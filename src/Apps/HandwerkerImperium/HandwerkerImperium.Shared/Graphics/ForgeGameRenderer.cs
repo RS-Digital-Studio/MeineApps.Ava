@@ -108,7 +108,8 @@ public sealed class ForgeGameRenderer : IDisposable
     private readonly SKPaint _fillPaint = new() { IsAntialias = true };
     private readonly SKPaint _sparkPaint = new() { IsAntialias = true };
     private readonly SKPaint _smokePaint = new() { IsAntialias = true };
-    private readonly SKPaint _textPaint = new() { IsAntialias = true, TextSize = 10 };
+    private readonly SKPaint _textPaint = new() { IsAntialias = true };
+    private readonly SKFont _textFont9 = new() { Size = 9f };
 
     // Gecachte SKPath-Objekte (GC-frei, Wiederverwendung via Reset())
     private readonly SKPath _anvilBodyPath = new();
@@ -754,11 +755,8 @@ public sealed class ForgeGameRenderer : IDisposable
 
         // Temperatur-Labels
         _textPaint.Color = new SKColor(255, 255, 255, 90);
-        _textPaint.TextSize = 9;
-        canvas.DrawText("KALT", x + 4, y + h + 13, _textPaint);
-
-        float heissWidth = _textPaint.MeasureText("HEISS");
-        canvas.DrawText("HEISS", x + w - heissWidth - 4, y + h + 13, _textPaint);
+        canvas.DrawText("KALT", x + 4, y + h + 13, SKTextAlign.Left, _textFont9, _textPaint);
+        canvas.DrawText("HEISS", x + w - 4, y + h + 13, SKTextAlign.Right, _textFont9, _textPaint);
 
         // Temperatur-Marker (dreieckiger Zeiger mit Glow)
         float markerX = innerX + (float)(temp * innerW);
@@ -1200,5 +1198,6 @@ public sealed class ForgeGameRenderer : IDisposable
         _sparkPaint?.Dispose();
         _smokePaint?.Dispose();
         _textPaint?.Dispose();
+        _textFont9?.Dispose();
     }
 }

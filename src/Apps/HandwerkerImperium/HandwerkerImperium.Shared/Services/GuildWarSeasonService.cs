@@ -93,9 +93,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             var savedPhase = _preferences.Get(PrefKeyLastPhase, "attack");
             _lastKnownPhase = ParseWarPhase(savedPhase);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GuildWarSeasonService.InitializeAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -172,9 +172,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             };
             await _firebase.PushAsync($"guild_war_log/{_activeWarId}", logEntry);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in ContributeScoreAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -263,9 +263,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
                 MvpScore = mvpScore
             };
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetCurrentWarDataAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return null;
         }
         finally
@@ -301,9 +301,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
                 .OrderByDescending(e => e.Timestamp)
                 .ToList();
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetWarLogAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return [];
         }
     }
@@ -442,9 +442,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             };
             await _firebase.PushAsync($"guild_war_log/{_activeWarId}", logEntry);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in CheckPhaseTransitionAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -493,9 +493,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             // Saison-Belohnungen verteilen
             DistributeSeasonRewards();
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in CheckSeasonEndAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -660,9 +660,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             await _firebase.SetAsync($"guild_wars/{newWarId}", newWar);
             return newWarId;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in FindOrCreateWarAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return null;
         }
     }
@@ -691,9 +691,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
 
             return scores.Values.Sum(s => s.TotalScore);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in CalculateGuildTotalScoreAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return 0;
         }
     }
@@ -744,9 +744,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
 
             return (mvpName, mvpEntry.Value.TotalScore);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetMvpAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return ("", 0);
         }
     }
@@ -969,9 +969,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
                     membership.LeagueId = newLeagueKey;
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in ProcessLeaguePromotionAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 

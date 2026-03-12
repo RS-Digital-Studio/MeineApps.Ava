@@ -1,5 +1,6 @@
 namespace RebornSaga.Scenes;
 
+using MeineApps.Core.Ava.Localization;
 using RebornSaga.Engine;
 using RebornSaga.Engine.Transitions;
 using RebornSaga.Models;
@@ -34,6 +35,25 @@ public class SaveSlotScene : Scene
     private readonly AffinityService _affinityService;
     private readonly FateTrackingService _fateTrackingService;
     private readonly CodexService _codexService;
+    private readonly ILocalizationService _localization;
+
+    // Gecachte lokalisierte Strings
+    private readonly string _newGameText;
+    private readonly string _loadSaveText;
+    private readonly string _backText;
+    private readonly string _cancelText;
+    private readonly string _deleteText;
+    private readonly string _emptySlotText;
+    private readonly string _tapToStartText;
+    private readonly string _deleteSlotFormat;
+    private readonly string _cannotBeUndoneText;
+    private readonly string _classSwordmaster;
+    private readonly string _classArcanist;
+    private readonly string _classShadowblade;
+    private readonly string _prologBeginning;
+    private readonly string _prologAwakening;
+    private readonly string _prologSystem;
+    private readonly string _chapterFormat;
 
     private float _time;
     private readonly SKRect[] _slotRects = new SKRect[3];
@@ -50,6 +70,10 @@ public class SaveSlotScene : Scene
     private SKRect _deleteYesRect;
     private SKRect _deleteNoRect;
 
+    // Gecachte Slot-Display-Strings (vermeidet per-Frame String-Allokation)
+    private readonly string[] _cachedSlotLabels = new string[3];
+    private readonly string[] _cachedLevelTexts = new string[3];
+
     // Back-Button
     private SKRect _backButtonRect;
 
@@ -63,7 +87,8 @@ public class SaveSlotScene : Scene
         InventoryService inventoryService,
         AffinityService affinityService,
         FateTrackingService fateTrackingService,
-        CodexService codexService)
+        CodexService codexService,
+        ILocalizationService localization)
     {
         _saveGameService = saveGameService;
         _storyEngine = storyEngine;
@@ -72,6 +97,23 @@ public class SaveSlotScene : Scene
         _affinityService = affinityService;
         _fateTrackingService = fateTrackingService;
         _codexService = codexService;
+        _localization = localization;
+        _newGameText = _localization.GetString("NewGame") ?? "New Game";
+        _loadSaveText = _localization.GetString("LoadSave") ?? "Load Save";
+        _backText = _localization.GetString("Back") ?? "Back";
+        _cancelText = _localization.GetString("Cancel") ?? "Cancel";
+        _deleteText = _localization.GetString("Delete") ?? "Delete";
+        _emptySlotText = _localization.GetString("EmptySlot") ?? "- Empty -";
+        _tapToStartText = _localization.GetString("TapToStart") ?? "Tap to start";
+        _deleteSlotFormat = _localization.GetString("DeleteSlotFormat") ?? "Delete Slot {0}?";
+        _cannotBeUndoneText = _localization.GetString("CannotBeUndone") ?? "This action cannot be undone.";
+        _classSwordmaster = _localization.GetString("ClassSwordmaster") ?? "Swordmaster";
+        _classArcanist = _localization.GetString("ClassArcanist") ?? "Arcanist";
+        _classShadowblade = _localization.GetString("ClassShadowblade") ?? "Shadowblade";
+        _prologBeginning = _localization.GetString("PrologBeginning") ?? "Prologue: Beginning";
+        _prologAwakening = _localization.GetString("PrologAwakening") ?? "Prologue: Awakening";
+        _prologSystem = _localization.GetString("PrologSystem") ?? "Prologue: System";
+        _chapterFormat = _localization.GetString("ChapterFormat") ?? "Chapter {0}";
     }
 
     public override void OnEnter()
@@ -79,6 +121,10 @@ public class SaveSlotScene : Scene
         _time = 0;
         _deleteConfirmSlot = -1;
         _isLoading = false;
+
+        // Statische Slot-Labels vorberechnen (nie geändert)
+        for (int i = 0; i < 3; i++)
+            _cachedSlotLabels[i] = $"Slot {i + 1}";
 
         // Echte Slot-Daten aus SaveGameService laden
         // AppChecker:ignore
@@ -104,9 +150,9 @@ public class SaveSlotScene : Scene
                     {
                         className = cls switch
                         {
-                            Models.Enums.ClassName.Swordmaster => "Schwertmeister",
-                            Models.Enums.ClassName.Arcanist => "Arkanist",
-                            Models.Enums.ClassName.Shadowblade => "Schattenklinke",
+                            Models.Enums.ClassName.Swordmaster => _classSwordmaster,
+                            Models.Enums.ClassName.Arcanist => _classArcanist,
+                            Models.Enums.ClassName.Shadowblade => _classShadowblade,
                             _ => className
                         };
                     }
@@ -114,25 +160,31 @@ public class SaveSlotScene : Scene
                     // Kapitel-Name ableiten
                     var chapterName = entity.ChapterId switch
                     {
-                        "p1" => "Prolog: Anfang",
-                        "p2" => "Prolog: Erwachen",
-                        "p3" => "Prolog: System",
-                        _ when entity.ChapterId.StartsWith("k") => $"Kapitel {entity.ChapterId[1..]}",
+                        "p1" => _prologBeginning,
+                        "p2" => _prologAwakening,
+                        "p3" => _prologSystem,
+                        _ when entity.ChapterId.StartsWith("k") => string.Format(_chapterFormat, entity.ChapterId[1..]),
                         _ => entity.ChapterId
                     };
 
+                    var playTime = TimeSpan.FromSeconds(entity.PlayTimeSeconds);
                     _slots[i] = new SaveSlotData
                     {
                         IsEmpty = false,
                         ClassName = className,
                         Level = entity.Level,
                         ChapterName = chapterName,
-                        PlayTime = TimeSpan.FromSeconds(entity.PlayTimeSeconds)
+                        PlayTime = playTime,
+                        PlayTimeFormatted = playTime.TotalHours >= 1
+                            ? $"{(int)playTime.TotalHours}h {playTime.Minutes:D2}m"
+                            : $"{playTime.Minutes}m {playTime.Seconds:D2}s"
                     };
+                    _cachedLevelTexts[i] = $"Level {entity.Level}";
                 }
                 else
                 {
                     _slots[i] = new SaveSlotData(); // Leer
+                    _cachedLevelTexts[i] = "";
                 }
             }
         }
@@ -140,7 +192,10 @@ public class SaveSlotScene : Scene
         {
             // Bei Fehler: alle Slots als leer anzeigen
             for (int i = 0; i < 3; i++)
+            {
                 _slots[i] = new SaveSlotData();
+                _cachedLevelTexts[i] = "";
+            }
         }
     }
 
@@ -156,7 +211,7 @@ public class SaveSlotScene : Scene
         BackgroundCompositor.RenderBack(canvas, bounds, _time);
 
         // Titel (modusabhängig)
-        var title = Mode == SaveSlotMode.NewGame ? "Neues Spiel" : "Spielstand laden";
+        var title = Mode == SaveSlotMode.NewGame ? _newGameText : _loadSaveText;
         UIRenderer.DrawTextWithShadow(canvas, title,
             bounds.MidX, bounds.Height * 0.08f, bounds.Width * 0.06f,
             UIRenderer.PrimaryGlow);
@@ -185,7 +240,7 @@ public class SaveSlotScene : Scene
         _backButtonRect = new SKRect(
             bounds.MidX - backW / 2, bounds.Height * 0.9f,
             bounds.MidX + backW / 2, bounds.Height * 0.9f + backH);
-        UIRenderer.DrawButton(canvas, _backButtonRect, "Zurück", false, false, UIRenderer.TextMuted);
+        UIRenderer.DrawButton(canvas, _backButtonRect, _backText, false, false, UIRenderer.TextMuted);
 
         // Löschen-Dialog (Overlay)
         if (_deleteConfirmSlot >= 0)
@@ -215,20 +270,19 @@ public class SaveSlotScene : Scene
         UIRenderer.DrawPanel(canvas, rect, bgColor, 10f,
             isHovered ? UIRenderer.PrimaryGlow : null);
 
-        // Slot-Nummer
-        var slotLabel = $"Slot {index + 1}";
-        UIRenderer.DrawText(canvas, slotLabel,
+        // Slot-Nummer (gecacht)
+        UIRenderer.DrawText(canvas, _cachedSlotLabels[index],
             rect.Left + 15, rect.Top + rect.Height * 0.25f,
             rect.Height * 0.18f, UIRenderer.TextMuted);
 
         if (slot.IsEmpty)
         {
             // Leerer Slot
-            UIRenderer.DrawText(canvas, "- Leer -",
+            UIRenderer.DrawText(canvas, _emptySlotText,
                 rect.MidX, rect.MidY, rect.Height * 0.2f,
                 UIRenderer.TextSecondary, SKTextAlign.Center, true);
 
-            UIRenderer.DrawText(canvas, "Tap zum Starten",
+            UIRenderer.DrawText(canvas, _tapToStartText,
                 rect.MidX, rect.MidY + rect.Height * 0.25f, rect.Height * 0.14f,
                 UIRenderer.TextMuted, SKTextAlign.Center);
         }
@@ -242,7 +296,7 @@ public class SaveSlotScene : Scene
             UIRenderer.DrawText(canvas, slot.ClassName,
                 leftX, infoY, fontSize * 1.2f, UIRenderer.Primary);
 
-            UIRenderer.DrawText(canvas, $"Level {slot.Level}",
+            UIRenderer.DrawText(canvas, _cachedLevelTexts[index],
                 leftX, infoY + fontSize * 1.6f, fontSize, UIRenderer.TextPrimary);
 
             UIRenderer.DrawText(canvas, slot.ChapterName,
@@ -284,10 +338,10 @@ public class SaveSlotScene : Scene
         UIRenderer.DrawPanel(canvas, dialogRect, UIRenderer.PanelBg, 12f, UIRenderer.Danger);
 
         // Text
-        UIRenderer.DrawText(canvas, $"Slot {_deleteConfirmSlot + 1} löschen?",
+        UIRenderer.DrawText(canvas, string.Format(_deleteSlotFormat, _deleteConfirmSlot + 1),
             dialogRect.MidX, dialogRect.Top + dialogH * 0.25f,
             dialogH * 0.15f, UIRenderer.TextPrimary, SKTextAlign.Center);
-        UIRenderer.DrawText(canvas, "Dieser Vorgang kann nicht rückgängig gemacht werden.",
+        UIRenderer.DrawText(canvas, _cannotBeUndoneText,
             dialogRect.MidX, dialogRect.Top + dialogH * 0.45f,
             dialogH * 0.1f, UIRenderer.TextSecondary, SKTextAlign.Center);
 
@@ -299,12 +353,12 @@ public class SaveSlotScene : Scene
         _deleteNoRect = new SKRect(
             dialogRect.MidX - btnW - 10, btnY,
             dialogRect.MidX - 10, btnY + btnH);
-        UIRenderer.DrawButton(canvas, _deleteNoRect, "Abbrechen", false, false, UIRenderer.TextMuted);
+        UIRenderer.DrawButton(canvas, _deleteNoRect, _cancelText, false, false, UIRenderer.TextMuted);
 
         _deleteYesRect = new SKRect(
             dialogRect.MidX + 10, btnY,
             dialogRect.MidX + btnW + 10, btnY + btnH);
-        UIRenderer.DrawButton(canvas, _deleteYesRect, "Löschen", false, false, UIRenderer.Danger);
+        UIRenderer.DrawButton(canvas, _deleteYesRect, _deleteText, false, false, UIRenderer.Danger);
     }
 
     public override void HandlePointerDown(SKPoint position)
@@ -507,6 +561,7 @@ public class SaveSlotScene : Scene
             // UI-Index 0-2 → DB-SlotNumber 1-3
             await _saveGameService.DeleteSlotAsync(uiSlotIndex + 1);
             _slots[uiSlotIndex] = new SaveSlotData();
+            _cachedLevelTexts[uiSlotIndex] = "";
         }
         catch
         {
@@ -531,7 +586,6 @@ public class SaveSlotData
     public int MaxExp { get; set; }
     public TimeSpan PlayTime { get; set; }
 
-    public string PlayTimeFormatted => PlayTime.TotalHours >= 1
-        ? $"{(int)PlayTime.TotalHours}h {PlayTime.Minutes:D2}m"
-        : $"{PlayTime.Minutes}m {PlayTime.Seconds:D2}s";
+    /// <summary>Gecachter Spielzeit-String (wird bei Slot-Load einmal berechnet).</summary>
+    public string PlayTimeFormatted { get; set; } = "";
 }

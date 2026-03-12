@@ -296,6 +296,7 @@ public sealed partial class ForgeGameViewModel : ViewModelBase, IDisposable
         UpdateGameTypeVisuals();
         InitializeZones();
         CheckAndShowTutorial(GameType);
+        if (!ShowTutorial) _ = StartGameAsync();
     }
 
     private void UpdateGameTypeVisuals()
@@ -688,6 +689,7 @@ public sealed partial class ForgeGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(GameType);
             _gameStateService.MarkDirty();
         }
+        _ = StartGameAsync();
     }
 
     [RelayCommand]

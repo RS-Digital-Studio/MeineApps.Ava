@@ -46,6 +46,10 @@ public enum GameIconKind
     Medal,
     MedalOutline,
 
+    // Communication
+    ChatBubble,
+    Send,
+
     // Combat & Guild
     Sword,
     SwordCross,

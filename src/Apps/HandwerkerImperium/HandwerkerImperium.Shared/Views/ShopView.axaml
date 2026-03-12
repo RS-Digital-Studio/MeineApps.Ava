@@ -27,7 +27,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Shop_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            AutomationProperties.AutomationId="Shop_Icon_Back"
                            Foreground="White" />
         </Button>
@@ -59,7 +59,7 @@
               <SolidColorBrush Color="Black" Opacity="0.25" />
             </Border.Background>
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <icons:GameIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}"
+              <icons:GameIcon Kind="ScrewFlatTop" Width="20" Height="20" Foreground="{StaticResource CraftGoldBrush}"
                                AutomationProperties.AutomationId="Shop_Icon_GoldenScrews" />
               <TextBlock Text="{Binding GoldenScrewsBalance}" FontSize="14" FontWeight="Bold"
                          AutomationProperties.AutomationId="Shop_Txt_GoldenScrewsBalance"
@@ -191,7 +191,7 @@
                                 Spacing="4"
                                 HorizontalAlignment="Center"
                                 IsVisible="{Binding IsPurchased}">
-                      <icons:GameIcon Kind="Check" Width="14" Height="14"
+                      <icons:GameIcon Kind="Check" Width="18" Height="18"
                                        AutomationProperties.AutomationId="Shop_Icon_Purchased"
                                        Foreground="{DynamicResource SuccessBrush}" />
                       <TextBlock Text="{loc:Translate Purchased}"
@@ -223,7 +223,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="Shop_Border_ToolsIconBg"
                   Background="{StaticResource CraftPrimaryBrush}">
-            <icons:GameIcon Kind="Hammer" Width="14" Height="14" Foreground="White"
+            <icons:GameIcon Kind="Hammer" Width="18" Height="18" Foreground="White"
                              AutomationProperties.AutomationId="Shop_Icon_ToolsHeader" />
           </Border>
           <TextBlock Text="{loc:Translate Tools}"
@@ -250,7 +250,7 @@
                         <GradientStop Color="#B45309" Offset="1" />
                       </LinearGradientBrush>
                     </Border.Background>
-                    <icons:GameIcon Kind="{Binding IconKind, Converter={StaticResource IconKindConverter}}" Width="24" Height="24"
+                    <icons:GameIcon Kind="{Binding IconKind, Converter={StaticResource IconKindConverter}}" Width="28" Height="28"
                                      AutomationProperties.AutomationId="Shop_Icon_ToolItem"
                                      Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -284,7 +284,7 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <icons:GameIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="{StaticResource CraftGoldBrush}"
+                      <icons:GameIcon Kind="ScrewFlatTop" Width="18" Height="18" Foreground="{StaticResource CraftGoldBrush}"
                                        AutomationProperties.AutomationId="Shop_Icon_UpgradeCost" />
                       <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold"
                                  AutomationProperties.AutomationId="Shop_Txt_UpgradeCost"
@@ -292,7 +292,7 @@
                     </StackPanel>
                   </Button>
                   <!-- Max Level Badge -->
-                  <icons:GameIcon Grid.Column="2" Kind="CheckCircle" Width="24" Height="24"
+                  <icons:GameIcon Grid.Column="2" Kind="CheckCircle" Width="28" Height="28"
                                    AutomationProperties.AutomationId="Shop_Icon_ToolMaxLevel"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    IsVisible="{Binding IsMaxLevel}"
@@ -310,7 +310,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="Shop_Border_EquipmentIconBg"
                   Background="#9C27B0">
-            <icons:GameIcon Kind="Shield" Width="14" Height="14" Foreground="White"
+            <icons:GameIcon Kind="Shield" Width="18" Height="18" Foreground="White"
                              AutomationProperties.AutomationId="Shop_Icon_EquipmentHeader" />
           </Border>
           <TextBlock Text="{loc:Translate EquipmentShop}"
@@ -337,7 +337,7 @@
                     <Border.Background>
                       <SolidColorBrush Color="{Binding RarityColor, Converter={x:Static coreConv:StringToColorConverter.Instance}}" Opacity="0.2" />
                     </Border.Background>
-                    <icons:GameIcon Kind="{Binding IconKind}" Width="24" Height="24"
+                    <icons:GameIcon Kind="{Binding IconKind}" Width="28" Height="28"
                                      AutomationProperties.AutomationId="Shop_Icon_EquipmentItem"
                                      Foreground="{Binding RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -367,7 +367,7 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <icons:GameIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="{StaticResource CraftGoldBrush}"
+                      <icons:GameIcon Kind="ScrewFlatTop" Width="18" Height="18" Foreground="{StaticResource CraftGoldBrush}"
                                        AutomationProperties.AutomationId="Shop_Icon_EquipmentCost" />
                       <TextBlock Text="{Binding PriceDisplay}" FontSize="12" FontWeight="SemiBold"
                                  AutomationProperties.AutomationId="Shop_Txt_EquipmentCost"
@@ -387,7 +387,7 @@
                 HorizontalAlignment="Center"
                 Margin="0,16,0,0">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <icons:GameIcon Kind="Restore" Width="18" Height="18"
+            <icons:GameIcon Kind="Restore" Width="24" Height="24"
                              AutomationProperties.AutomationId="Shop_Icon_RestorePurchases" />
             <TextBlock Text="{Binding RestorePurchasesText}"
                        AutomationProperties.AutomationId="Shop_Txt_RestorePurchases"
@@ -400,7 +400,7 @@
                 AutomationProperties.AutomationId="Shop_Border_InfoCard">
           <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="InformationOutline" Width="14" Height="14"
+              <icons:GameIcon Kind="InformationOutline" Width="18" Height="18"
                                AutomationProperties.AutomationId="Shop_Icon_Info"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Notice}"

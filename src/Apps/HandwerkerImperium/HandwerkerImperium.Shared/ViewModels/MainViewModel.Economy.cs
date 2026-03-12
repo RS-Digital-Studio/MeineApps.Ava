@@ -379,8 +379,9 @@ public sealed partial class MainViewModel
                 break;
 
             case Models.Enums.DeliveryType.GoldenScrews:
-                _gameStateService.AddGoldenScrews((int)delivery.Amount);
-                FloatingTextRequested?.Invoke($"+{(int)delivery.Amount} \u2699", "screw");
+                var screwAmount = (int)Math.Round(delivery.Amount);
+                _gameStateService.AddGoldenScrews(screwAmount);
+                FloatingTextRequested?.Invoke($"+{screwAmount} \u2699", "screw");
                 break;
 
             case Models.Enums.DeliveryType.Experience:
@@ -466,6 +467,7 @@ public sealed partial class MainViewModel
         // Login-Streak aktualisieren
         OnPropertyChanged(nameof(LoginStreak));
         OnPropertyChanged(nameof(HasLoginStreak));
+        OnPropertyChanged(nameof(ShowStreakBadge));
 
         // Automation-Unlock-Properties aktualisieren (Level-abhängig, wichtig nach Init + Prestige)
         OnPropertyChanged(nameof(IsAutoCollectUnlocked));
@@ -481,8 +483,8 @@ public sealed partial class MainViewModel
         var totalMtBonus = MasterTool.GetTotalIncomeBonus(state.CollectedMasterTools);
         MasterToolsBonusDisplay = totalMtBonus > 0 ? $"+{(int)(totalMtBonus * 100)}%" : "";
 
-        // Prestige-Shop ab Level 500 (oder wenn bereits prestigiert → Shop bleibt zugänglich nach Reset)
-        IsPrestigeShopUnlocked = state.PlayerLevel >= 500 || state.Prestige.TotalPrestigeCount > 0;
+        // Prestige-Shop ab bestimmtem Level (oder wenn bereits prestigiert → Shop bleibt zugänglich nach Reset)
+        IsPrestigeShopUnlocked = state.PlayerLevel >= LevelThresholds.PrestigeShopUnlock || state.Prestige.TotalPrestigeCount > 0;
 
         // Refresh workshops
         RefreshWorkshops();
@@ -490,7 +492,7 @@ public sealed partial class MainViewModel
         // Tutorial-Hint: Pulsierender Rahmen solange FirstWorkshop-Hint noch nicht gesehen
         // Nach Prestige (Level zurück auf 1) nicht erneut anzeigen
         ShowTutorialHint = !_contextualHintService.HasSeenHint(ContextualHints.FirstWorkshop.Id)
-                           && state.PlayerLevel < 3
+                           && state.PlayerLevel < LevelThresholds.TutorialHintMaxLevel
                            && state.Prestige.TotalPrestigeCount == 0;
 
         // Refresh orders
@@ -521,6 +523,9 @@ public sealed partial class MainViewModel
                 UpdateWorkshopDisplay(Workshops[i], state, _workshopTypes[i]);
             }
         }
+
+        // Workshop-Canvas-Höhe aktualisieren (dynamisch basierend auf Anzahl)
+        OnPropertyChanged(nameof(WorkshopCanvasHeight));
 
         // Gebäude-Zusammenfassung aktualisieren (Task #5)
         RefreshBuildingsSummary(state);
@@ -761,6 +766,7 @@ public sealed partial class MainViewModel
             < 80 => "#22C55E",  // Grün
             _ => "#FFD700"      // Gold
         };
+        OnPropertyChanged(nameof(ShowReputationBadge));
     }
 
     /// <summary>

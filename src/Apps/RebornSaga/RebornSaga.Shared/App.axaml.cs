@@ -7,6 +7,7 @@ using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Extensions;
 using MeineApps.Core.Premium.Ava.Services;
 using RebornSaga.Engine;
+using RebornSaga.Rendering.Backgrounds;
 using RebornSaga.Rendering.Characters;
 using RebornSaga.Services;
 using RebornSaga.ViewModels;
@@ -69,22 +70,24 @@ public partial class App : Application
     /// Initialisiert alle Services die Daten beim Start laden müssen.
     /// Muss aufgerufen werden bevor SaveGameService.LoadGameAsync() verwendet wird.
     /// </summary>
-    public static async Task InitializeServicesAsync()
+    public static Task InitializeServicesAsync()
     {
         // Skill- und Item-Definitionen aus Embedded JSON laden
         // (Voraussetzung für SaveGameService.LoadGameAsync)
         Services.GetRequiredService<SkillService>().LoadSkills();
         Services.GetRequiredService<InventoryService>().LoadItems();
 
-        // Sprite-Rendering initialisieren (SpriteCache → CharacterRenderer)
-        CharacterRenderer.Initialize(Services.GetRequiredService<SpriteCache>());
+        // Sprite-Rendering initialisieren (SpriteCache → CharacterRenderer + BackgroundCompositor)
+        var spriteCache = Services.GetRequiredService<SpriteCache>();
+        CharacterRenderer.Initialize(spriteCache);
+        BackgroundCompositor.SetSpriteCache(spriteCache);
 
         // Käufe über Google Play wiederherstellen (Premium-Status nach Gerätewechsel)
         var purchaseService = Services.GetService<IPurchaseService>();
         if (purchaseService != null)
             _ = purchaseService.InitializeAsync(); // AppChecker:ignore - Fire-and-forget OK, verschluckt Fehler intern
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     /// <summary>

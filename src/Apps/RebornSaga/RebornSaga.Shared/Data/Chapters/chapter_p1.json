@@ -44,6 +44,7 @@
         { "character": "system_aria", "emotion": "neutral", "textKey": "p1_system_scout_detected", "typewriterSpeed": 18 },
         { "character": "kael", "emotion": "determined", "textKey": "p1_kael_scout_spotted", "position": "right" }
       ],
+      "effects": { "addItems": ["C001"] },
       "next": "p1_tutorial_battle"
     },
     {

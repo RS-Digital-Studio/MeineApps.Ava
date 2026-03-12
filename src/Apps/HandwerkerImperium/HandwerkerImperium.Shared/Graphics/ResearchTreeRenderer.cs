@@ -31,7 +31,7 @@ namespace HandwerkerImperium.Graphics;
 ///    ↓
 /// [14] [15]       → Zeile 9: Letzte Verzweigung (Meisterforschungen)
 /// </summary>
-public sealed class ResearchTreeRenderer
+public sealed class ResearchTreeRenderer : IDisposable
 {
     private float _time;
 
@@ -460,16 +460,6 @@ public sealed class ResearchTreeRenderer
             canvas.DrawText($"\u20ac{item.CostDisplay}", cx, y + 19, SKTextAlign.Center, _fontMedium, _text);
         }
 
-        // Level-Badge oben links am Icon
-        _fontSmall.Size = 8;
-        _fontSmall.Embolden = true;
-        _fill.Color = branchColor;
-        float badgeX = cx - NodeSize / 2 - 2;
-        float badgeY = item.IsLocked ? cx - NodeSize / 2 + 2 : // Korrektur: badgeY berechnen
-            y - NodeSize - ProgressBarHeight - TextHeight + 4;
-        // Vereinfacht: Badge in die untere rechte Ecke des Icons
-        float bx = cx + NodeSize / 2 - 12;
-        float by = y - ProgressBarHeight - TextHeight - 2;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -592,6 +582,19 @@ public sealed class ResearchTreeRenderer
         }
 
         return null;
+    }
+
+    private bool _disposed;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _fontSmall?.Dispose();
+        _fontMedium?.Dispose();
+        _fontBold?.Dispose();
+        _connectionPath?.Dispose();
+        _arrowPath?.Dispose();
     }
 
     private struct FlowParticle

@@ -45,6 +45,7 @@
         { "character": "aria", "emotion": "determined", "textKey": "p2_aria_combo", "position": "left" },
         { "character": "protagonist", "emotion": "determined", "textKey": "p2_protag_combo", "position": "right" }
       ],
+      "effects": { "addItems": ["C001"] },
       "next": "p2_battle_malachar"
     },
     {

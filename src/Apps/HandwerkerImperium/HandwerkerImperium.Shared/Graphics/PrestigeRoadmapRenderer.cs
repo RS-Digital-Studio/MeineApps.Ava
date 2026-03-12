@@ -16,6 +16,9 @@ public sealed class PrestigeRoadmapRenderer : IDisposable
     private readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private readonly SKPaint _textPaint = new() { IsAntialias = true };
     private readonly SKPaint _glowPaint = new() { IsAntialias = true };
+
+    // Mutierbarer Font (Größe abhängig von medalRadius, berechnet pro Frame)
+    private readonly SKFont _textFont = new();
     private readonly SKPaint _linePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3f };
 
     // Gecachter MaskFilter (wird nur bei Radius-Änderung neu erstellt)
@@ -177,28 +180,27 @@ public sealed class PrestigeRoadmapRenderer : IDisposable
 
             // Tier-Buchstabe
             _textPaint.Color = isUnlocked ? SKColors.White : new SKColor(150, 150, 150);
-            _textPaint.TextSize = medalRadius * 0.9f;
-            _textPaint.TextAlign = SKTextAlign.Center;
-            _textPaint.FakeBoldText = isCurrent;
-            canvas.DrawText(TierSymbols[i], cx, medalY + medalRadius * 0.3f, _textPaint);
+            _textFont.Size = medalRadius * 0.9f;
+            _textFont.Embolden = isCurrent;
+            canvas.DrawText(TierSymbols[i], cx, medalY + medalRadius * 0.3f, SKTextAlign.Center, _textFont, _textPaint);
 
             // Tier-Count unter der Medaille (nur wenn > 0)
             int count = i < tierCounts.Length ? tierCounts[i] : 0;
             if (count > 0)
             {
                 _textPaint.Color = color.WithAlpha(200);
-                _textPaint.TextSize = medalRadius * 0.55f;
-                _textPaint.FakeBoldText = false;
-                canvas.DrawText($"x{count}", cx, medalY + medalRadius + medalRadius * 0.7f, _textPaint);
+                _textFont.Size = medalRadius * 0.55f;
+                _textFont.Embolden = false;
+                canvas.DrawText($"x{count}", cx, medalY + medalRadius + medalRadius * 0.7f, SKTextAlign.Center, _textFont, _textPaint);
             }
 
             // Benötigtes Level über der Medaille (gecachter String)
             _textPaint.Color = isUnlocked
                 ? color.WithAlpha(150)
                 : new SKColor(120, 120, 120, 150);
-            _textPaint.TextSize = medalRadius * 0.5f;
-            _textPaint.FakeBoldText = false;
-            canvas.DrawText(TierLevelStrings[i], cx, medalY - medalRadius - 4f, _textPaint);
+            _textFont.Size = medalRadius * 0.5f;
+            _textFont.Embolden = false;
+            canvas.DrawText(TierLevelStrings[i], cx, medalY - medalRadius - 4f, SKTextAlign.Center, _textFont, _textPaint);
         }
     }
 
@@ -236,6 +238,7 @@ public sealed class PrestigeRoadmapRenderer : IDisposable
         _textPaint.Dispose();
         _glowPaint.Dispose();
         _linePaint.Dispose();
+        _textFont.Dispose();
         _glowMaskFilter?.Dispose();
     }
 }

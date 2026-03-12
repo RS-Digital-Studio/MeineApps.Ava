@@ -18,10 +18,10 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
     {
         var loc = services.GetRequiredService<ILocalizationService>();
 
-        // Schritt 1: Shader + ViewModel parallel (unabhängig voneinander)
+        // Schritt 1: Shader + ViewModel + Icons parallel (unabhängig voneinander)
         AddStep(new LoadingStep
         {
-            Name = "Shader+ViewModel",
+            Name = "Shader+ViewModel+Icons",
             DisplayName = loc.GetString("SplashStep_Graphics") ?? "Grafik-Engine laden...",
             Weight = 40,
             ExecuteAsync = async () =>
@@ -30,7 +30,9 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
                 var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
                 // Käufe mit Google Play abgleichen (Geräte-/Datenwechsel → Premium-Status wiederherstellen)
                 var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
-                await Task.WhenAll(shaderTask, vmTask, purchaseTask);
+                // Alle 224 Bitmap-Icons vorladen (WebP → SKBitmap → Avalonia IImage)
+                var iconsTask = Icons.GameIcon.PreloadAllAsync();
+                await Task.WhenAll(shaderTask, vmTask, purchaseTask, iconsTask);
             }
         });
 

@@ -177,6 +177,12 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
       <guild:GuildAchievementsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildAchievementsActive}"
                                    DataContext="{Binding GuildViewModel}"
                                    AutomationProperties.AutomationId="Main_View_GuildAchievements" />
+      <guild:GuildChatView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildChatActive}"
+                           DataContext="{Binding GuildViewModel}"
+                           AutomationProperties.AutomationId="Main_View_GuildChat" />
+      <guild:GuildWarView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildWarActive}"
+                          DataContext="{Binding GuildViewModel}"
+                          AutomationProperties.AutomationId="Main_View_GuildWar" />
       <ContentControl Content="{Binding CraftingViewModel}"
                       IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsCraftingActive}"
                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"

@@ -28,7 +28,7 @@
         <Button Classes="Text"
                 Command="{Binding GoBackCommand}"
                 AutomationProperties.AutomationId="WorkerMarket_Btn_Back">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            Foreground="{StaticResource CraftPrimaryLightBrush}"
                            AutomationProperties.AutomationId="WorkerMarket_Icon_Back" />
         </Button>
@@ -58,7 +58,7 @@
                   CornerRadius="12" Padding="8,4"
                   AutomationProperties.AutomationId="WorkerMarket_Border_ScrewsBadge">
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <icons:GameIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}"
+              <icons:GameIcon Kind="ScrewFlatTop" Width="20" Height="20" Foreground="{StaticResource CraftGoldBrush}"
                                AutomationProperties.AutomationId="WorkerMarket_Icon_Screws" />
               <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="14" FontWeight="Bold"
                          Foreground="{StaticResource CraftGoldBrush}"
@@ -109,12 +109,12 @@
                     AutomationProperties.AutomationId="WorkerMarket_Btn_Refresh">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <!-- Gratis: Refresh-Icon grün -->
-                <icons:GameIcon Kind="Refresh" Width="18" Height="18"
+                <icons:GameIcon Kind="Refresh" Width="24" Height="24"
                                  Foreground="{DynamicResource SuccessBrush}"
                                  IsVisible="{Binding HasFreeRefresh}"
                                  AutomationProperties.AutomationId="WorkerMarket_Icon_FreeRefresh" />
                 <!-- Kostenpflichtig: Video-Icon -->
-                <icons:GameIcon Kind="Video" Width="18" Height="18"
+                <icons:GameIcon Kind="Video" Width="24" Height="24"
                                  IsVisible="{Binding !HasFreeRefresh}"
                                  AutomationProperties.AutomationId="WorkerMarket_Icon_AdRefresh" />
                 <TextBlock Text="{Binding RefreshButtonText}" FontSize="13"
@@ -130,7 +130,7 @@
                 AutomationProperties.AutomationId="WorkerMarket_Border_NoSlotsWarning">
           <StackPanel Spacing="10">
             <!-- Icon zentriert ueber dem Text -->
-            <icons:GameIcon Kind="AlertCircleOutline" Width="24" Height="24"
+            <icons:GameIcon Kind="AlertCircleOutline" Width="28" Height="28"
                              Foreground="{DynamicResource WarningBrush}"
                              HorizontalAlignment="Center"
                              AutomationProperties.AutomationId="WorkerMarket_Icon_NoSlotsAlert" />
@@ -150,7 +150,7 @@
                     Padding="12,8"
                     AutomationProperties.AutomationId="WorkerMarket_Btn_WatchAdExtraSlot">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <icons:GameIcon Kind="Video" Width="18" Height="18"
+                <icons:GameIcon Kind="Video" Width="24" Height="24"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}"
                                  AutomationProperties.AutomationId="WorkerMarket_Icon_AdExtraSlot" />
                 <TextBlock Text="{loc:Translate WatchAdForWorkerSlot}" FontSize="13"
@@ -225,7 +225,7 @@
                     <!-- Personality -->
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <icons:GameIcon Kind="{Binding PersonalityIcon, Converter={StaticResource IconKindConverter}}"
-                                       Width="14" Height="14" VerticalAlignment="Center"
+                                       Width="18" Height="18" VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        AutomationProperties.AutomationId="WorkerMarket_Icon_PersonalityIcon" />
                       <TextBlock Text="{Binding PersonalityDisplay}"
@@ -238,7 +238,7 @@
                     <!-- Talent Stars -->
                     <StackPanel Orientation="Horizontal" Spacing="2"
                                 AutomationProperties.AutomationId="WorkerMarket_Panel_Talent">
-                      <icons:GameIcon Kind="Star" Width="14" Height="14"
+                      <icons:GameIcon Kind="Star" Width="18" Height="18"
                                        Foreground="{StaticResource CraftGoldBrush}"
                                        AutomationProperties.AutomationId="WorkerMarket_Icon_TalentStar" />
                       <TextBlock Text="{Binding Talent}"
@@ -282,7 +282,7 @@
                     <StackPanel Orientation="Horizontal"
                                 Spacing="6"
                                 HorizontalAlignment="Center">
-                      <icons:GameIcon Kind="AccountPlus" Width="16" Height="16"
+                      <icons:GameIcon Kind="AccountPlus" Width="20" Height="20"
                                        AutomationProperties.AutomationId="WorkerMarket_Icon_Hire" />
                       <TextBlock Text="{Binding HiringCost, StringFormat='{}{0:N0} €'}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -292,7 +292,7 @@
                                   IsVisible="{Binding HiringScrewCost}"
                                   AutomationProperties.AutomationId="WorkerMarket_Panel_ScrewCost">
                         <TextBlock Text="+" FontSize="13" FontWeight="SemiBold" />
-                        <icons:GameIcon Kind="ScrewFlatTop" Width="14" Height="14"
+                        <icons:GameIcon Kind="ScrewFlatTop" Width="18" Height="18"
                                          Foreground="{StaticResource CraftGoldBrush}"
                                          AutomationProperties.AutomationId="WorkerMarket_Icon_ScrewCost" />
                         <TextBlock Text="{Binding HiringScrewCost}"
@@ -338,7 +338,7 @@
           <!-- Overlay-Titel -->
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
                       AutomationProperties.AutomationId="WorkerMarket_Panel_OverlayTitle">
-            <icons:GameIcon Kind="Factory" Width="24" Height="24"
+            <icons:GameIcon Kind="Factory" Width="28" Height="28"
                              Foreground="{StaticResource CraftPrimaryLightBrush}"
                              AutomationProperties.AutomationId="WorkerMarket_Icon_OverlayFactory" />
             <TextBlock Text="{Binding SelectWorkshopTitle}"
@@ -352,7 +352,7 @@
                   CornerRadius="8" Padding="12,8"
                   AutomationProperties.AutomationId="WorkerMarket_Border_PendingWorker">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <icons:GameIcon Kind="AccountPlus" Width="18" Height="18"
+              <icons:GameIcon Kind="AccountPlus" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryLightBrush}"
                                AutomationProperties.AutomationId="WorkerMarket_Icon_PendingWorker" />
               <TextBlock Text="{Binding PendingWorker.Name}"
@@ -394,7 +394,7 @@
                                  AutomationProperties.AutomationId="WorkerMarket_Txt_WorkshopWorkerInfo" />
                     </StackPanel>
                     <icons:GameIcon Grid.Column="1" Kind="ChevronRight"
-                                     Width="24" Height="24"
+                                     Width="28" Height="28"
                                      Foreground="{StaticResource CraftPrimaryLightBrush}"
                                      VerticalAlignment="Center"
                                      AutomationProperties.AutomationId="WorkerMarket_Icon_WorkshopChevron" />

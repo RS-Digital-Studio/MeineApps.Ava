@@ -1,3 +1,4 @@
+using BomberBlast.Services;
 using SkiaSharp;
 
 namespace BomberBlast.Graphics;
@@ -22,9 +23,35 @@ public static class ShopIconRenderer
     /// <param name="size">Icon-Groesse (Breite/Hoehe)</param>
     /// <param name="upgradeTypeIndex">UpgradeType Index (0-11)</param>
     /// <param name="color">Hauptfarbe des Icons</param>
+    private static readonly SKPaint _aiBitmapPaint = new() { IsAntialias = true };
+
+    /// <summary>
+    /// Shop-Upgrade-Typ-Index → Asset-Name Mapping.
+    /// </summary>
+    private static readonly string[] ShopAssetNames =
+    [
+        "shop_start_bombs", "shop_start_fire", "shop_start_speed",
+        "shop_extra_lives", "shop_score_multi", "shop_time_bonus",
+        "shop_shield_start", "shop_coin_bonus", "shop_powerup_luck",
+        "shop_ice_bomb", "shop_fire_bomb", "shop_sticky_bomb"
+    ];
+
     public static void Render(SKCanvas canvas, float cx, float cy, float size,
         int upgradeTypeIndex, SKColor color)
     {
+        // AI-Bitmap versuchen
+        if (upgradeTypeIndex >= 0 && upgradeTypeIndex < ShopAssetNames.Length)
+        {
+            var bitmap = GameAssetService.Current?.GetOrLoadBitmap($"shop/{ShopAssetNames[upgradeTypeIndex]}.webp");
+            if (bitmap != null)
+            {
+                float half = size * 0.45f;
+                var dest = new SKRect(cx - half, cy - half, cx + half, cy + half);
+                canvas.DrawBitmap(bitmap, dest, _aiBitmapPaint);
+                return;
+            }
+        }
+
         float r = size / 2f;
 
         switch (upgradeTypeIndex)

@@ -1,5 +1,6 @@
 namespace RebornSaga.Scenes;
 
+using MeineApps.Core.Ava.Localization;
 using RebornSaga.Engine;
 using RebornSaga.Models;
 using RebornSaga.Models.Enums;
@@ -19,11 +20,29 @@ public class InventoryScene : Scene
     private readonly InventoryService _inventory;
     private readonly Player _player;
     private readonly SpriteCache? _spriteCache;
+    private readonly ILocalizationService _localization;
 
     // Tabs: Alle, Waffen, Rüstung, Accessoire, Verbrauch, Key
     private static readonly ItemType?[] Tabs = { null, ItemType.Weapon, ItemType.Armor, ItemType.Accessory, ItemType.Consumable, ItemType.KeyItem };
-    private static readonly string[] TabNames = { "Alle", "Waffen", "Rüstung", "Accessoire", "Verbrauch", "Schlüssel" };
+    private readonly string[] _tabNames = new string[6];
     private int _selectedTab;
+
+    // Lokalisierte Strings (gecacht im Konstruktor)
+    private readonly string _inventoryTitle;
+    private readonly string _backText;
+    private readonly string _noItemsText;
+    private readonly string _equipText;
+    private readonly string _unequipText;
+    private readonly string _useText;
+    private readonly string _typeWeapon;
+    private readonly string _typeArmor;
+    private readonly string _typeAccessory;
+    private readonly string _typeConsumable;
+    private readonly string _typeKeyItem;
+    private readonly string _sellPriceFormat;
+    private readonly string _healHpFormat;
+    private readonly string _healMpFormat;
+    private readonly string _healPercentFormat;
 
     // Items in der aktuellen Ansicht
     private List<(Item item, int count)> _currentItems = new();
@@ -68,11 +87,36 @@ public class InventoryScene : Scene
     };
     private static readonly SKPaint _iconBitmapPaint = new() { IsAntialias = true };
 
-    public InventoryScene(InventoryService inventory, Player player, SpriteCache? spriteCache = null)
+    public InventoryScene(InventoryService inventory, Player player, ILocalizationService localization,
+        SpriteCache? spriteCache = null)
     {
         _inventory = inventory;
         _player = player;
+        _localization = localization;
         _spriteCache = spriteCache;
+
+        _tabNames[0] = _localization.GetString("TabAll") ?? "All";
+        _tabNames[1] = _localization.GetString("TabWeapons") ?? "Weapons";
+        _tabNames[2] = _localization.GetString("TabArmor") ?? "Armor";
+        _tabNames[3] = _localization.GetString("TabAccessory") ?? "Accessory";
+        _tabNames[4] = _localization.GetString("TabConsumable") ?? "Consumable";
+        _tabNames[5] = _localization.GetString("TabKeyItems") ?? "Key Items";
+
+        _inventoryTitle = _localization.GetString("Inventory") ?? "Inventory";
+        _backText = _localization.GetString("Back") ?? "Back";
+        _noItemsText = _localization.GetString("NoItems") ?? "No items";
+        _equipText = _localization.GetString("Equip") ?? "Equip";
+        _unequipText = _localization.GetString("Unequip") ?? "Unequip";
+        _useText = _localization.GetString("Use") ?? "Use";
+        _typeWeapon = _localization.GetString("TypeWeapon") ?? "Weapon";
+        _typeArmor = _localization.GetString("TypeArmor") ?? "Armor";
+        _typeAccessory = _localization.GetString("TypeAccessory") ?? "Accessory";
+        _typeConsumable = _localization.GetString("TypeConsumable") ?? "Consumable";
+        _typeKeyItem = _localization.GetString("TypeKeyItem") ?? "Key Item";
+        _sellPriceFormat = _localization.GetString("SellPriceFormat") ?? "Sell: {0}G";
+        _healHpFormat = _localization.GetString("HealHpFormat") ?? "Heals {0} HP";
+        _healMpFormat = _localization.GetString("HealMpFormat") ?? "Heals {0} MP";
+        _healPercentFormat = _localization.GetString("HealPercentFormat") ?? "Heals {0}% HP+MP";
     }
 
     public override void OnEnter()
@@ -117,21 +161,21 @@ public class InventoryScene : Scene
         canvas.DrawRect(bounds, _overlayPaint);
 
         // Header: "Inventar" + Gold
-        UIRenderer.DrawTextWithShadow(canvas, "Inventar", bounds.MidX, bounds.Top + bounds.Height * 0.04f,
+        UIRenderer.DrawTextWithShadow(canvas, _inventoryTitle, bounds.MidX, bounds.Top + bounds.Height * 0.04f,
             bounds.Width * 0.06f, UIRenderer.PrimaryGlow);
         UIRenderer.DrawText(canvas, _cachedGoldText,
             bounds.Right - bounds.Width * 0.05f, bounds.Top + bounds.Height * 0.04f,
             bounds.Width * 0.035f, UIRenderer.Accent, SKTextAlign.Right);
 
         // Zurück-Button
-        UIRenderer.DrawButton(canvas, _backButtonRect, "Zurück", color: UIRenderer.Border);
+        UIRenderer.DrawButton(canvas, _backButtonRect, _backText, color: UIRenderer.Border);
 
         // Tabs
-        for (int i = 0; i < TabNames.Length; i++)
+        for (int i = 0; i < _tabNames.Length; i++)
         {
             var isActive = i == _selectedTab;
             var tabColor = isActive ? UIRenderer.Primary : UIRenderer.CardBg;
-            UIRenderer.DrawButton(canvas, _tabRects[i], TabNames[i], color: tabColor);
+            UIRenderer.DrawButton(canvas, _tabRects[i], _tabNames[i], color: tabColor);
         }
 
         // Item-Liste
@@ -178,7 +222,8 @@ public class InventoryScene : Scene
             // Item-Name + Anzahl (nach Icon versetzt wenn vorhanden)
             var textLeft = hasIcon ? iconLeft + iconSize + 6f : rect.Left + 8f;
             var fontSize = rect.Height * 0.35f;
-            UIRenderer.DrawText(canvas, item.NameKey, textLeft, rect.MidY - fontSize * 0.3f,
+            var itemDisplayName = _localization.GetString(item.NameKey) ?? item.NameKey;
+            UIRenderer.DrawText(canvas, itemDisplayName, textLeft, rect.MidY - fontSize * 0.3f,
                 fontSize, UIRenderer.TextPrimary);
 
             // Typ + Anzahl rechts (gecacht pro sichtbarem Slot)
@@ -197,7 +242,7 @@ public class InventoryScene : Scene
 
         if (_currentItems.Count == 0)
         {
-            UIRenderer.DrawText(canvas, "Keine Items", bounds.MidX, bounds.MidY,
+            UIRenderer.DrawText(canvas, _noItemsText, bounds.MidX, bounds.MidY,
                 bounds.Width * 0.04f, UIRenderer.TextMuted, SKTextAlign.Center, true);
         }
 
@@ -225,7 +270,8 @@ public class InventoryScene : Scene
         var lineH = fontSize * 1.8f;
 
         // Name
-        UIRenderer.DrawText(canvas, item.NameKey, x, y, fontSize * 1.2f, UIRenderer.PrimaryGlow);
+        var detailName = _localization.GetString(item.NameKey) ?? item.NameKey;
+        UIRenderer.DrawText(canvas, detailName, x, y, fontSize * 1.2f, UIRenderer.PrimaryGlow);
         y += lineH * 1.2f;
 
         // Typ (gecacht)
@@ -249,12 +295,12 @@ public class InventoryScene : Scene
         if (item.IsEquippable)
         {
             var isEquipped = _inventory.IsEquipped(item.Id);
-            UIRenderer.DrawButton(canvas, _actionButton1Rect, isEquipped ? "Ablegen" : "Ausrüsten",
+            UIRenderer.DrawButton(canvas, _actionButton1Rect, isEquipped ? _unequipText : _equipText,
                 color: isEquipped ? UIRenderer.Border : UIRenderer.Primary);
         }
         else if (item.IsUsable)
         {
-            UIRenderer.DrawButton(canvas, _actionButton1Rect, "Benutzen", color: UIRenderer.Success);
+            UIRenderer.DrawButton(canvas, _actionButton1Rect, _useText, color: UIRenderer.Success);
         }
     }
 
@@ -266,11 +312,11 @@ public class InventoryScene : Scene
     {
         _cachedTypeText = item.Type switch
         {
-            ItemType.Weapon => "Waffe",
-            ItemType.Armor => "Rüstung",
-            ItemType.Accessory => "Accessoire",
-            ItemType.Consumable => "Verbrauchbar",
-            ItemType.KeyItem => "Schlüsselitem",
+            ItemType.Weapon => _typeWeapon,
+            ItemType.Armor => _typeArmor,
+            ItemType.Accessory => _typeAccessory,
+            ItemType.Consumable => _typeConsumable,
+            ItemType.KeyItem => _typeKeyItem,
             _ => ""
         };
 
@@ -282,13 +328,13 @@ public class InventoryScene : Scene
         if (item.HpBonus > 0) _cachedDetailStats.Add(($"HP +{item.HpBonus}", UIRenderer.Danger));
         if (item.MpBonus > 0) _cachedDetailStats.Add(($"MP +{item.MpBonus}", UIRenderer.Primary));
         if (item.LukBonus > 0) _cachedDetailStats.Add(($"LUK +{item.LukBonus}", UIRenderer.Accent));
-        if (item.HealHp > 0) _cachedDetailStats.Add(($"Heilt {item.HealHp} HP", UIRenderer.Success));
-        if (item.HealMp > 0) _cachedDetailStats.Add(($"Heilt {item.HealMp} MP", UIRenderer.Primary));
-        if (item.HealPercent > 0) _cachedDetailStats.Add(($"Heilt {item.HealPercent}% HP+MP", UIRenderer.Success));
+        if (item.HealHp > 0) _cachedDetailStats.Add((string.Format(_healHpFormat, item.HealHp), UIRenderer.Success));
+        if (item.HealMp > 0) _cachedDetailStats.Add((string.Format(_healMpFormat, item.HealMp), UIRenderer.Primary));
+        if (item.HealPercent > 0) _cachedDetailStats.Add((string.Format(_healPercentFormat, item.HealPercent), UIRenderer.Success));
         if (!string.IsNullOrEmpty(item.Effect))
             _cachedDetailStats.Add((item.Effect, UIRenderer.TextMuted));
 
-        _cachedSellText = item.SellPrice > 0 ? $"Verkauf: {item.SellPrice}G" : "";
+        _cachedSellText = item.SellPrice > 0 ? string.Format(_sellPriceFormat, item.SellPrice) : "";
     }
 
     private void CalculateLayout(SKRect bounds)
@@ -300,10 +346,10 @@ public class InventoryScene : Scene
         _backButtonRect = new SKRect(bounds.Left + 8, bounds.Top + 8, bounds.Left + w * 0.15f, bounds.Top + h * 0.06f);
 
         // Tabs
-        var tabW = w / TabNames.Length;
+        var tabW = w / _tabNames.Length;
         var tabY = bounds.Top + h * 0.08f;
         var tabH = h * 0.05f;
-        for (int i = 0; i < TabNames.Length; i++)
+        for (int i = 0; i < _tabNames.Length; i++)
             _tabRects[i] = new SKRect(bounds.Left + i * tabW + 2, tabY, bounds.Left + (i + 1) * tabW - 2, tabY + tabH);
 
         // Item-Liste (linke Hälfte)

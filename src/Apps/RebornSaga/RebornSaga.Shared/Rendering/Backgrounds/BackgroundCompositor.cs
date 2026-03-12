@@ -1,10 +1,12 @@
 namespace RebornSaga.Rendering.Backgrounds;
 
 using RebornSaga.Rendering.Backgrounds.Layers;
+using RebornSaga.Services;
 using SkiaSharp;
 
 /// <summary>
 /// Orchestriert das Multi-Layer Hintergrund-Rendering.
+/// Hybrid: AI-generierter Hintergrund als Basis + prozedurale SkiaSharp-Overlays (Partikel, Licht).
 /// RenderBack() vor Charakteren, RenderFront() nach Charakteren.
 /// BeginLighting/EndLighting klammern die Charakter-Renderung für Ambient-Tönung.
 /// </summary>
@@ -12,6 +14,19 @@ public static class BackgroundCompositor
 {
     private static SceneDef? _currentScene;
     private static string _currentKey = "";
+    private static SpriteCache? _spriteCache;
+
+    // Gepoolter Paint für AI-Hintergrund-Rendering
+    private static readonly SKPaint _bgBitmapPaint = new() { IsAntialias = true };
+
+    /// <summary>
+    /// Initialisiert den SpriteCache für AI-generierte Hintergründe.
+    /// Muss nach DI-Container-Aufbau aufgerufen werden.
+    /// </summary>
+    public static void SetSpriteCache(SpriteCache spriteCache)
+    {
+        _spriteCache = spriteCache;
+    }
 
     /// <summary>
     /// Setzt die aktive Szene per backgroundKey aus dem Story-JSON.
@@ -24,26 +39,65 @@ public static class BackgroundCompositor
     }
 
     /// <summary>
-    /// Zeichnet alles HINTER den Charakteren: Himmel, Mittelgrund-Elemente, Boden, Punkt-Lichter.
+    /// Zeichnet alles HINTER den Charakteren.
+    /// Hybrid-Rendering: AI-Hintergrund als Basis, darüber prozedurale Licht-Effekte.
+    /// Ohne AI-Assets wird auf prozedurale Hintergründe zurückgegriffen.
     /// </summary>
     public static void RenderBack(SKCanvas canvas, SKRect bounds, float time)
     {
         var scene = _currentScene ?? SceneDefinitions.Default;
 
-        // 1. Himmel-Gradient
-        SkyRenderer.Render(canvas, bounds, scene.Sky);
+        // AI-generierter Hintergrund als Basis (wenn verfügbar)
+        var aiBg = _spriteCache?.GetBackground(_currentKey);
+        if (aiBg != null)
+        {
+            // AI-Bild als Vollbild-Basis (Cover-Fit: Seitenverhältnis beibehalten)
+            var srcRect = new SKRect(0, 0, aiBg.Width, aiBg.Height);
+            var srcAspect = (float)aiBg.Width / aiBg.Height;
+            var dstAspect = bounds.Width / bounds.Height;
+            SKRect drawRect;
 
-        // 2. Mittelgrund-Silhouetten
-        if (scene.Elements.Length > 0)
-            ElementRenderer.Render(canvas, bounds, scene.Elements);
+            if (srcAspect > dstAspect)
+            {
+                // Bild ist breiter als Ziel: oben/unten croppen
+                var cropWidth = aiBg.Height * dstAspect;
+                var cropX = (aiBg.Width - cropWidth) / 2f;
+                srcRect = new SKRect(cropX, 0, cropX + cropWidth, aiBg.Height);
+                drawRect = bounds;
+            }
+            else
+            {
+                // Bild ist höher als Ziel: links/rechts croppen
+                var cropHeight = aiBg.Width / dstAspect;
+                var cropY = (aiBg.Height - cropHeight) / 2f;
+                srcRect = new SKRect(0, cropY, aiBg.Width, cropY + cropHeight);
+                drawRect = bounds;
+            }
 
-        // 3. Boden
-        if (scene.Ground != null)
-            GroundRenderer.Render(canvas, bounds, scene.Ground);
+            canvas.DrawBitmap(aiBg, srcRect, drawRect, _bgBitmapPaint);
 
-        // 4. Punkt-Lichter (hinter Charakteren, erzeugt Lichtkreise auf Boden/Wand)
-        if (scene.Lights.Length > 0)
-            LightingRenderer.RenderPointLights(canvas, bounds, scene.Lights, time);
+            // Nur Punkt-Lichter darüber (atmosphärische Effekte bleiben)
+            if (scene.Lights.Length > 0)
+                LightingRenderer.RenderPointLights(canvas, bounds, scene.Lights, time);
+        }
+        else
+        {
+            // Prozeduraler Fallback (bis AI-Assets heruntergeladen sind)
+            // 1. Himmel-Gradient
+            SkyRenderer.Render(canvas, bounds, scene.Sky);
+
+            // 2. Mittelgrund-Silhouetten
+            if (scene.Elements.Length > 0)
+                ElementRenderer.Render(canvas, bounds, scene.Elements);
+
+            // 3. Boden
+            if (scene.Ground != null)
+                GroundRenderer.Render(canvas, bounds, scene.Ground);
+
+            // 4. Punkt-Lichter
+            if (scene.Lights.Length > 0)
+                LightingRenderer.RenderPointLights(canvas, bounds, scene.Lights, time);
+        }
     }
 
     /// <summary>

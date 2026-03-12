@@ -1,3 +1,4 @@
+using BomberBlast.Services;
 using SkiaSharp;
 
 namespace BomberBlast.Graphics;
@@ -36,6 +37,13 @@ public static class LevelSelectVisualization
     // Stern-Farben
     private static readonly SKColor _starGold = new(0xFF, 0xD7, 0x00);
     private static readonly SKColor _starEmpty = new(0x66, 0x66, 0x66);
+
+    // Welt-Asset-Namen (Index → Dateiname)
+    private static readonly string[] WorldAssetNames =
+    [
+        "forest", "industrial", "cavern", "sky", "inferno",
+        "ruins", "ocean", "volcano", "sky_fortress", "shadow_realm"
+    ];
 
     /// <summary>
     /// Daten für ein Level-Thumbnail.
@@ -88,17 +96,33 @@ public static class LevelSelectVisualization
         _cellPaint.Color = level.IsCompleted ? worldColor : worldColor.WithAlpha(140);
         canvas.DrawRoundRect(bounds, cornerR, cornerR, _cellPaint);
 
-        // Subtiler Gradient-Overlay (oben heller)
-        _cellPaint.Color = SKColors.White.WithAlpha(25);
-        canvas.Save();
-        using var clipPath = new SKPath();
-        clipPath.AddRoundRect(bounds, cornerR, cornerR);
-        canvas.ClipPath(clipPath);
-        canvas.DrawRect(bounds.Left, bounds.Top, bounds.Width, bounds.Height * 0.4f, _cellPaint);
-        canvas.Restore();
+        // AI-Welt-Hintergrundbild (wenn verfügbar)
+        var worldBitmap = GameAssetService.Current?.GetOrLoadBitmap($"worlds/world_{WorldAssetNames[wi]}.webp");
+        if (worldBitmap != null)
+        {
+            canvas.Save();
+            using var clipPath2 = new SKPath();
+            clipPath2.AddRoundRect(bounds, cornerR, cornerR);
+            canvas.ClipPath(clipPath2);
+            _cellPaint.Color = SKColors.White.WithAlpha(level.IsCompleted ? (byte)180 : (byte)100);
+            canvas.DrawBitmap(worldBitmap, bounds, _cellPaint);
+            _cellPaint.Color = SKColors.White;
+            canvas.Restore();
+        }
+        else
+        {
+            // Fallback: Subtiler Gradient-Overlay (oben heller)
+            _cellPaint.Color = SKColors.White.WithAlpha(25);
+            canvas.Save();
+            using var clipPath = new SKPath();
+            clipPath.AddRoundRect(bounds, cornerR, cornerR);
+            canvas.ClipPath(clipPath);
+            canvas.DrawRect(bounds.Left, bounds.Top, bounds.Width, bounds.Height * 0.4f, _cellPaint);
+            canvas.Restore();
 
-        // Welt-spezifisches Muster
-        DrawWorldPattern(canvas, bounds, wi, animTime);
+            // Welt-spezifisches Muster
+            DrawWorldPattern(canvas, bounds, wi, animTime);
+        }
 
         // Rand
         _starStroke.Color = SKColors.White.WithAlpha(60);

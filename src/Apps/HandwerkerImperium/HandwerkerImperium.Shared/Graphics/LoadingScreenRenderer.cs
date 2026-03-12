@@ -105,14 +105,11 @@ public sealed class LoadingScreenRenderer
         _textPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, alpha);
 
         string title = "HandwerkerImperium";
-        float titleWidth = _titleFont.MeasureText(title);
-        canvas.DrawText(title, cx - titleWidth / 2f, y, SKTextAlign.Left, _titleFont, _textPaint);
+        canvas.DrawText(title, cx, y, SKTextAlign.Center, _titleFont, _textPaint);
 
         // Untertitel
-        string subtitle = "Baue dein Imperium";
-        float subWidth = _subtitleFont.MeasureText(subtitle);
         _subtitlePaint.Color = new SKColor(0xFF, 0xA7, 0x26, (byte)(alpha * 0.8f));
-        canvas.DrawText(subtitle, cx - subWidth / 2f, y + 22, SKTextAlign.Left, _subtitleFont, _subtitlePaint);
+        canvas.DrawText("Baue dein Imperium", cx, y + 22, SKTextAlign.Center, _subtitleFont, _subtitlePaint);
     }
 
     // ═════════════════════════════════════════════════════════════════

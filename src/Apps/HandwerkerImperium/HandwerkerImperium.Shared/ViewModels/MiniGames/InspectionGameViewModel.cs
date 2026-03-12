@@ -228,6 +228,7 @@ public sealed partial class InspectionGameViewModel : ViewModelBase, IDisposable
         InitializeGame();
 
         CheckAndShowTutorial(MiniGameType.Inspection);
+        if (!ShowTutorial) _ = StartGameAsync();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -334,11 +335,9 @@ public sealed partial class InspectionGameViewModel : ViewModelBase, IDisposable
                 await EndGameAsync();
             }
         }
-        catch (Exception ex)
+        catch
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
-#endif
+            // Timer-Fehler still behandelt
         }
     }
 
@@ -578,6 +577,7 @@ public sealed partial class InspectionGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(MiniGameType.Inspection);
             _gameStateService.MarkDirty();
         }
+        _ = StartGameAsync();
     }
 
     [RelayCommand]

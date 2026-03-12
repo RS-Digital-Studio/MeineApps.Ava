@@ -86,7 +86,7 @@
                   HorizontalContentAlignment="Center"
                   AutomationProperties.AutomationId="Main_Btn_SummaryShop">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <icons:GameIcon Kind="StorefrontOutline" Width="16" Height="16" />
+              <icons:GameIcon Kind="StorefrontOutline" Width="20" Height="20" />
               <TextBlock Text="{loc:Translate PrestigeShop}" FontSize="14" FontWeight="Bold" />
             </StackPanel>
           </Button>

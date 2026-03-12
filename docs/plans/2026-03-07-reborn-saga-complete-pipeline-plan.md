@@ -1,6 +1,6 @@
 # RebornSaga: Komplette Pipeline — Implementierungsplan
 
-> **Status (7. März 2026):** Code-Phasen (0, 3a, 3b, 4) ERLEDIGT. Python-Scripts (1, 2, 5) ERSTELLT. Code-Review durchgeführt + alle Findings gefixt. Verbleibend: Scripts ausführen (ComfyUI/kohya starten), Audio-Assets beschaffen, Firebase-Key erstellen.
+> **Status (9. März 2026):** ALLE Code-Phasen ERLEDIGT (0, 3a, 3b, 4, 5, 6.1). 336 Assets (77 MB) auf Firebase Storage hochgeladen. Manifest im korrekten Format generiert. AssetDeliveryService URL-Fix. Audio: 28 SFX + 10 BGM vorhanden. Lokalisierung: 135 Keys in 6 Sprachen. AppChecker: 0 Fehler/FAIL/TODOs. Verbleibend: Android-Test auf Gerät (6.2), Release-Build nur auf Anfrage (6.4).
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 

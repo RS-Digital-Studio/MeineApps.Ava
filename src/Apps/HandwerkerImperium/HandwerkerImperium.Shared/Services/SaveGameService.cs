@@ -206,8 +206,8 @@ public sealed class SaveGameService : ISaveGameService
     private static void SanitizeState(GameState state)
     {
         // Basis-Werte mit Ober-Caps (Exploit-Schutz gegen Save-Editing)
-        if (state.PlayerLevel < 1) state.PlayerLevel = 1;
-        if (state.PlayerLevel > 1500) state.PlayerLevel = 1500;
+        if (state.PlayerLevel < LevelThresholds.MinPlayerLevel) state.PlayerLevel = LevelThresholds.MinPlayerLevel;
+        if (state.PlayerLevel > LevelThresholds.MaxPlayerLevel) state.PlayerLevel = LevelThresholds.MaxPlayerLevel;
         if (state.Money < 0) state.Money = 0;
         if (state.Money > 100_000_000_000m) state.Money = 100_000_000_000m;
         if (state.CurrentXp < 0) state.CurrentXp = 0;

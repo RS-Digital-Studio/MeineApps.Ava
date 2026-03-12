@@ -74,7 +74,7 @@
                   Command="{Binding CollectOfflineEarningsWithAdCommand}"
                   AutomationProperties.AutomationId="Main_Btn_OfflineDoubleWithAd">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <icons:GameIcon Kind="PlayCircle" Width="18" Height="18"
+              <icons:GameIcon Kind="PlayCircle" Width="24" Height="24"
                                AutomationProperties.AutomationId="Main_Icon_OfflineAdPlay" />
               <TextBlock Text="{loc:Translate DoubleWithAd}" VerticalAlignment="Center"
                          AutomationProperties.AutomationId="Main_Txt_OfflineDoubleWithAd" />

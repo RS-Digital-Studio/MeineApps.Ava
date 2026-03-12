@@ -55,6 +55,8 @@ public static class RarityFrameRenderer
 
     // MaskFilter für Glow-Unschärfe – einmalig erstellt, unveränderlich
     private static readonly SKMaskFilter _blurFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+    // MaskFilter für Shimmer-Glow (Legendary-Rahmen) – einmalig erstellt
+    private static readonly SKMaskFilter _shimmerBlurFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5f);
 
     // ═══════════════════════════════════════════════════════════════════════
     // Öffentliche Haupt-Methode
@@ -267,7 +269,7 @@ public static class RarityFrameRenderer
         GetPointOnRect(bounds, fraction, out float px, out float py);
 
         _glowPaint.Color      = new SKColor(255, 255, 255, 200);
-        _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5f);
+        _glowPaint.MaskFilter = _shimmerBlurFilter;
         canvas.DrawCircle(px, py, 5f, _glowPaint);
         _glowPaint.MaskFilter = null;
 

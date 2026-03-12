@@ -14,5 +14,9 @@ public interface IQuickJobService
     TimeSpan TimeUntilNextRotation { get; }
     /// <summary>Maximale Quick Jobs pro Tag (skaliert mit Prestige).</summary>
     int MaxDailyJobs { get; }
+    /// <summary>Prüft ob das tägliche Quick-Job-Limit erreicht ist.</summary>
+    bool IsDailyLimitReached { get; }
+    /// <summary>Wird aufgerufen wenn ein QuickJob abgeschlossen wird. Erhöht Tages-Counter und feuert Event.</summary>
+    void NotifyJobCompleted(QuickJob job);
     event EventHandler<QuickJob>? QuickJobCompleted;
 }

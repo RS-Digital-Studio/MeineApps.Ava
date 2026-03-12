@@ -1,5 +1,6 @@
 namespace RebornSaga.Scenes;
 
+using MeineApps.Core.Ava.Localization;
 using RebornSaga.Engine;
 using RebornSaga.Models;
 using RebornSaga.Models.Enums;
@@ -20,6 +21,20 @@ public class ShopScene : Scene
     private readonly GoldService _goldService;
     private readonly Player _player;
     private readonly List<Item> _shopItems;
+    private readonly ILocalizationService _localization;
+
+    // Lokalisierte Strings (gecacht im Konstruktor)
+    private readonly string _merchantText;
+    private readonly string _backText;
+    private readonly string _buyText;
+    private readonly string _sellText;
+    private readonly string _nothingToSellText;
+    private readonly string _noWaresText;
+    private readonly string _buyFormat;
+    private readonly string _sellFormat;
+    private readonly string _healHpFormat;
+    private readonly string _healMpFormat;
+    private readonly string _onlyFormat;
 
     // Modus: Kaufen oder Verkaufen
     private bool _isSelling;
@@ -63,12 +78,26 @@ public class ShopScene : Scene
     /// <param name="inventory">Inventar-Service.</param>
     /// <param name="player">Spieler-Instanz.</param>
     /// <param name="shopItems">Verfügbare Items im Shop.</param>
-    public ShopScene(InventoryService inventory, GoldService goldService, Player player, List<Item> shopItems)
+    public ShopScene(InventoryService inventory, GoldService goldService, Player player,
+        List<Item> shopItems, ILocalizationService localization)
     {
         _inventory = inventory;
         _goldService = goldService;
         _player = player;
         _shopItems = shopItems;
+        _localization = localization;
+
+        _merchantText = _localization.GetString("Merchant") ?? "Merchant";
+        _backText = _localization.GetString("Back") ?? "Back";
+        _buyText = _localization.GetString("Buy") ?? "Buy";
+        _sellText = _localization.GetString("Sell") ?? "Sell";
+        _nothingToSellText = _localization.GetString("NothingToSell") ?? "Nothing to sell";
+        _noWaresText = _localization.GetString("NoWares") ?? "No wares";
+        _buyFormat = _localization.GetString("BuyFormat") ?? "Buy ({0}G)";
+        _sellFormat = _localization.GetString("SellFormat") ?? "Sell ({0}G)";
+        _healHpFormat = _localization.GetString("HealHpFormat") ?? "Heals {0} HP";
+        _healMpFormat = _localization.GetString("HealMpFormat") ?? "Heals {0} MP";
+        _onlyFormat = _localization.GetString("OnlyRestriction") ?? "Only: {0}";
     }
 
     public override void OnEnter()
@@ -117,18 +146,18 @@ public class ShopScene : Scene
         canvas.DrawRect(bounds, _bgPaint);
 
         // Header
-        UIRenderer.DrawTextWithShadow(canvas, "Händler", bounds.MidX, bounds.Top + bounds.Height * 0.04f,
+        UIRenderer.DrawTextWithShadow(canvas, _merchantText, bounds.MidX, bounds.Top + bounds.Height * 0.04f,
             bounds.Width * 0.06f, UIRenderer.Accent);
         UIRenderer.DrawText(canvas, _cachedGoldText,
             bounds.Right - bounds.Width * 0.05f, bounds.Top + bounds.Height * 0.04f,
             bounds.Width * 0.035f, UIRenderer.Accent, SKTextAlign.Right);
 
         // Zurück-Button
-        UIRenderer.DrawButton(canvas, _backButtonRect, "Zurück", color: UIRenderer.Border);
+        UIRenderer.DrawButton(canvas, _backButtonRect, _backText, color: UIRenderer.Border);
 
         // Kaufen/Verkaufen Tabs
-        UIRenderer.DrawButton(canvas, _buyTabRect, "Kaufen", color: !_isSelling ? UIRenderer.Primary : UIRenderer.CardBg);
-        UIRenderer.DrawButton(canvas, _sellTabRect, "Verkaufen", color: _isSelling ? UIRenderer.Primary : UIRenderer.CardBg);
+        UIRenderer.DrawButton(canvas, _buyTabRect, _buyText, color: !_isSelling ? UIRenderer.Primary : UIRenderer.CardBg);
+        UIRenderer.DrawButton(canvas, _sellTabRect, _sellText, color: _isSelling ? UIRenderer.Primary : UIRenderer.CardBg);
 
         // Item-Liste
         var maxVisible = Math.Min(_itemRects.Length, _displayItems.Count - _scrollOffset);
@@ -150,7 +179,8 @@ public class ShopScene : Scene
 
             // Name
             var fontSize = rect.Height * 0.35f;
-            UIRenderer.DrawText(canvas, item.NameKey, rect.Left + 8, rect.MidY - fontSize * 0.3f,
+            var itemDisplayName = _localization.GetString(item.NameKey) ?? item.NameKey;
+            UIRenderer.DrawText(canvas, itemDisplayName, rect.Left + 8, rect.MidY - fontSize * 0.3f,
                 fontSize, canAfford ? UIRenderer.TextPrimary : UIRenderer.TextMuted);
 
             // Preis (gecacht pro sichtbarem Slot)
@@ -165,7 +195,7 @@ public class ShopScene : Scene
 
         if (_displayItems.Count == 0)
         {
-            var emptyText = _isSelling ? "Nichts zu verkaufen" : "Keine Waren";
+            var emptyText = _isSelling ? _nothingToSellText : _noWaresText;
             UIRenderer.DrawText(canvas, emptyText, bounds.MidX, bounds.MidY,
                 bounds.Width * 0.04f, UIRenderer.TextMuted, SKTextAlign.Center, true);
         }
@@ -195,7 +225,8 @@ public class ShopScene : Scene
         var lineH = fontSize * 1.8f;
 
         // Name
-        UIRenderer.DrawText(canvas, item.NameKey, x, y, fontSize * 1.2f, UIRenderer.Accent);
+        var detailName = _localization.GetString(item.NameKey) ?? item.NameKey;
+        UIRenderer.DrawText(canvas, detailName, x, y, fontSize * 1.2f, UIRenderer.Accent);
         y += lineH * 1.2f;
 
         // Gecachte Stats zeichnen
@@ -229,13 +260,17 @@ public class ShopScene : Scene
         if (item.SpdBonus != 0) _cachedDetailStats.Add(($"SPD {(item.SpdBonus > 0 ? "+" : "")}{item.SpdBonus}", UIRenderer.Success));
         if (item.HpBonus > 0) _cachedDetailStats.Add(($"HP +{item.HpBonus}", UIRenderer.Danger));
         if (item.MpBonus > 0) _cachedDetailStats.Add(($"MP +{item.MpBonus}", UIRenderer.Primary));
-        if (item.HealHp > 0) _cachedDetailStats.Add(($"Heilt {item.HealHp} HP", UIRenderer.Success));
-        if (item.HealMp > 0) _cachedDetailStats.Add(($"Heilt {item.HealMp} MP", UIRenderer.Primary));
+        if (item.HealHp > 0) _cachedDetailStats.Add((string.Format(_healHpFormat, item.HealHp), UIRenderer.Success));
+        if (item.HealMp > 0) _cachedDetailStats.Add((string.Format(_healMpFormat, item.HealMp), UIRenderer.Primary));
         if (!string.IsNullOrEmpty(item.ClassRestriction))
-            _cachedDetailStats.Add(($"Nur: {item.ClassRestriction}", UIRenderer.TextMuted));
+        {
+            // Klassen-Enum lokalisieren statt rohen englischen Namen anzeigen
+            var localizedClass = _localization.GetString($"Class{item.ClassRestriction}") ?? item.ClassRestriction;
+            _cachedDetailStats.Add((string.Format(_onlyFormat, localizedClass), UIRenderer.TextMuted));
+        }
 
         var price = _isSelling ? item.SellPrice : item.BuyPrice;
-        _cachedBtnText = _isSelling ? $"Verkaufen ({price}G)" : $"Kaufen ({price}G)";
+        _cachedBtnText = _isSelling ? string.Format(_sellFormat, price) : string.Format(_buyFormat, price);
     }
 
     private void CalculateLayout(SKRect bounds)

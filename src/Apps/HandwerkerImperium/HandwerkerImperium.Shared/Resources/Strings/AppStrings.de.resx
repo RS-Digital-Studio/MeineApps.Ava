@@ -406,6 +406,12 @@
   <data name="DeleteSaveGame" xml:space="preserve">
     <value>Spielstand löschen</value>
   </data>
+  <data name="Graphics" xml:space="preserve">
+    <value>Grafik</value>
+  </data>
+  <data name="GraphicsDesc" xml:space="preserve">
+    <value>Niedrigere Einstellungen reduzieren Partikel und Wetter für bessere Performance.</value>
+  </data>
   <data name="About" xml:space="preserve">
     <value>Über</value>
   </data>
@@ -4904,6 +4910,18 @@
   <data name="HintAutomationText" xml:space="preserve">
     <value>Ab Level 15 kannst du Lieferungen automatisch einsammeln lassen!</value>
   </data>
+  <data name="HintManagerUnlockTitle" xml:space="preserve">
+    <value>Vorarbeiter</value>
+  </data>
+  <data name="HintManagerUnlockText" xml:space="preserve">
+    <value>Stelle Vorarbeiter ein, um deine Werkstätten mit dauerhaften Boni zu verstärken!</value>
+  </data>
+  <data name="HintMasterToolsUnlockTitle" xml:space="preserve">
+    <value>Meisterwerkzeuge</value>
+  </data>
+  <data name="HintMasterToolsUnlockText" xml:space="preserve">
+    <value>Sammle seltene Meisterwerkzeuge für mächtige passive Einkommensboni!</value>
+  </data>
   <data name="ResetTutorialHints" xml:space="preserve">
     <value>Tutorial zurücksetzen</value>
   </data>
@@ -5051,5 +5069,522 @@
   </data>
   <data name="TabLockedHint" xml:space="preserve">
     <value>Wird bei Level {0} freigeschaltet</value>
+  </data>
+
+  <!-- Guild Chat & War UI -->
+  <data name="GuildChatTitle" xml:space="preserve">
+    <value>Gilden-Chat</value>
+  </data>
+  <data name="GuildChatWatermark" xml:space="preserve">
+    <value>Nachricht schreiben...</value>
+  </data>
+  <data name="GuildWarYourContribution" xml:space="preserve">
+    <value>Dein Beitrag</value>
+  </data>
+  <data name="GuildWarFight" xml:space="preserve">
+    <value>Kämpfen!</value>
+  </data>
+  <data name="GuildWarSeasonOverview" xml:space="preserve">
+    <value>Saison-Übersicht</value>
+  </data>
+  <data name="GuildWarPoints" xml:space="preserve">
+    <value>{0:N0} Punkte</value>
+  </data>
+
+  <!-- Fehlende Keys (aus EN-RESX uebernommen - dort faelschlicherweise deutsch) -->
+
+  <!-- Ascension -->
+  <data name="AscEternalTools" xml:space="preserve">
+    <value>Ewige Werkzeuge</value>
+  </data>
+  <data name="AscEternalToolsDesc" xml:space="preserve">
+    <value>Behalte einen Teil deiner Werkzeuge nach dem Prestige</value>
+  </data>
+  <data name="AscGoldenEra" xml:space="preserve">
+    <value>Goldene Ära</value>
+  </data>
+  <data name="AscGoldenEraDesc" xml:space="preserve">
+    <value>Starte mit einem temporären Einkommensboost</value>
+  </data>
+  <data name="AscLegendaryReputation" xml:space="preserve">
+    <value>Legendärer Ruf</value>
+  </data>
+  <data name="AscLegendaryReputationDesc" xml:space="preserve">
+    <value>Starte mit höherer Reputation</value>
+  </data>
+  <data name="AscQuickStart" xml:space="preserve">
+    <value>Schnellstart</value>
+  </data>
+  <data name="AscQuickStartDesc" xml:space="preserve">
+    <value>Schalte die ersten Workshops sofort frei</value>
+  </data>
+  <data name="AscStartCapital" xml:space="preserve">
+    <value>Startkapital</value>
+  </data>
+  <data name="AscStartCapitalDesc" xml:space="preserve">
+    <value>Beginne mit zusätzlichem Gold nach dem Prestige</value>
+  </data>
+  <data name="AscTimelessResearch" xml:space="preserve">
+    <value>Zeitlose Forschung</value>
+  </data>
+  <data name="AscTimelessResearchDesc" xml:space="preserve">
+    <value>Behalte einen Teil deiner Forschung</value>
+  </data>
+
+  <!-- Events -->
+  <data name="EventCelebrityEndorsementDesc" xml:space="preserve">
+    <value>Reputation steigt schneller!</value>
+  </data>
+  <data name="EventEconomicDownturnDesc" xml:space="preserve">
+    <value>Einnahmen sind reduziert!</value>
+  </data>
+  <data name="EventHighDemandDesc" xml:space="preserve">
+    <value>Mehr Aufträge verfügbar!</value>
+  </data>
+  <data name="EventInnovationFairDesc" xml:space="preserve">
+    <value>Forschung ist schneller!</value>
+  </data>
+  <data name="EventMaterialSaleDesc" xml:space="preserve">
+    <value>Materialien sind günstiger!</value>
+  </data>
+  <data name="EventMaterialShortageDesc" xml:space="preserve">
+    <value>Materialien sind teurer!</value>
+  </data>
+  <data name="EventTaxAuditDesc" xml:space="preserve">
+    <value>Steuern auf alle Einnahmen!</value>
+  </data>
+  <data name="EventWorkerStrikeDesc" xml:space="preserve">
+    <value>Nur einfache Arbeiter verfügbar!</value>
+  </data>
+
+  <!-- Mini-Games -->
+  <data name="Blueprint" xml:space="preserve">
+    <value>Blaupause</value>
+  </data>
+  <data name="DesignPuzzle" xml:space="preserve">
+    <value>Design-Puzzle</value>
+  </data>
+  <data name="ForgeGame" xml:space="preserve">
+    <value>Schmiedespiel</value>
+  </data>
+  <data name="Inspection" xml:space="preserve">
+    <value>Inspektion</value>
+  </data>
+  <data name="RoofTiling" xml:space="preserve">
+    <value>Dachdecken</value>
+  </data>
+
+  <!-- Orders -->
+  <data name="OrderTypeQuick" xml:space="preserve">
+    <value>Schnellauftrag</value>
+  </data>
+
+  <!-- Prestige -->
+  <data name="PrestigeDiamant" xml:space="preserve">
+    <value>Diamant</value>
+  </data>
+  <data name="PrestigeHistory" xml:space="preserve">
+    <value>Prestige-Verlauf</value>
+  </data>
+  <data name="PrestigeLegende" xml:space="preserve">
+    <value>Legende</value>
+  </data>
+  <data name="PrestigeMeister" xml:space="preserve">
+    <value>Meister</value>
+  </data>
+  <data name="PrestigeNone" xml:space="preserve">
+    <value>Kein Prestige</value>
+  </data>
+  <data name="PrestigePlatin" xml:space="preserve">
+    <value>Platin</value>
+  </data>
+
+  <!-- Reputation -->
+  <data name="ReputationAverage" xml:space="preserve">
+    <value>Durchschnittlich</value>
+  </data>
+  <data name="ReputationExcellent" xml:space="preserve">
+    <value>Ausgezeichnet</value>
+  </data>
+  <data name="ReputationGood" xml:space="preserve">
+    <value>Gut</value>
+  </data>
+  <data name="ReputationLegendary" xml:space="preserve">
+    <value>Legendär</value>
+  </data>
+  <data name="ReputationPoor" xml:space="preserve">
+    <value>Schlecht</value>
+  </data>
+
+  <!-- Guild Achievements -->
+  <data name="GuildAchDesc_Boss_Bronze" xml:space="preserve">
+    <value>Besiege 1 Gildenboss</value>
+  </data>
+  <data name="GuildAchDesc_Boss_Gold" xml:space="preserve">
+    <value>Besiege 50 Gildenbosse</value>
+  </data>
+  <data name="GuildAchDesc_Boss_Silver" xml:space="preserve">
+    <value>Besiege 10 Gildenbosse</value>
+  </data>
+  <data name="GuildAchDesc_Hall_Bronze" xml:space="preserve">
+    <value>Erreiche Hallen-Level 5</value>
+  </data>
+  <data name="GuildAchDesc_Hall_Gold" xml:space="preserve">
+    <value>Erreiche Hallen-Level 50</value>
+  </data>
+  <data name="GuildAchDesc_Hall_Silver" xml:space="preserve">
+    <value>Erreiche Hallen-Level 20</value>
+  </data>
+  <data name="GuildAchDesc_League_Bronze" xml:space="preserve">
+    <value>Erreiche die Bronze-Liga</value>
+  </data>
+  <data name="GuildAchDesc_League_Gold" xml:space="preserve">
+    <value>Erreiche die Gold-Liga</value>
+  </data>
+  <data name="GuildAchDesc_League_Silver" xml:space="preserve">
+    <value>Erreiche die Silber-Liga</value>
+  </data>
+  <data name="GuildAchDesc_MaxBuilding_Bronze" xml:space="preserve">
+    <value>Bringe 1 Gebäude auf Max-Level</value>
+  </data>
+  <data name="GuildAchDesc_MaxBuilding_Gold" xml:space="preserve">
+    <value>Bringe alle 10 Gebäude auf Max-Level</value>
+  </data>
+  <data name="GuildAchDesc_MaxBuilding_Silver" xml:space="preserve">
+    <value>Bringe 5 Gebäude auf Max-Level</value>
+  </data>
+  <data name="GuildAchDesc_Members_Bronze" xml:space="preserve">
+    <value>Erreiche 5 Mitglieder</value>
+  </data>
+  <data name="GuildAchDesc_Members_Gold" xml:space="preserve">
+    <value>Erreiche 30 Mitglieder</value>
+  </data>
+  <data name="GuildAchDesc_Members_Silver" xml:space="preserve">
+    <value>Erreiche 15 Mitglieder</value>
+  </data>
+  <data name="GuildAchDesc_Money_Bronze" xml:space="preserve">
+    <value>Sammle 1M € Gildengeld</value>
+  </data>
+  <data name="GuildAchDesc_Money_Gold" xml:space="preserve">
+    <value>Sammle 10B € Gildengeld</value>
+  </data>
+  <data name="GuildAchDesc_Money_Silver" xml:space="preserve">
+    <value>Sammle 100M € Gildengeld</value>
+  </data>
+  <data name="GuildAchDesc_Mvp_Bronze" xml:space="preserve">
+    <value>Werde 1x MVP im Gildenkrieg</value>
+  </data>
+  <data name="GuildAchDesc_Mvp_Gold" xml:space="preserve">
+    <value>Werde 20x MVP im Gildenkrieg</value>
+  </data>
+  <data name="GuildAchDesc_Mvp_Silver" xml:space="preserve">
+    <value>Werde 5x MVP im Gildenkrieg</value>
+  </data>
+  <data name="GuildAchDesc_Research_Bronze" xml:space="preserve">
+    <value>Schließe 3 Forschungen ab</value>
+  </data>
+  <data name="GuildAchDesc_Research_Gold" xml:space="preserve">
+    <value>Schließe alle 18 Forschungen ab</value>
+  </data>
+  <data name="GuildAchDesc_Research_Silver" xml:space="preserve">
+    <value>Schließe 10 Forschungen ab</value>
+  </data>
+  <data name="GuildAchDesc_Seasons_Bronze" xml:space="preserve">
+    <value>Schließe 1 Kriegssaison ab</value>
+  </data>
+  <data name="GuildAchDesc_Seasons_Gold" xml:space="preserve">
+    <value>Schließe 20 Kriegssaisons ab</value>
+  </data>
+  <data name="GuildAchDesc_Seasons_Silver" xml:space="preserve">
+    <value>Schließe 5 Kriegssaisons ab</value>
+  </data>
+  <data name="GuildAchDesc_Speedkill_Bronze" xml:space="preserve">
+    <value>Besiege einen Boss in unter 48h</value>
+  </data>
+  <data name="GuildAchDesc_Speedkill_Gold" xml:space="preserve">
+    <value>Besiege einen Boss in unter 12h</value>
+  </data>
+  <data name="GuildAchDesc_Speedkill_Silver" xml:space="preserve">
+    <value>Besiege einen Boss in unter 24h</value>
+  </data>
+  <data name="GuildAchDesc_Wars_Bronze" xml:space="preserve">
+    <value>Gewinne 1 Gildenkrieg</value>
+  </data>
+  <data name="GuildAchDesc_Wars_Gold" xml:space="preserve">
+    <value>Gewinne 50 Gildenkriege</value>
+  </data>
+  <data name="GuildAchDesc_Wars_Silver" xml:space="preserve">
+    <value>Gewinne 10 Gildenkriege</value>
+  </data>
+  <data name="GuildAch_Boss_Bronze" xml:space="preserve">
+    <value>Besieger</value>
+  </data>
+  <data name="GuildAch_Boss_Gold" xml:space="preserve">
+    <value>Titanenbezwinger</value>
+  </data>
+  <data name="GuildAch_Boss_Silver" xml:space="preserve">
+    <value>Bossjäger</value>
+  </data>
+  <data name="GuildAch_Hall_Bronze" xml:space="preserve">
+    <value>Bauanfänger</value>
+  </data>
+  <data name="GuildAch_Hall_Gold" xml:space="preserve">
+    <value>Großbaumeister</value>
+  </data>
+  <data name="GuildAch_Hall_Silver" xml:space="preserve">
+    <value>Baumeister</value>
+  </data>
+  <data name="GuildAch_League_Bronze" xml:space="preserve">
+    <value>Bronze-Liga</value>
+  </data>
+  <data name="GuildAch_League_Gold" xml:space="preserve">
+    <value>Gold-Liga</value>
+  </data>
+  <data name="GuildAch_League_Silver" xml:space="preserve">
+    <value>Silber-Liga</value>
+  </data>
+  <data name="GuildAch_MaxBuilding_Bronze" xml:space="preserve">
+    <value>Gebäude-Anfänger</value>
+  </data>
+  <data name="GuildAch_MaxBuilding_Gold" xml:space="preserve">
+    <value>Gebäude-Meister</value>
+  </data>
+  <data name="GuildAch_MaxBuilding_Silver" xml:space="preserve">
+    <value>Gebäude-Experte</value>
+  </data>
+  <data name="GuildAch_Members_Bronze" xml:space="preserve">
+    <value>Kleine Gemeinschaft</value>
+  </data>
+  <data name="GuildAch_Members_Gold" xml:space="preserve">
+    <value>Große Gilde</value>
+  </data>
+  <data name="GuildAch_Members_Silver" xml:space="preserve">
+    <value>Wachsende Gilde</value>
+  </data>
+  <data name="GuildAch_Money_Bronze" xml:space="preserve">
+    <value>Erste Einnahmen</value>
+  </data>
+  <data name="GuildAch_Money_Gold" xml:space="preserve">
+    <value>Gildenschatz</value>
+  </data>
+  <data name="GuildAch_Money_Silver" xml:space="preserve">
+    <value>Erfolgreiche Gilde</value>
+  </data>
+  <data name="GuildAch_Mvp_Bronze" xml:space="preserve">
+    <value>Teamplayer</value>
+  </data>
+  <data name="GuildAch_Mvp_Gold" xml:space="preserve">
+    <value>Gilden-MVP</value>
+  </data>
+  <data name="GuildAch_Mvp_Silver" xml:space="preserve">
+    <value>Wertvoller Spieler</value>
+  </data>
+  <data name="GuildAch_Research_Bronze" xml:space="preserve">
+    <value>Wissensdurst</value>
+  </data>
+  <data name="GuildAch_Research_Gold" xml:space="preserve">
+    <value>Meisterforscher</value>
+  </data>
+  <data name="GuildAch_Research_Silver" xml:space="preserve">
+    <value>Forschungslabor</value>
+  </data>
+  <data name="GuildAch_Seasons_Bronze" xml:space="preserve">
+    <value>Erste Saison</value>
+  </data>
+  <data name="GuildAch_Seasons_Gold" xml:space="preserve">
+    <value>Saison-Veteran</value>
+  </data>
+  <data name="GuildAch_Seasons_Silver" xml:space="preserve">
+    <value>Erfahrener Krieger</value>
+  </data>
+  <data name="GuildAch_Speedkill_Bronze" xml:space="preserve">
+    <value>Schneller Sieg</value>
+  </data>
+  <data name="GuildAch_Speedkill_Gold" xml:space="preserve">
+    <value>Rekordzeit</value>
+  </data>
+  <data name="GuildAch_Speedkill_Silver" xml:space="preserve">
+    <value>Blitzsieg</value>
+  </data>
+  <data name="GuildAch_Wars_Bronze" xml:space="preserve">
+    <value>Erste Schlacht</value>
+  </data>
+  <data name="GuildAch_Wars_Gold" xml:space="preserve">
+    <value>Kriegsmeister</value>
+  </data>
+  <data name="GuildAch_Wars_Silver" xml:space="preserve">
+    <value>Kriegsveteran</value>
+  </data>
+  <data name="GuildAchievementUnlocked" xml:space="preserve">
+    <value>Gilden-Erfolg freigeschaltet!</value>
+  </data>
+
+  <!-- Guild Bosses -->
+  <data name="GuildBossDesc_ClockworkColossus" xml:space="preserve">
+    <value>Eine riesige mechanische Konstruktion</value>
+  </data>
+  <data name="GuildBossDesc_IronTitan" xml:space="preserve">
+    <value>Ein gepanzerter Titan aus geschmiedetem Eisen</value>
+  </data>
+  <data name="GuildBossDesc_MasterArchitect" xml:space="preserve">
+    <value>Ein brillanter aber wahnsinniger Baumeister</value>
+  </data>
+  <data name="GuildBossDesc_RustDragon" xml:space="preserve">
+    <value>Ein Drache aus rostigem Metall und Dampf</value>
+  </data>
+  <data name="GuildBossDesc_ShadowTrader" xml:space="preserve">
+    <value>Ein mysteriöser Händler der im Verborgenen agiert</value>
+  </data>
+  <data name="GuildBossDesc_StoneGolem" xml:space="preserve">
+    <value>Ein gewaltiger Golem aus lebendigem Stein</value>
+  </data>
+  <data name="GuildBoss_ClockworkColossus" xml:space="preserve">
+    <value>Uhrwerk-Koloss</value>
+  </data>
+  <data name="GuildBoss_IronTitan" xml:space="preserve">
+    <value>Eisentitan</value>
+  </data>
+  <data name="GuildBoss_MasterArchitect" xml:space="preserve">
+    <value>Meisterarchitekt</value>
+  </data>
+  <data name="GuildBoss_RustDragon" xml:space="preserve">
+    <value>Rostdrache</value>
+  </data>
+  <data name="GuildBoss_ShadowTrader" xml:space="preserve">
+    <value>Schattenhändler</value>
+  </data>
+  <data name="GuildBoss_StoneGolem" xml:space="preserve">
+    <value>Steingolem</value>
+  </data>
+
+  <!-- Guild Buildings -->
+  <data name="GuildBuildingDesc_AssemblyHall" xml:space="preserve">
+    <value>Erhöht die max. Mitgliederzahl</value>
+  </data>
+  <data name="GuildBuildingDesc_Fortress" xml:space="preserve">
+    <value>Verteidigungsbonus im Gildenkrieg</value>
+  </data>
+  <data name="GuildBuildingDesc_MasterThrone" xml:space="preserve">
+    <value>Verstärkt alle Gilden-Effekte</value>
+  </data>
+  <data name="GuildBuildingDesc_ResearchLab" xml:space="preserve">
+    <value>Verkürzt die Forschungszeit</value>
+  </data>
+  <data name="GuildBuildingDesc_Smithy" xml:space="preserve">
+    <value>Erhöht die Auftragsbelohnungen</value>
+  </data>
+  <data name="GuildBuildingDesc_TradingPost" xml:space="preserve">
+    <value>Erhöht das Einkommen</value>
+  </data>
+  <data name="GuildBuildingDesc_Treasury" xml:space="preserve">
+    <value>Wöchentliche Gilden-Belohnung</value>
+  </data>
+  <data name="GuildBuildingDesc_TrophyHall" xml:space="preserve">
+    <value>Erhöht Trophäen-Punkte</value>
+  </data>
+  <data name="GuildBuildingDesc_Watchtower" xml:space="preserve">
+    <value>Erhöht Kriegspunkte</value>
+  </data>
+  <data name="GuildBuildingDesc_Workshop" xml:space="preserve">
+    <value>Erhöht die Crafting-Geschwindigkeit</value>
+  </data>
+  <data name="GuildBuildingEffect_CraftingSpeed" xml:space="preserve">
+    <value>Crafting-Tempo</value>
+  </data>
+  <data name="GuildBuildingEffect_Defense" xml:space="preserve">
+    <value>Verteidigung</value>
+  </data>
+  <data name="GuildBuildingEffect_Everything" xml:space="preserve">
+    <value>Alle Effekte</value>
+  </data>
+  <data name="GuildBuildingEffect_Income" xml:space="preserve">
+    <value>Einkommen</value>
+  </data>
+  <data name="GuildBuildingEffect_MaxMembers" xml:space="preserve">
+    <value>Max. Mitglieder</value>
+  </data>
+  <data name="GuildBuildingEffect_OrderReward" xml:space="preserve">
+    <value>Auftragsbelohnung</value>
+  </data>
+  <data name="GuildBuildingEffect_ResearchTime" xml:space="preserve">
+    <value>Forschungszeit</value>
+  </data>
+  <data name="GuildBuildingEffect_Trophies" xml:space="preserve">
+    <value>Trophäen</value>
+  </data>
+  <data name="GuildBuildingEffect_WarPoints" xml:space="preserve">
+    <value>Kriegspunkte</value>
+  </data>
+  <data name="GuildBuildingEffect_WeeklyReward" xml:space="preserve">
+    <value>Wöchentliche Belohnung</value>
+  </data>
+  <data name="GuildBuilding_AssemblyHall" xml:space="preserve">
+    <value>Versammlungshalle</value>
+  </data>
+  <data name="GuildBuilding_Fortress" xml:space="preserve">
+    <value>Festung</value>
+  </data>
+  <data name="GuildBuilding_MasterThrone" xml:space="preserve">
+    <value>Meisterthron</value>
+  </data>
+  <data name="GuildBuilding_ResearchLab" xml:space="preserve">
+    <value>Forschungslabor</value>
+  </data>
+  <data name="GuildBuilding_Smithy" xml:space="preserve">
+    <value>Schmiede</value>
+  </data>
+  <data name="GuildBuilding_TradingPost" xml:space="preserve">
+    <value>Handelsposten</value>
+  </data>
+  <data name="GuildBuilding_Treasury" xml:space="preserve">
+    <value>Schatzkammer</value>
+  </data>
+  <data name="GuildBuilding_TrophyHall" xml:space="preserve">
+    <value>Trophäenhalle</value>
+  </data>
+  <data name="GuildBuilding_Watchtower" xml:space="preserve">
+    <value>Wachturm</value>
+  </data>
+  <data name="GuildBuilding_Workshop" xml:space="preserve">
+    <value>Werkstatt</value>
+  </data>
+
+  <!-- Guild Tips -->
+  <data name="GuildTip_guild_hub" xml:space="preserve">
+    <value>Willkommen in deiner Gilde! Hier siehst du das Wochenziel und die Mitglieder.</value>
+  </data>
+
+  <!-- Guild War -->
+  <data name="GuildWarBonusDeposit" xml:space="preserve">
+    <value>Gildenkasse füllen</value>
+  </data>
+  <data name="GuildWarBonusDepositDesc" xml:space="preserve">
+    <value>Zahle 50.000 € in die Gildenkasse</value>
+  </data>
+  <data name="GuildWarBonusMiniGames" xml:space="preserve">
+    <value>Minispiele spielen</value>
+  </data>
+  <data name="GuildWarBonusMiniGamesDesc" xml:space="preserve">
+    <value>Spiele 3 Minispiele</value>
+  </data>
+  <data name="GuildWarBonusOrders" xml:space="preserve">
+    <value>Aufträge abschließen</value>
+  </data>
+  <data name="GuildWarBonusOrdersDesc" xml:space="preserve">
+    <value>Schließe 5 Aufträge ab</value>
+  </data>
+
+  <!-- Loading -->
+  <data name="SplashStep_Workshops" xml:space="preserve">
+    <value>Werkstätten laden...</value>
+  </data>
+  <data name="GraphicsLow" xml:space="preserve">
+    <value>Niedrig</value>
+  </data>
+  <data name="GraphicsMedium" xml:space="preserve">
+    <value>Mittel</value>
+  </data>
+  <data name="GraphicsHigh" xml:space="preserve">
+    <value>Hoch</value>
   </data>
 </root>

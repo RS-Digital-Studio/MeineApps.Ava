@@ -61,7 +61,7 @@
           <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
                         IsVisible="{Binding WelcomeOfferMoneyReward, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-              <icons:GameIcon Kind="Cash" Width="20" Height="20" Foreground="{StaticResource SuccessGreenBrush}" />
+              <icons:GameIcon Kind="Cash" Width="24" Height="24" Foreground="{StaticResource SuccessGreenBrush}" />
               <TextBlock Text="{Binding WelcomeOfferMoneyReward}"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{StaticResource SuccessGreenBrush}"
@@ -69,7 +69,7 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
                         IsVisible="{Binding WelcomeOfferScrewReward, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-              <icons:GameIcon Kind="Cog" Width="20" Height="20" Foreground="{StaticResource CraftGoldBrush}" />
+              <icons:GameIcon Kind="Cog" Width="24" Height="24" Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{Binding WelcomeOfferScrewReward}"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{StaticResource CraftGoldBrush}"

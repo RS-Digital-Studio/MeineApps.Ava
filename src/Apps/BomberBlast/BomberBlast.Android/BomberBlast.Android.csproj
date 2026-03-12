@@ -44,4 +44,9 @@
     <AndroidAsset Include="Assets\Sounds\**" />
   </ItemGroup>
 
+  <!-- AI-generierte Visual Assets (WebP, Dark Fantasy Arcade) -->
+  <ItemGroup>
+    <AndroidAsset Include="..\BomberBlast.Shared\Assets\visuals\**" Link="Assets\visuals\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

@@ -16,8 +16,6 @@ public struct CharacterAnimState
     public bool IsSpeaking;
     public int MouthFrame;        // 0=geschlossen, 1=offen, 2=weit
     public float MouthTimer;
-    public float CrossfadeAlpha;  // 0-1 für Emotions-Überblendung
-    public string? PreviousSpriteKey; // Für Crossfade zum vorherigen Bild
 }
 
 /// <summary>
@@ -29,22 +27,18 @@ public static class SpriteCharacterRenderer
 {
     // --- Gepoolte SKPaint-Instanzen ---
     private static readonly SKPaint _spritePaint = new() { IsAntialias = true };
-    private static readonly SKPaint _fadePaint = new() { IsAntialias = true };
 
     // --- Blinzel-Konstanten ---
     private const float BlinkDuration = 0.15f;
-    private const float BlinkIntervalMin = 3.0f;
-    private const float BlinkIntervalMax = 5.0f;
+    private const float BlinkIntervalMin = 4.0f;
+    private const float BlinkIntervalMax = 7.0f;
 
     // --- Mund-Animation ---
-    private const float MouthToggleInterval = 0.15f;
-
-    // --- Crossfade ---
-    private const float CrossfadeDuration = 0.15f; // 150ms Überblendung
+    private const float MouthToggleInterval = 0.2f;
 
     // --- Idle-Breathing ---
-    private const float BreathFrequency = 1.5f;
-    private const float BreathAmplitude = 1.5f;
+    private const float BreathFrequency = 0.7f;  // Langsameres Atmen
+    private const float BreathAmplitude = 1.0f;   // Subtilere Bewegung
 
     // Per-Character AnimState (kein synchrones Blinzeln mehr)
     private static readonly Dictionary<string, CharacterAnimState> _animStates = new();
@@ -92,54 +86,40 @@ public static class SpriteCharacterRenderer
         // Sprite-Ziel-Rect berechnen (zentriert auf cx, cy)
         var destRect = CalculateDestRect(sprite, cx, cy + breathOffset, scale);
 
-        // --- Crossfade-Überblendung bei Emotions-Wechsel ---
-        var currentKey = $"{charId}_{pose}_{emotion}";
-        if (state.PreviousSpriteKey != null && state.PreviousSpriteKey != currentKey && state.CrossfadeAlpha < 1f)
-        {
-            // Crossfade läuft noch — altes Bild wird nicht mehr gezeichnet wenn Alpha = 1
-            state.CrossfadeAlpha = MathF.Min(1f, state.CrossfadeAlpha + (1f / (CrossfadeDuration * 60f)));
-            _spritePaint.Color = new SKColor(255, 255, 255, (byte)(state.CrossfadeAlpha * 255));
-        }
-        else
-        {
-            // Kein Crossfade oder abgeschlossen
-            state.CrossfadeAlpha = 1f;
-            state.PreviousSpriteKey = currentKey;
-            _spritePaint.Color = SKColors.White;
-        }
-
-        // Wenn neuer Sprite-Key erkannt → Crossfade starten
-        if (state.PreviousSpriteKey != currentKey && state.CrossfadeAlpha >= 1f)
-        {
-            state.CrossfadeAlpha = 0f;
-            state.PreviousSpriteKey = currentKey;
-        }
+        // Sprite immer mit voller Deckkraft zeichnen (kein Crossfade).
+        // Die alte Crossfade-Logik (Alpha 0→1 über 300ms) verursachte Portrait/FullBody-Zappeln
+        // weil die Vignette-Maske bei niedrigem Alpha den Charakter visuell beschnitt.
+        _spritePaint.Color = SKColors.White;
 
         // Hauptbild zeichnen
         canvas.DrawBitmap(sprite, destRect, _spritePaint);
 
+        // DEAKTIVIERT: Overlay-Dateien sind Vollbilder (nicht transparente Patches).
+        // Sie ersetzen den gesamten Charakter visuell → Springen zwischen Framings.
+        // TODO: Overlays als echte transparente Eye/Mouth-Patches regenerieren,
+        // dann diesen Code reaktivieren.
         // Blinzel-Overlay
-        if (state.IsBlinking)
-        {
-            var blink = cache.GetBlinkOverlay(charId);
-            if (blink != null)
-            {
-                var blinkRect = CalculateDestRect(blink, cx, cy + breathOffset, scale);
-                canvas.DrawBitmap(blink, blinkRect, _spritePaint);
-            }
-        }
-
+        // if (state.IsBlinking)
+        // {
+        //     var blink = cache.GetBlinkOverlay(charId);
+        //     if (blink != null)
+        //     {
+        //         var blinkRect = CalculateDestRect(blink, cx, cy + breathOffset, scale);
+        //         canvas.DrawBitmap(blink, blinkRect, _spritePaint);
+        //     }
+        // }
+        //
         // Mund-Overlay (nur wenn sprechend)
-        if (state.IsSpeaking && state.MouthFrame > 0)
-        {
-            var wide = state.MouthFrame == 2;
-            var mouth = cache.GetMouthOverlay(charId, wide);
-            if (mouth != null)
-            {
-                var mouthRect = CalculateDestRect(mouth, cx, cy + breathOffset, scale);
-                canvas.DrawBitmap(mouth, mouthRect, _spritePaint);
-            }
-        }
+        // if (state.IsSpeaking && state.MouthFrame > 0)
+        // {
+        //     var wide = state.MouthFrame == 2;
+        //     var mouth = cache.GetMouthOverlay(charId, wide);
+        //     if (mouth != null)
+        //     {
+        //         var mouthRect = CalculateDestRect(mouth, cx, cy + breathOffset, scale);
+        //         canvas.DrawBitmap(mouth, mouthRect, _spritePaint);
+        //     }
+        // }
 
         // State zurückschreiben
         _animStates[charId] = state;
@@ -169,7 +149,6 @@ public static class SpriteCharacterRenderer
     public static void Cleanup()
     {
         _spritePaint.Dispose();
-        _fadePaint.Dispose();
         _animStates.Clear();
     }
 
@@ -183,8 +162,7 @@ public static class SpriteCharacterRenderer
         // Neuen State mit versetztem Blinzel-Timing erstellen
         state = new CharacterAnimState
         {
-            NextBlinkTime = (float)_rng.NextDouble() * BlinkIntervalMax,
-            CrossfadeAlpha = 1f
+            NextBlinkTime = (float)_rng.NextDouble() * BlinkIntervalMax
         };
         _animStates[charId] = state;
         return state;

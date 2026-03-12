@@ -23,7 +23,7 @@
                 Classes="Text"
                 Command="{Binding CancelCommand}">
           <icons:GameIcon AutomationProperties.AutomationId="Blueprint_Icon_Close"
-                           Kind="Close" Width="24" Height="24" />
+                           Kind="Close" Width="28" Height="28" />
         </Button>
 
         <!-- Titel -->
@@ -33,7 +33,7 @@
                       HorizontalAlignment="Center"
                       Spacing="6">
             <icons:GameIcon AutomationProperties.AutomationId="Blueprint_Icon_Title"
-                             Kind="FloorPlan" Width="22" Height="22" />
+                             Kind="FloorPlan" Width="26" Height="26" />
             <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_Title"
                        Text="{loc:Translate BlueprintGame}"
                        FontSize="18" FontWeight="Bold"
@@ -60,7 +60,7 @@
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Blueprint_Icon_Clock"
-                             Kind="Clock" Width="16" Height="16" />
+                             Kind="Clock" Width="20" Height="20" />
             <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_Timer"
                        Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
                        FontSize="14" FontWeight="Bold"
@@ -124,7 +124,7 @@
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
           <icons:GameIcon AutomationProperties.AutomationId="Blueprint_Icon_StepCheck"
-                           Kind="CheckCircle" Width="16" Height="16"
+                           Kind="CheckCircle" Width="20" Height="20"
                            Foreground="{DynamicResource SuccessBrush}" />
           <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_StepProgress"
                      FontSize="12"
@@ -143,7 +143,7 @@
                 Padding="12,4">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Blueprint_Icon_NextStep"
-                             Kind="ArrowRight" Width="16" Height="16"
+                             Kind="ArrowRight" Width="20" Height="20"
                              Foreground="White" />
             <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_NextStep"
                        FontSize="14" FontWeight="Bold"
@@ -161,7 +161,7 @@
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
           <icons:GameIcon AutomationProperties.AutomationId="Blueprint_Icon_Mistakes"
-                           Kind="Close" Width="16" Height="16"
+                           Kind="Close" Width="20" Height="20"
                            Foreground="{DynamicResource ErrorBrush}" />
           <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_MistakeCount"
                      FontSize="12"
@@ -232,7 +232,7 @@
                     IsVisible="{Binding IsLastTask}">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Blueprint_Icon_RewardMoney"
-                             Kind="CashMultiple" Width="20" Height="20"
+                             Kind="CashMultiple" Width="24" Height="24"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
                        AutomationProperties.AutomationId="Blueprint_Txt_RewardMoney"
@@ -244,7 +244,7 @@
 
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Blueprint_Icon_RewardXp"
-                             Kind="Star" Width="20" Height="20"
+                             Kind="Star" Width="24" Height="24"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock x:Name="RewardXpText"
                        AutomationProperties.AutomationId="Blueprint_Txt_RewardXp"
@@ -311,13 +311,7 @@
                 Grid.Row="4" Spacing="16">
 
       <!-- Start Button (versteckt waehrend Spiel, Memorisierung und nach Ergebnis) -->
-      <Panel>
-        <Panel.IsVisible>
-          <MultiBinding Converter="{x:Static BoolConverters.And}">
-            <Binding Path="!IsResultShown" />
-            <Binding Path="!IsMemorizing" />
-          </MultiBinding>
-        </Panel.IsVisible>
+      <Panel IsVisible="False">
         <Button AutomationProperties.AutomationId="Blueprint_Btn_Start"
                 Content="{loc:Translate Start}"
                 Classes="Primary"

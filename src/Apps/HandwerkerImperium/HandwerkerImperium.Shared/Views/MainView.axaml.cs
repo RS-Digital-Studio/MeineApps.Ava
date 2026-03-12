@@ -62,6 +62,7 @@ public partial class MainView : UserControl
         _tabBarRenderer.Dispose();
         _transitionRenderer.Dispose();
         _backgroundRenderer.Dispose();
+        _ceremonyRenderer.Dispose();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -374,32 +375,39 @@ public partial class MainView : UserControl
     /// </summary>
     private async void FadeInContentPanel()
     {
-        var panel = this.FindControl<Panel>("ContentPanel");
-        if (panel == null) return;
-
-        panel.Opacity = 0;
-
-        var fadeIn = new Animation
+        try
         {
-            Duration = TimeSpan.FromMilliseconds(150),
-            Easing = new CubicEaseOut(),
-            FillMode = FillMode.Forward,
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters = { new Setter(OpacityProperty, 0.0) }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1.0),
-                    Setters = { new Setter(OpacityProperty, 1.0) }
-                }
-            }
-        };
+            var panel = this.FindControl<Panel>("ContentPanel");
+            if (panel == null) return;
 
-        await fadeIn.RunAsync(panel);
+            panel.Opacity = 0;
+
+            var fadeIn = new Animation
+            {
+                Duration = TimeSpan.FromMilliseconds(150),
+                Easing = new CubicEaseOut(),
+                FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame
+                    {
+                        Cue = new Cue(0),
+                        Setters = { new Setter(OpacityProperty, 0.0) }
+                    },
+                    new KeyFrame
+                    {
+                        Cue = new Cue(1.0),
+                        Setters = { new Setter(OpacityProperty, 1.0) }
+                    }
+                }
+            };
+
+            await fadeIn.RunAsync(panel);
+        }
+        catch (Exception)
+        {
+            // Animation-Fehler sind nicht kritisch (View evtl. bereits entladen)
+        }
     }
 
     private void OnCelebrationRequested()

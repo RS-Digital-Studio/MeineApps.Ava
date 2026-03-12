@@ -25,7 +25,7 @@ public enum CeremonyType
 /// Eigene Instanz (kein Singleton), wird beim Auslösen erstellt und nach Ablauf entsorgt.
 /// Gecachte SKPaint-Objekte, struct-basiertes Confetti.
 /// </summary>
-public sealed class RewardCeremonyRenderer
+public sealed class RewardCeremonyRenderer : IDisposable
 {
     // --- Konfig ---
     private const float TotalDuration = 4.0f;       // Gesamtdauer in Sekunden
@@ -66,15 +66,16 @@ public sealed class RewardCeremonyRenderer
     };
     private static readonly SKPaint _textPaint = new()
     {
-        IsAntialias = true,
-        TextAlign = SKTextAlign.Center,
-        FakeBoldText = true
+        IsAntialias = true
     };
     private static readonly SKPaint _subtitlePaint = new()
     {
-        IsAntialias = true,
-        TextAlign = SKTextAlign.Center
+        IsAntialias = true
     };
+
+    // Gecachte Fonts fuer Titel und Untertitel
+    private static readonly SKFont _titleFont = new() { Size = 24f, Embolden = true };
+    private static readonly SKFont _subtitleFont = new() { Size = 16f };
     private static readonly SKPaint _confettiPaint = new() { IsAntialias = true };
     private static readonly SKPaint _iconPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
 
@@ -275,9 +276,8 @@ public sealed class RewardCeremonyRenderer
             float textEased = EasingFunctions.EaseOutBack(textT, 1.2f);
             float titleY = centerY + 80f + (1f - textEased) * 30f;
 
-            _textPaint.TextSize = 24f;
             _textPaint.Color = SKColors.White.WithAlpha((byte)(255 * Math.Min(textEased, backdropAlpha)));
-            canvas.DrawText(_title, centerX, titleY, _textPaint);
+            canvas.DrawText(_title, centerX, titleY, SKTextAlign.Center, _titleFont, _textPaint);
 
             // Untertitel
             if (!string.IsNullOrEmpty(_subtitle) && _elapsed > TextDelay + 0.2f)
@@ -286,9 +286,8 @@ public sealed class RewardCeremonyRenderer
                 float subEased = EasingFunctions.EaseOutCubic(subT);
                 float subtitleY = titleY + 28f + (1f - subEased) * 15f;
 
-                _subtitlePaint.TextSize = 16f;
                 _subtitlePaint.Color = _accentColor.WithAlpha((byte)(230 * Math.Min(subEased, backdropAlpha)));
-                canvas.DrawText(_subtitle, centerX, subtitleY, _subtitlePaint);
+                canvas.DrawText(_subtitle, centerX, subtitleY, SKTextAlign.Center, _subtitleFont, _subtitlePaint);
             }
         }
     }
@@ -451,6 +450,15 @@ public sealed class RewardCeremonyRenderer
     }
 
     private float NextRandom(float min, float max) => min + NextRandom() * (max - min);
+
+    private bool _disposed;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _iconPath?.Dispose();
+    }
 
     private struct ConfettiParticle
     {

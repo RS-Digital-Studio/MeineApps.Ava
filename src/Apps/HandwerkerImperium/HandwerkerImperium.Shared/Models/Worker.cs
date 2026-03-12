@@ -66,16 +66,16 @@ public class Worker
 
     /// <summary>
     /// Akkumulator für fraktionale XP-Gewinne beim Arbeiten.
-    /// Wird nicht persistiert - nur innerhalb einer Session relevant.
+    /// Persistiert damit bei App-Neustart kein Fortschritt verloren geht.
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("workingXpAcc")]
     public decimal WorkingXpAccumulator { get; set; }
 
     /// <summary>
     /// Akkumulator für fraktionale XP-Gewinne beim Training.
-    /// Wird nicht persistiert - nur innerhalb einer Session relevant.
+    /// Persistiert damit bei App-Neustart kein Fortschritt verloren geht.
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("trainingXpAcc")]
     public decimal TrainingXpAccumulator { get; set; }
 
     /// <summary>

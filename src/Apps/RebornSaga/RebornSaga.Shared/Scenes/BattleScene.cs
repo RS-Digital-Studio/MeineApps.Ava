@@ -31,7 +31,8 @@ public enum BattlePhase
     EnemyAttack,    // Gegner-Angriffs-Animation
     Victory,        // Sieg (EXP + Gold + Drops)
     Defeat,         // Niederlage
-    BossPhaseChange // Boss wechselt Phase (Mini-Cutscene)
+    BossPhaseChange, // Boss wechselt Phase (Mini-Cutscene)
+    Done            // Kampf abgeschlossen, keine weitere Interaktion
 }
 
 /// <summary>
@@ -67,6 +68,7 @@ public class BattleScene : Scene, IDisposable
     private int _enemyHp;
     private int _enemyMaxHp;
     private int _currentBossPhase;
+    private string _cachedEnemySpriteKey = ""; // Gecacht, nur bei Boss-Phasenwechsel aktualisiert
     private int _comboCount;
     private bool _dodgeSuccessful;
 
@@ -83,6 +85,8 @@ public class BattleScene : Scene, IDisposable
 
     // Gecachte Strings (nur bei Änderung aktualisiert, vermeidet per-Frame Allokation)
     private string _cachedEnemyName = "";
+    private string _cachedEnemyDisplayName = ""; // Ohne Level-Suffix (für Intro)
+    private string _cachedEnemyIntroSub = "";    // "Lv.X" oder "Lv.X - Element"
     private string _cachedEnemyElemText = "";
     private string _cachedPlayerName = "";
     private string _cachedPlayerHp = "";
@@ -129,10 +133,23 @@ public class BattleScene : Scene, IDisposable
     private int _hoveredAction = -1;
     private bool _actionsEnabled;
 
+    // Tutorial-System (geführter Prolog-Kampf)
+    private bool _isTutorialBattle;
+    private int _tutorialStep;       // 0=Intro, 1=Attack, 2=Skill, 3=Item, 4=Dodge, 5=Free
+    private bool _tutorialOverlayActive; // true während TutorialOverlay sichtbar
+    private string _tutorialAriaTitle = "";
+
+    // Temporärer ATK-Buff (wird am Kampfende zurückgesetzt)
+    private int _tempAtkBonus;
+
+    // GameOver-Overlay (Feld statt lokal, verhindert Event-Subscription-Stacking)
+    private GameOverOverlay? _gameOverOverlay;
+
     // Ergebnis-Daten
     private int _earnedExp;
     private int _earnedGold;
     private readonly List<string> _earnedDrops = new();
+    private readonly List<string> _earnedDropNames = new(); // Lokalisierte Display-Namen für Drops
 
     // Events
     public event Action<int, int, List<string>>? BattleWon; // (exp, gold, drops)
@@ -164,6 +181,7 @@ public class BattleScene : Scene, IDisposable
     };
 
     private readonly StoryEngine _storyEngine;
+    private readonly TutorialService? _tutorialService;
     private readonly IAudioService? _audioService;
     private readonly SpriteCache? _spriteCache;
     private readonly ILocalizationService _localization;
@@ -187,6 +205,7 @@ public class BattleScene : Scene, IDisposable
     public BattleScene(BattleEngine battleEngine, SkillService skillService,
         InventoryService inventoryService, StoryEngine storyEngine,
         ILocalizationService localization,
+        TutorialService? tutorialService = null,
         IAudioService? audioService = null, SpriteCache? spriteCache = null)
     {
         _battleEngine = battleEngine;
@@ -194,6 +213,7 @@ public class BattleScene : Scene, IDisposable
         _inventoryService = inventoryService;
         _storyEngine = storyEngine;
         _localization = localization;
+        _tutorialService = tutorialService;
         _audioService = audioService;
         _spriteCache = spriteCache;
         UpdateLocalizedTexts();
@@ -248,12 +268,23 @@ public class BattleScene : Scene, IDisposable
         _earnedExp = 0;
         _earnedGold = 0;
         _earnedDrops.Clear();
+        _earnedDropNames.Clear();
         _particles.Clear();
+        _tempAtkBonus = 0;
+        _gameOverOverlay = null; // Altes Overlay-Referenz zurücksetzen bei neuem Kampf
+
+        // Sprite-Key cachen (wird nur bei Boss-Phasenwechsel aktualisiert)
+        UpdateEnemySpriteKey();
 
         // Gecachte Strings + Element einmal berechnen
-        _cachedEnemyName = $"{enemy.NameKey} Lv.{enemy.Level}";
+        var enemyDisplayName = _localization.GetString(enemy.NameKey) ?? enemy.NameKey;
+        _cachedEnemyDisplayName = enemyDisplayName;
+        _cachedEnemyName = $"{enemyDisplayName} Lv.{enemy.Level}";
         _cachedEnemyElement = enemy.Element;
         _cachedEnemyElemText = _cachedEnemyElement.HasValue ? $"[{_cachedEnemyElement.Value}]" : "";
+        _cachedEnemyIntroSub = enemy.Element.HasValue
+            ? $"Lv.{enemy.Level} - {enemy.Element.Value}"
+            : $"Lv.{enemy.Level}";
         _cachedPlayerName = $"{player.Name} Lv.{player.Level}";
         _cachedComboText = "";
         _lastPlayerHp = -1; // Erzwingt Update beim ersten Render
@@ -264,6 +295,12 @@ public class BattleScene : Scene, IDisposable
         // Floating Numbers zurücksetzen
         for (int i = 0; i < _floatingNumbers.Length; i++)
             _floatingNumbers[i].IsActive = false;
+
+        // Tutorial-Kampf erkennen (Malachar-Boss in P2 + noch nicht gesehen)
+        _isTutorialBattle = enemy.Id == "B001" && (_tutorialService?.ShouldShow("FirstBattle") ?? false);
+        _tutorialStep = 0;
+        _tutorialOverlayActive = false;
+        _tutorialAriaTitle = "ARIA";
     }
 
     /// <summary>Aktualisiert gecachte HP/MP-Strings nur bei Änderung.</summary>
@@ -316,6 +353,17 @@ public class BattleScene : Scene, IDisposable
         _time += deltaTime;
         _phaseTimer += deltaTime;
         _particles.Update(deltaTime);
+
+        // Tutorial: Overlay-Dismissal erkennen (Step 0 → 1 Übergang)
+        if (_isTutorialBattle && _tutorialOverlayActive && SceneManager.Overlays.Count == 0)
+        {
+            _tutorialOverlayActive = false;
+            if (_tutorialStep == 0)
+            {
+                _tutorialStep = 1;
+                ShowTutorialHint("tutorial_battle_attack", _actionRects[0]);
+            }
+        }
 
         // Screen-Shake abklingen
         _shakeIntensity *= MathF.Pow(0.01f, deltaTime);
@@ -472,56 +520,60 @@ public class BattleScene : Scene, IDisposable
             canvas.Translate(shakeX, shakeY);
         }
 
-        // Ambient-Licht-Tönung (umklammert Kampf-Grafiken)
+        // Ambient-Licht-Tönung (umklammert Kampf-Grafiken, try/finally gegen Canvas-Korruption)
         BackgroundCompositor.BeginLighting(canvas);
-
-        // Gegner (obere Hälfte)
-        RenderEnemy(canvas, bounds);
-
-        // Slash-Effekt am Gegner (3 diagonale Linien mit Alpha-Fade)
-        if (_showSlashEffect)
-            RenderSlashEffect(canvas, bounds);
-
-        // Dodge-Ghosting: Semi-transparente Nachbilder des Spieler-HUD
-        if (_dodgeTimer > 0)
+        try
         {
-            var ghostAlpha = (byte)(60 * (_dodgeTimer / DodgeDuration));
-            for (int g = 2; g >= 1; g--)
+            // Gegner (obere Hälfte)
+            RenderEnemy(canvas, bounds);
+
+            // Slash-Effekt am Gegner (3 diagonale Linien mit Alpha-Fade)
+            if (_showSlashEffect)
+                RenderSlashEffect(canvas, bounds);
+
+            // Dodge-Ghosting: Semi-transparente Nachbilder des Spieler-HUD
+            if (_dodgeTimer > 0)
+            {
+                var ghostAlpha = (byte)(60 * (_dodgeTimer / DodgeDuration));
+                for (int g = 2; g >= 1; g--)
+                {
+                    canvas.Save();
+                    canvas.Translate(_dodgeOffsetX * (g * 0.4f), 0);
+                    _ghostLayerPaint.Color = SKColors.White.WithAlpha((byte)(ghostAlpha / g));
+                    canvas.SaveLayer(_ghostLayerPaint);
+                    RenderPlayerHud(canvas, bounds);
+                    canvas.Restore(); // SaveLayer
+                    canvas.Restore(); // Translate
+                }
+            }
+
+            // Spieler-Info (untere Hälfte) mit Angriffs-/Dodge-Offset
+            if (_attackOffsetX != 0 || _dodgeOffsetX != 0)
             {
                 canvas.Save();
-                canvas.Translate(_dodgeOffsetX * (g * 0.4f), 0);
-                _ghostLayerPaint.Color = SKColors.White.WithAlpha((byte)(ghostAlpha / g));
-                canvas.SaveLayer(_ghostLayerPaint);
+                canvas.Translate(_attackOffsetX + _dodgeOffsetX, 0);
                 RenderPlayerHud(canvas, bounds);
-                canvas.Restore(); // SaveLayer
-                canvas.Restore(); // Translate
+                canvas.Restore();
             }
-        }
+            else
+            {
+                RenderPlayerHud(canvas, bounds);
+            }
 
-        // Spieler-Info (untere Hälfte) mit Angriffs-/Dodge-Offset
-        if (_attackOffsetX != 0 || _dodgeOffsetX != 0)
+            // Floating Damage Numbers
+            RenderFloatingNumbers(canvas, bounds);
+
+            // Combo-Counter
+            if (_comboCount >= 3)
+                RenderComboCounter(canvas, bounds);
+
+            // Partikel
+            _particles.Render(canvas);
+        }
+        finally
         {
-            canvas.Save();
-            canvas.Translate(_attackOffsetX + _dodgeOffsetX, 0);
-            RenderPlayerHud(canvas, bounds);
-            canvas.Restore();
+            BackgroundCompositor.EndLighting(canvas);
         }
-        else
-        {
-            RenderPlayerHud(canvas, bounds);
-        }
-
-        // Floating Damage Numbers
-        RenderFloatingNumbers(canvas, bounds);
-
-        // Combo-Counter
-        if (_comboCount >= 3)
-            RenderComboCounter(canvas, bounds);
-
-        // Partikel
-        _particles.Render(canvas);
-
-        BackgroundCompositor.EndLighting(canvas);
 
         // Vordergrund + atmosphärische Partikel (über Kampf-Grafiken)
         BackgroundCompositor.RenderFront(canvas, bounds, _time);
@@ -563,61 +615,92 @@ public class BattleScene : Scene, IDisposable
 
     private void RenderEnemy(SKCanvas canvas, SKRect bounds)
     {
-        var enemyAreaH = bounds.Height * 0.45f;
-        var enemyY = bounds.Top + enemyAreaH * 0.15f;
+        var margin = bounds.Width * 0.04f;
 
-        // Gegner-Name + Level (gecachter String)
+        // Gegner-Name + Level (gecachter String) — ganz oben
         var nameSize = bounds.Width * 0.04f;
+        var nameY = bounds.Top + margin + nameSize;
         _nameFont.Size = nameSize;
         _textPaint.Color = UIRenderer.TextPrimary;
-        canvas.DrawText(_cachedEnemyName, bounds.MidX, enemyY, SKTextAlign.Center, _nameFont, _textPaint);
+        canvas.DrawText(_cachedEnemyName, bounds.MidX, nameY, SKTextAlign.Center, _nameFont, _textPaint);
 
         // Element-Anzeige (wenn vorhanden, gecachter String)
+        var elemH = 0f;
         if (_cachedEnemyElement.HasValue)
         {
             var elemColor = GetElementColor(_cachedEnemyElement.Value);
             _labelFont.Size = nameSize * 0.7f;
             _textPaint.Color = elemColor;
-            canvas.DrawText(_cachedEnemyElemText, bounds.MidX, enemyY + nameSize * 1.3f,
+            elemH = nameSize * 1.0f;
+            canvas.DrawText(_cachedEnemyElemText, bounds.MidX, nameY + elemH,
                 SKTextAlign.Center, _labelFont, _textPaint);
         }
 
         // Gegner-HP-Balken
         var hpBarW = bounds.Width * 0.6f;
-        var hpBarH = bounds.Height * 0.022f;
+        var hpBarH = bounds.Height * 0.02f;
         var hpBarX = bounds.MidX - hpBarW / 2;
-        var hpBarY = enemyY + nameSize * 2.2f;
+        var hpBarY = nameY + elemH + nameSize * 0.6f;
         DrawHpBar(canvas, hpBarX, hpBarY, hpBarW, hpBarH, _enemyHp, _enemyMaxHp, UIRenderer.Danger);
 
-        // Gegner-"Sprite" (stilisierte geometrische Form basierend auf Element)
-        var spriteY = hpBarY + hpBarH + enemyAreaH * 0.1f;
-        var spriteH = enemyAreaH * 0.55f;
-        var spriteRect = new SKRect(bounds.MidX - spriteH * 0.4f, spriteY,
-            bounds.MidX + spriteH * 0.4f, spriteY + spriteH);
+        // Gegner-Sprite: Füllt Raum von HP-Bar-Ende bis Spieler-HUD-Beginn (75%)
+        var spriteTop = hpBarY + hpBarH + margin * 0.5f;
+        var spriteBottom = bounds.Height * 0.72f;  // Vor dem Spieler-HUD aufhören
+        var spriteH = spriteBottom - spriteTop;
 
-        // Flash-Effekt bei Treffer (mit Overflow-Schutz)
-        if (_enemyFlashTimer > 0)
+        if (spriteH > 0)
         {
-            var flashAlpha = (byte)Math.Min(255, _enemyFlashTimer * 5f * 255);
-            _bgOverlayPaint.Color = SKColors.White.WithAlpha(flashAlpha);
-            using var flashRect = new SKRoundRect(spriteRect, 8f);
-            canvas.DrawRoundRect(flashRect, _bgOverlayPaint);
-        }
+            // Seitenverhältnis des AI-Sprites beibehalten (Portrait ~0.68:1)
+            // Breite maximal 85% des Screens
+            var spriteW = MathF.Min(spriteH * 0.68f, bounds.Width * 0.85f);
+            // Wenn Breite begrenzt, Höhe anpassen
+            if (spriteW < spriteH * 0.68f)
+                spriteH = spriteW / 0.68f;
 
-        DrawEnemySprite(canvas, spriteRect, _time);
+            var spriteRect = new SKRect(
+                bounds.MidX - spriteW * 0.5f, spriteTop,
+                bounds.MidX + spriteW * 0.5f, spriteTop + spriteH);
+
+            // Flash-Effekt bei Treffer (mit Overflow-Schutz)
+            if (_enemyFlashTimer > 0)
+            {
+                var flashAlpha = (byte)Math.Min(255, _enemyFlashTimer * 5f * 255);
+                _bgOverlayPaint.Color = SKColors.White.WithAlpha(flashAlpha);
+                using var flashRect = new SKRoundRect(spriteRect, 8f);
+                canvas.DrawRoundRect(flashRect, _bgOverlayPaint);
+            }
+
+            DrawEnemySprite(canvas, spriteRect, _time);
+        }
     }
 
     private void DrawEnemySprite(SKCanvas canvas, SKRect rect, float time)
     {
         // AI-Sprite laden (gecacht über SpriteCache)
-        var spriteKey = GetEnemySpriteKey();
-        var sprite = _spriteCache?.GetEnemySprite(spriteKey);
+        var sprite = _spriteCache?.GetEnemySprite(_cachedEnemySpriteKey);
 
         if (sprite != null)
         {
-            // AI-Sprite mit korrektem Seitenverhältnis zeichnen
+            // AI-Sprite mit korrektem Seitenverhältnis zeichnen (Contain-Fit)
             var srcRect = new SKRect(0, 0, sprite.Width, sprite.Height);
-            canvas.DrawBitmap(sprite, srcRect, rect);
+            var srcAspect = (float)sprite.Width / sprite.Height;
+            var dstAspect = rect.Width / rect.Height;
+            SKRect destRect;
+            if (srcAspect > dstAspect)
+            {
+                // Sprite breiter als Ziel: an Breite anpassen
+                var h = rect.Width / srcAspect;
+                var yOff = (rect.Height - h) / 2f;
+                destRect = new SKRect(rect.Left, rect.Top + yOff, rect.Right, rect.Top + yOff + h);
+            }
+            else
+            {
+                // Sprite höher als Ziel: an Höhe anpassen
+                var w = rect.Height * srcAspect;
+                var xOff = (rect.Width - w) / 2f;
+                destRect = new SKRect(rect.Left + xOff, rect.Top, rect.Left + xOff + w, rect.Bottom);
+            }
+            canvas.DrawBitmap(sprite, srcRect, destRect);
 
             // Treffer-Flash (weißer Overlay bei Schaden)
             if (_enemyFlashTimer > 0f)
@@ -642,24 +725,25 @@ public class BattleScene : Scene, IDisposable
     }
 
     /// <summary>
-    /// Sprite-Key für den Gegner. Bosse (Phases > 1) bekommen phasenbasierte Varianten.
+    /// Berechnet und cached den Sprite-Key für den Gegner.
+    /// Dateiname: {Id}_{nameKey_suffix}.webp, z.B. "E005_shadow_scout", "B001_malachar_p2"
+    /// Wird bei Setup und Boss-Phasenwechsel aufgerufen (nicht per Frame).
     /// </summary>
-    private string GetEnemySpriteKey()
+    private void UpdateEnemySpriteKey()
     {
-        // Boss: Phasen-basiertes Sprite (Enemy hat kein IsBoss — Phases > 1 = Boss)
-        if (_enemy.Phases > 1)
-        {
-            var phase = _currentBossPhase switch
-            {
-                0 => "idle",
-                1 => "idle",
-                2 => "attack",
-                3 => "special",
-                _ => "enraged"
-            };
-            return $"{_enemy.Id}_{phase}";
-        }
-        return _enemy.Id;
+        // NameKey-Suffix extrahieren: "enemy_shadow_scout" → "shadow_scout", "boss_malachar" → "malachar"
+        var nameSuffix = _enemy.NameKey;
+        if (nameSuffix.StartsWith("enemy_"))
+            nameSuffix = nameSuffix[6..];
+        else if (nameSuffix.StartsWith("boss_"))
+            nameSuffix = nameSuffix[5..];
+
+        var baseKey = $"{_enemy.Id}_{nameSuffix}";
+
+        // Boss: Phasen-basiertes Sprite (Phases > 1 = Boss, _p2/_p3 Suffix)
+        _cachedEnemySpriteKey = (_enemy.Phases > 1 && _currentBossPhase > 1)
+            ? $"{baseKey}_p{_currentBossPhase}"
+            : baseKey;
     }
 
     /// <summary>
@@ -704,7 +788,7 @@ public class BattleScene : Scene, IDisposable
     {
         var alpha = (byte)(255 * (_slashTimer / SlashDuration));
         var cx = bounds.MidX;
-        var cy = bounds.Height * 0.35f;
+        var cy = bounds.Height * 0.40f;  // Mitte des Gegner-Sprite-Bereichs
         var len = bounds.Width * 0.15f;
 
         _glowPaint.Color = SKColors.White.WithAlpha(alpha);
@@ -809,9 +893,10 @@ public class BattleScene : Scene, IDisposable
             var y = startY + row * (btnH + spacing);
             _actionRects[i] = new SKRect(x, y, x + btnW, y + btnH);
 
-            var isHovered = i == _hoveredAction;
+            var enabled = IsTutorialActionEnabled(i);
+            var isHovered = i == _hoveredAction && enabled;
             UIRenderer.DrawButton(canvas, _actionRects[i], _actionLabels[i],
-                isHovered, false, _actionColors[i]);
+                isHovered, false, _actionColors[i], disabled: !enabled);
         }
     }
 
@@ -828,16 +913,13 @@ public class BattleScene : Scene, IDisposable
 
         _nameFont.Size = bounds.Width * 0.06f;
         _textPaint.Color = UIRenderer.Danger.WithAlpha((byte)(_introProgress * 255));
-        canvas.DrawText(_enemy.NameKey, bounds.MidX + slideOffset, introY,
+        canvas.DrawText(_cachedEnemyDisplayName, bounds.MidX + slideOffset, introY,
             SKTextAlign.Center, _nameFont, _textPaint);
 
-        // Level + Element
+        // Level + Element (gecacht in Setup)
         _labelFont.Size = bounds.Width * 0.035f;
         _textPaint.Color = UIRenderer.TextSecondary.WithAlpha((byte)(_introProgress * 200));
-        var subText = _enemy.Element.HasValue
-            ? $"Lv.{_enemy.Level} - {_enemy.Element.Value}"
-            : $"Lv.{_enemy.Level}";
-        canvas.DrawText(subText, bounds.MidX + slideOffset * 0.5f, introY + _nameFont.Size * 1.5f,
+        canvas.DrawText(_cachedEnemyIntroSub, bounds.MidX + slideOffset * 0.5f, introY + _nameFont.Size * 1.5f,
             SKTextAlign.Center, _labelFont, _textPaint);
 
         // Boss-Warnung
@@ -875,15 +957,15 @@ public class BattleScene : Scene, IDisposable
         canvas.DrawText($"+{_earnedGold} Gold", bounds.MidX, infoY + _labelFont.Size * 1.8f,
             SKTextAlign.Center, _labelFont, _textPaint);
 
-        // Drops
-        if (_earnedDrops.Count > 0)
+        // Drops (lokalisierte Namen statt roher ItemIds)
+        if (_earnedDropNames.Count > 0)
         {
             var dropY = infoY + _labelFont.Size * 3.6f;
             _textPaint.Color = UIRenderer.Success;
             _labelFont.Size = bounds.Width * 0.035f;
-            foreach (var drop in _earnedDrops)
+            foreach (var dropName in _earnedDropNames)
             {
-                canvas.DrawText($"+ {drop}", bounds.MidX, dropY,
+                canvas.DrawText($"+ {dropName}", bounds.MidX, dropY,
                     SKTextAlign.Center, _labelFont, _textPaint);
                 dropY += _labelFont.Size * 1.5f;
             }
@@ -1018,7 +1100,8 @@ public class BattleScene : Scene, IDisposable
             // Skill-Name
             _labelFont.Size = itemH * 0.45f;
             _textPaint.Color = canUse ? UIRenderer.TextPrimary : UIRenderer.TextMuted;
-            canvas.DrawText(skill.Definition.NameKey, _skillRects[i].Left + 10f,
+            var skillName = _localization.GetString(skill.Definition.NameKey) ?? skill.Definition.NameKey;
+            canvas.DrawText(skillName, _skillRects[i].Left + 10f,
                 _skillRects[i].MidY + itemH * 0.12f, SKTextAlign.Left, _labelFont, _textPaint);
 
             // MP-Kosten rechts
@@ -1091,7 +1174,8 @@ public class BattleScene : Scene, IDisposable
             // Item-Name
             _labelFont.Size = itemH * 0.45f;
             _textPaint.Color = UIRenderer.TextPrimary;
-            canvas.DrawText(item.NameKey, _itemRects[i].Left + 10f,
+            var itemName = _localization.GetString(item.NameKey) ?? item.NameKey;
+            canvas.DrawText(itemName, _itemRects[i].Left + 10f,
                 _itemRects[i].MidY + itemH * 0.12f, SKTextAlign.Left, _labelFont, _textPaint);
 
             // Anzahl rechts
@@ -1198,13 +1282,63 @@ public class BattleScene : Scene, IDisposable
 
     // --- Kampf-Logik ---
 
+    // --- Tutorial-System ---
+
+    /// <summary>Zeigt einen Tutorial-Hint via TutorialOverlay.</summary>
+    private void ShowTutorialHint(string messageKey, SKRect? highlightRect = null)
+    {
+        _tutorialOverlayActive = true;
+        var message = _localization.GetString(messageKey) ?? messageKey;
+        // Eindeutige hintId pro Schritt (verhindert MarkSeen-Konflikte)
+        var hintId = $"battle_tutorial_{_tutorialStep}";
+        var overlay = SceneManager.ShowOverlay<TutorialOverlay>();
+        overlay.SetHint(hintId, _tutorialAriaTitle, message, highlightRect ?? default);
+    }
+
+    /// <summary>Prüft ob eine Aktion im Tutorial erlaubt ist.</summary>
+    private bool IsTutorialActionEnabled(int actionIndex)
+    {
+        if (!_isTutorialBattle || _tutorialStep >= 5) return true;
+        return _tutorialStep switch
+        {
+            1 => actionIndex == 0,  // Nur Angriff
+            2 => actionIndex == 2,  // Nur Skill
+            3 => actionIndex == 3,  // Nur Item
+            4 => actionIndex == 1,  // Nur Ausweichen
+            _ => true               // Intro/Free: alles
+        };
+    }
+
+    /// <summary>Schrittzähler weiterschalten nach erfolgreicher Aktion.</summary>
+    private void AdvanceTutorialStep()
+    {
+        if (!_isTutorialBattle) return;
+        _tutorialStep++;
+    }
+
     private void TransitionTo(BattlePhase phase)
     {
         _phase = phase;
         _phaseTimer = 0;
 
         if (phase == BattlePhase.PlayerTurn)
+        {
             _actionsEnabled = true;
+
+            // Tutorial-Hint zeigen wenn Tutorial aktiv und kein Overlay offen
+            if (_isTutorialBattle && !_tutorialOverlayActive)
+            {
+                switch (_tutorialStep)
+                {
+                    case 0: ShowTutorialHint("tutorial_battle_intro"); break;
+                    case 1: ShowTutorialHint("tutorial_battle_attack", _actionRects[0]); break;
+                    case 2: ShowTutorialHint("tutorial_battle_skill", _actionRects[2]); break;
+                    case 3: ShowTutorialHint("tutorial_battle_item", _actionRects[3]); break;
+                    case 4: ShowTutorialHint("tutorial_battle_dodge", _actionRects[1]); break;
+                    case 5: ShowTutorialHint("tutorial_battle_finish"); break;
+                }
+            }
+        }
         else
             _actionsEnabled = false;
     }
@@ -1230,7 +1364,8 @@ public class BattleScene : Scene, IDisposable
             var accentColor = skill.Element.HasValue
                 ? GetElementColor(skill.Element.Value)
                 : new SKColor(0x9B, 0x59, 0xB6);
-            _splashArt.Start(skill.NameKey, _player.Class.ToString(), accentColor, 1.5f);
+            var ultName = _localization.GetString(skill.NameKey) ?? skill.NameKey;
+            _splashArt.Start(ultName, _player.Class.ToString(), accentColor, 1.5f);
         }
 
         // MP abziehen
@@ -1273,6 +1408,7 @@ public class BattleScene : Scene, IDisposable
                 if (_enemy.Phases > 1 && _currentBossPhase < _enemy.Phases)
                 {
                     _currentBossPhase++;
+                    UpdateEnemySpriteKey();
                     _enemyHp = _enemyMaxHp;
                     _shakeIntensity = 15f;
                     _particles.Emit(enemyCenter.X, enemyCenter.Y, 20, ParticleSystem.SystemGlitch);
@@ -1299,6 +1435,7 @@ public class BattleScene : Scene, IDisposable
         }
 
         _selectedSkill = null;
+        AdvanceTutorialStep();
         TransitionTo(BattlePhase.EnemyTurn);
     }
 
@@ -1323,11 +1460,13 @@ public class BattleScene : Scene, IDisposable
         else if (effect.StartsWith("atk_buff_"))
         {
             // z.B. "atk_buff_30" → ATK um 30% für diesen Kampf erhöhen
+            // Bonus wird in _tempAtkBonus getrackt und am Kampfende zurückgesetzt
             var pctStr = effect.Replace("atk_buff_", "");
             if (int.TryParse(pctStr, out var pct))
             {
                 var bonus = _player.Atk * pct / 100;
                 _player.Atk += bonus;
+                _tempAtkBonus += bonus;
                 SpawnFloatingNumber(_lastBounds.MidX * 0.5f, _lastBounds.Height * 0.65f,
                     $"ATK+{bonus}", new SKColor(0xFF, 0x45, 0x00), 20f);
             }
@@ -1376,6 +1515,7 @@ public class BattleScene : Scene, IDisposable
             if (_enemy.Phases > 1 && _currentBossPhase < _enemy.Phases)
             {
                 _currentBossPhase++;
+                UpdateEnemySpriteKey();
                 _enemyHp = _enemyMaxHp; // Volle HP für nächste Phase
                 _shakeIntensity = 15f;
                 _particles.Emit(enemyCenter.X, enemyCenter.Y, 20, ParticleSystem.SystemGlitch);
@@ -1396,6 +1536,23 @@ public class BattleScene : Scene, IDisposable
     {
         var (damage, isCrit) = _battleEngine.CalculateDamage(
             _enemy.Atk, 1f, _player.Def, _cachedEnemyElement, null, 5);
+
+        // Tutorial-Override: Schaden kontrollieren
+        if (_isTutorialBattle)
+        {
+            if (_tutorialStep == 3)
+            {
+                // Schritt 3 (Item-Tutorial): Spieler auf ~30% HP bringen
+                var targetHp = (int)(_player.MaxHp * 0.3f);
+                if (_player.Hp > targetHp)
+                    damage = _player.Hp - targetHp;
+            }
+            else if (_tutorialStep < 3)
+            {
+                // Vor Item-Tutorial: Schaden niedrig halten (max 10% HP)
+                damage = Math.Min(damage, Math.Max(1, (int)(_player.MaxHp * 0.1f)));
+            }
+        }
 
         _player.Hp = Math.Max(0, _player.Hp - damage);
         _playerFlashTimer = 0.4f;
@@ -1419,12 +1576,42 @@ public class BattleScene : Scene, IDisposable
         TransitionTo(BattlePhase.PlayerTurn);
     }
 
+    /// <summary>Setzt temporäre Kampf-Buffs zurück (ATK-Buff etc.).</summary>
+    private void ResetTempBuffs()
+    {
+        if (_tempAtkBonus > 0)
+        {
+            _player.Atk -= _tempAtkBonus;
+            _tempAtkBonus = 0;
+        }
+    }
+
     private void OnVictory()
     {
+        // Temporäre Buffs zurücksetzen bevor EXP/Gold verteilt wird
+        ResetTempBuffs();
+
+        // Tutorial als abgeschlossen markieren
+        if (_isTutorialBattle)
+        {
+            _tutorialService?.MarkSeen("FirstBattle");
+        }
+
         _earnedExp = _enemy.Exp;
         _earnedGold = _enemy.Gold;
         _earnedDrops.Clear();
+        _earnedDropNames.Clear();
         _earnedDrops.AddRange(_battleEngine.CalculateDrops(_enemy));
+
+        // Drop-IDs → lokalisierte Display-Namen auflösen
+        foreach (var dropId in _earnedDrops)
+        {
+            var item = _inventoryService.GetItemDefinition(dropId);
+            var name = item != null
+                ? (_localization.GetString(item.NameKey) ?? item.NameKey)
+                : dropId;
+            _earnedDropNames.Add(name);
+        }
 
         // Partikel-Explosion (Gold + Magie, relative Position)
         var cx = _lastBounds.MidX;
@@ -1438,8 +1625,8 @@ public class BattleScene : Scene, IDisposable
     /// <summary>Sieg: Story-Effekte anwenden, zum nächsten Knoten navigieren.</summary>
     private void HandlePostVictory()
     {
-        // Phase auf eine ungültige setzen, damit kein erneuter Tap was auslöst
-        _phase = BattlePhase.BossPhaseChange;
+        // Kampf abgeschlossen — keine weitere Interaktion
+        _phase = BattlePhase.Done;
 
         // Story zum nächsten Knoten vorspulen
         _storyEngine.AdvanceToNext();
@@ -1460,24 +1647,50 @@ public class BattleScene : Scene, IDisposable
     /// <summary>Niederlage: GameOverOverlay anzeigen mit Revive/Laden.</summary>
     private void HandlePostDefeat()
     {
-        _phase = BattlePhase.BossPhaseChange;
+        ResetTempBuffs();
+        _phase = BattlePhase.Done;
 
-        var overlay = SceneManager.ShowOverlay<GameOverOverlay>();
-        overlay.ReviveRequested += () =>
+        // Guard: Wenn bereits ein GameOverOverlay aktiv ist, keine erneute Subscription
+        if (_gameOverOverlay != null) return;
+
+        _gameOverOverlay = SceneManager.ShowOverlay<GameOverOverlay>();
+        _gameOverOverlay.ReviveRequested += OnReviveRequested;
+        _gameOverOverlay.LoadSaveRequested += OnLoadSaveRequested;
+    }
+
+    /// <summary>Revive-Callback: Spieler wiederbeleben und Kampf fortsetzen.</summary>
+    private void OnReviveRequested()
+    {
+        _player.Hp = Math.Max(1, _player.MaxHp / 2);
+        _player.Mp = _player.MaxMp / 2;
+
+        if (_gameOverOverlay != null)
         {
-            // Spieler wiederbeleben (halbe HP)
-            _player.Hp = Math.Max(1, _player.MaxHp / 2);
-            _player.Mp = _player.MaxMp / 2;
-            SceneManager.HideOverlay(overlay);
-            _phase = BattlePhase.PlayerTurn;
-            _actionsEnabled = true;
-            _phaseTimer = 0;
-        };
-        overlay.LoadSaveRequested += () =>
+            SceneManager.HideOverlay(_gameOverOverlay);
+            // Events abmelden um Leaks zu vermeiden
+            _gameOverOverlay.ReviveRequested -= OnReviveRequested;
+            _gameOverOverlay.LoadSaveRequested -= OnLoadSaveRequested;
+            _gameOverOverlay = null;
+        }
+
+        _phase = BattlePhase.PlayerTurn;
+        _actionsEnabled = true;
+        _phaseTimer = 0;
+    }
+
+    /// <summary>Laden-Callback: Overlay schliessen und SaveSlotScene oeffnen.</summary>
+    private void OnLoadSaveRequested()
+    {
+        if (_gameOverOverlay != null)
         {
-            SceneManager.HideOverlay(overlay);
-            SceneManager.ChangeScene<SaveSlotScene>(new FadeTransition());
-        };
+            SceneManager.HideOverlay(_gameOverOverlay);
+            // Events abmelden um Leaks zu vermeiden
+            _gameOverOverlay.ReviveRequested -= OnReviveRequested;
+            _gameOverOverlay.LoadSaveRequested -= OnLoadSaveRequested;
+            _gameOverOverlay = null;
+        }
+
+        SceneManager.ChangeScene<SaveSlotScene>(new FadeTransition());
     }
 
     // --- Input ---
@@ -1583,6 +1796,7 @@ public class BattleScene : Scene, IDisposable
 
                     // Item-Liste aktualisieren und Zug beenden
                     _availableItems = _inventoryService.GetItemsByType(ItemType.Consumable);
+                    AdvanceTutorialStep();
                     TransitionTo(BattlePhase.EnemyTurn);
                 }
                 return;
@@ -1592,16 +1806,26 @@ public class BattleScene : Scene, IDisposable
 
     private void HandleAction(int actionIndex)
     {
+        // Tutorial: Blockierte Aktionen ignorieren
+        if (_isTutorialBattle && !IsTutorialActionEnabled(actionIndex))
+            return;
+
         _actionsEnabled = false;
 
         switch (actionIndex)
         {
             case 0: // Angriff
+                AdvanceTutorialStep();
                 TransitionTo(BattlePhase.PlayerAttack);
                 break;
 
             case 1: // Ausweichen
-                _dodgeSuccessful = _battleEngine.TryDodge(_player.Spd, _enemy.Spd);
+                // Tutorial: Dodge ist im Tutorial immer erfolgreich
+                if (_isTutorialBattle && _tutorialStep == 4)
+                    _dodgeSuccessful = true;
+                else
+                    _dodgeSuccessful = _battleEngine.TryDodge(_player.Spd, _enemy.Spd);
+
                 if (_dodgeSuccessful)
                 {
                     var dodgeY = _lastBounds.Height * 0.65f;
@@ -1610,18 +1834,20 @@ public class BattleScene : Scene, IDisposable
                     _cachedComboText = _comboCount.ToString();
                 }
                 _dodgeTimer = DodgeDuration;
+                AdvanceTutorialStep();
                 TransitionTo(BattlePhase.PlayerDodge);
-                // Phase-Logik in Update() entscheidet: Dodge erfolgreich → PlayerTurn, sonst → EnemyTurn
                 break;
 
             case 2: // Skill-Auswahl öffnen
                 _availableSkills = _skillService.GetUnlockedSkills();
                 TransitionTo(BattlePhase.SkillSelect);
+                // Tutorial: Step wird nach Skill-Ausführung weitergeschaltet (in ExecuteSkillAttack)
                 break;
 
             case 3: // Item-Auswahl öffnen
                 _availableItems = _inventoryService.GetItemsByType(ItemType.Consumable);
                 TransitionTo(BattlePhase.ItemSelect);
+                // Tutorial: Step wird nach Item-Nutzung weitergeschaltet (in HandleItemSelectInput)
                 break;
         }
     }
@@ -1656,6 +1882,13 @@ public class BattleScene : Scene, IDisposable
 
     public void Dispose()
     {
+        // GameOverOverlay-Events abmelden (verhindert Leak bei Dispose waehrend aktivem Overlay)
+        if (_gameOverOverlay != null)
+        {
+            _gameOverOverlay.ReviveRequested -= OnReviveRequested;
+            _gameOverOverlay.LoadSaveRequested -= OnLoadSaveRequested;
+            _gameOverOverlay = null;
+        }
         _particles.Dispose();
     }
 

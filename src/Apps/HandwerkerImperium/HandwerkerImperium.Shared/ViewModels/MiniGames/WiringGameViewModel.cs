@@ -197,6 +197,7 @@ public sealed partial class WiringGameViewModel : ViewModelBase, IDisposable
         InitializeGame();
 
         CheckAndShowTutorial(MiniGameType.WiringGame);
+        if (!ShowTutorial) _ = StartGameAsync();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -321,11 +322,9 @@ public sealed partial class WiringGameViewModel : ViewModelBase, IDisposable
                 await EndGameAsync(false);
             }
         }
-        catch (Exception ex)
+        catch
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
-#endif
+            // Timer-Fehler still behandelt
         }
     }
 
@@ -571,6 +570,7 @@ public sealed partial class WiringGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(MiniGameType.WiringGame);
             _gameStateService.MarkDirty();
         }
+        _ = StartGameAsync();
     }
 
     [RelayCommand]

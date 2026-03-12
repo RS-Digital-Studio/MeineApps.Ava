@@ -1,5 +1,6 @@
 namespace RebornSaga.Scenes;
 
+using MeineApps.Core.Ava.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using RebornSaga.Engine;
 using RebornSaga.Engine.Transitions;
@@ -32,11 +33,18 @@ public class OverworldScene : Scene, IDisposable
     private readonly StoryEngine _storyEngine;
     private readonly SaveGameService _saveGameService;
     private readonly SpriteCache? _spriteCache;
+    private readonly ILocalizationService _localization;
     private Player _player;
+
+    // Lokalisierte Strings
+    private readonly string _loadingMapText;
+    private readonly string _menuText;
 
     // Map-Daten
     private ChapterMap? _map;
     private readonly Dictionary<string, MapNode> _nodeIndex = new();
+    // Vorgänger-Index: Ziel-ID → Liste der Quell-IDs (invertierte Adjazenzliste)
+    private readonly Dictionary<string, List<string>> _predecessorIndex = new();
 
     // Kamera
     private float _cameraX;
@@ -76,11 +84,15 @@ public class OverworldScene : Scene, IDisposable
     /// Erstellt die Overworld-Szene für das aktuelle Kapitel des Spielers.
     /// </summary>
     public OverworldScene(StoryEngine storyEngine, SaveGameService saveGameService,
-        SpriteCache? spriteCache = null)
+        ILocalizationService localization, SpriteCache? spriteCache = null)
     {
         _storyEngine = storyEngine;
         _saveGameService = saveGameService;
+        _localization = localization;
         _spriteCache = spriteCache;
+
+        _loadingMapText = _localization.GetString("LoadingMap") ?? "Loading map...";
+        _menuText = _localization.GetString("Menu") ?? "Menu";
 
         // Spieler-Instanz: Platzhalter bis SetPlayer() aufgerufen wird
         _player = Player.Create(Models.Enums.ClassName.Swordmaster);
@@ -153,7 +165,7 @@ public class OverworldScene : Scene, IDisposable
         if (_map == null)
         {
             // Lade-Anzeige
-            UIRenderer.DrawText(canvas, "Lade Karte...", bounds.MidX, bounds.MidY, 18f,
+            UIRenderer.DrawText(canvas, _loadingMapText, bounds.MidX, bounds.MidY, 18f,
                 UIRenderer.TextSecondary, SKTextAlign.Center, true);
             return;
         }
@@ -172,7 +184,7 @@ public class OverworldScene : Scene, IDisposable
 
         // Menü-Button (oben rechts im HUD-Bereich)
         _menuButtonRect = new SKRect(bounds.Right - 80f, bounds.Top + 8f, bounds.Right - 8f, bounds.Top + 48f);
-        UIRenderer.DrawButton(canvas, _menuButtonRect, "Menu", false, false, UIRenderer.Border);
+        UIRenderer.DrawButton(canvas, _menuButtonRect, _menuText, false, false, UIRenderer.Border);
     }
 
     // --- Input ---
@@ -335,6 +347,7 @@ public class OverworldScene : Scene, IDisposable
     private void LoadMap(string chapterId)
     {
         _nodeIndex.Clear();
+        _predecessorIndex.Clear();
 
         try
         {
@@ -352,15 +365,27 @@ public class OverworldScene : Scene, IDisposable
             var regionBg = _spriteCache?.GetBackground($"map/regions/{_map.ChapterId}");
             OverworldRenderer.SetRegionBackground(regionBg);
 
-            // Index und Display-Namen aufbauen
+            // Index, Display-Namen und Vorgänger-Index aufbauen
             _displayNames.Clear();
             var prefix = $"Map_{_map.ChapterId.ToUpperInvariant()}_";
             foreach (var node in _map.Nodes)
             {
                 _nodeIndex[node.Id] = node;
-                _displayNames[node.Id] = node.NameKey.StartsWith(prefix)
+                var rawName = node.NameKey.StartsWith(prefix)
                     ? node.NameKey[prefix.Length..]
                     : node.NameKey;
+                _displayNames[node.Id] = _localization.GetString(node.NameKey) ?? rawName;
+
+                // Vorgänger-Index: Für jede Connection (Ziel) die Quelle (node.Id) eintragen
+                foreach (var connId in node.Connections)
+                {
+                    if (!_predecessorIndex.TryGetValue(connId, out var preds))
+                    {
+                        preds = new List<string>();
+                        _predecessorIndex[connId] = preds;
+                    }
+                    preds.Add(node.Id);
+                }
             }
 
             // Initiale Zugänglichkeit setzen
@@ -437,15 +462,14 @@ public class OverworldScene : Scene, IDisposable
 
     /// <summary>
     /// Markiert alle Vorgänger-Knoten des aktuellen Knotens als erledigt.
-    /// Nutzt die Verbindungen rückwärts: wenn ein Knoten den Ziel-Knoten als Connection hat,
-    /// ist er ein Vorgänger.
+    /// Nutzt den vorberechneten Vorgänger-Index (O(V+E) statt O(N²)).
     /// </summary>
     private void MarkPredecessorsCompleted(string currentNodeId)
     {
         if (_map == null || string.IsNullOrEmpty(currentNodeId)) return;
         if (!_nodeIndex.ContainsKey(currentNodeId)) return;
 
-        // BFS rückwärts: Finde alle Knoten die ZUM aktuellen führen
+        // BFS rückwärts über den Vorgänger-Index
         var visited = new HashSet<string>();
         var queue = new Queue<string>();
         queue.Enqueue(currentNodeId);
@@ -455,16 +479,19 @@ public class OverworldScene : Scene, IDisposable
             var nodeId = queue.Dequeue();
             if (!visited.Add(nodeId)) continue;
 
-            // Alle Knoten finden die diesen Knoten als Connection haben (Vorgänger)
-            foreach (var node in _map.Nodes)
+            // Vorgänger über den Index nachschlagen (O(1) pro Knoten)
+            if (_predecessorIndex.TryGetValue(nodeId, out var predecessors))
             {
-                if (node.Id == nodeId) continue;
-                if (node.Connections.Contains(nodeId) && visited.Add(node.Id))
+                foreach (var predId in predecessors)
                 {
-                    node.IsCompleted = true;
-                    node.IsAccessible = true;
-                    node.IsRevealed = true;
-                    queue.Enqueue(node.Id);
+                    if (visited.Contains(predId)) continue;
+                    if (_nodeIndex.TryGetValue(predId, out var predNode))
+                    {
+                        predNode.IsCompleted = true;
+                        predNode.IsAccessible = true;
+                        predNode.IsRevealed = true;
+                        queue.Enqueue(predId);
+                    }
                 }
             }
         }
@@ -493,7 +520,7 @@ public class OverworldScene : Scene, IDisposable
 
         if (_map != null && string.IsNullOrEmpty(_cachedChapterName))
         {
-            _cachedChapterName = _map.ChapterNameKey;
+            _cachedChapterName = _localization.GetString(_map.ChapterNameKey) ?? _map.ChapterNameKey;
         }
     }
 
@@ -504,6 +531,8 @@ public class OverworldScene : Scene, IDisposable
 
     public void Dispose()
     {
+        // OnExit() ruft bereits _particles.Dispose() auf,
+        // ParticleSystem hat _disposed-Guard gegen Doppel-Dispose
         _particles.Dispose();
     }
 

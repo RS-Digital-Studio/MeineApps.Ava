@@ -92,7 +92,7 @@ F:\Meine_Apps_Ava\
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.0.19 | Banner + Rewarded | 4,99 Premium | Produktion |
+| HandwerkerImperium | v2.0.20 | Banner + Rewarded | 4,99 Premium | Produktion |
 | BomberBlast | v2.0.27 | Banner + Rewarded | 1,99 remove_ads | Geschlossener Test |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
 

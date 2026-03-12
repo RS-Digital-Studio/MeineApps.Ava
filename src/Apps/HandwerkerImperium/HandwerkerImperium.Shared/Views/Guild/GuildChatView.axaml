@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:svc="using:HandwerkerImperium.Services.Interfaces"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Guild.GuildChatView"
+             x:DataType="vm:GuildViewModel">
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        AutomationProperties.AutomationId="GuildChat_Grid_Root">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0" Padding="16,12" CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#92400E" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+        <Button Grid.Column="0" Classes="Text" Padding="8"
+                MinWidth="48" MinHeight="48"
+                Command="{Binding NavigateBackCommand}">
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="White" />
+        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center">
+          <icons:GameIcon Kind="ChatBubble" Width="28" Height="28"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          <TextBlock Text="{loc:Translate GuildChatTitle}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- NACHRICHTEN                                                       -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  x:Name="ChatScrollViewer">
+      <StackPanel Margin="8,8,8,16">
+
+        <!-- Leerer Zustand -->
+        <StackPanel IsVisible="{Binding !ChatMessages.Count}"
+                    Spacing="8" HorizontalAlignment="Center" Margin="0,48">
+          <icons:GameIcon Kind="ChatBubble" Width="40" Height="40"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding ChatSubtitle}"
+                     FontSize="14"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Nachrichten -->
+        <ItemsControl ItemsSource="{Binding ChatMessages}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="svc:ChatMessageDisplay">
+              <Panel>
+                <!-- Eigene Nachricht: rechts -->
+                <Border Margin="48,3,8,3" Padding="12,8" CornerRadius="12,12,4,12"
+                        MaxWidth="280" HorizontalAlignment="Right"
+                        Background="{StaticResource CraftSecondaryBrush}"
+                        IsVisible="{Binding IsOwnMessage}">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Text}"
+                               FontSize="14" TextWrapping="Wrap"
+                               Foreground="White" />
+                    <TextBlock Text="{Binding TimestampDisplay}"
+                               FontSize="10" Foreground="#AAFFFFFF"
+                               HorizontalAlignment="Right" />
+                  </StackPanel>
+                </Border>
+                <!-- Fremde Nachricht: links -->
+                <Border Margin="8,3,48,3" Padding="12,8" CornerRadius="12,12,12,4"
+                        MaxWidth="280" HorizontalAlignment="Left"
+                        Background="{DynamicResource SurfaceBrush}"
+                        IsVisible="{Binding !IsOwnMessage}">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Name}"
+                               FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource CraftGoldBrush}" />
+                    <TextBlock Text="{Binding Text}"
+                               FontSize="14" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding TimestampDisplay}"
+                               FontSize="10"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               HorizontalAlignment="Right" />
+                  </StackPanel>
+                </Border>
+              </Panel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ================================================================= -->
+    <!-- EINGABE                                                           -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="2" Padding="12,8"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource BorderBrush}">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox Grid.Column="0"
+                 Text="{Binding ChatInput, Mode=TwoWay}"
+                 Watermark="{loc:Translate GuildChatWatermark}"
+                 MaxLength="200"
+                 AcceptsReturn="False"
+                 VerticalAlignment="Center" />
+        <Button Grid.Column="1"
+                Command="{Binding SendChatMessageCommand}"
+                IsEnabled="{Binding CanSendChat}"
+                Padding="10,8" CornerRadius="20"
+                Background="{StaticResource CraftPrimaryBrush}">
+          <icons:GameIcon Kind="Send" Width="24" Height="24" Foreground="White" />
+        </Button>
+      </Grid>
+    </Border>
+
+  </Grid>
+
+</UserControl>

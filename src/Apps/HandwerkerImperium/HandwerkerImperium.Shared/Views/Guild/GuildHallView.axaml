@@ -24,12 +24,12 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 Command="{Binding NavigateBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="White" />
         </Button>
         <!-- Titel -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
-          <icons:GameIcon Kind="OfficeBuildingCog" Width="24" Height="24"
+          <icons:GameIcon Kind="OfficeBuildingCog" Width="28" Height="28"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{loc:Translate GuildHallTitle}"
                      FontSize="18" FontWeight="Bold"
@@ -67,7 +67,7 @@
                 IsVisible="{Binding HallEffectsSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
           <StackPanel Spacing="6">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="ShieldStar" Width="18" Height="18"
+              <icons:GameIcon Kind="ShieldStar" Width="24" Height="24"
                                Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate ActiveEffects}"
                          FontSize="14" FontWeight="Bold"
@@ -128,7 +128,7 @@
                           IsEnabled="{Binding !IsMaxLevel}"
                           Command="{Binding $parent[ItemsControl].((vm:GuildHallViewModel)DataContext).UpgradeBuildingCommand}"
                           CommandParameter="{Binding BuildingIdStr}">
-                    <icons:GameIcon Kind="ArrowUpBold" Width="16" Height="16" />
+                    <icons:GameIcon Kind="ArrowUpBold" Width="20" Height="20" />
                   </Button>
 
                 </Grid>

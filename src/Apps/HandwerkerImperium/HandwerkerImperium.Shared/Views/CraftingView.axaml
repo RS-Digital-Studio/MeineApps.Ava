@@ -28,7 +28,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Crafting_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            AutomationProperties.AutomationId="Crafting_Icon_Back"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
@@ -65,7 +65,7 @@
             <Border CornerRadius="4" Padding="6,3"
                     AutomationProperties.AutomationId="Crafting_Border_ActiveIconBg"
                     Background="{StaticResource CraftPrimaryBrush}">
-              <icons:GameIcon Kind="ProgressClock" Width="14" Height="14" Foreground="White"
+              <icons:GameIcon Kind="ProgressClock" Width="18" Height="18" Foreground="White"
                                AutomationProperties.AutomationId="Crafting_Icon_ActiveHeader" />
             </Border>
             <TextBlock Text="{loc:Translate ActiveCrafting}"
@@ -87,7 +87,7 @@
                     <Border CornerRadius="8" Padding="6"
                             Background="{StaticResource CraftPrimaryBrush}"
                             VerticalAlignment="Center">
-                      <icons:GameIcon Kind="{Binding OutputIcon}" Width="22" Height="22"
+                      <icons:GameIcon Kind="{Binding OutputIcon}" Width="26" Height="26"
                                        Foreground="{StaticResource CraftPrimaryLightBrush}" />
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
@@ -118,7 +118,7 @@
                             Command="{Binding $parent[ItemsControl].((vm:CraftingViewModel)DataContext).CollectProductCommand}"
                             CommandParameter="{Binding JobId}">
                       <StackPanel Orientation="Horizontal" Spacing="4">
-                        <icons:GameIcon Kind="PackageDown" Width="16" Height="16"
+                        <icons:GameIcon Kind="PackageDown" Width="20" Height="20"
                                          AutomationProperties.AutomationId="Crafting_Icon_CollectJob" />
                         <TextBlock Text="{loc:Translate CollectProduct}"
                                    AutomationProperties.AutomationId="Crafting_Txt_CollectJobBtn"
@@ -137,7 +137,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="Crafting_Border_RecipesIconBg"
                   Background="{StaticResource CraftPrimaryBrush}">
-            <icons:GameIcon Kind="BookOpenVariant" Width="14" Height="14" Foreground="White"
+            <icons:GameIcon Kind="BookOpenVariant" Width="18" Height="18" Foreground="White"
                              AutomationProperties.AutomationId="Crafting_Icon_RecipesHeader" />
           </Border>
           <TextBlock Text="{loc:Translate Recipes}"
@@ -181,7 +181,7 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextWrapping="Wrap"
                                VerticalAlignment="Center" />
-                    <icons:GameIcon Grid.Column="1" Kind="ArrowRight" Width="16" Height="16"
+                    <icons:GameIcon Grid.Column="1" Kind="ArrowRight" Width="20" Height="20"
                                      AutomationProperties.AutomationId="Crafting_Icon_RecipeArrow"
                                      Foreground="{StaticResource CraftPrimaryLightBrush}"
                                      VerticalAlignment="Center" />
@@ -194,7 +194,7 @@
 
                   <!-- Dauer -->
                   <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4">
-                    <icons:GameIcon Kind="ClockOutline" Width="14" Height="14"
+                    <icons:GameIcon Kind="ClockOutline" Width="18" Height="18"
                                      AutomationProperties.AutomationId="Crafting_Icon_RecipeDuration"
                                      Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="{Binding DurationDisplay}"
@@ -214,7 +214,7 @@
                           Command="{Binding $parent[ItemsControl].((vm:CraftingViewModel)DataContext).StartCraftingCommand}"
                           CommandParameter="{Binding .}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                      <icons:GameIcon Kind="Hammer" Width="16" Height="16"
+                      <icons:GameIcon Kind="Hammer" Width="20" Height="20"
                                        AutomationProperties.AutomationId="Crafting_Icon_StartRecipe" />
                       <TextBlock Text="{loc:Translate StartCrafting}"
                                  AutomationProperties.AutomationId="Crafting_Txt_StartRecipeBtn"
@@ -235,7 +235,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="Crafting_Border_InventoryIconBg"
                   Background="{StaticResource CraftPrimaryBrush}">
-            <icons:GameIcon Kind="PackageVariant" Width="14" Height="14" Foreground="White"
+            <icons:GameIcon Kind="PackageVariant" Width="18" Height="18" Foreground="White"
                              AutomationProperties.AutomationId="Crafting_Icon_InventoryHeader" />
           </Border>
           <TextBlock Text="{loc:Translate Inventory}"
@@ -258,7 +258,7 @@
                   <Border CornerRadius="8" Padding="6"
                           Background="{StaticResource CraftPrimaryBrush}"
                           VerticalAlignment="Center">
-                    <icons:GameIcon Kind="{Binding Icon}" Width="20" Height="20"
+                    <icons:GameIcon Kind="{Binding Icon}" Width="24" Height="24"
                                      Foreground="{StaticResource CraftPrimaryLightBrush}" />
                   </Border>
                   <!-- Name + Anzahl -->

@@ -1,5 +1,6 @@
 namespace RebornSaga.Scenes;
 
+using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using RebornSaga.Engine;
 using RebornSaga.Engine.Transitions;
@@ -24,8 +25,15 @@ public class DialogueScene : Scene
 {
     private readonly StoryEngine _storyEngine;
     private readonly IPreferencesService _preferences;
+    private readonly ILocalizationService _localization;
     private readonly SpriteCache _spriteCache;
     private float _time;
+
+    // Lokalisierte UI-Button-Strings
+    private readonly string _logText;
+    private readonly string _autoText;
+    private readonly string _autoOnText;
+    private readonly string _skipText;
     private readonly TypewriterRenderer _typewriter = new();
 
     // Manga-Panel-Modus ("off", "dual", "triple")
@@ -72,11 +80,18 @@ public class DialogueScene : Scene
     private SKRect _autoButtonRect;
     private SKRect _logButtonRect;
 
-    public DialogueScene(StoryEngine storyEngine, IPreferencesService preferences, SpriteCache spriteCache)
+    public DialogueScene(StoryEngine storyEngine, IPreferencesService preferences,
+        ILocalizationService localization, SpriteCache spriteCache)
     {
         _storyEngine = storyEngine;
         _preferences = preferences;
+        _localization = localization;
         _spriteCache = spriteCache;
+
+        _logText = _localization.GetString("Log") ?? "Log";
+        _autoText = _localization.GetString("Auto") ?? "Auto";
+        _autoOnText = _localization.GetString("AutoOn") ?? "Auto: On";
+        _skipText = _localization.GetString("Skip") ?? "Skip";
     }
 
     public override void OnEnter()
@@ -153,9 +168,16 @@ public class DialogueScene : Scene
         _showChoices = false;
         _autoTimer = 0;
 
+        // Vorherigen Sprecher stumm schalten
+        foreach (var s in _activeSpeakers)
+            SpriteCharacterRenderer.SetSpeaking(s.Definition.Id, false);
+
         // Portrait setzen
         if (portrait != null)
         {
+            // Aktiven Sprecher als sprechend markieren (Mund-Animation)
+            SpriteCharacterRenderer.SetSpeaking(portrait.Id, true);
+
             // Alle bisherigen Sprecher als inaktiv markieren
             foreach (var s in _activeSpeakers)
                 s.IsActive = false;
@@ -210,8 +232,17 @@ public class DialogueScene : Scene
     public override void Update(float deltaTime)
     {
         _time += deltaTime;
+
+        var wasTyping = !_typewriter.IsComplete;
         _typewriter.Update(deltaTime);
         _glitchEffect.Update(deltaTime);
+
+        // Mund-Animation stoppen wenn Typewriter fertig
+        if (wasTyping && _typewriter.IsComplete)
+        {
+            foreach (var s in _activeSpeakers)
+                SpriteCharacterRenderer.SetSpeaking(s.Definition.Id, false);
+        }
 
         // Kamera-Zoom interpolieren
         _cameraZoom += (_targetZoom - _cameraZoom) * deltaTime * 5f;
@@ -259,21 +290,24 @@ public class DialogueScene : Scene
         {
             // Standard-Rendering (kein Manga-Panel)
 
-            // Hintergrund (hinter Charakteren)
-            BackgroundCompositor.SetScene(_backgroundKey);
+            // Hintergrund (hinter Charakteren, SetScene bereits in SetBackground() aufgerufen)
             BackgroundCompositor.RenderBack(canvas, bounds, _time);
 
-            // Ambient-Licht-Tönung (umklammert Charaktere)
+            // Ambient-Licht-Tönung (umklammert Charaktere, try/finally gegen Canvas-Korruption)
             BackgroundCompositor.BeginLighting(canvas);
-
-            // Charakter-Portraits
-            foreach (var speaker in _activeSpeakers)
+            try
             {
-                CharacterRenderer.DrawPortrait(canvas, bounds, speaker.Definition,
-                    speaker.Pose, speaker.Emotion, speaker.Position, _time, speaker.IsActive);
+                // Charakter-Portraits
+                foreach (var speaker in _activeSpeakers)
+                {
+                    CharacterRenderer.DrawPortrait(canvas, bounds, speaker.Definition,
+                        speaker.Pose, speaker.Emotion, speaker.Position, _time, speaker.IsActive);
+                }
             }
-
-            BackgroundCompositor.EndLighting(canvas);
+            finally
+            {
+                BackgroundCompositor.EndLighting(canvas);
+            }
 
             // Vordergrund + Partikel (über Charakteren)
             BackgroundCompositor.RenderFront(canvas, bounds, _time);
@@ -326,24 +360,38 @@ public class DialogueScene : Scene
             bounds.Right - btnSpacing, btnY,
             bounds.Right - 5, btnY + btnH);
 
-        UIRenderer.DrawButton(canvas, _logButtonRect, "Log", false, false, UIRenderer.TextMuted);
-        UIRenderer.DrawButton(canvas, _autoButtonRect, _isAutoMode ? "Auto: An" : "Auto",
+        UIRenderer.DrawButton(canvas, _logButtonRect, _logText, false, false, UIRenderer.TextMuted);
+        UIRenderer.DrawButton(canvas, _autoButtonRect, _isAutoMode ? _autoOnText : _autoText,
             false, false, _isAutoMode ? UIRenderer.Success : UIRenderer.TextMuted);
-        UIRenderer.DrawButton(canvas, _skipButtonRect, "Skip", false, false, UIRenderer.TextMuted);
+        UIRenderer.DrawButton(canvas, _skipButtonRect, _skipText, false, false, UIRenderer.TextMuted);
     }
 
     // ── Manga-Panel Hilfsmethoden ──
 
     /// <summary>
     /// Rendert einen Sprecher innerhalb eines Manga-Panels per SpriteCharacterRenderer.
+    /// Content-aware: Skaliert basierend auf sichtbarem Inhalt, nicht voller Sprite-Leinwand.
     /// </summary>
     private void RenderSpeakerInPanel(SKCanvas canvas, SKRect rect, DialogueSpeaker speaker)
     {
-        var cx = rect.MidX;
-        var cy = rect.MidY;
-        var scale = rect.Height / 1216f;
+        // FESTE Referenz-Skalierung (keine per-Sprite Content-Bounds für Skalierung)
+        const float refContentH = 1700f;
+        const float refContentW = 750f;
+
+        // Content soll ins Panel passen (90% Höhe, 90% Breite)
+        var scaleH = rect.Height * 0.90f / refContentH;
+        var scaleW = rect.Width * 0.90f / refContentW;
+        var scale = MathF.Min(scaleH, scaleW);
+
+        // Content-Bounds NUR für Positionierung
+        var cb = _spriteCache.GetSpriteContentBounds(speaker.Definition.Id, speaker.Pose, speaker.Emotion);
+        var contentMidX = (cb.Left + cb.Right) / 2f;
+        var contentMidY = (cb.Top + cb.Bottom) / 2f;
+        var drawCx = rect.MidX - (contentMidX - 1248f / 2f) * scale;
+        var drawCy = rect.MidY - (contentMidY - 1824f / 2f) * scale;
+
         SpriteCharacterRenderer.Draw(canvas, speaker.Definition.Id, speaker.Pose, speaker.Emotion,
-            cx, cy, scale, _time, _spriteCache);
+            drawCx, drawCy, scale, _time, _spriteCache);
     }
 
     // ── Kamera-Effekte ──
@@ -412,10 +460,10 @@ public class DialogueScene : Scene
         var emotion = Enum.TryParse<Emotion>(line.Emotion, true, out var em) ? em : Emotion.Neutral;
         var pose = Enum.TryParse<Pose>(line.Pose, true, out var p) ? p : Pose.Standing;
 
-        // Sprecher-Name: Character-ID groß geschrieben oder aus Definition
-        var speakerName = charDef?.Id ?? line.Character;
-        if (!string.IsNullOrEmpty(speakerName))
-            speakerName = char.ToUpper(speakerName[0]) + speakerName[1..];
+        // Sprecher-Name: DisplayName aus CharacterDefinition, Fallback auf Character-ID
+        var speakerName = !string.IsNullOrEmpty(charDef?.DisplayName)
+            ? charDef.DisplayName
+            : line.Character ?? "???";
 
         // Sprecher-Farbe je nach Charakter
         var nameColor = charDef != null ? UIRenderer.Primary : UIRenderer.TextPrimary;
@@ -608,6 +656,9 @@ public class DialogueScene : Scene
                 if (UIRenderer.HitTest(_skipButtonRect, position))
                 {
                     _typewriter.ShowAll();
+                    // Mund-Animation sofort stoppen
+                    foreach (var s in _activeSpeakers)
+                        SpriteCharacterRenderer.SetSpeaking(s.Definition.Id, false);
                     return;
                 }
                 if (UIRenderer.HitTest(_autoButtonRect, position))
@@ -642,6 +693,9 @@ public class DialogueScene : Scene
                 if (!_typewriter.IsComplete)
                 {
                     _typewriter.ShowAll();
+                    // Mund-Animation sofort stoppen
+                    foreach (var s in _activeSpeakers)
+                        SpriteCharacterRenderer.SetSpeaking(s.Definition.Id, false);
                     return;
                 }
 

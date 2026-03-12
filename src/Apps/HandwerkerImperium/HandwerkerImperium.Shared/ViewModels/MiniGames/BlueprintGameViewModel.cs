@@ -235,6 +235,7 @@ public sealed partial class BlueprintGameViewModel : ViewModelBase, IDisposable
         InitializeGame();
 
         CheckAndShowTutorial(MiniGameType.Blueprint);
+        if (!ShowTutorial) _ = StartGameAsync();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -373,11 +374,9 @@ public sealed partial class BlueprintGameViewModel : ViewModelBase, IDisposable
                 await EndGameAsync();
             }
         }
-        catch (Exception ex)
+        catch
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameTimerTick: {ex}");
-#endif
+            // Timer-Fehler still behandelt
         }
     }
 
@@ -607,6 +606,7 @@ public sealed partial class BlueprintGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(MiniGameType.Blueprint);
             _gameStateService.MarkDirty();
         }
+        _ = StartGameAsync();
     }
 
     [RelayCommand]

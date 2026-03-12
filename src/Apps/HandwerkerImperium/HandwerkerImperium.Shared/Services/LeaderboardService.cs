@@ -83,9 +83,9 @@ public sealed class LeaderboardService : ILeaderboardService
             // Spieler-Profil aktualisieren
             await UpdatePlayerProfileAsync().ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in SubmitScoresAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -141,9 +141,9 @@ public sealed class LeaderboardService : ILeaderboardService
                 });
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetTopEntriesAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
 
         return result;
@@ -182,9 +182,9 @@ public sealed class LeaderboardService : ILeaderboardService
                 IsCurrentPlayer = true
             };
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetOwnEntryAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return null;
         }
     }
@@ -216,9 +216,9 @@ public sealed class LeaderboardService : ILeaderboardService
 
             await _firebase.SetAsync($"player_profiles/{uid}", profile).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in UpdatePlayerProfileAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 

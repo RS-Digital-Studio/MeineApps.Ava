@@ -159,21 +159,30 @@ public sealed class GameAssetService : IGameAssetService
             bitmap.Dispose();
             return _cache.TryGetValue(assetPath, out var existing) ? existing.Bitmap : null;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"[GameAssetService] Fehler beim Laden von '{assetPath}': {ex.Message}");
+            // Asset-Ladefehler still behandelt
             return null;
         }
     }
 
     private void EvictOldest()
     {
-        var oldest = _cache
-            .OrderBy(kv => kv.Value.LastAccessTick)
-            .FirstOrDefault();
+        // Linear-Scan O(n) statt OrderBy O(n log n)
+        long minTick = long.MaxValue;
+        string? minKey = null;
 
-        if (oldest.Key != null)
-            Evict(oldest.Key);
+        foreach (var kv in _cache)
+        {
+            if (kv.Value.LastAccessTick < minTick)
+            {
+                minTick = kv.Value.LastAccessTick;
+                minKey = kv.Key;
+            }
+        }
+
+        if (minKey != null)
+            Evict(minKey);
     }
 
     private static Stream? GetAssetStream(string assetPath)

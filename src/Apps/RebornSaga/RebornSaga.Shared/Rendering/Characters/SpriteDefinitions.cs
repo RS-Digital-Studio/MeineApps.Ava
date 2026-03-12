@@ -1,6 +1,7 @@
 namespace RebornSaga.Rendering.Characters;
 
 using System.Collections.Generic;
+using System.Text;
 using System.Text.Json.Serialization;
 
 /// <summary>
@@ -126,9 +127,13 @@ public static class SpriteAssetPaths
     public static string GetEnemyPhaseSpritePath(string enemyId, int phase)
         => $"{EnemyDir}/{enemyId}_phase{phase}.webp";
 
-    /// <summary>Pfad zu einem Hintergrund-Bild (AI-generiert).</summary>
+    /// <summary>
+    /// Pfad zu einem Hintergrund-Bild (AI-generiert).
+    /// Konvertiert camelCase Story-Keys zu snake_case Dateinamen:
+    /// "forestDay" → "backgrounds/forest_day.webp"
+    /// </summary>
     public static string GetBackgroundPath(string sceneKey)
-        => $"{BackgroundDir}/{sceneKey}.webp";
+        => $"{BackgroundDir}/{ToSnakeCase(sceneKey)}.webp";
 
     /// <summary>Pfad zu einer animierten Szene (CG/Cutscene als Animated WebP).</summary>
     public static string GetAnimatedScenePath(string sceneId)
@@ -141,4 +146,30 @@ public static class SpriteAssetPaths
     /// <summary>Pfad zum Title Key Visual.</summary>
     public static string GetTitleKeyVisualPath()
         => "title_key_visual.webp";
+
+    /// <summary>
+    /// Konvertiert camelCase zu snake_case für Asset-Dateinamen.
+    /// "forestDay" → "forest_day", "villageSquare" → "village_square"
+    /// Bereits snake_case oder einwortige Keys bleiben unverändert.
+    /// </summary>
+    private static string ToSnakeCase(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return input;
+
+        var sb = new StringBuilder(input.Length + 4);
+        sb.Append(char.ToLowerInvariant(input[0]));
+        for (var i = 1; i < input.Length; i++)
+        {
+            if (char.IsUpper(input[i]))
+            {
+                sb.Append('_');
+                sb.Append(char.ToLowerInvariant(input[i]));
+            }
+            else
+            {
+                sb.Append(input[i]);
+            }
+        }
+        return sb.ToString();
+    }
 }

@@ -336,4 +336,180 @@
   <data name="BackArrow" xml:space="preserve">
     <value>&lt; Retour</value>
   </data>
+  <data name="ChooseYourClass" xml:space="preserve">
+    <value>Choisissez votre classe</value>
+  </data>
+  <data name="YourClass" xml:space="preserve">
+    <value>Votre classe</value>
+  </data>
+  <data name="ClassDescSwordmaster" xml:space="preserve">
+    <value>ATK &amp; DEF élevés. Combattant au corps à corps classique.</value>
+  </data>
+  <data name="ClassDescArcanist" xml:space="preserve">
+    <value>Magie puissante &amp; haut MP. Destructeur à distance.</value>
+  </data>
+  <data name="ClassDescShadowblade" xml:space="preserve">
+    <value>Rapide &amp; mortel. Coups critiques. Maître de l'esquive.</value>
+  </data>
+  <data name="FreePoints" xml:space="preserve">
+    <value>Points libres : {0}</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Général</value>
+  </data>
+  <data name="DiscoveredFormat" xml:space="preserve">
+    <value>{0}/{1} découverts</value>
+  </data>
+  <data name="NoEntries" xml:space="preserve">
+    <value>Aucune entrée</value>
+  </data>
+  <data name="NoEntriesYet" xml:space="preserve">
+    <value>Aucune entrée découverte pour le moment.</value>
+  </data>
+  <data name="StatusWindow" xml:space="preserve">
+    <value>STATUS WINDOW</value>
+  </data>
+  <data name="NoSkills" xml:space="preserve">
+    <value>Aucune compétence</value>
+  </data>
+  <data name="EmptySlot" xml:space="preserve">
+    <value>- Vide -</value>
+  </data>
+  <data name="NoItems" xml:space="preserve">
+    <value>Aucun objet</value>
+  </data>
+  <data name="SellPriceFormat" xml:space="preserve">
+    <value>Vente : {0}G</value>
+  </data>
+  <data name="BuyFormat" xml:space="preserve">
+    <value>Acheter ({0}G)</value>
+  </data>
+  <data name="SellFormat" xml:space="preserve">
+    <value>Vendre ({0}G)</value>
+  </data>
+  <data name="HealHpFormat" xml:space="preserve">
+    <value>Soigne {0} HP</value>
+  </data>
+  <data name="HealMpFormat" xml:space="preserve">
+    <value>Soigne {0} MP</value>
+  </data>
+  <data name="HealPercentFormat" xml:space="preserve">
+    <value>Soigne {0}% HP+MP</value>
+  </data>
+  <data name="OnlyRestriction" xml:space="preserve">
+    <value>Seulement : {0}</value>
+  </data>
+  <data name="LoadingMap" xml:space="preserve">
+    <value>Chargement de la carte...</value>
+  </data>
+
+  <!-- SaveSlot Scene -->
+  <data name="TapToStart" xml:space="preserve">
+    <value>Touchez pour commencer</value>
+  </data>
+  <data name="DeleteSlotFormat" xml:space="preserve">
+    <value>Supprimer le Slot {0} ?</value>
+  </data>
+  <data name="CannotBeUndone" xml:space="preserve">
+    <value>Cette action est irréversible.</value>
+  </data>
+  <data name="PrologBeginning" xml:space="preserve">
+    <value>Prologue : Début</value>
+  </data>
+  <data name="PrologAwakening" xml:space="preserve">
+    <value>Prologue : Éveil</value>
+  </data>
+  <data name="PrologSystem" xml:space="preserve">
+    <value>Prologue : Système</value>
+  </data>
+  <data name="ChapterFormat" xml:space="preserve">
+    <value>Chapitre {0}</value>
+  </data>
+
+  <!-- Enemy Names -->
+  <data name="enemy_shadow_wolf" xml:space="preserve">
+    <value>Loup de l'Ombre</value>
+  </data>
+  <data name="enemy_forest_slime" xml:space="preserve">
+    <value>Gelée de Forêt</value>
+  </data>
+  <data name="enemy_goblin_scout" xml:space="preserve">
+    <value>Éclaireur Gobelin</value>
+  </data>
+  <data name="enemy_fortress_guard" xml:space="preserve">
+    <value>Garde de la Forteresse</value>
+  </data>
+  <data name="enemy_shadow_scout" xml:space="preserve">
+    <value>Éclaireur de l'Ombre</value>
+  </data>
+
+  <!-- Boss Names -->
+  <data name="boss_malachar" xml:space="preserve">
+    <value>Malachar</value>
+  </data>
+  <data name="boss_vexara" xml:space="preserve">
+    <value>Vexara</value>
+  </data>
+  <data name="boss_krynn" xml:space="preserve">
+    <value>Krynn</value>
+  </data>
+  <data name="boss_nihilus" xml:space="preserve">
+    <value>Nihilus</value>
+  </data>
+  <data name="boss_wolf_alpha" xml:space="preserve">
+    <value>Loup Alpha</value>
+  </data>
+  <data name="boss_garak" xml:space="preserve">
+    <value>Garak</value>
+  </data>
+  <data name="boss_erdross" xml:space="preserve">
+    <value>Erdross</value>
+  </data>
+  <data name="boss_sentinel" xml:space="preserve">
+    <value>La Sentinelle</value>
+  </data>
+  <data name="boss_sylas" xml:space="preserve">
+    <value>Sylas</value>
+  </data>
+  <data name="boss_ravok" xml:space="preserve">
+    <value>Ravok</value>
+  </data>
+  <data name="boss_thessara" xml:space="preserve">
+    <value>Thessara</value>
+  </data>
+  <data name="boss_morthos" xml:space="preserve">
+    <value>Morthos</value>
+  </data>
+  <data name="boss_shadow_self" xml:space="preserve">
+    <value>Ombre de Soi</value>
+  </data>
+  <data name="boss_xaroth" xml:space="preserve">
+    <value>Xaroth</value>
+  </data>
+  <data name="boss_xaroth_evolved" xml:space="preserve">
+    <value>Xaroth Évolué</value>
+  </data>
+  <data name="boss_nihilus_echo" xml:space="preserve">
+    <value>Écho de Nihilus</value>
+  </data>
+
+  <!-- Tutorial Battle -->
+  <data name="tutorial_battle_intro" xml:space="preserve">
+    <value>Ton premier combat ! Je vais te guider étape par étape.</value>
+  </data>
+  <data name="tutorial_battle_attack" xml:space="preserve">
+    <value>Appuie sur **Attaquer** pour frapper l'ennemi.</value>
+  </data>
+  <data name="tutorial_battle_skill" xml:space="preserve">
+    <value>L'ennemi riposte ! Utilise une **Compétence** pour plus de dégâts. Elles coûtent des PM.</value>
+  </data>
+  <data name="tutorial_battle_item" xml:space="preserve">
+    <value>Tu es gravement blessé ! Ouvre les **Objets** et utilise une potion de soin.</value>
+  </data>
+  <data name="tutorial_battle_dodge" xml:space="preserve">
+    <value>Parfois, **esquiver** est le meilleur choix ! Appuie sur Esquiver.</value>
+  </data>
+  <data name="tutorial_battle_finish" xml:space="preserve">
+    <value>Bien joué ! Maintenant, vaincs l'ennemi !</value>
+  </data>
 </root>

@@ -90,7 +90,9 @@ public sealed class LuckySpinWheelRenderer : IDisposable
     private readonly SKPaint _iconBorderPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private readonly SKPaint _iconFillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _iconStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
-    private readonly SKPaint _iconTextPaint = new() { IsAntialias = true, TextAlign = SKTextAlign.Center, FakeBoldText = true };
+    private readonly SKPaint _iconTextPaint = new() { IsAntialias = true };
+    // Mutierbarer Font fuer Icon-Text (Größe variiert je nach Icon)
+    private readonly SKFont _iconTextFont = new() { Embolden = true };
 
     /// <summary>
     /// Rendert das Glücksrad auf den Canvas.
@@ -313,10 +315,9 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         };
 
         _iconTextPaint.Color = new SKColor(0x6D, 0x4C, 0x00);
-        _iconTextPaint.TextSize = textSize;
-        var textBounds = new SKRect();
-        _iconTextPaint.MeasureText(euroText, ref textBounds);
-        canvas.DrawText(euroText, cx, cy + textBounds.Height * 0.35f, _iconTextPaint);
+        _iconTextFont.Size = textSize;
+        _iconTextFont.MeasureText(euroText, out var textBounds);
+        canvas.DrawText(euroText, cx, cy + textBounds.Height * 0.35f, SKTextAlign.Center, _iconTextFont, _iconTextPaint);
 
         // Glanz-Highlight oben links (gecachter MaskFilter)
         _glintPaint.Color = SKColors.White.WithAlpha(90);
@@ -355,10 +356,9 @@ public sealed class LuckySpinWheelRenderer : IDisposable
 
         // "XP" Text
         _iconTextPaint.Color = new SKColor(0x0D, 0x47, 0xA1);
-        _iconTextPaint.TextSize = innerR * 1.0f;
-        var tb = new SKRect();
-        _iconTextPaint.MeasureText("XP", ref tb);
-        canvas.DrawText("XP", cx, cy + tb.Height * 0.35f, _iconTextPaint);
+        _iconTextFont.Size = innerR * 1.0f;
+        _iconTextFont.MeasureText("XP", out var tb);
+        canvas.DrawText("XP", cx, cy + tb.Height * 0.35f, SKTextAlign.Center, _iconTextFont, _iconTextPaint);
     }
 
     /// <summary>
@@ -749,5 +749,6 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         _iconFillPaint.Dispose();
         _iconStrokePaint.Dispose();
         _iconTextPaint.Dispose();
+        _iconTextFont.Dispose();
     }
 }

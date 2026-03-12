@@ -1,5 +1,6 @@
 namespace RebornSaga.Scenes;
 
+using MeineApps.Core.Ava.Localization;
 using RebornSaga.Engine;
 using RebornSaga.Models;
 using RebornSaga.Rendering.UI;
@@ -15,6 +16,7 @@ using System.Collections.Generic;
 public class CodexScene : Scene
 {
     private readonly CodexService _codexService;
+    private readonly ILocalizationService _localization;
     private float _time;
 
     // Kategorien und Einträge
@@ -35,6 +37,15 @@ public class CodexScene : Scene
     private string _progressText = "";
     private int _lastTotal, _lastUnlocked;
 
+    // Lokalisierte Strings (gecacht im Konstruktor)
+    private readonly string _codexTitle;
+    private readonly string _backText;
+    private readonly string _closeText;
+    private readonly string _generalText;
+    private readonly string _noEntriesText;
+    private readonly string _noEntriesYetText;
+    private readonly string _discoveredFormat;
+
     // Gepoolte Paints
     private static readonly SKPaint _bgPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _borderPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
@@ -42,9 +53,18 @@ public class CodexScene : Scene
     private static readonly SKFont _bodyFont = new() { LinearMetrics = true };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true };
 
-    public CodexScene(CodexService codexService)
+    public CodexScene(CodexService codexService, ILocalizationService localization)
     {
         _codexService = codexService;
+        _localization = localization;
+
+        _codexTitle = _localization.GetString("Codex") ?? "Codex";
+        _backText = _localization.GetString("Back") ?? "Back";
+        _closeText = _localization.GetString("Close") ?? "Close";
+        _generalText = _localization.GetString("General") ?? "General";
+        _noEntriesText = _localization.GetString("NoEntries") ?? "No entries";
+        _noEntriesYetText = _localization.GetString("NoEntriesYet") ?? "No entries discovered yet.";
+        _discoveredFormat = _localization.GetString("DiscoveredFormat") ?? "{0}/{1} discovered";
     }
 
     public override void OnEnter()
@@ -60,7 +80,7 @@ public class CodexScene : Scene
     {
         _categories = _codexService.GetCategories();
         if (_categories.Count == 0)
-            _categories.Add("Allgemein");
+            _categories.Add(_generalText);
         RefreshEntries();
     }
 
@@ -79,7 +99,7 @@ public class CodexScene : Scene
         var (total, unlocked) = _codexService.GetProgress();
         if (total != _lastTotal || unlocked != _lastUnlocked)
         {
-            _progressText = total > 0 ? $"{unlocked}/{total} entdeckt" : "Keine Einträge";
+            _progressText = total > 0 ? string.Format(_discoveredFormat, unlocked, total) : _noEntriesText;
             _lastTotal = total;
             _lastUnlocked = unlocked;
         }
@@ -97,7 +117,7 @@ public class CodexScene : Scene
         canvas.DrawRect(bounds, _bgPaint);
 
         // Titel
-        UIRenderer.DrawTextWithShadow(canvas, "Kodex", bounds.MidX, bounds.Height * 0.06f,
+        UIRenderer.DrawTextWithShadow(canvas, _codexTitle, bounds.MidX, bounds.Height * 0.06f,
             bounds.Width * 0.06f, UIRenderer.PrimaryGlow);
 
         // Fortschritt
@@ -121,7 +141,7 @@ public class CodexScene : Scene
             bounds.MidX - backW / 2, bounds.Height * 0.92f,
             bounds.MidX + backW / 2, bounds.Height * 0.92f + backH);
         UIRenderer.DrawButton(canvas, _backButtonRect,
-            _selectedEntry >= 0 ? "Zurück" : "Schließen",
+            _selectedEntry >= 0 ? _backText : _closeText,
             false, false, UIRenderer.TextMuted);
     }
 
@@ -166,7 +186,7 @@ public class CodexScene : Scene
 
         if (_currentEntries.Count == 0)
         {
-            UIRenderer.DrawText(canvas, "Noch keine Einträge entdeckt.",
+            UIRenderer.DrawText(canvas, _noEntriesYetText,
                 bounds.MidX, bounds.MidY, bounds.Width * 0.03f,
                 UIRenderer.TextMuted, SKTextAlign.Center);
             return;

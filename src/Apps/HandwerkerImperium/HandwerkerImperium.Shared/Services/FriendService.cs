@@ -43,7 +43,7 @@ public sealed class FriendService : IFriendService
         }
     }
 
-    public void GenerateDailyGifts()
+    public void CheckAvailableGifts()
     {
         var state = _gameState.State;
         if (state.Friends.Count == 0) return;
@@ -116,9 +116,9 @@ public sealed class FriendService : IFriendService
 
             await _firebase.SetAsync($"friend_requests/{targetUid}/{uid}", request);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in SendFriendRequestAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 
@@ -148,9 +148,9 @@ public sealed class FriendService : IFriendService
                 });
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetPendingRequestsAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
 
         return result;
@@ -194,9 +194,9 @@ public sealed class FriendService : IFriendService
 
             FriendsUpdated?.Invoke();
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in AcceptRequestAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 
@@ -209,9 +209,9 @@ public sealed class FriendService : IFriendService
 
             await _firebase.DeleteAsync($"friend_requests/{uid}/{fromUid}");
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in DeclineRequestAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 
@@ -241,9 +241,9 @@ public sealed class FriendService : IFriendService
                 });
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetRealFriendsAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
 
         return result;
@@ -262,9 +262,9 @@ public sealed class FriendService : IFriendService
 
             FriendsUpdated?.Invoke();
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in RemoveFriendAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 }

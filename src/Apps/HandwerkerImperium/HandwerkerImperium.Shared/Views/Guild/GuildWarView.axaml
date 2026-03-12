@@ -1,0 +1,172 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Guild.GuildWarView"
+             x:DataType="vm:GuildViewModel">
+
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="GuildWar_Grid_Root">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0" Padding="16,12" CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#7F1D1D" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+        <!-- Zurück -->
+        <Button Grid.Column="0" Classes="Text" Padding="8"
+                MinWidth="48" MinHeight="48"
+                Command="{Binding NavigateBackCommand}">
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="White" />
+        </Button>
+        <!-- Titel -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center">
+          <icons:GameIcon Kind="SwordCross" Width="28" Height="28"
+                           Foreground="#EF4444" />
+          <TextBlock Text="{loc:Translate GuildWarTitle}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="#FCA5A5"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- CONTENT                                                           -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12" Margin="16,12,16,80">
+
+        <!-- Kein aktiver Krieg -->
+        <Border IsVisible="{Binding !HasActiveWar}"
+                Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="12" Padding="24,32">
+          <StackPanel Spacing="12" HorizontalAlignment="Center">
+            <icons:GameIcon Kind="SwordCross" Width="48" Height="48"
+                             Foreground="{DynamicResource TextTertiaryBrush}"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding WarSubtitle, FallbackValue='Kein aktiver Krieg'}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" TextAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Aktiver Krieg -->
+        <StackPanel IsVisible="{Binding HasActiveWar}" Spacing="12">
+
+          <!-- Versus-Karte -->
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12" Padding="16">
+            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+
+              <!-- Gilden-Namen -->
+              <Grid Grid.Row="0" ColumnDefinitions="*,Auto,*">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding ActiveWar.OwnGuildName}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           HorizontalAlignment="Center" TextAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="VS"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           Margin="12,0" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2"
+                           Text="{Binding ActiveWar.OpponentGuildName}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="#EF4444"
+                           HorizontalAlignment="Center" TextAlignment="Center" />
+              </Grid>
+
+              <!-- Score-Balken (proportional) -->
+              <Grid Grid.Row="1" Height="40" ClipToBounds="True">
+                <Grid ColumnDefinitions="*,*">
+                  <!-- Eigener Score (links, orange) -->
+                  <Border Grid.Column="0"
+                          Background="{StaticResource CraftPrimaryBrush}"
+                          CornerRadius="8,0,0,8" />
+                  <!-- Gegner-Score (rechts, rot) -->
+                  <Border Grid.Column="1"
+                          Background="#DC2626"
+                          CornerRadius="0,8,8,0" />
+                </Grid>
+                <!-- Score-Text zentriert -->
+                <TextBlock Text="{Binding WarStatusText}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Grid>
+
+              <!-- Verbleibende Zeit -->
+              <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6"
+                          HorizontalAlignment="Center">
+                <icons:GameIcon Kind="TimerOutline" Width="20" Height="20"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding WarTimeRemaining}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <!-- Eigener Beitrag -->
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12" Padding="16">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Translate GuildWarYourContribution}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding WarContributionDisplay}"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+              </StackPanel>
+              <!-- Beitragen-Button -->
+              <Button Grid.Column="1"
+                      Command="{Binding ContributeToWarCommand}"
+                      Padding="16,10" CornerRadius="10"
+                      Background="{StaticResource CraftPrimaryBrush}"
+                      VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <icons:GameIcon Kind="SwordCross" Width="24" Height="24"
+                                   Foreground="White" />
+                  <TextBlock Text="{loc:Translate GuildWarFight}"
+                             FontSize="14" FontWeight="Bold"
+                             Foreground="White" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </Border>
+
+          <!-- Saison-Link -->
+          <Button Command="{Binding NavigateToWarSeasonCommand}"
+                  HorizontalAlignment="Stretch"
+                  Padding="16,12" CornerRadius="10"
+                  Background="{DynamicResource SurfaceBrush}">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+              <icons:GameIcon Grid.Column="0" Kind="TrophyOutline" Width="24" Height="24"
+                               Foreground="{StaticResource CraftGoldBrush}" />
+              <TextBlock Grid.Column="1" Text="{loc:Translate GuildWarSeasonOverview}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
+            </Grid>
+          </Button>
+
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

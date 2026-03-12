@@ -67,11 +67,17 @@ public static class UIRenderer
     /// <summary>
     /// Zeichnet einen interaktiven Button mit Hover- und Press-Zuständen.
     /// </summary>
-    public static void DrawButton(SKCanvas canvas, SKRect rect, string text, bool isHovered = false, bool isPressed = false, SKColor? color = null)
+    public static void DrawButton(SKCanvas canvas, SKRect rect, string text, bool isHovered = false, bool isPressed = false, SKColor? color = null, bool disabled = false)
     {
         var btnColor = color ?? Primary;
 
-        if (isPressed)
+        if (disabled)
+        {
+            // Ausgegraut: Sättigung entfernen, Transparenz erhöhen
+            var gray = (byte)((btnColor.Red + btnColor.Green + btnColor.Blue) / 3 * 0.4f);
+            btnColor = new SKColor(gray, gray, gray, 120);
+        }
+        else if (isPressed)
             btnColor = new SKColor(
                 (byte)(btnColor.Red * 0.7f),
                 (byte)(btnColor.Green * 0.7f),
@@ -88,8 +94,8 @@ public static class UIRenderer
         _buttonPaint.Color = btnColor;
         canvas.DrawRoundRect(roundRect, _buttonPaint);
 
-        // Hover-Glow
-        if (isHovered)
+        // Hover-Glow (nicht bei disabled)
+        if (isHovered && !disabled)
         {
             _glowPaint.Color = btnColor.WithAlpha(60);
             _glowPaint.MaskFilter = _glowFilter;
@@ -97,8 +103,9 @@ public static class UIRenderer
             _glowPaint.MaskFilter = null;
         }
 
-        // Text zentriert
-        DrawText(canvas, text, rect.MidX, rect.MidY, rect.Height * 0.4f, SKColors.White, SKTextAlign.Center, true);
+        // Text zentriert (bei disabled halbtransparent)
+        var textColor = disabled ? new SKColor(255, 255, 255, 80) : SKColors.White;
+        DrawText(canvas, text, rect.MidX, rect.MidY, rect.Height * 0.4f, textColor, SKTextAlign.Center, true);
     }
 
     /// <summary>

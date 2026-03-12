@@ -8,6 +8,7 @@ using Avalonia.Android;
 using BomberBlast.Core;
 using BomberBlast.Droid;
 using BomberBlast.Input;
+using BomberBlast.Services;
 using BomberBlast.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Services;
@@ -57,6 +58,13 @@ public class MainActivity : AvaloniaMainActivity<App>
         App.PlayGamesServiceFactory = sp =>
             new MeineApps.Core.Premium.Ava.Droid.AndroidPlayGamesService(
                 this, sp.GetRequiredService<IPreferencesService>());
+
+        // AI-Asset-Loader: WebP-Bilder aus Android Assets laden
+        GameAssetService.PlatformAssetLoader = path =>
+        {
+            try { return Assets?.Open($"visuals/{path}"); }
+            catch (Java.IO.FileNotFoundException) { return null; }
+        };
 
         base.OnCreate(savedInstanceState);
 

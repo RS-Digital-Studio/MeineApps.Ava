@@ -1643,6 +1643,16 @@ namespace HandwerkerImperium.Resources.Strings {
 
         public static string SplashStep_Graphics => ResourceManager.GetString("SplashStep_Graphics", resourceCulture) ?? "";
 
+        public static string Graphics => ResourceManager.GetString("Graphics", resourceCulture) ?? "";
+
+        public static string GraphicsDesc => ResourceManager.GetString("GraphicsDesc", resourceCulture) ?? "";
+
+        public static string GraphicsLow => ResourceManager.GetString("GraphicsLow", resourceCulture) ?? "";
+
+        public static string GraphicsMedium => ResourceManager.GetString("GraphicsMedium", resourceCulture) ?? "";
+
+        public static string GraphicsHigh => ResourceManager.GetString("GraphicsHigh", resourceCulture) ?? "";
+
         public static string HintDismissButton => ResourceManager.GetString("HintDismissButton", resourceCulture) ?? "";
 
         public static string HintWelcomeTitle => ResourceManager.GetString("HintWelcomeTitle", resourceCulture) ?? "";
@@ -1712,6 +1722,14 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string HintAutomationTitle => ResourceManager.GetString("HintAutomationTitle", resourceCulture) ?? "";
 
         public static string HintAutomationText => ResourceManager.GetString("HintAutomationText", resourceCulture) ?? "";
+
+        public static string HintManagerUnlockTitle => ResourceManager.GetString("HintManagerUnlockTitle", resourceCulture) ?? "";
+
+        public static string HintManagerUnlockText => ResourceManager.GetString("HintManagerUnlockText", resourceCulture) ?? "";
+
+        public static string HintMasterToolsUnlockTitle => ResourceManager.GetString("HintMasterToolsUnlockTitle", resourceCulture) ?? "";
+
+        public static string HintMasterToolsUnlockText => ResourceManager.GetString("HintMasterToolsUnlockText", resourceCulture) ?? "";
 
         public static string ResetTutorialHints => ResourceManager.GetString("ResetTutorialHints", resourceCulture) ?? "";
 

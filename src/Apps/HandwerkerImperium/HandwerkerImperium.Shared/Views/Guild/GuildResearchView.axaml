@@ -24,12 +24,12 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 Command="{Binding NavigateBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="White" />
         </Button>
         <!-- Titel -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
-          <icons:GameIcon Kind="FlaskOutline" Width="24" Height="24" Foreground="{StaticResource CraftPrimaryBrush}" />
+          <icons:GameIcon Kind="FlaskOutline" Width="28" Height="28" Foreground="{StaticResource CraftPrimaryBrush}" />
           <TextBlock Text="{loc:Translate GuildResearchTitle}"
                      FontSize="18" FontWeight="Bold"
                      Foreground="{StaticResource CraftPrimaryLightBrush}"
@@ -58,7 +58,7 @@
       </Border.Background>
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
         <!-- Zahnrad-Icon -->
-        <icons:GameIcon Kind="Cog" Width="20" Height="20"
+        <icons:GameIcon Kind="Cog" Width="24" Height="24"
                          Foreground="#F59E0B" />
         <!-- Forschungsname -->
         <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
@@ -149,7 +149,7 @@
                       HorizontalAlignment="Stretch"
                       Command="{Binding ConfirmResearchContributeCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                  <icons:GameIcon Kind="HandCoin" Width="14" Height="14" />
+                  <icons:GameIcon Kind="HandCoin" Width="18" Height="18" />
                   <TextBlock Text="{loc:Translate GuildResearchContribute}"
                              FontSize="13" FontWeight="Bold" />
                 </StackPanel>

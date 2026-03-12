@@ -255,10 +255,9 @@ public sealed class InventGameRenderer : IDisposable
     private readonly SKPaint _progressTextPaint = new()
     {
         Color = new SKColor(0xFF, 0xFF, 0xFF, 0xB0),
-        IsAntialias = true,
-        TextSize = 11,
-        TextAlign = SKTextAlign.Center
+        IsAntialias = true
     };
+    private readonly SKFont _progressFont = new() { Size = 11 };
 
     // Scan-Linie (Shader aendert sich)
     private readonly SKPaint _scanShaderPaint = new() { IsAntialias = false };
@@ -277,22 +276,21 @@ public sealed class InventGameRenderer : IDisposable
     private readonly SKPaint _numberShadowPaint = new()
     {
         Color = new SKColor(0, 0, 0, 100),
-        IsAntialias = true,
-        TextAlign = SKTextAlign.Center,
-        FakeBoldText = true
+        IsAntialias = true
     };
     private readonly SKPaint _numberPaint = new()
     {
-        IsAntialias = true,
-        TextAlign = SKTextAlign.Center
+        IsAntialias = true
     };
     private readonly SKPaint _numberGlowPaint = new()
     {
         IsAntialias = true,
-        TextAlign = SKTextAlign.Center,
-        FakeBoldText = true,
         MaskFilter = _blur3Filter
     };
+    // SKFont fuer Text-Rendering (ersetzt deprecated paint.TextSize/TextAlign/FakeBoldText)
+    private readonly SKFont _numberFont = new() { Embolden = true };
+    private readonly SKFont _numberLightFont = new();
+    private readonly SKFont _numberGlowFont = new() { Embolden = true };
 
     // ═══════════════════════════════════════════════════════════════════════
     // STATISCHE PAINTS fuer Icon-Methoden (alle static, konstante Farben)
@@ -547,8 +545,9 @@ public sealed class InventGameRenderer : IDisposable
     private static readonly SKPaint _defaultTextPaint = new()
     {
         IsAntialias = true,
-        Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80), TextAlign = SKTextAlign.Center
+        Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80)
     };
+    private static readonly SKFont s_defaultFont = new();
 
     // --- DrawStepBadge ---
     private static readonly SKPaint _stepBadgeBgPaint = new()
@@ -559,11 +558,9 @@ public sealed class InventGameRenderer : IDisposable
     private static readonly SKPaint _stepBadgeTextPaint = new()
     {
         Color = SKColors.White,
-        IsAntialias = true,
-        TextSize = 11,
-        TextAlign = SKTextAlign.Center,
-        FakeBoldText = true
+        IsAntialias = true
     };
+    private static readonly SKFont s_stepBadgeFont = new() { Size = 11, Embolden = true };
 
     // --- DrawCircuitCorners ---
     private static readonly SKPaint _circuitCornerPaint = new()
@@ -1111,7 +1108,7 @@ public sealed class InventGameRenderer : IDisposable
         float by = rect.Top + badgeR + 4;
 
         canvas.DrawCircle(bx, by, badgeR, _stepBadgeBgPaint);
-        canvas.DrawText(step.ToString(), bx, by + 4, _stepBadgeTextPaint);
+        canvas.DrawText(step.ToString(), bx, by + 4, SKTextAlign.Center, s_stepBadgeFont, _stepBadgeTextPaint);
     }
 
     /// <summary>
@@ -1240,7 +1237,7 @@ public sealed class InventGameRenderer : IDisposable
         }
 
         // Fortschritts-Text
-        canvas.DrawText($"{completed}/{total}", bounds.MidX, y + barHeight + 14, _progressTextPaint);
+        canvas.DrawText($"{completed}/{total}", bounds.MidX, y + barHeight + 14, SKTextAlign.Center, _progressFont, _progressTextPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1703,8 +1700,8 @@ public sealed class InventGameRenderer : IDisposable
 
         canvas.DrawCircle(cx, cy, half * 0.6f, _defaultCirclePaint);
 
-        _defaultTextPaint.TextSize = size * 0.5f;
-        canvas.DrawText("?", cx, cy + size * 0.15f, _defaultTextPaint);
+        s_defaultFont.Size = size * 0.5f;
+        canvas.DrawText("?", cx, cy + size * 0.15f, SKTextAlign.Center, s_defaultFont, _defaultTextPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1725,8 +1722,8 @@ public sealed class InventGameRenderer : IDisposable
         // Schatten
         if (!isQuestion)
         {
-            _numberShadowPaint.TextSize = fontSize;
-            canvas.DrawText(displayNumber, x + 1, y + 1, _numberShadowPaint);
+            _numberFont.Size = fontSize;
+            canvas.DrawText(displayNumber, x + 1, y + 1, SKTextAlign.Center, _numberFont, _numberShadowPaint);
         }
 
         // Haupttext
@@ -1739,17 +1736,17 @@ public sealed class InventGameRenderer : IDisposable
             textColor = new SKColor(0xFF, 0xFF, 0xFF, 0xE0);
 
         _numberPaint.Color = textColor;
-        _numberPaint.TextSize = fontSize;
-        _numberPaint.FakeBoldText = !isQuestion;
-        canvas.DrawText(displayNumber, x, y, _numberPaint);
+        var font = isQuestion ? _numberLightFont : _numberFont;
+        font.Size = fontSize;
+        canvas.DrawText(displayNumber, x, y, SKTextAlign.Center, font, _numberPaint);
 
         // Holographischer Glow bei Memorisierung
         if (isMemorizing && !isQuestion)
         {
             float glowPulse = 0.5f + 0.5f * MathF.Sin(_animTime * 4 + rect.Left * 0.05f);
             _numberGlowPaint.Color = NeonCyan.WithAlpha((byte)(60 * glowPulse));
-            _numberGlowPaint.TextSize = fontSize + 3;
-            canvas.DrawText(displayNumber, x, y, _numberGlowPaint);
+            _numberGlowFont.Size = fontSize + 3;
+            canvas.DrawText(displayNumber, x, y, SKTextAlign.Center, _numberGlowFont, _numberGlowPaint);
         }
     }
 
@@ -1805,6 +1802,10 @@ public sealed class InventGameRenderer : IDisposable
         _numberShadowPaint?.Dispose();
         _numberPaint?.Dispose();
         _numberGlowPaint?.Dispose();
+        _numberFont?.Dispose();
+        _numberLightFont?.Dispose();
+        _numberGlowFont?.Dispose();
+        _progressFont?.Dispose();
         _circuitLinePaint?.Dispose();
     }
 }

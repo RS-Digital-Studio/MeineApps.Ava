@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Helpers;
+using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
@@ -78,6 +79,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasLastCloudSave;
 
+    // Grafik-Qualität
+    [ObservableProperty]
+    private GraphicsQualityOption? _selectedGraphicsQuality;
+
     // Automatisierungs-Toggles
     [ObservableProperty]
     private bool _autoCollectDelivery;
@@ -101,6 +106,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
     public bool ShowAds => !_purchaseService.IsPremium;
+
+    // Grafik-Qualitäts-Optionen (lokalisiert, wird im Konstruktor befüllt)
+    public List<GraphicsQualityOption> GraphicsQualities { get; } = [];
 
     // Available languages
     public List<LanguageOption> Languages { get; } =
@@ -137,6 +145,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _playGamesService = playGamesService;
         _contextualHintService = contextualHintService;
 
+        // Grafik-Qualitäts-Optionen lokalisiert befüllen
+        GraphicsQualities.Add(new(localizationService.GetString("GraphicsLow") ?? "Low", GraphicsQuality.Low));
+        GraphicsQualities.Add(new(localizationService.GetString("GraphicsMedium") ?? "Medium", GraphicsQuality.Medium));
+        GraphicsQualities.Add(new(localizationService.GetString("GraphicsHigh") ?? "High", GraphicsQuality.High));
+
         // Don't load settings here - GameState is not initialized yet.
         // MainViewModel.InitializeAsync() will call ReloadSettings() after loading the save.
     }
@@ -159,6 +172,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
             VibrationEnabled = state.HapticsEnabled;
             NotificationsEnabled = state.NotificationsEnabled;
             CloudSaveEnabled = state.CloudSaveEnabled;
+
+            // Grafik-Qualität laden
+            SelectedGraphicsQuality = GraphicsQualities.FirstOrDefault(q => q.Quality == state.GraphicsQuality)
+                                      ?? GraphicsQualities[2]; // High als Fallback
 
             // Automatisierungs-Einstellungen laden
             AutoCollectDelivery = state.Automation.AutoCollectDelivery;
@@ -269,6 +286,15 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _saveGameService.SaveAsync().FireAndForget();
     }
 
+    partial void OnSelectedGraphicsQualityChanged(GraphicsQualityOption? value)
+    {
+        if (_isInitializing || value == null) return;
+
+        _gameStateService.State.GraphicsQuality = value.Quality;
+        _gameStateService.MarkDirty();
+        _saveGameService.SaveAsync().FireAndForget();
+    }
+
     partial void OnAutoCollectDeliveryChanged(bool value)
     {
         if (_isInitializing) return;
@@ -319,6 +345,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private void GoBack()
     {
         NavigationRequested?.Invoke("..");
+    }
+
+    [RelayCommand]
+    private void NavigateToStatistics()
+    {
+        NavigationRequested?.Invoke("../statistics");
     }
 
     [RelayCommand]
@@ -615,3 +647,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
 /// Represents a language option for the picker.
 /// </summary>
 public record LanguageOption(string DisplayName, string Code);
+
+/// <summary>
+/// Represents a graphics quality option for the picker.
+/// </summary>
+public record GraphicsQualityOption(string DisplayName, GraphicsQuality Quality);

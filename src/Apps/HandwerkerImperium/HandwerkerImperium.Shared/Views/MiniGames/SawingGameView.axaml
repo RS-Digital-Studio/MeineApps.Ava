@@ -23,7 +23,7 @@
                 Classes="Text"
                 Command="{Binding CancelCommand}">
           <icons:GameIcon AutomationProperties.AutomationId="Sawing_Icon_Close"
-                           Kind="Close" Width="24" Height="24" />
+                           Kind="Close" Width="28" Height="28" />
         </Button>
 
         <!-- Title -->
@@ -127,7 +127,7 @@
                     IsVisible="{Binding IsLastTask}">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Sawing_Icon_RewardMoney"
-                             Kind="CashMultiple" Width="20" Height="20"
+                             Kind="CashMultiple" Width="24" Height="24"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
                        AutomationProperties.AutomationId="Sawing_Txt_RewardMoney"
@@ -139,7 +139,7 @@
 
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Sawing_Icon_RewardXp"
-                             Kind="Star" Width="20" Height="20"
+                             Kind="Star" Width="24" Height="24"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock x:Name="RewardXpText"
                        AutomationProperties.AutomationId="Sawing_Txt_RewardXp"
@@ -209,7 +209,7 @@
                 Grid.Row="3" Spacing="16">
 
       <!-- Start Button (versteckt waehrend Spiel und nach Ergebnis) -->
-      <Panel IsVisible="{Binding !IsResultShown}">
+      <Panel IsVisible="False">
         <Button AutomationProperties.AutomationId="Sawing_Btn_Start"
                 Content="{loc:Translate Start}"
                 Classes="Primary"

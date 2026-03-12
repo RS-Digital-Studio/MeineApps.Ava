@@ -22,6 +22,13 @@ public sealed partial class MainViewModel
         IsDashboardActive = true;
         NotifyTabBarVisibility();
 
+        // Dashboard-Sub-Tabs zurücksetzen wenn QuickJobs noch nicht freigeschaltet (z.B. nach Prestige)
+        if (!IsQuickJobsUnlocked && IsQuickJobsTabActive)
+        {
+            IsOrdersTabActive = true;
+            IsQuickJobsTabActive = false;
+        }
+
         // Aufträge sicherstellen (falls leer z.B. nach Spielabbruch)
         if (_gameStateService.IsInitialized && _gameStateService.State.AvailableOrders.Count == 0)
         {
@@ -274,7 +281,7 @@ public sealed partial class MainViewModel
         // 5a. Guild-Sub-Seiten → zurück zum Guild-Hub
         if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive ||
             IsGuildWarSeasonActive || IsGuildBossActive || IsGuildHallActive ||
-            IsGuildAchievementsActive)
+            IsGuildAchievementsActive || IsGuildChatActive || IsGuildWarActive)
         {
             SelectGuildTab();
             return true;
@@ -347,8 +354,8 @@ public sealed partial class MainViewModel
                     _gameStateService.AddMoney(_activeQuickJob.Reward);
                     _gameStateService.AddXp(_activeQuickJob.XpReward);
                     _gameStateService.State.TotalQuickJobsCompleted++;
-                    (_quickJobService as QuickJobService)?.NotifyJobCompleted(_activeQuickJob);
-                    (_dailyChallengeService as DailyChallengeService)?.OnQuickJobCompleted();
+                    _quickJobService?.NotifyJobCompleted(_activeQuickJob);
+                    _dailyChallengeService.OnQuickJobCompleted();
                 }
                 _activeQuickJob = null;
                 _quickJobMiniGamePlayed = false;
@@ -359,7 +366,7 @@ public sealed partial class MainViewModel
             // Gilden-Sub-Seiten → zurück zum Guild-Hub
             if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive ||
                 IsGuildWarSeasonActive || IsGuildBossActive || IsGuildHallActive ||
-                IsGuildAchievementsActive)
+                IsGuildAchievementsActive || IsGuildChatActive || IsGuildWarActive)
             {
                 SelectGuildTab();
                 return;
@@ -445,6 +452,13 @@ public sealed partial class MainViewModel
         }
 
         // Neue Feature-Views (Welle 1-8)
+        // "statistics" = direkt zur Statistik-Ansicht (z.B. aus Einstellungen)
+        if (route == "statistics")
+        {
+            SelectStatisticsTab();
+            return;
+        }
+
         if (route is "manager" or "tournament" or "seasonal_event" or "battle_pass" or "guild" or "crafting")
         {
             // Tab-Lock-Guards: guild (Tab 3), manager/crafting (Imperium-Sub-Views, Tab 1)
@@ -475,7 +489,8 @@ public sealed partial class MainViewModel
 
         // Gilden-Sub-Seiten (von GuildView-Hub aus)
         if (route is "guild_research" or "guild_members" or "guild_invite" or
-            "guild_war_season" or "guild_boss" or "guild_hall" or "guild_achievements")
+            "guild_war_season" or "guild_boss" or "guild_hall" or "guild_achievements" or
+            "guild_chat" or "guild_war")
         {
             // Gilden-Tab gesperrt → zum Dashboard
             if (IsTabLocked(3)) { SelectDashboardTab(); return; }
@@ -500,6 +515,15 @@ public sealed partial class MainViewModel
                     break;
                 case "guild_achievements":
                     IsGuildAchievementsActive = true;
+                    break;
+                case "guild_chat":
+                    IsGuildChatActive = true;
+                    _ = GuildViewModel.LoadChatMessagesAsync();
+                    GuildViewModel.StartChatPolling();
+                    break;
+                case "guild_war":
+                    IsGuildWarActive = true;
+                    _ = GuildViewModel.LoadWarStatusAsync();
                     break;
             }
             NotifyTabBarVisibility();

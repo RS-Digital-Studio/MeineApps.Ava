@@ -108,13 +108,17 @@ public sealed class CityRenderer : IDisposable
         _time += deltaTime;
         float nightDim = GetNightDimFactor();
 
-        // Wetter-System initialisieren (einmalig) + updaten
-        if (!_weatherInitialized)
+        // Wetter-System initialisieren (einmalig) + updaten (nur bei Medium/High)
+        var gfxQuality = state.GraphicsQuality;
+        if (gfxQuality >= Models.Enums.GraphicsQuality.Medium)
         {
-            _weatherSystem.SetWeatherByMonth();
-            _weatherInitialized = true;
+            if (!_weatherInitialized)
+            {
+                _weatherSystem.SetWeatherByMonth();
+                _weatherInitialized = true;
+            }
+            _weatherSystem.Update(deltaTime);
         }
-        _weatherSystem.Update(deltaTime);
 
         // AI-Hintergrund laden (ersetzt 5 Parallax-Layer)
         if (!_cityBackgroundLoaded && _assetService != null)
@@ -128,59 +132,27 @@ public sealed class CityRenderer : IDisposable
 
         if (_cityBackground != null)
         {
-            // AI-Hintergrund als einzelnes Bild (ersetzt 5 Parallax-Layer)
-            var bgRect = new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Top + bounds.Height * 0.52f);
-            canvas.DrawBitmap(_cityBackground, bgRect);
+            // AI-Hintergrund als Vollbild (ersetzt gesamte prozedurale Szene)
+            canvas.DrawBitmap(_cityBackground, bounds);
         }
         else
         {
-            // Prozedurale Hintergründe (Fallback bis Asset geladen/vorhanden)
-            DrawSkyLayer(canvas, bounds, nightDim);
-            if (nightDim < 0.8f)
-                DrawStars(canvas, bounds, nightDim);
-            DrawDistantHills(canvas, bounds, nightDim);
-            DrawClouds(canvas, bounds, nightDim);
-            DrawNearHills(canvas, bounds, nightDim);
+            // Einfacher Amber-Gradient bis AI-Asset geladen wird
+            using var shader = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.MidX, bounds.Top),
+                new SKPoint(bounds.MidX, bounds.Bottom),
+                new[] { new SKColor(0x44, 0x33, 0x11), new SKColor(0x22, 0x1A, 0x0A) },
+                null, SKShaderTileMode.Clamp);
+            _skyPaint.Shader = shader;
+            canvas.DrawRect(bounds, _skyPaint);
+            _skyPaint.Shader = null;
         }
 
-        // Welt-Progression aktualisieren
-        int worldTier = GetWorldTier(state.PlayerLevel);
-        _cachedVibrancy = CityProgressionHelper.GetVibrancyMultiplier(worldTier);
+        // Wetter-Overlay über dem Hintergrund (nur bei Medium/High)
+        if (gfxQuality >= Models.Enums.GraphicsQuality.Medium)
+            _weatherSystem.Render(canvas, bounds);
 
-        // Boden + Straße (mit Progression)
-        float groundY = bounds.Top + bounds.Height * 0.52f;
-        DrawGround(canvas, bounds, groundY, nightDim, state);
-
-        // Wolken-Schatten auf dem Boden (dunkle Ovale die mit Wolken wandern)
-        DrawCloudShadows(canvas, bounds, groundY, nightDim);
-
-        float streetY = groundY + 6;
-        CityProgressionHelper.DrawProgressiveStreet(canvas, bounds, streetY, 12, worldTier, nightDim, _time);
-
-        // Workshops (oberhalb der Straße) - isometrisch
-        float workshopRowBottom = streetY - 2;
-        DrawWorkshopRow(canvas, bounds, state, workshopRowBottom, nightDim);
-
-        // Lieferwagen auf der Straße
-        DrawDeliveryVan(canvas, bounds, streetY, nightDim);
-
-        // Straßen-Dekorationen (Bäume, Laternen, Bänke - zwischen Workshops und Straße)
-        CityProgressionHelper.DrawStreetDecorations(canvas, bounds, streetY, worldTier, nightDim, _time);
-
-        // Support-Gebäude (unterhalb der Straße)
-        float buildingRowTop = streetY + 14;
-        DrawBuildingRow(canvas, bounds, buildings, buildingRowTop, nightDim);
-
-        // Wetter-Overlay (Regen, Schnee, Blätter, Sonnenstrahlen)
-        _weatherSystem.Render(canvas, bounds);
-
-        // Boden-Wetter-Effekte (Pfützen, Schnee-Haufen, liegende Blätter)
-        DrawGroundWeatherEffects(canvas, bounds, streetY, nightDim);
-
-        // Workshop-Partikel (Rauch, Funken etc. - über den Gebäuden)
-        DrawWorkshopParticles(canvas, bounds, state, workshopRowBottom, nightDim);
-
-        // Tap-Label + Highlight-Glow (über allem)
+        // Tap-Label + Highlight-Glow
         DrawTapLabel(canvas, deltaTime);
     }
 
@@ -352,14 +324,16 @@ public sealed class CityRenderer : IDisposable
     }
 
     /// <summary>
-    /// 4 Wolken mit verschiedenen Geschwindigkeiten (Layer 4, 0.3x Parallax).
+    /// 4 Wolken mit einheitlicher Geschwindigkeit (Layer 4, 0.3x Parallax).
+    /// Alle Wolken bewegen sich kohärent in eine Richtung.
     /// </summary>
     private void DrawClouds(SKCanvas canvas, SKRect bounds, float nightDim)
     {
         var color = CityBuildingShapes.ApplyDim(new SKColor(0xFF, 0xFF, 0xFF, 0xA0), nightDim);
         _cloudPaint.Color = color;
 
-        float[] speeds = { 8f, 12f, 6f, 15f };
+        // Einheitliche Geschwindigkeit für kohärente Bewegung
+        const float baseSpeed = 10f;
         float[] heights = { 0.06f, 0.14f, 0.20f, 0.03f };
         float[] widths = { 40f, 30f, 50f, 25f };
         float[] offsets = { 0f, 0.25f, 0.55f, 0.8f };
@@ -367,7 +341,13 @@ public sealed class CityRenderer : IDisposable
 
         for (int i = 0; i < 4; i++)
         {
-            float cloudX = ((offsets[i] * bounds.Width + _time * speeds[i] + parallaxOffset) % (bounds.Width + widths[i] * 2)) - widths[i];
+            float wrapWidth = bounds.Width + widths[i] * 2;
+            float rawX = offsets[i] * bounds.Width + _time * baseSpeed + parallaxOffset;
+            // Modulo nur positiv (verhindert Richtungswechsel)
+            float cloudX = rawX % wrapWidth;
+            if (cloudX < 0) cloudX += wrapWidth;
+            cloudX -= widths[i];
+
             float cloudY = bounds.Top + bounds.Height * heights[i];
             float w = widths[i];
 
@@ -380,13 +360,14 @@ public sealed class CityRenderer : IDisposable
 
     /// <summary>
     /// Wolken-Schatten auf dem Boden (dunkle Ovale die mit den Wolken wandern).
+    /// Gleiche Geschwindigkeit wie DrawClouds für kohärente Bewegung.
     /// </summary>
     private void DrawCloudShadows(SKCanvas canvas, SKRect bounds, float groundY, float nightDim)
     {
         // Nur tagsüber sichtbar (Schatten brauchen Sonne)
         if (nightDim < 0.6f) return;
 
-        float[] speeds = { 8f, 12f, 6f, 15f };
+        const float baseSpeed = 10f;
         float[] widths = { 40f, 30f, 50f, 25f };
         float[] offsets = { 0f, 0.25f, 0.55f, 0.8f };
         float parallaxOffset = ScrollOffset * 0.3f;
@@ -395,8 +376,11 @@ public sealed class CityRenderer : IDisposable
 
         for (int i = 0; i < 4; i++)
         {
-            float cloudX = ((offsets[i] * bounds.Width + _time * speeds[i] + parallaxOffset)
-                % (bounds.Width + widths[i] * 2)) - widths[i];
+            float wrapWidth = bounds.Width + widths[i] * 2;
+            float rawX = offsets[i] * bounds.Width + _time * baseSpeed + parallaxOffset;
+            float cloudX = rawX % wrapWidth;
+            if (cloudX < 0) cloudX += wrapWidth;
+            cloudX -= widths[i];
             float w = widths[i];
 
             // Schatten auf dem Boden (leicht versetzt, breiter, flacher)

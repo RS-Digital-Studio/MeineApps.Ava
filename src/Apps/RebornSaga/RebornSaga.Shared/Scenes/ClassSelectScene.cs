@@ -1,5 +1,6 @@
 namespace RebornSaga.Scenes;
 
+using MeineApps.Core.Ava.Localization;
 using RebornSaga.Engine;
 using RebornSaga.Engine.Transitions;
 using RebornSaga.Models;
@@ -19,12 +20,20 @@ using System;
 public class ClassSelectScene : Scene, IDisposable
 {
     private readonly StoryEngine _storyEngine;
+    private readonly ILocalizationService _localization;
     private float _time;
     private int _selectedClass; // 0=Schwert, 1=Magier, 2=Assassine
     private bool _confirmed;
 
     // Prolog-Modus: Klasse ist vorgewählt, nur Bestätigen
     private bool _isPrologMode;
+
+    // Lokalisierte Strings (gecacht im Konstruktor)
+    private readonly string[] _classNames = new string[3];
+    private readonly string[][] _classDescLines = new string[3][];
+    private readonly string _titleChoose;
+    private readonly string _titleYourClass;
+    private readonly string _confirmText;
 
     /// <summary>Slot-Nummer in dem das neue Spiel gespeichert wird.</summary>
     public int SelectedSlot { get; set; }
@@ -55,22 +64,39 @@ public class ClassSelectScene : Scene, IDisposable
         new(0x2E, 0xCC, 0x71)  // Grün (Schattenklinke)
     };
 
-    // Klassen-Namen (werden später durch Lokalisierung ersetzt)
-    private static readonly string[] _classNames = { "Schwertmeister", "Arkanist", "Schattenklinke" };
-    // Vorberechnete Beschreibungs-Zeilen (kurz genug für Kartenbreite, 3 Zeilen)
-    private static readonly string[][] _classDescLines =
-    {
-        new[] { "Hoher Angriff", "& Verteidigung.", "Klassischer Nahkampf." },
-        new[] { "Mächtige Magie", "& hoher MP-Pool.", "Distanz-Zerstörer." },
-        new[] { "Schnell & tödlich.", "Kritische Treffer.", "Ausweich-Meister." }
-    };
-
     /// <summary>Event wenn die Klasse bestätigt wird (Index 0-2).</summary>
     public event Action<int>? ClassSelected;
 
-    public ClassSelectScene(StoryEngine storyEngine)
+    public ClassSelectScene(StoryEngine storyEngine, ILocalizationService localization)
     {
         _storyEngine = storyEngine;
+        _localization = localization;
+
+        // Klassen-Namen cachen
+        _classNames[0] = _localization.GetString("ClassSwordmaster") ?? "Swordmaster";
+        _classNames[1] = _localization.GetString("ClassArcanist") ?? "Arcanist";
+        _classNames[2] = _localization.GetString("ClassShadowblade") ?? "Shadowblade";
+
+        // Klassen-Beschreibungen cachen (aufgeteilt in Zeilen via ". ")
+        var descKeys = new[] { "ClassDescSwordmaster", "ClassDescArcanist", "ClassDescShadowblade" };
+        var descFallbacks = new[]
+        {
+            "High ATK & DEF. Classic melee fighter.",
+            "Powerful magic & high MP. Ranged destroyer.",
+            "Fast & deadly. Critical hits. Dodge master."
+        };
+        for (int i = 0; i < 3; i++)
+        {
+            var text = _localization.GetString(descKeys[i]) ?? descFallbacks[i];
+            var parts = text.Split(". ", StringSplitOptions.RemoveEmptyEntries);
+            for (int j = 0; j < parts.Length - 1; j++)
+                if (!parts[j].EndsWith('.')) parts[j] += ".";
+            _classDescLines[i] = parts;
+        }
+
+        _titleChoose = _localization.GetString("ChooseYourClass") ?? "Choose your class";
+        _titleYourClass = _localization.GetString("YourClass") ?? "Your Class";
+        _confirmText = _localization.GetString("Confirm") ?? "Confirm";
     }
 
     public override void OnEnter()
@@ -100,7 +126,7 @@ public class ClassSelectScene : Scene, IDisposable
 
         // Titel
         var titleY = bounds.Height * 0.06f;
-        var title = _isPrologMode ? "Deine Klasse" : "Wähle deine Klasse";
+        var title = _isPrologMode ? _titleYourClass : _titleChoose;
         UIRenderer.DrawTextWithShadow(canvas, title, bounds.MidX, titleY,
             bounds.Width * 0.05f, UIRenderer.PrimaryGlow);
 
@@ -138,7 +164,7 @@ public class ClassSelectScene : Scene, IDisposable
             bounds.MidX + btnW / 2, bounds.Height * 0.9f + btnH);
 
         var btnColor = _classColors[_selectedClass];
-        UIRenderer.DrawButton(canvas, _confirmButtonRect, "Bestätigen", false, false, btnColor);
+        UIRenderer.DrawButton(canvas, _confirmButtonRect, _confirmText, false, false, btnColor);
     }
 
     private void DrawClassCard(SKCanvas canvas, SKRect rect, int classIndex,

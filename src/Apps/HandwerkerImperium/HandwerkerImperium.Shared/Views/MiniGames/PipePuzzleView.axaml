@@ -23,7 +23,7 @@
                 Classes="Text"
                 Command="{Binding CancelCommand}">
           <icons:GameIcon AutomationProperties.AutomationId="Pipe_Icon_Close"
-                           Kind="Close" Width="24" Height="24" />
+                           Kind="Close" Width="28" Height="28" />
         </Button>
 
         <!-- Titel -->
@@ -33,7 +33,7 @@
                       HorizontalAlignment="Center"
                       Spacing="6">
             <icons:GameIcon AutomationProperties.AutomationId="Pipe_Icon_Title"
-                             Kind="Pipe" Width="22" Height="22" />
+                             Kind="Pipe" Width="26" Height="26" />
             <TextBlock AutomationProperties.AutomationId="Pipe_Txt_Title"
                        Text="{loc:Translate PipePuzzle}"
                        FontSize="18" FontWeight="Bold"
@@ -60,7 +60,7 @@
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Pipe_Icon_Clock"
-                             Kind="Clock" Width="16" Height="16" />
+                             Kind="Clock" Width="20" Height="20" />
             <TextBlock AutomationProperties.AutomationId="Pipe_Txt_Timer"
                        Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
                        FontSize="14" FontWeight="Bold"
@@ -99,7 +99,7 @@
                   Margin="0,4">
         <StackPanel Orientation="Horizontal" Spacing="4">
           <icons:GameIcon AutomationProperties.AutomationId="Pipe_Icon_Moves"
-                           Kind="Refresh" Width="16" Height="16" />
+                           Kind="Refresh" Width="20" Height="20" />
           <TextBlock AutomationProperties.AutomationId="Pipe_Txt_MovesCount"
                      FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}">
@@ -195,7 +195,7 @@
                     IsVisible="{Binding IsLastTask}">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Pipe_Icon_RewardMoney"
-                             Kind="CashMultiple" Width="20" Height="20"
+                             Kind="CashMultiple" Width="24" Height="24"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
                        AutomationProperties.AutomationId="Pipe_Txt_RewardMoney"
@@ -207,7 +207,7 @@
 
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Pipe_Icon_RewardXp"
-                             Kind="Star" Width="20" Height="20"
+                             Kind="Star" Width="24" Height="24"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock x:Name="RewardXpText"
                        AutomationProperties.AutomationId="Pipe_Txt_RewardXp"
@@ -274,7 +274,7 @@
                 Grid.Row="4" Spacing="16">
 
       <!-- Start Button (versteckt waehrend Spiel und nach Ergebnis) -->
-      <Panel IsVisible="{Binding !IsResultShown}">
+      <Panel IsVisible="False">
         <Button AutomationProperties.AutomationId="Pipe_Btn_Start"
                 Content="{loc:Translate StartPuzzle}"
                 Classes="Primary"

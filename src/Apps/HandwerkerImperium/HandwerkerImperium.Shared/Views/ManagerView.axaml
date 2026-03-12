@@ -28,7 +28,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Manager_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            AutomationProperties.AutomationId="Manager_Icon_Back"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
@@ -137,8 +137,8 @@
                           Command="{Binding $parent[ItemsControl].((vm:ManagerViewModel)DataContext).UpgradeManagerCommand}"
                           CommandParameter="{Binding Id}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <icons:GameIcon Kind="ArrowUpBold" Width="14" Height="14" />
-                      <icons:GameIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="{StaticResource CraftGoldBrush}" />
+                      <icons:GameIcon Kind="ArrowUpBold" Width="18" Height="18" />
+                      <icons:GameIcon Kind="ScrewFlatTop" Width="18" Height="18" Foreground="{StaticResource CraftGoldBrush}" />
                       <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold" />
                     </StackPanel>
                   </Button>

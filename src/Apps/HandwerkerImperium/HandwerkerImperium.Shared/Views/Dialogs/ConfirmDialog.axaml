@@ -70,7 +70,7 @@
                     </Style>
                   </Button.Styles>
                   <StackPanel Orientation="Horizontal" Spacing="4">
-                    <icons:GameIcon Kind="{Binding Icon}" Width="14" Height="14">
+                    <icons:GameIcon Kind="{Binding Icon}" Width="18" Height="18">
                       <icons:GameIcon.Foreground>
                         <SolidColorBrush Color="{Binding Color}" />
                       </icons:GameIcon.Foreground>

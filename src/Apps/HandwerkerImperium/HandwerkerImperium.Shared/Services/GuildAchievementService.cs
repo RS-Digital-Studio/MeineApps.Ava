@@ -79,9 +79,9 @@ public sealed class GuildAchievementService : IGuildAchievementService
                 });
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetAchievementsAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -160,9 +160,9 @@ public sealed class GuildAchievementService : IGuildAchievementService
             // Cache aktualisieren
             _cachedStates[achievementId] = state;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in UpdateProgressAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -252,9 +252,9 @@ public sealed class GuildAchievementService : IGuildAchievementService
             // Hinweis: Kriegs- und Boss-Achievements werden direkt bei den
             // entsprechenden Aktionen aktualisiert (GuildWarSeasonService/GuildBossService)
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in CheckAllAchievementsAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 }

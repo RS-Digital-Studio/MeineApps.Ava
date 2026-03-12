@@ -22,7 +22,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Settings_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            AutomationProperties.AutomationId="Settings_Icon_Back" />
         </Button>
 
@@ -32,7 +32,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
-          <icons:GameIcon Kind="CogOutline" Width="24" Height="24"
+          <icons:GameIcon Kind="CogOutline" Width="28" Height="28"
                            AutomationProperties.AutomationId="Settings_Icon_Title"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{loc:Translate Settings}"
@@ -55,12 +55,29 @@
       <StackPanel Spacing="12" Margin="16"
                   AutomationProperties.AutomationId="Settings_Panel_Content">
 
+        <!-- STATISTIK-LINK -->
+        <Button Command="{Binding NavigateToStatisticsCommand}"
+                HorizontalAlignment="Stretch"
+                Padding="16,14" CornerRadius="12"
+                Background="{DynamicResource SurfaceBrush}">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <icons:GameIcon Grid.Column="0" Kind="ChartBar" Width="26" Height="26"
+                             Foreground="{StaticResource CraftPrimaryLightBrush}" />
+            <TextBlock Grid.Column="1" Text="{loc:Translate Stats}"
+                       FontSize="15" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+            <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                             Foreground="{DynamicResource TextTertiaryBrush}" />
+          </Grid>
+        </Button>
+
         <!-- SOUND & VIBRATION -->
         <Border Classes="SettingsCard"
                 AutomationProperties.AutomationId="Settings_Border_AudioCard">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="VolumeHigh" Width="20" Height="20"
+              <icons:GameIcon Kind="VolumeHigh" Width="24" Height="24"
                                AutomationProperties.AutomationId="Settings_Icon_AudioHeader"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Audio}"
@@ -72,7 +89,7 @@
             <!-- Sound Toggle -->
             <Grid ColumnDefinitions="Auto,*,Auto"
                   AutomationProperties.AutomationId="Settings_Grid_SoundRow">
-              <icons:GameIcon Kind="VolumeHigh" Width="24" Height="24"
+              <icons:GameIcon Kind="VolumeHigh" Width="28" Height="28"
                                AutomationProperties.AutomationId="Settings_Icon_Sound"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1"
@@ -91,7 +108,7 @@
             <!-- Vibration Toggle -->
             <Grid ColumnDefinitions="Auto,*,Auto"
                   AutomationProperties.AutomationId="Settings_Grid_VibrationRow">
-              <icons:GameIcon Kind="Vibrate" Width="24" Height="24"
+              <icons:GameIcon Kind="Vibrate" Width="28" Height="28"
                                AutomationProperties.AutomationId="Settings_Icon_Vibration"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1"
@@ -110,7 +127,7 @@
             <!-- Notifications Toggle -->
             <Grid ColumnDefinitions="Auto,*,Auto"
                   AutomationProperties.AutomationId="Settings_Grid_NotificationsRow">
-              <icons:GameIcon Kind="Bell" Width="24" Height="24"
+              <icons:GameIcon Kind="Bell" Width="28" Height="28"
                                AutomationProperties.AutomationId="Settings_Icon_Notifications"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1"
@@ -130,7 +147,7 @@
             <Grid ColumnDefinitions="Auto,*,Auto"
                   AutomationProperties.AutomationId="Settings_Grid_CloudSaveRow"
                   IsVisible="{Binding IsPlayGamesSignedIn}">
-              <icons:GameIcon Kind="CloudSync" Width="24" Height="24"
+              <icons:GameIcon Kind="CloudSync" Width="28" Height="28"
                                AutomationProperties.AutomationId="Settings_Icon_CloudSave"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
@@ -151,97 +168,33 @@
           </StackPanel>
         </Border>
 
-        <!-- AUTOMATION -->
+        <!-- GRAFIK-QUALITÄT -->
         <Border Classes="SettingsCard"
-                AutomationProperties.AutomationId="Settings_Border_AutomationCard">
-          <StackPanel Spacing="16">
+                AutomationProperties.AutomationId="Settings_Border_GraphicsCard">
+          <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="RobotOutline" Width="20" Height="20"
+              <icons:GameIcon Kind="Cog" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
-              <TextBlock Text="{loc:Translate Automation}"
+              <TextBlock Text="{loc:Translate Graphics}"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
-            <!-- AutoCollect (Lv15+) -->
-            <Grid ColumnDefinitions="Auto,*,Auto"
-                  AutomationProperties.AutomationId="Settings_Grid_AutoCollect">
-              <icons:GameIcon Kind="PackageDown" Width="24" Height="24"
-                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
-              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                <TextBlock Text="{loc:Translate AutoCollectDesc}"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate AutoCollectLocked}"
-                           FontSize="11"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           IsVisible="{Binding !IsAutoCollectUnlocked}" />
-              </StackPanel>
-              <ToggleSwitch Grid.Column="2"
-                            IsChecked="{Binding AutoCollectDelivery}"
-                            IsEnabled="{Binding IsAutoCollectUnlocked}"
-                            OnContent="" OffContent="" />
-            </Grid>
+            <ComboBox ItemsSource="{Binding GraphicsQualities}"
+                      AutomationProperties.AutomationId="Settings_Combo_Graphics"
+                      SelectedItem="{Binding SelectedGraphicsQuality}"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:GraphicsQualityOption">
+                  <TextBlock Text="{Binding DisplayName}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
 
-            <!-- AutoAccept (Lv25+) -->
-            <Grid ColumnDefinitions="Auto,*,Auto"
-                  AutomationProperties.AutomationId="Settings_Grid_AutoAccept">
-              <icons:GameIcon Kind="FileDocumentCheck" Width="24" Height="24"
-                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
-              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                <TextBlock Text="{loc:Translate AutoAcceptDesc}"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate AutoAcceptLocked}"
-                           FontSize="11"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           IsVisible="{Binding !IsAutoAcceptUnlocked}" />
-              </StackPanel>
-              <ToggleSwitch Grid.Column="2"
-                            IsChecked="{Binding AutoAcceptOrder}"
-                            IsEnabled="{Binding IsAutoAcceptUnlocked}"
-                            OnContent="" OffContent="" />
-            </Grid>
-
-            <!-- AutoAssign (Lv50+) -->
-            <Grid ColumnDefinitions="Auto,*,Auto"
-                  AutomationProperties.AutomationId="Settings_Grid_AutoAssign">
-              <icons:GameIcon Kind="AccountSwitch" Width="24" Height="24"
-                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
-              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                <TextBlock Text="{loc:Translate AutoAssignDesc}"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate AutoAssignLocked}"
-                           FontSize="11"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           IsVisible="{Binding !IsAutoAssignUnlocked}" />
-              </StackPanel>
-              <ToggleSwitch Grid.Column="2"
-                            IsChecked="{Binding AutoAssignWorkers}"
-                            IsEnabled="{Binding IsAutoAssignUnlocked}"
-                            OnContent="" OffContent="" />
-            </Grid>
-
-            <!-- AutoClaimDaily (Premium) -->
-            <Grid ColumnDefinitions="Auto,*,Auto"
-                  AutomationProperties.AutomationId="Settings_Grid_AutoClaimDaily">
-              <icons:GameIcon Kind="Gift" Width="24" Height="24"
-                               Foreground="{StaticResource CraftGoldBrush}" />
-              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                <TextBlock Text="{loc:Translate AutoClaimDailyDesc}"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate AutoClaimDailyLocked}"
-                           FontSize="11"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           IsVisible="{Binding !IsAutoClaimUnlocked}" />
-              </StackPanel>
-              <ToggleSwitch Grid.Column="2"
-                            IsChecked="{Binding AutoClaimDaily}"
-                            IsEnabled="{Binding IsAutoClaimUnlocked}"
-                            OnContent="" OffContent="" />
-            </Grid>
+            <TextBlock Text="{loc:Translate GraphicsDesc}"
+                       FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       TextWrapping="Wrap" />
           </StackPanel>
         </Border>
 
@@ -250,7 +203,7 @@
                 AutomationProperties.AutomationId="Settings_Border_CloudSaveActions">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="CloudSync" Width="20" Height="20"
+              <icons:GameIcon Kind="CloudSync" Width="24" Height="24"
                                AutomationProperties.AutomationId="Settings_Icon_CloudActions"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate CloudSave}"
@@ -261,7 +214,7 @@
 
             <!-- Anmelde-Status -->
             <Grid ColumnDefinitions="Auto,*,Auto">
-              <icons:GameIcon Kind="Account" Width="20" Height="20"
+              <icons:GameIcon Kind="Account" Width="24" Height="24"
                                AutomationProperties.AutomationId="Settings_Icon_PlayGamesStatus"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Margin="8,0,0,0"
@@ -286,7 +239,7 @@
                       HorizontalContentAlignment="Center"
                       MinHeight="44">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <icons:GameIcon Kind="CloudUpload" Width="18" Height="18" />
+                  <icons:GameIcon Kind="CloudUpload" Width="24" Height="24" />
                   <TextBlock Text="{loc:Translate SaveToCloud}" FontSize="14" FontWeight="SemiBold" />
                 </StackPanel>
               </Button>
@@ -297,7 +250,7 @@
                       HorizontalContentAlignment="Center"
                       MinHeight="44">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <icons:GameIcon Kind="CloudDownload" Width="18" Height="18" />
+                  <icons:GameIcon Kind="CloudDownload" Width="24" Height="24" />
                   <TextBlock Text="{loc:Translate RestoreFromCloud}" FontSize="14" FontWeight="SemiBold" />
                 </StackPanel>
               </Button>
@@ -317,7 +270,7 @@
                 AutomationProperties.AutomationId="Settings_Border_LanguageCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="Translate" Width="20" Height="20"
+              <icons:GameIcon Kind="Translate" Width="24" Height="24"
                                AutomationProperties.AutomationId="Settings_Icon_LanguageHeader"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Language}"
@@ -345,7 +298,7 @@
                 AutomationProperties.AutomationId="Settings_Border_PremiumCard">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="Crown" Width="20" Height="20"
+              <icons:GameIcon Kind="Crown" Width="24" Height="24"
                                AutomationProperties.AutomationId="Settings_Icon_PremiumHeader"
                                Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate Premium}"
@@ -364,7 +317,7 @@
                          Foreground="{StaticResource CraftGoldBrush}" />
               <icons:GameIcon Grid.Column="1"
                                AutomationProperties.AutomationId="Settings_Icon_PremiumCheck"
-                               Kind="Check" Width="24" Height="24"
+                               Kind="Check" Width="28" Height="28"
                                Foreground="{StaticResource CraftGoldBrush}" />
             </Grid>
 
@@ -418,7 +371,7 @@
                 BorderThickness="2">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="AlertCircle" Width="20" Height="20"
+              <icons:GameIcon Kind="AlertCircle" Width="24" Height="24"
                                AutomationProperties.AutomationId="Settings_Icon_DataWarning"
                                Foreground="{DynamicResource ErrorBrush}" />
               <TextBlock Text="{loc:Translate Data}"
@@ -458,7 +411,7 @@
                 AutomationProperties.AutomationId="Settings_Border_AboutCard">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="InformationOutline" Width="20" Height="20"
+              <icons:GameIcon Kind="InformationOutline" Width="24" Height="24"
                                AutomationProperties.AutomationId="Settings_Icon_AboutHeader"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate About}"

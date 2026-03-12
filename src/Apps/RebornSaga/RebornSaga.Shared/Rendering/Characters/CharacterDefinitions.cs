@@ -9,6 +9,8 @@ using SkiaSharp;
 public class CharacterDefinition
 {
     public string Id { get; init; } = "";
+    /// <summary>Angezeigter Name im Dialog (z.B. "ARIA", "Aria", "Aldric").</summary>
+    public string DisplayName { get; init; } = "";
     public SKColor SkinColor { get; init; }
     public SKColor HairColor { get; init; }
     public SKColor EyeColor { get; init; }
@@ -36,6 +38,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Protagonist_Sword = new()
     {
         Id = "protag_sword",
+        DisplayName = "", // Wird dynamisch durch Player.Name ersetzt
         SkinColor = new SKColor(0xFF, 0xDB, 0xAC),
         HairColor = new SKColor(0x2C, 0x3E, 0x50),  // Dunkelblau
         EyeColor = new SKColor(0x4A, 0x90, 0xD9),   // System-Blau
@@ -52,6 +55,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Protagonist_Mage = new()
     {
         Id = "protag_mage",
+        DisplayName = "",
         SkinColor = new SKColor(0xFF, 0xDB, 0xAC),
         HairColor = new SKColor(0x6C, 0x3C, 0x97),  // Lila
         EyeColor = new SKColor(0x9B, 0x59, 0xB6),   // Mystisch-Lila
@@ -68,6 +72,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Protagonist_Assassin = new()
     {
         Id = "protag_assassin",
+        DisplayName = "",
         SkinColor = new SKColor(0xF0, 0xCE, 0xA0),
         HairColor = new SKColor(0x1C, 0x1C, 0x1C),  // Schwarz
         EyeColor = new SKColor(0x2E, 0xCC, 0x71),   // Grün
@@ -86,6 +91,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Aria = new()
     {
         Id = "aria",
+        DisplayName = "Aria",
         SkinColor = new SKColor(0xFF, 0xDB, 0xAC),
         HairColor = new SKColor(0xCC, 0x33, 0x33),  // Feuerrot
         EyeColor = new SKColor(0x2E, 0xCC, 0x71),   // Grün
@@ -103,6 +109,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Aldric = new()
     {
         Id = "aldric",
+        DisplayName = "Aldric",
         SkinColor = new SKColor(0xE8, 0xD0, 0xB5),
         HairColor = new SKColor(0xE0, 0xE0, 0xE8),  // Weiß/Silber
         EyeColor = new SKColor(0x58, 0xA6, 0xFF),   // Leuchtendes Blau
@@ -119,6 +126,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Kael = new()
     {
         Id = "kael",
+        DisplayName = "Kael",
         SkinColor = new SKColor(0xD4, 0xA5, 0x74),
         HairColor = new SKColor(0x8B, 0x65, 0x14),  // Braun
         EyeColor = new SKColor(0xF3, 0x9C, 0x12),   // Amber
@@ -136,6 +144,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Luna = new()
     {
         Id = "luna",
+        DisplayName = "Luna",
         SkinColor = new SKColor(0xFA, 0xE0, 0xC8),
         HairColor = new SKColor(0x5D, 0xAE, 0xE3),  // Hellblau
         EyeColor = new SKColor(0xAD, 0x8B, 0xFA),   // Lavendel
@@ -153,6 +162,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Vex = new()
     {
         Id = "vex",
+        DisplayName = "Vex",
         SkinColor = new SKColor(0xC4, 0x8E, 0x60),
         HairColor = new SKColor(0x2C, 0x2C, 0x2C),  // Schwarz
         EyeColor = new SKColor(0xE7, 0x4C, 0x3C),   // Rot
@@ -171,6 +181,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition SystemAria = new()
     {
         Id = "system_aria",
+        DisplayName = "System Aria",
         SkinColor = new SKColor(0x4A, 0x90, 0xD9, 180), // Blau-transparent
         HairColor = new SKColor(0x58, 0xA6, 0xFF, 150),
         EyeColor = new SKColor(0x58, 0xA6, 0xFF),
@@ -189,6 +200,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Nihilus = new()
     {
         Id = "nihilus",
+        DisplayName = "Nihilus",
         SkinColor = new SKColor(0x2C, 0x2C, 0x3A),  // Dunkle Hautfarbe
         HairColor = new SKColor(0x0A, 0x0A, 0x0A),  // Schwarz
         EyeColor = new SKColor(0x8B, 0x00, 0x00),    // Dunkelrot/violett
@@ -206,6 +218,7 @@ public static class CharacterDefinitions
     public static readonly CharacterDefinition Xaroth = new()
     {
         Id = "xaroth",
+        DisplayName = "Xaroth",
         SkinColor = new SKColor(0xD4, 0xC5, 0xA9),  // Blasse Haut
         HairColor = new SKColor(0x4A, 0x4A, 0x5A),  // Grau
         EyeColor = new SKColor(0xCC, 0x00, 0x00),    // Rot
@@ -224,7 +237,7 @@ public static class CharacterDefinitions
     /// Alle NPC/Spezial-Definitionen per ID, für Lookup aus Story-JSON.
     /// Protagonist wird separat über GetProtagonist() aufgelöst.
     /// </summary>
-    private static readonly Dictionary<string, CharacterDefinition> _byId = new()
+    private static readonly Dictionary<string, CharacterDefinition> _byId = new(System.StringComparer.OrdinalIgnoreCase)
     {
         ["aria"] = Aria,
         ["aldric"] = Aldric,

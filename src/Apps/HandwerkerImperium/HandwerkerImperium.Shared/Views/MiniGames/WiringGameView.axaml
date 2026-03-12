@@ -23,7 +23,7 @@
                 Classes="Text"
                 Command="{Binding CancelCommand}">
           <icons:GameIcon AutomationProperties.AutomationId="Wiring_Icon_Close"
-                           Kind="Close" Width="24" Height="24" />
+                           Kind="Close" Width="28" Height="28" />
         </Button>
 
         <!-- Titel -->
@@ -33,7 +33,7 @@
                       HorizontalAlignment="Center"
                       Spacing="6">
             <icons:GameIcon AutomationProperties.AutomationId="Wiring_Icon_Title"
-                             Kind="LightningBolt" Width="22" Height="22" />
+                             Kind="LightningBolt" Width="26" Height="26" />
             <TextBlock AutomationProperties.AutomationId="Wiring_Txt_Title"
                        Text="{loc:Translate WiringGame}"
                        FontSize="18" FontWeight="Bold"
@@ -60,7 +60,7 @@
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Wiring_Icon_Clock"
-                             Kind="Clock" Width="16" Height="16" />
+                             Kind="Clock" Width="20" Height="20" />
             <TextBlock AutomationProperties.AutomationId="Wiring_Txt_Timer"
                        Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
                        FontSize="14" FontWeight="Bold"
@@ -89,7 +89,7 @@
                   Margin="0,4">
         <StackPanel Orientation="Horizontal" Spacing="4">
           <icons:GameIcon AutomationProperties.AutomationId="Wiring_Icon_Check"
-                           Kind="Check" Width="16" Height="16"
+                           Kind="Check" Width="20" Height="20"
                            Foreground="{DynamicResource SuccessBrush}" />
           <TextBlock AutomationProperties.AutomationId="Wiring_Txt_ConnectedCount"
                      FontSize="12"
@@ -167,7 +167,7 @@
                     IsVisible="{Binding IsLastTask}">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Wiring_Icon_RewardMoney"
-                             Kind="CashMultiple" Width="20" Height="20"
+                             Kind="CashMultiple" Width="24" Height="24"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
                        AutomationProperties.AutomationId="Wiring_Txt_RewardMoney"
@@ -179,7 +179,7 @@
 
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Wiring_Icon_RewardXp"
-                             Kind="Star" Width="20" Height="20"
+                             Kind="Star" Width="24" Height="24"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock x:Name="RewardXpText"
                        AutomationProperties.AutomationId="Wiring_Txt_RewardXp"
@@ -246,7 +246,7 @@
                 Grid.Row="4" Spacing="16">
 
       <!-- Start-Button (versteckt waehrend Spiel und nach Ergebnis) -->
-      <Panel IsVisible="{Binding !IsResultShown}">
+      <Panel IsVisible="False">
         <Button AutomationProperties.AutomationId="Wiring_Btn_Start"
                 Content="{loc:Translate StartGame}"
                 Classes="Primary"

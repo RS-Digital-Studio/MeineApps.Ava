@@ -74,6 +74,9 @@ public partial class App : Application
         // Statischer Logger für ShaderEffects (nicht DI-verwaltet)
         ShaderEffects.Logger = Services.GetRequiredService<IAppLogger>();
 
+        // Statischer Accessor für AI-Asset-Renderer (statische Klassen ohne DI)
+        GameAssetService.Current = Services.GetRequiredService<IGameAssetService>();
+
         // Lazy-Injection: AchievementService in Services verdrahten (vermeidet zirkuläre DI)
         var achievementService = Services.GetRequiredService<IAchievementService>();
         Services.GetRequiredService<IBattlePassService>().SetAchievementService(achievementService);
@@ -197,6 +200,7 @@ public partial class App : Application
             (Services.GetService<GameRenderer>() as IDisposable)?.Dispose();
             (Services.GetService<GameViewModel>() as IDisposable)?.Dispose();
             (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
+            (Services.GetService<IGameAssetService>() as IDisposable)?.Dispose();
         }
         catch
         {
@@ -278,6 +282,7 @@ public partial class App : Application
         else
             services.AddSingleton<IVibrationService, NullVibrationService>();
         services.AddSingleton<IGameTrackingService, GameTrackingService>();
+        services.AddSingleton<IGameAssetService, GameAssetService>();
         services.AddSingleton<SoundManager>();
         services.AddSingleton<InputManager>();
         services.AddSingleton<GameRenderer>();

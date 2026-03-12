@@ -23,12 +23,12 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 Command="{Binding NavigateBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="White" />
         </Button>
         <!-- Titel -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
-          <icons:GameIcon Kind="EmailPlusOutline" Width="24" Height="24"
+          <icons:GameIcon Kind="EmailPlusOutline" Width="28" Height="28"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{loc:Translate GuildInviteTitle}"
                      FontSize="18" FontWeight="Bold"
@@ -48,7 +48,7 @@
         <Border Classes="Card StatsCard">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="KeyVariant" Width="20" Height="20"
+              <icons:GameIcon Kind="KeyVariant" Width="24" Height="24"
                                Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate InviteCode}"
                          FontSize="15" FontWeight="Bold"
@@ -71,7 +71,7 @@
                     Command="{Binding ShareInviteCodeCommand}"
                     Padding="20,8">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <icons:GameIcon Kind="ShareVariant" Width="18" Height="18" />
+                <icons:GameIcon Kind="ShareVariant" Width="24" Height="24" />
                 <TextBlock Text="{loc:Translate ShareCode}"
                            FontSize="14" FontWeight="Bold" />
               </StackPanel>
@@ -83,7 +83,7 @@
         <Border Classes="Card StatsCard">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="KeyboardReturn" Width="20" Height="20"
+              <icons:GameIcon Kind="KeyboardReturn" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate EnterCode}"
                          FontSize="15" FontWeight="Bold"
@@ -109,7 +109,7 @@
         <Border Classes="Card StatsCard">
           <StackPanel Spacing="10">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-              <icons:GameIcon Kind="AccountSearch" Width="20" Height="20"
+              <icons:GameIcon Kind="AccountSearch" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1"
                          Text="{loc:Translate AvailablePlayers}"
@@ -117,7 +117,7 @@
                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <Button Grid.Column="2" Classes="Text" Padding="4"
                       Command="{Binding LoadAvailablePlayersCommand}">
-                <icons:GameIcon Kind="Refresh" Width="18" Height="18"
+                <icons:GameIcon Kind="Refresh" Width="24" Height="24"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </Button>
             </Grid>
@@ -145,7 +145,7 @@
                       <Border Width="36" Height="36" CornerRadius="18"
                               Background="{StaticResource CraftSecondaryBrush}"
                               VerticalAlignment="Center">
-                        <icons:GameIcon Kind="Account" Width="20" Height="20"
+                        <icons:GameIcon Kind="Account" Width="24" Height="24"
                                          Foreground="White"
                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Border>

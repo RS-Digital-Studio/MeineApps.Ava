@@ -249,6 +249,29 @@ public static class SceneDefinitions
         Foreground: new[] { new ForegroundDef(ForegroundStyle.LightRay, new SKColor(0xFF, 0xD0, 0x80), 15, 0.0f) }
     );
 
+    // Dunkle Schloss-Variante für finale Konfrontation (K10)
+    public static readonly SceneDef DarkCastle = new(
+        Sky: new(new SKColor(0x0A, 0x05, 0x10), new SKColor(0x10, 0x08, 0x18), new SKColor(0x08, 0x04, 0x0C)),
+        Elements: new[]
+        {
+            new ElementDef(ElementType.Pillar, 8, new SKColor(0x18, 0x10, 0x20), 0.35f, 0.50f, 0.85f),
+            new ElementDef(ElementType.Banner, 4, new SKColor(0x15, 0x08, 0x18), 0.15f, 0.22f, 0.84f) { AccentColor = new SKColor(0x8B, 0x00, 0x00) },
+            new ElementDef(ElementType.Throne, 1, new SKColor(0x20, 0x10, 0x25), 0.25f, 0.35f, 0.82f)
+        },
+        Ground: new GroundDef(GroundType.Stone, new SKColor(0x15, 0x10, 0x18), 0.10f, new SKColor(0x25, 0x18, 0x28)),
+        Lights: new[]
+        {
+            new LightDef(LightType.Ambient, new SKColor(0x80, 0x20, 0x40), 0.08f),
+            new LightDef(LightType.PointLight, new SKColor(0xE0, 0x30, 0x30), 0.30f, 0.5f, 0.4f, 60f, true)
+        },
+        Particles: new[]
+        {
+            new ParticleDef(ParticleStyle.GlitchLine, 6, new SKColor(0xE0, 0x30, 0x30), 40),
+            new ParticleDef(ParticleStyle.Ember, 8, new SKColor(0xC0, 0x20, 0x20), 30)
+        },
+        Foreground: Array.Empty<ForegroundDef>()
+    );
+
     public static readonly SceneDef Dreamworld = new(
         Sky: new(new SKColor(0x10, 0x08, 0x18), new SKColor(0x0A, 0x12, 0x18), new SKColor(0x08, 0x08, 0x14)),
         Elements: new[]
@@ -287,6 +310,7 @@ public static class SceneDefinitions
         ["battlefield"] = Battlefield,
         ["castle"] = CastleHall,
         ["castleHall"] = CastleHall,
+        ["darkCastle"] = DarkCastle,
         ["dreamworld"] = Dreamworld,
     };
 

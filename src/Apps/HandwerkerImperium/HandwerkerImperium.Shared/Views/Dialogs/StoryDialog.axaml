@@ -92,7 +92,7 @@
                 IsVisible="{Binding StoryRewardText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                 AutomationProperties.AutomationId="Main_Border_StoryReward">
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <icons:GameIcon Kind="Gift" Width="20" Height="20" Foreground="{StaticResource CraftGoldBrush}"
+            <icons:GameIcon Kind="Gift" Width="24" Height="24" Foreground="{StaticResource CraftGoldBrush}"
                              AutomationProperties.AutomationId="Main_Icon_StoryRewardGift" />
             <TextBlock Text="{Binding StoryRewardText}"
                        FontSize="14" FontWeight="SemiBold"

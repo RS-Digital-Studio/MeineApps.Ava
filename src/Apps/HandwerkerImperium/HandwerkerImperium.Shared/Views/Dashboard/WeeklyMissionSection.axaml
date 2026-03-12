@@ -12,7 +12,7 @@
                 AutomationProperties.AutomationId="Dashboard_Border_WeeklyMissions">
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-              <icons:GameIcon Kind="ClipboardList" Width="20" Height="20"
+              <icons:GameIcon Kind="ClipboardList" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryBrush}"
                                AutomationProperties.AutomationId="Dashboard_Icon_WeeklyMissions" />
               <StackPanel Grid.Column="1" Margin="8,0,0,0">
@@ -27,7 +27,7 @@
               <Button Grid.Column="2" Classes="Text" Padding="4"
                       Command="{Binding ToggleWeeklyMissionsExpandedCommand}"
                       AutomationProperties.AutomationId="Dashboard_Btn_ToggleWeeklyMissions">
-                <icons:GameIcon Kind="{Binding WeeklyMissionsExpandIconKind}" Width="20" Height="20" />
+                <icons:GameIcon Kind="{Binding WeeklyMissionsExpandIconKind}" Width="24" Height="24" />
               </Button>
             </Grid>
             <ItemsControl ItemsSource="{Binding WeeklyMissions}"
@@ -55,7 +55,7 @@
                         <StackPanel Orientation="Horizontal" Spacing="2"
                                     IsVisible="{Binding HasGoldenScrewReward}">
                           <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                          <icons:GameIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+                          <icons:GameIcon Kind="ScrewFlatTop" Width="20" Height="20" Foreground="{StaticResource CraftGoldBrush}" />
                           <TextBlock Text="{Binding GoldenScrewReward}" FontSize="12" Foreground="{StaticResource CraftGoldBrush}"
                                      AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionRewardGS" />
                         </StackPanel>
@@ -66,7 +66,7 @@
                                 Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).ClaimWeeklyMissionCommand}"
                                 CommandParameter="{Binding Id}"
                                 AutomationProperties.AutomationId="Dashboard_Btn_ClaimWeeklyMission">
-                          <icons:GameIcon Kind="Gift" Width="16" Height="16"
+                          <icons:GameIcon Kind="Gift" Width="20" Height="20"
                                            Foreground="{StaticResource CraftPrimaryBrush}" />
                         </Button>
                       </StackPanel>
@@ -97,7 +97,7 @@
                     Command="{Binding ClaimAllWeeklyBonusCommand}"
                     AutomationProperties.AutomationId="Dashboard_Btn_ClaimAllWeeklyBonus">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <icons:GameIcon Kind="Gift" Width="16" Height="16"
+                <icons:GameIcon Kind="Gift" Width="20" Height="20"
                                  AutomationProperties.AutomationId="Dashboard_Icon_ClaimAllWeeklyBonus" />
                 <TextBlock Text="{loc:Translate ClaimWeeklyBonus}" FontSize="13"
                            AutomationProperties.AutomationId="Dashboard_Txt_ClaimAllWeeklyBonus" />

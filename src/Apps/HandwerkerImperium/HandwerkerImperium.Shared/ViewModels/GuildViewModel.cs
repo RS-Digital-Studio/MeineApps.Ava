@@ -48,6 +48,7 @@ public sealed partial class GuildViewModel : ViewModelBase
     private readonly IGuildAchievementService _achievementService;
     private bool _isBusy;
     private DateTime _lastChatSend = DateTime.MinValue;
+    private Avalonia.Threading.DispatcherTimer? _chatPollTimer;
     private readonly Action<string> _warSeasonNavHandler;
     private readonly Action<string> _bossNavHandler;
     private readonly Action<string> _hallNavHandler;
@@ -292,6 +293,9 @@ public sealed partial class GuildViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _warSubtitle = "";
+
+    [ObservableProperty]
+    private string _warContributionDisplay = "";
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES - Quick-Status (Hub-Übersicht)
@@ -1014,14 +1018,39 @@ public sealed partial class GuildViewModel : ViewModelBase
                 ChatInput = "";
                 _lastChatSend = DateTime.UtcNow;
                 await LoadChatMessagesAsync();
+                // Cooldown 5 Sekunden nur bei Erfolg
+                _ = Task.Delay(5000).ContinueWith(_ =>
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => CanSendChat = true));
+            }
+            else
+            {
+                CanSendChat = true;
             }
         }
-        finally
+        catch
         {
-            // Cooldown 5 Sekunden
-            _ = Task.Delay(5000).ContinueWith(_ =>
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => CanSendChat = true));
+            CanSendChat = true;
         }
+    }
+
+    /// <summary>
+    /// Startet den 15-Sekunden Polling-Timer für den Chat.
+    /// </summary>
+    public void StartChatPolling()
+    {
+        StopChatPolling();
+        _chatPollTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
+        _chatPollTimer.Tick += async (_, _) => await LoadChatMessagesAsync();
+        _chatPollTimer.Start();
+    }
+
+    /// <summary>
+    /// Stoppt den Chat-Polling-Timer.
+    /// </summary>
+    public void StopChatPolling()
+    {
+        _chatPollTimer?.Stop();
+        _chatPollTimer = null;
     }
 
     /// <summary>
@@ -1095,6 +1124,8 @@ public sealed partial class GuildViewModel : ViewModelBase
                     : (_localizationService.GetString("WarResult") ?? "Ergebnis steht fest");
                 WarStatusText = $"{MoneyFormatter.Format(status.OwnScore, 0)} vs {MoneyFormatter.Format(status.OpponentScore, 0)}";
                 WarSubtitle = WarStatusText;
+                var pointsTemplate = _localizationService.GetString("GuildWarPoints") ?? "{0:N0} Punkte";
+                WarContributionDisplay = string.Format(pointsTemplate, status.OwnContribution);
             }
             else if (status != null && !status.IsActive)
             {
@@ -1402,6 +1433,7 @@ public sealed partial class GuildViewModel : ViewModelBase
     {
         if (_disposed) return;
         _disposed = true;
+        StopChatPolling();
         _guildService.GuildUpdated -= OnGuildUpdated;
         _achievementService.AchievementCompleted -= OnGuildAchievementCompleted;
         WarSeasonViewModel.NavigationRequested -= _warSeasonNavHandler;

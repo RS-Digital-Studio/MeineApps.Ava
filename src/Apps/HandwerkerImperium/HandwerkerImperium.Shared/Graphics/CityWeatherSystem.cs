@@ -109,10 +109,15 @@ public sealed class CityWeatherSystem : IDisposable
 
     /// <summary>
     /// Rendert das Wetter-Overlay über die City-Szene.
+    /// Clipping auf bounds verhindert Partikel außerhalb des sichtbaren Bereichs.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds)
     {
         if (_currentWeather == WeatherType.Clear) return;
+
+        // Alle Wetter-Effekte auf den City-Bereich clippen
+        canvas.Save();
+        canvas.ClipRect(bounds);
 
         switch (_currentWeather)
         {
@@ -131,6 +136,8 @@ public sealed class CityWeatherSystem : IDisposable
                 RenderSunshine(canvas, bounds);
                 break;
         }
+
+        canvas.Restore();
     }
 
     // ═══════════════════════════════════════════════════════════════

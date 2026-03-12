@@ -197,6 +197,11 @@ public sealed partial class MainViewModel
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         CanRescueStreak = false;
 
+        // Dashboard-Header-Badge aktualisieren
+        OnPropertyChanged(nameof(LoginStreak));
+        OnPropertyChanged(nameof(HasLoginStreak));
+        OnPropertyChanged(nameof(ShowStreakBadge));
+
         var rescuedMsg = _localizationService.GetString("StreakRescued") ?? "Streak rescued!";
         FloatingTextRequested?.Invoke(rescuedMsg, "golden_screws");
     }
@@ -211,7 +216,7 @@ public sealed partial class MainViewModel
         if (job == null || job.IsCompleted) return;
 
         // Tageslimit prüfen (verhindert Reward-Farming)
-        if ((_quickJobService as QuickJobService)?.IsDailyLimitReached == true)
+        if (_quickJobService?.IsDailyLimitReached == true)
         {
             int maxDaily = _quickJobService?.MaxDailyJobs ?? 20;
             var template = _localizationService.GetString("QuickJobDailyLimit");

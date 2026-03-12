@@ -85,6 +85,8 @@ public partial class App : Application
         {
             MeisterHansRenderer.Initialize(assetService);
             WorkerAvatarRenderer.InitializeAssetService(assetService);
+            WorkshopGameCardRenderer.Initialize(assetService);
+            Icons.GameIcon.Initialize(assetService);
         }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -156,9 +158,9 @@ public partial class App : Application
                 splash.FadeOut();
             });
         }
-        catch (Exception ex)
+        catch
         {
-            Debug.WriteLine($"[HandwerkerImperium] Loading-Pipeline fehlgeschlagen: {ex}");
+            // Loading-Fehler still behandelt, Splash trotzdem ausblenden
             Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
         }
     }
@@ -193,6 +195,10 @@ public partial class App : Application
 
             // FirebaseService hält HttpClient
             (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
+
+            // Icon-System: Avalonia-Bitmap-Cache + SkiaSharp-Paints/Filter freigeben
+            Icons.GameIcon.ClearCache();
+            Icons.GameIconRenderer.Cleanup();
         }
         catch
         {

@@ -42,7 +42,7 @@ public class GameState
     public int TotalXp { get; set; }
 
     [JsonPropertyName("money")]
-    public decimal Money { get; set; } = 250m;
+    public decimal Money { get; set; } = 1000m;
 
     [JsonPropertyName("totalMoneyEarned")]
     public decimal TotalMoneyEarned { get; set; }
@@ -259,6 +259,9 @@ public class GameState
 
     [JsonPropertyName("notificationsEnabled")]
     public bool NotificationsEnabled { get; set; } = true;
+
+    [JsonPropertyName("graphicsQuality")]
+    public Enums.GraphicsQuality GraphicsQuality { get; set; } = Enums.GraphicsQuality.High;
 
     [JsonPropertyName("cloudSaveEnabled")]
     public bool CloudSaveEnabled { get; set; } = true;
@@ -889,9 +892,10 @@ public class GameState
     {
         var state = new GameState();
 
-        // Create the starting workshop (Carpenter) with 1 worker
+        // Startwerkstatt (Schreiner) mit 2 Arbeitern für schnelleren Einstieg
         var carpenter = Workshop.Create(WorkshopType.Carpenter);
         carpenter.IsUnlocked = true;
+        carpenter.Workers.Add(Worker.CreateRandom());
         carpenter.Workers.Add(Worker.CreateRandom());
         state.Workshops.Add(carpenter);
 

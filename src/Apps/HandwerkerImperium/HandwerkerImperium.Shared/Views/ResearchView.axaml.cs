@@ -80,6 +80,20 @@ public partial class ResearchView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
+    }
+
+    private void OnDetachedFromVisualTree(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        _renderTimer?.Stop();
+        _renderTimer = null;
+        _labRenderer.Dispose();
+        _activeRenderer.Dispose();
+        _tabRenderer.Dispose();
+        _bannerRenderer.Dispose();
+        _treeRenderer.Dispose();
+        _celebrationRenderer.Dispose();
+        _bgRenderer.Dispose();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

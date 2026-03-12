@@ -19,6 +19,7 @@ public class TutorialOverlay : Scene
     private float _time;
     private string _hintId = "";
     private string _title = "";
+    private string _ariaTitle = ""; // Gecacht: "[ARIA] {_title}"
     private string _message = "";
     private SKRect _highlightRect; // Bereich der hervorgehoben wird (leer = kein Highlight)
 
@@ -47,6 +48,7 @@ public class TutorialOverlay : Scene
     {
         _hintId = hintId;
         _title = title;
+        _ariaTitle = $"[ARIA] {title}";
         _message = message;
         _highlightRect = highlightRect;
     }
@@ -108,14 +110,14 @@ public class TutorialOverlay : Scene
         // ARIA-Label
         _titleFont.Size = boxH * 0.2f;
         _textPaint.Color = UIRenderer.Primary.WithAlpha(byteAlpha);
-        canvas.DrawText($"[ARIA] {_title}", boxRect.Left + 15, boxRect.Top + boxH * 0.25f,
+        canvas.DrawText(_ariaTitle, boxRect.Left + 15, boxRect.Top + boxH * 0.25f,
             SKTextAlign.Left, _titleFont, _textPaint);
 
-        // Nachricht
-        _messageFont.Size = boxH * 0.18f;
+        // Nachricht (mehrzeilig mit Zeilenumbruch)
+        _messageFont.Size = boxH * 0.16f;
         _textPaint.Color = UIRenderer.TextPrimary.WithAlpha(byteAlpha);
-        canvas.DrawText(_message, boxRect.Left + 15, boxRect.Top + boxH * 0.55f,
-            SKTextAlign.Left, _messageFont, _textPaint);
+        DrawWrappedText(canvas, _message, boxRect.Left + 15, boxRect.Top + boxH * 0.42f,
+            boxW - 30, _messageFont, _textPaint);
 
         // "Tippe zum Fortfahren" Hint
         if (_time > 1f)
@@ -135,6 +137,34 @@ public class TutorialOverlay : Scene
             _tutorialService.MarkSeen(_hintId);
             SceneManager.HideOverlay(this);
         }
+    }
+
+    /// <summary>Zeichnet Text mit automatischem Zeilenumbruch.</summary>
+    private static void DrawWrappedText(SKCanvas canvas, string text, float x, float y,
+        float maxWidth, SKFont font, SKPaint paint)
+    {
+        var words = text.Split(' ');
+        var line = "";
+        var lineY = y;
+        var lineHeight = font.Size * 1.4f;
+
+        foreach (var word in words)
+        {
+            var testLine = string.IsNullOrEmpty(line) ? word : $"{line} {word}";
+            var textWidth = font.MeasureText(testLine);
+            if (textWidth > maxWidth && !string.IsNullOrEmpty(line))
+            {
+                canvas.DrawText(line, x, lineY, SKTextAlign.Left, font, paint);
+                line = word;
+                lineY += lineHeight;
+            }
+            else
+            {
+                line = testLine;
+            }
+        }
+        if (!string.IsNullOrEmpty(line))
+            canvas.DrawText(line, x, lineY, SKTextAlign.Left, font, paint);
     }
 
     /// <summary>Gibt statische Ressourcen frei.</summary>

@@ -177,6 +177,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private bool _hasWorkerWarning;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowCraftingResearch))]
+    [NotifyPropertyChangedFor(nameof(ShowManagerSection))]
+    [NotifyPropertyChangedFor(nameof(ShowMasterToolsSection))]
+    [NotifyPropertyChangedFor(nameof(IsQuickJobsUnlocked))]
+    [NotifyPropertyChangedFor(nameof(ShowBannerStrip))]
+    [NotifyPropertyChangedFor(nameof(QuickAccessColumns))]
     private int _playerLevel = 1;
 
     [ObservableProperty]
@@ -196,6 +202,21 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private ObservableCollection<WorkshopDisplayModel> _workshops = [];
+
+    /// <summary>
+    /// Dynamische Höhe des Workshop-Canvas basierend auf Anzahl freigeschalteter Workshops.
+    /// 2 Spalten, ~160dp pro Reihe + 8dp Gap.
+    /// </summary>
+    public double WorkshopCanvasHeight
+    {
+        get
+        {
+            var count = Workshops.Count;
+            if (count == 0) return 160;
+            var rows = (int)Math.Ceiling(count / 2.0);
+            return rows * 160 + (rows - 1) * 8;
+        }
+    }
 
     [ObservableProperty]
     private ObservableCollection<Order> _availableOrders = [];
@@ -740,6 +761,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public int LoginStreak => _gameStateService.State.DailyRewardStreak;
     public bool HasLoginStreak => LoginStreak >= 2;
 
+    // Dashboard-Header: Nur bei relevantem Status anzeigen (Entschlackung)
+    public bool ShowStreakBadge => LoginStreak >= 5;
+    public bool ShowReputationBadge => ReputationScore < LevelThresholds.ReputationWarningThreshold
+                                      || ReputationScore >= LevelThresholds.ReputationHighlightThreshold;
+
+    // Progressive Disclosure: Sections erst ab bestimmtem Level anzeigen
+    public bool ShowCraftingResearch => PlayerLevel >= LevelThresholds.CraftingResearch;
+    public bool ShowManagerSection => PlayerLevel >= LevelThresholds.ManagerSection;
+    public bool ShowMasterToolsSection => PlayerLevel >= LevelThresholds.MasterToolsSection;
+    public bool IsQuickJobsUnlocked => PlayerLevel >= LevelThresholds.QuickJobs;
+    public bool ShowBannerStrip => PlayerLevel >= LevelThresholds.BannerStrip;
+    public int QuickAccessColumns => 1 + (ShowManagerSection ? 1 : 0) + (ShowMasterToolsSection ? 1 : 0);
+
     // FloatingText Event fuer Dashboard-Animationen
     public event Action<string, string>? FloatingTextRequested;
 
@@ -798,6 +832,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             if (_gameStateService.State.Automation.AutoClaimDaily == value) return;
             _gameStateService.State.Automation.AutoClaimDaily = value;
+            _gameStateService.MarkDirty();
+            _saveGameService.SaveAsync().FireAndForget();
+            OnPropertyChanged();
+        }
+    }
+
+    public bool AutoAssignWorkers
+    {
+        get => _gameStateService.State.Automation.AutoAssignWorkers;
+        set
+        {
+            if (_gameStateService.State.Automation.AutoAssignWorkers == value) return;
+            _gameStateService.State.Automation.AutoAssignWorkers = value;
             _gameStateService.MarkDirty();
             _saveGameService.SaveAsync().FireAndForget();
             OnPropertyChanged();
@@ -911,6 +958,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private bool _isGuildAchievementsActive;
 
     [ObservableProperty]
+    private bool _isGuildChatActive;
+
+    [ObservableProperty]
+    private bool _isGuildWarActive;
+
+    [ObservableProperty]
     private bool _isCraftingActive;
 
     [ObservableProperty]
@@ -925,8 +978,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     /// <summary>
     /// Minimales Spieler-Level pro Tab-Index (0=Werkstatt, 1=Imperium, 2=Missionen, 3=Gilde, 4=Shop).
+    /// Zentralisiert in <see cref="LevelThresholds"/>.
     /// </summary>
-    public static readonly int[] TabUnlockLevels = [1, 5, 8, 15, 3];
+    public static int[] TabUnlockLevels => LevelThresholds.TabUnlockLevels;
 
     /// <summary>
     /// Gibt zurück ob der Tab bei gegebenem Index für das aktuelle Level gesperrt ist.
@@ -972,7 +1026,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                                     !IsGuildResearchActive && !IsGuildMembersActive &&
                                     !IsGuildInviteActive && !IsGuildWarSeasonActive &&
                                     !IsGuildBossActive && !IsGuildHallActive &&
-                                    !IsGuildAchievementsActive;
+                                    !IsGuildAchievementsActive && !IsGuildChatActive &&
+                                    !IsGuildWarActive;
 
     private void DeactivateAllTabs()
     {
@@ -1008,6 +1063,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IsGuildBossActive = false;
         IsGuildHallActive = false;
         IsGuildAchievementsActive = false;
+        if (IsGuildChatActive) GuildViewModel.StopChatPolling();
+        IsGuildChatActive = false;
+        IsGuildWarActive = false;
         IsCraftingActive = false;
         IsForgeGameActive = false;
         IsInventGameActive = false;
@@ -1337,6 +1395,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsAutoAcceptUnlocked));
         OnPropertyChanged(nameof(IsAutoAssignUnlocked));
 
+        // Progressive Disclosure: Wird automatisch via [NotifyPropertyChangedFor] auf _playerLevel ausgelöst
+
         // Pulse-Animation bei JEDEM Level-Up (dezent, kein Dialog)
         IsLevelUpPulsing = true;
         _levelPulseTimer?.Stop();
@@ -1375,14 +1435,20 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Tab-Freischaltung: Hinweis wenn ein neuer Tab verfügbar wird
         CheckTabUnlockNotification(e.NewLevel);
 
-        // Kontextuelle Hints bei Level-Meilensteinen
-        if (e.NewLevel == 3)
+        // Kontextuelle Hints bei Level-Meilensteinen (passend zu Progressive Disclosure)
+        if (e.NewLevel == LevelThresholds.HintWorkerUnlock)
             _contextualHintService.TryShowHint(ContextualHints.WorkerUnlock);
-        else if (e.NewLevel == 10)
+        else if (e.NewLevel == LevelThresholds.HintQuickJobs)
             _contextualHintService.TryShowHint(ContextualHints.QuickJobs);
-        else if (e.NewLevel == 15)
+        else if (e.NewLevel == LevelThresholds.HintCrafting)
+            _contextualHintService.TryShowHint(ContextualHints.CraftingHint);
+        else if (e.NewLevel == LevelThresholds.HintManagerUnlock)
+            _contextualHintService.TryShowHint(ContextualHints.ManagerUnlock);
+        else if (e.NewLevel == LevelThresholds.HintAutomation)
             _contextualHintService.TryShowHint(ContextualHints.Automation);
-        else if (e.NewLevel == 30)
+        else if (e.NewLevel == LevelThresholds.HintMasterTools)
+            _contextualHintService.TryShowHint(ContextualHints.MasterToolsUnlock);
+        else if (e.NewLevel == LevelThresholds.HintPrestige)
             _contextualHintService.TryShowHint(ContextualHints.PrestigeHint);
 
         // Story-Kapitel prüfen
@@ -1458,7 +1524,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
 
             // Größere Zeremonien bei höheren Meilensteinen
-            if (e.NewLevel >= 50)
+            if (e.NewLevel >= LevelThresholds.WorkshopCeremonyThreshold)
             {
                 CeremonyRequested?.Invoke(CeremonyType.WorkshopMilestone,
                     $"{workshopName} Lv.{e.NewLevel}",
@@ -1688,6 +1754,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         ResearchViewModel.UpdateLocalizedTexts();
         ShopViewModel.LoadShopData();
         ShopViewModel.LoadTools();
+        GuildViewModel.UpdateLocalizedTexts();
+        ManagerViewModel.UpdateLocalizedTexts();
+        CraftingViewModel.UpdateLocalizedTexts();
+        LuckySpinViewModel.UpdateLocalizedTexts();
+        BattlePassViewModel.UpdateLocalizedTexts();
+        TournamentViewModel.UpdateLocalizedTexts();
+        SeasonalEventViewModel.UpdateLocalizedTexts();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

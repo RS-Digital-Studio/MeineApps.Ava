@@ -232,6 +232,7 @@ public sealed partial class RoofTilingGameViewModel : ViewModelBase, IDisposable
         InitializeGame();
 
         CheckAndShowTutorial(MiniGameType.RoofTiling);
+        if (!ShowTutorial) _ = StartGameAsync();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -423,11 +424,9 @@ public sealed partial class RoofTilingGameViewModel : ViewModelBase, IDisposable
                 await EndGameAsync();
             }
         }
-        catch (Exception ex)
+        catch
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
-#endif
+            // Timer-Fehler still behandelt
         }
     }
 
@@ -698,6 +697,7 @@ public sealed partial class RoofTilingGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(MiniGameType.RoofTiling);
             _gameStateService.MarkDirty();
         }
+        _ = StartGameAsync();
     }
 
     [RelayCommand]

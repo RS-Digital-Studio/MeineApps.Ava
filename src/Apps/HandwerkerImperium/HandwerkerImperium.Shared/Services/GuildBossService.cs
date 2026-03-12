@@ -113,9 +113,9 @@ public sealed class GuildBossService : IGuildBossService
                 Leaderboard = leaderboard
             };
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetActiveBossAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return null;
         }
         finally
@@ -188,9 +188,9 @@ public sealed class GuildBossService : IGuildBossService
             // Nur eigenen Eintrag schreiben (Race-Condition-frei)
             await _firebase.SetAsync(damagePath, ownDamage);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in DealDamageAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -257,9 +257,9 @@ public sealed class GuildBossService : IGuildBossService
                 _cachedBoss = null;
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in CheckBossStatusAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -326,9 +326,9 @@ public sealed class GuildBossService : IGuildBossService
 
             return true;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in SpawnBossIfNeededAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return false;
         }
         finally
@@ -395,9 +395,9 @@ public sealed class GuildBossService : IGuildBossService
 
             return leaderboard.OrderByDescending(e => e.Damage).ToList();
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetLeaderboardAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return [];
         }
     }
@@ -454,12 +454,13 @@ public sealed class GuildBossService : IGuildBossService
             var leaderboard = await GetLeaderboardAsync();
             if (leaderboard.Count == 0) return;
 
-            // Eigenen Rang finden
-            var ownDamage = await _firebase.GetAsync<GuildBossDamage>(
-                $"guild_boss_damage/{guildId}/{uid}");
-            if (ownDamage == null || ownDamage.TotalDamage <= 0) return;
+            // Eigenen Schaden aus dem bereits geladenen Leaderboard extrahieren (kein extra Firebase-Call)
+            var playerName = _gameStateService.State.PlayerName ?? uid;
+            var ownEntry = leaderboard.FirstOrDefault(e =>
+                e.PlayerName == playerName || e.PlayerName == uid);
+            if (ownEntry == null || ownEntry.Damage <= 0) return;
 
-            var ownRank = leaderboard.Count(e => e.Damage > ownDamage.TotalDamage) + 1;
+            var ownRank = leaderboard.Count(e => e.Damage > ownEntry.Damage) + 1;
 
             var gsReward = ownRank switch
             {
@@ -471,9 +472,9 @@ public sealed class GuildBossService : IGuildBossService
             _gameStateService.AddGoldenScrews(gsReward);
             _preferences.Set(rewardKey, true);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in DistributeBossRewardsAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 }

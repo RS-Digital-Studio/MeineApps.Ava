@@ -32,6 +32,11 @@ public sealed partial class GameRenderer
 
         float totalScale = wobbleScale * attackPulse;
 
+        // AI-Bitmap versuchen (Dark Fantasy Arcade Boss-Sprites)
+        if (TryRenderBossFromBitmap(canvas, boss, bossPixelSize, totalScale, wobbleY, isNeon))
+            return;
+
+        // Fallback: Prozedurale Boss-Sprites
         switch (boss.BossKind)
         {
             case BossType.StoneGolem:
@@ -50,6 +55,78 @@ public sealed partial class GameRenderer
                 RenderFinalBoss(canvas, boss, bossPixelSize, totalScale, wobbleY, isNeon);
                 break;
         }
+    }
+
+    private static readonly SKPaint _bossBitmapPaint = new() { IsAntialias = true };
+
+    /// <summary>
+    /// Rendert Boss als AI-Bitmap mit Animationseffekten.
+    /// Schatten + Bitmap + Neon-Aura + Enrage-Glow bleiben prozedural.
+    /// </summary>
+    private bool TryRenderBossFromBitmap(SKCanvas canvas, BossEnemy boss, float size,
+        float scale, float wobbleY, bool isNeon)
+    {
+        var bossName = boss.BossKind switch
+        {
+            BossType.StoneGolem => "boss_stone_golem",
+            BossType.IceDragon => "boss_ice_dragon",
+            BossType.FireDemon => "boss_fire_demon",
+            BossType.ShadowMaster => "boss_shadow_master",
+            BossType.FinalBoss => "boss_final",
+            _ => null
+        };
+        if (bossName == null) return false;
+
+        var bitmap = GameAssetService.Current?.GetBitmap($"bosses/{bossName}.webp");
+        if (bitmap == null) return false;
+
+        float cx = boss.X;
+        float cy = boss.Y + wobbleY;
+        float half = size * scale * 0.5f;
+
+        // Schatten unter dem Boss
+        _fillPaint.Color = new SKColor(0, 0, 0, 50);
+        _fillPaint.MaskFilter = null;
+        canvas.DrawOval(cx, cy + half * 0.9f, half * 0.7f, half * 0.15f, _fillPaint);
+
+        // Neon-Aura (wenn Neon-Style aktiv)
+        if (isNeon)
+        {
+            var auraColor = boss.BossKind switch
+            {
+                BossType.IceDragon => new SKColor(100, 200, 255, 40),
+                BossType.FireDemon => new SKColor(255, 80, 20, 40),
+                BossType.ShadowMaster => new SKColor(180, 50, 255, 40),
+                BossType.FinalBoss => new SKColor(255, 200, 50, 40),
+                _ => new SKColor(200, 200, 200, 30)
+            };
+            _fillPaint.Color = auraColor;
+            _fillPaint.MaskFilter = _bossAuraFilter;
+            canvas.DrawCircle(cx, cy, half * 0.85f, _fillPaint);
+            _fillPaint.MaskFilter = null;
+        }
+
+        // AI-Boss-Bitmap (skaliert + animiert)
+        var dest = new SKRect(cx - half, cy - half, cx + half, cy + half);
+
+        // Enrage: Roter/Oranger Overlay-Tint
+        if (boss.IsEnraged)
+        {
+            float pulse = 0.7f + MathF.Sin(_globalTimer * 10f) * 0.3f;
+            byte alpha = (byte)(60 * pulse);
+            _bossBitmapPaint.ColorFilter = SKColorFilter.CreateBlendMode(
+                new SKColor(255, 50, 0, alpha), SKBlendMode.SrcATop);
+        }
+        else
+        {
+            _bossBitmapPaint.ColorFilter = null;
+        }
+
+        canvas.DrawBitmap(bitmap, dest, _bossBitmapPaint);
+        _bossBitmapPaint.ColorFilter?.Dispose();
+        _bossBitmapPaint.ColorFilter = null;
+
+        return true;
     }
 
     /// <summary>

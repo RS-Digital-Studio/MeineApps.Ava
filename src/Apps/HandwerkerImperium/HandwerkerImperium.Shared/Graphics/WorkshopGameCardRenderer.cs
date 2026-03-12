@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using HandwerkerImperium.Icons;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -47,11 +50,59 @@ public struct WorkshopCardData
 /// </summary>
 public static class WorkshopGameCardRenderer
 {
+    // AI-Asset-Service für Workshop-Hintergründe in den Karten
+    private static IGameAssetService? _assetService;
+
+    // Workshop-Typ → GameIcon für Button-Symbole
+    private static readonly Dictionary<WorkshopType, GameIconKind> _workshopIcons = new()
+    {
+        { WorkshopType.Carpenter, GameIconKind.HandSaw },
+        { WorkshopType.Plumber, GameIconKind.Pipe },
+        { WorkshopType.Electrician, GameIconKind.LightningBolt },
+        { WorkshopType.Painter, GameIconKind.Palette },
+        { WorkshopType.Roofer, GameIconKind.Hammer },
+        { WorkshopType.Contractor, GameIconKind.HammerWrench },
+        { WorkshopType.Architect, GameIconKind.Compass },
+        { WorkshopType.GeneralContractor, GameIconKind.Crown },
+        { WorkshopType.MasterSmith, GameIconKind.Anvil },
+        { WorkshopType.InnovationLab, GameIconKind.FlaskOutline },
+    };
+
+    // Workshop-Typ → Asset-Dateiname
+    private static readonly Dictionary<WorkshopType, string> _assetNames = new()
+    {
+        { WorkshopType.Carpenter, "carpenter" },
+        { WorkshopType.Plumber, "plumber" },
+        { WorkshopType.Electrician, "electrician" },
+        { WorkshopType.Painter, "painter" },
+        { WorkshopType.Roofer, "roofer" },
+        { WorkshopType.Contractor, "contractor" },
+        { WorkshopType.Architect, "architect" },
+        { WorkshopType.GeneralContractor, "general_contractor" },
+        { WorkshopType.MasterSmith, "master_smith" },
+        { WorkshopType.InnovationLab, "innovation_lab" },
+    };
+
+    /// <summary>
+    /// Initialisiert den Renderer mit dem Asset-Service für AI-Workshop-Bilder.
+    /// </summary>
+    public static void Initialize(IGameAssetService assetService) => _assetService = assetService;
+
     // Gecachte Paints
     private static readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = SKColors.White };
     private static readonly SKPaint _iconPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f };
+
+    // Gecachte Fonts (verschiedene Größen fuer Text-Rendering)
+    private static readonly SKFont _font8 = new() { Size = 8f };
+    private static readonly SKFont _font9 = new() { Size = 9f };
+    private static readonly SKFont _font10 = new() { Size = 10f };
+    private static readonly SKFont _font11 = new() { Size = 11f };
+    private static readonly SKFont _font11Bold = new() { Size = 11f, Embolden = true };
+    private static readonly SKFont _font12 = new() { Size = 12f };
+    private static readonly SKFont _font12Bold = new() { Size = 12f, Embolden = true };
+    private static readonly SKFont _font13Bold = new() { Size = 13f, Embolden = true };
 
     /// <summary>
     /// Rendert eine einzelne Workshop-Karte in den angegebenen Bereich.
@@ -114,10 +165,12 @@ public static class WorkshopGameCardRenderer
             _fillPaint.Shader = null;
         }
 
-        // Workshop-Illustration rendern (bestehender Renderer)
+        // Workshop-Illustration: AI-Bild
         canvas.Save();
         canvas.ClipRect(headerBounds);
-        WorkshopCardRenderer.Render(canvas, headerBounds, data.Type, true, data.Level);
+        var aiBg = TryGetWorkshopBitmap(data.Type);
+        if (aiBg != null)
+            canvas.DrawBitmap(aiBg, headerBounds);
         canvas.Restore();
 
         // Level-Badge oben-rechts
@@ -142,11 +195,7 @@ public static class WorkshopGameCardRenderer
 
         // Zeile 1: Workshop-Name
         _textPaint.Color = wsColor;
-        _textPaint.TextSize = 11f;
-        _textPaint.TextAlign = SKTextAlign.Left;
-        _textPaint.FakeBoldText = true;
-        canvas.DrawText(data.Name ?? "", textX, statsTop + lineH * 0.8f, _textPaint);
-        _textPaint.FakeBoldText = false;
+        canvas.DrawText(data.Name ?? "", textX, statsTop + lineH * 0.8f, SKTextAlign.Left, _font11Bold, _textPaint);
 
         // Zeile 2: Worker-Anzeige (Helm-Icons + Zahl)
         float workerY = statsTop + lineH * 1.7f;
@@ -156,8 +205,7 @@ public static class WorkshopGameCardRenderer
         float incomeY = statsTop + lineH * 2.7f;
         GameCardRenderer.DrawCoinIcon(canvas, textX + 5f, incomeY, 5f);
         _textPaint.Color = data.IsNetNegative ? new SKColor(0xEF, 0x44, 0x44) : new SKColor(0x22, 0xC5, 0x5E);
-        _textPaint.TextSize = 10f;
-        canvas.DrawText(data.NetIncomeText ?? "", textX + 14f, incomeY + 3.5f, _textPaint);
+        canvas.DrawText(data.NetIncomeText ?? "", textX + 14f, incomeY + 3.5f, SKTextAlign.Left, _font10, _textPaint);
 
         // Zeile 4: Level-Progress
         float progressY = statsTop + lineH * 3.4f;
@@ -172,9 +220,7 @@ public static class WorkshopGameCardRenderer
         if (data.ShowMilestone)
         {
             _textPaint.Color = new SKColor(0xFF, 0xD7, 0x00, 180);
-            _textPaint.TextSize = 8f;
-            _textPaint.TextAlign = SKTextAlign.Right;
-            canvas.DrawText($"\u2192 Lv.{data.NextMilestone}", inner.Right - 8f, progressY - 1f, _textPaint);
+            canvas.DrawText($"\u2192 Lv.{data.NextMilestone}", inner.Right - 8f, progressY - 1f, SKTextAlign.Right, _font8, _textPaint);
         }
 
         // === Upgrade-Button (25%) ===
@@ -186,11 +232,7 @@ public static class WorkshopGameCardRenderer
             _fillPaint.Color = new SKColor(0xFF, 0xD7, 0x00, 40);
             canvas.DrawRoundRect(buttonBounds, 8f, 8f, _fillPaint);
             _textPaint.Color = new SKColor(0xFF, 0xD7, 0x00);
-            _textPaint.TextSize = 11f;
-            _textPaint.TextAlign = SKTextAlign.Center;
-            _textPaint.FakeBoldText = true;
-            canvas.DrawText("MAX", buttonBounds.MidX, buttonBounds.MidY + 4f, _textPaint);
-            _textPaint.FakeBoldText = false;
+            canvas.DrawText("MAX", buttonBounds.MidX, buttonBounds.MidY + 4f, SKTextAlign.Center, _font11Bold, _textPaint);
         }
         else
         {
@@ -200,13 +242,13 @@ public static class WorkshopGameCardRenderer
             var btnColor = enabled ? wsColor : new SKColor(0x50, 0x50, 0x58);
             GameCardRenderer.Draw3DButton(canvas, buttonBounds, btnColor, upgradeText, 10f, enabled, 6f);
 
-            // Pfeil-Icon links im Button
-            if (enabled)
+            // Workshop-Icon links im Button (statt Pfeil)
+            if (_workshopIcons.TryGetValue(data.Type, out var iconKind))
             {
-                _textPaint.Color = SKColors.White;
-                _textPaint.TextSize = 12f;
-                _textPaint.TextAlign = SKTextAlign.Left;
-                canvas.DrawText("\u2191", buttonBounds.Left + 6f, buttonBounds.MidY + 4f, _textPaint);
+                _iconPaint.Color = enabled ? SKColors.White : new SKColor(0x80, 0x80, 0x88);
+                float iconSize = buttonBounds.Height * 0.5f;
+                GameIconRenderer.DrawAt(canvas, iconKind,
+                    buttonBounds.Left + iconSize + 4f, buttonBounds.MidY, iconSize, _iconPaint);
             }
         }
     }
@@ -251,32 +293,25 @@ public static class WorkshopGameCardRenderer
 
         // Workshop-Name
         _textPaint.Color = wsColor;
-        _textPaint.TextSize = 13f;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.FakeBoldText = true;
-        canvas.DrawText(data.Name ?? "", inner.MidX, inner.Top + inner.Height * 0.25f, _textPaint);
-        _textPaint.FakeBoldText = false;
+        canvas.DrawText(data.Name ?? "", inner.MidX, inner.Top + inner.Height * 0.25f, SKTextAlign.Center, _font13Bold, _textPaint);
 
         // Offenes Schloss
         GameCardRenderer.DrawLockIcon(canvas, inner.MidX, inner.Top + inner.Height * 0.35f, 28f, isOpen: true);
 
         // "Tippe zum Freischalten"
         _textPaint.Color = new SKColor(0x22, 0xC5, 0x5E, 200);
-        _textPaint.TextSize = 9f;
-        canvas.DrawText("Tippe zum Freischalten", inner.MidX, inner.Top + inner.Height * 0.68f, _textPaint);
+        canvas.DrawText("Tippe zum Freischalten", inner.MidX, inner.Top + inner.Height * 0.68f, SKTextAlign.Center, _font9, _textPaint);
 
         // Kosten-Anzeige
         float costY = inner.Top + inner.Height * 0.75f;
         GameCardRenderer.DrawCoinIcon(canvas, inner.MidX - 20f, costY, 6f);
         _textPaint.Color = data.CanAffordUnlock ? new SKColor(0x22, 0xC5, 0x5E) : new SKColor(0xEF, 0x44, 0x44);
-        _textPaint.TextSize = 11f;
-        canvas.DrawText(data.UpgradeCostText ?? "", inner.MidX, costY + 4f, _textPaint);
+        canvas.DrawText(data.UpgradeCostText ?? "", inner.MidX, costY + 4f, SKTextAlign.Center, _font11, _textPaint);
 
         // Rabatt-Hinweis: "-30% mit Video" (nur wenn ShowAds aktiv → immer anzeigen, Monetarisierungs-Anreiz)
         float discountY = inner.Top + inner.Height * 0.88f;
         _textPaint.Color = new SKColor(0xFF, 0xD7, 0x00, 180); // Gold
-        _textPaint.TextSize = 8f;
-        canvas.DrawText("\u25B6 -30%", inner.MidX, discountY + 3f, _textPaint);
+        canvas.DrawText("\u25B6 -30%", inner.MidX, discountY + 3f, SKTextAlign.Center, _font8, _textPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -295,22 +330,24 @@ public static class WorkshopGameCardRenderer
         _fillPaint.Color = new SKColor(0x12, 0x12, 0x18, 240);
         canvas.DrawRect(inner, _fillPaint);
 
-        // Workshop-Name (gedimmt)
+        // Workshop-Icon (gedimmt, zeigt was freigeschaltet wird)
         var wsColor = WorkshopCardRenderer.GetWorkshopColor(data.Type);
+        if (_workshopIcons.TryGetValue(data.Type, out var lockedIcon))
+        {
+            _iconPaint.Color = wsColor.WithAlpha(60);
+            GameIconRenderer.DrawAt(canvas, lockedIcon, inner.MidX, inner.Top + inner.Height * 0.18f, 24f, _iconPaint);
+        }
+
+        // Workshop-Name (gedimmt)
         _textPaint.Color = wsColor.WithAlpha(100);
-        _textPaint.TextSize = 12f;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.FakeBoldText = true;
-        canvas.DrawText(data.Name ?? "", inner.MidX, inner.Top + inner.Height * 0.3f, _textPaint);
-        _textPaint.FakeBoldText = false;
+        canvas.DrawText(data.Name ?? "", inner.MidX, inner.Top + inner.Height * 0.35f, SKTextAlign.Center, _font12Bold, _textPaint);
 
         // Grosses geschlossenes Schloss
-        GameCardRenderer.DrawLockIcon(canvas, inner.MidX, inner.Top + inner.Height * 0.4f, 32f, isOpen: false);
+        GameCardRenderer.DrawLockIcon(canvas, inner.MidX, inner.Top + inner.Height * 0.48f, 32f, isOpen: false);
 
         // "Ab Level X"
         _textPaint.Color = new SKColor(0x94, 0xA3, 0xB8, 160);
-        _textPaint.TextSize = 10f;
-        canvas.DrawText($"Ab Level {data.UnlockLevel}", inner.MidX, inner.Top + inner.Height * 0.75f, _textPaint);
+        canvas.DrawText($"Ab Level {data.UnlockLevel}", inner.MidX, inner.Top + inner.Height * 0.75f, SKTextAlign.Center, _font10, _textPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -340,9 +377,21 @@ public static class WorkshopGameCardRenderer
         // Zahl dahinter
         float textX = x + showIcons * iconSpacing + 8f;
         _textPaint.Color = new SKColor(0xB0, 0xB0, 0xB8);
-        _textPaint.TextSize = 9f;
-        _textPaint.TextAlign = SKTextAlign.Left;
-        canvas.DrawText($"{workerCount}/{maxWorkers}", textX, y + 2f, _textPaint);
+        canvas.DrawText($"{workerCount}/{maxWorkers}", textX, y + 2f, SKTextAlign.Left, _font9, _textPaint);
+    }
+
+    /// <summary>
+    /// Lädt das AI-Workshop-Bild aus dem Asset-Service. Triggert async Laden beim ersten Aufruf.
+    /// </summary>
+    private static SkiaSharp.SKBitmap? TryGetWorkshopBitmap(WorkshopType type)
+    {
+        if (_assetService == null) return null;
+        var name = _assetNames.GetValueOrDefault(type, "carpenter");
+        var path = $"workshops/{name}.webp";
+        var bmp = _assetService.GetBitmap(path);
+        if (bmp == null)
+            _ = _assetService.LoadBitmapAsync(path);
+        return bmp;
     }
 
 }

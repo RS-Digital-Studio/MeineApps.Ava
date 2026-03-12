@@ -24,12 +24,12 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 Command="{Binding NavigateBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="White" />
         </Button>
         <!-- Titel -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
-          <icons:GameIcon Kind="Skull" Width="24" Height="24"
+          <icons:GameIcon Kind="Skull" Width="28" Height="28"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{loc:Translate GuildBossTitle}"
                      FontSize="18" FontWeight="Bold"
@@ -101,7 +101,7 @@
               <!-- Countdown -->
               <StackPanel Orientation="Horizontal" Spacing="6"
                           HorizontalAlignment="Center">
-                <icons:GameIcon Kind="ClockOutline" Width="14" Height="14"
+                <icons:GameIcon Kind="ClockOutline" Width="18" Height="18"
                                  Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding BossCountdown}"
                            FontSize="12"
@@ -140,7 +140,7 @@
           <Border Classes="Card StatsCard" IsVisible="{Binding HasLeaderboard}">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <icons:GameIcon Kind="TrophyOutline" Width="18" Height="18"
+                <icons:GameIcon Kind="TrophyOutline" Width="24" Height="24"
                                  Foreground="{StaticResource CraftGoldBrush}" />
                 <TextBlock Text="{loc:Translate DamageLeaderboard}"
                            FontSize="14" FontWeight="Bold"

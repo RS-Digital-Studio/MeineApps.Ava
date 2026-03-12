@@ -24,7 +24,7 @@ public sealed class AssetDeliveryService : IAssetDeliveryService, IDisposable
     private const string FirebaseBaseUrl =
         "https://firebasestorage.googleapis.com/v0/b/rebornsaga-671b6.firebasestorage.app/o/";
 
-    private const string ManifestFileName = "manifest.json";
+    private const string ManifestFileName = "assets/asset_manifest.json";
     private const string LocalManifestFileName = "manifest.local.json";
 
     private readonly HttpClient _httpClient;
@@ -115,8 +115,9 @@ public sealed class AssetDeliveryService : IAssetDeliveryService, IDisposable
     }
 
     /// <summary>
-    /// Lädt alle ausstehenden Assets herunter. Fortschritt wird über IProgress gemeldet.
-    /// SHA256-Hash-Verifikation nach jedem Download. Thread-safe über SemaphoreSlim.
+    /// Lädt alle ausstehenden Assets parallel herunter (max 6 gleichzeitig).
+    /// SHA256-Hash wird inline beim Stream-Kopieren berechnet (kein doppeltes File-I/O).
+    /// Thread-safe über SemaphoreSlim. Fortschritt via Interlocked-Operationen.
     /// </summary>
     public async Task<bool> DownloadAssetsAsync(
         IProgress<AssetDownloadProgress> progress,
@@ -131,27 +132,51 @@ public sealed class AssetDeliveryService : IAssetDeliveryService, IDisposable
             var totalFiles = _pendingFiles.Count;
             var totalBytes = _pendingBytes;
             long bytesDownloaded = 0;
+            int filesCompleted = 0;
+            int failedCount = 0;
 
-            for (var i = 0; i < _pendingFiles.Count; i++)
+            // Verzeichnisse vorab erstellen (vermeidet Race-Conditions bei parallelen Downloads)
+            PreCreateDirectories(_pendingFiles);
+
+            // Paralleler Download mit max 6 gleichzeitigen Verbindungen
+            using var throttle = new SemaphoreSlim(6, 6);
+
+            var tasks = _pendingFiles.Select(file => Task.Run(async () =>
             {
-                ct.ThrowIfCancellationRequested();
+                await throttle.WaitAsync(ct);
+                try
+                {
+                    ct.ThrowIfCancellationRequested();
 
-                var file = _pendingFiles[i];
-                var fileName = Path.GetFileName(file.Path);
+                    var success = await DownloadFileAsync(file, ct);
+                    if (!success)
+                    {
+                        Interlocked.Increment(ref failedCount);
+                        return;
+                    }
 
-                progress.Report(new AssetDownloadProgress(
-                    CurrentFile: i + 1,
-                    TotalFiles: totalFiles,
-                    BytesDownloaded: bytesDownloaded,
-                    TotalBytes: totalBytes,
-                    CurrentFileName: fileName));
+                    // Fortschritt thread-safe aktualisieren
+                    var newBytes = Interlocked.Add(ref bytesDownloaded, file.Size);
+                    var completed = Interlocked.Increment(ref filesCompleted);
 
-                var success = await DownloadFileAsync(file, ct);
-                if (!success)
-                    return false;
+                    progress.Report(new AssetDownloadProgress(
+                        CurrentFile: completed,
+                        TotalFiles: totalFiles,
+                        BytesDownloaded: newBytes,
+                        TotalBytes: totalBytes,
+                        CurrentFileName: Path.GetFileName(file.Path)));
+                }
+                finally
+                {
+                    throttle.Release();
+                }
+            }, ct)).ToArray();
 
-                bytesDownloaded += file.Size;
-            }
+            await Task.WhenAll(tasks);
+
+            // Bei Fehlern abbrechen
+            if (failedCount > 0)
+                return false;
 
             // Abschluss melden
             progress.Report(new AssetDownloadProgress(
@@ -185,6 +210,24 @@ public sealed class AssetDeliveryService : IAssetDeliveryService, IDisposable
         {
             _downloadSemaphore.Release();
         }
+    }
+
+    /// <summary>
+    /// Erstellt alle Zielverzeichnisse vorab (einmalig statt pro Datei).
+    /// </summary>
+    private void PreCreateDirectories(List<AssetFile> files)
+    {
+        var directories = new HashSet<string>();
+        foreach (var file in files)
+        {
+            var localPath = GetLocalPath(file.Path);
+            var dir = Path.GetDirectoryName(localPath);
+            if (!string.IsNullOrEmpty(dir))
+                directories.Add(dir);
+        }
+
+        foreach (var dir in directories)
+            Directory.CreateDirectory(dir);
     }
 
     /// <summary>
@@ -296,20 +339,16 @@ public sealed class AssetDeliveryService : IAssetDeliveryService, IDisposable
     }
 
     /// <summary>
-    /// Lädt eine einzelne Datei von Firebase Storage herunter und verifiziert den SHA256-Hash.
-    /// Stream-basiert (kein vollständiges Laden in RAM). 3 Retry-Versuche mit exponentiellem Backoff.
-    /// Hash-Verifikation erfolgt NACH dem Schreiben auf Disk.
+    /// Lädt eine einzelne Datei von Firebase Storage herunter mit Inline-SHA256-Hashing.
+    /// Hash wird WÄHREND des Stream-Kopierens berechnet (kein doppeltes File-I/O).
+    /// 3 Retry-Versuche mit exponentiellem Backoff. Thread-safe temp-Dateinamen.
     /// </summary>
     private async Task<bool> DownloadFileAsync(AssetFile file, CancellationToken ct)
     {
         const int maxRetries = 3;
         var localPath = GetLocalPath(file.Path);
-        var tempPath = localPath + ".tmp";
-
-        // Zielverzeichnis erstellen
-        var directory = Path.GetDirectoryName(localPath);
-        if (!string.IsNullOrEmpty(directory))
-            Directory.CreateDirectory(directory);
+        // Thread-safe: eindeutiger temp-Name pro Task (parallele Downloads)
+        var tempPath = localPath + $".{Environment.CurrentManagedThreadId}.tmp";
 
         for (var attempt = 0; attempt < maxRetries; attempt++)
         {
@@ -322,28 +361,36 @@ public sealed class AssetDeliveryService : IAssetDeliveryService, IDisposable
             try
             {
                 // Firebase Storage URL: Pfad URL-encoded + ?alt=media
-                var encodedPath = Uri.EscapeDataString(file.Path);
+                var encodedPath = Uri.EscapeDataString($"assets/{file.Path}");
                 var url = $"{FirebaseBaseUrl}{encodedPath}?alt=media";
 
-                // Stream-basierter Download: direkt in temporäre Datei schreiben
+                // Stream-basierter Download mit Inline-SHA256-Hashing
                 using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
                 response.EnsureSuccessStatusCode();
 
                 await using var networkStream = await response.Content.ReadAsStreamAsync(ct);
+                using var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
                 await using var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None,
                     bufferSize: 81920, useAsync: true);
 
-                await networkStream.CopyToAsync(fileStream, ct);
+                // Hash inline berechnen während wir in die Datei schreiben
+                var buffer = new byte[81920];
+                int bytesRead;
+                while ((bytesRead = await networkStream.ReadAsync(buffer, ct)) > 0)
+                {
+                    sha256.AppendData(buffer, 0, bytesRead);
+                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
+                }
 
-                // Sicherstellen dass alles auf Disk ist
                 await fileStream.FlushAsync(ct);
                 fileStream.Close();
 
-                // SHA256-Hash der geschriebenen Datei verifizieren
-                var hash = ComputeFileHash(tempPath);
+                // Hash finalisieren und vergleichen (kein erneutes File-Lesen nötig)
+                var hashBytes = sha256.GetHashAndReset();
+                var hash = Convert.ToHexString(hashBytes).ToLowerInvariant();
+
                 if (!string.Equals(hash, file.Hash, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Hash-Mismatch: temporäre Datei löschen, beim nächsten Retry erneut versuchen
                     TryDeleteFile(tempPath);
                     continue;
                 }
@@ -356,12 +403,11 @@ public sealed class AssetDeliveryService : IAssetDeliveryService, IDisposable
             catch (OperationCanceledException)
             {
                 TryDeleteFile(tempPath);
-                throw; // Abbruch weitergeben
+                throw;
             }
             catch (Exception)
             {
                 TryDeleteFile(tempPath);
-                // Letzter Versuch fehlgeschlagen → false
                 if (attempt == maxRetries - 1)
                     return false;
             }

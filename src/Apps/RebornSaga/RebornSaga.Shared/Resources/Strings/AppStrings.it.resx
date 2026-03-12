@@ -336,4 +336,180 @@
   <data name="BackArrow" xml:space="preserve">
     <value>&lt; Indietro</value>
   </data>
+  <data name="ChooseYourClass" xml:space="preserve">
+    <value>Scegli la tua classe</value>
+  </data>
+  <data name="YourClass" xml:space="preserve">
+    <value>La tua classe</value>
+  </data>
+  <data name="ClassDescSwordmaster" xml:space="preserve">
+    <value>Alto ATK &amp; DEF. Combattente corpo a corpo classico.</value>
+  </data>
+  <data name="ClassDescArcanist" xml:space="preserve">
+    <value>Magia potente &amp; alto MP. Distruttore a distanza.</value>
+  </data>
+  <data name="ClassDescShadowblade" xml:space="preserve">
+    <value>Veloce &amp; letale. Colpi critici. Maestro di schivata.</value>
+  </data>
+  <data name="FreePoints" xml:space="preserve">
+    <value>Punti liberi: {0}</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Generale</value>
+  </data>
+  <data name="DiscoveredFormat" xml:space="preserve">
+    <value>{0}/{1} scoperti</value>
+  </data>
+  <data name="NoEntries" xml:space="preserve">
+    <value>Nessuna voce</value>
+  </data>
+  <data name="NoEntriesYet" xml:space="preserve">
+    <value>Nessuna voce scoperta finora.</value>
+  </data>
+  <data name="StatusWindow" xml:space="preserve">
+    <value>STATUS WINDOW</value>
+  </data>
+  <data name="NoSkills" xml:space="preserve">
+    <value>Nessuna abilità</value>
+  </data>
+  <data name="EmptySlot" xml:space="preserve">
+    <value>- Vuoto -</value>
+  </data>
+  <data name="NoItems" xml:space="preserve">
+    <value>Nessun oggetto</value>
+  </data>
+  <data name="SellPriceFormat" xml:space="preserve">
+    <value>Vendita: {0}G</value>
+  </data>
+  <data name="BuyFormat" xml:space="preserve">
+    <value>Compra ({0}G)</value>
+  </data>
+  <data name="SellFormat" xml:space="preserve">
+    <value>Vendi ({0}G)</value>
+  </data>
+  <data name="HealHpFormat" xml:space="preserve">
+    <value>Cura {0} HP</value>
+  </data>
+  <data name="HealMpFormat" xml:space="preserve">
+    <value>Cura {0} MP</value>
+  </data>
+  <data name="HealPercentFormat" xml:space="preserve">
+    <value>Cura {0}% HP+MP</value>
+  </data>
+  <data name="OnlyRestriction" xml:space="preserve">
+    <value>Solo: {0}</value>
+  </data>
+  <data name="LoadingMap" xml:space="preserve">
+    <value>Caricamento mappa...</value>
+  </data>
+
+  <!-- SaveSlot Scene -->
+  <data name="TapToStart" xml:space="preserve">
+    <value>Tocca per iniziare</value>
+  </data>
+  <data name="DeleteSlotFormat" xml:space="preserve">
+    <value>Eliminare Slot {0}?</value>
+  </data>
+  <data name="CannotBeUndone" xml:space="preserve">
+    <value>Questa azione non può essere annullata.</value>
+  </data>
+  <data name="PrologBeginning" xml:space="preserve">
+    <value>Prologo: Inizio</value>
+  </data>
+  <data name="PrologAwakening" xml:space="preserve">
+    <value>Prologo: Risveglio</value>
+  </data>
+  <data name="PrologSystem" xml:space="preserve">
+    <value>Prologo: Sistema</value>
+  </data>
+  <data name="ChapterFormat" xml:space="preserve">
+    <value>Capitolo {0}</value>
+  </data>
+
+  <!-- Enemy Names -->
+  <data name="enemy_shadow_wolf" xml:space="preserve">
+    <value>Lupo d'Ombra</value>
+  </data>
+  <data name="enemy_forest_slime" xml:space="preserve">
+    <value>Melma della Foresta</value>
+  </data>
+  <data name="enemy_goblin_scout" xml:space="preserve">
+    <value>Goblin Esploratore</value>
+  </data>
+  <data name="enemy_fortress_guard" xml:space="preserve">
+    <value>Guardia della Fortezza</value>
+  </data>
+  <data name="enemy_shadow_scout" xml:space="preserve">
+    <value>Esploratore d'Ombra</value>
+  </data>
+
+  <!-- Boss Names -->
+  <data name="boss_malachar" xml:space="preserve">
+    <value>Malachar</value>
+  </data>
+  <data name="boss_vexara" xml:space="preserve">
+    <value>Vexara</value>
+  </data>
+  <data name="boss_krynn" xml:space="preserve">
+    <value>Krynn</value>
+  </data>
+  <data name="boss_nihilus" xml:space="preserve">
+    <value>Nihilus</value>
+  </data>
+  <data name="boss_wolf_alpha" xml:space="preserve">
+    <value>Lupo Alpha</value>
+  </data>
+  <data name="boss_garak" xml:space="preserve">
+    <value>Garak</value>
+  </data>
+  <data name="boss_erdross" xml:space="preserve">
+    <value>Erdross</value>
+  </data>
+  <data name="boss_sentinel" xml:space="preserve">
+    <value>La Sentinella</value>
+  </data>
+  <data name="boss_sylas" xml:space="preserve">
+    <value>Sylas</value>
+  </data>
+  <data name="boss_ravok" xml:space="preserve">
+    <value>Ravok</value>
+  </data>
+  <data name="boss_thessara" xml:space="preserve">
+    <value>Thessara</value>
+  </data>
+  <data name="boss_morthos" xml:space="preserve">
+    <value>Morthos</value>
+  </data>
+  <data name="boss_shadow_self" xml:space="preserve">
+    <value>Ombra Interiore</value>
+  </data>
+  <data name="boss_xaroth" xml:space="preserve">
+    <value>Xaroth</value>
+  </data>
+  <data name="boss_xaroth_evolved" xml:space="preserve">
+    <value>Xaroth Evoluto</value>
+  </data>
+  <data name="boss_nihilus_echo" xml:space="preserve">
+    <value>Eco di Nihilus</value>
+  </data>
+
+  <!-- Tutorial Battle -->
+  <data name="tutorial_battle_intro" xml:space="preserve">
+    <value>La tua prima battaglia! Ti guiderò passo dopo passo.</value>
+  </data>
+  <data name="tutorial_battle_attack" xml:space="preserve">
+    <value>Tocca **Attacco** per colpire il nemico.</value>
+  </data>
+  <data name="tutorial_battle_skill" xml:space="preserve">
+    <value>Il nemico contrattacca! Usa un'**Abilità** per più danni. Costano PM.</value>
+  </data>
+  <data name="tutorial_battle_item" xml:space="preserve">
+    <value>Sei gravemente ferito! Apri gli **Oggetti** e usa una pozione curativa.</value>
+  </data>
+  <data name="tutorial_battle_dodge" xml:space="preserve">
+    <value>A volte **schivare** è la scelta migliore! Tocca Schiva.</value>
+  </data>
+  <data name="tutorial_battle_finish" xml:space="preserve">
+    <value>Ben fatto! Ora sconfiggi il nemico!</value>
+  </data>
 </root>

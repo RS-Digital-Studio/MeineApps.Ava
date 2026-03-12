@@ -12,7 +12,7 @@ namespace HandwerkerImperium.Services;
 /// Firebase REST API Client: Anonymous Auth + Realtime Database.
 /// Funktioniert auf Android und Desktop ohne native SDKs.
 /// </summary>
-public sealed class FirebaseService : IFirebaseService
+public sealed class FirebaseService : IFirebaseService, IDisposable
 {
     // Firebase-Projekt: handwerkerimperium-487917
     private const string ApiKey = "AIzaSyCyfSD0g7TZR1CNgjPlc9L3SyfNwbEst9k";
@@ -185,9 +185,9 @@ public sealed class FirebaseService : IFirebaseService
 
             return true;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in TryRefreshTokenAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return false;
         }
     }
@@ -212,9 +212,9 @@ public sealed class FirebaseService : IFirebaseService
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             await _httpClient.PutAsync(url, content);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in SyncAuthToPlayerMappingAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 
@@ -252,9 +252,9 @@ public sealed class FirebaseService : IFirebaseService
             IsOnline = true;
             return JsonSerializer.Deserialize<T>(json);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             IsOnline = false;
             return null;
         }
@@ -280,9 +280,9 @@ public sealed class FirebaseService : IFirebaseService
 
             IsOnline = response.IsSuccessStatusCode;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in SetAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             IsOnline = false;
         }
     }
@@ -309,9 +309,9 @@ public sealed class FirebaseService : IFirebaseService
 
             IsOnline = response.IsSuccessStatusCode;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in UpdateAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             IsOnline = false;
         }
     }
@@ -345,9 +345,9 @@ public sealed class FirebaseService : IFirebaseService
             var result = JsonSerializer.Deserialize<Dictionary<string, string>>(responseJson);
             return result?.GetValueOrDefault("name");
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in PushAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             IsOnline = false;
             return null;
         }
@@ -371,9 +371,9 @@ public sealed class FirebaseService : IFirebaseService
 
             IsOnline = response.IsSuccessStatusCode;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in DeleteAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             IsOnline = false;
         }
     }
@@ -408,9 +408,9 @@ public sealed class FirebaseService : IFirebaseService
             IsOnline = true;
             return json;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in QueryAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             IsOnline = false;
             return null;
         }
@@ -422,7 +422,26 @@ public sealed class FirebaseService : IFirebaseService
 
     private async Task ForceRefreshAndRetryAuth()
     {
-        _tokenExpiry = DateTime.MinValue;
-        await EnsureAuthenticatedAsync();
+        // Cooldown: Nicht bei jedem Request den Token refreshen wenn der Refresh fehlschlägt
+        _tokenExpiry = DateTime.UtcNow.AddMinutes(-1);
+        _idToken = null;
+
+        try
+        {
+            await EnsureAuthenticatedAsync();
+        }
+        catch (InvalidOperationException)
+        {
+            // Token-Refresh dauerhaft fehlgeschlagen → Cooldown setzen damit nicht jeder
+            // Request den Refresh erneut triggert (sonst sind alle Firebase-Features tot)
+            _tokenExpiry = DateTime.UtcNow.AddMinutes(5);
+            IsOnline = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+        _authLock.Dispose();
     }
 }

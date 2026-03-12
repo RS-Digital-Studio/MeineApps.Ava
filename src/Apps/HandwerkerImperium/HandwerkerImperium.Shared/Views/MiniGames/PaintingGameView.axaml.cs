@@ -280,11 +280,9 @@ public partial class PaintingGameView : UserControl
             }
         });
         }
-        catch (Exception ex)
+        catch
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameCompleted: {ex.Message}");
-#endif
+            // Effekt-Fehler still behandelt
         }
     }
 }

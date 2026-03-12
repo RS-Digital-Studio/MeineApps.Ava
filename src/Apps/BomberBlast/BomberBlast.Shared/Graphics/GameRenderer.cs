@@ -513,6 +513,7 @@ public sealed partial class GameRenderer : IDisposable
     private readonly SKMaskFilter _mediumGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6);
     private readonly SKMaskFilter _outerGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Outer, 4);
     private readonly SKMaskFilter _hudTextGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Outer, 3);
+    private readonly SKMaskFilter _bossAuraFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 12);
 
     // HUD-Gradient-Cache (wird bei Style-Wechsel invalidiert)
     private SKShader? _hudGradientShader;

@@ -21,6 +21,11 @@ public interface IDailyChallengeService
     bool RetryChallenge(string challengeId);
 
     /// <summary>
+    /// Wird aufgerufen wenn ein QuickJob abgeschlossen wird (für Challenge-Tracking).
+    /// </summary>
+    void OnQuickJobCompleted();
+
+    /// <summary>
     /// Wird ausgelöst wenn sich der Fortschritt einer Challenge ändert.
     /// </summary>
     event EventHandler? ChallengeProgressChanged;

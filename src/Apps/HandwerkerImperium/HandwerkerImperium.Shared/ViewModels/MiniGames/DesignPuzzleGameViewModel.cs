@@ -238,6 +238,7 @@ public sealed partial class DesignPuzzleGameViewModel : ViewModelBase, IDisposab
         InitializeGame();
 
         CheckAndShowTutorial(MiniGameType.DesignPuzzle);
+        if (!ShowTutorial) _ = StartGameAsync();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -352,11 +353,9 @@ public sealed partial class DesignPuzzleGameViewModel : ViewModelBase, IDisposab
                 await EndGameAsync();
             }
         }
-        catch (Exception ex)
+        catch
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
-#endif
+            // Timer-Fehler still behandelt
         }
     }
 
@@ -625,6 +624,7 @@ public sealed partial class DesignPuzzleGameViewModel : ViewModelBase, IDisposab
             state.SeenMiniGameTutorials.Add(MiniGameType.DesignPuzzle);
             _gameStateService.MarkDirty();
         }
+        _ = StartGameAsync();
     }
 
     [RelayCommand]

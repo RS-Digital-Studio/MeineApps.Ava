@@ -1,3 +1,4 @@
+using BomberBlast.Services;
 using SkiaSharp;
 
 namespace BomberBlast.Graphics;
@@ -35,11 +36,44 @@ public static class AchievementIconRenderer
     /// <param name="isUnlocked">Ob freigeschaltet</param>
     /// <param name="progress">Fortschritt 0.0-1.0 (für Ring-Anzeige)</param>
     /// <param name="animTime">Animation für Glow</param>
+    private static readonly SKPaint _aiBitmapPaint = new() { IsAntialias = true };
+
+    /// <summary>
+    /// Achievement-Kategorie → Asset-Name Mapping.
+    /// </summary>
+    private static readonly string[] AchievementAssetNames =
+        ["achievement_progress", "achievement_mastery", "achievement_combat", "achievement_skill", "achievement_challenge"];
+
     public static void Render(SKCanvas canvas, float cx, float cy, float size,
         int categoryIndex, bool isUnlocked, float progress = 0, float animTime = 0)
     {
+        // AI-Bitmap versuchen (nur freigeschaltete Achievements)
+        if (isUnlocked && categoryIndex >= 0 && categoryIndex < AchievementAssetNames.Length)
+        {
+            var bitmap = GameAssetService.Current?.GetOrLoadBitmap(
+                $"achievements/{AchievementAssetNames[categoryIndex]}.webp");
+            if (bitmap != null)
+            {
+                float half = size * 0.45f;
+                var dest = new SKRect(cx - half, cy - half, cx + half, cy + half);
+
+                // Glow-Aura (pulsierend)
+                var catColor = GetCategoryColor(categoryIndex);
+                float pulse = 0.6f + 0.4f * MathF.Sin(animTime * 3f);
+                _glowPaint.Color = catColor.WithAlpha((byte)(pulse * 40));
+                _glowPaint.MaskFilter?.Dispose();
+                _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.15f);
+                canvas.DrawCircle(cx, cy, half * 1.15f, _glowPaint);
+                _glowPaint.MaskFilter?.Dispose();
+                _glowPaint.MaskFilter = null;
+
+                canvas.DrawBitmap(bitmap, dest, _aiBitmapPaint);
+                return;
+            }
+        }
+
         float r = size / 2f;
-        var catColor = GetCategoryColor(categoryIndex);
+        var catColor2 = GetCategoryColor(categoryIndex);
 
         if (isUnlocked)
         {
@@ -47,7 +81,7 @@ public static class AchievementIconRenderer
 
             // Glow-Aura (pulsierend)
             float pulse = 0.6f + 0.4f * MathF.Sin(animTime * 3f);
-            _glowPaint.Color = catColor.WithAlpha((byte)(pulse * 40));
+            _glowPaint.Color = catColor2.WithAlpha((byte)(pulse * 40));
             _glowPaint.MaskFilter?.Dispose();
 
             _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.3f);
@@ -56,11 +90,11 @@ public static class AchievementIconRenderer
             _glowPaint.MaskFilter = null;
 
             // Hintergrund-Kreis
-            _bgPaint.Color = catColor.WithAlpha(200);
+            _bgPaint.Color = catColor2.WithAlpha(200);
             canvas.DrawCircle(cx, cy, r, _bgPaint);
 
             // Heller Ring
-            _strokePaint.Color = catColor.WithAlpha((byte)(120 + pulse * 80));
+            _strokePaint.Color = catColor2.WithAlpha((byte)(120 + pulse * 80));
             _strokePaint.StrokeWidth = 2f;
             canvas.DrawCircle(cx, cy, r, _strokePaint);
 
@@ -93,7 +127,7 @@ public static class AchievementIconRenderer
                 canvas.DrawArc(arcRect, -90, 360, false, _strokePaint);
 
                 // Fortschritt
-                _strokePaint.Color = catColor.WithAlpha(140);
+                _strokePaint.Color = catColor2.WithAlpha(140);
                 float sweep = progress * 360f;
                 canvas.DrawArc(arcRect, -90, sweep, false, _strokePaint);
                 _strokePaint.StrokeWidth = 2f;
@@ -111,7 +145,7 @@ public static class AchievementIconRenderer
             // Fortschritts-Text unter dem Icon
             if (progress > 0 && progress < 1f)
             {
-                _textPaint.Color = catColor.WithAlpha(180);
+                _textPaint.Color = catColor2.WithAlpha(180);
                 _progressFont.Size = r * 0.4f;
                 string pctText = $"{(int)(progress * 100)}%";
                 canvas.DrawText(pctText, cx, cy + r + _progressFont.Size + 2f,

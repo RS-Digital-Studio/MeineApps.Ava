@@ -30,7 +30,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Achievements_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            AutomationProperties.AutomationId="Achievements_Icon_Back"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
@@ -133,7 +133,7 @@
                           VerticalAlignment="Center">
                     <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                      AutomationProperties.AutomationId="Achievements_Icon_ItemIcon"
-                                     Width="24" Height="24"
+                                     Width="28" Height="28"
                                      Foreground="White"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center" />
@@ -157,7 +157,7 @@
 
                   <icons:GameIcon Grid.Column="2"
                                    AutomationProperties.AutomationId="Achievements_Icon_ItemCheck"
-                                   Kind="Check" Width="20" Height="20"
+                                   Kind="Check" Width="24" Height="24"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    VerticalAlignment="Center"
                                    IsVisible="{Binding IsUnlocked}" />
@@ -195,7 +195,7 @@
                             Command="{Binding $parent[ListBox].((vm:AchievementsViewModel)DataContext).BoostAchievementCommand}"
                             CommandParameter="{Binding .}">
                       <StackPanel Orientation="Horizontal" Spacing="2">
-                        <icons:GameIcon Kind="Video" Width="14" Height="14"
+                        <icons:GameIcon Kind="Video" Width="18" Height="18"
                                          AutomationProperties.AutomationId="Achievements_Icon_ItemBoostAd"
                                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
                         <TextBlock Text="+20%"

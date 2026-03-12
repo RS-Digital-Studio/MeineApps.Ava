@@ -57,6 +57,8 @@ public sealed class SawingGameRenderer : IDisposable
     private readonly SKPaint _shaderPaint = new() { IsAntialias = false };
     // Weichgezeichnete Formen (Astloch-Schatten mit MaskFilter)
     private readonly SKPaint _blurPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    // Gecachter MaskFilter fuer Astloch-Schatten (vermeidet Native Memory Leak pro DrawKnot-Aufruf)
+    private readonly SKMaskFilter _knotBlurFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2);
     // Holzmaserung: Hauptlinien (dick, 1.5px)
     private readonly SKPaint _grainPaint1 = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
     // Holzmaserung: Sekundaerlinien (mittel, 1px)
@@ -406,7 +408,7 @@ public sealed class SawingGameRenderer : IDisposable
     {
         // Aeusserer Schatten (Vertiefung)
         _blurPaint.Color = WoodDark.WithAlpha(100);
-        _blurPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2);
+        _blurPaint.MaskFilter = _knotBlurFilter;
         canvas.DrawCircle(cx + 1, cy + 1, radius + 1, _blurPaint);
         _blurPaint.MaskFilter = null;
 
@@ -804,5 +806,6 @@ public sealed class SawingGameRenderer : IDisposable
         _grainPaint2?.Dispose();
         _grainPaint3?.Dispose();
         _fineGrainPaint?.Dispose();
+        _knotBlurFilter?.Dispose();
     }
 }

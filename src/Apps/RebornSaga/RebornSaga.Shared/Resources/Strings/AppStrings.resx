@@ -48,6 +48,12 @@
   </data>
 
   <!-- Class Select Scene -->
+  <data name="ChooseYourClass" xml:space="preserve">
+    <value>Choose your class</value>
+  </data>
+  <data name="YourClass" xml:space="preserve">
+    <value>Your Class</value>
+  </data>
   <data name="ClassSwordmaster" xml:space="preserve">
     <value>Swordmaster</value>
   </data>
@@ -56,6 +62,15 @@
   </data>
   <data name="ClassShadowblade" xml:space="preserve">
     <value>Shadowblade</value>
+  </data>
+  <data name="ClassDescSwordmaster" xml:space="preserve">
+    <value>High ATK &amp; DEF. Classic melee fighter.</value>
+  </data>
+  <data name="ClassDescArcanist" xml:space="preserve">
+    <value>Powerful magic &amp; high MP. Ranged destroyer.</value>
+  </data>
+  <data name="ClassDescShadowblade" xml:space="preserve">
+    <value>Fast &amp; deadly. Critical hits. Dodge master.</value>
   </data>
   <data name="Confirm" xml:space="preserve">
     <value>Confirm</value>
@@ -167,6 +182,9 @@
   </data>
   <data name="Equipment" xml:space="preserve">
     <value>Equipment</value>
+  </data>
+  <data name="FreePoints" xml:space="preserve">
+    <value>Free Points: {0}</value>
   </data>
   <data name="Free" xml:space="preserve">
     <value>Free</value>
@@ -385,5 +403,175 @@
   <!-- System -->
   <data name="PressBackAgainToExit" xml:space="preserve">
     <value>Press back again to exit</value>
+  </data>
+
+  <!-- Codex Scene -->
+  <data name="General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="DiscoveredFormat" xml:space="preserve">
+    <value>{0}/{1} discovered</value>
+  </data>
+  <data name="NoEntries" xml:space="preserve">
+    <value>No entries</value>
+  </data>
+  <data name="NoEntriesYet" xml:space="preserve">
+    <value>No entries discovered yet.</value>
+  </data>
+
+  <!-- Status Scene -->
+  <data name="StatusWindow" xml:space="preserve">
+    <value>STATUS WINDOW</value>
+  </data>
+  <data name="NoSkills" xml:space="preserve">
+    <value>No skills</value>
+  </data>
+  <data name="EmptySlot" xml:space="preserve">
+    <value>- Empty -</value>
+  </data>
+
+  <!-- Inventory Scene -->
+  <data name="NoItems" xml:space="preserve">
+    <value>No items</value>
+  </data>
+  <data name="SellPriceFormat" xml:space="preserve">
+    <value>Sell: {0}G</value>
+  </data>
+
+  <!-- Shop Scene -->
+  <data name="BuyFormat" xml:space="preserve">
+    <value>Buy ({0}G)</value>
+  </data>
+  <data name="SellFormat" xml:space="preserve">
+    <value>Sell ({0}G)</value>
+  </data>
+
+  <!-- Shared Detail Panel -->
+  <data name="HealHpFormat" xml:space="preserve">
+    <value>Heals {0} HP</value>
+  </data>
+  <data name="HealMpFormat" xml:space="preserve">
+    <value>Heals {0} MP</value>
+  </data>
+  <data name="HealPercentFormat" xml:space="preserve">
+    <value>Heals {0}% HP+MP</value>
+  </data>
+  <data name="OnlyRestriction" xml:space="preserve">
+    <value>Only: {0}</value>
+  </data>
+
+  <!-- Overworld Scene -->
+  <data name="LoadingMap" xml:space="preserve">
+    <value>Loading map...</value>
+  </data>
+
+  <!-- SaveSlot Scene -->
+  <data name="TapToStart" xml:space="preserve">
+    <value>Tap to start</value>
+  </data>
+  <data name="DeleteSlotFormat" xml:space="preserve">
+    <value>Delete Slot {0}?</value>
+  </data>
+  <data name="CannotBeUndone" xml:space="preserve">
+    <value>This action cannot be undone.</value>
+  </data>
+  <data name="PrologBeginning" xml:space="preserve">
+    <value>Prologue: Beginning</value>
+  </data>
+  <data name="PrologAwakening" xml:space="preserve">
+    <value>Prologue: Awakening</value>
+  </data>
+  <data name="PrologSystem" xml:space="preserve">
+    <value>Prologue: System</value>
+  </data>
+  <data name="ChapterFormat" xml:space="preserve">
+    <value>Chapter {0}</value>
+  </data>
+
+  <!-- Enemy Names -->
+  <data name="enemy_shadow_wolf" xml:space="preserve">
+    <value>Shadow Wolf</value>
+  </data>
+  <data name="enemy_forest_slime" xml:space="preserve">
+    <value>Forest Slime</value>
+  </data>
+  <data name="enemy_goblin_scout" xml:space="preserve">
+    <value>Goblin Scout</value>
+  </data>
+  <data name="enemy_fortress_guard" xml:space="preserve">
+    <value>Fortress Guard</value>
+  </data>
+  <data name="enemy_shadow_scout" xml:space="preserve">
+    <value>Shadow Scout</value>
+  </data>
+
+  <!-- Boss Names -->
+  <data name="boss_malachar" xml:space="preserve">
+    <value>Malachar</value>
+  </data>
+  <data name="boss_vexara" xml:space="preserve">
+    <value>Vexara</value>
+  </data>
+  <data name="boss_krynn" xml:space="preserve">
+    <value>Krynn</value>
+  </data>
+  <data name="boss_nihilus" xml:space="preserve">
+    <value>Nihilus</value>
+  </data>
+  <data name="boss_wolf_alpha" xml:space="preserve">
+    <value>Alpha Wolf</value>
+  </data>
+  <data name="boss_garak" xml:space="preserve">
+    <value>Garak</value>
+  </data>
+  <data name="boss_erdross" xml:space="preserve">
+    <value>Erdross</value>
+  </data>
+  <data name="boss_sentinel" xml:space="preserve">
+    <value>The Sentinel</value>
+  </data>
+  <data name="boss_sylas" xml:space="preserve">
+    <value>Sylas</value>
+  </data>
+  <data name="boss_ravok" xml:space="preserve">
+    <value>Ravok</value>
+  </data>
+  <data name="boss_thessara" xml:space="preserve">
+    <value>Thessara</value>
+  </data>
+  <data name="boss_morthos" xml:space="preserve">
+    <value>Morthos</value>
+  </data>
+  <data name="boss_shadow_self" xml:space="preserve">
+    <value>Shadow Self</value>
+  </data>
+  <data name="boss_xaroth" xml:space="preserve">
+    <value>Xaroth</value>
+  </data>
+  <data name="boss_xaroth_evolved" xml:space="preserve">
+    <value>Xaroth Evolved</value>
+  </data>
+  <data name="boss_nihilus_echo" xml:space="preserve">
+    <value>Nihilus Echo</value>
+  </data>
+
+  <!-- Tutorial Battle -->
+  <data name="tutorial_battle_intro" xml:space="preserve">
+    <value>Your first battle! I'll guide you through the basics step by step.</value>
+  </data>
+  <data name="tutorial_battle_attack" xml:space="preserve">
+    <value>Tap **Attack** to hit the enemy.</value>
+  </data>
+  <data name="tutorial_battle_skill" xml:space="preserve">
+    <value>The enemy strikes back! Use a **Skill** for more damage. Skills cost MP.</value>
+  </data>
+  <data name="tutorial_battle_item" xml:space="preserve">
+    <value>You're badly wounded! Open **Items** and use a healing potion.</value>
+  </data>
+  <data name="tutorial_battle_dodge" xml:space="preserve">
+    <value>Sometimes dodging is the best choice! Tap **Dodge**.</value>
+  </data>
+  <data name="tutorial_battle_finish" xml:space="preserve">
+    <value>Well done! Now defeat the enemy!</value>
   </data>
 </root>

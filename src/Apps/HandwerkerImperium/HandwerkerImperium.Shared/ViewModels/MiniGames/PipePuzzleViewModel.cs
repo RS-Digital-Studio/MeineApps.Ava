@@ -205,6 +205,7 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
         InitializePuzzle();
 
         CheckAndShowTutorial(MiniGameType.PipePuzzle);
+        if (!ShowTutorial) _ = StartGameAsync();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -530,11 +531,9 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
                 await EndGameAsync(false);
             }
         }
-        catch (Exception ex)
+        catch
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
-#endif
+            // Timer-Fehler still behandelt
         }
     }
 
@@ -874,6 +873,7 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(MiniGameType.PipePuzzle);
             _gameStateService.MarkDirty();
         }
+        _ = StartGameAsync();
     }
 
     [RelayCommand]

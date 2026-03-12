@@ -29,7 +29,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Statistics_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            AutomationProperties.AutomationId="Statistics_Icon_Back"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
@@ -53,7 +53,7 @@
         <Button Grid.Column="2" Classes="Text"
                 AutomationProperties.AutomationId="Statistics_Btn_Refresh"
                 Command="{Binding RefreshStatisticsCommand}">
-          <icons:GameIcon Kind="Refresh" Width="24" Height="24"
+          <icons:GameIcon Kind="Refresh" Width="28" Height="28"
                            AutomationProperties.AutomationId="Statistics_Icon_Refresh"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
@@ -74,7 +74,7 @@
                 HorizontalAlignment="Center"
                 Margin="0,0,0,8">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <icons:GameIcon Kind="Trophy" Width="20" Height="20"
+            <icons:GameIcon Kind="Trophy" Width="28" Height="28"
                              AutomationProperties.AutomationId="Statistics_Icon_Leaderboard" />
             <TextBlock Text="{loc:Translate Leaderboard}" VerticalAlignment="Center"
                        AutomationProperties.AutomationId="Statistics_Txt_Leaderboard" />
@@ -87,7 +87,7 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         AutomationProperties.AutomationId="Statistics_Panel_PlayerHeader">
-              <icons:GameIcon Kind="AccountHardHat" Width="20" Height="20"
+              <icons:GameIcon Kind="AccountHardHat" Width="28" Height="28"
                                AutomationProperties.AutomationId="Statistics_Icon_Player"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Player}"
@@ -178,7 +178,7 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         AutomationProperties.AutomationId="Statistics_Panel_MiniGamesHeader">
-              <icons:GameIcon Kind="GamepadVariant" Width="20" Height="20"
+              <icons:GameIcon Kind="GamepadVariant" Width="28" Height="28"
                                AutomationProperties.AutomationId="Statistics_Icon_MiniGames"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate MiniGames}"
@@ -243,7 +243,7 @@
                            AutomationProperties.AutomationId="Statistics_Txt_CurrentStreakLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <icons:GameIcon Kind="Fire" Width="18" Height="18"
+                  <icons:GameIcon Kind="Fire" Width="28" Height="28"
                                    AutomationProperties.AutomationId="Statistics_Icon_Fire"
                                    Foreground="{DynamicResource WarningBrush}" />
                   <TextBlock Text="{Binding CurrentPerfectStreak}"
@@ -260,7 +260,7 @@
                            AutomationProperties.AutomationId="Statistics_Txt_BestStreakLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <icons:GameIcon Kind="Star" Width="18" Height="18"
+                  <icons:GameIcon Kind="Star" Width="28" Height="28"
                                    AutomationProperties.AutomationId="Statistics_Icon_Star"
                                    Foreground="{StaticResource CraftGoldBrush}" />
                   <TextBlock Text="{Binding BestPerfectStreak}"
@@ -279,7 +279,7 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         AutomationProperties.AutomationId="Statistics_Panel_PrestigeHeader">
-              <icons:GameIcon Kind="Creation" Width="20" Height="20"
+              <icons:GameIcon Kind="Creation" Width="28" Height="28"
                                AutomationProperties.AutomationId="Statistics_Icon_Prestige"
                                Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate Prestige}"
@@ -353,7 +353,7 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
                     <icons:GameIcon Kind="{Binding NextTierIcon, Converter={StaticResource IconKindConverter}}"
-                                     Width="18" Height="18"
+                                     Width="24" Height="24"
                                      AutomationProperties.AutomationId="Statistics_Icon_NextTier">
                       <icons:GameIcon.Foreground>
                         <SolidColorBrush Color="{Binding NextTierColor}" />
@@ -448,7 +448,7 @@
                     Background="#20FFD700"
                     AutomationProperties.AutomationId="Statistics_Border_PrestigePassActive">
               <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                <icons:GameIcon Kind="ShieldCheck" Width="18" Height="18"
+                <icons:GameIcon Kind="ShieldCheck" Width="28" Height="28"
                                  AutomationProperties.AutomationId="Statistics_Icon_PrestigePassActive"
                                  Foreground="{StaticResource CraftGoldBrush}" />
                 <TextBlock Text="{loc:Translate PrestigePassActive}"
@@ -468,7 +468,7 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <icons:GameIcon Kind="Creation" Width="16" Height="16"
+                <icons:GameIcon Kind="Creation" Width="24" Height="24"
                                  AutomationProperties.AutomationId="Statistics_Icon_PrestigeBtn" />
                 <TextBlock Text="{loc:Translate Prestige}"
                            AutomationProperties.AutomationId="Statistics_Txt_PrestigeBtnLabel"
@@ -493,7 +493,7 @@
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         AutomationProperties.AutomationId="Statistics_Panel_HistoryHeader">
-              <icons:GameIcon Kind="History" Width="20" Height="20"
+              <icons:GameIcon Kind="History" Width="28" Height="28"
                                AutomationProperties.AutomationId="Statistics_Icon_History"
                                Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate PrestigeHistory}"
@@ -518,7 +518,7 @@
                           <SolidColorBrush Color="{Binding TierColor}" Opacity="0.2" />
                         </Border.Background>
                         <icons:GameIcon Kind="{Binding TierIcon, Converter={StaticResource IconKindConverter}}"
-                                         Width="18" Height="18"
+                                         Width="24" Height="24"
                                          HorizontalAlignment="Center"
                                          VerticalAlignment="Center"
                                          AutomationProperties.AutomationId="Statistics_Icon_HistoryTier">
@@ -577,7 +577,7 @@
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           AutomationProperties.AutomationId="Statistics_Panel_ShopHeader">
-                <icons:GameIcon Kind="StorefrontOutline" Width="20" Height="20"
+                <icons:GameIcon Kind="StorefrontOutline" Width="24" Height="24"
                                  AutomationProperties.AutomationId="Statistics_Icon_Shop"
                                  Foreground="{StaticResource CraftGoldBrush}" />
                 <TextBlock Text="{loc:Translate PrestigeShop}"
@@ -595,7 +595,7 @@
                   <SolidColorBrush Color="#D97706" Opacity="0.3" />
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <icons:GameIcon Kind="Creation" Width="14" Height="14"
+                  <icons:GameIcon Kind="Creation" Width="18" Height="18"
                                    AutomationProperties.AutomationId="Statistics_Icon_PPCoin"
                                    Foreground="{StaticResource CraftGoldBrush}" />
                   <TextBlock Text="{Binding PrestigePoints}"
@@ -622,7 +622,7 @@
                             AutomationProperties.AutomationId="Statistics_Border_ShopCategoryHeader">
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <icons:GameIcon Kind="{Binding CategoryIcon, Converter={StaticResource IconKindConverter}}"
-                                         Width="16" Height="16"
+                                         Width="20" Height="20"
                                          Foreground="{StaticResource CraftGoldBrush}" />
                         <TextBlock Text="{Binding CategoryName}"
                                    FontSize="13" FontWeight="Bold"
@@ -647,7 +647,7 @@
                                 VerticalAlignment="Center">
                           <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                            AutomationProperties.AutomationId="Statistics_Icon_ShopItemIcon"
-                                           Width="20" Height="20"
+                                           Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
@@ -701,7 +701,7 @@
 
                         <icons:GameIcon Grid.Column="2"
                                          AutomationProperties.AutomationId="Statistics_Icon_ShopItemPurchased"
-                                         Kind="CheckCircle" Width="24" Height="24"
+                                         Kind="CheckCircle" Width="28" Height="28"
                                          Foreground="{DynamicResource SuccessBrush}"
                                          VerticalAlignment="Center"
                                          IsVisible="{Binding IsPurchased}" />
@@ -720,7 +720,7 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         AutomationProperties.AutomationId="Statistics_Panel_WorkshopSummaryHeader">
-              <icons:GameIcon Kind="Factory" Width="20" Height="20"
+              <icons:GameIcon Kind="Factory" Width="24" Height="24"
                                AutomationProperties.AutomationId="Statistics_Icon_Factory"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Workshops}"
@@ -775,7 +775,7 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         AutomationProperties.AutomationId="Statistics_Panel_WorkshopDetailsHeader">
-              <icons:GameIcon Kind="ClipboardList" Width="20" Height="20"
+              <icons:GameIcon Kind="ClipboardList" Width="24" Height="24"
                                AutomationProperties.AutomationId="Statistics_Icon_ClipboardList"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate WorkshopDetails}"
@@ -797,7 +797,7 @@
                       <!-- Icon -->
                       <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                        AutomationProperties.AutomationId="Statistics_Icon_WorkshopDetailIcon"
-                                       Width="20" Height="20"
+                                       Width="24" Height="24"
                                        Foreground="{StaticResource CraftPrimaryLightBrush}"
                                        VerticalAlignment="Center" />
 
@@ -824,7 +824,7 @@
                                   Orientation="Horizontal"
                                   Spacing="2"
                                   VerticalAlignment="Center">
-                        <icons:GameIcon Kind="AccountHardHat" Width="14" Height="14"
+                        <icons:GameIcon Kind="AccountHardHat" Width="18" Height="18"
                                          AutomationProperties.AutomationId="Statistics_Icon_WorkshopDetailWorker"
                                          Foreground="{DynamicResource TextSecondaryBrush}" />
                         <TextBlock Text="{Binding Workers}"

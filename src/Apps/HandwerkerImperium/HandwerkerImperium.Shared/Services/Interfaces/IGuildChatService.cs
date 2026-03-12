@@ -27,4 +27,16 @@ public class ChatMessageDisplay
     public string Text { get; set; } = "";
     public string Timestamp { get; set; } = "";
     public bool IsOwnMessage { get; set; }
+
+    /// <summary>Formatierte Uhrzeit für die Anzeige (HH:mm).</summary>
+    public string TimestampDisplay
+    {
+        get
+        {
+            if (DateTime.TryParse(Timestamp, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+                return dt.ToLocalTime().ToString("HH:mm");
+            return "";
+        }
+    }
 }

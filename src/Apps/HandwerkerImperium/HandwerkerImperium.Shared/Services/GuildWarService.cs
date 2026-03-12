@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Services;
@@ -81,9 +82,9 @@ public sealed class GuildWarService : IGuildWarService
             _lastWarCheck = DateTime.UtcNow;
             return war;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetOrCreateActiveWarAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return null;
         }
         finally
@@ -110,7 +111,7 @@ public sealed class GuildWarService : IGuildWarService
             var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
-            // Eigenen Score aktualisieren
+            // Eigenen Score aktualisieren (Race-Condition-frei: jeder Spieler hat eigenen Eintrag)
             var ownScore = await _firebase.GetAsync<GuildWarScore>(
                 $"guild_war_scores/{_activeWarId}/{membership.GuildId}/{uid}");
 
@@ -122,31 +123,19 @@ public sealed class GuildWarService : IGuildWarService
                     UpdatedAt = DateTime.UtcNow.ToString("O")
                 });
 
-            // Gilden-Gesamtscore aktualisieren (aktuellen Wert aus Firebase lesen, nicht cached)
-            if (!string.IsNullOrEmpty(_activeWarId))
+            // Cache aktualisieren (lokaler Wert, kein Firebase-Write auf Gesamt-Score)
+            if (_cachedWar != null)
             {
-                var freshWar = await _firebase.GetAsync<GuildWar>($"guild_wars/{_activeWarId}");
-                if (freshWar != null)
-                {
-                    var isGuildA = freshWar.GuildAId == membership.GuildId;
-                    var scoreField = isGuildA ? "scoreA" : "scoreB";
-                    var currentTotal = isGuildA ? freshWar.ScoreA : freshWar.ScoreB;
-
-                    await _firebase.UpdateAsync($"guild_wars/{_activeWarId}",
-                        new Dictionary<string, object> { [scoreField] = currentTotal + points });
-
-                    // Cache aktualisieren
-                    _cachedWar = freshWar;
-                    if (isGuildA)
-                        _cachedWar.ScoreA = currentTotal + points;
-                    else
-                        _cachedWar.ScoreB = currentTotal + points;
-                }
+                var isGuildA = _cachedWar.GuildAId == membership.GuildId;
+                if (isGuildA)
+                    _cachedWar.ScoreA += points;
+                else
+                    _cachedWar.ScoreB += points;
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in ContributeScoreAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 
@@ -160,19 +149,29 @@ public sealed class GuildWarService : IGuildWarService
 
         var isGuildA = war.GuildAId == membership.GuildId;
 
-        // Eigenen Beitrag laden
+        // Scores aus per-Player-Daten aggregieren (Race-Condition-frei)
+        long ownScore = 0;
+        long opponentScore = 0;
         long ownContribution = 0;
         try
         {
-            var uid = _firebase.PlayerId;
-            if (!string.IsNullOrEmpty(uid) && !string.IsNullOrEmpty(_activeWarId))
+            if (!string.IsNullOrEmpty(_activeWarId))
             {
-                var score = await _firebase.GetAsync<GuildWarScore>(
-                    $"guild_war_scores/{_activeWarId}/{membership.GuildId}/{uid}");
-                ownContribution = score?.Score ?? 0;
+                var ownGuildId = membership.GuildId;
+                var opponentGuildId = isGuildA ? war.GuildBId : war.GuildAId;
+
+                (ownScore, ownContribution) = await AggregateGuildScoresAsync(
+                    _activeWarId, ownGuildId, _firebase.PlayerId);
+                (opponentScore, _) = await AggregateGuildScoresAsync(
+                    _activeWarId, opponentGuildId, null);
             }
         }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Fehler in GetWarStatusAsync: {ex.Message}"); }
+        catch
+        {
+            // Netzwerkfehler → Fallback auf War-Objekt-Werte
+            ownScore = isGuildA ? war.ScoreA : war.ScoreB;
+            opponentScore = isGuildA ? war.ScoreB : war.ScoreA;
+        }
 
         var endDate = DateTime.TryParse(war.EndDate, CultureInfo.InvariantCulture,
             DateTimeStyles.RoundtripKind, out var ed) ? ed : DateTime.UtcNow.AddDays(7);
@@ -181,13 +180,13 @@ public sealed class GuildWarService : IGuildWarService
         {
             OwnGuildName = isGuildA ? war.GuildAName : war.GuildBName,
             OpponentGuildName = isGuildA ? war.GuildBName : war.GuildAName,
-            OwnScore = isGuildA ? war.ScoreA : war.ScoreB,
-            OpponentScore = isGuildA ? war.ScoreB : war.ScoreA,
+            OwnScore = ownScore,
+            OpponentScore = opponentScore,
             OwnContribution = ownContribution,
             EndDate = endDate,
             IsActive = war.Status == "active" && endDate > DateTime.UtcNow,
             DidWin = war.Status == "completed" &&
-                     (isGuildA ? war.ScoreA > war.ScoreB : war.ScoreB > war.ScoreA)
+                     (isGuildA ? ownScore > opponentScore : opponentScore < ownScore)
         };
     }
 
@@ -217,28 +216,67 @@ public sealed class GuildWarService : IGuildWarService
 
         try
         {
+            var membership = _gameStateService.State.GuildMembership;
+            if (membership == null) return;
+
+            // Scores aggregieren (Race-Condition-frei)
+            var isGuildA = _cachedWar.GuildAId == membership.GuildId;
+            var ownGuildId = membership.GuildId;
+            var opponentGuildId = isGuildA ? _cachedWar.GuildBId : _cachedWar.GuildAId;
+
+            var (ownTotal, _) = await AggregateGuildScoresAsync(_activeWarId, ownGuildId, null);
+            var (opponentTotal, _) = await AggregateGuildScoresAsync(_activeWarId, opponentGuildId, null);
+
             // War als beendet markieren
             await _firebase.UpdateAsync($"guild_wars/{_activeWarId}",
                 new Dictionary<string, object> { ["status"] = "completed" });
             _cachedWar.Status = "completed";
 
             // Belohnungen verteilen
-            var membership = _gameStateService.State.GuildMembership;
-            if (membership == null) return;
-
-            var isGuildA = _cachedWar.GuildAId == membership.GuildId;
-            var won = isGuildA
-                ? _cachedWar.ScoreA > _cachedWar.ScoreB
-                : _cachedWar.ScoreB > _cachedWar.ScoreA;
-
+            var won = ownTotal > opponentTotal;
             var reward = won ? WinnerReward : LoserReward;
             _gameStateService.AddGoldenScrews(reward);
             _preferences.Set(rewardKey, true);
             await _saveGameService.SaveAsync();
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in CheckAndFinalizeWarAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
+        }
+    }
+
+    /// <summary>
+    /// Aggregiert alle Spieler-Scores einer Gilde in einem War (Race-Condition-frei).
+    /// Gibt (GildenGesamt, eigener Beitrag) zurück. Wenn playerIdToFind null ist, wird eigener Beitrag nicht gesucht.
+    /// </summary>
+    private async Task<(long Total, long OwnContribution)> AggregateGuildScoresAsync(
+        string warId, string guildId, string? playerIdToFind)
+    {
+        try
+        {
+            var json = await _firebase.QueryAsync($"guild_war_scores/{warId}/{guildId}", "");
+            if (string.IsNullOrEmpty(json) || json == "null")
+                return (0, 0);
+
+            var scores = JsonSerializer.Deserialize<Dictionary<string, GuildWarScore>>(json);
+            if (scores == null || scores.Count == 0)
+                return (0, 0);
+
+            long total = 0;
+            long own = 0;
+
+            foreach (var (playerId, score) in scores)
+            {
+                total += score.Score;
+                if (playerIdToFind != null && playerId == playerIdToFind)
+                    own = score.Score;
+            }
+
+            return (total, own);
+        }
+        catch
+        {
+            return (0, 0);
         }
     }
 
@@ -300,9 +338,9 @@ public sealed class GuildWarService : IGuildWarService
             await _firebase.SetAsync($"guild_wars/{warId}", war);
             return war;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in TryCreateWarAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return null;
         }
     }

@@ -1,5 +1,6 @@
 namespace RebornSaga.Scenes;
 
+using MeineApps.Core.Ava.Localization;
 using RebornSaga.Engine;
 using RebornSaga.Models;
 using RebornSaga.Models.Enums;
@@ -20,10 +21,25 @@ public class StatusScene : Scene
     private readonly SkillService _skillService;
     private readonly InventoryService _inventory;
     private readonly ProgressionService _progression;
+    private readonly ILocalizationService _localization;
 
     // Tabs: Stats, Skills, Equipment
     private int _selectedTab;
-    private static readonly string[] TabLabels = { "Status", "Skills", "Equipment" };
+    private readonly string[] _tabLabels = new string[3];
+
+    // Lokalisierte Strings (gecacht im Konstruktor)
+    private readonly string _statusWindowTitle;
+    private readonly string _noSkillsText;
+    private readonly string _emptySlotText;
+    private readonly string _freePointsFormat;
+    private readonly string _freeText;
+    private readonly string _buffText;
+    private readonly string _classSwordmaster;
+    private readonly string _classMage;
+    private readonly string _classAssassin;
+    private readonly string _slotWeapon;
+    private readonly string _slotArmor;
+    private readonly string _slotAccessory;
 
     // Layout
     private SKRect _lastBounds;
@@ -60,10 +76,7 @@ public class StatusScene : Scene
 
     // Gecachte Equipment-Strings (nur bei Tab-Wechsel aktualisieren)
     private bool _equipCacheDirty = true;
-    private static readonly (EquipSlot slot, string label)[] EquipSlots =
-    {
-        (EquipSlot.Weapon, "Waffe"), (EquipSlot.Armor, "Rüstung"), (EquipSlot.Accessory, "Accessoire")
-    };
+    private readonly (EquipSlot slot, string label)[] _equipSlots;
     private readonly string[] _cachedEquipBonusTexts = new string[3];
 
     /// <summary>Gecachte Daten für einen Skill-Eintrag im Skills-Tab.</summary>
@@ -85,12 +98,38 @@ public class StatusScene : Scene
     private static readonly SKPaint _glowBorderPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKMaskFilter _panelGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
 
-    public StatusScene(Player player, SkillService skillService, InventoryService inventory, ProgressionService progression)
+    public StatusScene(Player player, SkillService skillService, InventoryService inventory,
+        ProgressionService progression, ILocalizationService localization)
     {
         _player = player;
         _skillService = skillService;
         _inventory = inventory;
         _progression = progression;
+        _localization = localization;
+
+        _tabLabels[0] = _localization.GetString("Status") ?? "Status";
+        _tabLabels[1] = _localization.GetString("Skills") ?? "Skills";
+        _tabLabels[2] = _localization.GetString("Equipment") ?? "Equipment";
+
+        _statusWindowTitle = _localization.GetString("StatusWindow") ?? "STATUS WINDOW";
+        _noSkillsText = _localization.GetString("NoSkills") ?? "No skills";
+        _emptySlotText = _localization.GetString("EmptySlot") ?? "- Empty -";
+        _freePointsFormat = _localization.GetString("FreePoints") ?? "Free Points: {0}";
+        _freeText = _localization.GetString("Free") ?? "Free";
+        _buffText = _localization.GetString("Buff") ?? "Buff";
+        _classSwordmaster = _localization.GetString("ClassSwordmaster") ?? "Swordmaster";
+        _classMage = _localization.GetString("ClassMage") ?? "Mage";
+        _classAssassin = _localization.GetString("ClassAssassin") ?? "Assassin";
+
+        _slotWeapon = _localization.GetString("TypeWeapon") ?? "Weapon";
+        _slotArmor = _localization.GetString("TypeArmor") ?? "Armor";
+        _slotAccessory = _localization.GetString("TypeAccessory") ?? "Accessory";
+        _equipSlots = new[]
+        {
+            (EquipSlot.Weapon, _slotWeapon),
+            (EquipSlot.Armor, _slotArmor),
+            (EquipSlot.Accessory, _slotAccessory)
+        };
     }
 
     public override void OnEnter()
@@ -110,7 +149,7 @@ public class StatusScene : Scene
         _cachedSpdText = $"SPD: {_player.Spd}";
         _cachedLukText = $"LUK: {_player.Luk}";
         _cachedGoldText = $"Gold: {_player.Gold:N0}";
-        _cachedFreePoints = _player.FreeStatPoints > 0 ? $"Freie Punkte: {_player.FreeStatPoints}" : "";
+        _cachedFreePoints = _player.FreeStatPoints > 0 ? string.Format(_freePointsFormat, _player.FreeStatPoints) : "";
         _lastLevel = _player.Level;
         _lastHp = _player.Hp;
         _lastMp = _player.Mp;
@@ -119,9 +158,9 @@ public class StatusScene : Scene
         // Klassen-Text für Status-Tab (gecacht statt pro Frame)
         var classText = _player.Class switch
         {
-            ClassName.Swordmaster => "Schwertmeister",
-            ClassName.Arcanist => "Magier",
-            ClassName.Shadowblade => "Assassine",
+            ClassName.Swordmaster => _classSwordmaster,
+            ClassName.Arcanist => _classMage,
+            ClassName.Shadowblade => _classAssassin,
             _ => ""
         };
         _cachedClassLine = $"{classText}  {_cachedLevelText}";
@@ -163,16 +202,16 @@ public class StatusScene : Scene
         canvas.DrawRoundRect(panelRR, _glowBorderPaint);
 
         // Header: "STATUS WINDOW"
-        UIRenderer.DrawTextWithShadow(canvas, "STATUS WINDOW", bounds.MidX, bounds.Top + bounds.Height * 0.05f,
+        UIRenderer.DrawTextWithShadow(canvas, _statusWindowTitle, bounds.MidX, bounds.Top + bounds.Height * 0.05f,
             bounds.Width * 0.055f, UIRenderer.PrimaryGlow);
 
         // Zurück-Button
         UIRenderer.DrawButton(canvas, _backButtonRect, "X", color: UIRenderer.Border);
 
         // Tabs
-        for (int i = 0; i < TabLabels.Length; i++)
+        for (int i = 0; i < _tabLabels.Length; i++)
         {
-            UIRenderer.DrawButton(canvas, _tabRects[i], TabLabels[i],
+            UIRenderer.DrawButton(canvas, _tabRects[i], _tabLabels[i],
                 color: i == _selectedTab ? UIRenderer.Primary : UIRenderer.CardBg);
         }
 
@@ -269,7 +308,7 @@ public class StatusScene : Scene
 
         if (_cachedSkills.Count == 0)
         {
-            UIRenderer.DrawText(canvas, "Keine Skills", bounds.MidX, bounds.MidY,
+            UIRenderer.DrawText(canvas, _noSkillsText, bounds.MidX, bounds.MidY,
                 fontSize * 1.2f, UIRenderer.TextMuted, SKTextAlign.Center, true);
             return;
         }
@@ -327,8 +366,8 @@ public class StatusScene : Scene
         foreach (var skill in skills.Where(s => s.IsUnlocked))
         {
             var def = skill.Definition;
-            var mpText = def.MpCost > 0 ? $"{def.MpCost} MP" : "Frei";
-            var multiText = def.Multiplier > 0 ? $"{def.Multiplier:F1}x" : "Buff";
+            var mpText = def.MpCost > 0 ? $"{def.MpCost} MP" : _freeText;
+            var multiText = def.Multiplier > 0 ? $"{def.Multiplier:F1}x" : _buffText;
 
             string? tagsText = null;
             var tags = "";
@@ -340,7 +379,7 @@ public class StatusScene : Scene
             {
                 TierText = def.IsUltimate ? "ULT" : $"T{def.Tier}",
                 IsUltimate = def.IsUltimate,
-                NameKey = def.NameKey,
+                NameKey = _localization.GetString(def.NameKey) ?? def.NameKey,
                 InfoLine = $"{mpText}  |  {multiText}",
                 Mastery = skill.Mastery,
                 MasteryRequired = def.MasteryRequired,
@@ -366,9 +405,9 @@ public class StatusScene : Scene
             _equipCacheDirty = false;
         }
 
-        for (int i = 0; i < EquipSlots.Length; i++)
+        for (int i = 0; i < _equipSlots.Length; i++)
         {
-            var (slot, label) = EquipSlots[i];
+            var (slot, label) = _equipSlots[i];
             var cardRect = new SKRect(x, y, x + w, y + lineH * 1.4f);
             UIRenderer.DrawPanel(canvas, cardRect, UIRenderer.CardBg, 6f);
 
@@ -379,7 +418,8 @@ public class StatusScene : Scene
             var equipped = _inventory.GetEquipped(slot);
             if (equipped != null)
             {
-                UIRenderer.DrawText(canvas, equipped.NameKey, x + 8, y + lineH * 0.8f, fontSize, UIRenderer.TextPrimary);
+                var equipName = _localization.GetString(equipped.NameKey) ?? equipped.NameKey;
+                UIRenderer.DrawText(canvas, equipName, x + 8, y + lineH * 0.8f, fontSize, UIRenderer.TextPrimary);
 
                 // Stat-Boni (gecacht)
                 UIRenderer.DrawText(canvas, _cachedEquipBonusTexts[i], x + w - 8, y + lineH * 0.8f,
@@ -387,7 +427,7 @@ public class StatusScene : Scene
             }
             else
             {
-                UIRenderer.DrawText(canvas, "- Leer -", x + 8, y + lineH * 0.8f, fontSize, UIRenderer.TextMuted);
+                UIRenderer.DrawText(canvas, _emptySlotText, x + 8, y + lineH * 0.8f, fontSize, UIRenderer.TextMuted);
             }
 
             y += lineH * 1.6f;
@@ -400,9 +440,9 @@ public class StatusScene : Scene
     /// </summary>
     private void RebuildEquipmentCache()
     {
-        for (int i = 0; i < EquipSlots.Length; i++)
+        for (int i = 0; i < _equipSlots.Length; i++)
         {
-            var equipped = _inventory.GetEquipped(EquipSlots[i].slot);
+            var equipped = _inventory.GetEquipped(_equipSlots[i].slot);
             if (equipped != null)
             {
                 var bonusText = "";

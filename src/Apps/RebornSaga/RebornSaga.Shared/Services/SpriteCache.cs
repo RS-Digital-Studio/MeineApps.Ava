@@ -9,11 +9,16 @@ using System.Collections.Generic;
 /// LRU-Cache für Charakter-Sprites (Einzelbilder, kein Atlas).
 /// Hält maximal <see cref="MaxCachedImages"/> Bilder gleichzeitig im Speicher.
 /// Thread-safe über lock auf _syncRoot.
+/// Berechnet Content-Bounds (nicht-transparenter Bereich) pro Sprite beim ersten Load.
 /// </summary>
 public sealed class SpriteCache : IDisposable
 {
-    /// <summary>Maximale Anzahl gleichzeitig gecachter Sprite-Bilder.</summary>
-    public const int MaxCachedImages = 30;
+    /// <summary>
+    /// Maximale Anzahl gleichzeitig gecachter Sprite-Bilder.
+    /// 60 statt 30: Dialogszenen brauchen ~15-20 Einträge (2 Charaktere × Poses/Emotions +
+    /// Overlays + Hintergrund). Bei 30 wurden aktive Sprites/Hintergründe verdrängt → weißes Flackern.
+    /// </summary>
+    public const int MaxCachedImages = 60;
 
     private readonly IAssetDeliveryService _assets;
     private readonly object _syncRoot = new();
@@ -22,6 +27,9 @@ public sealed class SpriteCache : IDisposable
     private readonly LinkedList<string> _lruOrder = new();
     // Lookup: relativePath → Cache-Eintrag + LRU-Node
     private readonly Dictionary<string, (SKBitmap Bitmap, LinkedListNode<string> Node)> _cache = new();
+
+    // Content-Bounds Cache: Nicht-transparenter Bereich pro Sprite (einmal pro Load berechnet)
+    private readonly Dictionary<string, SKRectI> _contentBounds = new();
 
     private bool _disposed;
 
@@ -104,6 +112,22 @@ public sealed class SpriteCache : IDisposable
     }
 
     /// <summary>
+    /// Gibt die Content-Bounds eines Charakter-Sprites zurück (nicht-transparenter Bereich).
+    /// Wird beim ersten Load berechnet und gecacht. Für content-aware Skalierung und Positionierung.
+    /// </summary>
+    public SKRectI GetSpriteContentBounds(string charId, Pose pose, Emotion emotion)
+    {
+        var path = SpriteAssetPaths.GetCharacterSpritePath(charId, pose, emotion);
+        lock (_syncRoot)
+        {
+            if (_contentBounds.TryGetValue(path, out var bounds))
+                return bounds;
+        }
+        // Fallback: Gesamtes Sprite (wenn noch nicht geladen)
+        return new SKRectI(0, 0, 1248, 1824);
+    }
+
+    /// <summary>
     /// Prüft ob ein Charakter-Sprite verfügbar ist (lokal heruntergeladen).
     /// </summary>
     public bool HasSprite(string charId, Pose pose, Emotion emotion)
@@ -127,6 +151,7 @@ public sealed class SpriteCache : IDisposable
 
             _cache.Clear();
             _lruOrder.Clear();
+            _contentBounds.Clear();
         }
     }
 
@@ -176,13 +201,54 @@ public sealed class SpriteCache : IDisposable
                 {
                     evicted.Bitmap.Dispose();
                     _cache.Remove(evictKey);
+                    _contentBounds.Remove(evictKey);
                 }
             }
+
+            // Content-Bounds berechnen (einmal pro Sprite, für content-aware Rendering)
+            if (!_contentBounds.ContainsKey(relativePath))
+                _contentBounds[relativePath] = ComputeContentBounds(bitmap);
 
             // Neuen Eintrag hinzufügen
             var node = _lruOrder.AddFirst(relativePath);
             _cache[relativePath] = (bitmap, node);
             return bitmap;
         }
+    }
+
+    /// <summary>
+    /// Berechnet die Bounding Box des nicht-transparenten Bereichs (Content-Bounds).
+    /// Sampling mit Schritt 4 für Performance (~142K statt 2.3M Pixel bei 1248x1824).
+    /// Wird einmal pro Sprite beim ersten Load aufgerufen und gecacht.
+    /// </summary>
+    private static SKRectI ComputeContentBounds(SKBitmap bitmap)
+    {
+        int w = bitmap.Width, h = bitmap.Height;
+        int minX = w, minY = h, maxX = -1, maxY = -1;
+        const int step = 4;
+
+        for (int y = 0; y < h; y += step)
+        {
+            for (int x = 0; x < w; x += step)
+            {
+                if (bitmap.GetPixel(x, y).Alpha > 10)
+                {
+                    if (x < minX) minX = x;
+                    if (y < minY) minY = y;
+                    if (x > maxX) maxX = x;
+                    if (y > maxY) maxY = y;
+                }
+            }
+        }
+
+        // Kein Content gefunden → Fallback auf gesamtes Bitmap
+        if (maxX < 0) return new SKRectI(0, 0, w, h);
+
+        // Margin für Sampling-Lücken (step Pixel in jede Richtung)
+        return new SKRectI(
+            Math.Max(0, minX - step),
+            Math.Max(0, minY - step),
+            Math.Min(w, maxX + step + 1),
+            Math.Min(h, maxY + step + 1));
     }
 }

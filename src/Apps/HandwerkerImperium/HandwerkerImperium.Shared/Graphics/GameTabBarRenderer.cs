@@ -118,7 +118,8 @@ public sealed class GameTabBarRenderer : IDisposable
 
     private readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
-    private readonly SKPaint _textPaint = new() { IsAntialias = true, TextAlign = SKTextAlign.Center };
+    private readonly SKPaint _textPaint = new() { IsAntialias = true };
+    private readonly SKFont _cachedFont = new(SKTypeface.Default, 9);
     private readonly SKPaint _shadowPaint = new()
     {
         IsAntialias = true,
@@ -223,10 +224,10 @@ public sealed class GameTabBarRenderer : IDisposable
                 if (state.UnlockLevels != null && i < state.UnlockLevels.Length && state.UnlockLevels[i] > 0)
                 {
                     _textPaint.Color = LockedLevelText;
-                    _textPaint.TextSize = 7f;
-                    _textPaint.FakeBoldText = true;
-                    canvas.DrawText($"Lv.{state.UnlockLevels[i]}", tabCenterX, labelY, _textPaint);
-                    _textPaint.FakeBoldText = false;
+                    _cachedFont.Size = 7f;
+                    _cachedFont.Embolden = true;
+                    canvas.DrawText($"Lv.{state.UnlockLevels[i]}", tabCenterX, labelY, SKTextAlign.Center, _cachedFont, _textPaint);
+                    _cachedFont.Embolden = false;
                 }
             }
             else
@@ -446,10 +447,10 @@ public sealed class GameTabBarRenderer : IDisposable
         if (string.IsNullOrEmpty(text)) return;
 
         _textPaint.Color = isActive ? LabelActive : LabelInactive;
-        _textPaint.TextSize = 9f;
-        _textPaint.FakeBoldText = isActive;
+        _cachedFont.Size = 9f;
+        _cachedFont.Embolden = isActive;
 
-        canvas.DrawText(text, centerX, y, _textPaint);
+        canvas.DrawText(text, centerX, y, SKTextAlign.Center, _cachedFont, _textPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -484,14 +485,13 @@ public sealed class GameTabBarRenderer : IDisposable
 
         // Weiße Zahl
         _textPaint.Color = BadgeWhite;
-        _textPaint.TextSize = 8f;
-        _textPaint.FakeBoldText = true;
+        _cachedFont.Size = 8f;
+        _cachedFont.Embolden = true;
 
         string text = count > 99 ? "99+" : count.ToString();
-        var textBounds = new SKRect();
-        _textPaint.MeasureText(text, ref textBounds);
-        canvas.DrawText(text, cx, cy + textBounds.Height * 0.35f, _textPaint);
-        _textPaint.FakeBoldText = false;
+        _cachedFont.MeasureText(text, out var textBounds, _textPaint);
+        canvas.DrawText(text, cx, cy + textBounds.Height * 0.35f, SKTextAlign.Center, _cachedFont, _textPaint);
+        _cachedFont.Embolden = false;
 
         canvas.Restore();
     }
@@ -942,12 +942,11 @@ public sealed class GameTabBarRenderer : IDisposable
 
             // Euro-Zeichen
             _textPaint.Color = CoinDark.WithAlpha(alpha);
-            _textPaint.TextSize = coinR * 1.0f;
-            _textPaint.FakeBoldText = true;
-            var tb = new SKRect();
-            _textPaint.MeasureText("\u20AC", ref tb);
-            canvas.DrawText("\u20AC", coinCx, coinY + tb.Height * 0.35f, _textPaint);
-            _textPaint.FakeBoldText = false;
+            _cachedFont.Size = coinR * 1.0f;
+            _cachedFont.Embolden = true;
+            _cachedFont.MeasureText("\u20AC", out var tb, _textPaint);
+            canvas.DrawText("\u20AC", coinCx, coinY + tb.Height * 0.35f, SKTextAlign.Center, _cachedFont, _textPaint);
+            _cachedFont.Embolden = false;
         }
     }
 
@@ -1087,10 +1086,11 @@ public sealed class GameTabBarRenderer : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        // Paints
+        // Paints + Font
         _fillPaint?.Dispose();
         _strokePaint?.Dispose();
         _textPaint?.Dispose();
+        _cachedFont?.Dispose();
         _shadowPaint.MaskFilter?.Dispose();
         _shadowPaint?.Dispose();
         _glowPaint.MaskFilter?.Dispose();

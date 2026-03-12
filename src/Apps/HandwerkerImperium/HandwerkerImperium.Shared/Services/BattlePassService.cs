@@ -97,9 +97,6 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
 
         // SeasonTheme wird automatisch aus SeasonNumber berechnet (SeasonNumber % 4)
         // → Farbe, Icon und Capstone-Reward passen sich der neuen Saison an
-        System.Diagnostics.Debug.WriteLine(
-            $"[BattlePass] Neue Saison #{bp.SeasonNumber} gestartet: Theme={bp.SeasonTheme}, Farbe={bp.SeasonThemeColor}, Icon={bp.SeasonThemeIcon}");
-
         _gameState.MarkDirty();
         BattlePassUpdated?.Invoke();
     }

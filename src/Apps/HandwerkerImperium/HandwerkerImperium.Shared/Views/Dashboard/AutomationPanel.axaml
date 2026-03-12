@@ -8,7 +8,7 @@
 
         <Border Classes="Card" Padding="10,8" Margin="0,0,0,4"
                 AutomationProperties.AutomationId="Dashboard_Border_Automation">
-          <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+          <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
 
             <!-- AutoCollect (Lv15+) -->
             <Border Grid.Column="0" CornerRadius="8" Padding="6,4"
@@ -16,7 +16,7 @@
                     IsEnabled="{Binding IsAutoCollectUnlocked}"
                     AutomationProperties.AutomationId="Dashboard_Border_AutoCollect">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <icons:GameIcon Kind="PackageDown" Width="16" Height="16"
+                <icons:GameIcon Kind="PackageDown" Width="20" Height="20"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Translate AutoCollectDesc}" FontSize="9"
@@ -42,7 +42,7 @@
                     IsEnabled="{Binding IsAutoAcceptUnlocked}"
                     AutomationProperties.AutomationId="Dashboard_Border_AutoAccept">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <icons:GameIcon Kind="FileDocumentCheck" Width="16" Height="16"
+                <icons:GameIcon Kind="FileDocumentCheck" Width="20" Height="20"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Translate AutoAcceptDesc}" FontSize="9"
@@ -68,7 +68,7 @@
                     IsEnabled="{Binding IsAutoClaimUnlocked}"
                     AutomationProperties.AutomationId="Dashboard_Border_AutoClaimDaily">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <icons:GameIcon Kind="Gift" Width="16" Height="16"
+                <icons:GameIcon Kind="Gift" Width="20" Height="20"
                                  Foreground="{StaticResource CraftGoldBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Translate AutoClaimDailyDesc}" FontSize="9"
@@ -84,6 +84,32 @@
                            TextAlignment="Center" TextWrapping="Wrap"
                            MaxWidth="80"
                            IsVisible="{Binding !IsAutoClaimUnlocked}"
+                           Margin="0,-4,0,0" />
+              </StackPanel>
+            </Border>
+
+            <!-- AutoAssign (Lv50+) -->
+            <Border Grid.Column="3" CornerRadius="8" Padding="6,4"
+                    Background="{DynamicResource SurfaceBrush}"
+                    IsEnabled="{Binding IsAutoAssignUnlocked}"
+                    AutomationProperties.AutomationId="Dashboard_Border_AutoAssign">
+              <StackPanel Spacing="2" HorizontalAlignment="Center">
+                <icons:GameIcon Kind="AccountGroup" Width="20" Height="20"
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                 HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Translate AutoAssignDesc}" FontSize="9"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="80" />
+                <ToggleSwitch IsChecked="{Binding AutoAssignWorkers}"
+                              OnContent="" OffContent=""
+                              HorizontalAlignment="Center"
+                              Margin="0,-4,0,-4" />
+                <TextBlock Text="{loc:Translate AutoAssignLocked}"
+                           FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="80"
+                           IsVisible="{Binding !IsAutoAssignUnlocked}"
                            Margin="0,-4,0,0" />
               </StackPanel>
             </Border>

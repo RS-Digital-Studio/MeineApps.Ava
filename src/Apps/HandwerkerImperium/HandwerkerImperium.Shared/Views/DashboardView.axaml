@@ -138,7 +138,7 @@
                         IsVisible="{Binding MasterToolsCollected, Converter={StaticResource GreaterThanZero}}"
                         AutomationProperties.AutomationId="Dashboard_Btn_MasterTools">
                   <StackPanel Orientation="Horizontal" Spacing="4">
-                    <icons:GameIcon Kind="Wrench" Width="14" Height="14" Foreground="#F59E0B"
+                    <icons:GameIcon Kind="Wrench" Width="18" Height="18" Foreground="#F59E0B"
                                      AutomationProperties.AutomationId="Dashboard_Icon_MasterTools" />
                     <TextBlock FontSize="12" FontWeight="Bold" Foreground="#F59E0B"
                                AutomationProperties.AutomationId="Dashboard_Txt_MasterToolsCount">
@@ -153,7 +153,7 @@
                         AutomationProperties.AutomationId="Dashboard_Border_GoldenScrews">
                   <StackPanel Orientation="Horizontal" Spacing="4"
                               VerticalAlignment="Center">
-                    <icons:GameIcon Kind="ScrewFlatTop" Width="16" Height="16"
+                    <icons:GameIcon Kind="ScrewFlatTop" Width="20" Height="20"
                                      Foreground="{StaticResource CraftGoldBrush}"
                                      VerticalAlignment="Center"
                                      AutomationProperties.AutomationId="Dashboard_Icon_GoldenScrews" />
@@ -171,16 +171,26 @@
                         IsVisible="{Binding HasDailyReward}"
                         Command="{Binding ClaimDailyRewardCommand}"
                         AutomationProperties.AutomationId="Dashboard_Btn_DailyReward">
-                  <icons:GameIcon Kind="Gift" Width="20" Height="20" Foreground="#3D1C00"
+                  <icons:GameIcon Kind="Gift" Width="24" Height="24" Foreground="#3D1C00"
                                    AutomationProperties.AutomationId="Dashboard_Icon_DailyReward" />
+                </Button>
+                <!-- Einstellungen (Zahnrad) -->
+                <Button Classes="Text" Padding="6"
+                        MinWidth="36" MinHeight="36"
+                        Background="#30000000" CornerRadius="18"
+                        Command="{Binding SelectSettingsTabCommand}"
+                        AutomationProperties.AutomationId="Dashboard_Btn_Settings">
+                  <icons:GameIcon Kind="Cog" Width="24" Height="24"
+                                   Foreground="#FFFFFFCC"
+                                   AutomationProperties.AutomationId="Dashboard_Icon_Settings" />
                 </Button>
               </StackPanel>
             </Grid>
 
-            <!-- Zeile 2: Level + XP (volle Breite) + Stats + Achievements -->
+            <!-- Zeile 2: Level + XP (volle Breite) + Reputation (nur bei Warnung/Highlight) + Streak -->
             <Grid ColumnDefinitions="Auto,*,Auto" AutomationProperties.AutomationId="Dashboard_Grid_LevelRow">
               <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <icons:GameIcon Kind="Star" Width="14" Height="14" Foreground="{StaticResource CraftGoldBrush}"
+                <icons:GameIcon Kind="Star" Width="18" Height="18" Foreground="{StaticResource CraftGoldBrush}"
                                  AutomationProperties.AutomationId="Dashboard_Icon_Level" />
                 <TextBlock Text="{Binding PlayerLevel, StringFormat='Lv.{0}'}"
                            FontSize="12" FontWeight="Bold"
@@ -195,9 +205,10 @@
                                  AutomationProperties.AutomationId="Dashboard_Canvas_LevelProgress" />
 
               <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
-                <!-- Reputation-Badge (antippbar für Details) -->
+                <!-- Reputation nur bei Warnung (<50) oder Highlight (>=80) -->
                 <Button Classes="Text" Padding="4,2"
                         Command="{Binding ShowReputationInfoCommand}"
+                        IsVisible="{Binding ShowReputationBadge}"
                         AutomationProperties.AutomationId="Dashboard_Btn_Reputation">
                   <StackPanel Orientation="Horizontal" Spacing="2">
                     <icons:GameIcon Kind="Star" Width="13" Height="13"
@@ -210,37 +221,16 @@
                                AutomationProperties.AutomationId="Dashboard_Txt_ReputationScore" />
                   </StackPanel>
                 </Button>
-                <!-- Streak-Feuer (sichtbar ab Streak >= 2) -->
+                <!-- Streak nur bei >= 5 Tagen -->
                 <StackPanel Orientation="Horizontal" Spacing="2"
-                            IsVisible="{Binding HasLoginStreak}"
+                            IsVisible="{Binding ShowStreakBadge}"
                             AutomationProperties.AutomationId="Dashboard_Panel_LoginStreak">
-                  <icons:GameIcon Kind="Fire" Width="14" Height="14" Foreground="#FF6B35"
+                  <icons:GameIcon Kind="Fire" Width="18" Height="18" Foreground="#FF6B35"
                                    AutomationProperties.AutomationId="Dashboard_Icon_LoginStreak" />
                   <TextBlock Text="{Binding LoginStreak}" FontSize="11" FontWeight="Bold"
                              Foreground="#FF6B35" VerticalAlignment="Center"
                              AutomationProperties.AutomationId="Dashboard_Txt_LoginStreak" />
                 </StackPanel>
-                <Button Classes="Text" Padding="4"
-                        Command="{Binding SelectStatisticsTabCommand}"
-                        AutomationProperties.AutomationId="Dashboard_Btn_Statistics">
-                  <icons:GameIcon Kind="ChartBar" Width="18" Height="18"
-                                   Foreground="#FFFFFFAA"
-                                   AutomationProperties.AutomationId="Dashboard_Icon_Statistics" />
-                </Button>
-                <Button Classes="Text" Padding="4"
-                        Command="{Binding SelectAchievementsTabCommand}"
-                        AutomationProperties.AutomationId="Dashboard_Btn_Achievements">
-                  <icons:GameIcon Kind="Trophy" Width="18" Height="18"
-                                   Foreground="#FFFFFFAA"
-                                   AutomationProperties.AutomationId="Dashboard_Icon_Achievements" />
-                </Button>
-                <Button Classes="Text" Padding="4"
-                        Command="{Binding SelectSettingsTabCommand}"
-                        AutomationProperties.AutomationId="Dashboard_Btn_Settings">
-                  <icons:GameIcon Kind="Cog" Width="18" Height="18"
-                                   Foreground="#FFFFFFAA"
-                                   AutomationProperties.AutomationId="Dashboard_Icon_Settings" />
-                </Button>
               </StackPanel>
             </Grid>
 
@@ -303,22 +293,22 @@
                 BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="1.5" CornerRadius="10"
                 Padding="10,6" Margin="0,0,0,4">
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <icons:GameIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+            <icons:GameIcon Kind="ArrowDownBold" Width="20" Height="20" Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock Text="{loc:Translate TutorialUpgradeHint}" FontSize="13" FontWeight="SemiBold"
                        Foreground="{StaticResource CraftGoldBrush}" />
-            <icons:GameIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+            <icons:GameIcon Kind="ArrowDownBold" Width="20" Height="20" Foreground="{StaticResource CraftGoldBrush}" />
           </StackPanel>
         </Border>
 
-        <!-- Workshop-Karten Canvas -->
-        <skia:SKCanvasView x:Name="WorkshopCardsCanvas" Height="800"
+        <!-- Workshop-Karten Canvas (dynamische Höhe basierend auf Anzahl Workshops) -->
+        <skia:SKCanvasView x:Name="WorkshopCardsCanvas" Height="{Binding WorkshopCanvasHeight}"
                            PaintSurface="OnWorkshopCardsPaintSurface"
                            PointerPressed="OnWorkshopCardsPointerPressed"
                            PointerReleased="OnWorkshopCardsPointerReleased"
                            PointerMoved="OnWorkshopCardsPointerMoved" />
 
-        <!-- Banner-Strip (kompakte Chips) -->
-        <dashboard:BannerStrip Margin="0,8,0,0" />
+        <!-- Banner-Strip (kompakte Chips, ab Lv.3) -->
+        <dashboard:BannerStrip Margin="0,8,0,0" IsVisible="{Binding ShowBannerStrip}" />
 
         <!-- ============================================================= -->
         <!-- AUFTRÄGE + QUICK JOBS (Tab-Umschalter)                       -->
@@ -344,6 +334,7 @@
             </Button>
             <Button Grid.Column="1" Classes="Text" Padding="8,6"
                     Command="{Binding ShowQuickJobsTabCommand}"
+                    IsVisible="{Binding IsQuickJobsUnlocked}"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                     AutomationProperties.AutomationId="Dashboard_Btn_QuickJobsTab">
               <StackPanel Orientation="Horizontal" Spacing="6">
@@ -360,7 +351,7 @@
                     Command="{Binding RefreshOrdersCommand}"
                     IsVisible="{Binding IsOrdersTabActive}"
                     AutomationProperties.AutomationId="Dashboard_Btn_RefreshOrders">
-              <icons:GameIcon Kind="Refresh" Width="22" Height="22" />
+              <icons:GameIcon Kind="Refresh" Width="26" Height="26" />
             </Button>
             <!-- Unterstreichung für aktiven Tab -->
             <Border Grid.Row="1" Grid.Column="0" Height="2"
@@ -463,13 +454,13 @@
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  Margin="0,4,0,8" />
                       <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="4">
-                        <icons:GameIcon Kind="CashMultiple" Width="18" Height="18"
+                        <icons:GameIcon Kind="CashMultiple" Width="24" Height="24"
                                          Foreground="{DynamicResource SuccessBrush}" />
                         <TextBlock Text="{Binding EstimatedReward, StringFormat='~{0:N0}'}"
                                    FontSize="14" FontWeight="Bold"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    VerticalAlignment="Center" />
-                        <icons:GameIcon Kind="Star" Width="14" Height="14"
+                        <icons:GameIcon Kind="Star" Width="18" Height="18"
                                          Foreground="{StaticResource CraftGoldBrush}"
                                          Margin="8,0,0,0" />
                         <TextBlock Text="{Binding EstimatedXp, StringFormat='~{0} XP'}"
@@ -495,7 +486,7 @@
           <StackPanel IsVisible="{Binding IsQuickJobsTabActive}" Spacing="8">
             <!-- Timer-Anzeige -->
             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" Margin="0,0,0,4">
-              <icons:GameIcon Kind="TimerRefresh" Width="14" Height="14"
+              <icons:GameIcon Kind="TimerRefresh" Width="18" Height="18"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Text="{Binding QuickJobTimerDisplay}" FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -546,7 +537,7 @@
                               IsVisible="{Binding !IsCompleted}"
                               Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).StartQuickJobCommand}"
                               CommandParameter="{Binding .}" />
-                      <icons:GameIcon Grid.Column="1" Kind="Check" Width="20" Height="20"
+                      <icons:GameIcon Grid.Column="1" Kind="Check" Width="24" Height="24"
                                        Foreground="{DynamicResource SuccessBrush}"
                                        IsVisible="{Binding IsCompleted}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -557,6 +548,10 @@
             </ListBox>
           </StackPanel>
         </StackPanel>
+
+        <!-- AUTOMATISIERUNG (ab Level 15, direkt im Spiel statt in Settings) -->
+        <dashboard:AutomationPanel Margin="0,12,0,0"
+                                    IsVisible="{Binding IsAutoCollectUnlocked}" />
 
         <!-- Bottom Spacer -->
         <Border Height="16" />

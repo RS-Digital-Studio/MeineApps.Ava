@@ -62,7 +62,7 @@ OnEnter() → Update(dt) / Render(canvas, bounds) / HandleInput() → OnPause() 
 | SaveSlotScene | 3 Speicherplätze, Long-Press zum Löschen |
 | ClassSelectScene | 3 Klassen (Schwertmeister/Arkanist/Schattenklinke) |
 | DialogueScene | Hintergrund + Portrait + Typewriter + Choices + MangaPanel-Modus + GlitchEffect (ARIA) + Kamera-Zoom/Shake |
-| BattleScene | Aktions-basierter Kampf (Angriff/Ausweichen/Skill/Item) + AI-Enemy-Sprites (Fallback prozedural) + Angriffs-Animation, Dodge-Ghosting, SplashArt bei Ultimates |
+| BattleScene | Aktions-basierter Kampf (Angriff/Ausweichen/Skill/Item) + AI-Enemy-Sprites + Angriffs-Animation, Dodge-Ghosting, SplashArt bei Ultimates, geführtes 5-Phasen-Tutorial (Prolog P1) |
 | OverworldScene | Node-Map (Slay the Spire-inspiriert) mit Kamera-Pan, AI-Regions-Hintergründe |
 | InventoryScene | Grid-Ansicht, 6 Kategorien, AI-Item-Icons mit Qualitäts-Glow, Ausrüsten/Benutzen |
 | ShopScene | Kaufen/Verkaufen, Gold-Counter |
@@ -120,6 +120,18 @@ map/regions/{chapterId}.webp                       → Overworld-Regions-Hinterg
 - `AssetDeliveryService` - Firebase Storage REST API, SHA256-Hash-Verifikation, Delta-Updates
 - `AssetManifest` - Beschreibt alle Packs (characters, backgrounds, enemies, items, scenes)
 - Stream-basierter Download mit Retry (3x exponentieller Backoff), temporäre Dateien
+- Firebase: `gs://rebornsaga-671b6.firebasestorage.app/assets/` (317 Dateien, 69.2 MB)
+- Generierung: ComfyUI + Animagine XL 4.0, Scripts in `F:\AI\ComfyUI_workflows\`
+- Upload: `upload_assets.py` (Uniform Bucket Access, kein make_public())
+
+**Asset-Qualitäts-Pipeline (10. März 2026) - ABGESCHLOSSEN:**
+- `regenerate_all_assets.py` - 3-Phasen-Pipeline: Queue → Chroma Key → Deploy
+- `resume_missing_jobs.py` - Nur fehlende Jobs nachladen (nach ComfyUI-Crash)
+- Dunkle Chars (Nihilus, Xaroth, Vex, Kael, Assassin, Aldric, Sword): Green Screen + Chroma-Key
+- Helle Chars (Aria, Luna, System Aria, Mage): White BG + BiRefNet
+- 11 Charaktere (10-13 Posen + Overlays), 4 Enemies, 6 Backgrounds, 8 Items regeneriert
+- Alle Sprites: Full-Body, Long Shot, kein Close-Up, 1248x1824 WebP q90
+- Overlay-Varianten (blink/mouth) werden aus standing_neutral kopiert
 
 **AnimatedWebPRenderer:**
 - SKCodec-basiertes Frame-für-Frame Rendering für CG-Szenen/Cutscenes
@@ -286,8 +298,7 @@ Gold-Quellen: Kampf-Drops, Story-Belohnungen, Rewarded Video (500G, 3x/Tag), Dai
 - **Story-Texte**: JSON in `Data/Dialogue/{lang}/` (DE, EN, ES, FR, IT, PT)
 - **UI-Strings**: ILocalizationService per Constructor Injection in Scenes/Overlays. AppStrings.resx + 5 Kultur-Dateien (de/es/fr/it/pt). AppStrings.Designer.cs manuell gepflegt (CLI-Build generiert nicht automatisch)
 - **Pattern**: Strings im Konstruktor cachen (`_localization.GetString("Key") ?? "Fallback"`), nicht per-Frame
-- **Lokalisierte Scenes/Overlays**: BattleScene, LevelUpOverlay, GameOverOverlay, PauseOverlay, FateChangedOverlay, TutorialOverlay, BacklogOverlay, StatusWindowOverlay, ChapterUnlockOverlay, SettingsScene, AssetDownloadScene
-- **Noch hardcodiert**: TitleScene, SaveSlotScene, CodexScene, ShopScene, InventoryScene, DialogueScene, ClassSelectScene, OverworldScene, StatusScene (in AppStrings.resx vorbereitet)
+- **Lokalisierte Scenes/Overlays**: Alle Scenes und Overlays vollständig lokalisiert (BattleScene, TitleScene, SaveSlotScene, ClassSelectScene, DialogueScene, OverworldScene, StatusScene, InventoryScene, ShopScene, CodexScene, SettingsScene, AssetDownloadScene + alle Overlays)
 - **Fallback**: Englisch (Base .resx), Deutsch für Story-Texte (StoryEngine.LoadDialogueTextsAsync)
 - **DI-Registrierung**: `ILocalizationService` als Singleton in App.axaml.cs mit `RebornSaga.Resources.Strings.AppStrings.ResourceManager`
 
@@ -324,19 +335,32 @@ Dateinamen-Mapping in `AndroidAudioService.SoundFileMap` (SFX) und `BgmFileMap` 
 
 ### Phasen (BattlePhase Enum)
 ```
-Intro → PlayerTurn → (Attack | Dodge | SkillSelect | ItemSelect | PlayerSkillAttack) → EnemyTurn → (Victory | Defeat)
+Intro → PlayerTurn → (Attack | Dodge | SkillSelect | ItemSelect | PlayerSkillAttack) → EnemyTurn → (Victory | Defeat | BossPhaseChange | Done)
 ```
+- `Done`: Kampf abgeschlossen, keine weitere Interaktion (nach Victory/Defeat-Verarbeitung)
+- `BossPhaseChange`: Boss wechselt Phase (Mini-Cutscene, volle HP)
 
 ### Skill-Integration
 - `SkillSelect`-Phase: Zeigt verfügbare Skills (max 6), MP-Kosten, Element-Icons
 - `ExecuteSkillAttack()`: Multiplier-basierter Schaden, MP-Abzug, Element-System (1.5x/0.5x), Skill-Evolution bei Mastery-Schwelle
 - `ApplySkillEffect()`: Verarbeitet `heal_Xpct` (HP-Heilung %) und `atk_buff_X` (ATK-Bonus temporär)
-- Constructor: `BattleScene(BattleEngine, SkillService, InventoryService)` - alle drei per DI
+- Constructor: `BattleScene(BattleEngine, SkillService, InventoryService, StoryEngine, ILocalizationService, TutorialService?, IAudioService?, SpriteCache?)` - alle per DI (TutorialService optional)
 
 ### Item-Integration
 - `ItemSelect`-Phase: Zeigt Consumables aus InventoryService (max 6)
 - `UseItem()` via InventoryService: HealPercent oder HealHp/HealMp
 - Items mit `IsUsable`-Flag und korrekten Stat-Clamps (HP min 1, MP min 0)
+
+### Tutorial-System (geführter Prolog-Kampf)
+- **Aktivierung**: `_isTutorialBattle = true` wenn `enemy.Id == "B001" && TutorialService.ShouldShow("FirstBattle")`
+- **5 Phasen** (_tutorialStep 0-5): Intro → Angriff → Skill → Item → Ausweichen → Frei
+- **Button-Einschränkung**: `IsTutorialActionEnabled()` erlaubt pro Phase nur die zu lernende Aktion
+- **Schaden-Override**: Vor Phase 3 max 10% HP Schaden, in Phase 3 auf ~30% HP runtersetzen (Item-Tutorial)
+- **Dodge-Override**: Phase 4 erzwingt erfolgreichen Dodge
+- **TutorialOverlay**: Zeigt ARIA-Hinweise mit Button-Highlight, ConsumesInput blockiert BattleScene
+- **Abschluss**: Bei Victory → `TutorialService.MarkSeen("FirstBattle")`
+- **Starter-Item**: chapter_p1.json gibt `C001` (Heiltrank) per `addItems`-Effekt vor dem Kampf
+- **RESX-Keys**: `tutorial_battle_intro/attack/skill/item/dodge/finish` (6 Sprachen)
 
 ## Performance-Optimierungen
 
@@ -345,6 +369,11 @@ Intro → PlayerTurn → (Attack | Dodge | SkillSelect | ItemSelect | PlayerSkil
 - **ShopScene**: Gecachte Preis-Strings, nur bei Selektion aktualisiert
 - **InventoryScene**: Gecachte Item-Strings pro Slot
 - **Alle Renderer**: Statische SKPaint/SKFont/SKMaskFilter, keine per-Frame Allokationen
+- **BattleScene**: Gecachter Sprite-Key (`_cachedEnemySpriteKey`), wird nur bei Setup/Boss-Phasenwechsel aktualisiert
+- **SaveSlotScene**: Gecachte Slot-Labels, Level-Texte und PlayTime-Strings (nicht per-Frame)
+- **TutorialOverlay**: Gecachter ARIA-Titel-String
+- **OverworldScene**: Vorgänger-Index (Dictionary<string, List<string>>) beim Map-Load aufgebaut, MarkPredecessorsCompleted O(V+E) statt O(N²)
+- **NameKey-Lokalisierung**: Alle `.NameKey`-Anzeigen in Scenes über `_localization.GetString()` aufgelöst (BattleScene, StatusScene, ShopScene, InventoryScene, OverworldScene)
 
 ## Android-Besonderheiten
 

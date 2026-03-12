@@ -239,6 +239,7 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
         InitializeGame();
 
         CheckAndShowTutorial(MiniGameType.InventGame);
+        if (!ShowTutorial) _ = StartGameAsync();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -377,11 +378,9 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
                 await EndGameAsync();
             }
         }
-        catch (Exception ex)
+        catch
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameTimerTick: {ex}");
-#endif
+            // Timer-Fehler still behandelt
         }
     }
 
@@ -611,6 +610,7 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(MiniGameType.InventGame);
             _gameStateService.MarkDirty();
         }
+        _ = StartGameAsync();
     }
 
     [RelayCommand]

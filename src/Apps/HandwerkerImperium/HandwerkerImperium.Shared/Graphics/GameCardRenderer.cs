@@ -85,6 +85,13 @@ public static class GameCardRenderer
         Color = SKColors.White
     };
 
+    // Mutierbarer Font fuer Text-Rendering (Größe variiert je nach Aufruf)
+    private static readonly SKFont _textFont = new();
+    private static readonly SKFont _textFontBold = new() { Embolden = true };
+
+    // Gecachter MaskFilter fuer Progress-Bar Glow-Kopf (vermeidet Native Memory Leak)
+    private static readonly SKMaskFilter _progressGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+
     // ═══════════════════════════════════════════════════════════════════════
     // Rahmen-Stufe bestimmen
     // ═══════════════════════════════════════════════════════════════════════
@@ -235,7 +242,7 @@ public static class GameCardRenderer
             float glowR = height * 1.2f;
 
             _glowPaint.Color = barColorEnd.WithAlpha(80);
-            _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+            _glowPaint.MaskFilter = _progressGlowFilter;
             canvas.DrawCircle(glowX, glowY, glowR, _glowPaint);
             _glowPaint.MaskFilter = null;
 
@@ -279,13 +286,10 @@ public static class GameCardRenderer
         if (!string.IsNullOrEmpty(text))
         {
             _textPaint.Color = enabled ? SKColors.White : new SKColor(200, 200, 200, 160);
-            _textPaint.TextSize = fontSize;
-            _textPaint.TextAlign = SKTextAlign.Center;
-            _textPaint.FakeBoldText = true;
+            _textFontBold.Size = fontSize;
 
             float textY = bounds.MidY + fontSize * 0.35f;
-            canvas.DrawText(text, bounds.MidX, textY, _textPaint);
-            _textPaint.FakeBoldText = false;
+            canvas.DrawText(text, bounds.MidX, textY, SKTextAlign.Center, _textFontBold, _textPaint);
         }
 
         return bounds;
@@ -310,11 +314,8 @@ public static class GameCardRenderer
 
         // Euro-Symbol in der Mitte
         _textPaint.Color = CoinDark;
-        _textPaint.TextSize = radius * 1.2f;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.FakeBoldText = true;
-        canvas.DrawText("\u20AC", x, y + radius * 0.4f, _textPaint);
-        _textPaint.FakeBoldText = false;
+        _textFontBold.Size = radius * 1.2f;
+        canvas.DrawText("\u20AC", x, y + radius * 0.4f, SKTextAlign.Center, _textFontBold, _textPaint);
 
         // Glanz-Highlight (oben-links)
         _fillPaint.Color = new SKColor(255, 255, 255, 100);
@@ -414,11 +415,8 @@ public static class GameCardRenderer
 
         // Text
         _textPaint.Color = SKColors.White;
-        _textPaint.TextSize = fontSize;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.FakeBoldText = true;
-        canvas.DrawText(text, centerX, centerY + fontSize * 0.35f, _textPaint);
-        _textPaint.FakeBoldText = false;
+        _textFontBold.Size = fontSize;
+        canvas.DrawText(text, centerX, centerY + fontSize * 0.35f, SKTextAlign.Center, _textFontBold, _textPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -465,11 +463,8 @@ public static class GameCardRenderer
 
         // Level-Zahl
         _textPaint.Color = SKColors.White;
-        _textPaint.TextSize = size * 0.35f;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.FakeBoldText = true;
-        canvas.DrawText(level.ToString(), x, y + size * 0.08f, _textPaint);
-        _textPaint.FakeBoldText = false;
+        _textFontBold.Size = size * 0.35f;
+        canvas.DrawText(level.ToString(), x, y + size * 0.08f, SKTextAlign.Center, _textFontBold, _textPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

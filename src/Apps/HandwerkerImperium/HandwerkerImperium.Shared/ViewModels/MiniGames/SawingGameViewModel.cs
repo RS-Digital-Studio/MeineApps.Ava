@@ -304,6 +304,7 @@ public sealed partial class SawingGameViewModel : ViewModelBase, IDisposable
         InitializeZones();
 
         CheckAndShowTutorial(GameType);
+        if (!ShowTutorial) _ = StartGameAsync();
     }
 
     private void UpdateGameTypeVisuals()
@@ -604,6 +605,7 @@ public sealed partial class SawingGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(GameType);
             _gameStateService.MarkDirty();
         }
+        _ = StartGameAsync();
     }
 
     [RelayCommand]

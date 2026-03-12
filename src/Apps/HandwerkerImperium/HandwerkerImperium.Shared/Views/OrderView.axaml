@@ -24,7 +24,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Order_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            AutomationProperties.AutomationId="Order_Icon_Back" />
         </Button>
 
@@ -34,7 +34,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
-          <icons:GameIcon Kind="ClipboardList" Width="22" Height="22"
+          <icons:GameIcon Kind="ClipboardList" Width="26" Height="26"
                            AutomationProperties.AutomationId="Order_Icon_Title"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{loc:Translate OrderDetails}"
@@ -82,7 +82,7 @@
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <icons:GameIcon Kind="{Binding WorkshopIcon, Converter={StaticResource IconKindConverter}}"
-                                   Width="14" Height="14" VerticalAlignment="Center"
+                                   Width="18" Height="18" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    AutomationProperties.AutomationId="Order_Icon_WorkshopIcon" />
                   <TextBlock Text="{Binding WorkshopName}"
@@ -116,7 +116,7 @@
             <StackPanel Orientation="Horizontal" Spacing="6"
                         AutomationProperties.AutomationId="Order_Panel_CooperationHint"
                         IsVisible="{Binding IsCooperationOrder}">
-              <icons:GameIcon Kind="Handshake" Width="16" Height="16"
+              <icons:GameIcon Kind="Handshake" Width="20" Height="20"
                                AutomationProperties.AutomationId="Order_Icon_CooperationHint"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Text="{loc:Translate CooperationOrderHint}"
@@ -132,7 +132,7 @@
                 AutomationProperties.AutomationId="Order_Border_RewardsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="Gift" Width="20" Height="20"
+              <icons:GameIcon Kind="Gift" Width="24" Height="24"
                                AutomationProperties.AutomationId="Order_Icon_RewardHeader"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{loc:Translate Reward}"
@@ -197,7 +197,7 @@
                 IsVisible="{Binding IsInProgress}">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="ChartBar" Width="20" Height="20"
+              <icons:GameIcon Kind="ChartBar" Width="24" Height="24"
                                AutomationProperties.AutomationId="Order_Icon_ProgressHeader"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{loc:Translate Progress}"
@@ -263,7 +263,7 @@
                 AutomationProperties.AutomationId="Order_Border_TipCard"
                 IsVisible="{Binding CanStart}">
           <StackPanel Orientation="Horizontal" Spacing="12">
-            <icons:GameIcon Kind="LightbulbOn" Width="24" Height="24"
+            <icons:GameIcon Kind="LightbulbOn" Width="28" Height="28"
                              AutomationProperties.AutomationId="Order_Icon_Tip"
                              Foreground="{DynamicResource WarningBrush}" />
             <TextBlock Text="{loc:Translate OrderTip}"

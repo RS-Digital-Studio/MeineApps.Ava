@@ -1,3 +1,4 @@
+using BomberBlast.Services;
 using SkiaSharp;
 
 namespace BomberBlast.Graphics;
@@ -245,6 +246,9 @@ public static class MenuBackgroundRenderer
         RenderGradient(canvas, width, height, theme);
         RenderGrid(canvas, width, height, theme);
 
+        // AI-generiertes Hintergrundbild (halbtransparent über Gradient, unter Partikeln)
+        RenderAIBackground(canvas, width, height, theme);
+
         // Subtiler radialer Glow nur für Default-Theme (vor den Partikeln)
         if (theme == BackgroundTheme.Default)
             RenderDefaultVignette(canvas, width, height, time);
@@ -289,6 +293,50 @@ public static class MenuBackgroundRenderer
                 RenderSpinLights(canvas, width, height, time);
                 break;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AI-HINTERGRUNDBILD (Dark Fantasy Arcade)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private static readonly SKPaint _aiBgPaint = new() { IsAntialias = true };
+
+    /// <summary>
+    /// Zeichnet AI-generiertes Hintergrundbild halbtransparent über den Gradient.
+    /// Partikel werden darüber gerendert für Hybrid-Effekt.
+    /// Fallback: Kein Effekt wenn Asset nicht vorhanden.
+    /// </summary>
+    private static void RenderAIBackground(SKCanvas canvas, float width, float height, BackgroundTheme theme)
+    {
+        var assetPath = theme switch
+        {
+            BackgroundTheme.Default => "menu_bg/menu_default.webp",
+            BackgroundTheme.Dungeon => "menu_bg/menu_dungeon.webp",
+            BackgroundTheme.Shop => "menu_bg/menu_shop.webp",
+            BackgroundTheme.League => "menu_bg/menu_league.webp",
+            BackgroundTheme.BattlePass => "menu_bg/menu_battlepass.webp",
+            BackgroundTheme.Victory => "menu_bg/menu_victory.webp",
+            BackgroundTheme.LuckySpin => "menu_bg/menu_lucky_spin.webp",
+            _ => null
+        };
+
+        if (assetPath == null) return;
+
+        var bitmap = GameAssetService.Current?.GetBitmap(assetPath);
+        if (bitmap == null) return;
+
+        // Bitmap cover-skaliert zeichnen (wie CSS background-size: cover)
+        float scaleX = width / bitmap.Width;
+        float scaleY = height / bitmap.Height;
+        float scale = Math.Max(scaleX, scaleY);
+        float drawW = bitmap.Width * scale;
+        float drawH = bitmap.Height * scale;
+        float drawX = (width - drawW) / 2f;
+        float drawY = (height - drawH) / 2f;
+
+        _aiBgPaint.Color = SKColors.White.WithAlpha(90); // Halbtransparent über Gradient
+        canvas.DrawBitmap(bitmap, new SKRect(drawX, drawY, drawX + drawW, drawY + drawH), _aiBgPaint);
+        _aiBgPaint.Color = SKColors.White;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

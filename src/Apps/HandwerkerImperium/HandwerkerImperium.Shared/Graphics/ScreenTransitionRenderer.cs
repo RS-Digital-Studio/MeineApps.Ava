@@ -57,6 +57,9 @@ public sealed class ScreenTransitionRenderer : IDisposable
         Style = SKPaintStyle.Fill
     };
 
+    // Gecachter MaskFilter fuer Glow-Effekte an Trennkanten (vermeidet Native Memory Leak)
+    private readonly SKMaskFilter _lineGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+
     /// <summary>
     /// True während eine Transition aktiv ist.
     /// </summary>
@@ -198,7 +201,7 @@ public sealed class ScreenTransitionRenderer : IDisposable
             {
                 byte glowAlpha = (byte)(goldAlpha / 3);
                 _linePaint.Color = GoldColor.WithAlpha(glowAlpha);
-                _linePaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+                _linePaint.MaskFilter = _lineGlowFilter;
                 canvas.DrawRect(splitX - 3f, bounds.Top, 6f, bounds.Height, _linePaint);
                 _linePaint.MaskFilter = null;
             }
@@ -305,7 +308,7 @@ public sealed class ScreenTransitionRenderer : IDisposable
             {
                 byte glowAlpha = (byte)(goldAlpha / 3);
                 _linePaint.Color = GoldColor.WithAlpha(glowAlpha);
-                _linePaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+                _linePaint.MaskFilter = _lineGlowFilter;
                 canvas.DrawRect(bounds.Left, splitY - 3f, bounds.Width, 6f, _linePaint);
                 _linePaint.MaskFilter = null;
             }
@@ -322,5 +325,6 @@ public sealed class ScreenTransitionRenderer : IDisposable
         _overlayPaint?.Dispose();
         _linePaint?.Dispose();
         _vignettePaint?.Dispose();
+        _lineGlowFilter?.Dispose();
     }
 }

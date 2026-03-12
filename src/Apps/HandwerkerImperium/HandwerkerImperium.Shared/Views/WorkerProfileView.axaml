@@ -159,7 +159,7 @@
             <StackPanel Spacing="4" AutomationProperties.AutomationId="WorkerProfile_Panel_Mood">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="EmoticonHappy" Width="18" Height="18"
+                  <icons:GameIcon Kind="EmoticonHappy" Width="24" Height="24"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_Mood" />
                   <TextBlock Text="{loc:Translate Mood}"
@@ -182,7 +182,7 @@
             <StackPanel Spacing="4" AutomationProperties.AutomationId="WorkerProfile_Panel_Fatigue">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="Sleep" Width="18" Height="18"
+                  <icons:GameIcon Kind="Sleep" Width="24" Height="24"
                                    Foreground="{DynamicResource ErrorBrush}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_Fatigue" />
                   <TextBlock Text="{loc:Translate Fatigue}"
@@ -205,7 +205,7 @@
             <StackPanel Spacing="4" AutomationProperties.AutomationId="WorkerProfile_Panel_Experience">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="TrendingUp" Width="18" Height="18"
+                  <icons:GameIcon Kind="TrendingUp" Width="24" Height="24"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_Experience" />
                   <TextBlock Text="{loc:Translate Experience}"
@@ -236,7 +236,7 @@
             <!-- Titel -->
             <StackPanel Orientation="Horizontal" Spacing="8"
                         AutomationProperties.AutomationId="WorkerProfile_Panel_EquipmentHeader">
-              <icons:GameIcon Kind="Shield" Width="20" Height="20"
+              <icons:GameIcon Kind="Shield" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryLightBrush}"
                                AutomationProperties.AutomationId="WorkerProfile_Icon_EquipmentTitle" />
               <TextBlock Text="{loc:Translate EquipmentTitle}"
@@ -259,7 +259,7 @@
                   <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
                 </Border.Background>
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
-                  <icons:GameIcon Kind="HardHat" Width="24" Height="24"
+                  <icons:GameIcon Kind="HardHat" Width="28" Height="28"
                                    HorizontalAlignment="Center"
                                    Foreground="{Binding EquippedHelmet.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#666666, TargetNullValue=#666666}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_SlotHelmet" />
@@ -293,7 +293,7 @@
                   <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
                 </Border.Background>
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
-                  <icons:GameIcon Kind="HandWave" Width="24" Height="24"
+                  <icons:GameIcon Kind="HandWave" Width="28" Height="28"
                                    HorizontalAlignment="Center"
                                    Foreground="{Binding EquippedGloves.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#666666, TargetNullValue=#666666}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_SlotGloves" />
@@ -326,7 +326,7 @@
                   <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
                 </Border.Background>
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
-                  <icons:GameIcon Kind="ShoeFormal" Width="24" Height="24"
+                  <icons:GameIcon Kind="ShoeFormal" Width="28" Height="28"
                                    HorizontalAlignment="Center"
                                    Foreground="{Binding EquippedBoots.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#666666, TargetNullValue=#666666}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_SlotBoots" />
@@ -359,7 +359,7 @@
                   <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
                 </Border.Background>
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
-                  <icons:GameIcon Kind="Wrench" Width="24" Height="24"
+                  <icons:GameIcon Kind="Wrench" Width="28" Height="28"
                                    HorizontalAlignment="Center"
                                    Foreground="{Binding EquippedBelt.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#666666, TargetNullValue=#666666}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_SlotBelt" />
@@ -391,7 +391,7 @@
                     Padding="16,8"
                     AutomationProperties.AutomationId="WorkerProfile_Btn_Unequip">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <icons:GameIcon Kind="ShieldRemove" Width="16" Height="16"
+                <icons:GameIcon Kind="ShieldRemove" Width="20" Height="20"
                                  Foreground="{DynamicResource WarningBrush}"
                                  AutomationProperties.AutomationId="WorkerProfile_Icon_Unequip" />
                 <TextBlock Text="{loc:Translate Unequip}" FontSize="12"
@@ -404,7 +404,7 @@
             <StackPanel Spacing="8" Margin="0,4,0,0"
                         AutomationProperties.AutomationId="WorkerProfile_Panel_AvailableEquipment">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <icons:GameIcon Kind="BagPersonal" Width="16" Height="16"
+                <icons:GameIcon Kind="BagPersonal" Width="20" Height="20"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}"
                                  AutomationProperties.AutomationId="WorkerProfile_Icon_AvailableEquipment" />
                 <TextBlock Text="{loc:Translate AvailableEquipment}"
@@ -440,7 +440,7 @@
                                 VerticalAlignment="Center"
                                 Background="{Binding RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}">
                           <icons:GameIcon Kind="{Binding TypeIcon, Converter={StaticResource IconKindConverter}}"
-                                           Width="20" Height="20"
+                                           Width="24" Height="24"
                                            Foreground="White" />
                         </Border>
                         <!-- Name + Bonus -->
@@ -462,7 +462,7 @@
                                 CommandParameter="{Binding .}"
                                 AutomationProperties.AutomationId="WorkerProfile_Btn_EquipItem">
                           <StackPanel Orientation="Horizontal" Spacing="4">
-                            <icons:GameIcon Kind="ShieldPlus" Width="14" Height="14" />
+                            <icons:GameIcon Kind="ShieldPlus" Width="18" Height="18" />
                             <TextBlock Text="{loc:Translate EquipAction}"
                                        FontSize="11" FontWeight="Bold" />
                           </StackPanel>
@@ -514,7 +514,7 @@
                           BorderBrush="{Binding IsEfficiencySelected, Converter={StaticResource TrainingTypeBorderConverter}}"
                           Background="{Binding IsEfficiencySelected, Converter={StaticResource TrainingTypeBgConverter}}">
                     <StackPanel HorizontalAlignment="Center" Spacing="4">
-                      <icons:GameIcon Kind="Dumbbell" Width="24" Height="24"
+                      <icons:GameIcon Kind="Dumbbell" Width="28" Height="28"
                                        HorizontalAlignment="Center"
                                        Foreground="{Binding IsEfficiencySelected, Converter={StaticResource TrainingTypeIconConverter}}"
                                        AutomationProperties.AutomationId="WorkerProfile_Icon_TrainEfficiency" />
@@ -538,7 +538,7 @@
                           BorderBrush="{Binding IsEnduranceSelected, Converter={StaticResource TrainingTypeBorderConverter}}"
                           Background="{Binding IsEnduranceSelected, Converter={StaticResource TrainingTypeBgConverter}}">
                     <StackPanel HorizontalAlignment="Center" Spacing="4">
-                      <icons:GameIcon Kind="Run" Width="24" Height="24"
+                      <icons:GameIcon Kind="Run" Width="28" Height="28"
                                        HorizontalAlignment="Center"
                                        Foreground="{Binding IsEnduranceSelected, Converter={StaticResource TrainingTypeIconConverter}}"
                                        AutomationProperties.AutomationId="WorkerProfile_Icon_TrainEndurance" />
@@ -562,7 +562,7 @@
                           BorderBrush="{Binding IsMoraleSelected, Converter={StaticResource TrainingTypeBorderConverter}}"
                           Background="{Binding IsMoraleSelected, Converter={StaticResource TrainingTypeBgConverter}}">
                     <StackPanel HorizontalAlignment="Center" Spacing="4">
-                      <icons:GameIcon Kind="EmoticonHappy" Width="24" Height="24"
+                      <icons:GameIcon Kind="EmoticonHappy" Width="28" Height="28"
                                        HorizontalAlignment="Center"
                                        Foreground="{Binding IsMoraleSelected, Converter={StaticResource TrainingTypeIconConverter}}"
                                        AutomationProperties.AutomationId="WorkerProfile_Icon_TrainMorale" />
@@ -620,7 +620,7 @@
                         AutomationProperties.AutomationId="WorkerProfile_Btn_StartTraining">
                   <StackPanel Orientation="Horizontal" Spacing="6"
                               HorizontalAlignment="Center">
-                    <icons:GameIcon Kind="SchoolOutline" Width="18" Height="18"
+                    <icons:GameIcon Kind="SchoolOutline" Width="24" Height="24"
                                      AutomationProperties.AutomationId="WorkerProfile_Icon_Train" />
                     <TextBlock Text="{loc:Translate Train}" FontSize="13"
                                AutomationProperties.AutomationId="WorkerProfile_Txt_Train" />
@@ -634,7 +634,7 @@
                         AutomationProperties.AutomationId="WorkerProfile_Btn_StopTraining">
                   <StackPanel Orientation="Horizontal" Spacing="6"
                               HorizontalAlignment="Center">
-                    <icons:GameIcon Kind="Stop" Width="18" Height="18"
+                    <icons:GameIcon Kind="Stop" Width="24" Height="24"
                                      AutomationProperties.AutomationId="WorkerProfile_Icon_StopTraining" />
                     <TextBlock Text="{loc:Translate StopTraining}" FontSize="13"
                                AutomationProperties.AutomationId="WorkerProfile_Txt_StopTraining" />
@@ -681,7 +681,7 @@
                         AutomationProperties.AutomationId="WorkerProfile_Btn_StartResting">
                   <StackPanel Orientation="Horizontal" Spacing="6"
                               HorizontalAlignment="Center">
-                    <icons:GameIcon Kind="BedOutline" Width="18" Height="18"
+                    <icons:GameIcon Kind="BedOutline" Width="24" Height="24"
                                      AutomationProperties.AutomationId="WorkerProfile_Icon_Rest" />
                     <TextBlock Text="{loc:Translate Rest}" FontSize="13"
                                AutomationProperties.AutomationId="WorkerProfile_Txt_Rest" />
@@ -695,7 +695,7 @@
                         AutomationProperties.AutomationId="WorkerProfile_Btn_StopResting">
                   <StackPanel Orientation="Horizontal" Spacing="6"
                               HorizontalAlignment="Center">
-                    <icons:GameIcon Kind="Stop" Width="18" Height="18"
+                    <icons:GameIcon Kind="Stop" Width="24" Height="24"
                                      AutomationProperties.AutomationId="WorkerProfile_Icon_StopResting" />
                     <TextBlock Text="{loc:Translate StopResting}" FontSize="13"
                                AutomationProperties.AutomationId="WorkerProfile_Txt_StopResting" />
@@ -720,7 +720,7 @@
                     AutomationProperties.AutomationId="WorkerProfile_Btn_GiveBonus">
               <StackPanel Orientation="Horizontal" Spacing="6"
                           HorizontalAlignment="Center">
-                <icons:GameIcon Kind="GiftOutline" Width="18" Height="18"
+                <icons:GameIcon Kind="GiftOutline" Width="24" Height="24"
                                  AutomationProperties.AutomationId="WorkerProfile_Icon_GiveBonus" />
                 <TextBlock Text="{loc:Translate GiveBonus}" FontSize="13"
                            AutomationProperties.AutomationId="WorkerProfile_Txt_GiveBonus" />
@@ -743,7 +743,7 @@
                       Padding="12,10"
                       AutomationProperties.AutomationId="WorkerProfile_Btn_Transfer">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="SwapHorizontal" Width="18" Height="18"
+                  <icons:GameIcon Kind="SwapHorizontal" Width="24" Height="24"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_Transfer" />
                   <TextBlock Text="{loc:Translate Transfer}" FontSize="13"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_Transfer" />
@@ -759,7 +759,7 @@
                     Padding="16,8"
                     AutomationProperties.AutomationId="WorkerProfile_Btn_Fire">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <icons:GameIcon Kind="AccountRemove" Width="18" Height="18"
+                <icons:GameIcon Kind="AccountRemove" Width="24" Height="24"
                                  Foreground="{DynamicResource ErrorBrush}"
                                  AutomationProperties.AutomationId="WorkerProfile_Icon_Fire" />
                 <TextBlock Text="{loc:Translate FireWorker}"

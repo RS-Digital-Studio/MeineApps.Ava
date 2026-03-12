@@ -163,4 +163,18 @@ public static class ContextualHints
         Id = "automation", TitleKey = "HintAutomationTitle", TextKey = "HintAutomationText",
         Position = HintPosition.Below
     };
+
+    // Vorarbeiter freigeschaltet (Level 10)
+    public static readonly ContextualHint ManagerUnlock = new()
+    {
+        Id = "manager_unlock", TitleKey = "HintManagerUnlockTitle", TextKey = "HintManagerUnlockText",
+        Position = HintPosition.Below
+    };
+
+    // Meisterwerkzeuge freigeschaltet (Level 20)
+    public static readonly ContextualHint MasterToolsUnlock = new()
+    {
+        Id = "master_tools_unlock", TitleKey = "HintMasterToolsUnlockTitle", TextKey = "HintMasterToolsUnlockText",
+        Position = HintPosition.Below
+    };
 }

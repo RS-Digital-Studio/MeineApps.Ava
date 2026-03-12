@@ -12,28 +12,36 @@
 
 ---
 
-## Aktueller Status (7. März 2026)
+## Aktueller Status (10. März 2026)
 
-**CODE komplett (Tasks 1-2, 5-7, 10-11, 15-16). BILDER noch nicht generiert.**
+**PLAN ABGESCHLOSSEN. Alle 36 AI-Assets generiert, konvertiert und deployt. Build erfolgreich.**
 
 | Task | Inhalt | Phase | Status |
 |------|--------|-------|--------|
 | 1 | GameAssetService erstellen (Laden + LRU-Cache) | Infrastruktur | DONE |
 | 2 | DI-Registrierung + Plattform-Asset-Loading | Infrastruktur | DONE |
-| 3 | ComfyUI Setup: DreamShaper XL + Script | Asset-Gen | DONE (Script fertig) |
-| 4 | AI-Assets generieren: Phase 0 (City+Hans+Schreiner) | Asset-Gen | OFFEN |
+| 3 | ComfyUI Setup: DreamShaper XL + Script | Asset-Gen | DONE |
+| 4 | AI-Assets generieren: Phase 0 (City+Hans+Schreiner) | Asset-Gen | DONE |
 | 5 | CityRenderer: Hybrid-Hintergrund | Code | DONE |
 | 6 | MeisterHansRenderer: AI-Portrait | Code | DONE |
 | 7 | WorkshopSceneRenderer + View-Wiring | Code | DONE |
-| 8 | Benchmark auf Android-Gerät | Test | OFFEN |
-| 9 | AI-Assets generieren: Phase 1+2 (alle restlichen) | Asset-Gen | OFFEN |
+| 8 | Benchmark auf Android-Gerät | Test | OFFEN (nächster Schritt) |
+| 9 | AI-Assets generieren: Phase 1+2 (alle restlichen) | Asset-Gen | DONE |
 | 10 | WorkshopSceneRenderer: Alle 10 Workshops (AssetNames Dict) | Code | DONE |
 | 11 | Splash-Screen: AI Key Visual (direkt AssetLoader) | Code | DONE |
-| 12 | Alte prozedurale Hintergründe entfernen | Cleanup | OFFEN (nach Verifikation) |
+| 12 | Alte prozedurale Hintergründe entfernen | Cleanup | OFFEN (nach Benchmark) |
 | 13-14 | (in Task 9 zusammengefasst) | — | — |
 | 15 | WorkerAvatarRenderer: AI-Tier-Portraits + Cache-Fix | Code | DONE |
 | 16 | Mini-Game Renderer: AI-Hintergründe (alle 10 + Views) | Code | DONE |
-| 17 | Build + AppChecker + CLAUDE.md | Final | OFFEN |
+| 17 | Build + AppChecker + CLAUDE.md | Final | DONE |
+
+### Asset-Generierung (10. März 2026)
+
+- **ComfyUI + DreamShaper XL Alpha2** (SDXL Checkpoint, 6.5 GB)
+- **36 Assets** generiert (je 3 Varianten, v01 ausgewählt)
+- **PNG → WebP** konvertiert (Pillow, quality 85, method 6)
+- **12.8 MB PNG → 1.2 MB WebP** (90% Kompression)
+- Shared-Build + Android-Build: 0 Fehler
 
 ### Review-Korrekturen (7. März 2026 — Plan vs. Code-Realität)
 

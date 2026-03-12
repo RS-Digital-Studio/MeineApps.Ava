@@ -1,6 +1,7 @@
 namespace RebornSaga.ViewModels;
 
 using CommunityToolkit.Mvvm.ComponentModel;
+using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using RebornSaga.Engine;
 using RebornSaga.Scenes;
@@ -15,6 +16,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly SceneManager _sceneManager;
     private readonly InputManager _inputManager;
+    private readonly ILocalizationService _localization;
     private readonly BackPressHelper _backPressHelper = new();
 
     /// <summary>
@@ -22,15 +24,17 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public event Action<string>? ExitHintRequested;
 
-    public MainViewModel(SceneManager sceneManager)
+    public MainViewModel(SceneManager sceneManager, ILocalizationService localization)
     {
         _sceneManager = sceneManager;
+        _localization = localization;
         _inputManager = new InputManager(sceneManager);
 
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
-        // Titelbildschirm als erste Szene laden
-        _sceneManager.ChangeScene<TitleScene>();
+        // Asset-Download-Prüfung als erste Szene laden
+        // (wechselt automatisch zu TitleScene wenn keine Downloads nötig)
+        _sceneManager.ChangeScene<AssetDownloadScene>();
     }
 
     /// <summary>
@@ -63,7 +67,8 @@ public partial class MainViewModel : ObservableObject
         }
 
         // 3. Double-Back-to-Exit auf TitleScene
-        return _backPressHelper.HandleDoubleBack("Nochmal drücken zum Beenden");
+        var msg = _localization.GetString("PressBackAgainToExit") ?? "Press back again to exit";
+        return _backPressHelper.HandleDoubleBack(msg);
     }
 
     /// <summary>

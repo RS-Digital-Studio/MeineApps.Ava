@@ -222,7 +222,7 @@
                 BorderThickness="1"
                 AutomationProperties.AutomationId="Missionen_Border_LuckySpin">
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <icons:GameIcon Kind="ChartDonut" Width="22" Height="22"
+            <icons:GameIcon Kind="ChartDonut" Width="26" Height="26"
                              Foreground="{StaticResource CraftGoldBrush}"
                              AutomationProperties.AutomationId="Missionen_Icon_LuckySpin" />
             <TextBlock Text="{loc:Translate LuckySpin}"

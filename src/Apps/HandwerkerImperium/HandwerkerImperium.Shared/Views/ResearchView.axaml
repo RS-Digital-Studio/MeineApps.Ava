@@ -36,7 +36,7 @@
             <Button Classes="Text"
                     AutomationProperties.AutomationId="Research_Btn_Back"
                     Command="{Binding GoBackCommand}">
-              <icons:GameIcon Kind="ArrowLeft" Width="20" Height="20"
+              <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                                AutomationProperties.AutomationId="Research_Icon_Back"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </Button>
@@ -48,7 +48,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Spacing="6">
-              <icons:GameIcon Kind="FlaskOutline" Width="22" Height="22"
+              <icons:GameIcon Kind="FlaskOutline" Width="26" Height="26"
                                AutomationProperties.AutomationId="Research_Icon_Flask"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{Binding Title}"
@@ -66,7 +66,7 @@
                       AutomationProperties.AutomationId="Research_Border_ScrewBadge"
                       CornerRadius="10" Padding="6,3">
                 <StackPanel Orientation="Horizontal" Spacing="3">
-                  <icons:GameIcon Kind="ScrewFlatTop" Width="14" Height="14"
+                  <icons:GameIcon Kind="ScrewFlatTop" Width="18" Height="18"
                                    AutomationProperties.AutomationId="Research_Icon_Screw"
                                    Foreground="{StaticResource CraftGoldBrush}" />
                   <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="12" FontWeight="Bold"
@@ -111,7 +111,7 @@
                 AutomationProperties.AutomationId="Research_Btn_Cancel"
                 Command="{Binding CancelResearchCommand}"
                 Padding="6">
-          <icons:GameIcon Kind="Close" Width="18" Height="18"
+          <icons:GameIcon Kind="Close" Width="24" Height="24"
                            AutomationProperties.AutomationId="Research_Icon_Cancel"
                            Foreground="{DynamicResource ErrorBrush}" />
         </Button>
@@ -130,9 +130,9 @@
                 IsVisible="{Binding CanInstantFinish}"
                 Command="{Binding InstantFinishResearchCommand}">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <icons:GameIcon Kind="LightningBolt" Width="16" Height="16"
+            <icons:GameIcon Kind="LightningBolt" Width="20" Height="20"
                              AutomationProperties.AutomationId="Research_Icon_Lightning" />
-            <icons:GameIcon Kind="ScrewFlatTop" Width="14" Height="14"
+            <icons:GameIcon Kind="ScrewFlatTop" Width="18" Height="18"
                              AutomationProperties.AutomationId="Research_Icon_InstantScrew"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock Text="{Binding InstantFinishCost}"
@@ -148,7 +148,7 @@
                 IsVisible="{Binding CanWatchAdToFinish}"
                 Command="{Binding WatchAdToFinishResearchCommand}">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <icons:GameIcon Kind="Video" Width="16" Height="16"
+            <icons:GameIcon Kind="Video" Width="20" Height="20"
                              AutomationProperties.AutomationId="Research_Icon_AdVideo"
                              Foreground="{StaticResource CraftPrimaryLightBrush}" />
             <TextBlock Text="{loc:Translate WatchAdToFinishResearch}"

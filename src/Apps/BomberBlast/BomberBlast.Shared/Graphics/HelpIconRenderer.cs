@@ -1,4 +1,5 @@
 using BomberBlast.Models.Entities;
+using BomberBlast.Services;
 using SkiaSharp;
 
 namespace BomberBlast.Graphics;
@@ -48,6 +49,10 @@ public static class HelpIconRenderer
     /// </summary>
     public static void DrawEnemy(SKCanvas canvas, float cx, float cy, float size, EnemyType type)
     {
+        // AI-Bitmap versuchen (Dark Fantasy Arcade Icons)
+        if (TryDrawAIBitmap(canvas, cx, cy, size, $"enemies/enemy_{type.ToString().ToLowerInvariant()}.webp"))
+            return;
+
         var fillPaint = _fillPaint;
         var strokePaint = _strokePaint;
 
@@ -522,6 +527,17 @@ public static class HelpIconRenderer
     /// </summary>
     public static void DrawPowerUp(SKCanvas canvas, float cx, float cy, float size, PowerUpType type)
     {
+        // AI-Bitmap versuchen (Dark Fantasy Arcade PowerUp-Icons)
+        var powerUpName = type switch
+        {
+            PowerUpType.BombUp => "bomb_up",
+            PowerUpType.LineBomb => "line_bomb",
+            PowerUpType.PowerBomb => "power_bomb",
+            _ => type.ToString().ToLowerInvariant()
+        };
+        if (TryDrawAIBitmap(canvas, cx, cy, size, $"powerups/powerup_{powerUpName}.webp"))
+            return;
+
         var color = GetPowerUpColor(type);
         float radius = size * 0.35f;
 
@@ -711,6 +727,19 @@ public static class HelpIconRenderer
     /// </summary>
     public static void DrawBoss(SKCanvas canvas, float cx, float cy, float size, BossType type)
     {
+        // AI-Bitmap versuchen (Dark Fantasy Arcade Boss-Portraits)
+        var bossName = type switch
+        {
+            BossType.StoneGolem => "boss_stone_golem",
+            BossType.IceDragon => "boss_ice_dragon",
+            BossType.FireDemon => "boss_fire_demon",
+            BossType.ShadowMaster => "boss_shadow_master",
+            BossType.FinalBoss => "boss_final",
+            _ => null
+        };
+        if (bossName != null && TryDrawAIBitmap(canvas, cx, cy, size, $"bosses/{bossName}.webp"))
+            return;
+
         var fillPaint = _fillPaint;
         var strokePaint = _strokePaint;
 
@@ -961,6 +990,16 @@ public static class HelpIconRenderer
     /// </summary>
     public static void DrawBombCard(SKCanvas canvas, float cx, float cy, float size, BombType type)
     {
+        // AI-Bitmap versuchen (Dark Fantasy Arcade Bomben-Karten)
+        var cardName = type switch
+        {
+            BombType.TimeWarp => "time_warp",
+            BombType.BlackHole => "black_hole",
+            _ => type.ToString().ToLowerInvariant()
+        };
+        if (TryDrawAIBitmap(canvas, cx, cy, size, $"cards/card_{cardName}.webp"))
+            return;
+
         var fillPaint = _fillPaint;
         var strokePaint = _strokePaint;
 
@@ -1293,4 +1332,26 @@ public static class HelpIconRenderer
         BombType.BlackHole => new SKColor(100, 0, 200),
         _ => new SKColor(255, 160, 50) // Normal: warmer orangener Glow
     };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AI-BITMAP HELPER
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private static readonly SKPaint _aiBitmapPaint = new() { IsAntialias = true };
+
+    /// <summary>
+    /// Versucht ein AI-generiertes Bitmap zu zeichnen.
+    /// Gibt true zurück wenn erfolgreich (Caller überspringt prozedurales Rendering).
+    /// Gibt false zurück wenn Asset nicht verfügbar (Fallback auf prozedural).
+    /// </summary>
+    private static bool TryDrawAIBitmap(SKCanvas canvas, float cx, float cy, float size, string assetPath)
+    {
+        var bitmap = GameAssetService.Current?.GetOrLoadBitmap(assetPath);
+        if (bitmap == null) return false;
+
+        float half = size * 0.4f;
+        var dest = new SKRect(cx - half, cy - half, cx + half, cy + half);
+        canvas.DrawBitmap(bitmap, dest, _aiBitmapPaint);
+        return true;
+    }
 }

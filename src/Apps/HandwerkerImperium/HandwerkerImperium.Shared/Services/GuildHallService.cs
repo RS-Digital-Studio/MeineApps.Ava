@@ -125,9 +125,9 @@ public sealed class GuildHallService : IGuildHallService
             // Effekte berechnen und cachen
             RecalculateEffects(definitions);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetBuildingsAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -227,9 +227,9 @@ public sealed class GuildHallService : IGuildHallService
 
             return true;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in UpgradeBuildingAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return false;
         }
         finally
@@ -288,9 +288,9 @@ public sealed class GuildHallService : IGuildHallService
                 RecalculateEffects(GuildBuildingDefinition.GetAll());
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in CheckUpgradeCompletionAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {
@@ -334,9 +334,9 @@ public sealed class GuildHallService : IGuildHallService
 
             RecalculateEffects(GuildBuildingDefinition.GetAll());
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in RefreshHallCacheAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
         finally
         {

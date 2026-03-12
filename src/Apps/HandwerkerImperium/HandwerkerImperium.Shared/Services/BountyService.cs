@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Services;
@@ -69,15 +70,11 @@ public sealed class BountyService : IBountyService
                 await _firebase.SetAsync($"bounties/{bountyId}", bounty);
             }
 
-            // Eigenen Beitrag laden
-            long ownContribution = 0;
-            var uid = _firebase.PlayerId;
-            if (!string.IsNullOrEmpty(uid))
-            {
-                var contribution = await _firebase.GetAsync<BountyContribution>(
-                    $"bounties/{bountyId}/contributions/{uid}");
-                ownContribution = contribution?.Amount ?? 0;
-            }
+            // Gesamtbeitrag aller Spieler aggregieren (Race-Condition-frei)
+            var (totalContributions, ownContribution) = await AggregateContributionsAsync(bountyId);
+
+            // Nutze aggregierten Wert statt des potenziell veralteten bounty.Current
+            var current = Math.Max(bounty.Current, totalContributions);
 
             var endDate = DateTime.TryParse(bounty.EndDate, CultureInfo.InvariantCulture,
                 DateTimeStyles.RoundtripKind, out var ed) ? ed : DateTime.UtcNow.AddDays(3);
@@ -91,19 +88,19 @@ public sealed class BountyService : IBountyService
                 Type = bounty.Type,
                 TypeDisplayKey = typeInfo.DisplayKey ?? "BountyOrders",
                 Target = bounty.Target,
-                Current = bounty.Current,
+                Current = current,
                 OwnContribution = ownContribution,
                 Reward = bounty.Reward,
                 EndDate = endDate,
-                IsCompleted = bounty.Status == "completed" || bounty.Current >= bounty.Target
+                IsCompleted = bounty.Status == "completed" || current >= bounty.Target
             };
 
             _lastBountyCheck = DateTime.UtcNow;
             return _cachedBounty;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetActiveBountyAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return null;
         }
         finally
@@ -122,7 +119,7 @@ public sealed class BountyService : IBountyService
             var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
-            // Eigenen Beitrag aktualisieren
+            // Eigenen Beitrag aktualisieren (Race-Condition-frei: jeder Spieler hat eigenen Eintrag)
             var existing = await _firebase.GetAsync<BountyContribution>(
                 $"bounties/{bountyId}/contributions/{uid}");
             var newAmount = (existing?.Amount ?? 0) + amount;
@@ -134,28 +131,28 @@ public sealed class BountyService : IBountyService
                     UpdatedAt = DateTime.UtcNow.ToString("O")
                 });
 
-            // Globalen Counter aktualisieren (Read-Modify-Write)
+            // Gesamtfortschritt aggregieren und Status prüfen
             var bounty = await _firebase.GetAsync<CommunityBounty>($"bounties/{bountyId}");
             if (bounty != null && bounty.Status == "active")
             {
-                var newCurrent = bounty.Current + amount;
-                var updates = new Dictionary<string, object> { ["current"] = newCurrent };
-
-                // Prüfe ob Ziel erreicht
-                if (newCurrent >= bounty.Target)
+                var (totalContributions, _) = await AggregateContributionsAsync(bountyId);
+                if (totalContributions >= bounty.Target)
                 {
-                    updates["status"] = "completed";
+                    await _firebase.UpdateAsync($"bounties/{bountyId}",
+                        new Dictionary<string, object>
+                        {
+                            ["status"] = "completed",
+                            ["current"] = totalContributions
+                        });
                 }
-
-                await _firebase.UpdateAsync($"bounties/{bountyId}", updates);
             }
 
             // Cache invalidieren
             _cachedBounty = null;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in ContributeAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
     }
 
@@ -167,8 +164,11 @@ public sealed class BountyService : IBountyService
             var bounty = await _firebase.GetAsync<CommunityBounty>($"bounties/{bountyId}");
             if (bounty == null) return;
 
-            // Prüfe ob Ziel erreicht und noch nicht belohnt
-            if (bounty.Current >= bounty.Target || bounty.Status == "completed")
+            // Aggregierten Fortschritt prüfen (Race-Condition-frei)
+            var (totalContributions, _) = await AggregateContributionsAsync(bountyId);
+            var isCompleted = bounty.Status == "completed" || totalContributions >= bounty.Target;
+
+            if (isCompleted)
             {
                 // Duplikat-Schutz: Pro Bounty nur einmal belohnen
                 var rewardKey = $"bounty_rewarded_{bountyId}";
@@ -190,9 +190,44 @@ public sealed class BountyService : IBountyService
                 }
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in CheckAndFinalizeBountyAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
+        }
+    }
+
+    /// <summary>
+    /// Aggregiert alle Beiträge einer Bounty (Race-Condition-frei, wie GuildBossService-Pattern).
+    /// Gibt (Gesamt, eigener Beitrag) zurück.
+    /// </summary>
+    private async Task<(long Total, long Own)> AggregateContributionsAsync(string bountyId)
+    {
+        try
+        {
+            var json = await _firebase.QueryAsync($"bounties/{bountyId}/contributions", "");
+            if (string.IsNullOrEmpty(json) || json == "null")
+                return (0, 0);
+
+            var contributions = JsonSerializer.Deserialize<Dictionary<string, BountyContribution>>(json);
+            if (contributions == null || contributions.Count == 0)
+                return (0, 0);
+
+            long total = 0;
+            long own = 0;
+            var uid = _firebase.PlayerId;
+
+            foreach (var (playerId, contribution) in contributions)
+            {
+                total += contribution.Amount;
+                if (playerId == uid)
+                    own = contribution.Amount;
+            }
+
+            return (total, own);
+        }
+        catch
+        {
+            return (0, 0);
         }
     }
 

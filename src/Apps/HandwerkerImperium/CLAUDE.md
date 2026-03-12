@@ -6,22 +6,22 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Auftraege oder spiele Mini-Games.
 
-**Version:** 2.0.19 (VersionCode 27) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
+**Version:** 2.0.20 (VersionCode 28) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
 
-## Icon-System (Eigene Warme Werkstatt Icons)
+## Icon-System (Bitmap-Icons, AI + Programmatisch)
 
-Kein Material.Icons.Avalonia. Alle Icons sind eigene geometrische SVG-Pfade im "Warme Werkstatt"-Stil.
+Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Assets/visuals/icons/`.
 
-- **222 Icons** in `Icons/GameIconKind.cs` (Enum) + `Icons/GameIconPaths.cs` (Pfaddaten)
-- **Design-Sprache**: Hexagonale Grundformen (6-seitig, spitze Oberseite) statt runder Kreise
-- **Hexagon-Template**: `M12 2L19 5L22 12L19 19L12 22L5 19L2 12L5 5Z`
-- **Nur M/L/H/V/Z Befehle** (keine Bezier-Kurven) für kantigen geometrischen Stil
-- **24x24 Koordinatenraum** für alle Icons
-- **Dual-Parser-Kompatibilität**: Pfade funktionieren mit Avalonia `StreamGeometry.Parse` UND SkiaSharp `SKPath.ParseSvgPathData`
-- **Gebäude-Icons**: Kantine=SilverwareForkKnife, Lager=Warehouse, Büro=OfficeBuildingCog, Ausstellungsraum=Store, Ausbildungszentrum=GraduationCap, Fuhrpark=Truck, Werkstatt-Erweiterung=ArrowExpand
-- **GameIcon** (`Icons/GameIcon.cs`): Custom Control (erbt von `PathIcon`, `StyleKeyOverride => typeof(PathIcon)`)
-- **GameIconRenderer** (`Icons/GameIconRenderer.cs`): SkiaSharp-Renderer mit `ConcurrentDictionary<GameIconKind, SKPath?>` Cache
+- **Hybrid-Generierung**: ~200 Objekt-Icons AI-generiert (ComfyUI DreamShaper XL, Cartoon-Stil), ~22 abstrakte UI-Icons programmatisch (PIL, geometrische Formen)
+- **GameIconKind.cs**: Enum mit 224 Werten in Kategorien (Navigation, Status, Stars, Combat, Economy, Workers, Tools, Buildings, etc.)
+- **GameIcon** (`Icons/GameIcon.cs`): Custom Control (erbt von `TemplatedControl`, hat `Foreground`). Render: Bitmap-Alpha als OpacityMask, Foreground als Füllfarbe
+- **GameIconRenderer** (`Icons/GameIconRenderer.cs`): SkiaSharp-Renderer für SKCanvas. Bitmap + SKColorFilter.CreateBlendMode(color, SrcIn) für Tinting
+- **GameIconPaths.cs**: Leerer Stub (gibt null zurück). Keine SVG-Pfade mehr
+- **Preloading**: `GameIcon.PreloadAllAsync()` in Loading-Pipeline (Step 1 parallel mit Shader+ViewModel+Purchases)
+- **Pfad-Konvertierung**: PascalCase → snake_case → `icons/{name}.webp` (z.B. ArrowDown → icons/arrow_down.webp)
+- **Tinting**: AXAML nutzt `Foreground="{StaticResource CraftGoldBrush}"`, SkiaSharp nutzt `paint.Color`
 - **StringToGameIconKindConverter**: Konvertiert String-Iconnamen zu Enum-Werten in XAML-Bindings
+- **Generierungs-Script**: `F:\AI\ComfyUI_workflows\handwerkerimperium\generate_icons_test.py`
 
 ## Haupt-Features
 
@@ -56,10 +56,17 @@ Kein Material.Icons.Avalonia. Alle Icons sind eigene geometrische SVG-Pfade im "
 - **Saisonale Events** (4/Jahr mit Saisonwaehrung und Event-Shop)
 - **Gilden/Innungen** (Firebase Realtime Database, Wochenziele, 18 Forschungen mit Timer+Auto-Completion, Einladungs-Inbox mit Accept/Decline)
 - **Crafting-System** (13 Rezepte in 3 Tiers, Inventar + Verkauf)
-- **Automatisierung** (Auto-Collect Lv15+, Auto-Accept Lv25+, Auto-Assign Lv50+, Auto-ClaimDaily Premium)
+- **Automatisierung** (Auto-Collect Lv15+, Auto-Accept Lv25+, Auto-Assign Lv50+, Auto-ClaimDaily Premium) — eigenes Dashboard-Panel (nicht in Settings)
 - **Welcome Back Angebote** + **Gluecksrad** (taeglich gratis)
 - **Ausruestungs-System** (4 Typen x 4 Seltenheiten fuer Arbeiter, Equip/Unequip im Worker-Profil, Inventar-Browser)
-- **Isometrische Weltkarte** (Full-Screen 2.5D SkiaSharp, 8x8 Diamond-Grid, Kamera, Radial-Menue, Partikel, Tag/Nacht, Wetter)
+- **Grafik-Einstellungen** (Low/Medium/High, GraphicsQuality in GameState, steuert Wetter-Effekte etc.)
+- **MiniGame-Direktstart** (Auto-Start nach Tutorial-Check + 3-2-1-Countdown, kein Start-Button)
+
+### Neuer-Spieler-Einstieg
+
+- **Startgeld**: 1.000 EUR (statt 250)
+- **Start-Werkstatt**: Schreinerei mit 2 Arbeitern (statt 1)
+- Workshop-Karten zeigen werkstatt-spezifische Icons (GameIconRenderer) auf Upgrade-Button und dimmed auf Locked-Karten
 
 ## Premium & Ads
 
@@ -112,17 +119,42 @@ Alle erben `DataContext="{Binding}"` vom MainViewModel. Backdrop-Dismiss im Code
 
 | Tab | Index | View | Inhalt |
 |-----|-------|------|--------|
-| Werkstatt | 0 | IsometricWorldView | 2.5D-Weltkarte, Radial-Menue, Partikel, Tag/Nacht, Wetter |
-| Imperium | 1 | ImperiumView | Prestige-Banner, Gebaeude, Crafting+Research, Workers/Manager/MasterTools |
+| Werkstatt | 0 | DashboardView | City-Szene (CityRenderer), Workshop-Karten, Automation-Panel, Quick-Jobs |
+| Imperium | 1 | ImperiumView | Gebaeude, Crafting+Research, Workers/Manager/MasterTools, Prestige (am Ende) |
 | Missionen | 2 | MissionenView | Daily Challenges, Weekly Missions, Turnier/BattlePass/SaisonEvent/Erfolge, Gluecksrad |
 | Gilde | 3 | GuildView | Guild-Hub, Research/Members/Invite Sub-Seiten |
 | Shop | 4 | ShopView | IAP, Goldschrauben-Pakete, Ausruestungs-Shop |
 
 **Tab-Bar Badges**: Tab 0 (HasPendingDelivery+CanActivateRush), Tab 1 (HasWorkerWarning), Tab 2 (ClaimableMissionsCount+HasFreeSpin). SkiaSharp-Tab-Bar (GameTabBarRenderer, 64dp).
 
+### Dashboard-Header (UI-Entschlackung Phase 1)
+
+- **Zeile 1**: Level-Badge + Gold/Schrauben + Settings-Gear (kreisförmiger Button mit `#30000000` Background)
+- **Zeile 2**: Nur Level+XP (immer), Reputation (bedingt: `ShowReputationBadge` bei <50 oder >=80), Streak (bedingt: `ShowStreakBadge` bei >=5 Tagen)
+- **Statistics-Zugang**: Über SettingsView (Link-Button mit ChevronRight, Route `../statistics`)
+- **Workshop-Canvas**: Dynamische Höhe via `WorkshopCanvasHeight` (2 Spalten, ~160dp/Reihe) statt fixe 800dp
+
+### Progressive Disclosure (Phase 2)
+
+Level-basierte Section-Visibility innerhalb der Views:
+
+| Property | Level | Betroffene Section |
+|----------|-------|--------------------|
+| `ShowBannerStrip` | 3 | Dashboard BannerStrip (Events/Boosts) |
+| `IsQuickJobsUnlocked` | 5 | Dashboard QuickJobs-Tab |
+| `ShowCraftingResearch` | 8 | Imperium Crafting+Forschung |
+| `HasLockedBuildings` (BuildingsVM) | datenbasiert | Imperium gesperrte Workshops (zeigt nur wenn welche existieren) |
+| `ShowManagerSection` | 10 | Imperium Vorarbeiter Quick-Access |
+| `ShowMasterToolsSection` | 20 | Imperium Meisterwerkzeuge Quick-Access |
+| `QuickAccessColumns` | dynamisch | Imperium Quick-Access UniformGrid (1-3 Spalten) |
+
+Zusätzlich existieren Tab-Level-Gates (`TabUnlockLevels`): Werkstatt=1, Shop=3, Imperium=5, Missionen=8, Gilde=15.
+
+**Alle Level-Schwellenwerte sind in `Models/LevelThresholds.cs` zentralisiert** (Feature-Unlocks, Automation, Tabs, Hints, Reputation, Daten-Caps). Keine Magic Numbers in Services/ViewModels - immer `LevelThresholds.*` verwenden. GameLoopService nutzt `GameStateService.IsAuto*Unlocked` Properties statt eigener Level-Checks.
+
 ### Dashboard-UserControls (Views/Dashboard/)
 
-`DailyChallengeSection`, `WeeklyMissionSection`, `BannerStrip` - erben DataContext vom Parent (MainViewModel). PaintSurface-Handler nutzen `IProgressProvider`-Interface.
+`DailyChallengeSection`, `WeeklyMissionSection`, `BannerStrip`, `AutomationPanel` (Lv15+ sichtbar, 3 Toggles: AutoCollect/AutoAccept/AutoClaimDaily) - erben DataContext vom Parent (MainViewModel). PaintSurface-Handler nutzen `IProgressProvider`-Interface.
 
 ### Gilden-Sub-Seiten (Views/Guild/)
 
@@ -136,41 +168,10 @@ Weitere Sub-Seiten:
 - `GuildMembersView` - Mitglieder-Liste mit Avatar/Name/Rolle/Beitrag
 - `GuildInviteView` - 6-stelliger Invite-Code, Spieler-Browser
 - `GuildAchievementsView` - 30 Achievements (10 Typen x 3 Tiers) mit SkiaSharp-Renderer
+- `GuildChatView` - Messenger-UI mit Bubble-Layout (eigene rechts, fremde links), Auto-Scroll, 15s Polling
+- `GuildWarView` - Kriegs-Detail mit VS-Anzeige, Score-Balken, Timer, Kampf-Button, Saison-Link
 
-Navigation via `NavigationRequested` Events. Sub-VM-Events werden an GuildViewModel propagiert. Zurueck-Navigation (".." oder Android-Back) fuehrt zum Guild-Hub.
-
-### Isometrische Weltkarte (Graphics/IsometricWorld/)
-
-Full-Screen 2.5D-Weltkarte als zentraler Game-Hub (Tab 0). Komplett SkiaSharp-basiert, 30fps Render-Loop.
-
-**8 Dateien:**
-
-| Datei | Zweck |
-|-------|-------|
-| `IsoGridHelper.cs` | IsoToScreen/ScreenToIso, TileWidth=96f, TileHeight=48f, 8x8 Grid, Painter's Algorithm |
-| `IsoCameraSystem.cs` | Pan mit Inertia, PinchZoom (0.5x-2.0x), FocusOnBuilding (animiert), Bounds-Clamping |
-| `IsoTerrainRenderer.cs` | 4 Gruentoene, Weg-Farben nach WorldTier, wind-animiertes Gras, Dekorationen |
-| `IsoBuildingRenderer.cs` | 10 Workshop-Typen (25+ Draw-Calls), 7 Support-Gebaeude, Level-Rahmen. **0 GC/Frame**: 18 static readonly SKPath mit Rewind() |
-| `IsoParticleManager.cs` | 300-Partikel Struct-Pool (0 GC), 10 ParticleTypes, LCG Pseudo-Random, lock-basiert |
-| `IsoRadialMenu.cs` | 4 Aktionen (Upgrade/Workers/MiniGame/Info), EaseOutBack, 6 static readonly SKPaint, HitTest |
-| `IsometricWorldRenderer.cs` | 9-Stage Render-Pipeline, Shader-Cache, GridCell Struct, HitTest |
-| `EasingFunctions.cs` | EaseOutCubic/Back/Elastic/Bounce, Spring, Lerp, SmoothStep, PingPong |
-
-**Grid-Layout (8x8 Diamond):**
-- Workshop-Positionen: (2,2)/(4,2)/(6,2)/(1,4)/(3,4)/(5,4)/(7,4)/(2,6)/(4,6)/(6,6)
-- Building-Positionen: (0,1)/(1,1)/(3,1)/(5,1)/(7,1)/(0,3)/(7,6)
-
-**Render-Pipeline (9 Stufen):** Sky-Gradient → Camera-Transform → Terrain → Buildings (Painter's Algorithm) → Partikel → Camera-Reset → Wetter-Overlay → Radial-Menue → HUD
-
-**Touch-Handling:**
-- Pan: Drag mit >10px Schwelle, Camera.Pan(dx, dy) mit Inertia
-- Tap: <10px + <300ms → HitTest → Workshop (Radial-Menue), Building (Imperium-Tab), RadialMenu-Aktion (Upgrade bleibt offen). Screen-Space HitTest: Klick innerhalb Menue-Backdrop ohne Button-Treffer → ignoriert
-- Desktop-Mausrad-Zoom: ScrollZoomFactor=1.1f, zoomt Richtung Mausposition
-
-**Integration mit MainViewModel:**
-- `UpgradeWorkshopSilent(type)`, `NavigateToWorkshopFromCity(type)`, `SelectWorkerMarketTabCommand`, `SelectBuildingsTabCommand`
-- `FloatingTextRequested` Event (money=gruen, xp/golden_screws=gold, level=craft-orange)
-- `GetGameStateForRendering()` fuer Renderer
+Navigation via `NavigationRequested` Events. Sub-VM-Events werden an GuildViewModel propagiert. Zurueck-Navigation (".." oder Android-Back) fuehrt zum Guild-Hub. Routes: `guild_chat` (startet Chat-Polling), `guild_war` (lädt War-Status).
 
 ### Game Loop
 
@@ -208,6 +209,7 @@ Kosten: 500 bis 1B. Dauer: 10min bis 72h (Echtzeit).
 
 Alle 10 Mini-Games nutzen dedizierte SkiaSharp-Renderer. Header, Result-Display, Countdown und Buttons bleiben XAML. Jeder Renderer hat `Render()` + `HitTest()`, View hat 30fps Render-Loop, Touch via `PointerPressed` + DPI-Skalierung.
 **Tutorial-System**: Erstes Spielen zeigt Overlay (Tracking via `GameState.SeenMiniGameTutorials`).
+**Direktstart**: Alle MiniGames starten automatisch nach Tutorial-Check (kein Start-Button). Start-Buttons sind per `<Panel IsVisible="False">` versteckt. Bei Tutorial-Dismiss wird `StartGameAsync()` aufgerufen.
 **Belohnungsanzeige**: NUR bei letzter Aufgabe als Gesamt-Belohnung. Berechnung: `order.FinalReward * GetOrderRewardMultiplier(order)` (inkl. Research, Gebäude, Reputation, Events, Stammkunden). PaintingGame zusätzlich `* comboMult`. Rewarded-Ad setzt `order.IsScoreDoubled = true`, PaintingGame setzt `order.ComboMultiplier`. `CompleteActiveOrder()` wendet beides bei Auszahlung an.
 **Ergebnis-Animation**: Zwischen-Runden sofort, letzte Runde staggered (100ms Delay, 250ms Duration).
 **Dashboard-Belohnung**: Bindet an `EstimatedReward`/`EstimatedXp` (inkl. Difficulty + OrderType, mit "~"-Präfix).
@@ -261,7 +263,8 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `GuildBossService` | Kooperative Gilden-Bosse (6 Typen), Schaden-Tracking, Spawn/Despawn, Belohnungen |
 | `GuildTipService` | Kontextuelle Gilden-Tipps (Preferences-basiert, 24h Cooldown) |
 | `GuildAchievementService` | 30 Gilden-Achievements (10 Typen x 3 Tiers), Firebase-Tracking |
-| `FirebaseService` | Anonymous Auth, Token-Refresh (55min), CRUD, 5s Timeout, SemaphoreSlim |
+| `FirebaseService` | Anonymous Auth, Token-Refresh (55min, Retry bei Netzwerkfehler), CRUD, 5s Timeout, SemaphoreSlim. PlayerId-GUID (stabile Spieler-Identität, überlebt Account-Wechsel), auth_to_player Mapping via SyncAuthToPlayerMappingAsync() |
+| `GameAssetService` | LRU-Cache 50MB, WebP→SKBitmap, PlatformAssetLoader |
 | `CraftingService` | 13 Rezepte in 3 Tiers, Produktionsketten, Echtzeit-Timer |
 | `WeeklyMissionService` | 5 Wochenmissionen, Montag-Reset, 50 Goldschrauben Bonus |
 | `WelcomeBackService` | Angebote nach 24h+ Abwesenheit, Starter-Paket (einmalig) |
@@ -298,7 +301,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | SkiaShimmerEffect | GPU-Shimmer auf Goldschrauben-Bereich (permanent wenn > 0) |
 | City 2.5D | CityRenderer: 5-Layer Parallax, isometrische Gebaeude, Tag/Nacht, 8 Welt-Stufen |
 | City Buildings | CityBuildingShapes: Workshop-Farben, Dach-Details, Fenster-Blinken, Level-Rahmen, Mini-Arbeiter |
-| City Weather | CityWeatherSystem: Regen+Regenbogen, Sonne+Shimmer, Blaetter, Schnee (80 Struct-Pool) |
+| City Weather | CityWeatherSystem: Regen+Regenbogen, Sonne+Shimmer, Blaetter, Schnee (80 Struct-Pool, canvas.ClipRect auf City-Bounds, nur bei GraphicsQuality >= Medium) |
 | City Progression | CityProgressionHelper: Strassen-Upgrade, Dekorationen (Buesche/Baeume/Laternen/Baenke/Brunnen) |
 | City Touch | Tap auf Workshop → RadialBurst + TapLabel + Navigation. Tap auf Gebaeude → Imperium-Tab |
 | City Details | Workshop-Mini-Icons, Spotlight+Fahnen, Lieferwagen+Fussgaenger, Fenster-Glow, Laternen-Lichtkegel, Wolken-Schatten, Sonnenauf-/Untergang, Boden-Wetter |
@@ -306,7 +309,8 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | Loading-Screen | Zahnraeder, Funken-Partikel, Gradient-Fortschrittsbalken, rotierende Tipps |
 | Splash-Screen | "Die Schmiede": Zahnraeder, Amboss, Hammer-Animation, Glut-Partikel |
 | Gluecksrad | LuckySpinWheelRenderer: 8 Segmente, Nieten-Rand, SkiaSharp-Icons, Spin-Animation ~60fps. Segment-Reihenfolge (0-7): MoneySmall, MoneyMedium, MoneyLarge, XpBoost, GoldenScrews, SpeedBoost, ToolUpgrade, Jackpot. Winkelberechnung: `360 - segmentCenter` (Rad dreht im Uhrzeigersinn, Zeiger oben) |
-| Iso-Weltkarte | 2.5D 8x8 Diamond-Grid, 10 Workshop-Gebaeude, Kamera, Radial-Menue, Partikel, Tag/Nacht |
+| Workshop-Icons | WorkshopGameCardRenderer: Werkstatt-spezifische GameIconRenderer-Icons auf Upgrade-Button + dimmed auf Locked-Karten |
+| Grafik-Qualität | GraphicsQuality (Low/Medium/High) steuert Wetter, Partikel etc. in SettingsView |
 | Gilden-Forschungsbaum | 18 Items, Bezier-Verbindungen, Flow-Partikel, GuildHallHeader (Steinmauer, Fackeln, Emblem), Node-Namen+Kosten/Effekt-Labels, Lock-Badges, Drop-Shadow, Inner-Highlight |
 | Research-Labor | ResearchLabRenderer: Werkstatt-Szene, Zahnraeder, Dampf, Gluehbirne |
 | Research-Baum | 2D Top-Heroes-Style, Branch-Farben, Flow-Partikel, Branch-Banner, Celebration-Confetti |
@@ -322,18 +326,16 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 - **Overlay-Farben**: DialogOverlay=#AA000000, RewardOverlay=#CC000000
 - **Hardcodierte Farben**: Alle in ~30 Views durch CraftXxxBrush ersetzt. Ausnahme: Alpha-Kanal + GradientStop bleiben hardcodiert
 
-## Visual Upgrade (Phase 0-2, geplant)
+## Visual Upgrade (Phase 0-2, deployt)
 
-AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL. Hybrid-Rendering: AI-Hintergrund + prozedurale Overlays.
+AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL. Hybrid-Rendering: AI-Hintergrund (1x DrawBitmap) + prozedurale Overlays.
 
-- **Design:** `docs/plans/2026-03-07-handwerkerimperium-visual-upgrade-design.md`
-- **Plan:** `docs/plans/2026-03-07-handwerkerimperium-visual-upgrade-plan.md`
-- **Memory:** `~/.claude/projects/.../memory/comfyui-pipeline.md`
+- **Status:** 36 Assets deployt (1.2 MB WebP), Shared+Android Build OK
 - **GameAssetService** (IGameAssetService): LRU-Cache 50MB, WebP→SKBitmap, PlatformAssetLoader
-- **~37 Assets** in APK gebundled (~3-5 MB WebP), kein Play Asset Delivery, kein Fallback
-- **Phase 0:** City-Hintergrund + Meister Hans (4 Moods) + 1 Workshop (PoC)
-- **Phase 1:** 10 Workshop-Hintergründe + Splash — alte prozedurale Hintergründe LÖSCHEN
-- **Phase 2:** Worker-Portraits (Tier 1-10) + 10 Mini-Game-Hintergründe
+- **Assets:** `Assets/visuals/{city,workshops,workers,minigames,meister_hans,splash}/` (WebP, quality 85)
+- **Shared csproj:** `<AvaloniaResource Include="Assets\**" />` (Wildcard)
+- **Android csproj:** `<AndroidAsset Include="..\..\Shared\Assets\visuals\**\*.webp" Link="..." />`
+- **Offen:** Android-Benchmark (Task 8), alte prozedurale Hintergründe entfernen (Task 12 — erst nach Verifikation auf Gerät)
 
 ## IsBusy-Pattern
 
@@ -448,12 +450,21 @@ Effekte ueber `GuildMembership`-Properties gecacht:
 - `Views/Guild/GuildHallView.axaml`: Hauptquartier-Szene mit SkiaSharp-Renderer
 - `Views/Guild/GuildAchievementsView.axaml`: Achievement-Liste mit SkiaSharp-Renderer
 
+### Firebase-Identitätssystem
+
+- **PlayerId** (GUID) ist die stabile Spieler-Identität. Überlebt Firebase-Account-Wechsel, Geräte-Wechsel und Preferences-Verlust.
+- **Initialisierung** (Priorität): 1. Preferences (`player_id`), 2. GameState.PlayerGuid (Backup), 3. neue GUID generieren
+- **Firebase-UID** (`Uid`) ist nur intern für die Authentifizierung. Alle Daten-Pfade verwenden `PlayerId`, NICHT `Uid`.
+- **auth_to_player Mapping**: `/auth_to_player/{uid}` → PlayerId in Realtime Database. Wird nach jedem Token-Refresh geschrieben (fire-and-forget via `SyncAuthToPlayerMappingAsync()`).
+- **Security Rules**: PlayerId-basierte Autorisierung via auth_to_player Lookup. Rules-Datei: `database.rules.json` im Repo-Root. Deploy: `npx firebase-tools deploy --only database --project handwerkerimperium-487917`
+- **Alle 11 Guild-Services** nutzen `_firebase.PlayerId` statt `_firebase.Uid` für Datenbankpfade.
+
 ### GameLoop-Integration (neue Gilden-Services)
 
 4 neue Services im GameLoopService (1s-Takt) mit gestaffelten Offsets:
 - `GuildBossService.CheckBossStatusAsync()` + `SpawnBossIfNeededAsync()` alle 60s (Offset 20)
 - `GuildHallService.CheckUpgradeCompletionAsync()` alle 60s (Offset 40)
-- `GuildAchievementService.CheckAllAchievementsAsync()` alle 300s (Offset 200)
+- `GuildAchievementService.CheckAllAchievementsAsync()` alle 300s (Offset 250)
 - `GuildWarSeasonService.CheckPhaseTransitionAsync()` + `CheckSeasonEndAsync()` alle 300s (Offset 260)
 
 ## Feierabend-Rush
@@ -506,6 +517,8 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 
 **WorkerAvatarRenderer**: Statische wiederverwendbare Paints (s_fillNoAA, s_fillAA, s_strokeNoAA) + s_cachedPath. Kein IDisposable (static readonly Felder leben bis Prozessende). **GameCardRenderer** und **ResearchIconRenderer** sind statische Klassen.
 
+**SKFont-Migration (neue SkiaSharp-API)**: Alle Renderer verwenden `canvas.DrawText(text, x, y, align, font, paint)` statt deprecated `paint.TextSize`/`paint.TextAlign`/`paint.FakeBoldText`/`canvas.DrawText(text, x, y, paint)`. Font-Felder: static readonly bei fester Größe (WorkshopGameCardRenderer: 8 Fonts, RewardCeremonyRenderer: 2 Fonts, GameCardRenderer: 2 Fonts), Instanz-Felder bei dynamischer Größe (PrestigeRoadmapRenderer: 1 Font, LuckySpinWheelRenderer: 1 Font, ForgeGameRenderer: 1 Font). `SKFont.MeasureText()` nutzt `out SKRect` statt `ref SKRect`.
+
 **WorkerAvatarControl**: Gemeinsamer statischer Timer (`s_sharedTimer`) für alle Instanzen statt pro-Instanz Timer. Statische `s_bitmapPaint` + `s_blinkPaint` (keine Allokation pro Frame). WeakReference-Liste für Auto-Cleanup.
 
 ## Scroll-Performance-Optimierungen
@@ -530,7 +543,7 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 |----------|---------------------|
 | CityWeatherSystem | 3 SKPaint + 1 SKPath |
 | CoinFlyAnimation | 4 SKPaint |
-| ScreenTransitionRenderer | 3 SKPaint |
+| ScreenTransitionRenderer | 3 SKPaint + 1 SKMaskFilter |
 | OdometerRenderer | 5 SKPaint + 3 SKFont |
 | ResearchTabRenderer | 1 SKFont + 1 SKPath |
 | ResearchCelebrationRenderer | 2 SKFont |
@@ -538,7 +551,7 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 | ResearchBranchBannerRenderer | 2 SKFont + 1 SKPath |
 | GameBackgroundRenderer | 6 SKPaint + 1 SKShader |
 | GameJuiceEngine | 6 SKPaint + 1 SKFont + 1 SKPath |
-| GameTabBarRenderer | 5 SKPaint + 2 MaskFilter + 7 SKPath |
+| GameTabBarRenderer | 5 SKPaint + 1 SKFont + 2 MaskFilter + 7 SKPath |
 | CityRenderer | 12 SKPaint + 2 SKFont + 3 SKPath + CityWeatherSystem |
 | GuildResearchTreeRenderer | 4 SKPaint (_fill, _stroke, _text, _glowPaint) + 3 SKFont + 3 SKPath |
 | GuildHallHeaderRenderer | 1 SKShader |
@@ -551,10 +564,10 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 | GuildResearchBackgroundRenderer | 1 SKShader + 4 SKPath |
 | ResearchBackgroundRenderer | 1 SKShader + 5 SKPath |
 | ResearchLabRenderer | 6 SKPaint |
-| ForgeGameRenderer | 10 SKPaint |
+| ForgeGameRenderer | 10 SKPaint + 1 SKFont |
 | PipePuzzleRenderer | 6 SKPaint + 3 SKMaskFilter + 1 SKPath |
-| SawingGameRenderer | 10 SKPaint + 1 SKPath |
-| BlueprintGameRenderer | 1 SKPath + 21 SKPaint (Instanz) + ~40 static readonly + 2 static MaskFilter |
+| SawingGameRenderer | 10 SKPaint + 1 SKPath + 1 SKMaskFilter |
+| BlueprintGameRenderer | 1 SKPath + 21 SKPaint (Instanz) + 3 SKFont + ~40 static readonly + 2 static MaskFilter |
 | InventGameRenderer | 23 SKPaint + 1 SKPath |
 | WiringGameRenderer | 8 SKPaint + 3 SKMaskFilter + 1 SKPath + 1 SKFont |
 | DesignPuzzleRenderer | 7 SKPaint + 1 SKFont |
@@ -563,4 +576,9 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 | PaintingGameRenderer | 13 SKPaint |
 | InspectionGameRenderer | 8 SKPaint + 1 SKPath (_fillNoAA, _fillAA, _fillAA2, _fillAA3, _strokeNoAA, _strokeAA, _strokeAA2, _strokeAA3, _cachedPath) |
 | RoofTilingRenderer | 5 SKPaint (_fillPaint, _strokePaint, _iconPaint, _fillPaintAA, _borderPaint) |
-| LuckySpinWheelRenderer | 11 SKPaint (_shadowPaint, _glintPaint, _segFillPaint, _segGlowPaint, _hubFillPaint, _pointerFillPaint, _iconShaderPaint, _iconBorderPaint, _iconFillPaint, _iconStrokePaint, _iconTextPaint) |
+| LuckySpinWheelRenderer | 11 SKPaint + 1 SKFont (_shadowPaint, _glintPaint, _segFillPaint, _segGlowPaint, _hubFillPaint, _pointerFillPaint, _iconShaderPaint, _iconBorderPaint, _iconFillPaint, _iconStrokePaint, _iconTextPaint, _iconTextFont) |
+| PrestigeRoadmapRenderer | 5 SKPaint + 1 SKFont + 1 SKMaskFilter |
+| RewardCeremonyRenderer | 1 SKPath (_iconPath) |
+| ResearchTreeRenderer | 3 SKFont + 2 SKPath |
+
+**Kein IDisposable nötig** (nur static readonly Felder): `FireworksRenderer`, `LoadingScreenRenderer`, `WorkerAvatarRenderer`, `GameCardRenderer`, `ResearchIconRenderer`.

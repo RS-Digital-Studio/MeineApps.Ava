@@ -270,12 +270,20 @@ public sealed class WorkerService : IWorkerService
         var canteen = state.GetBuilding(BuildingType.Canteen);
         decimal restMultiplier = 1m + (canteen?.RestTimeReduction ?? 0m); // z.B. 1.5 = 50% schneller
 
-        // Fatigue-Erholung (schneller mit Canteen)
+        // Fatigue-Erholung (schneller mit Canteen + Ausrüstung)
         decimal fatigueRecovery = (100m / worker.RestHoursNeeded) * deltaHours * restMultiplier;
+        // Ausrüstungs-Bonus: FatigueReduction beschleunigt auch Erholung
+        var equipFatigueReduction = worker.EquippedItem?.FatigueReduction ?? 0m;
+        if (equipFatigueReduction > 0)
+            fatigueRecovery *= (1m + equipFatigueReduction);
         worker.Fatigue = Math.Max(0m, worker.Fatigue - fatigueRecovery);
 
-        // Stimmungs-Erholung beim Ruhen (Canteen-Bonus addiert)
+        // Stimmungs-Erholung beim Ruhen (Canteen-Bonus + Ausrüstung)
         decimal moodRecovery = 1m + (canteen?.MoodRecoveryPerHour ?? 0m);
+        // Ausrüstungs-Bonus: MoodBonus verbessert auch Stimmungserholung
+        var equipMoodBonus = worker.EquippedItem?.MoodBonus ?? 0m;
+        if (equipMoodBonus > 0)
+            moodRecovery *= (1m + equipMoodBonus);
         worker.Mood = Math.Min(100m, worker.Mood + moodRecovery * deltaHours);
 
         // Automatisch Ruhe beenden wenn voll erholt
@@ -320,8 +328,12 @@ public sealed class WorkerService : IWorkerService
                 break;
         }
 
-        // Training erhöht Erschöpfung (langsamer als Arbeiten)
-        worker.Fatigue = Math.Min(100m, worker.Fatigue + worker.FatiguePerHour * 0.5m * deltaHours);
+        // Training erhöht Erschöpfung (langsamer als Arbeiten, mit Ausrüstungs-Bonus)
+        var trainingFatigueRate = worker.FatiguePerHour * 0.5m;
+        var equipFatReduction = worker.EquippedItem?.FatigueReduction ?? 0m;
+        if (equipFatReduction > 0)
+            trainingFatigueRate *= (1m - equipFatReduction);
+        worker.Fatigue = Math.Min(100m, worker.Fatigue + trainingFatigueRate * deltaHours);
     }
 
     private void UpdateEfficiencyTraining(Worker worker, decimal deltaHours, decimal trainingMultiplier)
@@ -396,6 +408,11 @@ public sealed class WorkerService : IWorkerService
         if (state.GuildMembership?.ResearchFatigueReduction > 0)
             moodDecay *= (1m - state.GuildMembership.ResearchFatigueReduction);
 
+        // Ausrüstungs-Bonus: MoodBonus reduziert Stimmungsabfall
+        var equipMoodBonus = worker.EquippedItem?.MoodBonus ?? 0m;
+        if (equipMoodBonus > 0)
+            moodDecay *= (1m - equipMoodBonus);
+
         // Canteen-Gebäude: Passive Stimmungs-Erholung auch beim Arbeiten
         var canteen = state.GetBuilding(BuildingType.Canteen);
         decimal passiveMoodRecovery = canteen?.MoodRecoveryPerHour ?? 0m;
@@ -406,10 +423,14 @@ public sealed class WorkerService : IWorkerService
         else
             worker.Mood = Math.Min(100m, worker.Mood + Math.Abs(netMoodChange) * deltaHours);
 
-        // Fatigue increases while working (mit Gilden-Forschung Reduktion)
+        // Fatigue increases while working (mit Gilden-Forschung Reduktion + Ausrüstung)
         var fatigueRate = worker.FatiguePerHour;
         if (state.GuildMembership?.ResearchFatigueReduction > 0)
             fatigueRate *= (1m - state.GuildMembership.ResearchFatigueReduction);
+        // Ausrüstungs-Bonus: FatigueReduction verlangsamt Ermüdung
+        var equipFatigueReduction = worker.EquippedItem?.FatigueReduction ?? 0m;
+        if (equipFatigueReduction > 0)
+            fatigueRate *= (1m - equipFatigueReduction);
         worker.Fatigue = Math.Min(100m, worker.Fatigue + fatigueRate * deltaHours);
 
         // Auto-Rest bei 100% Erschöpfung
@@ -419,8 +440,8 @@ public sealed class WorkerService : IWorkerService
             worker.RestStartedAt = DateTime.UtcNow;
         }
 
-        // Langsamer XP-Gewinn beim Arbeiten (10% der Trainingsrate)
-        decimal xpGain = worker.TrainingXpPerHour * 0.1m * deltaHours * worker.Personality.GetXpMultiplier();
+        // Passiver XP-Gewinn beim Arbeiten (25% der Trainingsrate = 12.5 XP/h)
+        decimal xpGain = worker.TrainingXpPerHour * 0.25m * deltaHours * worker.Personality.GetXpMultiplier();
         worker.WorkingXpAccumulator += xpGain;
         if (worker.WorkingXpAccumulator >= 1m)
         {

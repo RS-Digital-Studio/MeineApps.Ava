@@ -20,6 +20,22 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Converter**: `StringToGameIconKindConverter` fuer String→GameIconKind in XAML-Bindings
 - XAML-Namespace: `xmlns:icons="using:BomberBlast.Icons"`
 
+## AI-generierte Visual Assets (Dark Fantasy Arcade)
+
+- **Stil**: Dark Fantasy Arcade - dramatische Beleuchtung, leuchtende Akzente auf dunklem Hintergrund
+- **Checkpoint**: DreamShaper XL Alpha2, DPM++ 2M Karras, 30 Steps, CFG 7.0
+- **Pipeline**: SDXL txt2img (1024x1024) → RealESRGAN 4x → Lanczos Downscale → WebP
+- **GameAssetService**: LRU-Cache (50MB), ConcurrentDictionary + Lazy<Task> Deduplication
+  - `GameAssetService.Current`: Statischer Accessor für Renderer (statische Klassen ohne DI)
+  - `GameAssetService.PlatformAssetLoader`: Android Assets.Open() in MainActivity gesetzt
+  - Desktop: `avares://BomberBlast.Shared/Assets/visuals/{path}`
+  - Preload in LoadingPipeline: Splash, Menu-BGs, Bosse
+- **Hybrid-Rendering**: Renderer laden AI-Bitmap, Fallback auf prozedurales Rendering
+- **Lade-Strategien**: `GetBitmap()` für preloaded Assets (Bosse, Menu-BGs), `GetOrLoadBitmap()` für lazy-loaded Assets (Welten, Enemies, PowerUps, Shop, Achievements) — triggered async Laden, nächster Frame hat Bitmap
+- **Asset-Ordner**: `Assets/visuals/` mit Unterordnern: bosses/, cards/, worlds/, enemies/, powerups/, menu_bg/, shop/, achievements/
+- **164 Assets in 4 Phasen**: Splash, Bosse, Karten, Welten, Gegner, PowerUps, Shop, Dungeon, Skins
+- **Modifizierte Renderer**: MenuBackgroundRenderer, HelpIconRenderer, ShopIconRenderer, LevelSelectVisualization, AchievementIconRenderer, GameRenderer.Bosses
+
 ## Haupt-Features
 
 ### SkiaSharp Rendering (GameRenderer - 7 Partial Classes)
@@ -176,6 +192,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | ICloudSaveService | Cloud Save: Local-First Sync, 35 Keys, Debounce 5s, Konflikt-Resolution |
 | IBattlePassService | 30-Tier Saison, XP-basiert, Free/Premium-Track, XP-Boost (2x 24h) |
 | IRotatingDealsService | 3 tägliche + 1 wöchentliches Deal, 20-50% Rabatt |
+| IGameAssetService | AI-generierte WebP-Bitmaps, LRU-Cache 50MB, Preload in Pipeline |
 
 ## Architektur-Entscheidungen
 

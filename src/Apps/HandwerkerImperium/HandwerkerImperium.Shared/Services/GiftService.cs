@@ -66,9 +66,9 @@ public sealed class GiftService : IGiftService
 
             return true;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in SendGiftAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return false;
         }
     }
@@ -122,9 +122,9 @@ public sealed class GiftService : IGiftService
                 });
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in GetPendingGiftsAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
         }
 
         return result;
@@ -151,9 +151,9 @@ public sealed class GiftService : IGiftService
             await _saveGameService.SaveAsync();
             return true;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"Fehler in ClaimGiftAsync: {ex.Message}");
+            // Netzwerkfehler still behandelt
             return false;
         }
     }

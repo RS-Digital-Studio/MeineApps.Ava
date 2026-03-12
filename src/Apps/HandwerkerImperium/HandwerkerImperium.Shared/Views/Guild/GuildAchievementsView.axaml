@@ -24,12 +24,12 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 Command="{Binding NavigateBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="White" />
         </Button>
         <!-- Titel -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
-          <icons:GameIcon Kind="TrophyOutline" Width="24" Height="24"
+          <icons:GameIcon Kind="TrophyOutline" Width="28" Height="28"
                            Foreground="{StaticResource CraftGoldBrush}" />
           <TextBlock Text="{loc:Translate GuildAchievementsTitle}"
                      FontSize="18" FontWeight="Bold"
@@ -73,7 +73,7 @@
                       <SolidColorBrush Color="{Binding TierColor}" Opacity="0.15" />
                     </Border.Background>
                     <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
-                                     Width="24" Height="24"
+                                     Width="28" Height="28"
                                      Foreground="{Binding TierColor}"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
@@ -97,7 +97,7 @@
                   <!-- Belohnung / Abgehakt -->
                   <StackPanel Grid.Column="2" VerticalAlignment="Center"
                               HorizontalAlignment="Center" Spacing="2">
-                    <icons:GameIcon Kind="CheckCircle" Width="20" Height="20"
+                    <icons:GameIcon Kind="CheckCircle" Width="24" Height="24"
                                      Foreground="{DynamicResource SuccessBrush}"
                                      IsVisible="{Binding IsCompleted}"
                                      HorizontalAlignment="Center" />

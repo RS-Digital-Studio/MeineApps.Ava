@@ -93,7 +93,7 @@
                     HorizontalAlignment="Center" MinWidth="160"
                     AutomationProperties.AutomationId="Main_Btn_RescueStreak">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <icons:GameIcon Kind="ShieldAlert" Width="16" Height="16" />
+                <icons:GameIcon Kind="ShieldAlert" Width="20" Height="20" />
                 <TextBlock Text="{loc:Translate RescueStreak}" FontSize="13" />
               </StackPanel>
             </Button>

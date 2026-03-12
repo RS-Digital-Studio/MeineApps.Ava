@@ -24,7 +24,7 @@
         <Button Classes="Text"
                 Command="{Binding GoBackCommand}"
                 AutomationProperties.AutomationId="Workshop_Btn_Back">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            AutomationProperties.AutomationId="Workshop_Icon_Back" />
         </Button>
 
@@ -116,7 +116,7 @@
                     HorizontalContentAlignment="Center"
                     AutomationProperties.AutomationId="Workshop_Btn_Upgrade">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <icons:GameIcon Kind="ChevronUp" Width="18" Height="18"
+                <icons:GameIcon Kind="ChevronUp" Width="24" Height="24"
                                  AutomationProperties.AutomationId="Workshop_Icon_Upgrade" />
                 <TextBlock Text="{Binding UpgradeCostDisplay, StringFormat='Upgrade ({0})'}"
                            AutomationProperties.AutomationId="Workshop_Txt_UpgradeCost" />
@@ -143,7 +143,7 @@
               <!-- Bruttoeinkommen -->
               <StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="CashMultiple" Width="16" Height="16"
+                  <icons:GameIcon Kind="CashMultiple" Width="20" Height="20"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    AutomationProperties.AutomationId="Workshop_Icon_GrossIncome" />
                   <TextBlock Text="{loc:Translate GrossIncome}"
@@ -160,7 +160,7 @@
               <!-- Nettoeinkommen + Trend -->
               <StackPanel Grid.Column="1">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="Finance" Width="16" Height="16"
+                  <icons:GameIcon Kind="Finance" Width="20" Height="20"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                                    AutomationProperties.AutomationId="Workshop_Icon_NetIncome" />
                   <TextBlock Text="{loc:Translate NetIncome}"
@@ -168,11 +168,11 @@
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              AutomationProperties.AutomationId="Workshop_Txt_NetIncomeLabel" />
                   <!-- Trend-Indikator -->
-                  <icons:GameIcon Kind="TrendingUp" Width="14" Height="14"
+                  <icons:GameIcon Kind="TrendingUp" Width="18" Height="18"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    IsVisible="{Binding HasTrendUp}"
                                    AutomationProperties.AutomationId="Workshop_Icon_TrendUp" />
-                  <icons:GameIcon Kind="TrendingDown" Width="14" Height="14"
+                  <icons:GameIcon Kind="TrendingDown" Width="18" Height="18"
                                    Foreground="{DynamicResource ErrorBrush}"
                                    IsVisible="{Binding HasTrendDown}"
                                    AutomationProperties.AutomationId="Workshop_Icon_TrendDown" />
@@ -207,7 +207,7 @@
                     AutomationProperties.AutomationId="Workshop_Border_RunningCosts">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="TrendingDown" Width="14" Height="14"
+                  <icons:GameIcon Kind="TrendingDown" Width="18" Height="18"
                                    Foreground="{DynamicResource WarningBrush}"
                                    AutomationProperties.AutomationId="Workshop_Icon_RunningCosts" />
                   <TextBlock Text="{loc:Translate RunningCosts}"
@@ -259,7 +259,7 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
               <StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="ChartBar" Width="14" Height="14"
+                  <icons:GameIcon Kind="ChartBar" Width="18" Height="18"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                                    AutomationProperties.AutomationId="Workshop_Icon_TotalEarned" />
                   <TextBlock Text="{loc:Translate TotalEarned}"
@@ -274,7 +274,7 @@
               </StackPanel>
               <StackPanel Grid.Column="1">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="ClipboardCheck" Width="14" Height="14"
+                  <icons:GameIcon Kind="ClipboardCheck" Width="18" Height="18"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                                    AutomationProperties.AutomationId="Workshop_Icon_OrdersCompleted" />
                   <TextBlock Text="{loc:Translate OrdersCompleted}"
@@ -299,7 +299,7 @@
 
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <icons:GameIcon Kind="AccountHardHat" Width="20" Height="20"
+                <icons:GameIcon Kind="AccountHardHat" Width="24" Height="24"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}"
                                  AutomationProperties.AutomationId="Workshop_Icon_Workers" />
                 <TextBlock Text="{loc:Translate Workers}"
@@ -319,7 +319,7 @@
             <Grid ColumnDefinitions="Auto,*,Auto"
                   IsEnabled="{Binding IsAutoAssignUnlocked}"
                   AutomationProperties.AutomationId="Workshop_Grid_AutoAssign">
-              <icons:GameIcon Kind="RobotHappy" Width="18" Height="18"
+              <icons:GameIcon Kind="RobotHappy" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1" Margin="8,0,0,0"
                          Text="{loc:Translate AutoAssignDesc}" FontSize="12"
@@ -390,7 +390,7 @@
                     HorizontalContentAlignment="Center"
                     AutomationProperties.AutomationId="Workshop_Btn_HireWorker">
               <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                <icons:GameIcon Kind="AccountPlus" Width="18" Height="18"
+                <icons:GameIcon Kind="AccountPlus" Width="24" Height="24"
                                  AutomationProperties.AutomationId="Workshop_Icon_HireWorker" />
                 <TextBlock Text="{loc:Translate HireWorker}" FontSize="14"
                            AutomationProperties.AutomationId="Workshop_Txt_HireWorker" />
@@ -413,7 +413,7 @@
                       Padding="12,8"
                       AutomationProperties.AutomationId="Workshop_Btn_WatchAdExtraSlot">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <icons:GameIcon Kind="Video" Width="18" Height="18"
+                  <icons:GameIcon Kind="Video" Width="24" Height="24"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                                    AutomationProperties.AutomationId="Workshop_Icon_AdExtraSlot" />
                   <TextBlock Text="{loc:Translate WatchAdForWorkerSlot}" FontSize="13"
@@ -436,7 +436,7 @@
                   Padding="12,10"
                   AutomationProperties.AutomationId="Workshop_Btn_WatchAdSpeedup">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <icons:GameIcon Kind="Video" Width="20" Height="20"
+              <icons:GameIcon Kind="Video" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryLightBrush}"
                                AutomationProperties.AutomationId="Workshop_Icon_AdSpeedup" />
               <TextBlock Text="{loc:Translate WatchAdForSpeedup}"

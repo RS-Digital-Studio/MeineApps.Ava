@@ -1,5 +1,6 @@
 namespace RebornSaga.Scenes;
 
+using MeineApps.Core.Ava.Localization;
 using RebornSaga.Engine;
 using RebornSaga.Rendering.Backgrounds;
 using RebornSaga.Rendering.Effects;
@@ -13,6 +14,8 @@ using System;
 /// </summary>
 public class TitleScene : Scene, IDisposable
 {
+    private readonly ILocalizationService _localization;
+    private readonly string[] _buttonLabels = new string[3];
     private float _time;
     private float _titleAlpha;           // Fade-In für Titel
     private float _subtitleAlpha;         // Fade-In für Untertitel (verzögert)
@@ -22,6 +25,14 @@ public class TitleScene : Scene, IDisposable
     private int _hoveredButton = -1;
     private int _pressedButton = -1;
     private bool _disposed;
+
+    public TitleScene(ILocalizationService localization)
+    {
+        _localization = localization;
+        _buttonLabels[0] = _localization.GetString("NewGame") ?? "New Game";
+        _buttonLabels[1] = _localization.GetString("Continue") ?? "Continue";
+        _buttonLabels[2] = _localization.GetString("Settings") ?? "Settings";
+    }
 
     // Gepoolte Paints für Titel-Glow
     private readonly SKPaint _titleGlowPaint = new()
@@ -139,7 +150,7 @@ public class TitleScene : Scene, IDisposable
         var startY = bounds.Height * 0.55f;
         var spacing = btnH + bounds.Height * 0.025f;
 
-        string[] labels = { "Neues Spiel", "Fortsetzen", "Einstellungen" };
+        var labels = _buttonLabels;
 
         for (int i = 0; i < 3; i++)
         {

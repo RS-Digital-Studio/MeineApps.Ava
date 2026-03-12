@@ -18,9 +18,9 @@ public sealed class GameStateService : IGameStateService
     public bool IsInitialized { get; private set; }
 
     // Automation Level-Gates (zentral, vermeidet Duplikation in ViewModels)
-    public bool IsAutoCollectUnlocked => _state.PlayerLevel >= 15;
-    public bool IsAutoAcceptUnlocked => _state.PlayerLevel >= 25;
-    public bool IsAutoAssignUnlocked => _state.PlayerLevel >= 50;
+    public bool IsAutoCollectUnlocked => _state.PlayerLevel >= LevelThresholds.AutoCollect;
+    public bool IsAutoAcceptUnlocked => _state.PlayerLevel >= LevelThresholds.AutoAccept;
+    public bool IsAutoAssignUnlocked => _state.PlayerLevel >= LevelThresholds.AutoAssign;
 
     // Events
     public event EventHandler<MoneyChangedEventArgs>? MoneyChanged;

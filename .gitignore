@@ -369,3 +369,7 @@ FodyWeavers.xsd
 
 # Website (eigenes Git-Repo)
 website/
+
+# Firebase Service Account Keys (NIEMALS committen!)
+*firebase-adminsdk*
+*service-account*.json

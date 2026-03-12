@@ -133,11 +133,8 @@ public sealed partial class MainViewModel
         // Start the game loop for idle earnings
         _gameLoopService.Start();
         }
-        catch (Exception ex)
+        catch
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in Initialize: {ex}");
-#endif
             IsLoading = false;
         }
     }

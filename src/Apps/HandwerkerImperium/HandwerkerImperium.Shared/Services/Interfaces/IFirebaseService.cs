@@ -4,7 +4,7 @@ namespace HandwerkerImperium.Services.Interfaces;
 /// Firebase REST API Client für Realtime Database + Anonymous Auth.
 /// Plattformübergreifend (Android + Desktop) via HttpClient.
 /// </summary>
-public interface IFirebaseService
+public interface IFirebaseService : IDisposable
 {
     /// <summary>Firebase User-ID (nur für Authentifizierung, NICHT als Spieler-Identität verwenden).</summary>
     string? Uid { get; }

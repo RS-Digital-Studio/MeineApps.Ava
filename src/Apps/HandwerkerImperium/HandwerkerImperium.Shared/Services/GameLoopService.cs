@@ -675,7 +675,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         var auto = state.Automation;
 
         // AutoCollect: Lieferung einsammeln wenn vorhanden
-        if (auto.AutoCollectDelivery && state.PlayerLevel >= 15 && state.PendingDelivery != null && !state.PendingDelivery.IsExpired)
+        if (auto.AutoCollectDelivery && _gameStateService.IsAutoCollectUnlocked && state.PendingDelivery != null && !state.PendingDelivery.IsExpired)
         {
             var delivery = state.PendingDelivery;
             state.PendingDelivery = null;
@@ -688,7 +688,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                     _gameStateService.AddMoney(delivery.Amount);
                     break;
                 case DeliveryType.GoldenScrews:
-                    _gameStateService.AddGoldenScrews((int)delivery.Amount);
+                    _gameStateService.AddGoldenScrews((int)Math.Round(delivery.Amount));
                     break;
                 case DeliveryType.Experience:
                     _gameStateService.AddXp((int)delivery.Amount);
@@ -707,7 +707,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         }
 
         // AutoAccept: Besten Auftrag annehmen wenn kein aktiver vorhanden
-        if (auto.AutoAcceptOrder && state.PlayerLevel >= 25 && state.ActiveOrder == null && state.AvailableOrders.Count > 0)
+        if (auto.AutoAcceptOrder && _gameStateService.IsAutoAcceptUnlocked && state.ActiveOrder == null && state.AvailableOrders.Count > 0)
         {
             // Besten Auftrag wählen (höchste Belohnung) - ohne LINQ um Allokationen zu vermeiden
             Order? bestOrder = null;
@@ -732,7 +732,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     /// </summary>
     private void ProcessAutoAssign(GameState state)
     {
-        if (!state.Automation.AutoAssignWorkers || state.PlayerLevel < 50)
+        if (!state.Automation.AutoAssignWorkers || !_gameStateService.IsAutoAssignUnlocked)
             return;
 
         // Idle Worker finden (nicht zugewiesen zu einem Workshop)

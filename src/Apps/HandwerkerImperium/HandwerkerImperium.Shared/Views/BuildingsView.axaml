@@ -23,7 +23,7 @@
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 Command="{Binding GoBackCommand}"
                 AutomationProperties.AutomationId="Buildings_Btn_Back">
-          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
         </Button>
         <!-- Title -->
@@ -88,7 +88,7 @@
                         HorizontalAlignment="Center">
                   <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                    AutomationProperties.AutomationId="Buildings_Icon_ItemIcon"
-                                   Width="24" Height="24"
+                                   Width="28" Height="28"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center" />
@@ -134,7 +134,7 @@
                             Spacing="4"
                             HorizontalAlignment="Center"
                             IsVisible="{Binding IsLocked}">
-                  <icons:GameIcon Kind="Lock" Width="14" Height="14"
+                  <icons:GameIcon Kind="Lock" Width="18" Height="18"
                                    AutomationProperties.AutomationId="Buildings_Icon_ItemLock"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Text="{Binding UnlockLevel, StringFormat='Lv.{0}'}"
@@ -150,7 +150,7 @@
                             Spacing="4"
                             HorizontalAlignment="Center"
                             IsVisible="{Binding IsMaxLevel}">
-                  <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
+                  <icons:GameIcon Kind="CheckCircle" Width="18" Height="18"
                                    AutomationProperties.AutomationId="Buildings_Icon_ItemMaxCheck"
                                    Foreground="{DynamicResource SuccessBrush}" />
                   <TextBlock Text="{Binding CostDisplay}"
@@ -172,7 +172,7 @@
                   <StackPanel Orientation="Horizontal"
                               Spacing="4"
                               HorizontalAlignment="Center">
-                    <icons:GameIcon Kind="HammerWrench" Width="14" Height="14"
+                    <icons:GameIcon Kind="HammerWrench" Width="18" Height="18"
                                      AutomationProperties.AutomationId="Buildings_Icon_Build" />
                     <TextBlock Text="{Binding CostDisplay}" FontSize="11"
                                AutomationProperties.AutomationId="Buildings_Txt_BuildCost" />
@@ -192,7 +192,7 @@
                   <StackPanel Orientation="Horizontal"
                               Spacing="4"
                               HorizontalAlignment="Center">
-                    <icons:GameIcon Kind="ArrowUpBold" Width="14" Height="14"
+                    <icons:GameIcon Kind="ArrowUpBold" Width="18" Height="18"
                                      AutomationProperties.AutomationId="Buildings_Icon_Upgrade" />
                     <TextBlock Text="{Binding CostDisplay}" FontSize="11"
                                AutomationProperties.AutomationId="Buildings_Txt_UpgradeCost" />

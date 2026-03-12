@@ -14,8 +14,8 @@ public interface IFriendService
     /// <summary>Initialisiert Freundes-Liste (simulierte Freunde als Basis).</summary>
     void Initialize();
 
-    /// <summary>Generiert tägliche Geschenke von simulierten Freunden.</summary>
-    void GenerateDailyGifts();
+    /// <summary>Prüft ob tägliche Geschenke von simulierten Freunden verfügbar sind.</summary>
+    void CheckAvailableGifts();
 
     /// <summary>Nimmt ein Geschenk von einem simulierten Freund an.</summary>
     void ClaimGift(string friendId);

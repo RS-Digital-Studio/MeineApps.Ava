@@ -216,11 +216,9 @@ public sealed class BlueprintGameRenderer : IDisposable
     private static readonly SKPaint _stepBadgeTextPaint = new()
     {
         Color = SKColors.White,
-        IsAntialias = true,
-        TextSize = 11,
-        TextAlign = SKTextAlign.Center,
-        FakeBoldText = true
+        IsAntialias = true
     };
+    private static readonly SKFont s_stepBadgeFont = new() { Size = 11, Embolden = true };
 
     // --- Fehler-Overlay ---
     // overlayPaint: dynamisches Alpha
@@ -271,10 +269,9 @@ public sealed class BlueprintGameRenderer : IDisposable
     private static readonly SKPaint _progressTextPaint = new()
     {
         Color = new SKColor(0xFF, 0xFF, 0xFF, 0x90),
-        IsAntialias = true,
-        TextSize = 10,
-        TextAlign = SKTextAlign.Center
+        IsAntialias = true
     };
+    private static readonly SKFont s_progressFont = new() { Size = 10 };
 
     // --- Partikel ---
     private readonly SKPaint _sparkPaint = new() { IsAntialias = true };
@@ -308,23 +305,23 @@ public sealed class BlueprintGameRenderer : IDisposable
     private readonly SKPaint _numberShadowPaint = new()
     {
         Color = new SKColor(0, 0, 0, 80),
-        IsAntialias = true,
-        TextAlign = SKTextAlign.Center,
-        FakeBoldText = true
+        IsAntialias = true
     };
 
     private readonly SKPaint _numberPaint = new()
     {
-        IsAntialias = true,
-        TextAlign = SKTextAlign.Center
+        IsAntialias = true
     };
 
     private readonly SKPaint _numberGlowPaint = new()
     {
-        IsAntialias = true,
-        TextAlign = SKTextAlign.Center,
-        FakeBoldText = true
+        IsAntialias = true
     };
+
+    // SKFont fuer Text-Rendering (ersetzt deprecated paint.TextSize/TextAlign/FakeBoldText)
+    private readonly SKFont _numberFont = new() { Embolden = true };
+    private readonly SKFont _numberLightFont = new();
+    private readonly SKFont _numberGlowFont = new() { Embolden = true };
 
     // --- Icon-Paints (statisch, konstante Properties) ---
     // Fundament
@@ -460,8 +457,9 @@ public sealed class BlueprintGameRenderer : IDisposable
     private static readonly SKPaint _defaultIconTextPaint = new()
     {
         IsAntialias = true,
-        Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80), TextAlign = SKTextAlign.Center
+        Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80)
     };
+    private static readonly SKFont s_defaultIconFont = new();
 
     /// <summary>
     /// Daten-Struct fuer einen einzelnen Bauschritt (View-optimiert, keine VM-Referenz).
@@ -1029,7 +1027,7 @@ public sealed class BlueprintGameRenderer : IDisposable
         float by = rect.Top + badgeR + 4;
 
         canvas.DrawCircle(bx, by, badgeR, _stepBadgeBgPaint);
-        canvas.DrawText(step.ToString(), bx, by + 4, _stepBadgeTextPaint);
+        canvas.DrawText(step.ToString(), bx, by + 4, SKTextAlign.Center, s_stepBadgeFont, _stepBadgeTextPaint);
     }
 
     /// <summary>
@@ -1171,7 +1169,7 @@ public sealed class BlueprintGameRenderer : IDisposable
         }
 
         // Text "X/Y"
-        canvas.DrawText($"{completed}/{total}", bounds.MidX, y + barHeight + 12, _progressTextPaint);
+        canvas.DrawText($"{completed}/{total}", bounds.MidX, y + barHeight + 12, SKTextAlign.Center, s_progressFont, _progressTextPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1599,9 +1597,9 @@ public sealed class BlueprintGameRenderer : IDisposable
 
         canvas.DrawCircle(cx, cy, half * 0.6f, _defaultIconCirclePaint);
 
-        // TextSize aendert sich je nach Kachel-Groesse → pro Aufruf setzen
-        _defaultIconTextPaint.TextSize = size * 0.5f;
-        canvas.DrawText("?", cx, cy + size * 0.15f, _defaultIconTextPaint);
+        // Schriftgroesse aendert sich je nach Kachel-Groesse → pro Aufruf setzen
+        s_defaultIconFont.Size = size * 0.5f;
+        canvas.DrawText("?", cx, cy + size * 0.15f, SKTextAlign.Center, s_defaultIconFont, _defaultIconTextPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1626,25 +1624,25 @@ public sealed class BlueprintGameRenderer : IDisposable
         // Schatten unter der Nummer
         if (!isQuestion)
         {
-            _numberShadowPaint.TextSize = fontSize;
-            canvas.DrawText(displayNumber, x + 1, y + 1, _numberShadowPaint);
+            _numberFont.Size = fontSize;
+            canvas.DrawText(displayNumber, x + 1, y + 1, SKTextAlign.Center, _numberFont, _numberShadowPaint);
         }
 
-        // Haupttext
+        // Haupttext: Bold fuer Nummern, Light fuer Fragezeichen
         _numberPaint.Color = isQuestion
             ? new SKColor(0xFF, 0xFF, 0xFF, 0x80)
             : new SKColor(0xFF, 0xFF, 0xFF, 0xE0);
-        _numberPaint.TextSize = fontSize;
-        _numberPaint.FakeBoldText = !isQuestion;
-        canvas.DrawText(displayNumber, x, y, _numberPaint);
+        var font = isQuestion ? _numberLightFont : _numberFont;
+        font.Size = fontSize;
+        canvas.DrawText(displayNumber, x, y, SKTextAlign.Center, font, _numberPaint);
 
         // Memorisierungsphase: Nummer pulsiert mit Glow
         if (isMemorizing && !isQuestion)
         {
             float glowPulse = 0.5f + 0.5f * MathF.Sin(_animTime * 4);
             _numberGlowPaint.Color = BlueprintCyan.WithAlpha((byte)(40 * glowPulse));
-            _numberGlowPaint.TextSize = fontSize + 2;
-            canvas.DrawText(displayNumber, x, y, _numberGlowPaint);
+            _numberGlowFont.Size = fontSize + 2;
+            canvas.DrawText(displayNumber, x, y, SKTextAlign.Center, _numberGlowFont, _numberGlowPaint);
         }
     }
 
@@ -1706,5 +1704,10 @@ public sealed class BlueprintGameRenderer : IDisposable
         _numberShadowPaint?.Dispose();
         _numberPaint?.Dispose();
         _numberGlowPaint?.Dispose();
+
+        // Instanz-Fonts
+        _numberFont?.Dispose();
+        _numberLightFont?.Dispose();
+        _numberGlowFont?.Dispose();
     }
 }

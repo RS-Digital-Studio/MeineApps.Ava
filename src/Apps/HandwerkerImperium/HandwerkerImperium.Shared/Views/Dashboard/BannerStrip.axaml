@@ -22,7 +22,7 @@
             </LinearGradientBrush>
           </Border.Background>
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <icons:GameIcon Kind="Flash" Width="16" Height="16" Foreground="White" />
+            <icons:GameIcon Kind="Flash" Width="20" Height="20" Foreground="White" />
             <TextBlock Text="{Binding RushButtonText}" FontSize="12"
                        FontWeight="Bold" Foreground="White" />
           </StackPanel>
@@ -36,7 +36,7 @@
               BorderThickness="1"
               AutomationProperties.AutomationId="Dashboard_Border_RushActiveChip">
         <StackPanel Orientation="Horizontal" Spacing="6">
-          <icons:GameIcon Kind="Flash" Width="16" Height="16"
+          <icons:GameIcon Kind="Flash" Width="20" Height="20"
                            Foreground="{StaticResource CraftGoldBrush}" />
           <TextBlock Text="{Binding RushTimeRemaining}" FontSize="12"
                      FontWeight="Bold" Foreground="{StaticResource CraftGoldBrush}" />
@@ -56,7 +56,7 @@
             </LinearGradientBrush>
           </Border.Background>
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <icons:GameIcon Kind="PackageDown" Width="16" Height="16" Foreground="White" />
+            <icons:GameIcon Kind="PackageDown" Width="20" Height="20" Foreground="White" />
             <TextBlock Text="{Binding DeliveryDescription}" FontSize="12"
                        FontWeight="Bold" Foreground="White"
                        MaxWidth="120" TextTrimming="CharacterEllipsis" />
@@ -72,7 +72,7 @@
               AutomationProperties.AutomationId="Dashboard_Border_EventChip">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <icons:GameIcon Kind="{Binding ActiveEventIcon, Converter={StaticResource IconKindConverter}}"
-                           Width="16" Height="16"
+                           Width="20" Height="20"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{Binding ActiveEventName}" FontSize="12"
                      FontWeight="SemiBold"
@@ -89,7 +89,7 @@
               Background="#33FF5722"
               AutomationProperties.AutomationId="Dashboard_Border_WorkerWarningChip">
         <StackPanel Orientation="Horizontal" Spacing="6">
-          <icons:GameIcon Kind="AlertCircleOutline" Width="16" Height="16"
+          <icons:GameIcon Kind="AlertCircleOutline" Width="20" Height="20"
                            Foreground="#FF5722" />
           <TextBlock Text="{Binding WorkerWarningText}" FontSize="11"
                      Foreground="#FF5722" MaxWidth="140"

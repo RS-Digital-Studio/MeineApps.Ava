@@ -45,8 +45,9 @@ public class SecureStorageService : ISecureStorageService
             if (creds == null) return null;
             return (creds.ApiKey, creds.ApiSecret);
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Credentials laden/entschlüsseln fehlgeschlagen: {ex.Message}");
             return null;
         }
     }

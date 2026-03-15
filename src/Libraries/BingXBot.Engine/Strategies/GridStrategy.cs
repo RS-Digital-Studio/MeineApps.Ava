@@ -36,8 +36,22 @@ public class GridStrategy : IStrategy
         var currentPrice = context.CurrentTicker.LastPrice;
 
         // Grenzen bestimmen (automatisch aus den letzten Candles oder manuell)
-        var upper = _upperBound > 0 ? _upperBound : candles.TakeLast(50).Max(c => c.High);
-        var lower = _lowerBound > 0 ? _lowerBound : candles.TakeLast(50).Min(c => c.Low);
+        // Index-basiert statt TakeLast (vermeidet Iterator-Overhead)
+        var lookbackStart = Math.Max(0, candles.Count - 50);
+        var upper = _upperBound;
+        var lower = _lowerBound;
+        if (upper <= 0 || lower <= 0)
+        {
+            var autoHigh = candles[lookbackStart].High;
+            var autoLow = candles[lookbackStart].Low;
+            for (int j = lookbackStart + 1; j < candles.Count; j++)
+            {
+                if (candles[j].High > autoHigh) autoHigh = candles[j].High;
+                if (candles[j].Low < autoLow) autoLow = candles[j].Low;
+            }
+            if (upper <= 0) upper = autoHigh;
+            if (lower <= 0) lower = autoLow;
+        }
 
         if (currentPrice < lower || currentPrice > upper)
             return new SignalResult(Signal.None, 0m, null, null, null,
@@ -45,6 +59,8 @@ public class GridStrategy : IStrategy
 
         // Grid-Levels berechnen
         var range = upper - lower;
+        if (range <= 0)
+            return new SignalResult(Signal.None, 0m, null, null, null, "Grid-Range ist 0 oder negativ");
         var stepSize = range / (_gridLevels + 1);
         var gridLevels = new List<decimal>();
         for (int i = 1; i <= _gridLevels; i++)
@@ -57,6 +73,8 @@ public class GridStrategy : IStrategy
 
         // Preis-Abstand zum nächsten Level als Prozent
         var spacingThreshold = currentPrice * _gridSpacingPercent / 100m;
+        if (spacingThreshold <= 0)
+            return new SignalResult(Signal.None, 0m, null, null, null, "Grid-Spacing ist 0");
 
         // Preis nahe am unteren Grid-Level -> Long
         if (nearestBelow > 0 && currentPrice - nearestBelow < spacingThreshold)

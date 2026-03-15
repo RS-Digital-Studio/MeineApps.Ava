@@ -76,6 +76,8 @@ public class RiskManager : IRiskManager
     {
         if (entryPrice <= 0 || account.AvailableBalance <= 0) return 0m;
 
+        // MaxLeverage muss > 0 sein, sonst Fallback auf 1
+        var leverage = _settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m;
         var riskAmount = account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
 
         if (stopLoss.HasValue && stopLoss.Value > 0 && stopLoss.Value != entryPrice)
@@ -88,14 +90,14 @@ public class RiskManager : IRiskManager
             {
                 var positionValue = riskAmount / slPercent;
                 // Leverage begrenzen
-                var maxPositionValue = account.AvailableBalance * _settings.MaxLeverage;
+                var maxPositionValue = account.AvailableBalance * leverage;
                 positionValue = Math.Min(positionValue, maxPositionValue);
                 return positionValue / entryPrice;
             }
         }
 
         // Fallback: MaxPositionSizePercent direkt
-        var fallbackValue = riskAmount * _settings.MaxLeverage;
+        var fallbackValue = riskAmount * leverage;
         return fallbackValue / entryPrice;
     }
 

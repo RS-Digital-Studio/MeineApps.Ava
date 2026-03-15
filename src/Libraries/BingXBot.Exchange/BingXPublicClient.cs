@@ -20,11 +20,18 @@ public class BingXPublicClient : IPublicMarketDataClient
     private readonly RateLimiter _rateLimiter;
     private readonly ILogger<BingXPublicClient> _logger;
 
+    /// <summary>Timeout für einzelne HTTP-Requests (30s statt Endlos-Default).</summary>
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
+
     public BingXPublicClient(HttpClient httpClient, RateLimiter rateLimiter, ILogger<BingXPublicClient> logger)
     {
         _httpClient = httpClient;
         _rateLimiter = rateLimiter;
         _logger = logger;
+
+        // Timeout konfigurieren falls noch nicht gesetzt
+        if (_httpClient.Timeout == System.Threading.Timeout.InfiniteTimeSpan)
+            _httpClient.Timeout = RequestTimeout;
     }
 
     /// <summary>
@@ -39,7 +46,7 @@ public class BingXPublicClient : IPublicMarketDataClient
 
         while (currentStart < to && !ct.IsCancellationRequested)
         {
-            await _rateLimiter.WaitForSlotAsync("queries", ct);
+            await _rateLimiter.WaitForSlotAsync("queries", ct).ConfigureAwait(false);
 
             var startMs = new DateTimeOffset(DateTime.SpecifyKind(currentStart, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
             var endMs = new DateTimeOffset(DateTime.SpecifyKind(to, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
@@ -48,7 +55,7 @@ public class BingXPublicClient : IPublicMarketDataClient
 
             try
             {
-                var response = await _httpClient.GetStringAsync(url, ct);
+                var response = await _httpClient.GetStringAsync(url, ct).ConfigureAwait(false);
                 var result = JsonSerializer.Deserialize<BingXResponse<List<BingXKlineDetail>>>(response);
 
                 if (result?.Code != 0 || result.Data == null || result.Data.Count == 0)
@@ -103,10 +110,10 @@ public class BingXPublicClient : IPublicMarketDataClient
     /// </summary>
     public async Task<List<Ticker>> GetAllTickersAsync(CancellationToken ct = default)
     {
-        await _rateLimiter.WaitForSlotAsync("queries", ct);
+        await _rateLimiter.WaitForSlotAsync("queries", ct).ConfigureAwait(false);
 
         var url = $"{BaseUrl}/openApi/swap/v2/quote/ticker";
-        var response = await _httpClient.GetStringAsync(url, ct);
+        var response = await _httpClient.GetStringAsync(url, ct).ConfigureAwait(false);
         var result = JsonSerializer.Deserialize<BingXResponse<List<BingXTickerDetail>>>(response);
 
         if (result?.Code != 0 || result.Data == null)
@@ -128,7 +135,7 @@ public class BingXPublicClient : IPublicMarketDataClient
     /// </summary>
     public async Task<List<string>> GetAllSymbolsAsync(CancellationToken ct = default)
     {
-        var tickers = await GetAllTickersAsync(ct);
+        var tickers = await GetAllTickersAsync(ct).ConfigureAwait(false);
         return tickers
             .OrderByDescending(t => t.Volume24h)
             .Select(t => t.Symbol)

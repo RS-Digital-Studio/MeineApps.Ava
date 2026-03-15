@@ -72,12 +72,13 @@ public class PerformanceReport
         report.ProfitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? decimal.MaxValue : 0m;
 
         // Sharpe Ratio (vereinfacht, annualisiert)
-        if (trades.Count > 1)
+        if (trades.Count > 1 && initialBalance > 0)
         {
-            var returns = trades.Select(t => t.Pnl / initialBalance).ToList();
+            var returns = trades.Select(t => (double)(t.Pnl / initialBalance)).ToList();
             var avgReturn = returns.Average();
-            var stdDev = (decimal)Math.Sqrt((double)returns.Select(r => (r - avgReturn) * (r - avgReturn)).Average());
-            report.SharpeRatio = stdDev > 0 ? avgReturn / stdDev * (decimal)Math.Sqrt(252) : 0m; // Annualisiert
+            var variance = returns.Select(r => (r - avgReturn) * (r - avgReturn)).Average();
+            var stdDev = Math.Sqrt(variance);
+            report.SharpeRatio = stdDev > 0 ? (decimal)(avgReturn / stdDev * Math.Sqrt(252)) : 0m; // Annualisiert
         }
 
         return report;

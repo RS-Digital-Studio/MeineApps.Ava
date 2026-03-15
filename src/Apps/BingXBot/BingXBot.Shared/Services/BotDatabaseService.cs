@@ -84,8 +84,10 @@ public class BotDatabaseService
         {
             return JsonSerializer.Deserialize<BotSettings>(entity.Value) ?? new BotSettings();
         }
-        catch
+        catch (JsonException)
         {
+            // Korrupte Settings-Daten → Defaults verwenden
+            System.Diagnostics.Debug.WriteLine("BotSettings JSON korrupt, verwende Defaults");
             return new BotSettings();
         }
     }

@@ -124,9 +124,10 @@ public partial class SettingsViewModel : ObservableObject
             {
                 await _secureStorage.DeleteCredentialsAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignorieren, lokale State wird trotzdem zurückgesetzt
+                // Lokaler State wird trotzdem zurückgesetzt
+                System.Diagnostics.Debug.WriteLine($"Credentials löschen fehlgeschlagen: {ex.Message}");
             }
         }
 

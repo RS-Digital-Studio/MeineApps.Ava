@@ -179,9 +179,9 @@ public class BingXWebSocketClient : IAsyncDisposable
                     }
                     message = Encoding.UTF8.GetString(decompressed.ToArray());
                 }
-                catch
+                catch (InvalidDataException)
                 {
-                    // Nicht komprimiert - direkt als Text lesen
+                    // Nicht gzip-komprimiert - direkt als Text lesen
                     message = Encoding.UTF8.GetString(ms.ToArray());
                 }
 

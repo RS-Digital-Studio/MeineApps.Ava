@@ -25,6 +25,10 @@ public class TradingEngine
     private Task? _mainLoop;
     private DateTime _lastDataReceived = DateTime.UtcNow;
 
+    // Cache für Ticker-Daten pro Scan-Durchlauf (vermeidet wiederholte API-Aufrufe)
+    private IReadOnlyList<Ticker>? _cachedTickers;
+    private DateTime _tickersCachedAt;
+
     public BotState State { get; private set; } = BotState.Stopped;
     public TradingMode Mode { get; private set; }
 
@@ -161,20 +165,24 @@ public class TradingEngine
             {
                 if (State == BotState.Paused)
                 {
-                    await Task.Delay(1000, ct);
+                    await Task.Delay(1000, ct).ConfigureAwait(false);
                     continue;
                 }
 
+                // Ticker-Cache aktualisieren für diesen Scan-Durchlauf
+                _cachedTickers = await _exchangeClient.GetAllTickersAsync().ConfigureAwait(false);
+                _tickersCachedAt = DateTime.UtcNow;
+
                 // Scanner laufen lassen
                 var candidates = new List<ScanResult>();
-                await foreach (var result in _scanner.ScanAsync(_scannerSettings, ct))
+                await foreach (var result in _scanner.ScanAsync(_scannerSettings, ct).ConfigureAwait(false))
                 {
                     candidates.Add(result);
                 }
 
                 if (candidates.Count == 0)
                 {
-                    await Task.Delay(5000, ct); // 5s warten wenn nichts gefunden
+                    await Task.Delay(5000, ct).ConfigureAwait(false); // 5s warten wenn nichts gefunden
                     continue;
                 }
 
@@ -203,7 +211,7 @@ public class TradingEngine
                 }
 
                 // Scan-Intervall (30s)
-                await Task.Delay(30000, ct);
+                await Task.Delay(30000, ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -217,7 +225,7 @@ public class TradingEngine
 
                 // Nicht crashen, nur pausieren
                 SetState(BotState.Paused);
-                await Task.Delay(5000, ct);
+                await Task.Delay(5000, ct).ConfigureAwait(false);
             }
         }
     }
@@ -227,12 +235,14 @@ public class TradingEngine
         var symbol = candidate.Symbol;
 
         // Klines laden für Indikator-Berechnung
-        var candles = await _exchangeClient.GetKlinesAsync(symbol, _scannerSettings.ScanTimeFrame, 200);
+        var candles = await _exchangeClient.GetKlinesAsync(symbol, _scannerSettings.ScanTimeFrame, 200).ConfigureAwait(false);
         if (candles.Count < 50) return;
 
-        var positions = await _exchangeClient.GetPositionsAsync();
-        var account = await _exchangeClient.GetAccountInfoAsync();
-        var tickers = await _exchangeClient.GetAllTickersAsync();
+        var positions = await _exchangeClient.GetPositionsAsync().ConfigureAwait(false);
+        var account = await _exchangeClient.GetAccountInfoAsync().ConfigureAwait(false);
+
+        // Ticker aus Cache (wird pro Scan-Durchlauf einmal geladen, siehe RunLoopAsync)
+        var tickers = _cachedTickers ?? await _exchangeClient.GetAllTickersAsync().ConfigureAwait(false);
         var ticker = tickers.FirstOrDefault(t => t.Symbol == symbol);
         if (ticker == null) return;
 
@@ -261,7 +271,7 @@ public class TradingEngine
             var closeSide = signal.Signal == Signal.CloseLong ? Side.Buy : Side.Sell;
             if (positions.Any(p => p.Symbol == symbol && p.Side == closeSide))
             {
-                await _exchangeClient.ClosePositionAsync(symbol, closeSide);
+                await _exchangeClient.ClosePositionAsync(symbol, closeSide).ConfigureAwait(false);
                 EmitLog(Core.Enums.LogLevel.Trade, "Trade", $"{symbol}: Position geschlossen ({closeSide})");
             }
             return;
@@ -272,12 +282,12 @@ public class TradingEngine
             // Leverage setzen (Live-Modus)
             if (Mode == TradingMode.Live)
             {
-                await _exchangeClient.SetLeverageAsync(symbol, (int)_riskSettings.MaxLeverage, side);
+                await _exchangeClient.SetLeverageAsync(symbol, (int)_riskSettings.MaxLeverage, side).ConfigureAwait(false);
             }
 
             var order = await _exchangeClient.PlaceOrderAsync(new OrderRequest(
                 symbol, side, OrderType.Market, riskCheck.AdjustedPositionSize,
-                StopLoss: signal.StopLoss, TakeProfit: signal.TakeProfit));
+                StopLoss: signal.StopLoss, TakeProfit: signal.TakeProfit)).ConfigureAwait(false);
 
             EmitLog(Core.Enums.LogLevel.Trade, "Trade", $"{symbol}: {side} {riskCheck.AdjustedPositionSize:F6} @ {ticker.LastPrice}");
             OrderPlaced?.Invoke(this, order);

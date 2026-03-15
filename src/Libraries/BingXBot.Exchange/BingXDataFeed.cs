@@ -88,18 +88,18 @@ public class BingXDataFeed : IDataFeed
             {
                 _logger.LogDebug(ex, "Fehler beim Parsen der Kline-Nachricht");
             }
-        });
+        }).ConfigureAwait(false);
 
         try
         {
-            await foreach (var candle in candleChannel.Reader.ReadAllAsync(ct))
+            await foreach (var candle in candleChannel.Reader.ReadAllAsync(ct).ConfigureAwait(false))
             {
                 yield return candle;
             }
         }
         finally
         {
-            await _wsClient.UnsubscribeAsync(channel);
+            await _wsClient.UnsubscribeAsync(channel).ConfigureAwait(false);
             candleChannel.Writer.Complete();
         }
     }
@@ -140,18 +140,18 @@ public class BingXDataFeed : IDataFeed
             {
                 _logger.LogDebug(ex, "Fehler beim Parsen der Ticker-Nachricht");
             }
-        });
+        }).ConfigureAwait(false);
 
         try
         {
-            await foreach (var ticker in tickerChannel.Reader.ReadAllAsync(ct))
+            await foreach (var ticker in tickerChannel.Reader.ReadAllAsync(ct).ConfigureAwait(false))
             {
                 yield return ticker;
             }
         }
         finally
         {
-            await _wsClient.UnsubscribeAsync(channel);
+            await _wsClient.UnsubscribeAsync(channel).ConfigureAwait(false);
             tickerChannel.Writer.Complete();
         }
     }
@@ -179,7 +179,7 @@ public class BingXDataFeed : IDataFeed
             var remaining = (int)Math.Ceiling((to - currentFrom) / duration);
             var limit = Math.Min(remaining, MaxKlinesPerRequest);
 
-            var candles = await _restClient.GetKlinesAsync(symbol, tf, limit);
+            var candles = await _restClient.GetKlinesAsync(symbol, tf, limit).ConfigureAwait(false);
 
             if (candles.Count == 0)
                 break;
@@ -223,6 +223,6 @@ public class BingXDataFeed : IDataFeed
 
     public async ValueTask DisposeAsync()
     {
-        await _wsClient.DisposeAsync();
+        await _wsClient.DisposeAsync().ConfigureAwait(false);
     }
 }

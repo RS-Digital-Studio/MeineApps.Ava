@@ -197,7 +197,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 if (candles.Count > 0)
                 {
                     BtcPrice = candles[^1].Close;
-                    BtcPriceChange = candles.Count > 1
+                    BtcPriceChange = candles.Count > 1 && candles[0].Close != 0
                         ? (candles[^1].Close - candles[0].Close) / candles[0].Close * 100m
                         : 0m;
                     BtcStatusText = $"BTC-USDT | {candles.Count} Candles (1h)";
@@ -205,8 +205,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 IsBtcLoading = false;
             });
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"BTC-Daten Ladefehler: {ex.Message}");
             IsBtcLoading = false;
             BtcStatusText = "Daten nicht verfuegbar (offline?)";
         }

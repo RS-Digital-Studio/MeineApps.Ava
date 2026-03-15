@@ -25,23 +25,24 @@ public class RateLimiter
         var limit = _limits.GetValueOrDefault(category, 20);
         var semaphore = _semaphores.GetOrAdd(category, _ => new SemaphoreSlim(1, 1));
 
-        await semaphore.WaitAsync(ct);
+        await semaphore.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             // Queue-Zugriff innerhalb des Semaphore-Locks - thread-safe
             var timestamps = _timestamps.GetOrAdd(category, _ => new Queue<DateTime>());
+            var now = DateTime.UtcNow;
 
-            // Alte Timestamps entfernen (aelter als 1 Sekunde)
-            while (timestamps.Count > 0 && timestamps.Peek() < DateTime.UtcNow.AddSeconds(-1))
+            // Alte Timestamps entfernen (älter als 1 Sekunde)
+            while (timestamps.Count > 0 && timestamps.Peek() < now.AddSeconds(-1))
                 timestamps.Dequeue();
 
             // Warten wenn Limit erreicht
             if (timestamps.Count >= limit)
             {
                 var oldest = timestamps.Peek();
-                var waitTime = oldest.AddSeconds(1) - DateTime.UtcNow;
+                var waitTime = oldest.AddSeconds(1) - now;
                 if (waitTime > TimeSpan.Zero)
-                    await Task.Delay(waitTime, ct);
+                    await Task.Delay(waitTime, ct).ConfigureAwait(false);
                 timestamps.Dequeue();
             }
 

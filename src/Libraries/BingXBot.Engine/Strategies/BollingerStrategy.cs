@@ -48,6 +48,8 @@ public class BollingerStrategy : IStrategy
         var currentPrice = context.CurrentTicker.LastPrice;
         var atrValue = lastAtr.Value;
         var bandWidth = lastUpper.Value - lastLower.Value;
+        if (bandWidth <= 0)
+            return new SignalResult(Signal.None, 0m, null, null, null, "Bollinger Bandbreite ist 0");
 
         // Preis unter unterem Band -> Long (Mean Reversion nach oben)
         if (currentPrice < lastLower.Value)

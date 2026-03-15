@@ -64,7 +64,7 @@ public class BingXRestClient : IExchangeClient
         Dictionary<string, string>? parameters,
         string rateCategory)
     {
-        await _rateLimiter.WaitForSlotAsync(rateCategory, CancellationToken.None);
+        await _rateLimiter.WaitForSlotAsync(rateCategory, CancellationToken.None).ConfigureAwait(false);
 
         var queryParams = parameters ?? new Dictionary<string, string>();
 
@@ -88,8 +88,8 @@ public class BingXRestClient : IExchangeClient
 
         _logger.LogDebug("{Method} {Path}", method, path);
 
-        using var response = await _httpClient.SendAsync(request);
-        var content = await response.Content.ReadAsStringAsync();
+        using var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -356,7 +356,7 @@ public class BingXRestClient : IExchangeClient
         var closeSide = side == Side.Buy ? Side.Sell : Side.Buy;
 
         // Erst aktuelle Position finden um die Menge zu bestimmen
-        var positions = await GetPositionsAsync();
+        var positions = await GetPositionsAsync().ConfigureAwait(false);
         var position = positions.FirstOrDefault(p =>
             p.Symbol == symbol && p.Side == side);
 
@@ -373,12 +373,12 @@ public class BingXRestClient : IExchangeClient
             symbol,
             closeSide,
             OrderType.Market,
-            position.Quantity));
+            position.Quantity)).ConfigureAwait(false);
     }
 
     public async Task CloseAllPositionsAsync()
     {
-        var positions = await GetPositionsAsync();
+        var positions = await GetPositionsAsync().ConfigureAwait(false);
 
         _logger.LogInformation("Schließe {Count} offene Positionen", positions.Count);
 
@@ -386,7 +386,7 @@ public class BingXRestClient : IExchangeClient
         {
             try
             {
-                await ClosePositionAsync(position.Symbol, position.Side);
+                await ClosePositionAsync(position.Symbol, position.Side).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

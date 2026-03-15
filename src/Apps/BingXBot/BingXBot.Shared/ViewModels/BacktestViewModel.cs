@@ -82,9 +82,10 @@ public partial class BacktestViewModel : ObservableObject
             foreach (var s in symbols.Take(50))
                 AvailableSymbols.Add(s);
         }
-        catch
+        catch (Exception ex)
         {
-            // Fallback-Symbole
+            // Fallback-Symbole bei Netzwerkfehler
+            System.Diagnostics.Debug.WriteLine($"Symbol-Laden fehlgeschlagen: {ex.Message}");
             AvailableSymbols.Clear();
             AvailableSymbols.Add("BTC-USDT");
             AvailableSymbols.Add("ETH-USDT");

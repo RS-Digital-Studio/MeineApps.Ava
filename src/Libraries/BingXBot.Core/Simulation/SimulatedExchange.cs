@@ -8,10 +8,11 @@ namespace BingXBot.Core.Simulation;
 /// <summary>
 /// Simulierte Exchange für Paper-Trading und Backtesting (Thread-safe).
 /// Implementiert IExchangeClient mit internem State statt echten API-Aufrufen.
+/// Nutzt ReaderWriterLockSlim für bessere Parallelität bei Leseoperationen.
 /// </summary>
 public class SimulatedExchange : IExchangeClient
 {
-    private readonly object _lock = new();
+    private readonly ReaderWriterLockSlim _rwLock = new();
     private decimal _balance;
     private readonly List<Position> _positions = [];
     private readonly List<Order> _openOrders = [];
@@ -31,15 +32,15 @@ public class SimulatedExchange : IExchangeClient
     /// </summary>
     public void SetCurrentPrice(string symbol, decimal price)
     {
-        lock (_lock)
-        {
-            _currentPrices[symbol] = price;
-        }
+        _rwLock.EnterWriteLock();
+        try { _currentPrices[symbol] = price; }
+        finally { _rwLock.ExitWriteLock(); }
     }
 
     public Task<Order> PlaceOrderAsync(OrderRequest request)
     {
-        lock (_lock)
+        _rwLock.EnterWriteLock();
+        try
         {
             var orderId = $"SIM-{++_orderCounter}";
 
@@ -98,11 +99,13 @@ public class SimulatedExchange : IExchangeClient
             _openOrders.Add(pendingOrder);
             return Task.FromResult(pendingOrder);
         }
+        finally { _rwLock.ExitWriteLock(); }
     }
 
     public Task<bool> CancelOrderAsync(string orderId, string symbol)
     {
-        lock (_lock)
+        _rwLock.EnterWriteLock();
+        try
         {
             var index = _openOrders.FindIndex(o => o.OrderId == orderId);
             if (index < 0)
@@ -111,11 +114,13 @@ public class SimulatedExchange : IExchangeClient
             _openOrders.RemoveAt(index);
             return Task.FromResult(true);
         }
+        finally { _rwLock.ExitWriteLock(); }
     }
 
     public Task<IReadOnlyList<Order>> GetOpenOrdersAsync(string? symbol = null)
     {
-        lock (_lock)
+        _rwLock.EnterReadLock();
+        try
         {
             IReadOnlyList<Order> result = symbol == null
                 ? _openOrders.ToList().AsReadOnly()
@@ -123,11 +128,13 @@ public class SimulatedExchange : IExchangeClient
 
             return Task.FromResult(result);
         }
+        finally { _rwLock.ExitReadLock(); }
     }
 
     public Task<IReadOnlyList<Position>> GetPositionsAsync()
     {
-        lock (_lock)
+        _rwLock.EnterReadLock();
+        try
         {
             IReadOnlyList<Position> result = _positions
                 .Select(p => UpdatePositionPnlLocked(p))
@@ -136,11 +143,13 @@ public class SimulatedExchange : IExchangeClient
 
             return Task.FromResult(result);
         }
+        finally { _rwLock.ExitReadLock(); }
     }
 
     public Task ClosePositionAsync(string symbol, Side side)
     {
-        lock (_lock)
+        _rwLock.EnterWriteLock();
+        try
         {
             var index = _positions.FindIndex(p => p.Symbol == symbol && p.Side == side);
             if (index < 0)
@@ -173,16 +182,16 @@ public class SimulatedExchange : IExchangeClient
             _positions.RemoveAt(index);
             return Task.CompletedTask;
         }
+        finally { _rwLock.ExitWriteLock(); }
     }
 
     public async Task CloseAllPositionsAsync()
     {
-        // Kopie der Liste unter Lock erstellen
+        // Kopie der Liste unter ReadLock erstellen
         List<Position> positionsCopy;
-        lock (_lock)
-        {
-            positionsCopy = _positions.ToList();
-        }
+        _rwLock.EnterReadLock();
+        try { positionsCopy = _positions.ToList(); }
+        finally { _rwLock.ExitReadLock(); }
 
         foreach (var pos in positionsCopy)
         {
@@ -192,7 +201,8 @@ public class SimulatedExchange : IExchangeClient
 
     public Task<AccountInfo> GetAccountInfoAsync()
     {
-        lock (_lock)
+        _rwLock.EnterReadLock();
+        try
         {
             var unrealizedPnl = _positions.Sum(p =>
             {
@@ -211,6 +221,7 @@ public class SimulatedExchange : IExchangeClient
 
             return Task.FromResult(info);
         }
+        finally { _rwLock.ExitReadLock(); }
     }
 
     public Task SetLeverageAsync(string symbol, int leverage, Side side)
@@ -254,16 +265,15 @@ public class SimulatedExchange : IExchangeClient
     /// </summary>
     public List<CompletedTrade> GetCompletedTrades()
     {
-        lock (_lock)
-        {
-            return _completedTrades.ToList();
-        }
+        _rwLock.EnterReadLock();
+        try { return _completedTrades.ToList(); }
+        finally { _rwLock.ExitReadLock(); }
     }
 
     #region Private Hilfsmethoden
 
     /// <summary>
-    /// Gibt den aktuellen Preis zurück. MUSS unter _lock aufgerufen werden.
+    /// Gibt den aktuellen Preis zurück. MUSS unter _rwLock (Read oder Write) aufgerufen werden.
     /// </summary>
     private decimal GetPriceLocked(string symbol)
     {
@@ -296,7 +306,7 @@ public class SimulatedExchange : IExchangeClient
     }
 
     /// <summary>
-    /// Position mit aktuellem unrealizedPnl aktualisieren. MUSS unter _lock aufgerufen werden.
+    /// Position mit aktuellem unrealizedPnl aktualisieren. MUSS unter _rwLock (Read oder Write) aufgerufen werden.
     /// </summary>
     private Position UpdatePositionPnlLocked(Position pos)
     {

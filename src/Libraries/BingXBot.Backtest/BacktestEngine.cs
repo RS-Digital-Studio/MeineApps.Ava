@@ -45,7 +45,7 @@ public class BacktestEngine
         CancellationToken ct = default)
     {
         // 1. Historische Daten laden
-        var allCandles = await LoadHistoricalDataAsync(symbol, timeFrame, from, to);
+        var allCandles = await LoadHistoricalDataAsync(symbol, timeFrame, from, to).ConfigureAwait(false);
 
         // Wenn keine Daten: Demo-Candles generieren
         if (allCandles.Count == 0)
@@ -81,22 +81,25 @@ public class BacktestEngine
         var positionSignals = new Dictionary<string, SignalResult>();
 
         // 5. Candle-Iteration
+        var iterationCount = allCandles.Count - warmupSize;
         for (int i = warmupSize; i < allCandles.Count; i++)
         {
             ct.ThrowIfCancellationRequested();
 
             // Fortschritt melden
-            var progressPercent = (int)((double)(i - warmupSize) / (allCandles.Count - warmupSize) * 100);
+            var progressPercent = (int)((double)(i - warmupSize) / iterationCount * 100);
             progress?.Report(progressPercent);
 
             // Aktuellen Preis setzen
             var currentCandle = allCandles[i];
             simExchange.SetCurrentPrice(symbol, currentCandle.Close);
 
-            // Kontext erstellen (letzte N Candles bis aktuell)
-            var contextCandles = allCandles.Take(i + 1).TakeLast(Math.Min(i + 1, 200)).ToList();
-            var positions = await simExchange.GetPositionsAsync();
-            var account = await simExchange.GetAccountInfoAsync();
+            // Kontext erstellen: Index-basierter Slice statt Take/TakeLast (O(1) statt O(n))
+            var contextStart = Math.Max(0, i + 1 - 200);
+            var contextCount = i + 1 - contextStart;
+            IReadOnlyList<Candle> contextCandles = allCandles.GetRange(contextStart, contextCount);
+            var positions = await simExchange.GetPositionsAsync().ConfigureAwait(false);
+            var account = await simExchange.GetAccountInfoAsync().ConfigureAwait(false);
             var ticker = new Ticker(symbol, currentCandle.Close, currentCandle.Low, currentCandle.High,
                 currentCandle.Volume, 0m, currentCandle.CloseTime);
 
@@ -106,7 +109,8 @@ public class BacktestEngine
             var signal = strategy.Evaluate(context);
 
             // SL/TP-Check auf offene Positionen mit echten Werten aus dem Signal
-            foreach (var pos in positions.ToList())
+            // positions ist bereits eine Kopie (IReadOnlyList aus SimulatedExchange), kein ToList() nötig
+            foreach (var pos in positions)
             {
                 var key = $"{pos.Symbol}_{pos.Side}";
                 if (!positionSignals.TryGetValue(key, out var origSignal))
@@ -135,14 +139,14 @@ public class BacktestEngine
                 if (slHit)
                 {
                     simExchange.SetCurrentPrice(symbol, origSignal.StopLoss!.Value);
-                    await simExchange.ClosePositionAsync(symbol, pos.Side);
+                    await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
                     positionSignals.Remove(key);
                     simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                 }
                 else if (tpHit)
                 {
                     simExchange.SetCurrentPrice(symbol, origSignal.TakeProfit!.Value);
-                    await simExchange.ClosePositionAsync(symbol, pos.Side);
+                    await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
                     positionSignals.Remove(key);
                     simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                 }
@@ -158,7 +162,7 @@ public class BacktestEngine
                     try
                     {
                         await simExchange.PlaceOrderAsync(new OrderRequest(
-                            symbol, side, OrderType.Market, riskCheck.AdjustedPositionSize));
+                            symbol, side, OrderType.Market, riskCheck.AdjustedPositionSize)).ConfigureAwait(false);
 
                         // Signal für SL/TP-Tracking speichern
                         var key = $"{symbol}_{side}";
@@ -174,7 +178,7 @@ public class BacktestEngine
             {
                 if (positions.Any(p => p.Side == Side.Buy))
                 {
-                    await simExchange.ClosePositionAsync(symbol, Side.Buy);
+                    await simExchange.ClosePositionAsync(symbol, Side.Buy).ConfigureAwait(false);
                     positionSignals.Remove($"{symbol}_{Side.Buy}");
                 }
             }
@@ -182,7 +186,7 @@ public class BacktestEngine
             {
                 if (positions.Any(p => p.Side == Side.Sell))
                 {
-                    await simExchange.ClosePositionAsync(symbol, Side.Sell);
+                    await simExchange.ClosePositionAsync(symbol, Side.Sell).ConfigureAwait(false);
                     positionSignals.Remove($"{symbol}_{Side.Sell}");
                 }
             }
@@ -190,17 +194,17 @@ public class BacktestEngine
             // Equity Snapshot (alle 10 Candles)
             if (i % 10 == 0)
             {
-                var eq = await simExchange.GetAccountInfoAsync();
+                var eq = await simExchange.GetAccountInfoAsync().ConfigureAwait(false);
                 equityCurve.Add(new EquityPoint(currentCandle.CloseTime, eq.Balance + eq.UnrealizedPnl));
             }
         }
 
         // 6. Alle offenen Positionen schließen
-        await simExchange.CloseAllPositionsAsync();
+        await simExchange.CloseAllPositionsAsync().ConfigureAwait(false);
         positionSignals.Clear();
 
         // Finaler Equity-Punkt
-        var finalAccount = await simExchange.GetAccountInfoAsync();
+        var finalAccount = await simExchange.GetAccountInfoAsync().ConfigureAwait(false);
         equityCurve.Add(new EquityPoint(allCandles[^1].CloseTime, finalAccount.Balance));
 
         progress?.Report(100);
@@ -233,7 +237,7 @@ public class BacktestEngine
             _logger.LogInformation("Lade echte Marktdaten von BingX für {Symbol}...", symbol);
             try
             {
-                var candles = await _publicClient.GetKlinesAsync(symbol, timeFrame, from, to);
+                var candles = await _publicClient.GetKlinesAsync(symbol, timeFrame, from, to).ConfigureAwait(false);
                 if (candles.Count > 0)
                 {
                     _logger.LogInformation("{Count} echte Candles geladen ({From} bis {To})",
@@ -250,7 +254,7 @@ public class BacktestEngine
         // Priorität 2: IExchangeClient (für Tests/Mocks/authentifizierte Clients)
         if (_dataSource != null)
         {
-            return await LoadFromExchangeClientAsync(symbol, timeFrame, from, to);
+            return await LoadFromExchangeClientAsync(symbol, timeFrame, from, to).ConfigureAwait(false);
         }
 
         // Priorität 3: Leere Liste zurückgeben (Caller generiert Demo-Daten wenn nötig)
@@ -275,7 +279,7 @@ public class BacktestEngine
         {
             // Einzelner Request reicht
             var limit = Math.Min(expectedCandles + 50, batchSize);
-            var candles = await _dataSource!.GetKlinesAsync(symbol, timeFrame, limit);
+            var candles = await _dataSource!.GetKlinesAsync(symbol, timeFrame, limit).ConfigureAwait(false);
             return candles
                 .Where(c => c.OpenTime >= from && c.OpenTime <= to)
                 .OrderBy(c => c.OpenTime)
@@ -288,7 +292,7 @@ public class BacktestEngine
 
         for (int batch = 0; batch < batchCount; batch++)
         {
-            var candles = await _dataSource!.GetKlinesAsync(symbol, timeFrame, batchSize);
+            var candles = await _dataSource!.GetKlinesAsync(symbol, timeFrame, batchSize).ConfigureAwait(false);
             if (candles.Count == 0)
                 break;
 

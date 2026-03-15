@@ -11,7 +11,7 @@ public class TradeJournal
 
     public async Task RecordTradeAsync(CompletedTrade trade)
     {
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             _trades.Add(trade);

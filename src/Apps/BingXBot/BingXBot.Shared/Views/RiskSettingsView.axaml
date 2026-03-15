@@ -32,7 +32,7 @@
       <Setter Property="CornerRadius" Value="6" />
       <Setter Property="Padding" Value="8,4" />
       <Setter Property="FontSize" Value="13" />
-      <Setter Property="MinWidth" Value="120" />
+      <Setter Property="MinWidth" Value="140" />
       <Setter Property="HorizontalAlignment" Value="Left" />
     </Style>
 
@@ -216,7 +216,7 @@
               <TextBlock Text="Maximale Anzahl gleichzeitig offener Positionen" FontSize="11"
                          Foreground="{DynamicResource TextMutedBrush}" />
             </StackPanel>
-            <NumericUpDown Classes="RiskNumeric"
+            <NumericUpDown Grid.Column="1" Classes="RiskNumeric"
                            Value="{Binding MaxOpenPositions}"
                            Minimum="1" Maximum="20" Increment="1"
                            FormatString="0" />
@@ -232,7 +232,7 @@
               <TextBlock Text="Maximale Positionen für das gleiche Handelspaar" FontSize="11"
                          Foreground="{DynamicResource TextMutedBrush}" />
             </StackPanel>
-            <NumericUpDown Classes="RiskNumeric"
+            <NumericUpDown Grid.Column="1" Classes="RiskNumeric"
                            Value="{Binding MaxOpenPositionsPerSymbol}"
                            Minimum="1" Maximum="5" Increment="1"
                            FormatString="0" />
@@ -278,7 +278,7 @@
               <TextBlock Text="Schwellwert für Korrelations-Check (0.1 - 1.0)" FontSize="11"
                          Foreground="{DynamicResource TextMutedBrush}" />
             </StackPanel>
-            <TextBox Classes="NumericInput" Text="{Binding MaxCorrelation}" />
+            <TextBox Grid.Column="1" Classes="NumericInput" Text="{Binding MaxCorrelation}" />
           </Grid>
         </StackPanel>
       </Border>

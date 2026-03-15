@@ -19,6 +19,7 @@ public class SimulatedExchange : IExchangeClient
     private readonly Dictionary<string, decimal> _currentPrices = new();
     private readonly BacktestSettings _settings;
     private readonly List<CompletedTrade> _completedTrades = [];
+    private readonly Dictionary<string, int> _leverageSettings = new();
     private int _orderCounter;
 
     public SimulatedExchange(BacktestSettings settings)
@@ -72,6 +73,10 @@ public class SimulatedExchange : IExchangeClient
                 }
                 else
                 {
+                    // Leverage aus Settings holen (Default: 10x)
+                    var leverageKey = $"{request.Symbol}_{request.Side}";
+                    var leverage = _leverageSettings.GetValueOrDefault(leverageKey, 10);
+
                     // Neue Position erstellen
                     _positions.Add(new Position(
                         request.Symbol,
@@ -80,7 +85,7 @@ public class SimulatedExchange : IExchangeClient
                         fillPrice,
                         request.Quantity,
                         0m,
-                        1m,
+                        leverage,
                         MarginType.Cross,
                         DateTime.UtcNow));
                 }
@@ -212,10 +217,11 @@ public class SimulatedExchange : IExchangeClient
 
             var usedMargin = _positions.Sum(p => p.Quantity * p.EntryPrice / (p.Leverage > 0 ? p.Leverage : 1));
             var equity = _balance + unrealizedPnl;
+            var availableBalance = Math.Max(0, equity - usedMargin);
 
             var info = new AccountInfo(
-                _balance,
-                equity - usedMargin,
+                equity,
+                availableBalance,
                 unrealizedPnl,
                 usedMargin);
 
@@ -226,7 +232,9 @@ public class SimulatedExchange : IExchangeClient
 
     public Task SetLeverageAsync(string symbol, int leverage, Side side)
     {
-        // No-op in der Simulation
+        _rwLock.EnterWriteLock();
+        try { _leverageSettings[$"{symbol}_{side}"] = leverage; }
+        finally { _rwLock.ExitWriteLock(); }
         return Task.CompletedTask;
     }
 

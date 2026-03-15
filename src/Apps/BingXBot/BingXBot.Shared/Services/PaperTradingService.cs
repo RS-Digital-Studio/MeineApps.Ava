@@ -248,8 +248,9 @@ public class PaperTradingService : IDisposable
                     continue;
                 }
 
-                // Order platzieren
+                // Leverage setzen (aus RiskSettings) und Order platzieren
                 var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
+                await _exchange.SetLeverageAsync(ticker.Symbol, (int)_riskSettings.MaxLeverage, side);
                 await _exchange.PlaceOrderAsync(new OrderRequest(
                     ticker.Symbol, side, OrderType.Market, riskCheck.AdjustedPositionSize));
 

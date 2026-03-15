@@ -20,6 +20,8 @@ public class SimulatedExchange : IExchangeClient
     private readonly BacktestSettings _settings;
     private readonly List<CompletedTrade> _completedTrades = [];
     private readonly Dictionary<string, int> _leverageSettings = new();
+    /// <summary>Speichert die Opening-Fee pro Position fuer korrekte Fee-Auswertung im CompletedTrade.</summary>
+    private readonly Dictionary<string, decimal> _positionOpenFees = new();
     private int _orderCounter;
 
     public SimulatedExchange(BacktestSettings settings)
@@ -47,10 +49,34 @@ public class SimulatedExchange : IExchangeClient
 
             if (request.Type == OrderType.Market)
             {
-                // Market-Order sofort füllen
+                // Market-Order sofort fuellen
                 var basePrice = GetPriceLocked(request.Symbol);
                 var fillPrice = ApplySlippage(basePrice, request.Side);
                 var fee = _settings.TakerFee * request.Quantity * fillPrice;
+
+                // Leverage aus Settings holen (Default: 10x)
+                var leverageKey = $"{request.Symbol}_{request.Side}";
+                var leverage = _leverageSettings.GetValueOrDefault(leverageKey, 10);
+                var effectiveLeverage = leverage > 0 ? leverage : 1;
+
+                // Margin-Check: Benoetigte Margin berechnen und pruefen ob genug verfuegbar
+                var requiredMargin = request.Quantity * fillPrice / effectiveLeverage;
+                var unrealizedPnl = _positions.Sum(p =>
+                {
+                    var cp = _currentPrices.GetValueOrDefault(p.Symbol, p.EntryPrice);
+                    return CalculatePnl(p.Side, p.EntryPrice, cp, p.Quantity);
+                });
+                var usedMargin = _positions.Sum(p => p.Quantity * p.EntryPrice / (p.Leverage > 0 ? p.Leverage : 1));
+                var equity = _balance + unrealizedPnl;
+                var availableBalance = Math.Max(0, equity - usedMargin);
+
+                if (requiredMargin + fee > availableBalance)
+                {
+                    // Nicht genug Margin verfuegbar - Order ablehnen
+                    var rejectedOrder = new Order(orderId, request.Symbol, request.Side, request.Type,
+                        fillPrice, request.Quantity, request.StopPrice, DateTime.UtcNow, OrderStatus.Rejected);
+                    return Task.FromResult(rejectedOrder);
+                }
 
                 _balance -= fee;
 
@@ -60,22 +86,25 @@ public class SimulatedExchange : IExchangeClient
 
                 if (existing >= 0)
                 {
-                    // Position vergrößern (Durchschnittspreis berechnen)
+                    // Position vergroessern (Durchschnittspreis berechnen)
                     var pos = _positions[existing];
                     var totalQty = pos.Quantity + request.Quantity;
                     var avgPrice = (pos.EntryPrice * pos.Quantity + fillPrice * request.Quantity) / totalQty;
+                    // Gesamte Opening-Fee akkumulieren (bestehende + neue)
+                    var existingOpenFee = _positionOpenFees.GetValueOrDefault($"{pos.Symbol}_{pos.Side}", 0m);
+                    _positionOpenFees[$"{pos.Symbol}_{pos.Side}"] = existingOpenFee + fee;
                     _positions[existing] = pos with
                     {
                         EntryPrice = avgPrice,
                         Quantity = totalQty,
-                        MarkPrice = fillPrice
+                        MarkPrice = fillPrice,
+                        Leverage = effectiveLeverage  // Aktuellen Leverage uebernehmen
                     };
                 }
                 else
                 {
-                    // Leverage aus Settings holen (Default: 10x)
-                    var leverageKey = $"{request.Symbol}_{request.Side}";
-                    var leverage = _leverageSettings.GetValueOrDefault(leverageKey, 10);
+                    // Opening-Fee speichern fuer spaetere Auswertung im CompletedTrade
+                    _positionOpenFees[$"{request.Symbol}_{request.Side}"] = fee;
 
                     // Neue Position erstellen
                     _positions.Add(new Position(
@@ -85,7 +114,7 @@ public class SimulatedExchange : IExchangeClient
                         fillPrice,
                         request.Quantity,
                         0m,
-                        leverage,
+                        effectiveLeverage,
                         MarginType.Cross,
                         DateTime.UtcNow));
                 }
@@ -166,11 +195,18 @@ public class SimulatedExchange : IExchangeClient
 
             // PnL berechnen
             var pnl = CalculatePnl(pos.Side, pos.EntryPrice, exitPriceWithSlippage, pos.Quantity);
-            var fee = _settings.TakerFee * pos.Quantity * exitPriceWithSlippage;
+            var closingFee = _settings.TakerFee * pos.Quantity * exitPriceWithSlippage;
 
-            _balance += pnl - fee;
+            // Opening-Fee aus dem Speicher holen (wurde bei PlaceOrderAsync bereits von _balance abgezogen)
+            var feeKey = $"{pos.Symbol}_{pos.Side}";
+            var openingFee = _positionOpenFees.GetValueOrDefault(feeKey, 0m);
+            _positionOpenFees.Remove(feeKey);
 
-            // CompletedTrade erstellen
+            // Nur PnL und Closing-Fee auf Balance anrechnen (Opening-Fee wurde bereits abgezogen)
+            _balance += pnl - closingFee;
+
+            // CompletedTrade: Gesamte Fee (Opening + Closing) fuer korrektes Reporting
+            var totalFee = openingFee + closingFee;
             _completedTrades.Add(new CompletedTrade(
                 pos.Symbol,
                 pos.Side,
@@ -178,7 +214,7 @@ public class SimulatedExchange : IExchangeClient
                 exitPriceWithSlippage,
                 pos.Quantity,
                 pnl,
-                fee,
+                totalFee,
                 pos.OpenTime,
                 DateTime.UtcNow,
                 "Manuell geschlossen",

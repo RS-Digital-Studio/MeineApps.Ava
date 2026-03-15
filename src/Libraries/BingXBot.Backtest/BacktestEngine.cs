@@ -161,12 +161,15 @@ public class BacktestEngine
                     var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
                     try
                     {
-                        await simExchange.PlaceOrderAsync(new OrderRequest(
+                        var order = await simExchange.PlaceOrderAsync(new OrderRequest(
                             symbol, side, OrderType.Market, riskCheck.AdjustedPositionSize)).ConfigureAwait(false);
 
-                        // Signal für SL/TP-Tracking speichern
-                        var key = $"{symbol}_{side}";
-                        positionSignals[key] = signal;
+                        // Nur SL/TP-Tracking speichern wenn Order tatsaechlich gefuellt wurde
+                        if (order.Status == OrderStatus.Filled)
+                        {
+                            var key = $"{symbol}_{side}";
+                            positionSignals[key] = signal;
+                        }
                     }
                     catch (Exception ex)
                     {

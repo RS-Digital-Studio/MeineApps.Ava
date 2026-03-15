@@ -71,14 +71,32 @@ public class PerformanceReport
         var grossLoss = Math.Abs(losers.Sum(t => t.Pnl));
         report.ProfitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? decimal.MaxValue : 0m;
 
-        // Sharpe Ratio (vereinfacht, annualisiert)
+        // Sharpe Ratio (annualisiert) mit Running Balance.
+        // Returns werden relativ zur aktuellen Balance berechnet, nicht zur initialen.
+        // Verhindert Verzerrung bei wachsendem/schrumpfendem Account.
         if (trades.Count > 1 && initialBalance > 0)
         {
-            var returns = trades.Select(t => (double)(t.Pnl / initialBalance)).ToList();
-            var avgReturn = returns.Average();
-            var variance = returns.Select(r => (r - avgReturn) * (r - avgReturn)).Average();
-            var stdDev = Math.Sqrt(variance);
-            report.SharpeRatio = stdDev > 0 ? (decimal)(avgReturn / stdDev * Math.Sqrt(252)) : 0m; // Annualisiert
+            var returns = new List<double>();
+            var runningBalance = (double)initialBalance;
+
+            foreach (var trade in trades)
+            {
+                if (runningBalance > 0)
+                {
+                    returns.Add((double)trade.Pnl / runningBalance);
+                    runningBalance += (double)trade.Pnl;
+                }
+            }
+
+            if (returns.Count > 1)
+            {
+                var avgReturn = returns.Average();
+                var variance = returns.Select(r => (r - avgReturn) * (r - avgReturn)).Average();
+                var stdDev = Math.Sqrt(variance);
+                report.SharpeRatio = stdDev > 0
+                    ? (decimal)(avgReturn / stdDev * Math.Sqrt(252))
+                    : 0m;
+            }
         }
 
         return report;

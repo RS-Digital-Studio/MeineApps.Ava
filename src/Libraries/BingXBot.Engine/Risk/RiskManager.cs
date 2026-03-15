@@ -42,8 +42,12 @@ public class RiskManager : IRiskManager
         decimal totalDrawdownPercent;
         lock (_lock)
         {
-            // Unrealisierte Verluste einbeziehen (nur negative Werte)
-            var unrealizedLoss = context.Account.UnrealizedPnl < 0 ? context.Account.UnrealizedPnl : 0m;
+            // Unrealisierte Verluste: Summe ALLER negativen PnL einzelner Positionen,
+            // nicht die Netto-Summe. Verhindert dass Gewinne einer Position
+            // die Verluste einer anderen maskieren.
+            var unrealizedLoss = context.OpenPositions
+                .Where(p => p.UnrealizedPnl < 0)
+                .Sum(p => p.UnrealizedPnl); // Ist negativ oder 0
             var effectiveDailyPnl = _dailyPnl + unrealizedLoss;
             var effectiveTotalPnl = _totalPnl + unrealizedLoss;
 
@@ -96,8 +100,11 @@ public class RiskManager : IRiskManager
             }
         }
 
-        // Fallback: MaxPositionSizePercent direkt
-        var fallbackValue = riskAmount * leverage;
+        // Fallback ohne StopLoss: Konservativ - halbes Risiko als Margin, max 5x Leverage.
+        // Ohne SL ist das Verlustrisiko unbekannt, daher deutlich vorsichtiger.
+        var fallbackMargin = riskAmount * 0.5m;
+        var fallbackLeverage = Math.Min(leverage, 5m);
+        var fallbackValue = fallbackMargin * fallbackLeverage;
         return fallbackValue / entryPrice;
     }
 

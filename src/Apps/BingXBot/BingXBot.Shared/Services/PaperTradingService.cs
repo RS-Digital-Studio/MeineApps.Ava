@@ -106,10 +106,13 @@ public class PaperTradingService : IDisposable
         // Alle Positionen schliessen
         if (_exchange != null)
         {
+            // Anzahl bereits publizierter Trades merken
+            var previousTradeCount = _exchange.GetCompletedTrades().Count;
             await _exchange.CloseAllPositionsAsync();
-            var completedTrades = _exchange.GetCompletedTrades();
-            foreach (var trade in completedTrades)
-                _eventBus.PublishTrade(trade);
+            // Nur die neu durch CloseAll entstandenen Trades publizieren (verhindert Doppel-Publizierung)
+            var allTrades = _exchange.GetCompletedTrades();
+            for (int i = previousTradeCount; i < allTrades.Count; i++)
+                _eventBus.PublishTrade(allTrades[i]);
         }
 
         _cts?.Dispose();
@@ -269,13 +272,16 @@ public class PaperTradingService : IDisposable
                     var closeSide = signal.Signal == Signal.CloseLong ? Side.Buy : Side.Sell;
                     if (positions.Any(p => p.Symbol == ticker.Symbol && p.Side == closeSide))
                     {
+                        // Trade-Count vor dem Close merken, um nur den neuen Trade zu publizieren
+                        var prevCount = _exchange.GetCompletedTrades().Count;
                         await _exchange.ClosePositionAsync(ticker.Symbol, closeSide);
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                             $"{ticker.Symbol}: Position geschlossen ({closeSide})", ticker.Symbol));
 
-                        // Abgeschlossene Trades publizieren
-                        foreach (var trade in _exchange.GetCompletedTrades())
-                            _eventBus.PublishTrade(trade);
+                        // Nur den neu entstandenen Trade publizieren (nicht alle alten)
+                        var allTrades = _exchange.GetCompletedTrades();
+                        for (int j = prevCount; j < allTrades.Count; j++)
+                            _eventBus.PublishTrade(allTrades[j]);
                     }
                     continue;
                 }
@@ -292,8 +298,16 @@ public class PaperTradingService : IDisposable
                 // Leverage setzen (aus RiskSettings) und Order platzieren
                 var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
                 await _exchange.SetLeverageAsync(ticker.Symbol, (int)_riskSettings.MaxLeverage, side);
-                await _exchange.PlaceOrderAsync(new OrderRequest(
+                var order = await _exchange.PlaceOrderAsync(new OrderRequest(
                     ticker.Symbol, side, OrderType.Market, riskCheck.AdjustedPositionSize));
+
+                // Pruefen ob die Order abgelehnt wurde (z.B. nicht genug Margin)
+                if (order.Status == OrderStatus.Rejected)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Trade",
+                        $"{ticker.Symbol}: Order abgelehnt (nicht genug Margin)", ticker.Symbol));
+                    continue;
+                }
 
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                     $"{ticker.Symbol}: {side} {riskCheck.AdjustedPositionSize:F6} @ {ticker.LastPrice:N2}",

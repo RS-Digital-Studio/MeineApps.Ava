@@ -3,7 +3,7 @@ name: dependency-checker
 model: sonnet
 description: >
   NuGet und Abhängigkeits-Manager für die Multi-App Codebase. Prüft Versionen, findet Vulnerabilities,
-  räumt unbenutzte Packages auf und verwaltet Central Package Management über alle 8 Apps.
+  räumt unbenutzte Packages auf und verwaltet Central Package Management über alle 9 Apps.
 
   <example>
   Context: Package-Update prüfen
@@ -39,19 +39,19 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10
+- **Framework**: Avalonia 11.3.12, .NET 10
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **Solution**: `MeineApps.Ava.sln`
 - **Central Package Management**: `Directory.Packages.props`
 - **Build-Konfiguration**: `Directory.Build.props`, `Directory.Build.targets`
-- **8 Apps + 3 Libraries + 1 UI-Library + 3 Tools**
+- **9 Apps + 3 Libraries + 1 UI-Library + 3 Tools**
 
 ### Aktuelle Kern-Packages
 
 | Package | Version | Zweck |
 |---------|---------|-------|
-| Avalonia | 11.3.11 | UI Framework |
-| Material.Icons.Avalonia | 2.4.1 | Icons |
+| Avalonia | 11.3.12 | UI Framework |
+| Material.Icons.Avalonia | 3.0.0 | Icons |
 | CommunityToolkit.Mvvm | 8.4.0 | MVVM |
 | SkiaSharp | 3.119.2 | 2D Graphics |
 | SkiaSharp.Skottie | 3.119.2 | Lottie |
@@ -95,7 +95,7 @@ dotnet list MeineApps.Ava.sln package --include-transitive
 - Central Package Management (`Directory.Packages.props`) IMMER nutzen
 - Versionen pinnen, keine Ranges
 - PackageReferences alphabetisch sortieren
-- Bei Updates: ALLE 8 Apps testen (`dotnet build MeineApps.Ava.sln`)
+- Bei Updates: ALLE 9 Apps testen (`dotnet build MeineApps.Ava.sln`)
 - CLAUDE.md Packages-Tabelle aktualisieren
 
 ## Arbeitsweise

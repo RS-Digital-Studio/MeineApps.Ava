@@ -48,7 +48,7 @@ Antworte IMMER auf Deutsch. Code-Kommentare auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, SkiaSharp 3.119.2, .NET 10
+- **Framework**: Avalonia 11.3.12, SkiaSharp 3.119.2, .NET 10
 - **Plattformen**: Android (Fokus) + Desktop
 - **Spiele**:
   - **BomberBlast**: Bomberman-Klon, Landscape, SkiaSharp Game-Rendering, SkSL GPU-Shader, HUD-Overlay
@@ -57,6 +57,8 @@ Antworte IMMER auf Deutsch. Code-Kommentare auf Deutsch. Keine Emojis.
     - Shader: `src/Apps/BomberBlast/BomberBlast.Shared/Graphics/ShaderEffects.cs`
   - **HandwerkerImperium**: Idle-Game, Portrait, SkiaSharp-Szenen (Stadt, Werkstatt, Forschung)
     - Renderer: `src/Apps/HandwerkerImperium/HandwerkerImperium.Shared/Graphics/*.cs`
+  - **RebornSaga**: Anime Isekai-RPG, volle SkiaSharp-Engine, in Entwicklung
+    - Engine: `src/Apps/RebornSaga/RebornSaga.Shared/`
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **Gotchas-Referenz**: `C:\Users\rober\.claude\projects\F--Meine-Apps-Ava\memory\gotchas.md`
 

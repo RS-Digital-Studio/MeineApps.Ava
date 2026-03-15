@@ -1,9 +1,9 @@
 ---
 name: performance
-model: opus
+model: sonnet
 description: >
   Performance-Analyse und Optimierungs-Spezialist für Avalonia/Android. Findet CPU-Bottlenecks,
-  GC-Pressure, UI-Stutter, Startup-Zeiten und SkiaSharp-Rendering-Probleme über alle 8 Apps.
+  GC-Pressure, UI-Stutter, Startup-Zeiten und SkiaSharp-Rendering-Probleme über alle 9 Apps.
 
   <example>
   Context: App ist langsam
@@ -41,12 +41,12 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, CommunityToolkit.Mvvm 8.4.0
+- **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **Plattformen**: Android (Fokus, schwächere Hardware!) + Windows + Linux
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **Datenbank**: sqlite-net-pcl 1.9.172
 - **2D Graphics**: SkiaSharp 3.119.2
-- **Games**: BomberBlast (60fps Render-Loop), HandwerkerImperium (Idle-Loop)
+- **Games**: BomberBlast (60fps Render-Loop), HandwerkerImperium (Idle-Loop), RebornSaga (SkiaSharp-RPG-Engine)
 
 ## Analyse-Framework
 

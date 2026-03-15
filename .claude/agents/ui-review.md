@@ -36,10 +36,10 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, SkiaSharp 3.119.2
+- **Framework**: Avalonia 11.3.12, .NET 10, SkiaSharp 3.119.2
 - **Plattformen**: Android (Fokus) + Windows + Linux (Desktop nur zum Testen)
-- **Themes**: 4 Themes (Midnight, Aurora, Daylight, Forest) via DynamicResource
-- **Icons**: Material.Icons.Avalonia 2.4.1 (7000+ SVG Icons)
+- **Themes**: App-spezifische Farbpaletten (Themes/AppPalette.axaml pro App), kein dynamischer Theme-Wechsel
+- **Icons**: Material.Icons.Avalonia 3.0.0 (7000+ SVG Icons)
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **App-Pfad**: `src/Apps/{App}/{App}.Shared/Views/`
 
@@ -63,7 +63,7 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 - **KORREKT**: `{DynamicResource PrimaryColor}`, `{DynamicResource SurfaceBrush}`
 - Ausnahme: Transparente Farben (`Transparent`, `#00000000`) und Game-spezifische SkiaSharp-Farben
 - Prüfe ALLE Farb-Attribute: Background, Foreground, Fill, Stroke, BorderBrush, Color
-- **Kontrast über ALLE 4 Themes prüfen**: Nicht nur Daylight, auch Midnight, Aurora, Forest
+- **Kontrast auf App-spezifischer Farbpalette prüfen**: Jede App hat eigene AppPalette.axaml
 
 ### 4. Responsive Layouts
 - **KEINE festen Pixel-Breiten** für Container (MaxWidth ist OK für Content-Begrenzung)
@@ -82,7 +82,7 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 - `AutomationProperties.Name` auf wichtigen interaktiven Elementen
 - `TextWrapping="Wrap"` auf Textblöcken die lang werden können
 - Empty-States: Was sieht der User wenn Listen leer sind?
-- Kontrast: Text auf Hintergrund lesbar über alle 4 Themes
+- Kontrast: Text auf Hintergrund lesbar mit App-spezifischer Farbpalette
 - Fokusreihenfolge logisch
 
 ### 7. Safe Area / Notch

@@ -41,7 +41,7 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **Branch**: `master` (Haupt-Branch)
-- **8 Apps**: `src/Apps/{App}/`
+- **9 Apps**: `src/Apps/{App}/`
 - **3 Libraries**: `src/Libraries/`
 - **Commit-Stil**: Deutsch, App-Prefix (z.B. "BomberBlast: Fix für Back-Button")
 
@@ -98,7 +98,7 @@ git log --oneline -- src/Apps/*/
 ### Cross-App-Änderungen
 1. Commits die mehrere Apps betreffen finden
 2. Shared Library Änderungen identifizieren
-3. Impact auf alle 8 Apps bewerten
+3. Impact auf alle 9 Apps bewerten
 
 ## Output
 

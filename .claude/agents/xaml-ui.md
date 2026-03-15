@@ -3,7 +3,7 @@ name: xaml-ui
 model: opus
 description: >
   Avalonia AXAML und UI-Spezialist. Baut UI-Layouts, Styles, Data Binding, Custom Controls,
-  responsive Design, Animationen und SkiaSharp-Integration für alle 8 Apps.
+  responsive Design, Animationen und SkiaSharp-Integration für alle 9 Apps.
 
   <example>
   Context: Neues UI-Layout wird gebraucht
@@ -36,10 +36,10 @@ Antworte IMMER auf Deutsch. Code-Kommentare auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, CommunityToolkit.Mvvm 8.4.0
+- **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **Plattformen**: Android (Fokus) + Windows + Linux
-- **Icons**: Material.Icons.Avalonia 2.4.1 (7000+ SVG Icons)
-- **Themes**: 4 Themes (Midnight, Aurora, Daylight, Forest) via DynamicResource
+- **Icons**: Material.Icons.Avalonia 3.0.0 (7000+ SVG Icons)
+- **Themes**: App-spezifische Farbpaletten (Themes/AppPalette.axaml pro App), kein dynamischer Theme-Wechsel
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **App-Views**: `src/Apps/{App}/{App}.Shared/Views/`
 - **Shared Styles**: `src/UI/MeineApps.UI/Styles/`
@@ -80,7 +80,7 @@ Antworte IMMER auf Deutsch. Code-Kommentare auf Deutsch. Keine Emojis.
 - `RowSpan`/`ColumnSpan` für komplexe Layouts
 - KEINE festen Pixel-Breiten für Container
 
-### Ad-Banner Layout (6 werbe-unterstützte Apps)
+### Ad-Banner Layout (6 Apps mit Banner-Ads, RebornSaga nur Rewarded)
 - MainView: `RowDefinitions="*,Auto,Auto"` → Row 0 Content, Row 1 Ad-Spacer (64dp), Row 2 Tab-Bar
 - Ad-Spacer: Genau 64dp (adaptive Banner können 50-60dp+ sein)
 - ScrollViewer-Content: Bottom-Margin mindestens 60dp auf letztem Kind-Element
@@ -131,7 +131,7 @@ Antworte IMMER auf Deutsch. Code-Kommentare auf Deutsch. Keine Emojis.
 - `AutomationProperties.Name` auf interaktiven Elementen
 - `TextWrapping="Wrap"` auf Textblöcken die lang werden können
 - Empty-States: Was sieht der User wenn Listen leer sind?
-- Kontrast über ALLE 4 Themes prüfen
+- Kontrast auf App-spezifischer Farbpalette prüfen
 
 ## Arbeitsweise
 

@@ -1,6 +1,6 @@
 ---
 name: new-feature
-model: opus
+model: sonnet
 description: >
   Feature-Planungs-Agent. Analysiert bestehende Patterns und erstellt detaillierte Architektur-Pläne
   für neue Features inkl. Models, Services, ViewModels, Views, DI, RESX-Keys und Accessibility.
@@ -37,12 +37,12 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, CommunityToolkit.Mvvm 8.4.0
+- **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **MVVM**: CommunityToolkit.Mvvm mit `[ObservableProperty]`, `[RelayCommand]`
 - **DI**: Constructor Injection, Services als Singleton, VMs als Transient/Singleton
 - **Navigation**: Event-basiert (`NavigationRequested`), kein Shell-Routing
 - **Lokalisierung**: ResourceManager, 6 Sprachen (DE/EN/ES/FR/IT/PT)
-- **Themes**: 4 Themes via DynamicResource
+- **Themes**: App-spezifische Farbpaletten (Themes/AppPalette.axaml pro App)
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 
 ## Planungsschritte

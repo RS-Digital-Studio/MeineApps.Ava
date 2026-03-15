@@ -39,10 +39,10 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, CommunityToolkit.Mvvm 8.4.0
+- **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **Plattformen**: Android (Fokus) + Windows + Linux
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
-- **8 Apps**: Verschiedene Typen (Calculator, Timer, Game, Business)
+- **9 Apps**: Verschiedene Typen (Calculator, Timer, Game, Business)
 - **Shared Libraries**: MeineApps.Core.Ava, MeineApps.Core.Premium.Ava, MeineApps.UI
 - **Gotchas/Lessons**: `C:\Users\rober\.claude\projects\F--Meine-Apps-Ava\memory\`
 

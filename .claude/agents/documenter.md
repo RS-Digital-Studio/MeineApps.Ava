@@ -39,9 +39,9 @@ Antworte IMMER auf Deutsch. Code-Kommentare auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, CommunityToolkit.Mvvm 8.4.0
+- **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
-- **8 Apps**: RechnerPlus, ZeitManager, FinanzRechner, FitnessRechner, HandwerkerRechner, WorkTimePro, HandwerkerImperium, BomberBlast
+- **9 Apps**: RechnerPlus, ZeitManager, FinanzRechner, FitnessRechner, HandwerkerRechner, WorkTimePro, HandwerkerImperium, BomberBlast, RebornSaga
 - **Sprache**: Deutsche Code-Kommentare, echte Umlaute (ä, ö, ü, ß)
 
 ## Dokumentations-Hierarchie

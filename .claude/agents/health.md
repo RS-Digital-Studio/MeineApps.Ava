@@ -3,12 +3,12 @@ name: health
 model: opus
 description: >
   Codebase-Gesundheits-Agent. Analysiert Architektur-Qualität, Abhängigkeiten, Layer-Verletzungen,
-  toten Code, Convention-Konsistenz, DI-Vollständigkeit und NuGet-Sicherheit über alle 8 Apps und Libraries.
+  toten Code, Convention-Konsistenz, DI-Vollständigkeit und NuGet-Sicherheit über alle 9 Apps und Libraries.
 
   <example>
   Context: Allgemeine Codebase-Qualität prüfen
   user: "Wie gesund ist unsere Codebase?"
-  assistant: "Der health-Agent analysiert Architektur, Abhängigkeiten, toten Code und Konsistenz über alle 8 Apps."
+  assistant: "Der health-Agent analysiert Architektur, Abhängigkeiten, toten Code und Konsistenz über alle 9 Apps."
   <commentary>
   Makro-Analyse der gesamten Codebase - nicht einzelne Bugs.
   </commentary>
@@ -45,9 +45,9 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, CommunityToolkit.Mvvm 8.4.0
+- **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **Plattformen**: Android (Fokus) + Windows + Linux
-- **8 Apps**: RechnerPlus, ZeitManager, FinanzRechner, FitnessRechner, HandwerkerRechner, WorkTimePro, HandwerkerImperium, BomberBlast
+- **9 Apps**: RechnerPlus, ZeitManager, FinanzRechner, FitnessRechner, HandwerkerRechner, WorkTimePro, HandwerkerImperium, BomberBlast, RebornSaga
 - **3 Libraries**: MeineApps.Core.Ava, MeineApps.Core.Premium.Ava, MeineApps.CalcLib
 - **1 UI-Library**: MeineApps.UI
 - **3 Tools**: AppChecker, StoreAssetGenerator, SocialPostGenerator
@@ -138,7 +138,7 @@ MeineApps.Core.Premium.Ava → MeineApps.Core.Ava
 
 ### 7. Convention-Konsistenz (Cross-App)
 
-Alle 8 Apps MÜSSEN gleiche Patterns verwenden:
+Alle 9 Apps MÜSSEN gleiche Patterns verwenden:
 
 - Naming: ViewModel-Suffix, Service-Prefix, Event-Namen
 - DI-Registrierung: Gleicher Pattern in allen App.axaml.cs
@@ -146,7 +146,7 @@ Alle 8 Apps MÜSSEN gleiche Patterns verwenden:
 - Back-Button: Alle mit Double-Back-to-Exit
 - Lokalisierung: Alle über `ILocalizationService.GetString()`
 - Error-Handling: Alle über `MessageRequested` Event
-- Ad-Banner: 64dp Spacer in allen 6 werbe-unterstützten Apps
+- Ad-Banner: 64dp Spacer in allen 6 Apps mit Banner-Ads (RebornSaga nur Rewarded, kein Banner)
 - Compiled Bindings: `x:CompileBindings="True"` konsistent gesetzt?
 
 ### 8. DI-Vollständigkeit

@@ -40,20 +40,20 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10
+- **Framework**: Avalonia 11.3.12, .NET 10
 - **Plattformen**: Android (Fokus) + Windows + Linux
-- **8 Apps**: Verschiedene Typen (Calculator, Timer, Game, Business)
+- **9 Apps**: Verschiedene Typen (Calculator, Timer, Game, Business)
 - **Shared Libraries**: Code-Sharing über 3 Libraries
 - **Android-Performance**: Schwächere Hardware, GC-Pausen, Battery-Drain
 - **6 Sprachen**: Lokalisierung über alle Apps
-- **4 Themes**: DynamicResource-basiert
+- **Themes**: App-spezifische Farbpaletten via DynamicResource
 
 ## Challenge-Framework
 
 ### 1. Annahmen hinterfragen
 - Welche impliziten Annahmen stecken in der Lösung?
 - "Das funktioniert auf Desktop" → Auch auf einem 200 EUR Android-Gerät?
-- "Das brauchen wir nicht" → Bist du sicher? Alle 8 Apps?
+- "Das brauchen wir nicht" → Bist du sicher? Alle 9 Apps?
 - "Das machen wir später" → Wird "später" je kommen?
 
 ### 2. Edge Cases durchspielen
@@ -79,7 +79,7 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ### 5. Kosten-Nutzen
 - Lohnt sich die Komplexität für den Gewinn?
-- Was sind die versteckten Kosten? (6 RESX-Dateien, 4 Themes, 8 Apps)
+- Was sind die versteckten Kosten? (6 RESX-Dateien, 9 App-Paletten, 9 Apps)
 - Ist das Over-Engineering oder angemessene Vorbereitung?
 - Wie viele User profitieren tatsächlich?
 

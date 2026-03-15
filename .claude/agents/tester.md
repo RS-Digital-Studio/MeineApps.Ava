@@ -39,12 +39,12 @@ Antworte IMMER auf Deutsch. Code-Kommentare auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, CommunityToolkit.Mvvm 8.4.0
+- **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **Test-Ordner**: `tests/`
 - **DI-Pattern**: Constructor Injection, Services als Singleton
 - **Datenbank**: sqlite-net-pcl 1.9.172
-- **8 Apps**: ViewModels, Services, Game-Logik zu testen
+- **9 Apps**: ViewModels, Services, Game-Logik zu testen
 
 ## Vor dem Schreiben
 

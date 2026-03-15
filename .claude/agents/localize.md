@@ -1,6 +1,6 @@
 ---
 name: localize
-model: opus
+model: sonnet
 description: >
   Lokalisierungs-Agent für 6 Sprachen (DE/EN/ES/FR/IT/PT). Prüft RESX-Vollständigkeit, fehlende Keys,
   Placeholder-Konsistenz, Plural-Formen, Datumsformate und hardcodierte Strings.

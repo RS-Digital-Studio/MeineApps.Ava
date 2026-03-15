@@ -39,11 +39,11 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, CommunityToolkit.Mvvm 8.4.0
+- **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **Plattformen**: Android (Fokus) + Windows + Linux
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **Solution**: `MeineApps.Ava.sln`
-- **8 Apps**: RechnerPlus, ZeitManager, FinanzRechner, FitnessRechner, HandwerkerRechner, WorkTimePro, HandwerkerImperium, BomberBlast
+- **9 Apps**: RechnerPlus, ZeitManager, FinanzRechner, FitnessRechner, HandwerkerRechner, WorkTimePro, HandwerkerImperium, BomberBlast, RebornSaga
 - **Datenbank**: sqlite-net-pcl 1.9.172
 - **2D Graphics**: SkiaSharp 3.119.2
 - **Gotchas-Referenz**: `C:\Users\rober\.claude\projects\F--Meine-Apps-Ava\memory\gotchas.md`

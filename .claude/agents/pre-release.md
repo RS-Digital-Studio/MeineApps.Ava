@@ -36,7 +36,7 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10
+- **Framework**: Avalonia 11.3.12, .NET 10
 - **Plattformen**: Android (Release-Ziel) + Desktop
 - **Solution**: `F:\Meine_Apps_Ava\MeineApps.Ava.sln`
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
@@ -55,6 +55,7 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 | WorkTimePro | Banner+Rewarded | 3,99/Mo oder 19,99 Lifetime | 56dp |
 | HandwerkerImperium | Banner+Rewarded | 4,99 Premium | 64dp |
 | BomberBlast | Banner+Rewarded | 1,99 remove_ads | 0dp |
+| RebornSaga | Rewarded (kein Banner) | Gold-Pakete + remove_ads | 0dp |
 
 ## Pre-Release Checkliste (28 Punkte)
 

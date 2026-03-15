@@ -47,11 +47,12 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, SkiaSharp 3.119.2, .NET 10
+- **Framework**: Avalonia 11.3.12, SkiaSharp 3.119.2, .NET 10
 - **Plattformen**: Android (Fokus) + Desktop
 - **Spiele**:
   - **BomberBlast**: Bomberman-Klon, Landscape, 100 Story-Level, 10 Welten, 5 Bosse, SkiaSharp-Rendering
   - **HandwerkerImperium**: Idle-Game, Portrait, Werkstätten + Arbeiter, Prestige-System
+  - **RebornSaga**: Anime Isekai-RPG, volle SkiaSharp-Engine, in Entwicklung
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **Balancing-Referenz**: `C:\Users\rober\.claude\projects\F--Meine-Apps-Ava\memory\balancing.md`
 

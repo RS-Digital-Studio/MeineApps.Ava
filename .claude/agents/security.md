@@ -39,10 +39,10 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10
+- **Framework**: Avalonia 11.3.12, .NET 10
 - **Plattformen**: Android (Fokus) + Windows + Linux
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
-- **8 Apps**: 6 mit Ads/IAP, 2 werbefrei
+- **9 Apps**: 7 mit Ads/IAP, 2 werbefrei
 - **Datenbank**: sqlite-net-pcl 1.9.172 (lokale SQLite)
 - **Ads**: AdMob (Google)
 - **IAP**: Google Play Billing Client v8

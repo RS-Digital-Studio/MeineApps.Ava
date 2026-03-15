@@ -50,7 +50,7 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 - **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **Plattformen**: Android (Fokus) + Windows + Linux
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
-- **8 Apps**: Verschiedene Typen (Calculator, Timer, Game, Business)
+- **9 Apps**: Verschiedene Typen (Calculator, Timer, Game, Business)
 - **Lokalisierung**: 6 Sprachen (DE/EN/ES/FR/IT/PT)
 - **Themes**: App-spezifische Farbpaletten (Themes/AppPalette.axaml)
 - **Patterns**: Event-Navigation, Constructor Injection, Factory für Android

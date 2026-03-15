@@ -36,11 +36,11 @@ Antworte IMMER auf Deutsch. Code-Kommentare auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10
+- **Framework**: Avalonia 11.3.12, .NET 10
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **Keystore**: `F:\Meine_Apps_Ava\Releases\meineapps.keystore` (Alias: meineapps, Pwd: MeineApps2025)
 - **Solution**: `F:\Meine_Apps_Ava\MeineApps.Ava.sln`
-- **8 Apps**: RechnerPlus, ZeitManager, FinanzRechner, FitnessRechner, HandwerkerRechner, WorkTimePro, HandwerkerImperium, BomberBlast
+- **9 Apps**: RechnerPlus, ZeitManager, FinanzRechner, FitnessRechner, HandwerkerRechner, WorkTimePro, HandwerkerImperium, BomberBlast, RebornSaga
 
 ## Release-Pipeline (8 Schritte)
 

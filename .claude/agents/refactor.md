@@ -27,7 +27,7 @@ description: >
   <example>
   Context: Cross-App-Duplikation
   user: "Gibt es duplizierten Code den wir in die Core-Library verschieben können?"
-  assistant: "Der refactor-Agent sucht Duplikate über alle 8 Apps und extrahiert sie in Shared Libraries."
+  assistant: "Der refactor-Agent sucht Duplikate über alle 9 Apps und extrahiert sie in Shared Libraries."
   <commentary>
   Cross-App-Duplikation finden und in Libraries extrahieren.
   </commentary>
@@ -58,7 +58,7 @@ Antworte IMMER auf Deutsch. Code-Kommentare auf Deutsch. Keine Emojis.
 ## Vor jedem Refactoring
 
 1. Code VOLLSTÄNDIG verstehen (alle Caller und Consumer lesen)
-2. Alle betroffenen Stellen identifizieren (Grep über alle 8 Apps)
+2. Alle betroffenen Stellen identifizieren (Grep über alle 9 Apps)
 3. Schritte planen VOR dem ersten Edit
 4. CLAUDE.md lesen für Projekt-Conventions
 

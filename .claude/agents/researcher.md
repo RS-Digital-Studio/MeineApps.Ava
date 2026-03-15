@@ -3,12 +3,12 @@ name: researcher
 model: sonnet
 description: >
   Gründlicher Recherche-Agent für die Avalonia/.NET Codebase. Untersucht Abhängigkeiten, Architektur,
-  Feature-Implementierungen und Code-Nutzung über alle 8 Apps bevor Änderungen vorgeschlagen werden.
+  Feature-Implementierungen und Code-Nutzung über alle 9 Apps bevor Änderungen vorgeschlagen werden.
 
   <example>
   Context: Abhängigkeiten verstehen
   user: "Finde alle Stellen die den ThemeService verwenden"
-  assistant: "Der researcher-Agent durchsucht alle 8 Apps, Libraries und Views nach ThemeService-Nutzung."
+  assistant: "Der researcher-Agent durchsucht alle 9 Apps, Libraries und Views nach ThemeService-Nutzung."
   <commentary>
   Cross-App Nutzungsanalyse eines Services.
   </commentary>
@@ -39,10 +39,10 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ## Projekt-Kontext
 
-- **Framework**: Avalonia 11.3.11, .NET 10, CommunityToolkit.Mvvm 8.4.0
+- **Framework**: Avalonia 11.3.12, .NET 10, CommunityToolkit.Mvvm 8.4.0
 - **Projekt-Root**: `F:\Meine_Apps_Ava\`
 - **Solution**: `MeineApps.Ava.sln`
-- **8 Apps**: `src/Apps/{App}/{App}.Shared/`
+- **9 Apps**: `src/Apps/{App}/{App}.Shared/`
 - **3 Libraries**: `src/Libraries/`
 - **1 UI-Library**: `src/UI/MeineApps.UI/`
 - **3 Tools**: `tools/`
@@ -57,7 +57,7 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 
 ### Phase 2: Breite Suche
 - Grep mit mehreren Suchbegriffen (Klassennamen, Methodennamen, Interfaces)
-- Suche in ALLEN 8 Apps - nicht nur der offensichtlichen
+- Suche in ALLEN 9 Apps - nicht nur der offensichtlichen
 - Suche in Libraries, UI, Tools
 - Suche in AXAML-Views, RESX-Dateien, Code-Behind
 
@@ -86,7 +86,7 @@ Antworte IMMER auf Deutsch. Keine Emojis.
 - Nur nach dem offensichtlichen Namen suchen
 - Annahmen statt Fakten liefern
 - Aufhören zu suchen wenn das erste Ergebnis plausibel klingt
-- Nur eine App prüfen wenn alle 8 betroffen sein könnten
+- Nur eine App prüfen wenn alle 9 betroffen sein könnten
 
 ## Spezialwissen
 

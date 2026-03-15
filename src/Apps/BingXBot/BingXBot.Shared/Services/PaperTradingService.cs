@@ -70,6 +70,7 @@ public class PaperTradingService : IDisposable
             $"Paper-Trading gestartet (Startkapital: {initialBalance:N0} USDT)"));
 
         _ = RunLoopAsync(_cts.Token);
+        _ = PriceTickerLoopAsync(_cts.Token);
     }
 
     /// <summary>Pausiert das Paper-Trading (Loop laeuft weiter, ueberspringt aber Scans).</summary>
@@ -158,6 +159,46 @@ public class PaperTradingService : IDisposable
             // 30 Sekunden warten bis zum naechsten Scan
             try { await Task.Delay(30_000, ct); }
             catch (OperationCanceledException) { break; }
+        }
+    }
+
+    /// <summary>
+    /// Schneller Preis-Ticker: Aktualisiert alle 5 Sekunden die Preise offener Positionen.
+    /// Damit PnL und MarkPrice in der UI flüssig aktualisiert werden statt nur alle 30s beim Scan.
+    /// </summary>
+    private async Task PriceTickerLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { await Task.Delay(5_000, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { break; }
+
+            if (_isPaused || _exchange == null) continue;
+
+            try
+            {
+                // Prüfe ob offene Positionen vorhanden
+                var positions = await _exchange.GetPositionsAsync().ConfigureAwait(false);
+                if (positions.Count == 0) continue;
+
+                // Aktuelle Ticker für offene Symbole holen (ein einzelner API-Call)
+                var tickers = await _publicClient.GetAllTickersAsync(ct).ConfigureAwait(false);
+                if (tickers.Count == 0) continue;
+
+                var tickerMap = tickers.ToDictionary(t => t.Symbol, t => t.LastPrice);
+
+                // Preise auf der SimulatedExchange aktualisieren
+                foreach (var pos in positions)
+                {
+                    if (tickerMap.TryGetValue(pos.Symbol, out var price))
+                        _exchange.SetCurrentPrice(pos.Symbol, price);
+                }
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"PriceTicker Fehler: {ex.Message}");
+            }
         }
     }
 

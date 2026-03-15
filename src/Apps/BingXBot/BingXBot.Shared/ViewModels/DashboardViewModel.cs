@@ -359,17 +359,53 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Aktualisiert BTC-Daten alle 60 Sekunden automatisch.
+    /// Aktualisiert BTC-Preis alle 10 Sekunden, volle Candles alle 60 Sekunden.
     /// </summary>
     private async Task StartAutoRefreshAsync()
     {
-        _refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(60));
+        _refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+        var tickCount = 0;
         try
         {
             while (await _refreshTimer.WaitForNextTickAsync())
-                await LoadBtcDataAsync();
+            {
+                tickCount++;
+
+                if (tickCount % 6 == 0)
+                {
+                    // Alle 60s: Volle Candle-Daten laden
+                    await LoadBtcDataAsync();
+                }
+                else
+                {
+                    // Alle 10s: Nur den aktuellen BTC-Preis aktualisieren
+                    await UpdateBtcPriceAsync();
+                }
+            }
         }
         catch (OperationCanceledException) { }
+    }
+
+    /// <summary>
+    /// Aktualisiert nur den BTC-Preis (schnell, ein API-Call).
+    /// </summary>
+    private async Task UpdateBtcPriceAsync()
+    {
+        if (_publicClient == null) return;
+        try
+        {
+            var tickers = await _publicClient.GetAllTickersAsync();
+            var btc = tickers.FirstOrDefault(t => t.Symbol == "BTC-USDT");
+            if (btc != null)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    BtcPrice = btc.LastPrice;
+                    BtcPriceChange = btc.PriceChangePercent24h;
+                });
+            }
+        }
+        catch { /* Stille Fehlerbehandlung - nächster Tick versucht es erneut */ }
     }
 
     /// <summary>

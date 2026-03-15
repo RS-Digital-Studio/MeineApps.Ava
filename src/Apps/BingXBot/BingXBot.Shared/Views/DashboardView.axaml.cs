@@ -5,6 +5,7 @@ using Avalonia.Labs.Controls;
 using Avalonia.Media;
 using BingXBot.Graphics;
 using BingXBot.ViewModels;
+using Material.Icons.Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 using System.ComponentModel;
@@ -136,7 +137,7 @@ public partial class DashboardView : UserControl
     }
 
     /// <summary>
-    /// Aktualisiert die P&L-TextBlock-Farben: gruen wenn positiv, rot wenn negativ.
+    /// Aktualisiert die P&L-TextBlock-Farben und Pfeil-Icons: gruen/hoch wenn positiv, rot/runter wenn negativ.
     /// </summary>
     private void UpdatePnlColors()
     {
@@ -148,10 +149,28 @@ public partial class DashboardView : UserControl
             unrealizedText.Foreground = _vm.UnrealizedPnl >= 0 ? ProfitBrush : LossBrush;
         }
 
+        var unrealizedIcon = this.FindControl<MaterialIcon>("UnrealizedPnlIcon");
+        if (unrealizedIcon != null)
+        {
+            unrealizedIcon.Kind = _vm.UnrealizedPnl >= 0
+                ? Material.Icons.MaterialIconKind.ArrowUp
+                : Material.Icons.MaterialIconKind.ArrowDown;
+            unrealizedIcon.Foreground = _vm.UnrealizedPnl >= 0 ? ProfitBrush : LossBrush;
+        }
+
         var totalText = this.FindControl<TextBlock>("TotalPnlText");
         if (totalText != null)
         {
             totalText.Foreground = _vm.TotalPnl >= 0 ? ProfitBrush : LossBrush;
+        }
+
+        var totalIcon = this.FindControl<MaterialIcon>("TotalPnlIcon");
+        if (totalIcon != null)
+        {
+            totalIcon.Kind = _vm.TotalPnl >= 0
+                ? Material.Icons.MaterialIconKind.ArrowUp
+                : Material.Icons.MaterialIconKind.ArrowDown;
+            totalIcon.Foreground = _vm.TotalPnl >= 0 ? ProfitBrush : LossBrush;
         }
     }
 

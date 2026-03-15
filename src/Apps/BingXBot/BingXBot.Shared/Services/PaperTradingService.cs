@@ -411,6 +411,27 @@ public class PaperTradingService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gibt das gespeicherte Signal (SL/TP) fuer eine offene Position zurueck.
+    /// </summary>
+    public SignalResult? GetPositionSignal(string symbol, Side side)
+    {
+        _positionSignals.TryGetValue($"{symbol}_{side}", out var signal);
+        return signal;
+    }
+
+    /// <summary>
+    /// Aktualisiert SL/TP fuer eine offene Position (z.B. wenn der User im Dashboard editiert).
+    /// </summary>
+    public void UpdatePositionSignal(string symbol, Side side, decimal? newSl, decimal? newTp)
+    {
+        var key = $"{symbol}_{side}";
+        if (_positionSignals.TryGetValue(key, out var existing))
+        {
+            _positionSignals[key] = existing with { StopLoss = newSl, TakeProfit = newTp };
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed) return;

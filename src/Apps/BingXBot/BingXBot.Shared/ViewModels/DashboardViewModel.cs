@@ -286,22 +286,14 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             // Offene Positionen laden
             var positions = await _liveClient.GetPositionsAsync();
 
+            // Positionen als Items erstellen (auf Background-Thread, damit API-Calls nicht UI blockieren)
+            var posItems = positions.Select(p => CreatePositionItem(p)).ToList();
+
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 OpenPositions.Clear();
-                foreach (var p in positions)
-                {
-                    OpenPositions.Add(new PositionDisplayItem
-                    {
-                        Symbol = p.Symbol,
-                        Side = p.Side.ToString(),
-                        EntryPrice = p.EntryPrice,
-                        MarkPrice = p.MarkPrice,
-                        Quantity = p.Quantity,
-                        Pnl = p.UnrealizedPnl,
-                        Leverage = p.Leverage
-                    });
-                }
+                foreach (var item in posItems)
+                    OpenPositions.Add(item);
                 HasOpenPositions = OpenPositions.Count > 0;
                 PositionsStatusText = HasOpenPositions
                     ? $"{OpenPositions.Count} offene Position(en)"
@@ -513,6 +505,127 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         ShowWelcomeHint = false;
     }
 
+    /// <summary>
+    /// Schliesst eine einzelne Position (Paper oder Live).
+    /// </summary>
+    [RelayCommand]
+    private async Task ClosePosition(PositionDisplayItem? position)
+    {
+        if (position == null) return;
+
+        var side = position.Side == "Buy" ? Side.Buy : Side.Sell;
+
+        try
+        {
+            if (IsPaperMode && _paperService.Exchange != null)
+            {
+                _paperService.Exchange.SetCurrentPrice(position.Symbol, position.MarkPrice);
+                await _paperService.Exchange.ClosePositionAsync(position.Symbol, side);
+            }
+            else if (!IsPaperMode && _liveClient != null)
+            {
+                await _liveClient.ClosePositionAsync(position.Symbol, side);
+            }
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
+                $"{position.Symbol}: Position manuell geschlossen ({position.Side})", position.Symbol));
+
+            // Position aus der Liste entfernen
+            OpenPositions.Remove(position);
+            HasOpenPositions = OpenPositions.Count > 0;
+            PositionsStatusText = HasOpenPositions
+                ? $"{OpenPositions.Count} offene Position(en)"
+                : "Keine offenen Positionen";
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Trade",
+                $"{position.Symbol}: Schliessen fehlgeschlagen - {ex.Message}", position.Symbol));
+        }
+    }
+
+    /// <summary>
+    /// Schliesst alle offenen Positionen nacheinander.
+    /// </summary>
+    [RelayCommand]
+    private async Task CloseAllPositions()
+    {
+        if (OpenPositions.Count == 0) return;
+
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Trade",
+            $"Schliesse alle {OpenPositions.Count} Positionen..."));
+
+        // Kopie der Liste (wird waehrend Iteration modifiziert)
+        var positionsCopy = OpenPositions.ToList();
+
+        foreach (var pos in positionsCopy)
+        {
+            await ClosePosition(pos);
+        }
+    }
+
+    /// <summary>
+    /// Erstellt ein PositionDisplayItem mit CloseRequested-Verdrahtung und SL/TP aus dem Service.
+    /// </summary>
+    private PositionDisplayItem CreatePositionItem(Position p)
+    {
+        var item = new PositionDisplayItem
+        {
+            Symbol = p.Symbol,
+            Side = p.Side.ToString(),
+            EntryPrice = p.EntryPrice,
+            MarkPrice = p.MarkPrice,
+            Quantity = p.Quantity,
+            Pnl = p.UnrealizedPnl,
+            Leverage = p.Leverage
+        };
+
+        // Close-Action verdrahten
+        item.CloseRequested = async (pos) => await ClosePosition(pos);
+
+        // SL/TP aus dem Service laden
+        if (IsPaperMode)
+        {
+            var signal = _paperService.GetPositionSignal(p.Symbol, p.Side);
+            if (signal != null)
+            {
+                item.StopLoss = signal.StopLoss;
+                item.TakeProfit = signal.TakeProfit;
+            }
+        }
+        else if (_liveService != null)
+        {
+            var signal = _liveService.GetPositionSignal(p.Symbol, p.Side);
+            if (signal != null)
+            {
+                item.StopLoss = signal.StopLoss;
+                item.TakeProfit = signal.TakeProfit;
+            }
+        }
+
+        // SL/TP-Aenderungen an den Service zurueckschreiben
+        item.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(PositionDisplayItem.StopLoss) or nameof(PositionDisplayItem.TakeProfit))
+            {
+                var side = item.Side == "Buy" ? Side.Buy : Side.Sell;
+                if (IsPaperMode)
+                {
+                    _paperService.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
+                }
+                else
+                {
+                    _liveService?.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
+                }
+
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Trade",
+                    $"{item.Symbol}: SL={item.StopLoss?.ToString("N2") ?? "---"} / TP={item.TakeProfit?.ToString("N2") ?? "---"}", item.Symbol));
+            }
+        };
+
+        return item;
+    }
+
     private PeriodicTimer? _refreshTimer;
     private bool _disposed;
 
@@ -569,6 +682,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                     var pos = positions ?? Array.Empty<Position>();
                     var isPaper = IsPaperMode;
 
+                    // Items vorab erstellen (inkl. SL/TP aus dem Service)
+                    var posItems = pos.Select(p => CreatePositionItem(p)).ToList();
+
                     Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                     {
                         Balance = acct.Balance;
@@ -580,19 +696,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
                         // Positionen aktualisieren
                         OpenPositions.Clear();
-                        foreach (var p in pos)
-                        {
-                            OpenPositions.Add(new PositionDisplayItem
-                            {
-                                Symbol = p.Symbol,
-                                Side = p.Side.ToString(),
-                                EntryPrice = p.EntryPrice,
-                                MarkPrice = p.MarkPrice,
-                                Quantity = p.Quantity,
-                                Pnl = p.UnrealizedPnl,
-                                Leverage = p.Leverage
-                            });
-                        }
+                        foreach (var item in posItems)
+                            OpenPositions.Add(item);
                         HasOpenPositions = OpenPositions.Count > 0;
                         PositionsStatusText = HasOpenPositions
                             ? $"{OpenPositions.Count} offene Position(en)"
@@ -762,15 +867,74 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
 /// <summary>
 /// Anzeige-Modell fuer eine offene Position im Dashboard.
+/// ObservableObject damit editierbare SL/TP/Trailing-Felder korrekt binden.
 /// </summary>
-public class PositionDisplayItem
+public partial class PositionDisplayItem : ObservableObject
 {
-    public string Symbol { get; set; } = "";
-    public string Side { get; set; } = "";
-    public decimal EntryPrice { get; set; }
-    public decimal MarkPrice { get; set; }
-    public decimal Quantity { get; set; }
-    public decimal Pnl { get; set; }
-    public decimal Leverage { get; set; }
+    // Basis-Daten (werden bei jedem Account-Update gesetzt)
+    [ObservableProperty] private string _symbol = "";
+    [ObservableProperty] private string _side = "";
+    [ObservableProperty] private decimal _entryPrice;
+    [ObservableProperty] private decimal _markPrice;
+    [ObservableProperty] private decimal _quantity;
+    [ObservableProperty] private decimal _pnl;
+    [ObservableProperty] private decimal _leverage;
+
+    // SL/TP/Trailing (editierbar vom User)
+    [ObservableProperty] private decimal? _stopLoss;
+    [ObservableProperty] private decimal? _takeProfit;
+    [ObservableProperty] private decimal? _trailingStop; // In Prozent
+
+    // Berechnete Properties
     public bool IsProfit => Pnl > 0;
+    public string PnlColor => Pnl >= 0 ? "#10B981" : "#EF4444";
+    public string SideColor => Side == "Buy" ? "#10B981" : "#EF4444";
+    public string PnlText => $"{Pnl:+0.00;-0.00}";
+    public decimal PnlPercent => EntryPrice > 0 && Quantity > 0
+        ? (MarkPrice - EntryPrice) / EntryPrice * 100m * (Side == "Buy" ? 1 : -1)
+        : 0m;
+    public string PnlPercentText => $"{PnlPercent:+0.00;-0.00}%";
+
+    // Fuer den Key im PaperTradingService/LiveTradingService
+    public string PositionKey => $"{Symbol}_{Side}";
+
+    // Close-Action: Wird vom DashboardViewModel gesetzt
+    public Func<PositionDisplayItem, Task>? CloseRequested { get; set; }
+
+    [RelayCommand]
+    private async Task RequestClose()
+    {
+        if (CloseRequested != null)
+            await CloseRequested(this);
+    }
+
+    // Benachrichtigt berechnete Properties bei Pnl/Side/Price-Aenderungen
+    partial void OnPnlChanged(decimal value)
+    {
+        OnPropertyChanged(nameof(IsProfit));
+        OnPropertyChanged(nameof(PnlColor));
+        OnPropertyChanged(nameof(PnlText));
+        OnPropertyChanged(nameof(PnlPercent));
+        OnPropertyChanged(nameof(PnlPercentText));
+    }
+
+    partial void OnSideChanged(string value)
+    {
+        OnPropertyChanged(nameof(SideColor));
+        OnPropertyChanged(nameof(PositionKey));
+        OnPropertyChanged(nameof(PnlPercent));
+        OnPropertyChanged(nameof(PnlPercentText));
+    }
+
+    partial void OnMarkPriceChanged(decimal value)
+    {
+        OnPropertyChanged(nameof(PnlPercent));
+        OnPropertyChanged(nameof(PnlPercentText));
+    }
+
+    partial void OnEntryPriceChanged(decimal value)
+    {
+        OnPropertyChanged(nameof(PnlPercent));
+        OnPropertyChanged(nameof(PnlPercentText));
+    }
 }

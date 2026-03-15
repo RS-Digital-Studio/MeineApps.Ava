@@ -243,72 +243,122 @@
       <UniformGrid Columns="4" Rows="1" IsVisible="{Binding HasAccountData}">
 
         <!-- Balance -->
-        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
-                Padding="16" Margin="0,0,8,0"
+        <Border CornerRadius="10" Padding="20,16" Margin="0,0,8,0"
                 BoxShadow="{DynamicResource CardShadow}">
-          <StackPanel Spacing="6">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#2A2A44" Offset="0" />
+              <GradientStop Color="#1E2A40" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Wallet" Width="16" Height="16"
-                               Foreground="{DynamicResource AppPrimaryBrush}" />
+              <Border Background="#263B82" CornerRadius="8" Padding="6" Width="32" Height="32">
+                <mi:MaterialIcon Kind="Wallet" Width="18" Height="18"
+                                 Foreground="{DynamicResource AppPrimaryBrush}" />
+              </Border>
               <TextBlock Text="Balance" FontSize="12"
-                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                         Foreground="{DynamicResource AppTextSecondaryBrush}"
+                         VerticalAlignment="Center" />
             </StackPanel>
-            <TextBlock Text="{Binding Balance, StringFormat='{}{0:N2} USDT'}"
-                       FontSize="22" FontWeight="Bold"
+            <TextBlock Text="{Binding Balance, StringFormat='{}{0:N2}'}"
+                       FontSize="24" FontWeight="Bold"
                        Foreground="{DynamicResource AppTextBrush}" />
+            <TextBlock Text="USDT" FontSize="11"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" Margin="0,-4,0,0" />
           </StackPanel>
         </Border>
 
         <!-- Verfuegbar -->
-        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
-                Padding="16" Margin="4,0"
+        <Border CornerRadius="10" Padding="20,16" Margin="4,0"
                 BoxShadow="{DynamicResource CardShadow}">
-          <StackPanel Spacing="6">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#2A2A44" Offset="0" />
+              <GradientStop Color="#1E3A2A" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="CashMultiple" Width="16" Height="16"
-                               Foreground="{DynamicResource AccentBrush}" />
+              <Border Background="#1E4A3A" CornerRadius="8" Padding="6" Width="32" Height="32">
+                <mi:MaterialIcon Kind="CashMultiple" Width="18" Height="18"
+                                 Foreground="{DynamicResource AccentBrush}" />
+              </Border>
               <TextBlock Text="Verfuegbar" FontSize="12"
-                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                         Foreground="{DynamicResource AppTextSecondaryBrush}"
+                         VerticalAlignment="Center" />
             </StackPanel>
-            <TextBlock Text="{Binding AvailableBalance, StringFormat='{}{0:N2} USDT'}"
-                       FontSize="22" FontWeight="Bold"
+            <TextBlock Text="{Binding AvailableBalance, StringFormat='{}{0:N2}'}"
+                       FontSize="24" FontWeight="Bold"
                        Foreground="{DynamicResource AppTextBrush}" />
+            <TextBlock Text="USDT" FontSize="11"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" Margin="0,-4,0,0" />
           </StackPanel>
         </Border>
 
         <!-- Unrealisiert P&L -->
-        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
-                Padding="16" Margin="4,0"
+        <Border CornerRadius="10" Padding="20,16" Margin="4,0"
                 BoxShadow="{DynamicResource CardShadow}">
-          <StackPanel Spacing="6">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#2A2A44" Offset="0" />
+              <GradientStop Color="#2A3A1E" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="TrendingUp" Width="16" Height="16"
-                               Foreground="{DynamicResource AppProfitBrush}" />
+              <Border Background="#2A4A1E" CornerRadius="8" Padding="6" Width="32" Height="32">
+                <mi:MaterialIcon Kind="TrendingUp" Width="18" Height="18"
+                                 Foreground="{DynamicResource AppProfitBrush}" />
+              </Border>
               <TextBlock Text="Unrealisiert" FontSize="12"
-                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                         Foreground="{DynamicResource AppTextSecondaryBrush}"
+                         VerticalAlignment="Center" />
             </StackPanel>
-            <TextBlock x:Name="UnrealizedPnlText"
-                       Text="{Binding UnrealizedPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00} USDT'}"
-                       FontSize="22" FontWeight="Bold"
-                       Foreground="{DynamicResource AppTextBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock x:Name="UnrealizedPnlText"
+                         Text="{Binding UnrealizedPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00}'}"
+                         FontSize="24" FontWeight="Bold"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <mi:MaterialIcon x:Name="UnrealizedPnlIcon" Kind="ArrowUp" Width="16" Height="16"
+                               Foreground="{DynamicResource AppProfitBrush}"
+                               VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="USDT" FontSize="11"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" Margin="0,-4,0,0" />
           </StackPanel>
         </Border>
 
         <!-- Gesamt-PnL -->
-        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
-                Padding="16" Margin="8,0,0,0"
+        <Border CornerRadius="10" Padding="20,16" Margin="8,0,0,0"
                 BoxShadow="{DynamicResource CardShadow}">
-          <StackPanel Spacing="6">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#2A2A44" Offset="0" />
+              <GradientStop Color="#3A2A1E" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="ChartAreaspline" Width="16" Height="16"
-                               Foreground="{DynamicResource AppProfitBrush}" />
+              <Border Background="#4A2A1E" CornerRadius="8" Padding="6" Width="32" Height="32">
+                <mi:MaterialIcon Kind="ChartAreaspline" Width="18" Height="18"
+                                 Foreground="{DynamicResource AppWarningBrush}" />
+              </Border>
               <TextBlock Text="Gesamt-PnL" FontSize="12"
-                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                         Foreground="{DynamicResource AppTextSecondaryBrush}"
+                         VerticalAlignment="Center" />
             </StackPanel>
-            <TextBlock x:Name="TotalPnlText"
-                       Text="{Binding TotalPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00} USDT'}"
-                       FontSize="22" FontWeight="Bold"
-                       Foreground="{DynamicResource AppTextBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock x:Name="TotalPnlText"
+                         Text="{Binding TotalPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00}'}"
+                         FontSize="24" FontWeight="Bold"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <mi:MaterialIcon x:Name="TotalPnlIcon" Kind="ArrowUp" Width="16" Height="16"
+                               Foreground="{DynamicResource AppProfitBrush}"
+                               VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="USDT" FontSize="11"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" Margin="0,-4,0,0" />
           </StackPanel>
         </Border>
 
@@ -329,92 +379,147 @@
       </Border>
 
       <!-- ================================================================= -->
-      <!-- Offene Positionen (mit Tabelle oder Hinweis)                      -->
+      <!-- Offene Positionen                                                 -->
       <!-- ================================================================= -->
-      <!-- Positionen vorhanden -->
       <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
               Padding="20,16"
-              BoxShadow="{DynamicResource CardShadow}"
-              IsVisible="{Binding HasOpenPositions}">
+              BoxShadow="{DynamicResource CardShadow}">
         <StackPanel Spacing="12">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="FormatListBulleted" Width="18" Height="18"
-                             Foreground="{DynamicResource AppPrimaryBrush}" />
-            <TextBlock Text="Offene Positionen" Classes="SectionTitle" />
-            <Border CornerRadius="10" Padding="8,3" Margin="8,0,0,0"
-                    Background="{DynamicResource CardBrush}">
-              <TextBlock Text="{Binding OpenPositions.Count, StringFormat='{}{0}'}"
-                         FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-            </Border>
-          </StackPanel>
 
-          <!-- Tabellen-Header -->
-          <Grid ColumnDefinitions="*,80,120,120,100,120,80">
-            <TextBlock Grid.Column="0" Text="Symbol" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Grid.Column="1" Text="Seite" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Grid.Column="2" Text="Einstieg" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
-            <TextBlock Grid.Column="3" Text="Mark" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
-            <TextBlock Grid.Column="4" Text="Menge" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
-            <TextBlock Grid.Column="5" Text="P&amp;L" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
-            <TextBlock Grid.Column="6" Text="Hebel" FontSize="11" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+          <!-- Header mit "Alle schliessen" Button -->
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="FormatListBulleted" Width="18" Height="18"
+                               Foreground="{DynamicResource AppPrimaryBrush}" />
+              <TextBlock Text="Offene Positionen" Classes="SectionTitle" />
+              <Border Background="{DynamicResource AppPrimaryBrush}" CornerRadius="10" Padding="8,2"
+                      IsVisible="{Binding HasOpenPositions}" VerticalAlignment="Center" Margin="8,0,0,0">
+                <TextBlock Text="{Binding OpenPositions.Count}" FontSize="11"
+                           Foreground="White" FontWeight="Bold" />
+              </Border>
+            </StackPanel>
+
+            <Button Grid.Column="2" Content="Alle schliessen"
+                    Command="{Binding CloseAllPositionsCommand}"
+                    IsVisible="{Binding HasOpenPositions}"
+                    Background="#3F1818" Foreground="{DynamicResource AppLossBrush}"
+                    CornerRadius="6" Padding="12,6" FontSize="12" Cursor="Hand"
+                    BorderThickness="1" BorderBrush="{DynamicResource AppLossBrush}" />
           </Grid>
 
-          <Border Height="1" Background="{DynamicResource AppBorderBrush}" />
-
-          <!-- Positions-Liste -->
-          <ItemsControl ItemsSource="{Binding OpenPositions}">
+          <!-- Positions-Cards -->
+          <ItemsControl ItemsSource="{Binding OpenPositions}"
+                        IsVisible="{Binding HasOpenPositions}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:PositionDisplayItem">
-                <Grid ColumnDefinitions="*,80,120,120,100,120,80" Margin="0,6">
-                  <TextBlock Grid.Column="0" Text="{Binding Symbol}" FontSize="13" FontWeight="SemiBold"
-                             Foreground="{DynamicResource AppTextBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding Side}" FontSize="13"
-                             Foreground="{DynamicResource AppTextBrush}" />
-                  <TextBlock Grid.Column="2" Text="{Binding EntryPrice, StringFormat='{}{0:N4}'}"
-                             FontSize="13" Foreground="{DynamicResource AppTextBrush}"
-                             HorizontalAlignment="Right" />
-                  <TextBlock Grid.Column="3" Text="{Binding MarkPrice, StringFormat='{}{0:N4}'}"
-                             FontSize="13" Foreground="{DynamicResource AppTextBrush}"
-                             HorizontalAlignment="Right" />
-                  <TextBlock Grid.Column="4" Text="{Binding Quantity, StringFormat='{}{0:N4}'}"
-                             FontSize="13" Foreground="{DynamicResource AppTextBrush}"
-                             HorizontalAlignment="Right" />
-                  <TextBlock Grid.Column="5"
-                             Text="{Binding Pnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00}'}"
-                             FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right"
-                             Classes.PnlPositive="{Binding IsProfit}"
-                             Classes.PnlNegative="{Binding !IsProfit}" />
-                  <TextBlock Grid.Column="6" Text="{Binding Leverage, StringFormat='{}{0}x'}"
-                             FontSize="13" Foreground="{DynamicResource AppTextSecondaryBrush}"
-                             HorizontalAlignment="Right" />
-                </Grid>
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8"
+                        Padding="16,12" Margin="0,4"
+                        BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}">
+                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+
+                    <!-- Zeile 1: Symbol + Side + Leverage | P&L + Close-Button -->
+                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                      <TextBlock Text="{Binding Symbol}" FontSize="15" FontWeight="Bold"
+                                 Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+                      <Border Background="{Binding SideColor}" CornerRadius="4" Padding="8,2"
+                              VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Side}" FontSize="11" FontWeight="Bold"
+                                   Foreground="White" />
+                      </Border>
+                      <TextBlock Text="{Binding Leverage, StringFormat='{}{0:F0}x'}" FontSize="12"
+                                 Foreground="{DynamicResource AppTextSecondaryBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                      <!-- P&L mit Prozent -->
+                      <StackPanel HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding PnlText}" FontSize="16" FontWeight="Bold"
+                                   Foreground="{Binding PnlColor}" HorizontalAlignment="Right" />
+                        <TextBlock Text="{Binding PnlPercentText}" FontSize="11"
+                                   Foreground="{Binding PnlColor}" HorizontalAlignment="Right" />
+                      </StackPanel>
+
+                      <!-- Close-Button -->
+                      <Button Command="{Binding RequestCloseCommand}"
+                              Background="Transparent" Padding="6"
+                              CornerRadius="4" ToolTip.Tip="Position schliessen" Cursor="Hand"
+                              BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}">
+                        <mi:MaterialIcon Kind="Close" Width="14" Height="14"
+                                         Foreground="{DynamicResource AppLossBrush}" />
+                      </Button>
+                    </StackPanel>
+
+                    <!-- Zeile 2: Einstieg / Aktuell / Menge -->
+                    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="20" Margin="0,10,0,0">
+                      <StackPanel>
+                        <TextBlock Text="Einstieg" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                        <TextBlock Text="{Binding EntryPrice, StringFormat='{}{0:N4}'}" FontSize="13"
+                                   Foreground="{DynamicResource AppTextBrush}" />
+                      </StackPanel>
+                      <StackPanel>
+                        <TextBlock Text="Aktuell" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                        <TextBlock Text="{Binding MarkPrice, StringFormat='{}{0:N4}'}" FontSize="13"
+                                   Foreground="{DynamicResource AppTextBrush}" />
+                      </StackPanel>
+                      <StackPanel>
+                        <TextBlock Text="Menge" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                        <TextBlock Text="{Binding Quantity, StringFormat='{}{0:N4}'}" FontSize="13"
+                                   Foreground="{DynamicResource AppTextBrush}" />
+                      </StackPanel>
+                    </StackPanel>
+
+                    <!-- Zeile 3: SL / TP / Trailing (editierbar) -->
+                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="12" Margin="0,10,0,0">
+                      <StackPanel>
+                        <TextBlock Text="Stop-Loss" FontSize="10" Foreground="{DynamicResource AppLossBrush}" />
+                        <TextBox Text="{Binding StopLoss, StringFormat='{}{0:N2}'}"
+                                 MinWidth="100" FontSize="11" Padding="6,4"
+                                 Background="{DynamicResource SurfaceBrush}"
+                                 BorderBrush="{DynamicResource AppBorderBrush}"
+                                 Foreground="{DynamicResource AppTextBrush}"
+                                 Watermark="Kein SL" CornerRadius="4" />
+                      </StackPanel>
+                      <StackPanel>
+                        <TextBlock Text="Take-Profit" FontSize="10" Foreground="{DynamicResource AppProfitBrush}" />
+                        <TextBox Text="{Binding TakeProfit, StringFormat='{}{0:N2}'}"
+                                 MinWidth="100" FontSize="11" Padding="6,4"
+                                 Background="{DynamicResource SurfaceBrush}"
+                                 BorderBrush="{DynamicResource AppBorderBrush}"
+                                 Foreground="{DynamicResource AppTextBrush}"
+                                 Watermark="Kein TP" CornerRadius="4" />
+                      </StackPanel>
+                      <StackPanel>
+                        <TextBlock Text="Trailing %" FontSize="10" Foreground="{DynamicResource AppWarningBrush}" />
+                        <TextBox Text="{Binding TrailingStop, StringFormat='{}{0:N1}'}"
+                                 MinWidth="80" FontSize="11" Padding="6,4"
+                                 Background="{DynamicResource SurfaceBrush}"
+                                 BorderBrush="{DynamicResource AppBorderBrush}"
+                                 Foreground="{DynamicResource AppTextBrush}"
+                                 Watermark="Aus" CornerRadius="4" />
+                      </StackPanel>
+                    </StackPanel>
+
+                  </Grid>
+                </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-        </StackPanel>
-      </Border>
 
-      <!-- Keine Positionen -->
-      <Border IsVisible="{Binding !HasOpenPositions}"
-              Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
-              Padding="20,16"
-              BoxShadow="{DynamicResource CardShadow}">
-        <StackPanel Spacing="8">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="FormatListBulleted" Width="18" Height="18"
-                             Foreground="{DynamicResource AppPrimaryBrush}" />
-            <TextBlock Text="Offene Positionen" Classes="SectionTitle" />
+          <!-- Leerer Zustand: Keine Positionen -->
+          <StackPanel IsVisible="{Binding !HasOpenPositions}" HorizontalAlignment="Center"
+                      Margin="0,12">
+            <mi:MaterialIcon Kind="ChartBoxOutline" Width="32" Height="32"
+                             Foreground="{DynamicResource AppTextSecondaryBrush}"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="Keine offenen Positionen" FontSize="13"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}"
+                       HorizontalAlignment="Center" Margin="0,8,0,0" />
+            <TextBlock Text="Der Bot eroeffnet Trades automatisch wenn Signale erkannt werden"
+                       FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="300"
+                       TextAlignment="Center" />
           </StackPanel>
-          <TextBlock Text="{Binding PositionsStatusText}" FontSize="13"
-                     Foreground="{DynamicResource TextMutedBrush}"
-                     HorizontalAlignment="Center" Margin="0,8" />
+
         </StackPanel>
       </Border>
 

@@ -15,6 +15,7 @@ public partial class RiskSettingsViewModel : ObservableObject
 {
     private readonly RiskSettings _riskSettings;
     private readonly BotEventBus _eventBus;
+    private readonly BotDatabaseService? _dbService;
 
     [ObservableProperty] private decimal _maxPositionSizePercent;
     [ObservableProperty] private decimal _maxDailyDrawdownPercent;
@@ -30,11 +31,47 @@ public partial class RiskSettingsViewModel : ObservableObject
     [ObservableProperty] private decimal _trailingStopPercent;
     [ObservableProperty] private string _saveStatus = "";
 
-    public RiskSettingsViewModel(RiskSettings riskSettings, BotEventBus eventBus)
+    public RiskSettingsViewModel(RiskSettings riskSettings, BotEventBus eventBus, BotDatabaseService? dbService = null)
     {
         _riskSettings = riskSettings;
         _eventBus = eventBus;
+        _dbService = dbService;
         LoadFromSettings();
+
+        // Settings aus DB laden (überschreibt Defaults)
+        _ = LoadSettingsFromDbAsync();
+    }
+
+    /// <summary>
+    /// Lädt persistierte Settings aus der SQLite-Datenbank.
+    /// </summary>
+    private async Task LoadSettingsFromDbAsync()
+    {
+        if (_dbService == null) return;
+        try
+        {
+            var settings = await _dbService.LoadSettingsAsync();
+            // Risk-Settings aus DB auf das echte Objekt und UI übertragen
+            _riskSettings.MaxPositionSizePercent = settings.Risk.MaxPositionSizePercent;
+            _riskSettings.MaxDailyDrawdownPercent = settings.Risk.MaxDailyDrawdownPercent;
+            _riskSettings.MaxTotalDrawdownPercent = settings.Risk.MaxTotalDrawdownPercent;
+            _riskSettings.MaxOpenPositions = settings.Risk.MaxOpenPositions;
+            _riskSettings.MaxOpenPositionsPerSymbol = settings.Risk.MaxOpenPositionsPerSymbol;
+            _riskSettings.MaxLeverage = settings.Risk.MaxLeverage;
+            _riskSettings.UseKellyCriterion = settings.Risk.UseKellyCriterion;
+            _riskSettings.UseAtrSizing = settings.Risk.UseAtrSizing;
+            _riskSettings.CheckCorrelation = settings.Risk.CheckCorrelation;
+            _riskSettings.MaxCorrelation = settings.Risk.MaxCorrelation;
+            _riskSettings.EnableTrailingStop = settings.Risk.EnableTrailingStop;
+            _riskSettings.TrailingStopPercent = settings.Risk.TrailingStopPercent;
+
+            // UI aktualisieren
+            LoadFromSettings();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Settings aus DB laden fehlgeschlagen: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -74,6 +111,23 @@ public partial class RiskSettingsViewModel : ObservableObject
         _riskSettings.TrailingStopPercent = TrailingStopPercent;
 
         SaveStatus = "Gespeichert";
+
+        // In DB persistieren (fire-and-forget)
+        if (_dbService != null)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var botSettings = new BotSettings { Risk = _riskSettings };
+                    await _dbService.SaveSettingsAsync(botSettings);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Settings in DB speichern fehlgeschlagen: {ex.Message}");
+                }
+            });
+        }
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Risk",
             $"Risiko-Einstellungen gespeichert: MaxPos={MaxPositionSizePercent}%, MaxDD={MaxTotalDrawdownPercent}%, Hebel={MaxLeverage}x"));

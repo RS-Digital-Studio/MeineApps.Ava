@@ -85,13 +85,13 @@ Alle ViewModels bekommen ihre Engine-Dependencies per Constructor Injection:
 | ViewModel | DI-Parameter |
 |-----------|--------------|
 | MainViewModel | BotEventBus |
-| DashboardViewModel | BotEventBus, IPublicMarketDataClient? |
+| DashboardViewModel | BotEventBus, IPublicMarketDataClient?, BotDatabaseService? |
 | StrategyViewModel | StrategyManager, BotEventBus |
-| BacktestViewModel | RiskSettings, BotEventBus, IPublicMarketDataClient? |
-| TradeHistoryViewModel | BotEventBus |
+| BacktestViewModel | RiskSettings, BotEventBus, IPublicMarketDataClient?, BotDatabaseService? |
+| TradeHistoryViewModel | BotEventBus, BotDatabaseService? |
 | LogViewModel | BotEventBus |
 | ScannerViewModel | ScannerSettings, BotEventBus, IMarketScanner?, IPublicMarketDataClient? |
-| RiskSettingsViewModel | RiskSettings, BotEventBus |
+| RiskSettingsViewModel | RiskSettings, BotEventBus, BotDatabaseService? |
 | SettingsViewModel | BotSettings, BotEventBus, ISecureStorageService?, IExchangeClient? |
 
 Optionale Parameter (mit `?`) ermöglichen Demo-Modus ohne Exchange-Verbindung.
@@ -110,6 +110,42 @@ dotnet build src/Apps/BingXBot/BingXBot.Desktop
 dotnet run --project src/Apps/BingXBot/BingXBot.Desktop
 dotnet test tests/BingXBot.Tests
 ```
+
+## DB-Persistenz (BotDatabaseService)
+
+SQLite-basierte Persistenz für Trades, Equity-Snapshots, Logs und Settings:
+
+| ViewModel | DB-Nutzung |
+|-----------|------------|
+| BacktestViewModel | Speichert Trades nach erfolgreichem Backtest |
+| TradeHistoryViewModel | Lädt bestehende Trades beim Start aus DB |
+| RiskSettingsViewModel | Speichert/lädt RiskSettings in/aus DB |
+| DashboardViewModel | Speichert Equity-Snapshots alle 5 Minuten wenn Bot läuft |
+
+Alle DB-Parameter sind optional (`BotDatabaseService?`), damit Tests ohne DB funktionieren.
+
+## Tests (137 Tests)
+
+| Datei | Tests | Beschreibung |
+|-------|-------|--------------|
+| Core/ModelTests.cs | Models | Record-Erstellung, Enums |
+| Core/ConfigTests.cs | Konfiguration | Settings-Defaults |
+| Core/SimulatedExchangeTests.cs | SimulatedExchange | Order-Ausführung |
+| Core/TimeFrameHelperTests.cs | TimeFrame-Konvertierung | IntervalString, Duration |
+| Engine/EmaCrossStrategyTests.cs | EMA Cross | Signal-Generierung |
+| Engine/StrategyTests.cs | Alle Strategien | Gemeinsame Tests |
+| Engine/StrategyFactoryTests.cs | StrategyFactory | Erstellung, Clone, Unknown |
+| Engine/StrategyManagerTests.cs | StrategyManager | Multi-Symbol |
+| Engine/IndicatorHelperTests.cs | Indikatoren | EMA, RSI, BB, MACD |
+| Engine/CorrelationCheckerTests.cs | Korrelation | Pearson-Berechnung |
+| Engine/MarketScannerTests.cs | Scanner | Volumen/Momentum-Filter |
+| Engine/TradingEngineTests.cs | TradingEngine | Tick-Verarbeitung |
+| Engine/RiskManagerTests.cs | RiskManager | Position-Sizing, Drawdown |
+| Engine/TradeJournalTests.cs | TradeJournal | Record, WinRate, ProfitFactor |
+| Exchange/RateLimiterTests.cs | RateLimiter | Request-Throttling |
+| Exchange/BingXRestClientTests.cs | REST-Client | API-Aufrufe |
+| Backtest/BacktestEngineTests.cs | BacktestEngine | Run, Demo-Candles |
+| Backtest/PerformanceReportTests.cs | PerformanceReport | Metriken, Drawdown |
 
 ## Farbpalette
 

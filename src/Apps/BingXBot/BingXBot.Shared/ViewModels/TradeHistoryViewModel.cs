@@ -13,6 +13,7 @@ namespace BingXBot.ViewModels;
 public partial class TradeHistoryViewModel : ObservableObject
 {
     private readonly BotEventBus _eventBus;
+    private readonly BotDatabaseService? _dbService;
     private readonly List<TradeHistoryItem> _allTrades = new();
 
     // Filter
@@ -32,13 +33,44 @@ public partial class TradeHistoryViewModel : ObservableObject
 
     public ObservableCollection<TradeHistoryItem> Trades { get; } = new();
 
-    public TradeHistoryViewModel(BotEventBus eventBus)
+    public TradeHistoryViewModel(BotEventBus eventBus, BotDatabaseService? dbService = null)
     {
         _eventBus = eventBus;
+        _dbService = dbService;
         _eventBus.TradeCompleted += OnTradeCompleted;
         _eventBus.BacktestCompleted += OnBacktestCompleted;
 
         UpdateSummary();
+
+        // Bestehende Trades aus DB laden
+        _ = LoadTradesFromDbAsync();
+    }
+
+    /// <summary>
+    /// Lädt persisierte Trades aus der SQLite-Datenbank.
+    /// </summary>
+    private async Task LoadTradesFromDbAsync()
+    {
+        if (_dbService == null) return;
+        try
+        {
+            var trades = await _dbService.GetTradesAsync();
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                foreach (var t in trades)
+                {
+                    _allTrades.Add(new TradeHistoryItem(
+                        t.Symbol, t.Side.ToString(), t.EntryPrice, t.ExitPrice,
+                        t.Quantity, t.Pnl, t.Fee, "", t.Mode.ToString(),
+                        t.ExitTime, t.Pnl > 0));
+                }
+                ApplyFilter();
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Trades aus DB laden fehlgeschlagen: {ex.Message}");
+        }
     }
 
     private void OnTradeCompleted(object? sender, CompletedTrade trade)

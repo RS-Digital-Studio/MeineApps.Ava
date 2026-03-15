@@ -25,6 +25,7 @@ public partial class BacktestViewModel : ObservableObject
     private readonly RiskSettings _riskSettings;
     private readonly IPublicMarketDataClient? _publicClient;
     private readonly BotEventBus _eventBus;
+    private readonly BotDatabaseService? _dbService;
     private CancellationTokenSource? _cts;
 
     [ObservableProperty] private string _symbol = "BTC-USDT";
@@ -60,11 +61,12 @@ public partial class BacktestViewModel : ObservableObject
     /// </summary>
     public ObservableCollection<string> AvailableSymbols { get; } = new();
 
-    public BacktestViewModel(RiskSettings riskSettings, BotEventBus eventBus, IPublicMarketDataClient? publicClient = null)
+    public BacktestViewModel(RiskSettings riskSettings, BotEventBus eventBus, IPublicMarketDataClient? publicClient = null, BotDatabaseService? dbService = null)
     {
         _riskSettings = riskSettings;
         _eventBus = eventBus;
         _publicClient = publicClient;
+        _dbService = dbService;
 
         // Symbole im Hintergrund laden
         _ = LoadSymbolsAsync();
@@ -238,6 +240,13 @@ public partial class BacktestViewModel : ObservableObject
                 StrategyName = SelectedStrategy,
                 Symbol = Symbol
             });
+
+            // Trades in DB persistieren
+            if (_dbService != null)
+            {
+                foreach (var trade in report.Trades)
+                    await _dbService.SaveTradeAsync(trade).ConfigureAwait(false);
+            }
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Backtest",
                 $"{SelectedStrategy} auf {Symbol}: {report.TotalTrades} Trades, P&L: {pnlSign}{report.TotalPnl:F2} USDT, WinRate: {report.WinRate:F1}%"));

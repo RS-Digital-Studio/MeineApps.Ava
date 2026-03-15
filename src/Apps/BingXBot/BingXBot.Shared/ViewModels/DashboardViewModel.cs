@@ -17,6 +17,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 {
     private readonly IPublicMarketDataClient? _publicClient;
     private readonly BotEventBus _eventBus;
+    private readonly BotDatabaseService? _dbService;
+    private PeriodicTimer? _equityTimer;
 
     // === Modus ===
     [ObservableProperty] private bool _isPaperMode = true;
@@ -55,10 +57,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _showWelcomeHint = true;
     [ObservableProperty] private string _welcomeHintText = "Willkommen! Starte mit einem Backtest um eine Strategie zu testen, oder konfiguriere deine API-Keys in den Einstellungen.";
 
-    public DashboardViewModel(BotEventBus eventBus, IPublicMarketDataClient? publicClient = null)
+    public DashboardViewModel(BotEventBus eventBus, IPublicMarketDataClient? publicClient = null, BotDatabaseService? dbService = null)
     {
         _eventBus = eventBus;
         _publicClient = publicClient;
+        _dbService = dbService;
 
         // Keine Fake-Daten! Zeige ehrlichen Zustand.
         HasAccountData = false;
@@ -87,6 +90,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             AvailableBalance = 10_000m;
             UnrealizedPnl = 0m;
             TotalPnl = 0m;
+
+            // Equity-Snapshots alle 5 Minuten in DB persistieren
+            _ = StartEquitySnapshotTimerAsync();
 
             // Status über EventBus publizieren
             _eventBus.PublishBotState(BotState.Running);
@@ -125,6 +131,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         BotStatusText = "Gestoppt";
         BotStatusColor = "#EF4444"; // Rot
         PositionsStatusText = "Keine offenen Positionen";
+        StopEquitySnapshotTimer();
 
         _eventBus.PublishBotState(BotState.Stopped);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
@@ -138,6 +145,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         CanStart = true;
         BotStatusText = "Notfall-Stop ausgefuehrt";
         BotStatusColor = "#EF4444";
+        StopEquitySnapshotTimer();
 
         // Alle Positionen schliessen
         OpenPositions.Clear();
@@ -195,6 +203,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         _refreshTimer?.Dispose();
+        _equityTimer?.Dispose();
     }
 
     /// <summary>
@@ -252,6 +261,55 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 await LoadBtcDataAsync();
         }
         catch (OperationCanceledException) { }
+    }
+
+    /// <summary>
+    /// Startet periodische Equity-Snapshots (alle 5 Minuten) in die DB.
+    /// </summary>
+    private async Task StartEquitySnapshotTimerAsync()
+    {
+        if (_dbService == null) return;
+
+        StopEquitySnapshotTimer();
+        _equityTimer = new PeriodicTimer(TimeSpan.FromMinutes(5));
+        try
+        {
+            // Ersten Snapshot sofort speichern
+            await SaveEquitySnapshotAsync();
+
+            while (await _equityTimer.WaitForNextTickAsync())
+                await SaveEquitySnapshotAsync();
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    /// <summary>
+    /// Speichert einen einzelnen Equity-Snapshot in der DB.
+    /// </summary>
+    private async Task SaveEquitySnapshotAsync()
+    {
+        if (_dbService == null || !HasAccountData) return;
+        try
+        {
+            var point = new EquityPoint(DateTime.UtcNow, Balance + UnrealizedPnl);
+            await _dbService.SaveEquitySnapshotAsync(point);
+
+            // Auch in die ObservableCollection für das UI
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => EquityData.Add(point));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Equity-Snapshot speichern fehlgeschlagen: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Stoppt den Equity-Snapshot-Timer.
+    /// </summary>
+    private void StopEquitySnapshotTimer()
+    {
+        _equityTimer?.Dispose();
+        _equityTimer = null;
     }
 }
 

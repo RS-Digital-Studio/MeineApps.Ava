@@ -6,15 +6,16 @@ using BingXBot.Engine.Indicators;
 namespace BingXBot.Engine.Strategies;
 
 /// <summary>
-/// MACD-Strategie (Trend-Following).
-/// Long wenn MACD-Linie über Signal-Linie kreuzt UND Histogram positiv wird.
-/// Short umgekehrt.
-/// ATR-basierter Stop-Loss und Take-Profit.
+/// MACD + Histogram-Momentum-Strategie (Krypto-optimiert).
+/// Statt einfachem MACD-Cross (zu viele Fehlsignale, Signal kommt zu spät):
+/// - Histogram-Momentum: Long wenn Histogram negativ→positiv wechselt UND 2 steigende Balken
+/// - Zero-Line-Cross: Stärkeres Signal wenn MACD die Null-Linie kreuzt
+/// - Trend-Kontext: Nur Long wenn MACD > 0 (Aufwärtstrend), nur Short wenn MACD < 0
 /// </summary>
 public class MacdStrategy : IStrategy
 {
     public string Name => "MACD";
-    public string Description => "Long bei bullischem MACD-Cross + positivem Histogram, Short umgekehrt";
+    public string Description => "MACD Histogram-Momentum + Zero-Line-Cross + Trend-Kontext (Krypto-optimiert)";
 
     private int _fastPeriod = 12;
     private int _slowPeriod = 26;
@@ -34,7 +35,7 @@ public class MacdStrategy : IStrategy
     public SignalResult Evaluate(MarketContext context)
     {
         var candles = context.Candles;
-        // MACD braucht slowPeriod + signalPeriod Warmup
+        // MACD braucht slowPeriod + signalPeriod + 3 extra für Histogram-Momentum
         if (candles.Count < _slowPeriod + _signalPeriod + 5)
             return new SignalResult(Signal.None, 0m, null, null, null, "Zu wenig Daten");
 
@@ -42,44 +43,81 @@ public class MacdStrategy : IStrategy
         var atr = IndicatorHelper.CalculateAtr(candles, _atrPeriod);
 
         var lastMacd = macd[^1];
-        var lastSignal = signal[^1];
         var lastHist = histogram[^1];
-        var prevMacd = macd[^2];
-        var prevSignal = signal[^2];
         var prevHist = histogram[^2];
+        var prevPrevHist = histogram.Count >= 3 ? histogram[^3] : null;
+        var prevMacd = macd[^2];
         var lastAtr = atr[^1];
 
-        if (lastMacd == null || lastSignal == null || lastHist == null ||
-            prevMacd == null || prevSignal == null || prevHist == null || lastAtr == null)
+        if (lastMacd == null || lastHist == null || prevHist == null || prevMacd == null || lastAtr == null)
             return new SignalResult(Signal.None, 0m, null, null, null, "Indikatoren nicht bereit");
 
         var currentPrice = context.CurrentTicker.LastPrice;
         var atrValue = lastAtr.Value;
 
-        // Bullish: MACD kreuzt über Signal UND Histogram wird positiv
-        if (prevMacd <= prevSignal && lastMacd > lastSignal && lastHist > 0)
+        // 1. Zero-Line-Cross (stärkstes Signal): MACD kreuzt die Null-Linie
+        if (prevMacd <= 0 && lastMacd > 0)
         {
-            var sl = currentPrice - atrValue * 1.5m;
-            var tp = currentPrice + atrValue * 1.5m * _tpMultiplier;
-            return new SignalResult(Signal.Long, 0.75m, currentPrice, sl, tp,
-                $"MACD kreuzt über Signal, Histogram {lastHist.Value:F4} positiv");
+            // Bullish: MACD von negativ zu positiv
+            var sl = currentPrice - atrValue * 2m;
+            var tp = currentPrice + atrValue * 2m * _tpMultiplier;
+            return new SignalResult(Signal.Long, 0.9m, currentPrice, sl, tp,
+                $"MACD Zero-Line-Cross bullish (MACD: {lastMacd.Value:F4})");
         }
 
-        // Bearish: MACD kreuzt unter Signal UND Histogram wird negativ
-        if (prevMacd >= prevSignal && lastMacd < lastSignal && lastHist < 0)
+        if (prevMacd >= 0 && lastMacd < 0)
         {
-            var sl = currentPrice + atrValue * 1.5m;
-            var tp = currentPrice - atrValue * 1.5m * _tpMultiplier;
-            return new SignalResult(Signal.Short, 0.75m, currentPrice, sl, tp,
-                $"MACD kreuzt unter Signal, Histogram {lastHist.Value:F4} negativ");
+            // Bearish: MACD von positiv zu negativ
+            var sl = currentPrice + atrValue * 2m;
+            var tp = currentPrice - atrValue * 2m * _tpMultiplier;
+            return new SignalResult(Signal.Short, 0.9m, currentPrice, sl, tp,
+                $"MACD Zero-Line-Cross bearish (MACD: {lastMacd.Value:F4})");
+        }
+
+        // 2. Histogram-Momentum: Wechsel + 2 aufeinanderfolgende steigende/fallende Balken
+        var histogramRising = lastHist > prevHist;
+        var histogramConsecutiveRising = prevPrevHist != null && prevHist > prevPrevHist && lastHist > prevHist;
+        var histogramFalling = lastHist < prevHist;
+        var histogramConsecutiveFalling = prevPrevHist != null && prevHist < prevPrevHist && lastHist < prevHist;
+
+        // Long: Histogram wechselt von negativ zu positiv UND steigt konsekutiv
+        if (prevHist <= 0 && lastHist > 0 && histogramRising)
+        {
+            // Trend-Kontext: Nur Long wenn MACD > 0 (Aufwärtstrend) oder gerade aufbauend
+            if (lastMacd >= 0 || histogramConsecutiveRising)
+            {
+                var confidence = lastMacd > 0 ? 0.8m : 0.7m;
+                if (histogramConsecutiveRising) confidence += 0.05m;
+
+                var sl = currentPrice - atrValue * 1.5m;
+                var tp = currentPrice + atrValue * 1.5m * _tpMultiplier;
+                return new SignalResult(Signal.Long, Math.Min(1m, confidence), currentPrice, sl, tp,
+                    $"MACD Histogram bullish (Hist: {lastHist.Value:F4}, MACD: {lastMacd.Value:F4})");
+            }
+        }
+
+        // Short: Histogram wechselt von positiv zu negativ UND fällt konsekutiv
+        if (prevHist >= 0 && lastHist < 0 && histogramFalling)
+        {
+            // Trend-Kontext: Nur Short wenn MACD < 0 (Abwärtstrend) oder gerade abbauend
+            if (lastMacd <= 0 || histogramConsecutiveFalling)
+            {
+                var confidence = lastMacd < 0 ? 0.8m : 0.7m;
+                if (histogramConsecutiveFalling) confidence += 0.05m;
+
+                var sl = currentPrice + atrValue * 1.5m;
+                var tp = currentPrice - atrValue * 1.5m * _tpMultiplier;
+                return new SignalResult(Signal.Short, Math.Min(1m, confidence), currentPrice, sl, tp,
+                    $"MACD Histogram bearish (Hist: {lastHist.Value:F4}, MACD: {lastMacd.Value:F4})");
+            }
         }
 
         return new SignalResult(Signal.None, 0m, null, null, null,
-            $"Kein MACD-Cross (MACD: {lastMacd.Value:F4}, Signal: {lastSignal.Value:F4})");
+            $"Kein MACD-Signal (MACD: {lastMacd.Value:F4}, Hist: {lastHist.Value:F4})");
     }
 
-    public void WarmUp(IReadOnlyList<Candle> history) { /* Warmup-Logik bei Bedarf */ }
-    public void Reset() { /* State zuruecksetzen bei Bedarf */ }
+    public void WarmUp(IReadOnlyList<Candle> history) { }
+    public void Reset() { }
 
     public IStrategy Clone() => new MacdStrategy
     {

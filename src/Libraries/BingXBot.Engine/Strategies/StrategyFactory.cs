@@ -9,16 +9,18 @@ namespace BingXBot.Engine.Strategies;
 public static class StrategyFactory
 {
     /// <summary>Alle verfügbaren Strategie-Namen.</summary>
-    public static readonly string[] AvailableStrategies = ["EMA Cross", "RSI", "Bollinger Bands", "MACD", "Grid"];
+    public static readonly string[] AvailableStrategies =
+        ["Trend-Following", "EMA Cross", "RSI Momentum", "Bollinger Breakout", "MACD", "Smart Grid"];
 
     /// <summary>Erstellt eine neue IStrategy-Instanz basierend auf dem Namen.</summary>
     public static IStrategy Create(string name) => name switch
     {
+        "Trend-Following" => new TrendFollowStrategy(),
         "EMA Cross" => new EmaCrossStrategy(),
-        "RSI" => new RsiStrategy(),
-        "Bollinger Bands" => new BollingerStrategy(),
+        "RSI Momentum" => new RsiStrategy(),
+        "Bollinger Breakout" => new BollingerStrategy(),
         "MACD" => new MacdStrategy(),
-        "Grid" => new GridStrategy(),
+        "Smart Grid" => new GridStrategy(),
         _ => throw new ArgumentException($"Unbekannte Strategie: {name}")
     };
 }

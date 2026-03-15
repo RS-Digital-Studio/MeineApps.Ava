@@ -16,25 +16,47 @@ Automatisierter Trading Bot mit modularem Strategie-System, Market Scanner, Back
 4 Libraries + Desktop-App:
 
 ```
-BingXBot.Core        ← Domain (Models, Enums, Interfaces, SimulatedExchange, DB-Entities)
-BingXBot.Exchange    ← BingX REST + WebSocket API Client
-BingXBot.Engine      ← Trading-Logik (Strategien, Scanner, Risk, TradingEngine)
-BingXBot.Backtest    ← Backtesting + Paper-Trading
-BingXBot.Shared      ← Avalonia UI (ViewModels, Views)
-BingXBot.Desktop     ← Desktop Entry-Point
+BingXBot.Core        <- Domain (Models, Enums, Interfaces, SimulatedExchange, DB-Entities)
+BingXBot.Exchange    <- BingX REST + WebSocket API Client
+BingXBot.Engine      <- Trading-Logik (Strategien, Scanner, Risk, TradingEngine)
+BingXBot.Backtest    <- Backtesting + Paper-Trading
+BingXBot.Shared      <- Avalonia UI (ViewModels, Views)
+BingXBot.Desktop     <- Desktop Entry-Point
 ```
 
-## Strategien
+## Strategien (6 Stück, alle Krypto-optimiert)
 
 | Strategie | Datei | Logik |
 |-----------|-------|-------|
-| EMA Cross | EmaCrossStrategy.cs | Fast/Slow EMA Kreuzung |
-| RSI | RsiStrategy.cs | Oversold/Overbought |
-| Bollinger | BollingerStrategy.cs | Band-Touch Mean-Reversion |
-| MACD | MacdStrategy.cs | MACD/Signal-Linie Cross |
-| Grid | GridStrategy.cs | Range-Trading mit Levels |
+| Trend-Following | TrendFollowStrategy.cs | Multi-Indikator (EMA+RSI+MACD+Volume), 5 Bedingungen, Confidence-basiert |
+| EMA Cross | EmaCrossStrategy.cs | EMA-Cross + Volume + EMA200 Trend-Filter + ATR-Volatilitätsfilter |
+| RSI Momentum | RsiStrategy.cs | RSI als Momentum-Indikator + Divergenz-Erkennung + Volume-Konfirmation |
+| Bollinger Breakout | BollingerStrategy.cs | Squeeze-Erkennung + Breakout + Volume-Konfirmation |
+| MACD | MacdStrategy.cs | Histogram-Momentum + Zero-Line-Cross + Trend-Kontext |
+| Smart Grid | GridStrategy.cs | Dynamische Grenzen via Bollinger, nur in Range-Märkten (EMA+ATR Trend-Check) |
 
 Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Support via `StrategyManager`.
+
+**Krypto-Optimierungen (alle Strategien):**
+- Volume-Konfirmation (Signal nur bei überdurchschnittlichem Volumen)
+- ATR-basierte SL/TP (angepasst an Krypto-Volatilität)
+- Trend-Filter (kein Counter-Trend-Trading)
+- Keine einfache Mean-Reversion (gefährlich bei Krypto-Trends)
+
+**Strategie-Auswahl im Dashboard:**
+- Dropdown im Bot-Control-Bereich
+- Default: Trend-Following (beste Strategie für Krypto-Futures)
+- Beschreibung wird automatisch angezeigt
+- Gesperrt während Bot läuft
+
+## Paper-Trading (PaperTradingService)
+
+Echter Paper-Trading-Service mit REST-Polling:
+- Alle 30 Sekunden: Ticker holen, Scanner filtern, Klines laden
+- Strategie evaluieren, RiskManager prüfen, Order auf SimulatedExchange platzieren
+- Account-Update im Dashboard alle 5 Sekunden
+- Events über BotEventBus (Trades, Logs, Account-Updates)
+- Datei: `Services/PaperTradingService.cs`
 
 ## Risikomanagement
 
@@ -49,7 +71,7 @@ Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Suppo
 
 | View | Zweck | Engine-Verdrahtung |
 |------|-------|--------------------|
-| Dashboard | Balance, Positionen, Bot-Controls, Equity-Chart, BTC-Live-Candlestick-Chart | BotEventBus, IPublicMarketDataClient (Klines), Auto-Refresh 60s |
+| Dashboard | Balance, Positionen, Bot-Controls, Strategie-Auswahl, Equity-Chart, BTC-Live-Candlestick-Chart | BotEventBus, StrategyManager, PaperTradingService, IPublicMarketDataClient, Auto-Refresh |
 | Scanner | Live-Scan mit Volumen/Momentum-Filter | BotEventBus, ScannerSettings, IMarketScanner (optional) |
 | Strategie | Auswahl + dynamischer Parameter-Editor + Parameter-Rückschreibung | BotEventBus, StrategyManager, IStrategy-Instanzen |
 | Backtest | Historischer Test mit PerformanceReport, publiziert Ergebnisse an TradeHistory + Log | BotEventBus, BacktestEngine, RiskManager, SimulatedExchange |
@@ -71,10 +93,10 @@ Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Suppo
 
 | Event | Publisher | Subscriber |
 |-------|-----------|------------|
-| `TradeCompleted` | DashboardVM (Bot-Trades) | TradeHistoryVM |
+| `TradeCompleted` | DashboardVM (Bot-Trades), PaperTradingService | TradeHistoryVM |
 | `BacktestCompleted` | BacktestVM | TradeHistoryVM |
-| `LogEmitted` | Alle ViewModels | LogVM |
-| `BotStateChanged` | DashboardVM | MainVM (Status-Bar) |
+| `LogEmitted` | Alle ViewModels, PaperTradingService | LogVM |
+| `BotStateChanged` | DashboardVM, PaperTradingService | MainVM (Status-Bar) |
 
 Datei: `Services/BotEventBus.cs`
 
@@ -85,7 +107,7 @@ Alle ViewModels bekommen ihre Engine-Dependencies per Constructor Injection:
 | ViewModel | DI-Parameter |
 |-----------|--------------|
 | MainViewModel | BotEventBus |
-| DashboardViewModel | BotEventBus, IPublicMarketDataClient?, BotDatabaseService? |
+| DashboardViewModel | BotEventBus, StrategyManager, PaperTradingService, IPublicMarketDataClient?, BotDatabaseService? |
 | StrategyViewModel | StrategyManager, BotEventBus |
 | BacktestViewModel | RiskSettings, BotEventBus, IPublicMarketDataClient?, BotDatabaseService? |
 | TradeHistoryViewModel | BotEventBus, BotDatabaseService? |
@@ -124,7 +146,7 @@ SQLite-basierte Persistenz für Trades, Equity-Snapshots, Logs und Settings:
 
 Alle DB-Parameter sind optional (`BotDatabaseService?`), damit Tests ohne DB funktionieren.
 
-## Tests (137 Tests)
+## Tests (156 Tests)
 
 | Datei | Tests | Beschreibung |
 |-------|-------|--------------|
@@ -132,9 +154,9 @@ Alle DB-Parameter sind optional (`BotDatabaseService?`), damit Tests ohne DB fun
 | Core/ConfigTests.cs | Konfiguration | Settings-Defaults |
 | Core/SimulatedExchangeTests.cs | SimulatedExchange | Order-Ausführung |
 | Core/TimeFrameHelperTests.cs | TimeFrame-Konvertierung | IntervalString, Duration |
-| Engine/EmaCrossStrategyTests.cs | EMA Cross | Signal-Generierung |
-| Engine/StrategyTests.cs | Alle Strategien | Gemeinsame Tests |
-| Engine/StrategyFactoryTests.cs | StrategyFactory | Erstellung, Clone, Unknown |
+| Engine/EmaCrossStrategyTests.cs | EMA Cross | Signal-Generierung, Krypto-Filter |
+| Engine/StrategyTests.cs | Alle 6 Strategien | Gemeinsame Tests + strategie-spezifische |
+| Engine/StrategyFactoryTests.cs | StrategyFactory | Erstellung, Clone, Unknown, alte Namen |
 | Engine/StrategyManagerTests.cs | StrategyManager | Multi-Symbol |
 | Engine/IndicatorHelperTests.cs | Indikatoren | EMA, RSI, BB, MACD |
 | Engine/CorrelationCheckerTests.cs | Korrelation | Pearson-Berechnung |

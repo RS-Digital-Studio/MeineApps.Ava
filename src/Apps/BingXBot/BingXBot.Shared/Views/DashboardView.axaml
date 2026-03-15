@@ -135,22 +135,39 @@
               </Border>
             </StackPanel>
 
-            <!-- Buttons -->
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Classes="BotButton BotStart" Content="Start"
-                      Command="{Binding StartBotCommand}"
-                      IsEnabled="{Binding CanStart}" />
-              <Button Classes="BotButton BotPause" Content="Pause"
-                      Command="{Binding PauseBotCommand}"
-                      IsEnabled="{Binding IsRunning}" />
-              <Button Classes="BotButton BotStop" Content="Stop"
-                      Command="{Binding StopBotCommand}"
-                      IsEnabled="{Binding IsRunning}" />
-              <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="8,4" />
-              <Button Classes="BotButton BotEmergency" Content="NOTFALL-STOP"
-                      Command="{Binding EmergencyStopCommand}"
-                      IsEnabled="{Binding IsRunning}" />
+            <!-- Strategie-Auswahl + Buttons -->
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <!-- Strategie-Dropdown -->
+              <StackPanel Spacing="2">
+                <TextBlock Text="Strategie" FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                <ComboBox ItemsSource="{Binding AvailableStrategies}"
+                          SelectedItem="{Binding SelectedStrategy}"
+                          IsEnabled="{Binding !IsRunning}"
+                          MinWidth="180" FontSize="12" />
+              </StackPanel>
+
+              <!-- Buttons -->
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                <Button Classes="BotButton BotStart" Content="Start"
+                        Command="{Binding StartBotCommand}"
+                        IsEnabled="{Binding CanStart}" />
+                <Button Classes="BotButton BotPause" Content="Pause"
+                        Command="{Binding PauseBotCommand}"
+                        IsEnabled="{Binding IsRunning}" />
+                <Button Classes="BotButton BotStop" Content="Stop"
+                        Command="{Binding StopBotCommand}"
+                        IsEnabled="{Binding IsRunning}" />
+                <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="8,4" />
+                <Button Classes="BotButton BotEmergency" Content="NOTFALL-STOP"
+                        Command="{Binding EmergencyStopCommand}"
+                        IsEnabled="{Binding IsRunning}" />
+              </StackPanel>
             </StackPanel>
+
+            <!-- Strategie-Beschreibung -->
+            <TextBlock Text="{Binding StrategyDescription}" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       TextWrapping="Wrap" MaxWidth="500" />
           </StackPanel>
         </Border>
 

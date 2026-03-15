@@ -68,7 +68,7 @@ public class StrategyManagerTests
         var rsi = manager.GetOrCreateForSymbol("BTC-USDT");
 
         emaCross.Name.Should().Be("EMA Cross");
-        rsi.Name.Should().Be("RSI");
+        rsi.Name.Should().Be("RSI Momentum");
         emaCross.Should().NotBeSameAs(rsi);
     }
 

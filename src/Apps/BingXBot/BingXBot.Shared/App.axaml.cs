@@ -83,6 +83,9 @@ public partial class App : Application
         // Engine
         services.AddSingleton<StrategyManager>();
 
+        // Paper-Trading Service
+        services.AddSingleton<PaperTradingService>();
+
         // ViewModels (Singleton)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<DashboardViewModel>();

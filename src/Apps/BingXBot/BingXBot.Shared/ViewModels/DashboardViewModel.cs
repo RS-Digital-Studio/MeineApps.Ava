@@ -1,6 +1,8 @@
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Engine;
+using BingXBot.Engine.Strategies;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,13 +14,17 @@ namespace BingXBot.ViewModels;
 /// ViewModel fuer das Dashboard - ehrliche Zustandsanzeige ohne Fake-Daten.
 /// Zeigt nur echte Daten an (BTC-Kurs live, Account nur wenn Bot laeuft).
 /// Publiziert Bot-Status und Log-Einträge über den BotEventBus.
+/// Enthält Strategie-Auswahl und PaperTradingService-Verdrahtung.
 /// </summary>
 public partial class DashboardViewModel : ObservableObject, IDisposable
 {
     private readonly IPublicMarketDataClient? _publicClient;
     private readonly BotEventBus _eventBus;
     private readonly BotDatabaseService? _dbService;
+    private readonly StrategyManager _strategyManager;
+    private readonly PaperTradingService _paperService;
     private PeriodicTimer? _equityTimer;
+    private PeriodicTimer? _accountUpdateTimer;
 
     // === Modus ===
     [ObservableProperty] private bool _isPaperMode = true;
@@ -30,6 +36,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _botStatusColor = "#EF4444"; // Rot
     [ObservableProperty] private bool _isRunning;
     [ObservableProperty] private bool _canStart = true;
+
+    // === Strategie-Auswahl (direkt im Dashboard) ===
+    [ObservableProperty] private string _selectedStrategy = "Trend-Following";
+    [ObservableProperty] private string _strategyDescription = "";
+    public string[] AvailableStrategies => StrategyFactory.AvailableStrategies;
 
     // === Account (nur anzeigen wenn Daten vorhanden) ===
     [ObservableProperty] private bool _hasAccountData;
@@ -57,9 +68,16 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _showWelcomeHint = true;
     [ObservableProperty] private string _welcomeHintText = "Willkommen! Starte mit einem Backtest um eine Strategie zu testen, oder konfiguriere deine API-Keys in den Einstellungen.";
 
-    public DashboardViewModel(BotEventBus eventBus, IPublicMarketDataClient? publicClient = null, BotDatabaseService? dbService = null)
+    public DashboardViewModel(
+        BotEventBus eventBus,
+        StrategyManager strategyManager,
+        PaperTradingService paperService,
+        IPublicMarketDataClient? publicClient = null,
+        BotDatabaseService? dbService = null)
     {
         _eventBus = eventBus;
+        _strategyManager = strategyManager;
+        _paperService = paperService;
         _publicClient = publicClient;
         _dbService = dbService;
 
@@ -67,9 +85,25 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         HasAccountData = false;
         HasOpenPositions = false;
 
+        // Initiale Strategie-Beschreibung laden
+        OnSelectedStrategyChanged(SelectedStrategy);
+
         // BTC-Daten laden (echt, kein Fake)
         _ = LoadBtcDataAsync();
         _ = StartAutoRefreshAsync();
+    }
+
+    partial void OnSelectedStrategyChanged(string value)
+    {
+        try
+        {
+            var strategy = StrategyFactory.Create(value);
+            StrategyDescription = strategy.Description;
+        }
+        catch
+        {
+            StrategyDescription = "";
+        }
     }
 
     [RelayCommand]
@@ -77,14 +111,23 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     {
         if (IsPaperMode)
         {
-            // Paper-Modus: Simuliertes Trading starten
+            // Strategie aktivieren
+            var strategy = StrategyFactory.Create(SelectedStrategy);
+            _strategyManager.SetStrategy(strategy);
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+                $"Strategie: {SelectedStrategy}"));
+
+            // Paper-Trading-Service starten
+            _paperService.Start(10_000m);
+
             IsRunning = true;
             CanStart = false;
             BotStatusText = "Laeuft (Paper)";
             BotStatusColor = "#10B981"; // Gruen
             ShowWelcomeHint = false;
 
-            // Paper-Account mit 10.000 USDT Startkapital
+            // Account-Daten anzeigen
             HasAccountData = true;
             Balance = 10_000m;
             AvailableBalance = 10_000m;
@@ -94,10 +137,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             // Equity-Snapshots alle 5 Minuten in DB persistieren
             _ = StartEquitySnapshotTimerAsync();
 
-            // Status über EventBus publizieren
-            _eventBus.PublishBotState(BotState.Running);
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-                "Paper-Trading gestartet mit 10.000 USDT Startkapital"));
+            // Account-Update Timer starten (alle 5 Sekunden)
+            _ = StartAccountUpdateAsync();
         }
         else
         {
@@ -124,37 +165,39 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void StopBot()
+    private async void StopBot()
     {
+        _accountUpdateTimer?.Dispose();
+        _accountUpdateTimer = null;
+        StopEquitySnapshotTimer();
+
+        await _paperService.StopAsync();
+
         IsRunning = false;
         CanStart = true;
         BotStatusText = "Gestoppt";
         BotStatusColor = "#EF4444"; // Rot
         PositionsStatusText = "Keine offenen Positionen";
-        StopEquitySnapshotTimer();
-
-        _eventBus.PublishBotState(BotState.Stopped);
-        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-            "Bot gestoppt"));
     }
 
     [RelayCommand]
     private void EmergencyStop()
     {
+        _accountUpdateTimer?.Dispose();
+        _accountUpdateTimer = null;
+        StopEquitySnapshotTimer();
+
+        _paperService.EmergencyStop();
+
         IsRunning = false;
         CanStart = true;
         BotStatusText = "Notfall-Stop ausgefuehrt";
         BotStatusColor = "#EF4444";
-        StopEquitySnapshotTimer();
 
         // Alle Positionen schliessen
         OpenPositions.Clear();
         HasOpenPositions = false;
         PositionsStatusText = "Alle Positionen geschlossen";
-
-        _eventBus.PublishBotState(BotState.EmergencyStop);
-        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
-            "NOTFALL-STOP: Alle Positionen geschlossen, Bot gestoppt"));
     }
 
     [RelayCommand]
@@ -204,6 +247,63 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _disposed = true;
         _refreshTimer?.Dispose();
         _equityTimer?.Dispose();
+        _accountUpdateTimer?.Dispose();
+    }
+
+    /// <summary>
+    /// Aktualisiert Account-Daten und offene Positionen alle 5 Sekunden vom PaperTradingService.
+    /// </summary>
+    private async Task StartAccountUpdateAsync()
+    {
+        _accountUpdateTimer?.Dispose();
+        _accountUpdateTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            while (await _accountUpdateTimer.WaitForNextTickAsync())
+            {
+                if (!IsRunning || _paperService.Exchange == null) continue;
+
+                try
+                {
+                    var account = await _paperService.Exchange.GetAccountInfoAsync();
+                    var positions = await _paperService.Exchange.GetPositionsAsync();
+
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        Balance = account.Balance;
+                        AvailableBalance = account.AvailableBalance;
+                        UnrealizedPnl = account.UnrealizedPnl;
+                        TotalPnl = account.Balance - 10_000m + account.UnrealizedPnl;
+
+                        // Positionen aktualisieren
+                        OpenPositions.Clear();
+                        foreach (var p in positions)
+                        {
+                            OpenPositions.Add(new PositionDisplayItem
+                            {
+                                Symbol = p.Symbol,
+                                Side = p.Side.ToString(),
+                                EntryPrice = p.EntryPrice,
+                                MarkPrice = p.MarkPrice,
+                                Quantity = p.Quantity,
+                                Pnl = p.UnrealizedPnl,
+                                Leverage = p.Leverage
+                            });
+                        }
+                        HasOpenPositions = OpenPositions.Count > 0;
+                        PositionsStatusText = HasOpenPositions
+                            ? $"{OpenPositions.Count} offene Position(en)"
+                            : "Keine offenen Positionen";
+                    });
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Account-Update Fehler: {ex.Message}");
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
     }
 
     /// <summary>

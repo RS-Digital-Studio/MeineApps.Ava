@@ -19,8 +19,8 @@ public partial class StrategyViewModel : ObservableObject
     private readonly StrategyManager _strategyManager;
     private readonly BotEventBus _eventBus;
 
-    [ObservableProperty] private string _selectedStrategy = "EMA Cross";
-    [ObservableProperty] private string _strategyDescription = "Kreuzt Fast-EMA über Slow-EMA = Long, darunter = Short";
+    [ObservableProperty] private string _selectedStrategy = "Trend-Following";
+    [ObservableProperty] private string _strategyDescription = "Multi-Indikator Trend-Following: EMA+RSI+MACD+Volume (5 Bedingungen, Krypto-optimiert)";
     [ObservableProperty] private bool _isActive;
     [ObservableProperty] private string _statusText = "Inaktiv";
     [ObservableProperty] private string _toggleButtonText = "Aktivieren";
@@ -42,15 +42,9 @@ public partial class StrategyViewModel : ObservableObject
 
     partial void OnSelectedStrategyChanged(string value)
     {
-        StrategyDescription = value switch
-        {
-            "EMA Cross" => "Kreuzt Fast-EMA über Slow-EMA = Long, darunter = Short",
-            "RSI" => "Long bei RSI < Oversold, Short bei RSI > Overbought",
-            "Bollinger Bands" => "Long bei Preis unter unterem Band, Short bei oberem Band",
-            "MACD" => "Long bei MACD über Signal-Linie, Short umgekehrt",
-            "Grid" => "Gestaffelte Orders in einem Preisbereich",
-            _ => ""
-        };
+        // Beschreibung direkt aus der Strategie-Instanz laden
+        var tempStrategy = StrategyFactory.Create(value);
+        StrategyDescription = tempStrategy.Description;
         LoadParametersFromStrategy();
 
         // Wenn aktiv, Strategie im Manager aktualisieren

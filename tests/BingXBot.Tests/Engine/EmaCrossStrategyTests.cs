@@ -24,7 +24,8 @@ public class EmaCrossStrategyTests
     public void Evaluate_EnoughCandles_ShouldNotThrow()
     {
         var strategy = new EmaCrossStrategy();
-        var candles = TestHelper.GenerateTestCandles(100);
+        // Braucht 200+ Candles wegen EMA200 Trend-Filter
+        var candles = TestHelper.GenerateTestCandles(250);
         var context = TestHelper.CreateContext(candles);
 
         var act = () => strategy.Evaluate(context);
@@ -36,7 +37,7 @@ public class EmaCrossStrategyTests
     public void Evaluate_WithData_ShouldReturnValidSignal()
     {
         var strategy = new EmaCrossStrategy();
-        var candles = TestHelper.GenerateTestCandles(100);
+        var candles = TestHelper.GenerateTestCandles(250);
         var context = TestHelper.CreateContext(candles);
 
         var result = strategy.Evaluate(context);
@@ -46,14 +47,17 @@ public class EmaCrossStrategyTests
     }
 
     [Fact]
-    public void Parameters_ShouldContainFastAndSlowPeriod()
+    public void Parameters_ShouldContainAllNewParameters()
     {
         var strategy = new EmaCrossStrategy();
 
         strategy.Parameters.Should().Contain(p => p.Name == "FastPeriod");
         strategy.Parameters.Should().Contain(p => p.Name == "SlowPeriod");
+        strategy.Parameters.Should().Contain(p => p.Name == "TrendPeriod");
         strategy.Parameters.Should().Contain(p => p.Name == "AtrPeriod");
+        strategy.Parameters.Should().Contain(p => p.Name == "VolumePeriod");
         strategy.Parameters.Should().Contain(p => p.Name == "TpMultiplier");
+        strategy.Parameters.Should().Contain(p => p.Name == "MinAtrPercent");
     }
 
     [Fact]
@@ -72,6 +76,22 @@ public class EmaCrossStrategyTests
     {
         var strategy = new EmaCrossStrategy();
         strategy.Name.Should().Be("EMA Cross");
+    }
+
+    [Fact]
+    public void Description_ShouldMentionKrypto()
+    {
+        var strategy = new EmaCrossStrategy();
+        strategy.Description.Should().Contain("Krypto");
+    }
+
+    [Fact]
+    public void DefaultPeriods_ShouldBeBroader()
+    {
+        var strategy = new EmaCrossStrategy();
+        // Fast=12, Slow=26 statt 9/21 (weniger Noise)
+        strategy.Parameters.Should().Contain(p => p.Name == "FastPeriod" && (int)p.DefaultValue == 12);
+        strategy.Parameters.Should().Contain(p => p.Name == "SlowPeriod" && (int)p.DefaultValue == 26);
     }
 
     [Fact]

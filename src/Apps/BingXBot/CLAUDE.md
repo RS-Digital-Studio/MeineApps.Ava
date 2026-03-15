@@ -61,6 +61,25 @@ Echter Paper-Trading-Service mit REST-Polling (implementiert IDisposable):
 - Events ueber BotEventBus (Trades, Logs, Account-Updates)
 - Datei: `Services/PaperTradingService.cs`
 
+## Live-Trading (v1.0 - Nur Anzeige)
+
+Live-Modus verbindet sich mit echtem BingX-Account:
+- BingXRestClient wird zur Laufzeit mit gespeicherten API-Keys erstellt
+- Verbindungstest: GetAccountInfoAsync() beim Start
+- Echte Balance + Positionen werden alle 5 Sekunden aktualisiert
+- **v1.0: NUR Anzeige, KEIN automatisches Handeln** (zu riskant ohne ausreichendes Testing)
+- Notfall-Stop trennt Verbindung, schliesst aber KEINE echten Positionen (manuell auf BingX)
+- SettingsViewModel feuert `ApiKeysAvailableChanged` Event bei Save/Delete
+
+## Activity-Feed (Dashboard)
+
+Live-Feed der letzten 20 Bot-Aktionen direkt im Dashboard:
+- Subscribet auf `BotEventBus.LogEmitted` (filtert Debug-Level aus)
+- ActivityItem Record: Time, Category, Message, Level, Symbol
+- Farbcodiert: Rot=Error, Amber=Warning, Gruen=Trade, Grau=Info
+- Max 200px Höhe, scrollbar
+- Zeigt "Bot ist gestoppt" wenn nicht aktiv
+
 ## Risikomanagement
 
 - Position-Sizing: %-basiert, Kelly-Criterion, ATR-Sizing
@@ -74,7 +93,7 @@ Echter Paper-Trading-Service mit REST-Polling (implementiert IDisposable):
 
 | View | Zweck | Engine-Verdrahtung |
 |------|-------|--------------------|
-| Dashboard | Balance, Positionen, Bot-Controls, Strategie-Auswahl, Equity-Chart, BTC-Live-Candlestick-Chart | BotEventBus, StrategyManager, PaperTradingService, IPublicMarketDataClient, Auto-Refresh |
+| Dashboard | Balance, Positionen, Activity-Feed, Bot-Controls, Strategie-Auswahl, Equity-Chart, BTC-Live-Candlestick-Chart, Live-Trading (nur Anzeige) | BotEventBus, StrategyManager, PaperTradingService, IPublicMarketDataClient, ISecureStorageService, BingXRestClient (Live), Auto-Refresh |
 | Scanner | Live-Scan mit Volumen/Momentum-Filter | BotEventBus, ScannerSettings, IMarketScanner (optional) |
 | Strategie | Auswahl + dynamischer Parameter-Editor + Parameter-Rückschreibung | BotEventBus, StrategyManager, IStrategy-Instanzen |
 | Backtest | Historischer Test mit PerformanceReport, publiziert Ergebnisse an TradeHistory + Log | BotEventBus, BacktestEngine, RiskManager, SimulatedExchange |
@@ -98,7 +117,7 @@ Echter Paper-Trading-Service mit REST-Polling (implementiert IDisposable):
 |-------|-----------|------------|
 | `TradeCompleted` | DashboardVM (Bot-Trades), PaperTradingService | TradeHistoryVM |
 | `BacktestCompleted` | BacktestVM | TradeHistoryVM |
-| `LogEmitted` | Alle ViewModels, PaperTradingService | LogVM |
+| `LogEmitted` | Alle ViewModels, PaperTradingService | LogVM, DashboardVM (Activity-Feed) |
 | `BotStateChanged` | DashboardVM, PaperTradingService | MainVM (Status-Bar) |
 
 Datei: `Services/BotEventBus.cs`
@@ -110,7 +129,7 @@ Alle ViewModels bekommen ihre Engine-Dependencies per Constructor Injection:
 | ViewModel | DI-Parameter |
 |-----------|--------------|
 | MainViewModel | BotEventBus |
-| DashboardViewModel | BotEventBus, StrategyManager, PaperTradingService, IPublicMarketDataClient?, BotDatabaseService? |
+| DashboardViewModel | BotEventBus, StrategyManager, PaperTradingService, IPublicMarketDataClient?, BotDatabaseService?, ISecureStorageService? |
 | StrategyViewModel | StrategyManager, BotEventBus |
 | BacktestViewModel | RiskSettings, BotEventBus, IPublicMarketDataClient?, BotDatabaseService? |
 | TradeHistoryViewModel | BotEventBus, BotDatabaseService? |

@@ -20,6 +20,9 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IExchangeClient? _exchangeClient;
     private readonly BotEventBus _eventBus;
 
+    /// <summary>Event wenn sich der API-Key-Status ändert (true = vorhanden, false = gelöscht).</summary>
+    public event EventHandler<bool>? ApiKeysAvailableChanged;
+
     [ObservableProperty] private string _apiKey = "";
     [ObservableProperty] private string _apiSecret = "";
     [ObservableProperty] private bool _hasCredentials;
@@ -110,6 +113,8 @@ public partial class SettingsViewModel : ObservableObject
 
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
                     "API-Credentials gespeichert"));
+
+                ApiKeysAvailableChanged?.Invoke(this, true);
             }
             catch (Exception ex)
             {
@@ -149,6 +154,8 @@ public partial class SettingsViewModel : ObservableObject
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
             "API-Credentials gelöscht"));
+
+        ApiKeysAvailableChanged?.Invoke(this, false);
     }
 
     [RelayCommand]

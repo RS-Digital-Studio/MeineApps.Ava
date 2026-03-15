@@ -7,13 +7,18 @@
 
   <DockPanel>
 
-    <!-- Titel -->
-    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="0,0,0,20">
-      <mi:MaterialIcon Kind="History" Width="28" Height="28"
-                       Foreground="{DynamicResource AppPrimaryBrush}" />
-      <TextBlock Text="Backtest" FontSize="22" FontWeight="Bold"
-                 Foreground="{DynamicResource TextPrimaryBrush}"
-                 VerticalAlignment="Center" />
+    <!-- Titel + Erklärung -->
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,20">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <mi:MaterialIcon Kind="History" Width="28" Height="28"
+                         Foreground="{DynamicResource AppPrimaryBrush}" />
+        <TextBlock Text="Backtest" FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   VerticalAlignment="Center" />
+      </StackPanel>
+      <TextBlock Text="Teste eine Strategie gegen historische Marktdaten, um zu sehen wie sie performt hätte."
+                 FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                 TextWrapping="Wrap" Margin="40,0,0,0" />
     </StackPanel>
 
     <!-- Trade-Liste unten -->
@@ -243,12 +248,17 @@
         <!-- Kein Ergebnis: Platzhalter -->
         <StackPanel IsVisible="{Binding !HasResult}"
                     VerticalAlignment="Center" HorizontalAlignment="Center"
-                    Spacing="8">
+                    Spacing="12">
           <mi:MaterialIcon Kind="ChartBoxOutline" Width="48" Height="48"
                            Foreground="{DynamicResource TextMutedBrush}" Opacity="0.4"
                            HorizontalAlignment="Center" />
-          <TextBlock Text="Backtest starten um Ergebnisse zu sehen" FontSize="13"
+          <TextBlock Text="Starte einen Backtest um Ergebnisse zu sehen"
+                     FontSize="14" FontWeight="SemiBold"
                      Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center" />
+          <TextBlock Text="Wähle links ein Symbol, eine Strategie und einen Zeitraum aus."
+                     FontSize="12"
+                     Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7"
                      HorizontalAlignment="Center" />
         </StackPanel>
 
@@ -258,20 +268,25 @@
               ColumnDefinitions="*,12,*,12,*,12,*">
 
           <!-- Zeile 1: P&L, WinRate, Max DD, Sharpe -->
-          <!-- P&L -->
+          <!-- P&L (grün bei Gewinn, rot bei Verlust) -->
           <Border Grid.Row="0" Grid.Column="0"
                   Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="8" Padding="16,12">
             <StackPanel Spacing="4">
               <TextBlock Text="Gesamt-P&amp;L" FontSize="11"
                          Foreground="{DynamicResource TextMutedBrush}" />
+              <!-- Gewinn -->
               <TextBlock Text="{Binding TotalPnl, StringFormat={}{0:+0.00;-0.00} $}"
                          FontSize="20" FontWeight="Bold"
-                         Foreground="{DynamicResource SuccessBrush}" />
+                         Foreground="{DynamicResource SuccessBrush}"
+                         IsVisible="{Binding TotalPnl, FallbackValue=0,
+                           Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <TextBlock Text="Gewinn / Verlust über alle Trades"
+                         FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" />
             </StackPanel>
           </Border>
 
-          <!-- WinRate -->
+          <!-- WinRate (grün wenn >50%, sonst rot) -->
           <Border Grid.Row="0" Grid.Column="2"
                   Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="8" Padding="16,12">
@@ -281,6 +296,8 @@
               <TextBlock Text="{Binding WinRate, StringFormat={}{0:F1}%}"
                          FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="Anteil der Trades mit Gewinn"
+                         FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" />
             </StackPanel>
           </Border>
 
@@ -294,6 +311,8 @@
               <TextBlock Text="{Binding MaxDrawdown, StringFormat={}{0:F1}%}"
                          FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource ErrorBrush}" />
+              <TextBlock Text="Größter Rückgang vom Höchststand"
+                         FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" />
             </StackPanel>
           </Border>
 
@@ -307,6 +326,8 @@
               <TextBlock Text="{Binding SharpeRatio, StringFormat={}{0:F2}}"
                          FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="Risiko-adjustierte Rendite (>1 = gut)"
+                         FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" />
             </StackPanel>
           </Border>
 
@@ -321,6 +342,8 @@
               <TextBlock Text="{Binding ProfitFactor, StringFormat={}{0:F2}}"
                          FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="Verhältnis Gewinn / Verlust (>1 = profitabel)"
+                         FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" />
             </StackPanel>
           </Border>
 
@@ -334,6 +357,8 @@
               <TextBlock Text="{Binding TotalTrades}"
                          FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="Anzahl ausgeführter Trades"
+                         FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" />
             </StackPanel>
           </Border>
 
@@ -342,11 +367,13 @@
                   Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="8" Padding="16,12">
             <StackPanel Spacing="4">
-              <TextBlock Text="Avg. Win" FontSize="11"
+              <TextBlock Text="Durchschn. Gewinn" FontSize="11"
                          Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding AverageWin, StringFormat={}{0:+0.00} $}"
                          FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource SuccessBrush}" />
+              <TextBlock Text="Mittelwert der Gewinn-Trades"
+                         FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" />
             </StackPanel>
           </Border>
 
@@ -355,11 +382,13 @@
                   Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="8" Padding="16,12">
             <StackPanel Spacing="4">
-              <TextBlock Text="Avg. Loss" FontSize="11"
+              <TextBlock Text="Durchschn. Verlust" FontSize="11"
                          Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding AverageLoss, StringFormat={}{0:-0.00} $}"
                          FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource ErrorBrush}" />
+              <TextBlock Text="Mittelwert der Verlust-Trades"
+                         FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" />
             </StackPanel>
           </Border>
 

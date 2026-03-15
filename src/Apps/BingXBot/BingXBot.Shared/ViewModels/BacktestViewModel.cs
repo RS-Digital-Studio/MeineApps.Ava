@@ -26,14 +26,14 @@ public partial class BacktestViewModel : ObservableObject
     [ObservableProperty] private string _symbol = "BTC-USDT";
     [ObservableProperty] private string _selectedStrategy = "EMA Cross";
     [ObservableProperty] private string _selectedTimeFrame = "H1";
-    [ObservableProperty] private DateTimeOffset? _startDate = DateTimeOffset.Now.AddDays(-30);
-    [ObservableProperty] private DateTimeOffset? _endDate = DateTimeOffset.Now;
+    [ObservableProperty] private DateTimeOffset? _startDate = DateTimeOffset.UtcNow.AddDays(-30);
+    [ObservableProperty] private DateTimeOffset? _endDate = DateTimeOffset.UtcNow;
     [ObservableProperty] private decimal _initialBalance = 1000m;
     [ObservableProperty] private decimal _leverage = 10m;
     [ObservableProperty] private bool _isRunning;
     [ObservableProperty] private bool _isLoadingSymbols;
     [ObservableProperty] private int _progress;
-    [ObservableProperty] private string _statusText = "Bereit";
+    [ObservableProperty] private string _statusText = "Wähle ein Symbol und eine Strategie, dann starte den Backtest";
 
     // Ergebnis-Werte
     [ObservableProperty] private bool _hasResult;
@@ -122,7 +122,7 @@ public partial class BacktestViewModel : ObservableObject
     {
         IsRunning = true;
         HasResult = false;
-        StatusText = "Lade Marktdaten...";
+        StatusText = "Lade historische Daten von BingX...";
         Trades.Clear();
 
         _cts?.Cancel();
@@ -173,8 +173,13 @@ public partial class BacktestViewModel : ObservableObject
             var from = StartDate?.UtcDateTime ?? DateTime.UtcNow.AddDays(-30);
             var to = EndDate?.UtcDateTime ?? DateTime.UtcNow;
 
-            StatusText = "Backtest läuft...";
-            var progress = new Progress<int>(p => Progress = p);
+            StatusText = $"Teste {SelectedStrategy}-Strategie gegen historische Candles...";
+            var progress = new Progress<int>(p =>
+            {
+                Progress = p;
+                if (p > 0 && p < 100)
+                    StatusText = $"Teste {SelectedStrategy}-Strategie... {p}%";
+            });
 
             var report = await engine.RunAsync(
                 strategy,
@@ -210,7 +215,8 @@ public partial class BacktestViewModel : ObservableObject
             }
 
             HasResult = true;
-            StatusText = $"Abgeschlossen - {report.TotalTrades} Trades, P&L: {report.TotalPnl:F2} USDT";
+            var pnlSign = report.TotalPnl >= 0 ? "+" : "";
+            StatusText = $"Abgeschlossen: {report.TotalTrades} Trades, P&L: {pnlSign}{report.TotalPnl:F2} USDT";
         }
         catch (OperationCanceledException)
         {

@@ -184,8 +184,26 @@
             </Grid>
           </Border>
 
+          <!-- Leerer Zustand -->
+          <StackPanel IsVisible="{Binding !TradeCount}"
+                      VerticalAlignment="Center" HorizontalAlignment="Center"
+                      Spacing="12" Margin="0,40">
+            <mi:MaterialIcon Kind="SwapHorizontalCircleOutline" Width="48" Height="48"
+                             Foreground="{DynamicResource TextMutedBrush}" Opacity="0.4"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding EmptyStateText}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Abgeschlossene Trades erscheinen hier mit allen Details."
+                       FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+
           <!-- Tabellen-Body -->
-          <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ScrollViewer VerticalScrollBarVisibility="Auto"
+                        IsVisible="{Binding TradeCount}">
             <ItemsControl ItemsSource="{Binding Trades}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:TradeHistoryItem">

@@ -18,6 +18,7 @@ public partial class LogViewModel : ObservableObject
 
     [ObservableProperty] private string _selectedCategory = "Alle";
     [ObservableProperty] private int _entryCount;
+    [ObservableProperty] private string _emptyStateText = "Noch keine Log-Einträge. Starte den Bot oder einen Backtest.";
 
     public string[] Categories => new[] { "Alle", "Trade", "Scanner", "Risk", "Engine", "WebSocket", "Backtest" };
 
@@ -25,7 +26,6 @@ public partial class LogViewModel : ObservableObject
 
     public LogViewModel()
     {
-        LoadDemoLogs();
     }
 
     [RelayCommand]
@@ -33,19 +33,6 @@ public partial class LogViewModel : ObservableObject
     {
         LogEntries.Clear();
         EntryCount = 0;
-    }
-
-    private void LoadDemoLogs()
-    {
-        LogEntries.Add(new(DateTime.UtcNow.AddMinutes(-10), "Info", "Engine", "Bot gestartet im Paper-Modus"));
-        LogEntries.Add(new(DateTime.UtcNow.AddMinutes(-9), "Trade", "Scanner", "BTC-USDT: Momentum-Setup gefunden (Score: 95.5)"));
-        LogEntries.Add(new(DateTime.UtcNow.AddMinutes(-8), "Trade", "Trade", "BTC-USDT: Long 0.1 @ 50000"));
-        LogEntries.Add(new(DateTime.UtcNow.AddMinutes(-7), "Info", "Risk", "BTC-USDT: Trade erlaubt (2% Position, 10x Leverage)"));
-        LogEntries.Add(new(DateTime.UtcNow.AddMinutes(-5), "Warning", "WebSocket", "Verbindung unterbrochen, Reconnect..."));
-        LogEntries.Add(new(DateTime.UtcNow.AddMinutes(-4), "Info", "WebSocket", "Reconnect erfolgreich"));
-        LogEntries.Add(new(DateTime.UtcNow.AddMinutes(-2), "Trade", "Trade", "BTC-USDT: Position geschlossen, P&L: +120 USDT"));
-        LogEntries.Add(new(DateTime.UtcNow.AddMinutes(-1), "Error", "Engine", "API-Fehler: Rate Limit erreicht"));
-        EntryCount = LogEntries.Count;
     }
 }
 

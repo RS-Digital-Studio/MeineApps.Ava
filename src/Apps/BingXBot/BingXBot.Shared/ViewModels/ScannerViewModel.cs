@@ -26,7 +26,8 @@ public partial class ScannerViewModel : ObservableObject
     [ObservableProperty] private string _blacklistText = "";
     [ObservableProperty] private string _whitelistText = "";
     [ObservableProperty] private bool _isScanning;
-    [ObservableProperty] private string _scanStatus = "Bereit";
+    [ObservableProperty] private string _scanStatus = "Drücke 'Scannen' um den Markt zu durchsuchen";
+    [ObservableProperty] private string _scanModeDescription = "Sucht Paare mit starker Preisbewegung";
 
     public string[] TimeFrames => new[] { "M5", "M15", "M30", "H1", "H4", "D1" };
     public string[] ScanModes => new[] { "Momentum", "Reversal", "Breakout", "VolumeSurge" };
@@ -39,6 +40,24 @@ public partial class ScannerViewModel : ObservableObject
         _marketScanner = marketScanner;
         _publicClient = publicClient;
         LoadFromSettings();
+        UpdateScanModeDescription();
+    }
+
+    /// <summary>
+    /// Aktualisiert die Beschreibung des Scan-Modus bei Auswahländerung.
+    /// </summary>
+    partial void OnSelectedScanModeChanged(string value) => UpdateScanModeDescription();
+
+    private void UpdateScanModeDescription()
+    {
+        ScanModeDescription = SelectedScanMode switch
+        {
+            "Momentum" => "Sucht Paare mit starker Preisbewegung",
+            "Reversal" => "Sucht überkaufte/überverkaufte Paare",
+            "Breakout" => "Sucht Paare die aus einer Range ausbrechen",
+            "VolumeSurge" => "Sucht Paare mit ungewöhnlich hohem Volumen",
+            _ => ""
+        };
     }
 
     /// <summary>
@@ -90,7 +109,7 @@ public partial class ScannerViewModel : ObservableObject
     private async Task Scan()
     {
         IsScanning = true;
-        ScanStatus = "Scanne...";
+        ScanStatus = "Scanne BingX Perpetual-Paare...";
         Results.Clear();
 
         _cts?.Cancel();
@@ -160,7 +179,9 @@ public partial class ScannerViewModel : ObservableObject
                 Results.Add(new("SOL-USDT", 71.0m, SelectedScanMode, 15_000_000m, 8.1m));
             }
 
-            ScanStatus = $"{Results.Count} Ergebnisse";
+            ScanStatus = Results.Count > 0
+                ? $"{Results.Count} Paare gefunden die den Kriterien entsprechen"
+                : "Keine Paare gefunden - versuche die Filter anzupassen";
         }
         catch (OperationCanceledException)
         {

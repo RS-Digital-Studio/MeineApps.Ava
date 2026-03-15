@@ -7,13 +7,18 @@
 
   <DockPanel>
 
-    <!-- Titel -->
-    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="0,0,0,20">
-      <mi:MaterialIcon Kind="Radar" Width="28" Height="28"
-                       Foreground="{DynamicResource AppPrimaryBrush}" />
-      <TextBlock Text="Scanner" FontSize="22" FontWeight="Bold"
-                 Foreground="{DynamicResource TextPrimaryBrush}"
-                 VerticalAlignment="Center" />
+    <!-- Titel + Erklärung -->
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,20">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <mi:MaterialIcon Kind="Radar" Width="28" Height="28"
+                         Foreground="{DynamicResource AppPrimaryBrush}" />
+        <TextBlock Text="Scanner" FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   VerticalAlignment="Center" />
+      </StackPanel>
+      <TextBlock Text="Durchsucht alle BingX Perpetual-Paare und findet die besten Trading-Setups basierend auf Volumen, Preisbewegung und technischen Indikatoren."
+                 FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                 TextWrapping="Wrap" Margin="40,0,0,0" />
     </StackPanel>
 
     <!-- Blacklist / Whitelist unten -->
@@ -117,6 +122,10 @@
                         SelectedItem="{Binding SelectedScanMode}"
                         HorizontalAlignment="Stretch"
                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{Binding ScanModeDescription}"
+                         FontSize="11" FontStyle="Italic"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         TextWrapping="Wrap" />
             </StackPanel>
 
             <!-- Max. Ergebnisse -->
@@ -174,8 +183,13 @@
             <Grid ColumnDefinitions="*,80,100,120,80">
               <TextBlock Grid.Column="0" Text="Symbol" FontSize="12" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextMutedBrush}" />
-              <TextBlock Grid.Column="1" Text="Score" FontSize="12" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+              <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                <TextBlock Text="Score" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+                <TextBlock Text="Höher = stärker" FontSize="9"
+                           Foreground="{DynamicResource TextMutedBrush}" Opacity="0.6"
+                           HorizontalAlignment="Right" />
+              </StackPanel>
               <TextBlock Grid.Column="2" Text="Setup" FontSize="12" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
               <TextBlock Grid.Column="3" Text="Volumen 24h" FontSize="12" FontWeight="SemiBold"
@@ -188,12 +202,17 @@
           <!-- Keine Ergebnisse -->
           <StackPanel IsVisible="{Binding !Results.Count}"
                       VerticalAlignment="Center" HorizontalAlignment="Center"
-                      Spacing="8">
-            <mi:MaterialIcon Kind="DatabaseSearchOutline" Width="40" Height="40"
-                             Foreground="{DynamicResource TextMutedBrush}" Opacity="0.5"
+                      Spacing="12">
+            <mi:MaterialIcon Kind="DatabaseSearchOutline" Width="48" Height="48"
+                             Foreground="{DynamicResource TextMutedBrush}" Opacity="0.4"
                              HorizontalAlignment="Center" />
-            <TextBlock Text="Keine Ergebnisse" FontSize="13"
+            <TextBlock Text="Drücke 'Scannen' um den Markt zu durchsuchen"
+                       FontSize="14" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Der Scanner filtert nach Volumen, Preisbewegung und Scan-Modus."
+                       FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7"
                        HorizontalAlignment="Center" />
           </StackPanel>
 

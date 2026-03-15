@@ -23,23 +23,14 @@ public partial class App : Application
         RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
     }
 
-    public override async void OnFrameworkInitializationCompleted()
+    public override void OnFrameworkInitializationCompleted()
     {
+        // DI-Container synchron aufbauen
         var services = new ServiceCollection();
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
-        // Datenbank initialisieren
-        var db = Services.GetRequiredService<BotDatabaseService>();
-        try
-        {
-            await db.InitializeAsync();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"DB-Init fehlgeschlagen: {ex.Message}");
-        }
-
+        // Fenster SOFORT erstellen (vor jeglichem async)
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
@@ -48,6 +39,22 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+
+        // DB-Init NACH dem Fenster, fire-and-forget
+        _ = InitializeDatabaseAsync();
+    }
+
+    private static async Task InitializeDatabaseAsync()
+    {
+        try
+        {
+            var db = Services.GetRequiredService<BotDatabaseService>();
+            await db.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DB-Init fehlgeschlagen: {ex.Message}");
+        }
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -56,7 +63,7 @@ public partial class App : Application
         services.AddLogging(builder => builder
             .SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Debug));
 
-        // Settings (Singleton - werden von ViewModels und Engine geteilt)
+        // Settings (Singleton)
         services.AddSingleton<RiskSettings>();
         services.AddSingleton<ScannerSettings>();
         services.AddSingleton<BacktestSettings>();
@@ -66,7 +73,7 @@ public partial class App : Application
         services.AddSingleton<BotDatabaseService>();
         services.AddSingleton<ISecureStorageService, SecureStorageService>();
 
-        // Öffentlicher BingX-Client (kein API-Key nötig - für Marktdaten + Backtesting)
+        // Öffentlicher BingX-Client (kein API-Key nötig)
         services.AddSingleton<HttpClient>();
         services.AddSingleton<RateLimiter>();
         services.AddSingleton<BingXPublicClient>();
@@ -75,7 +82,7 @@ public partial class App : Application
         // Engine
         services.AddSingleton<StrategyManager>();
 
-        // ViewModels (Singleton - Views werden einmal erstellt und per IsVisible getoggelt)
+        // ViewModels (Singleton)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<StrategyViewModel>();

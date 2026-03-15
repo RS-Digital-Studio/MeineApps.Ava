@@ -128,54 +128,75 @@
               CornerRadius="8"
               BoxShadow="{DynamicResource CardShadow}"
               ClipToBounds="True">
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      x:Name="LogScrollViewer">
-          <ItemsControl ItemsSource="{Binding LogEntries}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:LogDisplayItem">
-                <Border Padding="12,8"
-                        BorderBrush="{DynamicResource BorderSubtleBrush}"
-                        BorderThickness="0,0,0,1">
-                  <Grid ColumnDefinitions="70,70,80,*">
-                    <!-- Timestamp (Monospace) -->
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding TimeText}"
-                               FontSize="12"
-                               FontFamily="Consolas, Courier New, monospace"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               VerticalAlignment="Center" />
+        <Panel>
+          <!-- Leerer Zustand -->
+          <StackPanel IsVisible="{Binding !EntryCount}"
+                      VerticalAlignment="Center" HorizontalAlignment="Center"
+                      Spacing="12">
+            <mi:MaterialIcon Kind="TextBoxOutline" Width="48" Height="48"
+                             Foreground="{DynamicResource TextMutedBrush}" Opacity="0.4"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding EmptyStateText}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Log-Einträge erscheinen hier automatisch sobald der Bot aktiv ist."
+                       FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
 
-                    <!-- Level (farbcodiert) -->
-                    <Border Grid.Column="1"
-                            CornerRadius="4" Padding="6,2"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Background="{DynamicResource SurfaceBrush}">
-                      <TextBlock Text="{Binding Level}"
-                                 FontSize="11" FontWeight="SemiBold"
-                                 Foreground="{Binding LevelColor}" />
-                    </Border>
+          <!-- Log-Einträge -->
+          <ScrollViewer VerticalScrollBarVisibility="Auto"
+                        x:Name="LogScrollViewer"
+                        IsVisible="{Binding EntryCount}">
+            <ItemsControl ItemsSource="{Binding LogEntries}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:LogDisplayItem">
+                  <Border Padding="12,8"
+                          BorderBrush="{DynamicResource BorderSubtleBrush}"
+                          BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="70,70,80,*">
+                      <!-- Timestamp (Monospace) -->
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding TimeText}"
+                                 FontSize="12"
+                                 FontFamily="Consolas, Courier New, monospace"
+                                 Foreground="{DynamicResource TextMutedBrush}"
+                                 VerticalAlignment="Center" />
 
-                    <!-- Kategorie -->
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding Category}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               VerticalAlignment="Center" />
+                      <!-- Level (farbcodiert) -->
+                      <Border Grid.Column="1"
+                              CornerRadius="4" Padding="6,2"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Center"
+                              Background="{DynamicResource SurfaceBrush}">
+                        <TextBlock Text="{Binding Level}"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{Binding LevelColor}" />
+                      </Border>
 
-                    <!-- Nachricht -->
-                    <TextBlock Grid.Column="3"
-                               Text="{Binding Message}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               TextWrapping="Wrap"
-                               VerticalAlignment="Center" />
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
+                      <!-- Kategorie -->
+                      <TextBlock Grid.Column="2"
+                                 Text="{Binding Category}"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 VerticalAlignment="Center" />
+
+                      <!-- Nachricht -->
+                      <TextBlock Grid.Column="3"
+                                 Text="{Binding Message}"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 TextWrapping="Wrap"
+                                 VerticalAlignment="Center" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Panel>
       </Border>
 
     </Grid>

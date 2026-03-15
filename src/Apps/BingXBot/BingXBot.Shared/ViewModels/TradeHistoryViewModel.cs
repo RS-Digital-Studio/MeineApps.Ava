@@ -22,12 +22,13 @@ public partial class TradeHistoryViewModel : ObservableObject
     public string[] Modes => new[] { "Alle", "Live", "Paper", "Backtest" };
     public string[] Periods => new[] { "Heute", "Letzte 7 Tage", "Letzte 30 Tage", "Alles" };
 
+    [ObservableProperty] private string _emptyStateText = "Noch keine Trades. Starte den Bot oder einen Backtest.";
+
     public ObservableCollection<TradeHistoryItem> Trades { get; } = new();
 
     public TradeHistoryViewModel()
     {
-        // Demo-Daten laden
-        LoadDemoData();
+        UpdateSummary();
     }
 
     partial void OnSelectedModeChanged(string value) => ApplyFilter();
@@ -43,7 +44,7 @@ public partial class TradeHistoryViewModel : ObservableObject
     private void UpdateSummary()
     {
         TradeCount = Trades.Count;
-        TotalPnl = Trades.Sum(t => t.Pnl);
+        TotalPnl = Trades.Count > 0 ? Trades.Sum(t => t.Pnl) : 0m;
         var wins = Trades.Count(t => t.Pnl > 0);
         WinRate = TradeCount > 0 ? (decimal)wins / TradeCount * 100m : 0m;
     }
@@ -54,16 +55,6 @@ public partial class TradeHistoryViewModel : ObservableObject
         SelectedMode = "Alle";
         SymbolFilter = "";
         SelectedPeriod = "Letzte 7 Tage";
-    }
-
-    private void LoadDemoData()
-    {
-        Trades.Add(new("BTC-USDT", "Long", 50000m, 51200m, 0.1m, 120m, 5m, "EMA Cross", "Live", DateTime.UtcNow.AddHours(-2), true));
-        Trades.Add(new("ETH-USDT", "Short", 3200m, 3100m, 1m, 100m, 3m, "RSI", "Paper", DateTime.UtcNow.AddHours(-5), true));
-        Trades.Add(new("BTC-USDT", "Long", 51000m, 50500m, 0.1m, -50m, 5m, "EMA Cross", "Live", DateTime.UtcNow.AddHours(-8), false));
-        Trades.Add(new("SOL-USDT", "Short", 150m, 155m, 10m, -50m, 2m, "Bollinger", "Paper", DateTime.UtcNow.AddDays(-1), false));
-        Trades.Add(new("ETH-USDT", "Long", 3050m, 3180m, 2m, 260m, 6m, "MACD", "Live", DateTime.UtcNow.AddDays(-2), true));
-        UpdateSummary();
     }
 }
 

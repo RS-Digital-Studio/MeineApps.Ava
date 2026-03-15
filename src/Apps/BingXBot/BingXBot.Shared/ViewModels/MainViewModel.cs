@@ -19,7 +19,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isSettingsActive;
     [ObservableProperty] private string _botStatus = "Gestoppt";
     [ObservableProperty] private string _tradingMode = "Paper";
-    [ObservableProperty] private string _connectionStatus = "Getrennt";
+    [ObservableProperty] private string _connectionStatus = "Marktdaten verfügbar";
 
     /// <summary>
     /// Navigation zu einer Seite. Parameter ist immer string (XAML CommandParameter).

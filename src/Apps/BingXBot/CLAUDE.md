@@ -49,7 +49,7 @@ Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Suppo
 
 | View | Zweck | Engine-Verdrahtung |
 |------|-------|--------------------|
-| Dashboard | Balance, Positionen, Bot-Controls, Equity-Chart | (separater Agent) |
+| Dashboard | Balance, Positionen, Bot-Controls, Equity-Chart, BTC-Live-Candlestick-Chart | IPublicMarketDataClient (Klines), Auto-Refresh 60s |
 | Scanner | Live-Scan mit Volumen/Momentum-Filter | ScannerSettings, IMarketScanner (optional) |
 | Strategie | Auswahl + dynamischer Parameter-Editor | StrategyManager, IStrategy-Instanzen |
 | Backtest | Historischer Test mit PerformanceReport | BacktestEngine, RiskManager, SimulatedExchange |
@@ -57,6 +57,13 @@ Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Suppo
 | Risk-Settings | Risiko-Parameter konfigurieren | RiskSettings (bidirektional) |
 | Log | Live-Log mit Level/Kategorie-Filter | - |
 | Settings | API-Keys, Verbindung | BotSettings, ISecureStorageService, IExchangeClient |
+
+## SkiaSharp-Renderer
+
+| Renderer | Datei | Beschreibung |
+|----------|-------|--------------|
+| EquityChartRenderer | Graphics/EquityChartRenderer.cs | Linien-Chart fuer Equity-Kurve (Profit/Loss-Farbgebung, Baseline) |
+| BtcPriceChartRenderer | Graphics/BtcPriceChartRenderer.cs | Candlestick-Chart fuer BTC-USDT (75% Candles, 25% Volumen, Preis-Grid, Docht/Body) |
 
 ## ViewModel-DI-Verdrahtung
 

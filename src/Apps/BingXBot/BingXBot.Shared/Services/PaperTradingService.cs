@@ -30,6 +30,9 @@ public class PaperTradingService : IDisposable
     private volatile bool _isPaused;
     private bool _disposed;
 
+    // SL/TP-Tracking: Speichert das Original-Signal pro offener Position (Symbol_Side → SignalResult)
+    private readonly Dictionary<string, SignalResult> _positionSignals = new();
+
     /// <summary>Zugriff auf die simulierte Exchange fuer Account-Abfragen.</summary>
     public SimulatedExchange? Exchange => _exchange;
 
@@ -118,6 +121,7 @@ public class PaperTradingService : IDisposable
         _cts?.Dispose();
         _cts = null;
 
+        _positionSignals.Clear();
         _eventBus.PublishBotState(BotState.Stopped);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
             "Paper-Trading gestoppt"));
@@ -132,6 +136,7 @@ public class PaperTradingService : IDisposable
 
         if (_exchange != null)
             await _exchange.CloseAllPositionsAsync();
+        _positionSignals.Clear();
 
         _cts?.Dispose();
         _cts = null;
@@ -190,11 +195,67 @@ public class PaperTradingService : IDisposable
 
                 var tickerMap = tickers.ToDictionary(t => t.Symbol, t => t.LastPrice);
 
-                // Preise auf der SimulatedExchange aktualisieren
+                // Preise auf der SimulatedExchange aktualisieren + SL/TP prüfen
                 foreach (var pos in positions)
                 {
-                    if (tickerMap.TryGetValue(pos.Symbol, out var price))
+                    if (!tickerMap.TryGetValue(pos.Symbol, out var price)) continue;
+                    _exchange.SetCurrentPrice(pos.Symbol, price);
+
+                    // SL/TP-Prüfung für diese Position
+                    var key = $"{pos.Symbol}_{pos.Side}";
+                    if (!_positionSignals.TryGetValue(key, out var signal)) continue;
+
+                    var hit = false;
+                    string reason = "";
+
+                    if (pos.Side == Side.Buy)
+                    {
+                        if (signal.StopLoss.HasValue && price <= signal.StopLoss.Value)
+                        {
+                            _exchange.SetCurrentPrice(pos.Symbol, signal.StopLoss.Value);
+                            hit = true;
+                            reason = $"Stop-Loss bei {signal.StopLoss.Value:N2}";
+                        }
+                        else if (signal.TakeProfit.HasValue && price >= signal.TakeProfit.Value)
+                        {
+                            _exchange.SetCurrentPrice(pos.Symbol, signal.TakeProfit.Value);
+                            hit = true;
+                            reason = $"Take-Profit bei {signal.TakeProfit.Value:N2}";
+                        }
+                    }
+                    else // Short
+                    {
+                        if (signal.StopLoss.HasValue && price >= signal.StopLoss.Value)
+                        {
+                            _exchange.SetCurrentPrice(pos.Symbol, signal.StopLoss.Value);
+                            hit = true;
+                            reason = $"Stop-Loss bei {signal.StopLoss.Value:N2}";
+                        }
+                        else if (signal.TakeProfit.HasValue && price <= signal.TakeProfit.Value)
+                        {
+                            _exchange.SetCurrentPrice(pos.Symbol, signal.TakeProfit.Value);
+                            hit = true;
+                            reason = $"Take-Profit bei {signal.TakeProfit.Value:N2}";
+                        }
+                    }
+
+                    if (hit)
+                    {
+                        var prevCount = _exchange.GetCompletedTrades().Count;
+                        await _exchange.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
+                        _positionSignals.Remove(key);
+
+                        // Preis zurücksetzen
                         _exchange.SetCurrentPrice(pos.Symbol, price);
+
+                        // Trade publizieren
+                        var allTrades = _exchange.GetCompletedTrades();
+                        for (int i = prevCount; i < allTrades.Count; i++)
+                            _eventBus.PublishTrade(allTrades[i]);
+
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
+                            $"{pos.Symbol}: {reason} ({pos.Side})", pos.Symbol));
+                    }
                 }
             }
             catch (OperationCanceledException) { break; }
@@ -272,13 +333,13 @@ public class PaperTradingService : IDisposable
                     var closeSide = signal.Signal == Signal.CloseLong ? Side.Buy : Side.Sell;
                     if (positions.Any(p => p.Symbol == ticker.Symbol && p.Side == closeSide))
                     {
-                        // Trade-Count vor dem Close merken, um nur den neuen Trade zu publizieren
                         var prevCount = _exchange.GetCompletedTrades().Count;
                         await _exchange.ClosePositionAsync(ticker.Symbol, closeSide);
+                        _positionSignals.Remove($"{ticker.Symbol}_{closeSide}");
+
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                             $"{ticker.Symbol}: Position geschlossen ({closeSide})", ticker.Symbol));
 
-                        // Nur den neu entstandenen Trade publizieren (nicht alle alten)
                         var allTrades = _exchange.GetCompletedTrades();
                         for (int j = prevCount; j < allTrades.Count; j++)
                             _eventBus.PublishTrade(allTrades[j]);
@@ -308,6 +369,10 @@ public class PaperTradingService : IDisposable
                         $"{ticker.Symbol}: Order abgelehnt (nicht genug Margin)", ticker.Symbol));
                     continue;
                 }
+
+                // SL/TP-Signal für diese Position speichern (wird im PriceTickerLoop geprüft)
+                var slTpKey = $"{ticker.Symbol}_{side}";
+                _positionSignals[slTpKey] = signal;
 
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                     $"{ticker.Symbol}: {side} {riskCheck.AdjustedPositionSize:F6} @ {ticker.LastPrice:N2}",

@@ -2,9 +2,11 @@ using BingXBot.Backtest;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
+using BingXBot.Core.Models;
 using BingXBot.Core.Simulation;
 using BingXBot.Engine.Risk;
 using BingXBot.Engine.Strategies;
+using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -16,11 +18,13 @@ namespace BingXBot.ViewModels;
 /// <summary>
 /// ViewModel für Backtesting (historische Daten, Strategie-Tests, Ergebnisse).
 /// Nutzt echte BacktestEngine mit BingXPublicClient für echte Marktdaten (kein API-Key nötig).
+/// Publiziert Ergebnisse über den BotEventBus an TradeHistory und Log.
 /// </summary>
 public partial class BacktestViewModel : ObservableObject
 {
     private readonly RiskSettings _riskSettings;
     private readonly IPublicMarketDataClient? _publicClient;
+    private readonly BotEventBus _eventBus;
     private CancellationTokenSource? _cts;
 
     [ObservableProperty] private string _symbol = "BTC-USDT";
@@ -56,9 +60,10 @@ public partial class BacktestViewModel : ObservableObject
     /// </summary>
     public ObservableCollection<string> AvailableSymbols { get; } = new();
 
-    public BacktestViewModel(RiskSettings riskSettings, IPublicMarketDataClient? publicClient = null)
+    public BacktestViewModel(RiskSettings riskSettings, BotEventBus eventBus, IPublicMarketDataClient? publicClient = null)
     {
         _riskSettings = riskSettings;
+        _eventBus = eventBus;
         _publicClient = publicClient;
 
         // Symbole im Hintergrund laden
@@ -129,6 +134,10 @@ public partial class BacktestViewModel : ObservableObject
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
+
+        // Log: Backtest gestartet
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Backtest",
+            $"Starte Backtest: {SelectedStrategy} auf {Symbol} ({SelectedTimeFrame}), Kapital: {InitialBalance} USDT, Hebel: {Leverage}x"));
 
         try
         {
@@ -221,14 +230,29 @@ public partial class BacktestViewModel : ObservableObject
             StatusText = usedDemoData
                 ? $"Abgeschlossen (Demo-Daten): {report.TotalTrades} Trades, P&L: {pnlSign}{report.TotalPnl:F2} USDT"
                 : $"Abgeschlossen: {report.TotalTrades} Trades, P&L: {pnlSign}{report.TotalPnl:F2} USDT";
+
+            // Ergebnisse an EventBus publizieren → TradeHistory + Log
+            _eventBus.PublishBacktestCompleted(new BacktestCompletedArgs
+            {
+                Trades = report.Trades,
+                StrategyName = SelectedStrategy,
+                Symbol = Symbol
+            });
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Backtest",
+                $"{SelectedStrategy} auf {Symbol}: {report.TotalTrades} Trades, P&L: {pnlSign}{report.TotalPnl:F2} USDT, WinRate: {report.WinRate:F1}%"));
         }
         catch (OperationCanceledException)
         {
             StatusText = "Abgebrochen";
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Backtest",
+                "Backtest abgebrochen"));
         }
         catch (Exception ex)
         {
             StatusText = $"Fehler: {ex.Message}";
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Backtest",
+                $"Backtest fehlgeschlagen: {ex.Message}"));
         }
         finally
         {

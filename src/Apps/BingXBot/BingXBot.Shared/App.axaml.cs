@@ -72,6 +72,7 @@ public partial class App : Application
         // Services
         services.AddSingleton<BotDatabaseService>();
         services.AddSingleton<ISecureStorageService, SecureStorageService>();
+        services.AddSingleton<BotEventBus>();
 
         // Öffentlicher BingX-Client (kein API-Key nötig)
         services.AddSingleton<HttpClient>();

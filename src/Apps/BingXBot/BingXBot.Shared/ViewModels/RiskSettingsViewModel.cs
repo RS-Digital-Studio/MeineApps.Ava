@@ -1,4 +1,6 @@
 using BingXBot.Core.Configuration;
+using BingXBot.Core.Models;
+using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -7,10 +9,12 @@ namespace BingXBot.ViewModels;
 /// <summary>
 /// ViewModel für Risk-Management-Einstellungen (Max Drawdown, Position Sizing, Stop-Loss).
 /// Direkt verbunden mit dem echten RiskSettings-Objekt aus dem DI-Container.
+/// Publiziert Änderungen über den BotEventBus an die Log-Ansicht.
 /// </summary>
 public partial class RiskSettingsViewModel : ObservableObject
 {
     private readonly RiskSettings _riskSettings;
+    private readonly BotEventBus _eventBus;
 
     [ObservableProperty] private decimal _maxPositionSizePercent;
     [ObservableProperty] private decimal _maxDailyDrawdownPercent;
@@ -26,9 +30,10 @@ public partial class RiskSettingsViewModel : ObservableObject
     [ObservableProperty] private decimal _trailingStopPercent;
     [ObservableProperty] private string _saveStatus = "";
 
-    public RiskSettingsViewModel(RiskSettings riskSettings)
+    public RiskSettingsViewModel(RiskSettings riskSettings, BotEventBus eventBus)
     {
         _riskSettings = riskSettings;
+        _eventBus = eventBus;
         LoadFromSettings();
     }
 
@@ -69,6 +74,9 @@ public partial class RiskSettingsViewModel : ObservableObject
         _riskSettings.TrailingStopPercent = TrailingStopPercent;
 
         SaveStatus = "Gespeichert";
+
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Risk",
+            $"Risiko-Einstellungen gespeichert: MaxPos={MaxPositionSizePercent}%, MaxDD={MaxTotalDrawdownPercent}%, Hebel={MaxLeverage}x"));
     }
 
     [RelayCommand]
@@ -93,5 +101,8 @@ public partial class RiskSettingsViewModel : ObservableObject
         // Auch ins echte Settings-Objekt schreiben
         Save();
         SaveStatus = "Zurückgesetzt";
+
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Risk",
+            "Risiko-Einstellungen auf Standardwerte zurückgesetzt"));
     }
 }

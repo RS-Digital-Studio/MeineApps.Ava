@@ -1,3 +1,5 @@
+using BingXBot.Core.Models;
+using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
@@ -6,9 +8,13 @@ namespace BingXBot.ViewModels;
 
 /// <summary>
 /// ViewModel für Trade-History (abgeschlossene Trades, PnL-Übersicht).
+/// Empfängt echte Trades über den BotEventBus (von Bot und Backtest).
 /// </summary>
 public partial class TradeHistoryViewModel : ObservableObject
 {
+    private readonly BotEventBus _eventBus;
+    private readonly List<TradeHistoryItem> _allTrades = new();
+
     // Filter
     [ObservableProperty] private string _selectedMode = "Alle";
     [ObservableProperty] private string _symbolFilter = "";
@@ -26,19 +32,91 @@ public partial class TradeHistoryViewModel : ObservableObject
 
     public ObservableCollection<TradeHistoryItem> Trades { get; } = new();
 
-    public TradeHistoryViewModel()
+    public TradeHistoryViewModel(BotEventBus eventBus)
     {
+        _eventBus = eventBus;
+        _eventBus.TradeCompleted += OnTradeCompleted;
+        _eventBus.BacktestCompleted += OnBacktestCompleted;
+
         UpdateSummary();
+    }
+
+    private void OnTradeCompleted(object? sender, CompletedTrade trade)
+    {
+        var item = new TradeHistoryItem(
+            trade.Symbol, trade.Side.ToString(), trade.EntryPrice, trade.ExitPrice,
+            trade.Quantity, trade.Pnl, trade.Fee,
+            trade.Mode == Core.Enums.TradingMode.Paper ? "Paper-Bot" : "Live-Bot",
+            trade.Mode.ToString(),
+            trade.ExitTime, trade.Pnl > 0);
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            _allTrades.Insert(0, item); // Neueste zuerst
+            ApplyFilter();
+        });
+    }
+
+    private void OnBacktestCompleted(object? sender, BacktestCompletedArgs args)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            foreach (var trade in args.Trades)
+            {
+                _allTrades.Insert(0, new TradeHistoryItem(
+                    trade.Symbol, trade.Side.ToString(), trade.EntryPrice, trade.ExitPrice,
+                    trade.Quantity, trade.Pnl, trade.Fee, args.StrategyName, "Backtest",
+                    trade.ExitTime, trade.Pnl > 0));
+            }
+            ApplyFilter();
+        });
     }
 
     partial void OnSelectedModeChanged(string value) => ApplyFilter();
     partial void OnSymbolFilterChanged(string value) => ApplyFilter();
     partial void OnSelectedPeriodChanged(string value) => ApplyFilter();
 
+    /// <summary>
+    /// Baut die angezeigte Trade-Liste neu auf basierend auf aktuellen Filtern.
+    /// </summary>
     private void ApplyFilter()
     {
-        // Platzhalter - später wird hier aus SQLite gefiltert
+        Trades.Clear();
+        foreach (var trade in _allTrades)
+        {
+            if (!PassesFilter(trade)) continue;
+            Trades.Add(trade);
+        }
         UpdateSummary();
+    }
+
+    /// <summary>
+    /// Prüft ob ein Trade die aktuellen Filter-Kriterien erfüllt.
+    /// </summary>
+    private bool PassesFilter(TradeHistoryItem item)
+    {
+        // Modus-Filter
+        if (SelectedMode != "Alle" && item.Mode != SelectedMode)
+            return false;
+
+        // Symbol-Filter (Freitext-Suche)
+        if (!string.IsNullOrWhiteSpace(SymbolFilter) &&
+            !item.Symbol.Contains(SymbolFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // Zeitraum-Filter
+        var now = DateTime.UtcNow;
+        var cutoff = SelectedPeriod switch
+        {
+            "Heute" => now.Date,
+            "Letzte 7 Tage" => now.AddDays(-7),
+            "Letzte 30 Tage" => now.AddDays(-30),
+            _ => DateTime.MinValue // "Alles"
+        };
+        if (item.Time < cutoff)
+            return false;
+
+        return true;
     }
 
     private void UpdateSummary()

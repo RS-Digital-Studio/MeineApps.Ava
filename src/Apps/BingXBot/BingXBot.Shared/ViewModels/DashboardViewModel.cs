@@ -1,6 +1,7 @@
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
@@ -10,10 +11,12 @@ namespace BingXBot.ViewModels;
 /// <summary>
 /// ViewModel fuer das Dashboard - ehrliche Zustandsanzeige ohne Fake-Daten.
 /// Zeigt nur echte Daten an (BTC-Kurs live, Account nur wenn Bot laeuft).
+/// Publiziert Bot-Status und Log-Einträge über den BotEventBus.
 /// </summary>
 public partial class DashboardViewModel : ObservableObject, IDisposable
 {
     private readonly IPublicMarketDataClient? _publicClient;
+    private readonly BotEventBus _eventBus;
 
     // === Modus ===
     [ObservableProperty] private bool _isPaperMode = true;
@@ -52,8 +55,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _showWelcomeHint = true;
     [ObservableProperty] private string _welcomeHintText = "Willkommen! Starte mit einem Backtest um eine Strategie zu testen, oder konfiguriere deine API-Keys in den Einstellungen.";
 
-    public DashboardViewModel(IPublicMarketDataClient? publicClient = null)
+    public DashboardViewModel(BotEventBus eventBus, IPublicMarketDataClient? publicClient = null)
     {
+        _eventBus = eventBus;
         _publicClient = publicClient;
 
         // Keine Fake-Daten! Zeige ehrlichen Zustand.
@@ -83,6 +87,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             AvailableBalance = 10_000m;
             UnrealizedPnl = 0m;
             TotalPnl = 0m;
+
+            // Status über EventBus publizieren
+            _eventBus.PublishBotState(BotState.Running);
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+                "Paper-Trading gestartet mit 10.000 USDT Startkapital"));
         }
         else
         {
@@ -91,6 +100,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             BotStatusColor = "#F59E0B"; // Amber
             WelcomeHintText = "Fuer Live-Trading: Gehe zu Einstellungen und hinterlege deine BingX API-Keys.";
             ShowWelcomeHint = true;
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
+                "Live-Trading erfordert API-Keys. Bitte in den Einstellungen konfigurieren."));
         }
     }
 
@@ -99,6 +111,10 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     {
         BotStatusText = "Pausiert";
         BotStatusColor = "#F59E0B"; // Amber
+
+        _eventBus.PublishBotState(BotState.Paused);
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+            "Bot pausiert"));
     }
 
     [RelayCommand]
@@ -109,6 +125,10 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         BotStatusText = "Gestoppt";
         BotStatusColor = "#EF4444"; // Rot
         PositionsStatusText = "Keine offenen Positionen";
+
+        _eventBus.PublishBotState(BotState.Stopped);
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+            "Bot gestoppt"));
     }
 
     [RelayCommand]
@@ -123,6 +143,10 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         OpenPositions.Clear();
         HasOpenPositions = false;
         PositionsStatusText = "Alle Positionen geschlossen";
+
+        _eventBus.PublishBotState(BotState.EmergencyStop);
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
+            "NOTFALL-STOP: Alle Positionen geschlossen, Bot gestoppt"));
     }
 
     [RelayCommand]
@@ -152,6 +176,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         AvailableBalance = 0;
         UnrealizedPnl = 0;
         TotalPnl = 0;
+
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+            $"Modus gewechselt zu: {ModeText}"));
     }
 
     [RelayCommand]

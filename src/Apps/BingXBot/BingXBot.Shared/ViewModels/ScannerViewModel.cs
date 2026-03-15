@@ -1,6 +1,8 @@
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
+using BingXBot.Core.Models;
+using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
@@ -10,12 +12,14 @@ namespace BingXBot.ViewModels;
 /// <summary>
 /// ViewModel für den Markt-Scanner (Filterkriterien, Scan-Ergebnisse).
 /// Nutzt BingXPublicClient für echte Ticker-Daten, IMarketScanner für Signal-Analyse.
+/// Publiziert Scan-Ergebnisse über den BotEventBus an die Log-Ansicht.
 /// </summary>
 public partial class ScannerViewModel : ObservableObject
 {
     private readonly ScannerSettings _scannerSettings;
     private readonly IMarketScanner? _marketScanner;
     private readonly IPublicMarketDataClient? _publicClient;
+    private readonly BotEventBus _eventBus;
     private CancellationTokenSource? _cts;
 
     [ObservableProperty] private decimal _minVolume;
@@ -34,9 +38,10 @@ public partial class ScannerViewModel : ObservableObject
 
     public ObservableCollection<ScanResultItem> Results { get; } = new();
 
-    public ScannerViewModel(ScannerSettings scannerSettings, IMarketScanner? marketScanner = null, IPublicMarketDataClient? publicClient = null)
+    public ScannerViewModel(ScannerSettings scannerSettings, BotEventBus eventBus, IMarketScanner? marketScanner = null, IPublicMarketDataClient? publicClient = null)
     {
         _scannerSettings = scannerSettings;
+        _eventBus = eventBus;
         _marketScanner = marketScanner;
         _publicClient = publicClient;
         LoadFromSettings();
@@ -116,6 +121,9 @@ public partial class ScannerViewModel : ObservableObject
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
 
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Scanner",
+            $"Scan gestartet: Modus={SelectedScanMode}, TimeFrame={SelectedTimeFrame}, MinVolume={MinVolume}"));
+
         try
         {
             var settings = BuildCurrentSettings();
@@ -182,14 +190,31 @@ public partial class ScannerViewModel : ObservableObject
             ScanStatus = Results.Count > 0
                 ? $"{Results.Count} Paare gefunden die den Kriterien entsprechen"
                 : "Keine Paare gefunden - versuche die Filter anzupassen";
+
+            // Ergebnisse loggen
+            if (Results.Count > 0)
+            {
+                var topSymbols = string.Join(", ", Results.Take(5).Select(r => $"{r.Symbol}({r.Score:F0})"));
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Scanner",
+                    $"Scan abgeschlossen: {Results.Count} Ergebnisse. Top: {topSymbols}"));
+            }
+            else
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Scanner",
+                    "Scan abgeschlossen: Keine Paare gefunden"));
+            }
         }
         catch (OperationCanceledException)
         {
             ScanStatus = "Abgebrochen";
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Scanner",
+                "Scan abgebrochen"));
         }
         catch (Exception ex)
         {
             ScanStatus = $"Fehler: {ex.Message}";
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Scanner",
+                $"Scan fehlgeschlagen: {ex.Message}"));
         }
         finally
         {

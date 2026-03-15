@@ -1,3 +1,5 @@
+using BingXBot.Core.Enums;
+using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -5,9 +7,12 @@ namespace BingXBot.ViewModels;
 
 /// <summary>
 /// Haupt-ViewModel mit Sidebar-Navigation und Status-Anzeige.
+/// Empfängt Bot-Status-Updates über den BotEventBus.
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
+    private readonly BotEventBus _eventBus;
+
     [ObservableProperty] private string _currentPage = "Dashboard";
     [ObservableProperty] private bool _isDashboardActive = true;
     [ObservableProperty] private bool _isScannerActive;
@@ -20,6 +25,29 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _botStatus = "Gestoppt";
     [ObservableProperty] private string _tradingMode = "Paper";
     [ObservableProperty] private string _connectionStatus = "Marktdaten verfügbar";
+
+    public MainViewModel(BotEventBus eventBus)
+    {
+        _eventBus = eventBus;
+        _eventBus.BotStateChanged += OnBotStateChanged;
+    }
+
+    private void OnBotStateChanged(object? sender, BotState state)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            BotStatus = state switch
+            {
+                BotState.Running => "Laeuft",
+                BotState.Paused => "Pausiert",
+                BotState.Stopped => "Gestoppt",
+                BotState.Starting => "Startet...",
+                BotState.EmergencyStop => "Notfall-Stop",
+                BotState.Error => "Fehler",
+                _ => state.ToString()
+            };
+        });
+    }
 
     /// <summary>
     /// Navigation zu einer Seite. Parameter ist immer string (XAML CommandParameter).

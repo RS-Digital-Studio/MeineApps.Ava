@@ -1,5 +1,7 @@
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Interfaces;
+using BingXBot.Core.Models;
+using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -9,12 +11,14 @@ namespace BingXBot.ViewModels;
 /// ViewModel für allgemeine Einstellungen (API-Keys, Verbindung, Log-Level).
 /// Nutzt ISecureStorageService für verschlüsselte API-Key-Speicherung
 /// und IExchangeClient für Verbindungstests.
+/// Publiziert Aktionen über den BotEventBus an die Log-Ansicht.
 /// </summary>
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly BotSettings _botSettings;
     private readonly ISecureStorageService? _secureStorage;
     private readonly IExchangeClient? _exchangeClient;
+    private readonly BotEventBus _eventBus;
 
     [ObservableProperty] private string _apiKey = "";
     [ObservableProperty] private string _apiSecret = "";
@@ -28,10 +32,12 @@ public partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(
         BotSettings botSettings,
+        BotEventBus eventBus,
         ISecureStorageService? secureStorage = null,
         IExchangeClient? exchangeClient = null)
     {
         _botSettings = botSettings;
+        _eventBus = eventBus;
         _secureStorage = secureStorage;
         _exchangeClient = exchangeClient;
 
@@ -101,10 +107,15 @@ public partial class SettingsViewModel : ObservableObject
                 ApiKey = MaskKey(ApiKey);
                 ApiSecret = MaskKey(ApiSecret);
                 _isMasked = true;
+
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+                    "API-Credentials gespeichert"));
             }
             catch (Exception ex)
             {
                 ConnectionStatus = $"Speichern fehlgeschlagen: {ex.Message}";
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
+                    $"API-Credentials speichern fehlgeschlagen: {ex.Message}"));
             }
         }
         else
@@ -135,6 +146,9 @@ public partial class SettingsViewModel : ObservableObject
         ApiSecret = "";
         HasCredentials = false;
         ConnectionStatus = "Gelöscht";
+
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+            "API-Credentials gelöscht"));
     }
 
     [RelayCommand]
@@ -149,6 +163,9 @@ public partial class SettingsViewModel : ObservableObject
         IsConnecting = true;
         ConnectionStatus = "Verbinde...";
 
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+            "Teste BingX-Verbindung..."));
+
         try
         {
             if (_exchangeClient != null)
@@ -156,17 +173,26 @@ public partial class SettingsViewModel : ObservableObject
                 // Echten Verbindungstest: Account-Info abrufen
                 var account = await _exchangeClient.GetAccountInfoAsync();
                 ConnectionStatus = $"Verbunden (Balance: {account.Balance:F2} USDT)";
+
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+                    $"BingX-Verbindung erfolgreich. Balance: {account.Balance:F2} USDT"));
             }
             else
             {
                 // Kein Exchange-Client verfügbar
                 await Task.Delay(500);
                 ConnectionStatus = "Exchange-Client nicht konfiguriert (Demo-Modus)";
+
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
+                    "Kein Exchange-Client konfiguriert (Demo-Modus)"));
             }
         }
         catch (Exception ex)
         {
             ConnectionStatus = $"Verbindung fehlgeschlagen: {ex.Message}";
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
+                $"BingX-Verbindung fehlgeschlagen: {ex.Message}"));
         }
         finally
         {

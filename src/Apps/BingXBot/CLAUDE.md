@@ -49,14 +49,14 @@ Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Suppo
 
 | View | Zweck | Engine-Verdrahtung |
 |------|-------|--------------------|
-| Dashboard | Balance, Positionen, Bot-Controls, Equity-Chart, BTC-Live-Candlestick-Chart | IPublicMarketDataClient (Klines), Auto-Refresh 60s |
-| Scanner | Live-Scan mit Volumen/Momentum-Filter | ScannerSettings, IMarketScanner (optional) |
-| Strategie | Auswahl + dynamischer Parameter-Editor | StrategyManager, IStrategy-Instanzen |
-| Backtest | Historischer Test mit PerformanceReport | BacktestEngine, RiskManager, SimulatedExchange |
-| Trade-History | Alle Trades filterbar | - |
-| Risk-Settings | Risiko-Parameter konfigurieren | RiskSettings (bidirektional) |
-| Log | Live-Log mit Level/Kategorie-Filter | - |
-| Settings | API-Keys, Verbindung | BotSettings, ISecureStorageService, IExchangeClient |
+| Dashboard | Balance, Positionen, Bot-Controls, Equity-Chart, BTC-Live-Candlestick-Chart | BotEventBus, IPublicMarketDataClient (Klines), Auto-Refresh 60s |
+| Scanner | Live-Scan mit Volumen/Momentum-Filter | BotEventBus, ScannerSettings, IMarketScanner (optional) |
+| Strategie | Auswahl + dynamischer Parameter-Editor + Parameter-Rückschreibung | BotEventBus, StrategyManager, IStrategy-Instanzen |
+| Backtest | Historischer Test mit PerformanceReport, publiziert Ergebnisse an TradeHistory + Log | BotEventBus, BacktestEngine, RiskManager, SimulatedExchange |
+| Trade-History | Alle Trades filterbar (Modus/Symbol/Zeitraum), empfängt Trades von Bot + Backtest | BotEventBus (TradeCompleted, BacktestCompleted) |
+| Risk-Settings | Risiko-Parameter konfigurieren | BotEventBus, RiskSettings (bidirektional) |
+| Log | Live-Log mit Level/Kategorie-Filter, empfängt Logs von allen ViewModels | BotEventBus (LogEmitted) |
+| Settings | API-Keys, Verbindung | BotEventBus, BotSettings, ISecureStorageService, IExchangeClient |
 
 ## SkiaSharp-Renderer
 
@@ -65,19 +65,43 @@ Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Suppo
 | EquityChartRenderer | Graphics/EquityChartRenderer.cs | Linien-Chart fuer Equity-Kurve (Profit/Loss-Farbgebung, Baseline) |
 | BtcPriceChartRenderer | Graphics/BtcPriceChartRenderer.cs | Candlestick-Chart fuer BTC-USDT (75% Candles, 25% Volumen, Preis-Grid, Docht/Body) |
 
+## BotEventBus (zentraler Event-Aggregator)
+
+`BotEventBus` (Singleton) ermöglicht ViewModel-zu-ViewModel-Kommunikation ohne direkte Referenzen:
+
+| Event | Publisher | Subscriber |
+|-------|-----------|------------|
+| `TradeCompleted` | DashboardVM (Bot-Trades) | TradeHistoryVM |
+| `BacktestCompleted` | BacktestVM | TradeHistoryVM |
+| `LogEmitted` | Alle ViewModels | LogVM |
+| `BotStateChanged` | DashboardVM | MainVM (Status-Bar) |
+
+Datei: `Services/BotEventBus.cs`
+
 ## ViewModel-DI-Verdrahtung
 
 Alle ViewModels bekommen ihre Engine-Dependencies per Constructor Injection:
 
 | ViewModel | DI-Parameter |
 |-----------|--------------|
-| StrategyViewModel | StrategyManager |
-| BacktestViewModel | RiskSettings |
-| ScannerViewModel | ScannerSettings, IMarketScanner? (optional) |
-| RiskSettingsViewModel | RiskSettings (lädt/speichert bidirektional) |
-| SettingsViewModel | BotSettings, ISecureStorageService?, IExchangeClient? (optional) |
+| MainViewModel | BotEventBus |
+| DashboardViewModel | BotEventBus, IPublicMarketDataClient? |
+| StrategyViewModel | StrategyManager, BotEventBus |
+| BacktestViewModel | RiskSettings, BotEventBus, IPublicMarketDataClient? |
+| TradeHistoryViewModel | BotEventBus |
+| LogViewModel | BotEventBus |
+| ScannerViewModel | ScannerSettings, BotEventBus, IMarketScanner?, IPublicMarketDataClient? |
+| RiskSettingsViewModel | RiskSettings, BotEventBus |
+| SettingsViewModel | BotSettings, BotEventBus, ISecureStorageService?, IExchangeClient? |
 
 Optionale Parameter (mit `?`) ermöglichen Demo-Modus ohne Exchange-Verbindung.
+
+### Strategie-Parameter-Rückschreibung
+
+StrategyViewModel schreibt UI-Parameter per Reflection zurück auf die IStrategy-Instanz:
+- Convention: UI-Name "FastPeriod" wird auf privates Feld "_fastPeriod" gemappt
+- Unterstützt int und decimal Parameter-Typen
+- Wird bei "Aktivieren" und bei Strategie-Wechsel (wenn aktiv) angewendet
 
 ## Build
 

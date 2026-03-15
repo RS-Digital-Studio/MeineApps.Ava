@@ -10,8 +10,8 @@ public class RiskManager : IRiskManager
 {
     private readonly RiskSettings _settings;
     private readonly ILogger<RiskManager> _logger;
-    // Hinweis: Drawdown basiert auf realisierten Verlusten (abgeschlossene Trades).
-    // Unrealisierte Verluste offener Positionen fließen NICHT in die Berechnung ein.
+    // Drawdown basiert auf realisierten + unrealisierten Verlusten.
+    // Unrealisierte Verluste offener Positionen fliessen in den taeglichen Drawdown ein.
     private decimal _dailyPnl;
     private decimal _totalPnl;
     private readonly object _lock = new();
@@ -37,24 +37,29 @@ public class RiskManager : IRiskManager
         if (symbolPositions >= _settings.MaxOpenPositionsPerSymbol)
             return new RiskCheckResult(false, $"Max {_settings.MaxOpenPositionsPerSymbol} Positionen pro Symbol erreicht", 0m);
 
-        // 4. Täglichen Drawdown prüfen
+        // 4. Taeglichen Drawdown pruefen (inkl. unrealisierter Verluste offener Positionen)
         decimal dailyDrawdownPercent;
         decimal totalDrawdownPercent;
         lock (_lock)
         {
+            // Unrealisierte Verluste einbeziehen (nur negative Werte)
+            var unrealizedLoss = context.Account.UnrealizedPnl < 0 ? context.Account.UnrealizedPnl : 0m;
+            var effectiveDailyPnl = _dailyPnl + unrealizedLoss;
+            var effectiveTotalPnl = _totalPnl + unrealizedLoss;
+
             dailyDrawdownPercent = context.Account.Balance > 0
-                ? Math.Abs(_dailyPnl) / context.Account.Balance * 100m
+                ? Math.Abs(effectiveDailyPnl) / context.Account.Balance * 100m
                 : 0m;
             totalDrawdownPercent = context.Account.Balance > 0
-                ? Math.Abs(_totalPnl) / context.Account.Balance * 100m
+                ? Math.Abs(effectiveTotalPnl) / context.Account.Balance * 100m
                 : 0m;
         }
 
-        if (_dailyPnl < 0 && dailyDrawdownPercent >= _settings.MaxDailyDrawdownPercent)
+        if (dailyDrawdownPercent >= _settings.MaxDailyDrawdownPercent)
             return new RiskCheckResult(false, $"Tages-Drawdown {dailyDrawdownPercent:F1}% >= {_settings.MaxDailyDrawdownPercent}%", 0m);
 
-        // 5. Gesamt-Drawdown prüfen
-        if (_totalPnl < 0 && totalDrawdownPercent >= _settings.MaxTotalDrawdownPercent)
+        // 5. Gesamt-Drawdown pruefen
+        if (totalDrawdownPercent >= _settings.MaxTotalDrawdownPercent)
             return new RiskCheckResult(false, $"Gesamt-Drawdown {totalDrawdownPercent:F1}% >= {_settings.MaxTotalDrawdownPercent}%", 0m);
 
         // 6. Position-Größe berechnen

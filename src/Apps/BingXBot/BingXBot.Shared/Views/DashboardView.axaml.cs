@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Labs.Controls;
@@ -35,6 +36,7 @@ public partial class DashboardView : UserControl
         InitializeComponent();
 
         DataContext = App.Services.GetRequiredService<DashboardViewModel>();
+        DetachedFromVisualTree += OnDetached;
 
         if (DataContext is DashboardViewModel dashVm)
         {
@@ -184,5 +186,11 @@ public partial class DashboardView : UserControl
         var canvas = e.Surface.Canvas;
         var bounds = canvas.LocalClipBounds; // NICHT e.Info.Width/Height (DPI-Problem!)
         BtcPriceChartRenderer.Render(canvas, bounds, _vm.BtcCandles.ToList());
+    }
+
+    private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (_vm != null)
+            _vm.PropertyChanged -= OnViewModelPropertyChanged;
     }
 }

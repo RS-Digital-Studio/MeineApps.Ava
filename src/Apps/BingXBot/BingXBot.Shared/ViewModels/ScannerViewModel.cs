@@ -224,6 +224,13 @@ public partial class ScannerViewModel : ObservableObject
 }
 
 /// <summary>
-/// Ein einzelnes Scanner-Ergebnis.
+/// Ein einzelnes Scanner-Ergebnis mit berechneten Display-Properties.
 /// </summary>
-public record ScanResultItem(string Symbol, decimal Score, string SetupType, decimal Volume24h, decimal PriceChange);
+public record ScanResultItem(string Symbol, decimal Score, string SetupType, decimal Volume24h, decimal PriceChange)
+{
+    /// <summary>Farbe fuer PriceChange: Gruen bei positiv, Rot bei negativ.</summary>
+    public string PriceChangeColor => PriceChange >= 0 ? "#10B981" : "#EF4444";
+
+    /// <summary>Formatierter Text mit Vorzeichen.</summary>
+    public string PriceChangeText => $"{PriceChange:+0.0;-0.0}%";
+}

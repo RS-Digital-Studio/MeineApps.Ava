@@ -19,14 +19,33 @@ public static class BtcPriceChartRenderer
     private static readonly SKFont LabelFont = new(SKTypeface.Default, 10);
     private static readonly SKFont EmptyFont = new(SKTypeface.Default, 14);
 
+    // Gecachte Paints fuer Candles (vermeidet 300+ Allokationen pro Frame)
+    private static readonly SKPaint BullishWickPaint = new() { Color = BullishColor, StrokeWidth = 1f, IsAntialias = true };
+    private static readonly SKPaint BearishWickPaint = new() { Color = BearishColor, StrokeWidth = 1f, IsAntialias = true };
+    private static readonly SKPaint BullishBodyPaint = new() { Color = BullishColor, Style = SKPaintStyle.Stroke, StrokeWidth = 1f, IsAntialias = true };
+    private static readonly SKPaint BearishBodyPaint = new() { Color = BearishColor, Style = SKPaintStyle.Fill, StrokeWidth = 1f, IsAntialias = true };
+    private static readonly SKPaint BullishVolumePaint = new() { Color = BullishColor.WithAlpha(80), Style = SKPaintStyle.Fill };
+    private static readonly SKPaint BearishVolumePaint = new() { Color = BearishColor.WithAlpha(80), Style = SKPaintStyle.Fill };
+
+    // Gecachte Paints fuer Grid, Text und Preis-Linie
+    private static readonly SKPaint CachedGridPaint = new() { Color = GridColor, StrokeWidth = 0.5f };
+    private static readonly SKPaint CachedTextPaint = new() { Color = TextColor, IsAntialias = true };
+    private static readonly SKPaint EmptyTextPaint = new() { Color = TextColor, IsAntialias = true };
+
+    // Gecachte Paints fuer aktuelle Preis-Linie (bullish/bearish)
+    private static readonly SKPathEffect PriceDashEffect = SKPathEffect.CreateDash([4f, 4f], 0);
+    private static readonly SKPaint BullishPriceLabelPaint = new() { Color = BullishColor, IsAntialias = true };
+    private static readonly SKPaint BearishPriceLabelPaint = new() { Color = BearishColor, IsAntialias = true };
+    private static readonly SKPaint BullishPriceLinePaint = new() { Color = BullishColor.WithAlpha(100), StrokeWidth = 1f, PathEffect = PriceDashEffect };
+    private static readonly SKPaint BearishPriceLinePaint = new() { Color = BearishColor.WithAlpha(100), StrokeWidth = 1f, PathEffect = PriceDashEffect };
+
     public static void Render(SKCanvas canvas, SKRect bounds, IReadOnlyList<Candle> candles)
     {
         canvas.Clear(BackgroundColor);
 
         if (candles.Count < 2)
         {
-            using var textPaint = new SKPaint { Color = TextColor, IsAntialias = true };
-            canvas.DrawText("Lade BTC-Daten...", bounds.MidX, bounds.MidY, SKTextAlign.Center, EmptyFont, textPaint);
+            canvas.DrawText("Lade BTC-Daten...", bounds.MidX, bounds.MidY, SKTextAlign.Center, EmptyFont, EmptyTextPaint);
             return;
         }
 
@@ -69,13 +88,11 @@ public static class BtcPriceChartRenderer
             var c = candles[i];
             var x = priceArea.Left + candleWidth * i + candleWidth / 2;
             var isBullish = c.Close >= c.Open;
-            var color = isBullish ? BullishColor : BearishColor;
 
             // Docht (High-Low Linie)
             var highY = MapY(c.High, priceArea, minPrice, maxPrice);
             var lowY = MapY(c.Low, priceArea, minPrice, maxPrice);
-            using var wickPaint = new SKPaint { Color = color, StrokeWidth = 1f, IsAntialias = true };
-            canvas.DrawLine(x, highY, x, lowY, wickPaint);
+            canvas.DrawLine(x, highY, x, lowY, isBullish ? BullishWickPaint : BearishWickPaint);
 
             // Body (Open-Close Rechteck)
             var openY = MapY(c.Open, priceArea, minPrice, maxPrice);
@@ -83,63 +100,38 @@ public static class BtcPriceChartRenderer
             var bodyTop = Math.Min(openY, closeY);
             var bodyBottom = Math.Max(openY, closeY);
             var bodyHeight = Math.Max(bodyBottom - bodyTop, 1f);
-
-            using var bodyPaint = new SKPaint
-            {
-                Color = color,
-                Style = isBullish ? SKPaintStyle.Stroke : SKPaintStyle.Fill,
-                StrokeWidth = 1f,
-                IsAntialias = true
-            };
-            canvas.DrawRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight, bodyPaint);
+            canvas.DrawRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight, isBullish ? BullishBodyPaint : BearishBodyPaint);
 
             // Volumen-Balken
             if (maxVolume > 0)
             {
                 var volHeight = (float)(c.Volume / maxVolume) * volumeArea.Height;
-                using var volPaint = new SKPaint
-                {
-                    Color = color.WithAlpha(80),
-                    Style = SKPaintStyle.Fill
-                };
-                canvas.DrawRect(x - bodyWidth / 2, volumeArea.Bottom - volHeight, bodyWidth, volHeight, volPaint);
+                canvas.DrawRect(x - bodyWidth / 2, volumeArea.Bottom - volHeight, bodyWidth, volHeight, isBullish ? BullishVolumePaint : BearishVolumePaint);
             }
         }
 
         // Aktueller Preis-Label rechts (gepunktete Linie + Text)
         var lastPrice = candles[^1].Close;
         var lastY = MapY(lastPrice, priceArea, minPrice, maxPrice);
-        var lastColor = candles[^1].Close >= candles[^1].Open ? BullishColor : BearishColor;
+        var isBullishLast = candles[^1].Close >= candles[^1].Open;
 
-        using var priceLabelPaint = new SKPaint { Color = lastColor, IsAntialias = true };
-        using var dashEffect = SKPathEffect.CreateDash([4f, 4f], 0);
-        using var priceLinePaint = new SKPaint
-        {
-            Color = lastColor.WithAlpha(100),
-            StrokeWidth = 1f,
-            PathEffect = dashEffect
-        };
-        canvas.DrawLine(priceArea.Left, lastY, priceArea.Right, lastY, priceLinePaint);
-        canvas.DrawText($"{lastPrice:F1}", priceArea.Right + 3, lastY + 4, LabelFont, priceLabelPaint);
+        canvas.DrawLine(priceArea.Left, lastY, priceArea.Right, lastY, isBullishLast ? BullishPriceLinePaint : BearishPriceLinePaint);
+        canvas.DrawText($"{lastPrice:F1}", priceArea.Right + 3, lastY + 4, LabelFont, isBullishLast ? BullishPriceLabelPaint : BearishPriceLabelPaint);
     }
 
     private static void DrawPriceGrid(SKCanvas canvas, SKRect area, decimal min, decimal max)
     {
-        using var gridPaint = new SKPaint { Color = GridColor, StrokeWidth = 0.5f };
-        using var textPaint = new SKPaint { Color = TextColor, IsAntialias = true };
-
         for (int i = 0; i <= 4; i++)
         {
             var y = area.Top + area.Height * i / 4f;
-            canvas.DrawLine(area.Left, y, area.Right, y, gridPaint);
+            canvas.DrawLine(area.Left, y, area.Right, y, CachedGridPaint);
             var price = max - (max - min) * i / 4m;
-            canvas.DrawText($"{price:F0}", area.Left - 5, y + 4, SKTextAlign.Right, LabelFont, textPaint);
+            canvas.DrawText($"{price:F0}", area.Left - 5, y + 4, SKTextAlign.Right, LabelFont, CachedTextPaint);
         }
     }
 
     private static void DrawTimeLabels(SKCanvas canvas, SKRect area, IReadOnlyList<Candle> candles)
     {
-        using var textPaint = new SKPaint { Color = TextColor, IsAntialias = true };
         var step = Math.Max(1, candles.Count / 6);
         var candleWidth = area.Width / candles.Count;
 
@@ -147,7 +139,7 @@ public static class BtcPriceChartRenderer
         {
             var x = area.Left + candleWidth * i + candleWidth / 2;
             var label = candles[i].OpenTime.ToString("HH:mm");
-            canvas.DrawText(label, x, area.Bottom + 14, SKTextAlign.Center, LabelFont, textPaint);
+            canvas.DrawText(label, x, area.Bottom + 14, SKTextAlign.Center, LabelFont, CachedTextPaint);
         }
     }
 

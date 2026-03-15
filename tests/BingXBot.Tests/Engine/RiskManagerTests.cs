@@ -10,7 +10,7 @@ namespace BingXBot.Tests.Engine;
 
 public class RiskManagerTests
 {
-    private static MarketContext CreateContext(int openPositions = 0, decimal balance = 10000m, string symbol = "BTC-USDT")
+    private static MarketContext CreateContext(int openPositions = 0, decimal balance = 10000m, string symbol = "BTC-USDT", decimal unrealizedPnl = 0m)
     {
         var positions = Enumerable.Range(0, openPositions)
             .Select(i => new Position($"SYM{i}-USDT", Side.Buy, 100m, 100m, 1m, 0m, 10m, MarginType.Cross, DateTime.UtcNow))
@@ -21,7 +21,7 @@ public class RiskManagerTests
             new List<Candle>(),
             new Ticker(symbol, 50000m, 49999m, 50001m, 10000000m, 5m, DateTime.UtcNow),
             positions,
-            new AccountInfo(balance, balance, 0m, 0m));
+            new AccountInfo(balance, balance, unrealizedPnl, 0m));
     }
 
     [Fact]
@@ -102,5 +102,45 @@ public class RiskManagerTests
         var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
         var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m));
         result.IsAllowed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void DailyDrawdown_WithUnrealizedLoss_ShouldBlockEarlier()
+    {
+        // Realisierte Verluste allein reichen nicht (3% < 5%), aber mit unrealisierten
+        // Verlusten (-300 = 3%) kommen wir auf 6% >= 5% → blockiert
+        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10 };
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+
+        // 300 realisierter Verlust = 3%
+        risk.UpdateDailyStats(new CompletedTrade("BTC-USDT", Side.Buy, 50000m, 47500m, 0.1m, -300m, 5m, DateTime.UtcNow, DateTime.UtcNow, "SL", TradingMode.Live));
+
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+
+        // Ohne unrealisierte Verluste: 3% < 5% → erlaubt
+        var resultOk = risk.ValidateTrade(signal, CreateContext(balance: 10000m, unrealizedPnl: 0m));
+        resultOk.IsAllowed.Should().BeTrue();
+
+        // Mit -300 unrealisierten Verlusten: 3% + 3% = 6% >= 5% → blockiert
+        var resultBlocked = risk.ValidateTrade(signal, CreateContext(balance: 10000m, unrealizedPnl: -300m));
+        resultBlocked.IsAllowed.Should().BeFalse();
+        resultBlocked.RejectionReason.Should().Contain("Drawdown");
+    }
+
+    [Fact]
+    public void DailyDrawdown_WithUnrealizedProfit_ShouldNotAffectDrawdown()
+    {
+        // Positive unrealisierte PnL soll den Drawdown nicht reduzieren
+        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10 };
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+
+        // 550 realisierter Verlust = 5.5% → blockiert
+        risk.UpdateDailyStats(new CompletedTrade("BTC-USDT", Side.Buy, 50000m, 47500m, 0.1m, -550m, 5m, DateTime.UtcNow, DateTime.UtcNow, "SL", TradingMode.Live));
+
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+
+        // Trotz +500 unrealisierter Profit bleibt der Drawdown bei 5.5% → blockiert
+        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m, unrealizedPnl: 500m));
+        result.IsAllowed.Should().BeFalse();
     }
 }

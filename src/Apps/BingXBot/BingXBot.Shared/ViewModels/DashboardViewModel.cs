@@ -11,7 +11,7 @@ namespace BingXBot.ViewModels;
 /// ViewModel fuer das Dashboard - ehrliche Zustandsanzeige ohne Fake-Daten.
 /// Zeigt nur echte Daten an (BTC-Kurs live, Account nur wenn Bot laeuft).
 /// </summary>
-public partial class DashboardViewModel : ObservableObject
+public partial class DashboardViewModel : ObservableObject, IDisposable
 {
     private readonly IPublicMarketDataClient? _publicClient;
 
@@ -161,6 +161,14 @@ public partial class DashboardViewModel : ObservableObject
     }
 
     private PeriodicTimer? _refreshTimer;
+    private bool _disposed;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _refreshTimer?.Dispose();
+    }
 
     /// <summary>
     /// Laedt BTC-Klinendaten von BingX (oeffentlich, kein API-Key noetig).

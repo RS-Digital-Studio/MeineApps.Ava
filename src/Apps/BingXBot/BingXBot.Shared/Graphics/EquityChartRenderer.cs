@@ -21,19 +21,22 @@ public static class EquityChartRenderer
     private static readonly SKFont GridFont = new() { Size = 10 };
     private static readonly SKFont EmptyFont = new() { Size = 14 };
 
+    // Gecachte Paints (vermeidet pro-Frame Allokationen)
+    private static readonly SKPaint EmptyTextPaint = new() { Color = TextColor, IsAntialias = true };
+    private static readonly SKPaint CachedGridPaint = new() { Color = GridColor, StrokeWidth = 0.5f, IsAntialias = true };
+    private static readonly SKPaint CachedGridTextPaint = new() { Color = TextColor, IsAntialias = true };
+    private static readonly SKPaint ProfitLinePaint = new() { Color = ProfitColor, StrokeWidth = 2f, Style = SKPaintStyle.Stroke, IsAntialias = true };
+    private static readonly SKPaint LossLinePaint = new() { Color = LossColor, StrokeWidth = 2f, Style = SKPaintStyle.Stroke, IsAntialias = true };
+    private static readonly SKPaint ProfitFillPaint = new() { Color = ProfitColor.WithAlpha(30), Style = SKPaintStyle.Fill, IsAntialias = true };
+    private static readonly SKPaint LossFillPaint = new() { Color = LossColor.WithAlpha(30), Style = SKPaintStyle.Fill, IsAntialias = true };
+
     public static void Render(SKCanvas canvas, SKRect bounds, IReadOnlyList<EquityPoint> data, decimal initialBalance)
     {
         canvas.Clear(BackgroundColor);
 
         if (data.Count < 2)
         {
-            // "Keine Daten" anzeigen
-            using var textPaint = new SKPaint
-            {
-                Color = TextColor,
-                IsAntialias = true
-            };
-            canvas.DrawText("Keine Equity-Daten", bounds.MidX, bounds.MidY, SKTextAlign.Center, EmptyFont, textPaint);
+            canvas.DrawText("Keine Equity-Daten", bounds.MidX, bounds.MidY, SKTextAlign.Center, EmptyFont, EmptyTextPaint);
             return;
         }
 
@@ -73,17 +76,14 @@ public static class EquityChartRenderer
 
     private static void DrawGrid(SKCanvas canvas, SKRect area, decimal minVal, decimal maxVal, IReadOnlyList<EquityPoint> data)
     {
-        using var gridPaint = new SKPaint { Color = GridColor, StrokeWidth = 0.5f, IsAntialias = true };
-        using var textPaint = new SKPaint { Color = TextColor, IsAntialias = true };
-
-        // Horizontale Grid-Linien (5 Stück)
+        // Horizontale Grid-Linien (5 Stueck)
         for (int i = 0; i <= 4; i++)
         {
             var y = area.Top + (area.Height * i / 4f);
-            canvas.DrawLine(area.Left, y, area.Right, y, gridPaint);
+            canvas.DrawLine(area.Left, y, area.Right, y, CachedGridPaint);
 
             var value = maxVal - (maxVal - minVal) * i / 4m;
-            canvas.DrawText($"{value:F0}", area.Left - 5, y + 4, SKTextAlign.Right, GridFont, textPaint);
+            canvas.DrawText($"{value:F0}", area.Left - 5, y + 4, SKTextAlign.Right, GridFont, CachedGridTextPaint);
         }
 
         // Vertikale Grid-Linien (basierend auf Zeitstempel)
@@ -92,27 +92,27 @@ public static class EquityChartRenderer
         for (int i = 0; i < totalPoints; i += step)
         {
             var x = area.Left + (area.Width * i / (totalPoints - 1f));
-            canvas.DrawLine(x, area.Top, x, area.Bottom, gridPaint);
+            canvas.DrawLine(x, area.Top, x, area.Bottom, CachedGridPaint);
 
             var label = data[i].Time.ToString("dd.MM");
-            canvas.DrawText(label, x, area.Bottom + 15, SKTextAlign.Center, GridFont, textPaint);
+            canvas.DrawText(label, x, area.Bottom + 15, SKTextAlign.Center, GridFont, CachedGridTextPaint);
         }
     }
 
-    // Gecachter PathEffect fuer Baseline (vermeidet Allokation pro Frame)
+    // Gecachter Baseline-Paint (vermeidet Allokation pro Frame)
     private static readonly SKPathEffect BaselineDashEffect = SKPathEffect.CreateDash([6f, 4f], 0);
+    private static readonly SKPaint BaselinePaint = new()
+    {
+        Color = BaselineColor.WithAlpha(100),
+        StrokeWidth = 1f,
+        PathEffect = BaselineDashEffect,
+        IsAntialias = true
+    };
 
     private static void DrawBaseline(SKCanvas canvas, SKRect area, decimal baseline, decimal min, decimal max)
     {
         var y = MapY(baseline, area, min, max);
-        using var paint = new SKPaint
-        {
-            Color = BaselineColor.WithAlpha(100),
-            StrokeWidth = 1f,
-            PathEffect = BaselineDashEffect,
-            IsAntialias = true
-        };
-        canvas.DrawLine(area.Left, y, area.Right, y, paint);
+        canvas.DrawLine(area.Left, y, area.Right, y, BaselinePaint);
     }
 
     private static void DrawEquityLine(SKCanvas canvas, SKRect area, IReadOnlyList<EquityPoint> data,
@@ -132,16 +132,7 @@ public static class EquityChartRenderer
 
         // Linie zeichnen - Farbe basierend auf letztem Wert vs Baseline
         var lastEquity = data[^1].Equity;
-        var lineColor = lastEquity >= baseline ? ProfitColor : LossColor;
-
-        using var linePaint = new SKPaint
-        {
-            Color = lineColor,
-            StrokeWidth = 2f,
-            Style = SKPaintStyle.Stroke,
-            IsAntialias = true
-        };
-        canvas.DrawPath(path, linePaint);
+        canvas.DrawPath(path, lastEquity >= baseline ? ProfitLinePaint : LossLinePaint);
     }
 
     private static void DrawEquityFill(SKCanvas canvas, SKRect area, IReadOnlyList<EquityPoint> data,
@@ -166,17 +157,7 @@ public static class EquityChartRenderer
         path.Close();
 
         var lastEquity = data[^1].Equity;
-        var fillColor = lastEquity >= baseline
-            ? ProfitColor.WithAlpha(30)
-            : LossColor.WithAlpha(30);
-
-        using var fillPaint = new SKPaint
-        {
-            Color = fillColor,
-            Style = SKPaintStyle.Fill,
-            IsAntialias = true
-        };
-        canvas.DrawPath(path, fillPaint);
+        canvas.DrawPath(path, lastEquity >= baseline ? ProfitFillPaint : LossFillPaint);
     }
 
     private static float MapX(int index, SKRect area, int totalPoints)

@@ -215,8 +215,11 @@ public partial class BacktestViewModel : ObservableObject
             }
 
             HasResult = true;
+            var usedDemoData = _publicClient == null;
             var pnlSign = report.TotalPnl >= 0 ? "+" : "";
-            StatusText = $"Abgeschlossen: {report.TotalTrades} Trades, P&L: {pnlSign}{report.TotalPnl:F2} USDT";
+            StatusText = usedDemoData
+                ? $"Abgeschlossen (Demo-Daten): {report.TotalTrades} Trades, P&L: {pnlSign}{report.TotalPnl:F2} USDT"
+                : $"Abgeschlossen: {report.TotalTrades} Trades, P&L: {pnlSign}{report.TotalPnl:F2} USDT";
         }
         catch (OperationCanceledException)
         {

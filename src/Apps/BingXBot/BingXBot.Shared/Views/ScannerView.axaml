@@ -255,11 +255,11 @@
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  HorizontalAlignment="Right"
                                  VerticalAlignment="Center" />
-                      <!-- Preisänderung -->
+                      <!-- Preisänderung (Grün/Rot je nach Vorzeichen) -->
                       <TextBlock Grid.Column="4"
-                                 Text="{Binding PriceChange, StringFormat={}{0:+0.0;-0.0}%}"
+                                 Text="{Binding PriceChangeText}"
                                  FontSize="12" FontWeight="SemiBold"
-                                 Foreground="{DynamicResource SuccessBrush}"
+                                 Foreground="{Binding PriceChangeColor}"
                                  HorizontalAlignment="Right"
                                  VerticalAlignment="Center" />
                     </Grid>

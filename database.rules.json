@@ -13,7 +13,25 @@
     "guilds": {
       ".read": "auth != null",
       "$guildId": {
-        ".write": "auth != null"
+        ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || !data.exists())",
+        "level": {
+          ".validate": "newData.isNumber() && (!data.exists() || newData.val() == data.val() || newData.val() == data.val() + 1)"
+        },
+        "leaguePoints": {
+          ".validate": "newData.isNumber()"
+        },
+        "maxMembers": {
+          ".validate": "newData.isNumber() && (!data.exists() || newData.val() >= data.val())"
+        },
+        "memberCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+        },
+        "weeklyGoal": {
+          ".validate": "newData.isNumber() && newData.val() > 0"
+        },
+        "weeklyProgress": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        }
       }
     },
 
@@ -21,7 +39,10 @@
       "$guildId": {
         ".read": "auth != null",
         "$playerId": {
-          ".write": "auth != null && (root.child('auth_to_player/' + auth.uid).val() == $playerId || root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val() + '/role').val() == 'leader')"
+          ".write": "auth != null && (root.child('auth_to_player/' + auth.uid).val() == $playerId || root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val() + '/role').val() == 'leader' || root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val() + '/role').val() == 'officer')",
+          "role": {
+            ".validate": "newData.isString() && (root.child('auth_to_player/' + auth.uid).val() != $playerId || newData.val() == data.val() || !data.exists())"
+          }
         }
       }
     },
@@ -49,7 +70,31 @@
       ".read": "auth != null",
       ".indexOn": ["endDate", "status"],
       "$warId": {
-        ".write": "auth != null"
+        ".write": "auth != null && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).exists() && (!data.exists() || root.child('guild_members/' + root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).val() + '/' + root.child('auth_to_player/' + auth.uid).val()).exists())",
+        "guildAId": {
+          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+        },
+        "guildBId": {
+          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+        },
+        "guildALevel": {
+          ".validate": "newData.isNumber() && (!data.exists() || newData.val() == data.val())"
+        },
+        "guildBLevel": {
+          ".validate": "newData.isNumber() && (!data.exists() || newData.val() == data.val())"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'active' || newData.val() == 'attack' || newData.val() == 'defend' || newData.val() == 'endgame' || newData.val() == 'completed')"
+        },
+        "startDate": {
+          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+        },
+        "endDate": {
+          ".validate": "newData.isString()"
+        },
+        "phase": {
+          ".validate": "newData.isString() && (newData.val() == 'attack' || newData.val() == 'defend' || newData.val() == 'endgame')"
+        }
       }
     },
 
@@ -58,7 +103,10 @@
         ".read": "auth != null",
         "$guildId": {
           "$playerId": {
-            ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).val() == $guildId"
+            ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).val() == $guildId",
+            "score": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            }
           }
         }
       }
@@ -67,7 +115,31 @@
     "guild_war_seasons": {
       ".read": "auth != null",
       "$seasonId": {
-        ".write": "auth != null"
+        ".write": false,
+        "standings": {
+          "$guildId": {
+            ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+            ".validate": "newData.hasChildren(['guildName', 'leaguePoints'])",
+            "leaguePoints": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "wins": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "losses": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            }
+          }
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'active' || newData.val() == 'completed')"
+        },
+        "startDate": {
+          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+        },
+        "endDate": {
+          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+        }
       }
     },
 
@@ -75,7 +147,10 @@
       "$warId": {
         ".read": "auth != null",
         ".indexOn": ["timestamp"],
-        ".write": "auth != null"
+        "$entryId": {
+          ".write": "auth != null && !data.exists() && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+          ".validate": "newData.hasChildren(['type', 'timestamp'])"
+        }
       }
     },
 
@@ -83,16 +158,20 @@
       ".read": "auth != null",
       ".indexOn": ["endDate", "status"],
       "$bountyId": {
-        ".write": "auth != null",
-        "current": {
-          ".validate": "newData.isNumber() && newData.val() >= data.val()"
+        ".write": false,
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'active' || newData.val() == 'completed')"
         },
         "target": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() > 0 && (!data.exists() || newData.val() == data.val())"
+        },
+        "current": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 100000))"
         },
         "contributions": {
           "$playerId": {
-            ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
+            ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
+            ".validate": "newData.isNumber() && newData.val() >= 0"
           }
         }
       }
@@ -130,7 +209,10 @@
         ".read": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
         "messages": {
           ".indexOn": ["timestamp"],
-          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
+          "$messageId": {
+            ".write": "auth != null && !data.exists() && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+            ".validate": "newData.hasChildren(['uid', 'name', 'text', 'timestamp']) && newData.child('text').isString() && newData.child('text').val().length <= 200 && newData.child('name').isString() && newData.child('name').val().length <= 50 && newData.child('uid').isString() && newData.child('uid').val() == root.child('auth_to_player/' + auth.uid).val()"
+          }
         }
       }
     },
@@ -145,14 +227,14 @@
     "guild_invite_codes": {
       "$guildId": {
         ".read": "auth != null",
-        ".write": "auth != null"
+        ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
       }
     },
 
     "invite_code_to_guild": {
       "$code": {
         ".read": "auth != null",
-        ".write": "auth != null"
+        ".write": "auth != null && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
       }
     },
 
@@ -160,7 +242,7 @@
       "$guildId": {
         ".read": "auth != null",
         "$recipientPlayerId": {
-          ".write": "auth != null"
+          ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || root.child('auth_to_player/' + auth.uid).val() == $recipientPlayerId)"
         }
       }
     },
@@ -201,7 +283,25 @@
         ".read": "auth != null",
         ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
         "$playerId": {
-          ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
+          ".validate": "root.child('auth_to_player/' + auth.uid).val() == $playerId || !newData.exists()"
+        }
+      }
+    },
+
+    "guild_achievements": {
+      "$guildId": {
+        ".read": "auth != null",
+        "$achievementId": {
+          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
+        }
+      }
+    },
+
+    "player_invites": {
+      "$playerId": {
+        ".read": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
+        "$guildId": {
+          ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || root.child('auth_to_player/' + auth.uid).val() == $playerId)"
         }
       }
     }

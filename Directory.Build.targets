@@ -10,6 +10,11 @@
     <!-- Play Store erfordert AAB -->
     <AndroidPackageFormat>aab</AndroidPackageFormat>
 
+    <!-- Debug-Symbole auch im Release fuer VS-Debugger auf Android -->
+    <AndroidIncludeDebugSymbols>true</AndroidIncludeDebugSymbols>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+
     <!-- Full AOT: ALLE Methoden AOT-kompiliert, kein JIT-Fallback.
          Behebt Mono JIT-Assertion "!ji->async" Crash auf manchen Geraeten (z.B. Huawei P30).
          SDK-Default ist Profiled AOT (nur hot Methods), Rest faellt auf JIT zurueck.

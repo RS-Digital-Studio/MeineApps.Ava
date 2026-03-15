@@ -51,10 +51,12 @@ public class RiskManager : IRiskManager
             var effectiveDailyPnl = _dailyPnl + unrealizedLoss;
             var effectiveTotalPnl = _totalPnl + unrealizedLoss;
 
-            dailyDrawdownPercent = context.Account.Balance > 0
+            // Drawdown ist nur bei negativem PnL relevant.
+            // Positive PnL (Gewinn) soll NICHT als Drawdown gezaehlt werden.
+            dailyDrawdownPercent = context.Account.Balance > 0 && effectiveDailyPnl < 0
                 ? Math.Abs(effectiveDailyPnl) / context.Account.Balance * 100m
                 : 0m;
-            totalDrawdownPercent = context.Account.Balance > 0
+            totalDrawdownPercent = context.Account.Balance > 0 && effectiveTotalPnl < 0
                 ? Math.Abs(effectiveTotalPnl) / context.Account.Balance * 100m
                 : 0m;
         }

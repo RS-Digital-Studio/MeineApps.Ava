@@ -24,6 +24,9 @@ public class BingXRestClient : IExchangeClient
     private readonly RateLimiter _rateLimiter;
     private readonly ILogger<BingXRestClient> _logger;
 
+    /// <summary>Timeout fuer einzelne HTTP-Requests (30s statt Endlos-Default).</summary>
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
+
     public BingXRestClient(
         string apiKey,
         string apiSecret,
@@ -36,6 +39,10 @@ public class BingXRestClient : IExchangeClient
         _httpClient = httpClient;
         _rateLimiter = rateLimiter;
         _logger = logger;
+
+        // Timeout konfigurieren falls noch nicht gesetzt
+        if (_httpClient.Timeout == System.Threading.Timeout.InfiniteTimeSpan)
+            _httpClient.Timeout = RequestTimeout;
     }
 
     #region Signatur

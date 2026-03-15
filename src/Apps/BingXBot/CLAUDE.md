@@ -149,7 +149,17 @@ SQLite-basierte Persistenz für Trades, Equity-Snapshots, Logs und Settings:
 
 Alle DB-Parameter sind optional (`BotDatabaseService?`), damit Tests ohne DB funktionieren.
 
-## Tests (163 Tests)
+## Bekannte Fixes (Code Review 15.03.2026)
+
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Race Condition _positionSignals | PaperTradingService.cs | Dictionary -> ConcurrentDictionary (PriceTickerLoop + ScanAndTradeAsync laufen parallel) |
+| Drawdown bei Gewinnen falsch | RiskManager.cs | Math.Abs(effectivePnl) zaehlt auch Gewinne als Drawdown. Fix: nur negativen PnL werten |
+| EmergencyStop publiziert Trades nicht | PaperTradingService.cs | CloseAll-Trades wurden nicht an EventBus/RiskManager gemeldet |
+| RiskManager im Paper-Trading nie aktualisiert | PaperTradingService.cs | UpdateDailyStats() wurde bei keinem Close aufgerufen -> Drawdown-Limits wirkungslos |
+| HttpClient ohne Timeout | BingXRestClient.cs | 30s Timeout hinzugefuegt (wie BingXPublicClient) |
+
+## Tests (165 Tests)
 
 | Datei | Tests | Beschreibung |
 |-------|-------|--------------|

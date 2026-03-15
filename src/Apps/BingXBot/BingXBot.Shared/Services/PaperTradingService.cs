@@ -31,7 +31,8 @@ public class PaperTradingService : IDisposable
     private bool _disposed;
 
     // SL/TP-Tracking: Speichert das Original-Signal pro offener Position (Symbol_Side → SignalResult)
-    private readonly Dictionary<string, SignalResult> _positionSignals = new();
+    // ConcurrentDictionary weil PriceTickerLoop und ScanAndTradeAsync parallel darauf zugreifen
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SignalResult> _positionSignals = new();
 
     /// <summary>Zugriff auf die simulierte Exchange fuer Account-Abfragen.</summary>
     public SimulatedExchange? Exchange => _exchange;
@@ -115,7 +116,10 @@ public class PaperTradingService : IDisposable
             // Nur die neu durch CloseAll entstandenen Trades publizieren (verhindert Doppel-Publizierung)
             var allTrades = _exchange.GetCompletedTrades();
             for (int i = previousTradeCount; i < allTrades.Count; i++)
+            {
                 _eventBus.PublishTrade(allTrades[i]);
+                _riskManager?.UpdateDailyStats(allTrades[i]);
+            }
         }
 
         _cts?.Dispose();
@@ -135,7 +139,18 @@ public class PaperTradingService : IDisposable
         _isPaused = false;
 
         if (_exchange != null)
+        {
+            // Anzahl bereits publizierter Trades merken (wie in StopAsync)
+            var previousTradeCount = _exchange.GetCompletedTrades().Count;
             await _exchange.CloseAllPositionsAsync();
+            // Nur die neu durch CloseAll entstandenen Trades publizieren
+            var allTrades = _exchange.GetCompletedTrades();
+            for (int i = previousTradeCount; i < allTrades.Count; i++)
+            {
+                _eventBus.PublishTrade(allTrades[i]);
+                _riskManager?.UpdateDailyStats(allTrades[i]);
+            }
+        }
         _positionSignals.Clear();
 
         _cts?.Dispose();
@@ -243,15 +258,18 @@ public class PaperTradingService : IDisposable
                     {
                         var prevCount = _exchange.GetCompletedTrades().Count;
                         await _exchange.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
-                        _positionSignals.Remove(key);
+                        _positionSignals.TryRemove(key, out _);
 
                         // Preis zurücksetzen
                         _exchange.SetCurrentPrice(pos.Symbol, price);
 
-                        // Trade publizieren
+                        // Trade publizieren + RiskManager aktualisieren
                         var allTrades = _exchange.GetCompletedTrades();
                         for (int i = prevCount; i < allTrades.Count; i++)
+                        {
                             _eventBus.PublishTrade(allTrades[i]);
+                            _riskManager?.UpdateDailyStats(allTrades[i]);
+                        }
 
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                             $"{pos.Symbol}: {reason} ({pos.Side})", pos.Symbol));
@@ -335,14 +353,17 @@ public class PaperTradingService : IDisposable
                     {
                         var prevCount = _exchange.GetCompletedTrades().Count;
                         await _exchange.ClosePositionAsync(ticker.Symbol, closeSide);
-                        _positionSignals.Remove($"{ticker.Symbol}_{closeSide}");
+                        _positionSignals.TryRemove($"{ticker.Symbol}_{closeSide}", out _);
 
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                             $"{ticker.Symbol}: Position geschlossen ({closeSide})", ticker.Symbol));
 
                         var allTrades = _exchange.GetCompletedTrades();
                         for (int j = prevCount; j < allTrades.Count; j++)
+                        {
                             _eventBus.PublishTrade(allTrades[j]);
+                            _riskManager.UpdateDailyStats(allTrades[j]);
+                        }
                     }
                     continue;
                 }

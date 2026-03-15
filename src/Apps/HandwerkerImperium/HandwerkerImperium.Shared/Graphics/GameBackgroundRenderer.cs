@@ -65,6 +65,14 @@ public sealed class GameBackgroundRenderer : IDisposable
     private SKShader? _vignetteShader;
     private float _lastVignetteW, _lastVignetteH;
 
+    // Gecachte Gradient-Shader fuer DrawVerticalGradient (vermeidet Shader-Allokation pro Frame)
+    private SKShader? _gradientShader2;
+    private SKColor _lastGrad2Top, _lastGrad2Bot;
+    private float _lastGrad2Top2, _lastGrad2Bot2; // MidX, Top, Bottom Bounds
+    private SKShader? _gradientShader3;
+    private SKColor _lastGrad3Top, _lastGrad3Mid, _lastGrad3Bot;
+    private float _lastGrad3MidX, _lastGrad3BTop, _lastGrad3BBot;
+
     /// <summary>
     /// Setzt die Workshop-Tint-Farbe fuer Workshop-Hintergruende.
     /// </summary>
@@ -282,7 +290,7 @@ public sealed class GameBackgroundRenderer : IDisposable
         for (int i = 0; i < 7; i++)
         {
             float yBase = bounds.Top + bounds.Height * (0.1f + i * 0.13f);
-            _wavePath.Reset();
+            _wavePath.Rewind();
             _wavePath.MoveTo(bounds.Left, yBase);
             for (float x = bounds.Left; x < bounds.Right; x += 20f)
             {
@@ -343,7 +351,7 @@ public sealed class GameBackgroundRenderer : IDisposable
         for (int i = 0; i < 10; i++)
         {
             float yBase = bounds.Top + bounds.Height * (0.08f + i * 0.09f);
-            _wavePath.Reset();
+            _wavePath.Rewind();
             _wavePath.MoveTo(bounds.Left, yBase);
             for (float x = bounds.Left; x < bounds.Right; x += 20f)
             {
@@ -594,35 +602,58 @@ public sealed class GameBackgroundRenderer : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Zeichnet einen vertikalen 2-Farben-Gradient.
+    /// Zeichnet einen vertikalen 2-Farben-Gradient (gecacht bei gleichen Parametern).
     /// </summary>
     private void DrawVerticalGradient(SKCanvas canvas, SKRect bounds, SKColor top, SKColor bottom)
     {
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.MidX, bounds.Top),
-            new SKPoint(bounds.MidX, bounds.Bottom),
-            new[] { top, bottom },
-            null,
-            SKShaderTileMode.Clamp);
+        // Shader nur neu erstellen wenn sich Farben oder Bounds geaendert haben
+        if (_gradientShader2 == null || _lastGrad2Top != top || _lastGrad2Bot != bottom ||
+            MathF.Abs(_lastGrad2Top2 - bounds.Top) > 1f || MathF.Abs(_lastGrad2Bot2 - bounds.Bottom) > 1f)
+        {
+            _gradientShader2?.Dispose();
+            _gradientShader2 = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.MidX, bounds.Top),
+                new SKPoint(bounds.MidX, bounds.Bottom),
+                new[] { top, bottom },
+                null,
+                SKShaderTileMode.Clamp);
+            _lastGrad2Top = top;
+            _lastGrad2Bot = bottom;
+            _lastGrad2Top2 = bounds.Top;
+            _lastGrad2Bot2 = bounds.Bottom;
+        }
 
-        _gradientPaint.Shader = shader;
+        _gradientPaint.Shader = _gradientShader2;
         canvas.DrawRect(bounds, _gradientPaint);
         _gradientPaint.Shader = null;
     }
 
     /// <summary>
-    /// Zeichnet einen vertikalen 3-Farben-Gradient (oben -> mitte -> unten).
+    /// Zeichnet einen vertikalen 3-Farben-Gradient (gecacht bei gleichen Parametern).
     /// </summary>
     private void DrawVerticalGradient(SKCanvas canvas, SKRect bounds, SKColor top, SKColor mid, SKColor bottom)
     {
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.MidX, bounds.Top),
-            new SKPoint(bounds.MidX, bounds.Bottom),
-            new[] { top, mid, bottom },
-            new[] { 0f, 0.5f, 1f },
-            SKShaderTileMode.Clamp);
+        // Shader nur neu erstellen wenn sich Farben oder Bounds geaendert haben
+        if (_gradientShader3 == null || _lastGrad3Top != top || _lastGrad3Mid != mid || _lastGrad3Bot != bottom ||
+            MathF.Abs(_lastGrad3MidX - bounds.MidX) > 1f ||
+            MathF.Abs(_lastGrad3BTop - bounds.Top) > 1f || MathF.Abs(_lastGrad3BBot - bounds.Bottom) > 1f)
+        {
+            _gradientShader3?.Dispose();
+            _gradientShader3 = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.MidX, bounds.Top),
+                new SKPoint(bounds.MidX, bounds.Bottom),
+                new[] { top, mid, bottom },
+                new[] { 0f, 0.5f, 1f },
+                SKShaderTileMode.Clamp);
+            _lastGrad3Top = top;
+            _lastGrad3Mid = mid;
+            _lastGrad3Bot = bottom;
+            _lastGrad3MidX = bounds.MidX;
+            _lastGrad3BTop = bounds.Top;
+            _lastGrad3BBot = bounds.Bottom;
+        }
 
-        _gradientPaint.Shader = shader;
+        _gradientPaint.Shader = _gradientShader3;
         canvas.DrawRect(bounds, _gradientPaint);
         _gradientPaint.Shader = null;
     }
@@ -686,7 +717,7 @@ public sealed class GameBackgroundRenderer : IDisposable
     /// </summary>
     private void DrawShieldSilhouette(SKCanvas canvas, float x, float y, float size)
     {
-        _silhouettePath.Reset();
+        _silhouettePath.Rewind();
         float halfW = size * 0.4f;
         float topH = size * 0.3f;
         float botH = size * 0.5f;
@@ -728,7 +759,7 @@ public sealed class GameBackgroundRenderer : IDisposable
     /// </summary>
     private void DrawBuildingSilhouette(SKCanvas canvas, float x, float y, float size)
     {
-        _silhouettePath.Reset();
+        _silhouettePath.Rewind();
         float halfW = size * 0.4f;
         float bodyH = size * 0.5f;
         float roofH = size * 0.35f;
@@ -763,7 +794,7 @@ public sealed class GameBackgroundRenderer : IDisposable
         float innerR = size * 0.35f;
         float outerR = size * 0.5f;
 
-        _silhouettePath.Reset();
+        _silhouettePath.Rewind();
         for (int i = 0; i < teeth; i++)
         {
             float angle1 = rotation + i * MathF.Tau / teeth;
@@ -838,5 +869,7 @@ public sealed class GameBackgroundRenderer : IDisposable
         _gridPaint?.Dispose();
         _fillPaint?.Dispose();
         _vignetteShader?.Dispose();
+        _gradientShader2?.Dispose();
+        _gradientShader3?.Dispose();
     }
 }

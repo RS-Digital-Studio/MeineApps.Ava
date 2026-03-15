@@ -92,6 +92,9 @@ public static class GameCardRenderer
     // Gecachter MaskFilter fuer Progress-Bar Glow-Kopf (vermeidet Native Memory Leak)
     private static readonly SKMaskFilter _progressGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
 
+    // Gecachte Level-Strings fuer DrawLevelBadge (vermeidet ToString()-Allokation pro Karte pro Frame)
+    private static readonly Dictionary<int, string> _levelLabelCache = new();
+
     // ═══════════════════════════════════════════════════════════════════════
     // Rahmen-Stufe bestimmen
     // ═══════════════════════════════════════════════════════════════════════
@@ -461,10 +464,15 @@ public static class GameCardRenderer
         _strokePaint.StrokeWidth = 1f;
         canvas.DrawPath(path, _strokePaint);
 
-        // Level-Zahl
+        // Level-Zahl (gecachter String statt ToString() pro Frame)
         _textPaint.Color = SKColors.White;
         _textFontBold.Size = size * 0.35f;
-        canvas.DrawText(level.ToString(), x, y + size * 0.08f, SKTextAlign.Center, _textFontBold, _textPaint);
+        if (!_levelLabelCache.TryGetValue(level, out var levelText))
+        {
+            levelText = level.ToString();
+            _levelLabelCache[level] = levelText;
+        }
+        canvas.DrawText(levelText, x, y + size * 0.08f, SKTextAlign.Center, _textFontBold, _textPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

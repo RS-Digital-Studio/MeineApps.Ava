@@ -6,7 +6,8 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.MiniGames.RoofTilingGameView"
-             x:DataType="vm:RoofTilingGameViewModel">
+             x:DataType="vm:RoofTilingGameViewModel"
+             x:CompileBindings="True">
 
   <Grid AutomationProperties.AutomationId="RoofTiling_Grid_Root"
         RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
@@ -284,7 +285,7 @@
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
     <Border AutomationProperties.AutomationId="RoofTiling_Border_Countdown"
-            Grid.RowSpan="6" Background="#CC000000"
+            Grid.RowSpan="6" Background="{StaticResource RewardOverlayBrush}"
             IsVisible="{Binding IsCountdownActive}">
       <TextBlock AutomationProperties.AutomationId="RoofTiling_Txt_Countdown"
                  Text="{Binding CountdownText}"

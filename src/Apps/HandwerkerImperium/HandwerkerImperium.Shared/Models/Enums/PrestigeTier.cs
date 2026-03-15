@@ -112,6 +112,23 @@ public static class PrestigeTierExtensions
     public static bool KeepsBestWorkers(this PrestigeTier tier) => tier >= PrestigeTier.Legende;
 
     /// <summary>
+    /// Basis-Startgeld nach Prestige, skaliert mit Tier.
+    /// Höhere Tiers starten mit deutlich mehr Geld damit sich der Reset lohnt.
+    /// Kommt zusätzlich zu Prestige-Shop-Boni (pp_start_money).
+    /// </summary>
+    public static decimal GetTierStartMoney(this PrestigeTier tier) => tier switch
+    {
+        PrestigeTier.Bronze => 10_000m,
+        PrestigeTier.Silver => 100_000m,
+        PrestigeTier.Gold => 1_000_000m,
+        PrestigeTier.Platin => 25_000_000m,
+        PrestigeTier.Diamant => 250_000_000m,
+        PrestigeTier.Meister => 2_500_000_000m,
+        PrestigeTier.Legende => 25_000_000_000m,
+        _ => 100m
+    };
+
+    /// <summary>
     /// Color key for this tier.
     /// </summary>
     public static string GetColorKey(this PrestigeTier tier) => tier switch

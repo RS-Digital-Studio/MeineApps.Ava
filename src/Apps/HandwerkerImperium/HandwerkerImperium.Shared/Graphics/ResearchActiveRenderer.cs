@@ -55,6 +55,21 @@ public sealed class ResearchActiveRenderer : IDisposable
     private readonly SKFont _percentFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
     private readonly SKFont _digitFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
 
+    // Gecachter Prozent-String (nur neu berechnen wenn sich der int-Wert ändert)
+    private int _lastPercent = -1;
+    private string _percentText = "";
+    private float _percentTextWidth;
+
+    // Gecachte Einzelzeichen-Strings für Countdown-Ziffern (vermeidet c.ToString() pro Frame)
+    private static readonly string[] _charStrings = new string[128];
+
+    static ResearchActiveRenderer()
+    {
+        // Vorberechnung aller druckbaren ASCII-Zeichen
+        for (int c = 0; c < 128; c++)
+            _charStrings[c] = ((char)c).ToString();
+    }
+
     /// <summary>
     /// Rendert das aktive Forschungs-Banner.
     /// </summary>
@@ -291,11 +306,17 @@ public sealed class ResearchActiveRenderer : IDisposable
         // Countdown-Display (mechanische Ziffern)
         DrawCountdown(canvas, x, y + 42, timeRemaining, branchColor);
 
-        // Prozent-Anzeige
+        // Prozent-Anzeige (gecacht: nur neu berechnen wenn sich int-Wert ändert)
         _percentFont.Size = 12;
         _textPaint.Color = branchColor;
-        string percentText = $"{(int)(progress * 100)}%";
-        canvas.DrawText(percentText, x + w - _percentFont.MeasureText(percentText) - 4, y + h - 16, _percentFont, _textPaint);
+        int pct = (int)(progress * 100);
+        if (pct != _lastPercent)
+        {
+            _lastPercent = pct;
+            _percentText = $"{pct}%";
+            _percentTextWidth = _percentFont.MeasureText(_percentText);
+        }
+        canvas.DrawText(_percentText, x + w - _percentTextWidth - 4, y + h - 16, _percentFont, _textPaint);
     }
 
     /// <summary>
@@ -331,9 +352,10 @@ public sealed class ResearchActiveRenderer : IDisposable
                 _stroke.StrokeWidth = 0.5f;
                 canvas.DrawLine(cx, y + charH / 2, cx + charW, y + charH / 2, _stroke);
 
-                // Ziffer
+                // Ziffer (gecachter Einzelzeichen-String, vermeidet c.ToString() pro Frame)
                 _textPaint.Color = branchColor;
-                canvas.DrawText(c.ToString(), cx + charW / 2, y + 17, SKTextAlign.Center, _digitFont, _textPaint);
+                string charStr = c < 128 ? _charStrings[c] : c.ToString();
+                canvas.DrawText(charStr, cx + charW / 2, y + 17, SKTextAlign.Center, _digitFont, _textPaint);
 
                 cx += charW + 2;
             }

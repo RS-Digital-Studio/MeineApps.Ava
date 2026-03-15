@@ -94,6 +94,10 @@ public sealed class LuckySpinWheelRenderer : IDisposable
     // Mutierbarer Font fuer Icon-Text (Größe variiert je nach Icon)
     private readonly SKFont _iconTextFont = new() { Embolden = true };
 
+    // Gecachte SKPaths fuer CreateStarPath/CreateHexPath (vermeidet Allokation pro Aufruf)
+    private readonly SKPath _starPathCache = new();
+    private readonly SKPath _hexPathCache = new();
+
     /// <summary>
     /// Rendert das Glücksrad auf den Canvas.
     /// </summary>
@@ -334,8 +338,8 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         float innerR = outerR * 0.42f;
 
         _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
-        using var starPath = CreateStarPath(cx + 1, cy + 1, outerR, innerR, 5);
-        canvas.DrawPath(starPath, _shadowPaint);
+        FillStarPath(_starPathCache, cx + 1, cy + 1, outerR, innerR, 5);
+        canvas.DrawPath(_starPathCache, _shadowPaint);
 
         // Stern-Koerper (weiss mit leichtem Blau-Gradient)
         using var starShader = SKShader.CreateRadialGradient(
@@ -345,14 +349,14 @@ public sealed class LuckySpinWheelRenderer : IDisposable
             null,
             SKShaderTileMode.Clamp);
         _iconShaderPaint.Shader = starShader;
-        using var starMainPath = CreateStarPath(cx, cy, outerR, innerR, 5);
-        canvas.DrawPath(starMainPath, _iconShaderPaint);
+        FillStarPath(_starPathCache, cx, cy, outerR, innerR, 5);
+        canvas.DrawPath(_starPathCache, _iconShaderPaint);
         _iconShaderPaint.Shader = null;
 
         // Stern-Rand
         _iconBorderPaint.StrokeWidth = size * 0.04f;
         _iconBorderPaint.Color = new SKColor(0x0D, 0x47, 0xA1);
-        canvas.DrawPath(starMainPath, _iconBorderPaint);
+        canvas.DrawPath(_starPathCache, _iconBorderPaint);
 
         // "XP" Text
         _iconTextPaint.Color = new SKColor(0x0D, 0x47, 0xA1);
@@ -371,8 +375,8 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         float slotH = size * 0.75f;
 
         _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
-        using var hexShadow = CreateHexPath(cx + 1, cy + 1, hexR);
-        canvas.DrawPath(hexShadow, _shadowPaint);
+        FillHexPath(_hexPathCache, cx + 1, cy + 1, hexR);
+        canvas.DrawPath(_hexPathCache, _shadowPaint);
 
         // Sechskant-Koerper (goldener Gradient)
         using var hexShader = SKShader.CreateLinearGradient(
@@ -382,14 +386,14 @@ public sealed class LuckySpinWheelRenderer : IDisposable
             null,
             SKShaderTileMode.Clamp);
         _iconShaderPaint.Shader = hexShader;
-        using var hexPath = CreateHexPath(cx, cy, hexR);
-        canvas.DrawPath(hexPath, _iconShaderPaint);
+        FillHexPath(_hexPathCache, cx, cy, hexR);
+        canvas.DrawPath(_hexPathCache, _iconShaderPaint);
         _iconShaderPaint.Shader = null;
 
         // Sechskant-Rand
         _iconBorderPaint.StrokeWidth = size * 0.05f;
         _iconBorderPaint.Color = new SKColor(0x8C, 0x6D, 0x00);
-        canvas.DrawPath(hexPath, _iconBorderPaint);
+        canvas.DrawPath(_hexPathCache, _iconBorderPaint);
 
         // Kreuzschlitz in der Mitte (Phillips-Kreuz)
         _iconFillPaint.Color = new SKColor(0x6D, 0x4C, 0x00);
@@ -692,11 +696,12 @@ public sealed class LuckySpinWheelRenderer : IDisposable
     // --- Hilfsmethoden ---
 
     /// <summary>
-    /// Erstellt einen Stern-Pfad mit n Zacken.
+    /// Befuellt den uebergebenen SKPath mit einem Stern-Pfad (n Zacken).
+    /// Der Path wird vor dem Befuellen zurueckgesetzt (Rewind).
     /// </summary>
-    private static SKPath CreateStarPath(float cx, float cy, float outerR, float innerR, int points)
+    private static void FillStarPath(SKPath path, float cx, float cy, float outerR, float innerR, int points)
     {
-        var path = new SKPath();
+        path.Rewind();
         float angleStep = MathF.PI / points;
         float startOffset = -MathF.PI / 2f;
 
@@ -711,15 +716,15 @@ public sealed class LuckySpinWheelRenderer : IDisposable
             else path.LineTo(x, y);
         }
         path.Close();
-        return path;
     }
 
     /// <summary>
-    /// Erstellt einen regelmaessigen Sechskant-Pfad.
+    /// Befuellt den uebergebenen SKPath mit einem regelmaessigen Sechskant.
+    /// Der Path wird vor dem Befuellen zurueckgesetzt (Rewind).
     /// </summary>
-    private static SKPath CreateHexPath(float cx, float cy, float radius)
+    private static void FillHexPath(SKPath path, float cx, float cy, float radius)
     {
-        var path = new SKPath();
+        path.Rewind();
         for (int i = 0; i < 6; i++)
         {
             float angle = (60f * i - 30f) * MathF.PI / 180f;
@@ -730,7 +735,6 @@ public sealed class LuckySpinWheelRenderer : IDisposable
             else path.LineTo(x, y);
         }
         path.Close();
-        return path;
     }
 
     public void Dispose()
@@ -750,5 +754,7 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         _iconStrokePaint.Dispose();
         _iconTextPaint.Dispose();
         _iconTextFont.Dispose();
+        _starPathCache.Dispose();
+        _hexPathCache.Dispose();
     }
 }

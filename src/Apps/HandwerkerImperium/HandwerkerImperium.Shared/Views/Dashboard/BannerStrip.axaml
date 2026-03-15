@@ -3,7 +3,8 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
              x:Class="HandwerkerImperium.Views.Dashboard.BannerStrip"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <ScrollViewer HorizontalScrollBarVisibility="Auto"
                 VerticalScrollBarVisibility="Disabled">
@@ -22,9 +23,9 @@
             </LinearGradientBrush>
           </Border.Background>
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <icons:GameIcon Kind="Flash" Width="20" Height="20" Foreground="White" />
+            <icons:GameIcon Kind="Flash" Width="20" Height="20" Foreground="{DynamicResource PrimaryContrastBrush}" />
             <TextBlock Text="{Binding RushButtonText}" FontSize="12"
-                       FontWeight="Bold" Foreground="White" />
+                       FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}" />
           </StackPanel>
         </Border>
       </Button>
@@ -56,9 +57,9 @@
             </LinearGradientBrush>
           </Border.Background>
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <icons:GameIcon Kind="PackageDown" Width="20" Height="20" Foreground="White" />
+            <icons:GameIcon Kind="PackageDown" Width="20" Height="20" Foreground="{DynamicResource PrimaryContrastBrush}" />
             <TextBlock Text="{Binding DeliveryDescription}" FontSize="12"
-                       FontWeight="Bold" Foreground="White"
+                       FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}"
                        MaxWidth="120" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Border>
@@ -90,9 +91,9 @@
               AutomationProperties.AutomationId="Dashboard_Border_WorkerWarningChip">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <icons:GameIcon Kind="AlertCircleOutline" Width="20" Height="20"
-                           Foreground="#FF5722" />
+                           Foreground="{DynamicResource WarningBrush}" />
           <TextBlock Text="{Binding WorkerWarningText}" FontSize="11"
-                     Foreground="#FF5722" MaxWidth="140"
+                     Foreground="{DynamicResource WarningBrush}" MaxWidth="140"
                      TextTrimming="CharacterEllipsis" />
         </StackPanel>
       </Border>

@@ -38,6 +38,25 @@ public partial class WorkshopView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+
+        // Timer pausieren wenn View nicht sichtbar ist (Tab-Wechsel)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _workshopVm != null && _workshopCanvas != null && _renderTimer == null)
+                {
+                    // View wieder sichtbar → Timer neu starten
+                    StartRenderLoop();
+                }
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    // View versteckt → Timer stoppen (spart ~30 InvalidateSurface/s)
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -128,8 +147,11 @@ public partial class WorkshopView : UserControl
             // Dezenter Hintergrund (mit dynamischer Beleuchtung + Wand-Details)
             _interiorRenderer.Render(canvas, bounds, workshop, _workerAnimPhase);
 
-            // Aktive Worker zählen (nicht ruhend, nicht trainierend)
-            int activeWorkers = workshop.Workers.Count(w => !w.IsResting && !w.IsTraining);
+            // Aktive Worker zählen (For-Schleife statt LINQ, vermeidet Closure+Enumerator pro Frame)
+            int activeWorkers = 0;
+            for (int i = 0; i < workshop.Workers.Count; i++)
+                if (!workshop.Workers[i].IsResting && !workshop.Workers[i].IsTraining)
+                    activeWorkers++;
 
             // Ambient-Partikel VOR der Szene zeichnen (liegen dahinter)
             _ambientParticles.Draw(canvas, withGlow: true);
@@ -279,18 +301,25 @@ public partial class WorkshopView : UserControl
 
     private async void OnUpgradeEffect(object? sender, EventArgs e)
     {
-        // Level-Badge Scale-Pop Animation
-        var badge = this.FindControl<Border>("LevelBadge");
-        if (badge != null)
+        try
         {
-            await AnimationHelper.ScaleUpDownAsync(badge, 1.0, 1.25, TimeSpan.FromMilliseconds(250));
-        }
+            // Level-Badge Scale-Pop Animation
+            var badge = this.FindControl<Border>("LevelBadge");
+            if (badge != null)
+            {
+                await AnimationHelper.ScaleUpDownAsync(badge, 1.0, 1.25, TimeSpan.FromMilliseconds(250));
+            }
 
-        // Konfetti-Partikel bei Upgrade
-        if (_workshopCanvas != null)
+            // Konfetti-Partikel bei Upgrade
+            if (_workshopCanvas != null)
+            {
+                var bounds = _workshopCanvas.Bounds;
+                _animationManager.AddLevelUpConfetti((float)bounds.Width / 2, (float)bounds.Height / 2);
+            }
+        }
+        catch (Exception ex)
         {
-            var bounds = _workshopCanvas.Bounds;
-            _animationManager.AddLevelUpConfetti((float)bounds.Width / 2, (float)bounds.Height / 2);
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnUpgradeEffect)} Fehler: {ex.Message}");
         }
     }
 }

@@ -18,12 +18,28 @@ public partial class RoofTilingGameView : UserControl
     private DispatcherTimer? _renderTimer;
     private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
+    private RoofTileData[] _cachedTileData = [];
 
     public RoofTilingGameView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => StopRenderLoop();
+
+        // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _gameCanvas != null && _renderTimer == null)
+                    StartRenderLoop();
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
 
         // AI-Hintergrund-Service initialisieren
         var assetService = App.Services?.GetService<IGameAssetService>();
@@ -101,14 +117,15 @@ public partial class RoofTilingGameView : UserControl
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
 
-        // ViewModel-Tiles in RoofTileData konvertieren
+        // ViewModel-Tiles in RoofTileData konvertieren (gecachtes Array, keine Allokation pro Frame)
         var tiles = _vm.Tiles;
-        var tileData = new RoofTileData[tiles.Count];
+        if (_cachedTileData.Length != tiles.Count)
+            _cachedTileData = new RoofTileData[tiles.Count];
 
         for (int i = 0; i < tiles.Count; i++)
         {
             var t = tiles[i];
-            tileData[i] = new RoofTileData
+            _cachedTileData[i] = new RoofTileData
             {
                 TargetColor = ParseColorToArgb(t.CorrectColor),
                 DisplayColor = ParseColorToArgb(t.DisplayColor),
@@ -124,7 +141,7 @@ public partial class RoofTilingGameView : UserControl
         _lastCanvasWidth = bounds.Width;
         _lastCanvasHeight = bounds.Height;
 
-        _renderer.Render(canvas, bounds, tileData, _vm.GridColumns, _vm.GridRows,
+        _renderer.Render(canvas, bounds, _cachedTileData, _vm.GridColumns, _vm.GridRows,
             _vm.PlacedCount, _vm.TotalToPlace, deltaTime);
     }
 
@@ -204,23 +221,30 @@ public partial class RoofTilingGameView : UserControl
     /// </summary>
     private async void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(RoofTilingGameViewModel.SelectColorHint)) return;
-        if (_vm?.SelectColorHint != true) return;
-
-        var border = this.FindControl<Border>("ColorPaletteBorder");
-        if (border == null) return;
-
-        // Schnelles Opacity-Pulsieren (2x blinken)
-        await Dispatcher.UIThread.InvokeAsync(async () =>
+        try
         {
-            for (int i = 0; i < 2; i++)
+            if (e.PropertyName != nameof(RoofTilingGameViewModel.SelectColorHint)) return;
+            if (_vm?.SelectColorHint != true) return;
+
+            var border = this.FindControl<Border>("ColorPaletteBorder");
+            if (border == null) return;
+
+            // Schnelles Opacity-Pulsieren (2x blinken)
+            await Dispatcher.UIThread.InvokeAsync(async () =>
             {
-                border.Opacity = 0.4;
-                await Task.Delay(150);
-                border.Opacity = 1.0;
-                await Task.Delay(150);
-            }
-        });
+                for (int i = 0; i < 2; i++)
+                {
+                    border.Opacity = 0.4;
+                    await Task.Delay(150);
+                    border.Opacity = 1.0;
+                    await Task.Delay(150);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnVmPropertyChanged)} Fehler: {ex.Message}");
+        }
     }
 
     /// <summary>

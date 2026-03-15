@@ -7,6 +7,7 @@
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.OrderView"
              x:DataType="vm:OrderViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Order_Root">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Order_Grid_Root">

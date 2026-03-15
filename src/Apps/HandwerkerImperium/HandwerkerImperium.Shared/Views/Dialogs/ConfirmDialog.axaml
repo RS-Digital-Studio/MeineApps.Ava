@@ -5,6 +5,7 @@
              xmlns:models="using:HandwerkerImperium.Models"
              x:Class="HandwerkerImperium.Views.Dialogs.ConfirmDialog"
              x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
              x:Name="ConfirmDialogRoot">
 
   <!-- Generic Confirm Dialog (Bottom-Sheet Style) -->

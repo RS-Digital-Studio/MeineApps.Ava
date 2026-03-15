@@ -35,8 +35,8 @@ public static class LevelThresholds
     /// <summary>Auto-Accept: Besten Auftrag automatisch annehmen.</summary>
     public const int AutoAccept = 25;
 
-    /// <summary>Auto-Assign: Idle Worker automatisch zuweisen.</summary>
-    public const int AutoAssign = 50;
+    /// <summary>Auto-Assign: Idle Worker automatisch zuweisen (inkl. Auto-Rest bei Fatigue > 80%).</summary>
+    public const int AutoAssign = 20;
 
     // ═══════════════════════════════════════════════════════════════════════
     // TAB-FREISCHALTUNG

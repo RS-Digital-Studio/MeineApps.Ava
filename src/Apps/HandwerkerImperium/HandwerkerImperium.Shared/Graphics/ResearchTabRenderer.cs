@@ -184,7 +184,7 @@ public sealed class ResearchTabRenderer : IDisposable
 
             case ResearchBranch.Marketing:
                 // Megaphon (gecachter Path)
-                _megaphonPath.Reset();
+                _megaphonPath.Rewind();
                 _megaphonPath.MoveTo(cx - s * 0.5f, cy - s * 0.2f);
                 _megaphonPath.LineTo(cx + s * 0.6f, cy - s * 0.6f);
                 _megaphonPath.LineTo(cx + s * 0.6f, cy + s * 0.6f);

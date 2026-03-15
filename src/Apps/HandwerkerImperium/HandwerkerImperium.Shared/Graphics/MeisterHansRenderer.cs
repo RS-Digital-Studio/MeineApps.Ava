@@ -347,7 +347,7 @@ public static class MeisterHansRenderer
 
         // Schnurrbart
         float mustacheY = cy + 14 * scale;
-        _mustachePath.Reset();
+        _mustachePath.Rewind();
         _mustachePath.MoveTo(cx - 18 * scale, mustacheY);
         _mustachePath.QuadTo(cx - 6 * scale, mustacheY - 4 * scale, cx, mustacheY + 2 * scale);
         _mustachePath.QuadTo(cx + 6 * scale, mustacheY - 4 * scale, cx + 18 * scale, mustacheY);
@@ -475,7 +475,7 @@ public static class MeisterHansRenderer
         {
             case "happy":
                 // Lächeln
-                _mouthPath.Reset();
+                _mouthPath.Rewind();
                 _mouthPath.MoveTo(cx - 10 * scale, mouthY);
                 _mouthPath.QuadTo(cx, mouthY + 6 * scale, cx + 10 * scale, mouthY);
                 canvas.DrawPath(_mouthPath, MouthLinePaint);
@@ -483,7 +483,7 @@ public static class MeisterHansRenderer
 
             case "proud":
                 // Breites Grinsen
-                _mouthPath.Reset();
+                _mouthPath.Rewind();
                 _mouthPath.MoveTo(cx - 12 * scale, mouthY - 1 * scale);
                 _mouthPath.QuadTo(cx, mouthY + 8 * scale, cx + 12 * scale, mouthY - 1 * scale);
                 _mouthPath.QuadTo(cx, mouthY + 4 * scale, cx - 12 * scale, mouthY - 1 * scale);
@@ -493,7 +493,7 @@ public static class MeisterHansRenderer
 
             case "concerned":
                 // Nach unten gezogener Mund
-                _mouthPath.Reset();
+                _mouthPath.Rewind();
                 _mouthPath.MoveTo(cx - 8 * scale, mouthY + 2 * scale);
                 _mouthPath.QuadTo(cx, mouthY - 4 * scale, cx + 8 * scale, mouthY + 2 * scale);
                 canvas.DrawPath(_mouthPath, MouthLinePaint);
@@ -513,7 +513,7 @@ public static class MeisterHansRenderer
         float helmY = cy - 18 * scale;
 
         // Helm-Körper (oberer Bogen)
-        _helmPath.Reset();
+        _helmPath.Rewind();
         _helmPath.MoveTo(cx - 34 * scale, helmY + 8 * scale);
         _helmPath.QuadTo(cx - 34 * scale, helmY - 18 * scale, cx, helmY - 22 * scale);
         _helmPath.QuadTo(cx + 34 * scale, helmY - 18 * scale, cx + 34 * scale, helmY + 8 * scale);
@@ -530,7 +530,7 @@ public static class MeisterHansRenderer
         canvas.DrawRoundRect(brimShadow, 3 * scale, 3 * scale, HelmetShadowPaint);
 
         // Helm-Highlight (Glanz oben)
-        _helmHighlightPath.Reset();
+        _helmHighlightPath.Rewind();
         _helmHighlightPath.MoveTo(cx - 16 * scale, helmY - 10 * scale);
         _helmHighlightPath.QuadTo(cx, helmY - 20 * scale, cx + 16 * scale, helmY - 10 * scale);
         _helmHighlightPath.QuadTo(cx, helmY - 14 * scale, cx - 16 * scale, helmY - 10 * scale);
@@ -572,7 +572,7 @@ public static class MeisterHansRenderer
                 float dropY = cy - 24 * scale + MathF.Sin(elapsed * 2f) * 3 * scale;
                 _dynamicFillPaint.Color = new SKColor(0x64, 0xB5, 0xF6, 0xCC);
                 float dX = cx + 36 * scale;
-                _dropPath.Reset();
+                _dropPath.Rewind();
                 _dropPath.MoveTo(dX, dropY - 4 * scale);
                 _dropPath.QuadTo(dX + 3 * scale, dropY, dX, dropY + 5 * scale);
                 _dropPath.QuadTo(dX - 3 * scale, dropY, dX, dropY - 4 * scale);
@@ -587,7 +587,7 @@ public static class MeisterHansRenderer
     /// </summary>
     private static void DrawStar(SKCanvas canvas, float cx, float cy, float radius, SKPaint paint)
     {
-        _starPath.Reset();
+        _starPath.Rewind();
         float innerR = radius * 0.4f;
 
         for (int i = 0; i < 10; i++)

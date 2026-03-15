@@ -368,6 +368,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             if (IsPremium)
             {
                 _gameStateService.State.IsPremium = true;
+                _gameStateService.State.InvalidateMaxOfflineHoursCache();
                 _gameStateService.MarkDirty();
                 await _saveGameService.SaveAsync();
             }
@@ -393,6 +394,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             if (IsPremium)
             {
                 _gameStateService.State.IsPremium = true;
+                _gameStateService.State.InvalidateMaxOfflineHoursCache();
                 _gameStateService.MarkDirty();
                 await _saveGameService.SaveAsync();
             }

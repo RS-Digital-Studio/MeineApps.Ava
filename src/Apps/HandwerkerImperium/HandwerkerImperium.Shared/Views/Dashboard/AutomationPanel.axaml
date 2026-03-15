@@ -4,7 +4,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dashboard.AutomationPanel"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
         <Border Classes="Card" Padding="10,8" Margin="0,0,0,4"
                 AutomationProperties.AutomationId="Dashboard_Border_Automation">

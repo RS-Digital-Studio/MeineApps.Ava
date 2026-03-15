@@ -7,7 +7,8 @@
              xmlns:labs="using:Avalonia.Labs.Controls"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.WorkerProfileView"
-             x:DataType="vm:WorkerProfileViewModel">
+             x:DataType="vm:WorkerProfileViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="WorkerProfile_Grid_Root">
 
@@ -441,7 +442,7 @@
                                 Background="{Binding RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}">
                           <icons:GameIcon Kind="{Binding TypeIcon, Converter={StaticResource IconKindConverter}}"
                                            Width="24" Height="24"
-                                           Foreground="White" />
+                                           Foreground="{DynamicResource PrimaryContrastBrush}" />
                         </Border>
                         <!-- Name + Bonus -->
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
@@ -735,7 +736,7 @@
                         SelectedItem="{Binding SelectedTransferWorkshop}"
                         DisplayMemberBinding="{Binding Name}"
                         HorizontalAlignment="Stretch"
-                        MinHeight="40"
+                        MinHeight="44"
                         AutomationProperties.AutomationId="WorkerProfile_Combo_TransferWorkshop" />
               <Button Grid.Column="1"
                       Classes="Secondary"

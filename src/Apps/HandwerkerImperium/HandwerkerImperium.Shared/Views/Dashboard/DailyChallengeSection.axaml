@@ -6,7 +6,8 @@
              xmlns:models="using:HandwerkerImperium.Models"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.Dashboard.DailyChallengeSection"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
         <Border Classes="CardElevated" Padding="12" IsVisible="{Binding HasDailyChallenges}"
                 AutomationProperties.AutomationId="Dashboard_Border_DailyChallenges">
@@ -20,6 +21,7 @@
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Dashboard_Txt_DailyChallengesTitle" />
               <Button Grid.Column="2" Classes="Text" Padding="4"
+                      MinHeight="44" MinWidth="44"
                       Command="{Binding ToggleChallengesExpandedCommand}"
                       AutomationProperties.AutomationId="Dashboard_Btn_ToggleChallenges">
                 <icons:GameIcon Kind="{Binding ChallengesExpandIconKind}" Width="24" Height="24" />
@@ -60,19 +62,19 @@
                           </StackPanel>
                         </StackPanel>
                         <!-- Belohnung einsammeln Button (abgeschlossen, aber noch nicht eingesammelt) -->
-                        <Button Classes="Primary" Padding="10,6" MinHeight="36" CornerRadius="8"
+                        <Button Classes="Primary" Padding="10,8" MinHeight="44" CornerRadius="8"
                                 Background="{StaticResource CraftPrimaryBrush}"
                                 IsVisible="{Binding IsCompleted}"
                                 Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).ClaimChallengeRewardCommand}"
                                 CommandParameter="{Binding .}"
                                 AutomationProperties.AutomationId="Dashboard_Btn_ClaimChallengeReward">
                           <StackPanel Orientation="Horizontal" Spacing="4">
-                            <icons:GameIcon Kind="Gift" Width="20" Height="20" Foreground="White" />
-                            <TextBlock Text="{loc:Translate Claim}" FontSize="12" FontWeight="Bold" Foreground="White" />
+                            <icons:GameIcon Kind="Gift" Width="20" Height="20" Foreground="{DynamicResource PrimaryContrastBrush}" />
+                            <TextBlock Text="{loc:Translate Claim}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}" />
                           </StackPanel>
                         </Button>
                         <!-- Retry per Video-Ad -->
-                        <Button Classes="Text" Padding="8,6" MinHeight="36" MinWidth="36"
+                        <Button Classes="Text" Padding="8,8" MinHeight="44" MinWidth="44"
                                 IsVisible="{Binding CanRetryWithAd}"
                                 Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).RetryChallengeWithAdCommand}"
                                 CommandParameter="{Binding .}"

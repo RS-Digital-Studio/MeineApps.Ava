@@ -51,8 +51,8 @@ public static class WorkshopTypeExtensions
         WorkshopType.Plumber => 8,
         WorkshopType.Electrician => 15,
         WorkshopType.Painter => 22,
-        WorkshopType.Roofer => 60,
-        WorkshopType.Contractor => 100,
+        WorkshopType.Roofer => 40,          // Von 60 auf 40: Tote Zone Lv30-60 geschlossen
+        WorkshopType.Contractor => 80,      // Von 100 auf 80: Gleichmäßigere Verteilung
         WorkshopType.Architect => 1,            // Ab Level 1 verfuegbar, braucht aber Prestige 1
         WorkshopType.GeneralContractor => 1,    // Ab Level 1 verfuegbar, braucht aber Prestige 3
         WorkshopType.MasterSmith => 500,        // Endgame: Level 500 + Platin-Prestige
@@ -83,8 +83,8 @@ public static class WorkshopTypeExtensions
         WorkshopType.Plumber => 25_000m,
         WorkshopType.Electrician => 250_000m,
         WorkshopType.Painter => 2_500_000m,
-        WorkshopType.Roofer => 25_000_000m,
-        WorkshopType.Contractor => 250_000_000m,
+        WorkshopType.Roofer => 10_000_000m,           // Von 25M auf 10M: Passt zu Lv40 (statt Lv60)
+        WorkshopType.Contractor => 100_000_000m,       // Von 250M auf 100M: Passt zu Lv80 (statt Lv100)
         WorkshopType.Architect => 2_500_000_000m,
         WorkshopType.GeneralContractor => 25_000_000_000m,
         WorkshopType.MasterSmith => 5_000_000m,            // 5M - Platin-Prestige Endgame

@@ -331,7 +331,7 @@ public sealed class RewardCeremonyRenderer : IDisposable
 
     private void DrawArrowUp(SKCanvas canvas, float cx, float cy, float s)
     {
-        _iconPath.Reset();
+        _iconPath.Rewind();
         _iconPath.MoveTo(cx, cy - s);            // Spitze
         _iconPath.LineTo(cx + s * 0.6f, cy);     // Rechts
         _iconPath.LineTo(cx + s * 0.2f, cy);
@@ -345,7 +345,7 @@ public sealed class RewardCeremonyRenderer : IDisposable
 
     private void DrawStar(SKCanvas canvas, float cx, float cy, float s)
     {
-        _iconPath.Reset();
+        _iconPath.Rewind();
         for (int i = 0; i < 10; i++)
         {
             float angle = (i * 36f - 90f) * MathF.PI / 180f;
@@ -360,7 +360,7 @@ public sealed class RewardCeremonyRenderer : IDisposable
 
     private void DrawCrown(SKCanvas canvas, float cx, float cy, float s)
     {
-        _iconPath.Reset();
+        _iconPath.Rewind();
         float w = s * 0.9f, h = s * 0.7f;
         // Basis
         _iconPath.MoveTo(cx - w, cy + h * 0.4f);
@@ -386,7 +386,7 @@ public sealed class RewardCeremonyRenderer : IDisposable
     {
         // Kelch-Körper
         float w = s * 0.7f, h = s * 0.6f;
-        _iconPath.Reset();
+        _iconPath.Rewind();
         _iconPath.MoveTo(cx - w, cy - h);
         _iconPath.LineTo(cx + w, cy - h);
         _iconPath.LineTo(cx + w * 0.6f, cy + h * 0.3f);

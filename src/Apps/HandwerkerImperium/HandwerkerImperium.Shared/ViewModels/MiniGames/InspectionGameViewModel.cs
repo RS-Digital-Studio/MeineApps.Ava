@@ -7,6 +7,7 @@ using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
+using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels.MiniGames;
 
@@ -228,7 +229,7 @@ public sealed partial class InspectionGameViewModel : ViewModelBase, IDisposable
         InitializeGame();
 
         CheckAndShowTutorial(MiniGameType.Inspection);
-        if (!ShowTutorial) _ = StartGameAsync();
+        if (!ShowTutorial) StartGameAsync().SafeFireAndForget();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -577,7 +578,7 @@ public sealed partial class InspectionGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(MiniGameType.Inspection);
             _gameStateService.MarkDirty();
         }
-        _ = StartGameAsync();
+        StartGameAsync().SafeFireAndForget();
     }
 
     [RelayCommand]

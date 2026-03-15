@@ -385,18 +385,16 @@ public sealed partial class ResearchViewModel : ViewModelBase
     {
         if (!HasActiveResearch || ActiveResearch == null) return;
 
-        // NameKey VOR Abschluss speichern (LoadResearchTree setzt ActiveResearch = null)
-        var nameKey = ActiveResearch.NameKey;
-
         var success = await _rewardedAdService.ShowAdAsync("research_speedup");
         if (success)
         {
-            _researchService.InstantFinishResearch();
+            // BAL-4: 50% Zeitreduktion statt Sofortfertigstellung (Anti-Exploit)
+            _researchService.ReduceResearchTime(0.50);
             LoadResearchTree();
 
             AlertRequested?.Invoke(
-                _localizationService.GetString("ResearchFinishedFree"),
-                _localizationService.GetString(nameKey),
+                _localizationService.GetString("ResearchSpeedUp") ?? "Forschung beschleunigt",
+                _localizationService.GetString("ResearchSpeedUpDesc") ?? "Forschungszeit um 50% reduziert!",
                 _localizationService.GetString("Great"));
         }
     }

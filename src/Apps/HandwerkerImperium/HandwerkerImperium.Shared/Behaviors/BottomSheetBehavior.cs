@@ -45,67 +45,74 @@ public static class BottomSheetBehavior
 
     private static async void OnIsOpenChanged(Control element, AvaloniaPropertyChangedEventArgs e)
     {
-        var isOpen = (bool)e.NewValue!;
-        var distance = GetSlideDistance(element);
-
-        if (isOpen)
+        try
         {
-            // Startposition: Unterhalb des sichtbaren Bereichs (OHNE Transition)
-            element.Transitions = null;
-            element.RenderTransform = TransformOperations.Parse($"translate(0px, {distance}px)");
-            element.Opacity = 0;
-            element.IsVisible = true;
+            var isOpen = (bool)e.NewValue!;
+            var distance = GetSlideDistance(element);
 
-            // Frame abwarten, damit Startposition gerendert wird
-            await Task.Delay(16);
+            if (isOpen)
+            {
+                // Startposition: Unterhalb des sichtbaren Bereichs (OHNE Transition)
+                element.Transitions = null;
+                element.RenderTransform = TransformOperations.Parse($"translate(0px, {distance}px)");
+                element.Opacity = 0;
+                element.IsVisible = true;
 
-            // Transition aktivieren
-            element.Transitions =
-            [
-                new TransformOperationsTransition
-                {
-                    Property = Visual.RenderTransformProperty,
-                    Duration = TimeSpan.FromMilliseconds(300),
-                    Easing = new CubicEaseOut()
-                },
+                // Frame abwarten, damit Startposition gerendert wird
+                await Task.Delay(16);
 
-                new DoubleTransition
-                {
-                    Property = Visual.OpacityProperty,
-                    Duration = TimeSpan.FromMilliseconds(200)
-                }
-            ];
+                // Transition aktivieren
+                element.Transitions =
+                [
+                    new TransformOperationsTransition
+                    {
+                        Property = Visual.RenderTransformProperty,
+                        Duration = TimeSpan.FromMilliseconds(300),
+                        Easing = new CubicEaseOut()
+                    },
 
-            // Zielposition → Transition animiert automatisch
-            element.RenderTransform = TransformOperations.Parse("translate(0px, 0px)");
-            element.Opacity = 1;
+                    new DoubleTransition
+                    {
+                        Property = Visual.OpacityProperty,
+                        Duration = TimeSpan.FromMilliseconds(200)
+                    }
+                ];
+
+                // Zielposition → Transition animiert automatisch
+                element.RenderTransform = TransformOperations.Parse("translate(0px, 0px)");
+                element.Opacity = 1;
+            }
+            else
+            {
+                // Transition sicherstellen fuer Slide-Down
+                element.Transitions ??=
+                [
+                    new TransformOperationsTransition
+                    {
+                        Property = Visual.RenderTransformProperty,
+                        Duration = TimeSpan.FromMilliseconds(250),
+                        Easing = new CubicEaseIn()
+                    },
+
+                    new DoubleTransition
+                    {
+                        Property = Visual.OpacityProperty,
+                        Duration = TimeSpan.FromMilliseconds(200)
+                    }
+                ];
+
+                // Nach unten schieben
+                element.RenderTransform = TransformOperations.Parse($"translate(0px, {distance}px)");
+                element.Opacity = 0;
+
+                // Warten bis Animation fertig, dann ausblenden
+                await Task.Delay(300);
+                element.IsVisible = false;
+            }
         }
-        else
+        catch (Exception ex)
         {
-            // Transition sicherstellen fuer Slide-Down
-            element.Transitions ??=
-            [
-                new TransformOperationsTransition
-                {
-                    Property = Visual.RenderTransformProperty,
-                    Duration = TimeSpan.FromMilliseconds(250),
-                    Easing = new CubicEaseIn()
-                },
-
-                new DoubleTransition
-                {
-                    Property = Visual.OpacityProperty,
-                    Duration = TimeSpan.FromMilliseconds(200)
-                }
-            ];
-
-            // Nach unten schieben
-            element.RenderTransform = TransformOperations.Parse($"translate(0px, {distance}px)");
-            element.Opacity = 0;
-
-            // Warten bis Animation fertig, dann ausblenden
-            await Task.Delay(300);
-            element.IsVisible = false;
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnIsOpenChanged)} Fehler: {ex.Message}");
         }
     }
 }

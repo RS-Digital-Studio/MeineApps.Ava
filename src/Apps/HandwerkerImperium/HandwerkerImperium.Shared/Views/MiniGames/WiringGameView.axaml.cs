@@ -31,6 +31,21 @@ public partial class WiringGameView : UserControl
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => StopRenderLoop();
 
+        // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _gameCanvas != null && _renderTimer == null)
+                    StartRenderLoop();
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
+
         // AI-Hintergrund-Service initialisieren
         var assetService = App.Services?.GetService<IGameAssetService>();
         if (assetService != null)

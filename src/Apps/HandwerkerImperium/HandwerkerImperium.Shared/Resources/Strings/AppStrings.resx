@@ -2229,7 +2229,7 @@
     <value>Golden Screws (Video)</value>
   </data>
   <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
-    <value>8 golden screws for a video</value>
+    <value>10 golden screws for a video</value>
   </data>
   <data name="ShopGoldenScrews50Name" xml:space="preserve">
     <value>Golden Screws Pouch</value>
@@ -2376,6 +2376,12 @@
   </data>
   <data name="ResearchFinishedFree" xml:space="preserve">
     <value>Research completed for free!</value>
+  </data>
+  <data name="ResearchSpeedUp" xml:space="preserve">
+    <value>Research accelerated</value>
+  </data>
+  <data name="ResearchSpeedUpDesc" xml:space="preserve">
+    <value>Research time reduced by 50%!</value>
   </data>
   <data name="WatchAdToRetry" xml:space="preserve">
     <value>Retry (Video)</value>
@@ -2856,6 +2862,12 @@
   </data>
   <data name="PrestigeGoldenScrew25Desc" xml:space="preserve">
     <value>+25% Golden Screws from all sources</value>
+  </data>
+  <data name="PrestigeIncomeRepeatable" xml:space="preserve">
+    <value>Expansion Fund</value>
+  </data>
+  <data name="PrestigeIncomeRepeatableDesc" xml:space="preserve">
+    <value>+5% income per purchase (stackable, rising cost)</value>
   </data>
   <data name="PressBackAgainToExit" xml:space="preserve">
     <value>Press back again to exit</value>
@@ -3771,7 +3783,7 @@
     <value>Streak rescued!</value>
   </data>
   <data name="StreakRescueCost" xml:space="preserve">
-    <value>5 Golden Screws</value>
+    <value>{0} Golden Screws</value>
   </data>
 
   <data name="PlayGamesMembersInfo" xml:space="preserve">
@@ -4723,6 +4735,42 @@
   </data>
   <data name="PrestigeResetNote" xml:space="preserve">
     <value>Level, money and workshops will be reset.</value>
+  </data>
+  <data name="StartMoney" xml:space="preserve">
+    <value>Start money</value>
+  </data>
+  <data name="PrestigeLossLevel" xml:space="preserve">
+    <value>Level and XP</value>
+  </data>
+  <data name="PrestigeLossMoney" xml:space="preserve">
+    <value>Money and orders</value>
+  </data>
+  <data name="PrestigeLossWorkshops" xml:space="preserve">
+    <value>Workshops (only Carpenter remains)</value>
+  </data>
+  <data name="PrestigeLossResearch" xml:space="preserve">
+    <value>Research</value>
+  </data>
+  <data name="PrestigeLossTools" xml:space="preserve">
+    <value>Master tools</value>
+  </data>
+  <data name="PrestigeLossBuildings" xml:space="preserve">
+    <value>Buildings</value>
+  </data>
+  <data name="PrestigeLossEquipment" xml:space="preserve">
+    <value>Equipment</value>
+  </data>
+  <data name="PrestigeLossManagers" xml:space="preserve">
+    <value>Foremen</value>
+  </data>
+  <data name="PrestigeLossCrafting" xml:space="preserve">
+    <value>Crafting inventory and orders</value>
+  </data>
+  <data name="PrestigeTimingWarning" xml:space="preserve">
+    <value>You are already level {0} - at level {1} you could do {2} (more PP)!</value>
+  </data>
+  <data name="PrestigeNearNextTier" xml:space="preserve">
+    <value>Only {0} more levels until {1} (level {2}) - keep playing!</value>
   </data>
   <data name="PrestigeLosesLevel" xml:space="preserve">
     <value>Player level → 1</value>

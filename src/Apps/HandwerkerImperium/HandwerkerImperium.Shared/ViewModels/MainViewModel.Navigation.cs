@@ -5,6 +5,7 @@ using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels.MiniGames;
 using MeineApps.Core.Ava.Services;
+using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -419,7 +420,7 @@ public sealed partial class MainViewModel
         // "prestige" = Prestige-Bestätigung öffnen (von GoalService wenn Prestige verfügbar)
         if (route == "prestige")
         {
-            _ = NavigateToPrestigeAsync();
+            NavigateToPrestigeAsync().SafeFireAndForget();
             return;
         }
 
@@ -518,12 +519,12 @@ public sealed partial class MainViewModel
                     break;
                 case "guild_chat":
                     IsGuildChatActive = true;
-                    _ = GuildViewModel.LoadChatMessagesAsync();
+                    GuildViewModel.LoadChatMessagesAsync().SafeFireAndForget();
                     GuildViewModel.StartChatPolling();
                     break;
                 case "guild_war":
                     IsGuildWarActive = true;
-                    _ = GuildViewModel.LoadWarStatusAsync();
+                    GuildViewModel.LoadWarStatusAsync().SafeFireAndForget();
                     break;
             }
             NotifyTabBarVisibility();

@@ -124,6 +124,101 @@ public sealed class ForgeGameRenderer : IDisposable
     private static readonly SKMaskFilter Blur16 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 16);
 
     // ═══════════════════════════════════════════════════════════════════════
+    // Gecachte Shader fuer statische Elemente (nur bei Bounds-Aenderung neu)
+    // Spart ~13 Shader-Allokationen/Frame bei 30fps = ~390 Shader/s
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private SKRect _lastBounds;
+
+    // Amboss
+    private SKShader? _anvilBodyShader;
+    private SKShader? _hornShader;
+
+    // Esse
+    private SKShader? _forgeStoneShader;
+    private SKShader? _coalBedShader;
+    private SKShader? _bellowsShader;
+
+    // Temperatur-Bar Hintergrund (Position statisch)
+    private SKShader? _tempBarBgShader;
+
+    /// <summary>
+    /// Erstellt alle bounds-abhaengigen Shader neu.
+    /// Wird nur aufgerufen wenn sich die Bounds aendern (Groessenaenderung/Rotation).
+    /// </summary>
+    private void RebuildStaticShaders(SKRect bounds)
+    {
+        float padding = 14;
+        float areaTop = bounds.Top + padding;
+        float areaHeight = (bounds.Bottom - padding) - areaTop;
+
+        // --- Amboss ---
+        float anvilTop = areaTop + areaHeight * 0.15f;
+        float anvilHeight = areaHeight * 0.32f;
+        float centerX = bounds.Left + bounds.Width * 0.5f;
+        float topW = 75;
+        float hornLen = 35;
+
+        _anvilBodyShader?.Dispose();
+        _anvilBodyShader = SKShader.CreateLinearGradient(
+            new SKPoint(centerX, anvilTop),
+            new SKPoint(centerX, anvilTop + anvilHeight),
+            new[] { new SKColor(0x78, 0x78, 0x78), new SKColor(0x3A, 0x3A, 0x3A) },
+            null, SKShaderTileMode.Clamp);
+
+        float hornY = anvilTop + anvilHeight * 0.28f;
+        _hornShader?.Dispose();
+        _hornShader = SKShader.CreateLinearGradient(
+            new SKPoint(centerX - topW / 2, hornY),
+            new SKPoint(centerX - topW / 2 - hornLen, hornY + 7),
+            new[] { new SKColor(0x70, 0x70, 0x70), new SKColor(0x55, 0x55, 0x55) },
+            null, SKShaderTileMode.Clamp);
+
+        // --- Esse ---
+        float fLeft = bounds.Left + padding;
+        float fTop = areaTop + 8;
+        float fH = areaHeight * 0.42f;
+
+        _forgeStoneShader?.Dispose();
+        _forgeStoneShader = SKShader.CreateLinearGradient(
+            new SKPoint(fLeft, fTop),
+            new SKPoint(fLeft, fTop + fH),
+            new[] { new SKColor(0x6D, 0x56, 0x44), new SKColor(0x4A, 0x38, 0x2A) },
+            null, SKShaderTileMode.Clamp);
+
+        float coalY = fTop + fH - 14;
+        _coalBedShader?.Dispose();
+        _coalBedShader = SKShader.CreateLinearGradient(
+            new SKPoint(fLeft + 8, coalY),
+            new SKPoint(fLeft + 8, coalY + 8),
+            new[] { new SKColor(0xFF, 0x30, 0x00, 200), new SKColor(0x80, 0x10, 0x00, 150) },
+            null, SKShaderTileMode.Clamp);
+
+        // --- Blasebalg ---
+        float bX = bounds.Right - padding - 42;
+        float bY = areaTop + areaHeight * 0.28f;
+        _bellowsShader?.Dispose();
+        _bellowsShader = SKShader.CreateLinearGradient(
+            new SKPoint(bX, bY),
+            new SKPoint(bX, bY + 22),
+            new[] { new SKColor(0x7D, 0x5C, 0x4B), new SKColor(0x5D, 0x3C, 0x2B) },
+            null, SKShaderTileMode.Clamp);
+
+        // --- Temperatur-Bar ---
+        float barTop = anvilTop + anvilHeight + 32;
+        float barHeight = Math.Min(46, areaHeight * 0.16f);
+        float barLeft = bounds.Left + padding + 6;
+        float barWidth = bounds.Width - 2 * padding - 12;
+
+        _tempBarBgShader?.Dispose();
+        _tempBarBgShader = SKShader.CreateLinearGradient(
+            new SKPoint(barLeft, barTop), new SKPoint(barLeft, barTop + barHeight),
+            new[] { new SKColor(0x20, 0x14, 0x08), new SKColor(0x30, 0x1E, 0x10) },
+            null, SKShaderTileMode.Clamp);
+
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // Farb-Konstanten
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -180,6 +275,13 @@ public sealed class ForgeGameRenderer : IDisposable
         }
 
         _animTime += deltaTime;
+
+        // Statische Shader bei Bounds-Aenderung neu erstellen
+        if (_lastBounds != bounds)
+        {
+            _lastBounds = bounds;
+            RebuildStaticShaders(bounds);
+        }
 
         // Hammer-Animation und Effekte tracken
         if (isHammering && !_wasHammering)
@@ -333,20 +435,16 @@ public sealed class ForgeGameRenderer : IDisposable
         float hornLen = 35;
 
         // Amboss-Koerper (Trapez) mit vertikalem Metall-Gradient
-        _anvilBodyPath.Reset();
+        _anvilBodyPath.Rewind();
         _anvilBodyPath.MoveTo(cx - topW / 2, top);
         _anvilBodyPath.LineTo(cx + topW / 2, top);
         _anvilBodyPath.LineTo(cx + baseW / 2, top + height);
         _anvilBodyPath.LineTo(cx - baseW / 2, top + height);
         _anvilBodyPath.Close();
 
-        SwapShader(AnvilBodyPaint, SKShader.CreateLinearGradient(
-            new SKPoint(cx, top),
-            new SKPoint(cx, top + height),
-            new[] { new SKColor(0x78, 0x78, 0x78), new SKColor(0x3A, 0x3A, 0x3A) },
-            null, SKShaderTileMode.Clamp));
+        AnvilBodyPaint.Shader = _anvilBodyShader;
         canvas.DrawPath(_anvilBodyPath, AnvilBodyPaint);
-        SwapShader(AnvilBodyPaint, null);
+        AnvilBodyPaint.Shader = null;
 
         // Metallglanz-Highlight oben
         _fillPaint.Color = new SKColor(0xA0, 0xA0, 0xA0, 180);
@@ -354,7 +452,7 @@ public sealed class ForgeGameRenderer : IDisposable
 
         // Seiten-Reflexion (links heller)
         _fillPaint.Color = new SKColor(0x90, 0x90, 0x90, 50);
-        _anvilReflectPath.Reset();
+        _anvilReflectPath.Rewind();
         _anvilReflectPath.MoveTo(cx - topW / 2, top);
         _anvilReflectPath.LineTo(cx - topW / 2 + 12, top);
         _anvilReflectPath.LineTo(cx - baseW / 2 + 12, top + height);
@@ -367,18 +465,14 @@ public sealed class ForgeGameRenderer : IDisposable
 
         // Horn (links, konisch mit Gradient)
         float hornY = top + height * 0.28f;
-        _hornPath.Reset();
+        _hornPath.Rewind();
         _hornPath.MoveTo(cx - topW / 2 - 2, hornY);
         _hornPath.LineTo(cx - topW / 2 - hornLen, hornY + 6);
         _hornPath.LineTo(cx - topW / 2 - 2, hornY + 14);
         _hornPath.Close();
-        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
-            new SKPoint(cx - topW / 2, hornY),
-            new SKPoint(cx - topW / 2 - hornLen, hornY + 7),
-            new[] { new SKColor(0x70, 0x70, 0x70), new SKColor(0x55, 0x55, 0x55) },
-            null, SKShaderTileMode.Clamp));
+        _fillPaint.Shader = _hornShader;
         canvas.DrawPath(_hornPath, _fillPaint);
-        SwapShader(_fillPaint, null);
+        _fillPaint.Shader = null;
 
         // Sockel (2-stufig, dunkel)
         _fillPaint.Color = new SKColor(0x30, 0x30, 0x30);
@@ -486,7 +580,7 @@ public sealed class ForgeGameRenderer : IDisposable
         canvas.Save();
         canvas.RotateDegrees(rotation, hammerX, hammerY + 20);
 
-        // Stiel mit Holz-Gradient
+        // Stiel mit Holz-Gradient (Position dynamisch durch Animation)
         SwapShader(HammerHandlePaint, SKShader.CreateLinearGradient(
             new SKPoint(hammerX - 4, hammerY),
             new SKPoint(hammerX + 4, hammerY),
@@ -531,14 +625,10 @@ public sealed class ForgeGameRenderer : IDisposable
         float fW = 54;
         float fH = areaH * 0.42f;
 
-        // Steinrahmen mit Gradient (warme Toene)
-        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
-            new SKPoint(fLeft, fTop),
-            new SKPoint(fLeft, fTop + fH),
-            new[] { new SKColor(0x6D, 0x56, 0x44), new SKColor(0x4A, 0x38, 0x2A) },
-            null, SKShaderTileMode.Clamp));
+        // Steinrahmen mit Gradient (warme Toene, gecacht)
+        _fillPaint.Shader = _forgeStoneShader;
         canvas.DrawRoundRect(fLeft, fTop, fW, fH, 4, 4, _fillPaint);
-        SwapShader(_fillPaint, null);
+        _fillPaint.Shader = null;
 
         // Steinfugen (horizontal)
         _fillPaint.Color = new SKColor(0x3A, 0x2E, 0x22, 100);
@@ -551,15 +641,11 @@ public sealed class ForgeGameRenderer : IDisposable
         _fillPaint.Color = new SKColor(0x1A, 0x0E, 0x06);
         canvas.DrawRoundRect(fLeft + 5, fTop + 5, fW - 10, fH - 10, 2, 2, _fillPaint);
 
-        // Glut-Bett am Boden (rote Kohlen)
+        // Glut-Bett am Boden (rote Kohlen, gecacht)
         float coalY = fTop + fH - 14;
-        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
-            new SKPoint(fLeft + 8, coalY),
-            new SKPoint(fLeft + 8, coalY + 8),
-            new[] { new SKColor(0xFF, 0x30, 0x00, 200), new SKColor(0x80, 0x10, 0x00, 150) },
-            null, SKShaderTileMode.Clamp));
+        _fillPaint.Shader = _coalBedShader;
         canvas.DrawRect(fLeft + 8, coalY, fW - 16, 8, _fillPaint);
-        SwapShader(_fillPaint, null);
+        _fillPaint.Shader = null;
 
         // Feuer (animiert, pulsierend, mehrere Schichten)
         if (isPlaying || temperature > 0.05)
@@ -641,14 +727,10 @@ public sealed class ForgeGameRenderer : IDisposable
         float bX = bounds.Right - padding - 42;
         float bY = areaTop + areaH * 0.28f;
 
-        // Blasebalg-Koerper
-        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
-            new SKPoint(bX, bY),
-            new SKPoint(bX, bY + 22),
-            new[] { new SKColor(0x7D, 0x5C, 0x4B), new SKColor(0x5D, 0x3C, 0x2B) },
-            null, SKShaderTileMode.Clamp));
+        // Blasebalg-Koerper (gecacht)
+        _fillPaint.Shader = _bellowsShader;
         canvas.DrawRoundRect(bX, bY, 32, 22, 3, 3, _fillPaint);
-        SwapShader(_fillPaint, null);
+        _fillPaint.Shader = null;
 
         // Blasebalg-Griff
         _fillPaint.Color = new SKColor(0x8B, 0x5A, 0x2B);
@@ -675,13 +757,10 @@ public sealed class ForgeGameRenderer : IDisposable
         double temp, double pStart, double pWidth, double gStart, double gWidth,
         double oStart, double oWidth, bool isPlaying)
     {
-        // Bar-Hintergrund (dunkel mit Gradient)
-        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
-            new SKPoint(x, y), new SKPoint(x, y + h),
-            new[] { new SKColor(0x20, 0x14, 0x08), new SKColor(0x30, 0x1E, 0x10) },
-            null, SKShaderTileMode.Clamp));
+        // Bar-Hintergrund (dunkel mit Gradient, gecacht)
+        _fillPaint.Shader = _tempBarBgShader;
         canvas.DrawRoundRect(x, y, w, h, 4, 4, _fillPaint);
-        SwapShader(_fillPaint, null);
+        _fillPaint.Shader = null;
 
         // Rahmen
         canvas.DrawRoundRect(x, y, w, h, 4, 4, FramePaint);
@@ -781,7 +860,7 @@ public sealed class ForgeGameRenderer : IDisposable
         canvas.DrawRect(markerX - 2, y, 4, h, _fillPaint);
 
         // Pfeil-Spitze oben
-        _arrowPath.Reset();
+        _arrowPath.Rewind();
         _arrowPath.MoveTo(markerX - 5, y - 5);
         _arrowPath.LineTo(markerX, y - 10);
         _arrowPath.LineTo(markerX + 5, y - 5);
@@ -1199,5 +1278,13 @@ public sealed class ForgeGameRenderer : IDisposable
         _smokePaint?.Dispose();
         _textPaint?.Dispose();
         _textFont9?.Dispose();
+
+        // Gecachte statische Shader
+        _anvilBodyShader?.Dispose();
+        _hornShader?.Dispose();
+        _forgeStoneShader?.Dispose();
+        _coalBedShader?.Dispose();
+        _bellowsShader?.Dispose();
+        _tempBarBgShader?.Dispose();
     }
 }

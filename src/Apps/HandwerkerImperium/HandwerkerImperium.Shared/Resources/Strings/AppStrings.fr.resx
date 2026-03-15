@@ -2174,7 +2174,7 @@
     <value>Vis dor&#233;es (Vid&#233;o)</value>
   </data>
   <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
-    <value>8 vis dor&#233;es pour une vid&#233;o</value>
+    <value>10 vis dor&#233;es pour une vid&#233;o</value>
   </data>
   <data name="ShopGoldenScrews50Name" xml:space="preserve">
     <value>Sachet de vis dor&#233;es</value>
@@ -2321,6 +2321,12 @@
   </data>
   <data name="ResearchFinishedFree" xml:space="preserve">
     <value>Recherche termin&#233;e gratuitement !</value>
+  </data>
+  <data name="ResearchSpeedUp" xml:space="preserve">
+    <value>Recherche acc&#233;l&#233;r&#233;e</value>
+  </data>
+  <data name="ResearchSpeedUpDesc" xml:space="preserve">
+    <value>Temps de recherche r&#233;duit de 50% !</value>
   </data>
   <data name="WatchAdToRetry" xml:space="preserve">
     <value>R&#233;essayer (Vid&#233;o)</value>
@@ -2792,6 +2798,12 @@
   </data>
   <data name="PrestigeGoldenScrew25Desc" xml:space="preserve">
     <value>+25% Vis Dorées de toutes sources</value>
+  </data>
+  <data name="PrestigeIncomeRepeatable" xml:space="preserve">
+    <value>Fonds d'Expansion</value>
+  </data>
+  <data name="PrestigeIncomeRepeatableDesc" xml:space="preserve">
+    <value>+5% revenus par achat (cumulable, coût croissant)</value>
   </data>
   <data name="PressBackAgainToExit" xml:space="preserve">
     <value>Appuyez encore pour quitter</value>
@@ -3467,7 +3479,7 @@
   <data name="RescueStreak" xml:space="preserve"><value>Sauver la série ({0} vis)</value></data>
   <data name="StreakInDanger" xml:space="preserve"><value>Ta série de {0} jours est en danger !</value></data>
   <data name="StreakRescued" xml:space="preserve"><value>Série sauvée !</value></data>
-  <data name="StreakRescueCost" xml:space="preserve"><value>5 Vis dorées</value></data>
+  <data name="StreakRescueCost" xml:space="preserve"><value>{0} Vis dorées</value></data>
   <data name="CloudSaveNotAvailable" xml:space="preserve"><value>Sauvegarde cloud non disponible sur cet appareil</value></data>
   <data name="CloudRestoreFailed" xml:space="preserve"><value>Impossible de restaurer depuis le cloud</value></data>
   <data name="RestoreFromCloudConfirmation" xml:space="preserve"><value>Cela remplacera votre sauvegarde actuelle par celle du cloud. Êtes-vous sûr ?</value></data>
@@ -4521,6 +4533,42 @@
   </data>
   <data name="PrestigeResetNote" xml:space="preserve">
     <value>Niveau, argent et ateliers seront réinitialisés.</value>
+  </data>
+  <data name="StartMoney" xml:space="preserve">
+    <value>Capital de départ</value>
+  </data>
+  <data name="PrestigeLossLevel" xml:space="preserve">
+    <value>Niveau et XP</value>
+  </data>
+  <data name="PrestigeLossMoney" xml:space="preserve">
+    <value>Argent et commandes</value>
+  </data>
+  <data name="PrestigeLossWorkshops" xml:space="preserve">
+    <value>Ateliers (seul Menuiserie reste)</value>
+  </data>
+  <data name="PrestigeLossResearch" xml:space="preserve">
+    <value>Recherche</value>
+  </data>
+  <data name="PrestigeLossTools" xml:space="preserve">
+    <value>Outils de maître</value>
+  </data>
+  <data name="PrestigeLossBuildings" xml:space="preserve">
+    <value>Bâtiments</value>
+  </data>
+  <data name="PrestigeLossEquipment" xml:space="preserve">
+    <value>Équipement</value>
+  </data>
+  <data name="PrestigeLossManagers" xml:space="preserve">
+    <value>Contremaîtres</value>
+  </data>
+  <data name="PrestigeLossCrafting" xml:space="preserve">
+    <value>Inventaire d'artisanat et commandes</value>
+  </data>
+  <data name="PrestigeTimingWarning" xml:space="preserve">
+    <value>Tu es déjà niveau {0} - au niveau {1} tu pourrais faire {2} (plus de PP) !</value>
+  </data>
+  <data name="PrestigeNearNextTier" xml:space="preserve">
+    <value>Plus que {0} niveaux jusqu'à {1} (niveau {2}) - continue de jouer !</value>
   </data>
   <data name="PrestigeLosesLevel" xml:space="preserve">
     <value>Niveau joueur → 1</value>

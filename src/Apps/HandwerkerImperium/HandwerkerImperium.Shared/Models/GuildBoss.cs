@@ -264,7 +264,10 @@ public class GuildBossDisplayData
 /// </summary>
 public class BossDamageEntry
 {
-    /// <summary>Spieler-Name.</summary>
+    /// <summary>Spieler-ID (stabile Identität, überlebt Namensänderungen).</summary>
+    public string PlayerId { get; set; } = "";
+
+    /// <summary>Spieler-Name (nur für Anzeige).</summary>
     public string PlayerName { get; set; } = "";
 
     /// <summary>Gesamt-Schaden am Boss.</summary>

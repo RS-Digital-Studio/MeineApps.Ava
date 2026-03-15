@@ -6,7 +6,8 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.WorkshopView"
-             x:DataType="vm:WorkshopViewModel">
+             x:DataType="vm:WorkshopViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,Auto,*" AutomationProperties.AutomationId="Workshop_Grid_Root">
 
@@ -56,7 +57,7 @@
         <!-- Level Badge (animiert bei Upgrade) -->
         <Border x:Name="LevelBadge"
                 Grid.Column="2"
-                Background="Gold"
+                Background="{StaticResource CraftGoldBrush}"
                 CornerRadius="8"
                 Padding="12,6"
                 RenderTransformOrigin="0.5,0.5"

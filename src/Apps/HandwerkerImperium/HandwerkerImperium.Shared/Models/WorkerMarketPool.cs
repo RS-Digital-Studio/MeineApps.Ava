@@ -55,7 +55,7 @@ public class WorkerMarketPool
     /// <summary>
     /// Generates a new pool of workers based on player progression.
     /// </summary>
-    public void GeneratePool(int playerLevel, int prestigeLevel, bool hasHeadhunter = false)
+    public void GeneratePool(int playerLevel, int prestigeLevel, bool hasHeadhunter = false, bool hasSTierResearch = false)
     {
         AvailableWorkers.Clear();
         LastRotation = DateTime.UtcNow;
@@ -63,7 +63,7 @@ public class WorkerMarketPool
         FreeRefreshUsedThisRotation = false;
 
         int poolSize = hasHeadhunter ? 8 : 5;
-        var availableTiers = Worker.GetAvailableTiers(playerLevel, prestigeLevel);
+        var availableTiers = Worker.GetAvailableTiers(playerLevel, prestigeLevel, hasSTierResearch);
         if (availableTiers.Count == 0) return;
 
         var random = Random.Shared;

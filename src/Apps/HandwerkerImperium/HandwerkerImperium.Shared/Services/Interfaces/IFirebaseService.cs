@@ -27,17 +27,17 @@ public interface IFirebaseService : IDisposable
     /// <summary>GET-Request an Firebase Realtime Database.</summary>
     Task<T?> GetAsync<T>(string path) where T : class;
 
-    /// <summary>PUT-Request (Überschreiben).</summary>
-    Task SetAsync<T>(string path, T data);
+    /// <summary>PUT-Request (Überschreiben). Gibt true bei Erfolg zurück, false bei Fehler.</summary>
+    Task<bool> SetAsync<T>(string path, T data);
 
-    /// <summary>PATCH-Request (Teilweise aktualisieren).</summary>
-    Task UpdateAsync(string path, Dictionary<string, object> updates);
+    /// <summary>PATCH-Request (Teilweise aktualisieren). Gibt true bei Erfolg zurück, false bei Fehler.</summary>
+    Task<bool> UpdateAsync(string path, Dictionary<string, object> updates);
 
     /// <summary>POST-Request (Neuen Eintrag erstellen, gibt Key zurück).</summary>
     Task<string?> PushAsync<T>(string path, T data);
 
-    /// <summary>DELETE-Request.</summary>
-    Task DeleteAsync(string path);
+    /// <summary>DELETE-Request. Gibt true bei Erfolg zurück, false bei Fehler.</summary>
+    Task<bool> DeleteAsync(string path);
 
     /// <summary>GET mit Query-Parametern (orderBy, limitToLast etc.).</summary>
     Task<string?> QueryAsync(string path, string queryParams);

@@ -92,15 +92,16 @@ public class Workshop
 
     /// <summary>
     /// Base income per worker per second at current level.
-    /// Formel: 1 * 1.025^(Level-1) * TypeMultiplier
-    /// Moderat-exponentiell, skaliert sicher bis Level 1000.
+    /// Formel: 1 * 1.02^(Level-1) * TypeMultiplier
+    /// Langsameres Wachstum (1.02 statt 1.025) → Progression dauert länger,
+    /// Spieler müssen mehr upgraden/optimieren bevor es "explodiert".
     /// </summary>
     [JsonIgnore]
     public decimal BaseIncomePerWorker
     {
         get
         {
-            decimal baseIncome = (decimal)Math.Pow(1.025, Level - 1);
+            decimal baseIncome = (decimal)Math.Pow(1.02, Level - 1);
             return baseIncome * Type.GetBaseIncomeMultiplier() * GetMilestoneMultiplier();
         }
     }
@@ -151,17 +152,24 @@ public class Workshop
     /// Multiplikator-Meilensteine bei bestimmten Workshop-Leveln.
     /// Erzeugt "Bumpy Progression" (AdVenture-Capitalist-Pattern):
     /// Vor einem Meilenstein verlangsamt es sich, danach explodiert das Einkommen.
-    /// Kumulativ: Lv1000 = 1.5 * 2 * 2 * 3 * 5 * 10 = 900x
+    /// Meilensteine bei 25/50/75/100/150/200/250/500/1000 → gleichmäßige Belohnungsverteilung.
+    /// Kumulativ Lv1000 = 1.25 * 1.5 * 1.5 * 1.75 * 2.0 * 1.75 * 2.0 * 2.0 * 3.0 * 5.0 = ~620x
+    /// Meilenstein 200 schließt die Lücke zwischen 150 und 250.
+    /// Meilenstein 350 schließt die Durststrecke 250→500 (BAL-1 Balancing-Fix).
     /// </summary>
     public decimal GetMilestoneMultiplier()
     {
         decimal mult = 1.0m;
-        if (Level >= 25) mult *= 1.5m;
-        if (Level >= 50) mult *= 2.0m;
-        if (Level >= 100) mult *= 2.0m;
-        if (Level >= 250) mult *= 3.0m;
-        if (Level >= 500) mult *= 5.0m;
-        if (Level >= 1000) mult *= 10.0m;
+        if (Level >= 25) mult *= 1.25m;
+        if (Level >= 50) mult *= 1.5m;
+        if (Level >= 75) mult *= 1.5m;
+        if (Level >= 100) mult *= 1.75m;
+        if (Level >= 150) mult *= 2.0m;
+        if (Level >= 200) mult *= 1.75m;
+        if (Level >= 250) mult *= 2.0m;
+        if (Level >= 350) mult *= 2.0m;  // BAL-1: Neuer Meilenstein gegen Mid-Game-Durststrecke
+        if (Level >= 500) mult *= 3.0m;
+        if (Level >= 1000) mult *= 5.0m;
         return mult;
     }
 
@@ -169,19 +177,23 @@ public class Workshop
     /// Prüft ob das aktuelle Level ein Multiplikator-Meilenstein ist.
     /// </summary>
     public static bool IsMilestoneLevel(int level) =>
-        level is 25 or 50 or 100 or 250 or 500 or 1000;
+        level is 25 or 50 or 75 or 100 or 150 or 200 or 250 or 350 or 500 or 1000;
 
     /// <summary>
     /// Gibt den Multiplikator für ein bestimmtes Meilenstein-Level zurück.
     /// </summary>
     public static decimal GetMilestoneMultiplierForLevel(int level) => level switch
     {
-        25 => 1.5m,
-        50 => 2.0m,
-        100 => 2.0m,
-        250 => 3.0m,
-        500 => 5.0m,
-        1000 => 10.0m,
+        25 => 1.25m,
+        50 => 1.5m,
+        75 => 1.5m,
+        100 => 1.75m,
+        150 => 2.0m,
+        200 => 1.75m,
+        250 => 2.0m,
+        350 => 2.0m,  // BAL-1: Neuer Meilenstein
+        500 => 3.0m,
+        1000 => 5.0m,
         _ => 1.0m
     };
 
@@ -191,7 +203,7 @@ public class Workshop
     [JsonIgnore]
     public decimal RentPerHour => Level <= 100
         ? 10m * Level
-        : 1000m * (decimal)Math.Pow(1.008, Level - 100);
+        : 1000m * (decimal)Math.Pow(1.005, Level - 100);
 
     /// <summary>
     /// Material-Kosten pro Stunde (hybrid: linear bis Lv.100, dann exponentiell).
@@ -201,7 +213,7 @@ public class Workshop
     [JsonIgnore]
     public decimal MaterialCostPerHour => Level <= 100
         ? 5m * Level * Type.GetBaseIncomeMultiplier()
-        : 500m * (decimal)Math.Pow(1.008, Level - 100) * Type.GetBaseIncomeMultiplier();
+        : 500m * (decimal)Math.Pow(1.005, Level - 100) * Type.GetBaseIncomeMultiplier();
 
     /// <summary>
     /// Total worker wages per hour.
@@ -231,8 +243,9 @@ public class Workshop
 
     /// <summary>
     /// Kosten fuer Upgrade auf naechstes Level.
-    /// Formel: 200 * 1.035^(Level-1), reduziert durch Prestige-Shop UpgradeDiscount.
-    /// Moderat-exponentiell, skaliert sicher bis Level 1000.
+    /// Formel: 200 * 1.05^(Level-1), reduziert durch Prestige-Shop UpgradeDiscount.
+    /// Steilere Kostenkurve (1.05 statt 1.035) → Upgrades werden schneller teuer,
+    /// Spieler müssen länger sparen oder Ads schauen für Boost.
     /// </summary>
     [JsonIgnore]
     public decimal UpgradeCost
@@ -240,7 +253,7 @@ public class Workshop
         get
         {
             if (Level >= MaxLevel) return 0;
-            decimal baseCost = Level == 1 ? 100m : 200m * (decimal)Math.Pow(1.035, Level - 1);
+            decimal baseCost = Level == 1 ? 100m : 200m * (decimal)Math.Pow(1.05, Level - 1);
 
             // Prestige-Shop Upgrade-Rabatt anwenden
             if (UpgradeDiscount > 0)
@@ -263,7 +276,7 @@ public class Workshop
         for (int i = 0; i < maxUpgrades; i++)
         {
             int lvl = Level + i;
-            decimal cost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.035, lvl - 1);
+            decimal cost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.05, lvl - 1);
             total += cost * discountFactor;
         }
         return total;
@@ -280,7 +293,7 @@ public class Workshop
         for (int i = 0; i < MaxLevel - Level; i++)
         {
             int lvl = Level + i;
-            decimal lvlCost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.035, lvl - 1);
+            decimal lvlCost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.05, lvl - 1);
             if (total + lvlCost > budget) break;
             total += lvlCost;
             count++;

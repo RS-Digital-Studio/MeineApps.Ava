@@ -269,7 +269,7 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
         float megaH = h * 0.25f;
 
         // Trichter (Trapez)
-        _megaPath.Reset();
+        _megaPath.Rewind();
         _megaPath.MoveTo(cx - megaW * 0.3f, cy - megaH * 0.3f);
         _megaPath.LineTo(cx + megaW, cy - megaH * 0.8f);
         _megaPath.LineTo(cx + megaW, cy + megaH * 0.8f);

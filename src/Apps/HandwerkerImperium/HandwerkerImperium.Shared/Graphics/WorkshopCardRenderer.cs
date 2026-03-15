@@ -41,8 +41,10 @@ public static class WorkshopCardRenderer
     private static readonly SKColor GoldColor = new(0xFF, 0xD7, 0x00);
     private static readonly SKColor GoldDark = new(0xD4, 0xA0, 0x00);
 
-    // Hinweis: Paints werden in Render() lokal erstellt und per Parameter durchgereicht,
-    // da statische Felder in Render-Methoden nicht thread-sicher mutiert werden koennen.
+    // Statische wiederverwendbare Paints (nur auf UI-Thread verwendet, daher thread-sicher).
+    // Farbe/Style wird vor jeder Verwendung gesetzt.
+    private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
 
     /// <summary>
     /// Gibt die Workshop-Farbe für einen Typ zurück.
@@ -69,52 +71,48 @@ public static class WorkshopCardRenderer
         float cy = bounds.MidY;
         var color = GetWorkshopColor(type);
 
-        // Lokal erstellte Paints (thread-sicher, da keine statischen Felder mutiert werden)
-        using var fill = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
-        using var stroke = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
-
         // Hintergrund-Gradient (dunkel -> Workshop-Farbe)
-        DrawBackground(canvas, bounds, color, isUnlocked, level, fill, stroke);
+        DrawBackground(canvas, bounds, color, isUnlocked, level, _fill, _stroke);
 
         // Typ-spezifische Szene
         if (!isUnlocked)
         {
             // Gesperrte Workshops: Nur Silhouette
-            DrawLockedSilhouette(canvas, cx, cy, w, h, type, color, fill);
+            DrawLockedSilhouette(canvas, cx, cy, w, h, type, color, _fill);
         }
         else
         {
             switch (type)
             {
                 case WorkshopType.Carpenter:
-                    DrawCarpenterScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawCarpenterScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
                 case WorkshopType.Plumber:
-                    DrawPlumberScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawPlumberScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
                 case WorkshopType.Electrician:
-                    DrawElectricianScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawElectricianScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
                 case WorkshopType.Painter:
-                    DrawPainterScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawPainterScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
                 case WorkshopType.Roofer:
-                    DrawRooferScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawRooferScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
                 case WorkshopType.Contractor:
-                    DrawContractorScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawContractorScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
                 case WorkshopType.Architect:
-                    DrawArchitectScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawArchitectScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
                 case WorkshopType.GeneralContractor:
-                    DrawGeneralContractorScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawGeneralContractorScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
                 case WorkshopType.MasterSmith:
-                    DrawMasterSmithScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawMasterSmithScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
                 case WorkshopType.InnovationLab:
-                    DrawInnovationLabScene(canvas, cx, cy, w, h, color, fill, stroke);
+                    DrawInnovationLabScene(canvas, cx, cy, w, h, color, _fill, _stroke);
                     break;
             }
         }

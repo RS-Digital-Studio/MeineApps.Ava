@@ -5,6 +5,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -24,7 +25,9 @@ public sealed partial class GuildBossViewModel : ViewModelBase
 
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
+#pragma warning disable CS0067 // Event wird vorbereitet fuer zukuenftige Boss-Celebration
     public event Action? CelebrationRequested;
+#pragma warning restore CS0067
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES - Boss-Info
@@ -200,7 +203,7 @@ public sealed partial class GuildBossViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>Lädt die Boss-Daten neu (für Hub-Aufruf).</summary>
-    public void RefreshBoss() => _ = LoadBossDataAsync();
+    public void RefreshBoss() => LoadBossDataAsync().SafeFireAndForget();
 
     /// <summary>Gibt den Quick-Status für den Guild-Hub zurück.</summary>
     public string GetQuickStatus()

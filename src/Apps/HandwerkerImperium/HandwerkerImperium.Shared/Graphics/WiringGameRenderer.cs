@@ -120,6 +120,17 @@ public sealed class WiringGameRenderer : IDisposable
     private readonly SKPath _cachedPath = new();
     private readonly SKFont _cachedFont = new(SKTypeface.Default, 11);
 
+    // ═══════════════════════════════════════════════════════════════════
+    // GECACHTE SHADER (nur bei Bounds-Aenderung neu erstellt)
+    // Spart 4+ Shader-Allokationen/Frame bei 30fps
+    // ═══════════════════════════════════════════════════════════════════
+
+    private SKRect _lastBounds;
+    private SKShader? _wallShader;
+    private SKShader? _panelShaderLeft;
+    private SKShader? _panelShaderRight;
+    // Stecker-Shader sind pro Kabel + Seite unterschiedlich positioniert → bleiben dynamisch
+
     private struct LightningBolt
     {
         public float X1, Y1, X2, Y2, Life, MaxLife;
@@ -156,6 +167,13 @@ public sealed class WiringGameRenderer : IDisposable
         }
 
         _time += deltaTime;
+
+        // Statische Shader bei Bounds-Aenderung neu erstellen
+        if (_lastBounds != bounds)
+        {
+            _lastBounds = bounds;
+            RebuildStaticShaders(bounds);
+        }
 
         float padding = 12;
         float gap = 6;
@@ -425,14 +443,10 @@ public sealed class WiringGameRenderer : IDisposable
 
     private void DrawWallBackground(SKCanvas canvas, SKRect bounds)
     {
-        // Dunklere Betonwand mit Gradient
-        _shaderPaint.Shader?.Dispose();
-        _shaderPaint.Shader = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.Left, bounds.Top),
-            new SKPoint(bounds.Left, bounds.Bottom),
-            new[] { new SKColor(0x42, 0x42, 0x42), new SKColor(0x35, 0x35, 0x35) },
-            null, SKShaderTileMode.Clamp);
+        // Dunklere Betonwand mit Gradient (gecacht)
+        _shaderPaint.Shader = _wallShader;
         canvas.DrawRect(bounds, _shaderPaint);
+        _shaderPaint.Shader = null;
 
         // Fugenlinien (horizontal)
         _thinStrokePaint.Color = WallLine;
@@ -458,13 +472,10 @@ public sealed class WiringGameRenderer : IDisposable
     private void DrawPanel(SKCanvas canvas, float x, float y, float width, float height,
         string label, bool isAllConnected)
     {
-        // Panel-Koerper mit leichtem Gradient
-        _shaderPaint.Shader?.Dispose();
-        _shaderPaint.Shader = SKShader.CreateLinearGradient(
-            new SKPoint(x, y), new SKPoint(x, y + height),
-            new[] { PanelAccent, PanelBg },
-            null, SKShaderTileMode.Clamp);
+        // Panel-Koerper mit leichtem Gradient (gecacht)
+        _shaderPaint.Shader = (label == "IN") ? _panelShaderLeft : _panelShaderRight;
         canvas.DrawRect(x, y, width, height, _shaderPaint);
+        _shaderPaint.Shader = null;
 
         // Rand (bei Completion gruen leuchtend)
         _strokePaint.Color = isAllConnected && _completionStarted
@@ -578,14 +589,16 @@ public sealed class WiringGameRenderer : IDisposable
                 _fillPaint.Color = highlightColor;
                 canvas.DrawRect(x + width * 0.2f, cableY - cableThickness / 2,
                     width * 0.8f, 1, _fillPaint);
-                // Stecker-Ende (metallisch)
-                _shaderPaint.Shader?.Dispose();
-                _shaderPaint.Shader = SKShader.CreateLinearGradient(
+                // Stecker-Ende (metallisch, pro Kabel unterschiedliche Y-Position)
+                var leftPlugShader = SKShader.CreateLinearGradient(
                     new SKPoint(x + width - 6, cableY - cableThickness),
                     new SKPoint(x + width, cableY + cableThickness),
                     new[] { new SKColor(0x90, 0x90, 0x90), new SKColor(0x60, 0x60, 0x60) },
                     null, SKShaderTileMode.Clamp);
+                _shaderPaint.Shader = leftPlugShader;
                 canvas.DrawRect(x + width - 6, cableY - cableThickness - 1, 6, cableThickness * 2 + 2, _shaderPaint);
+                _shaderPaint.Shader = null;
+                leftPlugShader.Dispose();
             }
             else
             {
@@ -594,13 +607,15 @@ public sealed class WiringGameRenderer : IDisposable
                 _fillPaint.Color = highlightColor;
                 canvas.DrawRect(x, cableY - cableThickness / 2,
                     width * 0.8f, 1, _fillPaint);
-                _shaderPaint.Shader?.Dispose();
-                _shaderPaint.Shader = SKShader.CreateLinearGradient(
+                var rightPlugShader = SKShader.CreateLinearGradient(
                     new SKPoint(x, cableY - cableThickness),
                     new SKPoint(x + 6, cableY + cableThickness),
                     new[] { new SKColor(0x60, 0x60, 0x60), new SKColor(0x90, 0x90, 0x90) },
                     null, SKShaderTileMode.Clamp);
+                _shaderPaint.Shader = rightPlugShader;
                 canvas.DrawRect(x, cableY - cableThickness - 1, 6, cableThickness * 2 + 2, _shaderPaint);
+                _shaderPaint.Shader = null;
+                rightPlugShader.Dispose();
             }
 
             // Farbiger Indikator-Kreis
@@ -618,7 +633,7 @@ public sealed class WiringGameRenderer : IDisposable
                 _strokePaintAA.StrokeCap = SKStrokeCap.Round;
                 float cx = x + width / 2;
                 float cy = cableY;
-                _cachedPath.Reset();
+                _cachedPath.Rewind();
                 _cachedPath.MoveTo(cx - 5, cy);
                 _cachedPath.LineTo(cx - 1, cy + 4);
                 _cachedPath.LineTo(cx + 6, cy - 4);
@@ -669,7 +684,7 @@ public sealed class WiringGameRenderer : IDisposable
                 float rightY = wireAreaTop + j * (wireHeight + 8) + wireHeight / 2;
 
                 // Bezier-Kurve statt gerader Linie
-                _cachedPath.Reset();
+                _cachedPath.Rewind();
                 float cp1X = leftEndX + gapWidth * 0.35f;
                 float cp2X = leftEndX + gapWidth * 0.65f;
                 _cachedPath.MoveTo(leftEndX, leftY);
@@ -822,7 +837,7 @@ public sealed class WiringGameRenderer : IDisposable
             float dy = b.Y2 - b.Y1;
             var rng = Random.Shared;
 
-            _cachedPath.Reset();
+            _cachedPath.Rewind();
             _cachedPath.MoveTo(b.X1, b.Y1);
 
             for (int seg = 1; seg <= 3; seg++)
@@ -897,6 +912,39 @@ public sealed class WiringGameRenderer : IDisposable
     }
 
     /// <summary>
+    /// Erstellt bounds-abhaengige Shader neu (Wand + 2 Panels).
+    /// </summary>
+    private void RebuildStaticShaders(SKRect bounds)
+    {
+        float padding = 12;
+        float gap = 6;
+        float panelWidth = (bounds.Width - padding * 2 - gap) / 2;
+        float panelHeight = bounds.Height - padding * 2;
+        float leftPanelX = bounds.Left + padding;
+        float rightPanelX = bounds.Left + padding + panelWidth + gap;
+        float panelY = bounds.Top + padding;
+
+        _wallShader?.Dispose();
+        _wallShader = SKShader.CreateLinearGradient(
+            new SKPoint(bounds.Left, bounds.Top),
+            new SKPoint(bounds.Left, bounds.Bottom),
+            new[] { new SKColor(0x42, 0x42, 0x42), new SKColor(0x35, 0x35, 0x35) },
+            null, SKShaderTileMode.Clamp);
+
+        _panelShaderLeft?.Dispose();
+        _panelShaderLeft = SKShader.CreateLinearGradient(
+            new SKPoint(leftPanelX, panelY), new SKPoint(leftPanelX, panelY + panelHeight),
+            new[] { PanelAccent, PanelBg },
+            null, SKShaderTileMode.Clamp);
+
+        _panelShaderRight?.Dispose();
+        _panelShaderRight = SKShader.CreateLinearGradient(
+            new SKPoint(rightPanelX, panelY), new SKPoint(rightPanelX, panelY + panelHeight),
+            new[] { PanelAccent, PanelBg },
+            null, SKShaderTileMode.Clamp);
+    }
+
+    /// <summary>
     /// Gibt native SkiaSharp-Ressourcen frei.
     /// </summary>
     public void Dispose()
@@ -917,6 +965,11 @@ public sealed class WiringGameRenderer : IDisposable
         _blur5.Dispose();
         _cachedPath.Dispose();
         _cachedFont.Dispose();
+
+        // Gecachte statische Shader
+        _wallShader?.Dispose();
+        _panelShaderLeft?.Dispose();
+        _panelShaderRight?.Dispose();
     }
 }
 

@@ -45,6 +45,11 @@ public sealed class WorkerAvatarRenderer
         .Select(i => $"workers/tier_{i:D2}.webp")
         .ToArray();
 
+    // Weibliche Tier-Portrait-Pfade
+    private static readonly string[] s_tierFemaleAssetPaths = Enumerable.Range(1, 10)
+        .Select(i => $"workers/tier_{i:D2}_f.webp")
+        .ToArray();
+
     // ═══════════════════════════════════════════════════════════════════
     // FARB-PALETTEN
     // ═══════════════════════════════════════════════════════════════════
@@ -122,8 +127,9 @@ public sealed class WorkerAvatarRenderer
         // AI-Verfügbarkeit im Cache-Key: Wenn AI-Portrait nachgeladen wird,
         // erzeugt der neue Key einen Cache-Miss → AI-Version ersetzt prozedurale
         var tierIdx = (int)tier;
-        bool hasAI = tierIdx < s_tierAssetPaths.Length
-                     && s_assetService?.GetBitmap(s_tierAssetPaths[tierIdx]) != null;
+        var assetPaths = isFemale ? s_tierFemaleAssetPaths : s_tierAssetPaths;
+        bool hasAI = tierIdx >= 0 && tierIdx < assetPaths.Length
+                     && s_assetService?.GetBitmap(assetPaths[tierIdx]) != null;
         string cacheKey = $"{idSeed}|{tier}|{moodBucket}|{size}|{(isFemale ? "f" : "m")}{(hasAI ? "|ai" : "")}";
 
         // Cache pruefen - direkte Referenz, kein Copy
@@ -135,8 +141,8 @@ public sealed class WorkerAvatarRenderer
             }
         }
 
-        // AI-Tier-Portrait versuchen (skaliert in Zielgröße)
-        var tierPortrait = GetTierPortrait(tier);
+        // AI-Tier-Portrait versuchen (skaliert in Zielgröße, geschlechtsspezifisch)
+        var tierPortrait = GetTierPortrait(tier, isFemale);
         if (tierPortrait != null)
         {
             var bitmap = new SKBitmap(size, size, SKColorType.Rgba8888, SKAlphaType.Premul);
@@ -767,17 +773,42 @@ public sealed class WorkerAvatarRenderer
 
     /// <summary>
     /// Gibt das AI-generierte Tier-Portrait zurück oder null (Fallback auf prozedural).
+    /// Wählt geschlechtsspezifisches Portrait wenn verfügbar.
     /// </summary>
-    private static SKBitmap? GetTierPortrait(WorkerTier tier)
+    private static SKBitmap? GetTierPortrait(WorkerTier tier, bool isFemale = false)
     {
         if (s_assetService == null) return null;
         var tierIdx = (int)tier;
-        if (tierIdx < 0 || tierIdx >= s_tierAssetPaths.Length) return null;
-        var assetPath = s_tierAssetPaths[tierIdx];
+        var paths = isFemale ? s_tierFemaleAssetPaths : s_tierAssetPaths;
+        if (tierIdx < 0 || tierIdx >= paths.Length) return null;
+        var assetPath = paths[tierIdx];
         var portrait = s_assetService.GetBitmap(assetPath);
         if (portrait == null)
             _ = s_assetService.LoadBitmapAsync(assetPath);
         return portrait;
+    }
+
+    /// <summary>
+    /// Prüft ob für den gegebenen Tier ein AI-Portrait im Cache verfügbar ist.
+    /// Wird vom WorkerAvatarControl genutzt um nach async-Laden neu zu rendern.
+    /// </summary>
+    public static bool HasAIPortrait(WorkerTier tier, bool isFemale = false)
+    {
+        if (s_assetService == null) return false;
+        var tierIdx = (int)tier;
+        var paths = isFemale ? s_tierFemaleAssetPaths : s_tierAssetPaths;
+        if (tierIdx < 0 || tierIdx >= paths.Length) return false;
+        return s_assetService.GetBitmap(paths[tierIdx]) != null;
+    }
+
+    /// <summary>
+    /// Gibt alle Worker-Portrait-Pfade zurück (für Preloading in der Loading-Pipeline).
+    /// 10 männliche + 10 weibliche = 20 Portraits.
+    /// </summary>
+    public static IEnumerable<string> GetAllPortraitPaths()
+    {
+        foreach (var path in s_tierAssetPaths) yield return path;
+        foreach (var path in s_tierFemaleAssetPaths) yield return path;
     }
 
     private static MoodBucket GetMoodBucket(decimal mood)

@@ -60,6 +60,18 @@ public sealed class ResearchTreeRenderer : IDisposable
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _text = new() { IsAntialias = true };
 
+    // Gecachte Prozent-Strings 0%-100% (vermeidet Interpolation pro Node pro Frame)
+    private static readonly string[] _percentStrings = new string[101];
+
+    // Gecachte Kosten-Strings (CostDisplay → "EUR{CostDisplay}", nur bei neuen Werten allokieren)
+    private static readonly Dictionary<string, string> _costStringCache = new();
+
+    static ResearchTreeRenderer()
+    {
+        for (int i = 0; i <= 100; i++)
+            _percentStrings[i] = $"{i}%";
+    }
+
     // Gecachte Font- und Path-Objekte (vermeidet Allokationen pro Frame)
     private readonly SKFont _fontSmall = new() { Edging = SKFontEdging.Antialias };
     private readonly SKFont _fontMedium = new() { Edging = SKFontEdging.Antialias };
@@ -244,7 +256,7 @@ public sealed class ResearchTreeRenderer : IDisposable
         float endY = to.Y - NodeSize / 2 - 4;
 
         // Bezier-Kurve für geschwungene Verbindung (gecachter Path)
-        _connectionPath.Reset();
+        _connectionPath.Rewind();
         _connectionPath.MoveTo(from.X, startY);
 
         float midY = (startY + endY) / 2;
@@ -294,7 +306,7 @@ public sealed class ResearchTreeRenderer : IDisposable
     {
         float size = 8;
         _fill.Color = color;
-        _arrowPath.Reset();
+        _arrowPath.Rewind();
         _arrowPath.MoveTo(x, y);
         _arrowPath.LineTo(x - size, y - size * 1.5f);
         _arrowPath.LineTo(x + size, y - size * 1.5f);
@@ -424,7 +436,9 @@ public sealed class ResearchTreeRenderer : IDisposable
         // Prozent-Text im Balken (wenn erforscht oder aktiv)
         if (item.IsResearched || item.IsActive)
         {
-            string percentText = $"{(int)(progress * 100)}%";
+            // Gecachter Prozent-String statt Interpolation pro Node pro Frame
+            int pctIdx = Math.Clamp((int)(progress * 100), 0, 100);
+            string percentText = _percentStrings[pctIdx];
             _fontSmall.Size = 9;
             _fontSmall.Embolden = true;
             _text.Color = SKColors.White.WithAlpha(220);
@@ -457,7 +471,13 @@ public sealed class ResearchTreeRenderer : IDisposable
             _fontMedium.Size = 12;
             _fontMedium.Embolden = false;
             _text.Color = TextSecondary;
-            canvas.DrawText($"\u20ac{item.CostDisplay}", cx, y + 19, SKTextAlign.Center, _fontMedium, _text);
+            // Gecachter Kosten-String statt Interpolation pro Node pro Frame
+            if (!_costStringCache.TryGetValue(item.CostDisplay, out var costText))
+            {
+                costText = $"\u20ac{item.CostDisplay}";
+                _costStringCache[item.CostDisplay] = costText;
+            }
+            canvas.DrawText(costText, cx, y + 19, SKTextAlign.Center, _fontMedium, _text);
         }
 
     }

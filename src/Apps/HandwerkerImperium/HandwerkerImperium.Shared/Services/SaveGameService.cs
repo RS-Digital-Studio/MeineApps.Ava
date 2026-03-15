@@ -51,12 +51,18 @@ public sealed class SaveGameService : ISaveGameService
 
     public async Task SaveAsync()
     {
-        await _ioLock.WaitAsync();
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(30)))
+        {
+            System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] SaveAsync: IO-Lock Timeout - Save übersprungen");
+            return;
+        }
         try
         {
             var state = _gameStateService.State;
             state.LastSavedAt = DateTime.UtcNow;
 
+            // Serialisierung auf dem UI-Thread (Thread-Safety: GameLoop modifiziert State jede Sekunde,
+            // concurrent Serialisierung auf Background-Thread koennte Collection-Mutation-Exceptions ausloesen)
             string json = JsonSerializer.Serialize(state, _jsonOptions);
 
             // Atomic write: write to temp, backup old, rename temp to final
@@ -89,7 +95,11 @@ public sealed class SaveGameService : ISaveGameService
 
     public async Task<GameState?> LoadAsync()
     {
-        await _ioLock.WaitAsync();
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(30)))
+        {
+            System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] LoadAsync: IO-Lock Timeout - Load übersprungen");
+            return null;
+        }
         try
         {
             if (!SaveExists)
@@ -149,7 +159,11 @@ public sealed class SaveGameService : ISaveGameService
 
     public async Task DeleteSaveAsync()
     {
-        await _ioLock.WaitAsync();
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(30)))
+        {
+            System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] DeleteSaveAsync: IO-Lock Timeout - Delete übersprungen");
+            return;
+        }
         try
         {
             if (File.Exists(SaveFilePath)) File.Delete(SaveFilePath);
@@ -168,11 +182,23 @@ public sealed class SaveGameService : ISaveGameService
 
     public async Task<string> ExportSaveAsync()
     {
-        await _ioLock.WaitAsync();
+        var state = _gameStateService.State;
+        if (state == null) return string.Empty;
+
+        // Serialisierung außerhalb des Locks (UI-Thread, kein Race)
+        string json = JsonSerializer.Serialize(state, _jsonOptions);
+
+        // Lock nur fuer potentielle zukuenftige IO-Erweiterungen (Export-Datei etc.)
+        // Aktuell gibt ExportSaveAsync() nur den JSON-String zurueck,
+        // der Lock verhindert aber Race mit AutoSave falls spaeter File-Write hinzukommt
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false))
+        {
+            System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] ExportSaveAsync: IO-Lock Timeout - Export übersprungen");
+            return string.Empty;
+        }
         try
         {
-            var state = _gameStateService.State;
-            return JsonSerializer.Serialize(state, _jsonOptions);
+            return json;
         }
         finally
         {

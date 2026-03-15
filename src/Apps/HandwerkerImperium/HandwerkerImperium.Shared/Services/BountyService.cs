@@ -51,7 +51,8 @@ public sealed class BountyService : IBountyService
 
     public async Task<BountyDisplayData?> GetActiveBountyAsync()
     {
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)))
+            return _cachedBounty; // Timeout: gecachtes Ergebnis zurückgeben
         try
         {
             // Cache prüfen

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Helpers;
@@ -32,7 +33,7 @@ public enum GuildViewState
 /// ViewModel für das Multiplayer-Gildensystem via Firebase.
 /// Sechs UI-Zustände via GuildViewState Enum (flache Panels, keine verschachtelte IsVisible-Logik).
 /// </summary>
-public sealed partial class GuildViewModel : ViewModelBase
+public sealed partial class GuildViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IGameStateService _gameStateService;
@@ -40,7 +41,6 @@ public sealed partial class GuildViewModel : ViewModelBase
     private readonly IGuildResearchService _researchService;
     private readonly ILocalizationService _localizationService;
     private readonly IGuildChatService _chatService;
-    private readonly IGuildWarService _warService;
     private readonly IGuildWarSeasonService _warSeasonService;
     private readonly IGuildBossService _bossService;
     private readonly IGuildHallService _hallService;
@@ -49,9 +49,16 @@ public sealed partial class GuildViewModel : ViewModelBase
     private bool _isBusy;
     private DateTime _lastChatSend = DateTime.MinValue;
     private Avalonia.Threading.DispatcherTimer? _chatPollTimer;
+    private EventHandler? _chatPollHandler;
     private readonly Action<string> _warSeasonNavHandler;
     private readonly Action<string> _bossNavHandler;
     private readonly Action<string> _hallNavHandler;
+    private readonly Action<string, string> _warSeasonMsgHandler;
+    private readonly Action<string, string> _bossMsgHandler;
+    private readonly Action<string, string> _hallMsgHandler;
+    private readonly Action _bossCelebrationHandler;
+    private readonly Action _hallCelebrationHandler;
+    private readonly EventHandler<(string Text, string Type)> _hallFloatingTextHandler;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -59,6 +66,7 @@ public sealed partial class GuildViewModel : ViewModelBase
 
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
+    public event Action<string, string>? FloatingTextRequested;
     public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
     public event Action? CelebrationRequested;
 
@@ -372,7 +380,6 @@ public sealed partial class GuildViewModel : ViewModelBase
         IGuildResearchService researchService,
         ILocalizationService localizationService,
         IGuildChatService chatService,
-        IGuildWarService warService,
         IGuildWarSeasonService warSeasonService,
         IGuildBossService bossService,
         IGuildHallService hallService,
@@ -387,7 +394,6 @@ public sealed partial class GuildViewModel : ViewModelBase
         _researchService = researchService;
         _localizationService = localizationService;
         _chatService = chatService;
-        _warService = warService;
         _warSeasonService = warSeasonService;
         _bossService = bossService;
         _hallService = hallService;
@@ -405,6 +411,20 @@ public sealed partial class GuildViewModel : ViewModelBase
         WarSeasonViewModel.NavigationRequested += _warSeasonNavHandler;
         BossViewModel.NavigationRequested += _bossNavHandler;
         HallViewModel.NavigationRequested += _hallNavHandler;
+
+        // Sub-VM Message/Celebration/FloatingText-Events weiterleiten
+        _warSeasonMsgHandler = (t, m) => MessageRequested?.Invoke(t, m);
+        _bossMsgHandler = (t, m) => MessageRequested?.Invoke(t, m);
+        _hallMsgHandler = (t, m) => MessageRequested?.Invoke(t, m);
+        _bossCelebrationHandler = () => CelebrationRequested?.Invoke();
+        _hallCelebrationHandler = () => CelebrationRequested?.Invoke();
+        _hallFloatingTextHandler = (s, e) => FloatingTextRequested?.Invoke(e.Text, e.Type);
+        WarSeasonViewModel.MessageRequested += _warSeasonMsgHandler;
+        BossViewModel.MessageRequested += _bossMsgHandler;
+        BossViewModel.CelebrationRequested += _bossCelebrationHandler;
+        HallViewModel.MessageRequested += _hallMsgHandler;
+        HallViewModel.CelebrationRequested += _hallCelebrationHandler;
+        HallViewModel.FloatingTextRequested += _hallFloatingTextHandler;
 
         _guildService.GuildUpdated += OnGuildUpdated;
         _achievementService.AchievementCompleted += OnGuildAchievementCompleted;
@@ -461,10 +481,11 @@ public sealed partial class GuildViewModel : ViewModelBase
             if (membership != null)
             {
                 // Effekt-Caches parallel laden (sonst 0 bis Sub-Seite geöffnet wird)
-                _ = _researchService.RefreshResearchCacheAsync();
-                _ = _hallService.RefreshHallCacheAsync();
+                // SafeFireAndForget loggt Netzwerkfehler statt sie still zu verschlucken
+                _researchService.RefreshResearchCacheAsync().SafeFireAndForget();
+                _hallService.RefreshHallCacheAsync().SafeFireAndForget();
                 // War-Saison initialisieren (lädt aktive War-ID, cached War, Liga)
-                _ = _warSeasonService.InitializeAsync();
+                _warSeasonService.InitializeAsync().SafeFireAndForget();
 
                 UpdateContributionDisplay();
                 await RefreshGuildDetailsAsync();
@@ -1040,16 +1061,20 @@ public sealed partial class GuildViewModel : ViewModelBase
     {
         StopChatPolling();
         _chatPollTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-        _chatPollTimer.Tick += async (_, _) => await LoadChatMessagesAsync();
+        _chatPollHandler = async (_, _) => await LoadChatMessagesAsync();
+        _chatPollTimer.Tick += _chatPollHandler;
         _chatPollTimer.Start();
     }
 
     /// <summary>
-    /// Stoppt den Chat-Polling-Timer.
+    /// Stoppt den Chat-Polling-Timer und entfernt den Event-Handler.
     /// </summary>
     public void StopChatPolling()
     {
+        if (_chatPollTimer != null && _chatPollHandler != null)
+            _chatPollTimer.Tick -= _chatPollHandler;
         _chatPollTimer?.Stop();
+        _chatPollHandler = null;
         _chatPollTimer = null;
     }
 
@@ -1090,7 +1115,7 @@ public sealed partial class GuildViewModel : ViewModelBase
             // Beitrag: 10% des aktuellen Spieler-Levels als Score-Punkte
             var level = _gameStateService.State.PlayerLevel;
             var points = Math.Max(1, level * 10);
-            await _warService.ContributeScoreAsync(points);
+            await _warSeasonService.ContributeScoreAsync(points, "manual");
             await LoadWarStatusAsync();
 
             MessageRequested?.Invoke(
@@ -1112,27 +1137,33 @@ public sealed partial class GuildViewModel : ViewModelBase
     {
         try
         {
-            var status = await _warService.GetWarStatusAsync();
-            ActiveWar = status;
-            HasActiveWar = status is { IsActive: true };
+            var seasonData = await _warSeasonService.GetCurrentWarDataAsync();
+            var isActive = seasonData != null && !string.IsNullOrEmpty(seasonData.WarId)
+                           && !string.IsNullOrEmpty(seasonData.OpponentName);
 
-            if (status != null && status.IsActive)
+            // GuildWarDisplayData für die einfache GuildWarView befüllen
+            var membership = _gameStateService.State.GuildMembership;
+            ActiveWar = seasonData != null ? new GuildWarDisplayData
             {
-                var remaining = status.EndDate - DateTime.UtcNow;
+                OwnGuildName = membership?.GuildName ?? "",
+                OpponentGuildName = seasonData.OpponentName ?? "",
+                OwnScore = seasonData.OwnScore,
+                OpponentScore = seasonData.OpponentScore,
+                EndDate = DateTime.TryParse(seasonData.PhaseEndsAt, CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var ed) ? ed : DateTime.UtcNow,
+                IsActive = isActive
+            } : null;
+
+            HasActiveWar = isActive;
+
+            if (isActive && seasonData != null)
+            {
+                var remaining = ActiveWar!.EndDate - DateTime.UtcNow;
                 WarTimeRemaining = remaining > TimeSpan.Zero
                     ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}min"
                     : (_localizationService.GetString("WarResult") ?? "Ergebnis steht fest");
-                WarStatusText = $"{MoneyFormatter.Format(status.OwnScore, 0)} vs {MoneyFormatter.Format(status.OpponentScore, 0)}";
+                WarStatusText = $"{MoneyFormatter.Format(seasonData.OwnScore, 0)} vs {MoneyFormatter.Format(seasonData.OpponentScore, 0)}";
                 WarSubtitle = WarStatusText;
-                var pointsTemplate = _localizationService.GetString("GuildWarPoints") ?? "{0:N0} Punkte";
-                WarContributionDisplay = string.Format(pointsTemplate, status.OwnContribution);
-            }
-            else if (status != null && !status.IsActive)
-            {
-                HasActiveWar = false;
-                WarSubtitle = status.DidWin
-                    ? (_localizationService.GetString("WarResult") ?? "Sieg!")
-                    : (_localizationService.GetString("NoActiveWar") ?? "Kein aktiver Krieg");
             }
             else
             {
@@ -1177,9 +1208,9 @@ public sealed partial class GuildViewModel : ViewModelBase
     public void RefreshGuild()
     {
         RefreshFromLocalState();
-        _ = LoadGuildDataCommand.ExecuteAsync(null);
+        LoadGuildDataCommand.ExecuteAsync(null).SafeFireAndForget();
         // Quick-Status für Hub parallel laden
-        _ = RefreshQuickStatusAsync();
+        RefreshQuickStatusAsync().SafeFireAndForget();
     }
 
     /// <summary>
@@ -1391,7 +1422,7 @@ public sealed partial class GuildViewModel : ViewModelBase
             if (researching.RemainingTime.HasValue && researching.RemainingTime.Value <= TimeSpan.Zero)
             {
                 HasActiveResearch = false; // Guard: verhindert mehrfachen Aufruf bis Reload
-                _ = CompleteResearchTimerAsync();
+                CompleteResearchTimerAsync().SafeFireAndForget();
             }
         }
     }
@@ -1436,9 +1467,19 @@ public sealed partial class GuildViewModel : ViewModelBase
         StopChatPolling();
         _guildService.GuildUpdated -= OnGuildUpdated;
         _achievementService.AchievementCompleted -= OnGuildAchievementCompleted;
+
+        // Navigation-Events
         WarSeasonViewModel.NavigationRequested -= _warSeasonNavHandler;
         BossViewModel.NavigationRequested -= _bossNavHandler;
         HallViewModel.NavigationRequested -= _hallNavHandler;
+
+        // Message/Celebration/FloatingText-Events
+        WarSeasonViewModel.MessageRequested -= _warSeasonMsgHandler;
+        BossViewModel.MessageRequested -= _bossMsgHandler;
+        BossViewModel.CelebrationRequested -= _bossCelebrationHandler;
+        HallViewModel.MessageRequested -= _hallMsgHandler;
+        HallViewModel.CelebrationRequested -= _hallCelebrationHandler;
+        HallViewModel.FloatingTextRequested -= _hallFloatingTextHandler;
     }
 
     /// <summary>

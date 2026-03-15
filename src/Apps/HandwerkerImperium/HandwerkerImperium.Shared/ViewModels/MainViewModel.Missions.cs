@@ -187,9 +187,9 @@ public sealed partial class MainViewModel
     private void RescueStreak()
     {
         var state = _gameStateService.State;
-        if (state.GoldenScrews < 5) return;
+        if (state.GoldenScrews < 3) return;  // BAL-7: Von 5 auf 3 reduziert
 
-        _gameStateService.TrySpendGoldenScrews(5);
+        _gameStateService.TrySpendGoldenScrews(3);
         state.DailyRewardStreak = Math.Max(1, state.StreakBeforeBreak);
         state.StreakRescueUsed = true;
         _gameStateService.MarkDirty();

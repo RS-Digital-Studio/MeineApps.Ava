@@ -5,6 +5,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -207,7 +208,7 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>Lädt die Kriegs-Daten neu (für Hub-Aufruf).</summary>
-    public void RefreshWar() => _ = LoadWarDataAsync();
+    public void RefreshWar() => LoadWarDataAsync().SafeFireAndForget();
 
     /// <summary>Gibt den Quick-Status für den Guild-Hub zurück.</summary>
     public string GetQuickStatus()

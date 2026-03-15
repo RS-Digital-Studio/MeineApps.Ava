@@ -12,12 +12,21 @@ namespace HandwerkerImperium.Services;
 public sealed class CraftingService : ICraftingService
 {
     private readonly IGameStateService _gameState;
+    // Gecachter Crafting-Speed-Bonus (wird bei Prestige-Shop-Kauf invalidiert)
+    private decimal _cachedCraftingSpeedBonus = -1m;
+    private int _lastPurchasedCount = -1;
 
     public event Action? CraftingUpdated;
 
     public CraftingService(IGameStateService gameState)
     {
         _gameState = gameState;
+        // Bei State-Wechsel (Prestige/Import/Reset) Crafting-Speed-Cache invalidieren
+        _gameState.StateLoaded += (_, _) =>
+        {
+            _cachedCraftingSpeedBonus = -1m;
+            _lastPurchasedCount = -1;
+        };
     }
 
     public List<CraftingRecipe> GetAvailableRecipes(WorkshopType workshopType, int workshopLevel)
@@ -51,12 +60,17 @@ public sealed class CraftingService : ICraftingService
                 state.CraftingInventory.Remove(productId);
         }
 
-        // Crafting-Job erstellen
+        // Crafting-Job erstellen (Prestige-Shop CraftingSpeedBonus reduziert Dauer)
+        int effectiveDuration = recipe.DurationSeconds;
+        decimal craftingSpeedBonus = GetPrestigeCraftingSpeedBonus(state);
+        if (craftingSpeedBonus > 0)
+            effectiveDuration = Math.Max(1, (int)(effectiveDuration * (1m - Math.Min(craftingSpeedBonus, 0.50m))));
+
         var job = new CraftingJob
         {
             RecipeId = recipeId,
             StartedAt = DateTime.UtcNow,
-            DurationSeconds = recipe.DurationSeconds
+            DurationSeconds = effectiveDuration
         };
 
         state.ActiveCraftingJobs.Add(job);
@@ -71,7 +85,12 @@ public sealed class CraftingService : ICraftingService
         var state = _gameState.State;
         if (state.ActiveCraftingJobs.Count == 0) return;
 
-        bool anyCompleted = state.ActiveCraftingJobs.Any(j => j.IsComplete);
+        // For-Schleife statt LINQ .Any() (vermeidet Enumerator+Closure pro Sekunde)
+        bool anyCompleted = false;
+        for (int i = 0; i < state.ActiveCraftingJobs.Count; i++)
+        {
+            if (state.ActiveCraftingJobs[i].IsComplete) { anyCompleted = true; break; }
+        }
         if (anyCompleted)
         {
             CraftingUpdated?.Invoke();
@@ -130,5 +149,31 @@ public sealed class CraftingService : ICraftingService
         _gameState.MarkDirty();
         CraftingUpdated?.Invoke();
         return true;
+    }
+
+    /// <summary>
+    /// Berechnet den Crafting-Geschwindigkeitsbonus aus gekauften Prestige-Shop-Items.
+    /// Gecacht: Nur neu berechnet wenn sich PurchasedShopItems.Count aendert.
+    /// </summary>
+    private decimal GetPrestigeCraftingSpeedBonus(GameState state)
+    {
+        var purchased = state.Prestige.PurchasedShopItems;
+        if (purchased.Count == 0) return 0m;
+
+        // Cache invalidieren wenn sich Kauf-Anzahl aendert
+        if (purchased.Count == _lastPurchasedCount && _cachedCraftingSpeedBonus >= 0m)
+            return _cachedCraftingSpeedBonus;
+
+        decimal bonus = 0m;
+        var allItems = PrestigeShop.GetAllItems();
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            var item = allItems[i];
+            if (!item.IsRepeatable && purchased.Contains(item.Id) && item.Effect.CraftingSpeedBonus > 0)
+                bonus += item.Effect.CraftingSpeedBonus;
+        }
+        _cachedCraftingSpeedBonus = bonus;
+        _lastPurchasedCount = purchased.Count;
+        return bonus;
     }
 }

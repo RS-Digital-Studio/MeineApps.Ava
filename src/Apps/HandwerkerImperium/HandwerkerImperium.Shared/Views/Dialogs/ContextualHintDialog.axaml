@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              x:Class="HandwerkerImperium.Views.Dialogs.ContextualHintDialog"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <!-- Kontextueller Hint: Dialog-Modus (zentriert) oder Tooltip-Modus (oben/unten) -->
 

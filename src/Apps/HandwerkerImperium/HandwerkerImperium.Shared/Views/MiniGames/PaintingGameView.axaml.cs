@@ -36,6 +36,21 @@ public partial class PaintingGameView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
 
+        // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _gameCanvas != null && _renderTimer == null)
+                    StartRenderLoop();
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
+
         // AI-Hintergrund-Service initialisieren
         var assetService = App.Services?.GetService<IGameAssetService>();
         if (assetService != null)
@@ -225,9 +240,16 @@ public partial class PaintingGameView : UserControl
     /// </summary>
     private async void OnComboIncreased(object? sender, EventArgs e)
     {
-        var badge = this.FindControl<Border>("ComboBadge");
-        if (badge != null)
-            await AnimationHelper.ScaleUpDownAsync(badge, 1.0, 1.3, TimeSpan.FromMilliseconds(250));
+        try
+        {
+            var badge = this.FindControl<Border>("ComboBadge");
+            if (badge != null)
+                await AnimationHelper.ScaleUpDownAsync(badge, 1.0, 1.3, TimeSpan.FromMilliseconds(250));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnComboIncreased)} Fehler: {ex.Message}");
+        }
     }
 
     /// <summary>

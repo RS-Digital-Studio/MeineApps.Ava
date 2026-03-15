@@ -27,5 +27,18 @@ public interface IResearchService
     /// </summary>
     bool InstantFinishResearch();
 
+    /// <summary>
+    /// Reduziert die verbleibende Forschungszeit um den angegebenen Prozentsatz (0.0-1.0).
+    /// BAL-4: Für Rewarded-Ad-Speedup (50% statt Sofortfertigstellung).
+    /// </summary>
+    bool ReduceResearchTime(double percentage);
+
+    /// <summary>
+    /// Invalidiert alle internen Caches (Effekte + aktive Forschung).
+    /// Muss nach SaveGame-Load/Import/Reset aufgerufen werden,
+    /// damit der Cache zum neuen GameState passt.
+    /// </summary>
+    void InvalidateCaches();
+
     event EventHandler<Research>? ResearchCompleted;
 }

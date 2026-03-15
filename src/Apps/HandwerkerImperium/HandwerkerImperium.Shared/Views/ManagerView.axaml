@@ -4,7 +4,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.ManagerView"
-             x:DataType="vm:ManagerViewModel">
+             x:DataType="vm:ManagerViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="Manager_Grid_Root">
@@ -85,13 +86,13 @@
                       <!-- Schloss-Icon fuer gesperrte Manager -->
                       <icons:GameIcon Kind="LockOutline" Width="26" Height="26"
                                        AutomationProperties.AutomationId="Manager_Icon_ItemLock"
-                                       Foreground="White" Opacity="0.7"
+                                       Foreground="{DynamicResource PrimaryContrastBrush}" Opacity="0.7"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        IsVisible="{Binding !IsUnlocked}" />
                       <!-- Account-Icon fuer freigeschaltete Manager -->
                       <icons:GameIcon Kind="AccountTie" Width="28" Height="28"
                                        AutomationProperties.AutomationId="Manager_Icon_ItemPerson"
-                                       Foreground="White"
+                                       Foreground="{DynamicResource PrimaryContrastBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        IsVisible="{Binding IsUnlocked}" />
                     </Grid>

@@ -2174,7 +2174,7 @@
     <value>Parafusos dourados (V&#237;deo)</value>
   </data>
   <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
-    <value>8 parafusos dourados por um v&#237;deo</value>
+    <value>10 parafusos dourados por um v&#237;deo</value>
   </data>
   <data name="ShopGoldenScrews50Name" xml:space="preserve">
     <value>Bolsa de parafusos dourados</value>
@@ -2326,6 +2326,12 @@
   </data>
   <data name="ResearchFinishedFree" xml:space="preserve">
     <value>Pesquisa conclu&#237;da de gra&#231;a!</value>
+  </data>
+  <data name="ResearchSpeedUp" xml:space="preserve">
+    <value>Pesquisa acelerada</value>
+  </data>
+  <data name="ResearchSpeedUpDesc" xml:space="preserve">
+    <value>Tempo de pesquisa reduzido em 50%!</value>
   </data>
   <data name="WatchAdToRetry" xml:space="preserve">
     <value>Tentar novamente (V&#237;deo)</value>
@@ -2797,6 +2803,12 @@
   </data>
   <data name="PrestigeGoldenScrew25Desc" xml:space="preserve">
     <value>+25% Parafusos Dourados de todas as fontes</value>
+  </data>
+  <data name="PrestigeIncomeRepeatable" xml:space="preserve">
+    <value>Fundo de Expansão</value>
+  </data>
+  <data name="PrestigeIncomeRepeatableDesc" xml:space="preserve">
+    <value>+5% receita por compra (acumulável, custo crescente)</value>
   </data>
   <data name="PressBackAgainToExit" xml:space="preserve">
     <value>Pressione voltar novamente para sair</value>
@@ -3472,7 +3484,7 @@
   <data name="RescueStreak" xml:space="preserve"><value>Resgatar sequência ({0} parafusos)</value></data>
   <data name="StreakInDanger" xml:space="preserve"><value>Sua sequência de {0} dias está em perigo!</value></data>
   <data name="StreakRescued" xml:space="preserve"><value>Sequência resgatada!</value></data>
-  <data name="StreakRescueCost" xml:space="preserve"><value>5 Parafusos dourados</value></data>
+  <data name="StreakRescueCost" xml:space="preserve"><value>{0} Parafusos dourados</value></data>
   <data name="CloudSaveNotAvailable" xml:space="preserve"><value>Salvamento na nuvem não disponível neste dispositivo</value></data>
   <data name="CloudRestoreFailed" xml:space="preserve"><value>Não foi possível restaurar da nuvem</value></data>
   <data name="RestoreFromCloudConfirmation" xml:space="preserve"><value>Isto substituirá o seu jogo atual pelo da nuvem. Tem certeza?</value></data>
@@ -4522,6 +4534,42 @@
   </data>
   <data name="PrestigeResetNote" xml:space="preserve">
     <value>Nível, dinheiro e oficinas serão redefinidos.</value>
+  </data>
+  <data name="StartMoney" xml:space="preserve">
+    <value>Dinheiro inicial</value>
+  </data>
+  <data name="PrestigeLossLevel" xml:space="preserve">
+    <value>Nível e XP</value>
+  </data>
+  <data name="PrestigeLossMoney" xml:space="preserve">
+    <value>Dinheiro e encomendas</value>
+  </data>
+  <data name="PrestigeLossWorkshops" xml:space="preserve">
+    <value>Oficinas (só Carpintaria fica)</value>
+  </data>
+  <data name="PrestigeLossResearch" xml:space="preserve">
+    <value>Pesquisa</value>
+  </data>
+  <data name="PrestigeLossTools" xml:space="preserve">
+    <value>Ferramentas mestras</value>
+  </data>
+  <data name="PrestigeLossBuildings" xml:space="preserve">
+    <value>Edifícios</value>
+  </data>
+  <data name="PrestigeLossEquipment" xml:space="preserve">
+    <value>Equipamento</value>
+  </data>
+  <data name="PrestigeLossManagers" xml:space="preserve">
+    <value>Encarregados</value>
+  </data>
+  <data name="PrestigeLossCrafting" xml:space="preserve">
+    <value>Inventário de artesanato e encomendas</value>
+  </data>
+  <data name="PrestigeTimingWarning" xml:space="preserve">
+    <value>Já estás no nível {0} - no nível {1} poderias fazer {2} (mais PP)!</value>
+  </data>
+  <data name="PrestigeNearNextTier" xml:space="preserve">
+    <value>Só mais {0} níveis até {1} (nível {2}) - continue jogando!</value>
   </data>
   <data name="PrestigeLosesLevel" xml:space="preserve">
     <value>Nível do jogador → 1</value>

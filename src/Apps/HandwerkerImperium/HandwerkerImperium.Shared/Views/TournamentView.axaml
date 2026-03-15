@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:m="using:HandwerkerImperium.Models"
              x:Class="HandwerkerImperium.Views.TournamentView"
-             x:DataType="vm:TournamentViewModel">
+             x:DataType="vm:TournamentViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="Tournament_Grid_Root">
@@ -101,7 +102,7 @@
               </Border.Background>
               <icons:GameIcon Kind="GamepadVariant" Width="28" Height="28"
                                AutomationProperties.AutomationId="Tournament_Icon_GameType"
-                               Foreground="White"
+                               Foreground="{DynamicResource PrimaryContrastBrush}"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">

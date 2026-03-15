@@ -81,6 +81,29 @@ public partial class ResearchView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += OnDetachedFromVisualTree;
+
+        // Timer pausieren wenn View nicht sichtbar ist (Tab-Wechsel, Sub-Navigation)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _renderTimer == null)
+                {
+                    // View wieder sichtbar → Timer neu starten, alle Canvases als dirty markieren
+                    _headerDirty = true;
+                    _treeDataDirty = true;
+                    _tabDirty = true;
+                    _bannerDirty = true;
+                    StartRenderLoop();
+                }
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    // View versteckt → Timer stoppen (spart bis zu ~30 InvalidateSurface/s)
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
     }
 
     private void OnDetachedFromVisualTree(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)

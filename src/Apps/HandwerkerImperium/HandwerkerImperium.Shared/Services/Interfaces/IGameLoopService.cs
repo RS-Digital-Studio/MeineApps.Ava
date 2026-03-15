@@ -55,6 +55,21 @@ public interface IGameLoopService
     event EventHandler<SupplierDelivery>? DeliveryArrived;
 
     /// <summary>
+    /// Event wenn ein aktiver Auftrag wegen abgelaufener Deadline verfällt.
+    /// </summary>
+    event EventHandler? OrderExpired;
+
+    /// <summary>
+    /// Event wenn Automation eine Lieferung automatisch eingesammelt hat.
+    /// </summary>
+    event EventHandler<SupplierDelivery>? AutoCollectedDelivery;
+
+    /// <summary>
+    /// Event wenn Automation einen Auftrag automatisch angenommen hat.
+    /// </summary>
+    event EventHandler<Order>? AutoAcceptedOrder;
+
+    /// <summary>
     /// Workshop-Cache invalidieren (z.B. nach Workshop-Kauf).
     /// </summary>
     void InvalidateWorkshopCache();

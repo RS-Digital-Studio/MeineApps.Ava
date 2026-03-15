@@ -31,7 +31,7 @@ public class NotificationReceiver : BroadcastReceiver
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
         var builder = new NotificationCompat.Builder(context, channelId)
-            .SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
+            .SetSmallIcon(Resource.Mipmap.appicon)
             .SetContentTitle("Handwerker Imperium")
             .SetContentText(message)
             .SetContentIntent(pendingIntent)

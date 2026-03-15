@@ -61,15 +61,25 @@ public sealed class DailyRewardService : IDailyRewardService
 
     public List<DailyReward> GetRewardCycle()
     {
-        var rewards = DailyReward.GetRewardSchedule();
+        var schedule = DailyReward.GetRewardSchedule();
         var currentDay = CurrentDay;
         var isAvailable = IsRewardAvailable;
 
-        foreach (var reward in rewards)
+        // Kopien erstellen, da der Schedule statisch gecacht ist und IsToday/IsClaimed nicht mutiert werden duerfen
+        var rewards = new List<DailyReward>(schedule.Count);
+        foreach (var src in schedule)
         {
-            reward.IsToday = reward.Day == currentDay && isAvailable;
-            reward.IsClaimed = reward.Day < currentDay ||
-                              (reward.Day == currentDay && !isAvailable);
+            rewards.Add(new DailyReward
+            {
+                Day = src.Day,
+                Money = src.Money,
+                Xp = src.Xp,
+                GoldenScrews = src.GoldenScrews,
+                BonusType = src.BonusType,
+                IsToday = src.Day == currentDay && isAvailable,
+                IsClaimed = src.Day < currentDay ||
+                            (src.Day == currentDay && !isAvailable),
+            });
         }
 
         return rewards;
@@ -99,8 +109,9 @@ public sealed class DailyRewardService : IDailyRewardService
             state.DailyRewardStreak++;
         }
 
-        // Apply rewards
-        _gameStateService.AddMoney(reward.Money);
+        // Apply rewards (dynamisch skaliert basierend auf aktuellem Einkommen)
+        var scaledMoney = reward.GetScaledMoney(state.NetIncomePerSecond);
+        _gameStateService.AddMoney(scaledMoney);
 
         if (reward.Xp > 0)
         {

@@ -41,7 +41,11 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         get
         {
             var challenges = _gameStateService.State.DailyChallengeState.Challenges;
-            return challenges.Count > 0 && challenges.All(c => c.IsCompleted);
+            if (challenges.Count == 0) return false;
+            // For-Schleife statt LINQ .All()
+            for (int i = 0; i < challenges.Count; i++)
+                if (!challenges[i].IsCompleted) return false;
+            return true;
         }
     }
 
@@ -50,8 +54,11 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         get
         {
             var state = _gameStateService.State.DailyChallengeState;
-            return state.Challenges.Any(c => c.IsCompleted && !c.IsClaimed) ||
-                   (AreAllCompleted && !state.AllCompletedBonusClaimed);
+            var challenges = state.Challenges;
+            // For-Schleife statt LINQ .Any()
+            for (int i = 0; i < challenges.Count; i++)
+                if (challenges[i].IsCompleted && !challenges[i].IsClaimed) return true;
+            return AreAllCompleted && !state.AllCompletedBonusClaimed;
         }
     }
 
@@ -119,9 +126,11 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         if (!AreAllCompleted || state.AllCompletedBonusClaimed)
             return false;
 
-        // Zuerst alle unclaimten Einzelbelohnungen einsammeln
-        foreach (var challenge in state.Challenges.Where(c => c.IsCompleted && !c.IsClaimed))
+        // Zuerst alle unclaimten Einzelbelohnungen einsammeln (For-Schleife statt LINQ)
+        for (int i = 0; i < state.Challenges.Count; i++)
         {
+            var challenge = state.Challenges[i];
+            if (!challenge.IsCompleted || challenge.IsClaimed) continue;
             challenge.IsClaimed = true;
             _gameStateService.AddMoney(challenge.MoneyReward);
             _gameStateService.AddXp(challenge.XpReward);
@@ -264,8 +273,11 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
     private void IncrementChallenge(DailyChallengeType type, long amount = 1)
     {
         var challenges = _gameStateService.State.DailyChallengeState.Challenges;
-        foreach (var challenge in challenges.Where(c => c.Type == type && !c.IsCompleted))
+        // For-Schleife statt LINQ .Where() (wird bei Events haeufig aufgerufen)
+        for (int i = 0; i < challenges.Count; i++)
         {
+            var challenge = challenges[i];
+            if (challenge.Type != type || challenge.IsCompleted) continue;
             challenge.CurrentValue += amount;
             if (challenge.CurrentValue >= challenge.TargetValue)
             {
@@ -273,7 +285,7 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
             }
         }
         _gameStateService.MarkDirty();
-        // UI sofort über Fortschrittsänderung benachrichtigen
+        // UI sofort ueber Fortschrittsaenderung benachrichtigen
         ChallengeProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -283,15 +295,18 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
     private void SetChallengeMax(DailyChallengeType type, long value)
     {
         var challenges = _gameStateService.State.DailyChallengeState.Challenges;
-        foreach (var challenge in challenges.Where(c => c.Type == type && !c.IsCompleted))
+        // For-Schleife statt LINQ .Where()
+        for (int i = 0; i < challenges.Count; i++)
         {
+            var challenge = challenges[i];
+            if (challenge.Type != type || challenge.IsCompleted) continue;
             if (value > challenge.CurrentValue)
                 challenge.CurrentValue = value;
             if (challenge.CurrentValue >= challenge.TargetValue)
                 challenge.IsCompleted = true;
         }
         _gameStateService.MarkDirty();
-        // UI sofort über Fortschrittsänderung benachrichtigen
+        // UI sofort ueber Fortschrittsaenderung benachrichtigen
         ChallengeProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 

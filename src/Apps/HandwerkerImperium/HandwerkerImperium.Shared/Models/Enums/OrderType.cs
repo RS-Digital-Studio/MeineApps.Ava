@@ -45,7 +45,7 @@ public static class OrderTypeExtensions
         OrderType.Quick => 0.6m,
         OrderType.Standard => 1.0m,
         OrderType.Large => 1.8m,
-        OrderType.Weekly => 4.0m,
+        OrderType.Weekly => 2.5m,  // BAL-11: Von 4.0 auf 2.5 gesenkt (14-20x war zu dominant vs. andere Typen)
         OrderType.Cooperation => 2.5m,
         _ => 1.0m
     };
@@ -58,7 +58,7 @@ public static class OrderTypeExtensions
         OrderType.Quick => 0.5m,
         OrderType.Standard => 1.0m,
         OrderType.Large => 2.0m,
-        OrderType.Weekly => 5.0m,
+        OrderType.Weekly => 3.0m,  // BAL-11: XP proportional angepasst
         OrderType.Cooperation => 3.0m,
         _ => 1.0m
     };

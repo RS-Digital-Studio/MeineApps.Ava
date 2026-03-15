@@ -6,6 +6,7 @@ using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
+using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels.MiniGames;
 
@@ -304,7 +305,7 @@ public sealed partial class SawingGameViewModel : ViewModelBase, IDisposable
         InitializeZones();
 
         CheckAndShowTutorial(GameType);
-        if (!ShowTutorial) _ = StartGameAsync();
+        if (!ShowTutorial) StartGameAsync().SafeFireAndForget();
     }
 
     private void UpdateGameTypeVisuals()
@@ -605,7 +606,7 @@ public sealed partial class SawingGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(GameType);
             _gameStateService.MarkDirty();
         }
-        _ = StartGameAsync();
+        StartGameAsync().SafeFireAndForget();
     }
 
     [RelayCommand]

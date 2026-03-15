@@ -5,7 +5,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Guild.GuildHallView"
-             x:DataType="vm:GuildHallViewModel">
+             x:DataType="vm:GuildHallViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="GuildHall_Grid_Root">
@@ -23,8 +24,9 @@
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
+                MinHeight="44" MinWidth="44"
                 Command="{Binding NavigateBackCommand}">
-          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="White" />
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="{DynamicResource PrimaryContrastBrush}" />
         </Button>
         <!-- Titel -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"

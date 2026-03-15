@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MiniGames.PipePuzzleView"
-             x:DataType="vm:PipePuzzleViewModel">
+             x:DataType="vm:PipePuzzleViewModel"
+             x:CompileBindings="True">
 
   <Grid AutomationProperties.AutomationId="Pipe_Grid_Root"
         RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
@@ -222,7 +223,7 @@
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
     <Border AutomationProperties.AutomationId="Pipe_Border_Countdown"
-            Grid.RowSpan="5" Background="#CC000000"
+            Grid.RowSpan="5" Background="{StaticResource RewardOverlayBrush}"
             IsVisible="{Binding IsCountdownActive}">
       <TextBlock AutomationProperties.AutomationId="Pipe_Txt_Countdown"
                  Text="{Binding CountdownText}"

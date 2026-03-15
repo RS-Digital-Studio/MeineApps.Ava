@@ -7,6 +7,7 @@
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerImperium.Views.ImperiumView"
              x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Imperium_Root">
 
   <!-- FadeIn-Animation -->
@@ -385,7 +386,7 @@
                   </LinearGradientBrush>
                 </Border.Background>
                 <icons:GameIcon Kind="Wrench" Width="24" Height="24"
-                                 Foreground="#F59E0B"
+                                 Foreground="{DynamicResource WarningBrush}"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <TextBlock Text="{loc:Translate MasterTools}" FontSize="11" FontWeight="SemiBold"
@@ -427,11 +428,11 @@
             </LinearGradientBrush>
           </Border.Background>
           <Grid ColumnDefinitions="Auto,*,Auto">
-            <icons:GameIcon Kind="Creation" Width="28" Height="28" Foreground="White"
+            <icons:GameIcon Kind="Creation" Width="28" Height="28" Foreground="{DynamicResource PrimaryContrastBrush}"
                              VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" Spacing="1" Margin="10,0,0,0" VerticalAlignment="Center">
               <TextBlock Text="{loc:Translate PrestigeShop}" FontSize="15" FontWeight="Bold"
-                         Foreground="White" />
+                         Foreground="{DynamicResource PrimaryContrastBrush}" />
               <TextBlock Text="{Binding PrestigePointsPreview}" FontSize="12"
                          Foreground="#FFFFFFCC" />
               <Border Background="#35000000" CornerRadius="6" Padding="6,4" Margin="0,6,0,0"
@@ -509,8 +510,8 @@
         </Border>
       </Button>
 
-      <!-- Bottom Spacer -->
-      <Border Height="16" />
+      <!-- Bottom Spacer (80dp fuer Tab-Bar 68dp + Margin) -->
+      <Border Height="80" />
 
     </StackPanel>
   </ScrollViewer>

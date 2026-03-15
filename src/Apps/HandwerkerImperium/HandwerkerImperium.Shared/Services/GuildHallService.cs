@@ -58,7 +58,8 @@ public sealed class GuildHallService : IGuildHallService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return result;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return result; // Timeout: Lock nicht erhalten
         try
         {
             await _firebase.EnsureAuthenticatedAsync();
@@ -152,7 +153,8 @@ public sealed class GuildHallService : IGuildHallService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return false;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return false; // Timeout: Lock nicht erhalten
         try
         {
             await _firebase.EnsureAuthenticatedAsync();
@@ -197,7 +199,8 @@ public sealed class GuildHallService : IGuildHallService
             var upgradeEnd = DateTime.UtcNow.AddHours(durationHours);
 
             // Kosten VOR Firebase-Write abziehen (bei Firebase-Fehler zurückgeben)
-            _gameStateService.TrySpendGoldenScrews(cost.GoldenScrews);
+            if (!_gameStateService.TrySpendGoldenScrews(cost.GoldenScrews))
+                return false;
             if (!_gameStateService.TrySpendMoney(cost.GuildMoney))
             {
                 // Rollback: Goldschrauben zurückgeben
@@ -252,7 +255,8 @@ public sealed class GuildHallService : IGuildHallService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return; // Timeout: Lock nicht erhalten
         try
         {
             await _firebase.EnsureAuthenticatedAsync();
@@ -317,7 +321,8 @@ public sealed class GuildHallService : IGuildHallService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return; // Timeout: Lock nicht erhalten
         try
         {
             await _firebase.EnsureAuthenticatedAsync();

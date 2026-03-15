@@ -5,6 +5,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.SettingsView"
              x:DataType="vm:SettingsViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Settings_Root">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Settings_Grid_Root">

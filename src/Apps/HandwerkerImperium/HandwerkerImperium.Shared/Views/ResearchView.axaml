@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.ResearchView"
-             x:DataType="vm:ResearchViewModel">
+             x:DataType="vm:ResearchViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,Auto,Auto,*"
         AutomationProperties.AutomationId="Research_Grid_Root">

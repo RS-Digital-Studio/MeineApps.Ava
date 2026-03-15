@@ -5,7 +5,8 @@ namespace HandwerkerImperium.Graphics;
 /// <summary>
 /// Rendert eine mittelalterliche Gildenhalle als animierten Header über dem Forschungsbaum.
 /// Steinmauer-Hintergrund, 2 Fackeln mit Flammen-Animation, großes Gilden-Wappen in der Mitte,
-/// warmer Fackelschein. Alle SKPaint-Objekte gecacht für GC-freie Performance.
+/// warmer Fackelschein. Alle SKPaint-Objekte als Instanz-Felder für Thread-Sicherheit.
+/// Gecachte SKPaths für GC-freie 30fps Performance.
 /// </summary>
 public sealed class GuildHallHeaderRenderer : IDisposable
 {
@@ -18,7 +19,8 @@ public sealed class GuildHallHeaderRenderer : IDisposable
     private int _leftFlameCount;
     private readonly FlameParticle[] _rightFlameParticles = new FlameParticle[MaxFlameParticles];
     private int _rightFlameCount;
-    private float _flameTimer;
+    private float _leftFlameTimer;
+    private float _rightFlameTimer;
 
     // ═══════════════════════════════════════════════════════════════════════
     // FARBEN
@@ -29,6 +31,7 @@ public sealed class GuildHallHeaderRenderer : IDisposable
     private static readonly SKColor StoneLight = new(0x5A, 0x4C, 0x3E);
     private static readonly SKColor StoneGap = new(0x28, 0x1E, 0x14);
     private static readonly SKColor TorchWood = new(0x5D, 0x40, 0x37);
+    private static readonly SKColor TorchWoodDark = new(0x4E, 0x34, 0x2E);
     private static readonly SKColor TorchBracket = new(0x78, 0x90, 0x9C);
     private static readonly SKColor FlameCore = new(0xFF, 0xD5, 0x4F);
     private static readonly SKColor FlameMid = new(0xFF, 0x8C, 0x00);
@@ -37,26 +40,43 @@ public sealed class GuildHallHeaderRenderer : IDisposable
     private static readonly SKColor ShieldBorder = new(0xD4, 0xA3, 0x73);
     private static readonly SKColor ShieldFill = new(0x92, 0x40, 0x0E);
     private static readonly SKColor CraftGold = new(0xFF, 0xD7, 0x00);
+    private static readonly SKColor TorchHead = new(0x33, 0x22, 0x11);
+    private static readonly SKColor MetalGlint = new(0xFF, 0xFF, 0xFF, 30);
+    private static readonly SKColor ShadowBlack = new(0x00, 0x00, 0x00, 30);
 
     // ═══════════════════════════════════════════════════════════════════════
-    // GECACHTE PAINTS
+    // INSTANZ-PAINTS (Thread-sicher, werden pro Frame mutiert)
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static readonly SKPaint _stonePaint = new() { IsAntialias = false, Color = StoneBase };
-    private static readonly SKPaint _stoneDarkPaint = new() { IsAntialias = false, Color = StoneDark };
-    private static readonly SKPaint _stoneLightPaint = new() { IsAntialias = false, Color = StoneLight };
-    private static readonly SKPaint _stoneGapPaint = new() { IsAntialias = false, Color = StoneGap, StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke };
-    private static readonly SKPaint _torchWoodPaint = new() { IsAntialias = true, Color = TorchWood };
-    private static readonly SKPaint _torchBracketPaint = new() { IsAntialias = true, Color = TorchBracket };
+    // Steinmauer
+    private readonly SKPaint _stoneFillPaint = new() { IsAntialias = false, Style = SKPaintStyle.Fill };
+    private readonly SKPaint _stoneGapPaint = new() { IsAntialias = false, Color = StoneGap, StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke };
 
-    private static readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
-    private static readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    // Fackel
+    private readonly SKPaint _torchFillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private readonly SKPaint _torchStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, Color = TorchBracket, StrokeWidth = 3 };
 
-    // Fackelschein-Shader (gecacht, nur bei Bounds-Änderung neu)
-    private SKShader? _torchGlowShader;
+    // Allgemein
+    private readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+    private readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GECACHTE SKPATHS (wiederverwendet statt pro-Frame-Allokation)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private readonly SKPath _flameOuterPath = new();
+    private readonly SKPath _flameCorePath = new();
+    private readonly SKPath _shieldPath = new();
+    private readonly SKPath _gearPath = new();
+    private readonly SKPath _starPath = new();
+
+    // Fackelschein-Shader (je einer pro Fackel, gecacht)
+    private SKShader? _leftGlowShader;
+    private SKShader? _rightGlowShader;
     private float _lastGlowW, _lastGlowH;
-    private float _lastGlowCx, _lastGlowCy;
+    private float _lastLeftCx, _lastLeftCy;
+    private float _lastRightCx, _lastRightCy;
 
     // Vignette
     private SKShader? _vignetteShader;
@@ -80,19 +100,19 @@ public sealed class GuildHallHeaderRenderer : IDisposable
         float torchX1 = w * 0.18f;
         float torchX2 = w * 0.82f;
         float torchY = h * 0.35f;
-        DrawTorchGlow(canvas, torchX1, torchY, w, h);
-        DrawTorchGlow(canvas, torchX2, torchY, w, h);
+        DrawTorchGlow(canvas, torchX1, torchY, w, h, isLeft: true);
+        DrawTorchGlow(canvas, torchX2, torchY, w, h, isLeft: false);
 
         // 3. Gilden-Wappen in der Mitte
         DrawGuildEmblem(canvas, w / 2, h * 0.52f, Math.Min(w, h) * 0.42f);
 
         // 4. Fackeln (über dem Schein)
-        DrawTorch(canvas, torchX1, torchY, h);
-        DrawTorch(canvas, torchX2, torchY, h);
+        DrawTorch(canvas, torchX1, torchY);
+        DrawTorch(canvas, torchX2, torchY);
 
-        // 5. Flammen
-        UpdateAndDrawFlames(canvas, torchX1, torchY - 8, deltaTime, _leftFlameParticles, ref _leftFlameCount);
-        UpdateAndDrawFlames(canvas, torchX2, torchY - 8, deltaTime, _rightFlameParticles, ref _rightFlameCount);
+        // 5. Flammen (separate Timer pro Fackel)
+        UpdateAndDrawFlames(canvas, torchX1, torchY - 8, deltaTime, _leftFlameParticles, ref _leftFlameCount, ref _leftFlameTimer);
+        UpdateAndDrawFlames(canvas, torchX2, torchY - 8, deltaTime, _rightFlameParticles, ref _rightFlameCount, ref _rightFlameTimer);
 
         // 6. Vignette (dunkle Ränder)
         DrawVignette(canvas, w, h);
@@ -102,11 +122,11 @@ public sealed class GuildHallHeaderRenderer : IDisposable
     // STEINMAUER
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static void DrawStoneWall(SKCanvas canvas, SKRect bounds)
+    private void DrawStoneWall(SKCanvas canvas, SKRect bounds)
     {
         // Basis-Hintergrund
-        _stonePaint.Color = StoneBase;
-        canvas.DrawRect(bounds, _stonePaint);
+        _stoneFillPaint.Color = StoneBase;
+        canvas.DrawRect(bounds, _stoneFillPaint);
 
         float w = bounds.Width;
         float h = bounds.Height;
@@ -128,16 +148,15 @@ public sealed class GuildHallHeaderRenderer : IDisposable
 
                 // Leichte Farbvariation pro Stein (deterministisch)
                 int hash = row * 17 + col * 31;
-                var stoneColor = (hash % 3) switch
+                _stoneFillPaint.Color = (hash % 3) switch
                 {
                     0 => StoneBase,
                     1 => StoneDark,
                     _ => StoneLight
                 };
 
-                _stonePaint.Color = stoneColor;
                 var stoneRect = new SKRect(x + 1, y + 1, x + stoneW - 1, y + stoneH - 1);
-                canvas.DrawRect(stoneRect, _stonePaint);
+                canvas.DrawRect(stoneRect, _stoneFillPaint);
             }
 
             // Horizontale Fugen
@@ -163,45 +182,47 @@ public sealed class GuildHallHeaderRenderer : IDisposable
     // FACKEL
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static void DrawTorch(SKCanvas canvas, float cx, float cy, float headerH)
+    private void DrawTorch(SKCanvas canvas, float cx, float cy)
     {
         // Halterung (Metall-Winkel an der Wand)
-        _torchBracketPaint.StrokeWidth = 3;
-        _torchBracketPaint.Style = SKPaintStyle.Stroke;
-        canvas.DrawLine(cx, cy + 22, cx, cy + 40, _torchBracketPaint);
-        canvas.DrawLine(cx - 6, cy + 40, cx + 6, cy + 40, _torchBracketPaint);
-        _torchBracketPaint.Style = SKPaintStyle.Fill;
+        canvas.DrawLine(cx, cy + 22, cx, cy + 40, _torchStrokePaint);
+        canvas.DrawLine(cx - 6, cy + 40, cx + 6, cy + 40, _torchStrokePaint);
 
         // Holzstiel
-        _torchWoodPaint.Color = TorchWood;
-        canvas.DrawRect(cx - 3, cy - 4, 6, 26, _torchWoodPaint);
+        _torchFillPaint.Color = TorchWood;
+        canvas.DrawRect(cx - 3, cy - 4, 6, 26, _torchFillPaint);
 
         // Dunkle Maserung
-        _torchWoodPaint.Color = new SKColor(0x4E, 0x34, 0x2E);
-        canvas.DrawRect(cx - 1, cy, 2, 22, _torchWoodPaint);
+        _torchFillPaint.Color = TorchWoodDark;
+        canvas.DrawRect(cx - 1, cy, 2, 22, _torchFillPaint);
 
         // Fackelkopf (Stoff/Teer)
-        _fillPaint.Color = new SKColor(0x33, 0x22, 0x11);
-        canvas.DrawRect(cx - 5, cy - 10, 10, 8, _fillPaint);
+        _torchFillPaint.Color = TorchHead;
+        canvas.DrawRect(cx - 5, cy - 10, 10, 8, _torchFillPaint);
 
         // Glühender Rand am Fackelkopf
-        _fillPaint.Color = EmberColor.WithAlpha(80);
-        canvas.DrawRect(cx - 5, cy - 10, 10, 2, _fillPaint);
+        _torchFillPaint.Color = EmberColor.WithAlpha(80);
+        canvas.DrawRect(cx - 5, cy - 10, 10, 2, _torchFillPaint);
     }
 
-    private void DrawTorchGlow(SKCanvas canvas, float cx, float cy, float w, float h)
+    private void DrawTorchGlow(SKCanvas canvas, float cx, float cy, float w, float h, bool isLeft)
     {
         // Warmer Lichtkreis von der Fackel
         float pulse = 0.85f + MathF.Sin(_time * 5f) * 0.1f + MathF.Sin(_time * 7.3f) * 0.05f;
         float radius = w * 0.35f;
 
-        // Shader nur bei Position-/Größenänderung neu erstellen (nicht pro Frame)
+        // Separate Shader pro Fackel (verschiedene Positionen)
+        ref SKShader? shader = ref (isLeft ? ref _leftGlowShader : ref _rightGlowShader);
+        ref float lastCx = ref (isLeft ? ref _lastLeftCx : ref _lastRightCx);
+        ref float lastCy = ref (isLeft ? ref _lastLeftCy : ref _lastRightCy);
+
+        // Shader nur bei Positions-/Größenänderung neu erstellen
         // ReSharper disable CompareOfFloatsByEqualityOperator
-        if (_torchGlowShader == null || _lastGlowW != w || _lastGlowH != h ||
-            _lastGlowCx != cx || _lastGlowCy != cy)
+        if (shader == null || _lastGlowW != w || _lastGlowH != h ||
+            lastCx != cx || lastCy != cy)
         {
-            _torchGlowShader?.Dispose();
-            _torchGlowShader = SKShader.CreateRadialGradient(
+            shader?.Dispose();
+            shader = SKShader.CreateRadialGradient(
                 new SKPoint(cx, cy),
                 radius,
                 [
@@ -211,15 +232,15 @@ public sealed class GuildHallHeaderRenderer : IDisposable
                 ],
                 [0f, 0.5f, 1f],
                 SKShaderTileMode.Clamp);
-            _lastGlowCx = cx;
-            _lastGlowCy = cy;
+            lastCx = cx;
+            lastCy = cy;
             _lastGlowW = w;
             _lastGlowH = h;
         }
         // ReSharper restore CompareOfFloatsByEqualityOperator
 
         // Pulse über Paint-Alpha statt Shader-Neuerstellung
-        _glowPaint.Shader = _torchGlowShader;
+        _glowPaint.Shader = shader;
         _glowPaint.Color = _glowPaint.Color.WithAlpha((byte)(255 * pulse));
         canvas.DrawRect(0, 0, w, h, _glowPaint);
         _glowPaint.Shader = null;
@@ -231,14 +252,14 @@ public sealed class GuildHallHeaderRenderer : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     private void UpdateAndDrawFlames(SKCanvas canvas, float cx, float cy, float deltaTime,
-        FlameParticle[] particles, ref int particleCount)
+        FlameParticle[] particles, ref int particleCount, ref float flameTimer)
     {
-        _flameTimer += deltaTime;
+        flameTimer += deltaTime;
 
-        // Neue Flammen-Partikel emittieren (haeufig, fuer dichte Flamme)
-        if (_flameTimer >= 0.04f)
+        // Neue Flammen-Partikel emittieren (häufig, für dichte Flamme)
+        if (flameTimer >= 0.04f)
         {
-            _flameTimer = 0;
+            flameTimer = 0;
             if (particleCount < MaxFlameParticles)
             {
                 particles[particleCount++] = new FlameParticle
@@ -295,27 +316,23 @@ public sealed class GuildHallHeaderRenderer : IDisposable
         // Statische Flammen-Basis (immer sichtbar)
         float flicker = MathF.Sin(_time * 12f) * 2 + MathF.Sin(_time * 8.3f) * 1.5f;
 
-        // Äußerer Flammen-Kern
+        // Äußerer Flammen-Kern (gecachter Path)
         _fillPaint.Color = FlameOuter.WithAlpha(120);
-        using (var flamePath = new SKPath())
-        {
-            flamePath.MoveTo(cx - 6, cy);
-            flamePath.QuadTo(cx - 3 + flicker, cy - 18, cx, cy - 24 - MathF.Abs(flicker));
-            flamePath.QuadTo(cx + 3 - flicker, cy - 18, cx + 6, cy);
-            flamePath.Close();
-            canvas.DrawPath(flamePath, _fillPaint);
-        }
+        _flameOuterPath.Rewind();
+        _flameOuterPath.MoveTo(cx - 6, cy);
+        _flameOuterPath.QuadTo(cx - 3 + flicker, cy - 18, cx, cy - 24 - MathF.Abs(flicker));
+        _flameOuterPath.QuadTo(cx + 3 - flicker, cy - 18, cx + 6, cy);
+        _flameOuterPath.Close();
+        canvas.DrawPath(_flameOuterPath, _fillPaint);
 
-        // Innerer Flammen-Kern
+        // Innerer Flammen-Kern (gecachter Path)
         _fillPaint.Color = FlameCore.WithAlpha(200);
-        using (var corePath = new SKPath())
-        {
-            corePath.MoveTo(cx - 3, cy);
-            corePath.QuadTo(cx - 1 + flicker * 0.5f, cy - 12, cx, cy - 16 - MathF.Abs(flicker) * 0.5f);
-            corePath.QuadTo(cx + 1 - flicker * 0.5f, cy - 12, cx + 3, cy);
-            corePath.Close();
-            canvas.DrawPath(corePath, _fillPaint);
-        }
+        _flameCorePath.Rewind();
+        _flameCorePath.MoveTo(cx - 3, cy);
+        _flameCorePath.QuadTo(cx - 1 + flicker * 0.5f, cy - 12, cx, cy - 16 - MathF.Abs(flicker) * 0.5f);
+        _flameCorePath.QuadTo(cx + 1 - flicker * 0.5f, cy - 12, cx + 3, cy);
+        _flameCorePath.Close();
+        canvas.DrawPath(_flameCorePath, _fillPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -328,7 +345,7 @@ public sealed class GuildHallHeaderRenderer : IDisposable
         float halfH = size * 0.48f;
 
         // Schild-Schatten
-        _fillPaint.Color = new SKColor(0x00, 0x00, 0x00, 30);
+        _fillPaint.Color = ShadowBlack;
         DrawShieldPath(canvas, cx + 2, cy + 2, halfW, halfH, _fillPaint);
 
         // Goldener Schild-Rand (Glow)
@@ -365,20 +382,20 @@ public sealed class GuildHallHeaderRenderer : IDisposable
         DrawStar(canvas, cx, starY, 8, CraftGold);
     }
 
-    private static void DrawShieldPath(SKCanvas canvas, float cx, float cy, float halfW, float halfH, SKPaint paint)
+    private void DrawShieldPath(SKCanvas canvas, float cx, float cy, float halfW, float halfH, SKPaint paint)
     {
-        using var path = new SKPath();
+        _shieldPath.Rewind();
         // Schild-Form: oben gerade mit abgerundeten Ecken, unten spitz zulaufend
-        path.MoveTo(cx - halfW, cy - halfH * 0.6f);
-        path.LineTo(cx - halfW, cy + halfH * 0.2f);
-        path.QuadTo(cx - halfW * 0.3f, cy + halfH, cx, cy + halfH);
-        path.QuadTo(cx + halfW * 0.3f, cy + halfH, cx + halfW, cy + halfH * 0.2f);
-        path.LineTo(cx + halfW, cy - halfH * 0.6f);
+        _shieldPath.MoveTo(cx - halfW, cy - halfH * 0.6f);
+        _shieldPath.LineTo(cx - halfW, cy + halfH * 0.2f);
+        _shieldPath.QuadTo(cx - halfW * 0.3f, cy + halfH, cx, cy + halfH);
+        _shieldPath.QuadTo(cx + halfW * 0.3f, cy + halfH, cx + halfW, cy + halfH * 0.2f);
+        _shieldPath.LineTo(cx + halfW, cy - halfH * 0.6f);
         // Oberer Bogen
-        path.QuadTo(cx + halfW, cy - halfH, cx, cy - halfH);
-        path.QuadTo(cx - halfW, cy - halfH, cx - halfW, cy - halfH * 0.6f);
-        path.Close();
-        canvas.DrawPath(path, paint);
+        _shieldPath.QuadTo(cx + halfW, cy - halfH, cx, cy - halfH);
+        _shieldPath.QuadTo(cx - halfW, cy - halfH, cx - halfW, cy - halfH * 0.6f);
+        _shieldPath.Close();
+        canvas.DrawPath(_shieldPath, paint);
     }
 
     private void DrawGear(SKCanvas canvas, float cx, float cy, float radius)
@@ -388,7 +405,7 @@ public sealed class GuildHallHeaderRenderer : IDisposable
         int teeth = 8;
 
         _fillPaint.Color = TorchBracket.WithAlpha(160);
-        using var gearPath = new SKPath();
+        _gearPath.Rewind();
 
         for (int i = 0; i < teeth * 2; i++)
         {
@@ -397,11 +414,11 @@ public sealed class GuildHallHeaderRenderer : IDisposable
             float x = cx + MathF.Cos(a) * r;
             float y = cy + MathF.Sin(a) * r;
 
-            if (i == 0) gearPath.MoveTo(x, y);
-            else gearPath.LineTo(x, y);
+            if (i == 0) _gearPath.MoveTo(x, y);
+            else _gearPath.LineTo(x, y);
         }
-        gearPath.Close();
-        canvas.DrawPath(gearPath, _fillPaint);
+        _gearPath.Close();
+        canvas.DrawPath(_gearPath, _fillPaint);
 
         // Zentraler Kreis
         _fillPaint.Color = ShieldFill;
@@ -412,7 +429,7 @@ public sealed class GuildHallHeaderRenderer : IDisposable
         canvas.DrawCircle(cx, cy, radius * 0.3f, _strokePaint);
     }
 
-    private static void DrawHammer(SKCanvas canvas, float cx, float cy, float size)
+    private void DrawHammer(SKCanvas canvas, float cx, float cy, float size)
     {
         float handleLen = size * 1.2f;
 
@@ -431,25 +448,25 @@ public sealed class GuildHallHeaderRenderer : IDisposable
         canvas.DrawRect(headX - size * 0.35f, headY - size * 0.12f, size * 0.7f, size * 0.24f, _fillPaint);
 
         // Metallglanz auf Hammerkopf
-        _fillPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, 30);
+        _fillPaint.Color = MetalGlint;
         canvas.DrawRect(headX - size * 0.35f, headY - size * 0.12f, size * 0.7f, size * 0.08f, _fillPaint);
     }
 
-    private static void DrawStar(SKCanvas canvas, float cx, float cy, float size, SKColor color)
+    private void DrawStar(SKCanvas canvas, float cx, float cy, float size, SKColor color)
     {
         _fillPaint.Color = color;
-        using var starPath = new SKPath();
+        _starPath.Rewind();
         for (int i = 0; i < 10; i++)
         {
             float a = -MathF.PI / 2 + i * MathF.PI / 5;
             float r = (i % 2 == 0) ? size : size * 0.45f;
             float x = cx + MathF.Cos(a) * r;
             float y = cy + MathF.Sin(a) * r;
-            if (i == 0) starPath.MoveTo(x, y);
-            else starPath.LineTo(x, y);
+            if (i == 0) _starPath.MoveTo(x, y);
+            else _starPath.LineTo(x, y);
         }
-        starPath.Close();
-        canvas.DrawPath(starPath, _fillPaint);
+        _starPath.Close();
+        canvas.DrawPath(_starPath, _fillPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -493,7 +510,26 @@ public sealed class GuildHallHeaderRenderer : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        _torchGlowShader?.Dispose();
+
+        // Shader
+        _leftGlowShader?.Dispose();
+        _rightGlowShader?.Dispose();
         _vignetteShader?.Dispose();
+
+        // Gecachte Paths
+        _flameOuterPath.Dispose();
+        _flameCorePath.Dispose();
+        _shieldPath.Dispose();
+        _gearPath.Dispose();
+        _starPath.Dispose();
+
+        // Instanz-Paints
+        _stoneFillPaint.Dispose();
+        _stoneGapPaint.Dispose();
+        _torchFillPaint.Dispose();
+        _torchStrokePaint.Dispose();
+        _fillPaint.Dispose();
+        _strokePaint.Dispose();
+        _glowPaint.Dispose();
     }
 }

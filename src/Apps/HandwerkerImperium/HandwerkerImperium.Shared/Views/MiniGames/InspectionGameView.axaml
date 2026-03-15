@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MiniGames.InspectionGameView"
-             x:DataType="vm:InspectionGameViewModel">
+             x:DataType="vm:InspectionGameViewModel"
+             x:CompileBindings="True">
 
   <Grid AutomationProperties.AutomationId="Inspection_Grid_Root"
         RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
@@ -221,7 +222,7 @@
     <Border x:Name="CountdownOverlay"
             AutomationProperties.AutomationId="Inspection_Border_Countdown"
             Grid.RowSpan="5"
-            Background="#CC000000"
+            Background="{StaticResource RewardOverlayBrush}"
             IsVisible="{Binding IsCountdownActive}">
       <TextBlock x:Name="CountdownTextBlock"
                  AutomationProperties.AutomationId="Inspection_Txt_Countdown"

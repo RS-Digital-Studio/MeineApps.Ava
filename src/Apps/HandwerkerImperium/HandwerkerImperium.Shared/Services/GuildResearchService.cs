@@ -15,6 +15,23 @@ public sealed class GuildResearchService : IGuildResearchService
     private readonly IFirebaseService _firebaseService;
     private GuildResearchEffects _cachedEffects = new();
     private readonly SemaphoreSlim _semaphore = new(1, 1);
+    // Statisch sortierte Definition-Liste (GetAll() gibt bereits sortiert zurueck,
+    // aber als Sicherheit gegen zukuenftige Aenderungen einmal sortiert cachen)
+    private static readonly List<GuildResearchDefinition> s_sortedDefinitions = BuildSortedDefinitions();
+    // Statisches Lookup-Dictionary (vermeidet ToDictionary()/FirstOrDefault() pro Aufruf)
+    private static readonly Dictionary<string, GuildResearchDefinition> s_definitionLookup =
+        GuildResearchDefinition.GetAll().ToDictionary(d => d.Id);
+
+    private static List<GuildResearchDefinition> BuildSortedDefinitions()
+    {
+        var defs = new List<GuildResearchDefinition>(GuildResearchDefinition.GetAll());
+        defs.Sort((a, b) =>
+        {
+            int cmp = a.Category.CompareTo(b.Category);
+            return cmp != 0 ? cmp : a.Order.CompareTo(b.Order);
+        });
+        return defs;
+    }
 
     public GuildResearchService(
         IGameStateService gameStateService,
@@ -37,7 +54,8 @@ public sealed class GuildResearchService : IGuildResearchService
     {
         var result = new List<GuildResearchDisplay>();
 
-        await _semaphore.WaitAsync();
+        if (!await _semaphore.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return result; // Timeout: Lock nicht erhalten
         try
         {
             var membership = _gameStateService.State.GuildMembership;
@@ -50,12 +68,21 @@ public sealed class GuildResearchService : IGuildResearchService
                 $"guild_research/{membership.GuildId}");
             var states = statesRaw ?? new Dictionary<string, GuildResearchState>();
 
-            // Definitionen einmal laden und als Dictionary cachen
-            var definitions = GuildResearchDefinition.GetAll();
-            var defLookup = definitions.ToDictionary(d => d.Id);
+            // Statisches Lookup-Dictionary verwenden (kein ToDictionary pro Aufruf)
+            var defLookup = s_definitionLookup;
+
+            // Effekte ZUERST aus bereits abgeschlossenen Forschungen berechnen,
+            // damit ResearchSpeedBonus für Timer-Checks aktuell ist
+            var completedIds = new HashSet<string>();
+            foreach (var (id, state) in states)
+            {
+                if (state.Completed) completedIds.Add(id);
+            }
+            _cachedEffects = GuildResearchEffects.Calculate(completedIds);
 
             // Timer-Check: Abgelaufene Forschungen automatisch abschließen
             var now = DateTime.UtcNow;
+            var anyNewlyCompleted = false;
             foreach (var (id, state) in states)
             {
                 if (state.Completed || string.IsNullOrEmpty(state.ResearchStartedAt)) continue;
@@ -73,26 +100,23 @@ public sealed class GuildResearchService : IGuildResearchService
                 {
                     state.Completed = true;
                     state.CompletedAt = now.ToString("O");
+                    completedIds.Add(id);
+                    anyNewlyCompleted = true;
                     await _firebaseService.SetAsync($"guild_research/{membership.GuildId}/{id}", state);
                 }
             }
 
-            // Abgeschlossene IDs sammeln für Effekt-Berechnung
-            var completedIds = new HashSet<string>();
-            foreach (var (id, state) in states)
-            {
-                if (state.Completed) completedIds.Add(id);
-            }
-
-            // Effekte berechnen und cachen
-            _cachedEffects = GuildResearchEffects.Calculate(completedIds);
+            // Effekte nur neu berechnen wenn tatsächlich neue Forschungen abgeschlossen wurden
+            if (anyNewlyCompleted)
+                _cachedEffects = GuildResearchEffects.Calculate(completedIds);
             membership.ApplyResearchEffects(_cachedEffects);
             _gameStateService.MarkDirty();
 
             // Definitionen mit Zuständen mergen, pro Kategorie aktive bestimmen
             var categoryFirstIncomplete = new Dictionary<GuildResearchCategory, bool>();
 
-            foreach (var def in definitions.OrderBy(d => d.Category).ThenBy(d => d.Order))
+            // Gecachte sortierte Liste verwenden (kein OrderBy+ThenBy pro Aufruf)
+            foreach (var def in s_sortedDefinitions)
             {
                 states.TryGetValue(def.Id, out var researchState);
                 var isCompleted = researchState?.Completed ?? false;
@@ -152,7 +176,8 @@ public sealed class GuildResearchService : IGuildResearchService
     /// </summary>
     public async Task<bool> ContributeToResearchAsync(string researchId, long amount)
     {
-        await _semaphore.WaitAsync();
+        if (!await _semaphore.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return false; // Timeout: Lock nicht erhalten
         try
         {
             var membership = _gameStateService.State.GuildMembership;
@@ -172,9 +197,8 @@ public sealed class GuildResearchService : IGuildResearchService
 
             if (researchState.Completed) return false;
 
-            // Kosten der Forschung ermitteln
-            var definition = GuildResearchDefinition.GetAll().FirstOrDefault(d => d.Id == researchId);
-            if (definition == null) return false;
+            // Kosten der Forschung ermitteln (statisches Lookup statt FirstOrDefault)
+            if (!s_definitionLookup.TryGetValue(researchId, out var definition)) return false;
 
             // Beitrag berechnen (nicht mehr als nötig)
             var remaining = definition.Cost - researchState.Progress;
@@ -195,8 +219,12 @@ public sealed class GuildResearchService : IGuildResearchService
                 // completed wird NICHT gesetzt - erst wenn Timer abläuft
             }
 
-            // Firebase aktualisieren
-            await _firebaseService.SetAsync(path, researchState);
+            // Firebase aktualisieren - bei Fehler Rollback
+            if (!await _firebaseService.SetAsync(path, researchState))
+            {
+                _gameStateService.AddMoney(actualAmount);
+                return false;
+            }
 
             // Effekte neu berechnen
             await RefreshEffectsCoreAsync(guildId);
@@ -222,7 +250,8 @@ public sealed class GuildResearchService : IGuildResearchService
     /// </summary>
     public async Task<bool> CheckResearchCompletionAsync()
     {
-        await _semaphore.WaitAsync();
+        if (!await _semaphore.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return false; // Timeout: Lock nicht erhalten
         try
         {
             var membership = _gameStateService.State.GuildMembership;
@@ -237,7 +266,16 @@ public sealed class GuildResearchService : IGuildResearchService
 
             var now = DateTime.UtcNow;
             var anyCompleted = false;
-            var defLookup = GuildResearchDefinition.GetAll().ToDictionary(d => d.Id);
+            var defLookup = s_definitionLookup;
+
+            // Effekte ZUERST aus bereits abgeschlossenen Forschungen berechnen,
+            // damit ResearchSpeedBonus für Timer-Checks aktuell ist
+            var completedIds = new HashSet<string>();
+            foreach (var (id, state) in statesRaw)
+            {
+                if (state.Completed) completedIds.Add(id);
+            }
+            _cachedEffects = GuildResearchEffects.Calculate(completedIds);
 
             foreach (var (id, state) in statesRaw)
             {
@@ -301,7 +339,8 @@ public sealed class GuildResearchService : IGuildResearchService
     /// </summary>
     public async Task RefreshResearchCacheAsync()
     {
-        await _semaphore.WaitAsync();
+        if (!await _semaphore.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return; // Timeout: Lock nicht erhalten
         try
         {
             var membership = _gameStateService.State.GuildMembership;

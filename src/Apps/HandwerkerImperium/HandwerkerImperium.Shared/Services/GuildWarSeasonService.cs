@@ -67,7 +67,8 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return; // Timeout: Lock nicht erhalten
         try
         {
             // Liga aus Firebase laden
@@ -116,16 +117,21 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             return;
 
         var uid = _firebase.PlayerId;
-        if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(_activeWarId))
+        if (string.IsNullOrEmpty(uid))
             return;
 
         var phase = GetCurrentPhase();
         if (phase == WarPhase.Evaluation || phase == WarPhase.Completed)
             return; // Keine Punkte während Auswertung
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return; // Timeout: Lock nicht erhalten
         try
         {
+            // _activeWarId kann sich zwischen Pre-Check und Lock-Erwerb ändern
+            if (string.IsNullOrEmpty(_activeWarId))
+                return;
+
             var guildId = membership.GuildId;
             var scorePath = $"guild_war_scores/{_activeWarId}/{guildId}/{uid}";
 
@@ -192,7 +198,8 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return null;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return null; // Timeout: Lock nicht erhalten
         try
         {
             var seasonId = GetCurrentSeasonId();
@@ -409,19 +416,25 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
         if (currentPhase == _lastKnownPhase)
             return;
 
-        var previousPhase = _lastKnownPhase;
-        _lastKnownPhase = currentPhase;
-        _preferences.Set(PrefKeyLastPhase, currentPhase.ToString().ToLowerInvariant());
-
-        // Cache invalidieren bei Phasenwechsel
-        _cachedWar = null;
-
-        if (string.IsNullOrEmpty(_activeWarId))
-            return;
-
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return; // Timeout: Lock nicht erhalten
         try
         {
+            // Double-Check nach Lock-Erwerb (anderer Thread könnte schneller gewesen sein)
+            currentPhase = GetCurrentPhase();
+            if (currentPhase == _lastKnownPhase)
+                return;
+
+            var previousPhase = _lastKnownPhase;
+            _lastKnownPhase = currentPhase;
+            _preferences.Set(PrefKeyLastPhase, currentPhase.ToString().ToLowerInvariant());
+
+            // Cache invalidieren bei Phasenwechsel
+            _cachedWar = null;
+
+            if (string.IsNullOrEmpty(_activeWarId))
+                return;
+
             // Phase in Firebase updaten
             await _firebase.UpdateAsync($"guild_wars/{_activeWarId}",
                 new Dictionary<string, object>
@@ -476,7 +489,8 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return; // Timeout: Lock nicht erhalten
         try
         {
             // Letzten War-Belohnungen verteilen
@@ -980,16 +994,18 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Generiert die Saison-ID basierend auf Jahr und 4-Wochen-Block.
+    /// Generiert die Saison-ID basierend auf ISO-Jahr und 4-Wochen-Block.
     /// Format: s_{year}_{number:D2}
+    /// Verwendet ISOWeek statt GetWeekOfYear um Jahreswechsel-Probleme zu vermeiden
+    /// (z.B. 29.12. kann ISO-Woche 1 des Folgejahres sein).
     /// </summary>
     private static string GetCurrentSeasonId()
     {
         var now = DateTime.UtcNow;
-        var cal = CultureInfo.InvariantCulture.Calendar;
-        var week = cal.GetWeekOfYear(now, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-        var seasonNumber = (week - 1) / 4 + 1;
-        return $"s_{now.Year}_{seasonNumber:D2}";
+        var isoYear = ISOWeek.GetYear(now);
+        var isoWeek = ISOWeek.GetWeekOfYear(now);
+        var seasonNumber = (isoWeek - 1) / 4 + 1;
+        return $"s_{isoYear}_{seasonNumber:D2}";
     }
 
     /// <summary>
@@ -998,9 +1014,8 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
     private static int GetCurrentWeekInSeason()
     {
         var now = DateTime.UtcNow;
-        var cal = CultureInfo.InvariantCulture.Calendar;
-        var week = cal.GetWeekOfYear(now, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-        return ((week - 1) % 4) + 1;
+        var isoWeek = ISOWeek.GetWeekOfYear(now);
+        return ((isoWeek - 1) % 4) + 1;
     }
 
     /// <summary>
@@ -1009,9 +1024,8 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
     private static int GetSeasonNumber()
     {
         var now = DateTime.UtcNow;
-        var cal = CultureInfo.InvariantCulture.Calendar;
-        var week = cal.GetWeekOfYear(now, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-        return (week - 1) / 4 + 1;
+        var isoWeek = ISOWeek.GetWeekOfYear(now);
+        return (isoWeek - 1) / 4 + 1;
     }
 
     /// <summary>

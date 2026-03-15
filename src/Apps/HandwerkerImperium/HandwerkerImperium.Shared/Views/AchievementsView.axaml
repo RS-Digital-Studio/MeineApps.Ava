@@ -6,7 +6,8 @@
              xmlns:labs="using:Avalonia.Labs.Controls"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.AchievementsView"
-             x:DataType="vm:AchievementsViewModel">
+             x:DataType="vm:AchievementsViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,Auto,*"
         AutomationProperties.AutomationId="Achievements_Grid_Root">
@@ -134,7 +135,7 @@
                     <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                      AutomationProperties.AutomationId="Achievements_Icon_ItemIcon"
                                      Width="28" Height="28"
-                                     Foreground="White"
+                                     Foreground="{DynamicResource PrimaryContrastBrush}"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center" />
                   </Border>

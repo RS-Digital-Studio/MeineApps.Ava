@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MiniGames.BlueprintGameView"
-             x:DataType="vm:BlueprintGameViewModel">
+             x:DataType="vm:BlueprintGameViewModel"
+             x:CompileBindings="True">
 
   <Grid AutomationProperties.AutomationId="Blueprint_Grid_Root"
         RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
@@ -144,10 +145,10 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Blueprint_Icon_NextStep"
                              Kind="ArrowRight" Width="20" Height="20"
-                             Foreground="White" />
+                             Foreground="{DynamicResource PrimaryContrastBrush}" />
             <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_NextStep"
                        FontSize="14" FontWeight="Bold"
-                       Foreground="White">
+                       Foreground="{DynamicResource PrimaryContrastBrush}">
               <Run Text="#" />
               <Run Text="{Binding NextExpectedStep}" />
             </TextBlock>
@@ -259,7 +260,7 @@
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
     <Border AutomationProperties.AutomationId="Blueprint_Border_Countdown"
-            Grid.RowSpan="5" Background="#CC000000"
+            Grid.RowSpan="5" Background="{StaticResource RewardOverlayBrush}"
             IsVisible="{Binding IsCountdownActive}">
       <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_Countdown"
                  Text="{Binding CountdownText}"

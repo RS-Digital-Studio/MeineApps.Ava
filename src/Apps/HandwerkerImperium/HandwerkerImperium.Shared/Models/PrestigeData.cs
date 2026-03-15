@@ -62,6 +62,13 @@ public class PrestigeData
     public Dictionary<string, Worker> KeptWorkers { get; set; } = [];
 
     /// <summary>
+    /// Kaufanzahl für wiederholbare Prestige-Shop-Items.
+    /// Key = Item-ID, Value = Anzahl der Käufe.
+    /// </summary>
+    [JsonPropertyName("repeatableItemCounts")]
+    public Dictionary<string, int> RepeatableItemCounts { get; set; } = [];
+
+    /// <summary>
     /// Chronologische Aufzeichnung aller Prestige-Durchläufe (max. 20, neueste zuerst).
     /// </summary>
     [JsonPropertyName("history")]

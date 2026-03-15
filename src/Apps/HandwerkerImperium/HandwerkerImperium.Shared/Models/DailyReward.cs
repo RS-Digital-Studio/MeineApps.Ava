@@ -56,49 +56,72 @@ public class DailyReward
     public bool IsAvailable => IsToday && !IsClaimed;
 
     /// <summary>
-    /// Gets the reward schedule for a 30-day cycle.
-    /// Woche 1: Grundbelohnungen. Woche 2-3: Steigerung. Woche 4: Jackpot-Finale.
+    /// Berechnet die dynamisch skalierte Geld-Belohnung basierend auf dem aktuellen Einkommen.
+    /// Formel: max(FesterBetrag, Minuten-Offline-Einkommen * Tages-Multiplikator)
+    /// → Ab Mid-Game fühlen sich Daily Rewards immer wertvoll an (nie irrelevant).
     /// </summary>
-    public static List<DailyReward> GetRewardSchedule()
+    public decimal GetScaledMoney(decimal netIncomePerSecond)
     {
-        return
-        [
-            // Woche 1: Einstieg
-            new() { Day = 1, Money = 500m, Xp = 0, GoldenScrews = 0 },
-            new() { Day = 2, Money = 750m, Xp = 0, GoldenScrews = 1 },
-            new() { Day = 3, Money = 1_000m, Xp = 25, GoldenScrews = 0 },
-            new() { Day = 4, Money = 1_500m, Xp = 0, GoldenScrews = 2 },
-            new() { Day = 5, Money = 2_000m, Xp = 50, GoldenScrews = 0 },
-            new() { Day = 6, Money = 2_500m, Xp = 0, GoldenScrews = 3 },
-            new() { Day = 7, Money = 5_000m, Xp = 100, GoldenScrews = 5, BonusType = DailyBonusType.SpeedBoost },
-            // Woche 2: Aufbau
-            new() { Day = 8, Money = 3_000m, Xp = 50, GoldenScrews = 0 },
-            new() { Day = 9, Money = 3_500m, Xp = 0, GoldenScrews = 3 },
-            new() { Day = 10, Money = 4_000m, Xp = 75, GoldenScrews = 0 },
-            new() { Day = 11, Money = 5_000m, Xp = 0, GoldenScrews = 4 },
-            new() { Day = 12, Money = 6_000m, Xp = 100, GoldenScrews = 0 },
-            new() { Day = 13, Money = 7_000m, Xp = 0, GoldenScrews = 5 },
-            new() { Day = 14, Money = 10_000m, Xp = 200, GoldenScrews = 8, BonusType = DailyBonusType.XpBoost },
-            // Woche 3: Steigerung
-            new() { Day = 15, Money = 8_000m, Xp = 100, GoldenScrews = 0 },
-            new() { Day = 16, Money = 9_000m, Xp = 0, GoldenScrews = 5 },
-            new() { Day = 17, Money = 10_000m, Xp = 150, GoldenScrews = 0 },
-            new() { Day = 18, Money = 12_000m, Xp = 0, GoldenScrews = 6 },
-            new() { Day = 19, Money = 15_000m, Xp = 200, GoldenScrews = 0 },
-            new() { Day = 20, Money = 18_000m, Xp = 0, GoldenScrews = 8 },
-            new() { Day = 21, Money = 25_000m, Xp = 300, GoldenScrews = 10, BonusType = DailyBonusType.SpeedBoost },
-            // Woche 4: Jackpot-Finale
-            new() { Day = 22, Money = 15_000m, Xp = 150, GoldenScrews = 0 },
-            new() { Day = 23, Money = 18_000m, Xp = 0, GoldenScrews = 8 },
-            new() { Day = 24, Money = 20_000m, Xp = 200, GoldenScrews = 0 },
-            new() { Day = 25, Money = 25_000m, Xp = 0, GoldenScrews = 10 },
-            new() { Day = 26, Money = 30_000m, Xp = 300, GoldenScrews = 0 },
-            new() { Day = 27, Money = 35_000m, Xp = 0, GoldenScrews = 12 },
-            new() { Day = 28, Money = 40_000m, Xp = 400, GoldenScrews = 15, BonusType = DailyBonusType.XpBoost },
-            new() { Day = 29, Money = 50_000m, Xp = 500, GoldenScrews = 15 },
-            new() { Day = 30, Money = 100_000m, Xp = 1_000, GoldenScrews = 25, BonusType = DailyBonusType.SpeedBoost },
-        ];
+        if (netIncomePerSecond <= 0) return Money;
+
+        // Tages-Multiplikator: sqrt(Tag) statt linear → flachere Kurve im Endgame
+        // Tag 1 = 1 Min, Tag 7 = 2.6 Min, Tag 14 = 3.7 Min, Tag 30 = 5.5 Min
+        decimal minutesFactor = (decimal)Math.Sqrt(Day);
+        decimal minutesWorth = minutesFactor * netIncomePerSecond * 60m;
+
+        // Cap: Maximal 15 Minuten Einkommen (verhindert Wirtschafts-Destabilisierung)
+        decimal maxReward = netIncomePerSecond * 900m;
+        minutesWorth = Math.Min(minutesWorth, maxReward);
+
+        return Math.Max(Money, minutesWorth);
     }
+
+    // Gecachter 30-Tage-Belohnungsplan (statisch, wird nur einmal erstellt).
+    // ACHTUNG: Caller duerfen IsToday/IsClaimed NICHT direkt setzen - dafuer DailyRewardService.GetRewardCycle() verwenden.
+    private static readonly List<DailyReward> s_cachedSchedule =
+    [
+        // Woche 1: Einstieg
+        new() { Day = 1, Money = 500m, Xp = 0, GoldenScrews = 0 },
+        new() { Day = 2, Money = 750m, Xp = 0, GoldenScrews = 1 },
+        new() { Day = 3, Money = 1_000m, Xp = 25, GoldenScrews = 0 },
+        new() { Day = 4, Money = 1_500m, Xp = 0, GoldenScrews = 2 },
+        new() { Day = 5, Money = 2_000m, Xp = 50, GoldenScrews = 0 },
+        new() { Day = 6, Money = 2_500m, Xp = 0, GoldenScrews = 3 },
+        new() { Day = 7, Money = 5_000m, Xp = 100, GoldenScrews = 5, BonusType = DailyBonusType.SpeedBoost },
+        // Woche 2: Aufbau
+        new() { Day = 8, Money = 3_000m, Xp = 50, GoldenScrews = 0 },
+        new() { Day = 9, Money = 3_500m, Xp = 0, GoldenScrews = 3 },
+        new() { Day = 10, Money = 4_000m, Xp = 75, GoldenScrews = 0 },
+        new() { Day = 11, Money = 5_000m, Xp = 0, GoldenScrews = 4 },
+        new() { Day = 12, Money = 6_000m, Xp = 100, GoldenScrews = 0 },
+        new() { Day = 13, Money = 7_000m, Xp = 0, GoldenScrews = 5 },
+        new() { Day = 14, Money = 10_000m, Xp = 200, GoldenScrews = 8, BonusType = DailyBonusType.XpBoost },
+        // Woche 3: Steigerung
+        new() { Day = 15, Money = 8_000m, Xp = 100, GoldenScrews = 0 },
+        new() { Day = 16, Money = 9_000m, Xp = 0, GoldenScrews = 5 },
+        new() { Day = 17, Money = 10_000m, Xp = 150, GoldenScrews = 0 },
+        new() { Day = 18, Money = 12_000m, Xp = 0, GoldenScrews = 6 },
+        new() { Day = 19, Money = 15_000m, Xp = 200, GoldenScrews = 0 },
+        new() { Day = 20, Money = 18_000m, Xp = 0, GoldenScrews = 8 },
+        new() { Day = 21, Money = 25_000m, Xp = 300, GoldenScrews = 10, BonusType = DailyBonusType.SpeedBoost },
+        // Woche 4: Jackpot-Finale
+        new() { Day = 22, Money = 15_000m, Xp = 150, GoldenScrews = 0 },
+        new() { Day = 23, Money = 18_000m, Xp = 0, GoldenScrews = 8 },
+        new() { Day = 24, Money = 20_000m, Xp = 200, GoldenScrews = 0 },
+        new() { Day = 25, Money = 25_000m, Xp = 0, GoldenScrews = 10 },
+        new() { Day = 26, Money = 30_000m, Xp = 300, GoldenScrews = 0 },
+        new() { Day = 27, Money = 35_000m, Xp = 0, GoldenScrews = 12 },
+        new() { Day = 28, Money = 40_000m, Xp = 400, GoldenScrews = 15, BonusType = DailyBonusType.XpBoost },
+        new() { Day = 29, Money = 50_000m, Xp = 500, GoldenScrews = 15 },
+        new() { Day = 30, Money = 100_000m, Xp = 1_000, GoldenScrews = 25, BonusType = DailyBonusType.SpeedBoost },
+    ];
+
+    /// <summary>
+    /// Gibt den gecachten 30-Tage-Belohnungsplan zurueck.
+    /// Woche 1: Grundbelohnungen. Woche 2-3: Steigerung. Woche 4: Jackpot-Finale.
+    /// ACHTUNG: Die zurueckgegebene Liste ist gecacht - IsToday/IsClaimed NICHT direkt aendern.
+    /// </summary>
+    public static List<DailyReward> GetRewardSchedule() => s_cachedSchedule;
 }
 
 /// <summary>

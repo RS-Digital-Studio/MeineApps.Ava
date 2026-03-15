@@ -234,7 +234,14 @@ public sealed class GameStateService : IGameStateService
 
     public Workshop? GetWorkshop(WorkshopType type)
     {
-        return _state.Workshops.FirstOrDefault(w => w.Type == type);
+        // For-Schleife statt LINQ FirstOrDefault (vermeidet Enumerator+Closure-Allokation)
+        var workshops = _state.Workshops;
+        for (int i = 0; i < workshops.Count; i++)
+        {
+            if (workshops[i].Type == type)
+                return workshops[i];
+        }
+        return null;
     }
 
     public bool TryUpgradeWorkshop(WorkshopType type)
@@ -476,10 +483,14 @@ public sealed class GameStateService : IGameStateService
     {
         decimal multiplier = 1m;
 
-        // Research-RewardMultiplier
-        decimal researchRewardBonus = _state.Researches
-            .Where(r => r.IsResearched && r.Effect.RewardMultiplier > 0)
-            .Sum(r => r.Effect.RewardMultiplier);
+        // Research-RewardMultiplier (For-Schleife statt LINQ Where+Sum)
+        decimal researchRewardBonus = 0m;
+        for (int i = 0; i < _state.Researches.Count; i++)
+        {
+            var r = _state.Researches[i];
+            if (r.IsResearched && r.Effect.RewardMultiplier > 0)
+                researchRewardBonus += r.Effect.RewardMultiplier;
+        }
         if (researchRewardBonus > 0)
             multiplier *= (1m + researchRewardBonus);
 

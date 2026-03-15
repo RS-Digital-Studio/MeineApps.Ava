@@ -4,7 +4,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.CraftingView"
-             x:DataType="vm:CraftingViewModel">
+             x:DataType="vm:CraftingViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="Crafting_Grid_Root">
@@ -65,7 +66,7 @@
             <Border CornerRadius="4" Padding="6,3"
                     AutomationProperties.AutomationId="Crafting_Border_ActiveIconBg"
                     Background="{StaticResource CraftPrimaryBrush}">
-              <icons:GameIcon Kind="ProgressClock" Width="18" Height="18" Foreground="White"
+              <icons:GameIcon Kind="ProgressClock" Width="18" Height="18" Foreground="{DynamicResource PrimaryContrastBrush}"
                                AutomationProperties.AutomationId="Crafting_Icon_ActiveHeader" />
             </Border>
             <TextBlock Text="{loc:Translate ActiveCrafting}"
@@ -137,7 +138,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="Crafting_Border_RecipesIconBg"
                   Background="{StaticResource CraftPrimaryBrush}">
-            <icons:GameIcon Kind="BookOpenVariant" Width="18" Height="18" Foreground="White"
+            <icons:GameIcon Kind="BookOpenVariant" Width="18" Height="18" Foreground="{DynamicResource PrimaryContrastBrush}"
                              AutomationProperties.AutomationId="Crafting_Icon_RecipesHeader" />
           </Border>
           <TextBlock Text="{loc:Translate Recipes}"
@@ -235,7 +236,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="Crafting_Border_InventoryIconBg"
                   Background="{StaticResource CraftPrimaryBrush}">
-            <icons:GameIcon Kind="PackageVariant" Width="18" Height="18" Foreground="White"
+            <icons:GameIcon Kind="PackageVariant" Width="18" Height="18" Foreground="{DynamicResource PrimaryContrastBrush}"
                              AutomationProperties.AutomationId="Crafting_Icon_InventoryHeader" />
           </Border>
           <TextBlock Text="{loc:Translate Inventory}"

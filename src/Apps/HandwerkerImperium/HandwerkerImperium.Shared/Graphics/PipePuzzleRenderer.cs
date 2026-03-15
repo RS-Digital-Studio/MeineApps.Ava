@@ -425,7 +425,7 @@ public sealed class PipePuzzleRenderer : IDisposable
         float dropH = iconRadius * 1.2f;
         float dropW = iconRadius * 0.7f;
         _fillPaintAA.Color = SKColors.White;
-        _cachedPath.Reset();
+        _cachedPath.Rewind();
         _cachedPath.MoveTo(cx, cy - dropH * 0.5f);
         _cachedPath.CubicTo(cx - dropW, cy, cx - dropW * 0.6f, cy + dropH * 0.4f, cx, cy + dropH * 0.35f);
         _cachedPath.CubicTo(cx + dropW * 0.6f, cy + dropH * 0.4f, cx + dropW, cy, cx, cy - dropH * 0.5f);
@@ -463,7 +463,7 @@ public sealed class PipePuzzleRenderer : IDisposable
         float funnelW = iconRadius * 0.8f;
         float funnelH = iconRadius * 0.9f;
         _fillPaintAA.Color = SKColors.White;
-        _cachedPath.Reset();
+        _cachedPath.Rewind();
         _cachedPath.MoveTo(cx - funnelW, cy - funnelH * 0.4f);
         _cachedPath.LineTo(cx + funnelW, cy - funnelH * 0.4f);
         _cachedPath.LineTo(cx + funnelW * 0.25f, cy + funnelH * 0.2f);
@@ -535,7 +535,7 @@ public sealed class PipePuzzleRenderer : IDisposable
         {
             float px = positions[i][0], py = positions[i][1];
             float dx = dirs[i][0], dy = dirs[i][1];
-            _cachedPath.Reset();
+            _cachedPath.Rewind();
             _cachedPath.MoveTo(px + dx * arrowSize, py + dy * arrowSize);
             _cachedPath.LineTo(px - dy * arrowSize * 0.5f, py + dx * arrowSize * 0.5f);
             _cachedPath.LineTo(px + dy * arrowSize * 0.5f, py - dx * arrowSize * 0.5f);

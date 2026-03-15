@@ -143,6 +143,22 @@ public sealed class GameTabBarRenderer : IDisposable
     private readonly SKPath _laurelPathRight = new();
     private readonly SKPath _stripePath = new();
 
+    // Gecachter Lock-Icon-Path (vermeidet SKPath-Allokation pro Frame bei gesperrten Tabs)
+    private readonly SKPath _lockArcPath = new();
+
+    // Gecachte Badge-Strings für Zahlen 0-99 (vermeidet ToString() pro Frame)
+    private static readonly string[] _badgeStrings;
+
+    // Gecachte Level-Strings "Lv.X" fuer gesperrte Tabs (vermeidet Interpolation pro Frame)
+    private static readonly Dictionary<int, string> _levelStringCache = new();
+
+    static GameTabBarRenderer()
+    {
+        _badgeStrings = new string[100];
+        for (int i = 0; i < 100; i++)
+            _badgeStrings[i] = i.ToString();
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     // HAUPT-RENDER-METHODE
     // ═══════════════════════════════════════════════════════════════════
@@ -226,7 +242,14 @@ public sealed class GameTabBarRenderer : IDisposable
                     _textPaint.Color = LockedLevelText;
                     _cachedFont.Size = 7f;
                     _cachedFont.Embolden = true;
-                    canvas.DrawText($"Lv.{state.UnlockLevels[i]}", tabCenterX, labelY, SKTextAlign.Center, _cachedFont, _textPaint);
+                    // Gecachter Level-String statt Interpolation pro Frame
+                    int lvl = state.UnlockLevels[i];
+                    if (!_levelStringCache.TryGetValue(lvl, out var lvlText))
+                    {
+                        lvlText = $"Lv.{lvl}";
+                        _levelStringCache[lvl] = lvlText;
+                    }
+                    canvas.DrawText(lvlText, tabCenterX, labelY, SKTextAlign.Center, _cachedFont, _textPaint);
                     _cachedFont.Embolden = false;
                 }
             }
@@ -391,9 +414,9 @@ public sealed class GameTabBarRenderer : IDisposable
         _strokePaint.Color = new SKColor(0xFF, 0xD7, 0x00, 0xCC);
         _strokePaint.StrokeWidth = 1.8f;
         _strokePaint.StrokeCap = SKStrokeCap.Round;
-        using var arcRect = new SKPath();
-        arcRect.AddArc(new SKRect(cx - s * 0.45f, cy - s * 0.9f, cx + s * 0.45f, cy + s * 0.1f), 180, 180);
-        canvas.DrawPath(arcRect, _strokePaint);
+        _lockArcPath.Rewind();
+        _lockArcPath.AddArc(new SKRect(cx - s * 0.45f, cy - s * 0.9f, cx + s * 0.45f, cy + s * 0.1f), 180, 180);
+        canvas.DrawPath(_lockArcPath, _strokePaint);
 
         // Schlüsselloch (kleiner Kreis + Linie)
         _fillPaint.Color = new SKColor(0x5D, 0x40, 0x37);
@@ -488,7 +511,7 @@ public sealed class GameTabBarRenderer : IDisposable
         _cachedFont.Size = 8f;
         _cachedFont.Embolden = true;
 
-        string text = count > 99 ? "99+" : count.ToString();
+        string text = count > 99 ? "99+" : (count >= 0 && count < 100 ? _badgeStrings[count] : count.ToString());
         _cachedFont.MeasureText(text, out var textBounds, _textPaint);
         canvas.DrawText(text, cx, cy + textBounds.Height * 0.35f, SKTextAlign.Center, _cachedFont, _textPaint);
         _cachedFont.Embolden = false;
@@ -530,7 +553,7 @@ public sealed class GameTabBarRenderer : IDisposable
         byte alpha = isActive ? (byte)255 : (byte)160;
 
         // --- Dach (Dreieck) ---
-        _roofPath.Reset();
+        _roofPath.Rewind();
         _roofPath.MoveTo(cx, cy - s * 0.6f);              // Spitze
         _roofPath.LineTo(cx - s * 0.65f, cy - s * 0.05f); // Links unten
         _roofPath.LineTo(cx + s * 0.65f, cy - s * 0.05f); // Rechts unten
@@ -700,7 +723,7 @@ public sealed class GameTabBarRenderer : IDisposable
         // --- Krone (3 Zacken, über den Zinnen) ---
         float crownY = zinneY - s * 0.25f;
         _fillPaint.Color = CrownGold.WithAlpha(alpha);
-        _crownPath.Reset();
+        _crownPath.Rewind();
         _crownPath.MoveTo(cx - s * 0.25f, zinneY);
         _crownPath.LineTo(cx - s * 0.2f, crownY + s * 0.05f);
         _crownPath.LineTo(cx - s * 0.07f, zinneY - s * 0.05f);
@@ -856,13 +879,13 @@ public sealed class GameTabBarRenderer : IDisposable
         _strokePaint.StrokeCap = SKStrokeCap.Round;
 
         // Linke Seite
-        _laurelPathLeft.Reset();
+        _laurelPathLeft.Rewind();
         _laurelPathLeft.MoveTo(cx - s * 0.5f, cy + s * 0.35f);
         _laurelPathLeft.QuadTo(cx - s * 0.65f, cy - s * 0.1f, cx - s * 0.3f, cy - s * 0.5f);
         canvas.DrawPath(_laurelPathLeft, _strokePaint);
 
         // Rechte Seite
-        _laurelPathRight.Reset();
+        _laurelPathRight.Rewind();
         _laurelPathRight.MoveTo(cx + s * 0.5f, cy + s * 0.35f);
         _laurelPathRight.QuadTo(cx + s * 0.65f, cy - s * 0.1f, cx + s * 0.3f, cy - s * 0.5f);
         canvas.DrawPath(_laurelPathRight, _strokePaint);
@@ -906,7 +929,7 @@ public sealed class GameTabBarRenderer : IDisposable
 
         for (int i = 0; i < stripes; i++)
         {
-            _stripePath.Reset();
+            _stripePath.Rewind();
             float sx = shopLeft + i * stripeW;
             _stripePath.MoveTo(sx, awningY);
             _stripePath.LineTo(sx + stripeW, awningY);
@@ -1104,5 +1127,6 @@ public sealed class GameTabBarRenderer : IDisposable
         _laurelPathLeft?.Dispose();
         _laurelPathRight?.Dispose();
         _stripePath?.Dispose();
+        _lockArcPath?.Dispose();
     }
 }

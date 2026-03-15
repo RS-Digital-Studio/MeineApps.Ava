@@ -4,7 +4,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.DailyRewardDialog"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <!-- Daily Reward Dialog -->
   <Border Background="{StaticResource DialogOverlayBrush}"
@@ -86,7 +87,7 @@
             <TextBlock Text="{Binding StreakRescueText}"
                        FontSize="13" FontWeight="SemiBold"
                        HorizontalAlignment="Center"
-                       Foreground="#FF5722"
+                       Foreground="{DynamicResource WarningBrush}"
                        AutomationProperties.AutomationId="Main_Txt_StreakRescueWarning" />
             <Button Classes="Primary" Background="#FF5722"
                     Command="{Binding RescueStreakCommand}"

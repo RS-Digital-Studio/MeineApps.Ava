@@ -327,7 +327,7 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
         canvas.Save();
         canvas.RotateDegrees(angleDeg, cx, cy);
 
-        _gearPath.Reset();
+        _gearPath.Rewind();
 
         float toothDepth = radius * 0.2f;
         float innerRadius = radius - toothDepth;

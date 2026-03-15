@@ -5,6 +5,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.BuildingsView"
              x:DataType="vm:BuildingsViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Buildings_Root">
 
   <Grid RowDefinitions="Auto,*"
@@ -21,6 +22,7 @@
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Zurück-Button -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
+                MinHeight="44" MinWidth="44"
                 Command="{Binding GoBackCommand}"
                 AutomationProperties.AutomationId="Buildings_Btn_Back">
           <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"

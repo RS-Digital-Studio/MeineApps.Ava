@@ -40,35 +40,45 @@ public sealed class GoalService : IGoalService
     private GameGoal? CalculateBestGoal()
     {
         var state = _gameStateService.State;
-        var goals = new List<GameGoal>();
+        // Direkte "bester Kandidat"-Akkumulation statt List + OrderBy + FirstOrDefault
+        GameGoal? bestGoal = null;
 
         // 0. Anfänger-Ziele (Level <10) — gibt neuen Spielern klare Richtung
-        AddBeginnerGoals(state, goals);
+        bestGoal = FindBeginnerGoal(state);
+        if (bestGoal != null) return bestGoal; // Priorität 0 = höchste, sofort zurückgeben
 
         // 1. Workshop-Meilenstein nahe (höchste Prio wenn <5 Level entfernt)
-        foreach (var ws in state.Workshops.Where(w => w.IsUnlocked))
+        int[] milestones = [25, 50, 75, 100, 150, 200, 250, 350, 500, 1000];
+        for (int i = 0; i < state.Workshops.Count; i++)
         {
-            int[] milestones = [25, 50, 100, 250, 500, 1000];
-            foreach (int milestone in milestones)
+            var ws = state.Workshops[i];
+            if (!ws.IsUnlocked) continue;
+            for (int m = 0; m < milestones.Length; m++)
             {
-                int diff = milestone - ws.Level;
+                int diff = milestones[m] - ws.Level;
                 if (diff > 0 && diff <= 5)
                 {
-                    decimal mult = Workshop.GetMilestoneMultiplierForLevel(milestone);
+                    decimal mult = Workshop.GetMilestoneMultiplierForLevel(milestones[m]);
                     var wsName = _localizationService.GetString(ws.Type.GetLocalizationKey()) ?? ws.Type.ToString();
-                    goals.Add(new GameGoal
+                    var goal = new GameGoal
                     {
-                        Description = $"{wsName} → Lv.{milestone}",
+                        Description = $"{wsName} → Lv.{milestones[m]}",
                         RewardHint = $"x{mult:0.#} {_localizationService.GetString("IncomeBoost") ?? "Einkommens-Boost"}!",
-                        Progress = (double)ws.Level / milestone,
+                        Progress = (double)ws.Level / milestones[m],
                         NavigationRoute = "dashboard",
                         IconKind = "TrendingUp",
                         Priority = 1
-                    });
+                    };
+                    if (bestGoal == null || goal.Priority < bestGoal.Priority)
+                        bestGoal = goal;
                     break; // Nur nächsten Meilenstein pro Workshop
                 }
             }
         }
+
+        // Bei Priorität 1 schon gefunden → weiter prüfen ob niedrigere existiert (nein, 1 ist max)
+        if (bestGoal != null && bestGoal.Priority <= 1)
+            return bestGoal;
 
         // 2. Prestige verfügbar
         var highestTier = state.Prestige.GetHighestAvailableTier(state.PlayerLevel);
@@ -76,7 +86,7 @@ public sealed class GoalService : IGoalService
         {
             var points = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
             int tierPoints = (int)(points * highestTier.GetPointMultiplier());
-            goals.Add(new GameGoal
+            var goal = new GameGoal
             {
                 Description = _localizationService.GetString("PrestigeAvailable") ?? "Prestige verfügbar!",
                 RewardHint = $"+{tierPoints} {_localizationService.GetString("PrestigePointsShort") ?? "PP"}",
@@ -84,42 +94,59 @@ public sealed class GoalService : IGoalService
                 NavigationRoute = "prestige",
                 IconKind = "StarFourPoints",
                 Priority = 2
-            });
+            };
+            if (bestGoal == null || goal.Priority < bestGoal.Priority)
+                bestGoal = goal;
         }
 
-        // 3. Nächster Workshop freischaltbar (nur wenn halbwegs erreichbar)
-        var lockedWorkshops = state.Workshops
-            .Where(w => !w.IsUnlocked)
-            .OrderBy(w => w.UnlockCost);
-        foreach (var nextWs in lockedWorkshops)
+        if (bestGoal != null && bestGoal.Priority <= 2)
+            return bestGoal;
+
+        // 3. Nächster Workshop freischaltbar (günstigsten zuerst finden, ohne LINQ OrderBy)
+        Workshop? cheapestLocked = null;
+        for (int i = 0; i < state.Workshops.Count; i++)
         {
-            decimal remaining = nextWs.UnlockCost - state.Money;
+            var ws = state.Workshops[i];
+            if (ws.IsUnlocked) continue;
+            if (cheapestLocked == null || ws.UnlockCost < cheapestLocked.UnlockCost)
+                cheapestLocked = ws;
+        }
+        if (cheapestLocked != null)
+        {
+            decimal remaining = cheapestLocked.UnlockCost - state.Money;
             if (remaining > 0 && remaining < state.Money * 5)
             {
-                var wsName = _localizationService.GetString(nextWs.Type.GetLocalizationKey()) ?? nextWs.Type.ToString();
-                goals.Add(new GameGoal
+                var wsName = _localizationService.GetString(cheapestLocked.Type.GetLocalizationKey()) ?? cheapestLocked.Type.ToString();
+                var goal = new GameGoal
                 {
                     Description = $"{wsName} {_localizationService.GetString("Unlock") ?? "freischalten"}",
-                    RewardHint = $"x{nextWs.Type.GetBaseIncomeMultiplier():0.#} {_localizationService.GetString("Income") ?? "Einkommen"}",
-                    Progress = Math.Min(1.0, (double)(state.Money / nextWs.UnlockCost)),
+                    RewardHint = $"x{cheapestLocked.Type.GetBaseIncomeMultiplier():0.#} {_localizationService.GetString("Income") ?? "Einkommen"}",
+                    Progress = Math.Min(1.0, (double)(state.Money / cheapestLocked.UnlockCost)),
                     NavigationRoute = "dashboard",
                     IconKind = "LockOpenVariant",
                     Priority = 3
-                });
-                break; // Nur einen vorschlagen
+                };
+                if (bestGoal == null || goal.Priority < bestGoal.Priority)
+                    bestGoal = goal;
             }
         }
+
+        if (bestGoal != null && bestGoal.Priority <= 3)
+            return bestGoal;
 
         // 4. Gebäude-Upgrade (wenn erschwinglich und Imperium-Tab freigeschaltet Lv.5)
         if (state.PlayerLevel >= 5)
         {
-            foreach (var building in state.Buildings.Where(b => b.IsBuilt && b.Level < 5))
+            for (int i = 0; i < state.Buildings.Count; i++)
             {
+                var building = state.Buildings[i];
+                if (!building.IsBuilt || building.Level >= 5) continue;
+
                 var upgradeCost = building.NextLevelCost;
                 if (state.Money >= upgradeCost * 0.5m)
                 {
                     var bName = _localizationService.GetString(building.Type.GetLocalizationKey()) ?? building.Type.ToString();
-                    goals.Add(new GameGoal
+                    var goal = new GameGoal
                     {
                         Description = $"{bName} → Lv.{building.Level + 1}",
                         RewardHint = _localizationService.GetString("BuildingUpgradeHint") ?? "Bessere Boni!",
@@ -127,34 +154,41 @@ public sealed class GoalService : IGoalService
                         NavigationRoute = "imperium",
                         IconKind = "HomeCity",
                         Priority = 4
-                    });
+                    };
+                    if (bestGoal == null || goal.Priority < bestGoal.Priority)
+                        bestGoal = goal;
                     break; // Nur ein Gebäude vorschlagen
                 }
             }
         }
 
-        // Bestes Ziel nach Priorität zurückgeben
-        return goals.OrderBy(g => g.Priority).FirstOrDefault();
+        return bestGoal;
     }
 
     /// <summary>
-    /// Anfänger-Ziele für Spieler unter Level 10:
-    /// Klare, erreichbare Ziele die den Spieler durch die ersten Minuten führen.
-    /// Priorität 0 = höchste, damit sie vor Meilenstein-Zielen erscheinen.
+    /// Sucht das passende Anfänger-Ziel (Priorität 0).
+    /// Extrahiert aus AddBeginnerGoals für allokationsfreie Logik.
     /// </summary>
-    private void AddBeginnerGoals(GameState state, List<GameGoal> goals)
+    private GameGoal? FindBeginnerGoal(GameState state)
     {
-        // Nur für Anfänger (Level <10) und nicht nach Prestige (erfahrene Spieler)
-        if (state.PlayerLevel >= 10) return;
-        if (state.Prestige.TotalPrestigeCount > 0) return;
+        if (state.PlayerLevel >= 10) return null;
+        if (state.Prestige.TotalPrestigeCount > 0) return null;
 
-        var firstWorkshop = state.Workshops.FirstOrDefault(w => w.IsUnlocked);
+        Workshop? firstWorkshop = null;
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            if (state.Workshops[i].IsUnlocked)
+            {
+                firstWorkshop = state.Workshops[i];
+                break;
+            }
+        }
 
-        // Ziel: Erste Werkstatt upgraden (kein Upgrade gemacht, Werkstatt auf Level 1)
+        // Ziel: Erste Werkstatt upgraden
         if (firstWorkshop != null && firstWorkshop.Level <= 1 && state.TotalMoneySpent == 0)
         {
             var wsName = _localizationService.GetString(firstWorkshop.Type.GetLocalizationKey()) ?? firstWorkshop.Type.ToString();
-            goals.Add(new GameGoal
+            return new GameGoal
             {
                 Description = $"{wsName} {_localizationService.GetString("GoalUpgrade") ?? "upgraden"}",
                 RewardHint = _localizationService.GetString("GoalMoreIncome") ?? "+Einkommen!",
@@ -162,14 +196,13 @@ public sealed class GoalService : IGoalService
                 NavigationRoute = "dashboard",
                 IconKind = "ArrowUpBold",
                 Priority = 0
-            });
-            return; // Nur ein Anfänger-Ziel gleichzeitig
+            };
         }
 
-        // Ziel: Ersten Auftrag annehmen (noch nie einen Auftrag abgeschlossen)
+        // Ziel: Ersten Auftrag annehmen
         if (state.TotalOrdersCompleted == 0)
         {
-            goals.Add(new GameGoal
+            return new GameGoal
             {
                 Description = _localizationService.GetString("GoalFirstOrder") ?? "Ersten Auftrag annehmen",
                 RewardHint = _localizationService.GetString("GoalEarnMoney") ?? "Geld verdienen!",
@@ -177,14 +210,13 @@ public sealed class GoalService : IGoalService
                 NavigationRoute = "dashboard",
                 IconKind = "ClipboardText",
                 Priority = 0
-            });
-            return;
+            };
         }
 
-        // Ziel: Werkstatt auf Level 10 (erster Meilenstein-Annäherung, breiter als diff<=5)
+        // Ziel: Werkstatt auf Level 10
         if (firstWorkshop != null && firstWorkshop.Level < 10)
         {
-            goals.Add(new GameGoal
+            return new GameGoal
             {
                 Description = $"{_localizationService.GetString(firstWorkshop.Type.GetLocalizationKey()) ?? "Werkstatt"} → Lv.10",
                 RewardHint = _localizationService.GetString("GoalUnlockFeatures") ?? "Neue Features!",
@@ -192,17 +224,16 @@ public sealed class GoalService : IGoalService
                 NavigationRoute = "dashboard",
                 IconKind = "TrendingUp",
                 Priority = 0
-            });
-            return;
+            };
         }
 
-        // Ziel: Nächstes Spieler-Level (Level 5 oder 10 je nach aktuellem Stand)
+        // Ziel: Nächstes Spieler-Level
         int targetLevel = state.PlayerLevel < 5 ? 5 : 10;
         int xpForTarget = GameState.CalculateXpForLevel(targetLevel);
         int xpCurrent = state.TotalXp;
         double progress = xpForTarget > 0 ? Math.Min(1.0, (double)xpCurrent / xpForTarget) : 0;
 
-        goals.Add(new GameGoal
+        return new GameGoal
         {
             Description = string.Format(_localizationService.GetString("GoalReachLevel") ?? "Erreiche Level {0}", targetLevel),
             RewardHint = _localizationService.GetString("GoalUnlockFeatures") ?? "Neue Features!",
@@ -210,6 +241,8 @@ public sealed class GoalService : IGoalService
             NavigationRoute = "dashboard",
             IconKind = "StarFourPoints",
             Priority = 0
-        });
+        };
     }
+
+    // AddBeginnerGoals wurde durch FindBeginnerGoal ersetzt (keine List-Allokation)
 }

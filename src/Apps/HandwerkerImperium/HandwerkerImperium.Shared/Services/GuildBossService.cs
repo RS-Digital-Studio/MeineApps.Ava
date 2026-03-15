@@ -57,7 +57,8 @@ public sealed class GuildBossService : IGuildBossService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return null;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return null; // Timeout: Lock nicht erhalten
         try
         {
             var guildId = membership.GuildId;
@@ -145,7 +146,8 @@ public sealed class GuildBossService : IGuildBossService
         if (string.IsNullOrEmpty(uid))
             return;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return; // Timeout: Lock nicht erhalten
         try
         {
             var guildId = membership.GuildId;
@@ -217,7 +219,8 @@ public sealed class GuildBossService : IGuildBossService
             return;
         _lastBossCheck = DateTime.UtcNow;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return; // Timeout: Lock nicht erhalten
         try
         {
             var guildId = membership.GuildId;
@@ -282,7 +285,8 @@ public sealed class GuildBossService : IGuildBossService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return false;
 
-        await _lock.WaitAsync();
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return false; // Timeout: Lock nicht erhalten
         try
         {
             var guildId = membership.GuildId;
@@ -387,6 +391,7 @@ public sealed class GuildBossService : IGuildBossService
 
                 leaderboard.Add(new BossDamageEntry
                 {
+                    PlayerId = uid,
                     PlayerName = memberNames.GetValueOrDefault(uid, uid),
                     Damage = dmg.TotalDamage,
                     Hits = dmg.Hits
@@ -455,9 +460,8 @@ public sealed class GuildBossService : IGuildBossService
             if (leaderboard.Count == 0) return;
 
             // Eigenen Schaden aus dem bereits geladenen Leaderboard extrahieren (kein extra Firebase-Call)
-            var playerName = _gameStateService.State.PlayerName ?? uid;
-            var ownEntry = leaderboard.FirstOrDefault(e =>
-                e.PlayerName == playerName || e.PlayerName == uid);
+            var playerId = _firebase.PlayerId;
+            var ownEntry = leaderboard.FirstOrDefault(e => e.PlayerId == playerId);
             if (ownEntry == null || ownEntry.Damage <= 0) return;
 
             var ownRank = leaderboard.Count(e => e.Damage > ownEntry.Damage) + 1;

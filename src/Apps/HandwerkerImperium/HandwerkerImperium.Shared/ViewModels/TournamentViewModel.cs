@@ -6,6 +6,7 @@ using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -223,7 +224,7 @@ public sealed partial class TournamentViewModel : ViewModelBase
         }
 
         // Echtes Leaderboard async laden
-        _ = LoadLeaderboardAsync();
+        LoadLeaderboardAsync().SafeFireAndForget();
     }
 
     /// <summary>

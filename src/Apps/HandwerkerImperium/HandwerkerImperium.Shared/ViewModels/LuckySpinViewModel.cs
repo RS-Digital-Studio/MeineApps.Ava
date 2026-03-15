@@ -188,44 +188,51 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
     /// </summary>
     private async void OnSpinTick(object? sender, EventArgs e)
     {
-        double elapsed = (DateTime.UtcNow - _spinStartTime).TotalMilliseconds;
-        double progress = Math.Clamp(elapsed / SpinDurationMs, 0.0, 1.0);
-
-        // Exponentielles Easing (CubicEaseOut): schneller Start, sanftes Auslaufen
-        double easedProgress = 1.0 - Math.Pow(1.0 - progress, 3.0);
-
-        // Aktuelle Position interpolieren
-        _totalRotation = _targetAngle * easedProgress;
-        SpinAngle = _totalRotation % 360.0;
-
-        // Animation beendet?
-        if (progress >= 1.0)
+        try
         {
-            _spinTimer?.Stop();
-            _spinTimer!.Tick -= OnSpinTick;
-            _spinTimer = null;
+            double elapsed = (DateTime.UtcNow - _spinStartTime).TotalMilliseconds;
+            double progress = Math.Clamp(elapsed / SpinDurationMs, 0.0, 1.0);
 
-            // Endposition exakt setzen
-            SpinAngle = (_targetAngle % 360.0 + 360.0) % 360.0;
+            // Exponentielles Easing (CubicEaseOut): schneller Start, sanftes Auslaufen
+            double easedProgress = 1.0 - Math.Pow(1.0 - progress, 3.0);
 
-            // Gewinn anwenden
-            _luckySpinService.ApplyPrize(_pendingPrize);
+            // Aktuelle Position interpolieren
+            _totalRotation = _targetAngle * easedProgress;
+            SpinAngle = _totalRotation % 360.0;
 
-            // Gewinn-Anzeige vorbereiten
-            LastPrizeType = _pendingPrize;
-            LastPrizeDisplay = BuildPrizeDisplay(_pendingPrize);
-            ShowPrize = true;
-            IsSpinning = false;
+            // Animation beendet?
+            if (progress >= 1.0)
+            {
+                _spinTimer?.Stop();
+                _spinTimer!.Tick -= OnSpinTick;
+                _spinTimer = null;
 
-            // Sound + Haptik für Gewinn
-            await _audioService.PlaySoundAsync(GameSound.CoinCollect);
-            _audioService.Vibrate(VibrationType.Success);
+                // Endposition exakt setzen
+                SpinAngle = (_targetAngle % 360.0 + 360.0) % 360.0;
 
-            // Event für Celebration-Effekte
-            SpinCompleted?.Invoke();
+                // Gewinn anwenden
+                _luckySpinService.ApplyPrize(_pendingPrize);
 
-            // Properties aktualisieren
-            Refresh();
+                // Gewinn-Anzeige vorbereiten
+                LastPrizeType = _pendingPrize;
+                LastPrizeDisplay = BuildPrizeDisplay(_pendingPrize);
+                ShowPrize = true;
+                IsSpinning = false;
+
+                // Sound + Haptik für Gewinn
+                await _audioService.PlaySoundAsync(GameSound.CoinCollect);
+                _audioService.Vibrate(VibrationType.Success);
+
+                // Event für Celebration-Effekte
+                SpinCompleted?.Invoke();
+
+                // Properties aktualisieren
+                Refresh();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnSpinTick)} Fehler: {ex.Message}");
         }
     }
 

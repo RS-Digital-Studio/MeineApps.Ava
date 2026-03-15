@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.ShopView"
-             x:DataType="vm:ShopViewModel">
+             x:DataType="vm:ShopViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Shop_Grid_Root">
 
@@ -29,7 +30,7 @@
                 Command="{Binding GoBackCommand}">
           <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
                            AutomationProperties.AutomationId="Shop_Icon_Back"
-                           Foreground="White" />
+                           Foreground="{DynamicResource PrimaryContrastBrush}" />
         </Button>
 
         <!-- Title + Schrauben-Icon -->
@@ -45,7 +46,7 @@
           <TextBlock Text="{loc:Translate Shop}"
                      AutomationProperties.AutomationId="Shop_Txt_Title"
                      FontSize="22" FontWeight="Bold"
-                     Foreground="White" />
+                     Foreground="{DynamicResource PrimaryContrastBrush}" />
         </StackPanel>
 
         <!-- Balance Badges -->
@@ -141,7 +142,7 @@
                     <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                      AutomationProperties.AutomationId="Shop_Icon_ItemIcon"
                                      Width="28" Height="28"
-                                     Foreground="White"
+                                     Foreground="{DynamicResource PrimaryContrastBrush}"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center" />
                   </Border>
@@ -223,7 +224,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="Shop_Border_ToolsIconBg"
                   Background="{StaticResource CraftPrimaryBrush}">
-            <icons:GameIcon Kind="Hammer" Width="18" Height="18" Foreground="White"
+            <icons:GameIcon Kind="Hammer" Width="18" Height="18" Foreground="{DynamicResource PrimaryContrastBrush}"
                              AutomationProperties.AutomationId="Shop_Icon_ToolsHeader" />
           </Border>
           <TextBlock Text="{loc:Translate Tools}"
@@ -252,7 +253,7 @@
                     </Border.Background>
                     <icons:GameIcon Kind="{Binding IconKind, Converter={StaticResource IconKindConverter}}" Width="28" Height="28"
                                      AutomationProperties.AutomationId="Shop_Icon_ToolItem"
-                                     Foreground="White"
+                                     Foreground="{DynamicResource PrimaryContrastBrush}"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <!-- Info -->
@@ -288,7 +289,7 @@
                                        AutomationProperties.AutomationId="Shop_Icon_UpgradeCost" />
                       <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold"
                                  AutomationProperties.AutomationId="Shop_Txt_UpgradeCost"
-                                 Foreground="White" />
+                                 Foreground="{DynamicResource PrimaryContrastBrush}" />
                     </StackPanel>
                   </Button>
                   <!-- Max Level Badge -->
@@ -310,7 +311,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="Shop_Border_EquipmentIconBg"
                   Background="#9C27B0">
-            <icons:GameIcon Kind="Shield" Width="18" Height="18" Foreground="White"
+            <icons:GameIcon Kind="Shield" Width="18" Height="18" Foreground="{DynamicResource PrimaryContrastBrush}"
                              AutomationProperties.AutomationId="Shop_Icon_EquipmentHeader" />
           </Border>
           <TextBlock Text="{loc:Translate EquipmentShop}"
@@ -371,7 +372,7 @@
                                        AutomationProperties.AutomationId="Shop_Icon_EquipmentCost" />
                       <TextBlock Text="{Binding PriceDisplay}" FontSize="12" FontWeight="SemiBold"
                                  AutomationProperties.AutomationId="Shop_Txt_EquipmentCost"
-                                 Foreground="White" />
+                                 Foreground="{DynamicResource PrimaryContrastBrush}" />
                     </StackPanel>
                   </Button>
                 </Grid>

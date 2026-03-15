@@ -4,7 +4,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.WelcomeBackOfferDialog"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <!-- Welcome Back Offer Dialog -->
   <Border Background="{StaticResource DialogOverlayBrush}"

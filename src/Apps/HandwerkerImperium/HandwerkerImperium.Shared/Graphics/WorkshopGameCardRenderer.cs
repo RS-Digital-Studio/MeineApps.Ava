@@ -32,6 +32,7 @@ public struct WorkshopCardData
     public string NetIncomeText;
     public bool IsNetNegative;
     public int UnlockLevel;
+    public string TimeToUpgrade;
 }
 
 /// <summary>
@@ -94,7 +95,15 @@ public static class WorkshopGameCardRenderer
     private static readonly SKPaint _iconPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f };
 
-    // Gecachte Fonts (verschiedene Größen fuer Text-Rendering)
+    // Gecachte Header-Shader pro WorkshopType (vermeidet Shader-Allokation pro Karte pro Frame)
+    private static readonly Dictionary<WorkshopType, SKShader> _headerShaderCache = new();
+    private static float _lastHeaderW, _lastHeaderH;
+
+    // Gecachte Glow-Shader fuer Unlockable-Karten (1 pro WorkshopType)
+    private static readonly Dictionary<WorkshopType, SKShader> _glowShaderCache = new();
+    private static float _lastGlowInnerH;
+
+    // Gecachte Fonts (verschiedene Groessen fuer Text-Rendering)
     private static readonly SKFont _font8 = new() { Size = 8f };
     private static readonly SKFont _font9 = new() { Size = 9f };
     private static readonly SKFont _font10 = new() { Size = 10f };
@@ -103,6 +112,11 @@ public static class WorkshopGameCardRenderer
     private static readonly SKFont _font12 = new() { Size = 12f };
     private static readonly SKFont _font12Bold = new() { Size = 12f, Embolden = true };
     private static readonly SKFont _font13Bold = new() { Size = 13f, Embolden = true };
+
+    // Gecachte String-Caches (vermeidet String-Interpolation pro Karte pro Frame)
+    private static readonly Dictionary<int, string> _milestoneLabelCache = new();
+    private static readonly Dictionary<int, string> _unlockLevelLabelCache = new();
+    private static readonly Dictionary<(int, int), string> _workerCountLabelCache = new();
 
     /// <summary>
     /// Rendert eine einzelne Workshop-Karte in den angegebenen Bereich.
@@ -152,18 +166,32 @@ public static class WorkshopGameCardRenderer
         float headerH = innerH * 0.40f;
         var headerBounds = new SKRect(inner.Left, inner.Top, inner.Right, inner.Top + headerH);
 
-        // Workshop-Farbgradient als Header-Hintergrund
-        using (var headerShader = SKShader.CreateLinearGradient(
-            new SKPoint(headerBounds.MidX, headerBounds.Top),
-            new SKPoint(headerBounds.MidX, headerBounds.Bottom),
-            new[] { wsColor.WithAlpha(180), wsColor.WithAlpha(60) },
-            null,
-            SKShaderTileMode.Clamp))
+        // Workshop-Farbgradient als Header-Hintergrund (gecacht pro WorkshopType)
+        // Shader nur neu erstellen wenn sich die Header-Groesse geaendert hat
+        // (alle Karten haben dieselbe Groesse, daher reicht ein globaler Check)
+        // ReSharper disable CompareOfFloatsByEqualityOperator
+        if (_lastHeaderW != headerBounds.Width || _lastHeaderH != headerBounds.Height)
         {
-            _fillPaint.Shader = headerShader;
-            canvas.DrawRect(headerBounds, _fillPaint);
-            _fillPaint.Shader = null;
+            // Bounds geaendert → Cache invalidieren
+            foreach (var s in _headerShaderCache.Values) s.Dispose();
+            _headerShaderCache.Clear();
+            _lastHeaderW = headerBounds.Width;
+            _lastHeaderH = headerBounds.Height;
         }
+        // ReSharper restore CompareOfFloatsByEqualityOperator
+        if (!_headerShaderCache.TryGetValue(data.Type, out var cachedHeaderShader))
+        {
+            cachedHeaderShader = SKShader.CreateLinearGradient(
+                new SKPoint(headerBounds.MidX, headerBounds.Top),
+                new SKPoint(headerBounds.MidX, headerBounds.Bottom),
+                new[] { wsColor.WithAlpha(180), wsColor.WithAlpha(60) },
+                null,
+                SKShaderTileMode.Clamp);
+            _headerShaderCache[data.Type] = cachedHeaderShader;
+        }
+        _fillPaint.Shader = cachedHeaderShader;
+        canvas.DrawRect(headerBounds, _fillPaint);
+        _fillPaint.Shader = null;
 
         // Workshop-Illustration: AI-Bild
         canvas.Save();
@@ -220,7 +248,19 @@ public static class WorkshopGameCardRenderer
         if (data.ShowMilestone)
         {
             _textPaint.Color = new SKColor(0xFF, 0xD7, 0x00, 180);
-            canvas.DrawText($"\u2192 Lv.{data.NextMilestone}", inner.Right - 8f, progressY - 1f, SKTextAlign.Right, _font8, _textPaint);
+            if (!_milestoneLabelCache.TryGetValue(data.NextMilestone, out var milestoneLabel))
+            {
+                milestoneLabel = $"\u2192 Lv.{data.NextMilestone}";
+                _milestoneLabelCache[data.NextMilestone] = milestoneLabel;
+            }
+            canvas.DrawText(milestoneLabel, inner.Right - 8f, progressY - 1f, SKTextAlign.Right, _font8, _textPaint);
+        }
+
+        // Time-to-Upgrade Anzeige (unter Fortschrittsbalken, vor Button)
+        if (!string.IsNullOrEmpty(data.TimeToUpgrade) && !data.CanAffordUpgrade && !data.IsMaxLevel)
+        {
+            _textPaint.Color = new SKColor(0xFF, 0xA5, 0x00, 180); // Amber dezent
+            canvas.DrawText(data.TimeToUpgrade, inner.Right - 8f, progressY + 11f, SKTextAlign.Right, _font8, _textPaint);
         }
 
         // === Upgrade-Button (25%) ===
@@ -271,18 +311,28 @@ public static class WorkshopGameCardRenderer
         _fillPaint.Color = new SKColor(0x18, 0x18, 0x20, 230);
         canvas.DrawRect(inner, _fillPaint);
 
-        // Workshop-Farbglow von oben
-        using (var glowShader = SKShader.CreateLinearGradient(
-            new SKPoint(inner.MidX, inner.Top),
-            new SKPoint(inner.MidX, inner.Top + inner.Height * 0.4f),
-            new[] { wsColor.WithAlpha(60), SKColors.Transparent },
-            null,
-            SKShaderTileMode.Clamp))
+        // Workshop-Farbglow von oben (gecacht pro WorkshopType)
+        // ReSharper disable CompareOfFloatsByEqualityOperator
+        if (_lastGlowInnerH != inner.Height)
         {
-            _fillPaint.Shader = glowShader;
-            canvas.DrawRect(inner, _fillPaint);
-            _fillPaint.Shader = null;
+            foreach (var s in _glowShaderCache.Values) s.Dispose();
+            _glowShaderCache.Clear();
+            _lastGlowInnerH = inner.Height;
         }
+        // ReSharper restore CompareOfFloatsByEqualityOperator
+        if (!_glowShaderCache.TryGetValue(data.Type, out var cachedGlowShader))
+        {
+            cachedGlowShader = SKShader.CreateLinearGradient(
+                new SKPoint(inner.MidX, inner.Top),
+                new SKPoint(inner.MidX, inner.Top + inner.Height * 0.4f),
+                new[] { wsColor.WithAlpha(60), SKColors.Transparent },
+                null,
+                SKShaderTileMode.Clamp);
+            _glowShaderCache[data.Type] = cachedGlowShader;
+        }
+        _fillPaint.Shader = cachedGlowShader;
+        canvas.DrawRect(inner, _fillPaint);
+        _fillPaint.Shader = null;
 
         // Pulsierender Glow-Rahmen (zeigt an: freischaltbar)
         byte glowAlpha = (byte)(40 + 25 * MathF.Sin(time * 3f));
@@ -347,7 +397,12 @@ public static class WorkshopGameCardRenderer
 
         // "Ab Level X"
         _textPaint.Color = new SKColor(0x94, 0xA3, 0xB8, 160);
-        canvas.DrawText($"Ab Level {data.UnlockLevel}", inner.MidX, inner.Top + inner.Height * 0.75f, SKTextAlign.Center, _font10, _textPaint);
+        if (!_unlockLevelLabelCache.TryGetValue(data.UnlockLevel, out var unlockLabel))
+        {
+            unlockLabel = $"Ab Level {data.UnlockLevel}";
+            _unlockLevelLabelCache[data.UnlockLevel] = unlockLabel;
+        }
+        canvas.DrawText(unlockLabel, inner.MidX, inner.Top + inner.Height * 0.75f, SKTextAlign.Center, _font10, _textPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -377,7 +432,13 @@ public static class WorkshopGameCardRenderer
         // Zahl dahinter
         float textX = x + showIcons * iconSpacing + 8f;
         _textPaint.Color = new SKColor(0xB0, 0xB0, 0xB8);
-        canvas.DrawText($"{workerCount}/{maxWorkers}", textX, y + 2f, SKTextAlign.Left, _font9, _textPaint);
+        var wcKey = (workerCount, maxWorkers);
+        if (!_workerCountLabelCache.TryGetValue(wcKey, out var wcLabel))
+        {
+            wcLabel = $"{workerCount}/{maxWorkers}";
+            _workerCountLabelCache[wcKey] = wcLabel;
+        }
+        canvas.DrawText(wcLabel, textX, y + 2f, SKTextAlign.Left, _font9, _textPaint);
     }
 
     /// <summary>

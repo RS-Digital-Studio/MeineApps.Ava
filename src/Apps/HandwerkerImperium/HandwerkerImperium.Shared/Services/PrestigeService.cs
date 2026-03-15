@@ -43,21 +43,21 @@ public sealed class PrestigeService : IPrestigeService
         var state = _gameStateService.State;
         var prestige = state.Prestige;
 
-        // Prestige-Punkte berechnen (Tier-Multiplikator anwenden)
+        // Prestige-Punkte berechnen (Tier-Multiplikator anwenden, Math.Round statt Abschneidung)
         int basePoints = GetPrestigePoints(state.TotalMoneyEarned);
-        int tierPoints = (int)(basePoints * tier.GetPointMultiplier());
+        int tierPoints = (int)Math.Round(basePoints * tier.GetPointMultiplier());
 
-        // Bronze: Mindestens 5 PP (damit sich erster Prestige lohnt)
-        if (tier == PrestigeTier.Bronze && tierPoints < 5)
-            tierPoints = 5;
+        // Bronze: Mindestens 10 PP (damit beim ersten Prestige 2-3 Shop-Items kaufbar sind)
+        if (tier == PrestigeTier.Bronze && tierPoints < 10)
+            tierPoints = 10;
 
         // Prestige-Pass: +50% Bonus auf Prestige-Punkte
         if (state.IsPrestigePassActive)
-            tierPoints = (int)(tierPoints * 1.5m);
+            tierPoints = (int)Math.Round(tierPoints * 1.5m);
 
         // Gilden-Forschung: Prestige-Punkte-Bonus (+10%)
         if (state.GuildMembership?.ResearchPrestigePointBonus > 0)
-            tierPoints = (int)(tierPoints * (1m + state.GuildMembership.ResearchPrestigePointBonus));
+            tierPoints = (int)Math.Round(tierPoints * (1m + state.GuildMembership.ResearchPrestigePointBonus));
 
         prestige.PrestigePoints += tierPoints;
         prestige.TotalPrestigePoints += tierPoints;
@@ -118,6 +118,9 @@ public sealed class PrestigeService : IPrestigeService
         // Reset durchfuehren
         ResetProgress(state, tier);
 
+        // KEIN ConfigureAwait(false): PrestigeCompleted-Event wird von MainViewModel
+        // subscribed und feuert UI-Events (Celebration, Ceremony, FloatingText).
+        // Muss auf dem Aufrufer-Thread (UI-Thread) bleiben.
         await _saveGameService.SaveAsync();
 
         PrestigeCompleted?.Invoke(this, EventArgs.Empty);
@@ -137,15 +140,49 @@ public sealed class PrestigeService : IPrestigeService
     public IReadOnlyList<PrestigeShopItem> GetShopItems()
     {
         var allItems = PrestigeShop.GetAllItems();
-        var purchased = _gameStateService.State.Prestige.PurchasedShopItems;
+        var prestige = _gameStateService.State.Prestige;
+        var purchased = prestige.PurchasedShopItems;
 
-        // Kaufstatus aus PrestigeData uebernehmen
+        // Kopien erstellen damit statische Instanzen nicht mutiert werden
+        var result = new List<PrestigeShopItem>(allItems.Count);
         foreach (var item in allItems)
         {
-            item.IsPurchased = purchased.Contains(item.Id);
+            var copy = new PrestigeShopItem
+            {
+                Id = item.Id,
+                NameKey = item.NameKey,
+                DescriptionKey = item.DescriptionKey,
+                Icon = item.Icon,
+                Cost = item.Cost,
+                Effect = item.Effect,
+                Category = item.Category,
+                IsRepeatable = item.IsRepeatable
+            };
+
+            if (copy.IsRepeatable)
+            {
+                prestige.RepeatableItemCounts.TryGetValue(copy.Id, out var count);
+                copy.PurchaseCount = count;
+                copy.IsPurchased = false;
+            }
+            else
+            {
+                copy.IsPurchased = purchased.Contains(copy.Id);
+            }
+
+            result.Add(copy);
         }
 
-        return allItems;
+        return result;
+    }
+
+    /// <summary>
+    /// Berechnet die aktuellen Kosten für ein wiederholbares Item.
+    /// Formel: Basiskosten * 2^(Kaufanzahl) → 10/20/40/80/160/320...
+    /// </summary>
+    public static int GetRepeatableItemCost(PrestigeShopItem item, int purchaseCount)
+    {
+        return item.Cost * (1 << Math.Min(purchaseCount, 15)); // Cap bei 2^15 um Overflow zu vermeiden
     }
 
     public bool BuyShopItem(string itemId)
@@ -156,18 +193,30 @@ public sealed class PrestigeService : IPrestigeService
         var item = allItems.FirstOrDefault(i => i.Id == itemId);
         if (item == null) return false;
 
-        // Bereits gekauft?
-        if (prestige.PurchasedShopItems.Contains(itemId)) return false;
+        if (item.IsRepeatable)
+        {
+            // Wiederholbar: Steigende Kosten
+            prestige.RepeatableItemCounts.TryGetValue(itemId, out var count);
+            int cost = GetRepeatableItemCost(item, count);
 
-        // Genug Punkte?
-        if (prestige.PrestigePoints < item.Cost) return false;
+            if (prestige.PrestigePoints < cost) return false;
 
-        prestige.PrestigePoints -= item.Cost;
-        prestige.PurchasedShopItems.Add(itemId);
+            prestige.PrestigePoints -= cost;
+            prestige.RepeatableItemCounts[itemId] = count + 1;
+            // PurchaseCount nicht auf statischem Item setzen (UI-Kopien werden in GetShopItems erstellt)
+        }
+        else
+        {
+            // Einmalig: Standard-Logik
+            if (prestige.PurchasedShopItems.Contains(itemId)) return false;
+            if (prestige.PrestigePoints < item.Cost) return false;
 
-        // Shop-Boni werden dynamisch in GetPermanentMultiplier() berechnet,
-        // keine extra Neuberechnung nötig.
+            prestige.PrestigePoints -= item.Cost;
+            prestige.PurchasedShopItems.Add(itemId);
+        }
 
+        // MaxOfflineHours-Cache invalidieren (pp_offline_hours könnte gekauft worden sein)
+        _gameStateService.State.InvalidateMaxOfflineHoursCache();
         return true;
     }
 
@@ -238,8 +287,8 @@ public sealed class PrestigeService : IPrestigeService
     /// </summary>
     private static void ResetProgress(GameState state, PrestigeTier tier)
     {
-        // Startgeld berechnen (100 Basis + Shop-Boni)
-        decimal startMoney = 100m;
+        // Startgeld berechnen: Tier-Basis (skalierend) + Shop-Boni
+        decimal startMoney = tier.GetTierStartMoney();
         var purchased = state.Prestige.PurchasedShopItems;
         var allItems = PrestigeShop.GetAllItems();
         foreach (var item in allItems)
@@ -399,9 +448,9 @@ public sealed class PrestigeService : IPrestigeService
         // === RESET: Tournament (immer zurücksetzen) ===
         state.CurrentTournament = null;
 
-        // === RESET: Crafting (immer zurücksetzen) ===
-        state.CraftingInventory.Clear();
-        state.ActiveCraftingJobs.Clear();
+        // === RESET: Crafting (immer zurücksetzen, null-safe für alte Saves) ===
+        state.CraftingInventory = new Dictionary<string, int>();
+        state.ActiveCraftingJobs = [];
 
         // === RESET: Daily Shop Offer (immer zurücksetzen) ===
         state.DailyShopOffer = null;
@@ -472,8 +521,8 @@ public sealed class PrestigeService : IPrestigeService
         // - state.TotalTournamentsPlayed
         // - state.StreakRescueUsed
 
-        // === RESET: Prestige-Pass (wird bei jedem Prestige verbraucht) ===
-        state.IsPrestigePassActive = false;
+        // === Prestige-Pass bleibt permanent aktiv (einmaliger IAP-Kauf, nicht pro Prestige) ===
+        // Nicht mehr zurückgesetzt - der Spieler zahlt einmal 2,99 EUR und hat dauerhaft +50% PP.
 
         // Gold prestige preserves shop items (already in PrestigeData.PurchasedShopItems,
         // which is not touched by reset). Nothing extra needed here.

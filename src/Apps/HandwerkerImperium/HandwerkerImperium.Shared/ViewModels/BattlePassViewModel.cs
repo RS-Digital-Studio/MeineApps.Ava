@@ -23,11 +23,9 @@ public sealed partial class BattlePassViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event für Alert-Dialoge. Parameter: Titel, Nachricht, Button-Text.
-    /// </summary>
+#pragma warning disable CS0067 // Event wird vorbereitet fuer zukuenftige Battle-Pass-Alerts
     public event Action<string, string, string>? AlertRequested;
+#pragma warning restore CS0067
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES

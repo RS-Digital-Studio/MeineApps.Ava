@@ -6,7 +6,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:HandwerkerImperium.Controls"
              x:Class="HandwerkerImperium.Views.WorkerMarketView"
-             x:DataType="vm:WorkerMarketViewModel">
+             x:DataType="vm:WorkerMarketViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="WorkerMarket_Grid_Root">
 
@@ -206,7 +207,7 @@
                             AutomationProperties.AutomationId="WorkerMarket_Border_TierBadge">
                       <TextBlock Text="{Binding Tier}"
                                  FontSize="12" FontWeight="Bold"
-                                 Foreground="White"
+                                 Foreground="{DynamicResource PrimaryContrastBrush}"
                                  AutomationProperties.AutomationId="WorkerMarket_Txt_Tier" />
                     </Border>
                   </StackPanel>
@@ -363,7 +364,7 @@
                       CornerRadius="4" Padding="6,2"
                       AutomationProperties.AutomationId="WorkerMarket_Border_PendingTierBadge">
                 <TextBlock Text="{Binding PendingWorker.Tier}"
-                           FontSize="11" FontWeight="Bold" Foreground="White"
+                           FontSize="11" FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}"
                            AutomationProperties.AutomationId="WorkerMarket_Txt_PendingTier" />
               </Border>
             </StackPanel>

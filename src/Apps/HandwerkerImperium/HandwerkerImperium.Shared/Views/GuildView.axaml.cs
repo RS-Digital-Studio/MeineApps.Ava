@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using HandwerkerImperium.Helpers;
 using HandwerkerImperium.ViewModels;
 
 namespace HandwerkerImperium.Views;
@@ -24,7 +25,7 @@ public partial class GuildView : UserControl
         if (!_hasLoaded && DataContext is GuildViewModel vm)
         {
             _hasLoaded = true;
-            _ = vm.LoadGuildDataCommand.ExecuteAsync(null);
+            vm.LoadGuildDataCommand.ExecuteAsync(null).SafeFireAndForget();
         }
     }
 }

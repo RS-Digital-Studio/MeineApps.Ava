@@ -10,6 +10,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:guild="using:HandwerkerImperium.Views.Guild"
              x:Class="HandwerkerImperium.Views.MainView"
              x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Main_Root">
 
   <UserControl.Styles>
@@ -275,7 +276,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
             Classes="SheetBackdrop"
             Classes.Open="{Binding IsLuckySpinVisible}"
             IsVisible="{Binding IsLuckySpinVisible}"
-            Background="#AA000000"
+            Background="{StaticResource DialogOverlayBrush}"
             IsHitTestVisible="{Binding IsLuckySpinVisible}"
             AutomationProperties.AutomationId="Main_Overlay_LuckySpin">
       <Border Classes="BottomSheet"
@@ -323,7 +324,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
             AutomationProperties.AutomationId="Main_Border_UndoFireWorker">
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock Text="{Binding WorkerProfileViewModel.UndoFireWorkerText}"
-                   Foreground="White" FontSize="13"
+                   Foreground="{DynamicResource PrimaryContrastBrush}" FontSize="13"
                    VerticalAlignment="Center"
                    AutomationProperties.AutomationId="Main_Txt_UndoFireWorker" />
         <Button Grid.Column="1"

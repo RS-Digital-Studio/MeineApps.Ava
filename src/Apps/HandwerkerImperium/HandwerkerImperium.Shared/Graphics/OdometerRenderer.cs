@@ -15,6 +15,9 @@ public sealed class OdometerRenderer : IDisposable
     private const float CascadeDelay = 0.05f;       // Verzögerung zwischen Ziffern
     private const float SuffixTransitionDuration = 0.3f;
 
+    // Gecachte Ziffern-Strings (vermeidet ToString()-Allokation pro animierter Ziffer pro Frame)
+    private static readonly string[] _digitStrings = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+
     // Aktueller und Ziel-Wert
     private decimal _currentValue;
     private decimal _targetValue;
@@ -222,16 +225,16 @@ public sealed class OdometerRenderer : IDisposable
             float offsetY = -fraction * digitHeight * 0.8f;
 
             _digitPaint.Color = SKColors.White.WithAlpha(alpha);
-            string digitChar = (currentDigit % 10).ToString();
+            string digitChar = _digitStrings[currentDigit % 10];
             canvas.DrawText(digitChar, x, centerY + digitHeight * 0.35f + offsetY, SKTextAlign.Left, digitFont, _digitPaint);
 
-            // Nächste Ziffer (teilweise sichtbar bei Animation)
+            // Naechste Ziffer (teilweise sichtbar bei Animation)
             if (fraction > 0.01f)
             {
                 byte nextAlpha = (byte)(255 * fraction * 0.8f);
                 float nextOffsetY = (1f - fraction) * digitHeight * 0.8f;
                 _digitPaint.Color = SKColors.White.WithAlpha(nextAlpha);
-                string nextChar = ((currentDigit + 1) % 10).ToString();
+                string nextChar = _digitStrings[(currentDigit + 1) % 10];
                 canvas.DrawText(nextChar, x, centerY + digitHeight * 0.35f + nextOffsetY, SKTextAlign.Left, digitFont, _digitPaint);
             }
 

@@ -6,6 +6,7 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.LuckySpinView"
              x:DataType="vm:LuckySpinViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="LuckySpin_Root">
 
   <StackPanel Spacing="16" HorizontalAlignment="Center" MaxWidth="360">
@@ -79,9 +80,9 @@
             MinHeight="48"
             AutomationProperties.AutomationId="LuckySpin_Btn_Spin">
       <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-        <icons:GameIcon Kind="ChartDonut" Width="24" Height="24" Foreground="White" />
+        <icons:GameIcon Kind="ChartDonut" Width="24" Height="24" Foreground="{DynamicResource PrimaryContrastBrush}" />
         <TextBlock Text="{Binding SpinButtonText}"
-                   FontSize="16" FontWeight="Bold" Foreground="White"
+                   FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}"
                    AutomationProperties.AutomationId="LuckySpin_Txt_SpinButton" />
         <!-- Goldschrauben-Kosten (nur wenn nicht gratis) -->
         <Border IsVisible="{Binding !HasFreeSpin}"

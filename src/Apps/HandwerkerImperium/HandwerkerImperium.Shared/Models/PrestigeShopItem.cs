@@ -54,6 +54,18 @@ public class PrestigeShopItem
     /// </summary>
     [JsonIgnore]
     public PrestigeShopCategory Category { get; set; }
+
+    /// <summary>
+    /// Wiederholbar kaufbar (steigende Kosten: Basis * 2^(Kaufanzahl)).
+    /// </summary>
+    [JsonIgnore]
+    public bool IsRepeatable { get; set; }
+
+    /// <summary>
+    /// Aktuelle Kaufanzahl (nur für wiederholbare Items, aus PrestigeData geladen).
+    /// </summary>
+    [JsonIgnore]
+    public int PurchaseCount { get; set; }
 }
 
 /// <summary>

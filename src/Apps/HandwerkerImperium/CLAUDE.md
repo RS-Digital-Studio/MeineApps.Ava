@@ -6,7 +6,7 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Auftraege oder spiele Mini-Games.
 
-**Version:** 2.0.20 (VersionCode 28) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
+**Version:** 2.0.22 (VersionCode 30) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
 
 ## Icon-System (Bitmap-Icons, AI + Programmatisch)
 
@@ -32,18 +32,18 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Research Tree** (45 Upgrades in 3 Branches: Tools, Management, Marketing)
 - **7 Gebaeude** (Canteen, Storage, Office, Showroom, TrainingCenter, VehicleFleet, WorkshopExtension)
 - **Daily Challenges** (3/Tag) + **Weekly Missions** (5/Woche, 50 Goldschrauben Komplett-Bonus)
-- **Daily Login Rewards** (30-Tage-Zyklus) + **Streak-Rettung** (5 Goldschrauben)
+- **Daily Login Rewards** (30-Tage-Zyklus) + **Streak-Rettung** (3 Goldschrauben)
 - **Achievements** (94 Erfolge) + **Milestone-Celebrations** (Spieler-Level + Workshop-Level)
-- **Prestige-System** (7 Stufen Bronze-Legende, progressive Bewahrung, Hard-Cap bei 200x)
+- **Prestige-System** (7 Stufen Bronze-Legende, progressive Bewahrung, Soft-Cap 10x, Tier-skalierendes Startgeld, wiederholbares Shop-Item, permanenter Prestige-Pass)
 - **Events** (8 zufaellige + saisonaler Multiplikator, Intervall skaliert mit Prestige)
-- **Auftragstypen** (Standard/Large 1.8x/Weekly 4x/Cooperation 2.5x) + **Stammkunden** (bis 1.5x Bonus)
+- **Auftragstypen** (Standard/Large 1.8x/Weekly 2.5x/Cooperation 2.5x) + **Stammkunden** (bis 1.5x Bonus)
 - **Bulk Buy** (x1/x10/x100/Max) + **Hold-to-Upgrade** (schnelles Hochleveln)
 - **Naechstes-Ziel-System** (GoalService: dynamischer Gold-Banner, 4 Prioritaeten)
-- **Offline-Earnings** (100% erste 2h, 50% bis 6h, 25% danach)
+- **Offline-Earnings** (100% erste 2h, 40% bis 4h, 25% bis 8h, 10% danach)
 - **Feierabend-Rush** (2h 2x-Boost, 1x taeglich gratis, danach 10 Goldschrauben)
 - **Meisterwerkzeuge** (12 Artefakte, 5 Seltenheiten, passive Einkommens-Boni)
 - **Lieferant-System** (Variable Rewards alle 2-5 Min: Geld, Schrauben, XP, Mood, Speed)
-- **Prestige-Shop** (22 Items in 4 Kategorien) + **Prestige-Pass** (2,99 EUR IAP, +50% Prestige-Punkte)
+- **Prestige-Shop** (23 Items in 4 Kategorien, 1 wiederholbar) + **Prestige-Pass** (2,99 EUR IAP, +50% Prestige-Punkte, permanent nach Kauf). Shop-Effekte: OfflineHoursBonus (GameState.MaxOfflineHours), CraftingSpeedBonus (CraftingService.StartCrafting), ExtraQuickJobLimit (QuickJobService.GetMaxQuickJobsPerDay), UpgradeDiscount (GameLoopService-Cache), Income/Rush/Delivery (GameLoopService-Cache), CostReduction/MoodDecay/XP (PrestigeService-Getter), GoldenScrews (GameStateService.AddGoldenScrews), StartMoney/StartWorkerTier (PrestigeService.ResetProgress)
 - **Story-System** (25 Kapitel von NPC "Meister Hans" mit SkiaSharp-Portrait)
 - **Kontextuelles Tutorial** (17 Tooltip-Bubbles + Welcome-Dialog, ContextualHintService, SeenHints-Tracking)
 - **In-App Review** (Level 20/50/100, erstes Prestige, 50 Auftraege)
@@ -56,7 +56,7 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Saisonale Events** (4/Jahr mit Saisonwaehrung und Event-Shop)
 - **Gilden/Innungen** (Firebase Realtime Database, Wochenziele, 18 Forschungen mit Timer+Auto-Completion, Einladungs-Inbox mit Accept/Decline)
 - **Crafting-System** (13 Rezepte in 3 Tiers, Inventar + Verkauf)
-- **Automatisierung** (Auto-Collect Lv15+, Auto-Accept Lv25+, Auto-Assign Lv50+, Auto-ClaimDaily Premium) — eigenes Dashboard-Panel (nicht in Settings)
+- **Automatisierung** (Auto-Collect Lv15+, Auto-Accept Lv25+, Auto-Assign Lv20+, Auto-ClaimDaily Premium) — eigenes Dashboard-Panel (nicht in Settings)
 - **Welcome Back Angebote** + **Gluecksrad** (taeglich gratis)
 - **Ausruestungs-System** (4 Typen x 4 Seltenheiten fuer Arbeiter, Equip/Unequip im Worker-Profil, Inventar-Browser)
 - **Grafik-Einstellungen** (Low/Medium/High, GraphicsQuality in GameState, steuert Wetter-Effekte etc.)
@@ -75,13 +75,13 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Vorteile**: +50% Einkommen, +100% Goldschrauben aus Mini-Games, keine Werbung
 
 ### Rewarded (9 Placements)
-1. `golden_screws` - 5 Goldschrauben (Dashboard)
+1. `golden_screws` - 10 Goldschrauben (Dashboard, BAL-3: von 5 erhöht)
 2. `score_double` - Mini-Game Score verdoppeln
 3. `market_refresh` - Arbeitermarkt-Pool neu wuerfeln
-4. `workshop_speedup` - 2h Produktionsertrag sofort
+4. `workshop_speedup` - 30min Produktionsertrag sofort (BAL-5: von 2h reduziert)
 5. `workshop_unlock` - Workshop ohne Level freischalten
 6. `worker_hire_bonus` - +1 Worker-Slot persistent
-7. `research_speedup` - Forschung sofort fertig gratis
+7. `research_speedup` - Forschungszeit -50% (BAL-4: statt Sofortfertigstellung)
 8. `daily_challenge_retry` - Challenge-Fortschritt zuruecksetzen
 9. `achievement_boost` - Achievement Progress +20%
 
@@ -189,14 +189,17 @@ Jeder Typ hat: `BaseIncomeMultiplier`, `UnlockLevel`, `UnlockCost`, `RequiredPre
 
 10 Tiers: `F` (0.4x), `E` (0.65x), `D` (1.0x), `C` (1.5x), `B` (2.25x), `A` (3.35x), `S` (4.9x), `SS` (7.25x), `SSS` (11.25x), `Legendary` (17.5x)
 Loehne ~1.8x pro Tier (5-900 EUR/h). ROI sinkt ~15%/Tier.
-`HireWorker()` → individuelle Marktpreise: Tier-Basis * Level * Talent (0.7-1.3x) * Persoenlichkeit * Spezialisierung * Effizienz-Position. A+ Tiers kosten zusaetzlich Goldschrauben.
-Tier-Farben: F=Grau, E=Gruen, D=Teal, C=DarkOrange, B=Amber, A=Rot, S=Gold, SS=Lila, SSS=Cyan, Legendary=Rainbow
+`HireWorker()` → individuelle Marktpreise: Tier-Basis * Level * Talent (0.7-1.3x) * Persönlichkeit * Spezialisierung * Effizienz-Position. A+ Tiers kosten zusätzlich Goldschrauben.
+**HiringCost wird persistiert** (`[JsonPropertyName("hiringCost")]`) → Marktpreise bleiben nach App-Neustart korrekt.
+Tier-Farben: F=#9E9E9E(Grau), E=#4CAF50(Grün), D=#2196F3(Blau), C=#9C27B0(Lila), B=#FFC107(Gold), A=#F44336(Rot), S=#FF9800(Orange), SS=#E040FB(Pink), SSS=#7C4DFF(DeepPurple), Legendary=#FFD700(Gold)
+**S-Tier+ Freischaltung**: Research `mgmt_10` (UnlocksSTierWorkers) muss erforscht sein → WorkerService liest ResearchEffects und übergibt `hasSTierResearch` an `GeneratePool()`. Ebenso `mgmt_04` (UnlocksHeadhunter) → Pool-Größe 5→8.
 **3 Training-Typen**: Efficiency (XP→Level→+Effizienz), Endurance (senkt Fatigue, max -50%), Morale (senkt MoodDecay, max -50%)
+**Training Auto-Rest**: Bei 100% Fatigue wird Training automatisch beendet und Ruhe gestartet (identisch mit Arbeits-Modus).
 **Worker-Avatare**: WorkerAvatarRenderer (Pixel-Art), Worker.IsFemale deterministisch, RarityFrameRenderer (Tier→Rarity), Idle-Animationen (Atem+Blinzeln ab 56dp)
 
 ### Goldschrauben-Quellen
 
-1. Mini-Games (3-10), 2. Daily Challenges (20), 3. Achievements (5-50), 4. Rewarded Ad (5), 5. IAP (100/500/2000), 6. Daily Login (1-25), 7. Spieler-Meilensteine (3-200), 8. Workshop-Meilensteine (2-50)
+1. Mini-Games (3-10), 2. Daily Challenges (20), 3. Achievements (5-50), 4. Rewarded Ad (10, BAL-3), 5. IAP (100/500/2000), 6. Daily Login (1-25), 7. Spieler-Meilensteine (3-200), 8. Workshop-Meilensteine (2-50)
 
 ### Research Tree
 
@@ -236,7 +239,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `GameLoopService` | 1s-Takt: Einkommen, Kosten, Worker-States, AutoSave (30s) |
 | `GameStateService` | Zentraler State mit Thread-Safety (lock), GetOrderRewardMultiplier() |
 | `SaveGameService` | JSON-Persistenz (Load/Save/Import/Export/Reset) |
-| `WorkerService` | Mood, Fatigue, Training, Ruhe, Kuendigung, ReinstateWorker |
+| `WorkerService` | Mood, Fatigue, Training, Ruhe, Kündigung, ReinstateWorker, Research-basierte Markt-Generierung (S-Tier+Headhunter) |
 | `PrestigeService` | 7-Tier Prestige + Shop-Effekte + progressive Bewahrung |
 | `ResearchService` | 45 Research-Nodes, Timer, Effekt-Berechnung |
 | `EventService` | 8 Event-Typen + saisonaler Multiplikator |
@@ -245,7 +248,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `QuickJobService` | Schnelle MiniGame-Jobs (Rotation 8-15min, Limit 20-40/Tag) |
 | `StoryService` | 25 Kapitel von Meister Hans, fortschrittsbasiert |
 | `AchievementService` | 94 Erfolge + Goldschrauben-Rewards, PrestigeCompleted-Event |
-| `OfflineProgressService` | Offline-Einnahmen (Staffelung 100%/50%/25%) |
+| `OfflineProgressService` | Offline-Einnahmen (Staffelung 100%/40%/25%/10%, Events+Boosts anteilig) + Worker-State-Simulation (2-Phasen: Aktivität→Rest-Recovery, dynamische Fatigue, Training-Fortschritt+Kosten, Arbeits-XP, Level-Ups, alle GameLoop-Modifikatoren) |
 | `GoalService` | Dynamisches Naechstes-Ziel-System (4 Prioritaeten, Cache mit Dirty-Flag) |
 | `OrderGeneratorService` | 4 OrderTypes, Stammkunden-Zuweisung, Reputation beeinflusst Qualitaet |
 | `ReviewService` | In-App Review (14-Tage Cooldown, 5 Trigger) |
@@ -256,15 +259,15 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `TournamentService` | Woechentliche MiniGame-Turniere, 9 simulierte Gegner |
 | `BattlePassService` | 30-Tier Battle Pass, Free/Premium, 30-Tage-Saisons |
 | `SeasonalEventService` | 4 Events/Jahr (Mär/Jun/Sep/Dez, 1.-14.), SP-Waehrung (5+Bonus pro Auftrag), Event-Shop (4 Items/Saison), IDisposable (OrderCompleted-Subscription) |
-| `GuildService` | Firebase REST API, Gilden-CRUD, Wochenziele, Einladungen, GetMaxMembers() |
+| `GuildService` | Firebase REST API, Gilden-CRUD, Wochenziele, Einladungen, GetMaxMembers(), CountAndSyncMemberCountAsync (Race-Condition-frei) |
 | `GuildResearchService` | 18 Gilden-Forschungen (6 Kategorien), Timer, Effekt-Cache, SemaphoreSlim |
-| `GuildWarSeasonService` | Gilden-Krieg Saison-System (Matchmaking, Scoring, Ligen) |
+| `GuildWarSeasonService` | Einziger Gilden-Krieg-Service (Saison-System, Matchmaking, Scoring, Ligen, Bonus-Missionen). Legacy GuildWarService entfernt |
 | `GuildHallService` | Interaktives Gilden-HQ mit 10 Gebäuden (Level 1-5), Upgrade-Timer, Effekt-Cache |
 | `GuildBossService` | Kooperative Gilden-Bosse (6 Typen), Schaden-Tracking, Spawn/Despawn, Belohnungen |
 | `GuildTipService` | Kontextuelle Gilden-Tipps (Preferences-basiert, 24h Cooldown) |
 | `GuildAchievementService` | 30 Gilden-Achievements (10 Typen x 3 Tiers), Firebase-Tracking |
 | `FirebaseService` | Anonymous Auth, Token-Refresh (55min, Retry bei Netzwerkfehler), CRUD, 5s Timeout, SemaphoreSlim. PlayerId-GUID (stabile Spieler-Identität, überlebt Account-Wechsel), auth_to_player Mapping via SyncAuthToPlayerMappingAsync() |
-| `GameAssetService` | LRU-Cache 50MB, WebP→SKBitmap, PlatformAssetLoader |
+| `GameAssetService` | LRU-Cache 50MB, WebP→SKBitmap + animierte WebP Multi-Frame, PlatformAssetLoader |
 | `CraftingService` | 13 Rezepte in 3 Tiers, Produktionsketten, Echtzeit-Timer |
 | `WeeklyMissionService` | 5 Wochenmissionen, Montag-Reset, 50 Goldschrauben Bonus |
 | `WelcomeBackService` | Angebote nach 24h+ Abwesenheit, Starter-Paket (einmalig) |
@@ -323,19 +326,28 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 - **Tier-Farben**: F=Grau, E=Gruen, D=#0E7490, C=#B45309, B=Amber, A=Rot, S=Gold
 - **Branch-Farben**: Tools=#EA580C, Management=#92400E, Marketing=#65A30D
 - **Feature-Farben** (App.axaml): Tournament=#DC2626, SeasonalEvent=#059669, BattlePass=#7C3AED, MasterSmith=#B91C1C, InnovationLab=#6D28D9
-- **Overlay-Farben**: DialogOverlay=#AA000000, RewardOverlay=#CC000000
-- **Hardcodierte Farben**: Alle in ~30 Views durch CraftXxxBrush ersetzt. Ausnahme: Alpha-Kanal + GradientStop bleiben hardcodiert
+- **Overlay-Farben**: DialogOverlay=#AA000000 → `DialogOverlayBrush`, RewardOverlay=#CC000000 → `RewardOverlayBrush`
+- **Semantische Farben**: `SuccessBrush` (#22C55E), `ErrorBrush` (#EF4444), `WarningBrush` (#F59E0B) - alle in AppPalette.axaml definiert
+- **Kontrast-Farbe**: `PrimaryContrastBrush` (#FFFFFF) statt `Foreground="White"` in allen Views
+- **Hardcodierte Farben**: Alle in ~35 Views durch DynamicResource/StaticResource ersetzt. Ausnahme: Alpha-Kanal-Hintergruende (#20D97706 etc.), GradientStops, Opacity-Varianten (#FFFFFFCC) und SkiaSharp-Code bleiben hardcodiert
 
-## Visual Upgrade (Phase 0-2, deployt)
+## Visual Upgrade (Phase 0-3, deployt)
 
-AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL. Hybrid-Rendering: AI-Hintergrund (1x DrawBitmap) + prozedurale Overlays.
+AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL / Juggernaut-X. Hybrid-Rendering: AI-Hintergrund (1x DrawBitmap) + prozedurale Overlays.
 
-- **Status:** 36 Assets deployt (1.2 MB WebP), Shared+Android Build OK
-- **GameAssetService** (IGameAssetService): LRU-Cache 50MB, WebP→SKBitmap, PlatformAssetLoader
+- **Status:** 47 Assets deployt (~6.2 MB WebP), Shared+Android Build OK
+- **GameAssetService** (IGameAssetService): LRU-Cache 50MB, WebP→SKBitmap + animierte WebP Multi-Frame-Decodierung, PlatformAssetLoader
+- **Animations-API**: `GetAnimationFrames(path)` / `LoadAnimationAsync(path, targetW, targetH)` — decodiert animierte WebP (SKCodec), skaliert Frames, LRU-Cache
 - **Assets:** `Assets/visuals/{city,workshops,workers,minigames,meister_hans,splash}/` (WebP, quality 85)
+- **Animierte Assets (Phase 3):** `Assets/visuals/workshops/animated/*.webp` (10 Workshop-Animationen, je 16 Frames @ 8fps, ~4.6 MB) + `Assets/visuals/city/animated/city_background.webp` (~316 KB)
+- **AnimateDiff**: SDXL Motion Model (mm_sdxl_v10_beta.ckpt), motion_scale 0.4 für stabile Frames
+- **Checkpoints**: DreamShaper XL (Umgebungen), Juggernaut-X v10 (Personen-Portrait-Szenen)
+- **Workshop-Karten**: `WorkshopGameCardRenderer` zeigt animierte Frames im Header (8fps Loop, Fallback auf statisch)
+- **City-Header**: `CityRenderer` zeigt animierten Hintergrund (8fps Loop, skaliert auf 512x192, Fallback auf statisch)
 - **Shared csproj:** `<AvaloniaResource Include="Assets\**" />` (Wildcard)
 - **Android csproj:** `<AndroidAsset Include="..\..\Shared\Assets\visuals\**\*.webp" Link="..." />`
-- **Offen:** Android-Benchmark (Task 8), alte prozedurale Hintergründe entfernen (Task 12 — erst nach Verifikation auf Gerät)
+- **Generierungs-Script**: `F:\AI\ComfyUI_workflows\handwerkerimperium\generate_animated_scenes.py`
+- **Offen:** Android-Benchmark, alte prozedurale Hintergründe entfernen (erst nach Verifikation auf Gerät)
 
 ## IsBusy-Pattern
 
@@ -362,7 +374,7 @@ AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL. Hybri
 | Standard | Immer | 1.0x | Basis |
 | Large | WS-Level 10+ | 1.8x | Mehr Aufgaben |
 | Cooperation | WS-Level 15+, >=2 Workshops | 2.5x | Gemischte Aufgaben |
-| Weekly | WS-Level 20+ | 4.0x | 7-Tage-Deadline |
+| Weekly | WS-Level 20+ | 2.5x | 7-Tage-Deadline (BAL-11: von 4.0x gesenkt) |
 
 - **Stammkunden**: 20% Chance, BonusMultiplier 1.1-1.5x, max 20
 - **Abgelaufene Orders**: GameLoop prueft alle 60 Ticks
@@ -424,7 +436,7 @@ Effekte ueber `GuildMembership`-Properties gecacht:
 
 #### Services & Views
 - `Services/GuildService.cs`: Gilden-CRUD, Wochenziele, Einladungen (SendInvite, AcceptInvite, DeclineInvite), GetMaxMembers(). Research-Logik nach GuildResearchService extrahiert
-- `Services/GuildResearchService.cs`: Extrahierte Research-Logik (IGuildResearchService). GetGuildResearchAsync(), ContributeToResearchAsync(), CheckResearchCompletionAsync(), GetCachedEffects(), RefreshResearchCacheAsync(). SemaphoreSlim Thread-Safety
+- `Services/GuildResearchService.cs`: Extrahierte Research-Logik (IGuildResearchService). GetGuildResearchAsync(), ContributeToResearchAsync() (mit Firebase-Rollback), CheckResearchCompletionAsync(), GetCachedEffects(), RefreshResearchCacheAsync(). SemaphoreSlim Thread-Safety
 - `Services/GuildWarSeasonService.cs`: Saison-basierter Gilden-Krieg (Matchmaking, Scoring, Ligen-Auf/Abstieg, Bonus-Missionen)
 - `Services/GuildHallService.cs`: 10 Gebäude mit Upgrade-Timer (1-12h), Kosten (GS+Gildengeld), Effekt-Cache auf GuildMembership
 - `Services/GuildBossService.cs`: 6 Boss-Typen, Schadensbeitrag (Crafting/Orders/MiniGames/Donations), Spawn/Despawn-Logik, Belohnungen
@@ -534,6 +546,7 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 | MiniGame Views: Gecachte Render-Arrays | WiringGameView/PaintingGameView: .Select().ToArray() → gecachte Arrays mit For-Schleife (0 Allokation/Frame) |
 | MiniGame Views: SKColor.Parse-Cache | InspectionGameView/RoofTilingGameView: Dictionary-Cache fuer Hex→SKColor/uint (0 String-Parsing/Frame) |
 | PaintingGameView: Farb-Cache | SelectedColor nur bei Aenderung neu geparst statt pro Frame |
+| MiniGame Shader-Cache | ForgeGame (6), Wiring (3), WorkshopInterior (2), Sawing (1), CraftTextures (1): Bounds-basierter Cache statt pro-Frame-Erstellung. Spart ~13 Shader/Frame = ~390 Shader/s |
 
 ## IDisposable auf allen Renderern
 
@@ -564,15 +577,15 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 | GuildResearchBackgroundRenderer | 1 SKShader + 4 SKPath |
 | ResearchBackgroundRenderer | 1 SKShader + 5 SKPath |
 | ResearchLabRenderer | 6 SKPaint |
-| ForgeGameRenderer | 10 SKPaint + 1 SKFont |
+| ForgeGameRenderer | 10 SKPaint + 1 SKFont + 6 SKShader (gecacht) |
 | PipePuzzleRenderer | 6 SKPaint + 3 SKMaskFilter + 1 SKPath |
-| SawingGameRenderer | 10 SKPaint + 1 SKPath + 1 SKMaskFilter |
+| SawingGameRenderer | 10 SKPaint + 1 SKPath + 1 SKMaskFilter + 1 SKShader (gecacht) |
 | BlueprintGameRenderer | 1 SKPath + 21 SKPaint (Instanz) + 3 SKFont + ~40 static readonly + 2 static MaskFilter |
 | InventGameRenderer | 23 SKPaint + 1 SKPath |
-| WiringGameRenderer | 8 SKPaint + 3 SKMaskFilter + 1 SKPath + 1 SKFont |
+| WiringGameRenderer | 8 SKPaint + 3 SKMaskFilter + 1 SKPath + 1 SKFont + 3 SKShader (gecacht) |
 | DesignPuzzleRenderer | 7 SKPaint + 1 SKFont |
 | WorkshopSceneRenderer | 8 SKPaint |
-| WorkshopInteriorRenderer | 10 SKPaint |
+| WorkshopInteriorRenderer | 10 SKPaint + 2 SKShader (gecacht) |
 | PaintingGameRenderer | 13 SKPaint |
 | InspectionGameRenderer | 8 SKPaint + 1 SKPath (_fillNoAA, _fillAA, _fillAA2, _fillAA3, _strokeNoAA, _strokeAA, _strokeAA2, _strokeAA3, _cachedPath) |
 | RoofTilingRenderer | 5 SKPaint (_fillPaint, _strokePaint, _iconPaint, _fillPaintAA, _borderPaint) |

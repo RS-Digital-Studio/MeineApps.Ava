@@ -12,6 +12,13 @@ namespace HandwerkerImperium.ViewModels;
 // Partielle Klasse: Workshop-Kauf/Upgrade, Orders, Rush, Delivery, Prestige-Banner, Bulk-Buy
 public sealed partial class MainViewModel
 {
+    // Prestige-Banner Dirty-Flag: Nur neu berechnen wenn sich Level oder Prestige-Count aendert
+    private int _lastPrestigeBannerLevel = -1;
+    private int _lastPrestigeBannerPrestigeCount = -1;
+    // Wiederverwendbare Listen fuer Prestige-Banner (vermeidet 2x new List<string> alle 5 Ticks)
+    private readonly List<string> _prestigeGains = new();
+    private readonly List<string> _prestigeLosses = new();
+
     // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOP SELECTION + KAUF
     // ═══════════════════════════════════════════════════════════════════════
@@ -627,6 +634,7 @@ public sealed partial class MainViewModel
         }
     }
 
+
     /// <summary>
     /// Berechnet Upgrade-Income-Preview und Netto-Einkommen für eine Workshop-Anzeige (Task #10, #13).
     /// </summary>
@@ -653,8 +661,8 @@ public sealed partial class MainViewModel
             int upgradeCount = BulkBuyAmount == 0 ? 10 : BulkBuyAmount; // Max → zeige Preview für ~10 Level
             int targetLevel = Math.Min(workshop.Level + upgradeCount, Workshop.MaxLevel);
             // Einkommen bei Ziel-Level basierend auf Base-Income-Formel berechnen
-            decimal currentBase = (decimal)Math.Pow(1.025, workshop.Level - 1) * workshop.Type.GetBaseIncomeMultiplier();
-            decimal targetBase = (decimal)Math.Pow(1.025, targetLevel - 1) * workshop.Type.GetBaseIncomeMultiplier();
+            decimal currentBase = (decimal)Math.Pow(1.02, workshop.Level - 1) * workshop.Type.GetBaseIncomeMultiplier();
+            decimal targetBase = (decimal)Math.Pow(1.02, targetLevel - 1) * workshop.Type.GetBaseIncomeMultiplier();
             // Differenz berücksichtigt nur die Basis (Worker-Effekte skalieren proportional)
             decimal diff = (targetBase - currentBase) * Math.Max(1, workshop.Workers.Count);
             model.UpgradeIncomePreview = diff > 0 ? $"+{MoneyFormatter.FormatPerSecond(diff, 1)}" : "";
@@ -663,18 +671,43 @@ public sealed partial class MainViewModel
         {
             model.UpgradeIncomePreview = "";
         }
+
+        // Time-to-Upgrade: Geschätzte Wartezeit bis nächstes Upgrade leistbar
+        var state = _gameStateService.State;
+        decimal upgradeCost = model.BulkUpgradeCost > 0 ? model.BulkUpgradeCost : workshop.UpgradeCost;
+        decimal deficit = upgradeCost - state.Money;
+        if (deficit > 0 && state.NetIncomePerSecond > 0)
+        {
+            double seconds = (double)(deficit / state.NetIncomePerSecond);
+            model.TimeToUpgrade = seconds switch
+            {
+                < 60 => $"~{(int)seconds}s",
+                < 3600 => $"~{seconds / 60:0.#} Min",
+                < 86400 => $"~{seconds / 3600:0.#} Std",
+                _ => $"~{seconds / 86400:0.#} Tage"
+            };
+        }
+        else
+        {
+            model.TimeToUpgrade = "";
+        }
     }
 
+    // Statisch gecacht: BuildingType-Enum hat feste Groesse (aendert sich nicht zur Laufzeit)
+    private static readonly int s_totalBuildingCount = Enum.GetValues<BuildingType>().Length;
+
     /// <summary>
-    /// Aktualisiert die Gebäude-Zusammenfassung (Task #5).
+    /// Aktualisiert die Gebaeude-Zusammenfassung (Task #5).
     /// </summary>
     private void RefreshBuildingsSummary(GameState state)
     {
-        int totalBuildings = Enum.GetValues<BuildingType>().Length;
-        int builtCount = state.Buildings.Count(b => b.IsBuilt);
+        // For-Schleife statt LINQ .Count() (vermeidet Enumerator+Closure pro Sekunde)
+        int builtCount = 0;
+        for (int i = 0; i < state.Buildings.Count; i++)
+            if (state.Buildings[i].IsBuilt) builtCount++;
         var builtLabel = _localizationService.GetString("Built") ?? "gebaut";
         var buildingsLabel = _localizationService.GetString("Buildings") ?? "Gebäude";
-        BuildingsSummary = $"{totalBuildings} {buildingsLabel}, {builtCount} {builtLabel}";
+        BuildingsSummary = $"{s_totalBuildingCount} {buildingsLabel}, {builtCount} {builtLabel}";
     }
 
     /// <summary>
@@ -771,10 +804,20 @@ public sealed partial class MainViewModel
 
     /// <summary>
     /// Aktualisiert Prestige-Banner-Anzeige (Task #14).
+    /// Dirty-Flag: Nur neu berechnen wenn sich Level oder Prestige-Count geaendert hat.
     /// </summary>
     private void RefreshPrestigeBanner(GameState state)
     {
-        var highestTier = state.Prestige.GetHighestAvailableTier(state.PlayerLevel);
+        int currentLevel = state.PlayerLevel;
+        int currentPrestigeCount = state.Prestige.TotalPrestigeCount;
+
+        // Early-Exit: Nichts hat sich geaendert seit letztem Aufruf
+        if (currentLevel == _lastPrestigeBannerLevel && currentPrestigeCount == _lastPrestigeBannerPrestigeCount)
+            return;
+        _lastPrestigeBannerLevel = currentLevel;
+        _lastPrestigeBannerPrestigeCount = currentPrestigeCount;
+
+        var highestTier = state.Prestige.GetHighestAvailableTier(currentLevel);
         IsPrestigeAvailable = highestTier != PrestigeTier.None;
 
         if (IsPrestigeAvailable)
@@ -786,33 +829,33 @@ public sealed partial class MainViewModel
 
             PrestigePreviewTierName = _localizationService.GetString(highestTier.GetLocalizationKey()) ?? highestTier.ToString();
 
-            // Gewinne
+            // Gewinne (wiederverwendbare Liste statt new List<string>)
             decimal permanentBonus = highestTier.GetPermanentMultiplierBonus() * 100;
-            var gains = new List<string>();
-            gains.Add($"+{tierPoints} {pointsLabel} (x{highestTier.GetPointMultiplier()})");
-            gains.Add($"+{permanentBonus:0}% {_localizationService.GetString("PermanentIncomeBonus") ?? "permanenter Einkommens-Bonus"}");
+            _prestigeGains.Clear();
+            _prestigeGains.Add($"+{tierPoints} {pointsLabel} (x{highestTier.GetPointMultiplier()})");
+            _prestigeGains.Add($"+{permanentBonus:0}% {_localizationService.GetString("PermanentIncomeBonus") ?? "permanenter Einkommens-Bonus"}");
             if (highestTier.KeepsResearch())
-                gains.Add(_localizationService.GetString("PrestigeKeepsResearch") ?? "Forschung bleibt erhalten!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsResearch") ?? "Forschung bleibt erhalten!");
             if (highestTier.KeepsShopItems())
-                gains.Add(_localizationService.GetString("PrestigeKeepsShop") ?? "Prestige-Shop bleibt!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsShop") ?? "Prestige-Shop bleibt!");
             if (highestTier.KeepsMasterTools())
-                gains.Add(_localizationService.GetString("PrestigeKeepsTools") ?? "Meisterwerkzeuge bleiben!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsTools") ?? "Meisterwerkzeuge bleiben!");
             if (highestTier.KeepsBuildings())
-                gains.Add(_localizationService.GetString("PrestigeKeepsBuildings") ?? "Gebäude bleiben (Lv.1)!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsBuildings") ?? "Gebäude bleiben (Lv.1)!");
             if (highestTier.KeepsManagers())
-                gains.Add(_localizationService.GetString("PrestigeKeepsManagers") ?? "Manager bleiben (Lv.1)!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsManagers") ?? "Manager bleiben (Lv.1)!");
             if (highestTier.KeepsBestWorkers())
-                gains.Add(_localizationService.GetString("PrestigeKeepsWorkers") ?? "Beste Worker bleiben!");
-            PrestigePreviewGains = string.Join("\n", gains);
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsWorkers") ?? "Beste Worker bleiben!");
+            PrestigePreviewGains = string.Join("\n", _prestigeGains);
 
-            // Verluste
-            var losses = new List<string>();
-            losses.Add(_localizationService.GetString("PrestigeLosesLevel") ?? "Spieler-Level → 1");
-            losses.Add(_localizationService.GetString("PrestigeLosesMoney") ?? "Geld → 0");
-            losses.Add(_localizationService.GetString("PrestigeLosesWorkers") ?? "Worker → entlassen");
+            // Verluste (wiederverwendbare Liste statt new List<string>)
+            _prestigeLosses.Clear();
+            _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesLevel") ?? "Spieler-Level → 1");
+            _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesMoney") ?? "Geld → 0");
+            _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesWorkers") ?? "Worker → entlassen");
             if (!highestTier.KeepsResearch())
-                losses.Add(_localizationService.GetString("PrestigeLosesResearch") ?? "Forschung → Reset");
-            PrestigePreviewLosses = string.Join("\n", losses);
+                _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesResearch") ?? "Forschung → Reset");
+            PrestigePreviewLosses = string.Join("\n", _prestigeLosses);
 
             // Geschätzter Speed-Up
             decimal currentMult = state.Prestige.PermanentMultiplier;
@@ -838,7 +881,7 @@ public sealed partial class MainViewModel
             var currentTierLevel = highestTier != PrestigeTier.None ? highestTier.GetRequiredLevel() : 0;
             var range = reqLevel - currentTierLevel;
             var progress = range > 0
-                ? Math.Clamp((double)(state.PlayerLevel - currentTierLevel) / range, 0.0, 1.0)
+                ? Math.Clamp((double)(currentLevel - currentTierLevel) / range, 0.0, 1.0)
                 : 0.0;
             NextPrestigeTierProgress = progress;
             var tierName = _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString();
@@ -847,8 +890,8 @@ public sealed partial class MainViewModel
             var potentialPP = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
             int nextTierPoints = (int)(potentialPP * nextTier.GetPointMultiplier());
             NextPrestigeTierHint = nextTierPoints > 0
-                ? $"Lv. {state.PlayerLevel}/{reqLevel} \u2192 {tierName} (+{nextTierPoints} PP)"
-                : $"Lv. {state.PlayerLevel}/{reqLevel} \u2192 {tierName}";
+                ? $"Lv. {currentLevel}/{reqLevel} \u2192 {tierName} (+{nextTierPoints} PP)"
+                : $"Lv. {currentLevel}/{reqLevel} \u2192 {tierName}";
         }
         else
         {
@@ -858,7 +901,7 @@ public sealed partial class MainViewModel
         }
 
         // Tier-Auswahl: Verfügbare Tiers für den Dialog setzen
-        var availableTiers = state.Prestige.GetAllAvailableTiers(state.PlayerLevel);
+        var availableTiers = state.Prestige.GetAllAvailableTiers(currentLevel);
         HasMultiplePrestigeTiers = availableTiers.Count > 1;
         AvailablePrestigeTierCount = availableTiers.Count;
     }

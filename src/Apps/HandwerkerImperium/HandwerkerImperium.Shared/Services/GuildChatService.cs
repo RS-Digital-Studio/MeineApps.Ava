@@ -19,6 +19,7 @@ public sealed class GuildChatService : IGuildChatService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
     private DateTime _lastMessageSent = DateTime.MinValue;
     private static readonly TimeSpan MessageCooldown = TimeSpan.FromSeconds(5);
     private const int MaxMessageLength = 200;
@@ -34,6 +35,8 @@ public sealed class GuildChatService : IGuildChatService
 
     public async Task<bool> SendMessageAsync(string guildId, string text)
     {
+        if (!await _sendLock.WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false))
+            return false; // Timeout: Lock nicht erhalten
         try
         {
             if (!CanSendMessage) return false;
@@ -42,8 +45,10 @@ public sealed class GuildChatService : IGuildChatService
             var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
-            // Text bereinigen und kürzen
+            // Text bereinigen: Control-Characters entfernen (außer Newline), trimmen, kürzen
+            text = new string(text.Where(c => !char.IsControl(c) || c == '\n').ToArray());
             text = text.Trim();
+            if (string.IsNullOrWhiteSpace(text)) return false;
             if (text.Length > MaxMessageLength)
                 text = text[..MaxMessageLength];
 
@@ -57,7 +62,7 @@ public sealed class GuildChatService : IGuildChatService
                 Timestamp = DateTime.UtcNow.ToString("O")
             };
 
-            var key = await _firebase.PushAsync($"guild_chat/{guildId}/messages", message);
+            var key = await _firebase.PushAsync($"guild_chat/{guildId}/messages", message).ConfigureAwait(false);
             if (string.IsNullOrEmpty(key)) return false;
 
             _lastMessageSent = DateTime.UtcNow;
@@ -67,6 +72,10 @@ public sealed class GuildChatService : IGuildChatService
         {
             // Netzwerkfehler still behandelt
             return false;
+        }
+        finally
+        {
+            _sendLock.Release();
         }
     }
 
@@ -82,16 +91,15 @@ public sealed class GuildChatService : IGuildChatService
             // Letzte 50 Nachrichten laden (orderBy + limitToLast)
             var json = await _firebase.QueryAsync(
                 $"guild_chat/{guildId}/messages",
-                $"orderBy=\"timestamp\"&limitToLast={MaxMessages}");
+                $"orderBy=\"timestamp\"&limitToLast={MaxMessages}").ConfigureAwait(false);
 
             if (string.IsNullOrEmpty(json) || json == "null") return result;
 
             var messages = JsonSerializer.Deserialize<Dictionary<string, ChatMessage>>(json, JsonOptions);
             if (messages == null) return result;
 
-            foreach (var (_, msg) in messages.OrderBy(m =>
-                DateTime.TryParse(m.Value.Timestamp, CultureInfo.InvariantCulture,
-                    DateTimeStyles.RoundtripKind, out var dt) ? dt : DateTime.MinValue))
+            // Nachrichten in Liste sammeln (ohne LINQ OrderBy)
+            foreach (var (_, msg) in messages)
             {
                 result.Add(new ChatMessageDisplay
                 {
@@ -102,6 +110,14 @@ public sealed class GuildChatService : IGuildChatService
                     IsOwnMessage = msg.Uid == uid
                 });
             }
+
+            // In-place Sortierung statt LINQ OrderBy (vermeidet Extra-Allokation)
+            result.Sort((a, b) =>
+            {
+                DateTime.TryParse(a.Timestamp, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dtA);
+                DateTime.TryParse(b.Timestamp, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dtB);
+                return dtA.CompareTo(dtB);
+            });
         }
         catch
         {

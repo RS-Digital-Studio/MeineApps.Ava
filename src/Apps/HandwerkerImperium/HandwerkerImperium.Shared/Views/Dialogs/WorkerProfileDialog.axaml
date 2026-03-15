@@ -3,7 +3,8 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:views="using:HandwerkerImperium.Views"
              x:Class="HandwerkerImperium.Views.Dialogs.WorkerProfileDialog"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <!-- Worker Profile Bottom-Sheet -->
   <Border Background="{StaticResource DialogOverlayBrush}"

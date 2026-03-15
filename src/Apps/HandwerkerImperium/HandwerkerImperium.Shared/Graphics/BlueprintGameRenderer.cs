@@ -220,6 +220,19 @@ public sealed class BlueprintGameRenderer : IDisposable
     };
     private static readonly SKFont s_stepBadgeFont = new() { Size = 11, Embolden = true };
 
+    // Gecachte Step-Strings "1"-"20" (vermeidet ToString()-Allokation pro Tile pro Frame)
+    private static readonly string[] s_stepStrings = new string[21];
+    static BlueprintGameRenderer()
+    {
+        for (int i = 0; i <= 20; i++)
+            s_stepStrings[i] = i.ToString();
+    }
+
+    // Gecachter Progress-String "X/Y" (nur bei Aenderung neu formatieren)
+    private int _lastCompleted = -1;
+    private int _lastTotal = -1;
+    private string _cachedProgressText = "0/0";
+
     // --- Fehler-Overlay ---
     // overlayPaint: dynamisches Alpha
     private readonly SKPaint _errorOverlayPaint = new() { IsAntialias = true };
@@ -1027,7 +1040,9 @@ public sealed class BlueprintGameRenderer : IDisposable
         float by = rect.Top + badgeR + 4;
 
         canvas.DrawCircle(bx, by, badgeR, _stepBadgeBgPaint);
-        canvas.DrawText(step.ToString(), bx, by + 4, SKTextAlign.Center, s_stepBadgeFont, _stepBadgeTextPaint);
+        // Gecachter Step-String statt step.ToString() pro Frame
+        string stepText = (step >= 0 && step <= 20) ? s_stepStrings[step] : step.ToString();
+        canvas.DrawText(stepText, bx, by + 4, SKTextAlign.Center, s_stepBadgeFont, _stepBadgeTextPaint);
     }
 
     /// <summary>
@@ -1047,7 +1062,7 @@ public sealed class BlueprintGameRenderer : IDisposable
         float boltH = rect.Height * 0.3f;
 
         _errorBoltPaint.Color = new SKColor(0xFF, 0x80, 0x80, (byte)(200 * errPulse));
-        _cachedPath.Reset();
+        _cachedPath.Rewind();
         _cachedPath.MoveTo(cx - boltH * 0.15f, cy - boltH * 0.5f);
         _cachedPath.LineTo(cx + boltH * 0.1f, cy - boltH * 0.05f);
         _cachedPath.LineTo(cx - boltH * 0.1f, cy + boltH * 0.05f);
@@ -1168,8 +1183,14 @@ public sealed class BlueprintGameRenderer : IDisposable
             }
         }
 
-        // Text "X/Y"
-        canvas.DrawText($"{completed}/{total}", bounds.MidX, y + barHeight + 12, SKTextAlign.Center, s_progressFont, _progressTextPaint);
+        // Text "X/Y" (gecacht, nur bei Aenderung neu formatieren)
+        if (completed != _lastCompleted || total != _lastTotal)
+        {
+            _lastCompleted = completed;
+            _lastTotal = total;
+            _cachedProgressText = $"{completed}/{total}";
+        }
+        canvas.DrawText(_cachedProgressText, bounds.MidX, y + barHeight + 12, SKTextAlign.Center, s_progressFont, _progressTextPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

@@ -177,15 +177,17 @@ public static class WorkerTierExtensions
     public static string GetLocalizationKey(this WorkerTier tier) => $"Tier{tier}";
 
     /// <summary>
-    /// Zusaetzliche Goldschrauben-Kosten beim Einstellen (nur fuer hohe Tiers).
+    /// Zusätzliche Goldschrauben-Kosten beim Einstellen (nur für hohe Tiers).
+    /// Erhöht gegenüber vorher (A:15→20, S:40→60, SS:80→120, SSS:200→300, Legendary:500→750)
+    /// → Premium-Währung wertvoller, Anreiz für Rewarded Ads und Shop-Käufe.
     /// </summary>
     public static int GetHiringScrewCost(this WorkerTier tier) => tier switch
     {
-        WorkerTier.A => 15,
-        WorkerTier.S => 40,
-        WorkerTier.SS => 80,
-        WorkerTier.SSS => 200,
-        WorkerTier.Legendary => 500,
+        WorkerTier.A => 20,
+        WorkerTier.S => 60,
+        WorkerTier.SS => 120,
+        WorkerTier.SSS => 300,
+        WorkerTier.Legendary => 750,
         _ => 0
     };
 }

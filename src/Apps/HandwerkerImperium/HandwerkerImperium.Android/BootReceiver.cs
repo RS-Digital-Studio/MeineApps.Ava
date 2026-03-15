@@ -8,7 +8,8 @@ namespace HandwerkerImperium.Android;
 /// persistierte Benachrichtigungen erneut über AlarmManager.
 /// Ohne diesen Receiver gehen alle geplanten Alarme bei Neustart verloren.
 /// </summary>
-[BroadcastReceiver(Enabled = true, Exported = true, DirectBootAware = false)]
+[BroadcastReceiver(Enabled = true, Exported = true, DirectBootAware = false,
+    Permission = "android.permission.RECEIVE_BOOT_COMPLETED")]
 [IntentFilter([Intent.ActionBootCompleted])]
 public class BootReceiver : BroadcastReceiver
 {

@@ -6,7 +6,8 @@
              xmlns:models="using:HandwerkerImperium.Models"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.Dashboard.WeeklyMissionSection"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
         <Border Classes="CardElevated" Padding="12" IsVisible="{Binding HasWeeklyMissions}"
                 AutomationProperties.AutomationId="Dashboard_Border_WeeklyMissions">
@@ -25,6 +26,7 @@
                            AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionsReset" />
               </StackPanel>
               <Button Grid.Column="2" Classes="Text" Padding="4"
+                      MinHeight="44" MinWidth="44"
                       Command="{Binding ToggleWeeklyMissionsExpandedCommand}"
                       AutomationProperties.AutomationId="Dashboard_Btn_ToggleWeeklyMissions">
                 <icons:GameIcon Kind="{Binding WeeklyMissionsExpandIconKind}" Width="24" Height="24" />
@@ -60,7 +62,7 @@
                                      AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionRewardGS" />
                         </StackPanel>
                         <!-- Claim-Button -->
-                        <Button Classes="Text" Padding="8,6" MinHeight="36" MinWidth="36"
+                        <Button Classes="Text" Padding="8,8" MinHeight="44" MinWidth="44"
                                 IsVisible="{Binding IsCompleted}"
                                 IsEnabled="{Binding !IsClaimed}"
                                 Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).ClaimWeeklyMissionCommand}"

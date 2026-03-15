@@ -6,7 +6,8 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.MiniGames.PaintingGameView"
-             x:DataType="vm:PaintingGameViewModel">
+             x:DataType="vm:PaintingGameViewModel"
+             x:CompileBindings="True">
 
   <Grid AutomationProperties.AutomationId="Painting_Grid_Root"
         RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
@@ -130,11 +131,11 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <icons:GameIcon AutomationProperties.AutomationId="Painting_Icon_ComboFire"
                              Kind="Fire" Width="20" Height="20"
-                             Foreground="White" />
+                             Foreground="{DynamicResource PrimaryContrastBrush}" />
             <TextBlock AutomationProperties.AutomationId="Painting_Txt_ComboDisplay"
                        Text="{Binding ComboDisplay}"
                        FontSize="14" FontWeight="Bold"
-                       Foreground="White" />
+                       Foreground="{DynamicResource PrimaryContrastBrush}" />
           </StackPanel>
         </Border>
       </Grid>
@@ -253,7 +254,7 @@
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
     <Border AutomationProperties.AutomationId="Painting_Border_Countdown"
-            Grid.RowSpan="5" Background="#CC000000"
+            Grid.RowSpan="5" Background="{StaticResource RewardOverlayBrush}"
             IsVisible="{Binding IsCountdownActive}">
       <TextBlock AutomationProperties.AutomationId="Painting_Txt_Countdown"
                  Text="{Binding CountdownText}"

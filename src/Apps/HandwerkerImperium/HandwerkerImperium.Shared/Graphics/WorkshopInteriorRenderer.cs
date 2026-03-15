@@ -54,6 +54,17 @@ public sealed class WorkshopInteriorRenderer : IDisposable
     private readonly SKPaint _vignettePaint = new() { IsAntialias = true };
     private readonly SKPaint _spotPaint = new() { IsAntialias = true };
     private readonly SKPaint _glowPaint = new() { IsAntialias = true };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GECACHTE SHADER (nur bei Bounds-/Typ-Aenderung neu erstellt)
+    // Spart 2 von 4 Shader-Allokationen/Frame (Gradient + Vignette sind statisch,
+    // Spotlight + Glow sind zeitabhaengig und bleiben dynamisch)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private SKRect _lastBounds;
+    private WorkshopType _lastWorkshopType;
+    private SKShader? _cachedGradientShader;
+    private SKShader? _cachedVignetteShader;
     private readonly SKPaint _bulbPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _corePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _conePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -61,13 +72,57 @@ public sealed class WorkshopInteriorRenderer : IDisposable
     private readonly SKPaint _linePaint = new() { IsAntialias = true, StrokeWidth = 0.5f, Style = SKPaintStyle.Stroke };
     private readonly SKPaint _splatPaint = new() { IsAntialias = true };
 
+    /// <summary>
+    /// Erstellt bounds-/typ-abhaengige Shader neu (Gradient + Vignette).
+    /// Spotlight und Glow sind zeitabhaengig und bleiben dynamisch.
+    /// </summary>
+    // Gecachte Boden-Farbe für DrawSubtleFloorPattern (wird in RebuildStaticShaders gesetzt)
+    private SKColor _cachedFloorPatternColor;
+
+    private void RebuildStaticShaders(SKRect bounds, WorkshopType type)
+    {
+        var colors = WorkshopColors.GetValueOrDefault(type,
+            (new SKColor(0xD7, 0xCC, 0xB7), new SKColor(0xBC, 0xAA, 0x84), new SKColor(0xA6, 0x93, 0x72, 35)));
+        _cachedFloorPatternColor = colors.Item3;
+
+        // Gradient-Shader
+        _cachedGradientShader?.Dispose();
+        _cachedGradientShader = SKShader.CreateLinearGradient(
+            new SKPoint(bounds.Left, bounds.Top),
+            new SKPoint(bounds.Left, bounds.Bottom),
+            new[] { colors.Item1, colors.Item2 },
+            null,
+            SKShaderTileMode.Clamp);
+
+        // Vignette-Shader
+        var lightColor = LightColors.GetValueOrDefault(type, new SKColor(0xFF, 0xD7, 0x00));
+        float cx = bounds.MidX;
+        float cy = bounds.MidY;
+        float radius = MathF.Sqrt(bounds.Width * bounds.Width + bounds.Height * bounds.Height) * 0.55f;
+        byte edgeR = (byte)(lightColor.Red / 8);
+        byte edgeG = (byte)(lightColor.Green / 10);
+        byte edgeB = (byte)(lightColor.Blue / 12);
+
+        _cachedVignetteShader?.Dispose();
+        _cachedVignetteShader = SKShader.CreateRadialGradient(
+            new SKPoint(cx, cy),
+            radius,
+            new[]
+            {
+                new SKColor(lightColor.Red, lightColor.Green, lightColor.Blue, 8),
+                SKColors.Transparent,
+                new SKColor(edgeR, edgeG, edgeB, 30),
+                new SKColor(edgeR, edgeG, edgeB, 55),
+            },
+            new float[] { 0f, 0.3f, 0.7f, 1.0f },
+            SKShaderTileMode.Clamp);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        _gradientPaint.Shader?.Dispose();
         _gradientPaint.Dispose();
-        _vignettePaint.Shader?.Dispose();
         _vignettePaint.Dispose();
         _spotPaint.Shader?.Dispose();
         _spotPaint.Dispose();
@@ -79,6 +134,10 @@ public sealed class WorkshopInteriorRenderer : IDisposable
         _detailPaint.Dispose();
         _linePaint.Dispose();
         _splatPaint.Dispose();
+
+        // Gecachte statische Shader
+        _cachedGradientShader?.Dispose();
+        _cachedVignetteShader?.Dispose();
     }
     // Workshop-Typ-spezifische Farbpaletten
     private static readonly Dictionary<WorkshopType, (SKColor floorTop, SKColor floorBottom, SKColor pattern)> WorkshopColors = new()
@@ -115,18 +174,16 @@ public sealed class WorkshopInteriorRenderer : IDisposable
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, Workshop workshop, float time)
     {
-        var colors = WorkshopColors.GetValueOrDefault(workshop.Type,
-            (new SKColor(0xD7, 0xCC, 0xB7), new SKColor(0xBC, 0xAA, 0x84), new SKColor(0xA6, 0x93, 0x72, 35)));
+        // Statische Shader bei Bounds- oder Typ-Aenderung neu erstellen
+        if (_lastBounds != bounds || _lastWorkshopType != workshop.Type)
+        {
+            _lastBounds = bounds;
+            _lastWorkshopType = workshop.Type;
+            RebuildStaticShaders(bounds, workshop.Type);
+        }
 
-        // Vertikaler Gradient (oben heller → unten dunkler)
-        using var gradientShader = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.Left, bounds.Top),
-            new SKPoint(bounds.Left, bounds.Bottom),
-            new[] { colors.Item1, colors.Item2 },
-            null,
-            SKShaderTileMode.Clamp);
-        _gradientPaint.Shader?.Dispose();
-        _gradientPaint.Shader = gradientShader;
+        // Vertikaler Gradient (oben heller → unten dunkler, gecacht)
+        _gradientPaint.Shader = _cachedGradientShader;
         canvas.DrawRect(bounds, _gradientPaint);
         _gradientPaint.Shader = null;
 
@@ -134,7 +191,7 @@ public sealed class WorkshopInteriorRenderer : IDisposable
         DrawWallDetails(canvas, bounds, workshop.Type);
 
         // Dezentes Boden-Pattern (nur untere 25%, sehr subtil)
-        DrawSubtleFloorPattern(canvas, bounds, workshop.Type, colors.Item3);
+        DrawSubtleFloorPattern(canvas, bounds, workshop.Type, _cachedFloorPatternColor);
 
         // Dynamische Beleuchtung (Spotlight + Hängelampe + warme Vignette)
         DrawDynamicLighting(canvas, bounds, workshop.Type, time);
@@ -164,29 +221,8 @@ public sealed class WorkshopInteriorRenderer : IDisposable
     /// </summary>
     private void DrawWarmVignette(SKCanvas canvas, SKRect bounds, SKColor lightColor)
     {
-        float cx = bounds.MidX;
-        float cy = bounds.MidY;
-        float radius = MathF.Sqrt(bounds.Width * bounds.Width + bounds.Height * bounds.Height) * 0.55f;
-
-        // Warme Randfarbe: Lichtfarbe stark abgedunkelt
-        byte edgeR = (byte)(lightColor.Red / 8);
-        byte edgeG = (byte)(lightColor.Green / 10);
-        byte edgeB = (byte)(lightColor.Blue / 12);
-
-        using var vignetteShader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy),
-            radius,
-            new[]
-            {
-                new SKColor(lightColor.Red, lightColor.Green, lightColor.Blue, 8),
-                SKColors.Transparent,
-                new SKColor(edgeR, edgeG, edgeB, 30),
-                new SKColor(edgeR, edgeG, edgeB, 55),
-            },
-            new float[] { 0f, 0.3f, 0.7f, 1.0f },
-            SKShaderTileMode.Clamp);
-        _vignettePaint.Shader?.Dispose();
-        _vignettePaint.Shader = vignetteShader;
+        // Vignette-Shader ist gecacht (aendert sich nur bei Bounds/Typ-Wechsel)
+        _vignettePaint.Shader = _cachedVignetteShader;
         canvas.DrawRect(bounds, _vignettePaint);
         _vignettePaint.Shader = null;
     }

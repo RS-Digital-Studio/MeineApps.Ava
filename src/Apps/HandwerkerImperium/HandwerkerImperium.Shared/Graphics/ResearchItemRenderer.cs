@@ -46,6 +46,11 @@ public static class ResearchItemRenderer
     private static readonly SKFont _fontBold = new() { Embolden = true, Edging = SKFontEdging.Antialias };
     private static readonly SKPath _cachedPath = new();
 
+    // Gecachter DimPaint für gesperrte Items (vermeidet SKPaint+SKColorFilter pro Frame)
+    private static readonly SKColorFilter _dimFilter = SKColorFilter.CreateBlendMode(
+        new SKColor(0, 0, 0, 140), SKBlendMode.DstIn);
+    private static readonly SKPaint _dimPaint = new() { ColorFilter = _dimFilter, IsAntialias = true };
+
     /// <summary>
     /// Rendert eine einzelne Forschungs-Karte.
     /// </summary>
@@ -121,9 +126,7 @@ public static class ResearchItemRenderer
 
         if (item.IsLocked)
         {
-            // Opacity 0.45 für gesperrte Items
-            using var dimPaint = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(
-                new SKColor(0, 0, 0, 140), SKBlendMode.DstIn) };
+            // Opacity 0.45 für gesperrte Items (gecachter statischer DimPaint)
             canvas.Restore();
         }
     }
@@ -449,7 +452,7 @@ public static class ResearchItemRenderer
     private static void DrawStarS(SKCanvas canvas, float cx, float cy, float s)
     {
         // 5-zackiger Stern
-        _cachedPath.Reset();
+        _cachedPath.Rewind();
         for (int i = 0; i < 5; i++)
         {
             float outerAngle = -MathF.PI / 2 + i * MathF.Tau / 5;

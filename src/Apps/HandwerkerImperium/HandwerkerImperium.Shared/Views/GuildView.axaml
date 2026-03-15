@@ -5,7 +5,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.GuildView"
-             x:DataType="vm:GuildViewModel">
+             x:DataType="vm:GuildViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="Guild_Grid_Root">
@@ -214,7 +215,7 @@
                               Background="{Binding GuildColor, Converter={StaticResource ColorBrushConverter}}">
                         <icons:GameIcon Kind="{Binding GuildIcon, Converter={StaticResource IconKindConverter}}"
                                          Width="28" Height="28"
-                                         Foreground="White"
+                                         Foreground="{DynamicResource PrimaryContrastBrush}"
                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Border>
 
@@ -307,7 +308,7 @@
                             Background="{Binding Color, Converter={StaticResource ColorBrushConverter}}">
                       <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                        Width="28" Height="28"
-                                       Foreground="White"
+                                       Foreground="{DynamicResource PrimaryContrastBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
 
@@ -368,7 +369,7 @@
                     HorizontalAlignment="Center" Margin="0,4,0,8"
                     Background="{Binding SelectedColor, Converter={StaticResource ColorBrushConverter}}">
               <icons:GameIcon Kind="{Binding SelectedIcon, Converter={StaticResource IconKindConverter}}"
-                               Width="32" Height="32" Foreground="White"
+                               Width="32" Height="32" Foreground="{DynamicResource PrimaryContrastBrush}"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
 
@@ -453,12 +454,12 @@
               <icons:GameIcon Kind="{Binding CurrentGuildIcon, Converter={StaticResource IconKindConverter}}"
                                Width="40" Height="40"
                                AutomationProperties.AutomationId="Guild_Icon_CurrentGuild"
-                               Foreground="White"
+                               Foreground="{DynamicResource PrimaryContrastBrush}"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding CurrentGuildName}"
                          AutomationProperties.AutomationId="Guild_Txt_CurrentGuildName"
                          FontSize="20" FontWeight="Bold"
-                         Foreground="White"
+                         Foreground="{DynamicResource PrimaryContrastBrush}"
                          HorizontalAlignment="Center" />
               <TextBlock Text="{Binding GuildLevel, StringFormat='Lv.{0}'}"
                          AutomationProperties.AutomationId="Guild_Txt_CurrentGuildLevel"
@@ -530,7 +531,7 @@
             <Border Classes="Card" Padding="8" Margin="0,0,4,8">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
                 <icons:GameIcon Kind="Sword" Width="20" Height="20"
-                                 Foreground="#DC2626"
+                                 Foreground="{DynamicResource ErrorBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding WarQuickStatus}"
                            FontSize="10" TextTrimming="CharacterEllipsis"
@@ -587,6 +588,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
               <Button Grid.Column="2" Classes="Text" Padding="4"
+                      MinHeight="44" MinWidth="44"
                       Command="{Binding DismissTipCommand}">
                 <icons:GameIcon Kind="Close" Width="18" Height="18"
                                  Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -610,7 +612,7 @@
                     <SolidColorBrush Color="#DC2626" Opacity="0.15" />
                   </Border.Background>
                   <icons:GameIcon Kind="Sword" Width="26" Height="26"
-                                   Foreground="#DC2626"
+                                   Foreground="{DynamicResource ErrorBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
@@ -760,7 +762,7 @@
                     <SolidColorBrush Color="#7F1D1D" Opacity="0.15" />
                   </Border.Background>
                   <icons:GameIcon Kind="SwordCross" Width="26" Height="26"
-                                   Foreground="#DC2626"
+                                   Foreground="{DynamicResource ErrorBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">

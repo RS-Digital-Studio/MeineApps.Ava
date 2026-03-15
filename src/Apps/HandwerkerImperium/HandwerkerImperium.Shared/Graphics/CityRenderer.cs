@@ -82,6 +82,12 @@ public sealed class CityRenderer : IDisposable
     private readonly SKPath _treePath = new();
     private readonly SKPath _flagPath = new();
 
+    // Gecachter Level-Label-String-Cache (vermeidet String-Interpolation pro Workshop pro Frame)
+    private static readonly Dictionary<int, string> _levelLabelCache = new();
+
+    // Gecachter MeasureText-Cache für Level-Labels (Label → Breite)
+    private readonly Dictionary<string, float> _labelWidthCache = new();
+
     // Gecachter Font fuer Tap-Label (statt pro Frame neu erstellen)
     private readonly SKFont _tapLabelFont = new(SKTypeface.Default, 11);
 
@@ -249,7 +255,7 @@ public sealed class CityRenderer : IDisposable
         var hillColor = CityBuildingShapes.ApplyDim(new SKColor(0x6B, 0x8E, 0x6B), nightDim);
         _hillPaint.Color = hillColor;
 
-        _hillPath.Reset();
+        _hillPath.Rewind();
         _hillPath.MoveTo(bounds.Left, hillBaseY + 20);
 
         // Sanfte Hügelkurve
@@ -277,7 +283,7 @@ public sealed class CityRenderer : IDisposable
         var hillColor = CityBuildingShapes.ApplyDim(new SKColor(0x4A, 0x7C, 0x4A), nightDim);
         _hillPaint.Color = hillColor;
 
-        _hillPath.Reset();
+        _hillPath.Rewind();
         _hillPath.MoveTo(bounds.Left, hillBaseY + 15);
 
         for (float px = bounds.Left; px <= bounds.Right; px += 3)
@@ -314,7 +320,7 @@ public sealed class CityRenderer : IDisposable
 
             // Krone (Dreieck)
             _hillPaint.Color = treeColor;
-            _treePath.Reset();
+            _treePath.Rewind();
             _treePath.MoveTo(tx, ty - treeH);
             _treePath.LineTo(tx - treeH * 0.4f, ty - treeH * 0.25f);
             _treePath.LineTo(tx + treeH * 0.4f, ty - treeH * 0.25f);
@@ -493,7 +499,11 @@ public sealed class CityRenderer : IDisposable
                 }
 
                 // Mini-Arbeiter vor dem Workshop (1-3 je nach Worker-Anzahl)
-                int workerCount = workshop.Workers?.Count(w => !w.IsResting) ?? 0;
+                // For-Schleife statt LINQ Count (vermeidet Closure+Enumerator pro Workshop pro Frame)
+                int workerCount = 0;
+                if (workshop.Workers != null)
+                    for (int wi = 0; wi < workshop.Workers.Count; wi++)
+                        if (!workshop.Workers[wi].IsResting) workerCount++;
                 int displayWorkers = Math.Min(workerCount, 3);
                 for (int w = 0; w < displayWorkers; w++)
                 {
@@ -503,10 +513,18 @@ public sealed class CityRenderer : IDisposable
                         _time + w * 1.3f, nightDim);
                 }
 
-                // Level-Label unter dem Gebäude
+                // Level-Label unter dem Gebäude (gecachter String + MeasureText)
                 _labelPaint.Color = CityBuildingShapes.ApplyDim(SKColors.White, nightDim);
-                string label = $"Lv{level}";
-                float textWidth = _labelFont.MeasureText(label);
+                if (!_levelLabelCache.TryGetValue(level, out var label))
+                {
+                    label = $"Lv{level}";
+                    _levelLabelCache[level] = label;
+                }
+                if (!_labelWidthCache.TryGetValue(label, out float textWidth))
+                {
+                    textWidth = _labelFont.MeasureText(label);
+                    _labelWidthCache[label] = textWidth;
+                }
                 canvas.DrawText(label, x + (buildingWidth - textWidth) / 2f, rowBottom + 15,
                     SKTextAlign.Left, _labelFont, _labelPaint);
 
@@ -676,7 +694,7 @@ public sealed class CityRenderer : IDisposable
         // Fahne (weht im Wind)
         float wave = MathF.Sin(_time * 2.5f) * 1.5f;
         _particlePaint.Color = flagColor;
-        _flagPath.Reset();
+        _flagPath.Rewind();
         _flagPath.MoveTo(x + 1, y);
         _flagPath.LineTo(x + 6 + wave, y + 1.5f);
         _flagPath.LineTo(x + 1, y + 4);

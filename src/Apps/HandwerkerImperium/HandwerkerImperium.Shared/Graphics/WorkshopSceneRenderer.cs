@@ -55,6 +55,9 @@ public sealed class WorkshopSceneRenderer : IDisposable
     private readonly SKMaskFilter _glowSmall = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
     private readonly SKMaskFilter _glowMedium = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5);
 
+    // Gecachter Font für Maßzahlen (vermeidet Font-Allokation pro Frame)
+    private readonly SKFont _dimFont = new(SKTypeface.Default, 7);
+
     /// <summary>
     /// Zeichnet die Workshop-Szene basierend auf Typ, Worker-Anzahl, Level und Animations-Phase.
     /// </summary>
@@ -2029,8 +2032,7 @@ public sealed class WorkshopSceneRenderer : IDisposable
             canvas.DrawLine(gpX, gpY + gpH + 6, gpX + gpW * 0.45f, gpY + gpH + 6, _strokePaint);
             // Maßzahl
             _fillPaint.Color = new SKColor(0xFF, 0x57, 0x22, 100);
-            using var dimFont = new SKFont(SKTypeface.Default, 7);
-            canvas.DrawText("4.5m", gpX + gpW * 0.18f, gpY + gpH + 14, SKTextAlign.Center, dimFont, _fillPaint);
+            canvas.DrawText("4.5m", gpX + gpW * 0.18f, gpY + gpH + 14, SKTextAlign.Center, _dimFont, _fillPaint);
         }
 
         // Münz-Emission
@@ -2552,5 +2554,6 @@ public sealed class WorkshopSceneRenderer : IDisposable
         _shadowLarge.Dispose();
         _glowSmall.Dispose();
         _glowMedium.Dispose();
+        _dimFont.Dispose();
     }
 }

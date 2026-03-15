@@ -88,6 +88,25 @@ public sealed class GuildResearchTreeRenderer : IDisposable
     // Gecachter Namenscache (TruncateName erstellt sonst Strings pro Frame)
     private readonly Dictionary<string, string> _truncatedNameCache = new();
 
+    // Gecachter Kategorie-Label MeasureText (statische Namen, Breite ändert sich nie)
+    private readonly Dictionary<GuildResearchCategory, float> _categoryLabelWidthCache = new();
+
+    // Gecachte Prozent-Strings für Fortschrittsbalken (vermeidet Interpolation pro Node pro Frame)
+    private static readonly string[] _percentStrings = new string[101];
+
+    // Gecachte Kosten/Effekt-Strings pro Node-Index (nur bei Datenänderung neu berechnen)
+    private readonly string[] _cachedCostStrings = new string[18];
+    private readonly string[] _cachedEffectStrings = new string[18];
+    private readonly long[] _lastCostValues = new long[18];
+    private readonly long[] _lastProgressValues = new long[18];
+
+    static GuildResearchTreeRenderer()
+    {
+        // Prozent-Strings 0%-100% vorberechnen
+        for (int i = 0; i <= 100; i++)
+            _percentStrings[i] = $"{i}%";
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // LAYOUT-MAP: 18 Forschungen → (Zeile, Spalte) Positionen
     // ═══════════════════════════════════════════════════════════════════════
@@ -251,9 +270,13 @@ public sealed class GuildResearchTreeRenderer : IDisposable
             var color = GetCategoryColor(cat);
             float headerY = pos.Y - NodeSize / 2 - 22;
 
-            // Hintergrund-Pill
+            // Hintergrund-Pill (MeasureText gecacht, statische Kategorie-Namen)
             string label = GetCategoryLabel(cat);
-            float textW = _nameFont.MeasureText(label);
+            if (!_categoryLabelWidthCache.TryGetValue(cat, out float textW))
+            {
+                textW = _nameFont.MeasureText(label);
+                _categoryLabelWidthCache[cat] = textW;
+            }
             float pillW = textW + 18;
             float pillH = 20;
             float pillX = pos.X - pillW / 2;
@@ -552,21 +575,39 @@ public sealed class GuildResearchTreeRenderer : IDisposable
         _nameFont.Embolden = false;
 
         // Kosten (offen) oder Effekt (abgeschlossen) unter dem Namen
+        // Gecachte Strings: nur bei Datenänderung neu berechnen (nicht pro Frame)
         float infoY = nameY + 13;
         _costFont.Size = 10;
         if (item.IsCompleted)
         {
-            // Abgeschlossen: Effekt in Kategorie-Farbe
+            // Abgeschlossen: Effekt in Kategorie-Farbe (gecacht)
             _text.Color = catColor.WithAlpha(200);
-            canvas.DrawText(FormatEffect(item.EffectType, item.EffectValue),
-                cx, infoY, SKTextAlign.Center, _costFont, _text);
+            if (index < _cachedEffectStrings.Length && _cachedEffectStrings[index] == null)
+                _cachedEffectStrings[index] = FormatEffect(item.EffectType, item.EffectValue);
+            string effectStr = index < _cachedEffectStrings.Length ? _cachedEffectStrings[index] ?? "" : FormatEffect(item.EffectType, item.EffectValue);
+            canvas.DrawText(effectStr, cx, infoY, SKTextAlign.Center, _costFont, _text);
         }
         else
         {
-            // Offen: Kosten-Anzeige
+            // Offen: Kosten-Anzeige (gecacht, invalidiert bei Kostenänderung)
             _text.Color = item.IsLocked ? TextMuted.WithAlpha(120) : new SKColor(0xD4, 0xA3, 0x73);
-            canvas.DrawText(FormatCost(item.Cost, item.Progress),
-                cx, infoY, SKTextAlign.Center, _costFont, _text);
+            string costStr;
+            if (index < _cachedCostStrings.Length)
+            {
+                if (_lastCostValues[index] != item.Cost || _lastProgressValues[index] != item.Progress
+                    || _cachedCostStrings[index] == null)
+                {
+                    _cachedCostStrings[index] = FormatCost(item.Cost, item.Progress);
+                    _lastCostValues[index] = item.Cost;
+                    _lastProgressValues[index] = item.Progress;
+                }
+                costStr = _cachedCostStrings[index]!;
+            }
+            else
+            {
+                costStr = FormatCost(item.Cost, item.Progress);
+            }
+            canvas.DrawText(costStr, cx, infoY, SKTextAlign.Center, _costFont, _text);
         }
 
         // Glow-Effekt auf aktiven/forschenden Nodes
@@ -713,18 +754,20 @@ public sealed class GuildResearchTreeRenderer : IDisposable
             canvas.DrawRect(x + 1, y, fillW - 2, h * 0.4f, _fill);
         }
 
-        // Prozent-Text (größer und lesbarer)
+        // Prozent-Text (gecachte Strings für 0-100%, vermeidet Interpolation pro Frame)
         if (item.IsActive || item.IsCompleted || item.IsResearching)
         {
             string pct;
             if (item.IsResearching)
             {
                 float timerPct = GetTimerProgress(item);
-                pct = $"{(int)(timerPct * 100)}%";
+                int pctIdx = Math.Clamp((int)(timerPct * 100), 0, 100);
+                pct = _percentStrings[pctIdx];
             }
             else
             {
-                pct = $"{(int)(progress * 100)}%";
+                int pctIdx = Math.Clamp((int)(progress * 100), 0, 100);
+                pct = _percentStrings[pctIdx];
             }
             _percentFont.Size = 10;
             _text.Color = item.IsResearching ? ResearchingColor.WithAlpha(220) : SKColors.White.WithAlpha(200);

@@ -86,11 +86,21 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // Statisches Array vermeidet Allokation bei jedem RefreshWorkshops()-Aufruf
     private static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
 
+    // Workshop-Level-Meilensteine (statisch, vermeidet Array-Allokation pro Workshop-Upgrade)
+    private static readonly (int level, int screws)[] s_workshopMilestones =
+        [(50, 2), (100, 5), (250, 10), (500, 25), (1000, 50)];
+
     // Zaehler fuer FloatingText-Anzeige (nur alle 3 Ticks, nicht jeden)
     private int _floatingTextCounter;
 
     // Zaehler fuer Ziel-Aktualisierung (alle 60 Ticks)
     private int _tickForGoal;
+
+    // QuickJob-Timer: Letzte Minuten/Sekunden für int-Vergleich statt String-Allokation
+    private int _lastQjMins = -1, _lastQjSecs = -1;
+
+    // Gecachter lokalisierter "Netto"-Label (aendert sich nur bei Sprachwechsel)
+    private string _cachedNetIncomeLabel = "Netto";
 
     // Phase 9: Smooth Money-Counter Animation (vom MainView Render-Timer getrieben)
     private decimal _displayedMoney;
@@ -100,6 +110,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     // Wiederverwendbarer Timer für Level-Up Pulse (verhindert Timer-Leak bei rapidem Level-Up)
     private DispatcherTimer? _levelPulseTimer;
+
+    // Cache für saisonalen Modifikator (ändert sich nur monatlich)
+    private int _cachedSeasonMonth;
+
+    // Cache für aktiven Event-Namen (aendert sich nur bei Event-Wechsel, nicht pro Tick)
+    private string? _cachedActiveEventKey;
+    private string? _cachedActiveEventName;
 
     // EventHandler wrappers for new VMs (EventHandler<string> vs Action<string>)
     private readonly EventHandler<string> _workerMarketNavHandler;
@@ -111,6 +128,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly Action<string, string, string> _alertHandler;
     private readonly Func<string, string, string, string, Task<bool>> _confirmHandler;
     private Action? _guildCelebrationHandler;
+    private readonly Action<string, string> _guildFloatingTextHandler;
     private readonly Action<string, string> _workerProfileFloatingTextHandler;
 
     // Gespeicherte Delegate-Referenzen fuer Lambda-Subscriptions (fuer Dispose-Unsubscribe)
@@ -126,7 +144,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     public event EventHandler<OfflineEarningsEventArgs>? ShowOfflineEarnings;
-    public event EventHandler<LevelUpEventArgs>? ShowLevelUp;
     public event EventHandler<DailyRewardEventArgs>? ShowDailyReward;
     public event EventHandler<Achievement>? ShowAchievementUnlocked;
 
@@ -753,6 +770,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private string _prestigeSummaryCount = "";
 
     /// <summary>
+    /// True wenn irgendein Overlay-Dialog sichtbar ist.
+    /// Verhindert dass Hints oder andere Dialoge gleichzeitig erscheinen.
+    /// </summary>
+    private bool IsAnyDialogVisible =>
+        IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible ||
+        IsWelcomeOfferVisible || IsDailyRewardDialogVisible ||
+        IsStoryDialogVisible || IsHintVisible ||
+        IsLevelUpDialogVisible || IsAchievementDialogVisible ||
+        IsAlertDialogVisible || IsConfirmDialogVisible ||
+        IsPrestigeSummaryVisible;
+
+    /// <summary>
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
     public bool ShowAds => !_purchaseService.IsPremium;
@@ -1179,6 +1208,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _orderGeneratorService = orderGeneratorService;
         _audioService = audioService;
         _localizationService = localizationService;
+        _cachedNetIncomeLabel = _localizationService.GetString("NetIncome") ?? "Netto";
         _dailyRewardService = dailyRewardService;
         _achievementService = achievementService;
         _purchaseService = purchaseService;
@@ -1280,6 +1310,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _alertHandler = (t, m, b) => ShowAlertDialog(t, m, b);
         _confirmHandler = (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
         _guildCelebrationHandler = () => CelebrationRequested?.Invoke();
+        _guildFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         _workerProfileFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         // Benanntes Delegate-Feld fuer BuildingsVM FloatingText (statt anonymem Lambda → Dispose-sicher)
         _buildingsFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
@@ -1303,6 +1334,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         BattlePassViewModel.AlertRequested += _alertHandler;
         GuildViewModel.ConfirmationRequested += _confirmHandler;
         GuildViewModel.CelebrationRequested += _guildCelebrationHandler;
+        GuildViewModel.FloatingTextRequested += _guildFloatingTextHandler;
 
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
@@ -1323,6 +1355,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _gameLoopService.OnTick += OnGameTick;
         _gameLoopService.MasterToolUnlocked += OnMasterToolUnlocked;
         _gameLoopService.DeliveryArrived += OnDeliveryArrived;
+        _gameLoopService.OrderExpired += OnOrderExpired;
+        _gameLoopService.AutoCollectedDelivery += OnAutoCollectedDelivery;
+        _gameLoopService.AutoAcceptedOrder += OnAutoAcceptedOrder;
         _localizationService.LanguageChanged += OnLanguageChanged;
         _eventService.EventStarted += OnEventStarted;
         _eventService.EventEnded += OnEventEnded;
@@ -1344,13 +1379,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _notificationService = notificationService;
         _playGamesService = playGamesService;
 
-        // Back-Press Helper verdrahten
-        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+        // Back-Press Helper verdrahten (benannte Methode statt Lambda fuer Dispose-Abmeldung)
+        _backPressHelper.ExitHintRequested += OnBackPressExitHint;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENT HANDLERS
     // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Benannter Handler fuer BackPressHelper.ExitHintRequested (statt anonymem Lambda, damit Dispose abmelden kann).
+    /// </summary>
+    private void OnBackPressExitHint(string msg) => ExitHintRequested?.Invoke(msg);
 
     private void OnMoneyChanged(object? sender, MoneyChangedEventArgs e)
     {
@@ -1358,17 +1398,36 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Phase 9: Smooth animierter Geld-Counter
         AnimateMoneyTo(e.NewAmount);
 
-        // Update affordability für alle Workshops (For-Schleife statt LINQ FirstOrDefault)
-        var stateWorkshops = _gameStateService.State.Workshops;
-        foreach (var workshop in Workshops)
+        // Geld-abhängige Workshop-Flags aktualisieren (CanAfford, BulkCost bei Max-Modus)
+        // Bei x1/x10/x100: BulkUpgradeCost hängt nur vom Level ab (ändert sich nicht pro Tick),
+        // daher nur CanAffordUpgrade aktualisieren statt teure Math.Pow-Schleife
+        bool isMaxMode = BulkBuyAmount == 0;
+
+        if (isMaxMode)
         {
-            Workshop? ws = null;
+            // Max-Modus: Anzahl leistbarer Upgrades hängt vom Geld ab → muss neu berechnet werden
+            var stateWorkshops = _gameStateService.State.Workshops;
+            var stateDict = new Dictionary<WorkshopType, Workshop>(stateWorkshops.Count);
             for (int i = 0; i < stateWorkshops.Count; i++)
+                stateDict[stateWorkshops[i].Type] = stateWorkshops[i];
+
+            foreach (var workshop in Workshops)
             {
-                if (stateWorkshops[i].Type == workshop.Type) { ws = stateWorkshops[i]; break; }
+                stateDict.TryGetValue(workshop.Type, out var ws);
+                SetBulkUpgradeCost(workshop, ws, e.NewAmount);
+                workshop.CanAffordWorker = e.NewAmount >= workshop.HireWorkerCost;
             }
-            SetBulkUpgradeCost(workshop, ws, e.NewAmount);
-            workshop.CanAffordWorker = e.NewAmount >= workshop.HireWorkerCost;
+        }
+        else
+        {
+            // x1/x10/x100: BulkUpgradeCost ist level-abhängig (invariant bei Geld-Tick),
+            // nur CanAfford-Flags aktualisieren (reine Vergleiche, kein Math.Pow)
+            foreach (var workshop in Workshops)
+            {
+                workshop.CanAffordUpgrade = e.NewAmount >= workshop.BulkUpgradeCost;
+                workshop.CanAffordUnlock = workshop.CanBuyUnlock && e.NewAmount >= workshop.UnlockCost;
+                workshop.CanAffordWorker = e.NewAmount >= workshop.HireWorkerCost;
+            }
         }
     }
 
@@ -1410,12 +1469,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         FloatingTextRequested?.Invoke($"Level {e.NewLevel}!", "level");
 
         // Milestone-Bonus prüfen (10/25/50/100/250/500/1000)
-        bool isMilestone = false;
         foreach (var (level, screws) in _milestones)
         {
             if (e.NewLevel == level)
             {
-                isMilestone = true;
                 _gameStateService.AddGoldenScrews(screws);
 
                 // Sound + Celebration nur bei Milestones
@@ -1436,6 +1493,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         CheckTabUnlockNotification(e.NewLevel);
 
         // Kontextuelle Hints bei Level-Meilensteinen (passend zu Progressive Disclosure)
+        // Nicht anzeigen wenn ein anderer Dialog offen ist (z.B. Prestige-Summary)
+        if (IsAnyDialogVisible) return;
+
         if (e.NewLevel == LevelThresholds.HintWorkerUnlock)
             _contextualHintService.TryShowHint(ContextualHints.WorkerUnlock);
         else if (e.NewLevel == LevelThresholds.HintQuickJobs)
@@ -1460,7 +1520,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         // Leaderboard-Score aktualisieren (fire-and-forget)
         if (_playGamesService?.IsSignedIn == true)
-            _ = _playGamesService.SubmitScoreAsync("leaderboard_player_level", e.NewLevel);
+            _playGamesService.SubmitScoreAsync("leaderboard_player_level", e.NewLevel).SafeFireAndForget();
     }
 
     private void OnLevelPulseTimeout(object? sender, EventArgs e)
@@ -1536,9 +1596,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Schwellen weiter auseinander damit nicht bei jedem frühen Level Benachrichtigungen kommen
         if (!IsHoldingUpgrade)
         {
-            (int level, int screws)[] workshopMilestones =
-                [(50, 2), (100, 5), (250, 10), (500, 25), (1000, 50)];
-            foreach (var (level, screws) in workshopMilestones)
+            foreach (var (level, screws) in s_workshopMilestones)
             {
                 if (e.NewLevel == level)
                 {
@@ -1610,7 +1668,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private async void OnShowPrestigeDialog(object? sender, EventArgs e)
     {
-        await ShowPrestigeConfirmationAsync();
+        try
+        {
+            await ShowPrestigeConfirmationAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnShowPrestigeDialog)} Fehler: {ex.Message}");
+        }
     }
 
     private void OnMiniGameResultRecorded(object? sender, MiniGameResultRecordedEventArgs e)
@@ -1641,6 +1706,48 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             UpdateDeliveryDisplay();
             FloatingTextRequested?.Invoke(
                 $"{_localizationService.GetString("DeliveryArrived")}!", "Delivery");
+        });
+    }
+
+    /// <summary>
+    /// Handler: Aktiver Auftrag ist abgelaufen (Deadline überschritten).
+    /// Setzt UI-State zurück, damit kein "Geister-Auftrag" angezeigt wird.
+    /// </summary>
+    private void OnOrderExpired(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            HasActiveOrder = false;
+            ActiveOrder = null;
+            RefreshOrders();
+        });
+    }
+
+    /// <summary>
+    /// Handler: Automation hat eine Lieferung automatisch eingesammelt.
+    /// Aktualisiert die Lieferungs-Anzeige in der UI.
+    /// </summary>
+    private void OnAutoCollectedDelivery(object? sender, SupplierDelivery delivery)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            HasPendingDelivery = false;
+            FloatingTextRequested?.Invoke(
+                $"{_localizationService.GetString("DeliveryCollected") ?? "Lieferung eingesammelt"}!", "Delivery");
+        });
+    }
+
+    /// <summary>
+    /// Handler: Automation hat einen Auftrag automatisch angenommen.
+    /// Aktualisiert Auftrags-Anzeige und verfügbare Aufträge.
+    /// </summary>
+    private void OnAutoAcceptedOrder(object? sender, Order order)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            HasActiveOrder = true;
+            ActiveOrder = order;
+            RefreshOrders();
         });
     }
 
@@ -1682,23 +1789,35 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             HasActiveEvent = true;
             ActiveEventIcon = activeEvent.Icon;
-            ActiveEventName = _localizationService.GetString(activeEvent.NameKey);
+
+            // Event-Name nur neu laden wenn sich der Event-Key geaendert hat
+            if (_cachedActiveEventKey != activeEvent.NameKey)
+            {
+                _cachedActiveEventKey = activeEvent.NameKey;
+                _cachedActiveEventName = _localizationService.GetString(activeEvent.NameKey);
+            }
+            ActiveEventName = _cachedActiveEventName ?? string.Empty;
             UpdateEventTimer();
         }
         else if (HasActiveEvent)
         {
             HasActiveEvent = false;
+            _cachedActiveEventKey = null;
         }
 
-        // Saisonaler Modifikator
+        // Saisonaler Modifikator (nur bei Monatswechsel neu berechnen)
         var month = DateTime.UtcNow.Month;
-        SeasonalModifierText = month switch
+        if (month != _cachedSeasonMonth)
         {
-            3 or 4 or 5 => _localizationService.GetString("SeasonSpring"),
-            6 or 7 or 8 => _localizationService.GetString("SeasonSummer"),
-            9 or 10 or 11 => _localizationService.GetString("SeasonAutumn"),
-            _ => _localizationService.GetString("SeasonWinter")
-        };
+            _cachedSeasonMonth = month;
+            SeasonalModifierText = month switch
+            {
+                3 or 4 or 5 => _localizationService.GetString("SeasonSpring"),
+                6 or 7 or 8 => _localizationService.GetString("SeasonSummer"),
+                9 or 10 or 11 => _localizationService.GetString("SeasonAutumn"),
+                _ => _localizationService.GetString("SeasonWinter")
+            };
+        }
     }
 
     private void UpdateEventTimer()
@@ -1742,6 +1861,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
+        // Lokalisierungs-Caches aktualisieren
+        _cachedNetIncomeLabel = _localizationService.GetString("NetIncome") ?? "Netto";
+        _cachedActiveEventKey = null; // Event-Name bei Sprachwechsel neu laden
+        _lastPrestigeBannerLevel = -1; // Prestige-Banner mit neuen Texten neu berechnen
+
         // Alle lokalisierten Display-Texte aktualisieren
         RefreshQuickJobs();
         RefreshChallenges();
@@ -1788,13 +1912,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             _quickJobService.RotateIfNeeded();
             RefreshQuickJobs();
         }
+        // Int-Vergleich statt String-Allokation pro Tick (spart ~1 String/s GC-Pressure)
         var remaining = _quickJobService.TimeUntilNextRotation;
-        var newTimer = remaining.TotalMinutes >= 1
-            ? $"{(int)remaining.TotalMinutes}:{remaining.Seconds:D2}"
-            : $"0:{remaining.Seconds:D2}";
-        // Nur setzen wenn sich der String tatsächlich geändert hat (spart PropertyChanged)
-        if (newTimer != QuickJobTimerDisplay)
-            QuickJobTimerDisplay = newTimer;
+        int qjMins = (int)remaining.TotalMinutes;
+        int qjSecs = remaining.Seconds;
+        if (qjMins != _lastQjMins || qjSecs != _lastQjSecs)
+        {
+            _lastQjMins = qjMins;
+            _lastQjSecs = qjSecs;
+            QuickJobTimerDisplay = qjMins >= 1 ? $"{qjMins}:{qjSecs:D2}" : $"0:{qjSecs:D2}";
+        }
 
         // Forschungs-Timer aktualisieren (laeuft im Hintergrund weiter)
         if (ResearchViewModel.HasActiveResearch)
@@ -1962,8 +2089,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IsNetIncomeNegative = netIncome < 0;
         NetIncomeColor = netIncome < 0 ? "#FF5722" : "#FFFFFFAA";
 
-        var netLabel = _localizationService.GetString("NetIncome") ?? "Netto";
-        NetIncomeHeaderDisplay = $"{netLabel}: {MoneyFormatter.FormatPerSecond(netIncome, 1)}";
+        // Gecachter Label-Text (Invalidierung in OnLanguageChanged)
+        NetIncomeHeaderDisplay = $"{_cachedNetIncomeLabel}: {MoneyFormatter.FormatPerSecond(netIncome, 1)}";
     }
 
     /// <summary>
@@ -2163,6 +2290,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         BattlePassViewModel.AlertRequested -= _alertHandler;
         GuildViewModel.ConfirmationRequested -= _confirmHandler;
         GuildViewModel.CelebrationRequested -= _guildCelebrationHandler;
+        GuildViewModel.FloatingTextRequested -= _guildFloatingTextHandler;
 
         // Lambda-basierte Service-Subscriptions abmelden
         _rewardedAdService.AdUnavailable -= _adUnavailableHandler;
@@ -2180,6 +2308,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _gameLoopService.OnTick -= OnGameTick;
         _gameLoopService.MasterToolUnlocked -= OnMasterToolUnlocked;
         _gameLoopService.DeliveryArrived -= OnDeliveryArrived;
+        _gameLoopService.OrderExpired -= OnOrderExpired;
+        _gameLoopService.AutoCollectedDelivery -= OnAutoCollectedDelivery;
+        _gameLoopService.AutoAcceptedOrder -= OnAutoAcceptedOrder;
         _achievementService.AchievementUnlocked -= OnAchievementUnlocked;
         _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
         _localizationService.LanguageChanged -= OnLanguageChanged;
@@ -2192,6 +2323,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _contextualHintService.HintChanged -= OnHintChanged;
 
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
+        _backPressHelper.ExitHintRequested -= OnBackPressExitHint;
 
         GuildViewModel.Dispose();
         ShopViewModel.Dispose();
@@ -2256,6 +2388,12 @@ public partial class WorkshopDisplayModel : ObservableObject
     public string UpgradeIncomePreview { get; set; } = "";
 
     /// <summary>
+    /// Geschätzte Zeit bis zum nächsten Upgrade (z.B. "~3 Min", "~1,2 Std").
+    /// Leer wenn sofort leistbar.
+    /// </summary>
+    public string TimeToUpgrade { get; set; } = "";
+
+    /// <summary>
     /// Netto-Einkommen pro Sekunde (Brutto - Kosten), formatiert.
     /// </summary>
     public string NetIncomeDisplay { get; set; } = "";
@@ -2307,7 +2445,7 @@ public partial class WorkshopDisplayModel : ObservableObject
     public bool IsAlmostAffordable => !CanAffordUpgrade && IsUnlocked && UpgradeCost > 0;
 
     // Milestone-System: Naechstes Milestone-Level und Fortschritt
-    private static readonly int[] Milestones = [50, 100, 250, 500, 1000];
+    private static readonly int[] Milestones = [25, 50, 75, 100, 150, 200, 250, 350, 500, 1000];  // BAL-1: 350 hinzugefügt
 
     public int NextMilestone
     {
@@ -2374,6 +2512,7 @@ public partial class WorkshopDisplayModel : ObservableObject
         OnPropertyChanged(nameof(BulkUpgradeCost));
         OnPropertyChanged(nameof(BulkUpgradeLabel));
         OnPropertyChanged(nameof(UpgradeIncomePreview));
+        OnPropertyChanged(nameof(TimeToUpgrade));
         OnPropertyChanged(nameof(NetIncomeDisplay));
         OnPropertyChanged(nameof(IsNetNegative));
         OnPropertyChanged(nameof(HasCosts));

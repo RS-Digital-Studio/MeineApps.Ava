@@ -7,6 +7,7 @@ using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
+using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels.MiniGames;
 
@@ -232,7 +233,7 @@ public sealed partial class RoofTilingGameViewModel : ViewModelBase, IDisposable
         InitializeGame();
 
         CheckAndShowTutorial(MiniGameType.RoofTiling);
-        if (!ShowTutorial) _ = StartGameAsync();
+        if (!ShowTutorial) StartGameAsync().SafeFireAndForget();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -456,7 +457,7 @@ public sealed partial class RoofTilingGameViewModel : ViewModelBase, IDisposable
         if (string.IsNullOrEmpty(SelectedColor))
         {
             SelectColorHint = true;
-            _ = ResetSelectColorHintAsync();
+            ResetSelectColorHintAsync().SafeFireAndForget();
             return;
         }
 
@@ -697,7 +698,7 @@ public sealed partial class RoofTilingGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(MiniGameType.RoofTiling);
             _gameStateService.MarkDirty();
         }
-        _ = StartGameAsync();
+        StartGameAsync().SafeFireAndForget();
     }
 
     [RelayCommand]

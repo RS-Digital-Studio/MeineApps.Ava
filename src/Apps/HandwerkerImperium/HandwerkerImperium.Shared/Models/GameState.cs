@@ -672,8 +672,38 @@ public class GameState
     [JsonIgnore]
     public int BaseOfflineHours => 4;
 
+    // Gecachter MaxOfflineHours-Wert (invalidieren bei Prestige-Shop-Kauf oder Premium-Wechsel)
+    [JsonIgnore] private int _cachedMaxOfflineHours = -1;
+
+    /// <summary>
+    /// Cache invalidieren (nach Prestige-Shop-Kauf oder Premium-Status-Änderung).
+    /// </summary>
+    public void InvalidateMaxOfflineHoursCache() => _cachedMaxOfflineHours = -1;
+
     [JsonIgnore]
-    public int MaxOfflineHours => IsPremium ? 16 : OfflineVideoExtended ? 8 : 4;
+    public int MaxOfflineHours
+    {
+        get
+        {
+            if (_cachedMaxOfflineHours >= 0) return _cachedMaxOfflineHours;
+
+            int baseHours = IsPremium ? 16 : OfflineVideoExtended ? 8 : 4;
+
+            // Prestige-Shop OfflineHoursBonus addieren (pp_offline_hours: +4h)
+            var purchased = Prestige.PurchasedShopItems;
+            if (purchased.Count > 0)
+            {
+                foreach (var item in PrestigeShop.GetAllItems())
+                {
+                    if (!item.IsRepeatable && purchased.Contains(item.Id) && item.Effect.OfflineHoursBonus > 0)
+                        baseHours += item.Effect.OfflineHoursBonus;
+                }
+            }
+
+            _cachedMaxOfflineHours = baseHours;
+            return baseHours;
+        }
+    }
 
     /// <summary>
     /// Session flag: video extended offline duration.
@@ -752,7 +782,7 @@ public class GameState
             totalIncome += Workshops[i].GrossIncomePerSecond;
             totalCosts += Workshops[i].TotalCostsPerHour;
         }
-        decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 250.0m);
+        decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 200.0m);
         _cachedIncome = totalIncome * multiplier;
         _cachedCosts = totalCosts / 3600m;
         _incomeCacheDirty = false;
@@ -794,7 +824,8 @@ public class GameState
         TotalXp += amount;
 
         int levelUps = 0;
-        while (CurrentXp >= XpForNextLevel)
+        // Level-Cap: Endlos-Schleife bei manipulierten Saves oder extremen XP verhindern
+        while (CurrentXp >= XpForNextLevel && PlayerLevel < LevelThresholds.MaxPlayerLevel)
         {
             PlayerLevel++;
             levelUps++;

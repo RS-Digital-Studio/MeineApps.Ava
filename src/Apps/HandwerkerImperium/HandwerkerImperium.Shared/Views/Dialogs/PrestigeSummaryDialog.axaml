@@ -4,7 +4,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.PrestigeSummaryDialog"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <!-- Post-Prestige Zusammenfassung -->
   <Border Background="{StaticResource DialogOverlayBrush}"
@@ -22,9 +23,14 @@
 
         <!-- Tier-Badge -->
         <StackPanel HorizontalAlignment="Center" Spacing="4">
-          <TextBlock Text="{Binding PrestigeSummaryTierIcon}"
-                     FontSize="32" HorizontalAlignment="Center"
-                     AutomationProperties.AutomationId="Main_Txt_SummaryIcon" />
+          <icons:GameIcon Kind="{Binding PrestigeSummaryTierIcon, Converter={StaticResource IconKindConverter}}"
+                         Width="48" Height="48"
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="Main_Ico_SummaryIcon">
+            <icons:GameIcon.Foreground>
+              <SolidColorBrush Color="{Binding PrestigeSummaryTierColor}" />
+            </icons:GameIcon.Foreground>
+          </icons:GameIcon>
           <TextBlock FontSize="22" FontWeight="Bold"
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Main_Txt_SummaryTier">

@@ -225,6 +225,19 @@ public static class PrestigeShop
                 Category = PrestigeShopCategory.CurrencyAndStart,
                 Effect = new PrestigeEffect { GoldenScrewBonus = 0.25m }
             },
+
+            // ── Wiederholbar (Endgame PP-Senke) ──
+            new PrestigeShopItem
+            {
+                Id = "pp_income_repeatable",
+                NameKey = "PrestigeIncomeRepeatable",
+                DescriptionKey = "PrestigeIncomeRepeatableDesc",
+                Icon = "Refresh",
+                Cost = 10,  // Basiskosten, verdoppeln sich pro Kauf (10/20/40/80/160...)
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                IsRepeatable = true,
+                Effect = new PrestigeEffect { IncomeMultiplier = 0.05m }  // +5% pro Kauf
+            },
     ];
 
     /// <summary>

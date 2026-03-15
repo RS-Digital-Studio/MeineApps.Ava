@@ -248,9 +248,10 @@ public class Worker
 
     /// <summary>
     /// Anstellungskosten (level-skaliert). Wird beim Laden des Markts gesetzt.
-    /// Fallback auf Basis-Kosten wenn nicht gesetzt.
+    /// Persistiert damit nach App-Neustart der individuelle Preis (Talent, Persönlichkeit,
+    /// Spezialisierung, Effizienz) erhalten bleibt.
     /// </summary>
-    [JsonIgnore]
+    [JsonPropertyName("hiringCost")]
     public decimal HiringCost { get; set; }
 
     /// <summary>

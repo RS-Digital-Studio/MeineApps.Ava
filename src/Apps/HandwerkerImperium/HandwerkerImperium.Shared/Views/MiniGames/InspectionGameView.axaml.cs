@@ -25,6 +25,7 @@ public partial class InspectionGameView : UserControl
 
     // Cache fuer SKColor.Parse() - vermeidet String-Parsing pro Frame pro Zelle
     private readonly Dictionary<string, SKColor> _colorCache = new();
+    private InspectionCellData[] _cachedCells = [];
 
     public InspectionGameView()
     {
@@ -34,6 +35,21 @@ public partial class InspectionGameView : UserControl
         {
             StopRenderLoop();
             _renderer.Dispose();
+        };
+
+        // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _gameCanvas != null && _renderTimer == null)
+                    StartRenderLoop();
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
         };
 
         // AI-Hintergrund-Service initialisieren
@@ -125,7 +141,8 @@ public partial class InspectionGameView : UserControl
         if (_vm == null || _vm.Cells.Count == 0)
             return [];
 
-        var result = new InspectionCellData[_vm.Cells.Count];
+        if (_cachedCells.Length != _vm.Cells.Count)
+            _cachedCells = new InspectionCellData[_vm.Cells.Count];
         for (int i = 0; i < _vm.Cells.Count; i++)
         {
             var cell = _vm.Cells[i];
@@ -138,7 +155,7 @@ public partial class InspectionGameView : UserControl
                 _colorCache[bgColor] = skColor;
             }
 
-            result[i] = new InspectionCellData
+            _cachedCells[i] = new InspectionCellData
             {
                 Icon = cell.Icon,
                 IsDefect = cell.HasDefect,
@@ -149,7 +166,7 @@ public partial class InspectionGameView : UserControl
                 BackgroundColor = skColor
             };
         }
-        return result;
+        return _cachedCells;
     }
 
     /// <summary>

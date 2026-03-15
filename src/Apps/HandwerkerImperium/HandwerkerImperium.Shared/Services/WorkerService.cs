@@ -11,16 +11,21 @@ public sealed class WorkerService : IWorkerService
 {
     private readonly IGameStateService _gameState;
     private readonly IPrestigeService? _prestigeService;
+    private readonly IResearchService? _researchService;
     private readonly object _lock = new();
+
+    // Wiederverwendbare Liste für Kündigungen (vermeidet Allokation pro Tick)
+    private readonly List<(Workshop ws, Worker worker)> _workersToRemove = new();
 
     public event EventHandler<Worker>? WorkerMoodWarning;
     public event EventHandler<Worker>? WorkerQuit;
     public event EventHandler<Worker>? WorkerLevelUp;
 
-    public WorkerService(IGameStateService gameState, IPrestigeService? prestigeService = null)
+    public WorkerService(IGameStateService gameState, IPrestigeService? prestigeService = null, IResearchService? researchService = null)
     {
         _gameState = gameState;
         _prestigeService = prestigeService;
+        _researchService = researchService;
     }
 
     public bool HireWorker(Worker worker, WorkshopType workshop)
@@ -61,15 +66,19 @@ public sealed class WorkerService : IWorkerService
         lock (_lock)
         {
             var state = _gameState.State;
-            foreach (var ws in state.Workshops)
+            // Doppelte For-Schleife statt LINQ FirstOrDefault (konsistent mit GetWorker)
+            for (int i = 0; i < state.Workshops.Count; i++)
             {
-                var worker = ws.Workers.FirstOrDefault(w => w.Id == workerId);
-                if (worker != null)
+                var workers = state.Workshops[i].Workers;
+                for (int j = 0; j < workers.Count; j++)
                 {
-                    ws.Workers.Remove(worker);
-                    state.TotalWorkersFired++;
-                    state.InvalidateIncomeCache();
-                    return true;
+                    if (workers[j].Id == workerId)
+                    {
+                        workers.RemoveAt(j);
+                        state.TotalWorkersFired++;
+                        state.InvalidateIncomeCache();
+                        return true;
+                    }
                 }
             }
             return false;
@@ -105,16 +114,22 @@ public sealed class WorkerService : IWorkerService
 
             if (targetWs.Workers.Count >= targetWs.MaxWorkers) return false;
 
+            // Doppelte For-Schleife statt LINQ FirstOrDefault (konsistent mit GetWorker)
             Worker? worker = null;
             Workshop? sourceWs = null;
-            foreach (var ws in state.Workshops)
+            for (int i = 0; i < state.Workshops.Count; i++)
             {
-                worker = ws.Workers.FirstOrDefault(w => w.Id == workerId);
-                if (worker != null)
+                var ws = state.Workshops[i];
+                for (int j = 0; j < ws.Workers.Count; j++)
                 {
-                    sourceWs = ws;
-                    break;
+                    if (ws.Workers[j].Id == workerId)
+                    {
+                        worker = ws.Workers[j];
+                        sourceWs = ws;
+                        break;
+                    }
                 }
+                if (worker != null) break;
             }
 
             if (worker == null || sourceWs == null) return false;
@@ -215,7 +230,14 @@ public sealed class WorkerService : IWorkerService
         {
             var state = _gameState.State;
             var deltaHours = (decimal)deltaSeconds / 3600m;
-            var workersToRemove = new List<(Workshop ws, Worker worker)>();
+            _workersToRemove.Clear();
+
+            // Lookups VOR der Schleife cachen (vermeidet 50+ redundante Aufrufe/s bei vielen Workern)
+            var canteen = state.GetBuilding(BuildingType.Canteen);
+            var trainingCenter = state.GetBuilding(BuildingType.TrainingCenter);
+            decimal moodDecayReduction = _prestigeService?.GetMoodDecayReduction() ?? 0m;
+            decimal guildFatigueReduction = state.GuildMembership?.ResearchFatigueReduction ?? 0m;
+            decimal guildTrainingSpeedBonus = state.GuildMembership?.ResearchTrainingSpeedBonus ?? 0m;
 
             foreach (var ws in state.Workshops)
             {
@@ -223,18 +245,18 @@ public sealed class WorkerService : IWorkerService
                 {
                     if (worker.IsResting)
                     {
-                        UpdateResting(worker, deltaHours, state);
+                        UpdateResting(worker, deltaHours, canteen);
                     }
                     else if (worker.IsTraining)
                     {
-                        UpdateTraining(worker, deltaHours, state);
+                        UpdateTraining(worker, deltaHours, trainingCenter, guildTrainingSpeedBonus);
                     }
                     else
                     {
-                        UpdateWorking(worker, deltaHours, state);
+                        UpdateWorking(worker, deltaHours, moodDecayReduction, guildFatigueReduction, canteen);
                     }
 
-                    // Check quit conditions
+                    // Kündigungsbedingungen prüfen
                     if (worker.WillQuit)
                     {
                         if (worker.QuitDeadline == null)
@@ -244,7 +266,7 @@ public sealed class WorkerService : IWorkerService
                         }
                         else if (DateTime.UtcNow >= worker.QuitDeadline)
                         {
-                            workersToRemove.Add((ws, worker));
+                            _workersToRemove.Add((ws, worker));
                         }
                     }
                     else
@@ -254,8 +276,8 @@ public sealed class WorkerService : IWorkerService
                 }
             }
 
-            // Remove workers who quit
-            foreach (var (ws, worker) in workersToRemove)
+            // Gekündigte Worker entfernen
+            foreach (var (ws, worker) in _workersToRemove)
             {
                 ws.Workers.Remove(worker);
                 state.TotalWorkersFired++;
@@ -264,15 +286,13 @@ public sealed class WorkerService : IWorkerService
         }
     }
 
-    private void UpdateResting(Worker worker, decimal deltaHours, GameState state)
+    private static void UpdateResting(Worker worker, decimal deltaHours, Building? canteen)
     {
-        // Canteen-Gebäude: Erholungszeit-Reduktion
-        var canteen = state.GetBuilding(BuildingType.Canteen);
-        decimal restMultiplier = 1m + (canteen?.RestTimeReduction ?? 0m); // z.B. 1.5 = 50% schneller
+        // Canteen-Gebäude: Erholungszeit-Reduktion (gecacht übergeben)
+        decimal restMultiplier = 1m + (canteen?.RestTimeReduction ?? 0m);
 
         // Fatigue-Erholung (schneller mit Canteen + Ausrüstung)
         decimal fatigueRecovery = (100m / worker.RestHoursNeeded) * deltaHours * restMultiplier;
-        // Ausrüstungs-Bonus: FatigueReduction beschleunigt auch Erholung
         var equipFatigueReduction = worker.EquippedItem?.FatigueReduction ?? 0m;
         if (equipFatigueReduction > 0)
             fatigueRecovery *= (1m + equipFatigueReduction);
@@ -280,7 +300,6 @@ public sealed class WorkerService : IWorkerService
 
         // Stimmungs-Erholung beim Ruhen (Canteen-Bonus + Ausrüstung)
         decimal moodRecovery = 1m + (canteen?.MoodRecoveryPerHour ?? 0m);
-        // Ausrüstungs-Bonus: MoodBonus verbessert auch Stimmungserholung
         var equipMoodBonus = worker.EquippedItem?.MoodBonus ?? 0m;
         if (equipMoodBonus > 0)
             moodRecovery *= (1m + equipMoodBonus);
@@ -294,7 +313,7 @@ public sealed class WorkerService : IWorkerService
         }
     }
 
-    private void UpdateTraining(Worker worker, decimal deltaHours, GameState state)
+    private void UpdateTraining(Worker worker, decimal deltaHours, Building? trainingCenter, decimal guildTrainingSpeedBonus)
     {
         // Training-Kosten pro Tick
         var trainingCost = worker.TrainingCostPerHour * deltaHours;
@@ -307,13 +326,10 @@ public sealed class WorkerService : IWorkerService
         }
         _gameState.TrySpendMoney(trainingCost);
 
-        // TrainingCenter-Gebäude + Research: Trainings-Geschwindigkeit
-        var trainingCenter = state.GetBuilding(BuildingType.TrainingCenter);
+        // TrainingCenter-Gebäude + Gilden-Forschung: Trainings-Geschwindigkeit (gecacht übergeben)
         decimal trainingMultiplier = trainingCenter?.TrainingSpeedMultiplier ?? 1m;
-
-        // Gilden-Forschung: Training-Geschwindigkeit (+25%)
-        if (state.GuildMembership?.ResearchTrainingSpeedBonus > 0)
-            trainingMultiplier *= (1m + state.GuildMembership.ResearchTrainingSpeedBonus);
+        if (guildTrainingSpeedBonus > 0)
+            trainingMultiplier *= (1m + guildTrainingSpeedBonus);
 
         switch (worker.ActiveTrainingType)
         {
@@ -334,6 +350,15 @@ public sealed class WorkerService : IWorkerService
         if (equipFatReduction > 0)
             trainingFatigueRate *= (1m - equipFatReduction);
         worker.Fatigue = Math.Min(100m, worker.Fatigue + trainingFatigueRate * deltaHours);
+
+        // Auto-Rest bei 100% Erschöpfung (identisch mit UpdateWorking)
+        if (worker.Fatigue >= 100m)
+        {
+            worker.IsTraining = false;
+            worker.TrainingStartedAt = null;
+            worker.IsResting = true;
+            worker.RestStartedAt = DateTime.UtcNow;
+        }
     }
 
     private void UpdateEfficiencyTraining(Worker worker, decimal deltaHours, decimal trainingMultiplier)
@@ -393,28 +418,23 @@ public sealed class WorkerService : IWorkerService
         }
     }
 
-    private void UpdateWorking(Worker worker, decimal deltaHours, GameState state)
+    private void UpdateWorking(Worker worker, decimal deltaHours, decimal moodDecayReduction, decimal guildFatigueReduction, Building? canteen)
     {
-        // Stimmungsabfall beim Arbeiten (mit Prestige-Shop MoodDecayReduction)
+        // Stimmungsabfall beim Arbeiten (gecachte Prestige-Shop MoodDecayReduction)
         var moodDecay = worker.MoodDecayPerHour;
-        if (_prestigeService != null)
-        {
-            var reduction = _prestigeService.GetMoodDecayReduction();
-            if (reduction > 0)
-                moodDecay *= (1m - reduction);
-        }
+        if (moodDecayReduction > 0)
+            moodDecay *= (1m - moodDecayReduction);
 
-        // Gilden-Forschung: Ermüdungs-/Stimmungs-Reduktion (-20%)
-        if (state.GuildMembership?.ResearchFatigueReduction > 0)
-            moodDecay *= (1m - state.GuildMembership.ResearchFatigueReduction);
+        // Gilden-Forschung: Ermüdungs-/Stimmungs-Reduktion (gecacht übergeben)
+        if (guildFatigueReduction > 0)
+            moodDecay *= (1m - guildFatigueReduction);
 
         // Ausrüstungs-Bonus: MoodBonus reduziert Stimmungsabfall
         var equipMoodBonus = worker.EquippedItem?.MoodBonus ?? 0m;
         if (equipMoodBonus > 0)
             moodDecay *= (1m - equipMoodBonus);
 
-        // Canteen-Gebäude: Passive Stimmungs-Erholung auch beim Arbeiten
-        var canteen = state.GetBuilding(BuildingType.Canteen);
+        // Canteen-Gebäude: Passive Stimmungs-Erholung auch beim Arbeiten (gecacht übergeben)
         decimal passiveMoodRecovery = canteen?.MoodRecoveryPerHour ?? 0m;
         decimal netMoodChange = moodDecay - passiveMoodRecovery;
 
@@ -423,11 +443,10 @@ public sealed class WorkerService : IWorkerService
         else
             worker.Mood = Math.Min(100m, worker.Mood + Math.Abs(netMoodChange) * deltaHours);
 
-        // Fatigue increases while working (mit Gilden-Forschung Reduktion + Ausrüstung)
+        // Fatigue steigt beim Arbeiten (gecachte Gilden-Forschung Reduktion + Ausrüstung)
         var fatigueRate = worker.FatiguePerHour;
-        if (state.GuildMembership?.ResearchFatigueReduction > 0)
-            fatigueRate *= (1m - state.GuildMembership.ResearchFatigueReduction);
-        // Ausrüstungs-Bonus: FatigueReduction verlangsamt Ermüdung
+        if (guildFatigueReduction > 0)
+            fatigueRate *= (1m - guildFatigueReduction);
         var equipFatigueReduction = worker.EquippedItem?.FatigueReduction ?? 0m;
         if (equipFatigueReduction > 0)
             fatigueRate *= (1m - equipFatigueReduction);
@@ -469,14 +488,18 @@ public sealed class WorkerService : IWorkerService
         lock (_lock)
         {
             var state = _gameState.State;
+            var effects = _researchService?.GetTotalEffects();
+            bool hasHeadhunter = effects?.UnlocksHeadhunter ?? false;
+            bool hasSTier = effects?.UnlocksSTierWorkers ?? false;
+
             if (state.WorkerMarket == null)
             {
                 state.WorkerMarket = new WorkerMarketPool();
-                state.WorkerMarket.GeneratePool(state.PlayerLevel, state.Prestige?.TotalPrestigeCount ?? 0);
+                state.WorkerMarket.GeneratePool(state.PlayerLevel, state.Prestige?.TotalPrestigeCount ?? 0, hasHeadhunter, hasSTier);
             }
             else if (state.WorkerMarket.NeedsRotation)
             {
-                state.WorkerMarket.GeneratePool(state.PlayerLevel, state.Prestige?.TotalPrestigeCount ?? 0);
+                state.WorkerMarket.GeneratePool(state.PlayerLevel, state.Prestige?.TotalPrestigeCount ?? 0, hasHeadhunter, hasSTier);
             }
             return state.WorkerMarket;
         }
@@ -488,10 +511,14 @@ public sealed class WorkerService : IWorkerService
         {
             var state = _gameState.State;
             state.WorkerMarket ??= new WorkerMarketPool();
+            var effects = _researchService?.GetTotalEffects();
+            bool hasHeadhunter = effects?.UnlocksHeadhunter ?? false;
+            bool hasSTier = effects?.UnlocksSTierWorkers ?? false;
+
             // FreeRefreshUsed-Flag bewahren - GeneratePool setzt ihn zurück
             // (nur bei Rotation soll er zurückgesetzt werden, nicht bei manuellem Refresh)
             var freeRefreshUsed = state.WorkerMarket.FreeRefreshUsedThisRotation;
-            state.WorkerMarket.GeneratePool(state.PlayerLevel, state.Prestige?.TotalPrestigeCount ?? 0);
+            state.WorkerMarket.GeneratePool(state.PlayerLevel, state.Prestige?.TotalPrestigeCount ?? 0, hasHeadhunter, hasSTier);
             state.WorkerMarket.FreeRefreshUsedThisRotation = freeRefreshUsed;
             return state.WorkerMarket;
         }
@@ -501,9 +528,18 @@ public sealed class WorkerService : IWorkerService
     {
         lock (_lock)
         {
-            return _gameState.State.Workshops
-                .SelectMany(w => w.Workers)
-                .FirstOrDefault(w => w.Id == id);
+            // Doppelte For-Schleife statt LINQ SelectMany (vermeidet Enumerator-Allokation)
+            var workshops = _gameState.State.Workshops;
+            for (int i = 0; i < workshops.Count; i++)
+            {
+                var workers = workshops[i].Workers;
+                for (int j = 0; j < workers.Count; j++)
+                {
+                    if (workers[j].Id == id)
+                        return workers[j];
+                }
+            }
+            return null;
         }
     }
 }

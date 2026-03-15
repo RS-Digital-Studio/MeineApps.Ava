@@ -4,7 +4,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.SeasonalEventView"
-             x:DataType="vm:SeasonalEventViewModel">
+             x:DataType="vm:SeasonalEventViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="SeasonalEvent_Grid_Root">
@@ -96,7 +97,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="SeasonalEvent_Border_ShopIconBg"
                   Background="{StaticResource CraftPrimaryBrush}">
-            <icons:GameIcon Kind="StorefrontOutline" Width="18" Height="18" Foreground="White"
+            <icons:GameIcon Kind="StorefrontOutline" Width="18" Height="18" Foreground="{DynamicResource PrimaryContrastBrush}"
                              AutomationProperties.AutomationId="SeasonalEvent_Icon_ShopHeader" />
           </Border>
           <TextBlock Text="{loc:Translate EventShop}"

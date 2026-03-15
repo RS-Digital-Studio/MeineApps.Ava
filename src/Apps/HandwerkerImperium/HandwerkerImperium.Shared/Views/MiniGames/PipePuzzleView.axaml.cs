@@ -20,12 +20,28 @@ public partial class PipePuzzleView : UserControl
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
     private SKCanvasView? _puzzleCanvas;
+    private PipeTileData[] _cachedTiles = [];
 
     public PipePuzzleView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => StopRenderLoop();
+
+        // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _puzzleCanvas != null && _renderTimer == null)
+                    StartRenderLoop();
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
 
         // AI-Hintergrund-Service initialisieren
         var assetService = App.Services?.GetService<IGameAssetService>();
@@ -98,12 +114,13 @@ public partial class PipePuzzleView : UserControl
         // LocalClipBounds statt info.Width/Height fuer korrekte DPI-Skalierung
         _lastBounds = canvas.LocalClipBounds;
 
-        // Tile-Daten aus ViewModel extrahieren
-        var tiles = new PipeTileData[_vm.Tiles.Count];
+        // Tile-Daten aus ViewModel extrahieren (gecachtes Array, keine Allokation pro Frame)
+        if (_cachedTiles.Length != _vm.Tiles.Count)
+            _cachedTiles = new PipeTileData[_vm.Tiles.Count];
         for (int i = 0; i < _vm.Tiles.Count; i++)
         {
             var t = _vm.Tiles[i];
-            tiles[i] = new PipeTileData
+            _cachedTiles[i] = new PipeTileData
             {
                 PipeType = (int)t.PipeType,
                 Rotation = t.Rotation,
@@ -115,7 +132,7 @@ public partial class PipePuzzleView : UserControl
             };
         }
 
-        _renderer.Render(canvas, _lastBounds, tiles, _vm.GridCols, _vm.GridRows,
+        _renderer.Render(canvas, _lastBounds, _cachedTiles, _vm.GridCols, _vm.GridRows,
             _vm.IsPuzzleSolved, _vm.MaxConnectionDistance, deltaTime);
     }
 

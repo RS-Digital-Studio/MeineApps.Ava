@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Services;
@@ -82,7 +83,8 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
 
     public async Task EnsureAuthenticatedAsync()
     {
-        await _authLock.WaitAsync();
+        if (!await _authLock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            throw new InvalidOperationException("Firebase Auth-Lock Timeout");
         try
         {
             // Token noch gültig?
@@ -99,17 +101,17 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                 _refreshToken = savedRefreshToken;
 
                 // Token refreshen (mit Retry bei Netzwerk-Problemen)
-                if (await TryRefreshTokenAsync())
+                if (await TryRefreshTokenAsync().ConfigureAwait(false))
                 {
                     // auth_to_player Mapping aktualisieren (fire-and-forget)
-                    _ = SyncAuthToPlayerMappingAsync();
+                    SyncAuthToPlayerMappingAsync().SafeFireAndForget();
                     return;
                 }
 
-                await Task.Delay(500);
-                if (await TryRefreshTokenAsync())
+                await Task.Delay(500).ConfigureAwait(false);
+                if (await TryRefreshTokenAsync().ConfigureAwait(false))
                 {
-                    _ = SyncAuthToPlayerMappingAsync();
+                    SyncAuthToPlayerMappingAsync().SafeFireAndForget();
                     return;
                 }
 
@@ -120,10 +122,10 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             }
 
             // Erster Start ohne gespeicherten Account → neuen anonymen Account erstellen
-            await SignUpAnonymouslyAsync();
+            await SignUpAnonymouslyAsync().ConfigureAwait(false);
 
             // auth_to_player Mapping schreiben (fire-and-forget)
-            _ = SyncAuthToPlayerMappingAsync();
+            SyncAuthToPlayerMappingAsync().SafeFireAndForget();
         }
         finally
         {
@@ -136,10 +138,10 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
         var requestBody = JsonSerializer.Serialize(new { returnSecureToken = true });
         var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync(AuthUrl + ApiKey, content);
+        var response = await _httpClient.PostAsync(AuthUrl + ApiKey, content).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         var authResponse = JsonSerializer.Deserialize<FirebaseAuthResponse>(json);
 
         if (authResponse == null)
@@ -160,14 +162,15 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
     {
         try
         {
-            var requestBody = $"grant_type=refresh_token&refresh_token={_refreshToken}";
+            // Sicherheit: Refresh-Token URL-kodieren (kann Sonderzeichen enthalten)
+            var requestBody = $"grant_type=refresh_token&refresh_token={Uri.EscapeDataString(_refreshToken ?? "")}";
             var content = new StringContent(requestBody, Encoding.UTF8, "application/x-www-form-urlencoded");
 
             var response = await _httpClient.PostAsync(TokenRefreshUrl + ApiKey, content);
             if (!response.IsSuccessStatusCode)
                 return false;
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var tokenResponse = JsonSerializer.Deserialize<FirebaseTokenResponse>(json);
 
             if (tokenResponse == null)
@@ -226,15 +229,15 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
     {
         try
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
 
-            var response = await _httpClient.GetAsync(url);
+            var response = await _httpClient.GetAsync(url).ConfigureAwait(false);
 
             // 401 → Token refreshen und nochmal versuchen
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                await ForceRefreshAndRetryAuth();
+                await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
                 response = await _httpClient.GetAsync(url);
             }
@@ -245,7 +248,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (string.IsNullOrEmpty(json) || json == "null")
                 return null;
 
@@ -260,59 +263,74 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
         }
     }
 
-    public async Task SetAsync<T>(string path, T data)
+    public async Task<bool> SetAsync<T>(string path, T data)
     {
         try
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
             var json = JsonSerializer.Serialize(data);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PutAsync(url, content);
+            var response = await _httpClient.PutAsync(url, content).ConfigureAwait(false);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                await ForceRefreshAndRetryAuth();
+                await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
+                content = new StringContent(json, Encoding.UTF8, "application/json");
                 response = await _httpClient.PutAsync(url, content);
             }
 
-            IsOnline = response.IsSuccessStatusCode;
+            if (!response.IsSuccessStatusCode)
+            {
+                IsOnline = false;
+                return false;
+            }
+
+            IsOnline = true;
+            return true;
         }
         catch
         {
-            // Netzwerkfehler still behandelt
             IsOnline = false;
+            return false;
         }
     }
 
-    public async Task UpdateAsync(string path, Dictionary<string, object> updates)
+    public async Task<bool> UpdateAsync(string path, Dictionary<string, object> updates)
     {
         try
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
             var json = JsonSerializer.Serialize(updates);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var request = new HttpRequestMessage(new HttpMethod("PATCH"), url) { Content = content };
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                await ForceRefreshAndRetryAuth();
+                await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
                 request = new HttpRequestMessage(new HttpMethod("PATCH"), url) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
                 response = await _httpClient.SendAsync(request);
             }
 
-            IsOnline = response.IsSuccessStatusCode;
+            if (!response.IsSuccessStatusCode)
+            {
+                IsOnline = false;
+                return false;
+            }
+
+            IsOnline = true;
+            return true;
         }
         catch
         {
-            // Netzwerkfehler still behandelt
             IsOnline = false;
+            return false;
         }
     }
 
@@ -320,16 +338,16 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
     {
         try
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
             var json = JsonSerializer.Serialize(data);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync(url, content);
+            var response = await _httpClient.PostAsync(url, content).ConfigureAwait(false);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                await ForceRefreshAndRetryAuth();
+                await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
                 response = await _httpClient.PostAsync(url, content);
             }
@@ -341,7 +359,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             }
 
             IsOnline = true;
-            var responseJson = await response.Content.ReadAsStringAsync();
+            var responseJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var result = JsonSerializer.Deserialize<Dictionary<string, string>>(responseJson);
             return result?.GetValueOrDefault("name");
         }
@@ -353,28 +371,35 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
         }
     }
 
-    public async Task DeleteAsync(string path)
+    public async Task<bool> DeleteAsync(string path)
     {
         try
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
 
-            var response = await _httpClient.DeleteAsync(url);
+            var response = await _httpClient.DeleteAsync(url).ConfigureAwait(false);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                await ForceRefreshAndRetryAuth();
+                await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}";
                 response = await _httpClient.DeleteAsync(url);
             }
 
-            IsOnline = response.IsSuccessStatusCode;
+            if (!response.IsSuccessStatusCode)
+            {
+                IsOnline = false;
+                return false;
+            }
+
+            IsOnline = true;
+            return true;
         }
         catch
         {
-            // Netzwerkfehler still behandelt
             IsOnline = false;
+            return false;
         }
     }
 
@@ -382,15 +407,15 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
     {
         try
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             var url = $"{DatabaseUrl}/{path}.json?auth={_idToken}&{queryParams}";
 
-            var response = await _httpClient.GetAsync(url);
+            var response = await _httpClient.GetAsync(url).ConfigureAwait(false);
 
             // 401 → Token refreshen und nochmal versuchen
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                await ForceRefreshAndRetryAuth();
+                await ForceRefreshAndRetryAuth().ConfigureAwait(false);
                 url = $"{DatabaseUrl}/{path}.json?auth={_idToken}&{queryParams}";
                 response = await _httpClient.GetAsync(url);
             }
@@ -401,7 +426,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (string.IsNullOrEmpty(json) || json == "null")
                 return null;
 
@@ -428,7 +453,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
 
         try
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false); // Refresh-Versuch
         }
         catch (InvalidOperationException)
         {

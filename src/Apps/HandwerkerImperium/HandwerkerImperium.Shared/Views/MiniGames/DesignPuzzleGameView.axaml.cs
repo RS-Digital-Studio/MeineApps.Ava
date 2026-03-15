@@ -21,12 +21,28 @@ public partial class DesignPuzzleGameView : UserControl
     private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
+    private DesignPuzzleRenderer.RoomSlotData[] _cachedSlotData = [];
 
     public DesignPuzzleGameView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => StopRenderLoop();
+
+        // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _gameCanvas != null && _renderTimer == null)
+                    StartRenderLoop();
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
 
         // AI-Hintergrund-Service initialisieren
         var assetService = App.Services?.GetService<IGameAssetService>();
@@ -168,12 +184,13 @@ public partial class DesignPuzzleGameView : UserControl
         if (_vm == null) return [];
 
         var vmSlots = _vm.Slots;
-        var data = new DesignPuzzleRenderer.RoomSlotData[vmSlots.Count];
+        if (_cachedSlotData.Length != vmSlots.Count)
+            _cachedSlotData = new DesignPuzzleRenderer.RoomSlotData[vmSlots.Count];
 
         for (int i = 0; i < vmSlots.Count; i++)
         {
             var s = vmSlots[i];
-            data[i] = new DesignPuzzleRenderer.RoomSlotData
+            _cachedSlotData[i] = new DesignPuzzleRenderer.RoomSlotData
             {
                 HintColor = ParseHexColor(s.HintColor),
                 DisplayLabel = s.DisplayLabel,
@@ -186,7 +203,7 @@ public partial class DesignPuzzleGameView : UserControl
             };
         }
 
-        return data;
+        return _cachedSlotData;
     }
 
     /// <summary>

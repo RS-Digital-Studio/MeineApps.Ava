@@ -2174,7 +2174,7 @@
     <value>Viti dorate (Video)</value>
   </data>
   <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
-    <value>8 viti dorate per un video</value>
+    <value>10 viti dorate per un video</value>
   </data>
   <data name="ShopGoldenScrews50Name" xml:space="preserve">
     <value>Sacchetto di viti dorate</value>
@@ -2326,6 +2326,12 @@
   </data>
   <data name="ResearchFinishedFree" xml:space="preserve">
     <value>Ricerca completata gratis!</value>
+  </data>
+  <data name="ResearchSpeedUp" xml:space="preserve">
+    <value>Ricerca accelerata</value>
+  </data>
+  <data name="ResearchSpeedUpDesc" xml:space="preserve">
+    <value>Tempo di ricerca ridotto del 50%!</value>
   </data>
   <data name="WatchAdToRetry" xml:space="preserve">
     <value>Riprova (Video)</value>
@@ -2797,6 +2803,12 @@
   </data>
   <data name="PrestigeGoldenScrew25Desc" xml:space="preserve">
     <value>+25% Viti Dorate da tutte le fonti</value>
+  </data>
+  <data name="PrestigeIncomeRepeatable" xml:space="preserve">
+    <value>Fondo Espansione</value>
+  </data>
+  <data name="PrestigeIncomeRepeatableDesc" xml:space="preserve">
+    <value>+5% entrate per acquisto (cumulabile, costo crescente)</value>
   </data>
   <data name="PressBackAgainToExit" xml:space="preserve">
     <value>Premi di nuovo per uscire</value>
@@ -3472,7 +3484,7 @@
   <data name="RescueStreak" xml:space="preserve"><value>Salva la serie ({0} viti)</value></data>
   <data name="StreakInDanger" xml:space="preserve"><value>La tua serie di {0} giorni è in pericolo!</value></data>
   <data name="StreakRescued" xml:space="preserve"><value>Serie salvata!</value></data>
-  <data name="StreakRescueCost" xml:space="preserve"><value>5 Viti dorate</value></data>
+  <data name="StreakRescueCost" xml:space="preserve"><value>{0} Viti dorate</value></data>
   <data name="CloudSaveNotAvailable" xml:space="preserve"><value>Salvataggio cloud non disponibile su questo dispositivo</value></data>
   <data name="CloudRestoreFailed" xml:space="preserve"><value>Impossibile ripristinare dal cloud</value></data>
   <data name="RestoreFromCloudConfirmation" xml:space="preserve"><value>Questo sostituirà il tuo salvataggio attuale con quello del cloud. Sei sicuro?</value></data>
@@ -4522,6 +4534,42 @@
   </data>
   <data name="PrestigeResetNote" xml:space="preserve">
     <value>Livello, denaro e laboratori verranno ripristinati.</value>
+  </data>
+  <data name="StartMoney" xml:space="preserve">
+    <value>Denaro iniziale</value>
+  </data>
+  <data name="PrestigeLossLevel" xml:space="preserve">
+    <value>Livello e XP</value>
+  </data>
+  <data name="PrestigeLossMoney" xml:space="preserve">
+    <value>Denaro e ordini</value>
+  </data>
+  <data name="PrestigeLossWorkshops" xml:space="preserve">
+    <value>Laboratori (rimane solo Falegnameria)</value>
+  </data>
+  <data name="PrestigeLossResearch" xml:space="preserve">
+    <value>Ricerca</value>
+  </data>
+  <data name="PrestigeLossTools" xml:space="preserve">
+    <value>Strumenti del maestro</value>
+  </data>
+  <data name="PrestigeLossBuildings" xml:space="preserve">
+    <value>Edifici</value>
+  </data>
+  <data name="PrestigeLossEquipment" xml:space="preserve">
+    <value>Equipaggiamento</value>
+  </data>
+  <data name="PrestigeLossManagers" xml:space="preserve">
+    <value>Capomastri</value>
+  </data>
+  <data name="PrestigeLossCrafting" xml:space="preserve">
+    <value>Inventario artigianato e ordini</value>
+  </data>
+  <data name="PrestigeTimingWarning" xml:space="preserve">
+    <value>Sei già livello {0} - al livello {1} potresti fare {2} (più PP)!</value>
+  </data>
+  <data name="PrestigeNearNextTier" xml:space="preserve">
+    <value>Solo {0} livelli in più fino a {1} (livello {2}) - continua a giocare!</value>
   </data>
   <data name="PrestigeLosesLevel" xml:space="preserve">
     <value>Livello giocatore → 1</value>

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
@@ -21,6 +22,7 @@ public sealed class GuildService : IGuildService
     private readonly IGameStateService _gameStateService;
     private readonly IFirebaseService _firebaseService;
     private readonly IPreferencesService _preferences;
+    private readonly SemaphoreSlim _lock = new(1, 1);
 
     public event Action? GuildUpdated;
     public string? PlayerName { get; private set; }
@@ -35,8 +37,11 @@ public sealed class GuildService : IGuildService
         _firebaseService = firebaseService;
         _preferences = preferences;
 
-        // Spielernamen aus Preferences laden
-        PlayerName = _preferences.Get<string?>(PrefKeyPlayerName, null);
+        // Spielernamen aus Preferences laden (mit Längenbegrenzung für Legacy-Daten)
+        var savedName = _preferences.Get<string?>(PrefKeyPlayerName, null);
+        if (!string.IsNullOrEmpty(savedName) && savedName.Length > 30)
+            savedName = savedName[..30];
+        PlayerName = savedName;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -203,6 +208,11 @@ public sealed class GuildService : IGuildService
             var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid) || string.IsNullOrWhiteSpace(name)) return false;
 
+            // Sicherheit: Name trimmen und auf max. 30 Zeichen begrenzen
+            name = name.Trim();
+            if (name.Length > 30) name = name[..30];
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
             // Schon in einer Gilde?
             var state = _gameStateService.State;
             if (state.GuildMembership != null) return false;
@@ -212,7 +222,7 @@ public sealed class GuildService : IGuildService
 
             var guildData = new FirebaseGuildData
             {
-                Name = name.Trim(),
+                Name = name,
                 Icon = icon,
                 Color = color,
                 Level = 1,
@@ -280,8 +290,10 @@ public sealed class GuildService : IGuildService
             // Gilden-Daten prüfen
             var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
             if (guildData == null) return false;
-            // MaxMembers der Ziel-Gilde verwenden (nicht eigene Forschungs-Boni)
-            if (guildData.MemberCount >= guildData.MaxMembers) return false;
+
+            // Tatsächliche Mitgliederzahl prüfen (Race-Condition-frei)
+            var actualCount = await CountAndSyncMemberCountAsync(guildId);
+            if (actualCount >= guildData.MaxMembers) return false;
 
             var now = DateTime.UtcNow;
 
@@ -297,17 +309,14 @@ public sealed class GuildService : IGuildService
             };
             await _firebaseService.SetAsync($"guild_members/{guildId}/{uid}", member);
 
-            // MemberCount erhöhen
-            await _firebaseService.UpdateAsync($"guilds/{guildId}", new Dictionary<string, object>
-            {
-                ["memberCount"] = guildData.MemberCount + 1
-            });
+            // MemberCount aus tatsächlicher Mitgliederzahl synchronisieren
+            var newCount = await CountAndSyncMemberCountAsync(guildId);
 
             // Schnell-Lookup
             await _firebaseService.SetAsync($"player_guilds/{uid}", guildId);
 
             // Lokalen Cache aktualisieren
-            guildData.MemberCount++;
+            guildData.MemberCount = newCount;
             UpdateLocalCache(guildId, guildData);
 
             // Aus verfügbaren Spielern entfernen
@@ -339,30 +348,19 @@ public sealed class GuildService : IGuildService
             // Mitglied entfernen
             await _firebaseService.DeleteAsync($"guild_members/{guildId}/{uid}");
 
-            // MemberCount verringern
-            var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
-            if (guildData != null)
+            // MemberCount aus tatsächlicher Mitgliederzahl synchronisieren
+            var newCount = await CountAndSyncMemberCountAsync(guildId);
+            if (newCount == 0)
             {
-                var newCount = Math.Max(0, guildData.MemberCount - 1);
-                if (newCount == 0)
-                {
-                    // Leere Gilde löschen (Member-Ordner ist bereits leer nach eigenem DELETE)
-                    await _firebaseService.DeleteAsync($"guilds/{guildId}");
+                // Leere Gilde löschen
+                await _firebaseService.DeleteAsync($"guilds/{guildId}");
 
-                    // Invite-Code aufräumen (falls vorhanden)
-                    var code = await _firebaseService.GetAsync<string>($"guild_invite_codes/{guildId}");
-                    if (!string.IsNullOrEmpty(code))
-                    {
-                        await _firebaseService.DeleteAsync($"invite_code_to_guild/{code}");
-                        await _firebaseService.DeleteAsync($"guild_invite_codes/{guildId}");
-                    }
-                }
-                else
+                // Invite-Code aufräumen (falls vorhanden)
+                var code = await _firebaseService.GetAsync<string>($"guild_invite_codes/{guildId}");
+                if (!string.IsNullOrEmpty(code))
                 {
-                    await _firebaseService.UpdateAsync($"guilds/{guildId}", new Dictionary<string, object>
-                    {
-                        ["memberCount"] = newCount
-                    });
+                    await _firebaseService.DeleteAsync($"invite_code_to_guild/{code}");
+                    await _firebaseService.DeleteAsync($"guild_invite_codes/{guildId}");
                 }
             }
 
@@ -387,15 +385,17 @@ public sealed class GuildService : IGuildService
 
     public async Task<bool> ContributeAsync(decimal amount)
     {
+        var uid = _firebaseService.PlayerId;
+        if (string.IsNullOrEmpty(uid)) return false;
+
+        var state = _gameStateService.State;
+        var membership = state.GuildMembership;
+        if (membership == null || amount <= 0) return false;
+
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return false; // Timeout: Lock nicht erhalten
         try
         {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid)) return false;
-
-            var state = _gameStateService.State;
-            var membership = state.GuildMembership;
-            if (membership == null || amount <= 0) return false;
-
             // Spieler muss genug Geld haben
             if (!_gameStateService.TrySpendMoney(amount)) return false;
 
@@ -404,15 +404,24 @@ public sealed class GuildService : IGuildService
 
             // Aktuelle Gilden-Daten laden für atomisches Update
             var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
-            if (guildData == null) return false;
+            if (guildData == null)
+            {
+                // Rollback: Geld zurückgeben
+                _gameStateService.AddMoney(amount);
+                return false;
+            }
 
-            // Wochenziel-Fortschritt aktualisieren
-            await _firebaseService.UpdateAsync($"guilds/{guildId}", new Dictionary<string, object>
+            // Wochenziel-Fortschritt aktualisieren - bei Fehler Rollback
+            if (!await _firebaseService.UpdateAsync($"guilds/{guildId}", new Dictionary<string, object>
             {
                 ["weeklyProgress"] = guildData.WeeklyProgress + contributionLong
-            });
+            }))
+            {
+                _gameStateService.AddMoney(amount);
+                return false;
+            }
 
-            // Spieler-Beitrag aktualisieren
+            // Spieler-Beitrag aktualisieren (bei Fehler akzeptabel, nur Anzeige-Wert)
             var memberData = await _firebaseService.GetAsync<FirebaseGuildMember>($"guild_members/{guildId}/{uid}");
             if (memberData != null)
             {
@@ -428,9 +437,9 @@ public sealed class GuildService : IGuildService
 
             return true;
         }
-        catch
+        finally
         {
-            return false;
+            _lock.Release();
         }
     }
 
@@ -532,7 +541,12 @@ public sealed class GuildService : IGuildService
 
     public void SetPlayerName(string name)
     {
-        PlayerName = name.Trim();
+        // Sicherheit: Name trimmen und auf max. 30 Zeichen begrenzen
+        name = name.Trim();
+        if (name.Length > 30) name = name[..30];
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        PlayerName = name;
         _preferences.Set(PrefKeyPlayerName, PlayerName);
 
         // GameState synchron halten (für Chat, Friends, Gifts)
@@ -540,7 +554,7 @@ public sealed class GuildService : IGuildService
         _gameStateService.MarkDirty();
 
         // Firebase-Member-Eintrag asynchron aktualisieren
-        _ = UpdatePlayerNameInFirebaseAsync();
+        UpdatePlayerNameInFirebaseAsync().SafeFireAndForget();
     }
 
     private async Task UpdatePlayerNameInFirebaseAsync()
@@ -745,7 +759,7 @@ public sealed class GuildService : IGuildService
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         Span<char> code = stackalloc char[6];
         for (int i = 0; i < 6; i++)
-            code[i] = chars[Random.Shared.Next(chars.Length)];
+            code[i] = chars[System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, chars.Length)];
         return new string(code);
     }
 
@@ -953,16 +967,8 @@ public sealed class GuildService : IGuildService
             // Schnell-Lookup des Ziels entfernen
             await _firebaseService.DeleteAsync($"player_guilds/{targetUid}");
 
-            // MemberCount verringern
-            var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
-            if (guildData != null)
-            {
-                var newCount = Math.Max(0, guildData.MemberCount - 1);
-                await _firebaseService.UpdateAsync($"guilds/{guildId}", new Dictionary<string, object>
-                {
-                    ["memberCount"] = newCount
-                });
-            }
+            // MemberCount aus tatsächlicher Mitgliederzahl synchronisieren
+            await CountAndSyncMemberCountAsync(guildId);
 
             GuildUpdated?.Invoke();
             return true;
@@ -1057,6 +1063,36 @@ public sealed class GuildService : IGuildService
     // ═══════════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zählt die tatsächliche Mitgliederzahl aus guild_members (Race-Condition-frei).
+    /// Aktualisiert memberCount in guilds/{guildId} wenn abweichend.
+    /// </summary>
+    private async Task<int> CountAndSyncMemberCountAsync(string guildId)
+    {
+        try
+        {
+            var json = await _firebaseService.QueryAsync($"guild_members/{guildId}", "shallow=true");
+            var count = 0;
+            if (!string.IsNullOrEmpty(json) && json != "null")
+            {
+                var members = JsonSerializer.Deserialize<Dictionary<string, bool>>(json);
+                count = members?.Count ?? 0;
+            }
+
+            // Count in guilds/{guildId} synchronisieren
+            await _firebaseService.UpdateAsync($"guilds/{guildId}", new Dictionary<string, object>
+            {
+                ["memberCount"] = count
+            });
+
+            return count;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
 
     /// <summary>
     /// Prüft ob ein neuer Wochenstart ist und resettet ggf. das Wochenziel.

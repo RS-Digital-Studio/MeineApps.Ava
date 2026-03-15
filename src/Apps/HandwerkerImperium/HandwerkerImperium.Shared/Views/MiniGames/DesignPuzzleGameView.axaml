@@ -6,7 +6,8 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.MiniGames.DesignPuzzleGameView"
-             x:DataType="vm:DesignPuzzleGameViewModel">
+             x:DataType="vm:DesignPuzzleGameViewModel"
+             x:CompileBindings="True">
 
   <Grid AutomationProperties.AutomationId="DesignPuzzle_Grid_Root"
         RowDefinitions="Auto,*,Auto" Margin="10,20,10,20">
@@ -286,7 +287,7 @@
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
     <Border AutomationProperties.AutomationId="DesignPuzzle_Border_Countdown"
-            Grid.RowSpan="3" Background="#CC000000"
+            Grid.RowSpan="3" Background="{StaticResource RewardOverlayBrush}"
             IsVisible="{Binding IsCountdownActive}">
       <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_Countdown"
                  Text="{Binding CountdownText}"

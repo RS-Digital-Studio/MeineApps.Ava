@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
@@ -401,16 +402,25 @@ public sealed partial class StatisticsViewModel : ViewModelBase
             // Items dieser Kategorie (ungekaufte zuerst, dann günstigste)
             foreach (var item in group.OrderBy(i => i.IsPurchased).ThenBy(i => i.Cost))
             {
+                // Wiederholbare Items: Eskalierte Kosten berechnen
+                int displayCost = item.IsRepeatable
+                    ? PrestigeService.GetRepeatableItemCost(item, item.PurchaseCount)
+                    : item.Cost;
+
                 PrestigeShopItems.Add(new PrestigeShopItemDisplay
                 {
                     Id = item.Id,
                     Icon = item.Icon,
                     Name = _localizationService.GetString(item.NameKey) ?? item.NameKey,
-                    Description = _localizationService.GetString(item.DescriptionKey) ?? item.DescriptionKey,
-                    Cost = item.Cost,
+                    Description = item.IsRepeatable
+                        ? $"{_localizationService.GetString(item.DescriptionKey) ?? item.DescriptionKey} (x{item.PurchaseCount})"
+                        : _localizationService.GetString(item.DescriptionKey) ?? item.DescriptionKey,
+                    Cost = displayCost,
                     IsPurchased = item.IsPurchased,
-                    CanAfford = !item.IsPurchased && PrestigePoints >= item.Cost,
-                    IsRecommended = item.Id == recommendedId
+                    CanAfford = !item.IsPurchased && PrestigePoints >= displayCost,
+                    IsRecommended = item.Id == recommendedId,
+                    IsRepeatable = item.IsRepeatable,
+                    PurchaseCount = item.PurchaseCount,
                 });
             }
         }
@@ -847,6 +857,12 @@ public class PrestigeShopItemDisplay
     public bool IsPurchased { get; set; }
     public bool CanAfford { get; set; }
 
+    /// <summary>Ob das Item wiederholbar kaufbar ist.</summary>
+    public bool IsRepeatable { get; set; }
+
+    /// <summary>Aktuelle Kaufanzahl (nur für wiederholbare Items).</summary>
+    public int PurchaseCount { get; set; }
+
     /// <summary>Ob dieses Element ein Kategorie-Header ist (kein kaufbares Item).</summary>
     public bool IsHeader { get; set; }
 
@@ -863,13 +879,14 @@ public class PrestigeShopItemDisplay
 
     /// <summary>
     /// Hintergrundfarbe: Gold-transparent für gekauft, grau für gesperrt.
+    /// Wiederholbare Items haben immer den Standard-Hintergrund.
     /// </summary>
     public string IconBackground => IsPurchased ? "#40FFD700" : "#20808080";
 
     /// <summary>
-    /// Opacity: Gekaufte Items leicht gedimmt.
+    /// Opacity: Gekaufte Items leicht gedimmt. Wiederholbare nie gedimmt.
     /// </summary>
-    public double DisplayOpacity => IsPurchased ? 0.6 : 1.0;
+    public double DisplayOpacity => IsPurchased && !IsRepeatable ? 0.6 : 1.0;
 
     /// <summary>
     /// Kosten-Farbe: Grün wenn leistbar, Rot wenn nicht, Grau wenn gekauft.

@@ -8,6 +8,7 @@
              xmlns:dashboard="using:HandwerkerImperium.Views.Dashboard"
              x:Class="HandwerkerImperium.Views.MissionenView"
              x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Missionen_Root">
 
   <!-- FadeIn-Animation -->
@@ -240,8 +241,8 @@
         </Border>
       </Button>
 
-      <!-- Bottom Spacer -->
-      <Border Height="16" />
+      <!-- Bottom Spacer (80dp fuer Tab-Bar 68dp + Margin) -->
+      <Border Height="80" />
 
     </StackPanel>
   </ScrollViewer>

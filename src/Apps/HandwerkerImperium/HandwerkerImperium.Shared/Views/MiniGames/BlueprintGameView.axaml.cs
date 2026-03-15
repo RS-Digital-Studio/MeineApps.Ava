@@ -21,12 +21,28 @@ public partial class BlueprintGameView : UserControl
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
     private SKCanvasView? _gameCanvas;
+    private BlueprintGameRenderer.BlueprintStepData[] _cachedSteps = [];
 
     public BlueprintGameView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => StopRenderLoop();
+
+        // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _gameCanvas != null && _renderTimer == null)
+                    StartRenderLoop();
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
 
         // AI-Hintergrund-Service initialisieren
         var assetService = App.Services?.GetService<IGameAssetService>();
@@ -104,8 +120,9 @@ public partial class BlueprintGameView : UserControl
         int cols = _vm.GridWidth > 0 ? (int)Math.Round(_vm.GridWidth / 74.0) : 3;
         if (cols <= 0) cols = 3;
 
-        // Step-Daten aus ViewModel extrahieren (kein direkter VM-Zugriff im Renderer)
-        var steps = new BlueprintGameRenderer.BlueprintStepData[_vm.Steps.Count];
+        // Step-Daten aus ViewModel extrahieren (gecachtes Array, keine Allokation pro Frame)
+        if (_cachedSteps.Length != _vm.Steps.Count)
+            _cachedSteps = new BlueprintGameRenderer.BlueprintStepData[_vm.Steps.Count];
         for (int i = 0; i < _vm.Steps.Count; i++)
         {
             var step = _vm.Steps[i];
@@ -116,7 +133,7 @@ public partial class BlueprintGameView : UserControl
             // Aktiver Schritt: Naechster erwarteter StepNumber und noch nicht erledigt
             bool isActive = _vm.IsPlaying && step.StepNumber == _vm.NextExpectedStep && !step.IsCompleted;
 
-            steps[i] = new BlueprintGameRenderer.BlueprintStepData
+            _cachedSteps[i] = new BlueprintGameRenderer.BlueprintStepData
             {
                 Icon = step.Icon,
                 DisplayNumber = step.DisplayNumber,
@@ -128,7 +145,7 @@ public partial class BlueprintGameView : UserControl
             };
         }
 
-        _renderer.Render(canvas, _lastBounds, steps, cols, _vm.IsMemorizing, _vm.IsPlaying,
+        _renderer.Render(canvas, _lastBounds, _cachedSteps, cols, _vm.IsMemorizing, _vm.IsPlaying,
             _vm.CompletedSteps, _vm.TotalSteps, deltaTime);
     }
 

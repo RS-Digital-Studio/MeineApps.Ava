@@ -120,7 +120,10 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     private OrderType DetermineOrderType(int workshopLevel, int playerLevel)
     {
         var state = _gameStateService.State;
-        int unlockedWorkshops = state.Workshops.Count(w => state.IsWorkshopUnlocked(w.Type));
+        // For-Schleife statt LINQ Count (vermeidet Closure+Enumerator)
+        int unlockedWorkshops = 0;
+        for (int i = 0; i < state.Workshops.Count; i++)
+            if (state.IsWorkshopUnlocked(state.Workshops[i].Type)) unlockedWorkshops++;
         int roll = Random.Shared.Next(100);
 
         // Reputation-Bonus + Gilden-Forschung: Senkt Standard-Wahrscheinlichkeit
@@ -174,12 +177,29 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         if (orderType == OrderType.Cooperation)
         {
             // Cooperation: Tasks aus 2 verschiedenen Workshop-Typen mischen
-            var unlockedWorkshops = state.Workshops
-                .Where(w => state.IsWorkshopUnlocked(w.Type) && w.Type != workshopType)
-                .ToList();
-            var secondType = unlockedWorkshops.Count > 0
-                ? unlockedWorkshops[Random.Shared.Next(unlockedWorkshops.Count)].Type
-                : workshopType;
+            // Zufaelligen freigeschalteten Workshop waehlen (ohne LINQ/ToList)
+            int eligibleCount = 0;
+            for (int i = 0; i < state.Workshops.Count; i++)
+            {
+                var w = state.Workshops[i];
+                if (state.IsWorkshopUnlocked(w.Type) && w.Type != workshopType)
+                    eligibleCount++;
+            }
+            var secondType = workshopType;
+            if (eligibleCount > 0)
+            {
+                int pick = Random.Shared.Next(eligibleCount);
+                int seen = 0;
+                for (int i = 0; i < state.Workshops.Count; i++)
+                {
+                    var w = state.Workshops[i];
+                    if (state.IsWorkshopUnlocked(w.Type) && w.Type != workshopType)
+                    {
+                        if (seen == pick) { secondType = w.Type; break; }
+                        seen++;
+                    }
+                }
+            }
             var secondTemplates = _templates.GetValueOrDefault(secondType, templates);
             var secondTemplate = secondTemplates[Random.Shared.Next(Math.Min(secondTemplates.Count, maxTemplateIndex + 1))];
 
@@ -268,14 +288,32 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
             order.RequiredWorkshops = requiredTypes;
         }
 
-        // Stammkunden-Zuordnung (20% Chance wenn Stammkunden vorhanden)
-        var regulars = state.Reputation.RegularCustomers.Where(c => c.IsRegular).ToList();
-        if (regulars.Count > 0 && Random.Shared.NextDouble() < 0.20)
+        // Stammkunden-Zuordnung (20% Chance wenn Stammkunden vorhanden, ohne LINQ/ToList)
+        if (Random.Shared.NextDouble() < 0.20)
         {
-            var customer = regulars[Random.Shared.Next(regulars.Count)];
-            order.CustomerId = customer.Id;
-            order.CustomerName = customer.Name;
-            order.CustomerAvatarSeed = customer.AvatarSeed;
+            int regularCount = 0;
+            var customers = state.Reputation.RegularCustomers;
+            for (int i = 0; i < customers.Count; i++)
+                if (customers[i].IsRegular) regularCount++;
+            if (regularCount > 0)
+            {
+                int pick = Random.Shared.Next(regularCount);
+                int seen = 0;
+                for (int i = 0; i < customers.Count; i++)
+                {
+                    if (customers[i].IsRegular)
+                    {
+                        if (seen == pick)
+                        {
+                            order.CustomerId = customers[i].Id;
+                            order.CustomerName = customers[i].Name;
+                            order.CustomerAvatarSeed = customers[i].AvatarSeed;
+                            break;
+                        }
+                        seen++;
+                    }
+                }
+            }
         }
 
         return order;
@@ -294,23 +332,34 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         int extraFromGuildResearch = state.GuildMembership?.ResearchOrderSlotBonus ?? 0;
         int totalCount = count + extraFromBuilding + extraFromResearch + extraFromReputation + extraFromGuildResearch;
 
-        // Get all unlocked workshops
-        var unlockedWorkshops = state.Workshops
-            .Where(w => state.IsWorkshopUnlocked(w.Type))
-            .ToList();
+        // Freigeschaltete Workshops zaehlen (ohne LINQ/ToList)
+        int unlockedCount = 0;
+        for (int i = 0; i < state.Workshops.Count; i++)
+            if (state.IsWorkshopUnlocked(state.Workshops[i].Type)) unlockedCount++;
 
-        if (unlockedWorkshops.Count == 0)
+        if (unlockedCount == 0)
         {
             // No workshops yet, generate a carpenter order
             orders.Add(GenerateOrder(WorkshopType.Carpenter, 1));
             return orders;
         }
 
-        // Generate orders for different workshops
+        // Auftraege fuer zufaellige freigeschaltete Workshops generieren (ohne ToList)
         for (int i = 0; i < totalCount; i++)
         {
-            var workshop = unlockedWorkshops[Random.Shared.Next(unlockedWorkshops.Count)];
-            orders.Add(GenerateOrder(workshop.Type, workshop.Level));
+            int pick = Random.Shared.Next(unlockedCount);
+            int seen = 0;
+            Workshop? picked = null;
+            for (int j = 0; j < state.Workshops.Count; j++)
+            {
+                if (state.IsWorkshopUnlocked(state.Workshops[j].Type))
+                {
+                    if (seen == pick) { picked = state.Workshops[j]; break; }
+                    seen++;
+                }
+            }
+            picked ??= state.Workshops[0]; // Fallback (sollte nicht eintreten)
+            orders.Add(GenerateOrder(picked.Type, picked.Level));
         }
 
         return orders;

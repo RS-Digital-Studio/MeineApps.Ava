@@ -21,12 +21,28 @@ public partial class InventGameView : UserControl
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
     private SKCanvasView? _gameCanvas;
+    private InventGameRenderer.InventPartData[] _cachedParts = [];
 
     public InventGameView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => StopRenderLoop();
+
+        // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _gameCanvas != null && _renderTimer == null)
+                    StartRenderLoop();
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
 
         // AI-Hintergrund-Service initialisieren
         var assetService = App.Services?.GetService<IGameAssetService>();
@@ -105,8 +121,9 @@ public partial class InventGameView : UserControl
         int cols = _vm.GridWidth > 0 ? (int)Math.Round(_vm.GridWidth / 74.0) : 3;
         if (cols <= 0) cols = 3;
 
-        // Part-Daten aus ViewModel extrahieren (kein direkter VM-Zugriff im Renderer)
-        var parts = new InventGameRenderer.InventPartData[_vm.Parts.Count];
+        // Part-Daten aus ViewModel extrahieren (gecachtes Array, keine Allokation pro Frame)
+        if (_cachedParts.Length != _vm.Parts.Count)
+            _cachedParts = new InventGameRenderer.InventPartData[_vm.Parts.Count];
         for (int i = 0; i < _vm.Parts.Count; i++)
         {
             var part = _vm.Parts[i];
@@ -117,7 +134,7 @@ public partial class InventGameView : UserControl
             // Aktives Teil: Nächstes erwartetes StepNumber und noch nicht erledigt
             bool isActive = _vm.IsPlaying && part.StepNumber == _vm.NextExpectedPart && !part.IsCompleted;
 
-            parts[i] = new InventGameRenderer.InventPartData
+            _cachedParts[i] = new InventGameRenderer.InventPartData
             {
                 Icon = part.Icon,
                 DisplayNumber = part.DisplayNumber,
@@ -129,7 +146,7 @@ public partial class InventGameView : UserControl
             };
         }
 
-        _renderer.Render(canvas, _lastBounds, parts, cols, _vm.IsMemorizing, _vm.IsPlaying,
+        _renderer.Render(canvas, _lastBounds, _cachedParts, cols, _vm.IsMemorizing, _vm.IsPlaying,
             _vm.CompletedParts, _vm.TotalParts, deltaTime);
     }
 

@@ -6,7 +6,8 @@
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.StatisticsView"
-             x:DataType="vm:StatisticsViewModel">
+             x:DataType="vm:StatisticsViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="Statistics_Grid_Root">
@@ -402,7 +403,7 @@
                          FontSize="11"
                          AutomationProperties.AutomationId="Statistics_Txt_PrestigeKeep" />
               <TextBlock Text="{Binding PrestigeLoseList}"
-                         Foreground="#FF5722"
+                         Foreground="{DynamicResource WarningBrush}"
                          FontSize="11"
                          AutomationProperties.AutomationId="Statistics_Txt_PrestigeLose" />
             </StackPanel>
@@ -434,7 +435,7 @@
                         AutomationProperties.AutomationId="Statistics_Btn_BuyPrestigePass"
                         Command="{Binding BuyPrestigePassCommand}"
                         VerticalAlignment="Center"
-                        MinHeight="36" Padding="12,6">
+                        MinHeight="44" Padding="12,8">
                   <TextBlock Text="{loc:Translate PrestigePassBuy}"
                              AutomationProperties.AutomationId="Statistics_Txt_PrestigePassPrice"
                              FontSize="13" FontWeight="Bold" />
@@ -648,7 +649,7 @@
                           <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                            AutomationProperties.AutomationId="Statistics_Icon_ShopItemIcon"
                                            Width="24" Height="24"
-                                           Foreground="White"
+                                           Foreground="{DynamicResource PrimaryContrastBrush}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
                         </Border>

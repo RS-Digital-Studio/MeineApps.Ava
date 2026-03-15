@@ -1742,5 +1742,33 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string AvailableEquipment => ResourceManager.GetString("AvailableEquipment", resourceCulture) ?? "";
 
         public static string NoEquipmentInInventory => ResourceManager.GetString("NoEquipmentInInventory", resourceCulture) ?? "";
+
+        public static string PrestigeIncomeRepeatable => ResourceManager.GetString("PrestigeIncomeRepeatable", resourceCulture) ?? "";
+
+        public static string PrestigeIncomeRepeatableDesc => ResourceManager.GetString("PrestigeIncomeRepeatableDesc", resourceCulture) ?? "";
+
+        public static string StartMoney => ResourceManager.GetString("StartMoney", resourceCulture) ?? "";
+
+        public static string PrestigeLossLevel => ResourceManager.GetString("PrestigeLossLevel", resourceCulture) ?? "";
+
+        public static string PrestigeLossMoney => ResourceManager.GetString("PrestigeLossMoney", resourceCulture) ?? "";
+
+        public static string PrestigeLossWorkshops => ResourceManager.GetString("PrestigeLossWorkshops", resourceCulture) ?? "";
+
+        public static string PrestigeLossResearch => ResourceManager.GetString("PrestigeLossResearch", resourceCulture) ?? "";
+
+        public static string PrestigeLossTools => ResourceManager.GetString("PrestigeLossTools", resourceCulture) ?? "";
+
+        public static string PrestigeLossBuildings => ResourceManager.GetString("PrestigeLossBuildings", resourceCulture) ?? "";
+
+        public static string PrestigeLossEquipment => ResourceManager.GetString("PrestigeLossEquipment", resourceCulture) ?? "";
+
+        public static string PrestigeLossManagers => ResourceManager.GetString("PrestigeLossManagers", resourceCulture) ?? "";
+
+        public static string PrestigeLossCrafting => ResourceManager.GetString("PrestigeLossCrafting", resourceCulture) ?? "";
+
+        public static string PrestigeTimingWarning => ResourceManager.GetString("PrestigeTimingWarning", resourceCulture) ?? "";
+
+        public static string PrestigeNearNextTier => ResourceManager.GetString("PrestigeNearNextTier", resourceCulture) ?? "";
     }
 }

@@ -7,6 +7,7 @@ using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
+using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels.MiniGames;
 
@@ -235,7 +236,7 @@ public sealed partial class BlueprintGameViewModel : ViewModelBase, IDisposable
         InitializeGame();
 
         CheckAndShowTutorial(MiniGameType.Blueprint);
-        if (!ShowTutorial) _ = StartGameAsync();
+        if (!ShowTutorial) StartGameAsync().SafeFireAndForget();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -410,7 +411,7 @@ public sealed partial class BlueprintGameViewModel : ViewModelBase, IDisposable
             await _audioService.PlaySoundAsync(GameSound.Miss);
 
             // Fehler nach kurzer Zeit zurücksetzen
-            _ = ResetErrorAsync(step);
+            ResetErrorAsync(step).SafeFireAndForget();
         }
     }
 
@@ -606,7 +607,7 @@ public sealed partial class BlueprintGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(MiniGameType.Blueprint);
             _gameStateService.MarkDirty();
         }
-        _ = StartGameAsync();
+        StartGameAsync().SafeFireAndForget();
     }
 
     [RelayCommand]

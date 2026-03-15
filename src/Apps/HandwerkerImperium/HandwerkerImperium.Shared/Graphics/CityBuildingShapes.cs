@@ -23,6 +23,11 @@ public static class CityBuildingShapes
     private static readonly SKPath _crownPath = new();
     private static readonly SKPath _iconPath = new();
 
+    // Gecachter Fenster-Glow-Shader (vermeidet 600 Shader-Allokationen/s bei Nacht)
+    // Wird einmal mit fester Größe erstellt und per Canvas-Translation positioniert
+    private static SKShader? _windowGlowShader;
+    private static float _windowGlowRadius;
+
     // Workshop-Farben (Vorderseite)
     private static readonly Dictionary<WorkshopType, SKColor> FrontColors = new()
     {
@@ -232,7 +237,7 @@ public static class CityBuildingShapes
 
             case WorkshopType.Plumber:
                 // Wassertropfen (gecachter Path)
-                _iconPath.Reset();
+                _iconPath.Rewind();
                 _iconPath.MoveTo(centerX, y - s * 0.8f);
                 _iconPath.QuadTo(centerX + s * 0.6f, y + s * 0.2f, centerX, y + s * 0.7f);
                 _iconPath.QuadTo(centerX - s * 0.6f, y + s * 0.2f, centerX, y - s * 0.8f);
@@ -242,7 +247,7 @@ public static class CityBuildingShapes
 
             case WorkshopType.Electrician:
                 // Blitz-Symbol (gecachter Path)
-                _iconPath.Reset();
+                _iconPath.Rewind();
                 _iconPath.MoveTo(centerX + s * 0.1f, y - s * 0.9f);
                 _iconPath.LineTo(centerX - s * 0.4f, y + s * 0.1f);
                 _iconPath.LineTo(centerX + s * 0.1f, y + s * 0.1f);
@@ -264,7 +269,7 @@ public static class CityBuildingShapes
 
             case WorkshopType.Roofer:
                 // Dachgiebel-Silhouette (gecachter Path)
-                _iconPath.Reset();
+                _iconPath.Rewind();
                 _iconPath.MoveTo(centerX, y - s * 0.7f);
                 _iconPath.LineTo(centerX + s, y + s * 0.3f);
                 _iconPath.LineTo(centerX + s * 0.7f, y + s * 0.3f);
@@ -278,7 +283,7 @@ public static class CityBuildingShapes
 
             case WorkshopType.Contractor:
                 // Bauhelm (gecachter Path)
-                _iconPath.Reset();
+                _iconPath.Rewind();
                 _iconPath.AddArc(new SKRect(centerX - s * 0.8f, y - s * 0.6f,
                     centerX + s * 0.8f, y + s * 0.4f), 180, 180);
                 _iconPath.Close();
@@ -291,7 +296,7 @@ public static class CityBuildingShapes
                 // Winkelmesser/Zirkel (gecachter Path)
                 _detailPaint.Style = SKPaintStyle.Stroke;
                 _detailPaint.StrokeWidth = 1.2f;
-                _iconPath.Reset();
+                _iconPath.Rewind();
                 _iconPath.MoveTo(centerX, y - s * 0.8f);
                 _iconPath.LineTo(centerX - s * 0.7f, y + s * 0.7f);
                 _iconPath.LineTo(centerX + s * 0.7f, y + s * 0.7f);
@@ -303,7 +308,7 @@ public static class CityBuildingShapes
             case WorkshopType.GeneralContractor:
                 // Gold-Stern (gecachter Path)
                 _detailPaint.Color = ApplyDim(new SKColor(0xFF, 0xD7, 0x00), nightDim);
-                _iconPath.Reset();
+                _iconPath.Rewind();
                 for (int i = 0; i < 5; i++)
                 {
                     float outerAngle = -MathF.PI / 2f + i * 2f * MathF.PI / 5f;
@@ -360,10 +365,9 @@ public static class CityBuildingShapes
         var roofColor = ApplyDim(LightenColor(baseColor, 0.15f), nightDim);
 
         float sideOffset = width * 0.15f; // Isometrische Seiten-Verschiebung
-        float roofThickness = 4f;
 
         // Seitenwand (rechts, dunkler - Parallelogramm, gecachter Path)
-        _sidePath.Reset();
+        _sidePath.Rewind();
         _sidePath.MoveTo(x + width, y);
         _sidePath.LineTo(x + width + sideOffset, y - sideOffset * 0.6f);
         _sidePath.LineTo(x + width + sideOffset, y - sideOffset * 0.6f + height);
@@ -377,7 +381,7 @@ public static class CityBuildingShapes
         canvas.DrawRoundRect(x, y, width, height, 2, 2, _fillPaint);
 
         // Dach (Trapez oben, gecachter Path)
-        _roofPath.Reset();
+        _roofPath.Rewind();
         _roofPath.MoveTo(x - 1, y);
         _roofPath.LineTo(x + width + 1, y);
         _roofPath.LineTo(x + width + sideOffset + 1, y - sideOffset * 0.6f);
@@ -556,16 +560,30 @@ public static class CityBuildingShapes
                 if (isNight && lit)
                 {
                     // Warmer radialer Glow der aus dem Fenster strahlt
+                    // Gecachter Shader mit fester Größe, per Canvas-Translation positioniert
                     float glowRadius = winSize * 1.8f;
                     float centerWx = wx + winSize / 2f;
                     float centerWy = wy + winSize / 2f;
-                    using var glowShader = SKShader.CreateRadialGradient(
-                        new SKPoint(centerWx, centerWy), glowRadius,
-                        [new SKColor(0xFF, 0xE0, 0x82, 0x50), new SKColor(0xFF, 0xA5, 0x00, 0x00)],
-                        [0f, 1f], SKShaderTileMode.Clamp);
-                    _windowPaint.Shader = glowShader;
-                    canvas.DrawCircle(centerWx, centerWy, glowRadius, _windowPaint);
+
+                    // Shader nur erstellen wenn Radius sich geändert hat (alle Fenster gleich groß)
+                    // ReSharper disable once CompareOfFloatsByEqualityOperator
+                    if (_windowGlowShader == null || _windowGlowRadius != glowRadius)
+                    {
+                        _windowGlowShader?.Dispose();
+                        _windowGlowShader = SKShader.CreateRadialGradient(
+                            SKPoint.Empty, glowRadius,
+                            [new SKColor(0xFF, 0xE0, 0x82, 0x50), new SKColor(0xFF, 0xA5, 0x00, 0x00)],
+                            [0f, 1f], SKShaderTileMode.Clamp);
+                        _windowGlowRadius = glowRadius;
+                    }
+
+                    // Translation statt neuen Shader: Zentrum auf (0,0) im Shader, Canvas verschoben
+                    canvas.Save();
+                    canvas.Translate(centerWx, centerWy);
+                    _windowPaint.Shader = _windowGlowShader;
+                    canvas.DrawCircle(0, 0, glowRadius, _windowPaint);
                     _windowPaint.Shader = null;
+                    canvas.Restore();
 
                     // Heller Fensterkern
                     _windowPaint.Color = windowLitColor;
@@ -661,7 +679,7 @@ public static class CityBuildingShapes
     private static void DrawCrown(SKCanvas canvas, float cx, float cy)
     {
         _fillPaint.Color = new SKColor(0xFF, 0xD7, 0x00);
-        _crownPath.Reset();
+        _crownPath.Rewind();
         float w = 8f, h = 6f;
         // Krone: 3 Zacken (gecachter Path)
         _crownPath.MoveTo(cx - w, cy + h);

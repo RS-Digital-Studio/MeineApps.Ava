@@ -88,6 +88,15 @@ public sealed class SawingGameRenderer : IDisposable
     // Gecachter SKPath fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
     private readonly SKPath _cachedPath = new();
 
+    // ═══════════════════════════════════════════════════════════════════
+    // GECACHTE SHADER (nur bei Bounds-Aenderung neu erstellt)
+    // Spart 1 Shader-Allokation/Frame (Holz-Gradient ist statisch,
+    // Saege-Shader sind positionsabhaengig durch Animation → bleiben dynamisch)
+    // ═══════════════════════════════════════════════════════════════════
+
+    private SKRect _lastBounds;
+    private SKShader? _woodGradientShader;
+
     private struct SawdustParticle
     {
         public float X, Y, VelocityX, VelocityY, Life, MaxLife, Size;
@@ -139,6 +148,25 @@ public sealed class SawingGameRenderer : IDisposable
         }
 
         _sawAnimTime += deltaTime;
+
+        // Statischen Holz-Shader bei Bounds-Aenderung neu erstellen
+        if (_lastBounds != bounds)
+        {
+            _lastBounds = bounds;
+            float p = 16;
+            float bat = bounds.Top + p;
+            float bah = (bounds.Bottom - p) - bat;
+            float wt = bat;
+            float wh = bah * 0.55f;
+            float wx = bounds.Left + p;
+
+            _woodGradientShader?.Dispose();
+            _woodGradientShader = SKShader.CreateLinearGradient(
+                new SKPoint(wx, wt), new SKPoint(wx, wt + wh),
+                new SKColor[] { WoodDark.WithAlpha(60), SKColors.Transparent, WoodDark.WithAlpha(40) },
+                new float[] { 0, 0.5f, 1.0f },
+                SKShaderTileMode.Clamp);
+        }
 
         // Schneide-Animation zuruecksetzen wenn neues Spiel beginnt
         if (!isResultShown && _prevIsResultShown && _cutStarted)
@@ -255,7 +283,7 @@ public sealed class SawingGameRenderer : IDisposable
             canvas.DrawLine(cutX, y, cutX, y + cutDepth, _strokeAAPaint);
 
             // Saegeriss-Splitter an der Schnittkante
-            _cachedPath.Reset();
+            _cachedPath.Rewind();
             var rng = new Random(42); // Deterministisch
             for (int i = 0; i < 6; i++)
             {
@@ -305,13 +333,8 @@ public sealed class SawingGameRenderer : IDisposable
         _fillPaint.Color = WoodMedium;
         canvas.DrawRect(x, y, width, height, _fillPaint);
 
-        // Subtiler Farbverlauf (Mitte heller, Raender dunkler)
-        _shaderPaint.Shader?.Dispose();
-        _shaderPaint.Shader = SKShader.CreateLinearGradient(
-            new SKPoint(x, y), new SKPoint(x, y + height),
-            [WoodDark.WithAlpha(60), SKColors.Transparent, WoodDark.WithAlpha(40)],
-            [0, 0.5f, 1.0f],
-            SKShaderTileMode.Clamp);
+        // Subtiler Farbverlauf (Mitte heller, Raender dunkler, gecacht)
+        _shaderPaint.Shader = _woodGradientShader;
         canvas.DrawRect(x, y, width, height, _shaderPaint);
         _shaderPaint.Shader = null;
 
@@ -354,7 +377,7 @@ public sealed class SawingGameRenderer : IDisposable
         // Hauptmaserung (dickere Linien)
         for (float gy = y + 8; gy < y + height - 5; gy += 9)
         {
-            _cachedPath.Reset();
+            _cachedPath.Rewind();
             float waveOffset = MathF.Sin(gy * 0.15f) * 6;
             _cachedPath.MoveTo(x + 2, gy + waveOffset);
 
@@ -383,7 +406,7 @@ public sealed class SawingGameRenderer : IDisposable
 
         for (float gy = y + 12; gy < y + height - 5; gy += 9)
         {
-            _cachedPath.Reset();
+            _cachedPath.Rewind();
             float waveOffset = MathF.Sin(gy * 0.12f + 1.5f) * 4;
             _cachedPath.MoveTo(x + 4, gy + waveOffset);
 
@@ -488,7 +511,7 @@ public sealed class SawingGameRenderer : IDisposable
         float centerX = x + gapWidth * 0.5f;
         for (float r = 5; r < height * 0.6f; r += 4)
         {
-            _cachedPath.Reset();
+            _cachedPath.Rewind();
             _cachedPath.AddArc(new SKRect(centerX - gapWidth * 0.4f, centerY - r, centerX + gapWidth * 0.4f, centerY + r),
                 0, 360);
             canvas.DrawPath(_cachedPath, _strokeAAPaint);
@@ -508,16 +531,17 @@ public sealed class SawingGameRenderer : IDisposable
         float bladeH = 5;
         float toothH = 4;
 
-        // Saegeblatt (metallischer Gradient)
-        _shaderPaint.Shader?.Dispose();
-        _shaderPaint.Shader = SKShader.CreateLinearGradient(
+        // Saegeblatt (metallischer Gradient, Position dynamisch durch Animation)
+        var bladeShader = SKShader.CreateLinearGradient(
             new SKPoint(x - sawHalfWidth, y),
             new SKPoint(x - sawHalfWidth, y + bladeH),
             [SawBladeShine, SawBlade, new SKColor(0x90, 0x90, 0x90)],
             [0, 0.4f, 1.0f],
             SKShaderTileMode.Clamp);
+        _shaderPaint.Shader = bladeShader;
         canvas.DrawRect(x - sawHalfWidth, y, sawHalfWidth * 2, bladeH, _shaderPaint);
         _shaderPaint.Shader = null;
+        bladeShader.Dispose();
 
         // Saegezaehne (alternierend gross/klein)
         _fillPaint.Color = SawTooth;
@@ -539,15 +563,16 @@ public sealed class SawingGameRenderer : IDisposable
         float handleX = x - handleW / 2;
         float handleY = y - handleH;
 
-        _shaderPaint.Shader?.Dispose();
-        _shaderPaint.Shader = SKShader.CreateLinearGradient(
+        var handleShader = SKShader.CreateLinearGradient(
             new SKPoint(handleX, handleY),
             new SKPoint(handleX, handleY + handleH),
             [SawHandleLight, SawHandle, SawHandleDark],
             [0, 0.5f, 1.0f],
             SKShaderTileMode.Clamp);
+        _shaderPaint.Shader = handleShader;
         canvas.DrawRect(handleX, handleY, handleW, handleH, _shaderPaint);
         _shaderPaint.Shader = null;
+        handleShader.Dispose();
 
         // Griff-Akzent (Metallring oben/unten)
         _fillPaint.Color = new SKColor(0x90, 0x90, 0x90);
@@ -807,5 +832,8 @@ public sealed class SawingGameRenderer : IDisposable
         _grainPaint3?.Dispose();
         _fineGrainPaint?.Dispose();
         _knotBlurFilter?.Dispose();
+
+        // Gecachter statischer Shader
+        _woodGradientShader?.Dispose();
     }
 }

@@ -454,7 +454,7 @@ public sealed class GameJuiceEngine : IDisposable
         _particlePaint.Color = e.Color.WithAlpha((byte)(alpha * 200));
 
         // 4-zackiger Stern (gecachter Path, Reset pro Aufruf)
-        _sparklePath.Reset();
+        _sparklePath.Rewind();
         _sparklePath.MoveTo(e.X, e.Y - size);
         _sparklePath.LineTo(e.X + size * 0.3f, e.Y);
         _sparklePath.LineTo(e.X + size, e.Y);

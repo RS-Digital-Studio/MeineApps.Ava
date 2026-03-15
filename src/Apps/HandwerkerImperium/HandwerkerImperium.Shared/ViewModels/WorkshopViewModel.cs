@@ -334,7 +334,7 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
         if (!CanWatchSpeedupAd) return;
 
         var workshop = _gameStateService.State.GetOrCreateWorkshop(WorkshopType);
-        var earnings = workshop.GrossIncomePerSecond * 7200; // 2h Ertrag
+        var earnings = workshop.GrossIncomePerSecond * 1800; // BAL-5: 30min Ertrag (von 2h reduziert)
 
         var success = await _rewardedAdService.ShowAdAsync("workshop_speedup");
         if (success)

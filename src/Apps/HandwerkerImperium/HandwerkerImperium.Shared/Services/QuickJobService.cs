@@ -28,18 +28,31 @@ public sealed class QuickJobService : IQuickJobService
     }
 
     /// <summary>
-    /// Maximale Anzahl Quick Jobs pro Tag skaliert mit Prestige.
+    /// Maximale Anzahl Quick Jobs pro Tag skaliert mit Prestige + Prestige-Shop-Bonus.
     /// </summary>
     private int GetMaxQuickJobsPerDay()
     {
         int prestigeCount = _gameStateService.State.Prestige?.TotalPrestigeCount ?? 0;
-        return prestigeCount switch
+        int baseLimit = prestigeCount switch
         {
             0 => 20,
             1 => 25,
             2 => 30,
             _ => 40
         };
+
+        // Prestige-Shop ExtraQuickJobLimit addieren (pp_quickjob_limit: +10)
+        var purchased = _gameStateService.State.Prestige?.PurchasedShopItems;
+        if (purchased is { Count: > 0 })
+        {
+            foreach (var item in PrestigeShop.GetAllItems())
+            {
+                if (!item.IsRepeatable && purchased.Contains(item.Id) && item.Effect.ExtraQuickJobLimit > 0)
+                    baseLimit += item.Effect.ExtraQuickJobLimit;
+            }
+        }
+
+        return baseLimit;
     }
 
     // Workshop-spezifische MiniGame-Zuordnung (konsistent mit OrderGeneratorService)

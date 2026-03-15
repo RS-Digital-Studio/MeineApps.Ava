@@ -5,10 +5,14 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>HandwerkerImperium</RootNamespace>
     <ApplicationId>com.meineapps.handwerkerimperium</ApplicationId>
-    <ApplicationVersion>28</ApplicationVersion>
-    <ApplicationDisplayVersion>2.0.20</ApplicationDisplayVersion>
+    <ApplicationVersion>30</ApplicationVersion>
+    <ApplicationDisplayVersion>2.0.22</ApplicationDisplayVersion>
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Avalonia">
+    <AvaloniaXamlIlDebuggerLaunch>True</AvaloniaXamlIlDebuggerLaunch>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,8 +31,7 @@
   <ItemGroup>
     <AndroidAsset Include="Assets\Sounds\**\*.ogg" />
     <!-- AI-Assets aus Shared-Projekt als AndroidAsset einbinden (keine Duplizierung) -->
-    <AndroidAsset Include="..\HandwerkerImperium.Shared\Assets\visuals\**\*.webp"
-                  Link="Assets\visuals\%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidAsset Include="..\HandwerkerImperium.Shared\Assets\visuals\**\*.webp" Link="Assets\visuals\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -14,6 +14,7 @@
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.DashboardView"
              x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
              AutomationProperties.AutomationId="Dashboard_Root">
 
   <UserControl.Resources>
@@ -117,7 +118,7 @@
               <StackPanel Spacing="2">
                 <TextBlock x:Name="MoneyText" Text="{Binding MoneyDisplay}"
                            FontSize="32" FontWeight="Bold"
-                           Foreground="White"
+                           Foreground="{DynamicResource PrimaryContrastBrush}"
                            AutomationProperties.AutomationId="Dashboard_Txt_Money" />
                 <TextBlock Text="{Binding IncomeDisplay}"
                            FontSize="13" Classes="IncomePulse"
@@ -134,13 +135,14 @@
                 <!-- MasterTools Badge (antippbar für Info) -->
                 <Button Command="{Binding ShowMasterToolsInfoCommand}"
                         Background="#30000000" CornerRadius="12" Padding="8,4"
+                        MinHeight="44"
                         BorderThickness="0" Cursor="Hand"
                         IsVisible="{Binding MasterToolsCollected, Converter={StaticResource GreaterThanZero}}"
                         AutomationProperties.AutomationId="Dashboard_Btn_MasterTools">
                   <StackPanel Orientation="Horizontal" Spacing="4">
-                    <icons:GameIcon Kind="Wrench" Width="18" Height="18" Foreground="#F59E0B"
+                    <icons:GameIcon Kind="Wrench" Width="18" Height="18" Foreground="{DynamicResource WarningBrush}"
                                      AutomationProperties.AutomationId="Dashboard_Icon_MasterTools" />
-                    <TextBlock FontSize="12" FontWeight="Bold" Foreground="#F59E0B"
+                    <TextBlock FontSize="12" FontWeight="Bold" Foreground="{DynamicResource WarningBrush}"
                                AutomationProperties.AutomationId="Dashboard_Txt_MasterToolsCount">
                       <Run Text="{Binding MasterToolsCollected}" />/<Run Text="{Binding MasterToolsTotal}" />
                     </TextBlock>
@@ -167,6 +169,7 @@
                 <!-- Daily Reward Badge -->
                 <Button Classes="Primary"
                         Padding="8,4"
+                        MinHeight="44"
                         Background="#FFFFFF30"
                         IsVisible="{Binding HasDailyReward}"
                         Command="{Binding ClaimDailyRewardCommand}"
@@ -176,8 +179,8 @@
                 </Button>
                 <!-- Einstellungen (Zahnrad) -->
                 <Button Classes="Text" Padding="6"
-                        MinWidth="36" MinHeight="36"
-                        Background="#30000000" CornerRadius="18"
+                        MinWidth="44" MinHeight="44"
+                        Background="#30000000" CornerRadius="22"
                         Command="{Binding SelectSettingsTabCommand}"
                         AutomationProperties.AutomationId="Dashboard_Btn_Settings">
                   <icons:GameIcon Kind="Cog" Width="24" Height="24"
@@ -194,7 +197,7 @@
                                  AutomationProperties.AutomationId="Dashboard_Icon_Level" />
                 <TextBlock Text="{Binding PlayerLevel, StringFormat='Lv.{0}'}"
                            FontSize="12" FontWeight="Bold"
-                           Foreground="White"
+                           Foreground="{DynamicResource PrimaryContrastBrush}"
                            AutomationProperties.AutomationId="Dashboard_Txt_PlayerLevel" />
               </StackPanel>
 
@@ -207,6 +210,7 @@
               <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
                 <!-- Reputation nur bei Warnung (<50) oder Highlight (>=80) -->
                 <Button Classes="Text" Padding="4,2"
+                        MinHeight="44"
                         Command="{Binding ShowReputationInfoCommand}"
                         IsVisible="{Binding ShowReputationBadge}"
                         AutomationProperties.AutomationId="Dashboard_Btn_Reputation">
@@ -256,7 +260,7 @@
           <Button Grid.Column="1" Classes="Text" Padding="8,4" CornerRadius="12"
                   Background="{StaticResource CraftPrimaryBrush}"
                   Command="{Binding CycleBulkBuyCommand}">
-            <TextBlock Text="{Binding BulkBuyLabel}" FontSize="12" FontWeight="Bold" Foreground="White" />
+            <TextBlock Text="{Binding BulkBuyLabel}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}" />
           </Button>
         </Grid>
 
@@ -328,7 +332,7 @@
                         CornerRadius="10" Padding="6,2"
                         IsVisible="{Binding AvailableOrders.Count, Converter={StaticResource GreaterThanZero}}">
                   <TextBlock Text="{Binding AvailableOrders.Count}" FontSize="11"
-                             FontWeight="Bold" Foreground="White" />
+                             FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}" />
                 </Border>
               </StackPanel>
             </Button>
@@ -343,11 +347,12 @@
                 <Border Background="{StaticResource CraftPrimaryLightBrush}"
                         CornerRadius="10" Padding="6,2">
                   <TextBlock Text="{Binding QuickJobs.Count}" FontSize="11"
-                             FontWeight="Bold" Foreground="White" />
+                             FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}" />
                 </Border>
               </StackPanel>
             </Button>
             <Button Grid.Column="2" Classes="Text"
+                    MinHeight="44" MinWidth="44"
                     Command="{Binding RefreshOrdersCommand}"
                     IsVisible="{Binding IsOrdersTabActive}"
                     AutomationProperties.AutomationId="Dashboard_Btn_RefreshOrders">
@@ -442,10 +447,10 @@
                         <StackPanel Orientation="Horizontal" Spacing="4">
                           <icons:GameIcon Kind="{Binding OrderTypeIcon, Converter={StaticResource IconKindConverter}}"
                                            Width="12" Height="12"
-                                           Foreground="White" />
+                                           Foreground="{DynamicResource PrimaryContrastBrush}" />
                           <TextBlock Text="{Binding DisplayOrderType}"
                                      FontSize="11" FontWeight="SemiBold"
-                                     Foreground="White" />
+                                     Foreground="{DynamicResource PrimaryContrastBrush}" />
                         </StackPanel>
                       </Border>
                       <TextBlock Grid.Row="2" Grid.ColumnSpan="2"
@@ -553,8 +558,8 @@
         <dashboard:AutomationPanel Margin="0,12,0,0"
                                     IsVisible="{Binding IsAutoCollectUnlocked}" />
 
-        <!-- Bottom Spacer -->
-        <Border Height="16" />
+        <!-- Bottom Spacer (80dp fuer Tab-Bar 68dp + Margin) -->
+        <Border Height="80" />
 
       </StackPanel>
     </ScrollViewer>

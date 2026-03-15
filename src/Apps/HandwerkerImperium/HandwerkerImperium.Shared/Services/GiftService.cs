@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
 
@@ -57,12 +58,13 @@ public sealed class GiftService : IGiftService
                 Claimed = false
             };
 
+            // Kein ConfigureAwait(false) hier - danach wird GameState geschrieben (muss auf UI-Thread bleiben)
             var key = await _firebase.PushAsync($"gifts/{friendUid}", gift);
             if (string.IsNullOrEmpty(key)) return false;
 
-            // Letztes Sendedatum speichern
+            // Letztes Sendedatum speichern (UI-Thread, Thread-Safety garantiert)
             _gameStateService.State.LastGiftSentDate = DateTime.UtcNow;
-            await _saveGameService.SaveAsync();
+            await _saveGameService.SaveAsync().ConfigureAwait(false);
 
             return true;
         }
@@ -82,7 +84,7 @@ public sealed class GiftService : IGiftService
             var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return result;
 
-            var json = await _firebase.QueryAsync($"gifts/{uid}", "");
+            var json = await _firebase.QueryAsync($"gifts/{uid}", "").ConfigureAwait(false);
             if (string.IsNullOrEmpty(json) || json == "null") return result;
 
             var gifts = JsonSerializer.Deserialize<Dictionary<string, FirebaseGift>>(json, JsonOptions);
@@ -98,7 +100,7 @@ public sealed class GiftService : IGiftService
                     if (DateTime.TryParse(gift.SentAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var sentDate) &&
                         (now - sentDate).TotalDays > GiftExpiryDays)
                     {
-                        _ = _firebase.DeleteAsync($"gifts/{uid}/{giftId}");
+                        SafeDeleteAsync($"gifts/{uid}/{giftId}").SafeFireAndForget();
                     }
                     continue;
                 }
@@ -107,7 +109,7 @@ public sealed class GiftService : IGiftService
                 if (DateTime.TryParse(gift.SentAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var sent) &&
                     (now - sent).TotalDays > GiftExpiryDays)
                 {
-                    _ = _firebase.DeleteAsync($"gifts/{uid}/{giftId}");
+                    SafeDeleteAsync($"gifts/{uid}/{giftId}").SafeFireAndForget();
                     continue;
                 }
 
@@ -138,17 +140,18 @@ public sealed class GiftService : IGiftService
             if (string.IsNullOrEmpty(uid)) return false;
 
             // Geschenk laden
-            var gift = await _firebase.GetAsync<FirebaseGift>($"gifts/{uid}/{giftId}");
+            var gift = await _firebase.GetAsync<FirebaseGift>($"gifts/{uid}/{giftId}").ConfigureAwait(false);
             if (gift == null || gift.Claimed) return false;
 
-            // Goldschrauben gutschreiben
-            _gameStateService.AddGoldenScrews(gift.Amount);
-
-            // Als eingelöst markieren
+            // ERST Firebase markieren, DANN Belohnung (verhindert doppeltes Einlösen)
+            // Kein ConfigureAwait(false) - AddGoldenScrews ist zwar thread-safe (lock), aber wir bleiben konsistent auf dem UI-Thread
             await _firebase.UpdateAsync($"gifts/{uid}/{giftId}",
                 new Dictionary<string, object> { ["claimed"] = true });
 
-            await _saveGameService.SaveAsync();
+            // Goldschrauben gutschreiben (UI-Thread, Thread-Safety garantiert)
+            _gameStateService.AddGoldenScrews(gift.Amount);
+
+            await _saveGameService.SaveAsync().ConfigureAwait(false);
             return true;
         }
         catch
@@ -160,15 +163,24 @@ public sealed class GiftService : IGiftService
 
     public async Task<int> ClaimAllGiftsAsync()
     {
-        var gifts = await GetPendingGiftsAsync();
+        var gifts = await GetPendingGiftsAsync().ConfigureAwait(false);
         int claimed = 0;
 
         foreach (var gift in gifts.Where(g => !g.Claimed))
         {
-            if (await ClaimGiftAsync(gift.GiftId))
+            if (await ClaimGiftAsync(gift.GiftId).ConfigureAwait(false))
                 claimed++;
         }
 
         return claimed;
+    }
+
+    /// <summary>
+    /// Fire-and-forget Delete mit Exception-Schutz (für Bereinigung abgelaufener Geschenke).
+    /// </summary>
+    private async Task SafeDeleteAsync(string path)
+    {
+        try { await _firebase.DeleteAsync(path).ConfigureAwait(false); }
+        catch { /* Bereinigung kann fehlschlagen, kein kritischer Fehler */ }
     }
 }

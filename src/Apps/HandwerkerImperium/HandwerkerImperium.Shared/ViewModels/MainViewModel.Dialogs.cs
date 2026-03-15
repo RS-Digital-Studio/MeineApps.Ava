@@ -43,8 +43,8 @@ public sealed partial class MainViewModel
     private void PrestigeSummaryGoToShop()
     {
         IsPrestigeSummaryVisible = false;
-        // Zum Statistik-Tab navigieren (Prestige-Shop ist dort)
-        SelectStatisticsTab();
+        // Zum Imperium-Tab navigieren (Prestige-Shop/Roadmap sind dort)
+        SelectBuildingsTab();
     }
 
     [RelayCommand]
@@ -136,18 +136,27 @@ public sealed partial class MainViewModel
 
     /// <summary>
     /// Baut die Dialog-Texte für einen bestimmten Tier auf.
+    /// Zeigt Gewinne, Bewahrung, detaillierte Verluste und Timing-Warnung.
     /// </summary>
     private void UpdatePrestigeDialogContent(PrestigeTier tier)
     {
         var state = _gameStateService.State;
         var tierName = _localizationService.GetString(tier.GetLocalizationKey()) ?? tier.ToString();
-        var potentialPoints = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
-        int tierPoints = (int)(potentialPoints * tier.GetPointMultiplier());
+        int tierPoints = CalculateEffectivePrestigePoints(state, tier);
+
+        // Startgeld für den gewählten Tier (Tier-Basis + Shop-Boni, identisch mit ResetProgress)
+        var startMoney = tier.GetTierStartMoney();
+        foreach (var shopItem in PrestigeShop.GetAllItems())
+        {
+            if (state.Prestige.PurchasedShopItems.Contains(shopItem.Id) && shopItem.Effect.ExtraStartMoney > 0)
+                startMoney += shopItem.Effect.ExtraStartMoney;
+        }
 
         // 1. GEWINNE (prominent, oben)
         var gains = new List<string>();
         gains.Add($"\u2b06 +{tierPoints} PP ({tierName} x{tier.GetPointMultiplier()})");
         gains.Add($"\u2b06 +{tier.GetPermanentMultiplierBonus():P0} {_localizationService.GetString("PermanentIncomeBonus") ?? "permanenter Einkommens-Bonus"}");
+        gains.Add($"\u2b06 {_localizationService.GetString("StartMoney") ?? "Startgeld"}: {MoneyFormatter.FormatCompact(startMoney)}");
 
         // Speed-Up Prognose
         decimal currentMult = state.Prestige.PermanentMultiplier;
@@ -170,12 +179,77 @@ public sealed partial class MainViewModel
         if (tier.KeepsBestWorkers())
             gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsWorkers") ?? "Beste Worker pro Workshop bleiben"}");
 
-        // 3. VERLUSTE (kompakt, unten, neutral formuliert)
-        var resetNote = _localizationService.GetString("PrestigeResetNote")
-                        ?? "Level, Geld und Workshops werden zurückgesetzt.";
+        // 3. VERLUSTE (detailliert, explizit benannt)
+        var losses = new List<string>();
+        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossLevel") ?? "Level und XP"}");
+        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossMoney") ?? "Geld und Aufträge"}");
+        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossWorkshops") ?? "Workshops (nur Schreinerei bleibt)"}");
+
+        if (!tier.KeepsResearch())
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossResearch") ?? "Forschung"}");
+        if (!tier.KeepsMasterTools())
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossTools") ?? "Meisterwerkzeuge"}");
+        if (!tier.KeepsBuildings())
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossBuildings") ?? "Gebäude"}");
+        if (!tier.KeepsEquipment())
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossEquipment") ?? "Ausrüstung"}");
+        if (!tier.KeepsManagers())
+            losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossManagers") ?? "Vorarbeiter"}");
+
+        // Immer verloren (unabhängig vom Tier)
+        losses.Add($"\u2716 {_localizationService.GetString("PrestigeLossCrafting") ?? "Crafting-Inventar und Aufträge"}");
+
+        // 4. TIMING-WARNUNG (suboptimales Prestige erkennen)
+        // Prüft ob der nächste Tier nach diesem Prestige erreichbar wäre
+        string timingWarning = "";
+        var nextTier = tier.GetNextTier();
+        if (nextTier != PrestigeTier.None)
+        {
+            int currentLevel = state.PlayerLevel;
+            int nextTierLevel = nextTier.GetRequiredLevel();
+
+            // Simuliere: Wäre der nächste Tier nach diesem Prestige verfügbar?
+            // (Tier-Count wird durch dieses Prestige um 1 erhöht)
+            bool wouldNextTierBeAvailable = currentLevel >= nextTierLevel;
+            if (wouldNextTierBeAvailable)
+            {
+                // Prüfe ob die Voraussetzung (vorheriger Tier-Count) erfüllt wäre
+                int currentTierCountAfterPrestige = tier switch
+                {
+                    PrestigeTier.Bronze => state.Prestige.BronzeCount + 1,
+                    PrestigeTier.Silver => state.Prestige.SilverCount + 1,
+                    PrestigeTier.Gold => state.Prestige.GoldCount + 1,
+                    PrestigeTier.Platin => state.Prestige.PlatinCount + 1,
+                    PrestigeTier.Diamant => state.Prestige.DiamantCount + 1,
+                    PrestigeTier.Meister => state.Prestige.MeisterCount + 1,
+                    _ => 0
+                };
+                wouldNextTierBeAvailable = currentTierCountAfterPrestige >= nextTier.GetRequiredPreviousTierCount();
+            }
+
+            if (wouldNextTierBeAvailable)
+            {
+                // Spieler könnte den nächsten Tier machen → Warnung zeigen
+                int nextTierPoints = CalculateEffectivePrestigePoints(state, nextTier);
+                timingWarning = $"\n\u26a0 {string.Format(
+                    _localizationService.GetString("PrestigeTimingWarning") ?? "Du bist schon Level {0} - ab Level {1} wäre {2} möglich (mehr PP)!",
+                    currentLevel, nextTierLevel,
+                    _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString())}";
+            }
+            else if (currentLevel >= (int)(nextTierLevel * 0.7))
+            {
+                // Spieler ist nah am nächsten Tier-Level → Hinweis weiterspielen
+                var nextTierName = _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString();
+                timingWarning = $"\n\u2139 {string.Format(
+                    _localizationService.GetString("PrestigeNearNextTier") ?? "Noch {0} Level bis {1} (Level {2}) - weiterspielen lohnt sich!",
+                    nextTierLevel - currentLevel, nextTierName, nextTierLevel)}";
+            }
+        }
 
         ConfirmDialogTitle = $"{_localizationService.GetString("Prestige") ?? "Prestige"} \u2192 {tierName}";
-        ConfirmDialogMessage = string.Join("\n", gains) + $"\n\n{resetNote}";
+        ConfirmDialogMessage = string.Join("\n", gains)
+            + $"\n\n{string.Join("\n", losses)}"
+            + timingWarning;
     }
 
     /// <summary>
@@ -207,13 +281,12 @@ public sealed partial class MainViewModel
         _dialogSelectedTier = highestTier;
 
         // Tier-Optionen für Auswahl-Chips aufbauen
-        var potentialPoints = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
         var options = new List<PrestigeTierOption>();
         for (int i = 0; i < availableTiers.Count; i++)
         {
             var t = availableTiers[i];
             var tName = _localizationService.GetString(t.GetLocalizationKey()) ?? t.ToString();
-            int tPoints = (int)(potentialPoints * t.GetPointMultiplier());
+            int tPoints = CalculateEffectivePrestigePoints(state, t);
             var preservations = new List<string>();
             if (t.KeepsResearch()) preservations.Add(_localizationService.GetString("Research") ?? "Forschung");
             if (t.KeepsMasterTools()) preservations.Add(_localizationService.GetString("MasterTools") ?? "Werkzeuge");
@@ -249,7 +322,7 @@ public sealed partial class MainViewModel
         // Den vom Spieler ausgewählten Tier verwenden
         var selectedTier = _dialogSelectedTier;
         var tierName = _localizationService.GetString(selectedTier.GetLocalizationKey()) ?? selectedTier.ToString();
-        int tierPoints = (int)(potentialPoints * selectedTier.GetPointMultiplier());
+        int tierPoints = CalculateEffectivePrestigePoints(state, selectedTier);
 
         var success = await _prestigeService.DoPrestige(selectedTier);
         if (success)
@@ -329,6 +402,30 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>
+    /// Berechnet die effektiven Prestige-Punkte inklusive aller Boni (identisch mit DoPrestige-Logik).
+    /// Bronze-Minimum, Prestige-Pass (+50%), Gilden-Forschung (+10%) werden berücksichtigt.
+    /// </summary>
+    private int CalculateEffectivePrestigePoints(GameState state, PrestigeTier tier)
+    {
+        int basePoints = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
+        int tierPoints = (int)(basePoints * tier.GetPointMultiplier());
+
+        // Bronze: Mindestens 10 PP
+        if (tier == PrestigeTier.Bronze && tierPoints < 10)
+            tierPoints = 10;
+
+        // Prestige-Pass: +50%
+        if (state.IsPrestigePassActive)
+            tierPoints = (int)(tierPoints * 1.5m);
+
+        // Gilden-Forschung: Prestige-Punkte-Bonus (+10%)
+        if (state.GuildMembership?.ResearchPrestigePointBonus > 0)
+            tierPoints = (int)(tierPoints * (1m + state.GuildMembership.ResearchPrestigePointBonus));
+
+        return tierPoints;
+    }
+
+    /// <summary>
     /// Zeigt Reputations-Info-Dialog mit Level und Multiplikator.
     /// </summary>
     [RelayCommand]
@@ -382,7 +479,7 @@ public sealed partial class MainViewModel
             Dispatcher.UIThread.Post(() =>
             {
                 // Warte kurz damit andere Dialoge zuerst angezeigt werden
-                if (!IsLevelUpDialogVisible && !IsAchievementDialogVisible && !IsDailyRewardDialogVisible && !IsHoldingUpgrade)
+                if (!IsAnyDialogVisible && !IsHoldingUpgrade)
                 {
                     ShowStoryDialog(chapter);
                 }

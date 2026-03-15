@@ -25,11 +25,9 @@ public sealed partial class MainViewModel
     {
         try
         {
-        // GPU-Shader vorab kompilieren während Loading-Screen sichtbar ist
-        // (12 SkSL-Shader, spart 600ms-2.4s Jank beim ersten Render auf Android)
-        MeineApps.UI.SkiaSharp.Shaders.ShaderPreloader.PreloadAll();
+        // ShaderPreloader.PreloadAll() wird bereits in HandwerkerImperiumLoadingPipeline (Schritt 1) aufgerufen
 
-        // Load saved game first
+        // Spielstand laden
         if (!_gameStateService.IsInitialized)
         {
             await _saveGameService.LoadAsync();
@@ -349,11 +347,11 @@ public sealed partial class MainViewModel
         CanRescueStreak = state.StreakBeforeBreak > 1
                           && state.DailyRewardStreak <= 1
                           && !state.StreakRescueUsed
-                          && state.GoldenScrews >= 5;
+                          && state.GoldenScrews >= 3;  // BAL-7: Von 5 auf 3 reduziert
         if (CanRescueStreak)
         {
             var costText = _localizationService.GetString("StreakRescueCost") ?? "Rescue streak ({0})";
-            StreakRescueText = string.Format(costText, 5);
+            StreakRescueText = string.Format(costText, 3);
         }
 
         if (HasDailyReward)
@@ -399,9 +397,7 @@ public sealed partial class MainViewModel
     private void CheckDeferredDialogs()
     {
         // Nicht prüfen wenn noch ein Dialog offen ist
-        if (IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible ||
-            IsWelcomeOfferVisible || IsDailyRewardDialogVisible ||
-            IsStoryDialogVisible || IsHintVisible)
+        if (IsAnyDialogVisible)
             return;
 
         // 1. Verzögerte Daily Reward

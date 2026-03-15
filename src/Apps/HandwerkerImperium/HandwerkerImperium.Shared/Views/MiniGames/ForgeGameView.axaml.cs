@@ -28,6 +28,21 @@ public partial class ForgeGameView : UserControl
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => StopRenderLoop();
 
+        // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _vm != null && _gameCanvas != null && _renderTimer == null)
+                    StartRenderLoop();
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
+        };
+
         // AI-Hintergrund-Service initialisieren
         var assetService = App.Services?.GetService<IGameAssetService>();
         if (assetService != null)
@@ -156,13 +171,20 @@ public partial class ForgeGameView : UserControl
     /// </summary>
     private async void OnGameStarted(object? sender, EventArgs e)
     {
-        var countdownText = this.FindControl<TextBlock>("CountdownTextBlock");
-        if (countdownText == null) return;
-
-        await Dispatcher.UIThread.InvokeAsync(async () =>
+        try
         {
-            await AnimationHelper.PulseAsync(countdownText, TimeSpan.FromMilliseconds(200));
-        });
+            var countdownText = this.FindControl<TextBlock>("CountdownTextBlock");
+            if (countdownText == null) return;
+
+            await Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                await AnimationHelper.PulseAsync(countdownText, TimeSpan.FromMilliseconds(200));
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnGameStarted)} Fehler: {ex.Message}");
+        }
     }
 
     /// <summary>

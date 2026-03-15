@@ -3,6 +3,8 @@ using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.Loading;
 using MeineApps.UI.SkiaSharp.Shaders;
 using Microsoft.Extensions.DependencyInjection;
+using HandwerkerImperium.Graphics;
+using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels;
 
 namespace HandwerkerImperium.Loading;
@@ -32,7 +34,10 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
                 var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
                 // Alle 224 Bitmap-Icons vorladen (WebP → SKBitmap → Avalonia IImage)
                 var iconsTask = Icons.GameIcon.PreloadAllAsync();
-                await Task.WhenAll(shaderTask, vmTask, purchaseTask, iconsTask);
+                // 20 Worker-Portraits vorladen (10 Tiers x 2 Geschlechter → AI statt Pixel-Art)
+                var assetService = services.GetRequiredService<IGameAssetService>();
+                var portraitsTask = assetService.PreloadAsync(WorkerAvatarRenderer.GetAllPortraitPaths());
+                await Task.WhenAll(shaderTask, vmTask, purchaseTask, iconsTask, portraitsTask);
             }
         });
 

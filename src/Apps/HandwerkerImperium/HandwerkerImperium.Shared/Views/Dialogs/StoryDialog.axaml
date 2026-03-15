@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.Dialogs.StoryDialog"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <!-- Story Dialog (Meister Hans NPC) - 25 Kapitel mit SkiaSharp-Portrait -->
   <Border Classes="SheetBackdrop"

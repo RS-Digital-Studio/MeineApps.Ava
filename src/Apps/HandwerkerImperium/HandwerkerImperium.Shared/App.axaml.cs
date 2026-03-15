@@ -11,6 +11,7 @@ using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Extensions;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.Controls;
+using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Loading;
 using HandwerkerImperium.Resources.Strings;
 using HandwerkerImperium.Graphics;
@@ -97,7 +98,7 @@ public partial class App : Application
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);
             desktop.MainWindow.Content = panel;
-            _ = RunLoadingAsync(splash);
+            RunLoadingAsync(splash).SafeFireAndForget();
 
             // Desktop: Beim Herunterfahren alle IDisposable-Singletons disposen
             desktop.ShutdownRequested += (_, _) => DisposeServices();
@@ -109,7 +110,7 @@ public partial class App : Application
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);
             singleViewPlatform.MainView = panel;
-            _ = RunLoadingAsync(splash);
+            RunLoadingAsync(splash).SafeFireAndForget();
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -120,7 +121,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "HandwerkerImperium",
-            AppVersion = "v2.0.14",
+            AppVersion = "v2.0.20",
             Renderer = new HandwerkerImperiumSplashRenderer()
         };
     }
@@ -281,16 +282,13 @@ public partial class App : Application
         services.AddSingleton<IFirebaseService, FirebaseService>();
         services.AddSingleton<IGuildService, GuildService>();
         services.AddSingleton<ICraftingService, CraftingService>();
-        services.AddSingleton<IFriendService, FriendService>();
 
         // Masterplan-Services (Phasen 2-6)
+        // Entfernt: IFriendService, IAscensionService, IGiftService, ICosmeticService
+        // (registriert aber nirgends injiziert - Dateien bleiben als Referenz)
         services.AddSingleton<ILeaderboardService, LeaderboardService>();
-        services.AddSingleton<IAscensionService, AscensionService>();
-        services.AddSingleton<IGuildWarService, GuildWarService>();
         services.AddSingleton<IBountyService, BountyService>();
-        services.AddSingleton<IGiftService, GiftService>();
         services.AddSingleton<IGuildChatService, GuildChatService>();
-        services.AddSingleton<ICosmeticService, CosmeticService>();
         services.AddSingleton<IGoalService, GoalService>();
 
         // Gilden-Overhaul Services (AAA-System)

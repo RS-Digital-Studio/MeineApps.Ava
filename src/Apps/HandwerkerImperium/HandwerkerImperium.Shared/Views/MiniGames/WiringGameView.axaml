@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MiniGames.WiringGameView"
-             x:DataType="vm:WiringGameViewModel">
+             x:DataType="vm:WiringGameViewModel"
+             x:CompileBindings="True">
 
   <Grid AutomationProperties.AutomationId="Wiring_Grid_Root"
         RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
@@ -194,7 +195,7 @@
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
     <Border AutomationProperties.AutomationId="Wiring_Border_Countdown"
-            Grid.RowSpan="5" Background="#CC000000"
+            Grid.RowSpan="5" Background="{StaticResource RewardOverlayBrush}"
             IsVisible="{Binding IsCountdownActive}">
       <TextBlock AutomationProperties.AutomationId="Wiring_Txt_Countdown"
                  Text="{Binding CountdownText}"

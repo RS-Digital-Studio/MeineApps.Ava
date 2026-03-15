@@ -4,7 +4,8 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.BattlePassView"
-             x:DataType="vm:BattlePassViewModel">
+             x:DataType="vm:BattlePassViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="BattlePass_Grid_Root">
@@ -142,7 +143,7 @@
                     <TextBlock Text="{Binding TierNumber, StringFormat='{}{0}'}"
                                AutomationProperties.AutomationId="BattlePass_Txt_TierNumber"
                                FontSize="14" FontWeight="Bold"
-                               Foreground="White"
+                               Foreground="{DynamicResource PrimaryContrastBrush}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center" />
                   </Border>
@@ -226,7 +227,7 @@
                              AutomationProperties.AutomationId="BattlePass_Icon_UpgradeCrown" />
             <TextBlock Text="{loc:Translate UpgradePremium}"
                        AutomationProperties.AutomationId="BattlePass_Txt_UpgradeBtn"
-                       FontSize="16" FontWeight="Bold" Foreground="White" />
+                       FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}" />
           </StackPanel>
         </Button>
 

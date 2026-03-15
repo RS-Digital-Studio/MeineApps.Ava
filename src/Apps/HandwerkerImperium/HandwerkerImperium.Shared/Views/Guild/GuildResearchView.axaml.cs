@@ -30,6 +30,21 @@ public partial class GuildResearchView : UserControl
     // Letzte bekannte Bounds für HitTest
     private SKRect _lastBounds;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // DIRTY-FLAGS (vermeidet unnötige Canvas-Invalidierungen bei 30fps)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Header muss neu gezeichnet werden (bei aktiver Forschung wegen Fackel-Animationen,
+    /// oder bei Daten-Änderung/Tab-Wechsel).
+    /// </summary>
+    private bool _headerDirty = true;
+
+    /// <summary>
+    /// Forschungsbaum muss neu gezeichnet werden (Collection geändert, Forschung abgeschlossen).
+    /// </summary>
+    private bool _treeDirty = true;
+
     public GuildResearchView()
     {
         InitializeComponent();
@@ -40,6 +55,28 @@ public partial class GuildResearchView : UserControl
             _bgRenderer.Dispose();
             _treeRenderer.Dispose();
             _headerRenderer.Dispose();
+        };
+
+        // Timer pausieren wenn View nicht sichtbar ist (Tab-Wechsel, Sub-Navigation)
+        // Analog zu WorkshopView und ResearchView: spart ~30 InvalidateSurface/s
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty)
+            {
+                if (IsVisible && _guildVm != null && _renderTimer == null)
+                {
+                    // View wieder sichtbar: Dirty-Flags setzen fuer sofortigen Render
+                    _headerDirty = true;
+                    _treeDirty = true;
+                    StartRenderLoop();
+                }
+                else if (!IsVisible && _renderTimer != null)
+                {
+                    // View versteckt: Timer stoppen
+                    _renderTimer.Stop();
+                    _renderTimer = null;
+                }
+            }
         };
     }
 
@@ -53,15 +90,57 @@ public partial class GuildResearchView : UserControl
     {
         _renderTimer?.Stop();
 
+        // Altes VM abmelden
         if (_guildVm != null)
+        {
+            _guildVm.PropertyChanged -= OnGuildVmPropertyChanged;
             _guildVm = null;
+        }
 
         if (DataContext is GuildViewModel vm)
         {
             _guildVm = vm;
+            _guildVm.PropertyChanged += OnGuildVmPropertyChanged;
             _treeCanvas = this.FindControl<SKCanvasView>("TreeCanvas");
             _headerCanvas = this.FindControl<SKCanvasView>("HeaderCanvas");
+
+            // Beim Binden: Alles als dirty markieren für initialen Render
+            _headerDirty = true;
+            _treeDirty = true;
+
             StartRenderLoop();
+        }
+    }
+
+    /// <summary>
+    /// Reagiert auf ViewModel-Property-Änderungen und setzt Dirty-Flags
+    /// statt blind alle Canvases zu invalidieren.
+    /// </summary>
+    private void OnGuildVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(GuildViewModel.GuildResearch):
+                // Collection wurde neu geladen → Baum + Header müssen aktualisiert werden
+                _treeDirty = true;
+                _headerDirty = true;
+                break;
+
+            case nameof(GuildViewModel.HasActiveResearch):
+                // Forschungsstatus geändert → Header (Fortschrittsanzeige) + Baum (Status-Icons)
+                _headerDirty = true;
+                _treeDirty = true;
+                break;
+
+            case nameof(GuildViewModel.ActiveResearchCountdown):
+                // Countdown-Text hat sich geändert → Header neu zeichnen
+                _headerDirty = true;
+                break;
+
+            case nameof(GuildViewModel.IsResearchContributeDialogVisible):
+                // Dialog-Status geändert → Baum neu zeichnen (Highlight des ausgewählten Items)
+                _treeDirty = true;
+                break;
         }
     }
 
@@ -72,20 +151,41 @@ public partial class GuildResearchView : UserControl
         _renderTimer?.Stop();
         _countdownRefreshCounter = 0;
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
-        _renderTimer.Tick += (_, _) =>
+        _renderTimer.Tick += OnRenderTick;
+        _renderTimer.Start();
+    }
+
+    /// <summary>
+    /// Render-Tick mit Dirty-Flag-Prüfung (analog zu ResearchView).
+    /// Ohne aktive Forschung und ohne Daten-Änderung: KEIN Render → 0 InvalidateSurface()/s.
+    /// Bei aktiver Forschung: Header wird für Fackel-Animationen kontinuierlich invalidiert.
+    /// </summary>
+    private void OnRenderTick(object? sender, EventArgs e)
+    {
+        bool hasActiveResearch = _guildVm?.HasActiveResearch == true;
+
+        // Header: Bei aktiver Forschung immer (Fackel-Animationen, Fortschrittsring),
+        // ansonsten nur wenn dirty (erster Render, Daten-Änderung)
+        if (hasActiveResearch || _headerDirty)
         {
             _headerCanvas?.InvalidateSurface();
-            _treeCanvas?.InvalidateSurface();
+            _headerDirty = false;
+        }
 
-            // Countdown alle ~1s aktualisieren (30 Ticks × 33ms ≈ 1000ms)
-            _countdownRefreshCounter++;
-            if (_countdownRefreshCounter >= 30)
-            {
-                _countdownRefreshCounter = 0;
-                _guildVm?.RefreshActiveResearchCountdown();
-            }
-        };
-        _renderTimer.Start();
+        // Baum: Nur bei Daten-Änderung (Collection-Wechsel, Forschung abgeschlossen)
+        if (_treeDirty)
+        {
+            _treeCanvas?.InvalidateSurface();
+            _treeDirty = false;
+        }
+
+        // Countdown alle ~1s aktualisieren (30 Ticks × 33ms ≈ 1000ms)
+        _countdownRefreshCounter++;
+        if (_countdownRefreshCounter >= 30)
+        {
+            _countdownRefreshCounter = 0;
+            _guildVm?.RefreshActiveResearchCountdown();
+        }
     }
 
     private void OnHeaderPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

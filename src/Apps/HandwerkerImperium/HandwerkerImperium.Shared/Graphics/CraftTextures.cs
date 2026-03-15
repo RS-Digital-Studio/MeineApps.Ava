@@ -63,6 +63,11 @@ public static class CraftTextures
     private static SKMaskFilter StoneShadowFilter =>
         _stoneShadowFilter ??= SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.5f);
 
+    // Gecachter Holz-Gradient-Shader fuer DrawWoodGrain (statisch, lebt bis Prozessende)
+    private static SKRect _woodGrainLastRect;
+    private static SKColor _woodGrainLastColor;
+    private static SKShader? _woodGrainCachedShader;
+
     // --- Deterministische Pseudo-Zufallszahl basierend auf Seed ---
 
     /// <summary>
@@ -121,17 +126,23 @@ public static class CraftTextures
 
         int seed = RectSeed(rect);
 
-        // Vertikaler Gradient (oben heller, unten dunkler)
-        var topColor = Lighten(baseColor, 0.15f);
-        var bottomColor = Darken(baseColor, 0.15f);
+        // Vertikaler Gradient (oben heller, unten dunkler, gecacht)
+        if (_woodGrainLastRect != rect || _woodGrainLastColor != baseColor)
+        {
+            _woodGrainLastRect = rect;
+            _woodGrainLastColor = baseColor;
+            var topColor = Lighten(baseColor, 0.15f);
+            var bottomColor = Darken(baseColor, 0.15f);
 
-        using var gradientShader = SKShader.CreateLinearGradient(
-            new SKPoint(rect.Left, rect.Top),
-            new SKPoint(rect.Left, rect.Bottom),
-            [topColor, bottomColor],
-            SKShaderTileMode.Clamp);
+            _woodGrainCachedShader?.Dispose();
+            _woodGrainCachedShader = SKShader.CreateLinearGradient(
+                new SKPoint(rect.Left, rect.Top),
+                new SKPoint(rect.Left, rect.Bottom),
+                [topColor, bottomColor],
+                SKShaderTileMode.Clamp);
+        }
 
-        _fillPaint.Shader = gradientShader;
+        _fillPaint.Shader = _woodGrainCachedShader;
         canvas.DrawRect(rect, _fillPaint);
         _fillPaint.Shader = null;
 
@@ -149,7 +160,7 @@ public static class CraftTextures
             float amplitude = 1.5f + DeterministicRandom(seed, i + 20) * 2.5f;
             float frequency = 0.02f + DeterministicRandom(seed, i + 30) * 0.015f;
 
-            _grainPath.Reset();
+            _grainPath.Rewind();
             _grainPath.MoveTo(rect.Left, baseY + yOffset);
 
             for (float x = rect.Left + 2; x <= rect.Right; x += 3)
@@ -380,7 +391,7 @@ public static class CraftTextures
                 int vertexCount = 4 + (int)(DeterministicRandom(seed, stoneIndex * 7 + 202) * 3);
                 float baseRadius = Math.Min(cellW, cellH) * 0.38f;
 
-                _stonePath.Reset();
+                _stonePath.Rewind();
                 for (int v = 0; v < vertexCount; v++)
                 {
                     float angle = MathF.PI * 2f * v / vertexCount;
@@ -468,7 +479,7 @@ public static class CraftTextures
             _crackPaint.Color = new SKColor(0x60, 0x60, 0x60, 140);
             _crackPaint.StrokeWidth = 1f + DeterministicRandom(seed, 314 + i * 5) * 0.5f;
 
-            _crackPath2.Reset();
+            _crackPath2.Rewind();
             _crackPath2.MoveTo(startX, startY);
 
             int segments = 3 + (int)DeterministicRandom(seed, 315 + i * 5);

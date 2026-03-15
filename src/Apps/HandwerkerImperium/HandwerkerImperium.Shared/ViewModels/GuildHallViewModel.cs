@@ -5,6 +5,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -164,7 +165,7 @@ public sealed partial class GuildHallViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>Lädt die Hallen-Daten neu (für Hub-Aufruf).</summary>
-    public void RefreshHall() => _ = LoadHallDataAsync();
+    public void RefreshHall() => LoadHallDataAsync().SafeFireAndForget();
 
     /// <summary>Gibt den Quick-Status für den Guild-Hub zurück.</summary>
     public string GetQuickStatus()

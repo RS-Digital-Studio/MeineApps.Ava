@@ -556,6 +556,7 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                     if (success)
                     {
                         _gameStateService.State.IsPremium = true;
+                        _gameStateService.State.InvalidateMaxOfflineHoursCache();
                         await _saveGameService.SaveAsync();
                         await _audioService.PlaySoundAsync(GameSound.LevelUp);
                         ShowAlert(
@@ -644,6 +645,7 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
             if (restored)
             {
                 _gameStateService.State.IsPremium = _purchaseService.IsPremium;
+                _gameStateService.State.InvalidateMaxOfflineHoursCache();
                 await _saveGameService.SaveAsync();
                 await _audioService.PlaySoundAsync(GameSound.LevelUp);
                 ShowAlert(
@@ -711,12 +713,12 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 break;
 
             case "golden_screws_ad":
-                _gameStateService.AddGoldenScrews(5);
+                _gameStateService.AddGoldenScrews(10);  // BAL-3: Von 5 auf 10 erhöht (besseres Ad-ROI)
                 GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
                 await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
                 ShowAlert(
                     _localizationService.GetString("GoldenScrews"),
-                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 5),
+                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 10),
                     _localizationService.GetString("Great"));
                 break;
         }

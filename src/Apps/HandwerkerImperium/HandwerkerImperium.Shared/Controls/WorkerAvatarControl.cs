@@ -111,6 +111,8 @@ public class WorkerAvatarControl : Control
     private readonly SKCanvasView _canvasView;
     private SKBitmap? _currentBitmap;
     private bool _needsAnimation;
+    private bool _hasAIPortrait;
+    private bool _aiCheckDone; // Guard: AI-Nachladeprüfung nur einmal durchführen
     private int _stableHash;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -159,6 +161,7 @@ public class WorkerAvatarControl : Control
     {
         // Bitmap wird vom Cache verwaltet, NICHT hier disposen
         _currentBitmap = null;
+        _aiCheckDone = false; // Bei Property-Änderung erneut prüfen dürfen
 
         // Neues Bitmap generieren
         var idStr = IdSeed ?? string.Empty;
@@ -173,6 +176,7 @@ public class WorkerAvatarControl : Control
 
         _currentBitmap = WorkerAvatarRenderer.RenderAvatar(
             idStr, Tier, Mood, renderSize, IsFemale);
+        _hasAIPortrait = WorkerAvatarRenderer.HasAIPortrait(Tier, IsFemale);
 
         // Animations-Timer: Rarity-Rahmen (Uncommon+) ODER Idle-Animation (>=56dp)
         var rarity = TierToRarity(Tier);
@@ -265,6 +269,14 @@ public class WorkerAvatarControl : Control
             if (_currentBitmap == null) return;
         }
 
+        // AI-Portrait-Nachladeprüfung: Wenn beim ersten Render nur Pixel-Art
+        // verfügbar war, einmalig prüfen ob das AI-Portrait inzwischen geladen ist
+        if (!_hasAIPortrait && !_aiCheckDone && WorkerAvatarRenderer.HasAIPortrait(Tier, IsFemale))
+        {
+            _aiCheckDone = true;
+            InvalidateAvatar();
+        }
+
         var bounds = _canvasView.CanvasSize;
         var fullRect = new SKRect(0, 0, (float)bounds.Width, (float)bounds.Height);
         var rarity = TierToRarity(Tier);
@@ -287,8 +299,8 @@ public class WorkerAvatarControl : Control
         // Bitmap in die eingerückte Fläche zeichnen (statischer Paint, keine Allokation pro Frame)
         canvas.DrawBitmap(_currentBitmap, srcRect, avatarRect, s_bitmapPaint);
 
-        // Idle-Animation: Blinzeln (alle 3-5s für ~150ms, Augen-Overlay)
-        if (AvatarSize >= 56)
+        // Idle-Animation: Blinzeln nur bei Pixel-Art (bei AI-Portraits nicht sinnvoll)
+        if (AvatarSize >= 56 && !_hasAIPortrait)
         {
             DrawBlinkOverlay(canvas, avatarRect, time);
         }

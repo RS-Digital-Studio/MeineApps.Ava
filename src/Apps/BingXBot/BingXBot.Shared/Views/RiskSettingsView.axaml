@@ -1,0 +1,363 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.RiskSettingsView"
+             x:DataType="vm:RiskSettingsViewModel">
+
+  <UserControl.Styles>
+    <!-- Einheitliches TextBox-Styling für numerische Eingaben -->
+    <Style Selector="TextBox.NumericInput">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="MinWidth" Value="100" />
+      <Setter Property="MaxWidth" Value="140" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="TextBox.NumericInput:focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource AppPrimaryBrush}" />
+    </Style>
+
+    <!-- NumericUpDown-Styling -->
+    <Style Selector="NumericUpDown.RiskNumeric">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="8,4" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="MinWidth" Value="120" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+
+    <!-- ToggleSwitch -->
+    <Style Selector="ToggleSwitch.RiskToggle">
+      <Setter Property="OnContent" Value="An" />
+      <Setter Property="OffContent" Value="Aus" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <!-- Settings-Row: Label links, Input rechts -->
+    <Style Selector="Grid.SettingsRow">
+      <Setter Property="Margin" Value="0,4" />
+    </Style>
+
+    <!-- Buttons -->
+    <Style Selector="Button.RiskButton">
+      <Setter Property="Padding" Value="20,10" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="20" Margin="0,0,0,24" MaxWidth="700">
+
+      <!-- Titel -->
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <mi:MaterialIcon Kind="ShieldCheck" Width="24" Height="24"
+                         Foreground="{DynamicResource AppPrimaryBrush}" />
+        <TextBlock Text="Risk-Management" FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Position-Sizing                                        -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="ChartPie" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Position-Sizing" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Max Position Size -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. Positionsgröße" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Maximaler Anteil des Kontostands pro Position" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Classes="NumericInput" Text="{Binding MaxPositionSizePercent}" />
+              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <!-- Max Leverage -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. Hebel" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Maximaler erlaubter Leverage (1-125)" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Classes="NumericInput" Text="{Binding MaxLeverage}" />
+              <TextBlock Text="x" FontSize="13" VerticalAlignment="Center"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <!-- Kelly Criterion -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Kelly-Kriterium" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Optimale Positionsgröße nach Kelly-Formel" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" Classes="RiskToggle"
+                          IsChecked="{Binding UseKellyCriterion}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <!-- ATR Sizing -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="ATR-Sizing" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Positionsgröße basierend auf Average True Range" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" Classes="RiskToggle"
+                          IsChecked="{Binding UseAtrSizing}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Drawdown-Limits                                        -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="TrendingDown" Width="18" Height="18"
+                             Foreground="{DynamicResource AppLossBrush}" />
+            <TextBlock Text="Drawdown-Limits" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Max Daily Drawdown -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. täglicher Drawdown" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Bot pausiert bei Überschreitung (täglicher Verlust)" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Classes="NumericInput" Text="{Binding MaxDailyDrawdownPercent}" />
+              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <!-- Max Total Drawdown -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. Gesamt-Drawdown" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Bot stoppt vollständig bei Überschreitung" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Classes="NumericInput" Text="{Binding MaxTotalDrawdownPercent}" />
+              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Positionen                                              -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="FormatListNumbered" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Positionen" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Max Open Positions -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. offene Positionen" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Maximale Anzahl gleichzeitig offener Positionen" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <NumericUpDown Classes="RiskNumeric"
+                           Value="{Binding MaxOpenPositions}"
+                           Minimum="1" Maximum="20" Increment="1"
+                           FormatString="0" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <!-- Max Open Positions Per Symbol -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. Positionen pro Symbol" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Maximale Positionen für das gleiche Handelspaar" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <NumericUpDown Classes="RiskNumeric"
+                           Value="{Binding MaxOpenPositionsPerSymbol}"
+                           Minimum="1" Maximum="5" Increment="1"
+                           FormatString="0" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Korrelation                                             -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="SwapHorizontalBold" Width="18" Height="18"
+                             Foreground="{DynamicResource AppWarningBrush}" />
+            <TextBlock Text="Korrelation" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Check Correlation -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Korrelation prüfen" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Verhindert hoch korrelierte Positionen" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" Classes="RiskToggle"
+                          IsChecked="{Binding CheckCorrelation}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}"
+                  IsVisible="{Binding CheckCorrelation}" />
+
+          <!-- Max Correlation -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto"
+                IsVisible="{Binding CheckCorrelation}">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. Korrelation" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Schwellwert für Korrelations-Check (0.1 - 1.0)" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <TextBox Classes="NumericInput" Text="{Binding MaxCorrelation}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Trailing-Stop                                           -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="ArrowDownBold" Width="18" Height="18"
+                             Foreground="{DynamicResource SuccessBrush}" />
+            <TextBlock Text="Trailing-Stop" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Enable Trailing Stop -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Trailing-Stop aktivieren" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Stop-Loss folgt dem Preis in Gewinnrichtung" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" Classes="RiskToggle"
+                          IsChecked="{Binding EnableTrailingStop}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}"
+                  IsVisible="{Binding EnableTrailingStop}" />
+
+          <!-- Trailing Stop Percent -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto"
+                IsVisible="{Binding EnableTrailingStop}">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Trailing-Stop Abstand" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Abstand zum aktuellen Preis (0.5 - 5.0%)" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Classes="NumericInput" Text="{Binding TrailingStopPercent}" />
+              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Buttons: Speichern + Reset                                      -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Button Classes="RiskButton" Command="{Binding SaveCommand}"
+                Background="{DynamicResource AppPrimaryBrush}" Foreground="#FFFFFF">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
+            <TextBlock Text="Speichern" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Classes="RiskButton" Command="{Binding ResetToDefaultsCommand}"
+                Background="{DynamicResource CardBrush}"
+                Foreground="{DynamicResource AppTextBrush}"
+                BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Undo" Width="16" Height="16" />
+            <TextBlock Text="Zurücksetzen" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <!-- Status-Anzeige -->
+        <TextBlock Text="{Binding SaveStatus}" FontSize="13" FontWeight="SemiBold"
+                   Foreground="{DynamicResource SuccessBrush}" VerticalAlignment="Center"
+                   Margin="8,0,0,0"
+                   IsVisible="{Binding SaveStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      </StackPanel>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

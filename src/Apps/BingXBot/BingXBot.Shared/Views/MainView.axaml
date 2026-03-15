@@ -1,0 +1,313 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:views="using:BingXBot.Views"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.MainView"
+             x:DataType="vm:MainViewModel"
+             Background="Transparent">
+
+  <UserControl.Styles>
+    <!-- Fade-Transition für Tab-Inhalt -->
+    <Style Selector="Border.TabContent">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.TabContent:not(.Active)">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.TabContent.Active">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <!-- Sidebar Nav-Button Basis -->
+    <Style Selector="Button.NavButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource AppTextSecondaryBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="20,10" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.NavButton:pointerover">
+      <Setter Property="Background" Value="#10FFFFFF" />
+    </Style>
+
+    <!-- Aktiver Nav-Button -->
+    <Style Selector="Button.NavButton.Active">
+      <Setter Property="Background" Value="{DynamicResource ActiveNavGradientBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppPrimaryBrush}" />
+    </Style>
+
+    <!-- Aktiv-Indikator (linker Rand) -->
+    <Style Selector="Border.NavIndicator">
+      <Setter Property="Width" Value="3" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="0,2,2,0" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Border.NavIndicator.Active">
+      <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid ColumnDefinitions="220,*" RowDefinitions="*,Auto">
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- Sidebar (Spalte 0)                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <Border Grid.Column="0" Grid.RowSpan="2"
+            Background="{DynamicResource SidebarGradientBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}"
+            BorderThickness="0,0,1,0">
+      <DockPanel>
+        <!-- Logo / Titel -->
+        <StackPanel DockPanel.Dock="Top" Margin="20,20,20,32">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="RobotOutline" Width="28" Height="28"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="BingX Bot" FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource AppPrimaryBrush}" />
+          </StackPanel>
+          <TextBlock Text="Trading Terminal" FontSize="11"
+                     Foreground="{DynamicResource AppTextSecondaryBrush}"
+                     Margin="38,2,0,0" />
+        </StackPanel>
+
+        <!-- Trennlinie vor Settings -->
+        <Border DockPanel.Dock="Bottom" Height="1"
+                Background="{DynamicResource AppBorderBrush}"
+                Margin="16,8,16,0" />
+
+        <!-- Settings-Button unten -->
+        <Grid DockPanel.Dock="Bottom" Margin="0,0,0,12">
+          <Grid ColumnDefinitions="Auto,*">
+            <Border Grid.Column="0" Classes="NavIndicator"
+                    Classes.Active="{Binding IsSettingsActive}" />
+            <Button Grid.Column="1" Classes="NavButton"
+                    Classes.Active="{Binding IsSettingsActive}"
+                    Command="{Binding NavigateToCommand}"
+                    CommandParameter="Settings">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <mi:MaterialIcon Kind="Cog" Width="20" Height="20" />
+                <TextBlock Text="Einstellungen" VerticalAlignment="Center" FontSize="13" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </Grid>
+
+        <!-- Navigation -->
+        <ScrollViewer DockPanel.Dock="Top" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="2">
+
+            <!-- Dashboard -->
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Grid.Column="0" Classes="NavIndicator"
+                      Classes.Active="{Binding IsDashboardActive}" />
+              <Button Grid.Column="1" Classes="NavButton"
+                      Classes.Active="{Binding IsDashboardActive}"
+                      Command="{Binding NavigateToCommand}"
+                      CommandParameter="Dashboard">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <mi:MaterialIcon Kind="ViewDashboard" Width="20" Height="20" />
+                  <TextBlock Text="Dashboard" VerticalAlignment="Center" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- Scanner -->
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Grid.Column="0" Classes="NavIndicator"
+                      Classes.Active="{Binding IsScannerActive}" />
+              <Button Grid.Column="1" Classes="NavButton"
+                      Classes.Active="{Binding IsScannerActive}"
+                      Command="{Binding NavigateToCommand}"
+                      CommandParameter="Scanner">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <mi:MaterialIcon Kind="Radar" Width="20" Height="20" />
+                  <TextBlock Text="Scanner" VerticalAlignment="Center" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- Strategie -->
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Grid.Column="0" Classes="NavIndicator"
+                      Classes.Active="{Binding IsStrategyActive}" />
+              <Button Grid.Column="1" Classes="NavButton"
+                      Classes.Active="{Binding IsStrategyActive}"
+                      Command="{Binding NavigateToCommand}"
+                      CommandParameter="Strategie">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <mi:MaterialIcon Kind="ChartLine" Width="20" Height="20" />
+                  <TextBlock Text="Strategie" VerticalAlignment="Center" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- Backtest -->
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Grid.Column="0" Classes="NavIndicator"
+                      Classes.Active="{Binding IsBacktestActive}" />
+              <Button Grid.Column="1" Classes="NavButton"
+                      Classes.Active="{Binding IsBacktestActive}"
+                      Command="{Binding NavigateToCommand}"
+                      CommandParameter="Backtest">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <mi:MaterialIcon Kind="History" Width="20" Height="20" />
+                  <TextBlock Text="Backtest" VerticalAlignment="Center" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- Trade-History -->
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Grid.Column="0" Classes="NavIndicator"
+                      Classes.Active="{Binding IsTradeHistoryActive}" />
+              <Button Grid.Column="1" Classes="NavButton"
+                      Classes.Active="{Binding IsTradeHistoryActive}"
+                      Command="{Binding NavigateToCommand}"
+                      CommandParameter="TradeHistory">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <mi:MaterialIcon Kind="FormatListBulleted" Width="20" Height="20" />
+                  <TextBlock Text="Trade-History" VerticalAlignment="Center" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- Risk-Settings -->
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Grid.Column="0" Classes="NavIndicator"
+                      Classes.Active="{Binding IsRiskSettingsActive}" />
+              <Button Grid.Column="1" Classes="NavButton"
+                      Classes.Active="{Binding IsRiskSettingsActive}"
+                      Command="{Binding NavigateToCommand}"
+                      CommandParameter="RiskSettings">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <mi:MaterialIcon Kind="ShieldCheck" Width="20" Height="20" />
+                  <TextBlock Text="Risk-Management" VerticalAlignment="Center" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- Log -->
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Grid.Column="0" Classes="NavIndicator"
+                      Classes.Active="{Binding IsLogActive}" />
+              <Button Grid.Column="1" Classes="NavButton"
+                      Classes.Active="{Binding IsLogActive}"
+                      Command="{Binding NavigateToCommand}"
+                      CommandParameter="Log">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <mi:MaterialIcon Kind="Console" Width="20" Height="20" />
+                  <TextBlock Text="Log" VerticalAlignment="Center" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- Content Area (Spalte 1, Zeile 0)                                -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <Border Grid.Column="1" Grid.Row="0"
+            Background="{DynamicResource AppBackgroundBrush}"
+            Padding="24">
+      <Grid>
+        <!-- Dashboard -->
+        <Border Classes="TabContent" Classes.Active="{Binding IsDashboardActive}">
+          <views:DashboardView />
+        </Border>
+
+        <!-- Scanner -->
+        <Border Classes="TabContent" Classes.Active="{Binding IsScannerActive}">
+          <views:ScannerView />
+        </Border>
+
+        <!-- Strategie -->
+        <Border Classes="TabContent" Classes.Active="{Binding IsStrategyActive}">
+          <views:StrategyView />
+        </Border>
+
+        <!-- Backtest -->
+        <Border Classes="TabContent" Classes.Active="{Binding IsBacktestActive}">
+          <views:BacktestView />
+        </Border>
+
+        <!-- Trade-History -->
+        <Border Classes="TabContent" Classes.Active="{Binding IsTradeHistoryActive}">
+          <views:TradeHistoryView />
+        </Border>
+
+        <!-- Risk-Settings -->
+        <Border Classes="TabContent" Classes.Active="{Binding IsRiskSettingsActive}">
+          <views:RiskSettingsView />
+        </Border>
+
+        <!-- Log -->
+        <Border Classes="TabContent" Classes.Active="{Binding IsLogActive}">
+          <views:LogView />
+        </Border>
+
+        <!-- Settings -->
+        <Border Classes="TabContent" Classes.Active="{Binding IsSettingsActive}">
+          <views:SettingsView />
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- Status Bar (Spalte 1, Zeile 1)                                  -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <Border Grid.Column="1" Grid.Row="1"
+            Background="{DynamicResource AppSurfaceBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="16,8">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Verbindungsstatus -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+          <Ellipse Width="8" Height="8" Fill="{DynamicResource AppLossBrush}"
+                   VerticalAlignment="Center" />
+          <TextBlock Text="{Binding ConnectionStatus}"
+                     Foreground="{DynamicResource AppTextSecondaryBrush}"
+                     FontSize="12" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Modus und Bot-Status -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="Modus:" FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       VerticalAlignment="Center" />
+            <TextBlock Text="{Binding TradingMode}" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppWarningBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+          <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="0,2" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="Status:" FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       VerticalAlignment="Center" />
+            <TextBlock Text="{Binding BotStatus}" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+  </Grid>
+</UserControl>

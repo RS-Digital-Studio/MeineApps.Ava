@@ -90,6 +90,16 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- CRYPTOGRAPHY                                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.4" />
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- TRADING INDICATORS                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="Skender.Stock.Indicators" Version="2.7.1" />
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TESTING                                                          -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />

@@ -23,7 +23,7 @@ dotnet publish src/Apps/{App}/{App}.Desktop -c Release -r linux-x64
 # Android Release (AAB)
 dotnet publish src/Apps/{App}/{App}.Android -c Release
 
-# AppChecker v2.0 (22 Checker, 150+ Pruefungen) - Alle 8 Apps / Einzelne App
+# AppChecker v2.0 (22 Checker, 150+ Pruefungen) - Alle 9 Apps / Einzelne App
 dotnet run --project tools/AppChecker
 dotnet run --project tools/AppChecker {App}
 
@@ -59,7 +59,7 @@ F:\Meine_Apps_Ava\
 │   ├── UI/
 │   │   └── MeineApps.UI/           # Shared UI Components
 │   │
-│   └── Apps/                       # 9 Apps, jeweils Shared/Android/Desktop
+│   └── Apps/                       # 10 Apps, jeweils Shared/Android/Desktop
 │       ├── RechnerPlus/            # Taschenrechner (werbefrei)
 │       ├── ZeitManager/            # Timer/Stoppuhr/Alarm (werbefrei)
 │       ├── FinanzRechner/          # 6 Finanzrechner + Budget-Tracker
@@ -68,7 +68,8 @@ F:\Meine_Apps_Ava\
 │       ├── WorkTimePro/            # Arbeitszeiterfassung + Export
 │       ├── HandwerkerImperium/     # Idle-Game (Werkstaetten + Arbeiter)
 │       ├── BomberBlast/            # Bomberman-Klon (SkiaSharp, Landscape)
-│       └── RebornSaga/             # Anime Isekai-RPG (Volle SkiaSharp-Engine)
+│       ├── RebornSaga/             # Anime Isekai-RPG (Volle SkiaSharp-Engine)
+│       └── BingXBot/               # Trading Bot (BingX Futures, Desktop-only)
 │
 ├── tools/
 │   ├── AppChecker/              # 10 Check-Kategorien, 100+ Pruefungen
@@ -82,7 +83,7 @@ F:\Meine_Apps_Ava\
 
 ## Status (6. März 2026)
 
-7 Apps im geschlossenen Test. HandwerkerImperium in Produktion. 9. App (RebornSaga) in Entwicklung.
+7 Apps im geschlossenen Test. HandwerkerImperium in Produktion. RebornSaga + BingXBot in Entwicklung.
 
 | App | Version | Ads | Premium | Status |
 |-----|---------|-----|---------|--------|
@@ -92,9 +93,10 @@ F:\Meine_Apps_Ava\
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.0.20 | Banner + Rewarded | 4,99 Premium | Produktion |
+| HandwerkerImperium | v2.0.22 | Banner + Rewarded | 4,99 Premium | Produktion |
 | BomberBlast | v2.0.27 | Banner + Rewarded | 1,99 remove_ads | Geschlossener Test |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
+| BingXBot | v1.0.0 | Nein | Nein | Entwicklung (Desktop-only) |
 
 ---
 
@@ -113,6 +115,7 @@ Jede App hat eine eigene `Themes/AppPalette.axaml` im Shared-Projekt, statisch i
 | HandwerkerImperium | #D97706 Amber | Warme Werkstatt |
 | BomberBlast | #FF6B35 Orange | Neon Arcade |
 | RebornSaga | #4A90D9 Blau | Isekai System Blue |
+| BingXBot | #3B82F6 Blau | Dark Trading Terminal |
 
 Implementierung: Jede App laedt `<StyleInclude Source="/Themes/AppPalette.axaml" />` in App.axaml. Alle DynamicResource-Keys bleiben identisch. Design-Tokens (Spacing, Radius, Fonts) kommen weiterhin aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml`.
 
@@ -200,7 +203,7 @@ _childVM.NavigationRequested += route => CurrentPage = route;
 - `".."` = zurueck zum Parent
 - `"../subpage"` = zum Parent, dann zu subpage
 
-### Android Back-Button Pattern (einheitlich, alle 8 Apps)
+### Android Back-Button Pattern (einheitlich, alle 9 Apps)
 
 ```csharp
 // MainViewModel: Double-Back-to-Exit via BackPressHelper (MeineApps.Core.Ava.Services)
@@ -382,6 +385,8 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Play Review Namespace falsch | `Com.Google.Android.Play.Core.Review` existiert nicht | `Xamarin.Google.Android.Play.Core.Review` verwenden. Task/IOnCompleteListener aus `Android.Gms.Tasks`. `ReviewInfo` (Klasse), NICHT `IReviewInfo` |
 | MediaPlayer.PrepareAsync() gibt void zurück | Android Java-Binding: PrepareAsync() ist void, nicht Task | `Prepare()` synchron verwenden oder TaskCompletionSource mit Prepared-Event |
 | SKMaskFilter Native Memory Leak (OOM auf Android) | `paint.MaskFilter = SKMaskFilter.CreateBlur(...)` ohne Dispose des vorherigen Filters | Gecachte statische SKMaskFilter verwenden oder `paint.MaskFilter?.Dispose()` vor jeder Neuzuweisung |
+| JsonSerializer.Serialize auf Background-Thread → Collection-Crash | `Task.Run(() => Serialize(state))` waehrend GameLoop den State modifiziert | Serialisierung auf dem UI-Thread belassen (State ist klein, ~5-20ms). Alternative: DeepCopy vor Serialize |
+| Service-Caches stale nach Prestige/Import/Reset | GameLoopService/CraftingService subscriben nicht auf StateLoaded → Caches zeigen auf verwaiste Objekte | ALLE Services mit internen Caches MUESSEN `StateLoaded += ResetCaches` im Konstruktor haben |
 | Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel | `PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium` Key fehlt | `IPurchaseService.InitializeAsync()` in Loading-Pipeline aufrufen (parallel zum ersten Schritt). Stellt Käufe + Abos via Google Play Billing wieder her |
 | SKCanvasView Game-Loop startet nicht (Countdown stuck) | ContentControl+ViewLocator setzt DataContext verzögert → `InvalidateCanvasRequested` hat beim `StartGameLoop()` keinen Subscriber → Render-Timer startet nie | 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded als Backup, (3) OnPaintSurface Safety-Net startet Timer nach. `TrySubscribeToViewModel()` als zentrale idempotente Methode |
 

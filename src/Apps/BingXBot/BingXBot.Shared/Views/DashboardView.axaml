@@ -1,0 +1,324 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             x:Class="BingXBot.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+  <UserControl.Styles>
+    <!-- P&L-Farbe: Positiv = Grün, Negativ = Rot -->
+    <Style Selector="TextBlock.PnlPositive">
+      <Setter Property="Foreground" Value="{DynamicResource AppProfitBrush}" />
+    </Style>
+    <Style Selector="TextBlock.PnlNegative">
+      <Setter Property="Foreground" Value="{DynamicResource AppLossBrush}" />
+    </Style>
+
+    <!-- Bot-Button Styles -->
+    <Style Selector="Button.BotButton">
+      <Setter Property="Padding" Value="16,10" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="MinWidth" Value="100" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.BotStart">
+      <Setter Property="Background" Value="{DynamicResource SuccessBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.BotStart:pointerover">
+      <Setter Property="Background" Value="#34D399" />
+    </Style>
+    <Style Selector="Button.BotPause">
+      <Setter Property="Background" Value="{DynamicResource WarningBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.BotPause:pointerover">
+      <Setter Property="Background" Value="#FBBF24" />
+    </Style>
+    <Style Selector="Button.BotStop">
+      <Setter Property="Background" Value="{DynamicResource ErrorBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.BotStop:pointerover">
+      <Setter Property="Background" Value="#F87171" />
+    </Style>
+    <Style Selector="Button.BotEmergency">
+      <Setter Property="Background" Value="{DynamicResource ErrorBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.BotEmergency:pointerover">
+      <Setter Property="Background" Value="#DC2626" />
+    </Style>
+
+    <!-- Modus-Toggle Button -->
+    <Style Selector="Button.ModeToggle">
+      <Setter Property="Padding" Value="20,10" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+    </Style>
+    <Style Selector="Button.ModeToggle:pointerover">
+      <Setter Property="Background" Value="{DynamicResource CardHoverBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="20" Margin="0,0,0,24">
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Balance-Cards (4er Grid)                                        -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <UniformGrid Columns="4" Rows="1">
+
+        <!-- Balance -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+                Padding="16" Margin="0,0,8,0"
+                BoxShadow="{DynamicResource CardShadow}">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Wallet" Width="16" Height="16"
+                               Foreground="{DynamicResource AppPrimaryBrush}" />
+              <TextBlock Text="Balance" FontSize="12"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+            <TextBlock Text="{Binding Balance, StringFormat='{}{0:N2} USDT'}"
+                       FontSize="22" FontWeight="Bold"
+                       Foreground="{DynamicResource AppTextBrush}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Verfügbar -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+                Padding="16" Margin="4,0"
+                BoxShadow="{DynamicResource CardShadow}">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="CashMultiple" Width="16" Height="16"
+                               Foreground="{DynamicResource AccentBrush}" />
+              <TextBlock Text="Verfügbar" FontSize="12"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+            <TextBlock Text="{Binding AvailableBalance, StringFormat='{}{0:N2} USDT'}"
+                       FontSize="22" FontWeight="Bold"
+                       Foreground="{DynamicResource AppTextBrush}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Unrealisiert -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+                Padding="16" Margin="4,0"
+                BoxShadow="{DynamicResource CardShadow}">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="TrendingUp" Width="16" Height="16"
+                               Foreground="{DynamicResource AppProfitBrush}" />
+              <TextBlock Text="Unrealisiert" FontSize="12"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+            <TextBlock Text="{Binding UnrealizedPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00} USDT'}"
+                       FontSize="22" FontWeight="Bold"
+                       Foreground="{DynamicResource AppProfitBrush}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Gesamt-PnL -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+                Padding="16" Margin="8,0,0,0"
+                BoxShadow="{DynamicResource CardShadow}">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="ChartAreaspline" Width="16" Height="16"
+                               Foreground="{DynamicResource AppProfitBrush}" />
+              <TextBlock Text="Gesamt-PnL" FontSize="12"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+            <TextBlock Text="{Binding TotalPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00} USDT'}"
+                       FontSize="22" FontWeight="Bold"
+                       Foreground="{DynamicResource AppProfitBrush}" />
+          </StackPanel>
+        </Border>
+
+      </UniformGrid>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Bot-Controls + Modus-Toggle                                     -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Grid ColumnDefinitions="*,Auto">
+
+        <!-- Bot-Controls -->
+        <Border Grid.Column="0" Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+                Padding="20,16" Margin="0,0,8,0"
+                BoxShadow="{DynamicResource CardShadow}">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="RobotOutline" Width="18" Height="18"
+                               Foreground="{DynamicResource AppPrimaryBrush}" />
+              <TextBlock Text="Bot-Steuerung" FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+              <!-- Status-Badge -->
+              <Border CornerRadius="10" Padding="10,3" Margin="8,0,0,0"
+                      Background="{DynamicResource CardBrush}">
+                <TextBlock Text="{Binding BotStatus}" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AppTextSecondaryBrush}" />
+              </Border>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Classes="BotButton BotStart" Content="Start"
+                      Command="{Binding StartBotCommand}" />
+              <Button Classes="BotButton BotPause" Content="Pause"
+                      Command="{Binding PauseBotCommand}" />
+              <Button Classes="BotButton BotStop" Content="Stop"
+                      Command="{Binding StopBotCommand}" />
+              <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="8,4" />
+              <Button Classes="BotButton BotEmergency" Content="EMERGENCY STOP"
+                      Command="{Binding EmergencyStopCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Modus-Toggle -->
+        <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+                Padding="20,16" MinWidth="180"
+                BoxShadow="{DynamicResource CardShadow}">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="SwapHorizontal" Width="18" Height="18"
+                               Foreground="{DynamicResource AppWarningBrush}" />
+              <TextBlock Text="Trading-Modus" FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <StackPanel Spacing="8" HorizontalAlignment="Center">
+              <Button Classes="ModeToggle" Command="{Binding ToggleModeCommand}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="TestTube" Width="16" Height="16"
+                                   IsVisible="{Binding IsPaperMode}" />
+                  <mi:MaterialIcon Kind="CurrencyUsd" Width="16" Height="16"
+                                   IsVisible="{Binding !IsPaperMode}" />
+                  <TextBlock Text="{Binding TradingModeText}" FontSize="14" FontWeight="SemiBold" />
+                </StackPanel>
+              </Button>
+              <TextBlock Text="Klicken zum Umschalten" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Offene Positionen                                               -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="FormatListBulleted" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Offene Positionen" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+            <Border CornerRadius="10" Padding="8,3" Margin="8,0,0,0"
+                    Background="{DynamicResource CardBrush}">
+              <TextBlock Text="{Binding OpenPositions.Count, StringFormat='{}{0}'}"
+                         FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </Border>
+          </StackPanel>
+
+          <!-- Tabellen-Header -->
+          <Grid ColumnDefinitions="*,80,120,120,100,120,80">
+            <TextBlock Grid.Column="0" Text="Symbol" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="1" Text="Seite" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="2" Text="Einstieg" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="3" Text="Mark" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="4" Text="Menge" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="5" Text="P&amp;L" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="6" Text="Hebel" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource AppBorderBrush}" />
+
+          <!-- Positions-Liste -->
+          <ItemsControl ItemsSource="{Binding OpenPositions}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:PositionDisplayItem">
+                <Grid ColumnDefinitions="*,80,120,120,100,120,80" Margin="0,6">
+                  <TextBlock Grid.Column="0" Text="{Binding Symbol}" FontSize="13" FontWeight="SemiBold"
+                             Foreground="{DynamicResource AppTextBrush}" />
+                  <TextBlock Grid.Column="1" Text="{Binding Side}" FontSize="13"
+                             Foreground="{DynamicResource AppTextBrush}" />
+                  <TextBlock Grid.Column="2" Text="{Binding EntryPrice, StringFormat='{}{0:N4}'}"
+                             FontSize="13" Foreground="{DynamicResource AppTextBrush}"
+                             HorizontalAlignment="Right" />
+                  <TextBlock Grid.Column="3" Text="{Binding MarkPrice, StringFormat='{}{0:N4}'}"
+                             FontSize="13" Foreground="{DynamicResource AppTextBrush}"
+                             HorizontalAlignment="Right" />
+                  <TextBlock Grid.Column="4" Text="{Binding Quantity, StringFormat='{}{0:N4}'}"
+                             FontSize="13" Foreground="{DynamicResource AppTextBrush}"
+                             HorizontalAlignment="Right" />
+                  <TextBlock Grid.Column="5"
+                             Text="{Binding Pnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00}'}"
+                             FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right"
+                             Classes.PnlPositive="{Binding IsProfit}"
+                             Classes.PnlNegative="{Binding !IsProfit}" />
+                  <TextBlock Grid.Column="6" Text="{Binding Leverage, StringFormat='{}{0}x'}"
+                             FontSize="13" Foreground="{DynamicResource AppTextSecondaryBrush}"
+                             HorizontalAlignment="Right" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Leer-Zustand -->
+          <TextBlock Text="Keine offenen Positionen" FontSize="13"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center" Margin="0,12"
+                     IsVisible="{Binding !OpenPositions.Count}" />
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Equity-Kurve (Platzhalter)                                      -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16" MinHeight="200"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="ChartAreaspline" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Equity-Kurve" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Equity-Chart (SkiaSharp) -->
+          <skia:SKCanvasView x:Name="EquityCanvas" PaintSurface="OnEquityPaintSurface"
+                             MinHeight="200" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

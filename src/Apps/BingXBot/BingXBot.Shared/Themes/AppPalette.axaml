@@ -1,0 +1,159 @@
+<Styles xmlns="https://github.com/avaloniaui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- BingXBot - "Trading Terminal Dark"                                      -->
+  <!-- Dunkles Trading-Theme mit Blue/Purple Akzenten                         -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+  <Style>
+    <Style.Resources>
+      <!-- Primary Colors -->
+      <Color x:Key="PrimaryColor">#3B82F6</Color>
+      <Color x:Key="PrimaryHoverColor">#60A5FA</Color>
+      <Color x:Key="PrimaryPressedColor">#2563EB</Color>
+      <Color x:Key="PrimaryContrastColor">#FFFFFF</Color>
+
+      <!-- Secondary Colors -->
+      <Color x:Key="SecondaryColor">#8B5CF6</Color>
+      <Color x:Key="SecondaryHoverColor">#A78BFA</Color>
+      <Color x:Key="SecondaryPressedColor">#7C3AED</Color>
+
+      <!-- Accent Colors -->
+      <Color x:Key="AccentColor">#60A5FA</Color>
+      <Color x:Key="AccentHoverColor">#93C5FD</Color>
+
+      <!-- Feature Accent Colors (Trading-spezifisch) -->
+      <Color x:Key="ProfitColor">#10B981</Color>
+      <Color x:Key="LossColor">#EF4444</Color>
+      <Color x:Key="WarningAccentColor">#F59E0B</Color>
+
+      <!-- Background Colors (Trading Dark) -->
+      <Color x:Key="BackgroundColor">#1E1E2E</Color>
+      <Color x:Key="SurfaceColor">#2A2A3D</Color>
+      <Color x:Key="CardColor">#363650</Color>
+      <Color x:Key="CardHoverColor">#3F3F5C</Color>
+
+      <!-- Text Colors -->
+      <Color x:Key="TextPrimaryColor">#E2E8F0</Color>
+      <Color x:Key="TextSecondaryColor">#94A3B8</Color>
+      <Color x:Key="TextMutedColor">#64748B</Color>
+      <Color x:Key="TextDisabledColor">#475569</Color>
+
+      <!-- Border Colors -->
+      <Color x:Key="BorderColor">#3F3F5C</Color>
+      <Color x:Key="BorderSubtleColor">#363650</Color>
+      <Color x:Key="BorderFocusColor">#3B82F6</Color>
+
+      <!-- Semantic Colors -->
+      <Color x:Key="SuccessColor">#10B981</Color>
+      <Color x:Key="SuccessBackgroundColor">#064E3B</Color>
+      <Color x:Key="WarningColor">#F59E0B</Color>
+      <Color x:Key="WarningBackgroundColor">#78350F</Color>
+      <Color x:Key="ErrorColor">#EF4444</Color>
+      <Color x:Key="ErrorBackgroundColor">#7F1D1D</Color>
+      <Color x:Key="InfoColor">#3B82F6</Color>
+      <Color x:Key="InfoBackgroundColor">#1E3A8A</Color>
+
+      <!-- Shadow / Overlay -->
+      <Color x:Key="ShadowColor">#000000</Color>
+      <Color x:Key="OverlayColor">#80000000</Color>
+      <Color x:Key="RippleColor">#20FFFFFF</Color>
+
+      <!-- Gradient -->
+      <Color x:Key="GradientStartColor">#2A2A3D</Color>
+      <Color x:Key="GradientMidColor">#1E1E2E</Color>
+      <Color x:Key="GradientEndColor">#1A1A2E</Color>
+
+      <!-- App-spezifische Trading-Farben -->
+      <Color x:Key="AppPrimaryColor">#3B82F6</Color>
+      <Color x:Key="AppPrimaryLightColor">#60A5FA</Color>
+      <Color x:Key="AppPrimaryDarkColor">#2563EB</Color>
+      <Color x:Key="AppSecondaryColor">#8B5CF6</Color>
+      <Color x:Key="AppBackgroundColor">#1E1E2E</Color>
+      <Color x:Key="AppSurfaceColor">#2A2A3D</Color>
+      <Color x:Key="AppSurfaceLightColor">#363650</Color>
+      <Color x:Key="AppTextColor">#E2E8F0</Color>
+      <Color x:Key="AppTextSecondaryColor">#94A3B8</Color>
+      <Color x:Key="AppProfitColor">#10B981</Color>
+      <Color x:Key="AppLossColor">#EF4444</Color>
+      <Color x:Key="AppWarningColor">#F59E0B</Color>
+      <Color x:Key="AppBorderColor">#3F3F5C</Color>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- BRUSHES                                                        -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+
+      <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
+      <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{DynamicResource PrimaryHoverColor}" />
+      <SolidColorBrush x:Key="PrimaryPressedBrush" Color="{DynamicResource PrimaryPressedColor}" />
+      <SolidColorBrush x:Key="PrimaryContrastBrush" Color="{DynamicResource PrimaryContrastColor}" />
+
+      <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />
+      <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
+
+      <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
+      <SolidColorBrush x:Key="CardBrush" Color="{DynamicResource CardColor}" />
+      <SolidColorBrush x:Key="CardHoverBrush" Color="{DynamicResource CardHoverColor}" />
+
+      <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}" />
+      <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}" />
+      <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMutedColor}" />
+      <SolidColorBrush x:Key="TextDisabledBrush" Color="{DynamicResource TextDisabledColor}" />
+
+      <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}" />
+      <SolidColorBrush x:Key="BorderSubtleBrush" Color="{DynamicResource BorderSubtleColor}" />
+      <SolidColorBrush x:Key="BorderFocusBrush" Color="{DynamicResource BorderFocusColor}" />
+
+      <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}" />
+      <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="{DynamicResource SuccessBackgroundColor}" />
+      <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource WarningColor}" />
+      <SolidColorBrush x:Key="WarningBackgroundBrush" Color="{DynamicResource WarningBackgroundColor}" />
+      <SolidColorBrush x:Key="ErrorBrush" Color="{DynamicResource ErrorColor}" />
+      <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="{DynamicResource ErrorBackgroundColor}" />
+      <SolidColorBrush x:Key="InfoBrush" Color="{DynamicResource InfoColor}" />
+      <SolidColorBrush x:Key="InfoBackgroundBrush" Color="{DynamicResource InfoBackgroundColor}" />
+
+      <SolidColorBrush x:Key="OverlayBrush" Color="{DynamicResource OverlayColor}" />
+      <SolidColorBrush x:Key="RippleBrush" Color="{DynamicResource RippleColor}" />
+
+      <!-- Trading-spezifische Brushes -->
+      <SolidColorBrush x:Key="AppPrimaryBrush" Color="{DynamicResource AppPrimaryColor}" />
+      <SolidColorBrush x:Key="AppPrimaryLightBrush" Color="{DynamicResource AppPrimaryLightColor}" />
+      <SolidColorBrush x:Key="AppPrimaryDarkBrush" Color="{DynamicResource AppPrimaryDarkColor}" />
+      <SolidColorBrush x:Key="AppSecondaryBrush" Color="{DynamicResource AppSecondaryColor}" />
+      <SolidColorBrush x:Key="AppBackgroundBrush" Color="{DynamicResource AppBackgroundColor}" />
+      <SolidColorBrush x:Key="AppSurfaceBrush" Color="{DynamicResource AppSurfaceColor}" />
+      <SolidColorBrush x:Key="AppSurfaceLightBrush" Color="{DynamicResource AppSurfaceLightColor}" />
+      <SolidColorBrush x:Key="AppTextBrush" Color="{DynamicResource AppTextColor}" />
+      <SolidColorBrush x:Key="AppTextSecondaryBrush" Color="{DynamicResource AppTextSecondaryColor}" />
+      <SolidColorBrush x:Key="AppProfitBrush" Color="{DynamicResource AppProfitColor}" />
+      <SolidColorBrush x:Key="AppLossBrush" Color="{DynamicResource AppLossColor}" />
+      <SolidColorBrush x:Key="AppWarningBrush" Color="{DynamicResource AppWarningColor}" />
+      <SolidColorBrush x:Key="AppBorderBrush" Color="{DynamicResource AppBorderColor}" />
+
+      <!-- Box Shadows -->
+      <BoxShadows x:Key="CardShadow">0 2 8 0 #40000000, 0 1 4 0 #30000000</BoxShadows>
+      <BoxShadows x:Key="CardShadowHover">0 4 12 -1 #50000000, 0 2 6 -1 #40000000</BoxShadows>
+      <BoxShadows x:Key="ElevatedShadow">0 10 20 -3 #40000000, 0 4 8 -2 #30000000</BoxShadows>
+      <BoxShadows x:Key="ModalShadow">0 20 30 -5 #50000000, 0 10 15 -5 #40000000</BoxShadows>
+
+      <!-- Trading-spezifische Gradients -->
+      <LinearGradientBrush x:Key="SidebarGradientBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#2A2A3D" Offset="0" />
+        <GradientStop Color="#1E1E2E" Offset="1" />
+      </LinearGradientBrush>
+
+      <LinearGradientBrush x:Key="ActiveNavGradientBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Color="#1A3B82F6" Offset="0" />
+        <GradientStop Color="#003B82F6" Offset="1" />
+      </LinearGradientBrush>
+
+      <!-- Theme Identifier -->
+      <x:String x:Key="ThemeName">BingXBot</x:String>
+      <x:Boolean x:Key="IsDarkTheme">True</x:Boolean>
+    </Style.Resources>
+  </Style>
+
+</Styles>

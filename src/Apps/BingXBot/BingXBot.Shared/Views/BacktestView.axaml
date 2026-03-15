@@ -1,0 +1,373 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.BacktestView"
+             x:DataType="vm:BacktestViewModel">
+
+  <DockPanel>
+
+    <!-- Titel -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="0,0,0,20">
+      <mi:MaterialIcon Kind="History" Width="28" Height="28"
+                       Foreground="{DynamicResource AppPrimaryBrush}" />
+      <TextBlock Text="Backtest" FontSize="22" FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
+                 VerticalAlignment="Center" />
+    </StackPanel>
+
+    <!-- Trade-Liste unten -->
+    <Border DockPanel.Dock="Bottom"
+            Background="{DynamicResource CardBrush}"
+            CornerRadius="8" Margin="0,16,0,0"
+            BoxShadow="{DynamicResource CardShadow}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="1"
+            IsVisible="{Binding HasResult}"
+            MaxHeight="220">
+      <DockPanel>
+        <!-- Header -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="8,8,0,0"
+                Padding="16,10">
+          <Grid ColumnDefinitions="*,80,100,100,80">
+            <TextBlock Grid.Column="0" Text="Symbol" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="1" Text="Seite" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="Entry" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="3" Text="Exit" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="4" Text="P&amp;L" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+          </Grid>
+        </Border>
+
+        <!-- Trade-Zeilen -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Trades}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:BacktestTradeItem">
+                <Border Padding="16,8"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}"
+                        BorderThickness="0,0,0,1">
+                  <Grid ColumnDefinitions="*,80,100,100,80">
+                    <TextBlock Grid.Column="0" Text="{Binding Symbol}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                    <!-- Seite (Long/Short) -->
+                    <Border Grid.Column="1" CornerRadius="4" Padding="8,2"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                      <Border.Background>
+                        <SolidColorBrush Color="{DynamicResource InfoBackgroundColor}" />
+                      </Border.Background>
+                      <TextBlock Text="{Binding Side}" FontSize="11"
+                                 Foreground="{DynamicResource InfoBrush}"
+                                 HorizontalAlignment="Center" />
+                    </Border>
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Entry, StringFormat={}{0:N2}}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding Exit, StringFormat={}{0:N2}}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <!-- P&L farbcodiert: Gewinn grün, Verlust rot -->
+                    <TextBlock Grid.Column="4"
+                               Text="{Binding Pnl, StringFormat={}{0:+0.00;-0.00}}"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource SuccessBrush}"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                               IsVisible="{Binding IsWin}" />
+                    <TextBlock Grid.Column="4"
+                               Text="{Binding Pnl, StringFormat={}{0:+0.00;-0.00}}"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ErrorBrush}"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                               IsVisible="{Binding !IsWin}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- Hauptbereich: Settings links, Ergebnis-Cards rechts -->
+    <Grid ColumnDefinitions="280,16,*">
+
+      <!-- ═══ Settings (links) ═══ -->
+      <Border Grid.Column="0"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="8" Padding="20"
+              BoxShadow="{DynamicResource CardShadow}"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="1">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="14">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Cog" Width="18" Height="18"
+                               Foreground="{DynamicResource AppPrimaryBrush}" />
+              <TextBlock Text="Konfiguration" FontSize="13" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Symbol (editierbare ComboBox mit verfügbaren Symbolen von BingX) -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Symbol" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <ComboBox ItemsSource="{Binding AvailableSymbols}"
+                        SelectedItem="{Binding Symbol, Mode=TwoWay}"
+                        IsEditable="True"
+                        PlaceholderText="BTC-USDT"
+                        HorizontalAlignment="Stretch"
+                        FontSize="13"
+                        Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+
+            <!-- Strategie -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Strategie" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <ComboBox ItemsSource="{Binding Strategies}"
+                        SelectedItem="{Binding SelectedStrategy}"
+                        HorizontalAlignment="Stretch"
+                        Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+
+            <!-- Zeitrahmen -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Zeitrahmen" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <ComboBox ItemsSource="{Binding TimeFrames}"
+                        SelectedItem="{Binding SelectedTimeFrame}"
+                        HorizontalAlignment="Stretch"
+                        Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+
+            <!-- Zeitraum -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Start-Datum" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <CalendarDatePicker SelectedDate="{Binding StartDate, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch"
+                                  Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Text="End-Datum" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <CalendarDatePicker SelectedDate="{Binding EndDate, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch"
+                                  Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+
+            <!-- Start-Balance -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Start-Balance ($)" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBox Text="{Binding InitialBalance, Mode=TwoWay}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       Background="{DynamicResource SurfaceBrush}"
+                       BorderBrush="{DynamicResource BorderBrush}" />
+            </StackPanel>
+
+            <!-- Leverage -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Hebel (x)" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBox Text="{Binding Leverage, Mode=TwoWay}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       Background="{DynamicResource SurfaceBrush}"
+                       BorderBrush="{DynamicResource BorderBrush}" />
+            </StackPanel>
+
+            <!-- Start-Button -->
+            <Button Command="{Binding RunBacktestCommand}"
+                    IsEnabled="{Binding !IsRunning}"
+                    HorizontalAlignment="Stretch"
+                    Padding="0,10"
+                    CornerRadius="6"
+                    Cursor="Hand"
+                    HorizontalContentAlignment="Center">
+              <Button.Background>
+                <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
+              </Button.Background>
+              <StackPanel Orientation="Horizontal" Spacing="8"
+                          HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="PlayCircleOutline" Width="18" Height="18"
+                                 Foreground="{DynamicResource PrimaryContrastBrush}" />
+                <TextBlock Text="Backtest starten" FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryContrastBrush}" />
+              </StackPanel>
+            </Button>
+
+            <!-- Progress -->
+            <StackPanel Spacing="4" IsVisible="{Binding IsRunning}">
+              <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100"
+                           Foreground="{DynamicResource AppPrimaryBrush}"
+                           Background="{DynamicResource SurfaceBrush}"
+                           Height="6" CornerRadius="3" />
+              <TextBlock Text="{Binding StatusText}" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Status (wenn nicht laufend) -->
+            <TextBlock Text="{Binding StatusText}" FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center"
+                       IsVisible="{Binding !IsRunning}" />
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
+      <!-- ═══ Ergebnis-Cards (rechts) ═══ -->
+      <Border Grid.Column="2"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="8" Padding="20"
+              BoxShadow="{DynamicResource CardShadow}"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="1">
+        <Panel>
+
+        <!-- Kein Ergebnis: Platzhalter -->
+        <StackPanel IsVisible="{Binding !HasResult}"
+                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Spacing="8">
+          <mi:MaterialIcon Kind="ChartBoxOutline" Width="48" Height="48"
+                           Foreground="{DynamicResource TextMutedBrush}" Opacity="0.4"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="Backtest starten um Ergebnisse zu sehen" FontSize="13"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Ergebnis-Grid -->
+        <Grid IsVisible="{Binding HasResult}"
+              RowDefinitions="Auto,16,Auto,16,Auto"
+              ColumnDefinitions="*,12,*,12,*,12,*">
+
+          <!-- Zeile 1: P&L, WinRate, Max DD, Sharpe -->
+          <!-- P&L -->
+          <Border Grid.Row="0" Grid.Column="0"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Gesamt-P&amp;L" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding TotalPnl, StringFormat={}{0:+0.00;-0.00} $}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource SuccessBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- WinRate -->
+          <Border Grid.Row="0" Grid.Column="2"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Win-Rate" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding WinRate, StringFormat={}{0:F1}%}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Max Drawdown -->
+          <Border Grid.Row="0" Grid.Column="4"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Max. Drawdown" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding MaxDrawdown, StringFormat={}{0:F1}%}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource ErrorBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Sharpe Ratio -->
+          <Border Grid.Row="0" Grid.Column="6"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Sharpe Ratio" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding SharpeRatio, StringFormat={}{0:F2}}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Zeile 2: Profit Factor, Trades, Avg Win, Avg Loss -->
+          <!-- Profit Factor -->
+          <Border Grid.Row="2" Grid.Column="0"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Profit Factor" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding ProfitFactor, StringFormat={}{0:F2}}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Total Trades -->
+          <Border Grid.Row="2" Grid.Column="2"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Trades" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding TotalTrades}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Avg Win -->
+          <Border Grid.Row="2" Grid.Column="4"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Avg. Win" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding AverageWin, StringFormat={}{0:+0.00} $}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource SuccessBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Avg Loss -->
+          <Border Grid.Row="2" Grid.Column="6"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Avg. Loss" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding AverageLoss, StringFormat={}{0:-0.00} $}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource ErrorBrush}" />
+            </StackPanel>
+          </Border>
+
+        </Grid>
+        </Panel>
+      </Border>
+
+    </Grid>
+  </DockPanel>
+
+</UserControl>

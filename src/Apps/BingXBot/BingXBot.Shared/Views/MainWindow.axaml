@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BingXBot.ViewModels"
+        x:Class="BingXBot.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="BingX Bot"
+        Width="1280"
+        Height="800"
+        MinWidth="900"
+        MinHeight="600"
+        Background="{DynamicResource AppBackgroundBrush}">
+
+</Window>

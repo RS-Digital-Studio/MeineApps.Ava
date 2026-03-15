@@ -1,0 +1,201 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+  <UserControl.Styles>
+    <!-- Einheitliches TextBox-Styling -->
+    <Style Selector="TextBox.SettingsInput">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="TextBox.SettingsInput:focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource AppPrimaryBrush}" />
+    </Style>
+
+    <!-- Einheitliche Buttons -->
+    <Style Selector="Button.SettingsButton">
+      <Setter Property="Padding" Value="16,10" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.Primary">
+      <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.Primary:pointerover">
+      <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.Danger">
+      <Setter Property="Background" Value="{DynamicResource ErrorBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.Danger:pointerover">
+      <Setter Property="Background" Value="#F87171" />
+    </Style>
+    <Style Selector="Button.Secondary">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+    </Style>
+    <Style Selector="Button.Secondary:pointerover">
+      <Setter Property="Background" Value="{DynamicResource CardHoverBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="20" Margin="0,0,0,24" MaxWidth="700">
+
+      <!-- Titel -->
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <mi:MaterialIcon Kind="Cog" Width="24" Height="24"
+                         Foreground="{DynamicResource AppPrimaryBrush}" />
+        <TextBlock Text="Einstellungen" FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: API-Konfiguration                                      -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Key" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="API-Konfiguration" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- API-Key -->
+          <StackPanel Spacing="6">
+            <TextBlock Text="API-Key" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="SettingsInput" Text="{Binding ApiKey}"
+                     Watermark="BingX API-Key eingeben..." />
+          </StackPanel>
+
+          <!-- API-Secret -->
+          <StackPanel Spacing="6">
+            <TextBlock Text="API-Secret" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="SettingsInput" Text="{Binding ApiSecret}"
+                     PasswordChar="*" RevealPassword="True"
+                     Watermark="BingX API-Secret eingeben..." />
+          </StackPanel>
+
+          <!-- Buttons -->
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+            <Button Classes="SettingsButton Primary" Content="Speichern"
+                    Command="{Binding SaveCredentialsCommand}">
+              <Button.Content>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
+                  <TextBlock Text="Speichern" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button.Content>
+            </Button>
+            <Button Classes="SettingsButton Danger"
+                    Command="{Binding DeleteCredentialsCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Delete" Width="16" Height="16" />
+                <TextBlock Text="Löschen" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Verbindung                                              -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="LanConnect" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Verbindung" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Status-Anzeige -->
+          <Border Background="{DynamicResource CardBrush}" CornerRadius="6"
+                  Padding="16,12">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                <Ellipse.Fill>
+                  <SolidColorBrush Color="{DynamicResource WarningColor}" />
+                </Ellipse.Fill>
+              </Ellipse>
+              <TextBlock Text="{Binding ConnectionStatus}" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Test-Button -->
+          <Button Classes="SettingsButton Secondary"
+                  Command="{Binding TestConnectionCommand}"
+                  IsEnabled="{Binding !IsConnecting}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <!-- Spinner wenn verbindend -->
+              <mi:MaterialIcon Kind="Loading" Width="16" Height="16"
+                               IsVisible="{Binding IsConnecting}"
+                               Foreground="{DynamicResource AppPrimaryBrush}">
+                <mi:MaterialIcon.RenderTransform>
+                  <RotateTransform />
+                </mi:MaterialIcon.RenderTransform>
+              </mi:MaterialIcon>
+              <mi:MaterialIcon Kind="LanCheck" Width="16" Height="16"
+                               IsVisible="{Binding !IsConnecting}" />
+              <TextBlock Text="Verbindung testen" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Logging                                                 -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Console" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Logging" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="Log-Level" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <ComboBox ItemsSource="{Binding LogLevels}"
+                      SelectedItem="{Binding SelectedLogLevel}"
+                      Background="{DynamicResource CardBrush}"
+                      Foreground="{DynamicResource AppTextBrush}"
+                      BorderBrush="{DynamicResource AppBorderBrush}"
+                      BorderThickness="1" CornerRadius="6"
+                      Padding="12,8" FontSize="13"
+                      MinWidth="200" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

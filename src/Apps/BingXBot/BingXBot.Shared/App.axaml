@@ -1,0 +1,17 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.App">
+
+  <Application.Styles>
+    <!-- Avalonia Fluent Theme (Dark Mode) -->
+    <FluentTheme />
+
+    <!-- Material Icons -->
+    <materialIcons:MaterialIconStyles />
+
+    <!-- App-spezifische Farbpalette -->
+    <StyleInclude Source="/Themes/AppPalette.axaml" />
+  </Application.Styles>
+
+</Application>

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>BingXBot</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Projekt-Referenzen -->
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Core\BingXBot.Core.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Exchange\BingXBot.Exchange.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Engine\BingXBot.Engine.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Backtest\BingXBot.Backtest.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Avalonia -->
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Material.Icons.Avalonia" />
+
+    <!-- MVVM -->
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+
+    <!-- DI + Logging -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+
+    <!-- Database -->
+    <PackageReference Include="sqlite-net-pcl" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" />
+
+    <!-- Graphics -->
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Avalonia.Labs.Controls" />
+
+    <!-- Verschlüsselung (DPAPI auf Windows) -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+
+</Project>

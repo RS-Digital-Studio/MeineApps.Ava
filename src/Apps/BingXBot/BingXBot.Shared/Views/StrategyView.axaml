@@ -1,0 +1,154 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.StrategyView"
+             x:DataType="vm:StrategyViewModel">
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="20" Margin="0,0,0,24">
+
+      <!-- Titel -->
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <mi:MaterialIcon Kind="ChartLine" Width="28" Height="28"
+                         Foreground="{DynamicResource AppPrimaryBrush}" />
+        <TextBlock Text="Strategie" FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   VerticalAlignment="Center" />
+      </StackPanel>
+
+      <!-- Strategie-Auswahl -->
+      <Border Background="{DynamicResource CardBrush}"
+              CornerRadius="8" Padding="20"
+              BoxShadow="{DynamicResource CardShadow}"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="1">
+        <StackPanel Spacing="14">
+          <TextBlock Text="Strategie-Typ" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <ComboBox ItemsSource="{Binding AvailableStrategies}"
+                    SelectedItem="{Binding SelectedStrategy}"
+                    HorizontalAlignment="Stretch"
+                    Foreground="{DynamicResource TextPrimaryBrush}" />
+
+          <!-- Beschreibung -->
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="6" Padding="14,10">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <mi:MaterialIcon Kind="InformationOutline" Width="18" Height="18"
+                               Foreground="{DynamicResource InfoBrush}"
+                               VerticalAlignment="Top" Margin="0,2,0,0" />
+              <TextBlock Text="{Binding StrategyDescription}"
+                         FontSize="13" TextWrapping="Wrap"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <!-- Parameter -->
+      <Border Background="{DynamicResource CardBrush}"
+              CornerRadius="8" Padding="20"
+              BoxShadow="{DynamicResource CardShadow}"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="1">
+        <StackPanel Spacing="14">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="TuneVariant" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Parameter" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Dynamische Parameter-Liste -->
+          <ItemsControl ItemsSource="{Binding Parameters}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:StrategyParameterItem">
+                <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                  <TextBlock Grid.Column="0"
+                             Text="{Binding Name}"
+                             FontSize="13"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             VerticalAlignment="Center" />
+                  <TextBox Grid.Column="1"
+                           Text="{Binding Value, Mode=TwoWay}"
+                           Width="120"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           Background="{DynamicResource SurfaceBrush}"
+                           BorderBrush="{DynamicResource BorderBrush}"
+                           HorizontalContentAlignment="Right"
+                           Padding="8,6" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <!-- Aktivierung -->
+      <Border Background="{DynamicResource CardBrush}"
+              CornerRadius="8" Padding="20"
+              BoxShadow="{DynamicResource CardShadow}"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="1">
+        <Grid ColumnDefinitions="*,Auto">
+          <!-- Status-Anzeige -->
+          <StackPanel Grid.Column="0" Spacing="4">
+            <TextBlock Text="Status" FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <!-- Aktiv-Punkt -->
+              <Ellipse Width="10" Height="10"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding IsActive}">
+                <Ellipse.Fill>
+                  <SolidColorBrush Color="{DynamicResource ProfitColor}" />
+                </Ellipse.Fill>
+              </Ellipse>
+              <!-- Inaktiv-Punkt -->
+              <Ellipse Width="10" Height="10"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding !IsActive}">
+                <Ellipse.Fill>
+                  <SolidColorBrush Color="{DynamicResource TextMutedColor}" />
+                </Ellipse.Fill>
+              </Ellipse>
+              <TextBlock Text="{Binding StatusText}" FontSize="15" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Toggle-Button -->
+          <Button Grid.Column="1"
+                  Command="{Binding ToggleActiveCommand}"
+                  Padding="20,10"
+                  CornerRadius="6"
+                  VerticalAlignment="Center"
+                  Cursor="Hand">
+            <Button.Background>
+              <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
+            </Button.Background>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <!-- Play/Stop Icon je nach Status -->
+              <mi:MaterialIcon Kind="Play" Width="18" Height="18"
+                               Foreground="{DynamicResource PrimaryContrastBrush}"
+                               IsVisible="{Binding !IsActive}" />
+              <mi:MaterialIcon Kind="Stop" Width="18" Height="18"
+                               Foreground="{DynamicResource PrimaryContrastBrush}"
+                               IsVisible="{Binding IsActive}" />
+              <TextBlock Text="{Binding ToggleButtonText}"
+                         FontSize="13" FontWeight="SemiBold"
+                         Foreground="{DynamicResource PrimaryContrastBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

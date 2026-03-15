@@ -306,10 +306,20 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                     $"{positions.Count} offene Position(en) gefunden"));
             }
 
+            // PublicClient wird benoetigt fuer Marktdaten-Scans im Live-Trading
+            if (_publicClient == null)
+            {
+                BotStatusText = "Marktdaten-Client nicht verfuegbar";
+                BotStatusColor = "#EF4444";
+                CanStart = true;
+                _liveClient = null;
+                return;
+            }
+
             // LiveTradingService erstellen
             _liveService = new LiveTradingService(
                 _liveClient,
-                _publicClient!,
+                _publicClient,
                 _strategyManager,
                 _riskSettings,
                 _scannerSettings,
@@ -521,10 +531,14 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             {
                 _paperService.Exchange.SetCurrentPrice(position.Symbol, position.MarkPrice);
                 await _paperService.Exchange.ClosePositionAsync(position.Symbol, side);
+                // Signal aus dem Service entfernen, damit PriceTickerLoop nicht erneut schliesst
+                _paperService.RemovePositionSignal(position.Symbol, side);
             }
             else if (!IsPaperMode && _liveClient != null)
             {
                 await _liveClient.ClosePositionAsync(position.Symbol, side);
+                // Signal aus dem Service entfernen, damit PriceTickerLoop nicht erneut schliesst
+                _liveService?.RemovePositionSignal(position.Symbol, side);
             }
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
@@ -604,10 +618,14 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         }
 
         // SL/TP-Aenderungen an den Service zurueckschreiben
+        // Guard: Nur wenn das Item noch in der aktiven Positions-Liste ist (verhindert veraltete Updates
+        // nach Positions-Refresh, da alle 5s neue Items erstellt werden)
         item.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(PositionDisplayItem.StopLoss) or nameof(PositionDisplayItem.TakeProfit))
             {
+                if (!OpenPositions.Contains(item)) return;
+
                 var side = item.Side == "Buy" ? Side.Buy : Side.Sell;
                 if (IsPaperMode)
                 {

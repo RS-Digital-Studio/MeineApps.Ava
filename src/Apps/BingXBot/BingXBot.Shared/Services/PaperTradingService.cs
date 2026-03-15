@@ -421,6 +421,15 @@ public class PaperTradingService : IDisposable
     }
 
     /// <summary>
+    /// Entfernt das gespeicherte Signal fuer eine Position (z.B. bei manuellem Close ueber Dashboard).
+    /// Verhindert, dass PriceTickerLoop eine bereits geschlossene Position erneut zu schliessen versucht.
+    /// </summary>
+    public void RemovePositionSignal(string symbol, Side side)
+    {
+        _positionSignals.TryRemove($"{symbol}_{side}", out _);
+    }
+
+    /// <summary>
     /// Aktualisiert SL/TP fuer eine offene Position (z.B. wenn der User im Dashboard editiert).
     /// </summary>
     public void UpdatePositionSignal(string symbol, Side side, decimal? newSl, decimal? newTp)

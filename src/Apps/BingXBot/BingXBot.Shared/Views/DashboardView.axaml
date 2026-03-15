@@ -3,8 +3,13 @@
              xmlns:vm="using:BingXBot.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:conv="using:BingXBot.Converters"
              x:Class="BingXBot.Views.DashboardView"
              x:DataType="vm:DashboardViewModel">
+
+  <UserControl.Resources>
+    <conv:NullableDecimalConverter x:Key="NullableDecimalConverter" />
+  </UserControl.Resources>
 
   <UserControl.Styles>
     <!-- P&L-Farbe: Positiv = Gruen, Negativ = Rot -->
@@ -472,7 +477,7 @@
                     <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="12" Margin="0,10,0,0">
                       <StackPanel>
                         <TextBlock Text="Stop-Loss" FontSize="10" Foreground="{DynamicResource AppLossBrush}" />
-                        <TextBox Text="{Binding StopLoss, StringFormat='{}{0:N2}'}"
+                        <TextBox Text="{Binding StopLoss, Converter={StaticResource NullableDecimalConverter}}"
                                  MinWidth="100" FontSize="11" Padding="6,4"
                                  Background="{DynamicResource SurfaceBrush}"
                                  BorderBrush="{DynamicResource AppBorderBrush}"
@@ -481,7 +486,7 @@
                       </StackPanel>
                       <StackPanel>
                         <TextBlock Text="Take-Profit" FontSize="10" Foreground="{DynamicResource AppProfitBrush}" />
-                        <TextBox Text="{Binding TakeProfit, StringFormat='{}{0:N2}'}"
+                        <TextBox Text="{Binding TakeProfit, Converter={StaticResource NullableDecimalConverter}}"
                                  MinWidth="100" FontSize="11" Padding="6,4"
                                  Background="{DynamicResource SurfaceBrush}"
                                  BorderBrush="{DynamicResource AppBorderBrush}"
@@ -490,7 +495,7 @@
                       </StackPanel>
                       <StackPanel>
                         <TextBlock Text="Trailing %" FontSize="10" Foreground="{DynamicResource AppWarningBrush}" />
-                        <TextBox Text="{Binding TrailingStop, StringFormat='{}{0:N1}'}"
+                        <TextBox Text="{Binding TrailingStop, Converter={StaticResource NullableDecimalConverter}}"
                                  MinWidth="80" FontSize="11" Padding="6,4"
                                  Background="{DynamicResource SurfaceBrush}"
                                  BorderBrush="{DynamicResource AppBorderBrush}"

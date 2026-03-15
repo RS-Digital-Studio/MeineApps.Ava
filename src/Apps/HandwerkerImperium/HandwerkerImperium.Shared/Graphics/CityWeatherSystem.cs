@@ -149,12 +149,14 @@ public sealed class CityWeatherSystem : IDisposable
         _particlePaint.StrokeWidth = 1f;
         _particlePaint.Style = SKPaintStyle.Stroke;
 
+        // Wind einmal vor der Schleife berechnen (statt 60x pro Frame)
+        float windX = MathF.Sin(_time * 0.3f) * 0.5f;
+
         for (int i = 0; i < _activeCount; i++)
         {
             ref var p = ref _particles[i];
 
             // Bewegung: nach unten + leicht seitlich (Wind)
-            float windX = MathF.Sin(_time * 0.3f) * 0.5f;
             float x = ((p.X + _time * (p.SpeedX + windX)) % bounds.Width + bounds.Width) % bounds.Width + bounds.Left;
             float y = ((p.Y + _time * p.SpeedY) % bounds.Height) + bounds.Top;
 
@@ -311,7 +313,7 @@ public sealed class CityWeatherSystem : IDisposable
             // Alpha-Wert: Strahl ist in der Mitte heller
             byte alpha = (byte)(12 + 8 * MathF.Sin(_time * 0.5f + i * 0.9f));
 
-            _sunRayPath.Reset();
+            _sunRayPath.Rewind();
             _sunRayPath.MoveTo(sunX, sunY);
             _sunRayPath.LineTo(endX + perpX, endY + perpY);
             _sunRayPath.LineTo(endX - perpX, endY - perpY);

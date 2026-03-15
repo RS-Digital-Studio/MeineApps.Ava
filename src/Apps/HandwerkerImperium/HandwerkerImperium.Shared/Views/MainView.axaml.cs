@@ -36,8 +36,11 @@ public partial class MainView : UserControl
     private GameScreenType _currentScreenType = GameScreenType.Dashboard;
     private string[] _tabLabels = ["Workshop", "Empire", "Missions", "Guild", "Shop"];
 
-    // Performance: Hintergrund nur alle 5 Ticks invalidieren (~5fps statt 25fps)
+    // Performance: Hintergrund und Tab-Bar gedrosselt
     private int _bgTickCounter;
+
+    // Gecachte Badge-Counts (vermeidet Array-Allokation pro Frame)
+    private readonly int[] _tabBadgeCounts = new int[5];
 
     public MainView()
     {
@@ -92,7 +95,7 @@ public partial class MainView : UserControl
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Render-Timer (25fps - Tab-Bar, Transition, Hans)
+    // Render-Timer (15fps - Tab-Bar, Background, Transition, Hans)
     // ═══════════════════════════════════════════════════════════════════════
 
     private void StartRenderTimer()
@@ -111,21 +114,25 @@ public partial class MainView : UserControl
     {
         _renderTime += 0.066f; // 66ms Intervall (15fps)
 
-        // Money-Animation aktualisieren (ersetzt separaten 30fps-Timer)
+        // Money-Animation aktualisieren (hat internen Early-Return wenn nicht aktiv)
         _vm?.UpdateMoneyAnimation();
 
-        // Hintergrund nur alle 5 Ticks (~5fps) invalidieren - Partikel unter Content unsichtbar bei 25fps
+        // Hintergrund alle 15 Ticks (~1fps) - Partikel liegen unter Content und sind kaum sichtbar
         _bgTickCounter++;
-        if (_bgTickCounter >= 5)
+        if (_bgTickCounter >= 15)
         {
             _bgTickCounter = 0;
-            _backgroundRenderer.UpdateParticles(0.2f, _currentScreenType, _lastBackgroundBounds);
+            _backgroundRenderer.UpdateParticles(1.0f, _currentScreenType, _lastBackgroundBounds);
             BackgroundCanvas?.InvalidateSurface();
         }
 
-        // Tab-Bar nur aktualisieren wenn sichtbar
+        // Tab-Bar: 15fps kurz nach Tab-Wechsel (Animation), sonst ~5fps
         if (_vm?.IsTabBarVisible == true)
-            TabBarCanvas?.InvalidateSurface();
+        {
+            bool tabAnimActive = (_renderTime - _lastTabSwitchTime) < 0.5f; // 500ms nach Wechsel
+            if (tabAnimActive || _bgTickCounter % 3 == 0)
+                TabBarCanvas?.InvalidateSurface();
+        }
 
         // Screen-Transition aktualisieren (wenn aktiv)
         if (_transitionRenderer.IsActive)
@@ -140,7 +147,7 @@ public partial class MainView : UserControl
             _ceremonyRenderer.Update(0.04f);
             CeremonyCanvas?.InvalidateSurface();
 
-            if (!_ceremonyRenderer.IsActive)
+            if (!_ceremonyRenderer.IsActive && CeremonyCanvas != null)
             {
                 CeremonyCanvas.IsVisible = false;
             }
@@ -205,23 +212,22 @@ public partial class MainView : UserControl
         var bounds = canvas.LocalClipBounds;
         _lastTabBarBounds = bounds;
 
-        var lockedTabs = _vm?.GetLockedTabs();
+        var lockedTabs = _vm?.GetLockedTabs() ?? [];
+
+        // Badge-Counts in gecachtes Array schreiben (keine Allokation pro Frame)
+        if (_vm != null)
+        {
+            _tabBadgeCounts[0] = (_vm.HasPendingDelivery ? 1 : 0) + (_vm.CanActivateRush ? 1 : 0);
+            _tabBadgeCounts[1] = _vm.HasWorkerWarning ? 1 : 0;
+            _tabBadgeCounts[2] = _vm.ClaimableMissionsCount + (_vm.HasFreeSpin ? 1 : 0);
+            _tabBadgeCounts[3] = 0;
+            _tabBadgeCounts[4] = 0;
+        }
+
         var state = new TabBarState
         {
             ActiveTab = GetActiveTabIndex(),
-            BadgeCounts = _vm != null ? new[]
-            {
-                // Tab 0 Werkstatt: Lieferant + Rush
-                (_vm.HasPendingDelivery ? 1 : 0) + (_vm.CanActivateRush ? 1 : 0),
-                // Tab 1 Imperium: Worker-Warnung
-                (_vm.HasWorkerWarning ? 1 : 0),
-                // Tab 2 Missionen: Claimbare Challenges + Gratis-Spin
-                _vm.ClaimableMissionsCount + (_vm.HasFreeSpin ? 1 : 0),
-                // Tab 3 Gilde: 0 (kein Badge vorerst)
-                0,
-                // Tab 4 Shop: 0
-                0
-            } : new int[5],
+            BadgeCounts = _tabBadgeCounts,
             Labels = _tabLabels,
             Time = _renderTime,
             TabSwitchTime = _lastTabSwitchTime,
@@ -412,14 +418,17 @@ public partial class MainView : UserControl
 
     private void OnCelebrationRequested()
     {
-        CelebrationCanvas.ShowConfetti();
+        CelebrationCanvas?.ShowConfetti();
     }
 
     private void OnCeremonyRequested(CeremonyType type, string title, string subtitle)
     {
         _ceremonyRenderer.Start(type, title, subtitle);
-        CeremonyCanvas.IsVisible = true;
-        CeremonyCanvas.InvalidateSurface();
+        if (CeremonyCanvas != null)
+        {
+            CeremonyCanvas.IsVisible = true;
+            CeremonyCanvas.InvalidateSurface();
+        }
     }
 
     private void OnCeremonyPaintSurface(object? sender, Avalonia.Labs.Controls.SKPaintSurfaceEventArgs e)

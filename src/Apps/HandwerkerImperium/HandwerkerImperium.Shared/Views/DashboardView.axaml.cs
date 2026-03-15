@@ -12,6 +12,7 @@ using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels;
+using HandwerkerImperium.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.UI.SkiaSharp.Shaders;
 using SkiaSharp;
@@ -22,10 +23,34 @@ public partial class DashboardView : UserControl
 {
     private MainViewModel? _vm;
     private TranslateTransform? _headerTranslate;
+    private Border? _headerBorder; // Gecacht statt FindControl bei jedem Scroll-Event
+
+    // Gecachte Money-Flash-Animation (vermeidet Allokation bei jedem Aufruf)
+    private static readonly Avalonia.Animation.Animation s_moneyFlashAnimation = new()
+    {
+        Duration = TimeSpan.FromMilliseconds(400),
+        Children =
+        {
+            new KeyFrame
+            {
+                Cue = new Cue(0),
+                Setters = { new Setter(Visual.OpacityProperty, 1.0) }
+            },
+            new KeyFrame
+            {
+                Cue = new Cue(0.3),
+                Setters = { new Setter(Visual.OpacityProperty, 0.6) }
+            },
+            new KeyFrame
+            {
+                Cue = new Cue(1.0),
+                Setters = { new Setter(Visual.OpacityProperty, 1.0) }
+            }
+        }
+    };
 
     // City-Skyline Rendering
     private readonly CityRenderer _cityRenderer = new();
-    private readonly CityWeatherSystem _weatherSystem = new();
     private readonly AnimationManager _animationManager = new();
     private readonly CoinFlyAnimation _coinFlyAnimation = new();
     private GameJuiceEngine? _juiceEngine;
@@ -55,10 +80,10 @@ public partial class DashboardView : UserControl
     private const double TapMaxDurationMs = 400.0; // Tap muss innerhalb 400ms abgeschlossen sein
     private const double ScrollOffsetThreshold = 2.0; // ScrollViewer hat sich bewegt → kein Tap
 
-    // Performance: Render-Timer Drosselung während Scroll
+    // Performance: Workshop-Karten während Scroll pausieren
     private bool _isScrolling;
     private DateTime _lastScrollTime;
-    private int _renderTickCounter;
+    private bool _hasActiveEffects; // Temporärer 30fps-Boost für Game-Juice-Effekte
 
     public DashboardView()
     {
@@ -93,7 +118,6 @@ public partial class DashboardView : UserControl
         }
 
         _cityRenderer.Dispose();
-        _weatherSystem.Dispose();
         _coinFlyAnimation.Dispose();
         _juiceEngine?.Dispose();
     }
@@ -104,12 +128,13 @@ public partial class DashboardView : UserControl
     /// </summary>
     private void OnScrollChanged(object? sender, ScrollChangedEventArgs e)
     {
-        var header = this.FindControl<Border>("HeaderBorder");
+        // HeaderBorder nur einmal suchen und danach aus dem Cache verwenden
+        _headerBorder ??= this.FindControl<Border>("HeaderBorder");
         var scrollViewer = sender as ScrollViewer;
-        if (header == null || scrollViewer == null) return;
+        if (_headerBorder == null || scrollViewer == null) return;
 
         _headerTranslate ??= new TranslateTransform();
-        header.RenderTransform = _headerTranslate;
+        _headerBorder.RenderTransform = _headerTranslate;
 
         var offset = Math.Min(scrollViewer.Offset.Y * 0.3, 20);
         _headerTranslate.Y = -offset;
@@ -152,9 +177,6 @@ public partial class DashboardView : UserControl
             var assetService = App.Services?.GetService<IGameAssetService>();
             if (assetService != null)
                 _cityRenderer.Initialize(assetService);
-
-            // Wetter-System nach aktuellem Monat initialisieren
-            _weatherSystem.SetWeatherByMonth();
 
             // City-Canvas finden und Render-Loop nur starten wenn Dashboard aktiv
             _cityCanvas = this.FindControl<SKCanvasView>("CityCanvas");
@@ -243,7 +265,7 @@ public partial class DashboardView : UserControl
             var moneyText = this.FindControl<TextBlock>("MoneyText");
             if (moneyText != null)
             {
-                _ = AnimateMoneyFlash(moneyText);
+                AnimateMoneyFlash(moneyText).SafeFireAndForget();
             }
         }
 
@@ -269,32 +291,11 @@ public partial class DashboardView : UserControl
 
     /// <summary>
     /// Kurzer Opacity-Flash auf dem Geld-Display bei Einnahmen.
+    /// Nutzt gecachte statische Animation (keine Allokation pro Aufruf).
     /// </summary>
     private static async Task AnimateMoneyFlash(TextBlock text)
     {
-        var animation = new Avalonia.Animation.Animation
-        {
-            Duration = TimeSpan.FromMilliseconds(400),
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters = { new Setter(Visual.OpacityProperty, 1.0) }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(0.3),
-                    Setters = { new Setter(Visual.OpacityProperty, 0.6) }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1.0),
-                    Setters = { new Setter(Visual.OpacityProperty, 1.0) }
-                }
-            }
-        };
-        await animation.RunAsync(text);
+        await s_moneyFlashAnimation.RunAsync(text);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -554,7 +555,8 @@ public partial class DashboardView : UserControl
             UpgradeCostText = model.UpgradeCostDisplay,
             NetIncomeText = model.NetIncomeDisplay,
             IsNetNegative = model.IsNetNegative,
-            UnlockLevel = model.UnlockLevel
+            UnlockLevel = model.UnlockLevel,
+            TimeToUpgrade = model.TimeToUpgrade
         };
     }
 
@@ -634,44 +636,44 @@ public partial class DashboardView : UserControl
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Startet den Render-Timer für die City-Skyline (30fps).
-    /// Guard gegen Doppelstart wenn Timer bereits läuft.
+    /// Startet den Render-Timer für die City-Skyline.
+    /// 10fps Basis (AI-Hintergrund statisch, animierte WebP bei 8fps).
+    /// Temporär 30fps wenn Game-Juice-Effekte aktiv (CoinFly, Confetti, ScreenShake).
     /// </summary>
     private void StartCityRenderLoop()
     {
         if (_renderTimer is { IsEnabled: true }) return;
 
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) }; // 10fps Basis
         _renderTimer.Tick += OnCityRenderTick;
         _renderTimer.Start();
     }
 
     /// <summary>
-    /// Render-Tick mit Scroll-Drosselung:
-    /// - Während Scroll: City nur alle 3 Ticks (~10fps), Workshop-Karten gar nicht
-    /// - Ohne Scroll: Volle 30fps für beide Canvases
+    /// Render-Tick: City + Workshop-Karten invalidieren.
+    /// Adaptives FPS: 10fps Basis, automatisch 30fps bei aktiven Effekten.
     /// </summary>
     private void OnCityRenderTick(object? sender, EventArgs e)
     {
-        _renderTickCounter++;
-
         // Scroll-Ende erkennen (100ms ohne ScrollChanged)
         if (_isScrolling && (DateTime.UtcNow - _lastScrollTime).TotalMilliseconds > 100)
             _isScrolling = false;
 
-        if (_isScrolling)
+        // Adaptives FPS: 30fps wenn Effekte aktiv, sonst 10fps
+        bool effectsActive = _coinFlyAnimation.IsActive || _animationManager.HasActiveParticles ||
+                             (_juiceEngine?.HasActiveEffects == true);
+        if (effectsActive != _hasActiveEffects)
         {
-            // Während Scroll: City nur alle 3 Ticks (~10fps), Workshop-Karten pausieren
-            if (_renderTickCounter % 3 == 0)
-                _cityCanvas?.InvalidateSurface();
+            _hasActiveEffects = effectsActive;
+            _renderTimer!.Interval = TimeSpan.FromMilliseconds(effectsActive ? 33 : 100);
         }
-        else
-        {
-            // Ohne Scroll: Volle 30fps
-            _cityCanvas?.InvalidateSurface();
+
+        _cityCanvas?.InvalidateSurface();
+
+        // Workshop-Karten während Scroll pausieren
+        if (!_isScrolling)
             WorkshopCardsCanvas?.InvalidateSurface();
-        }
     }
 
     private void StopCityRenderLoop()
@@ -734,10 +736,6 @@ public partial class DashboardView : UserControl
             if (gameState != null)
             {
                 _cityRenderer.Render(canvas, bounds, gameState, gameState.Buildings, deltaSeconds);
-
-                // Wetter-Overlay (Regen/Schnee/Blätter/Sonnenstrahlen)
-                _weatherSystem.Update(deltaSeconds);
-                _weatherSystem.Render(canvas, bounds);
             }
 
             // Gold-Shimmer auf Goldschrauben-Bereich (oben links)

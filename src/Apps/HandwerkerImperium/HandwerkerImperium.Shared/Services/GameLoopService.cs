@@ -30,7 +30,6 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     private readonly ICraftingService? _craftingService;
     private readonly ILeaderboardService? _leaderboardService;
     private readonly IBountyService? _bountyService;
-    private readonly IGuildWarService? _guildWarService;
     private readonly IGuildWarSeasonService? _guildWarSeasonService;
     private readonly IGuildBossService? _guildBossService;
     private readonly IGuildHallService? _guildHallService;
@@ -46,6 +45,11 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     private Workshop? _cachedMasterSmith;
     private Workshop? _cachedInnovationLab;
     private bool _workshopCacheDirty = true;
+    // Gecachter ExtraWorkerSlots-Wert (vermeidet redundante Zuweisung pro Tick)
+    private int _lastExtraWorkerSlots = -1;
+    private decimal _lastLevelResistance = -1m;
+    // Gecachter MasterTool-Einkommens-Bonus (aendert sich nur bei Freischaltung, nicht pro Tick)
+    private decimal _cachedMasterToolBonus = -1m;
 
     private const int AutoSaveIntervalTicks = 30;
     private const int EventCheckIntervalTicks = 300; // Check events every 5 minutes
@@ -59,7 +63,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     private const int AutoAssignIntervalTicks = 60; // AutoAssign alle 60 Ticks
     private const int LeaderboardSubmitIntervalTicks = 300; // Leaderboard-Score alle 5 Minuten submitten
     private const int BountyCheckIntervalTicks = 120; // Bounty-Fortschritt alle 2 Minuten prüfen
-    private const int GuildWarCheckIntervalTicks = 300; // Guild-War alle 5 Minuten prüfen
+    // GuildWarCheckIntervalTicks entfällt (konsolidiert in GuildWarSeasonService)
     private const int QuickJobCheckIntervalTicks = 60; // QuickJob Rotation + Deadline-Check alle 60 Ticks
     private const int GuildBossCheckIntervalTicks = 60; // Boss-Status alle 60s prüfen
     private const int GuildHallCheckIntervalTicks = 60; // Gebäude-Upgrades alle 60s prüfen
@@ -74,8 +78,13 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
 
     /// <summary>
     /// Workshop-Cache invalidieren (z.B. nach Workshop-Kauf).
+    /// Invalidiert auch Prestige-Effekte, damit neue Workshops den UpgradeDiscount erhalten.
     /// </summary>
-    public void InvalidateWorkshopCache() => _workshopCacheDirty = true;
+    public void InvalidateWorkshopCache()
+    {
+        _workshopCacheDirty = true;
+        _prestigeEffectsDirty = true;
+    }
 
     private void RefreshWorkshopCacheIfNeeded(GameState state)
     {
@@ -112,7 +121,6 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         ICraftingService? craftingService = null,
         ILeaderboardService? leaderboardService = null,
         IBountyService? bountyService = null,
-        IGuildWarService? guildWarService = null,
         IGuildWarSeasonService? guildWarSeasonService = null,
         IGuildBossService? guildBossService = null,
         IGuildHallService? guildHallService = null,
@@ -134,11 +142,29 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         _craftingService = craftingService;
         _leaderboardService = leaderboardService;
         _bountyService = bountyService;
-        _guildWarService = guildWarService;
         _guildWarSeasonService = guildWarSeasonService;
         _guildBossService = guildBossService;
         _guildHallService = guildHallService;
         _guildAchievementService = guildAchievementService;
+
+        // Bei State-Wechsel (Load/Import/Reset/Prestige) alle Caches invalidieren
+        _gameStateService.StateLoaded += (_, _) => ResetAllCaches();
+    }
+
+    /// <summary>
+    /// Setzt alle internen Caches zurueck (bei State-Load, Import, Prestige-Reset).
+    /// Verhindert stale Referenzen auf verwaiste Objekte nach Prestige.
+    /// </summary>
+    private void ResetAllCaches()
+    {
+        _workshopCacheDirty = true;
+        _prestigeEffectsDirty = true;
+        _cachedMasterSmith = null;
+        _cachedInnovationLab = null;
+        _lastExtraWorkerSlots = -1;
+        _lastLevelResistance = -1m;
+        _lastAppliedSpecialEffectId = null;
+        _cachedMasterToolBonus = -1m;
     }
 
     public void Start()
@@ -211,14 +237,6 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         // 0. Research- und Gebäude-Effekte sammeln
         var researchEffects = _researchService?.GetTotalEffects();
         UpdateExtraWorkerSlots(state, researchEffects);
-
-        // 0b. Prestige-Shop Upgrade-Discount auf alle Workshops setzen
-        // (muss pro Tick laufen, da neue Workshops jederzeit hinzukommen können)
-        if (_cachedPrestigeUpgradeDiscount > 0)
-        {
-            for (int i = 0; i < state.Workshops.Count; i++)
-                state.Workshops[i].UpgradeDiscount = _cachedPrestigeUpgradeDiscount;
-        }
 
         // 1. Brutto-Einkommen berechnen (inkl. Research-Effizienz-Bonus, gekappt bei +50%)
         decimal grossIncome = state.TotalIncomePerSecond;
@@ -293,8 +311,10 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
             grossIncome *= 0.90m;
         }
 
-        // 3c. Meisterwerkzeuge: Passiver Einkommens-Bonus
-        decimal masterToolBonus = MasterTool.GetTotalIncomeBonus(state.CollectedMasterTools);
+        // 3c. Meisterwerkzeuge: Passiver Einkommens-Bonus (gecacht, Invalidierung in CheckMasterTools)
+        if (_cachedMasterToolBonus < 0)
+            _cachedMasterToolBonus = MasterTool.GetTotalIncomeBonus(state.CollectedMasterTools);
+        decimal masterToolBonus = _cachedMasterToolBonus;
         if (masterToolBonus > 0)
             grossIncome *= (1m + masterToolBonus);
 
@@ -320,16 +340,18 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                 grossIncome *= (1m + gm.ResearchEfficiencyBonus);
         }
 
-        // Soft-Cap: Diminishing Returns ab 2.0x Einkommens-Multiplikator
+        // Soft-Cap: Diminishing Returns ab 10.0x Einkommens-Multiplikator
+        // Nur Shop/Research/Event/Guild/MasterTool-Boni betroffen (Prestige-Multiplikator ist bereits in TotalIncomePerSecond).
+        // Angehoben auf 10.0x damit sich Endgame-Boni (Research+Shop+Events) lohnender anfühlen.
         // Logarithmisch: Jeder Bonus bringt etwas, aber immer weniger.
-        // Beispiele: 3.0x→2.58x, 5.0x→3.17x, 10.0x→4.17x, 50.0x→6.64x
+        // Beispiele: 12.0x→10.58x, 15.0x→11.32x, 20.0x→12.32x, 50.0x→14.61x
         if (state.TotalIncomePerSecond > 0)
         {
             decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
-            if (effectiveMultiplier > 2.0m)
+            if (effectiveMultiplier > 10.0m)
             {
-                decimal excess = effectiveMultiplier - 2.0m;
-                decimal softened = 2.0m + (decimal)Math.Log(1.0 + (double)excess, 2.0);
+                decimal excess = effectiveMultiplier - 10.0m;
+                decimal softened = 10.0m + (decimal)Math.Log(1.0 + (double)excess, 2.0);
                 grossIncome = state.TotalIncomePerSecond * softened;
             }
         }
@@ -371,17 +393,22 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         }
 
         // 6. Track earnings per workshop
+        // Workers.Count > 0 als Guard statt GrossIncomePerSecond > 0 (vermeidet LINQ .Sum() pro Tick)
         foreach (var ws in state.Workshops)
         {
-            if (ws.GrossIncomePerSecond > 0)
+            if (ws.Workers.Count > 0)
             {
-                ws.TotalEarned += ws.GrossIncomePerSecond;
-                for (int wi = 0; wi < ws.Workers.Count; wi++)
+                var grossInc = ws.GrossIncomePerSecond;
+                if (grossInc > 0)
                 {
-                    var worker = ws.Workers[wi];
-                    if (!worker.IsWorking) continue;
-                    // LevelFitFactor berücksichtigen (Workshop-Level-Malus für niedrige Tiers)
-                    worker.TotalEarned += ws.BaseIncomePerWorker * worker.EffectiveEfficiency * ws.GetWorkerLevelFitFactor(worker);
+                    ws.TotalEarned += grossInc;
+                    for (int wi = 0; wi < ws.Workers.Count; wi++)
+                    {
+                        var worker = ws.Workers[wi];
+                        if (!worker.IsWorking) continue;
+                        // LevelFitFactor berücksichtigen (Workshop-Level-Malus für niedrige Tiers)
+                        worker.TotalEarned += ws.BaseIncomePerWorker * worker.EffectiveEfficiency * ws.GetWorkerLevelFitFactor(worker);
+                    }
                 }
             }
         }
@@ -488,30 +515,31 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         if (_tickCount % BountyCheckIntervalTicks == 90 && _bountyService != null)
             _bountyService.CheckAndFinalizeBountyAsync().FireAndForget();
 
-        // 9p. Guild-War Prüfung (alle 5 Minuten, Offset 240)
-        if (_tickCount % GuildWarCheckIntervalTicks == 240 && _guildWarService != null)
-            _guildWarService.CheckAndFinalizeWarAsync().FireAndForget();
+        // 9p. Guild-War Prüfung entfällt (ersetzt durch GuildWarSeasonService in 9t.)
+
+        // Gilden-Services nur prüfen wenn Spieler Gildenmitglied ist (spart 4+ Firebase-Calls/min für Solo-Spieler)
+        var hasGuild = state.GuildMembership?.GuildId != null;
 
         // 9q. Gilden-Boss Status prüfen (alle 60s, Offset 20)
         // Sequentiell: Erst Status prüfen, dann ggf. Spawn (sonst Race Condition)
-        if (_tickCount % GuildBossCheckIntervalTicks == 20 && _guildBossService != null)
+        if (hasGuild && _tickCount % GuildBossCheckIntervalTicks == 20 && _guildBossService != null)
         {
             CheckBossSequentialAsync().FireAndForget();
         }
 
         // 9r. Gilden-Hauptquartier Upgrade-Completion prüfen (alle 60s, Offset 40)
-        if (_tickCount % GuildHallCheckIntervalTicks == 40 && _guildHallService != null)
+        if (hasGuild && _tickCount % GuildHallCheckIntervalTicks == 40 && _guildHallService != null)
             _guildHallService.CheckUpgradeCompletionAsync().FireAndForget();
 
         // 9s. Gilden-Achievements prüfen (alle 5 Minuten, Offset 250)
-        if (_tickCount % GuildAchievementCheckIntervalTicks == 250 && _guildAchievementService != null)
+        if (hasGuild && _tickCount % GuildAchievementCheckIntervalTicks == 250 && _guildAchievementService != null)
             _guildAchievementService.CheckAllAchievementsAsync().FireAndForget();
 
         // 9t. War-Saison Phasenwechsel + Saisonende prüfen (alle 5 Minuten, Offset 260)
-        if (_tickCount % GuildWarSeasonCheckIntervalTicks == 260 && _guildWarSeasonService != null)
+        // Sequentiell: CheckPhaseTransition kann _cachedWar nullen → CheckSeasonEnd braucht den alten Cache
+        if (hasGuild && _tickCount % GuildWarSeasonCheckIntervalTicks == 260 && _guildWarSeasonService != null)
         {
-            _guildWarSeasonService.CheckPhaseTransitionAsync().FireAndForget();
-            _guildWarSeasonService.CheckSeasonEndAsync().FireAndForget();
+            CheckWarSeasonSequentialAsync().FireAndForget();
         }
 
         // 9c. Reputation: Showroom-DailyReputationGain + Decay (einmal pro Tag, persistiert)
@@ -599,6 +627,9 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     /// </summary>
     private void CheckMasterTools(GameState state)
     {
+        // Early-Exit: Alle Meisterwerkzeuge bereits gesammelt → nichts zu prüfen
+        if (state.CollectedMasterTools.Count >= MasterTool.GetAllDefinitions().Count) return;
+
         foreach (var def in MasterTool.GetAllDefinitions())
         {
             if (state.CollectedMasterTools.Contains(def.Id))
@@ -607,6 +638,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
             if (MasterTool.CheckEligibility(def.Id, state))
             {
                 state.CollectedMasterTools.Add(def.Id);
+                _cachedMasterToolBonus = -1m; // Cache invalidieren nach Freischaltung
                 MasterToolUnlocked?.Invoke(this, def);
             }
         }
@@ -638,12 +670,26 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         _cachedPrestigeUpgradeDiscount = 0m;
 
         var purchased = state.Prestige.PurchasedShopItems;
-        if (purchased.Count == 0) return;
+        var repeatableCounts = state.Prestige.RepeatableItemCounts;
+
+        if (purchased.Count == 0 && repeatableCounts.Count == 0) return;
 
         var allItems = PrestigeShop.GetAllItems();
         for (int i = 0; i < allItems.Count; i++)
         {
             var item = allItems[i];
+
+            // Wiederholbare Items: Effekt * Kaufanzahl
+            if (item.IsRepeatable)
+            {
+                if (repeatableCounts.TryGetValue(item.Id, out var count) && count > 0)
+                {
+                    if (item.Effect.IncomeMultiplier > 0)
+                        _cachedPrestigeIncomeBonus += item.Effect.IncomeMultiplier * count;
+                }
+                continue;
+            }
+
             if (!purchased.Contains(item.Id)) continue;
 
             if (item.Effect.IncomeMultiplier > 0)
@@ -655,6 +701,11 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
             if (item.Effect.UpgradeDiscount > 0)
                 _cachedPrestigeUpgradeDiscount += item.Effect.UpgradeDiscount;
         }
+
+        // Upgrade-Discount auf alle Workshops setzen (nur bei Invalidierung statt pro Tick)
+        // Immer setzen, auch bei 0 → nach Prestige-Reset muessen alte Discounts geloescht werden
+        for (int i = 0; i < state.Workshops.Count; i++)
+            state.Workshops[i].UpgradeDiscount = _cachedPrestigeUpgradeDiscount;
     }
 
     /// <summary>
@@ -752,18 +803,42 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     }
 
     /// <summary>
+    /// War-Saison: Phasenwechsel prüfen, DANN Saisonende (sequentiell, nicht parallel).
+    /// CheckPhaseTransition kann _cachedWar nullen, was CheckSeasonEnd braucht.
+    /// </summary>
+    private async Task CheckWarSeasonSequentialAsync()
+    {
+        try
+        {
+            await _guildWarSeasonService!.CheckPhaseTransitionAsync();
+            await _guildWarSeasonService.CheckSeasonEndAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[GameLoop] CheckWarSeasonSequential fehlgeschlagen: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Boss-Status prüfen und dann ggf. neuen Boss spawnen (sequentiell, nicht parallel).
     /// </summary>
     private async Task CheckBossSequentialAsync()
     {
-        await _guildBossService!.CheckBossStatusAsync();
-        await _guildBossService.SpawnBossIfNeededAsync();
+        try
+        {
+            await _guildBossService!.CheckBossStatusAsync();
+            await _guildBossService.SpawnBossIfNeededAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[GameLoop] CheckBossSequential fehlgeschlagen: {ex.Message}");
+        }
     }
 
     /// <summary>
     /// Setzt ExtraWorkerSlots auf jedem Workshop basierend auf Research + Gebäude-Boni.
     /// </summary>
-    private static void UpdateExtraWorkerSlots(GameState state, ResearchEffect? researchEffects)
+    private void UpdateExtraWorkerSlots(GameState state, ResearchEffect? researchEffects)
     {
         int researchSlots = researchEffects?.ExtraWorkerSlots ?? 0;
 
@@ -776,6 +851,12 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
 
         int totalExtra = researchSlots + buildingSlots + guildSlots;
         decimal levelResistance = Math.Min(researchEffects?.LevelResistanceBonus ?? 0m, 0.50m);
+
+        // Nur zuweisen wenn sich der Wert geändert hat (vermeidet N Zuweisungen pro Tick)
+        if (totalExtra == _lastExtraWorkerSlots && levelResistance == _lastLevelResistance)
+            return;
+        _lastExtraWorkerSlots = totalExtra;
+        _lastLevelResistance = levelResistance;
 
         foreach (var ws in state.Workshops)
         {
@@ -813,8 +894,9 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     }
 
     /// <summary>
-    /// InnovationLab-Spezialeffekt: Verdoppelt Research-Geschwindigkeit wenn Workshop besetzt ist.
-    /// Schiebt die StartedAt-Zeit der aktiven Forschung pro Tick um 1 Extra-Sekunde nach vorne.
+    /// InnovationLab-Spezialeffekt: Beschleunigt Forschung proportional zur Worker-Anzahl.
+    /// Pro arbeitendem Worker +0.5s Extra-Fortschritt pro Tick (2 Worker = 1s, 4 = 2s).
+    /// Mindestens 1 Worker muss arbeiten, damit der Bonus greift.
     /// </summary>
     private void ApplyInnovationLabBonus(GameState state)
     {
@@ -833,7 +915,9 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         var activeResearch = _researchService.GetActiveResearch();
         if (activeResearch?.StartedAt != null)
         {
-            activeResearch.StartedAt = activeResearch.StartedAt.Value.AddSeconds(-1);
+            // Proportionaler Bonus: 0.5s pro Worker (skaliert mit Belegschaft)
+            double bonusSeconds = workingWorkers * 0.5;
+            activeResearch.StartedAt = activeResearch.StartedAt.Value.AddSeconds(-bonusSeconds);
         }
     }
 

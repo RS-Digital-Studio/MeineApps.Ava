@@ -15,6 +15,7 @@ public class StrategyTests
     public static IEnumerable<object[]> AllStrategies =>
         new List<object[]>
         {
+            new object[] { new EmaCrossStrategy() },
             new object[] { new TrendFollowStrategy() },
             new object[] { new RsiStrategy() },
             new object[] { new BollingerStrategy() },

@@ -51,11 +51,14 @@ Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Suppo
 
 ## Paper-Trading (PaperTradingService)
 
-Echter Paper-Trading-Service mit REST-Polling:
+Echter Paper-Trading-Service mit REST-Polling (implementiert IDisposable):
 - Alle 30 Sekunden: Ticker holen, Scanner filtern, Klines laden
-- Strategie evaluieren, RiskManager prüfen, Order auf SimulatedExchange platzieren
+- Strategie evaluieren, RiskManager pruefen, Order auf SimulatedExchange platzieren
 - Account-Update im Dashboard alle 5 Sekunden
-- Events über BotEventBus (Trades, Logs, Account-Updates)
+- Pause/Resume: Loop laeuft weiter, ueberspringt Scans bei Pause
+- EmergencyStopAsync: Async statt blockierendem GetAwaiter().GetResult()
+- CancellationTokenSource wird korrekt disposed (Start, Stop, Dispose)
+- Events ueber BotEventBus (Trades, Logs, Account-Updates)
 - Datei: `Services/PaperTradingService.cs`
 
 ## Risikomanagement
@@ -146,7 +149,7 @@ SQLite-basierte Persistenz für Trades, Equity-Snapshots, Logs und Settings:
 
 Alle DB-Parameter sind optional (`BotDatabaseService?`), damit Tests ohne DB funktionieren.
 
-## Tests (156 Tests)
+## Tests (163 Tests)
 
 | Datei | Tests | Beschreibung |
 |-------|-------|--------------|

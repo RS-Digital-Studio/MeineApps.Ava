@@ -156,16 +156,24 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void PauseBot()
     {
-        BotStatusText = "Pausiert";
-        BotStatusColor = "#F59E0B"; // Amber
-
-        _eventBus.PublishBotState(BotState.Paused);
-        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-            "Bot pausiert"));
+        if (_paperService.IsPaused)
+        {
+            // Resume
+            _paperService.Resume();
+            BotStatusText = "Laeuft (Paper)";
+            BotStatusColor = "#10B981"; // Gruen
+        }
+        else
+        {
+            // Pause
+            _paperService.Pause();
+            BotStatusText = "Pausiert";
+            BotStatusColor = "#F59E0B"; // Amber
+        }
     }
 
     [RelayCommand]
-    private async void StopBot()
+    private async Task StopBot()
     {
         _accountUpdateTimer?.Dispose();
         _accountUpdateTimer = null;
@@ -181,13 +189,13 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void EmergencyStop()
+    private async Task EmergencyStop()
     {
         _accountUpdateTimer?.Dispose();
         _accountUpdateTimer = null;
         StopEquitySnapshotTimer();
 
-        _paperService.EmergencyStop();
+        await _paperService.EmergencyStopAsync();
 
         IsRunning = false;
         CanStart = true;
@@ -248,6 +256,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _refreshTimer?.Dispose();
         _equityTimer?.Dispose();
         _accountUpdateTimer?.Dispose();
+        _paperService.Dispose();
     }
 
     /// <summary>

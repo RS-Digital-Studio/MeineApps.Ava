@@ -12,10 +12,10 @@ namespace BingXBot.Services;
 /// <summary>
 /// Paper-Trading-Service: Echtzeit-Simulation mit REST-Polling.
 /// Alle 30 Sekunden: Ticker holen, Scanner filtern, Klines laden, Strategie evaluieren,
-/// bei Signal: RiskManager prüfen, Order auf SimulatedExchange platzieren.
-/// Events werden über den BotEventBus publiziert.
+/// bei Signal: RiskManager pruefen, Order auf SimulatedExchange platzieren.
+/// Events werden ueber den BotEventBus publiziert.
 /// </summary>
-public class PaperTradingService
+public class PaperTradingService : IDisposable
 {
     private readonly IPublicMarketDataClient _publicClient;
     private readonly StrategyManager _strategyManager;
@@ -26,13 +26,18 @@ public class PaperTradingService
     private SimulatedExchange? _exchange;
     private RiskManager? _riskManager;
     private CancellationTokenSource? _cts;
-    private bool _isRunning;
+    private volatile bool _isRunning;
+    private volatile bool _isPaused;
+    private bool _disposed;
 
-    /// <summary>Zugriff auf die simulierte Exchange für Account-Abfragen.</summary>
+    /// <summary>Zugriff auf die simulierte Exchange fuer Account-Abfragen.</summary>
     public SimulatedExchange? Exchange => _exchange;
 
-    /// <summary>Ob der Service gerade läuft.</summary>
+    /// <summary>Ob der Service gerade laeuft.</summary>
     public bool IsRunning => _isRunning;
+
+    /// <summary>Ob der Service pausiert ist.</summary>
+    public bool IsPaused => _isPaused;
 
     public PaperTradingService(
         IPublicMarketDataClient publicClient,
@@ -55,8 +60,10 @@ public class PaperTradingService
 
         _exchange = new SimulatedExchange(new BacktestSettings { InitialBalance = initialBalance });
         _riskManager = new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance);
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         _isRunning = true;
+        _isPaused = false;
 
         _eventBus.PublishBotState(BotState.Running);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
@@ -65,14 +72,37 @@ public class PaperTradingService
         _ = RunLoopAsync(_cts.Token);
     }
 
-    /// <summary>Stoppt das Paper-Trading und schließt alle offenen Positionen.</summary>
+    /// <summary>Pausiert das Paper-Trading (Loop laeuft weiter, ueberspringt aber Scans).</summary>
+    public void Pause()
+    {
+        if (!_isRunning || _isPaused) return;
+        _isPaused = true;
+
+        _eventBus.PublishBotState(BotState.Paused);
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+            "Paper-Trading pausiert"));
+    }
+
+    /// <summary>Setzt das Paper-Trading nach Pause fort.</summary>
+    public void Resume()
+    {
+        if (!_isRunning || !_isPaused) return;
+        _isPaused = false;
+
+        _eventBus.PublishBotState(BotState.Running);
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+            "Paper-Trading fortgesetzt"));
+    }
+
+    /// <summary>Stoppt das Paper-Trading und schliesst alle offenen Positionen.</summary>
     public async Task StopAsync()
     {
         if (!_isRunning) return;
         _cts?.Cancel();
         _isRunning = false;
+        _isPaused = false;
 
-        // Alle Positionen schließen
+        // Alle Positionen schliessen
         if (_exchange != null)
         {
             await _exchange.CloseAllPositionsAsync();
@@ -81,17 +111,27 @@ public class PaperTradingService
                 _eventBus.PublishTrade(trade);
         }
 
+        _cts?.Dispose();
+        _cts = null;
+
         _eventBus.PublishBotState(BotState.Stopped);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
             "Paper-Trading gestoppt"));
     }
 
-    /// <summary>Notfall-Stop: Sofort alle Positionen schließen.</summary>
-    public void EmergencyStop()
+    /// <summary>Notfall-Stop: Sofort alle Positionen schliessen (async statt blockierend).</summary>
+    public async Task EmergencyStopAsync()
     {
         _cts?.Cancel();
         _isRunning = false;
-        _exchange?.CloseAllPositionsAsync().GetAwaiter().GetResult();
+        _isPaused = false;
+
+        if (_exchange != null)
+            await _exchange.CloseAllPositionsAsync();
+
+        _cts?.Dispose();
+        _cts = null;
+
         _eventBus.PublishBotState(BotState.EmergencyStop);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
             "NOTFALL-STOP: Alle Positionen geschlossen"));
@@ -104,7 +144,9 @@ public class PaperTradingService
         {
             try
             {
-                await ScanAndTradeAsync(ct);
+                // Bei Pause: Loop laeuft weiter, ueberspringt aber den Scan
+                if (!_isPaused)
+                    await ScanAndTradeAsync(ct);
             }
             catch (OperationCanceledException) { break; }
             catch (Exception ex)
@@ -113,7 +155,7 @@ public class PaperTradingService
                     $"Fehler in der Trading-Loop: {ex.Message}"));
             }
 
-            // 30 Sekunden warten bis zum nächsten Scan
+            // 30 Sekunden warten bis zum naechsten Scan
             try { await Task.Delay(30_000, ct); }
             catch (OperationCanceledException) { break; }
         }
@@ -126,7 +168,7 @@ public class PaperTradingService
         if (_strategyManager.CurrentTemplate == null)
         {
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
-                "Keine Strategie ausgewählt"));
+                "Keine Strategie ausgewaehlt"));
             return;
         }
 
@@ -149,7 +191,7 @@ public class PaperTradingService
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Debug, "Scanner",
             $"{candidates.Count} Kandidaten gefunden"));
 
-        // 3. Für jeden Kandidaten: Klines laden, Strategie evaluieren
+        // 3. Fuer jeden Kandidaten: Klines laden, Strategie evaluieren
         var account = await _exchange.GetAccountInfoAsync();
         var positions = await _exchange.GetPositionsAsync();
 
@@ -225,5 +267,14 @@ public class PaperTradingService
                     $"{ticker.Symbol}: Fehler - {ex.Message}", ticker.Symbol));
             }
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
     }
 }

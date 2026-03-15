@@ -176,8 +176,8 @@ public record TradeHistoryItem(
     decimal Quantity, decimal Pnl, decimal Fee, string Strategy,
     string Mode, DateTime Time, bool IsWin)
 {
-    /// <summary>Farbe für Side: Long=Grün, Short=Rot.</summary>
-    public string SideColor => Side == "Long" ? "#10B981" : "#EF4444";
+    /// <summary>Farbe für Side: Buy/Long=Grün, Sell/Short=Rot.</summary>
+    public string SideColor => Side is "Buy" or "Long" ? "#10B981" : "#EF4444";
 
     /// <summary>Farbe für P&amp;L: Positiv=Grün, Negativ=Rot, Neutral=Grau.</summary>
     public string PnlColor => Pnl > 0 ? "#10B981" : Pnl < 0 ? "#EF4444" : "#94A3B8";

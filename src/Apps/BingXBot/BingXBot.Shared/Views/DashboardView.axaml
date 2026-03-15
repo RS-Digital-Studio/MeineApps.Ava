@@ -83,10 +83,33 @@
       <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
+
+    <!-- Roter Rand wenn Live-Trading aktiv -->
+    <Style Selector="Border.LiveActive">
+      <Setter Property="BorderBrush" Value="#EF4444" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
   </UserControl.Styles>
 
   <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="16" Margin="0,0,0,24">
+
+      <!-- ================================================================= -->
+      <!-- LIVE-TRADING WARNUNG (nur wenn IsLiveActive=true)                 -->
+      <!-- ================================================================= -->
+      <Border IsVisible="{Binding IsLiveActive}"
+              Background="#3CEF4444" BorderBrush="#EF4444" BorderThickness="2"
+              CornerRadius="8" Padding="16">
+        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="AlertCircle" Width="22" Height="22"
+                           Foreground="#EF4444" VerticalAlignment="Center" />
+          <TextBlock Text="LIVE-TRADING AKTIV - Echtes Geld wird gehandelt!"
+                     FontSize="15" FontWeight="Bold" Foreground="#EF4444"
+                     VerticalAlignment="Center" />
+          <mi:MaterialIcon Kind="AlertCircle" Width="22" Height="22"
+                           Foreground="#EF4444" VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
 
       <!-- ================================================================= -->
       <!-- Willkommens-Hinweis (nur wenn ShowWelcomeHint=true)               -->
@@ -114,10 +137,11 @@
       <!-- ================================================================= -->
       <Grid ColumnDefinitions="*,Auto">
 
-        <!-- Bot-Kontrolle -->
+        <!-- Bot-Kontrolle (roter Rand wenn Live aktiv) -->
         <Border Grid.Column="0" Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
                 Padding="20,16" Margin="0,0,12,0"
-                BoxShadow="{DynamicResource CardShadow}">
+                BoxShadow="{DynamicResource CardShadow}"
+                Classes.LiveActive="{Binding IsLiveActive}">
           <StackPanel Spacing="12">
             <!-- Ueberschrift mit Status-Badge -->
             <StackPanel Orientation="Horizontal" Spacing="8">

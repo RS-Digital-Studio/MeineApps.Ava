@@ -1,3 +1,4 @@
+using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
@@ -42,11 +43,14 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly StrategyManager _strategyManager;
     private readonly PaperTradingService _paperService;
     private readonly ISecureStorageService? _secureStorage;
+    private readonly RiskSettings _riskSettings;
+    private readonly ScannerSettings _scannerSettings;
     private PeriodicTimer? _equityTimer;
     private PeriodicTimer? _accountUpdateTimer;
 
-    // === Live-Trading Client (erstellt zur Laufzeit mit API-Keys) ===
+    // === Live-Trading Client + Service (erstellt zur Laufzeit mit API-Keys) ===
     private BingXRestClient? _liveClient;
+    private LiveTradingService? _liveService;
 
     // === Modus ===
     [ObservableProperty] private bool _isPaperMode = true;
@@ -56,6 +60,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     // === Live-Trading Zustand ===
     [ObservableProperty] private bool _hasApiKeys;
     [ObservableProperty] private string _liveStatusText = "API-Keys nicht konfiguriert";
+    [ObservableProperty] private bool _isLiveActive; // true wenn Live-Trading aktiv handelt (für roten UI-Rahmen)
 
     // === Bot-Status ===
     [ObservableProperty] private string _botStatusText = "Gestoppt";
@@ -101,6 +106,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         BotEventBus eventBus,
         StrategyManager strategyManager,
         PaperTradingService paperService,
+        RiskSettings riskSettings,
+        ScannerSettings scannerSettings,
         IPublicMarketDataClient? publicClient = null,
         BotDatabaseService? dbService = null,
         ISecureStorageService? secureStorage = null)
@@ -108,6 +115,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _eventBus = eventBus;
         _strategyManager = strategyManager;
         _paperService = paperService;
+        _riskSettings = riskSettings;
+        _scannerSettings = scannerSettings;
         _publicClient = publicClient;
         _dbService = dbService;
         _secureStorage = secureStorage;
@@ -217,8 +226,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Startet den Live-Trading-Modus: Verbindet sich mit BingX und zeigt echte Daten an.
-    /// v1.0: NUR Anzeige (Account, Positionen, Signale), KEIN automatisches Handeln.
+    /// Startet den Live-Trading-Modus: Verbindet sich mit BingX, erstellt LiveTradingService
+    /// und handelt automatisch mit echtem Geld.
     /// </summary>
     private async Task StartLiveTradingAsync()
     {
@@ -247,7 +256,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        // BingXRestClient erstellen
+        // BingXRestClient erstellen + Verbindungstest
         BotStatusText = "Verbinde mit BingX...";
         BotStatusColor = "#F59E0B";
         CanStart = false;
@@ -267,7 +276,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 Balance = account.Balance;
                 AvailableBalance = account.AvailableBalance;
                 UnrealizedPnl = account.UnrealizedPnl;
-                TotalPnl = account.UnrealizedPnl; // Live: Unrealized als Gesamt-PnL (kein Startkapital bekannt)
+                TotalPnl = account.UnrealizedPnl;
                 HasAccountData = true;
             });
 
@@ -305,25 +314,44 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                     $"{positions.Count} offene Position(en) gefunden"));
             }
 
-            // WARNUNG: Live-Trading ist EXPERIMENTELL
+            // LiveTradingService erstellen
+            _liveService = new LiveTradingService(
+                _liveClient,
+                _publicClient!,
+                _strategyManager,
+                _riskSettings,
+                _scannerSettings,
+                _eventBus);
+
+            // Strategie aktivieren
+            var strategy = StrategyFactory.Create(SelectedStrategy);
+            _strategyManager.SetStrategy(strategy);
+
+            // WARNUNG im Activity-Feed
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
-                "LIVE-MODUS aktiv - Echte Account-Daten. Automatisches Trading ist deaktiviert (v1.0)."));
+                $"LIVE-TRADING AKTIV mit Strategie '{SelectedStrategy}'. Echtes Geld!"));
+
+            // Live-Trading starten
+            _liveService.Start();
 
             IsRunning = true;
-            BotStatusText = "Verbunden (Live) - Nur Anzeige";
-            BotStatusColor = "#10B981";
+            CanStart = false;
+            BotStatusText = "LIVE - Handelt aktiv!";
+            BotStatusColor = "#EF4444"; // ROT um Aufmerksamkeit zu erzeugen
             ShowWelcomeHint = false;
-            LiveStatusText = "Verbunden";
+            LiveStatusText = "Handelt aktiv";
+            IsLiveActive = true;
 
             // Account-Update Timer starten (alle 5 Sekunden echte Daten)
             _ = StartAccountUpdateAsync();
         }
         catch (Exception ex)
         {
-            BotStatusText = $"Verbindung fehlgeschlagen";
+            BotStatusText = "Verbindung fehlgeschlagen";
             BotStatusColor = "#EF4444";
             CanStart = true;
             _liveClient = null;
+            _liveService = null;
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
                 $"Live-Verbindung fehlgeschlagen: {ex.Message}"));
@@ -333,21 +361,23 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void PauseBot()
     {
-        if (!IsPaperMode)
+        if (!IsPaperMode && _liveService != null)
         {
-            // Live-Modus: Pause unterbricht Account-Updates
-            if (BotStatusText.Contains("Pausiert"))
+            // Live-Modus: Pause/Resume über LiveTradingService
+            if (_liveService.IsPaused)
             {
-                BotStatusText = "Verbunden (Live) - Nur Anzeige";
-                BotStatusColor = "#10B981";
+                _liveService.Resume();
+                BotStatusText = "LIVE - Handelt aktiv!";
+                BotStatusColor = "#EF4444"; // Rot
                 _ = StartAccountUpdateAsync();
             }
             else
             {
+                _liveService.Pause();
                 _accountUpdateTimer?.Dispose();
                 _accountUpdateTimer = null;
-                BotStatusText = "Pausiert (Live)";
-                BotStatusColor = "#F59E0B";
+                BotStatusText = "LIVE - Pausiert";
+                BotStatusColor = "#F59E0B"; // Amber
             }
             return;
         }
@@ -381,12 +411,19 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         }
         else
         {
-            // Live-Modus: Client freigeben
+            // Live-Modus: LiveTradingService stoppen + Client freigeben
+            if (_liveService != null)
+            {
+                await _liveService.StopAsync();
+                _liveService.Dispose();
+                _liveService = null;
+            }
             _liveClient = null;
             LiveStatusText = "Getrennt";
+            IsLiveActive = false;
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-                "Live-Verbindung getrennt"));
+                "Live-Trading gestoppt. Offene Positionen bleiben auf BingX bestehen."));
         }
 
         IsRunning = false;
@@ -409,13 +446,16 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         }
         else
         {
-            // Live-Modus v1.0: KEIN automatisches Schliessen von echten Positionen!
-            // Das wäre zu riskant ohne ausreichendes Testing.
+            // Live-Modus: LiveTradingService Notfall-Stop (schließt ALLE echten Positionen!)
+            if (_liveService != null)
+            {
+                await _liveService.EmergencyStopAsync();
+                _liveService.Dispose();
+                _liveService = null;
+            }
             _liveClient = null;
-            LiveStatusText = "Notfall-Trennung";
-
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
-                "NOTFALL-STOP (Live): Verbindung getrennt. Offene Positionen manuell auf BingX schliessen!"));
+            LiveStatusText = "Notfall-Stop";
+            IsLiveActive = false;
         }
 
         IsRunning = false;
@@ -450,7 +490,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             HasApiKeys = _secureStorage?.HasCredentials ?? false;
             ModeText = "Live-Modus";
             ModeDescription = HasApiKeys
-                ? "Echtes Trading mit BingX - Nur Anzeige (v1.0)"
+                ? "Echtes Trading mit BingX - Handelt automatisch!"
                 : "API-Keys erforderlich! Gehe zu Einstellungen.";
         }
 
@@ -461,6 +501,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         UnrealizedPnl = 0;
         TotalPnl = 0;
         _liveClient = null;
+        IsLiveActive = false;
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
             $"Modus gewechselt zu: {ModeText}"));
@@ -484,6 +525,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _equityTimer?.Dispose();
         _accountUpdateTimer?.Dispose();
         _paperService.Dispose();
+        _liveService?.Dispose();
+        _liveService = null;
         _liveClient = null;
     }
 

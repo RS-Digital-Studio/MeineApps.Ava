@@ -61,15 +61,21 @@ Echter Paper-Trading-Service mit REST-Polling (implementiert IDisposable):
 - Events ueber BotEventBus (Trades, Logs, Account-Updates)
 - Datei: `Services/PaperTradingService.cs`
 
-## Live-Trading (v1.0 - Nur Anzeige)
+## Live-Trading (v2.0 - Voll funktional)
 
-Live-Modus verbindet sich mit echtem BingX-Account:
+Live-Trading-Service handelt automatisch mit echtem Geld über BingXRestClient:
+- `LiveTradingService` (analog zu PaperTradingService, aber mit echtem BingXRestClient)
 - BingXRestClient wird zur Laufzeit mit gespeicherten API-Keys erstellt
 - Verbindungstest: GetAccountInfoAsync() beim Start
 - Echte Balance + Positionen werden alle 5 Sekunden aktualisiert
-- **v1.0: NUR Anzeige, KEIN automatisches Handeln** (zu riskant ohne ausreichendes Testing)
-- Notfall-Stop trennt Verbindung, schliesst aber KEINE echten Positionen (manuell auf BingX)
+- **Scan-Loop alle 30s**: Ticker holen, Scanner filtern, Klines laden, Strategie evaluieren, echte Orders platzieren
+- **SL/TP-Loop alle 5s**: Prüft offene Positionen gegen gespeicherte SL/TP-Levels, schließt bei Hit
+- **Normaler Stop**: Positionen bleiben offen (User entscheidet manuell)
+- **Notfall-Stop**: Schließt ALLE echten Positionen sofort über BingXRestClient
+- **Sicherheitsmaßnahmen**: Roter Status-Banner, "LIVE ORDER:" Prefix im Activity-Feed, 60s Pause bei API-Fehlern
 - SettingsViewModel feuert `ApiKeysAvailableChanged` Event bei Save/Delete
+- `IsLiveActive` Property für roten UI-Rahmen im Dashboard
+- Datei: `Services/LiveTradingService.cs`
 
 ## Activity-Feed (Dashboard)
 
@@ -93,7 +99,7 @@ Live-Feed der letzten 20 Bot-Aktionen direkt im Dashboard:
 
 | View | Zweck | Engine-Verdrahtung |
 |------|-------|--------------------|
-| Dashboard | Balance, Positionen, Activity-Feed, Bot-Controls, Strategie-Auswahl, Equity-Chart, BTC-Live-Candlestick-Chart, Live-Trading (nur Anzeige) | BotEventBus, StrategyManager, PaperTradingService, IPublicMarketDataClient, ISecureStorageService, BingXRestClient (Live), Auto-Refresh |
+| Dashboard | Balance, Positionen, Activity-Feed, Bot-Controls, Strategie-Auswahl, Equity-Chart, BTC-Live-Candlestick-Chart, Live-Trading (voll funktional) | BotEventBus, StrategyManager, PaperTradingService, LiveTradingService, RiskSettings, ScannerSettings, IPublicMarketDataClient, ISecureStorageService, BingXRestClient (Live), Auto-Refresh |
 | Scanner | Live-Scan mit Volumen/Momentum-Filter | BotEventBus, ScannerSettings, IMarketScanner (optional) |
 | Strategie | Auswahl + dynamischer Parameter-Editor + Parameter-Rückschreibung | BotEventBus, StrategyManager, IStrategy-Instanzen |
 | Backtest | Historischer Test mit PerformanceReport, publiziert Ergebnisse an TradeHistory + Log | BotEventBus, BacktestEngine, RiskManager, SimulatedExchange |
@@ -129,7 +135,7 @@ Alle ViewModels bekommen ihre Engine-Dependencies per Constructor Injection:
 | ViewModel | DI-Parameter |
 |-----------|--------------|
 | MainViewModel | BotEventBus |
-| DashboardViewModel | BotEventBus, StrategyManager, PaperTradingService, IPublicMarketDataClient?, BotDatabaseService?, ISecureStorageService? |
+| DashboardViewModel | BotEventBus, StrategyManager, PaperTradingService, RiskSettings, ScannerSettings, IPublicMarketDataClient?, BotDatabaseService?, ISecureStorageService? |
 | StrategyViewModel | StrategyManager, BotEventBus |
 | BacktestViewModel | RiskSettings, BotEventBus, IPublicMarketDataClient?, BotDatabaseService? |
 | TradeHistoryViewModel | BotEventBus, BotDatabaseService? |

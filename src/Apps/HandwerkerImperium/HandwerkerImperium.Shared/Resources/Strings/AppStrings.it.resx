@@ -637,7 +637,7 @@
     <value>Salvataggio cloud fallito. Riprova.</value>
   </data>
   <data name="LastCloudSave" xml:space="preserve">
-    <value>Ultimo salvataggio: {0}</value>
+    <value>Ultimo salvataggio</value>
   </data>
   <data name="AutoCollectDesc" xml:space="preserve">
     <value>Raccogli consegne automaticamente</value>
@@ -3489,7 +3489,7 @@
   <data name="CloudRestoreFailed" xml:space="preserve"><value>Impossibile ripristinare dal cloud</value></data>
   <data name="RestoreFromCloudConfirmation" xml:space="preserve"><value>Questo sostituirà il tuo salvataggio attuale con quello del cloud. Sei sicuro?</value></data>
   <data name="YesRestore" xml:space="preserve"><value>Sì, ripristina</value></data>
-  <data name="SignedInAs" xml:space="preserve"><value>Connesso come {0}</value></data>
+  <data name="SignedInAs" xml:space="preserve"><value>Connesso come</value></data>
   <data name="SignInFailed" xml:space="preserve"><value>Accesso non riuscito</value></data>
 
   <data name="LuckySpin" xml:space="preserve">
@@ -4113,9 +4113,6 @@
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>Nessuna connessione internet. Le funzioni della gilda richiedono una connessione attiva per la sincronizzazione con gli altri giocatori.</value>
   </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="InvitePlayer" xml:space="preserve">
     <value>Invita giocatore</value>
   </data>
@@ -4618,6 +4615,15 @@
   </data>
   <data name="OrSearchGuild" xml:space="preserve">
     <value>o cerca gilda</value>
+  </data>
+  <data name="OpenGuilds" xml:space="preserve">
+    <value>Gilde aperte</value>
+  </data>
+  <data name="EnterInviteCode" xml:space="preserve">
+    <value>Inserisci codice</value>
+  </data>
+  <data name="InviteCodePlaceholder" xml:space="preserve">
+    <value>Codice a 6 cifre</value>
   </data>
   <data name="InviteFailed" xml:space="preserve">
     <value>Invito fallito</value>

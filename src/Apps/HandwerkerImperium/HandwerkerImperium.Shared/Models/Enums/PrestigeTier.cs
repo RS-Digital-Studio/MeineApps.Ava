@@ -83,7 +83,7 @@ public static class PrestigeTierExtensions
     /// </summary>
     public static decimal GetPermanentMultiplierBonus(this PrestigeTier tier) => tier switch
     {
-        PrestigeTier.Bronze => 0.10m,   // +10% pro Bronze
+        PrestigeTier.Bronze => 0.20m,   // +20% pro Bronze (BAL-12: von 10% erhöht, erster Prestige soll sich lohnen)
         PrestigeTier.Silver => 0.25m,   // +25% pro Silver
         PrestigeTier.Gold => 0.50m,     // +50% pro Gold
         PrestigeTier.Platin => 1.00m,   // +100% pro Platin

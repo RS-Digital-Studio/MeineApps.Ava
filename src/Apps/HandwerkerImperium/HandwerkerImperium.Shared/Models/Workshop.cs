@@ -152,10 +152,10 @@ public class Workshop
     /// Multiplikator-Meilensteine bei bestimmten Workshop-Leveln.
     /// Erzeugt "Bumpy Progression" (AdVenture-Capitalist-Pattern):
     /// Vor einem Meilenstein verlangsamt es sich, danach explodiert das Einkommen.
-    /// Meilensteine bei 25/50/75/100/150/200/250/500/1000 → gleichmäßige Belohnungsverteilung.
-    /// Kumulativ Lv1000 = 1.25 * 1.5 * 1.5 * 1.75 * 2.0 * 1.75 * 2.0 * 2.0 * 3.0 * 5.0 = ~620x
+    /// Meilensteine bei 25/50/75/100/150/200/225/250/350/500/1000.
     /// Meilenstein 200 schließt die Lücke zwischen 150 und 250.
-    /// Meilenstein 350 schließt die Durststrecke 250→500 (BAL-1 Balancing-Fix).
+    /// Meilenstein 225 (BAL-13) schließt die Grind-Wall 200→250.
+    /// Meilenstein 350 schließt die Durststrecke 250→500 (BAL-1).
     /// </summary>
     public decimal GetMilestoneMultiplier()
     {
@@ -166,8 +166,9 @@ public class Workshop
         if (Level >= 100) mult *= 1.75m;
         if (Level >= 150) mult *= 2.0m;
         if (Level >= 200) mult *= 1.75m;
+        if (Level >= 225) mult *= 1.5m;   // BAL-13: Neuer Meilenstein gegen Grind-Wall 200→250
         if (Level >= 250) mult *= 2.0m;
-        if (Level >= 350) mult *= 2.0m;  // BAL-1: Neuer Meilenstein gegen Mid-Game-Durststrecke
+        if (Level >= 350) mult *= 2.0m;   // BAL-1: Neuer Meilenstein gegen Mid-Game-Durststrecke
         if (Level >= 500) mult *= 3.0m;
         if (Level >= 1000) mult *= 5.0m;
         return mult;
@@ -177,7 +178,7 @@ public class Workshop
     /// Prüft ob das aktuelle Level ein Multiplikator-Meilenstein ist.
     /// </summary>
     public static bool IsMilestoneLevel(int level) =>
-        level is 25 or 50 or 75 or 100 or 150 or 200 or 250 or 350 or 500 or 1000;
+        level is 25 or 50 or 75 or 100 or 150 or 200 or 225 or 250 or 350 or 500 or 1000;
 
     /// <summary>
     /// Gibt den Multiplikator für ein bestimmtes Meilenstein-Level zurück.
@@ -190,8 +191,9 @@ public class Workshop
         100 => 1.75m,
         150 => 2.0m,
         200 => 1.75m,
+        225 => 1.5m,   // BAL-13: Neuer Meilenstein gegen Grind-Wall
         250 => 2.0m,
-        350 => 2.0m,  // BAL-1: Neuer Meilenstein
+        350 => 2.0m,   // BAL-1: Neuer Meilenstein
         500 => 3.0m,
         1000 => 5.0m,
         _ => 1.0m

@@ -197,6 +197,13 @@ public sealed partial class ForgeGameViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _tutorialText = "";
 
+    // Auto-Complete (nach 50x bzw. 25x Perfect freigeschaltet)
+    [ObservableProperty]
+    private bool _canAutoComplete;
+
+    [ObservableProperty]
+    private string _autoCompleteHint = "";
+
     // ===================================================================
     // COMPUTED PROPERTIES
     // ===================================================================
@@ -296,8 +303,11 @@ public sealed partial class ForgeGameViewModel : ViewModelBase, IDisposable
 
         UpdateGameTypeVisuals();
         InitializeZones();
+        // Auto-Complete prüfen
+        UpdateAutoCompleteStatus();
+
         CheckAndShowTutorial(GameType);
-        if (!ShowTutorial) StartGameAsync().SafeFireAndForget();
+        if (!ShowTutorial && !CanAutoComplete) StartGameAsync().SafeFireAndForget();
     }
 
     private void UpdateGameTypeVisuals()
@@ -505,6 +515,10 @@ public sealed partial class ForgeGameViewModel : ViewModelBase, IDisposable
 
         // Ergebnis im GameState speichern
         _gameStateService.RecordMiniGameResult(Result);
+
+        // Perfect-Rating für Auto-Complete zählen
+        if (Result == MiniGameRating.Perfect)
+            _gameStateService.RecordPerfectRating(GameType);
 
         // Belohnungen berechnen
         var order = _gameStateService.GetActiveOrder();
@@ -716,6 +730,50 @@ public sealed partial class ForgeGameViewModel : ViewModelBase, IDisposable
             TutorialText = _localizationService.GetString($"Tutorial{gameType}Text") ?? "";
             ShowTutorial = true;
         }
+    }
+
+    // ===================================================================
+    // AUTO-COMPLETE
+    // ===================================================================
+
+    private void UpdateAutoCompleteStatus()
+    {
+        var state = _gameStateService.State;
+        bool canAuto = _gameStateService.CanAutoComplete(GameType, state.IsPremium);
+        CanAutoComplete = canAuto;
+        if (canAuto)
+        {
+            int count = state.PerfectRatingCounts.TryGetValue((int)GameType, out int c) ? c : 0;
+            var hint = _localizationService.GetString("AutoCompleteHint") ?? "";
+            AutoCompleteHint = string.Format(hint, count);
+        }
+    }
+
+    [RelayCommand]
+    private async Task AutoCompleteGameAsync()
+    {
+        if (!CanAutoComplete) return;
+
+        var order = _gameStateService.GetActiveOrder();
+        if (order == null) { NavigationRequested?.Invoke("../..");  return; }
+
+        while (!order.IsCompleted)
+            _gameStateService.RecordMiniGameResult(MiniGameRating.Good);
+
+        await _audioService.PlaySoundAsync(GameSound.Good);
+
+        RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
+        XpAmount = order.FinalXp;
+        Result = MiniGameRating.Good;
+        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
+        ResultEmoji = "★★";
+        IsLastTask = true;
+        IsResultShown = true;
+        Star1Opacity = 1.0; Star2Opacity = 1.0; Star3Opacity = 0.3;
+        GameCompleted?.Invoke(this, 2);
+        AdWatched = false;
+        CanWatchAd = _rewardedAdService.IsAvailable;
+        CanAutoComplete = false;
     }
 
     // ===================================================================

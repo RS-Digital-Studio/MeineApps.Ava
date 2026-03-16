@@ -94,6 +94,16 @@ public sealed class CityRenderer : IDisposable
     // Gecachter PathEffect für gestricheltes Outline (statt pro Frame neu erstellen)
     private static readonly SKPathEffect _dashedEffect = SKPathEffect.CreateDash([4, 4], 0);
 
+    // Statische Enum-Arrays (vermeidet Enum.GetValues-Allokation pro Frame)
+    private static readonly WorkshopType[] s_workshopTypes = Enum.GetValues<WorkshopType>();
+    private static readonly BuildingType[] s_buildingTypes = Enum.GetValues<BuildingType>();
+
+    // Workshop/Building-Dictionary-Cache (vermeidet FirstOrDefault-LINQ pro Frame)
+    private Dictionary<WorkshopType, Workshop>? _workshopLookup;
+    private Dictionary<BuildingType, Building>? _buildingLookup;
+    private int _cachedWorkshopCount = -1;
+    private int _cachedBuildingCount = -1;
+
     // Parallax-Scroll-Offset (wird extern gesetzt, z.B. vom ScrollViewer)
     public float ScrollOffset { get; set; }
 
@@ -107,12 +117,49 @@ public sealed class CityRenderer : IDisposable
     }
 
     /// <summary>
+    /// Refresht die Workshop/Building-Lookup-Dictionaries wenn sich die Anzahl geändert hat.
+    /// Vermeidet FirstOrDefault-LINQ-Allokationen pro Render-Frame.
+    /// </summary>
+    private void RefreshLookupCaches(GameState state, List<Building> buildings)
+    {
+        if (_workshopLookup == null || _cachedWorkshopCount != state.Workshops.Count)
+        {
+            _workshopLookup = new Dictionary<WorkshopType, Workshop>(state.Workshops.Count);
+            for (int i = 0; i < state.Workshops.Count; i++)
+                _workshopLookup[state.Workshops[i].Type] = state.Workshops[i];
+            _cachedWorkshopCount = state.Workshops.Count;
+        }
+        else
+        {
+            // Update bestehende Referenzen (Workshop-Objekte können sich geändert haben)
+            for (int i = 0; i < state.Workshops.Count; i++)
+                _workshopLookup[state.Workshops[i].Type] = state.Workshops[i];
+        }
+
+        if (_buildingLookup == null || _cachedBuildingCount != buildings.Count)
+        {
+            _buildingLookup = new Dictionary<BuildingType, Building>(buildings.Count);
+            for (int i = 0; i < buildings.Count; i++)
+                _buildingLookup[buildings[i].Type] = buildings[i];
+            _cachedBuildingCount = buildings.Count;
+        }
+        else
+        {
+            for (int i = 0; i < buildings.Count; i++)
+                _buildingLookup[buildings[i].Type] = buildings[i];
+        }
+    }
+
+    /// <summary>
     /// Rendert die komplette City-Ansicht.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, GameState state, List<Building> buildings, float deltaTime = 0.016f)
     {
         _time += deltaTime;
         float nightDim = GetNightDimFactor();
+
+        // Dictionary-Cache refreshen wenn sich Workshops/Buildings geändert haben
+        RefreshLookupCaches(state, buildings);
 
         // Wetter-System initialisieren (einmalig) + updaten (nur bei Medium/High)
         var gfxQuality = state.GraphicsQuality;
@@ -433,8 +480,7 @@ public sealed class CityRenderer : IDisposable
     /// </summary>
     private void DrawWorkshopRow(SKCanvas canvas, SKRect bounds, GameState state, float rowBottom, float nightDim)
     {
-        var allTypes = Enum.GetValues<WorkshopType>();
-        int count = allTypes.Length;
+        int count = s_workshopTypes.Length;
         if (count == 0) return;
 
         float totalWidth = bounds.Width - 16;
@@ -446,8 +492,8 @@ public sealed class CityRenderer : IDisposable
         int highestIdx = -1;
         for (int i = 0; i < count; i++)
         {
-            var ws = state.Workshops.FirstOrDefault(w => w.Type == allTypes[i]);
-            if (ws != null && state.IsWorkshopUnlocked(allTypes[i]) && ws.Level > highestLevel)
+            _workshopLookup!.TryGetValue(s_workshopTypes[i], out var ws);
+            if (ws != null && state.IsWorkshopUnlocked(s_workshopTypes[i]) && ws.Level > highestLevel)
             {
                 highestLevel = ws.Level;
                 highestIdx = i;
@@ -457,8 +503,8 @@ public sealed class CityRenderer : IDisposable
         float x = bounds.Left + 8;
         for (int i = 0; i < count; i++)
         {
-            var type = allTypes[i];
-            var workshop = state.Workshops.FirstOrDefault(w => w.Type == type);
+            var type = s_workshopTypes[i];
+            _workshopLookup!.TryGetValue(type, out var workshop);
             bool isUnlocked = state.IsWorkshopUnlocked(type);
 
             if (isUnlocked && workshop != null)
@@ -549,8 +595,7 @@ public sealed class CityRenderer : IDisposable
     /// </summary>
     private void DrawBuildingRow(SKCanvas canvas, SKRect bounds, List<Building> buildings, float rowTop, float nightDim)
     {
-        var allTypes = Enum.GetValues<BuildingType>();
-        int count = allTypes.Length;
+        int count = s_buildingTypes.Length;
         if (count == 0) return;
 
         float totalWidth = bounds.Width - 16;
@@ -560,8 +605,8 @@ public sealed class CityRenderer : IDisposable
         float x = bounds.Left + 8;
         for (int i = 0; i < count; i++)
         {
-            var type = allTypes[i];
-            var building = buildings.FirstOrDefault(b => b.Type == type);
+            var type = s_buildingTypes[i];
+            _buildingLookup!.TryGetValue(type, out var building);
             bool isBuilt = building?.IsBuilt ?? false;
 
             if (isBuilt)
@@ -712,8 +757,7 @@ public sealed class CityRenderer : IDisposable
     /// </summary>
     private void DrawWorkshopParticles(SKCanvas canvas, SKRect bounds, GameState state, float rowBottom, float nightDim)
     {
-        var allTypes = Enum.GetValues<WorkshopType>();
-        int count = allTypes.Length;
+        int count = s_workshopTypes.Length;
         float totalWidth = bounds.Width - 16;
         float gap = 5;
         float bw = Math.Max(22, (totalWidth - (count - 1) * gap) / count);
@@ -721,8 +765,8 @@ public sealed class CityRenderer : IDisposable
         float x = bounds.Left + 8;
         for (int i = 0; i < count; i++)
         {
-            var type = allTypes[i];
-            var workshop = state.Workshops.FirstOrDefault(w => w.Type == type);
+            var type = s_workshopTypes[i];
+            _workshopLookup!.TryGetValue(type, out var workshop);
             bool isUnlocked = state.IsWorkshopUnlocked(type);
 
             if (isUnlocked && workshop != null)
@@ -1107,8 +1151,7 @@ public sealed class CityRenderer : IDisposable
         float buildingRowTop = streetY + 14;
 
         // 1. Workshop-Reihe testen (oberhalb der Straße)
-        var workshopTypes = Enum.GetValues<WorkshopType>();
-        int wsCount = workshopTypes.Length;
+        int wsCount = s_workshopTypes.Length;
         if (wsCount > 0)
         {
             float totalWidth = bounds.Width - 16;
@@ -1118,8 +1161,9 @@ public sealed class CityRenderer : IDisposable
 
             for (int i = 0; i < wsCount; i++)
             {
-                var ws = state.Workshops.FirstOrDefault(w => w.Type == workshopTypes[i]);
-                bool isUnlocked = state.IsWorkshopUnlocked(workshopTypes[i]);
+                Workshop? ws = null;
+                _workshopLookup?.TryGetValue(s_workshopTypes[i], out ws);
+                bool isUnlocked = state.IsWorkshopUnlocked(s_workshopTypes[i]);
                 float height = (isUnlocked && ws != null)
                     ? CityBuildingShapes.GetBuildingHeight(ws.Level)
                     : 28f;
@@ -1132,7 +1176,7 @@ public sealed class CityRenderer : IDisposable
                     {
                         Target = CityTapTarget.Workshop,
                         Index = i,
-                        WorkshopType = workshopTypes[i],
+                        WorkshopType = s_workshopTypes[i],
                         HitX = x, HitY = top, HitW = bw, HitH = height
                     };
                 }
@@ -1141,8 +1185,7 @@ public sealed class CityRenderer : IDisposable
         }
 
         // 2. Building-Reihe testen (unterhalb der Straße)
-        var buildingTypes = Enum.GetValues<BuildingType>();
-        int bldCount = buildingTypes.Length;
+        int bldCount = s_buildingTypes.Length;
         if (bldCount > 0)
         {
             float totalWidth = bounds.Width - 16;
@@ -1152,7 +1195,8 @@ public sealed class CityRenderer : IDisposable
 
             for (int i = 0; i < bldCount; i++)
             {
-                var building = buildings.FirstOrDefault(b => b.Type == buildingTypes[i]);
+                Building? building = null;
+                _buildingLookup?.TryGetValue(s_buildingTypes[i], out building);
                 float height = (building?.IsBuilt ?? false) ? 18f + building!.Level * 3f : 18f;
 
                 if (touchX >= x && touchX <= x + bw &&
@@ -1162,7 +1206,7 @@ public sealed class CityRenderer : IDisposable
                     {
                         Target = CityTapTarget.Building,
                         Index = i,
-                        BuildingType = buildingTypes[i],
+                        BuildingType = s_buildingTypes[i],
                         HitX = x, HitY = buildingRowTop, HitW = bw, HitH = height
                     };
                 }

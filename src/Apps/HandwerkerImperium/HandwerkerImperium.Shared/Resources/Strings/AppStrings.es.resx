@@ -637,7 +637,7 @@
     <value>Error al guardar en la nube. Inténtalo de nuevo.</value>
   </data>
   <data name="LastCloudSave" xml:space="preserve">
-    <value>Último guardado: {0}</value>
+    <value>Último guardado</value>
   </data>
   <data name="AutoCollectDesc" xml:space="preserve">
     <value>Recoger entregas automáticamente</value>
@@ -3484,7 +3484,7 @@
   <data name="CloudRestoreFailed" xml:space="preserve"><value>No se pudo restaurar desde la nube</value></data>
   <data name="RestoreFromCloudConfirmation" xml:space="preserve"><value>Esto reemplazará tu partida actual con la de la nube. ¿Estás seguro?</value></data>
   <data name="YesRestore" xml:space="preserve"><value>Sí, restaurar</value></data>
-  <data name="SignedInAs" xml:space="preserve"><value>Conectado como {0}</value></data>
+  <data name="SignedInAs" xml:space="preserve"><value>Conectado como</value></data>
   <data name="SignInFailed" xml:space="preserve"><value>Error al iniciar sesión</value></data>
 
   <data name="PlayGamesMembersInfo" xml:space="preserve">
@@ -4112,9 +4112,6 @@
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>Sin conexión a internet. Las funciones de gremio requieren una conexión activa para sincronizar con otros jugadores.</value>
   </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="InvitePlayer" xml:space="preserve">
     <value>Invitar jugador</value>
   </data>
@@ -4617,6 +4614,15 @@
   </data>
   <data name="OrSearchGuild" xml:space="preserve">
     <value>o buscar gremio</value>
+  </data>
+  <data name="OpenGuilds" xml:space="preserve">
+    <value>Gremios abiertos</value>
+  </data>
+  <data name="EnterInviteCode" xml:space="preserve">
+    <value>Ingresar código</value>
+  </data>
+  <data name="InviteCodePlaceholder" xml:space="preserve">
+    <value>Código de 6 dígitos</value>
   </data>
   <data name="InviteFailed" xml:space="preserve">
     <value>Error al invitar</value>

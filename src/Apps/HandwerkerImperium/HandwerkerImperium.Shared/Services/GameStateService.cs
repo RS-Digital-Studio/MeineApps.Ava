@@ -624,6 +624,31 @@ public sealed class GameStateService : IGameStateService
             order, moneyReward, xpReward, avgRating));
     }
 
+    // ===================================================================
+    // MINI-GAME AUTO-COMPLETE
+    // ===================================================================
+
+    public void RecordPerfectRating(MiniGameType type)
+    {
+        lock (_stateLock)
+        {
+            int key = (int)type;
+            if (_state.PerfectRatingCounts.TryGetValue(key, out int count))
+                _state.PerfectRatingCounts[key] = count + 1;
+            else
+                _state.PerfectRatingCounts[key] = 1;
+        }
+    }
+
+    public bool CanAutoComplete(MiniGameType type, bool isPremium)
+    {
+        int threshold = isPremium ? 25 : 50;
+        lock (_stateLock)
+        {
+            return _state.PerfectRatingCounts.TryGetValue((int)type, out int count) && count >= threshold;
+        }
+    }
+
     public void CancelActiveOrder()
     {
         lock (_stateLock)

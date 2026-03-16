@@ -637,7 +637,7 @@
     <value>Échec de la sauvegarde cloud. Veuillez réessayer.</value>
   </data>
   <data name="LastCloudSave" xml:space="preserve">
-    <value>Dernière sauvegarde : {0}</value>
+    <value>Dernière sauvegarde</value>
   </data>
   <data name="AutoCollectDesc" xml:space="preserve">
     <value>Collecter les livraisons automatiquement</value>
@@ -3484,7 +3484,7 @@
   <data name="CloudRestoreFailed" xml:space="preserve"><value>Impossible de restaurer depuis le cloud</value></data>
   <data name="RestoreFromCloudConfirmation" xml:space="preserve"><value>Cela remplacera votre sauvegarde actuelle par celle du cloud. Êtes-vous sûr ?</value></data>
   <data name="YesRestore" xml:space="preserve"><value>Oui, restaurer</value></data>
-  <data name="SignedInAs" xml:space="preserve"><value>Connecté en tant que {0}</value></data>
+  <data name="SignedInAs" xml:space="preserve"><value>Connecté en tant que</value></data>
   <data name="SignInFailed" xml:space="preserve"><value>Échec de la connexion</value></data>
 
   <data name="PlayGamesMembersInfo" xml:space="preserve">
@@ -4112,9 +4112,6 @@
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>Pas de connexion internet. Les fonctions de guilde nécessitent une connexion active pour la synchronisation avec les autres joueurs.</value>
   </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="InvitePlayer" xml:space="preserve">
     <value>Inviter un joueur</value>
   </data>
@@ -4617,6 +4614,15 @@
   </data>
   <data name="OrSearchGuild" xml:space="preserve">
     <value>ou chercher une guilde</value>
+  </data>
+  <data name="OpenGuilds" xml:space="preserve">
+    <value>Guildes ouvertes</value>
+  </data>
+  <data name="EnterInviteCode" xml:space="preserve">
+    <value>Entrer le code</value>
+  </data>
+  <data name="InviteCodePlaceholder" xml:space="preserve">
+    <value>Code à 6 chiffres</value>
   </data>
   <data name="InviteFailed" xml:space="preserve">
     <value>Échec de l'invitation</value>

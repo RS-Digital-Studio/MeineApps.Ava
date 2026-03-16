@@ -187,6 +187,21 @@ public interface IGameStateService
     void CancelActiveOrder();
 
     // ===================================================================
+    // MINI-GAME AUTO-COMPLETE
+    // ===================================================================
+
+    /// <summary>
+    /// Zählt ein Perfect-Rating für den angegebenen MiniGame-Typ.
+    /// </summary>
+    void RecordPerfectRating(MiniGameType type);
+
+    /// <summary>
+    /// Prüft ob Auto-Complete für diesen MiniGame-Typ verfügbar ist.
+    /// Premium-Spieler: 25 Perfects, Free-Spieler: 50 Perfects.
+    /// </summary>
+    bool CanAutoComplete(MiniGameType type, bool isPremium);
+
+    // ===================================================================
     // STATE MANAGEMENT
     // ===================================================================
 

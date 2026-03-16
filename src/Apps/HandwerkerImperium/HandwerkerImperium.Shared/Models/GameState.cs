@@ -321,6 +321,20 @@ public class GameState
     public bool IsRushBoostActive => RushBoostEndTime > DateTime.UtcNow;
 
     /// <summary>
+    /// Ob der Soft-Cap auf den Einkommens-Multiplikator aktiv ist (> 10x).
+    /// Wird vom GameLoopService pro Tick gesetzt.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsSoftCapActive { get; set; }
+
+    /// <summary>
+    /// Wie viel Prozent des Einkommens durch den Soft-Cap verloren gehen (0-100).
+    /// Für UI-Transparenz: Zeigt dem Spieler warum Boni gedeckelt werden.
+    /// </summary>
+    [JsonIgnore]
+    public int SoftCapReductionPercent { get; set; }
+
+    /// <summary>
     /// Ob der tägliche Gratis-Rush verfügbar ist (noch nicht heute verwendet).
     /// Zeitmanipulations-sicher: Wenn LastFreeRushUsed in der Zukunft liegt, ist future &lt; today false → blockiert.
     /// </summary>
@@ -518,6 +532,13 @@ public class GameState
     /// <summary>Set der MiniGame-Typen mit mindestens einem Perfect Rating.</summary>
     [JsonPropertyName("perfectMiniGameTypes")]
     public List<string> PerfectMiniGameTypes { get; set; } = [];
+
+    /// <summary>
+    /// Zähler für Perfect-Ratings pro MiniGame-Typ (Key = MiniGameType als int).
+    /// Wird für Auto-Complete-Feature verwendet (50x Perfect → Auto-Ergebnis, Premium 25x).
+    /// </summary>
+    [JsonPropertyName("perfectRatingCounts")]
+    public Dictionary<int, int> PerfectRatingCounts { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // MANAGERS (Welle 3)

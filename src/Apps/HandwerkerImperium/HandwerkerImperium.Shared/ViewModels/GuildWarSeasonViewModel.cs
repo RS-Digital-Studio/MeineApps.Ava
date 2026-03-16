@@ -177,7 +177,12 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
                     MvpDisplay = $"{mvpLabel}: {data.MvpName} ({data.MvpScore:N0})";
                 }
 
-                // Bonus-Missionen
+                // Bonus-Missionen (RESX-Keys in lokalisierte Texte auflösen)
+                foreach (var m in data.BonusMissions)
+                {
+                    m.NameKey = _localizationService.GetString(m.NameKey) ?? m.NameKey;
+                    m.DescKey = _localizationService.GetString(m.DescKey) ?? m.DescKey;
+                }
                 BonusMissions = new ObservableCollection<WarBonusMission>(data.BonusMissions);
                 HasBonusMissions = BonusMissions.Count > 0;
             }

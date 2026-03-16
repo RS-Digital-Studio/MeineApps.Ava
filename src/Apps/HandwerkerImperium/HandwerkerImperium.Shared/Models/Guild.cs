@@ -162,8 +162,14 @@ public class GuildListItem
     public string Color { get; set; } = "#D97706";
     public int Level { get; set; } = 1;
     public int MemberCount { get; set; }
+    public int MaxMembers { get; set; } = 20;
+    public string Description { get; set; } = "";
+    public string LeagueId { get; set; } = "bronze";
     public long WeeklyGoal { get; set; }
     public long WeeklyProgress { get; set; }
+
+    /// <summary>Anzeige-Text für Mitglieder (z.B. "5/20").</summary>
+    public string MembersDisplay => $"{MemberCount}/{MaxMembers}";
 
     public double WeeklyGoalProgress => WeeklyGoal > 0
         ? Math.Clamp((double)WeeklyProgress / WeeklyGoal, 0.0, 1.0) : 0.0;

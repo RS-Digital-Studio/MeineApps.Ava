@@ -48,7 +48,7 @@ public sealed class GoalService : IGoalService
         if (bestGoal != null) return bestGoal; // Priorität 0 = höchste, sofort zurückgeben
 
         // 1. Workshop-Meilenstein nahe (höchste Prio wenn <5 Level entfernt)
-        int[] milestones = [25, 50, 75, 100, 150, 200, 250, 350, 500, 1000];
+        int[] milestones = [25, 50, 75, 100, 150, 200, 225, 250, 350, 500, 1000];
         for (int i = 0; i < state.Workshops.Count; i++)
         {
             var ws = state.Workshops[i];
@@ -158,6 +158,42 @@ public sealed class GoalService : IGoalService
                     if (bestGoal == null || goal.Priority < bestGoal.Priority)
                         bestGoal = goal;
                     break; // Nur ein Gebäude vorschlagen
+                }
+            }
+        }
+
+        // 5. Nächster Worker-Tier (wenn Spieler sich bald besseren Worker leisten kann)
+        if (bestGoal == null)
+        {
+            // Höchsten Tier aller aktuellen Worker finden
+            var highestWorkerTier = WorkerTier.F;
+            for (int i = 0; i < state.Workshops.Count; i++)
+            {
+                if (!state.Workshops[i].IsUnlocked) continue;
+                for (int w = 0; w < state.Workshops[i].Workers.Count; w++)
+                {
+                    if (state.Workshops[i].Workers[w].Tier > highestWorkerTier)
+                        highestWorkerTier = state.Workshops[i].Workers[w].Tier;
+                }
+            }
+
+            // Nächsten erreichbaren Tier prüfen
+            var nextTier = (WorkerTier)Math.Min((int)highestWorkerTier + 1, (int)WorkerTier.Legendary);
+            if (nextTier > highestWorkerTier && state.PlayerLevel >= nextTier.GetUnlockLevel())
+            {
+                decimal hiringCost = nextTier.GetHiringCost(state.PlayerLevel);
+                if (state.Money >= hiringCost * 0.3m && state.Money < hiringCost * 3m)
+                {
+                    var tierName = _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString();
+                    bestGoal = new GameGoal
+                    {
+                        Description = $"{tierName}-{_localizationService.GetString("Worker") ?? "Arbeiter"}",
+                        RewardHint = $"{nextTier.GetMinEfficiency():0.#}-{nextTier.GetMaxEfficiency():0.#}x {_localizationService.GetString("Efficiency") ?? "Effizienz"}",
+                        Progress = Math.Min(1.0, (double)(state.Money / hiringCost)),
+                        NavigationRoute = "workers",
+                        IconKind = "AccountArrowUp",
+                        Priority = 5
+                    };
                 }
             }
         }

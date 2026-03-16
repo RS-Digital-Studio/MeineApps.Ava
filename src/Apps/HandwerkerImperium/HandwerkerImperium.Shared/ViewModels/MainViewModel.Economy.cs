@@ -359,6 +359,9 @@ public sealed partial class MainViewModel
                 ? _localizationService.GetString("RushFreeActivation")
                 : $"Rush ({RushCostScrews} GS)";
         }
+
+        // Boost-Indikator mit-aktualisieren (Rush-Status hat sich geändert)
+        UpdateBoostIndicator();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -482,8 +485,9 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(IsAutoAssignUnlocked));
         OnPropertyChanged(nameof(IsAutoClaimUnlocked));
 
-        // Rush/Delivery/MasterTools
+        // Rush/Delivery/MasterTools + Boost-Indikator
         UpdateRushDisplay();
+        UpdateBoostIndicator();
         UpdateDeliveryDisplay();
         MasterToolsCollected = state.CollectedMasterTools.Count;
         MasterToolsTotal = MasterTool.GetAllDefinitions().Count;
@@ -904,6 +908,84 @@ public sealed partial class MainViewModel
         var availableTiers = state.Prestige.GetAllAvailableTiers(currentLevel);
         HasMultiplePrestigeTiers = availableTiers.Count > 1;
         AvailablePrestigeTierCount = availableTiers.Count;
+
+        // Prestige-Tier-Badge im Dashboard-Header aktualisieren
+        UpdatePrestigeTierBadge(state);
+    }
+
+    /// <summary>
+    /// Aktualisiert das kompakte Prestige-Tier-Badge im Dashboard-Header.
+    /// Zeigt den höchsten abgeschlossenen Tier als farbiges Badge.
+    /// </summary>
+    private void UpdatePrestigeTierBadge(GameState state)
+    {
+        var prestigeData = state.Prestige;
+        if (prestigeData.TotalPrestigeCount <= 0)
+        {
+            ShowPrestigeBadge = false;
+            return;
+        }
+
+        // Höchsten abgeschlossenen Tier ermitteln (CurrentTier zeigt den aktuell aktiven)
+        var tier = prestigeData.CurrentTier;
+        if (tier == PrestigeTier.None)
+        {
+            // Mindestens 1 Prestige aber CurrentTier ist None → muss Bronze gewesen sein
+            tier = PrestigeTier.Bronze;
+        }
+
+        ShowPrestigeBadge = true;
+        PrestigeTierBadgeColor = tier.GetColorKey();
+
+        // Kurztext: Erster Buchstabe des Tier-Namens (lokalisiert falls verfügbar)
+        PrestigeTierBadgeText = tier switch
+        {
+            PrestigeTier.Bronze => "B",
+            PrestigeTier.Silver => "S",
+            PrestigeTier.Gold => "G",
+            PrestigeTier.Platin => "P",
+            PrestigeTier.Diamant => "D",
+            PrestigeTier.Meister => "M",
+            PrestigeTier.Legende => "L",
+            _ => ""
+        };
+    }
+
+    /// <summary>
+    /// Aktualisiert den Boost-Indikator im Dashboard-Header.
+    /// Zeigt den aktiven Multiplikator wenn Rush und/oder SpeedBoost aktiv sind.
+    /// </summary>
+    private void UpdateBoostIndicator()
+    {
+        var state = _gameStateService.State;
+        bool rushActive = state.IsRushBoostActive;
+        bool speedActive = state.IsSpeedBoostActive;
+
+        if (!rushActive && !speedActive)
+        {
+            ShowBoostIndicator = false;
+            return;
+        }
+
+        ShowBoostIndicator = true;
+
+        // Multiplikator berechnen (identisch mit GameLoopService)
+        decimal multiplier = 1m;
+        if (speedActive) multiplier *= 2m;
+        if (rushActive)
+        {
+            decimal rushMult = 2m;
+            // Prestige-Shop Rush-Verstärker berücksichtigen
+            var purchased = state.Prestige.PurchasedShopItems;
+            foreach (var item in PrestigeShop.GetAllItems())
+            {
+                if (purchased.Contains(item.Id) && item.Effect.RushMultiplierBonus > 0)
+                    rushMult += item.Effect.RushMultiplierBonus;
+            }
+            multiplier *= rushMult;
+        }
+
+        BoostIndicatorText = $"{multiplier:0.#}x";
     }
 
     private void UpdateWorkshopDisplay(WorkshopDisplayModel model, GameState state, WorkshopType type)

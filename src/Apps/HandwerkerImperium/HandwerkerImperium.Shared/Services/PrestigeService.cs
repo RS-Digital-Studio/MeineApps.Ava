@@ -47,9 +47,9 @@ public sealed class PrestigeService : IPrestigeService
         int basePoints = GetPrestigePoints(state.TotalMoneyEarned);
         int tierPoints = (int)Math.Round(basePoints * tier.GetPointMultiplier());
 
-        // Bronze: Mindestens 10 PP (damit beim ersten Prestige 2-3 Shop-Items kaufbar sind)
-        if (tier == PrestigeTier.Bronze && tierPoints < 10)
-            tierPoints = 10;
+        // Bronze: Mindestens 15 PP (BAL-12: von 10 erhöht, damit beim ersten Prestige 3-4 Shop-Items kaufbar sind)
+        if (tier == PrestigeTier.Bronze && tierPoints < 15)
+            tierPoints = 15;
 
         // Prestige-Pass: +50% Bonus auf Prestige-Punkte
         if (state.IsPrestigePassActive)
@@ -117,6 +117,13 @@ public sealed class PrestigeService : IPrestigeService
 
         // Reset durchfuehren
         ResetProgress(state, tier);
+
+        // BAL-12: Speedrun-Phase nach Bronze-Prestige - 30min 3x Speed-Boost
+        // Damit sich der erste Reset nicht wie Bestrafung anfühlt
+        if (tier == PrestigeTier.Bronze)
+        {
+            state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes(30);
+        }
 
         // KEIN ConfigureAwait(false): PrestigeCompleted-Event wird von MainViewModel
         // subscribed und feuert UI-Events (Celebration, Ceremony, FloatingText).

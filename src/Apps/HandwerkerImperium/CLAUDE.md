@@ -36,9 +36,9 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Achievements** (94 Erfolge) + **Milestone-Celebrations** (Spieler-Level + Workshop-Level)
 - **Prestige-System** (7 Stufen Bronze-Legende, progressive Bewahrung, Soft-Cap 10x, Tier-skalierendes Startgeld, wiederholbares Shop-Item, permanenter Prestige-Pass)
 - **Events** (8 zufaellige + saisonaler Multiplikator, Intervall skaliert mit Prestige)
-- **Auftragstypen** (Standard/Large 1.8x/Weekly 2.5x/Cooperation 2.5x) + **Stammkunden** (bis 1.5x Bonus)
+- **Auftragstypen** (Standard/Large 1.8x/Weekly 3.0x/Cooperation 2.5x) + **Stammkunden** (bis 1.5x Bonus)
 - **Bulk Buy** (x1/x10/x100/Max) + **Hold-to-Upgrade** (schnelles Hochleveln)
-- **Naechstes-Ziel-System** (GoalService: dynamischer Gold-Banner, 4 Prioritaeten)
+- **Naechstes-Ziel-System** (GoalService: dynamischer Gold-Banner, 5 Prioritäten inkl. Worker-Tier-Ziel)
 - **Offline-Earnings** (100% erste 2h, 40% bis 4h, 25% bis 8h, 10% danach)
 - **Feierabend-Rush** (2h 2x-Boost, 1x taeglich gratis, danach 10 Goldschrauben)
 - **Meisterwerkzeuge** (12 Artefakte, 5 Seltenheiten, passive Einkommens-Boni)
@@ -61,6 +61,9 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Ausruestungs-System** (4 Typen x 4 Seltenheiten fuer Arbeiter, Equip/Unequip im Worker-Profil, Inventar-Browser)
 - **Grafik-Einstellungen** (Low/Medium/High, GraphicsQuality in GameState, steuert Wetter-Effekte etc.)
 - **MiniGame-Direktstart** (Auto-Start nach Tutorial-Check + 3-2-1-Countdown, kein Start-Button)
+- **MiniGame Auto-Complete** (ab 50 Perfect-Ratings "Auto-Ergebnis" mit Good-Rating, Premium ab 25, PerfectRatingCounts in GameState)
+- **Gilden-Browser** (offene Gilden suchen+beitreten ohne Einladung, Firebase REST-Abfrage, Browse-UI in GuildView)
+- **Soft-Cap-Transparenz** (IsSoftCapActive + SoftCapReductionPercent im GameState, UI-Indikator im Dashboard)
 
 ### Neuer-Spieler-Einstieg
 
@@ -374,7 +377,7 @@ AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL / Jugg
 | Standard | Immer | 1.0x | Basis |
 | Large | WS-Level 10+ | 1.8x | Mehr Aufgaben |
 | Cooperation | WS-Level 15+, >=2 Workshops | 2.5x | Gemischte Aufgaben |
-| Weekly | WS-Level 20+ | 2.5x | 7-Tage-Deadline (BAL-11: von 4.0x gesenkt) |
+| Weekly | WS-Level 20+ | 3.0x | 7-Tage-Deadline (BAL-14: von 2.5 auf 3.0, eigene Identität vs. Cooperation) |
 
 - **Stammkunden**: 20% Chance, BonusMultiplier 1.1-1.5x, max 20
 - **Abgelaufene Orders**: GameLoop prueft alle 60 Ticks

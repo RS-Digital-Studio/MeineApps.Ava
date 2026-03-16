@@ -344,7 +344,6 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         // Nur Shop/Research/Event/Guild/MasterTool-Boni betroffen (Prestige-Multiplikator ist bereits in TotalIncomePerSecond).
         // Angehoben auf 10.0x damit sich Endgame-Boni (Research+Shop+Events) lohnender anfühlen.
         // Logarithmisch: Jeder Bonus bringt etwas, aber immer weniger.
-        // Beispiele: 12.0x→10.58x, 15.0x→11.32x, 20.0x→12.32x, 50.0x→14.61x
         if (state.TotalIncomePerSecond > 0)
         {
             decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
@@ -353,6 +352,15 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                 decimal excess = effectiveMultiplier - 10.0m;
                 decimal softened = 10.0m + (decimal)Math.Log(1.0 + (double)excess, 2.0);
                 grossIncome = state.TotalIncomePerSecond * softened;
+
+                // Soft-Cap-Info für UI-Transparenz (wie viel % verloren gehen)
+                state.IsSoftCapActive = true;
+                state.SoftCapReductionPercent = (int)Math.Round((1.0m - softened / effectiveMultiplier) * 100m);
+            }
+            else
+            {
+                state.IsSoftCapActive = false;
+                state.SoftCapReductionPercent = 0;
             }
         }
 

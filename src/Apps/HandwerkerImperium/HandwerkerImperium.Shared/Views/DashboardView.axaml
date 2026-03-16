@@ -75,6 +75,16 @@
         </Animation>
       </Style.Animations>
     </Style>
+    <!-- Boost-Indikator Puls (Rush/SpeedBoost aktiv) -->
+    <Style Selector="Border.BoostPulse">
+      <Style.Animations>
+        <Animation Duration="0:0:1.5" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.7"/></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1.0"/></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.7"/></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
     <!-- Game Juice: FadeIn auf Haupt-Content -->
     <Style Selector="ScrollViewer#DashboardScrollViewer">
       <Setter Property="(i:Interaction.Behaviors)">
@@ -190,7 +200,7 @@
               </StackPanel>
             </Grid>
 
-            <!-- Zeile 2: Level + XP (volle Breite) + Reputation (nur bei Warnung/Highlight) + Streak -->
+            <!-- Zeile 2: Level + Prestige-Badge + XP + Boost-Indikator + Reputation + Streak -->
             <Grid ColumnDefinitions="Auto,*,Auto" AutomationProperties.AutomationId="Dashboard_Grid_LevelRow">
               <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                 <icons:GameIcon Kind="Star" Width="18" Height="18" Foreground="{StaticResource CraftGoldBrush}"
@@ -199,6 +209,17 @@
                            FontSize="12" FontWeight="Bold"
                            Foreground="{DynamicResource PrimaryContrastBrush}"
                            AutomationProperties.AutomationId="Dashboard_Txt_PlayerLevel" />
+                <!-- Prestige-Tier Badge (nur sichtbar nach erstem Prestige) -->
+                <Border IsVisible="{Binding ShowPrestigeBadge}"
+                        CornerRadius="8" Padding="5,2"
+                        Background="{Binding PrestigeTierBadgeColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="Dashboard_Border_PrestigeBadge">
+                  <TextBlock Text="{Binding PrestigeTierBadgeText}"
+                             FontSize="11" FontWeight="Bold"
+                             Foreground="#1A1A1A"
+                             AutomationProperties.AutomationId="Dashboard_Txt_PrestigeTier" />
+                </Border>
               </StackPanel>
 
               <!-- XP-Leiste: volle Breite, prominent, SkiaSharp Gradient+Glow -->
@@ -208,6 +229,24 @@
                                  AutomationProperties.AutomationId="Dashboard_Canvas_LevelProgress" />
 
               <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                <!-- Boost-Indikator (Rush/SpeedBoost aktiv) -->
+                <Border IsVisible="{Binding ShowBoostIndicator}"
+                        Classes="BoostPulse"
+                        CornerRadius="10" Padding="6,2"
+                        Background="#D97706"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="Dashboard_Border_BoostIndicator">
+                  <StackPanel Orientation="Horizontal" Spacing="3">
+                    <icons:GameIcon Kind="Flash" Width="13" Height="13"
+                                     Foreground="{DynamicResource PrimaryContrastBrush}"
+                                     AutomationProperties.AutomationId="Dashboard_Icon_Boost" />
+                    <TextBlock Text="{Binding BoostIndicatorText}"
+                               FontSize="11" FontWeight="Bold"
+                               Foreground="{DynamicResource PrimaryContrastBrush}"
+                               VerticalAlignment="Center"
+                               AutomationProperties.AutomationId="Dashboard_Txt_BoostMultiplier" />
+                  </StackPanel>
+                </Border>
                 <!-- Reputation nur bei Warnung (<50) oder Highlight (>=80) -->
                 <Button Classes="Text" Padding="4,2"
                         MinHeight="44"

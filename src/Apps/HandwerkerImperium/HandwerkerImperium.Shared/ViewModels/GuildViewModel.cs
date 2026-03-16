@@ -151,6 +151,9 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
     private bool _hasNoGuilds;
 
     [ObservableProperty]
+    private bool _isInviteCodeInputVisible;
+
+    [ObservableProperty]
     private ObservableCollection<GuildInvitationDisplay> _receivedInvites = [];
 
     [ObservableProperty]
@@ -528,6 +531,18 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
 
         // Nach Namenseingabe normal laden
         await LoadGuildDataAsync();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMMANDS - Einladungs-Code-Eingabe (Browse-State)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private void ToggleInviteCodeInput()
+    {
+        IsInviteCodeInputVisible = !IsInviteCodeInputVisible;
+        if (IsInviteCodeInputVisible)
+            JoinCodeInput = "";
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1534,6 +1549,12 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
         try
         {
             var achievements = await _achievementService.GetAchievementsAsync();
+            // RESX-Keys in lokalisierte Texte auflösen
+            foreach (var a in achievements)
+            {
+                a.Name = _localizationService.GetString(a.Name) ?? a.Name;
+                a.Description = _localizationService.GetString(a.Description) ?? a.Description;
+            }
             GuildAchievements = new ObservableCollection<GuildAchievementDisplay>(achievements);
             HasGuildAchievements = GuildAchievements.Count > 0;
         }

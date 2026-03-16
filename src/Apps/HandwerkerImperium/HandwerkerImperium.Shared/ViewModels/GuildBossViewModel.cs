@@ -138,7 +138,7 @@ public sealed partial class GuildBossViewModel : ViewModelBase
             }
 
             HasActiveBoss = true;
-            BossName = data.BossName;
+            BossName = _localizationService.GetString(data.BossName) ?? data.BossName;
             BossMaxHp = data.MaxHp;
             BossCurrentHp = data.CurrentHp;
             BossHpPercent = data.HpPercent;

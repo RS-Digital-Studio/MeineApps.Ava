@@ -4314,9 +4314,6 @@
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>No internet connection. Guild features require an active internet connection to sync with other players.</value>
   </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="InvitePlayer" xml:space="preserve">
     <value>Invite Player</value>
   </data>
@@ -4820,6 +4817,15 @@
   </data>
   <data name="OrSearchGuild" xml:space="preserve">
     <value>or search guild</value>
+  </data>
+  <data name="OpenGuilds" xml:space="preserve">
+    <value>Open Guilds</value>
+  </data>
+  <data name="EnterInviteCode" xml:space="preserve">
+    <value>Enter Code</value>
+  </data>
+  <data name="InviteCodePlaceholder" xml:space="preserve">
+    <value>6-digit code</value>
   </data>
   <data name="InviteFailed" xml:space="preserve">
     <value>Invite failed</value>

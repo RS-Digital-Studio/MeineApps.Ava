@@ -193,6 +193,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hasWorkerWarning;
 
+    /// <summary>
+    /// True wenn der Soft-Cap auf den Einkommens-Multiplikator aktiv ist.
+    /// Zeigt dem Spieler dass Boni ab 10x gedeckelt werden.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isSoftCapActive;
+
+    /// <summary>
+    /// Wie viel Prozent durch den Soft-Cap verloren gehen (z.B. "-25%").
+    /// </summary>
+    [ObservableProperty]
+    private string _softCapText = "";
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowCraftingResearch))]
     [NotifyPropertyChangedFor(nameof(ShowManagerSection))]
@@ -538,6 +551,34 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private string _rushButtonText = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PRESTIGE-TIER BADGE (Dashboard-Header)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Kurztext des höchsten abgeschlossenen Prestige-Tiers (z.B. "G" für Gold).</summary>
+    [ObservableProperty]
+    private string _prestigeTierBadgeText = "";
+
+    /// <summary>Farbe des Prestige-Tier-Badges (Hex).</summary>
+    [ObservableProperty]
+    private string _prestigeTierBadgeColor = "#9E9E9E";
+
+    /// <summary>Sichtbar wenn mindestens ein Prestige abgeschlossen wurde.</summary>
+    [ObservableProperty]
+    private bool _showPrestigeBadge;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOOST-INDIKATOR (Dashboard-Header)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Sichtbar wenn Rush oder SpeedBoost aktiv ist.</summary>
+    [ObservableProperty]
+    private bool _showBoostIndicator;
+
+    /// <summary>Multiplikator-Text (z.B. "2x", "4x").</summary>
+    [ObservableProperty]
+    private string _boostIndicatorText = "";
 
     // Lieferant (Variable Rewards)
     [ObservableProperty]
@@ -1934,6 +1975,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             UpdateRushDisplay();
         }
+        // Boost-Indikator separat prüfen (SpeedBoost kann unabhängig von Rush ablaufen)
+        else if (ShowBoostIndicator && !_gameStateService.State.IsSpeedBoostActive && !_gameStateService.State.IsRushBoostActive)
+        {
+            UpdateBoostIndicator();
+        }
 
         // Lieferant-Anzeige aktualisieren
         if (_floatingTextCounter % 3 == 0)
@@ -1984,6 +2030,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             // Worker-Warnung nur aktualisieren wenn Imperium/Dashboard sichtbar
             if (IsBuildingsActive || IsDashboardActive)
                 UpdateWorkerWarning(state);
+
+            // Soft-Cap-Indikator aktualisieren (nur wenn Dashboard sichtbar)
+            if (IsDashboardActive)
+            {
+                IsSoftCapActive = state.IsSoftCapActive;
+                if (state.IsSoftCapActive && state.SoftCapReductionPercent > 0)
+                    SoftCapText = $"-{state.SoftCapReductionPercent}%";
+                else if (!state.IsSoftCapActive)
+                    SoftCapText = "";
+            }
 
             // Welcome Back Timer aktualisieren
             if (IsWelcomeOfferVisible)
@@ -2100,35 +2156,50 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private void UpdateWorkerWarning(GameState state)
     {
         int tiredCount = 0, unhappyCount = 0, quitRisk = 0;
+        string? worstWorkshopName = null;
+        decimal worstScore = decimal.MaxValue;
+
         foreach (var ws in state.Workshops)
         {
+            if (!ws.IsUnlocked) continue;
             foreach (var w in ws.Workers)
             {
                 if (w.Fatigue > 80) tiredCount++;
                 if (w.Mood < 30) unhappyCount++;
                 if (w.Mood < 15) quitRisk++;
+
+                // Schlimmsten Workshop tracken (niedrigste Mood oder höchste Fatigue)
+                decimal score = w.Mood - w.Fatigue * 0.5m;
+                if (score < worstScore && (w.Fatigue > 80 || w.Mood < 30))
+                {
+                    worstScore = score;
+                    worstWorkshopName = _localizationService.GetString(ws.Type.GetLocalizationKey()) ?? ws.Type.ToString();
+                }
             }
         }
 
         HasWorkerWarning = tiredCount > 0 || unhappyCount > 0;
 
+        // Kontext-Info: Welcher Workshop ist betroffen
+        string context = worstWorkshopName != null ? $" ({worstWorkshopName})" : "";
+
         if (quitRisk > 0)
         {
             WorkerWarningText = string.Format(
                 _localizationService.GetString("WorkerQuitRisk") ?? "{0} Arbeiter drohen zu kündigen!",
-                quitRisk);
+                quitRisk) + context;
         }
         else if (unhappyCount > 0)
         {
             WorkerWarningText = string.Format(
                 _localizationService.GetString("WorkerUnhappy") ?? "{0} Arbeiter unzufrieden",
-                unhappyCount);
+                unhappyCount) + context;
         }
         else if (tiredCount > 0)
         {
             WorkerWarningText = string.Format(
                 _localizationService.GetString("WorkerTired") ?? "{0} Arbeiter erschöpft",
-                tiredCount);
+                tiredCount) + context;
         }
     }
 
@@ -2445,7 +2516,7 @@ public partial class WorkshopDisplayModel : ObservableObject
     public bool IsAlmostAffordable => !CanAffordUpgrade && IsUnlocked && UpgradeCost > 0;
 
     // Milestone-System: Naechstes Milestone-Level und Fortschritt
-    private static readonly int[] Milestones = [25, 50, 75, 100, 150, 200, 250, 350, 500, 1000];  // BAL-1: 350 hinzugefügt
+    private static readonly int[] Milestones = [25, 50, 75, 100, 150, 200, 225, 250, 350, 500, 1000];  // BAL-1: 350, BAL-13: 225
 
     public int NextMilestone
     {

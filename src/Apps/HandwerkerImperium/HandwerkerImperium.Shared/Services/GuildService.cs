@@ -177,6 +177,9 @@ public sealed class GuildService : IGuildService
                     Color = data.Color,
                     Level = data.Level,
                     MemberCount = data.MemberCount,
+                    MaxMembers = data.MaxMembers,
+                    Description = data.Description,
+                    LeagueId = data.LeagueId,
                     WeeklyGoal = data.WeeklyGoal,
                     WeeklyProgress = data.WeeklyProgress
                 });
@@ -293,6 +296,7 @@ public sealed class GuildService : IGuildService
 
             // Tatsächliche Mitgliederzahl prüfen (Race-Condition-frei)
             var actualCount = await CountAndSyncMemberCountAsync(guildId);
+            if (actualCount < 0) return false; // Netzwerkfehler → kein Join möglich
             if (actualCount >= guildData.MaxMembers) return false;
 
             var now = DateTime.UtcNow;
@@ -311,6 +315,7 @@ public sealed class GuildService : IGuildService
 
             // MemberCount aus tatsächlicher Mitgliederzahl synchronisieren
             var newCount = await CountAndSyncMemberCountAsync(guildId);
+            if (newCount < 0) newCount = guildData.MemberCount + 1; // Fallback bei Netzwerkfehler
 
             // Schnell-Lookup
             await _firebaseService.SetAsync($"player_guilds/{uid}", guildId);
@@ -350,6 +355,7 @@ public sealed class GuildService : IGuildService
 
             // MemberCount aus tatsächlicher Mitgliederzahl synchronisieren
             var newCount = await CountAndSyncMemberCountAsync(guildId);
+            // Bei Netzwerkfehler (-1): Gilde NICHT löschen (Safety)
             if (newCount == 0)
             {
                 // Leere Gilde löschen
@@ -1067,6 +1073,7 @@ public sealed class GuildService : IGuildService
     /// <summary>
     /// Zählt die tatsächliche Mitgliederzahl aus guild_members (Race-Condition-frei).
     /// Aktualisiert memberCount in guilds/{guildId} wenn abweichend.
+    /// Gibt -1 zurück bei Netzwerkfehlern (Aufrufer muss darauf reagieren).
     /// </summary>
     private async Task<int> CountAndSyncMemberCountAsync(string guildId)
     {
@@ -1088,9 +1095,10 @@ public sealed class GuildService : IGuildService
 
             return count;
         }
-        catch
+        catch (Exception ex)
         {
-            return 0;
+            System.Diagnostics.Debug.WriteLine($"[GuildService] CountAndSyncMemberCountAsync Fehler: {ex.Message}");
+            return -1; // Netzwerkfehler → Aufrufer darf nicht auf 0 basierte Entscheidungen treffen
         }
     }
 

@@ -156,6 +156,13 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _tutorialText = "";
 
+    // Auto-Complete (nach 50x bzw. 25x Perfect freigeschaltet)
+    [ObservableProperty]
+    private bool _canAutoComplete;
+
+    [ObservableProperty]
+    private string _autoCompleteHint = "";
+
     // ═══════════════════════════════════════════════════════════════════════
     // COMPUTED PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -239,8 +246,10 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
 
         InitializeGame();
 
+        UpdateAutoCompleteStatus(MiniGameType.InventGame);
+
         CheckAndShowTutorial(MiniGameType.InventGame);
-        if (!ShowTutorial) StartGameAsync().SafeFireAndForget();
+        if (!ShowTutorial && !CanAutoComplete) StartGameAsync().SafeFireAndForget();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -457,6 +466,10 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
         // Ergebnis aufzeichnen
         _gameStateService.RecordMiniGameResult(Result);
 
+        // Perfect-Rating für Auto-Complete zählen
+        if (Result == MiniGameRating.Perfect)
+            _gameStateService.RecordPerfectRating(MiniGameType.InventGame);
+
         // Sound abspielen
         var sound = Result switch
         {
@@ -638,6 +651,50 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
             TutorialText = _localizationService.GetString($"Tutorial{gameType}Text") ?? "";
             ShowTutorial = true;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AUTO-COMPLETE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void UpdateAutoCompleteStatus(MiniGameType gameType)
+    {
+        var state = _gameStateService.State;
+        bool canAuto = _gameStateService.CanAutoComplete(gameType, state.IsPremium);
+        CanAutoComplete = canAuto;
+        if (canAuto)
+        {
+            int count = state.PerfectRatingCounts.TryGetValue((int)gameType, out int c) ? c : 0;
+            var hint = _localizationService.GetString("AutoCompleteHint") ?? "";
+            AutoCompleteHint = string.Format(hint, count);
+        }
+    }
+
+    [RelayCommand]
+    private async Task AutoCompleteGameAsync()
+    {
+        if (!CanAutoComplete) return;
+
+        var order = _gameStateService.GetActiveOrder();
+        if (order == null) { NavigationRequested?.Invoke("../..");  return; }
+
+        while (!order.IsCompleted)
+            _gameStateService.RecordMiniGameResult(MiniGameRating.Good);
+
+        await _audioService.PlaySoundAsync(GameSound.Good);
+
+        RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
+        XpAmount = order.FinalXp;
+        Result = MiniGameRating.Good;
+        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
+        ResultEmoji = "★★";
+        IsLastTask = true;
+        IsResultShown = true;
+        Star1Opacity = 1.0; Star2Opacity = 1.0; Star3Opacity = 0.3;
+        GameCompleted?.Invoke(this, 2);
+        AdWatched = false;
+        CanWatchAd = _rewardedAdService.IsAvailable;
+        CanAutoComplete = false;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

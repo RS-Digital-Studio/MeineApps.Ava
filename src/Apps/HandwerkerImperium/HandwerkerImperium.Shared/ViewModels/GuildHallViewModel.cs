@@ -90,6 +90,13 @@ public sealed partial class GuildHallViewModel : ViewModelBase
 
             // Gebäude laden
             var buildingList = await _hallService.GetBuildingsAsync();
+            // RESX-Keys in lokalisierte Texte auflösen
+            foreach (var b in buildingList)
+            {
+                b.Name = _localizationService.GetString(b.Name) ?? b.Name;
+                b.Description = _localizationService.GetString(b.Description) ?? b.Description;
+                b.EffectDescription = _localizationService.GetString(b.EffectDescription) ?? b.EffectDescription;
+            }
             Buildings = new ObservableCollection<GuildBuildingDisplay>(buildingList);
             HasBuildings = Buildings.Count > 0;
 
@@ -184,6 +191,13 @@ public sealed partial class GuildHallViewModel : ViewModelBase
     private async Task LoadHallDataInternalAsync()
     {
         var buildingList = await _hallService.GetBuildingsAsync();
+        // RESX-Keys in lokalisierte Texte auflösen
+        foreach (var b in buildingList)
+        {
+            b.Name = _localizationService.GetString(b.Name) ?? b.Name;
+            b.Description = _localizationService.GetString(b.Description) ?? b.Description;
+            b.EffectDescription = _localizationService.GetString(b.EffectDescription) ?? b.EffectDescription;
+        }
         Buildings = new ObservableCollection<GuildBuildingDisplay>(buildingList);
         HasBuildings = Buildings.Count > 0;
         HallLevel = _hallService.GetHallLevel();

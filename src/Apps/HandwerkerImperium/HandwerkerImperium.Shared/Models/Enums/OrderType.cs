@@ -45,7 +45,7 @@ public static class OrderTypeExtensions
         OrderType.Quick => 0.6m,
         OrderType.Standard => 1.0m,
         OrderType.Large => 1.8m,
-        OrderType.Weekly => 2.5m,  // BAL-11: Von 4.0 auf 2.5 gesenkt (14-20x war zu dominant vs. andere Typen)
+        OrderType.Weekly => 3.0m,  // BAL-14: Von 2.5 auf 3.0 angehoben (war identisch mit Cooperation, Weekly braucht eigene Identität)
         OrderType.Cooperation => 2.5m,
         _ => 1.0m
     };

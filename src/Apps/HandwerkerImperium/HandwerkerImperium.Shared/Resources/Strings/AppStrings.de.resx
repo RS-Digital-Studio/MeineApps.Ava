@@ -648,7 +648,7 @@
     <value>Cloud-Speicherung fehlgeschlagen. Bitte erneut versuchen.</value>
   </data>
   <data name="LastCloudSave" xml:space="preserve">
-    <value>Letzter Speicherstand: {0}</value>
+    <value>Letzter Speicherstand</value>
   </data>
   <data name="AutoCollectDesc" xml:space="preserve">
     <value>Lieferungen automatisch einsammeln</value>
@@ -3776,7 +3776,7 @@
     <value>Ja, wiederherstellen</value>
   </data>
   <data name="SignedInAs" xml:space="preserve">
-    <value>Angemeldet als {0}</value>
+    <value>Angemeldet als</value>
   </data>
   <data name="SignInFailed" xml:space="preserve">
     <value>Anmeldung fehlgeschlagen</value>
@@ -4309,9 +4309,6 @@
   <data name="GuildOfflineHint" xml:space="preserve">
     <value>Keine Internetverbindung. Gilden-Funktionen benötigen eine aktive Internetverbindung für die Synchronisation mit anderen Spielern.</value>
   </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="InvitePlayer" xml:space="preserve">
     <value>Spieler einladen</value>
   </data>
@@ -4814,6 +4811,15 @@
   </data>
   <data name="OrSearchGuild" xml:space="preserve">
     <value>oder Gilde suchen</value>
+  </data>
+  <data name="OpenGuilds" xml:space="preserve">
+    <value>Offene Gilden</value>
+  </data>
+  <data name="EnterInviteCode" xml:space="preserve">
+    <value>Code eingeben</value>
+  </data>
+  <data name="InviteCodePlaceholder" xml:space="preserve">
+    <value>6-stelliger Code</value>
   </data>
   <data name="InviteFailed" xml:space="preserve">
     <value>Einladung fehlgeschlagen</value>
@@ -5634,5 +5640,11 @@
   </data>
   <data name="GraphicsHigh" xml:space="preserve">
     <value>Hoch</value>
+  </data>
+  <data name="AutoCompleteAvailable" xml:space="preserve">
+    <value>Auto-Ergebnis</value>
+  </data>
+  <data name="AutoCompleteHint" xml:space="preserve">
+    <value>Du hast dieses Spiel {0}x perfekt gemeistert!</value>
   </data>
 </root>

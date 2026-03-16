@@ -188,6 +188,13 @@ public sealed partial class SawingGameViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _tutorialText = "";
 
+    // Auto-Complete (nach 50x bzw. 25x Perfect freigeschaltet)
+    [ObservableProperty]
+    private bool _canAutoComplete;
+
+    [ObservableProperty]
+    private string _autoCompleteHint = "";
+
     // Direction of marker movement (1 = right, -1 = left)
     private int _direction = 1;
 
@@ -304,8 +311,11 @@ public sealed partial class SawingGameViewModel : ViewModelBase, IDisposable
         // Initialize zones based on difficulty
         InitializeZones();
 
+        // Auto-Complete prüfen
+        UpdateAutoCompleteStatus();
+
         CheckAndShowTutorial(GameType);
-        if (!ShowTutorial) StartGameAsync().SafeFireAndForget();
+        if (!ShowTutorial && !CanAutoComplete) StartGameAsync().SafeFireAndForget();
     }
 
     private void UpdateGameTypeVisuals()
@@ -426,6 +436,10 @@ public sealed partial class SawingGameViewModel : ViewModelBase, IDisposable
 
         // Record result in game state
         _gameStateService.RecordMiniGameResult(Result);
+
+        // Perfect-Rating für Auto-Complete zählen
+        if (Result == MiniGameRating.Perfect)
+            _gameStateService.RecordPerfectRating(GameType);
 
         // Play sound
         var sound = Result switch
@@ -617,6 +631,71 @@ public sealed partial class SawingGameViewModel : ViewModelBase, IDisposable
 
         _gameStateService.CancelActiveOrder();
         NavigationRequested?.Invoke("../..");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AUTO-COMPLETE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Prüft ob Auto-Complete für diesen MiniGame-Typ verfügbar ist und setzt die Properties.
+    /// </summary>
+    private void UpdateAutoCompleteStatus()
+    {
+        var state = _gameStateService.State;
+        bool canAuto = _gameStateService.CanAutoComplete(GameType, state.IsPremium);
+        CanAutoComplete = canAuto;
+        if (canAuto)
+        {
+            int count = state.PerfectRatingCounts.TryGetValue((int)GameType, out int c) ? c : 0;
+            var hint = _localizationService.GetString("AutoCompleteHint") ?? "";
+            AutoCompleteHint = string.Format(hint, count);
+        }
+    }
+
+    /// <summary>
+    /// Schließt alle verbleibenden Tasks des Auftrags mit Good-Rating ab (kein Perfect als Anreiz).
+    /// </summary>
+    [RelayCommand]
+    private async Task AutoCompleteGameAsync()
+    {
+        if (!CanAutoComplete) return;
+
+        var order = _gameStateService.GetActiveOrder();
+        if (order == null)
+        {
+            NavigationRequested?.Invoke("../..");
+            return;
+        }
+
+        // Alle verbleibenden Tasks mit Good abschließen
+        while (!order.IsCompleted)
+        {
+            _gameStateService.RecordMiniGameResult(MiniGameRating.Good);
+        }
+
+        // Sound abspielen
+        await _audioService.PlaySoundAsync(GameSound.Good);
+
+        // Belohnungen berechnen und anzeigen
+        RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
+        XpAmount = order.FinalXp;
+        Result = MiniGameRating.Good;
+        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
+        ResultEmoji = "★★";
+        IsLastTask = true;
+        IsResultShown = true;
+
+        // Sterne setzen (Good = 2 Sterne)
+        Star1Opacity = 1.0;
+        Star2Opacity = 1.0;
+        Star3Opacity = 0.3;
+
+        GameCompleted?.Invoke(this, 2);
+
+        AdWatched = false;
+        CanWatchAd = _rewardedAdService.IsAvailable;
+        CanAutoComplete = false;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

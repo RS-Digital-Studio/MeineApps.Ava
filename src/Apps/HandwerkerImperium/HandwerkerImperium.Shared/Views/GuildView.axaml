@@ -178,17 +178,49 @@
         <StackPanel Spacing="12"
                     IsVisible="{Binding IsBrowseState}">
 
-          <!-- Gilde gründen Button -->
-          <Button Classes="Primary"
-                  HorizontalAlignment="Stretch"
-                  Command="{Binding ShowCreateDialogCommand}"
-                  Padding="16,12" Margin="0,0,0,8">
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <icons:GameIcon Kind="Plus" Width="24" Height="24" />
-              <TextBlock Text="{loc:Translate GuildCreate}"
-                         FontSize="15" FontWeight="Bold" />
-            </StackPanel>
-          </Button>
+          <!-- Aktions-Buttons: Gilde gründen + Einladungs-Code -->
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,0,0,4">
+            <!-- Gilde gründen Button -->
+            <Button Grid.Column="0" Classes="Primary"
+                    HorizontalAlignment="Stretch"
+                    Command="{Binding ShowCreateDialogCommand}"
+                    Padding="12,12">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <icons:GameIcon Kind="Plus" Width="22" Height="22" />
+                <TextBlock Text="{loc:Translate GuildCreate}"
+                           FontSize="14" FontWeight="Bold" />
+              </StackPanel>
+            </Button>
+
+            <!-- Einladungs-Code eingeben Button -->
+            <Button Grid.Column="1"
+                    HorizontalAlignment="Stretch"
+                    Command="{Binding ToggleInviteCodeInputCommand}"
+                    Padding="12,12">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <icons:GameIcon Kind="EmailPlus" Width="22" Height="22" />
+                <TextBlock Text="{loc:Translate EnterInviteCode}"
+                           FontSize="14" FontWeight="Bold" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <!-- ── Einladungs-Code-Eingabe (aufklappbar) ── -->
+          <Border Classes="Card" Padding="12"
+                  IsVisible="{Binding IsInviteCodeInputVisible}" Margin="0,0,0,4">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBox Text="{Binding JoinCodeInput}"
+                       Watermark="{loc:Translate InviteCodePlaceholder}"
+                       MaxLength="6"
+                       HorizontalAlignment="Stretch" />
+              <Button Grid.Column="1" Classes="Primary"
+                      Padding="16,8"
+                      Command="{Binding JoinByCodeCommand}">
+                <TextBlock Text="{loc:Translate JoinGuild}"
+                           FontSize="13" FontWeight="Bold" />
+              </Button>
+            </Grid>
+          </Border>
 
           <!-- ── Einladungs-Inbox (nur sichtbar wenn Einladungen vorhanden) ── -->
           <StackPanel IsVisible="{Binding HasReceivedInvites}" Spacing="8" Margin="0,0,0,4">
@@ -279,6 +311,15 @@
             </Grid>
           </StackPanel>
 
+          <!-- Offene Gilden Header -->
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+            <icons:GameIcon Kind="AccountSearch" Width="22" Height="22"
+                             Foreground="{StaticResource CraftPrimaryLightBrush}" />
+            <TextBlock Text="{loc:Translate OpenGuilds}"
+                       FontSize="15" FontWeight="Bold"
+                       Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          </StackPanel>
+
           <!-- Leere Liste -->
           <StackPanel Spacing="8" HorizontalAlignment="Center"
                       IsVisible="{Binding HasNoGuilds}"
@@ -312,7 +353,7 @@
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
 
-                    <!-- Name + Info -->
+                    <!-- Name + Info + Beschreibung -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                       <TextBlock Text="{Binding Name}"
                                  FontSize="15" FontWeight="Bold"
@@ -321,10 +362,17 @@
                         <TextBlock Text="{Binding Level, StringFormat='Lv.{0}'}"
                                    FontSize="12"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}" />
-                        <TextBlock Text="{Binding MemberCount, StringFormat='{}{0}/20'}"
+                        <TextBlock Text="{Binding MembersDisplay}"
                                    FontSize="12"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
+                      <!-- Beschreibung (nur wenn vorhanden) -->
+                      <TextBlock Text="{Binding Description}"
+                                 FontSize="11" FontStyle="Italic"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 TextTrimming="CharacterEllipsis"
+                                 MaxLines="2" TextWrapping="Wrap"
+                                 IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
 
                     <!-- Beitreten-Button -->

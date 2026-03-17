@@ -51,12 +51,17 @@ Lies die App-CLAUDE.md (`src/Apps/{App}/CLAUDE.md`) und die Balancing-Referenz (
 
 ## Qualitätsstandard (KRITISCH)
 
-- Melde NUR Findings die du durch Code-Analyse VERIFIZIERT hast
-- Trenne klar: "Verifiziert im Code" vs. "Vermutung basierend auf Erfahrung"
-- "Nichts auffällig" ist ein valides Ergebnis für eine Kategorie
-- Lieber 5 fundierte Findings als 20 spekulative
-- Konkrete Werte aus dem Code zitieren, nicht generisch raten
-- **KURZ**: Max 60 Zeilen Gesamtausgabe. Gleichartige Findings gruppieren
+- **KURZ**: Max 60 Zeilen. Konkrete Werte aus dem Code zitieren
+- Trenne klar: "Verifiziert im Code" vs. "Design-Empfehlung basierend auf Erfahrung"
+
+### Self-Check VOR jeder Ausgabe
+Für JEDES Finding: Kann ich den KONKRETEN Wert oder die konkrete Stelle im Code zeigen die das Problem verursacht? Wenn nicht → WEGLASSEN oder als "Design-Empfehlung" markieren.
+
+### Typische False Positives die du NICHT melden darfst
+- "Fehlende Micro-Animation auf Button X" → das ist ein Feature-Wunsch, kein Audit-Finding
+- "Balancing KÖNNTE zu hart/leicht sein" → ohne konkrete Zahlenwerte aus dem Code ist das Spekulation
+- "Onboarding fehlt" → PRÜFE ob es vielleicht ein Tutorial gibt das du nicht gesehen hast
+- "P2W-Gefahr" → PRÜFE die konkreten Shop-Preise vs. Grind-Einnahmen BEVOR du das behauptest
 
 ## Analyse-Bereiche (NUR berichten wo etwas auffällt)
 

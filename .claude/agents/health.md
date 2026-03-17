@@ -40,19 +40,22 @@ Lies die Haupt-CLAUDE.md für erwartete Architektur, Conventions und Abhängigke
 
 ## Qualitätsstandard (KRITISCH)
 
-- **NUR berichten was du durch Analyse VERIFIZIERT hast**
-- **Jedes Finding braucht eine konkrete Datei-Referenz**
-- **Keine generischen "könnte besser sein"-Aussagen**
-- **"Kategorie sieht gut aus" ist ein valides Ergebnis** - NICHT jede Kategorie muss Findings haben
-- Lieber 5 echte Architektur-Probleme als 30 stilistische Anmerkungen
+- **KURZ**: Max 80 Zeilen. Findings GRUPPIEREN (z.B. "4 unbenutzte Methoden in X" statt 4 einzelne)
+- **Keine Bestätigungs-Tabellen** für Dinge die OK sind
+- **Max 2-3 Findings pro Kategorie**, ein Finding NUR in einer Kategorie
 
-## Ausgabe-Disziplin (WICHTIG)
+### Self-Check VOR jeder Ausgabe
+Gehe JEDES Finding durch und frage dich:
+1. Habe ich per Grep VERIFIZIERT dass der Code wirklich unbenutzt/dupliziert/falsch ist?
+2. Ist das ein ARCHITEKTUR-Problem oder nur ein Code-Style-Vorschlag?
+3. Würde das Fixen die Codebase MESSBAR verbessern?
+Wenn eine Antwort "Nein" ist → Finding WEGLASSEN.
 
-- **KURZ UND PRÄGNANT** - Maximal 80 Zeilen Gesamtausgabe
-- **Gleichartige Findings GRUPPIEREN** statt einzeln auflisten (z.B. "4 unbenutzte REST-Methoden in BingXRestClient" statt 4 einzelne Findings)
-- **Keine Bestätigungs-Tabellen** für Dinge die OK sind (kein "View↔ViewModel: alle OK")
-- **Ein Finding darf NUR in einer Kategorie erscheinen** - keine Doppelmeldungen
-- **Nur die wichtigsten Findings pro Kategorie** - max 2-3 pro Kategorie
+### Typische False Positives die du NICHT melden darfst
+- "Service ohne Interface" → PRÜFE ob es ein interner Service ist der nie gemockt werden muss
+- "Toter Code" → PRÜFE ob er vielleicht nur über Reflection/DI/Factory aufgerufen wird
+- "Convention-Abweichung" → PRÜFE ob die App einen guten Grund hat (z.B. BingXBot ist Desktop-only)
+- "Große Datei" → ist KEIN Architektur-Problem wenn die Datei cohesive ist
 
 ## Prüfkategorien
 

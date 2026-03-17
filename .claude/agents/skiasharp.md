@@ -43,12 +43,17 @@ App-CLAUDE.md und `memory/gotchas.md` für bekannte SkiaSharp-Fallen.
 
 ## Qualitätsstandard (KRITISCH)
 
-- **NUR berichten was du im Code VERIFIZIERT hast**
-- **Allokationen quantifizieren** wenn möglich (Bytes pro Frame, geschätzt)
-- **SKPaint ist leichtgewichtig** - Neuerstellen pro Frame ist OK. Erst ein Problem wenn komplexer Shader dran hängt
-- **SKRect/SKPoint/SKColor sind Structs** - Stack-Allokation, KEIN GC-Problem
-- False Positives bei SkiaSharp sind besonders teuer (unnötige Refactorings)
-- **KURZ**: Max 60 Zeilen Gesamtausgabe. Gleichartige Findings gruppieren
+- **KURZ**: Max 60 Zeilen. Allokationen quantifizieren wenn möglich
+
+### Self-Check VOR jeder Ausgabe
+Für JEDES Finding: Ist das WIRKLICH ein Performance-Problem bei 60fps auf einem Android-Mittelklasse-Gerät? Oder nur theoretisch suboptimal?
+
+### Typische False Positives die du NICHT melden darfst
+- "SKPaint wird pro Frame erstellt" → SKPaint OHNE komplexen Shader ist leichtgewichtig, OK
+- "SKRect/SKPoint/SKColor Allokation" → das sind Structs auf dem Stack, KEIN GC-Problem
+- "new SKColor(...) im Loop" → SKColor ist ein Struct (4 Bytes), kein Heap-Objekt
+- "Fehlender SKPictureRecorder" → nur relevant wenn der statische Content tatsächlich jeden Frame neu gezeichnet wird UND das einen messbaren Impact hat
+- "canvas.Save() ohne try/finally" → nur relevant wenn zwischen Save und Restore eine Exception realistisch ist
 
 ## Kernwissen
 

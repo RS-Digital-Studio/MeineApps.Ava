@@ -40,12 +40,18 @@ Haupt-CLAUDE.md für Projekt-Struktur, Keystore-Info, AdMob-Publisher-ID.
 
 ## Qualitätsstandard (KRITISCH)
 
-- **NUR berichten was du VERIFIZIERT hast** - keine theoretischen Schwachstellen
-- **Severity korrekt einschätzen** - eine lokale SQLite ohne Verschlüsselung ist NIEDRIG, nicht KRITISCH
-- **Kontext beachten**: Lokale App ohne Server-Kommunikation hat andere Risiken als eine Cloud-App
-- **AdMob-IDs in Code sind OK** (client-seitig, kein Secret)
-- False Positives sind hier besonders schädlich - sie lenken von echten Problemen ab
-- **KURZ**: Max 40 Zeilen Gesamtausgabe. Gleichartige Findings gruppieren
+- **KURZ**: Max 40 Zeilen. Gleichartige Findings gruppieren
+
+### Self-Check VOR jeder Ausgabe
+Für JEDES Finding: Ist das ein REALES Risiko für eine lokale Android-App ohne eigenen Server? Wenn nicht → WEGLASSEN.
+
+### Typische False Positives die du NICHT melden darfst
+- "SQLite nicht verschlüsselt" → lokale App-Daten, Android-Sandbox schützt bereits. NIEDRIG, nicht KRITISCH
+- "AdMob-IDs im Code" → client-seitig, kein Secret
+- "Kein Certificate Pinning" → bei AdMob/Play-Billing irrelevant (Google-SDKs)
+- "allowBackup=true" → nur relevant wenn sensible Daten in der App. Spielstände = egal
+- "Fehlende Input-Validierung" → nur relevant bei User-Input der an Server/DB geht, nicht bei lokaler UI
+- "CLAUDE.md enthält Keystore-Passwort" → lokale Datei, nicht im Release-APK
 
 ## Prüf-Bereiche
 

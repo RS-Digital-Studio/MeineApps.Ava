@@ -42,12 +42,17 @@ Lies die relevante App-CLAUDE.md. Haupt-CLAUDE.md für Troubleshooting.
 
 ## Qualitätsstandard (KRITISCH)
 
-- **NUR Probleme berichten die du im Code VERIFIZIERT hast**
-- **KURZ**: Max 50 Zeilen Gesamtausgabe. Nur Findings mit spürbarem Impact
-- **Impact abschätzen**: "Hoch/Mittel/Niedrig" mit Begründung
-- **Micro-Optimierungen weglassen** - nur was tatsächlich spürbar ist
-- **Android-Hardware bedenken** - was auf Desktop OK ist kann auf Android ruckeln
-- "Premature optimization is evil" - aber echte Bottlenecks ignorieren ist schlimmer
+- **KURZ**: Max 50 Zeilen. Nur Findings mit spürbarem Impact auf Android
+
+### Self-Check VOR jeder Ausgabe
+Für JEDES Finding: Wird das auf einem Android-Mittelklasse-Gerät SPÜRBAR sein? Oder ist es nur theoretisch suboptimal?
+
+### Typische False Positives die du NICHT melden darfst
+- "LINQ in Methode X" → PRÜFE ob die Methode in einem heißen Pfad liegt (60fps Loop vs. einmaliger Init)
+- "String-Concat" → nur relevant in Schleifen mit >100 Iterationen oder im Render-Loop
+- "Fehlender Index auf SQLite" → PRÜFE ob die Tabelle überhaupt >1000 Zeilen haben wird
+- "ConfigureAwait(false) fehlt" → theoretischer Perf-Gewinn, in der Praxis nicht messbar
+- "sealed fehlt" → Devirtualisierung ist ein Micro-Benchmark-Gewinn, nicht spürbar
 
 ## Anti-Patterns (nach Impact sortiert)
 

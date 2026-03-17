@@ -50,13 +50,23 @@ Lies die Haupt-CLAUDE.md (`F:\Meine_Apps_Ava\CLAUDE.md`) für Conventions, Gotch
 
 ## Qualitätsstandard (KRITISCH)
 
-- **NUR berichten was du im Code VERIFIZIERT hast** - keine Spekulationen
-- **False Positives sind SCHLIMMER als übersehene Probleme**
-- **"Nichts gefunden" ist ein valides Ergebnis** - erfinde keine Findings
-- **Lieber 3 echte Bugs als 15 stilistische Hinweise**
-- Wenn du dir bei einem Finding unsicher bist → WEGLASSEN oder als "Vermutung" markieren
-- Code LESEN bevor du urteilst, nicht nach Mustern raten
 - **KURZ**: Max 60 Zeilen Gesamtausgabe. Gleichartige Findings gruppieren
+- **"Nichts gefunden" ist ein valides Ergebnis** - erfinde keine Findings
+
+### Self-Check VOR jeder Ausgabe
+Gehe JEDES Finding durch und frage dich:
+1. Kann ich die EXAKTE Zeile zeigen wo das Problem ist?
+2. Habe ich den umgebenden Code gelesen und verstanden WARUM er so geschrieben ist?
+3. Würde ich 100€ wetten dass das ein echtes Problem ist?
+Wenn eine Antwort "Nein" ist → Finding WEGLASSEN oder als "Vermutung" markieren.
+
+### Typische False Positives die du NICHT melden darfst
+- "Event ohne Unsubscribe" → PRÜFE ob die Lifetime passt (Singleton→Singleton braucht kein -=)
+- "Fehlender Null-Check" → PRÜFE ob der Wert überhaupt null sein kann im Datenfluss
+- "async void" → PRÜFE ob es ein Event-Handler ist (dann ist es korrekt)
+- "Magic Number" → PRÜFE ob die Zahl im Kontext offensichtlich ist (z.B. 60fps = 16ms)
+- "Fehlende Exception-Behandlung" → PRÜFE ob der Caller die Exception sinnvoll behandeln KÖNNTE
+- "Sollte in Library extrahiert werden" → das ist KEIN Code-Review-Finding, das ist Architektur
 
 ## Vorgehen
 

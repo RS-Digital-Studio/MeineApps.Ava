@@ -41,9 +41,20 @@ Haupt-CLAUDE.md für Conventions und Troubleshooting. App-CLAUDE.md für App-spe
 ## Qualitätsstandard (KRITISCH)
 
 - **Pragmatisch**: WARNs sind OK für Release, nur FAILs blockieren
-- **Keine falschen Alarme**: Lieber übersehen als 10 False Positives
-- **Kontext beachten**: Werbefreie Apps → Ads-Checks = SKIP
 - **Build ist Pflicht**: Wenn Build fehlschlägt, SOFORT stoppen
+- **Kontext beachten**: Werbefreie Apps → Ads-Checks = SKIP
+
+### Self-Check VOR FAIL-Vergabe
+Bevor du ein FAIL vergibst, frage dich:
+1. Habe ich die EXAKTE Stelle im Code gesehen die das Problem verursacht?
+2. Würde das im Release TATSÄCHLICH crashen oder Geld kosten?
+3. Ist es vielleicht ein bewusstes Pattern (z.B. Debug.WriteLine in einem #if DEBUG Block)?
+Bei "Nein" → WARN statt FAIL.
+
+### Typische False Positives
+- "TODO-Kommentar" als FAIL → ist WARN (kein Crash-Risiko)
+- "Debug.WriteLine" in `#if DEBUG` Block → ist PASS (wird im Release entfernt)
+- "Hardcodierter String" der nur technisch ist (Log-Message, Exception) → SKIP
 
 ## Checkliste
 

@@ -378,6 +378,9 @@ public sealed partial class MainViewModel : ViewModelBase
             LeagueVm.UpdateLocalizedTexts();
             ProfileVm.UpdateLocalizedTexts();
             GemShopVm.UpdateLocalizedTexts();
+            StatisticsVm.UpdateLocalizedTexts();
+            DailyChallengeVm.UpdateLocalizedTexts();
+            WeeklyChallengeVm.UpdateLocalizedTexts();
         };
 
         // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget)

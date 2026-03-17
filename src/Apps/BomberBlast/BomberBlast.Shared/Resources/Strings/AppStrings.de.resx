@@ -1426,7 +1426,7 @@
     <value>Survival</value>
   </data>
   <data name="SurvivalKills" xml:space="preserve">
-    <value>Kills: {0}</value>
+    <value>Abschüsse: {0}</value>
   </data>
   <data name="SurvivalKillsLabel" xml:space="preserve">
     <value>KILLS</value>
@@ -1672,7 +1672,7 @@
     <value>Gesamt verdient</value>
   </data>
   <data name="StatsAchievements" xml:space="preserve">
-    <value>Achievements</value>
+    <value>Erfolge</value>
   </data>
   <data name="StatsTotalSpins" xml:space="preserve">
     <value>Glücksrad-Drehungen</value>

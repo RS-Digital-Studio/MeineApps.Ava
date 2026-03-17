@@ -139,7 +139,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "BomberBlast",
-            AppVersion = "v2.0.23",
+            AppVersion = "v2.0.27",
             Renderer = new BomberBlastSplashRenderer()
         };
     }

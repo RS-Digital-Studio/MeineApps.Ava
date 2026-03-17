@@ -4,7 +4,8 @@
              xmlns:icons="using:BomberBlast.Icons"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.DailyChallengeView"
-             x:DataType="vm:DailyChallengeViewModel">
+             x:DataType="vm:DailyChallengeViewModel"
+             x:CompileBindings="True">
 
   <Panel AutomationProperties.AutomationId="DailyChallenge_Root">
     <controls:MenuBackgroundCanvas />

@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
+             x:DataType="vm:SettingsViewModel"
+             x:CompileBindings="True">
 
   <!-- Animierter Menü-Hintergrund -->
   <Panel AutomationProperties.AutomationId="Settings_Root">
@@ -255,14 +256,14 @@
 
               <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto">
                 <!-- Classic Style -->
-                <Border Grid.Column="0"
+                <Border x:Name="ClassicBorder" Grid.Column="0"
                         Margin="0,0,4,0"
                         CornerRadius="8"
                         Padding="10,8"
                         Cursor="Hand"
                         Background="{DynamicResource SurfaceBrush}">
                   <Border.Styles>
-                    <Style Selector="Border">
+                    <Style Selector="Border#ClassicBorder">
                       <Setter Property="BorderBrush" Value="Transparent" />
                       <Setter Property="BorderThickness" Value="2" />
                     </Style>
@@ -297,14 +298,14 @@
                 </Border>
 
                 <!-- Neon Style -->
-                <Border Grid.Column="1"
+                <Border x:Name="NeonBorder" Grid.Column="1"
                         Margin="4,0,4,0"
                         CornerRadius="8"
                         Padding="10,8"
                         Cursor="Hand"
                         Background="{DynamicResource SurfaceBrush}">
                   <Border.Styles>
-                    <Style Selector="Border">
+                    <Style Selector="Border#NeonBorder">
                       <Setter Property="BorderBrush" Value="Transparent" />
                       <Setter Property="BorderThickness" Value="2" />
                     </Style>
@@ -339,14 +340,14 @@
                 </Border>
 
                 <!-- Retro Style -->
-                <Border Grid.Column="2"
+                <Border x:Name="RetroBorder" Grid.Column="2"
                         Margin="4,0,0,0"
                         CornerRadius="8"
                         Padding="10,8"
                         Cursor="Hand"
                         Background="{DynamicResource SurfaceBrush}">
                   <Border.Styles>
-                    <Style Selector="Border">
+                    <Style Selector="Border#RetroBorder">
                       <Setter Property="BorderBrush" Value="Transparent" />
                       <Setter Property="BorderThickness" Value="2" />
                     </Style>
@@ -427,7 +428,7 @@
 
               <!-- Buttons (nur wenn eingeloggt) -->
               <Grid ColumnDefinitions="*,*" IsVisible="{Binding IsPlayGamesSignedIn}">
-                <Panel Grid.Column="0" MinHeight="36" Margin="0,0,4,0">
+                <Panel Grid.Column="0" MinHeight="44" Margin="0,0,4,0">
                   <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="160" />
                   <Button AutomationProperties.AutomationId="Settings_BtnLeaderboards"
                           Background="Transparent"
@@ -441,7 +442,7 @@
                     </StackPanel>
                   </Button>
                 </Panel>
-                <Panel Grid.Column="1" MinHeight="36" Margin="4,0,0,0">
+                <Panel Grid.Column="1" MinHeight="44" Margin="4,0,0,0">
                   <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="161" />
                   <Button AutomationProperties.AutomationId="Settings_BtnGpgsAchievements"
                           Background="Transparent"
@@ -500,26 +501,26 @@
               <!-- Sync Buttons -->
               <StackPanel Orientation="Horizontal" Spacing="8"
                           IsVisible="{Binding CloudSaveEnabled}">
-                <Panel MinHeight="32">
+                <Panel MinHeight="44">
                   <controls:GameButtonCanvas ButtonColor="#2196F3" DamageLevel="0.3" ButtonSeed="162" />
                   <Button Background="Transparent"
                           Foreground="White"
                           Command="{Binding SyncNowCommand}"
                           IsEnabled="{Binding !IsCloudSyncing}"
-                          Height="32" Padding="12,0">
+                          MinHeight="44" Padding="12,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <icons:GameIcon Kind="CloudUpload" Width="16" Height="16" />
                       <TextBlock Text="{Binding CloudSaveSyncText}" FontSize="12" />
                     </StackPanel>
                   </Button>
                 </Panel>
-                <Panel MinHeight="32">
+                <Panel MinHeight="44">
                   <controls:GameButtonCanvas ButtonColor="#2196F3" DamageLevel="0.3" ButtonSeed="163" />
                   <Button Background="Transparent"
                           Foreground="White"
                           Command="{Binding DownloadFromCloudCommand}"
                           IsEnabled="{Binding !IsCloudSyncing}"
-                          Height="32" Padding="12,0">
+                          MinHeight="44" Padding="12,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <icons:GameIcon Kind="CloudDownload" Width="16" Height="16" />
                       <TextBlock Text="{Binding CloudSaveDownloadText}" FontSize="12" />
@@ -657,7 +658,7 @@
                 </Panel>
 
                 <!-- Restore Purchases -->
-                <Panel MinHeight="36" HorizontalAlignment="Left">
+                <Panel MinHeight="44" HorizontalAlignment="Left">
                   <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="165" />
                   <Button AutomationProperties.AutomationId="Settings_BtnRestore"
                           Content="{Binding RestoreButtonText}"
@@ -689,7 +690,7 @@
                              Foreground="{DynamicResource ErrorBrush}" />
                 </StackPanel>
 
-                <Panel MinHeight="36">
+                <Panel MinHeight="44">
                   <controls:GameButtonCanvas ButtonColor="#F44336" DamageLevel="0.7" ButtonSeed="166" />
                   <Button AutomationProperties.AutomationId="Settings_BtnResetProgress"
                           Content="{loc:Translate ResetProgress}"
@@ -701,7 +702,7 @@
                           FontSize="14" />
                 </Panel>
 
-                <Panel MinHeight="36">
+                <Panel MinHeight="44">
                   <controls:GameButtonCanvas ButtonColor="#F44336" DamageLevel="0.7" ButtonSeed="167" />
                   <Button AutomationProperties.AutomationId="Settings_BtnClearHighScores"
                           Content="{loc:Translate ClearHighScores}"
@@ -747,7 +748,7 @@
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
 
-                <Panel MinHeight="36">
+                <Panel MinHeight="44">
                   <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="168" />
                   <Button AutomationProperties.AutomationId="Settings_BtnPrivacy"
                           Content="{loc:Translate PrivacyPolicy}"

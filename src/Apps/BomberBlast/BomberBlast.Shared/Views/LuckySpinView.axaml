@@ -6,7 +6,8 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.LuckySpinView"
-             x:DataType="vm:LuckySpinViewModel">
+             x:DataType="vm:LuckySpinViewModel"
+             x:CompileBindings="True">
 
   <Panel AutomationProperties.AutomationId="LuckySpin_Root">
     <controls:MenuBackgroundCanvas BackgroundTheme="LuckySpin" />

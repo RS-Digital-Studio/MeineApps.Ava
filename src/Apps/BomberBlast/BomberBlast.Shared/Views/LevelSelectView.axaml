@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.LevelSelectView"
-             x:DataType="vm:LevelSelectViewModel">
+             x:DataType="vm:LevelSelectViewModel"
+             x:CompileBindings="True">
 
   <!-- Animierter Menü-Hintergrund -->
   <Panel AutomationProperties.AutomationId="LevelSelect_Root">
@@ -155,7 +156,7 @@
                                 <!-- Best Score (klein, unter den Sternen) -->
                                 <TextBlock Grid.Row="2"
                                            Text="{Binding BestScoreText}"
-                                           FontSize="8"
+                                           FontSize="10"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            HorizontalAlignment="Center"
                                            Margin="0,0,0,1"

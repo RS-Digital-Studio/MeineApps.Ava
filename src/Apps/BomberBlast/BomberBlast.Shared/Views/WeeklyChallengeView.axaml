@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.WeeklyChallengeView"
-             x:DataType="vm:WeeklyChallengeViewModel">
+             x:DataType="vm:WeeklyChallengeViewModel"
+             x:CompileBindings="True">
 
   <Panel AutomationProperties.AutomationId="Missions_Root">
     <controls:MenuBackgroundCanvas />
@@ -86,12 +87,11 @@
                                    Foreground="{DynamicResource TextMutedBrush}" />
                         <Grid Height="6" Margin="0,1,0,0">
                           <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="3" Opacity="0.5" />
-                          <Border CornerRadius="3" HorizontalAlignment="Left" Background="#FF9800">
-                            <Border.Width>
-                              <MultiBinding StringFormat="{}{0}%">
-                                <Binding Path="ProgressBarWidth" />
-                              </MultiBinding>
-                            </Border.Width>
+                          <Border CornerRadius="3" HorizontalAlignment="Stretch" Background="#FF9800"
+                                  RenderTransformOrigin="0,0.5">
+                            <Border.RenderTransform>
+                              <ScaleTransform ScaleX="{Binding Progress}" />
+                            </Border.RenderTransform>
                           </Border>
                         </Grid>
                       </StackPanel>
@@ -160,12 +160,11 @@
                                    Foreground="{DynamicResource TextMutedBrush}" />
                         <Grid Height="6" Margin="0,1,0,0">
                           <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="3" Opacity="0.5" />
-                          <Border CornerRadius="3" HorizontalAlignment="Left" Background="#00BCD4">
-                            <Border.Width>
-                              <MultiBinding StringFormat="{}{0}%">
-                                <Binding Path="ProgressBarWidth" />
-                              </MultiBinding>
-                            </Border.Width>
+                          <Border CornerRadius="3" HorizontalAlignment="Stretch" Background="#00BCD4"
+                                  RenderTransformOrigin="0,0.5">
+                            <Border.RenderTransform>
+                              <ScaleTransform ScaleX="{Binding Progress}" />
+                            </Border.RenderTransform>
                           </Border>
                         </Grid>
                       </StackPanel>
@@ -218,12 +217,12 @@
                 </StackPanel>
                 <TextBlock Text="{Binding DailyBonusText}" FontSize="16" FontWeight="Bold"
                            Foreground="#FFD700" HorizontalAlignment="Center" />
-                <Panel MinHeight="34" IsVisible="{Binding CanClaimDailyBonus}">
+                <Panel MinHeight="44" IsVisible="{Binding CanClaimDailyBonus}">
                   <controls:GameButtonCanvas ButtonColor="#FF9800" DamageLevel="0.4" ButtonSeed="155" />
                   <Button Classes="Primary GameButton"
                           Command="{Binding ClaimDailyBonusCommand}"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                          Height="34" Background="Transparent" Foreground="White"
+                          MinHeight="44" Background="Transparent" Foreground="White"
                           AutomationProperties.AutomationId="Missions_BtnClaimDailyBonus">
                     <TextBlock Text="{Binding DailyBonusLabel}" FontSize="12" FontWeight="Bold" Foreground="White" />
                   </Button>
@@ -276,12 +275,12 @@
                 </StackPanel>
                 <TextBlock Text="{Binding BonusText}" FontSize="16" FontWeight="Bold"
                            Foreground="#FFD700" HorizontalAlignment="Center" />
-                <Panel MinHeight="34" IsVisible="{Binding CanClaimBonus}">
+                <Panel MinHeight="44" IsVisible="{Binding CanClaimBonus}">
                   <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.4" ButtonSeed="156" />
                   <Button Classes="Primary GameButton"
                           Command="{Binding ClaimBonusCommand}"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                          Height="34" Background="Transparent" Foreground="White"
+                          MinHeight="44" Background="Transparent" Foreground="White"
                           AutomationProperties.AutomationId="Missions_BtnClaimWeeklyBonus">
                     <TextBlock Text="{Binding BonusLabel}" FontSize="12" FontWeight="Bold" Foreground="White" />
                   </Button>

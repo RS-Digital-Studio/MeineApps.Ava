@@ -3662,12 +3662,12 @@
     <value>Ascension {0} Unlocked!</value>
   </data>
   <data name="Buy" xml:space="preserve">
-    <value>Kaufen</value>
+    <value>Buy</value>
   </data>
   <data name="SplashStep_Graphics" xml:space="preserve">
-    <value>Grafiken laden</value>
+    <value>Loading Graphics</value>
   </data>
   <data name="SplashStep_Starting" xml:space="preserve">
-    <value>Starte Spiel</value>
+    <value>Starting Game</value>
   </data>
 </root>

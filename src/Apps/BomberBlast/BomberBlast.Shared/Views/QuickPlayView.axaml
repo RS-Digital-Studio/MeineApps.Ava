@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.QuickPlayView"
-             x:DataType="vm:QuickPlayViewModel">
+             x:DataType="vm:QuickPlayViewModel"
+             x:CompileBindings="True">
 
   <Panel AutomationProperties.AutomationId="QuickPlay_Root">
     <controls:MenuBackgroundCanvas />
@@ -146,7 +147,7 @@
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            FontFamily="Consolas, Courier New, monospace" />
-                <Panel Grid.Column="1" MinHeight="40" VerticalAlignment="Center">
+                <Panel Grid.Column="1" MinHeight="44" VerticalAlignment="Center">
                   <controls:GameButtonCanvas ButtonColor="#555555" DamageLevel="0.3" ButtonSeed="61" />
                   <Button AutomationProperties.AutomationId="QuickPlay_BtnNewSeed"
                           Classes="Secondary GameButton"

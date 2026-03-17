@@ -24,6 +24,9 @@ public sealed partial class GameEngine
     // Zähler für periodische Dict-Bereinigung (verwaiste Keys entfernen)
     private int _cacheCleanupCounter;
 
+    // Statische Offsets für Splitter-Spawn (vermeidet Array-Allokation pro Kill)
+    private static readonly (int dx, int dy)[] SplitterOffsets = [(-1, 0), (1, 0), (0, -1), (0, 1)];
+
     /// <summary>
     /// Baut den Positions-Cache für alle aktiven Gegner auf.
     /// Lists werden wiederverwendet statt pro Frame neu allokiert.
@@ -384,6 +387,7 @@ public sealed partial class GameEngine
     private void KillEnemy(Enemy enemy)
     {
         enemy.Kill();
+        _enemiesRemainingDirty = true;
         _enemiesKilled++;
 
         // Boss: Eigene Punkte statt EnemyType-Points
@@ -515,9 +519,8 @@ public sealed partial class GameEngine
         // Splitter-Logik: Beim Tod 2 Mini-Splitter spawnen
         if (enemy.Type.SplitsOnDeath() && !enemy.IsMiniSplitter)
         {
-            var offsets = new[] { (-1, 0), (1, 0), (0, -1), (0, 1) };
             int spawned = 0;
-            foreach (var (ox, oy) in offsets)
+            foreach (var (ox, oy) in SplitterOffsets)
             {
                 if (spawned >= 2) break;
                 int nx = enemy.GridX + ox;
@@ -527,6 +530,7 @@ public sealed partial class GameEngine
                 {
                     var mini = Enemy.CreateMiniSplitterAtGrid(nx, ny);
                     _enemies.Add(mini);
+                    _enemiesRemainingDirty = true;
                     spawned++;
 
                     // Spawn-Partikel

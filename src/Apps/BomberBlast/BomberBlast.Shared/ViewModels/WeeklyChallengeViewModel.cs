@@ -189,7 +189,7 @@ public sealed partial class WeeklyChallengeViewModel : ViewModelBase, INavigable
         BonusText = $"+{_weeklyService.AllCompleteBonusCoins:N0} Coins";
     }
 
-    private void UpdateLocalizedTexts()
+    public void UpdateLocalizedTexts()
     {
         WeeklyTitle = _localizationService.GetString("WeeklyChallengeTitle") ?? "Weekly Challenges";
         TotalWeeksLabel = _localizationService.GetString("WeeklyTotalWeeks") ?? "Completed Weeks";

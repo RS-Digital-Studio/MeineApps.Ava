@@ -6,6 +6,7 @@
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.LeagueView"
              x:DataType="vm:LeagueViewModel"
+             x:CompileBindings="True"
              x:Name="League_Root">
 
   <!-- Liga-System: Landscape 2-Spalten Layout mit Firebase Online-Rangliste -->
@@ -92,15 +93,10 @@
             <TextBlock Text="{Binding SeasonCountdown}"
                        FontSize="20" FontWeight="Bold"
                        Foreground="#FFD700" HorizontalAlignment="Center" />
-            <TextBlock FontSize="13"
+            <TextBlock Text="{Binding SeasonDisplayText}"
+                       FontSize="13"
                        Foreground="{DynamicResource TextMutedBrush}"
-                       HorizontalAlignment="Center">
-              <TextBlock.Text>
-                <MultiBinding StringFormat="Saison {0}">
-                  <Binding Path="SeasonNumber" />
-                </MultiBinding>
-              </TextBlock.Text>
-            </TextBlock>
+                       HorizontalAlignment="Center" />
           </StackPanel>
         </Border>
 
@@ -115,11 +111,11 @@
                        TextTrimming="CharacterEllipsis" />
 
             <!-- Belohnung abholen -->
-            <Panel MinHeight="32" IsVisible="{Binding CanClaimReward}" HorizontalAlignment="Center">
+            <Panel MinHeight="44" IsVisible="{Binding CanClaimReward}" HorizontalAlignment="Center">
               <controls:GameButtonCanvas ButtonColor="#22C55E" DamageLevel="0.3" ButtonSeed="180" />
               <Button Classes="Primary GameButton"
                       Command="{Binding ClaimRewardCommand}"
-                      Height="32" Padding="12,0" Background="Transparent" Foreground="White">
+                      MinHeight="44" Padding="12,8" Background="Transparent" Foreground="White">
                 <TextBlock Text="{Binding ClaimRewardText}"
                            FontSize="12" FontWeight="Bold" Foreground="White" />
               </Button>

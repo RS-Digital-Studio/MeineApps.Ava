@@ -6,7 +6,8 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.HelpView"
-             x:DataType="vm:HelpViewModel">
+             x:DataType="vm:HelpViewModel"
+             x:CompileBindings="True">
 
   <!-- Animierter Menü-Hintergrund -->
   <Panel AutomationProperties.AutomationId="Help_Root">
@@ -23,7 +24,8 @@
           <!-- Back Button -->
           <Button Classes="Text"
                   AutomationProperties.AutomationId="Help_BtnBack"
-                  Command="{Binding GoBackCommand}">
+                  Command="{Binding GoBackCommand}"
+                  MinWidth="44" MinHeight="44">
             <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 

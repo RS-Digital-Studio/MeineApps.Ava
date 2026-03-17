@@ -6,7 +6,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:ctrl="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.ShopView"
-             x:DataType="vm:ShopViewModel">
+             x:DataType="vm:ShopViewModel"
+             x:CompileBindings="True">
 
   <!-- Gemeinsames Skin-DataTemplate (6 Sektionen nutzen dasselbe Layout) -->
   <UserControl.Resources>
@@ -104,7 +105,7 @@
 
           <!-- Auswaehlen-Button (owned + nicht equipped) -->
           <Panel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                 Margin="0,6,0,0" MinHeight="30"
+                 Margin="0,6,0,0" MinHeight="44"
                  IsVisible="{Binding CanSelect}">
             <ctrl:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.3" ButtonSeed="130" />
             <Button Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
@@ -124,7 +125,7 @@
 
           <!-- Kauf-Button (nicht owned, nicht locked) -->
           <Panel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                 Margin="0,6,0,0" MinHeight="30"
+                 Margin="0,6,0,0" MinHeight="44"
                  IsVisible="{Binding CanBuy}">
             <ctrl:GameButtonCanvas ButtonColor="#FF6F00" DamageLevel="0.5" ButtonSeed="131" />
             <Button Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
@@ -292,7 +293,7 @@
                       </Border>
 
                       <!-- Kauf-Button -->
-                      <Panel MinHeight="32"
+                      <Panel MinHeight="44"
                              IsVisible="{Binding !IsMaxed}">
                         <ctrl:GameButtonCanvas ButtonColor="#4CAF50" DamageLevel="0.4" ButtonSeed="132" />
                         <Button Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseCommand}"

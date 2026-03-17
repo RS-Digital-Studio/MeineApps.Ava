@@ -6,6 +6,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="BomberBlast.Views.GameView"
              x:DataType="vm:GameViewModel"
+             x:CompileBindings="True"
              Focusable="True">
 
   <Panel AutomationProperties.AutomationId="Game_Root">

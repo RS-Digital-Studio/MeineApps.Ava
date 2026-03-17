@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.HighScoresView"
-             x:DataType="vm:HighScoresViewModel">
+             x:DataType="vm:HighScoresViewModel"
+             x:CompileBindings="True">
 
   <Panel AutomationProperties.AutomationId="HighScores_Root">
     <controls:MenuBackgroundCanvas />
@@ -27,7 +28,8 @@
           <!-- Back Button -->
           <Button Classes="Text"
                   Command="{Binding GoBackCommand}"
-                  AutomationProperties.AutomationId="HighScores_BtnBack">
+                  AutomationProperties.AutomationId="HighScores_BtnBack"
+                  MinWidth="44" MinHeight="44">
             <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 

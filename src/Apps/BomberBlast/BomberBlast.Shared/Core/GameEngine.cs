@@ -62,6 +62,10 @@ public sealed partial class GameEngine : IDisposable
 
     private bool _disposed;
 
+    // Gecachter EnemiesRemaining-Zähler (Dirty-Flag statt 60x/s Iteration)
+    private bool _enemiesRemainingDirty = true;
+    private int _enemiesRemainingCache;
+
     // Game state
     private GameState _state = GameState.Menu;
     private GameTimer _timer;
@@ -327,15 +331,20 @@ public sealed partial class GameEngine : IDisposable
     public int SurvivalKills => _enemiesKilled;
     public float SurvivalTimeElapsed => _survivalTimeElapsed;
 
-    /// <summary>Verbleibende aktive Gegner (für HUD-Anzeige)</summary>
+    /// <summary>Verbleibende aktive Gegner (für HUD-Anzeige, gecacht via Dirty-Flag)</summary>
     public int EnemiesRemaining
     {
         get
         {
-            int count = 0;
-            foreach (var e in _enemies)
-                if (e.IsActive && !e.IsDying) count++;
-            return count;
+            if (_enemiesRemainingDirty)
+            {
+                int count = 0;
+                foreach (var e in _enemies)
+                    if (e.IsActive && !e.IsDying) count++;
+                _enemiesRemainingCache = count;
+                _enemiesRemainingDirty = false;
+            }
+            return _enemiesRemainingCache;
         }
     }
     public bool IsCurrentScoreHighScore => _highScoreService.IsHighScore(Score);

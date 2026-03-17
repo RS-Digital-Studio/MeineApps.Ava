@@ -189,12 +189,18 @@ public sealed class GameAssetService : IGameAssetService
 
     private void EvictOldest()
     {
-        var oldest = _cache
-            .OrderBy(kv => kv.Value.LastAccessTick)
-            .FirstOrDefault();
-
-        if (oldest.Key != null)
-            Evict(oldest.Key);
+        string? oldestKey = null;
+        long oldestTick = long.MaxValue;
+        foreach (var kv in _cache)
+        {
+            if (kv.Value.LastAccessTick < oldestTick)
+            {
+                oldestTick = kv.Value.LastAccessTick;
+                oldestKey = kv.Key;
+            }
+        }
+        if (oldestKey != null)
+            Evict(oldestKey);
     }
 
     private static Stream? GetAssetStream(string assetPath)

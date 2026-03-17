@@ -34,6 +34,12 @@ public static class RarityRenderer
         Style = SKPaintStyle.Fill
     };
 
+    // Gecachte MaskFilter (vermeidet CreateBlur pro Frame)
+    private static readonly SKMaskFilter GlowBlur3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+    private static readonly SKMaskFilter GlowBlur5 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5f);
+    private static readonly SKMaskFilter GlowBlur8 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
+    private static readonly SKMaskFilter ShimmerBlur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+
     /// <summary>
     /// Statische Felder vorinitialisieren (SKPaint).
     /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Render zu vermeiden.
@@ -63,7 +69,6 @@ public static class RarityRenderer
         // Haupt-Rahmen
         BorderPaint.Color = color;
         BorderPaint.StrokeWidth = borderWidth;
-        BorderPaint.MaskFilter?.Dispose();
         BorderPaint.MaskFilter = null;
         canvas.DrawRoundRect(rect, 4f, 4f, BorderPaint);
     }
@@ -87,13 +92,18 @@ public static class RarityRenderer
             pulseFactor = 0.7f + 0.3f * MathF.Sin(time * pulseSpeed);
         }
 
-        // Äußerer Glow
+        // Äußerer Glow (gecachte MaskFilter statt pro-Frame Allokation)
         byte glowAlpha = (byte)(60 * pulseFactor);
         GlowPaint.Color = glowColor.WithAlpha(glowAlpha);
         GlowPaint.StrokeWidth = glowRadius * 2;
-        GlowPaint.MaskFilter?.Dispose();
 
-        GlowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, glowRadius);
+        GlowPaint.MaskFilter = glowRadius switch
+        {
+            3f => GlowBlur3,
+            5f => GlowBlur5,
+            8f => GlowBlur8,
+            _ => GlowBlur3
+        };
 
         var glowRect = new SKRect(
             rect.Left - glowRadius,
@@ -102,7 +112,6 @@ public static class RarityRenderer
             rect.Bottom + glowRadius);
 
         canvas.DrawRoundRect(glowRect, 6f, 6f, GlowPaint);
-        GlowPaint.MaskFilter?.Dispose();
         GlowPaint.MaskFilter = null;
     }
 
@@ -146,16 +155,13 @@ public static class RarityRenderer
             sy = rect.Bottom - (pos - 2 * rect.Width - rect.Height);
         }
 
-        // Shimmer-Punkt zeichnen
+        // Shimmer-Punkt zeichnen (gecachter MaskFilter)
         ShimmerPaint.Color = SKColors.White.WithAlpha(180);
-        ShimmerPaint.MaskFilter?.Dispose();
-
-        ShimmerPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+        ShimmerPaint.MaskFilter = ShimmerBlur;
         canvas.DrawCircle(sx, sy, 3f, ShimmerPaint);
 
         // Innerer heller Kern
         ShimmerPaint.Color = SKColors.White.WithAlpha(255);
-        ShimmerPaint.MaskFilter?.Dispose();
         ShimmerPaint.MaskFilter = null;
         canvas.DrawCircle(sx, sy, 1.5f, ShimmerPaint);
     }

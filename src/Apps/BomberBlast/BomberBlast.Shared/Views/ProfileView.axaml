@@ -4,7 +4,8 @@
              xmlns:icons="using:BomberBlast.Icons"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.ProfileView"
-             x:DataType="vm:ProfileViewModel">
+             x:DataType="vm:ProfileViewModel"
+             x:CompileBindings="True">
 
   <Panel AutomationProperties.AutomationId="Profile_Root">
     <controls:MenuBackgroundCanvas />
@@ -73,14 +74,14 @@
                          FontSize="10"
                          Foreground="{DynamicResource TextMutedBrush}"
                          HorizontalAlignment="Center" />
-              <Panel MinHeight="38">
+              <Panel MinHeight="44">
                 <controls:GameButtonCanvas ButtonColor="#4CAF50" DamageLevel="0.3" ButtonSeed="175" />
                 <Button Classes="Primary GameButton"
                         Command="{Binding SaveNameCommand}"
                         IsEnabled="{Binding IsNameChanged}"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Center"
-                        Height="38" Background="Transparent" Foreground="White">
+                        MinHeight="44" Background="Transparent" Foreground="White">
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <icons:GameIcon Kind="ContentSave" Width="16" Height="16" Foreground="White" />
                     <TextBlock Text="{Binding SaveButtonText}" Foreground="White" FontSize="13" />

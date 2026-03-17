@@ -55,7 +55,10 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
     private string _leaguePointsText = "0";
 
     [ObservableProperty]
-    private string _leagueSeasonText = "Saison 1";
+    private string _leaguePointsFormatted = "0";
+
+    [ObservableProperty]
+    private string _leagueSeasonText = "";
 
     // Rahmen
     [ObservableProperty]
@@ -298,6 +301,8 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
         LeagueTierColor = tier.GetColor();
         LeagueRankText = $"#{_leagueService.GetPlayerRank()}";
         LeaguePointsText = _leagueService.CurrentPoints.ToString("N0");
+        var pointsLabel = _localizationService.GetString("LeaguePoints") ?? "Points";
+        LeaguePointsFormatted = $"{LeaguePointsText} {pointsLabel}";
         LeagueSeasonText = $"{_localizationService.GetString("LeagueSeason") ?? "Saison"} {_leagueService.SeasonNumber}";
 
         // Rahmen

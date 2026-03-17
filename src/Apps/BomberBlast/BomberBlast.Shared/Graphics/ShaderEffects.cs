@@ -358,10 +358,7 @@ half4 main(float2 coord) {
             // Warmes Hitze-Band
             _shimmerPaint.Color = new SKColor(255, 200, 100, alpha);
             _shimmerPaint.BlendMode = SKBlendMode.SrcOver;
-            canvas.Save();
-            canvas.Translate(waveX, 0);
-            canvas.DrawRect(0, baseY + waveY, w, bandHeight * 0.6f, _shimmerPaint);
-            canvas.Restore();
+            canvas.DrawRect(waveX, baseY + waveY, w, bandHeight * 0.6f, _shimmerPaint);
         }
 
         // Zusätzlich: Aufsteigende Hitze-Streifen (vertikale Verwirbelung)

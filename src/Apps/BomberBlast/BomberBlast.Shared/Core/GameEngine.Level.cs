@@ -381,6 +381,7 @@ public sealed partial class GameEngine
 
         // Entities leeren
         _enemies.Clear();
+        _enemiesRemainingDirty = true;
         _bombs.Clear();
         _explosions.Clear();
         _powerUps.Clear();
@@ -708,6 +709,7 @@ public sealed partial class GameEngine
 
                 var enemy = Enemy.CreateAtGrid(pos.x, pos.y, spawn.Type);
                 _enemies.Add(enemy);
+                _enemiesRemainingDirty = true;
             }
         }
 
@@ -737,6 +739,7 @@ public sealed partial class GameEngine
 
             var boss = BossEnemy.CreateAtGrid(bossX, bossY, bossType);
             _enemies.Add(boss);
+            _enemiesRemainingDirty = true;
 
             // Sammlungs-Album: Boss als angetroffen melden
             _tracking.OnBossEncountered(bossType);
@@ -1019,6 +1022,7 @@ public sealed partial class GameEngine
 
             var enemy = Enemy.CreateAtGrid(x, y, type);
             _enemies.Add(enemy);
+            _enemiesRemainingDirty = true;
 
             // Spawn-Partikel
             float spawnX = x * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
@@ -1342,6 +1346,7 @@ public sealed partial class GameEngine
 
         var enemy = Enemy.CreateAtGrid(gx, gy, EnemyType.Pontan);
         _enemies.Add(enemy);
+        _enemiesRemainingDirty = true;
         _pontanSpawned++;
 
         // Spawn-Partikel

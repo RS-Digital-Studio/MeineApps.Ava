@@ -6,7 +6,8 @@
              xmlns:controls="using:BomberBlast.Controls"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="BomberBlast.Views.DungeonView"
-             x:DataType="vm:DungeonViewModel">
+             x:DataType="vm:DungeonViewModel"
+             x:CompileBindings="True">
 
   <Panel>
     <controls:MenuBackgroundCanvas BackgroundTheme="Dungeon" />
@@ -200,7 +201,7 @@
                                   IsVisible="{Binding IsMaxed}"
                                   Background="#30FFD700" CornerRadius="6" Padding="6,2"
                                   VerticalAlignment="Center">
-                            <TextBlock Text="MAX" FontSize="10" FontWeight="Bold"
+                            <TextBlock Text="{loc:Translate ShopMaxed}" FontSize="10" FontWeight="Bold"
                                        Foreground="#FFD700" />
                           </Border>
                         </Grid>
@@ -315,25 +316,23 @@
       </Grid>
 
       <!-- ===================== BuffSelection-Bereich (animiert) ===================== -->
-      <StackPanel Grid.Row="1" Margin="24,16,24,80" Spacing="16"
+      <StackPanel x:Name="BuffSelectionPanel" Grid.Row="1" Margin="24,16,24,80" Spacing="16"
                   VerticalAlignment="Center"
                   IsVisible="{Binding IsBuffSelection}"
                   RenderTransformOrigin="0.5,0.5">
         <StackPanel.RenderTransform>
           <TranslateTransform Y="0" />
         </StackPanel.RenderTransform>
-        <!-- Einblend-Animation: Slide-Up + Fade -->
+        <!-- Einblend-Animation: Fade-In (kein TranslateTransform.Y in KeyFrames - crasht auf Android) -->
         <StackPanel.Styles>
-          <Style Selector="StackPanel">
+          <Style Selector="StackPanel#BuffSelectionPanel">
             <Style.Animations>
               <Animation Duration="0:0:0.25" Easing="CubicEaseOut" FillMode="Forward">
                 <KeyFrame Cue="0%">
                   <Setter Property="Opacity" Value="0" />
-                  <Setter Property="TranslateTransform.Y" Value="30" />
                 </KeyFrame>
                 <KeyFrame Cue="100%">
                   <Setter Property="Opacity" Value="1" />
-                  <Setter Property="TranslateTransform.Y" Value="0" />
                 </KeyFrame>
               </Animation>
             </Style.Animations>
@@ -398,13 +397,13 @@
                 </Button.Transitions>
 
                 <!-- Äußerer Raritäts-Glow-Border mit Puls-Animation -->
-                <Border CornerRadius="18" Padding="2"
+                <Border x:Name="GlowBorder" CornerRadius="18" Padding="2"
                         BoxShadow="0 0 16 0 #40000000">
                   <Border.Background>
                     <SolidColorBrush Color="{Binding RarityColor}" />
                   </Border.Background>
                   <Border.Styles>
-                    <Style Selector="Border">
+                    <Style Selector="Border#GlowBorder">
                       <Style.Animations>
                         <!-- Pulsierender Glow (feste Werte, RarityColor differenziert visuell) -->
                         <Animation Duration="0:0:2" IterationCount="INFINITE">
@@ -463,6 +462,7 @@
                   Classes="Secondary GameButton"
                   Command="{Binding RerollBuffsCommand}"
                   IsVisible="{Binding CanReroll}"
+                  MinHeight="44"
                   Padding="12,8">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <icons:GameIcon Kind="Dice" Width="20" Height="20"

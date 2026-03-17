@@ -2,9 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:icons="using:BomberBlast.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.GemShopView"
-             x:DataType="vm:GemShopViewModel">
+             x:DataType="vm:GemShopViewModel"
+             x:CompileBindings="True">
 
   <!-- Gem-Shop: Landscape-Layout mit Gem-Balance links und 3 Kauf-Karten rechts -->
   <Panel Name="GemShop_Root" AutomationProperties.AutomationId="GemShop_Root">
@@ -23,6 +25,7 @@
                 Classes="Text"
                 Command="{Binding GoBackCommand}"
                 HorizontalAlignment="Left"
+                MinHeight="44"
                 Margin="0,0,0,8">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <icons:GameIcon Kind="ArrowLeft" Width="20" Height="20"
@@ -56,7 +59,7 @@
                        Foreground="#00BCD4"
                        HorizontalAlignment="Center"
                        AutomationProperties.AutomationId="GemShop_TxtBalance" />
-            <TextBlock Text="Gems"
+            <TextBlock Text="{loc:Translate Gems}"
                        FontSize="15" FontWeight="SemiBold"
                        Foreground="#4DD0E1"
                        HorizontalAlignment="Center" />
@@ -156,7 +159,7 @@
                            Margin="0,0,0,10" />
 
                 <!-- Kauf-Button -->
-                <Panel Grid.Row="4" MinHeight="40">
+                <Panel Grid.Row="4" MinHeight="44">
                   <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.5" ButtonSeed="{Binding ButtonSeed}" />
                   <Button Command="{Binding #GemShop_Root.((vm:GemShopViewModel)DataContext).PurchasePackageCommand}"
                           CommandParameter="{Binding}"

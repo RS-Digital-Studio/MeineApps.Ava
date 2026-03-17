@@ -139,7 +139,7 @@ public sealed partial class DailyChallengeViewModel : ViewModelBase, INavigable,
             : _localizationService.GetString("DailyChallengePlay") ?? "Start Challenge!";
     }
 
-    private void UpdateLocalizedTexts()
+    public void UpdateLocalizedTexts()
     {
         DailyChallengeTitle = _localizationService.GetString("DailyChallengeTitle") ?? "Daily Challenge";
         BestScoreLabel = _localizationService.GetString("DailyChallengeBestScore") ?? "Best Score";

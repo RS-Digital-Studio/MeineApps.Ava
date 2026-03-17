@@ -56,6 +56,9 @@ public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJu
     private int _seasonNumber;
 
     [ObservableProperty]
+    private string _seasonDisplayText = "";
+
+    [ObservableProperty]
     private string _pointsText = "";
 
     [ObservableProperty]
@@ -192,6 +195,8 @@ public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJu
         TierColor = Color.Parse(tier.GetColor());
         CurrentPoints = _leagueService.CurrentPoints;
         SeasonNumber = _leagueService.SeasonNumber;
+        var seasonLabel = _localization.GetString("LeagueSeason") ?? "Season";
+        SeasonDisplayText = $"{seasonLabel} {SeasonNumber}";
 
         var pointsLabel = _localization.GetString("LeaguePoints") ?? "Points";
         PointsText = $"{CurrentPoints} {pointsLabel}";

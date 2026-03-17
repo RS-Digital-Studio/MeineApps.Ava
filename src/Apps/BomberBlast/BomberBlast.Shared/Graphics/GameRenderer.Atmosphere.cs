@@ -338,8 +338,8 @@ public sealed partial class GameRenderer
 
     private void RenderShadowRealmBackground(SKCanvas canvas, float sw, float sh, float gl, float gt)
     {
-        // Leuchtende Augenpaare die blinzeln
-        _fillPaint.MaskFilter = _smallGlow;
+        // Leuchtende Augenpaare die blinzeln (MaskFilter entfernt: alpha=40 Glow kaum sichtbar, spart 4x DrawOval mit Blur)
+        _fillPaint.MaskFilter = null;
         for (int i = 0; i < 4; i++)
         {
             float x = gl * (0.1f + i * 0.25f);
@@ -416,13 +416,7 @@ public sealed partial class GameRenderer
             }
         }
 
-        // 4) Exit-Portal: Goldener Glow (auch wenn Cell via exitCell-Cache übergeben)
-        if (exitCell != null && exitCell.Type == CellType.Exit)
-        {
-            float epx = exitCell.X * cs + cs * 0.5f;
-            float epy = exitCell.Y * cs + cs * 0.5f;
-            _dynamicLighting.AddExitLight(epx, epy, cs, _globalTimer);
-        }
+        // 4) Exit-Portal: Bereits im Grid-Scan (3) abgedeckt - kein doppelter Add nötig
 
         // 5) Spieler-Schild: Cyan Glow
         if (player is { HasShield: true, IsActive: true })

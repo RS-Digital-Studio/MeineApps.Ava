@@ -5,31 +5,31 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.VictoryView"
-             x:DataType="vm:VictoryViewModel">
+             x:DataType="vm:VictoryViewModel"
+             x:CompileBindings="True">
 
   <!-- Animierter Victory-Hintergrund (Gold-Explosion, Confetti, Fireworks) -->
   <Panel AutomationProperties.AutomationId="Victory_Root">
     <controls:MenuBackgroundCanvas BackgroundTheme="Victory" />
 
     <!-- 2-Column Layout (Landscape) mit SlideUp Entry-Animation -->
-    <Grid ColumnDefinitions="*,*"
+    <Grid x:Name="ContentGrid" ColumnDefinitions="*,*"
           VerticalAlignment="Center"
           Margin="32,16,32,80"
           RenderTransformOrigin="0.5,0.5">
       <Grid.RenderTransform>
         <TranslateTransform Y="0" />
       </Grid.RenderTransform>
+      <!-- Einblend-Animation: Fade-In (kein TranslateTransform.Y in KeyFrames - crasht auf Android) -->
       <Grid.Styles>
-        <Style Selector="Grid">
+        <Style Selector="Grid#ContentGrid">
           <Style.Animations>
             <Animation Duration="0:0:0.2" Easing="CubicEaseOut" FillMode="Forward">
               <KeyFrame Cue="0%">
                 <Setter Property="Opacity" Value="0" />
-                <Setter Property="TranslateTransform.Y" Value="20" />
               </KeyFrame>
               <KeyFrame Cue="100%">
                 <Setter Property="Opacity" Value="1" />
-                <Setter Property="TranslateTransform.Y" Value="0" />
               </KeyFrame>
             </Animation>
           </Style.Animations>

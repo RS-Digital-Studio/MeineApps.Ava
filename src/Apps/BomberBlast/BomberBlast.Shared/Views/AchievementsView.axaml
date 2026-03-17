@@ -5,7 +5,8 @@
              xmlns:conv="using:BomberBlast.Converters"
              xmlns:ctrl="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.AchievementsView"
-             x:DataType="vm:AchievementsViewModel">
+             x:DataType="vm:AchievementsViewModel"
+             x:CompileBindings="True">
 
   <!-- Animierter Menü-Hintergrund -->
   <Panel AutomationProperties.AutomationId="Achievements_Root">
@@ -22,7 +23,8 @@
           <!-- Back Button -->
           <Button Classes="Text"
                   AutomationProperties.AutomationId="Achievements_BtnBack"
-                  Command="{Binding BackCommand}">
+                  Command="{Binding BackCommand}"
+                  MinWidth="44" MinHeight="44">
             <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 

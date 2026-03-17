@@ -154,6 +154,10 @@ public sealed class DynamicLighting
     // Gepoolter SKPath für Fackel-Flammen-Rendering (statt pro-Flamme new SKPath())
     private readonly SKPath _torchPath = new();
 
+    // Gecachte Fackel-Positionen (deterministisch pro Level)
+    private readonly List<(float fackelX, float fackelY)> _cachedTorchPositions = new();
+    private int _torchCacheWorldSeed = int.MinValue;
+
     /// <summary>
     /// Alle gesammelten Lichtquellen rendern.
     /// Verwendet MaskFilter-Blur statt pro-Licht RadialGradient-Shader
@@ -185,27 +189,28 @@ public sealed class DynamicLighting
     }
 
     /// <summary>
-    /// Fackeln an zufälligen Wand-Zellen generieren und als Lichtquellen hinzufügen.
-    /// Rendert auch die visuelle Fackel-Darstellung.
+    /// Berechnet Fackel-Positionen einmalig pro Level und cacht sie.
+    /// Wird nur bei Welt-/Level-Wechsel (neuer worldSeed) erneut ausgeführt.
     /// </summary>
-    public void AddTorchesFromGrid(GameGrid grid, int cellSize, float globalTimer,
-        SKCanvas canvas, SKPaint fillPaint, int worldSeed)
+    private void CacheTorchPositions(GameGrid grid, int cellSize, int worldSeed)
     {
-        int torchCount = 0;
+        if (worldSeed == _torchCacheWorldSeed) return;
+
+        _cachedTorchPositions.Clear();
+        _torchCacheWorldSeed = worldSeed;
+
         const int MAX_TORCHES = 4;
 
-        for (int y = 1; y < grid.Height - 1 && torchCount < MAX_TORCHES; y++)
+        for (int y = 1; y < grid.Height - 1 && _cachedTorchPositions.Count < MAX_TORCHES; y++)
         {
-            for (int x = 1; x < grid.Width - 1 && torchCount < MAX_TORCHES; x++)
+            for (int x = 1; x < grid.Width - 1 && _cachedTorchPositions.Count < MAX_TORCHES; x++)
             {
                 var cell = grid[x, y];
                 if (cell.Type != CellType.Wall) continue;
 
-                // Deterministische Auswahl: Nur bestimmte Wand-Zellen bekommen Fackeln
                 float rng = ProceduralTextures.CellRandom(x, y, worldSeed + 999);
-                if (rng > 0.08f) continue; // ~8% der Wände
+                if (rng > 0.08f) continue;
 
-                // Prüfen ob benachbarte Zelle begehbar ist (Fackel zeigt zur begehbaren Seite)
                 bool hasFloor = false;
                 float fackelX = x * cellSize + cellSize * 0.5f;
                 float fackelY = y * cellSize + cellSize * 0.5f;
@@ -223,35 +228,52 @@ public sealed class DynamicLighting
 
                 if (!hasFloor) continue;
 
-                // Fackel-Rendering: Kleines Feuer
-                float flicker1 = MathF.Sin(globalTimer * 8f + torchCount * 3.1f) * 2f;
-                float flicker2 = MathF.Sin(globalTimer * 12f + torchCount * 1.7f) * 1.5f;
-
-                // Flamme (3 flackernde Dreiecke)
-                for (int f = 0; f < 3; f++)
-                {
-                    float fOff = MathF.Sin(globalTimer * (6f + f * 2f) + torchCount * 2f + f) * 1.5f;
-                    float fHeight = 4f + MathF.Sin(globalTimer * 5f + f * 1.3f + torchCount) * 2f;
-
-                    byte fAlpha = (byte)(160 - f * 30);
-                    byte r = (byte)(255 - f * 20);
-                    byte g = (byte)(150 - f * 40);
-
-                    fillPaint.Color = new SKColor(r, g, 20, fAlpha);
-                    fillPaint.MaskFilter = null;
-
-                    _torchPath.Rewind();
-                    _torchPath.MoveTo(fackelX - 2 + fOff, fackelY);
-                    _torchPath.LineTo(fackelX + flicker1 + fOff, fackelY - fHeight);
-                    _torchPath.LineTo(fackelX + 2 + fOff, fackelY);
-                    _torchPath.Close();
-                    canvas.DrawPath(_torchPath, fillPaint);
-                }
-
-                // Lichtquelle
-                AddTorchLight(fackelX, fackelY, cellSize, globalTimer, torchCount);
-                torchCount++;
+                _cachedTorchPositions.Add((fackelX, fackelY));
             }
+        }
+    }
+
+    /// <summary>
+    /// Fackeln an zufälligen Wand-Zellen generieren und als Lichtquellen hinzufügen.
+    /// Rendert auch die visuelle Fackel-Darstellung.
+    /// Nutzt gecachte Positionen (Grid-Scan nur bei Level-Wechsel).
+    /// </summary>
+    public void AddTorchesFromGrid(GameGrid grid, int cellSize, float globalTimer,
+        SKCanvas canvas, SKPaint fillPaint, int worldSeed)
+    {
+        CacheTorchPositions(grid, cellSize, worldSeed);
+
+        for (int i = 0; i < _cachedTorchPositions.Count; i++)
+        {
+            var (fackelX, fackelY) = _cachedTorchPositions[i];
+
+            // Fackel-Rendering: Kleines Feuer
+            float flicker1 = MathF.Sin(globalTimer * 8f + i * 3.1f) * 2f;
+            float flicker2 = MathF.Sin(globalTimer * 12f + i * 1.7f) * 1.5f;
+
+            // Flamme (3 flackernde Dreiecke)
+            for (int f = 0; f < 3; f++)
+            {
+                float fOff = MathF.Sin(globalTimer * (6f + f * 2f) + i * 2f + f) * 1.5f;
+                float fHeight = 4f + MathF.Sin(globalTimer * 5f + f * 1.3f + i) * 2f;
+
+                byte fAlpha = (byte)(160 - f * 30);
+                byte r = (byte)(255 - f * 20);
+                byte g = (byte)(150 - f * 40);
+
+                fillPaint.Color = new SKColor(r, g, 20, fAlpha);
+                fillPaint.MaskFilter = null;
+
+                _torchPath.Rewind();
+                _torchPath.MoveTo(fackelX - 2 + fOff, fackelY);
+                _torchPath.LineTo(fackelX + flicker1 + fOff, fackelY - fHeight);
+                _torchPath.LineTo(fackelX + 2 + fOff, fackelY);
+                _torchPath.Close();
+                canvas.DrawPath(_torchPath, fillPaint);
+            }
+
+            // Lichtquelle
+            AddTorchLight(fackelX, fackelY, cellSize, globalTimer, i);
         }
     }
 
@@ -260,5 +282,7 @@ public sealed class DynamicLighting
         _torchPath.Dispose();
         _lightPaint.Shader?.Dispose();
         _lightPaint.Dispose();
+        _cachedTorchPositions.Clear();
+        _torchCacheWorldSeed = int.MinValue;
     }
 }

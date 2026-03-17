@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:ctrl="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.GameOverView"
-             x:DataType="vm:GameOverViewModel">
+             x:DataType="vm:GameOverViewModel"
+             x:CompileBindings="True">
 
   <!-- Gradient Background -->
   <Panel AutomationProperties.AutomationId="GameOver_Root">
@@ -23,7 +24,7 @@
 
       <!-- 2-Column Layout: Score+Coins links, Buttons rechts -->
       <!-- SlideUp Entry-Animation -->
-      <Grid Grid.Row="0"
+      <Grid x:Name="ContentGrid" Grid.Row="0"
             ColumnDefinitions="*,*"
             VerticalAlignment="Center"
             Margin="24,16,24,80"
@@ -31,17 +32,16 @@
         <Grid.RenderTransform>
           <TranslateTransform Y="0" />
         </Grid.RenderTransform>
+        <!-- Einblend-Animation: Fade-In (kein TranslateTransform.Y in KeyFrames - crasht auf Android) -->
         <Grid.Styles>
-          <Style Selector="Grid">
+          <Style Selector="Grid#ContentGrid">
             <Style.Animations>
               <Animation Duration="0:0:0.2" Easing="CubicEaseOut" FillMode="Forward">
                 <KeyFrame Cue="0%">
                   <Setter Property="Opacity" Value="0" />
-                  <Setter Property="TranslateTransform.Y" Value="20" />
                 </KeyFrame>
                 <KeyFrame Cue="100%">
                   <Setter Property="Opacity" Value="1" />
-                  <Setter Property="TranslateTransform.Y" Value="0" />
                 </KeyFrame>
               </Animation>
             </Style.Animations>

@@ -8,6 +8,7 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="BomberBlast.Views.CollectionView"
              x:DataType="vm:CollectionViewModel"
+             x:CompileBindings="True"
              x:Name="Collection_Root">
 
   <!-- Sammlungs-Album: Landscape 2-Spalten Layout -->
@@ -182,12 +183,12 @@
                       <!-- Status: Claim / Claimed / Locked -->
                       <Panel Grid.Column="2" VerticalAlignment="Center" Margin="6,0,0,0">
                         <!-- Einfordern-Button -->
-                        <Panel MinHeight="30" IsVisible="{Binding CanClaim}">
+                        <Panel MinHeight="44" IsVisible="{Binding CanClaim}">
                           <controls:GameButtonCanvas ButtonColor="#22C55E" DamageLevel="0.3" ButtonSeed="150" />
                           <Button Classes="Primary GameButton"
                                   Command="{Binding #Collection_Root.DataContext.ClaimMilestoneCommand}"
                                   CommandParameter="{Binding}"
-                                  Height="30" Padding="10,0"
+                                  MinHeight="44" Padding="10,8"
                                   Background="Transparent"
                                   Foreground="White">
                             <TextBlock Text="{Binding ClaimText}"

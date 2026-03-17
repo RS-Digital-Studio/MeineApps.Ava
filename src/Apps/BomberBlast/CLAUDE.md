@@ -53,6 +53,17 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Partial Classes**: GameRenderer.cs (Core/Palette/Viewport), .Grid.cs, .Characters.cs, .Bosses.cs, .Items.cs, .Atmosphere.cs, .HUD.cs
 - **ReducedEffects**: Deaktiviert alle atmosphärischen Systeme
 - **Boden-Cache**: Alle 150 Floor-Tiles als SKBitmap gecacht, invalidiert bei Welt-/Style-Wechsel
+- **EnemiesRemaining-Cache**: Dirty-Flag statt pro-Frame O(n) Iteration über Gegner-Liste
+- **Torch-Position-Cache**: Fackel-Positionen einmalig pro Level gecacht statt pro-Frame Grid-Scan (117→max 4 Iterationen)
+- **HeatShimmer**: Direkte Koordinaten statt canvas.Save/Translate/Restore pro Band
+- **GameAssetService**: LINQ-freies EvictOldest (manuelles Min statt OrderBy)
+- **Compiled Bindings**: Alle 23 Views nutzen `x:CompileBindings="True"` + `x:DataType`
+- **RarityRenderer**: 4 statische gecachte MaskFilter (3 Glow-Radien + 1 Shimmer) statt pro-Aufruf CreateBlur
+- **CollectLightSources**: Exit-Doppel-Add entfernt (Grid-Scan findet Exit bereits)
+- **ShadowRealm**: MaskFilter-Blur auf dekorativen DrawOvals entfernt (alpha=40, kaum sichtbar)
+- **Splitter-Offsets**: Statisches Array statt pro-Kill Heap-Allokation
+- **Touch-Targets**: Alle Buttons auf min. 44dp (Haupt-Navigation 48dp) - Android-Mindestgröße
+- **KeyFrame-Safety**: Keine TranslateTransform.Y in Style.Animations (nur Opacity in KeyFrames)
 
 ### Atmosphärische Subsysteme (5 Systeme, alle struct-basiert)
 | System | Beschreibung |

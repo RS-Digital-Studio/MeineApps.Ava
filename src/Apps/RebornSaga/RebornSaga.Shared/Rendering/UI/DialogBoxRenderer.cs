@@ -19,6 +19,13 @@ public static class DialogBoxRenderer
     private static readonly SKFont _dialogFont = new() { LinearMetrics = true };
     private static readonly SKPaint _dialogTextPaint = new() { IsAntialias = true };
 
+    // Gecachter Pfad für Weiter-Indikator (vermeidet new SKPath() pro Frame)
+    private static readonly SKPath _indicatorPath = new();
+
+    // Gecachtes Text-Wrapping (nur neu berechnen wenn Text sich ändert)
+    private static string? _cachedWrappedSourceText;
+    private static string[]? _cachedWrappedWords;
+
     /// <summary>
     /// Zeichnet die vollständige Dialogbox.
     /// </summary>
@@ -88,12 +95,13 @@ public static class DialogBoxRenderer
             var iy = boxRect.Bottom - 15;
             var iSize = 5f;
 
-            using var path = new SKPath();
-            path.MoveTo(ix - iSize, iy - iSize);
-            path.LineTo(ix + iSize, iy - iSize);
-            path.LineTo(ix, iy + iSize * 0.5f);
-            path.Close();
-            canvas.DrawPath(path, _indicatorPaint);
+            // Gecachter Pfad für Indikator-Dreieck (Rewind statt new)
+            _indicatorPath.Rewind();
+            _indicatorPath.MoveTo(ix - iSize, iy - iSize);
+            _indicatorPath.LineTo(ix + iSize, iy - iSize);
+            _indicatorPath.LineTo(ix, iy + iSize * 0.5f);
+            _indicatorPath.Close();
+            canvas.DrawPath(_indicatorPath, _indicatorPaint);
         }
     }
 
@@ -109,7 +117,13 @@ public static class DialogBoxRenderer
         _dialogTextPaint.Color = UIRenderer.TextPrimary;
         var lineHeight = fontSize * 1.5f;
 
-        var words = text.Split(' ');
+        // Gecachtes Split-Ergebnis (nur neu berechnen wenn Text sich ändert)
+        if (!ReferenceEquals(text, _cachedWrappedSourceText))
+        {
+            _cachedWrappedSourceText = text;
+            _cachedWrappedWords = text.Split(' ');
+        }
+        var words = _cachedWrappedWords!;
         var currentLine = "";
         var currentY = y;
 
@@ -148,6 +162,7 @@ public static class DialogBoxRenderer
         _borderPaint.Dispose();
         _nameBgPaint.Dispose();
         _indicatorPaint.Dispose();
+        _indicatorPath.Dispose();
         _dialogFont.Dispose();
         _dialogTextPaint.Dispose();
     }

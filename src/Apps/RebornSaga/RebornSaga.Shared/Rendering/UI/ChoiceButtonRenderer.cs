@@ -27,6 +27,11 @@ public static class ChoiceButtonRenderer
     private static float _cachedBaseFontSize;
     private static float _cachedLineH;
 
+    // Gecachte Zeilen pro Choice-Button (vermeidet Split+List pro Frame)
+    private static string[]? _cachedLabels;
+    private static string[][]? _cachedWrappedLines;
+    private static float _cachedAvailWidth;
+
     /// <summary>
     /// Berechnet die Rects für 2-4 Choice-Buttons und gibt sie zurück.
     /// Dynamische Höhe basierend auf Textlänge (mehrzeilig bei langen Texten).
@@ -56,6 +61,29 @@ public static class ChoiceButtonRenderer
         // Für DrawChoice cachen (gleiche Render-Phase)
         _cachedBaseFontSize = baseFontSize;
         _cachedLineH = lineH;
+
+        // Zeilen-Cache aktualisieren (nur bei neuen Labels oder Breitenänderung)
+        var needsRecache = _cachedLabels == null || _cachedLabels.Length != count
+            || Math.Abs(_cachedAvailWidth - availTextW) > 0.5f;
+        if (!needsRecache && labels != null)
+        {
+            for (int i = 0; i < count && i < labels.Length; i++)
+            {
+                if (_cachedLabels![i] != labels[i]) { needsRecache = true; break; }
+            }
+        }
+
+        if (needsRecache && labels != null)
+        {
+            _cachedLabels = new string[count];
+            _cachedWrappedLines = new string[count][];
+            _cachedAvailWidth = availTextW;
+            for (int i = 0; i < count && i < labels.Length; i++)
+            {
+                _cachedLabels[i] = labels[i];
+                _cachedWrappedLines[i] = WrapTextToLines(labels[i], availTextW, baseFontSize);
+            }
+        }
 
         for (int i = 0; i < count; i++)
         {
@@ -121,6 +149,40 @@ public static class ChoiceButtonRenderer
         }
 
         return lines;
+    }
+
+    /// <summary>
+    /// Bricht Text in Zeilen um und gibt das Ergebnis als Array zurück (für Cache).
+    /// </summary>
+    private static string[] WrapTextToLines(string text, float maxWidth, float fontSize)
+    {
+        if (string.IsNullOrEmpty(text)) return Array.Empty<string>();
+
+        _choiceFont.Size = fontSize;
+        if (_choiceFont.MeasureText(text) <= maxWidth)
+            return new[] { text };
+
+        var words = text.Split(' ');
+        var result = new List<string>();
+        var currentLine = "";
+
+        foreach (var word in words)
+        {
+            var testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+            if (_choiceFont.MeasureText(testLine) > maxWidth && !string.IsNullOrEmpty(currentLine))
+            {
+                result.Add(currentLine);
+                currentLine = word;
+            }
+            else
+            {
+                currentLine = testLine;
+            }
+        }
+        if (!string.IsNullOrEmpty(currentLine))
+            result.Add(currentLine);
+
+        return result.ToArray();
     }
 
     /// <summary>
@@ -210,33 +272,20 @@ public static class ChoiceButtonRenderer
         }
         else
         {
-            // Mehrzeilig: Wort-weise umbrechen
-            var words = label.Split(' ');
-            var lines = new List<string>();
-            var currentLine = "";
-            var spaceWidth = _choiceFont.MeasureText(" ");
+            // Mehrzeilig: Gecachte Zeilen aus CalculateRects verwenden
+            string[]? lines = null;
+            if (_cachedWrappedLines != null && index < _cachedWrappedLines.Length)
+                lines = _cachedWrappedLines[index];
 
-            foreach (var word in words)
-            {
-                var testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
-                if (_choiceFont.MeasureText(testLine) > availWidth && !string.IsNullOrEmpty(currentLine))
-                {
-                    lines.Add(currentLine);
-                    currentLine = word;
-                }
-                else
-                {
-                    currentLine = testLine;
-                }
-            }
-            if (!string.IsNullOrEmpty(currentLine))
-                lines.Add(currentLine);
+            // Fallback wenn kein Cache (sollte nicht auftreten)
+            if (lines == null || lines.Length == 0)
+                lines = WrapTextToLines(label, availWidth, fontSize);
 
             // Vertikal zentriert zeichnen
-            var totalTextH = lines.Count * lineH;
+            var totalTextH = lines.Length * lineH;
             var startY = rect.MidY - totalTextH / 2f + fontSize * 0.85f;
 
-            for (int l = 0; l < lines.Count; l++)
+            for (int l = 0; l < lines.Length; l++)
             {
                 canvas.DrawText(lines[l], textX, startY + l * lineH,
                     SKTextAlign.Left, _choiceFont, _textPaint);

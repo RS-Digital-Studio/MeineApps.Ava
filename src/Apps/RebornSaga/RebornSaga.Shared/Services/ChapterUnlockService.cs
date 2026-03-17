@@ -22,11 +22,11 @@ public class ChapterUnlockService
     /// </summary>
     private static readonly Dictionary<string, int> ChapterCosts = new()
     {
-        ["k6"] = 2000,
-        ["k7"] = 3000,
-        ["k8"] = 4000,
-        ["k9"] = 5000,
-        ["k10"] = 6000
+        ["k6"] = 800,
+        ["k7"] = 1200,
+        ["k8"] = 1800,
+        ["k9"] = 2500,
+        ["k10"] = 3500
     };
 
     /// <summary>

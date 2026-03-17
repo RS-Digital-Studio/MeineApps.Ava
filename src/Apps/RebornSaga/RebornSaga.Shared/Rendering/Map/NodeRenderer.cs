@@ -33,6 +33,11 @@ public static class NodeRenderer
     // Gecachte MaskFilter
     private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
 
+    // Gecachte Pfade (vermeidet new SKPath() pro Frame in Icon/Checkmark/Lock-Methoden)
+    private static readonly SKPath _iconPath = new();
+    private static readonly SKPath _checkPath = new();
+    private static readonly SKPath _lockPath = new();
+
     // SpriteCache für AI-generierte Node-Icons
     private static SpriteCache? _spriteCache;
     private static readonly SKPaint _nodeBitmapPaint = new() { IsAntialias = true };
@@ -172,16 +177,14 @@ public static class NodeRenderer
                 break;
 
             case MapNodeType.Boss:
-                // Totenkopf-Symbol (Kreuz)
-                using (var path = new SKPath())
-                {
-                    path.MoveTo(cx, cy - size);
-                    path.LineTo(cx, cy + size);
-                    path.MoveTo(cx - size * 0.7f, cy - size * 0.3f);
-                    path.LineTo(cx + size * 0.7f, cy - size * 0.3f);
-                    _borderPaint.Color = SKColors.White.WithAlpha(200);
-                    canvas.DrawPath(path, _borderPaint);
-                }
+                // Totenkopf-Symbol (Kreuz) — gecachter Pfad
+                _iconPath.Rewind();
+                _iconPath.MoveTo(cx, cy - size);
+                _iconPath.LineTo(cx, cy + size);
+                _iconPath.MoveTo(cx - size * 0.7f, cy - size * 0.3f);
+                _iconPath.LineTo(cx + size * 0.7f, cy - size * 0.3f);
+                _borderPaint.Color = SKColors.White.WithAlpha(200);
+                canvas.DrawPath(_iconPath, _borderPaint);
                 break;
 
             case MapNodeType.Npc:
@@ -190,28 +193,24 @@ public static class NodeRenderer
                 break;
 
             case MapNodeType.Dungeon:
-                // Eingangs-Symbol (Bogen)
-                using (var path = new SKPath())
-                {
-                    path.MoveTo(cx - size, cy + size);
-                    path.LineTo(cx - size, cy - size * 0.5f);
-                    path.ArcTo(new SKRect(cx - size, cy - size * 1.5f, cx + size, cy - size * 0.5f + size), 180, -180, false);
-                    path.LineTo(cx + size, cy + size);
-                    _borderPaint.Color = SKColors.White.WithAlpha(200);
-                    canvas.DrawPath(path, _borderPaint);
-                }
+                // Eingangs-Symbol (Bogen) — gecachter Pfad
+                _iconPath.Rewind();
+                _iconPath.MoveTo(cx - size, cy + size);
+                _iconPath.LineTo(cx - size, cy - size * 0.5f);
+                _iconPath.ArcTo(new SKRect(cx - size, cy - size * 1.5f, cx + size, cy - size * 0.5f + size), 180, -180, false);
+                _iconPath.LineTo(cx + size, cy + size);
+                _borderPaint.Color = SKColors.White.WithAlpha(200);
+                canvas.DrawPath(_iconPath, _borderPaint);
                 break;
 
             case MapNodeType.Rest:
-                // Flammen-Symbol (Dreieck)
-                using (var path = new SKPath())
-                {
-                    path.MoveTo(cx, cy - size);
-                    path.LineTo(cx - size * 0.7f, cy + size * 0.5f);
-                    path.LineTo(cx + size * 0.7f, cy + size * 0.5f);
-                    path.Close();
-                    canvas.DrawPath(path, _iconPaint);
-                }
+                // Flammen-Symbol (Dreieck) — gecachter Pfad
+                _iconPath.Rewind();
+                _iconPath.MoveTo(cx, cy - size);
+                _iconPath.LineTo(cx - size * 0.7f, cy + size * 0.5f);
+                _iconPath.LineTo(cx + size * 0.7f, cy + size * 0.5f);
+                _iconPath.Close();
+                canvas.DrawPath(_iconPath, _iconPaint);
                 break;
         }
     }
@@ -222,13 +221,13 @@ public static class NodeRenderer
     private static void DrawCheckmark(SKCanvas canvas, float cx, float cy, float radius)
     {
         _checkPaint.Color = StoryColor; // Gold
-        using var path = new SKPath();
+        _checkPath.Rewind();
         var ox = cx + radius * 0.6f;
         var oy = cy - radius * 0.6f;
-        path.MoveTo(ox - 5f, oy);
-        path.LineTo(ox - 1f, oy + 4f);
-        path.LineTo(ox + 5f, oy - 4f);
-        canvas.DrawPath(path, _checkPaint);
+        _checkPath.MoveTo(ox - 5f, oy);
+        _checkPath.LineTo(ox - 1f, oy + 4f);
+        _checkPath.LineTo(ox + 5f, oy - 4f);
+        canvas.DrawPath(_checkPath, _checkPaint);
     }
 
     /// <summary>
@@ -239,12 +238,12 @@ public static class NodeRenderer
         _iconPaint.Color = LockedColor;
         // Schloss-Körper
         canvas.DrawRect(cx - size, cy, size * 2, size * 1.5f, _iconPaint);
-        // Bügel
+        // Bügel — gecachter Pfad
         _borderPaint.Color = LockedColor;
         _borderPaint.StrokeWidth = 1.5f;
-        using var path = new SKPath();
-        path.AddArc(new SKRect(cx - size * 0.6f, cy - size * 1.2f, cx + size * 0.6f, cy + size * 0.2f), 180, -180);
-        canvas.DrawPath(path, _borderPaint);
+        _lockPath.Rewind();
+        _lockPath.AddArc(new SKRect(cx - size * 0.6f, cy - size * 1.2f, cx + size * 0.6f, cy + size * 0.2f), 180, -180);
+        canvas.DrawPath(_lockPath, _borderPaint);
         _borderPaint.StrokeWidth = 2f;
     }
 
@@ -259,6 +258,9 @@ public static class NodeRenderer
         _iconPaint.Dispose();
         _checkPaint.Dispose();
         _nodeBitmapPaint.Dispose();
+        _iconPath.Dispose();
+        _checkPath.Dispose();
+        _lockPath.Dispose();
         // _glowFilter ist static readonly — NICHT disposen
     }
 }

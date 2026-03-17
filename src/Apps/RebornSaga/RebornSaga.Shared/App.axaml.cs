@@ -70,12 +70,15 @@ public partial class App : Application
     /// Initialisiert alle Services die Daten beim Start laden müssen.
     /// Muss aufgerufen werden bevor SaveGameService.LoadGameAsync() verwendet wird.
     /// </summary>
-    public static Task InitializeServicesAsync()
+    public static async Task InitializeServicesAsync()
     {
-        // Skill- und Item-Definitionen aus Embedded JSON laden
+        // Skill- und Item-Definitionen parallel aus Embedded JSON laden
         // (Voraussetzung für SaveGameService.LoadGameAsync)
-        Services.GetRequiredService<SkillService>().LoadSkills();
-        Services.GetRequiredService<InventoryService>().LoadItems();
+        var skillService = Services.GetRequiredService<SkillService>();
+        var inventoryService = Services.GetRequiredService<InventoryService>();
+        await Task.WhenAll(
+            Task.Run(() => skillService.LoadSkills()),
+            Task.Run(() => inventoryService.LoadItems()));
 
         // Sprite-Rendering initialisieren (SpriteCache → CharacterRenderer + BackgroundCompositor)
         var spriteCache = Services.GetRequiredService<SpriteCache>();
@@ -86,8 +89,6 @@ public partial class App : Application
         var purchaseService = Services.GetService<IPurchaseService>();
         if (purchaseService != null)
             _ = purchaseService.InitializeAsync(); // AppChecker:ignore - Fire-and-forget OK, verschluckt Fehler intern
-
-        return Task.CompletedTask;
     }
 
     /// <summary>

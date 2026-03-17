@@ -324,6 +324,9 @@ public class BattleScene : Scene, IDisposable
     {
         _time = 0;
 
+        // Hintergrund-Szene einmalig setzen (nicht pro Frame in Render)
+        BackgroundCompositor.SetScene("battlefield");
+
         // Auto-Setup wenn kein manueller Setup()-Aufruf erfolgt ist
         if (_player is null)
             AutoSetupFromStoryEngine();
@@ -502,8 +505,7 @@ public class BattleScene : Scene, IDisposable
     {
         _lastBounds = bounds;
 
-        // Hintergrund immer zeichnen (auch vor Setup)
-        BackgroundCompositor.SetScene("battlefield");
+        // Hintergrund zeichnen (SetScene erfolgt einmalig in OnEnter)
         BackgroundCompositor.RenderBack(canvas, bounds, _time);
 
         // Guard: Setup() wurde noch nicht aufgerufen — nur Hintergrund zeigen
@@ -1892,20 +1894,14 @@ public class BattleScene : Scene, IDisposable
         _particles.Dispose();
     }
 
-    /// <summary>Gibt statische Ressourcen frei.</summary>
+    /// <summary>
+    /// Statische Ressourcen werden NICHT disposed - sie leben fuer die gesamte App-Lifetime.
+    /// Dispose von static readonly SKPaint/SKFont crasht beim zweiten Kampf (ObjectDisposedException).
+    /// GC räumt beim App-Ende auf.
+    /// </summary>
     public static void Cleanup()
     {
-        _bgOverlayPaint.Dispose();
-        _hpBarBgPaint.Dispose();
-        _hpBarFillPaint.Dispose();
-        _hpBarBorderPaint.Dispose();
-        _textPaint.Dispose();
-        _comboPaint.Dispose();
-        _glowPaint.Dispose();
-        _nameFont.Dispose();
-        _labelFont.Dispose();
-        _dmgFont.Dispose();
-        _comboFont.Dispose();
-        // _glowBlur ist static readonly — NICHT disposen (crasht bei Wiederverwendung)
+        // Absichtlich leer: statische Paints/Fonts/MaskFilter duerfen nicht
+        // disposed werden, da sie ueber mehrere Kampf-Instanzen geteilt werden.
     }
 }

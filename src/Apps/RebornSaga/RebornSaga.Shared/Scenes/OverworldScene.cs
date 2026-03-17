@@ -1,7 +1,6 @@
 namespace RebornSaga.Scenes;
 
 using MeineApps.Core.Ava.Localization;
-using Microsoft.Extensions.DependencyInjection;
 using RebornSaga.Engine;
 using RebornSaga.Engine.Transitions;
 using RebornSaga.Models;
@@ -328,15 +327,8 @@ public class OverworldScene : Scene, IDisposable
     {
         try
         {
-            var sp = App.Services;
             var playTime = await _saveGameService.GetPlayTimeAsync(0);
-            await _saveGameService.SaveGameAsync(0, _player,
-                sp.GetRequiredService<SkillService>(),
-                sp.GetRequiredService<InventoryService>(),
-                sp.GetRequiredService<AffinityService>(),
-                sp.GetRequiredService<FateTrackingService>(),
-                sp.GetRequiredService<CodexService>(),
-                playTime);
+            await _saveGameService.SaveGameAsync(0, _player, playTime);
         }
         catch
         {

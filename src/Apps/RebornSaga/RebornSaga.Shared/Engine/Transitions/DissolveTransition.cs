@@ -13,6 +13,9 @@ public class DissolveTransition : TransitionEffect
     private const int BlockSize = 8;
     private static readonly Random _random = new();
 
+    // Gecachter Clip-Pfad (vermeidet new SKPath() pro Frame)
+    private readonly SKPath _clipPath = new();
+
     // Vorgeneriertes Noise-Pattern für deterministische Auflösung
     private float[]? _noiseGrid;
     private int _gridCols;
@@ -45,8 +48,8 @@ public class DissolveTransition : TransitionEffect
 
         // Alte Szene als Overlay - Blöcke die noch nicht aufgelöst sind
         canvas.Save();
-        // Clip auf die noch sichtbaren Blöcke
-        using var clipPath = new SKPath();
+        // Clip auf die noch sichtbaren Blöcke (gecachter Pfad, Rewind statt new)
+        _clipPath.Rewind();
 
         for (int row = 0; row < _gridRows; row++)
         {
@@ -58,12 +61,12 @@ public class DissolveTransition : TransitionEffect
                 {
                     var x = bounds.Left + col * BlockSize;
                     var y = bounds.Top + row * BlockSize;
-                    clipPath.AddRect(new SKRect(x, y, x + BlockSize, y + BlockSize));
+                    _clipPath.AddRect(new SKRect(x, y, x + BlockSize, y + BlockSize));
                 }
             }
         }
 
-        canvas.ClipPath(clipPath);
+        canvas.ClipPath(_clipPath);
         renderOldScene(canvas, bounds);
         canvas.Restore();
     }

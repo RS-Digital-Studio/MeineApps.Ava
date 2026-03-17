@@ -35,6 +35,9 @@ public static class OverworldRenderer
     private static readonly SKColor[] _bgColors = { new(0x08, 0x0C, 0x12), new(0x12, 0x18, 0x22), new(0x0D, 0x11, 0x17) };
     private static readonly float[] _bgPositions = { 0f, 0.5f, 1f };
 
+    // Gecachter Pfad für Spieler-Marker (vermeidet new SKPath() pro Frame)
+    private static readonly SKPath _playerMarkerPath = new();
+
     // Konstanten
     private const float NodeRadius = 18f;
     private const float MapPadding = 40f;
@@ -279,15 +282,15 @@ public static class OverworldRenderer
         var bounce = MathF.Sin(animTime * 3f) * 4f;
         var markerY = pos.Y - NodeRadius - 12f + bounce;
 
-        // Dreieck-Pfeil nach unten
-        using var path = new SKPath();
-        path.MoveTo(pos.X, pos.Y - NodeRadius - 4f + bounce);
-        path.LineTo(pos.X - 6f, markerY - 4f);
-        path.LineTo(pos.X + 6f, markerY - 4f);
-        path.Close();
+        // Dreieck-Pfeil nach unten (gecachter Pfad, Rewind statt new)
+        _playerMarkerPath.Rewind();
+        _playerMarkerPath.MoveTo(pos.X, pos.Y - NodeRadius - 4f + bounce);
+        _playerMarkerPath.LineTo(pos.X - 6f, markerY - 4f);
+        _playerMarkerPath.LineTo(pos.X + 6f, markerY - 4f);
+        _playerMarkerPath.Close();
 
         _playerDotPaint.Color = UIRenderer.PrimaryGlow;
-        canvas.DrawPath(path, _playerDotPaint);
+        canvas.DrawPath(_playerMarkerPath, _playerDotPaint);
 
         // Leuchtender Punkt darüber
         _playerDotPaint.Color = UIRenderer.PrimaryGlow.WithAlpha(180);
@@ -314,6 +317,7 @@ public static class OverworldRenderer
         _hudBgPaint.Dispose();
         _playerDotPaint.Dispose();
         _bgBitmapPaint.Dispose();
+        _playerMarkerPath.Dispose();
         _regionBackground = null;
     }
 }

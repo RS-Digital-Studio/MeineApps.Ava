@@ -49,6 +49,10 @@ OnEnter() → Update(dt) / Render(canvas, bounds) / HandleInput() → OnPause() 
 - `ShowOverlay<T>()` / `HideOverlay()` - Transparente Overlays
 - `ConsumesInput` - Virtuelle Property (default: true). Bei `false` wird Input an darunterliegende Szene durchgereicht (z.B. EffectFeedbackOverlay)
 
+### Camera (Engine/Camera.cs)
+
+Viewport-Kamera mit Pan, Zoom und Screen-Shake. Wird von Szenen verwendet um den sichtbaren Bereich zu steuern. Properties: X, Y, Zoom. Methoden: Shake(intensity, duration), Update(dt), ApplyTransform(canvas, bounds).
+
 ### Szenen per DI erstellt
 
 `ActivatorUtilities.CreateInstance<T>()` - Constructor Injection für Services.
@@ -67,6 +71,7 @@ OnEnter() → Update(dt) / Render(canvas, bounds) / HandleInput() → OnPause() 
 | InventoryScene | Grid-Ansicht, 6 Kategorien, AI-Item-Icons mit Qualitäts-Glow, Ausrüsten/Benutzen |
 | ShopScene | Kaufen/Verkaufen, Gold-Counter |
 | StatusScene | 3 Tabs (Status/Skills/Equipment) |
+| CodexScene | Bestiary, Lore und Charakter-Profile nach Kategorien sortiert |
 | SettingsScene | Audio + Text-Geschwindigkeit, persistiert via IPreferencesService |
 
 ## Overlay-Übersicht
@@ -81,7 +86,8 @@ OnEnter() → Update(dt) / Render(canvas, bounds) / HandleInput() → OnPause() 
 | GameOverOverlay | Revive (Rewarded Ad) oder Speicherpunkt laden |
 | ChapterUnlockOverlay | Gold-Kosten, Freischalten oder Video ansehen |
 | BacklogOverlay | Scrollbare Dialog-Historie (max 200), thread-safe, Scroll-Support |
-| TutorialOverlay | Highlight + ARIA-Textbox |
+| EffectFeedbackOverlay | Floating-Texte (Karma/Affinität/EXP/Gold), auto-dismiss 2.5s, ConsumesInput=false (Input-Passthrough) |
+| TutorialOverlay | Highlight + ARIA-Textbox, ConsumesInput blockiert darunterliegende Szene |
 
 ## Rendering-System
 
@@ -173,7 +179,6 @@ BackgroundCompositor.RenderFront()     // Foreground + Partikel
 
 **14 Szenen:** SystemVoid, Title, ForestDay, ForestNight, Campfire, VillageSquare, VillageTavern, DungeonHalls, DungeonBoss, TowerLibrary, TowerSummit, Battlefield, CastleHall, Dreamworld
 
-- `ParallaxRenderer` - Mehrschichtiger Parallax-Scrolling (orthogonal, nicht integriert)
 
 ### Effekte
 
@@ -215,9 +220,9 @@ Data/Maps/overworld_{id}.json         → Overworld-Map (Knoten + Pfade)
 
 - Lädt Kapitel aus EmbeddedResource
 - Navigiert durch Knoten (Next, Choices, Conditions)
-- Constructor Injection: `ProgressionService`, `FateTrackingService`, `GoldService`
+- Constructor Injection: `ProgressionService`, `FateTrackingService`, `GoldService`, `InventoryService`
 - `SetPlayer(player)` muss nach SaveGame-Load oder Neues-Spiel aufgerufen werden (synchronisiert Engine-State)
-- `AdvanceToNode()` prüft `node.Condition` - wenn nicht erfüllt, wird Knoten übersprungen (folgt node.Next)
+- `AdvanceToNode()` prüft `node.Condition` - wenn nicht erfüllt, wird Knoten übersprungen (folgt node.Next, iterativ mit Limit 100)
 - Condition-Parser unterstützt:
   - Vergleiche: `karma > 50`, `affinity:aria >= 10`, `class == 1`
   - Item-Check: `has_item:M001`, `!has_item:M001`
@@ -228,7 +233,7 @@ Data/Maps/overworld_{id}.json         → Overworld-Map (Knoten + Pfade)
   - `exp` → ProgressionService.AwardExp() (Level-Up Events)
   - `gold` → GoldService.AddGold/SpendGold() (Minimum 0 Clamp)
   - `affinity` → Engine + Player.Affinities sync
-  - `addItems`/`removeItems` → Engine + Player.Inventory sync
+  - `addItems`/`removeItems` → InventoryService.AddItem/RemoveItem + Engine + Player.Inventory sync
   - `setFlags`/`removeFlags` → Engine + Player.Flags + FateTrackingService sync
   - `fateChanged` → Flag speichern + FateTrackingService.RecordFateChange() + FateChangeTriggered Event
 - Sprach-Fallback: CurrentUICulture → Deutsch
@@ -264,12 +269,13 @@ Feuer > Eis > Blitz > Wind > Licht > Dunkel > Feuer (1.5x bei Schwäche, 0.5x be
 | FateTrackingService | Karma (-100 bis +100), Entscheidungs-Log, FateFlags, ModifyKarma() |
 | CodexService | Enzyklopädie (Charaktere, Orte, Lore) |
 | ProgressionService | EXP, Level-Up, Stat-Verteilung |
-| SaveGameService | SQLite, 3 Slots, Auto-Save bei Knoten-Wechsel |
+| SaveGameService | SQLite, 3 Slots, Auto-Save bei Knoten-Wechsel. 5 Services per Constructor Injection (Skill/Inventory/Affinity/FateTracking/Codex). SaveGameAsync(slot, player, playTime), LoadGameAsync(slot) |
 | GoldService | Gold verwalten, Rewarded-Video-Cooldown (3x/Tag) |
-| ChapterUnlockService | K6-K10 per Gold (2.000-6.000) |
+| ChapterUnlockService | K6-K10 per Gold (800-3.500), Gesamt 9.800. SemaphoreSlim gegen Doppel-Unlock |
 | AudioService | SFX (SoundPool, 28 GameSfx) + BGM (MediaPlayer, 10 BgmTracks), Desktop-Stub, Android: AndroidAudioService + Vibrator |
 | TutorialService | Erstbesucher-Hints per Preferences |
-| DailyService | Login-Bonus (Gold), Prophezeiung, Streak |
+| DailyService | Login-Bonus (Gold), Prophezeiung (lokalisierbar, Prophecy_0-13 RESX-Keys), Streak |
+| EnemyLoader | Statisch, Lazy-Load aus enemies.json. GetById() gibt geklonten Enemy zurück (Kampf-HP pro Kampf variabel) |
 
 ## Gold-Economy
 
@@ -368,12 +374,20 @@ Intro → PlayerTurn → (Attack | Dodge | SkillSelect | ItemSelect | PlayerSkil
 - **StatusScene**: `CachedSkillEntry` struct für Skill-Display, Dirty-Flags für Neuberechnung
 - **ShopScene**: Gecachte Preis-Strings, nur bei Selektion aktualisiert
 - **InventoryScene**: Gecachte Item-Strings pro Slot
-- **Alle Renderer**: Statische SKPaint/SKFont/SKMaskFilter, keine per-Frame Allokationen
-- **BattleScene**: Gecachter Sprite-Key (`_cachedEnemySpriteKey`), wird nur bei Setup/Boss-Phasenwechsel aktualisiert
-- **SaveSlotScene**: Gecachte Slot-Labels, Level-Texte und PlayTime-Strings (nicht per-Frame)
+- **Alle Renderer**: Statische SKPaint/SKFont/SKMaskFilter + SKPath-Felder mit Rewind(), keine per-Frame Allokationen. Cleanup() ist absichtlich leer (statische Ressourcen leben fuer App-Lifetime, Dispose crasht bei Wiederverwendung)
+- **BattleScene**: Gecachter Sprite-Key (`_cachedEnemySpriteKey`), nur bei Setup/Boss-Phasenwechsel aktualisiert. BackgroundCompositor.SetScene() in OnEnter() statt pro Frame
+- **SaveSlotScene**: Gecachte Slot-Labels, Level-Texte und PlayTime-Strings. BackgroundCompositor.SetScene() in OnEnter(). _isLoading Guard gegen Race Condition bei async Slot-Laden
 - **TutorialOverlay**: Gecachter ARIA-Titel-String
 - **OverworldScene**: Vorgänger-Index (Dictionary<string, List<string>>) beim Map-Load aufgebaut, MarkPredecessorsCompleted O(V+E) statt O(N²)
 - **NameKey-Lokalisierung**: Alle `.NameKey`-Anzeigen in Scenes über `_localization.GetString()` aufgelöst (BattleScene, StatusScene, ShopScene, InventoryScene, OverworldScene)
+- **SpriteCache.ComputeContentBounds**: PeekPixels() statt GetPixel() (direkter Speicherzugriff, kein JNI-Overhead bei ~142K Aufrufen)
+- **DissolveTransition**: SKPath als Instanzfeld mit Rewind() statt new pro Frame
+- **OverworldRenderer**: Spieler-Marker-Pfad gecacht (statisches SKPath-Feld)
+- **NodeRenderer**: 3 gecachte SKPath-Felder für Icon/Checkmark/Lock (kein new pro Frame)
+- **DialogBoxRenderer**: Text-Split gecacht (nur bei Textänderung) + Indikator-Pfad gecacht
+- **ChoiceButtonRenderer**: Zeilen-Cache in CalculateRects, DrawChoice liest gecachte Zeilen
+- **GroundRenderer**: Fade-Shader gecacht (nur bei Szenen-/Bounds-Wechsel neu erstellt)
+- **InitializeServicesAsync**: LoadSkills + LoadItems parallel via Task.WhenAll
 
 ## Android-Besonderheiten
 
@@ -387,7 +401,7 @@ Intro → PlayerTurn → (Attack | Dodge | SkillSelect | ItemSelect | PlayerSkil
 
 ### InitializeServicesAsync (App.axaml.cs)
 - Wird von MainView.OnAttachedToVisualTree via MainViewModel.InitializeAsync() aufgerufen
-- Lädt SkillService.LoadSkills() und InventoryService.LoadItems() (Voraussetzung für SaveGameService.LoadGameAsync)
+- Lädt SkillService.LoadSkills() und InventoryService.LoadItems() parallel via Task.WhenAll (Voraussetzung für SaveGameService.LoadGameAsync)
 - IPurchaseService.InitializeAsync() fire-and-forget (stellt Käufe nach Gerätewechsel wieder her)
 - TitleScene braucht keine geladenen Daten, daher kein Blocking
 

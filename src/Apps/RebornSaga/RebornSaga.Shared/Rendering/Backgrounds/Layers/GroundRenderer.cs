@@ -11,6 +11,11 @@ public static class GroundRenderer
     private static readonly SKPaint _fadePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPath _path = new();
 
+    // Gecachter Fade-Shader (nur bei Szenen-/Bounds-Wechsel neu erstellen)
+    private static SKShader? _fadeShader;
+    private static SKColor _cachedFadeColor;
+    private static float _cachedFadeTop;
+
     public static void Render(SKCanvas canvas, SKRect bounds, GroundDef ground)
     {
         var groundTop = bounds.Bottom - bounds.Height * ground.Height;
@@ -19,14 +24,21 @@ public static class GroundRenderer
         _fillPaint.Color = ground.Color;
         canvas.DrawRect(bounds.Left, groundTop, bounds.Width, bounds.Height * ground.Height, _fillPaint);
 
-        // Oberkante: weicher Gradient-Übergang (kein harter Schnitt)
+        // Oberkante: weicher Gradient-Übergang (gecachter Shader, nur bei Wechsel neu)
         var fadeH = bounds.Height * 0.03f;
-        using var fadeShader = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.MidX, groundTop - fadeH),
-            new SKPoint(bounds.MidX, groundTop + fadeH),
-            new[] { ground.Color.WithAlpha(0), ground.Color },
-            SKShaderTileMode.Clamp);
-        _fadePaint.Shader = fadeShader;
+        if (_fadeShader == null || _cachedFadeColor != ground.Color
+            || Math.Abs(_cachedFadeTop - groundTop) > 0.5f)
+        {
+            _fadeShader?.Dispose();
+            _fadeShader = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.MidX, groundTop - fadeH),
+                new SKPoint(bounds.MidX, groundTop + fadeH),
+                new[] { ground.Color.WithAlpha(0), ground.Color },
+                SKShaderTileMode.Clamp);
+            _cachedFadeColor = ground.Color;
+            _cachedFadeTop = groundTop;
+        }
+        _fadePaint.Shader = _fadeShader;
         canvas.DrawRect(bounds.Left, groundTop - fadeH, bounds.Width, fadeH * 2, _fadePaint);
         _fadePaint.Shader = null;
 
@@ -128,6 +140,8 @@ public static class GroundRenderer
         _detailPaint.Dispose();
         _fadePaint.Dispose();
         _path.Dispose();
+        _fadeShader?.Dispose();
+        _fadeShader = null;
     }
 
     private static SKColor DarkenColor(SKColor c, float f) => new(

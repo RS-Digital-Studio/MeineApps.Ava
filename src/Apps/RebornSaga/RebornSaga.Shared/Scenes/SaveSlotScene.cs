@@ -30,11 +30,6 @@ public class SaveSlotScene : Scene
 {
     private readonly SaveGameService _saveGameService;
     private readonly StoryEngine _storyEngine;
-    private readonly SkillService _skillService;
-    private readonly InventoryService _inventoryService;
-    private readonly AffinityService _affinityService;
-    private readonly FateTrackingService _fateTrackingService;
-    private readonly CodexService _codexService;
     private readonly ILocalizationService _localization;
 
     // Gecachte lokalisierte Strings
@@ -83,20 +78,10 @@ public class SaveSlotScene : Scene
     public SaveSlotScene(
         SaveGameService saveGameService,
         StoryEngine storyEngine,
-        SkillService skillService,
-        InventoryService inventoryService,
-        AffinityService affinityService,
-        FateTrackingService fateTrackingService,
-        CodexService codexService,
         ILocalizationService localization)
     {
         _saveGameService = saveGameService;
         _storyEngine = storyEngine;
-        _skillService = skillService;
-        _inventoryService = inventoryService;
-        _affinityService = affinityService;
-        _fateTrackingService = fateTrackingService;
-        _codexService = codexService;
         _localization = localization;
         _newGameText = _localization.GetString("NewGame") ?? "New Game";
         _loadSaveText = _localization.GetString("LoadSave") ?? "Load Save";
@@ -120,7 +105,12 @@ public class SaveSlotScene : Scene
     {
         _time = 0;
         _deleteConfirmSlot = -1;
-        _isLoading = false;
+
+        // Lade-Guard SOFORT setzen, verhindert Slot-Interaktion bevor Daten geladen sind
+        _isLoading = true;
+
+        // Hintergrund-Szene einmalig setzen (nicht pro Frame in Render)
+        BackgroundCompositor.SetScene("systemVoid");
 
         // Statische Slot-Labels vorberechnen (nie geändert)
         for (int i = 0; i < 3; i++)
@@ -133,6 +123,7 @@ public class SaveSlotScene : Scene
 
     /// <summary>
     /// Lädt die Slot-Metadaten aus der SQLite-Datenbank.
+    /// Setzt _isLoading=false wenn fertig (erlaubt dann Slot-Interaktion).
     /// </summary>
     private async System.Threading.Tasks.Task LoadSlotDataAsync()
     {
@@ -197,6 +188,11 @@ public class SaveSlotScene : Scene
                 _cachedLevelTexts[i] = "";
             }
         }
+        finally
+        {
+            // Slot-Daten geladen (oder Fehler) → Interaktion erlauben
+            _isLoading = false;
+        }
     }
 
     public override void Update(float deltaTime)
@@ -206,8 +202,7 @@ public class SaveSlotScene : Scene
 
     public override void Render(SKCanvas canvas, SKRect bounds)
     {
-        // Hintergrund
-        BackgroundCompositor.SetScene("systemVoid");
+        // Hintergrund (SetScene erfolgt einmalig in OnEnter)
         BackgroundCompositor.RenderBack(canvas, bounds, _time);
 
         // Titel (modusabhängig)
@@ -424,12 +419,15 @@ public class SaveSlotScene : Scene
         switch (action)
         {
             case InputAction.Tap:
-                // Back-Button
+                // Back-Button (immer erlaubt, auch waehrend Laden)
                 if (UIRenderer.HitTest(_backButtonRect, position))
                 {
                     SceneManager.ChangeScene<TitleScene>(new FadeTransition());
                     return;
                 }
+
+                // Slot-Interaktion blockieren waehrend Daten geladen werden
+                if (_isLoading) return;
 
                 // Slot getappt
                 for (int i = 0; i < 3; i++)
@@ -443,6 +441,9 @@ public class SaveSlotScene : Scene
                 break;
 
             case InputAction.Hold:
+                // Slot-Interaktion blockieren waehrend Daten geladen werden
+                if (_isLoading) return;
+
                 // Long-Press auf belegtem Slot → Löschen
                 for (int i = 0; i < 3; i++)
                 {
@@ -495,9 +496,7 @@ public class SaveSlotScene : Scene
         {
             // UI-Index 0-2 → DB-SlotNumber 1-3
             var slotNumber = uiSlotIndex + 1;
-            var player = await _saveGameService.LoadGameAsync(
-                slotNumber, _skillService, _inventoryService,
-                _affinityService, _fateTrackingService, _codexService);
+            var player = await _saveGameService.LoadGameAsync(slotNumber);
 
             if (player == null)
             {

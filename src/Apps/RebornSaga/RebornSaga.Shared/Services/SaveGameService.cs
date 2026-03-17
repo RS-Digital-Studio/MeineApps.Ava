@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 /// <summary>
 /// SQLite-basiertes Save-System. 3 Slots + Auto-Save (Slot 0).
 /// ChapterUnlocks gelten global für alle Save-Slots.
+/// Services werden per Constructor Injection bereitgestellt.
 /// </summary>
 public class SaveGameService : IDisposable
 {
@@ -22,9 +23,29 @@ public class SaveGameService : IDisposable
         PropertyNameCaseInsensitive = true
     };
 
+    private readonly SkillService _skillService;
+    private readonly InventoryService _inventoryService;
+    private readonly AffinityService _affinityService;
+    private readonly FateTrackingService _fateTrackingService;
+    private readonly CodexService _codexService;
+
     private SQLiteAsyncConnection? _db;
     private readonly SemaphoreSlim _initSemaphore = new(1, 1);
     private readonly SemaphoreSlim _saveSemaphore = new(1, 1); // Verhindert parallele Saves (Auto-Save + manuell)
+
+    public SaveGameService(
+        SkillService skillService,
+        InventoryService inventoryService,
+        AffinityService affinityService,
+        FateTrackingService fateTrackingService,
+        CodexService codexService)
+    {
+        _skillService = skillService;
+        _inventoryService = inventoryService;
+        _affinityService = affinityService;
+        _fateTrackingService = fateTrackingService;
+        _codexService = codexService;
+    }
 
     /// <summary>
     /// Gibt die Datenbank-Verbindung zurück (lazy init, thread-safe).
@@ -76,19 +97,13 @@ public class SaveGameService : IDisposable
     public async Task SaveGameAsync(
         int slotNumber,
         Player player,
-        SkillService skillService,
-        InventoryService inventoryService,
-        AffinityService affinityService,
-        FateTrackingService fateTrackingService,
-        CodexService codexService,
         int playTimeSeconds,
         string? slotName = null)
     {
         await _saveSemaphore.WaitAsync();
         try
         {
-            await SaveGameInternalAsync(slotNumber, player, skillService, inventoryService,
-                affinityService, fateTrackingService, codexService, playTimeSeconds, slotName);
+            await SaveGameInternalAsync(slotNumber, player, playTimeSeconds, slotName);
         }
         finally
         {
@@ -102,11 +117,6 @@ public class SaveGameService : IDisposable
     private async Task SaveGameInternalAsync(
         int slotNumber,
         Player player,
-        SkillService skillService,
-        InventoryService inventoryService,
-        AffinityService affinityService,
-        FateTrackingService fateTrackingService,
-        CodexService codexService,
         int playTimeSeconds,
         string? slotName = null)
     {
@@ -120,12 +130,12 @@ public class SaveGameService : IDisposable
         var now = DateTime.UtcNow.ToString("O");
         var flagsJson = JsonSerializer.Serialize(player.Flags, JsonOptions);
         var completedChaptersJson = JsonSerializer.Serialize(player.CompletedChapters, JsonOptions);
-        var rawInventory = inventoryService.GetRawInventory();
-        var rawEquipment = inventoryService.GetRawEquipment();
-        var playerSkills = skillService.GetAllPlayerSkills();
-        var affinities = affinityService.GetAllAffinities();
-        var decisions = fateTrackingService.Decisions.ToList();
-        var unlockedCodex = codexService.GetUnlockedIds();
+        var rawInventory = _inventoryService.GetRawInventory();
+        var rawEquipment = _inventoryService.GetRawEquipment();
+        var playerSkills = _skillService.GetAllPlayerSkills();
+        var affinities = _affinityService.GetAllAffinities();
+        var decisions = _fateTrackingService.Decisions.ToList();
+        var unlockedCodex = _codexService.GetUnlockedIds();
 
         // Alles in einer Transaktion (Crash-sicher)
         await db.RunInTransactionAsync(conn =>
@@ -272,13 +282,7 @@ public class SaveGameService : IDisposable
     /// Gibt null zurück wenn der Slot leer ist.
     /// WICHTIG: SkillService.LoadSkills() und InventoryService.LoadItems() müssen vorher aufgerufen worden sein.
     /// </summary>
-    public async Task<Player?> LoadGameAsync(
-        int slotNumber,
-        SkillService skillService,
-        InventoryService inventoryService,
-        AffinityService affinityService,
-        FateTrackingService fateTrackingService,
-        CodexService codexService)
+    public async Task<Player?> LoadGameAsync(int slotNumber)
     {
         var db = await GetDatabaseAsync();
 
@@ -342,7 +346,7 @@ public class SaveGameService : IDisposable
                 inventory[ie.ItemId] = ie.Quantity;
             }
         }
-        inventoryService.RestoreState(inventory, equipment);
+        _inventoryService.RestoreState(inventory, equipment);
 
         // Skills laden
         var skillEntities = await db.Table<SkillDataEntity>()
@@ -357,7 +361,7 @@ public class SaveGameService : IDisposable
             if (se.IsUnlocked)
                 unlockedSkillIds.Add(se.SkillId);
         }
-        skillService.RestorePlayerSkills(masteryData, unlockedSkillIds);
+        _skillService.RestorePlayerSkills(masteryData, unlockedSkillIds);
 
         // Affinitäten laden
         var affEntities = await db.Table<AffinityEntity>()
@@ -385,7 +389,7 @@ public class SaveGameService : IDisposable
                 SeenScenes = seenScenes
             };
         }
-        affinityService.RestoreAffinities(affinityData);
+        _affinityService.RestoreAffinities(affinityData);
 
         // Story-Entscheidungen laden
         var progressEntities = await db.Table<StoryProgressEntity>()
@@ -400,7 +404,7 @@ public class SaveGameService : IDisposable
             KarmaChange = pe.KarmaChange,
             DescriptionKey = pe.DescriptionKey
         }).ToList();
-        fateTrackingService.Restore(player.Karma, decisions, player.Flags);
+        _fateTrackingService.Restore(player.Karma, decisions, player.Flags);
 
         // Kodex laden
         var codexEntities = await db.Table<CodexEntity>()
@@ -408,7 +412,7 @@ public class SaveGameService : IDisposable
             .ToListAsync();
 
         var unlockedCodexIds = new HashSet<string>(codexEntities.Where(c => c.IsDiscovered).Select(c => c.EntryId));
-        codexService.RestoreUnlocked(unlockedCodexIds);
+        _codexService.RestoreUnlocked(unlockedCodexIds);
 
         return player;
     }

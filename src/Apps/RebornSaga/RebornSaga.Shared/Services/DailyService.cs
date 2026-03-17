@@ -1,5 +1,6 @@
 namespace RebornSaga.Services;
 
+using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using RebornSaga.Models;
 using System;
@@ -8,16 +9,18 @@ using System.Globalization;
 /// <summary>
 /// Tägliche Login-Belohnungen, Prophezeiung und Streak-Tracking.
 /// Verwendet Preferences für Persistenz (kein SaveSlot-abhängiger State).
+/// Prophezeiungen werden über ILocalizationService aufgelöst (Fallback auf Deutsch).
 /// </summary>
 public class DailyService
 {
     private readonly IPreferencesService _preferences;
     private readonly GoldService _goldService;
+    private readonly ILocalizationService _localization;
 
     // Login-Belohnungen pro Tag im 7-Tage-Zyklus (Gold)
     private static readonly int[] DailyRewards = { 100, 150, 200, 250, 300, 400, 750 };
 
-    // Prophezeiungen (zufällige ARIA-Texte)
+    // Prophezeiungen — deutsche Fallback-Texte (wenn RESX-Key fehlt)
     private static readonly string[] Prophecies =
     {
         "Die Sterne flüstern von einer großen Veränderung...",
@@ -36,10 +39,11 @@ public class DailyService
         "Die nächste Entscheidung wird weitreichende Folgen haben.",
     };
 
-    public DailyService(IPreferencesService preferences, GoldService goldService)
+    public DailyService(IPreferencesService preferences, GoldService goldService, ILocalizationService localization)
     {
         _preferences = preferences;
         _goldService = goldService;
+        _localization = localization;
     }
 
     /// <summary>Aktueller Login-Streak (aufeinanderfolgende Tage).</summary>
@@ -106,12 +110,16 @@ public class DailyService
     /// <summary>
     /// Gibt die tägliche ARIA-Prophezeiung zurück.
     /// Basiert auf dem aktuellen Datum (deterministisch pro Tag).
+    /// Versucht lokalisierte Version über RESX-Key "Prophecy_{index}", Fallback auf deutsche Texte.
     /// </summary>
     public string GetDailyProphecy()
     {
         var dayHash = DateTime.Today.GetHashCode();
         var index = ((dayHash % Prophecies.Length) + Prophecies.Length) % Prophecies.Length;
-        return Prophecies[index];
+
+        // Lokalisierte Version versuchen (Key: Prophecy_0 bis Prophecy_13)
+        var key = $"Prophecy_{index}";
+        return _localization.GetString(key) ?? Prophecies[index];
     }
 
     /// <summary>

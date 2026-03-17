@@ -30,6 +30,7 @@ public class StoryEngine
     private readonly ProgressionService _progressionService;
     private readonly FateTrackingService _fateTrackingService;
     private readonly GoldService _goldService;
+    private readonly InventoryService _inventoryService;
 
     /// <summary>Aktueller Spieler (per SetPlayer() gesetzt nach SaveGame-Load oder Neues-Spiel).</summary>
     private Player? _player;
@@ -70,11 +71,13 @@ public class StoryEngine
     public StoryEngine(
         ProgressionService progressionService,
         FateTrackingService fateTrackingService,
-        GoldService goldService)
+        GoldService goldService,
+        InventoryService inventoryService)
     {
         _progressionService = progressionService;
         _fateTrackingService = fateTrackingService;
         _goldService = goldService;
+        _inventoryService = inventoryService;
     }
 
     /// <summary>
@@ -185,31 +188,48 @@ public class StoryEngine
     /// <summary>
     /// Navigiert zu einem bestimmten Knoten. Prüft node.Condition -
     /// wenn nicht erfüllt, wird der Knoten übersprungen (folgt node.Next).
+    /// Iterativ mit Limit (max 100 Knoten), verhindert StackOverflow bei Ketten
+    /// wo alle Conditions fehlschlagen.
     /// </summary>
     public void AdvanceToNode(string nodeId)
     {
-        if (!_nodeMap.TryGetValue(nodeId, out var node))
-            return;
+        const int maxIterations = 100;
+        var currentId = nodeId;
 
-        // Knoten-Bedingung prüfen: wenn nicht erfüllt, überspringen
-        if (!EvaluateCondition(node.Condition))
+        for (int i = 0; i < maxIterations; i++)
         {
-            // Zum nächsten Knoten springen wenn verfügbar, sonst Knoten ignorieren
-            if (!string.IsNullOrEmpty(node.Next))
-                AdvanceToNode(node.Next);
+            if (!_nodeMap.TryGetValue(currentId, out var node))
+                return;
+
+            // Knoten-Bedingung prüfen: wenn nicht erfüllt, überspringen
+            if (!EvaluateCondition(node.Condition))
+            {
+                // Zum nächsten Knoten springen wenn verfügbar, sonst Knoten ignorieren
+                if (!string.IsNullOrEmpty(node.Next))
+                {
+                    currentId = node.Next;
+                    continue;
+                }
+                return;
+            }
+
+            CurrentNode = node;
+            CurrentLineIndex = 0;
+
+            // Knoten-Effekte anwenden
+            if (node.Effects != null)
+                ApplyEffects(node.Effects);
+
+            // Kapitel-Ende erkennen
+            if (node.Type == NodeType.ChapterEnd && CurrentChapter != null)
+                ChapterCompleted?.Invoke(CurrentChapter.Id);
+
             return;
         }
 
-        CurrentNode = node;
-        CurrentLineIndex = 0;
-
-        // Knoten-Effekte anwenden
-        if (node.Effects != null)
-            ApplyEffects(node.Effects);
-
-        // Kapitel-Ende erkennen
-        if (node.Type == NodeType.ChapterEnd && CurrentChapter != null)
-            ChapterCompleted?.Invoke(CurrentChapter.Id);
+        // Sicherheitslimit erreicht - am letzten gültigen Knoten stoppen
+        System.Diagnostics.Debug.WriteLine(
+            $"StoryEngine: Knoten-Skip-Limit erreicht (100) ab '{nodeId}'. Möglicher Endlos-Loop in Kapitel-Daten.");
     }
 
     /// <summary>
@@ -432,12 +452,13 @@ public class StoryEngine
             }
         }
 
-        // --- Items ---
+        // --- Items (ueber InventoryService, synchronisiert Engine + Player) ---
         if (effects.AddItems != null)
         {
             foreach (var item in effects.AddItems)
             {
                 Items.Add(item);
+                _inventoryService.AddItem(item);
                 _player?.Inventory.Add(item);
             }
         }
@@ -447,6 +468,7 @@ public class StoryEngine
             foreach (var item in effects.RemoveItems)
             {
                 Items.Remove(item);
+                _inventoryService.RemoveItem(item);
                 _player?.Inventory.Remove(item);
             }
         }

@@ -219,6 +219,7 @@ public sealed class SpriteCache : IDisposable
     /// <summary>
     /// Berechnet die Bounding Box des nicht-transparenten Bereichs (Content-Bounds).
     /// Sampling mit Schritt 4 für Performance (~142K statt 2.3M Pixel bei 1248x1824).
+    /// Verwendet PeekPixels() für direkten Speicherzugriff (kein JNI-Overhead pro Pixel).
     /// Wird einmal pro Sprite beim ersten Load aufgerufen und gecacht.
     /// </summary>
     private static SKRectI ComputeContentBounds(SKBitmap bitmap)
@@ -227,16 +228,38 @@ public sealed class SpriteCache : IDisposable
         int minX = w, minY = h, maxX = -1, maxY = -1;
         const int step = 4;
 
-        for (int y = 0; y < h; y += step)
+        // PeekPixels vermeidet JNI-Overhead von GetPixel (~142K Aufrufe)
+        var pixmap = bitmap.PeekPixels();
+        if (pixmap != null)
         {
-            for (int x = 0; x < w; x += step)
+            for (int y = 0; y < h; y += step)
             {
-                if (bitmap.GetPixel(x, y).Alpha > 10)
+                for (int x = 0; x < w; x += step)
                 {
-                    if (x < minX) minX = x;
-                    if (y < minY) minY = y;
-                    if (x > maxX) maxX = x;
-                    if (y > maxY) maxY = y;
+                    if (pixmap.GetPixelColor(x, y).Alpha > 10)
+                    {
+                        if (x < minX) minX = x;
+                        if (y < minY) minY = y;
+                        if (x > maxX) maxX = x;
+                        if (y > maxY) maxY = y;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Fallback auf GetPixel (z.B. bei GPU-Backend ohne Pixmap-Zugriff)
+            for (int y = 0; y < h; y += step)
+            {
+                for (int x = 0; x < w; x += step)
+                {
+                    if (bitmap.GetPixel(x, y).Alpha > 10)
+                    {
+                        if (x < minX) minX = x;
+                        if (y < minY) minY = y;
+                        if (x > maxX) maxX = x;
+                        if (y > maxY) maxY = y;
+                    }
                 }
             }
         }

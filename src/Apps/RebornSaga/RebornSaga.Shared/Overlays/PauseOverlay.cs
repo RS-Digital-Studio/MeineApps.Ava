@@ -21,7 +21,7 @@ public class PauseOverlay : Scene
     private int _hoveredIndex = -1;  // Gedrückter/gehovter Menü-Eintrag für visuelles Feedback
     private int _pressedIndex = -1;  // Gedrückter Index (PointerDown → PointerUp)
 
-    /// <summary>Callback für Speichern (wird von außen gesetzt, da SaveGameAsync viele Parameter braucht).</summary>
+    /// <summary>Callback für Speichern (wird von der aktiven Szene gesetzt, da Player + Slot kontextabhängig).</summary>
     public Func<System.Threading.Tasks.Task>? OnSaveRequested { get; set; }
 
     // Menü-Einträge (lokalisiert)

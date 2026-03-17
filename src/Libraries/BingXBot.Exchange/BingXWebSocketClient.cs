@@ -24,15 +24,20 @@ public class BingXWebSocketClient : IAsyncDisposable
     private int _reconnectAttempts;
     private CancellationTokenSource? _cts;
     private readonly ConcurrentDictionary<string, Action<string>> _handlers = new();
-    // ListenKey wird erst beim Live-Trading via REST API gesetzt
-#pragma warning disable CS0649
+    // ListenKey für User-Data-Stream (Account/Position/Order Events)
     private string? _listenKey;
-#pragma warning restore CS0649
-    private PeriodicTimer? _listenKeyTimer;
     private Task? _receiveTask;
 
+    // User-Data-Stream: Separater WebSocket für Echtzeit-Account-Updates
+    private ClientWebSocket? _userWs;
+    private Task? _userReceiveTask;
+    private CancellationTokenSource? _userCts;
+
     public event EventHandler<bool>? ConnectionStateChanged;
+    /// <summary>Wird bei Account-Updates (Balance, Position, Order) aus dem User-Data-Stream ausgelöst.</summary>
+    public event EventHandler<string>? UserDataReceived;
     public bool IsConnected => _ws?.State == WebSocketState.Open;
+    public bool IsUserDataConnected => _userWs?.State == WebSocketState.Open;
 
     public BingXWebSocketClient(
         string apiKey,
@@ -66,23 +71,7 @@ public class BingXWebSocketClient : IAsyncDisposable
 
             // Receive-Loop in Background starten
             _receiveTask = Task.Run(() => ReceiveLoopAsync(_cts.Token), _cts.Token);
-
-            // ListenKey für User-Data-Streams erneuern (alle 30 Minuten)
-            _listenKeyTimer = new PeriodicTimer(TimeSpan.FromMinutes(30));
-            _ = Task.Run(async () =>
-            {
-                while (await _listenKeyTimer.WaitForNextTickAsync(_cts.Token))
-                {
-                    try
-                    {
-                        await RenewListenKeyAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "ListenKey-Erneuerung fehlgeschlagen");
-                    }
-                }
-            }, _cts.Token);
+            // ListenKey-Erneuerung wird extern vom LiveTradingService koordiniert
         }
         catch (Exception ex)
         {
@@ -286,14 +275,124 @@ public class BingXWebSocketClient : IAsyncDisposable
     private TimeSpan GetBackoff() => TimeSpan.FromSeconds(Math.Pow(2, _reconnectAttempts));
 
     /// <summary>
-    /// ListenKey für User-Data-Streams erneuern.
+    /// Verbindet den User-Data-Stream (Account/Position/Order Events).
+    /// Nutzt einen separaten WebSocket mit ListenKey.
     /// </summary>
-    private async Task RenewListenKeyAsync()
+    public async Task ConnectUserDataStreamAsync(string listenKey, CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(_listenKey)) return;
+        _listenKey = listenKey;
+        _userCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-        _logger.LogDebug("Erneuere ListenKey");
-        // ListenKey-Erneuerung erfolgt via REST API - wird in BingXDataFeed koordiniert
+        _userWs?.Dispose();
+        _userWs = new ClientWebSocket();
+        _userWs.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+
+        var uri = new Uri($"{WsBaseUrl}?listenKey={listenKey}");
+        _logger.LogInformation("Verbinde User-Data-Stream: {Uri}", uri.Host);
+
+        try
+        {
+            await _userWs.ConnectAsync(uri, _userCts.Token);
+            _logger.LogInformation("User-Data-Stream verbunden");
+
+            // Receive-Loop für User-Data
+            _userReceiveTask = Task.Run(() => UserDataReceiveLoopAsync(_userCts.Token), _userCts.Token);
+            // ListenKey-Erneuerung wird extern vom LiveTradingService koordiniert
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "User-Data-Stream Verbindung fehlgeschlagen");
+            throw;
+        }
+    }
+
+    /// <summary>Receive-Loop für User-Data-Stream Events.</summary>
+    private async Task UserDataReceiveLoopAsync(CancellationToken ct)
+    {
+        var buffer = new byte[ReceiveBufferSize];
+
+        try
+        {
+            while (!ct.IsCancellationRequested && _userWs?.State == WebSocketState.Open)
+            {
+                using var ms = new MemoryStream();
+                WebSocketReceiveResult result;
+
+                do
+                {
+                    result = await _userWs.ReceiveAsync(buffer, ct);
+                    ms.Write(buffer, 0, result.Count);
+                } while (!result.EndOfMessage);
+
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    _logger.LogWarning("User-Data-Stream: Close empfangen");
+                    break;
+                }
+
+                // BingX User-Data kann gzip-komprimiert sein
+                string message;
+                try
+                {
+                    ms.Position = 0;
+                    using var decompressed = new MemoryStream();
+                    using (var gzip = new GZipStream(ms, CompressionMode.Decompress))
+                    {
+                        await gzip.CopyToAsync(decompressed, ct);
+                    }
+                    message = Encoding.UTF8.GetString(decompressed.ToArray());
+                }
+                catch (InvalidDataException)
+                {
+                    message = Encoding.UTF8.GetString(ms.ToArray());
+                }
+
+                // Ping/Pong
+                if (message == "Ping" || message.Contains("\"ping\""))
+                {
+                    var pongBytes = Encoding.UTF8.GetBytes("Pong");
+                    await _userWs.SendAsync(pongBytes, WebSocketMessageType.Text, true, ct);
+                    continue;
+                }
+
+                // Event an Subscriber weiterleiten
+                UserDataReceived?.Invoke(this, message);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (WebSocketException ex)
+        {
+            _logger.LogError(ex, "User-Data-Stream: WebSocket-Fehler");
+        }
+
+        _logger.LogWarning("User-Data-Stream: Verbindung beendet");
+    }
+
+    /// <summary>Trennt den User-Data-Stream.</summary>
+    public async Task DisconnectUserDataStreamAsync()
+    {
+        if (_userCts != null)
+        {
+            await _userCts.CancelAsync();
+            _userCts.Dispose();
+            _userCts = null;
+        }
+
+        if (_userWs != null)
+        {
+            if (_userWs.State == WebSocketState.Open)
+            {
+                try
+                {
+                    await _userWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disconnect", CancellationToken.None);
+                }
+                catch { /* Best-effort Close */ }
+            }
+            _userWs.Dispose();
+            _userWs = null;
+        }
+
+        _listenKey = null;
     }
 
     /// <summary>
@@ -301,7 +400,8 @@ public class BingXWebSocketClient : IAsyncDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-        _listenKeyTimer?.Dispose();
+        // User-Data-Stream zuerst schließen
+        await DisconnectUserDataStreamAsync();
 
         if (_cts is not null)
         {
@@ -333,6 +433,15 @@ public class BingXWebSocketClient : IAsyncDisposable
             try
             {
                 await _receiveTask;
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        if (_userReceiveTask is not null)
+        {
+            try
+            {
+                await _userReceiveTask;
             }
             catch (OperationCanceledException) { }
         }

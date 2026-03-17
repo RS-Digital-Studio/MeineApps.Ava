@@ -24,7 +24,7 @@ public class GridStrategy : IStrategy
     private int _atrAvgPeriod = 50;
     private int _bollingerPeriod = 20;
     private decimal _bollingerStdDev = 2m;
-    private decimal _trendThresholdPercent = 2m;
+    private decimal _trendThresholdPercent = 3.5m;
 
     public IReadOnlyList<StrategyParameter> Parameters => new List<StrategyParameter>
     {
@@ -137,7 +137,13 @@ public class GridStrategy : IStrategy
             $"Zwischen Grid-Levels (nächstes Buy: {nearestBelow:F2}, nächstes Sell: {nearestAbove:F2})");
     }
 
-    public void WarmUp(IReadOnlyList<Candle> history) { }
+    public void WarmUp(IReadOnlyList<Candle> history)
+    {
+        if (history.Count < Math.Max(_emaPeriod, _atrAvgPeriod) + 5) return;
+        IndicatorHelper.CalculateEma(history, _emaPeriod);
+        IndicatorHelper.CalculateAtr(history, _atrPeriod);
+        IndicatorHelper.CalculateBollinger(history, _bollingerPeriod, _bollingerStdDev);
+    }
     public void Reset() { }
 
     public IStrategy Clone() => new GridStrategy

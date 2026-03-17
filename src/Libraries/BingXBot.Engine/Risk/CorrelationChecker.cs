@@ -8,32 +8,58 @@ public class CorrelationChecker
 {
     /// <summary>
     /// Prüft ob ein neues Symbol zu stark mit bestehenden offenen Positionen korreliert.
+    /// Nutzt IPublicMarketDataClient (kein API-Key nötig, funktioniert in Paper + Live).
+    /// Klines-Calls laufen parallel für alle Positionen (statt sequentiell).
+    /// Optional: Bereits geladene Klines für das neue Symbol können übergeben werden.
     /// </summary>
-    public async Task<bool> IsCorrelatedAsync(
+    public static async Task<bool> IsCorrelatedAsync(
         string newSymbol,
         IReadOnlyList<Position> openPositions,
         decimal maxCorrelation,
-        IExchangeClient client)
+        IPublicMarketDataClient client,
+        CancellationToken ct = default,
+        IReadOnlyList<Candle>? preloadedNewSymbolKlines = null)
     {
         if (openPositions.Count == 0) return false;
 
-        // Klines für das neue Symbol laden
-        var newKlines = await client.GetKlinesAsync(newSymbol, TimeFrame.H1, 100).ConfigureAwait(false);
+        var to = DateTime.UtcNow;
+        var from = to.AddHours(-100);
+
+        // Klines für neues Symbol: Bereits geladene nutzen oder neu laden
+        var newKlines = preloadedNewSymbolKlines
+            ?? (IReadOnlyList<Candle>)await client.GetKlinesAsync(newSymbol, TimeFrame.H1, from, to, ct).ConfigureAwait(false);
         if (newKlines.Count < 20) return false;
 
         var newPrices = newKlines.Select(k => k.Close).ToArray();
 
-        foreach (var pos in openPositions)
-        {
-            if (pos.Symbol == newSymbol) continue;
+        // Klines für alle offenen Positionen PARALLEL laden (statt sequentiell)
+        var positionsToCheck = openPositions.Where(p => p.Symbol != newSymbol).ToList();
+        if (positionsToCheck.Count == 0) return false;
 
-            var existingKlines = await client.GetKlinesAsync(pos.Symbol, TimeFrame.H1, 100).ConfigureAwait(false);
+        var klineTasks = positionsToCheck
+            .Select(pos => client.GetKlinesAsync(pos.Symbol, TimeFrame.H1, from, to, ct))
+            .ToList();
+
+        List<Candle>[] allKlines;
+        try
+        {
+            allKlines = await Task.WhenAll(klineTasks).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Bei API-Fehler: Korrelation nicht prüfbar → nicht blockieren
+            return false;
+        }
+
+        // Pearson-Korrelation gegen jede offene Position berechnen
+        for (int i = 0; i < allKlines.Length; i++)
+        {
+            var existingKlines = allKlines[i];
             if (existingKlines.Count < 20) continue;
 
             var existingPrices = existingKlines.Select(k => k.Close).ToArray();
             var minLength = Math.Min(newPrices.Length, existingPrices.Length);
 
-            // ArraySegment statt TakeLast+ToArray (vermeidet Allokation)
             var newSlice = new ArraySegment<decimal>(newPrices, newPrices.Length - minLength, minLength).ToArray();
             var existingSlice = new ArraySegment<decimal>(existingPrices, existingPrices.Length - minLength, minLength).ToArray();
             var correlation = CalculatePearson(newSlice, existingSlice);
@@ -54,7 +80,6 @@ public class CorrelationChecker
         if (x.Length != y.Length || x.Length < 2) return 0m;
 
         var n = x.Length;
-        // In double rechnen um Overflow bei decimal-Multiplikation zu vermeiden
         double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
         for (int i = 0; i < n; i++)
         {

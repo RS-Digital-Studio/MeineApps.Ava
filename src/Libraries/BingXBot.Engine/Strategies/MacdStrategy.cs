@@ -116,7 +116,12 @@ public class MacdStrategy : IStrategy
             $"Kein MACD-Signal (MACD: {lastMacd.Value:F4}, Hist: {lastHist.Value:F4})");
     }
 
-    public void WarmUp(IReadOnlyList<Candle> history) { }
+    public void WarmUp(IReadOnlyList<Candle> history)
+    {
+        if (history.Count < _slowPeriod + _signalPeriod + 5) return;
+        IndicatorHelper.CalculateMacd(history, _fastPeriod, _slowPeriod, _signalPeriod);
+        IndicatorHelper.CalculateAtr(history, _atrPeriod);
+    }
     public void Reset() { }
 
     public IStrategy Clone() => new MacdStrategy

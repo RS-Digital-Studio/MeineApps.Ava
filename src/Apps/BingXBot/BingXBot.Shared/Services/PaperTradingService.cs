@@ -4,6 +4,7 @@ using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Core.Simulation;
 using BingXBot.Engine;
+using BingXBot.Engine.Indicators;
 using BingXBot.Engine.Risk;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -29,6 +30,7 @@ public class PaperTradingService : IDisposable
     private volatile bool _isRunning;
     private volatile bool _isPaused;
     private bool _disposed;
+    private DateTime _lastDailyResetDate = DateTime.UtcNow.Date;
 
     // SL/TP-Tracking: Speichert das Original-Signal pro offener Position (Symbol_Side → SignalResult)
     // ConcurrentDictionary weil PriceTickerLoop und ScanAndTradeAsync parallel darauf zugreifen
@@ -168,6 +170,16 @@ public class PaperTradingService : IDisposable
         {
             try
             {
+                // Tageswechsel: Daily-Drawdown zurücksetzen
+                var today = DateTime.UtcNow.Date;
+                if (today != _lastDailyResetDate)
+                {
+                    _riskManager?.ResetDailyStats();
+                    _lastDailyResetDate = today;
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Risk",
+                        "Tages-Drawdown zurückgesetzt (neuer Tag)"));
+                }
+
                 // Bei Pause: Loop laeuft weiter, ueberspringt aber den Scan
                 if (!_isPaused)
                     await ScanAndTradeAsync(ct);
@@ -279,7 +291,8 @@ public class PaperTradingService : IDisposable
             catch (OperationCanceledException) { break; }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"PriceTicker Fehler: {ex.Message}");
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "PriceTicker",
+                    $"PriceTicker Fehler: {ex.Message}"));
             }
         }
     }
@@ -295,26 +308,17 @@ public class PaperTradingService : IDisposable
             return;
         }
 
-        // 1. Alle Ticker holen
+        // 1. Alle Ticker holen und filtern
         var tickers = await _publicClient.GetAllTickersAsync(ct);
         if (tickers.Count == 0) return;
 
-        // 2. Nach Scanner-Kriterien filtern
-        var candidates = tickers
-            .Where(t => t.Volume24h >= _scannerSettings.MinVolume24h)
-            .Where(t => Math.Abs(t.PriceChangePercent24h) >= _scannerSettings.MinPriceChange)
-            .Where(t => _scannerSettings.Blacklist.Count == 0 || !_scannerSettings.Blacklist.Contains(t.Symbol))
-            .Where(t => _scannerSettings.Whitelist.Count == 0 || _scannerSettings.Whitelist.Contains(t.Symbol))
-            .OrderByDescending(t => t.Volume24h)
-            .Take(_scannerSettings.MaxResults)
-            .ToList();
-
+        var candidates = ScanHelper.FilterCandidates(tickers, _scannerSettings);
         if (candidates.Count == 0) return;
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Debug, "Scanner",
             $"{candidates.Count} Kandidaten gefunden"));
 
-        // 3. Fuer jeden Kandidaten: Klines laden, Strategie evaluieren
+        // 2. Fuer jeden Kandidaten: Evaluieren und handeln
         var account = await _exchange.GetAccountInfoAsync();
         var positions = await _exchange.GetPositionsAsync();
 
@@ -324,22 +328,16 @@ public class PaperTradingService : IDisposable
 
             try
             {
-                // Klines laden (letzte 100 Stunden-Candles)
-                var candles = await _publicClient.GetKlinesAsync(
-                    ticker.Symbol, _scannerSettings.ScanTimeFrame,
-                    DateTime.UtcNow.AddHours(-100), DateTime.UtcNow, ct);
+                // Kandidat evaluieren (Klines + HTF + Strategie)
+                var result = await ScanHelper.EvaluateCandidateAsync(
+                    ticker, _publicClient, _strategyManager, _scannerSettings, positions, account, ct);
+                if (result == null) continue;
 
-                if (candles.Count < 50) continue;
+                var signal = result.Signal;
+                var context = result.Context;
 
-                // Aktuellen Preis setzen
+                // Aktuellen Preis auf der SimulatedExchange setzen
                 _exchange.SetCurrentPrice(ticker.Symbol, ticker.LastPrice);
-
-                // Strategie evaluieren
-                var strategy = _strategyManager.GetOrCreateForSymbol(ticker.Symbol);
-                var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account);
-                var signal = strategy.Evaluate(context);
-
-                if (signal.Signal == Signal.None) continue;
 
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Scanner",
                     $"{ticker.Symbol}: {signal.Signal} Signal (Confidence: {signal.Confidence:P0}) - {signal.Reason}",
@@ -368,14 +366,13 @@ public class PaperTradingService : IDisposable
                     continue;
                 }
 
-                // Risk-Check
-                var riskCheck = _riskManager.ValidateTrade(signal, context);
-                if (!riskCheck.IsAllowed)
-                {
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Risk",
-                        $"{ticker.Symbol}: Trade abgelehnt - {riskCheck.RejectionReason}", ticker.Symbol));
+                // Korrelations-Check + Risk-Check (gemeinsame Logik via ScanHelper)
+                if (await ScanHelper.CheckCorrelationAsync(
+                    ticker.Symbol, positions, _riskSettings, _publicClient, result.Candles, _eventBus, "", ct))
                     continue;
-                }
+
+                var riskCheck = ScanHelper.ValidateRisk(signal, context, _riskManager, _eventBus, "");
+                if (!riskCheck.IsAllowed) continue;
 
                 // Leverage setzen (aus RiskSettings) und Order platzieren
                 var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
@@ -409,6 +406,9 @@ public class PaperTradingService : IDisposable
                     $"{ticker.Symbol}: Fehler - {ex.Message}", ticker.Symbol));
             }
         }
+
+        // Indikator-Cache nach Scan-Durchlauf leeren (Daten sind beim nächsten Scan veraltet)
+        IndicatorHelper.ClearCache();
     }
 
     /// <summary>

@@ -34,6 +34,8 @@ public class TrendFollowStrategy : IStrategy
     private int _volumePeriod = 20;
     private decimal _volumeMultiplier = 1.0m;
     private decimal _minConfidence = 0.6m;
+    private int _adxPeriod = 14;
+    private decimal _minAdx = 20m;
 
     public IReadOnlyList<StrategyParameter> Parameters => new List<StrategyParameter>
     {
@@ -46,6 +48,8 @@ public class TrendFollowStrategy : IStrategy
         new("VolumePeriod", "Volumen-SMA Periode", "int", _volumePeriod, 10, 50, 5),
         new("VolumeMultiplier", "Volumen-Schwelle (x Durchschnitt)", "decimal", _volumeMultiplier, 0.5m, 3m, 0.1m),
         new("MinConfidence", "Min. Confidence für Signal", "decimal", _minConfidence, 0.4m, 1m, 0.1m),
+        new("AdxPeriod", "ADX Periode (Trend-Stärke)", "int", _adxPeriod, 7, 30, 1),
+        new("MinAdx", "Min. ADX für Trend-Signal (>25 = starker Trend)", "decimal", _minAdx, 15m, 40m, 5m),
     };
 
     public SignalResult Evaluate(MarketContext context)
@@ -63,6 +67,7 @@ public class TrendFollowStrategy : IStrategy
         var atr = IndicatorHelper.CalculateAtr(candles, _atrPeriod);
         var (_, _, histogram) = IndicatorHelper.CalculateMacd(candles, 12, 26, 9);
         var volumeSma = IndicatorHelper.CalculateSma(candles, _volumePeriod);
+        var adx = IndicatorHelper.CalculateAdx(candles, _adxPeriod);
 
         var lastEmaFast = emaFast[^1];
         var lastEmaSlow = emaSlow[^1];
@@ -71,10 +76,16 @@ public class TrendFollowStrategy : IStrategy
         var lastHist = histogram[^1];
         var prevHist = histogram[^2];
         var lastVolSma = volumeSma[^1];
+        var lastAdx = adx[^1];
 
         if (lastEmaFast == null || lastEmaSlow == null || lastRsi == null ||
             lastAtr == null || lastHist == null || prevHist == null || lastVolSma == null)
             return new SignalResult(Signal.None, 0m, null, null, null, "Indikatoren nicht bereit");
+
+        // ADX-Filter: Kein Trade wenn Trend zu schwach (Seitwärtsmarkt = Noise)
+        if (lastAdx.HasValue && lastAdx.Value < _minAdx)
+            return new SignalResult(Signal.None, 0m, null, null, null,
+                $"ADX zu niedrig ({lastAdx.Value:F0} < {_minAdx}) - kein klarer Trend");
 
         var currentPrice = context.CurrentTicker.LastPrice;
         var atrValue = lastAtr.Value;
@@ -162,29 +173,68 @@ public class TrendFollowStrategy : IStrategy
         var longConfidence = longConditions / 5m;
         var shortConfidence = shortConditions / 5m;
 
+        // ADX-Bonus: Starker Trend (>40) erhöht Confidence, schwacher (20-25) reduziert
+        if (lastAdx.HasValue)
+        {
+            var adxBonus = lastAdx.Value > 40m ? 0.1m : lastAdx.Value < 25m ? -0.05m : 0m;
+            longConfidence += adxBonus;
+            shortConfidence += adxBonus;
+        }
+
+        // Higher-Timeframe Trend-Konfirmation (wenn verfügbar)
+        var htfTrend = IndicatorHelper.GetHigherTimeframeTrend(context.HigherTimeframeCandles);
+
         // Long-Signal wenn genug Bedingungen erfüllt
         if (longConfidence >= _minConfidence && longConfidence > shortConfidence)
         {
+            // Higher-TF warnt: Confidence reduzieren, aber Signal nicht blockieren
+            if (htfTrend == -1) longConfidence -= 0.15m;
+            else if (htfTrend == 1) longConfidence += 0.05m;
+
+            if (longConfidence < _minConfidence)
+                return new SignalResult(Signal.None, 0m, null, null, null,
+                    $"Long-Signal ({longConditions}/5), aber Higher-TF bearish → Confidence zu niedrig");
+
             var sl = currentPrice - atrValue * _atrMultiplierSl;
             var tp = currentPrice + atrValue * _atrMultiplierTp;
-            return new SignalResult(Signal.Long, longConfidence, currentPrice, sl, tp,
-                $"Trend-Following Long ({longConditions}/5): {string.Join(", ", longReasons)}");
+            var htfInfo = htfTrend != 0 ? $", HTF:{(htfTrend > 0 ? "Bull" : "Bear")}" : "";
+            return new SignalResult(Signal.Long, Math.Min(1m, longConfidence), currentPrice, sl, tp,
+                $"Trend-Following Long ({longConditions}/5{htfInfo}): {string.Join(", ", longReasons)}");
         }
 
         // Short-Signal wenn genug Bedingungen erfüllt
         if (shortConfidence >= _minConfidence && shortConfidence > longConfidence)
         {
+            if (htfTrend == 1) shortConfidence -= 0.15m;
+            else if (htfTrend == -1) shortConfidence += 0.05m;
+
+            if (shortConfidence < _minConfidence)
+                return new SignalResult(Signal.None, 0m, null, null, null,
+                    $"Short-Signal ({shortConditions}/5), aber Higher-TF bullish → Confidence zu niedrig");
+
             var sl = currentPrice + atrValue * _atrMultiplierSl;
             var tp = currentPrice - atrValue * _atrMultiplierTp;
-            return new SignalResult(Signal.Short, shortConfidence, currentPrice, sl, tp,
-                $"Trend-Following Short ({shortConditions}/5): {string.Join(", ", shortReasons)}");
+            var htfInfo = htfTrend != 0 ? $", HTF:{(htfTrend > 0 ? "Bull" : "Bear")}" : "";
+            return new SignalResult(Signal.Short, Math.Min(1m, shortConfidence), currentPrice, sl, tp,
+                $"Trend-Following Short ({shortConditions}/5{htfInfo}): {string.Join(", ", shortReasons)}");
         }
 
         return new SignalResult(Signal.None, 0m, null, null, null,
             $"Keine klare Trend-Richtung (Long: {longConditions}/5, Short: {shortConditions}/5)");
     }
 
-    public void WarmUp(IReadOnlyList<Candle> history) { }
+    public void WarmUp(IReadOnlyList<Candle> history)
+    {
+        if (history.Count < Math.Max(_emaSlow, 35) + 10) return;
+        // Indikatoren vorab berechnen und in den Cache legen
+        IndicatorHelper.CalculateEma(history, _emaFast);
+        IndicatorHelper.CalculateEma(history, _emaSlow);
+        IndicatorHelper.CalculateRsi(history, _rsiPeriod);
+        IndicatorHelper.CalculateAtr(history, _atrPeriod);
+        IndicatorHelper.CalculateMacd(history, 12, 26, 9);
+        IndicatorHelper.CalculateSma(history, _volumePeriod);
+        IndicatorHelper.CalculateAdx(history, _adxPeriod);
+    }
     public void Reset() { }
 
     public IStrategy Clone() => new TrendFollowStrategy
@@ -197,6 +247,8 @@ public class TrendFollowStrategy : IStrategy
         _atrMultiplierTp = _atrMultiplierTp,
         _volumePeriod = _volumePeriod,
         _volumeMultiplier = _volumeMultiplier,
-        _minConfidence = _minConfidence
+        _minConfidence = _minConfidence,
+        _adxPeriod = _adxPeriod,
+        _minAdx = _minAdx
     };
 }

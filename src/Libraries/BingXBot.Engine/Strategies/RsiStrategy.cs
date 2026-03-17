@@ -173,7 +173,13 @@ public class RsiStrategy : IStrategy
         return new SignalResult(Signal.None, 0m, null, null, null, "");
     }
 
-    public void WarmUp(IReadOnlyList<Candle> history) { }
+    public void WarmUp(IReadOnlyList<Candle> history)
+    {
+        if (history.Count < _period + _divergenceLookback + 5) return;
+        IndicatorHelper.CalculateRsi(history, _period);
+        IndicatorHelper.CalculateAtr(history, _atrPeriod);
+        IndicatorHelper.CalculateSma(history, _volumePeriod);
+    }
     public void Reset() { }
 
     public IStrategy Clone() => new RsiStrategy

@@ -122,7 +122,15 @@ public class EmaCrossStrategy : IStrategy
         return new SignalResult(Signal.None, 0m, null, null, null, "Kein Cross");
     }
 
-    public void WarmUp(IReadOnlyList<Candle> history) { }
+    public void WarmUp(IReadOnlyList<Candle> history)
+    {
+        if (history.Count < _trendPeriod + 5) return;
+        IndicatorHelper.CalculateEma(history, _fastPeriod);
+        IndicatorHelper.CalculateEma(history, _slowPeriod);
+        IndicatorHelper.CalculateEma(history, _trendPeriod);
+        IndicatorHelper.CalculateAtr(history, _atrPeriod);
+        IndicatorHelper.CalculateSma(history, _volumePeriod);
+    }
     public void Reset() { }
 
     public IStrategy Clone() => new EmaCrossStrategy

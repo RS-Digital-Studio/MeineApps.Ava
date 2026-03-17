@@ -155,7 +155,13 @@ public class BollingerStrategy : IStrategy
         return count > 0 ? sum / count : 0m;
     }
 
-    public void WarmUp(IReadOnlyList<Candle> history) { }
+    public void WarmUp(IReadOnlyList<Candle> history)
+    {
+        if (history.Count < _squeezePeriod + 5) return;
+        IndicatorHelper.CalculateBollinger(history, _period, _stdDev);
+        IndicatorHelper.CalculateAtr(history, _atrPeriod);
+        IndicatorHelper.CalculateSma(history, _volumePeriod);
+    }
     public void Reset() { }
 
     public IStrategy Clone() => new BollingerStrategy

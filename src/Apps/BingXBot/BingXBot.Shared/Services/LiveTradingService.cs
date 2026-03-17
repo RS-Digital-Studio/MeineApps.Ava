@@ -4,6 +4,7 @@ using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine;
 using BingXBot.Engine.Risk;
+using BingXBot.Engine.Indicators;
 using BingXBot.Exchange;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
@@ -24,16 +25,25 @@ public class LiveTradingService : IDisposable
     private readonly RiskSettings _riskSettings;
     private readonly ScannerSettings _scannerSettings;
     private readonly BotEventBus _eventBus;
+    private readonly BingXWebSocketClient? _wsClient;
 
     private RiskManager? _riskManager;
     private CancellationTokenSource? _cts;
     private volatile bool _isRunning;
     private volatile bool _isPaused;
     private bool _disposed;
+    private string? _listenKey;
+    private PeriodicTimer? _listenKeyRenewTimer;
+    private DateTime _lastDailyResetDate = DateTime.UtcNow.Date;
+
+    /// <summary>BingX Perpetual Futures Taker Fee: 0.05% (Standard-Level).</summary>
+    private const decimal TakerFeeRate = 0.0005m;
 
     // SL/TP-Tracking: Speichert das Original-Signal pro offener Position (Symbol_Side -> SignalResult)
     // ConcurrentDictionary weil PriceTickerLoop und ScanAndTradeAsync parallel darauf zugreifen
     private readonly ConcurrentDictionary<string, SignalResult> _positionSignals = new();
+    // Zeitpunkt der Signal-Erstellung (für Grace Period bei Bereinigung verwaister Signale)
+    private readonly ConcurrentDictionary<string, DateTime> _signalCreatedAt = new();
 
     /// <summary>Ob der Service gerade läuft.</summary>
     public bool IsRunning => _isRunning;
@@ -47,7 +57,8 @@ public class LiveTradingService : IDisposable
         StrategyManager strategyManager,
         RiskSettings riskSettings,
         ScannerSettings scannerSettings,
-        BotEventBus eventBus)
+        BotEventBus eventBus,
+        BingXWebSocketClient? wsClient = null)
     {
         _restClient = restClient;
         _publicClient = publicClient;
@@ -55,6 +66,7 @@ public class LiveTradingService : IDisposable
         _riskSettings = riskSettings;
         _scannerSettings = scannerSettings;
         _eventBus = eventBus;
+        _wsClient = wsClient;
     }
 
     /// <summary>Startet das Live-Trading.</summary>
@@ -74,6 +86,85 @@ public class LiveTradingService : IDisposable
 
         _ = RunLoopAsync(_cts.Token);
         _ = PriceTickerLoopAsync(_cts.Token);
+
+        // User-Data-Stream starten (optional, Fallback auf REST-Polling)
+        if (_wsClient != null)
+            _ = StartUserDataStreamAsync(_cts.Token);
+    }
+
+    /// <summary>
+    /// Startet den User-Data-Stream für Echtzeit-Account/Position-Updates.
+    /// ListenKey wird alle 30 Minuten erneuert.
+    /// </summary>
+    private async Task StartUserDataStreamAsync(CancellationToken ct)
+    {
+        try
+        {
+            _listenKey = await _restClient.CreateListenKeyAsync().ConfigureAwait(false);
+            await _wsClient!.ConnectUserDataStreamAsync(_listenKey, ct).ConfigureAwait(false);
+
+            // Handler für User-Data Events
+            _wsClient.UserDataReceived += OnUserDataReceived;
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+                "User-Data-Stream verbunden (Echtzeit-Updates aktiv)"));
+
+            // ListenKey alle 30 Minuten erneuern
+            _listenKeyRenewTimer = new PeriodicTimer(TimeSpan.FromMinutes(30));
+            while (await _listenKeyRenewTimer.WaitForNextTickAsync(ct))
+            {
+                try
+                {
+                    await _restClient.RenewListenKeyAsync(_listenKey).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
+                        $"ListenKey-Erneuerung fehlgeschlagen: {ex.Message}"));
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
+                $"User-Data-Stream konnte nicht gestartet werden: {ex.Message} (Fallback: REST-Polling)"));
+        }
+    }
+
+    /// <summary>Verarbeitet User-Data-Stream Events (ACCOUNT_UPDATE, ORDER_TRADE_UPDATE).</summary>
+    private void OnUserDataReceived(object? sender, string message)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(message);
+            var root = doc.RootElement;
+
+            var eventType = root.TryGetProperty("e", out var eProp) ? eProp.GetString() : null;
+
+            switch (eventType)
+            {
+                case "ACCOUNT_UPDATE":
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Debug, "WebSocket",
+                        "Account-Update empfangen (Balance/Position geändert)"));
+                    break;
+
+                case "ORDER_TRADE_UPDATE":
+                    if (root.TryGetProperty("o", out var orderData))
+                    {
+                        var symbol = orderData.TryGetProperty("s", out var sProp) ? sProp.GetString() : "?";
+                        var status = orderData.TryGetProperty("X", out var xProp) ? xProp.GetString() : "?";
+                        var side = orderData.TryGetProperty("S", out var sideProp) ? sideProp.GetString() : "?";
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "WebSocket",
+                            $"Order-Update: {symbol} {side} → {status}", symbol));
+                    }
+                    break;
+            }
+        }
+        catch
+        {
+            // Parse-Fehler ignorieren - User-Data ist optional
+        }
     }
 
     /// <summary>Pausiert das Live-Trading (Loop läuft weiter, überspringt aber Scans).</summary>
@@ -108,17 +199,19 @@ public class LiveTradingService : IDisposable
         _isRunning = false;
         _isPaused = false;
 
+        // User-Data-Stream sauber trennen
+        await CleanupUserDataStreamAsync();
+
         // Im Live-Modus: Positionen NICHT automatisch schließen beim normalen Stop
         // Der User soll entscheiden ob er sie manuell schließen will
         _positionSignals.Clear();
+        _signalCreatedAt.Clear();
         _cts?.Dispose();
         _cts = null;
 
         _eventBus.PublishBotState(BotState.Stopped);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
             "Live-Trading gestoppt. Offene Positionen bleiben bestehen."));
-
-        await Task.CompletedTask;
     }
 
     /// <summary>
@@ -158,13 +251,47 @@ public class LiveTradingService : IDisposable
                 $"FEHLER beim Laden der Positionen: {ex.Message}"));
         }
 
+        // User-Data-Stream sauber trennen
+        await CleanupUserDataStreamAsync();
+
         _positionSignals.Clear();
+        _signalCreatedAt.Clear();
         _cts?.Dispose();
         _cts = null;
 
         _eventBus.PublishBotState(BotState.EmergencyStop);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
             "NOTFALL-STOP abgeschlossen. Prüfe dein BingX-Konto!"));
+    }
+
+    /// <summary>
+    /// Räumt den User-Data-Stream sauber auf: Event-Handler abmelden, Timer stoppen,
+    /// ListenKey löschen, WebSocket trennen. Wird bei Stop und EmergencyStop aufgerufen.
+    /// </summary>
+    private async Task CleanupUserDataStreamAsync()
+    {
+        // Timer stoppen
+        _listenKeyRenewTimer?.Dispose();
+        _listenKeyRenewTimer = null;
+
+        // Event-Handler abmelden
+        if (_wsClient != null)
+            _wsClient.UserDataReceived -= OnUserDataReceived;
+
+        // WebSocket-User-Data-Stream trennen
+        if (_wsClient != null && _wsClient.IsUserDataConnected)
+        {
+            try { await _wsClient.DisconnectUserDataStreamAsync().ConfigureAwait(false); }
+            catch { /* Best-effort beim Cleanup */ }
+        }
+
+        // ListenKey auf dem Server löschen (Best-effort)
+        if (_listenKey != null)
+        {
+            try { await _restClient.DeleteListenKeyAsync(_listenKey).ConfigureAwait(false); }
+            catch { /* Best-effort */ }
+            _listenKey = null;
+        }
     }
 
     /// <summary>Hauptschleife: Alle 30s scannen und handeln.</summary>
@@ -174,6 +301,16 @@ public class LiveTradingService : IDisposable
         {
             try
             {
+                // Tageswechsel: Daily-Drawdown zurücksetzen
+                var today = DateTime.UtcNow.Date;
+                if (today != _lastDailyResetDate)
+                {
+                    _riskManager?.ResetDailyStats();
+                    _lastDailyResetDate = today;
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Risk",
+                        "LIVE: Tages-Drawdown zurückgesetzt (neuer Tag)"));
+                }
+
                 // Bei Pause: Loop läuft weiter, überspringt aber den Scan
                 if (!_isPaused)
                     await ScanAndTradeAsync(ct).ConfigureAwait(false);
@@ -213,6 +350,27 @@ public class LiveTradingService : IDisposable
             {
                 // Offene Positionen von BingX holen
                 var positions = await _restClient.GetPositionsAsync().ConfigureAwait(false);
+
+                // Verwaiste Signale bereinigen: Wenn Position nicht mehr existiert UND Signal älter als 30s
+                // Grace Period verhindert dass ein Signal entfernt wird bevor die Order auf BingX settlet
+                if (_positionSignals.Count > 0)
+                {
+                    var positionKeys = new HashSet<string>(positions.Select(p => $"{p.Symbol}_{p.Side}"));
+                    var now = DateTime.UtcNow;
+                    foreach (var key in _positionSignals.Keys)
+                    {
+                        if (!positionKeys.Contains(key))
+                        {
+                            // Nur entfernen wenn Signal älter als 30 Sekunden (API-Latenz-Grace-Period)
+                            if (_signalCreatedAt.TryGetValue(key, out var createdAt) && (now - createdAt).TotalSeconds > 30)
+                            {
+                                _positionSignals.TryRemove(key, out _);
+                                _signalCreatedAt.TryRemove(key, out _);
+                            }
+                        }
+                    }
+                }
+
                 if (positions.Count == 0) continue;
 
                 // Aktuelle Preise holen (Public API, kein Key nötig)
@@ -250,16 +408,22 @@ public class LiveTradingService : IDisposable
                         {
                             await _restClient.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
                             _positionSignals.TryRemove(key, out _);
+                            _signalCreatedAt.TryRemove(key, out _);
 
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                                 $"LIVE: {pos.Symbol}: {reason} ({pos.Side})", pos.Symbol));
 
                             // CompletedTrade erstellen für TradeHistory
-                            var pnl = pos.Side == Side.Buy
+                            // Fees: BingX Taker Fee 0.05% pro Seite (Entry-Preis + Exit-Preis separat)
+                            var entryFee = pos.Quantity * pos.EntryPrice * TakerFeeRate;
+                            var exitFee = pos.Quantity * price * TakerFeeRate;
+                            var totalFee = entryFee + exitFee;
+                            var rawPnl = pos.Side == Side.Buy
                                 ? (price - pos.EntryPrice) * pos.Quantity
                                 : (pos.EntryPrice - price) * pos.Quantity;
+                            var pnl = rawPnl - totalFee;
                             var trade = new CompletedTrade(pos.Symbol, pos.Side, pos.EntryPrice, price,
-                                pos.Quantity, pnl, 0m, pos.OpenTime, DateTime.UtcNow, reason, TradingMode.Live);
+                                pos.Quantity, pnl, totalFee, pos.OpenTime, DateTime.UtcNow, reason, TradingMode.Live);
                             _eventBus.PublishTrade(trade);
                             _riskManager?.UpdateDailyStats(trade);
                         }
@@ -274,7 +438,8 @@ public class LiveTradingService : IDisposable
             catch (OperationCanceledException) { break; }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Live PriceTicker Fehler: {ex.Message}");
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "PriceTicker",
+                    $"LIVE PriceTicker Fehler: {ex.Message}"));
             }
         }
     }
@@ -290,26 +455,17 @@ public class LiveTradingService : IDisposable
             return;
         }
 
-        // 1. Ticker holen (Public API, kein Key nötig)
+        // 1. Ticker holen und filtern
         var tickers = await _publicClient.GetAllTickersAsync(ct).ConfigureAwait(false);
         if (tickers.Count == 0) return;
 
-        // 2. Nach Scanner-Kriterien filtern
-        var candidates = tickers
-            .Where(t => t.Volume24h >= _scannerSettings.MinVolume24h)
-            .Where(t => Math.Abs(t.PriceChangePercent24h) >= _scannerSettings.MinPriceChange)
-            .Where(t => _scannerSettings.Blacklist.Count == 0 || !_scannerSettings.Blacklist.Contains(t.Symbol))
-            .Where(t => _scannerSettings.Whitelist.Count == 0 || _scannerSettings.Whitelist.Contains(t.Symbol))
-            .OrderByDescending(t => t.Volume24h)
-            .Take(_scannerSettings.MaxResults)
-            .ToList();
-
+        var candidates = ScanHelper.FilterCandidates(tickers, _scannerSettings);
         if (candidates.Count == 0) return;
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Debug, "Scanner",
             $"{candidates.Count} Kandidaten"));
 
-        // 3. Account + Positionen von BingX holen
+        // 2. Account + Positionen von BingX holen
         var account = await _restClient.GetAccountInfoAsync().ConfigureAwait(false);
         var positions = await _restClient.GetPositionsAsync().ConfigureAwait(false);
 
@@ -319,19 +475,13 @@ public class LiveTradingService : IDisposable
 
             try
             {
-                // Klines laden (letzte 100 Stunden-Candles über Public API)
-                var candles = await _publicClient.GetKlinesAsync(
-                    ticker.Symbol, _scannerSettings.ScanTimeFrame,
-                    DateTime.UtcNow.AddHours(-100), DateTime.UtcNow, ct).ConfigureAwait(false);
+                // Kandidat evaluieren (Klines + HTF + Strategie)
+                var result = await ScanHelper.EvaluateCandidateAsync(
+                    ticker, _publicClient, _strategyManager, _scannerSettings, positions, account, ct);
+                if (result == null) continue;
 
-                if (candles.Count < 50) continue;
-
-                // Strategie evaluieren
-                var strategy = _strategyManager.GetOrCreateForSymbol(ticker.Symbol);
-                var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account);
-                var signal = strategy.Evaluate(context);
-
-                if (signal.Signal == Signal.None) continue;
+                var signal = result.Signal;
+                var context = result.Context;
 
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Scanner",
                     $"LIVE: {ticker.Symbol}: {signal.Signal} (Confidence: {signal.Confidence:P0}) - {signal.Reason}",
@@ -346,7 +496,9 @@ public class LiveTradingService : IDisposable
                         try
                         {
                             await _restClient.ClosePositionAsync(ticker.Symbol, closeSide).ConfigureAwait(false);
-                            _positionSignals.TryRemove($"{ticker.Symbol}_{closeSide}", out _);
+                            var closeKey = $"{ticker.Symbol}_{closeSide}";
+                            _positionSignals.TryRemove(closeKey, out _);
+                            _signalCreatedAt.TryRemove(closeKey, out _);
 
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                                 $"LIVE: {ticker.Symbol} {closeSide} geschlossen", ticker.Symbol));
@@ -360,14 +512,13 @@ public class LiveTradingService : IDisposable
                     continue;
                 }
 
-                // Risk-Check
-                var riskCheck = _riskManager.ValidateTrade(signal, context);
-                if (!riskCheck.IsAllowed)
-                {
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Risk",
-                        $"LIVE: {ticker.Symbol}: Abgelehnt - {riskCheck.RejectionReason}", ticker.Symbol));
+                // Korrelations-Check + Risk-Check (gemeinsame Logik via ScanHelper)
+                if (await ScanHelper.CheckCorrelationAsync(
+                    ticker.Symbol, positions, _riskSettings, _publicClient, result.Candles, _eventBus, "LIVE: ", ct))
                     continue;
-                }
+
+                var riskCheck = ScanHelper.ValidateRisk(signal, context, _riskManager, _eventBus, "LIVE: ");
+                if (!riskCheck.IsAllowed) continue;
 
                 // ECHTE ORDER PLATZIEREN
                 var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
@@ -391,16 +542,20 @@ public class LiveTradingService : IDisposable
                     }
 
                     // SL/TP Signal speichern (wird im PriceTickerLoop geprüft)
-                    _positionSignals[$"{ticker.Symbol}_{side}"] = signal;
+                    var signalKey = $"{ticker.Symbol}_{side}";
+                    _positionSignals[signalKey] = signal;
+                    _signalCreatedAt[signalKey] = DateTime.UtcNow;
 
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                         $"LIVE ORDER: {ticker.Symbol} {side} {riskCheck.AdjustedPositionSize:F6} @ {ticker.LastPrice:N2}",
                         ticker.Symbol));
 
-                    // RiskManager aktualisieren (als Eröffnungs-Trade mit PnL=0)
+                    // RiskManager aktualisieren (Eröffnungs-Fee als initialer Verlust)
+                    var entryNotional = riskCheck.AdjustedPositionSize * ticker.LastPrice;
+                    var entryFee = entryNotional * TakerFeeRate;
                     _riskManager.UpdateDailyStats(new CompletedTrade(
                         ticker.Symbol, side, ticker.LastPrice, ticker.LastPrice,
-                        riskCheck.AdjustedPositionSize, 0m, 0m,
+                        riskCheck.AdjustedPositionSize, -entryFee, entryFee,
                         DateTime.UtcNow, DateTime.UtcNow, "Eröffnet", TradingMode.Live));
 
                     // Account + Positionen aktualisieren (für nächste Iteration)
@@ -419,6 +574,9 @@ public class LiveTradingService : IDisposable
                     $"LIVE: {ticker.Symbol}: Fehler - {ex.Message}", ticker.Symbol));
             }
         }
+
+        // Indikator-Cache nach Scan-Durchlauf leeren (Daten sind beim nächsten Scan veraltet)
+        IndicatorHelper.ClearCache();
     }
 
     /// <summary>
@@ -436,7 +594,9 @@ public class LiveTradingService : IDisposable
     /// </summary>
     public void RemovePositionSignal(string symbol, Side side)
     {
-        _positionSignals.TryRemove($"{symbol}_{side}", out _);
+        var key = $"{symbol}_{side}";
+        _positionSignals.TryRemove(key, out _);
+        _signalCreatedAt.TryRemove(key, out _);
     }
 
     /// <summary>
@@ -455,6 +615,20 @@ public class LiveTradingService : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+
+        if (_wsClient != null)
+            _wsClient.UserDataReceived -= OnUserDataReceived;
+
+        _listenKeyRenewTimer?.Dispose();
+        _listenKeyRenewTimer = null;
+
+        // ListenKey löschen (Best-effort, nicht awaiten in Dispose)
+        if (_listenKey != null)
+        {
+            _ = _restClient.DeleteListenKeyAsync(_listenKey);
+            _listenKey = null;
+        }
+
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;

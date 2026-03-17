@@ -5,4 +5,5 @@ public record MarketContext(
     IReadOnlyList<Candle> Candles,
     Ticker CurrentTicker,
     IReadOnlyList<Position> OpenPositions,
-    AccountInfo Account);
+    AccountInfo Account,
+    IReadOnlyList<Candle>? HigherTimeframeCandles = null);

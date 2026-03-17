@@ -37,7 +37,14 @@ public class RiskManager : IRiskManager
         if (symbolPositions >= _settings.MaxOpenPositionsPerSymbol)
             return new RiskCheckResult(false, $"Max {_settings.MaxOpenPositionsPerSymbol} Positionen pro Symbol erreicht", 0m);
 
-        // 4. Taeglichen Drawdown pruefen (inkl. unrealisierter Verluste offener Positionen)
+        // 4. Position-Größe berechnen (vor Drawdown-Check, damit wir das Risiko kennen)
+        var entryPrice = signal.EntryPrice ?? context.CurrentTicker.LastPrice;
+        var posSize = CalculatePositionSize(context.Symbol, entryPrice, signal.StopLoss, context.Account);
+
+        if (posSize <= 0)
+            return new RiskCheckResult(false, "Position-Größe ist 0", 0m);
+
+        // 5. Taeglichen Drawdown pruefen (inkl. unrealisierter Verluste + Risiko der neuen Position)
         decimal dailyDrawdownPercent;
         decimal totalDrawdownPercent;
         lock (_lock)
@@ -48,8 +55,24 @@ public class RiskManager : IRiskManager
             var unrealizedLoss = context.OpenPositions
                 .Where(p => p.UnrealizedPnl < 0)
                 .Sum(p => p.UnrealizedPnl); // Ist negativ oder 0
-            var effectiveDailyPnl = _dailyPnl + unrealizedLoss;
-            var effectiveTotalPnl = _totalPnl + unrealizedLoss;
+
+            // Worst-Case-Risiko der NEUEN Position berechnen:
+            // Wenn SL gesetzt: Verlust = SL-Distanz * Quantity
+            // Ohne SL: Verlust = MaxPositionSizePercent vom Konto (konservative Schätzung)
+            var newPositionRisk = 0m;
+            if (signal.StopLoss.HasValue && signal.StopLoss.Value > 0)
+            {
+                var slDistance = Math.Abs(entryPrice - signal.StopLoss.Value);
+                newPositionRisk = slDistance * posSize; // Maximaler Verlust bei SL-Hit
+            }
+            else
+            {
+                // Ohne SL: konservativ das gesamte riskAmount als Worst-Case annehmen
+                newPositionRisk = context.Account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
+            }
+
+            var effectiveDailyPnl = _dailyPnl + unrealizedLoss - newPositionRisk;
+            var effectiveTotalPnl = _totalPnl + unrealizedLoss - newPositionRisk;
 
             // Drawdown ist nur bei negativem PnL relevant.
             // Positive PnL (Gewinn) soll NICHT als Drawdown gezaehlt werden.
@@ -62,18 +85,11 @@ public class RiskManager : IRiskManager
         }
 
         if (dailyDrawdownPercent >= _settings.MaxDailyDrawdownPercent)
-            return new RiskCheckResult(false, $"Tages-Drawdown {dailyDrawdownPercent:F1}% >= {_settings.MaxDailyDrawdownPercent}%", 0m);
+            return new RiskCheckResult(false, $"Tages-Drawdown {dailyDrawdownPercent:F1}% >= {_settings.MaxDailyDrawdownPercent}% (inkl. Risiko neuer Position)", 0m);
 
-        // 5. Gesamt-Drawdown pruefen
+        // 6. Gesamt-Drawdown pruefen
         if (totalDrawdownPercent >= _settings.MaxTotalDrawdownPercent)
-            return new RiskCheckResult(false, $"Gesamt-Drawdown {totalDrawdownPercent:F1}% >= {_settings.MaxTotalDrawdownPercent}%", 0m);
-
-        // 6. Position-Größe berechnen
-        var posSize = CalculatePositionSize(context.Symbol, signal.EntryPrice ?? context.CurrentTicker.LastPrice,
-            signal.StopLoss, context.Account);
-
-        if (posSize <= 0)
-            return new RiskCheckResult(false, "Position-Größe ist 0", 0m);
+            return new RiskCheckResult(false, $"Gesamt-Drawdown {totalDrawdownPercent:F1}% >= {_settings.MaxTotalDrawdownPercent}% (inkl. Risiko neuer Position)", 0m);
 
         return new RiskCheckResult(true, null, posSize);
     }

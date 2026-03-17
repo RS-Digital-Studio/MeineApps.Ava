@@ -27,6 +27,9 @@ public class BingXRestClient : IExchangeClient
     /// <summary>Timeout fuer einzelne HTTP-Requests (30s statt Endlos-Default).</summary>
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
 
+    /// <summary>Maximale Retry-Versuche bei transienten Fehlern (HTTP 429, 5xx, Timeout).</summary>
+    private const int MaxRetries = 3;
+
     public BingXRestClient(
         string apiKey,
         string apiSecret,
@@ -64,6 +67,7 @@ public class BingXRestClient : IExchangeClient
     /// <summary>
     /// Sendet einen signierten Request an die BingX API.
     /// Baut Query-String, fügt Timestamp + Signatur hinzu, parst Response.
+    /// Retry bei transienten Fehlern (HTTP 429, 5xx, Timeout) mit exponentiellem Backoff.
     /// </summary>
     private async Task<T> SendSignedRequestAsync<T>(
         HttpMethod method,
@@ -71,52 +75,95 @@ public class BingXRestClient : IExchangeClient
         Dictionary<string, string>? parameters,
         string rateCategory)
     {
-        await _rateLimiter.WaitForSlotAsync(rateCategory, CancellationToken.None).ConfigureAwait(false);
-
-        var queryParams = parameters ?? new Dictionary<string, string>();
-
-        // Timestamp hinzufügen
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-        queryParams["timestamp"] = timestamp;
-
-        // Query-String sortiert aufbauen
-        var sortedParams = queryParams.OrderBy(kv => kv.Key);
-        var queryString = string.Join("&", sortedParams.Select(kv =>
-            $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
-
-        // Signatur berechnen
-        var signature = GenerateSignature(queryString, _apiSecret);
-        queryString += $"&signature={signature}";
-
-        var url = $"{BaseUrl}{path}?{queryString}";
-
-        using var request = new HttpRequestMessage(method, url);
-        request.Headers.Add("X-BX-APIKEY", _apiKey);
-
-        _logger.LogDebug("{Method} {Path}", method, path);
-
-        using var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
-        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-        if (!response.IsSuccessStatusCode)
+        for (int attempt = 0; attempt <= MaxRetries; attempt++)
         {
-            _logger.LogError("HTTP {StatusCode}: {Content}", response.StatusCode, content);
-            throw new BingXApiException((int)response.StatusCode,
-                $"HTTP {response.StatusCode}: {content}");
+            await _rateLimiter.WaitForSlotAsync(rateCategory, CancellationToken.None).ConfigureAwait(false);
+
+            var queryParams = parameters != null
+                ? new Dictionary<string, string>(parameters)
+                : new Dictionary<string, string>();
+
+            // Timestamp bei jedem Versuch neu setzen (muss aktuell sein)
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            queryParams["timestamp"] = timestamp;
+            queryParams["recvWindow"] = "5000"; // 5s Fenster gegen Replay-Angriffe
+
+            // Query-String sortiert aufbauen
+            var sortedParams = queryParams.OrderBy(kv => kv.Key);
+            var queryString = string.Join("&", sortedParams.Select(kv =>
+                $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
+
+            // Signatur berechnen
+            var signature = GenerateSignature(queryString, _apiSecret);
+            queryString += $"&signature={signature}";
+
+            var url = $"{BaseUrl}{path}?{queryString}";
+
+            try
+            {
+                using var request = new HttpRequestMessage(method, url);
+                request.Headers.Add("X-BX-APIKEY", _apiKey);
+
+                _logger.LogDebug("{Method} {Path} (Versuch {Attempt})", method, path, attempt + 1);
+
+                using var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                // Transiente Fehler: Retry bei 429 (Rate Limit) und 5xx (Server-Fehler)
+                if (IsTransientError(response) && attempt < MaxRetries)
+                {
+                    var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1)); // 2s, 4s, 8s
+                    _logger.LogWarning("Transienter Fehler HTTP {StatusCode}, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
+                        (int)response.StatusCode, backoff.TotalSeconds, attempt + 1, MaxRetries);
+                    await Task.Delay(backoff).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    // Content kürzen um Info-Leaks in externen Log-Sinks zu vermeiden
+                    var truncated = content.Length > 200 ? content[..200] + "..." : content;
+                    _logger.LogError("HTTP {StatusCode}: {Content}", response.StatusCode, truncated);
+                    throw new BingXApiException((int)response.StatusCode,
+                        $"HTTP {response.StatusCode}: {truncated}");
+                }
+
+                var apiResponse = JsonSerializer.Deserialize<BingXResponse<T>>(content);
+                if (apiResponse is null)
+                    throw new BingXApiException(-1, "Response konnte nicht deserialisiert werden");
+
+                if (apiResponse.Code != 0)
+                {
+                    _logger.LogError("API Error {Code}: {Msg}", apiResponse.Code, apiResponse.Msg);
+                    throw new BingXApiException(apiResponse.Code, apiResponse.Msg ?? "Unbekannter Fehler");
+                }
+
+                return apiResponse.Data!;
+            }
+            catch (HttpRequestException ex) when (attempt < MaxRetries)
+            {
+                var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
+                _logger.LogWarning(ex, "Netzwerkfehler, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
+                    backoff.TotalSeconds, attempt + 1, MaxRetries);
+                await Task.Delay(backoff).ConfigureAwait(false);
+            }
+            catch (TaskCanceledException ex) when (!ex.CancellationToken.IsCancellationRequested && attempt < MaxRetries)
+            {
+                // Timeout (nicht manuell abgebrochen)
+                var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
+                _logger.LogWarning("Request Timeout, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
+                    backoff.TotalSeconds, attempt + 1, MaxRetries);
+                await Task.Delay(backoff).ConfigureAwait(false);
+            }
         }
 
-        var apiResponse = JsonSerializer.Deserialize<BingXResponse<T>>(content);
-        if (apiResponse is null)
-            throw new BingXApiException(-1, "Response konnte nicht deserialisiert werden");
-
-        if (apiResponse.Code != 0)
-        {
-            _logger.LogError("API Error {Code}: {Msg}", apiResponse.Code, apiResponse.Msg);
-            throw new BingXApiException(apiResponse.Code, apiResponse.Msg ?? "Unbekannter Fehler");
-        }
-
-        return apiResponse.Data!;
+        // Sollte nicht erreicht werden, aber Compiler braucht einen Rückgabewert
+        throw new BingXApiException(-1, $"Request fehlgeschlagen nach {MaxRetries + 1} Versuchen");
     }
+
+    /// <summary>Prüft ob ein HTTP-Fehler transient ist (Retry sinnvoll).</summary>
+    private static bool IsTransientError(HttpResponseMessage response) =>
+        (int)response.StatusCode == 429 || (int)response.StatusCode >= 500;
 
     /// <summary>
     /// Konvertiert Unix-Millisekunden in DateTime (UTC).
@@ -559,6 +606,74 @@ public class BingXRestClient : IExchangeClient
     {
         var tickers = await GetAllTickersAsync();
         return tickers.Select(t => t.Symbol).Distinct().OrderBy(s => s).ToList();
+    }
+
+    #endregion
+
+    #region User-Data-Stream (WebSocket ListenKey)
+
+    /// <summary>
+    /// Erstellt einen ListenKey für den User-Data-Stream (WebSocket).
+    /// Der Key ist 60 Minuten gültig und muss alle 30 Minuten erneuert werden.
+    /// </summary>
+    public async Task<string> CreateListenKeyAsync()
+    {
+        var data = await SendSignedRequestAsync<JsonElement>(
+            HttpMethod.Post,
+            "/openApi/user/auth/userDataStream",
+            null,
+            "queries");
+
+        var listenKey = data.TryGetProperty("listenKey", out var lk) ? lk.GetString() : null;
+        if (string.IsNullOrEmpty(listenKey))
+            throw new BingXApiException(-1, "ListenKey konnte nicht erstellt werden");
+
+        _logger.LogInformation("ListenKey erstellt: {Key}", listenKey[..8] + "...");
+        return listenKey;
+    }
+
+    /// <summary>
+    /// Erneuert einen bestehenden ListenKey (verlängert Gültigkeit um 60 Minuten).
+    /// </summary>
+    public async Task RenewListenKeyAsync(string listenKey)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            ["listenKey"] = listenKey
+        };
+
+        await SendSignedRequestAsync<JsonElement>(
+            HttpMethod.Put,
+            "/openApi/user/auth/userDataStream",
+            parameters,
+            "queries");
+
+        _logger.LogDebug("ListenKey erneuert");
+    }
+
+    /// <summary>
+    /// Löscht einen ListenKey (schließt den User-Data-Stream).
+    /// </summary>
+    public async Task DeleteListenKeyAsync(string listenKey)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            ["listenKey"] = listenKey
+        };
+
+        try
+        {
+            await SendSignedRequestAsync<JsonElement>(
+                HttpMethod.Delete,
+                "/openApi/user/auth/userDataStream",
+                parameters,
+                "queries");
+            _logger.LogDebug("ListenKey gelöscht");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "ListenKey-Löschung fehlgeschlagen");
+        }
     }
 
     #endregion

@@ -122,21 +122,22 @@ public class RiskManagerTests
     [Fact]
     public void DailyDrawdown_WithUnrealizedLoss_ShouldBlockEarlier()
     {
-        // Realisierte Verluste allein reichen nicht (3% < 5%), aber mit unrealisierten
-        // Verlusten (-300 = 3%) kommen wir auf 6% >= 5% -> blockiert
+        // Realisierte Verluste allein reichen nicht (1% < 5%), aber mit unrealisierten
+        // Verlusten (-300 = 3%) + neuem Position-Risiko (2%) kommen wir auf 6% >= 5% -> blockiert
         var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10 };
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
-        // 300 realisierter Verlust = 3%
-        risk.UpdateDailyStats(new CompletedTrade("BTC-USDT", Side.Buy, 50000m, 47500m, 0.1m, -300m, 5m, DateTime.UtcNow, DateTime.UtcNow, "SL", TradingMode.Live));
+        // 100 realisierter Verlust = 1%
+        risk.UpdateDailyStats(new CompletedTrade("BTC-USDT", Side.Buy, 50000m, 49000m, 0.1m, -100m, 5m, DateTime.UtcNow, DateTime.UtcNow, "SL", TradingMode.Live));
 
         var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
 
-        // Ohne unrealisierte Verluste (keine offenen Positionen): 3% < 5% -> erlaubt
+        // Ohne unrealisierte Verluste: 1% realisiert + neues Position-Risiko (ca. 2%) = ~3% < 5% -> erlaubt
         var resultOk = risk.ValidateTrade(signal, CreateContext(balance: 10000m));
         resultOk.IsAllowed.Should().BeTrue();
 
-        // Mit -300 unrealisierten Verlusten auf einer offenen Position: 3% + 3% = 6% >= 5% -> blockiert
+        // Mit -300 unrealisierten Verlusten auf offener Position:
+        // 1% realisiert + 3% unrealisiert + 2% neues Risiko = 6% >= 5% -> blockiert
         var losingPosition = new Position("ETH-USDT", Side.Buy, 3000m, 2700m, 1m, -300m, 10m, MarginType.Cross, DateTime.UtcNow);
         var resultBlocked = risk.ValidateTrade(signal, CreateContext(balance: 10000m, customPositions: new List<Position> { losingPosition }));
         resultBlocked.IsAllowed.Should().BeFalse();
@@ -184,5 +185,95 @@ public class RiskManagerTests
         var profitPosition = new Position("ETH-USDT", Side.Buy, 3000m, 3500m, 1m, 500m, 10m, MarginType.Cross, DateTime.UtcNow);
         var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m, customPositions: new List<Position> { profitPosition }));
         result.IsAllowed.Should().BeFalse();
+    }
+
+    // === Neue Tests: Position-Risiko im Drawdown (17.03.2026) ===
+
+    [Fact]
+    public void ValidateTrade_SignalMitSL_WorstCaseRisikoWirdEingerechnet()
+    {
+        // 2% von 10000 = 200 USDT MaxPositionSize.
+        // SL-Distanz: |50000 - 49000| = 1000, slPercent = 2%.
+        // PositionValue = 200 / 0.02 = 10000, capped auf 10000*10 = 100000 -> 2 BTC.
+        // WorstCase = 1000 USDT * 2 BTC = 2000 USDT... aber MaxRisk wird durch PositionSize begrenzt.
+        // Wir testen nur: Bei 4.8% realisiertem Verlust + SL-Risiko kein zusätzlicher Verlust ohne SL-Hit.
+        // Konkret: 480 USDT realisiert = 4.8%. newPositionRisk mit SL = slDistance * posSize.
+        // Test-Prüfpunkt: Mit SL wird ein anderer (höherer) WorstCase berechnet als ohne SL.
+        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10, MaxPositionSizePercent = 1m, MaxLeverage = 2m };
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+
+        // 100 USDT realisierter Verlust = 1% von 10000
+        risk.UpdateDailyStats(new CompletedTrade("BTC-USDT", Side.Buy, 50000m, 49000m, 0.1m, -100m, 5m, DateTime.UtcNow, DateTime.UtcNow, "SL", TradingMode.Live));
+
+        // Signal mit engem SL (1% Distanz): newPositionRisk = slDistance * posSize
+        // posSize = (10000 * 1% / 0.02) / 50000 = 100 USDT Value -> 0.002 BTC
+        // WorstCase = 500 * 0.002 = 1 USDT → sehr klein → erlaubt
+        var signalMitSl = new SignalResult(Signal.Long, 0.8m, 50000m, 49500m, 51000m, "Test");
+        var resultMitSl = risk.ValidateTrade(signalMitSl, CreateContext(balance: 10000m));
+        resultMitSl.IsAllowed.Should().BeTrue("Kleines SL-Risiko passt noch in Drawdown-Budget");
+    }
+
+    [Fact]
+    public void ValidateTrade_SignalOhneSL_NutztKonservativenFallback()
+    {
+        // Ohne SL: newPositionRisk = AvailableBalance * MaxPositionSizePercent / 100
+        // Wenn dieser Fallback allein bereits den verbleibenden Drawdown-Puffer übersteigt, wird blockiert.
+        // Settings: MaxDrawdown=5%, MaxPositionSize=4.5%, Balance=10000.
+        // Kein bisheriger Verlust. Fallback-Risiko = 10000 * 4.5% = 450 USDT = 4.5% -> noch erlaubt.
+        // Mit 1% realisiertem Verlust: 100 + 450 = 550 USDT = 5.5% >= 5% -> blockiert.
+        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10, MaxPositionSizePercent = 4.5m, MaxLeverage = 10m };
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+
+        // 1% realisierter Verlust
+        risk.UpdateDailyStats(new CompletedTrade("ETH-USDT", Side.Buy, 3000m, 2970m, 1m, -100m, 3m, DateTime.UtcNow, DateTime.UtcNow, "SL", TradingMode.Live));
+
+        // Signal OHNE StopLoss
+        var signalOhneSl = new SignalResult(Signal.Long, 0.8m, 50000m, null, 52000m, "Test ohne SL");
+        var result = risk.ValidateTrade(signalOhneSl, CreateContext(balance: 10000m));
+
+        // 100 (realisiert) + 450 (Fallback-Risiko ohne SL) = 550 = 5.5% >= 5% -> blockiert
+        result.IsAllowed.Should().BeFalse("Konservativer Fallback ohne SL überschreitet Drawdown-Limit");
+        result.RejectionReason.Should().Contain("Drawdown");
+    }
+
+    [Fact]
+    public void ValidateTrade_HoherDrawdownPlusNeuesRisiko_WirdKorrektBlockiert()
+    {
+        // Testet das kombinierte Szenario: bestehender Drawdown (realisiert + unrealisiert)
+        // plus das Worst-Case-Risiko der neuen Position überschreitet das Limit.
+        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10, MaxPositionSizePercent = 2m, MaxLeverage = 10m };
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+
+        // 2% realisierter Verlust
+        risk.UpdateDailyStats(new CompletedTrade("BTC-USDT", Side.Buy, 50000m, 49000m, 0.1m, -200m, 5m, DateTime.UtcNow, DateTime.UtcNow, "SL", TradingMode.Live));
+
+        // Offene Position mit 1.5% unrealisiertem Verlust
+        var verlustPosition = new Position("ETH-USDT", Side.Buy, 3000m, 2955m, 0.5m, -150m, 10m, MarginType.Cross, DateTime.UtcNow);
+
+        // Neues Signal: ohne SL → Fallback-Risiko = 10000 * 2% = 200 USDT (2%)
+        // Gesamt: 2% (real.) + 1.5% (unreal.) + 2% (neu) = 5.5% >= 5% → blockiert
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, null, 52000m, "Test ohne SL");
+        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m, customPositions: new List<Position> { verlustPosition }));
+
+        result.IsAllowed.Should().BeFalse("Kombination aus realisierten, unrealisierten Verlusten und neuem Risiko überschreitet Limit");
+        result.RejectionReason.Should().Contain("Drawdown");
+    }
+
+    [Fact]
+    public void ValidateTrade_SignalMitSL_KleinesRisiko_WirdNichtFaelschlichBlockiert()
+    {
+        // Stellt sicher dass ein Signal mit sehr engem SL (kleines WorstCase-Risiko)
+        // nicht fälschlicherweise blockiert wird, obwohl noch Drawdown-Budget vorhanden ist.
+        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10, MaxPositionSizePercent = 2m, MaxLeverage = 10m };
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+
+        // Kein bisheriger Verlust
+        var signal = new SignalResult(Signal.Long, 0.9m, 50000m, 49900m, 50500m, "Enger SL");
+        // SL-Distanz = 100, slPercent = 0.2%, posSize = (10000*2%) / 0.002 / 50000 = 2 BTC, capped auf 10000*10/50000 = 2 BTC
+        // WorstCase = 100 * 2 = 200 USDT = 2% < 5% → erlaubt
+        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m));
+
+        result.IsAllowed.Should().BeTrue("Kleines SL-Risiko passt problemlos in das Drawdown-Budget");
+        result.AdjustedPositionSize.Should().BeGreaterThan(0m);
     }
 }

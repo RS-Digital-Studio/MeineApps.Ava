@@ -11,7 +11,6 @@ using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels;
 using MeineApps.UI.SkiaSharp;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Views;
@@ -106,7 +105,7 @@ public partial class WorkshopView : UserControl
             vm.UpgradeEffectRequested += OnUpgradeEffect;
 
             // AI-Asset-Service fuer Hybrid-Rendering initialisieren
-            var assetService = App.Services?.GetService<IGameAssetService>();
+            var assetService = GameAssetService.Current;
             if (assetService != null)
                 _sceneRenderer.Initialize(assetService);
 

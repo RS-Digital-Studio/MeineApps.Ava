@@ -175,7 +175,8 @@ public class BattlePass
 
     /// <summary>
     /// Generiert die Premium-Track-Belohnungen für alle 30 Tiers.
-    /// Tier 30 (Index 29) enthält einen exklusiven saisonalen Capstone-Reward mit 20 Goldschrauben.
+    /// Tier 30 (Index 29) enthält einen exklusiven saisonalen Capstone-Reward mit 50 Goldschrauben.
+    /// Reguläre Tiers: 10 GS alle 3 Tiers, sonst 2 GS.
     /// </summary>
     public static List<BattlePassReward> GeneratePremiumRewards(decimal baseIncome, int seasonNumber = 1)
     {
@@ -203,7 +204,7 @@ public class BattlePass
                     IsFree = false,
                     MoneyReward = baseMoney * (1 + i * 0.75m),
                     XpReward = 100 + i * 50,
-                    GoldenScrewReward = 20,
+                    GoldenScrewReward = 50,
                     DescriptionKey = $"BPCapstone{season}"
                 });
             }
@@ -215,7 +216,7 @@ public class BattlePass
                     IsFree = false,
                     MoneyReward = baseMoney * (1 + i * 0.75m),
                     XpReward = 100 + i * 50,
-                    GoldenScrewReward = (i + 1) % 3 == 0 ? 5 : 2,
+                    GoldenScrewReward = (i + 1) % 3 == 0 ? 10 : 2,
                     DescriptionKey = $"BPPremium_{i}"
                 });
             }

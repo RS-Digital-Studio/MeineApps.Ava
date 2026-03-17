@@ -319,7 +319,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         CanPrestige = highestTier != PrestigeTier.None;
         MinimumPrestigeLevel = PrestigeTier.Bronze.GetRequiredLevel();
         // Basis-PP mit Tier-Multiplikator anzeigen (nicht nur Basis-PP)
-        var basePoints = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
+        var basePoints = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);
         var tierMultiplier = highestTier != PrestigeTier.None ? highestTier.GetPointMultiplier() : 1.0m;
         var potentialPoints = (int)(basePoints * tierMultiplier);
         PotentialBonus = $"+{potentialPoints} PP";

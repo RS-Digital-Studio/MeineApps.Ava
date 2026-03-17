@@ -24,8 +24,20 @@ public interface IResearchService
 
     /// <summary>
     /// Sofortfertigstellung der aktiven Forschung gegen Goldschrauben (ab Level 8).
+    /// Kosten sind Level-basiert (Research.InstantFinishScrewCost).
     /// </summary>
     bool InstantFinishResearch();
+
+    /// <summary>
+    /// Berechnet die zeitbasierten GS-Kosten für Sofortfertigstellung.
+    /// 5 GS pro verbleibende Stunde (aufgerundet), min 5, max 50.
+    /// </summary>
+    int GetInstantCompleteGSCost(TimeSpan remaining);
+
+    /// <summary>
+    /// Sofortfertigstellung mit zeitbasierten GS-Kosten (günstiger als Level-basiert).
+    /// </summary>
+    bool InstantCompleteResearch();
 
     /// <summary>
     /// Reduziert die verbleibende Forschungszeit um den angegebenen Prozentsatz (0.0-1.0).

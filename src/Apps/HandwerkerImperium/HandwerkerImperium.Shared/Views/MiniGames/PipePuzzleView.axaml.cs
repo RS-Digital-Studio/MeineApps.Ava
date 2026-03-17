@@ -7,7 +7,6 @@ using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels.MiniGames;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Views.MiniGames;
@@ -44,7 +43,7 @@ public partial class PipePuzzleView : UserControl
         };
 
         // AI-Hintergrund-Service initialisieren
-        var assetService = App.Services?.GetService<IGameAssetService>();
+        var assetService = GameAssetService.Current;
         if (assetService != null)
             _renderer.Initialize(assetService);
     }

@@ -124,21 +124,20 @@
                   Orientation="Horizontal"
                   Margin="8"
                   Spacing="6">
-        <!-- Sofort-Fertigstellen Button (ab Level 8) -->
+        <!-- Altes Level-basiertes InstantFinish entfernt (15-500 GS, immer teurer als zeitbasiertes InstantComplete max 50 GS) -->
+        <!-- Zeitbasierte GS-Sofortfertigstellung (5 GS/Stunde) -->
         <Button Classes="Secondary"
-                AutomationProperties.AutomationId="Research_Btn_InstantFinish"
+                AutomationProperties.AutomationId="Research_Btn_InstantComplete"
                 Padding="10,6"
-                IsVisible="{Binding CanInstantFinish}"
-                Command="{Binding InstantFinishResearchCommand}">
+                IsVisible="{Binding CanInstantComplete}"
+                Command="{Binding InstantCompleteResearchCommand}">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <icons:GameIcon Kind="LightningBolt" Width="20" Height="20"
-                             AutomationProperties.AutomationId="Research_Icon_Lightning" />
-            <icons:GameIcon Kind="ScrewFlatTop" Width="18" Height="18"
-                             AutomationProperties.AutomationId="Research_Icon_InstantScrew"
+            <icons:GameIcon Kind="TimerOutline" Width="18" Height="18"
+                             AutomationProperties.AutomationId="Research_Icon_InstantComplete"
                              Foreground="{StaticResource CraftGoldBrush}" />
-            <TextBlock Text="{Binding InstantFinishCost}"
-                       AutomationProperties.AutomationId="Research_Txt_InstantFinishCost"
-                       FontSize="12" FontWeight="SemiBold"
+            <TextBlock Text="{Binding InstantCompleteButtonText}"
+                       AutomationProperties.AutomationId="Research_Txt_InstantCompleteCost"
+                       FontSize="11" FontWeight="SemiBold"
                        Foreground="{StaticResource CraftGoldBrush}" />
           </StackPanel>
         </Button>

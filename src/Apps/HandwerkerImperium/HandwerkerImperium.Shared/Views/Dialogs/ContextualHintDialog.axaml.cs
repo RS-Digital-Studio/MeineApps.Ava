@@ -20,7 +20,7 @@ public partial class ContextualHintDialog : UserControl
     /// </summary>
     private void OnBackdropPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (DataContext is MainViewModel vm)
+        if (DataContext is DialogViewModel vm)
             vm.DismissHintCommand.Execute(null);
     }
 

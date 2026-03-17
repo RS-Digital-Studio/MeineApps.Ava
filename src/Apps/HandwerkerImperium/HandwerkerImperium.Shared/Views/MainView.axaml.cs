@@ -160,7 +160,7 @@ public partial class MainView : UserControl
         }
 
         // Meister Hans aktualisieren (delegiert an StoryDialog UserControl)
-        if (_vm?.IsStoryDialogVisible == true)
+        if (_vm?.DialogVM.IsStoryDialogVisible == true)
         {
             StoryDialogControl?.UpdateHansAnimation();
         }

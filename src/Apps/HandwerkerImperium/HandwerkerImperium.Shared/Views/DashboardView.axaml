@@ -250,7 +250,7 @@
                 <!-- Reputation nur bei Warnung (<50) oder Highlight (>=80) -->
                 <Button Classes="Text" Padding="4,2"
                         MinHeight="44"
-                        Command="{Binding ShowReputationInfoCommand}"
+                        Command="{Binding DialogVM.ShowReputationInfoCommand}"
                         IsVisible="{Binding ShowReputationBadge}"
                         AutomationProperties.AutomationId="Dashboard_Btn_Reputation">
                   <StackPanel Orientation="Horizontal" Spacing="2">

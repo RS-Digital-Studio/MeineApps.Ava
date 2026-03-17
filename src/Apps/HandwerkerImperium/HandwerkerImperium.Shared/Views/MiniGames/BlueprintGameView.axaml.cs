@@ -8,7 +8,6 @@ using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.ViewModels.MiniGames;
 using HandwerkerImperium.Icons;
 using HandwerkerImperium.Services;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Views.MiniGames;
@@ -45,7 +44,7 @@ public partial class BlueprintGameView : UserControl
         };
 
         // AI-Hintergrund-Service initialisieren
-        var assetService = App.Services?.GetService<IGameAssetService>();
+        var assetService = GameAssetService.Current;
         if (assetService != null)
             _renderer.Initialize(assetService);
     }

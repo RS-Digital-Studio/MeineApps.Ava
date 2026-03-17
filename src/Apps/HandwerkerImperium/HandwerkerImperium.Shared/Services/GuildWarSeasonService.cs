@@ -18,6 +18,7 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;
     private readonly IPreferencesService _preferences;
+    private readonly ILogService _log;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     // Cache
@@ -50,11 +51,13 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
     public GuildWarSeasonService(
         IFirebaseService firebase,
         IGameStateService gameStateService,
-        IPreferencesService preferences)
+        IPreferencesService preferences,
+        ILogService log)
     {
         _firebase = firebase;
         _gameStateService = gameStateService;
         _preferences = preferences;
+        _log = log;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -94,9 +97,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             var savedPhase = _preferences.Get(PrefKeyLastPhase, "attack");
             _lastKnownPhase = ParseWarPhase(savedPhase);
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Gildenkrieg-Initialisierung fehlgeschlagen", ex);
         }
         finally
         {
@@ -178,9 +181,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             };
             await _firebase.PushAsync($"guild_war_log/{_activeWarId}", logEntry);
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Kriegspunkte beitragen fehlgeschlagen", ex);
         }
         finally
         {
@@ -270,9 +273,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
                 MvpScore = mvpScore
             };
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Kriegsdaten laden fehlgeschlagen", ex);
             return null;
         }
         finally
@@ -308,9 +311,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
                 .OrderByDescending(e => e.Timestamp)
                 .ToList();
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Kriegs-Log laden fehlgeschlagen", ex);
             return [];
         }
     }
@@ -455,9 +458,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             };
             await _firebase.PushAsync($"guild_war_log/{_activeWarId}", logEntry);
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Phasenwechsel prüfen fehlgeschlagen", ex);
         }
         finally
         {
@@ -507,9 +510,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             // Saison-Belohnungen verteilen
             DistributeSeasonRewards();
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Saison-Ende prüfen fehlgeschlagen", ex);
         }
         finally
         {
@@ -674,9 +677,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             await _firebase.SetAsync($"guild_wars/{newWarId}", newWar);
             return newWarId;
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Krieg suchen/erstellen fehlgeschlagen", ex);
             return null;
         }
     }
@@ -705,9 +708,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
 
             return scores.Values.Sum(s => s.TotalScore);
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Gilden-Score berechnen fehlgeschlagen", ex);
             return 0;
         }
     }
@@ -758,9 +761,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
 
             return (mvpName, mvpEntry.Value.TotalScore);
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("MVP ermitteln fehlgeschlagen", ex);
             return ("", 0);
         }
     }
@@ -983,9 +986,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
                     membership.LeagueId = newLeagueKey;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Liga-Auf/Abstieg berechnen fehlgeschlagen", ex);
         }
     }
 

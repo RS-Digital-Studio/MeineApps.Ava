@@ -1770,5 +1770,33 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string PrestigeTimingWarning => ResourceManager.GetString("PrestigeTimingWarning", resourceCulture) ?? "";
 
         public static string PrestigeNearNextTier => ResourceManager.GetString("PrestigeNearNextTier", resourceCulture) ?? "";
+
+        public static string SoftCapReached => ResourceManager.GetString("SoftCapReached", resourceCulture) ?? "";
+
+        public static string WorkerLevelUp => ResourceManager.GetString("WorkerLevelUp", resourceCulture) ?? "";
+
+        public static string PrestigeTierUp => ResourceManager.GetString("PrestigeTierUp", resourceCulture) ?? "";
+
+        public static string StreakMilestone => ResourceManager.GetString("StreakMilestone", resourceCulture) ?? "";
+
+        public static string PremiumIncomeCompare => ResourceManager.GetString("PremiumIncomeCompare", resourceCulture) ?? "";
+
+        public static string ResearchInstantComplete => ResourceManager.GetString("ResearchInstantComplete", resourceCulture) ?? "";
+
+        public static string StarterOfferTitle => ResourceManager.GetString("StarterOfferTitle", resourceCulture) ?? "";
+
+        public static string StarterOfferDesc => ResourceManager.GetString("StarterOfferDesc", resourceCulture) ?? "";
+
+        public static string StarterOfferButton => ResourceManager.GetString("StarterOfferButton", resourceCulture) ?? "";
+
+        public static string WorkerQuitRisk => ResourceManager.GetString("WorkerQuitRisk", resourceCulture) ?? "";
+
+        public static string WorkerUnhappy => ResourceManager.GetString("WorkerUnhappy", resourceCulture) ?? "";
+
+        public static string WorkerTired => ResourceManager.GetString("WorkerTired", resourceCulture) ?? "";
+
+        public static string AutoCompleteAvailable => ResourceManager.GetString("AutoCompleteAvailable", resourceCulture) ?? "";
+
+        public static string AutoCompleteHint => ResourceManager.GetString("AutoCompleteHint", resourceCulture) ?? "";
     }
 }

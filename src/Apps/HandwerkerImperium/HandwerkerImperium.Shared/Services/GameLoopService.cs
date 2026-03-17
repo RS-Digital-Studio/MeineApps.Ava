@@ -340,17 +340,18 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                 grossIncome *= (1m + gm.ResearchEfficiencyBonus);
         }
 
-        // Soft-Cap: Diminishing Returns ab 10.0x Einkommens-Multiplikator
+        // BAL-PROGRESSION: Soft-Cap von 10x auf 5x gesenkt - Multiplikator-Stacking wird früher gebremst
+        // Diminishing Returns ab 5.0x Einkommens-Multiplikator.
         // Nur Shop/Research/Event/Guild/MasterTool-Boni betroffen (Prestige-Multiplikator ist bereits in TotalIncomePerSecond).
-        // Angehoben auf 10.0x damit sich Endgame-Boni (Research+Shop+Events) lohnender anfühlen.
         // Logarithmisch: Jeder Bonus bringt etwas, aber immer weniger.
+        const decimal softCapThreshold = 5.0m;
         if (state.TotalIncomePerSecond > 0)
         {
             decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
-            if (effectiveMultiplier > 10.0m)
+            if (effectiveMultiplier > softCapThreshold)
             {
-                decimal excess = effectiveMultiplier - 10.0m;
-                decimal softened = 10.0m + (decimal)Math.Log(1.0 + (double)excess, 2.0);
+                decimal excess = effectiveMultiplier - softCapThreshold;
+                decimal softened = softCapThreshold + (decimal)Math.Log(1.0 + (double)excess, 2.0);
                 grossIncome = state.TotalIncomePerSecond * softened;
 
                 // Soft-Cap-Info für UI-Transparenz (wie viel % verloren gehen)

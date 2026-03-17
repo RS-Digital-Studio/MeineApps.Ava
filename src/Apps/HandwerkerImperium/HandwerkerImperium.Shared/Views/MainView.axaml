@@ -271,6 +271,62 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
     <!-- Welcome Back Offer Dialog (extrahiert in UserControl) -->
     <dialogs:WelcomeBackOfferDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
+    <!-- Starter Offer Dialog (einmaliges zeitlich begrenztes Premium-Angebot) -->
+    <Border Grid.RowSpan="2"
+            IsVisible="{Binding IsStarterOfferVisible}"
+            Background="{StaticResource DialogOverlayBrush}"
+            IsHitTestVisible="{Binding IsStarterOfferVisible}"
+            AutomationProperties.AutomationId="Main_Overlay_StarterOffer">
+      <Border Classes="Card" MaxWidth="340" Padding="24"
+              CornerRadius="16"
+              HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="#92400E" Offset="0" />
+            <GradientStop Color="#D97706" Offset="1" />
+          </LinearGradientBrush>
+        </Border.Background>
+        <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <icons:GameIcon Kind="Crown" Width="48" Height="48"
+                           Foreground="{StaticResource CraftGoldBrush}"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Translate StarterOfferTitle}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{StaticResource CraftGoldBrush}"
+                     HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Translate StarterOfferDesc}"
+                     FontSize="14" TextWrapping="Wrap"
+                     Foreground="{DynamicResource PrimaryContrastBrush}"
+                     HorizontalAlignment="Center"
+                     TextAlignment="Center" />
+          <Border CornerRadius="8" Padding="8,4"
+                  HorizontalAlignment="Center">
+            <Border.Background>
+              <SolidColorBrush Color="Black" Opacity="0.3" />
+            </Border.Background>
+            <TextBlock Text="{Binding StarterOfferCountdown}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{StaticResource CraftGoldBrush}"
+                       HorizontalAlignment="Center" />
+          </Border>
+          <Button Classes="Primary" Padding="24,12"
+                  HorizontalAlignment="Center"
+                  Command="{Binding AcceptStarterOfferCommand}">
+            <TextBlock Text="{loc:Translate StarterOfferButton}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource PrimaryContrastBrush}" />
+          </Button>
+          <Button Classes="Text" Padding="16,8"
+                  HorizontalAlignment="Center"
+                  Command="{Binding DismissStarterOfferCommand}">
+            <TextBlock Text="{loc:Translate Later}"
+                       FontSize="12" Opacity="0.7"
+                       Foreground="{DynamicResource PrimaryContrastBrush}" />
+          </Button>
+        </StackPanel>
+      </Border>
+    </Border>
+
     <!-- Lucky Spin Bottom-Sheet Overlay -->
     <Border Grid.RowSpan="2"
             Classes="SheetBackdrop"
@@ -293,23 +349,23 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
       </Border>
     </Border>
 
-    <!-- Achievement Unlocked Dialog (extrahiert in UserControl) -->
-    <dialogs:AchievementDialog Grid.RowSpan="2" DataContext="{Binding}" />
+    <!-- Achievement Unlocked Dialog (DataContext: DialogVM) -->
+    <dialogs:AchievementDialog Grid.RowSpan="2" DataContext="{Binding DialogVM}" />
 
-    <!-- Kontextueller Hint (Tooltip-Bubble / Dialog, ersetzt altes Tutorial) -->
-    <dialogs:ContextualHintDialog Grid.RowSpan="2" DataContext="{Binding}" />
+    <!-- Kontextueller Hint (Tooltip-Bubble / Dialog, DataContext: DialogVM) -->
+    <dialogs:ContextualHintDialog Grid.RowSpan="2" DataContext="{Binding DialogVM}" />
 
-    <!-- Story Dialog mit Meister Hans (extrahiert in UserControl) -->
-    <dialogs:StoryDialog x:Name="StoryDialogControl" Grid.RowSpan="2" DataContext="{Binding}" />
+    <!-- Story Dialog mit Meister Hans (DataContext: DialogVM) -->
+    <dialogs:StoryDialog x:Name="StoryDialogControl" Grid.RowSpan="2" DataContext="{Binding DialogVM}" />
 
-    <!-- Prestige Zusammenfassung (nach Prestige-Durchführung) -->
-    <dialogs:PrestigeSummaryDialog Grid.RowSpan="2" DataContext="{Binding}" />
+    <!-- Prestige Zusammenfassung (DataContext: DialogVM) -->
+    <dialogs:PrestigeSummaryDialog Grid.RowSpan="2" DataContext="{Binding DialogVM}" />
 
-    <!-- Alert Dialog (extrahiert in UserControl) -->
-    <dialogs:AlertDialog Grid.RowSpan="2" DataContext="{Binding}" />
+    <!-- Alert Dialog (DataContext: DialogVM) -->
+    <dialogs:AlertDialog Grid.RowSpan="2" DataContext="{Binding DialogVM}" />
 
-    <!-- Confirm Dialog (extrahiert in UserControl) -->
-    <dialogs:ConfirmDialog Grid.RowSpan="2" DataContext="{Binding}" />
+    <!-- Confirm Dialog (DataContext: DialogVM) -->
+    <dialogs:ConfirmDialog Grid.RowSpan="2" DataContext="{Binding DialogVM}" />
 
     <!-- Worker Profile Bottom-Sheet (extrahiert in UserControl) -->
     <dialogs:WorkerProfileDialog Grid.RowSpan="2" DataContext="{Binding}" />

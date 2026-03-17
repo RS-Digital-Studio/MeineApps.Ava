@@ -753,6 +753,13 @@ public sealed partial class MainViewModel
             _localizationService.GetString("ManagerStatus") ?? "{0} aktiv",
             activeManagers);
 
+        // Progressive Disclosure: Missionen-Sub-Features (Dead Zone Lv40-80 schließen)
+        // Nach Prestige: Einmal freigeschaltete Features bleiben sichtbar (Prestige-Count > 0 = war schon mal dort)
+        bool hasPrestiged = state.Prestige.TotalPrestigeCount > 0;
+        ShowTournamentSection = state.PlayerLevel >= LevelThresholds.TournamentSection || hasPrestiged;
+        ShowSeasonalEventSection = state.PlayerLevel >= LevelThresholds.SeasonalEventSection || hasPrestiged;
+        ShowBattlePassSection = state.PlayerLevel >= LevelThresholds.BattlePassSection || hasPrestiged;
+
         // Turnier
         if (state.CurrentTournament != null)
         {
@@ -826,7 +833,7 @@ public sealed partial class MainViewModel
 
         if (IsPrestigeAvailable)
         {
-            var potentialPoints = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
+            var potentialPoints = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);
             int tierPoints = (int)(potentialPoints * highestTier.GetPointMultiplier());
             var pointsLabel = _localizationService.GetString("PrestigePoints") ?? "Prestige-Punkte";
             PrestigePointsPreview = $"+{tierPoints} {pointsLabel}";
@@ -891,7 +898,7 @@ public sealed partial class MainViewModel
             var tierName = _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString();
 
             // PP-Prognose: "Bei Gold: +400 PP"
-            var potentialPP = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
+            var potentialPP = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);
             int nextTierPoints = (int)(potentialPP * nextTier.GetPointMultiplier());
             NextPrestigeTierHint = nextTierPoints > 0
                 ? $"Lv. {currentLevel}/{reqLevel} \u2192 {tierName} (+{nextTierPoints} PP)"
@@ -904,10 +911,7 @@ public sealed partial class MainViewModel
             NextPrestigeTierProgress = 0;
         }
 
-        // Tier-Auswahl: Verfügbare Tiers für den Dialog setzen
-        var availableTiers = state.Prestige.GetAllAvailableTiers(currentLevel);
-        HasMultiplePrestigeTiers = availableTiers.Count > 1;
-        AvailablePrestigeTierCount = availableTiers.Count;
+        // Tier-Auswahl wird dynamisch beim Öffnen des Prestige-Dialogs in DialogVM gesetzt
 
         // Prestige-Tier-Badge im Dashboard-Header aktualisieren
         UpdatePrestigeTierBadge(state);

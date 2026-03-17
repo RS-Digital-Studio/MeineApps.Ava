@@ -141,7 +141,7 @@ public sealed class SaveGameService : ISaveGameService
                 // v1 -> v2 Migration
                 if (state.Version < 2)
                 {
-                    state = GameState.MigrateFromV1(state);
+                    state = MigrateFromV1(state);
                 }
 
                 SanitizeState(state);
@@ -240,6 +240,7 @@ public sealed class SaveGameService : ISaveGameService
         if (state.GoldenScrews < 0) state.GoldenScrews = 0;
         if (state.GoldenScrews > 100_000) state.GoldenScrews = 100_000;
         if (state.TotalMoneyEarned < 0) state.TotalMoneyEarned = 0;
+        if (state.CurrentRunMoney < 0) state.CurrentRunMoney = 0;
         if (state.TotalMoneySpent < 0) state.TotalMoneySpent = 0;
 
         // Workshops: mindestens ein Carpenter muss existieren
@@ -270,9 +271,9 @@ public sealed class SaveGameService : ISaveGameService
         if (state.Prestige.DiamantCount < 0) state.Prestige.DiamantCount = 0;
         if (state.Prestige.MeisterCount < 0) state.Prestige.MeisterCount = 0;
         if (state.Prestige.LegendeCount < 0) state.Prestige.LegendeCount = 0;
-        // PermanentMultiplier: Minimum 1.0 (kein Prestige), Maximum 200.0
+        // PermanentMultiplier: Minimum 1.0 (kein Prestige), Maximum 50.0
         if (state.Prestige.PermanentMultiplier < 1.0m) state.Prestige.PermanentMultiplier = 1.0m;
-        if (state.Prestige.PermanentMultiplier > 200.0m) state.Prestige.PermanentMultiplier = 200.0m;
+        if (state.Prestige.PermanentMultiplier > 50.0m) state.Prestige.PermanentMultiplier = 50.0m;
         state.Prestige.PurchasedShopItems ??= [];
         // Prestige-Shop-Items: Nur gültige IDs behalten (Exploit-Schutz)
         var validShopIds = PrestigeShop.GetAllItems().Select(i => i.Id).ToHashSet();
@@ -358,7 +359,7 @@ public sealed class SaveGameService : ISaveGameService
         state.CompletedRecipeIds ??= [];
         state.PerfectMiniGameTypes ??= [];
 
-        // Ascension-Daten validieren
+        // Ascension-Daten validieren (reserviert für zukünftige Funktionalität, Save-Kompatibilität)
         state.Ascension ??= new AscensionData();
         state.Ascension.Perks ??= new Dictionary<string, int>();
         if (state.Ascension.AscensionLevel < 0) state.Ascension.AscensionLevel = 0;
@@ -433,5 +434,71 @@ public sealed class SaveGameService : ISaveGameService
                 research.StartedAt = null;
             }
         }
+    }
+
+    /// <summary>
+    /// Migriert einen v1-Spielstand ins v2-Format.
+    /// Konvertiert Worker-Daten, Prestige und initialisiert neue Collections.
+    /// </summary>
+    private static GameState MigrateFromV1(GameState old)
+    {
+        if (old.Version >= 2) return old;
+
+        old.Version = 2;
+
+        // Worker migrieren: alte Worker hatten feste 1.0 Effizienz
+        foreach (var ws in old.Workshops)
+        {
+            ws.IsUnlocked = true;
+            foreach (var worker in ws.Workers)
+            {
+                worker.Tier = WorkerTier.E;
+                worker.Talent = 3;
+                worker.Personality = WorkerPersonality.Steady;
+                worker.Mood = 80m;
+                worker.Fatigue = 0m;
+                worker.ExperienceLevel = Math.Min(10, worker.SkillLevel);
+                worker.WagePerHour = WorkerTier.E.GetWagePerHour();
+                worker.AssignedWorkshop = ws.Type;
+            }
+
+            if (!old.UnlockedWorkshopTypes.Contains(ws.Type))
+                old.UnlockedWorkshopTypes.Add(ws.Type);
+        }
+
+        // Prestige migrieren
+        old.Prestige = new PrestigeData
+        {
+            BronzeCount = old.PrestigeLevel,
+            PermanentMultiplier = old.PrestigeMultiplier,
+            CurrentTier = old.PrestigeLevel > 0 ? PrestigeTier.Bronze : PrestigeTier.None
+        };
+
+        // Reputation initialisieren
+        old.Reputation ??= new CustomerReputation();
+
+        // Leere Collections initialisieren
+        old.Buildings ??= [];
+        old.EventHistory ??= [];
+
+        // Research-Tree initialisieren
+        if (old.Researches == null || old.Researches.Count == 0)
+        {
+            old.Researches = ResearchTree.CreateAll();
+        }
+        else
+        {
+            // Prerequisites aus der aktuellen ResearchTree-Definition synchronisieren
+            // (damit Änderungen am Baum-Layout auch bei bestehenden Spielständen wirken)
+            var template = ResearchTree.CreateAll();
+            foreach (var tmpl in template)
+            {
+                var existing = old.Researches.FirstOrDefault(r => r.Id == tmpl.Id);
+                if (existing != null)
+                    existing.Prerequisites = tmpl.Prerequisites;
+            }
+        }
+
+        return old;
     }
 }

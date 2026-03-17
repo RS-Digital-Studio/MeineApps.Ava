@@ -82,6 +82,7 @@ public partial class App : Application
 
         // Statische Renderer mit AI-Asset-Service initialisieren
         var assetService = Services.GetService<IGameAssetService>();
+        GameAssetService.Current = assetService;
         if (assetService != null)
         {
             MeisterHansRenderer.Initialize(assetService);
@@ -279,6 +280,7 @@ public partial class App : Application
         services.AddSingleton<ITournamentService, TournamentService>();
         services.AddSingleton<ISeasonalEventService, SeasonalEventService>();
         services.AddSingleton<IBattlePassService, BattlePassService>();
+        services.AddSingleton<ILogService, LogService>();
         services.AddSingleton<IFirebaseService, FirebaseService>();
         services.AddSingleton<IGuildService, GuildService>();
         services.AddSingleton<ICraftingService, CraftingService>();
@@ -300,6 +302,7 @@ public partial class App : Application
         services.AddSingleton<IGuildAchievementService, GuildAchievementService>();
 
         // ViewModels (Singleton because MainViewModel holds references to child VMs)
+        services.AddSingleton<MiniGameViewModels>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<AchievementsViewModel>();
         services.AddSingleton<OrderViewModel>();

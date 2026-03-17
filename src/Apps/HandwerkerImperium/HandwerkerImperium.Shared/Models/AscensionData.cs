@@ -4,7 +4,8 @@ namespace HandwerkerImperium.Models;
 
 /// <summary>
 /// Speichert alle Ascension-bezogenen Daten (Meta-Prestige).
-/// Freigeschaltet nach 3x Legende Prestige.
+/// Reserviert für zukünftige Ascension-Funktionalität.
+/// Klasse wird persistiert (JSON) - nicht löschen wegen Save-Kompatibilität.
 /// </summary>
 public class AscensionData
 {

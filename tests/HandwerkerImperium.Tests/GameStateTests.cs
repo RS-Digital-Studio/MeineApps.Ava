@@ -145,31 +145,32 @@ public class GameStateTests
     }
 
     [Fact]
-    public void AddXp_NormaleXP_ErhoehtCurrentXpUndTotalXp()
+    public void CurrentXp_SetzeDirekt_WirdGespeichert()
     {
-        // Vorbereitung
+        // AddXp wurde nach GameStateService verschoben - hier nur noch Property-Tests
         var state = GameState.CreateNew();
 
-        // Ausführung
-        state.AddXp(100);
+        // Ausführung: Direkte Zuweisung (AddXp-Logik liegt jetzt im Service)
+        state.CurrentXp = 100;
+        state.TotalXp = 100;
 
         // Prüfung
-        state.CurrentXp.Should().BeGreaterThanOrEqualTo(100);
-        state.TotalXp.Should().BeGreaterThanOrEqualTo(100);
+        state.CurrentXp.Should().Be(100);
+        state.TotalXp.Should().Be(100);
     }
 
     [Fact]
-    public void AddXp_GenugXpFuerLevelUp_ErhoehutLevel()
+    public void PlayerLevel_SetzeDirekt_WirdGespeichert()
     {
-        // Vorbereitung: Genug XP für Level 2 hinzufügen (100 XP)
+        // AddXp mit Level-Up liegt jetzt im GameStateService
         var state = GameState.CreateNew();
         state.PlayerLevel.Should().Be(1);
 
-        // Ausführung: Mehr als genug für Level 2
-        state.AddXp(1000);
+        // Ausführung: Direkte Zuweisung
+        state.PlayerLevel = 5;
 
-        // Prüfung: Mehrere Level-Ups erwartet
-        state.PlayerLevel.Should().BeGreaterThan(1);
+        // Prüfung
+        state.PlayerLevel.Should().Be(5);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -192,7 +193,7 @@ public class GameStateTests
     {
         // Vorbereitung
         var state = GameState.CreateNew();
-        state.AddXp(50); // Weniger als Level 2 benötigt
+        state.CurrentXp = 50; // Weniger als Level 2 benötigt
 
         // Prüfung
         state.LevelProgress.Should().BeInRange(0.0, 1.0);

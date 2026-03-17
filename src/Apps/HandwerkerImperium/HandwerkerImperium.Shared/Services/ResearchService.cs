@@ -200,6 +200,53 @@ public sealed class ResearchService : IResearchService
     }
 
     /// <summary>
+    /// Berechnet die zeitbasierten GS-Kosten für Sofortfertigstellung.
+    /// 5 GS pro verbleibende Stunde (aufgerundet), min 5, max 50.
+    /// </summary>
+    public int GetInstantCompleteGSCost(TimeSpan remaining)
+    {
+        if (remaining <= TimeSpan.Zero) return 0;
+        int hours = (int)Math.Ceiling(remaining.TotalHours);
+        int cost = hours * 5;
+        return Math.Clamp(cost, 5, 50);
+    }
+
+    /// <summary>
+    /// Sofortfertigstellung der aktiven Forschung mit zeitbasierten GS-Kosten.
+    /// </summary>
+    public bool InstantCompleteResearch()
+    {
+        var active = GetActiveResearch();
+        if (active == null || !active.IsActive) return false;
+
+        // Effektive Restzeit berechnen (inkl. Gilden-Bonus)
+        var effectiveDuration = active.Duration;
+        var guildSpeedBonus = _gameState.State.GuildMembership?.ResearchSpeedBonus ?? 0m;
+        if (guildSpeedBonus > 0)
+            effectiveDuration = TimeSpan.FromSeconds(effectiveDuration.TotalSeconds / (double)(1m + guildSpeedBonus));
+
+        var elapsed = active.StartedAt.HasValue ? DateTime.UtcNow - active.StartedAt.Value : TimeSpan.Zero;
+        var remaining = effectiveDuration - elapsed;
+        if (remaining <= TimeSpan.Zero) return false;
+
+        var cost = GetInstantCompleteGSCost(remaining);
+        if (!_gameState.CanAffordGoldenScrews(cost)) return false;
+
+        _gameState.TrySpendGoldenScrews(cost);
+
+        active.IsResearched = true;
+        active.IsActive = false;
+        active.CompletedAt = DateTime.UtcNow;
+        _gameState.State.ActiveResearchId = null;
+        MarkEffectsDirty();
+        _activeResearchCache = null;
+        _activeResearchDirty = false;
+
+        ResearchCompleted?.Invoke(this, active);
+        return true;
+    }
+
+    /// <summary>
     /// BAL-4: Reduziert die verbleibende Forschungszeit um den angegebenen Prozentsatz.
     /// Verschiebt StartedAt in die Vergangenheit, sodass die Restzeit sinkt.
     /// Berücksichtigt Guild-Speed-Bonus für korrekte effektive Restzeit.

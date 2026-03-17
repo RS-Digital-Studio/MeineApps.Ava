@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Services;
 
@@ -304,9 +305,20 @@ public sealed class GuildBossService : IGuildBossService
             var bossIndex = weekNumber % allBosses.Count;
             var definition = allBosses[bossIndex];
 
-            // HP berechnen
+            // HP berechnen: Basis aus Gildenlevel, dann mit Mitgliederzahl skalieren
             var guildLevel = Math.Max(1, membership.GuildLevel);
-            var bossHp = definition.CalculateHp(guildLevel);
+            var baseBossHp = definition.CalculateHp(guildLevel);
+
+            // BAL-28: Boss skaliert mit Gildengröße für Solo-Spieler
+            // Mitgliederzahl aus Firebase laden (dort aktuell gehalten)
+            var memberCount = 1;
+            var guildData = await _firebase.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
+            if (guildData != null)
+                memberCount = Math.Max(1, guildData.MemberCount);
+
+            // Bei 1-4 Mitgliedern: Faktor 1 (Minimum), bei 5: 1, bei 10: 2, bei 20: 4
+            var memberScaling = Math.Max(1, memberCount / 5);
+            var bossHp = baseBossHp * memberScaling;
 
             var now = DateTime.UtcNow;
             var newBoss = new FirebaseGuildBoss

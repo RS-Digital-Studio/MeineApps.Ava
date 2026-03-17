@@ -76,6 +76,12 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
     private bool _hasEquipmentShop;
 
     /// <summary>
+    /// Vergleichstext: Aktuelles vs. Premium-Einkommen (nur für Nicht-Premium-Spieler).
+    /// </summary>
+    [ObservableProperty]
+    private string _premiumIncomeComparison = string.Empty;
+
+    /// <summary>
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
     public bool ShowAds => !IsPremium;
@@ -137,6 +143,9 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
         var state = _gameStateService.State;
         IsPremium = state.IsPremium;
         CurrentBalance = FormatMoney(state.Money);
+
+        // Premium-Einkommensvergleich nur für Nicht-Premium-Spieler berechnen
+        UpdatePremiumIncomeComparison();
 
         // Create shop items with localized texts
         ShopItems =
@@ -611,7 +620,7 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                         };
                         if (screwAmount > 0)
                         {
-                            _gameStateService.AddGoldenScrews(screwAmount);
+                            _gameStateService.AddGoldenScrews(screwAmount, fromPurchase: true);
                             GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
                             await _audioService.PlaySoundAsync(GameSound.LevelUp);
                             ShowAlert(
@@ -746,11 +755,35 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
         };
     }
 
+    /// <summary>
+    /// Berechnet den Premium-Einkommensvergleich für Nicht-Premium-Spieler.
+    /// Zeigt aktuelles Netto-Einkommen und den Wert mit Premium (+50%).
+    /// </summary>
+    private void UpdatePremiumIncomeComparison()
+    {
+        if (IsPremium)
+        {
+            PremiumIncomeComparison = string.Empty;
+            return;
+        }
+
+        var netIncome = _gameStateService.State.NetIncomePerSecond;
+        var premiumIncome = netIncome * 1.5m;
+        var currentFormatted = MoneyFormatter.FormatPerSecond(netIncome);
+        var premiumFormatted = MoneyFormatter.FormatPerSecond(premiumIncome);
+
+        var template = _localizationService.GetString("PremiumIncomeCompare")
+                       ?? "Dein Einkommen: {0} \u2192 Mit Premium: {1}";
+        PremiumIncomeComparison = string.Format(template, currentFormatted, premiumFormatted);
+    }
+
     private static string FormatMoney(decimal amount) => MoneyFormatter.Format(amount, 2);
 
     private void OnMoneyChanged(object? sender, MoneyChangedEventArgs e)
     {
         CurrentBalance = FormatMoney(e.NewAmount);
+        // Einkommensvergleich aktualisieren (NetIncome kann sich geändert haben)
+        UpdatePremiumIncomeComparison();
     }
 
     private void OnGoldenScrewsChanged(object? sender, GoldenScrewsChangedEventArgs e)

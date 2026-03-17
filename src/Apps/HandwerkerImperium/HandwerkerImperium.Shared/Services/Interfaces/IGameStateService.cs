@@ -90,7 +90,7 @@ public interface IGameStateService
     /// <summary>
     /// Adds golden screws to the player's balance.
     /// </summary>
-    void AddGoldenScrews(int amount);
+    void AddGoldenScrews(int amount, bool fromPurchase = false);
 
     /// <summary>
     /// Attempts to spend golden screws. Returns true if successful.

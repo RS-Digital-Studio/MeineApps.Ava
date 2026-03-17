@@ -30,10 +30,10 @@ public sealed class PrestigeService : IPrestigeService
         return state.Prestige.CanPrestige(tier, state.PlayerLevel);
     }
 
-    public int GetPrestigePoints(decimal totalMoneyEarned)
+    public int GetPrestigePoints(decimal currentRunMoney)
     {
-        // Basis-Punkte aus PrestigeData (floor(sqrt(totalMoney / 100_000)))
-        return PrestigeData.CalculatePrestigePoints(totalMoneyEarned);
+        // Basis-Punkte nur aus dem aktuellen Durchlauf (floor(sqrt(currentRunMoney / 100_000)))
+        return PrestigeData.CalculatePrestigePoints(currentRunMoney);
     }
 
     public async Task<bool> DoPrestige(PrestigeTier tier)
@@ -43,8 +43,8 @@ public sealed class PrestigeService : IPrestigeService
         var state = _gameStateService.State;
         var prestige = state.Prestige;
 
-        // Prestige-Punkte berechnen (Tier-Multiplikator anwenden, Math.Round statt Abschneidung)
-        int basePoints = GetPrestigePoints(state.TotalMoneyEarned);
+        // Prestige-Punkte berechnen (nur aktueller Durchlauf, nicht kumulativ)
+        int basePoints = GetPrestigePoints(state.CurrentRunMoney);
         int tierPoints = (int)Math.Round(basePoints * tier.GetPointMultiplier());
 
         // Bronze: Mindestens 15 PP (BAL-12: von 10 erhöht, damit beim ersten Prestige 3-4 Shop-Items kaufbar sind)
@@ -107,8 +107,24 @@ public sealed class PrestigeService : IPrestigeService
         if (tier > prestige.CurrentTier)
             prestige.CurrentTier = tier;
 
-        // Permanenten Multiplier erhöhen (Tier-Bonus), Cap bei 200x
-        prestige.PermanentMultiplier += tier.GetPermanentMultiplierBonus();
+        // Diminishing Returns: Jeder weitere Prestige desselben Tiers gibt weniger Bonus
+        // Formel: baseBonus * 1/(1 + 0.1 * tierCount) - erster Prestige voller Bonus, 10. nur noch 50%
+        // tierCount ist NACH Inkrement (oben), daher -1 für den Wert VOR diesem Prestige
+        decimal baseBonus = tier.GetPermanentMultiplierBonus();
+        int tierCount = tier switch
+        {
+            PrestigeTier.Bronze => prestige.BronzeCount - 1,
+            PrestigeTier.Silver => prestige.SilverCount - 1,
+            PrestigeTier.Gold => prestige.GoldCount - 1,
+            PrestigeTier.Platin => prestige.PlatinCount - 1,
+            PrestigeTier.Diamant => prestige.DiamantCount - 1,
+            PrestigeTier.Meister => prestige.MeisterCount - 1,
+            PrestigeTier.Legende => prestige.LegendeCount - 1,
+            _ => 0
+        };
+        tierCount = Math.Max(0, tierCount);
+        decimal diminishedBonus = baseBonus * (1m / (1m + 0.1m * tierCount));
+        prestige.PermanentMultiplier += diminishedBonus;
         prestige.PermanentMultiplier = Math.Min(Math.Round(prestige.PermanentMultiplier, 3), MaxPermanentMultiplier);
 
         // Legacy-Felder synchron halten
@@ -231,7 +247,7 @@ public sealed class PrestigeService : IPrestigeService
     /// Maximaler Prestige-Multiplikator (nur Tier-Boni, nicht Shop-Income-Boni).
     /// Shop-Income-Boni werden separat im GameLoop/OfflineProgress angewendet.
     /// </summary>
-    private const decimal MaxPermanentMultiplier = 200.0m;
+    private const decimal MaxPermanentMultiplier = 50.0m;
 
     public decimal GetPermanentMultiplier()
     {
@@ -289,8 +305,8 @@ public sealed class PrestigeService : IPrestigeService
 
     /// <summary>
     /// Setzt den Spielfortschritt basierend auf dem Prestige-Tier zurück.
-    /// Höhere Tiers bewahren progressiv mehr: Silver=Research, Gold=ShopItems,
-    /// Platin=MasterTools, Diamant=Buildings+Equipment, Meister=Manager, Legende=BestWorkers.
+    /// Verschärfte Erhaltung (eine Stufe höher): Gold=Research, Platin=ShopItems,
+    /// Diamant=MasterTools, Meister=Buildings+Equipment, Legende=Manager+BestWorkers.
     /// </summary>
     private static void ResetProgress(GameState state, PrestigeTier tier)
     {
@@ -345,8 +361,9 @@ public sealed class PrestigeService : IPrestigeService
         state.CurrentXp = 0;
         state.TotalXp = 0;
 
-        // === RESET: Money (TotalMoneyEarned bleibt!) ===
+        // === RESET: Money (TotalMoneyEarned bleibt, CurrentRunMoney wird zurückgesetzt!) ===
         state.Money = startMoney;
+        state.CurrentRunMoney = 0;
         state.TotalMoneySpent = 0m;
 
         // === RESET: Workshops -> nur Carpenter Level 1 mit 1 Worker ===
@@ -389,11 +406,11 @@ public sealed class PrestigeService : IPrestigeService
         state.Reputation = new CustomerReputation();
         state.LastReputationDecay = DateTime.UtcNow;
 
-        // === RESET: Buildings (Diamant+ behält Gebäude, Level wird weiter unten auf 1 gesetzt) ===
+        // === RESET: Buildings (Meister+ behält Gebäude, Level wird weiter unten auf 1 gesetzt) ===
         if (!tier.KeepsBuildings())
             state.Buildings.Clear();
 
-        // === RESET: Research (Silver + Gold behalten Research!) ===
+        // === RESET: Research (Gold+ behält Research) ===
         if (!tier.KeepsResearch())
         {
             state.Researches = ResearchTree.CreateAll();
@@ -439,7 +456,7 @@ public sealed class PrestigeService : IPrestigeService
         // === RESET: Story (pending Story leeren, viewed bleiben erhalten) ===
         state.PendingStoryId = null;
 
-        // === RESET: Meisterwerkzeuge (Platin+ behält sie) ===
+        // === RESET: Meisterwerkzeuge (Diamant+ behält sie) ===
         if (!tier.KeepsMasterTools())
             state.CollectedMasterTools.Clear();
 
@@ -470,7 +487,7 @@ public sealed class PrestigeService : IPrestigeService
 
         // === Gilden-Mitgliedschaft bleibt bestehen (Firebase kümmert sich um Weekly-Reset) ===
 
-        // === BEDINGT: Equipment (Diamant+ behält es) ===
+        // === BEDINGT: Equipment (Meister+ behält es) ===
         if (!tier.KeepsEquipment())
         {
             state.EquipmentInventory.Clear();
@@ -483,7 +500,7 @@ public sealed class PrestigeService : IPrestigeService
             }
         }
 
-        // === BEDINGT: Manager (Meister+ behält sie, Level→1) ===
+        // === BEDINGT: Manager (Legende behält sie, Level→1) ===
         if (!tier.KeepsManagers())
         {
             state.Managers.Clear();
@@ -500,7 +517,7 @@ public sealed class PrestigeService : IPrestigeService
         // Legende-Worker werden bereits VOR dem Workshop-Reset gesichert (s.o.)
         // und beim Workshop-Unlock via GetOrCreateWorkshop() angewendet.
 
-        // === RESET: Gebäude (Diamant+ behält sie mit Level→1) ===
+        // === RESET: Gebäude (Meister+ behält sie mit Level→1) ===
         if (tier.KeepsBuildings())
         {
             foreach (var b in state.Buildings)
@@ -508,7 +525,7 @@ public sealed class PrestigeService : IPrestigeService
                 b.Level = 1;
             }
         }
-        // (Unterhalb von Diamant werden Buildings bereits oben via .Clear() zurückgesetzt)
+        // (Unterhalb von Meister werden Buildings bereits oben via .Clear() zurückgesetzt)
 
         // === PRESERVED (nicht angefasst): ===
         // - state.Prestige (PrestigeData mit Punkten, Shop-Items, Tier-Counts)

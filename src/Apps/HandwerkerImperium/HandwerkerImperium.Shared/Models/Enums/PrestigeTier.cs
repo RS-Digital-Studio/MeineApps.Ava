@@ -94,21 +94,20 @@ public static class PrestigeTierExtensions
     };
 
     /// <summary>
-    /// Was bei Prestige erhalten bleibt:
-    /// Bronze: Achievements, Premium, Settings, PrestigeData, Tutorial
-    /// Silver+: + Research bleibt
-    /// Gold+: + Prestige-Shop Items bleiben
-    /// Platin+: + MasterTools bleiben
-    /// Diamant+: + Gebäude (Level→1) + Equipment-Inventar
-    /// Meister+: + Manager (Level→1)
-    /// Legende: + 1 bester Worker pro Workshop
+    /// Was bei Prestige erhalten bleibt (verschärft - eine Stufe nach oben geschoben):
+    /// Bronze/Silver: Achievements, Premium, Settings, PrestigeData, Tutorial (NICHTS extra)
+    /// Gold+: + Research bleibt (vorher Silver)
+    /// Platin+: + Prestige-Shop Items bleiben (vorher Gold)
+    /// Diamant+: + MasterTools bleiben (vorher Platin)
+    /// Meister+: + Gebäude (Level→1) + Equipment-Inventar (vorher Diamant)
+    /// Legende: + Manager (Level→1) + 1 bester Worker pro Workshop (vorher Meister+Legende)
     /// </summary>
-    public static bool KeepsResearch(this PrestigeTier tier) => tier >= PrestigeTier.Silver;
-    public static bool KeepsShopItems(this PrestigeTier tier) => tier >= PrestigeTier.Gold;
-    public static bool KeepsMasterTools(this PrestigeTier tier) => tier >= PrestigeTier.Platin;
-    public static bool KeepsBuildings(this PrestigeTier tier) => tier >= PrestigeTier.Diamant;
-    public static bool KeepsEquipment(this PrestigeTier tier) => tier >= PrestigeTier.Diamant;
-    public static bool KeepsManagers(this PrestigeTier tier) => tier >= PrestigeTier.Meister;
+    public static bool KeepsResearch(this PrestigeTier tier) => tier >= PrestigeTier.Gold;
+    public static bool KeepsShopItems(this PrestigeTier tier) => tier >= PrestigeTier.Platin;
+    public static bool KeepsMasterTools(this PrestigeTier tier) => tier >= PrestigeTier.Diamant;
+    public static bool KeepsBuildings(this PrestigeTier tier) => tier >= PrestigeTier.Meister;
+    public static bool KeepsEquipment(this PrestigeTier tier) => tier >= PrestigeTier.Meister;
+    public static bool KeepsManagers(this PrestigeTier tier) => tier >= PrestigeTier.Legende;
     public static bool KeepsBestWorkers(this PrestigeTier tier) => tier >= PrestigeTier.Legende;
 
     /// <summary>

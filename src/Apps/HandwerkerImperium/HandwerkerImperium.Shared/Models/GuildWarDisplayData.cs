@@ -1,4 +1,4 @@
-namespace HandwerkerImperium.Services.Interfaces;
+namespace HandwerkerImperium.Models;
 
 /// <summary>
 /// Anzeige-Daten für den aktuellen Gilden-Krieg (Quick-View im Guild-Hub).

@@ -242,18 +242,18 @@ public sealed partial class MainViewModel
     public bool HandleBackPressed()
     {
         // 1. Offene Dialoge/Overlays schließen (höchste Priorität)
-        if (IsHintVisible) { DismissHint(); return true; }
+        if (DialogVM.IsHintVisible) { DialogVM.DismissHintCommand.Execute(null); return true; }
         if (IsLuckySpinVisible) { HideLuckySpin(); return true; }
         if (IsCombinedWelcomeDialogVisible) { DismissCombinedDialog(); return true; }
         if (IsWelcomeOfferVisible) { DismissWelcomeOffer(); return true; }
-        if (IsConfirmDialogVisible) { ConfirmDialogCancel(); return true; }
-        if (IsPrestigeSummaryVisible) { DismissPrestigeSummary(); return true; }
-        if (IsAlertDialogVisible) { DismissAlertDialog(); return true; }
-        if (IsAchievementDialogVisible) { DismissAchievementDialog(); return true; }
-        if (IsLevelUpDialogVisible) { DismissLevelUpDialog(); return true; }
+        if (DialogVM.IsConfirmDialogVisible) { DialogVM.ConfirmDialogCancelCommand.Execute(null); return true; }
+        if (DialogVM.IsPrestigeSummaryVisible) { DialogVM.DismissPrestigeSummaryCommand.Execute(null); return true; }
+        if (DialogVM.IsAlertDialogVisible) { DialogVM.DismissAlertDialogCommand.Execute(null); return true; }
+        if (DialogVM.IsAchievementDialogVisible) { DialogVM.DismissAchievementDialogCommand.Execute(null); return true; }
+        if (DialogVM.IsLevelUpDialogVisible) { DialogVM.DismissLevelUpDialogCommand.Execute(null); return true; }
         if (IsOfflineEarningsDialogVisible) { CollectOfflineEarningsNormal(); return true; }
         if (IsDailyRewardDialogVisible) { IsDailyRewardDialogVisible = false; CheckDeferredDialogs(); return true; }
-        if (IsStoryDialogVisible) { DismissStoryDialog(); return true; }
+        if (DialogVM.IsStoryDialogVisible) { DialogVM.DismissStoryDialogCommand.Execute(null); return true; }
 
         // 2. MiniGame aktiv → zurück zum Dashboard
         if (IsSawingGameActive || IsPipePuzzleActive || IsWiringGameActive || IsPaintingGameActive ||

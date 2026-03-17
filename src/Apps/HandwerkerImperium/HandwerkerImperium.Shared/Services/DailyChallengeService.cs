@@ -21,7 +21,8 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
     public event EventHandler? ChallengeProgressChanged;
 
     public decimal AllCompletedBonusAmount => 500m;
-    public int AllCompletedBonusScrews => 10;
+    // BAL-9: GS-Quellen gestrafft, F2P verdient weniger passiv
+    public int AllCompletedBonusScrews => 6;
 
     public DailyChallengeService(IGameStateService gameStateService, ILocalizationService localizationService)
     {
@@ -233,8 +234,8 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
                 break;
         }
 
-        // Goldschrauben-Belohnung: 1-3 je nach Level-Stufe
-        challenge.GoldenScrewReward = Math.Min(1 + tier, 3);
+        // BAL-9: Goldschrauben-Belohnung: 1-2 je nach Level-Stufe (vorher 1-3)
+        challenge.GoldenScrewReward = Math.Min(1 + tier, 2);
 
         return challenge;
     }

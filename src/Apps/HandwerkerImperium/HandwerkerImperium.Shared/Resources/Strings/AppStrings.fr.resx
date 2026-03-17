@@ -5460,4 +5460,37 @@
   <data name="GraphicsHigh" xml:space="preserve">
     <value>Élevé</value>
   </data>
+  <data name="SoftCapReached" xml:space="preserve">
+    <value>Plafond de bonus atteint !</value>
+  </data>
+  <data name="WorkerLevelUp" xml:space="preserve">
+    <value>{0} est maintenant niveau {1} !</value>
+  </data>
+  <data name="PrestigeTierUp" xml:space="preserve">
+    <value>Nouveau rang : {0} !</value>
+  </data>
+  <data name="StreakMilestone" xml:space="preserve">
+    <value>Série de {0} jours !</value>
+  </data>
+  <data name="PremiumIncomeCompare" xml:space="preserve">
+    <value>Ton revenu : {0} &#x2192; Avec Premium : {1}</value>
+  </data>
+  <data name="ResearchInstantComplete" xml:space="preserve">
+    <value>Terminer maintenant ({0} GS)</value>
+  </data>
+  <data name="StarterOfferTitle" xml:space="preserve">
+    <value>Offre exclusive !</value>
+  </data>
+  <data name="StarterOfferDesc" xml:space="preserve">
+    <value>Premium pour seulement 4,99 EUR - maintenant ou jamais !</value>
+  </data>
+  <data name="StarterOfferButton" xml:space="preserve">
+    <value>Obtenir Premium maintenant</value>
+  </data>
+  <data name="AutoCompleteAvailable" xml:space="preserve">
+    <value>Auto-Compléter</value>
+  </data>
+  <data name="AutoCompleteHint" xml:space="preserve">
+    <value>Vous avez maîtrisé ce jeu {0}x parfaitement !</value>
+  </data>
 </root>

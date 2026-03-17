@@ -85,6 +85,24 @@ public sealed partial class ResearchViewModel : ViewModelBase
     [ObservableProperty]
     private int _instantFinishCost;
 
+    /// <summary>
+    /// Ob die zeitbasierte GS-Sofortfertigstellung verfügbar ist.
+    /// </summary>
+    [ObservableProperty]
+    private bool _canInstantComplete;
+
+    /// <summary>
+    /// Zeitbasierte GS-Kosten für Sofortfertigstellung (5 GS/Stunde, min 5, max 50).
+    /// </summary>
+    [ObservableProperty]
+    private int _instantCompleteCost;
+
+    /// <summary>
+    /// Lokalisierter Button-Text für die zeitbasierte Sofortfertigstellung.
+    /// </summary>
+    [ObservableProperty]
+    private string _instantCompleteButtonText = string.Empty;
+
     [ObservableProperty]
     private string _title = string.Empty;
 
@@ -178,6 +196,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
             ActiveResearchName = _localizationService.GetString(active.NameKey);
             CanInstantFinish = active.CanInstantFinish && _gameStateService.CanAffordGoldenScrews(active.InstantFinishScrewCost);
             InstantFinishCost = active.InstantFinishScrewCost;
+            UpdateInstantCompleteState(active);
             UpdateTimer();
         }
         else
@@ -187,6 +206,9 @@ public sealed partial class ResearchViewModel : ViewModelBase
             ActiveResearchName = string.Empty;
             CanInstantFinish = false;
             InstantFinishCost = 0;
+            CanInstantComplete = false;
+            InstantCompleteCost = 0;
+            InstantCompleteButtonText = string.Empty;
         }
     }
 
@@ -399,6 +421,51 @@ public sealed partial class ResearchViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Zeitbasierte GS-Sofortfertigstellung der aktiven Forschung.
+    /// Kosten: 5 GS pro verbleibende Stunde (aufgerundet, min 5, max 50).
+    /// </summary>
+    [RelayCommand]
+    private async Task InstantCompleteResearchAsync()
+    {
+        if (!HasActiveResearch || ActiveResearch == null) return;
+
+        var remaining = ActiveResearch.RemainingTime;
+        if (remaining == null || remaining.Value <= TimeSpan.Zero) return;
+
+        var cost = _researchService.GetInstantCompleteGSCost(remaining.Value);
+
+        if (!_gameStateService.CanAffordGoldenScrews(cost))
+        {
+            AlertRequested?.Invoke(
+                _localizationService.GetString("NotEnoughScrews"),
+                string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), cost),
+                _localizationService.GetString("OK") ?? "OK");
+            return;
+        }
+
+        var buttonText = string.Format(
+            _localizationService.GetString("ResearchInstantComplete") ?? "Sofort fertig ({0} GS)",
+            cost);
+
+        bool confirm = true;
+        if (ConfirmationRequested != null)
+        {
+            confirm = await ConfirmationRequested.Invoke(
+                _localizationService.GetString("InstantFinish"),
+                buttonText,
+                _localizationService.GetString("Confirm"),
+                _localizationService.GetString("Cancel"));
+        }
+
+        if (!confirm) return;
+
+        if (_researchService.InstantCompleteResearch())
+        {
+            LoadResearchTree();
+        }
+    }
+
     [RelayCommand]
     private async Task CancelResearchAsync()
     {
@@ -432,6 +499,28 @@ public sealed partial class ResearchViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Aktualisiert die zeitbasierten GS-Sofortfertigstellungs-Properties.
+    /// </summary>
+    private void UpdateInstantCompleteState(Research active)
+    {
+        var remaining = active.RemainingTime;
+        if (remaining == null || remaining.Value <= TimeSpan.Zero)
+        {
+            CanInstantComplete = false;
+            InstantCompleteCost = 0;
+            InstantCompleteButtonText = string.Empty;
+            return;
+        }
+
+        var cost = _researchService.GetInstantCompleteGSCost(remaining.Value);
+        InstantCompleteCost = cost;
+        CanInstantComplete = active.IsActive && _gameStateService.CanAffordGoldenScrews(cost);
+        InstantCompleteButtonText = string.Format(
+            _localizationService.GetString("ResearchInstantComplete") ?? "Sofort fertig ({0} GS)",
+            cost);
+    }
 
     private void UpdateSelectedBranch()
     {

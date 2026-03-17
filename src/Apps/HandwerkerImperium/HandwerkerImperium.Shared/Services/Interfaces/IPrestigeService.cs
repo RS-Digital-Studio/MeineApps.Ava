@@ -16,10 +16,10 @@ public interface IPrestigeService
     bool CanPrestige(PrestigeTier tier);
 
     /// <summary>
-    /// Calculates how many prestige points the player would earn.
-    /// Formula: floor(sqrt(totalMoneyEarned / 100_000)) * tier multiplier
+    /// Berechnet die Basis-Prestige-Punkte aus dem aktuellen Durchlauf.
+    /// Formel: floor(sqrt(currentRunMoney / 100_000)) * Tier-Multiplikator
     /// </summary>
-    int GetPrestigePoints(decimal totalMoneyEarned);
+    int GetPrestigePoints(decimal currentRunMoney);
 
     /// <summary>
     /// Performs the prestige reset for the given tier.

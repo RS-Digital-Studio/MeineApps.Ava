@@ -61,11 +61,12 @@
         <UniformGrid Columns="2"
                      AutomationProperties.AutomationId="Missionen_Grid_Features">
 
-          <!-- Turnier -->
+          <!-- Turnier (ab Level 50) -->
           <Button Classes="Text" Margin="4" Padding="0"
                   HorizontalAlignment="Stretch" VerticalAlignment="Top"
                   HorizontalContentAlignment="Stretch"
                   Command="{Binding NavigateToTournamentCommand}"
+                  IsVisible="{Binding ShowTournamentSection}"
                   AutomationProperties.AutomationId="Missionen_Btn_Tournament">
             <Border Classes="CardElevated" Padding="10" MinHeight="80"
                     AutomationProperties.AutomationId="Missionen_Border_Tournament">
@@ -99,11 +100,12 @@
             </Border>
           </Button>
 
-          <!-- Battle Pass -->
+          <!-- Battle Pass (ab Level 70) -->
           <Button Classes="Text" Margin="4" Padding="0"
                   HorizontalAlignment="Stretch" VerticalAlignment="Top"
                   HorizontalContentAlignment="Stretch"
                   Command="{Binding NavigateToBattlePassCommand}"
+                  IsVisible="{Binding ShowBattlePassSection}"
                   AutomationProperties.AutomationId="Missionen_Btn_BattlePass">
             <Border Classes="CardElevated" Padding="10" MinHeight="80"
                     AutomationProperties.AutomationId="Missionen_Border_BattlePass">
@@ -137,11 +139,12 @@
             </Border>
           </Button>
 
-          <!-- Saison-Event -->
+          <!-- Saison-Event (ab Level 60) -->
           <Button Classes="Text" Margin="4" Padding="0"
                   HorizontalAlignment="Stretch" VerticalAlignment="Top"
                   HorizontalContentAlignment="Stretch"
                   Command="{Binding NavigateToSeasonalEventCommand}"
+                  IsVisible="{Binding ShowSeasonalEventSection}"
                   AutomationProperties.AutomationId="Missionen_Btn_SeasonalEvent">
             <Border Classes="CardElevated" Padding="10" MinHeight="80"
                     AutomationProperties.AutomationId="Missionen_Border_SeasonalEvent">

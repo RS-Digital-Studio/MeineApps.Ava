@@ -13,7 +13,6 @@ using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels;
 using HandwerkerImperium.Helpers;
-using Microsoft.Extensions.DependencyInjection;
 using MeineApps.UI.SkiaSharp.Shaders;
 using SkiaSharp;
 
@@ -174,7 +173,7 @@ public partial class DashboardView : UserControl
             _juiceEngine?.SetVignette(0.25f); // Subtile Vignette für Tiefe
 
             // AI-Hintergrund-Service für CityRenderer initialisieren
-            var assetService = App.Services?.GetService<IGameAssetService>();
+            var assetService = GameAssetService.Current;
             if (assetService != null)
                 _cityRenderer.Initialize(assetService);
 

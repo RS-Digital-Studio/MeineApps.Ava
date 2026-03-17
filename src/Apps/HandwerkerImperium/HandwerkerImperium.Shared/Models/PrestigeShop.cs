@@ -233,7 +233,7 @@ public static class PrestigeShop
                 NameKey = "PrestigeIncomeRepeatable",
                 DescriptionKey = "PrestigeIncomeRepeatableDesc",
                 Icon = "Refresh",
-                Cost = 10,  // Basiskosten, verdoppeln sich pro Kauf (10/20/40/80/160...)
+                Cost = 15,  // Basiskosten, verdoppeln sich pro Kauf (15/30/60/120/240...) - BAL-27: von 10 erhöht, erster Kauf weniger attraktiv als Einmal-Items
                 Category = PrestigeShopCategory.IncomeAndCosts,
                 IsRepeatable = true,
                 Effect = new PrestigeEffect { IncomeMultiplier = 0.05m }  // +5% pro Kauf

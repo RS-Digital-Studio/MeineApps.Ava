@@ -11,6 +11,12 @@ using SkiaSharp;
 /// </summary>
 public sealed class GameAssetService : IGameAssetService
 {
+    /// <summary>
+    /// Statischer Zugriff für Views die keinen DI-Zugang haben (SkiaSharp-Rendering).
+    /// Wird in App.axaml.cs nach DI-Registrierung gesetzt.
+    /// </summary>
+    public static IGameAssetService? Current { get; set; }
+
     // LRU-Cache: assetPath → (Bitmap, letzter Zugriff)
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
     // Deduplizierung: Nur EIN Ladevorgang pro Asset (verhindert Race Condition)

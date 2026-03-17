@@ -560,4 +560,34 @@
   <data name="GraphicsHigh" xml:space="preserve">
     <value>High</value>
   </data>
+  <data name="SoftCapReached" xml:space="preserve">
+    <value>Bonus cap reached!</value>
+  </data>
+  <data name="WorkerLevelUp" xml:space="preserve">
+    <value>{0} is now level {1}!</value>
+  </data>
+  <data name="PrestigeTierUp" xml:space="preserve">
+    <value>New rank: {0}!</value>
+  </data>
+  <data name="StreakMilestone" xml:space="preserve">
+    <value>{0} day streak!</value>
+  </data>
+  <data name="Days" xml:space="preserve">
+    <value>Days</value>
+  </data>
+  <data name="PremiumIncomeCompare" xml:space="preserve">
+    <value>Your income: {0} &#x2192; With Premium: {1}</value>
+  </data>
+  <data name="ResearchInstantComplete" xml:space="preserve">
+    <value>Finish now ({0} GS)</value>
+  </data>
+  <data name="StarterOfferTitle" xml:space="preserve">
+    <value>Exclusive Offer!</value>
+  </data>
+  <data name="StarterOfferDesc" xml:space="preserve">
+    <value>Premium for only 4.99 EUR - now or never!</value>
+  </data>
+  <data name="StarterOfferButton" xml:space="preserve">
+    <value>Get Premium Now</value>
+  </data>
 </root>

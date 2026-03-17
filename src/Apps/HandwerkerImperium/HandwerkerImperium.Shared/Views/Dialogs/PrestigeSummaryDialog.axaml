@@ -4,7 +4,7 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.PrestigeSummaryDialog"
-             x:DataType="vm:MainViewModel"
+             x:DataType="vm:DialogViewModel"
              x:CompileBindings="True">
 
   <!-- Post-Prestige Zusammenfassung -->

@@ -1,5 +1,6 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
@@ -127,6 +128,9 @@ public sealed partial class MainViewModel
         // Werden nach Schließen des letzten Startup-Dialogs geprüft
         _hasDeferredStory = true;
         _hasDeferredWelcomeHint = !_contextualHintService.HasSeenHint(ContextualHints.Welcome.Id);
+
+        // Starter-Offer prüfen (ab Level 10, einmalig, Nicht-Premium)
+        CheckStarterOffer();
 
         // Start the game loop for idle earnings
         _gameLoopService.Start();
@@ -372,6 +376,9 @@ public sealed partial class MainViewModel
         }
     }
 
+    // Streak-Meilensteine die eine besondere Celebration auslösen
+    private static readonly int[] s_streakMilestones = [30, 60, 100];
+
     [RelayCommand]
     public void ClaimDailyReward()
     {
@@ -379,6 +386,24 @@ public sealed partial class MainViewModel
         if (reward != null)
         {
             _audioService.PlaySoundAsync(GameSound.MoneyEarned).FireAndForget();
+
+            // Streak-Meilensteine feiern (30, 60, 100 Tage)
+            var currentStreak = _dailyRewardService.CurrentStreak;
+            for (int i = 0; i < s_streakMilestones.Length; i++)
+            {
+                if (currentStreak == s_streakMilestones[i])
+                {
+                    var streakText = string.Format(
+                        _localizationService.GetString("StreakMilestone") ?? "{0} Tage Streak!",
+                        currentStreak);
+                    CelebrationRequested?.Invoke();
+                    CeremonyRequested?.Invoke(CeremonyType.Achievement, streakText,
+                        $"{currentStreak} {_localizationService.GetString("Days") ?? "Tage"}");
+                    _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
+                    break;
+                }
+            }
+
             HasDailyReward = false;
             IsDailyRewardDialogVisible = false;
             CheckDeferredDialogs();
@@ -413,7 +438,7 @@ public sealed partial class MainViewModel
         {
             _hasDeferredStory = false;
             CheckForNewStoryChapter();
-            if (IsStoryDialogVisible) return;
+            if (DialogVM.IsStoryDialogVisible) return;
         }
 
         // 3. Verzögerter Welcome-Hint (nur beim allerersten Start)
@@ -422,5 +447,75 @@ public sealed partial class MainViewModel
             _hasDeferredWelcomeHint = false;
             _contextualHintService.TryShowHint(ContextualHints.Welcome);
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STARTER OFFER (einmaliges zeitlich begrenztes Premium-Angebot)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Prüft ob ein Starter-Offer angezeigt werden soll.
+    /// Bedingungen: Level >= 10, noch nicht angezeigt, kein Premium.
+    /// Bei erstem Auslösen: 24h-Countdown starten. Bei Wiedereinstieg: Countdown prüfen.
+    /// </summary>
+    private void CheckStarterOffer()
+    {
+        var state = _gameStateService.State;
+
+        // Bereits Premium oder schon angezeigt -> überspringen
+        if (state.IsPremium || state.StarterOfferShown) return;
+
+        // Level-Gate: Mindestens Level 15 (hat dann Plumber + Storage + Auto-Collect, versteht Economy)
+        if (state.PlayerLevel < 15) return;
+
+        // Timestamp setzen falls noch nicht gesetzt (erste Auslösung)
+        if (state.StarterOfferTimestamp == null)
+        {
+            state.StarterOfferTimestamp = DateTime.UtcNow;
+            _gameStateService.MarkDirty();
+        }
+
+        // 24h abgelaufen -> Angebot verpasst, als "gezeigt" markieren
+        var elapsed = DateTime.UtcNow - state.StarterOfferTimestamp.Value;
+        if (elapsed.TotalHours >= 24)
+        {
+            state.StarterOfferShown = true;
+            _gameStateService.MarkDirty();
+            return;
+        }
+
+        // Countdown berechnen und Dialog anzeigen
+        var remaining = TimeSpan.FromHours(24) - elapsed;
+        StarterOfferCountdown = remaining.TotalHours >= 1
+            ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}m"
+            : $"{remaining.Minutes}m {remaining.Seconds:D2}s";
+
+        IsStarterOfferVisible = true;
+    }
+
+    /// <summary>
+    /// Spieler nimmt das Starter-Offer an -> zum Premium-Kauf navigieren.
+    /// </summary>
+    [RelayCommand]
+    private void AcceptStarterOffer()
+    {
+        var state = _gameStateService.State;
+        state.StarterOfferShown = true;
+        _gameStateService.MarkDirty();
+        IsStarterOfferVisible = false;
+
+        // Zum Shop navigieren damit der Spieler den Premium-Kauf durchführen kann
+        NavigateToShop();
+    }
+
+    /// <summary>
+    /// Spieler lehnt das Starter-Offer ab -> Dialog schließen.
+    /// Angebot bleibt aber aktiv bis 24h abgelaufen.
+    /// </summary>
+    [RelayCommand]
+    private void DismissStarterOffer()
+    {
+        IsStarterOfferVisible = false;
+        CheckDeferredDialogs();
     }
 }

@@ -16,7 +16,7 @@ public partial class AlertDialog : UserControl
     /// </summary>
     private void OnAlertOverlayPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (DataContext is MainViewModel vm)
+        if (DataContext is DialogViewModel vm)
             vm.DismissAlertDialogCommand.Execute(null);
     }
 

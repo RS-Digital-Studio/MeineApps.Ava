@@ -82,6 +82,7 @@ public sealed class GameStateService : IGameStateService
             oldAmount = _state.Money;
             _state.Money += amount;
             _state.TotalMoneyEarned += amount;
+            _state.CurrentRunMoney += amount;
             newAmount = _state.Money;
         }
 
@@ -120,14 +121,21 @@ public sealed class GameStateService : IGameStateService
     // GOLDEN SCREWS OPERATIONS (Thread-safe)
     // ===================================================================
 
-    public void AddGoldenScrews(int amount)
+    public void AddGoldenScrews(int amount, bool fromPurchase = false)
     {
         if (amount <= 0) return;
 
-        // Prestige-Shop GoldenScrewBonus anwenden (z.B. +25%)
-        decimal bonus = GetGoldenScrewBonus();
-        if (bonus > 0)
-            amount = (int)Math.Ceiling(amount * (1m + bonus));
+        // Prestige-Shop GoldenScrewBonus anwenden (z.B. +25%) - nur für Gameplay-Quellen
+        if (!fromPurchase)
+        {
+            decimal bonus = GetGoldenScrewBonus();
+            if (bonus > 0)
+                amount = (int)Math.Ceiling(amount * (1m + bonus));
+
+            // Premium: +100% Goldschrauben aus Gameplay-Quellen (Mini-Games, Challenges, Meilensteine etc.)
+            if (_state.IsPremium)
+                amount *= 2;
+        }
 
         int oldAmount;
         int newAmount;
@@ -203,7 +211,27 @@ public sealed class GameStateService : IGameStateService
         lock (_stateLock)
         {
             oldLevel = _state.PlayerLevel;
-            levelUps = _state.AddXp(amount);
+
+            // XP-Boost aus DailyReward (2x)
+            if (_state.IsXpBoostActive)
+                amount *= 2;
+
+            // Prestige-Shop XP-Multiplikator
+            var xpBonus = GetPrestigeXpBonus();
+            if (xpBonus > 0)
+                amount = (int)(amount * (1m + xpBonus));
+
+            _state.CurrentXp += amount;
+            _state.TotalXp += amount;
+
+            levelUps = 0;
+            // Level-Cap: Endlos-Schleife bei manipulierten Saves oder extremen XP verhindern
+            while (_state.CurrentXp >= _state.XpForNextLevel && _state.PlayerLevel < LevelThresholds.MaxPlayerLevel)
+            {
+                _state.PlayerLevel++;
+                levelUps++;
+            }
+
             totalXp = _state.TotalXp;
             currentXp = _state.CurrentXp;
             xpForNext = _state.XpForNextLevel;
@@ -226,6 +254,24 @@ public sealed class GameStateService : IGameStateService
 
             LevelUp?.Invoke(this, new LevelUpEventArgs(oldLevel, newLevel, newlyUnlocked));
         }
+    }
+
+    /// <summary>
+    /// Berechnet den XP-Multiplikator-Bonus aus gekauften Prestige-Shop-Items.
+    /// </summary>
+    private decimal GetPrestigeXpBonus()
+    {
+        var purchased = _state.Prestige.PurchasedShopItems;
+        if (purchased.Count == 0) return 0m;
+
+        var allItems = PrestigeShop.GetAllItems();
+        decimal bonus = 0m;
+        foreach (var item in allItems)
+        {
+            if (purchased.Contains(item.Id) && item.Effect.XpMultiplier > 0)
+                bonus += item.Effect.XpMultiplier;
+        }
+        return bonus;
     }
 
     // ===================================================================
@@ -517,8 +563,15 @@ public sealed class GameStateService : IGameStateService
         // Stammkunden-Bonus
         if (order.IsRegularCustomerOrder)
         {
-            var customer = _state.Reputation.RegularCustomers
-                .FirstOrDefault(c => c.Id == order.CustomerId);
+            RegularCustomer? customer = null;
+            for (int i = 0; i < _state.Reputation.RegularCustomers.Count; i++)
+            {
+                if (_state.Reputation.RegularCustomers[i].Id == order.CustomerId)
+                {
+                    customer = _state.Reputation.RegularCustomers[i];
+                    break;
+                }
+            }
             if (customer != null)
                 multiplier *= customer.BonusMultiplier;
         }
@@ -566,9 +619,17 @@ public sealed class GameStateService : IGameStateService
 
             _state.TotalOrdersCompleted++;
 
-            avgRating = order.TaskResults.Count > 0
-                ? (MiniGameRating)(int)Math.Round(order.TaskResults.Average(r => (int)r))
-                : MiniGameRating.Ok;
+            if (order.TaskResults.Count > 0)
+            {
+                int ratingSum = 0;
+                for (int i = 0; i < order.TaskResults.Count; i++)
+                    ratingSum += (int)order.TaskResults[i];
+                avgRating = (MiniGameRating)(int)Math.Round((double)ratingSum / order.TaskResults.Count);
+            }
+            else
+            {
+                avgRating = MiniGameRating.Ok;
+            }
 
             // Reputation-System: Bewertung basierend auf MiniGame-Leistung
             int stars = avgRating switch
@@ -583,8 +644,15 @@ public sealed class GameStateService : IGameStateService
             // Stammkunden-Tracking bei Perfect Rating
             if (avgRating == MiniGameRating.Perfect && !string.IsNullOrEmpty(order.CustomerName))
             {
-                var existingCustomer = _state.Reputation.RegularCustomers
-                    .FirstOrDefault(c => c.Name == order.CustomerName);
+                RegularCustomer? existingCustomer = null;
+                for (int i = 0; i < _state.Reputation.RegularCustomers.Count; i++)
+                {
+                    if (_state.Reputation.RegularCustomers[i].Name == order.CustomerName)
+                    {
+                        existingCustomer = _state.Reputation.RegularCustomers[i];
+                        break;
+                    }
+                }
                 if (existingCustomer != null)
                 {
                     existingCustomer.PerfectOrderCount++;
@@ -642,7 +710,7 @@ public sealed class GameStateService : IGameStateService
 
     public bool CanAutoComplete(MiniGameType type, bool isPremium)
     {
-        int threshold = isPremium ? 25 : 50;
+        int threshold = isPremium ? 15 : 30;
         lock (_stateLock)
         {
             return _state.PerfectRatingCounts.TryGetValue((int)type, out int count) && count >= threshold;

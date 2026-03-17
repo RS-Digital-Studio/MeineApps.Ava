@@ -3,7 +3,7 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.AlertDialog"
-             x:DataType="vm:MainViewModel"
+             x:DataType="vm:DialogViewModel"
              x:CompileBindings="True">
 
   <!-- Generic Alert Dialog -->

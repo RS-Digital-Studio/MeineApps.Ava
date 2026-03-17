@@ -29,6 +29,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
     private static readonly TimeSpan TokenLifetime = TimeSpan.FromMinutes(55); // 5min vor Ablauf refreshen
 
     private readonly IPreferencesService _preferences;
+    private readonly ILogService _log;
     private readonly HttpClient _httpClient;
     private readonly SemaphoreSlim _authLock = new(1, 1);
 
@@ -42,9 +43,10 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
     public string? PlayerId => _playerId;
     public bool IsOnline { get; private set; }
 
-    public FirebaseService(IPreferencesService preferences)
+    public FirebaseService(IPreferencesService preferences, ILogService log)
     {
         _preferences = preferences;
+        _log = log;
         _httpClient = new HttpClient { Timeout = RequestTimeout };
     }
 
@@ -188,9 +190,9 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Firebase Token-Refresh fehlgeschlagen", ex);
             return false;
         }
     }
@@ -215,9 +217,9 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             await _httpClient.PutAsync(url, content);
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Auth-to-Player Mapping fehlgeschlagen", ex);
         }
     }
 
@@ -255,9 +257,9 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             IsOnline = true;
             return JsonSerializer.Deserialize<T>(json);
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Firebase GET fehlgeschlagen", ex);
             IsOnline = false;
             return null;
         }
@@ -291,8 +293,9 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             IsOnline = true;
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Firebase SET fehlgeschlagen", ex);
             IsOnline = false;
             return false;
         }
@@ -327,8 +330,9 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             IsOnline = true;
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Firebase UPDATE fehlgeschlagen", ex);
             IsOnline = false;
             return false;
         }
@@ -363,9 +367,9 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             var result = JsonSerializer.Deserialize<Dictionary<string, string>>(responseJson);
             return result?.GetValueOrDefault("name");
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Firebase PUSH fehlgeschlagen", ex);
             IsOnline = false;
             return null;
         }
@@ -396,8 +400,9 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             IsOnline = true;
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Firebase DELETE fehlgeschlagen", ex);
             IsOnline = false;
             return false;
         }
@@ -433,9 +438,9 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
             IsOnline = true;
             return json;
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Firebase QUERY fehlgeschlagen", ex);
             IsOnline = false;
             return null;
         }

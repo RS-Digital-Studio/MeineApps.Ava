@@ -5647,4 +5647,31 @@
   <data name="AutoCompleteHint" xml:space="preserve">
     <value>Du hast dieses Spiel {0}x perfekt gemeistert!</value>
   </data>
+  <data name="SoftCapReached" xml:space="preserve">
+    <value>Bonus-Decke erreicht!</value>
+  </data>
+  <data name="WorkerLevelUp" xml:space="preserve">
+    <value>{0} ist jetzt Level {1}!</value>
+  </data>
+  <data name="PrestigeTierUp" xml:space="preserve">
+    <value>Neuer Rang: {0}!</value>
+  </data>
+  <data name="StreakMilestone" xml:space="preserve">
+    <value>{0} Tage Streak!</value>
+  </data>
+  <data name="PremiumIncomeCompare" xml:space="preserve">
+    <value>Dein Einkommen: {0} &#x2192; Mit Premium: {1}</value>
+  </data>
+  <data name="ResearchInstantComplete" xml:space="preserve">
+    <value>Sofort fertig ({0} GS)</value>
+  </data>
+  <data name="StarterOfferTitle" xml:space="preserve">
+    <value>Exklusives Angebot!</value>
+  </data>
+  <data name="StarterOfferDesc" xml:space="preserve">
+    <value>Premium f&#252;r nur 4,99 EUR - jetzt oder nie!</value>
+  </data>
+  <data name="StarterOfferButton" xml:space="preserve">
+    <value>Jetzt Premium holen</value>
+  </data>
 </root>

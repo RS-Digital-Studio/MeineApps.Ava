@@ -34,7 +34,7 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Daily Challenges** (3/Tag) + **Weekly Missions** (5/Woche, 50 Goldschrauben Komplett-Bonus)
 - **Daily Login Rewards** (30-Tage-Zyklus) + **Streak-Rettung** (3 Goldschrauben)
 - **Achievements** (94 Erfolge) + **Milestone-Celebrations** (Spieler-Level + Workshop-Level)
-- **Prestige-System** (7 Stufen Bronze-Legende, progressive Bewahrung, Soft-Cap 10x, Tier-skalierendes Startgeld, wiederholbares Shop-Item, permanenter Prestige-Pass)
+- **Prestige-System** (7 Stufen Bronze-Legende, verschärfte Bewahrung, Soft-Cap 5x, Tier-skalierendes Startgeld, wiederholbares Shop-Item, permanenter Prestige-Pass, Diminishing Returns auf Multiplikator)
 - **Events** (8 zufaellige + saisonaler Multiplikator, Intervall skaliert mit Prestige)
 - **Auftragstypen** (Standard/Large 1.8x/Weekly 3.0x/Cooperation 2.5x) + **Stammkunden** (bis 1.5x Bonus)
 - **Bulk Buy** (x1/x10/x100/Max) + **Hold-to-Upgrade** (schnelles Hochleveln)
@@ -52,7 +52,7 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Audio + Haptik** (15 Sounds via SoundPool, 7 Vibrations-Muster, Hintergrundmusik)
 - **Vorarbeiter-System** (14 Manager, Lv.1-5, Workshop-Boni)
 - **Turniere** (Woechentlich, 9 simulierte Gegner, 3x/Tag gratis)
-- **Battle Pass** (30 Tiers, Free/Premium Track, 30-Tage-Saisons)
+- **Battle Pass** (30 Tiers, Free/Premium Track, 30-Tage-Saisons, Premium: 10 GS/3 Tiers + 50 GS Capstone)
 - **Saisonale Events** (4/Jahr mit Saisonwaehrung und Event-Shop)
 - **Gilden/Innungen** (Firebase Realtime Database, Wochenziele, 18 Forschungen mit Timer+Auto-Completion, Einladungs-Inbox mit Accept/Decline)
 - **Crafting-System** (13 Rezepte in 3 Tiers, Inventar + Verkauf)
@@ -61,9 +61,28 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Ausruestungs-System** (4 Typen x 4 Seltenheiten fuer Arbeiter, Equip/Unequip im Worker-Profil, Inventar-Browser)
 - **Grafik-Einstellungen** (Low/Medium/High, GraphicsQuality in GameState, steuert Wetter-Effekte etc.)
 - **MiniGame-Direktstart** (Auto-Start nach Tutorial-Check + 3-2-1-Countdown, kein Start-Button)
-- **MiniGame Auto-Complete** (ab 50 Perfect-Ratings "Auto-Ergebnis" mit Good-Rating, Premium ab 25, PerfectRatingCounts in GameState)
+- **MiniGame Auto-Complete** (ab 30 Perfect-Ratings "Auto-Ergebnis" mit Good-Rating, Premium ab 15, PerfectRatingCounts in GameState)
 - **Gilden-Browser** (offene Gilden suchen+beitreten ohne Einladung, Firebase REST-Abfrage, Browse-UI in GuildView)
 - **Soft-Cap-Transparenz** (IsSoftCapActive + SoftCapReductionPercent im GameState, UI-Indikator im Dashboard)
+
+### Prestige-System (Details)
+
+**PP-Formel**: `floor(sqrt(CurrentRunMoney / 100_000))` - nur Geld aus dem aktuellen Durchlauf zählt (nicht kumulativ). `CurrentRunMoney` wird bei jedem Prestige auf 0 zurückgesetzt.
+
+**Multiplikator mit Diminishing Returns**: Bonus pro Prestige sinkt mit Anzahl bereits durchgeführter Prestiges desselben Tiers. Formel: `baseBonus * 1/(1 + 0.1 * tierCount)`. Erster Prestige voller Bonus, 10. nur noch 50%. Cap bei 50x (statt 200x).
+
+**Tier-Multiplikator-Boni (Basis)**: Bronze +20%, Silver +25%, Gold +50%, Platin +100%, Diamant +200%, Meister +400%, Legende +800%.
+
+**Verschärfte Erhaltung (eine Stufe höher als original)**:
+
+| Tier | Erhaltung |
+|------|-----------|
+| Bronze/Silver | Nur Basis (Achievements, Premium, Settings, PrestigeData, Tutorial) |
+| Gold+ | + Research bleibt |
+| Platin+ | + Prestige-Shop Items bleiben |
+| Diamant+ | + MasterTools bleiben |
+| Meister+ | + Gebäude (Level→1) + Equipment |
+| Legende | + Manager (Level→1) + beste Worker |
 
 ### Neuer-Spieler-Einstieg
 
@@ -76,6 +95,8 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 ### Premium-Modell
 - **Preis**: 4,99 EUR (Lifetime)
 - **Vorteile**: +50% Einkommen, +100% Goldschrauben aus Mini-Games, keine Werbung
+- **Shop Live-Vergleich**: `PremiumIncomeComparison` Property im ShopVM zeigt Nicht-Premium-Spielern "Dein Einkommen: X/s -> Mit Premium: Y/s"
+- **Starter-Offer**: Einmaliges Angebot ab Level 10, 24h-Countdown, Properties `StarterOfferShown`/`StarterOfferTimestamp` in GameState
 
 ### Rewarded (9 Placements)
 1. `golden_screws` - 10 Goldschrauben (Dashboard, BAL-3: von 5 erhöht)
@@ -84,7 +105,7 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 4. `workshop_speedup` - 30min Produktionsertrag sofort (BAL-5: von 2h reduziert)
 5. `workshop_unlock` - Workshop ohne Level freischalten
 6. `worker_hire_bonus` - +1 Worker-Slot persistent
-7. `research_speedup` - Forschungszeit -50% (BAL-4: statt Sofortfertigstellung)
+7. `research_speedup` - Forschungszeit -50% (BAL-4: statt Sofortfertigstellung) + zeitbasierte GS-Sofortfertigstellung (5 GS/h, min 5, max 50)
 8. `daily_challenge_retry` - Challenge-Fortschritt zuruecksetzen
 9. `achievement_boost` - Achievement Progress +20%
 
@@ -99,16 +120,36 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 
 ### MainViewModel Partial-Class-Split
 
-MainViewModel ist in 6 partielle Dateien aufgeteilt:
+MainViewModel ist in 6 partielle Dateien aufgeteilt (~5.150 Zeilen, 165 ObservableProperties):
 
 | Datei | Inhalt |
 |-------|--------|
-| `MainViewModel.cs` | Felder, Constructor, ~120 ObservableProperties, Event-Handler, GameTick, Dispose |
+| `MainViewModel.cs` | Felder, Constructor, ~165 ObservableProperties, Event-Handler, GameTick, Dispose |
 | `MainViewModel.Navigation.cs` | Tab-Auswahl, NavigateTo-Commands, HandleBackPressed, MiniGame-Navigation |
-| `MainViewModel.Dialogs.cs` | Alert/Confirm, Prestige-Bestaetigung, Story-Dialog, Kontextuelle Hints |
+| `MainViewModel.Dialogs.cs` | Weiterleitungsmethoden an DialogVM, Prestige-Durchfuehrungslogik |
 | `MainViewModel.Economy.cs` | Workshop-Kauf/Upgrade, Auftraege, Rush, Lieferant, BulkBuy, Hold-to-Upgrade |
 | `MainViewModel.Missions.cs` | Weekly Missions, Welcome-Back, Lucky Spin, Streak-Rettung, Quick Jobs, Daily Challenges, Meisterwerkzeuge |
 | `MainViewModel.Init.cs` | InitializeAsync, Cloud-Save, Offline-Earnings, Daily Reward |
+
+### DialogViewModel (extrahiert aus MainViewModel)
+
+`DialogViewModel.cs` (785 Zeilen, 45 ObservableProperties) enthaelt alle Dialog-bezogenen Properties und Methoden:
+- **Alert-Dialog**: ShowAlertDialog(), DismissAlertDialog
+- **Confirm-Dialog**: ShowConfirmDialog() mit TaskCompletionSource, ConfirmDialogAccept/Cancel
+- **Story-Dialog**: CheckForNewStoryChapter(), ShowStoryDialog(), DismissStoryDialog (Meister Hans NPC)
+- **Achievement-Dialog**: AchievementName/Description, DismissAchievementDialog
+- **LevelUp-Dialog**: IsLevelUpPulsing, DismissLevelUpDialog
+- **Hint-Dialog**: OnHintChanged(), DismissHint (kontextuelle Tooltips/Dialoge)
+- **Prestige-Summary**: ShowPrestigeSummary(), DismissPrestigeSummary, GoToShop
+- **Prestige-Tier-Auswahl**: ShowPrestigeConfirmationDialogAsync(), SelectPrestigeTier, UpdatePrestigeDialogContent
+- **IsAnyDialogVisible**: Aggregierte Property fuer alle Dialog-Sichtbarkeiten
+
+**Kommunikation mit MainViewModel** via Events:
+- `DeferredDialogCheckRequested` → MainViewModel.CheckDeferredDialogs()
+- `PrestigeSummaryGoToShopRequested` → MainViewModel.SelectBuildingsTab()
+- `FloatingTextRequested` → MainViewModel.FloatingTextRequested Event
+
+MainViewModel erstellt DialogVM im Constructor und verdrahtet Events. Dialog-Views in MainView.axaml binden per `DataContext="{Binding DialogVM}"`.
 
 **Konventionen**: Jede Datei hat eigene `using`-Direktiven + `namespace HandwerkerImperium.ViewModels;` + `public partial class MainViewModel`. Event-Handler fuer BuildingsViewModel.FloatingTextRequested als benanntes Delegate-Feld mit korrektem Unsubscribe in Dispose().
 
@@ -116,7 +157,7 @@ MainViewModel ist in 6 partielle Dateien aufgeteilt:
 
 MainView-Dialoge in eigenstaendige UserControls extrahiert (reduziert MainView.axaml um ~650 Zeilen):
 `OfflineEarningsDialog`, `DailyRewardDialog`, `WelcomeBackOfferDialog`, `AchievementDialog`, `ContextualHintDialog` (Tooltip-Bubble/Dialog, ersetzt TutorialDialog), `StoryDialog` (Hans-Blinzel-Animation via StoryDialogControl.UpdateHansAnimation()), `AlertDialog`, `ConfirmDialog`, `WorkerProfileDialog`.
-Alle erben `DataContext="{Binding}"` vom MainViewModel. Backdrop-Dismiss im Code-Behind wo noetig.
+Die Dialog-Controls `AchievementDialog`, `ContextualHintDialog`, `StoryDialog`, `AlertDialog`, `ConfirmDialog`, `PrestigeSummaryDialog` binden per `DataContext="{Binding DialogVM}"` an DialogViewModel (x:DataType="vm:DialogViewModel"). `OfflineEarningsDialog`, `DailyRewardDialog`, `WelcomeBackOfferDialog`, `WorkerProfileDialog` erben weiterhin `DataContext="{Binding}"` vom MainViewModel. Backdrop-Dismiss im Code-Behind wo noetig.
 
 ### 5-Tab Navigation
 
@@ -150,6 +191,9 @@ Level-basierte Section-Visibility innerhalb der Views:
 | `ShowManagerSection` | 10 | Imperium Vorarbeiter Quick-Access |
 | `ShowMasterToolsSection` | 20 | Imperium Meisterwerkzeuge Quick-Access |
 | `QuickAccessColumns` | dynamisch | Imperium Quick-Access UniformGrid (1-3 Spalten) |
+| `ShowTournamentSection` | 50 | Missionen Turnier-Button (Dead Zone Lv40-80) |
+| `ShowSeasonalEventSection` | 60 | Missionen Saison-Event-Button |
+| `ShowBattlePassSection` | 70 | Missionen Battle-Pass-Button |
 
 Zusätzlich existieren Tab-Level-Gates (`TabUnlockLevels`): Werkstatt=1, Shop=3, Imperium=5, Missionen=8, Gilde=15.
 
@@ -202,7 +246,9 @@ Tier-Farben: F=#9E9E9E(Grau), E=#4CAF50(Grün), D=#2196F3(Blau), C=#9C27B0(Lila)
 
 ### Goldschrauben-Quellen
 
-1. Mini-Games (3-10), 2. Daily Challenges (20), 3. Achievements (5-50), 4. Rewarded Ad (10, BAL-3), 5. IAP (100/500/2000), 6. Daily Login (1-25), 7. Spieler-Meilensteine (3-200), 8. Workshop-Meilensteine (2-50)
+1. Mini-Games (3-10), 2. Daily Challenges (~12, BAL-9: von ~19 reduziert), 3. Achievements (5-50), 4. Rewarded Ad (10, BAL-3), 5. IAP (50/150/450), 6. Daily Login (1-25), 7. Spieler-Meilensteine (3-200), 8. Workshop-Meilensteine (2-50)
+
+**Premium +100% GS**: `AddGoldenScrews(amount, fromPurchase)` verdoppelt Gameplay-Quellen für Premium-Spieler. IAP-Käufe (`fromPurchase: true`) werden nicht verdoppelt. Prestige-Shop-Bonus stackt additiv.
 
 ### Research Tree
 
@@ -239,11 +285,12 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 
 | Service | Zweck |
 |---------|-------|
+| `LogService` | Zentraler Logging-Service (Debug-Output). ILogService injiziert in GuildService, GuildWarSeasonService, FirebaseService |
 | `GameLoopService` | 1s-Takt: Einkommen, Kosten, Worker-States, AutoSave (30s) |
-| `GameStateService` | Zentraler State mit Thread-Safety (lock), GetOrderRewardMultiplier() |
-| `SaveGameService` | JSON-Persistenz (Load/Save/Import/Export/Reset) |
+| `GameStateService` | Zentraler State mit Thread-Safety (lock), GetOrderRewardMultiplier(), AddXp() (aus GameState verschoben) |
+| `SaveGameService` | JSON-Persistenz (Load/Save/Import/Export/Reset), MigrateFromV1() (aus GameState verschoben) |
 | `WorkerService` | Mood, Fatigue, Training, Ruhe, Kündigung, ReinstateWorker, Research-basierte Markt-Generierung (S-Tier+Headhunter) |
-| `PrestigeService` | 7-Tier Prestige + Shop-Effekte + progressive Bewahrung |
+| `PrestigeService` | 7-Tier Prestige + Shop-Effekte + verschärfte Bewahrung + Diminishing Returns (Cap 50x) |
 | `ResearchService` | 45 Research-Nodes, Timer, Effekt-Berechnung |
 | `EventService` | 8 Event-Typen + saisonaler Multiplikator |
 | `DailyChallengeService` | 3 Challenges/Tag (00:00 Reset) |
@@ -270,7 +317,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `GuildTipService` | Kontextuelle Gilden-Tipps (Preferences-basiert, 24h Cooldown) |
 | `GuildAchievementService` | 30 Gilden-Achievements (10 Typen x 3 Tiers), Firebase-Tracking |
 | `FirebaseService` | Anonymous Auth, Token-Refresh (55min, Retry bei Netzwerkfehler), CRUD, 5s Timeout, SemaphoreSlim. PlayerId-GUID (stabile Spieler-Identität, überlebt Account-Wechsel), auth_to_player Mapping via SyncAuthToPlayerMappingAsync() |
-| `GameAssetService` | LRU-Cache 50MB, WebP→SKBitmap + animierte WebP Multi-Frame, PlatformAssetLoader |
+| `GameAssetService` | LRU-Cache 50MB, WebP→SKBitmap + animierte WebP Multi-Frame, PlatformAssetLoader. Statischer `GameAssetService.Current` Zugriff für Views (kein Service-Locator) |
 | `CraftingService` | 13 Rezepte in 3 Tiers, Produktionsketten, Echtzeit-Timer |
 | `WeeklyMissionService` | 5 Wochenmissionen, Montag-Reset, 50 Goldschrauben Bonus |
 | `WelcomeBackService` | Angebote nach 24h+ Abwesenheit, Starter-Paket (einmalig) |

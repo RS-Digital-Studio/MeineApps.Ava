@@ -84,7 +84,7 @@ public sealed class GoalService : IGoalService
         var highestTier = state.Prestige.GetHighestAvailableTier(state.PlayerLevel);
         if (highestTier != PrestigeTier.None)
         {
-            var points = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
+            var points = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);
             int tierPoints = (int)(points * highestTier.GetPointMultiplier());
             var goal = new GameGoal
             {

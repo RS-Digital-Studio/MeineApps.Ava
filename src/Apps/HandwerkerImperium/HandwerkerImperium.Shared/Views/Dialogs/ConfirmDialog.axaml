@@ -4,7 +4,7 @@
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:models="using:HandwerkerImperium.Models"
              x:Class="HandwerkerImperium.Views.Dialogs.ConfirmDialog"
-             x:DataType="vm:MainViewModel"
+             x:DataType="vm:DialogViewModel"
              x:CompileBindings="True"
              x:Name="ConfirmDialogRoot">
 
@@ -58,7 +58,7 @@
                         AutomationProperties.AutomationId="Main_Btn_TierChip">
                   <!-- Command-Binding via $parent zum UserControl-DataContext (MainViewModel) -->
                   <Button.Command>
-                    <Binding Path="((vm:MainViewModel)DataContext).SelectPrestigeTierCommand"
+                    <Binding Path="((vm:DialogViewModel)DataContext).SelectPrestigeTierCommand"
                              ElementName="ConfirmDialogRoot" />
                   </Button.Command>
                   <Button.Background>

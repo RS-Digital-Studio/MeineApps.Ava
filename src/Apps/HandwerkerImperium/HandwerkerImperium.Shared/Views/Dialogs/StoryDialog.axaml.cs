@@ -54,7 +54,7 @@ public partial class StoryDialog : UserControl
         canvas.Clear(SKColors.Transparent);
 
         var bounds = canvas.LocalClipBounds;
-        var vm = DataContext as MainViewModel;
+        var vm = DataContext as DialogViewModel;
         var mood = vm?.StoryMood ?? "happy";
 
         MeisterHansRenderer.Render(canvas, bounds, mood, _hansElapsed, _hansBlinking);

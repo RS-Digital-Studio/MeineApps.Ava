@@ -22,6 +22,7 @@ public sealed class GuildService : IGuildService
     private readonly IGameStateService _gameStateService;
     private readonly IFirebaseService _firebaseService;
     private readonly IPreferencesService _preferences;
+    private readonly ILogService _log;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     public event Action? GuildUpdated;
@@ -31,11 +32,13 @@ public sealed class GuildService : IGuildService
     public GuildService(
         IGameStateService gameStateService,
         IFirebaseService firebaseService,
-        IPreferencesService preferences)
+        IPreferencesService preferences,
+        ILogService log)
     {
         _gameStateService = gameStateService;
         _firebaseService = firebaseService;
         _preferences = preferences;
+        _log = log;
 
         // Spielernamen aus Preferences laden (mit Längenbegrenzung für Legacy-Daten)
         var savedName = _preferences.Get<string?>(PrefKeyPlayerName, null);
@@ -96,9 +99,9 @@ public sealed class GuildService : IGuildService
             }
             // else: Offline → lokalen Cache beibehalten
         }
-        catch
+        catch (Exception ex)
         {
-            // Offline → lokaler Cache bleibt bestehen
+            _log.Error("Gilden-Initialisierung fehlgeschlagen", ex);
         }
 
         GuildUpdated?.Invoke();
@@ -192,9 +195,9 @@ public sealed class GuildService : IGuildService
                 return levelCompare != 0 ? levelCompare : b.MemberCount.CompareTo(a.MemberCount);
             });
         }
-        catch
+        catch (Exception ex)
         {
-            // Offline
+            _log.Error("Gilden-Browse fehlgeschlagen", ex);
         }
 
         return result;
@@ -270,8 +273,9 @@ public sealed class GuildService : IGuildService
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Gilde erstellen fehlgeschlagen", ex);
             return false;
         }
     }
@@ -331,8 +335,9 @@ public sealed class GuildService : IGuildService
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Gilde beitreten fehlgeschlagen", ex);
             return false;
         }
     }
@@ -379,8 +384,9 @@ public sealed class GuildService : IGuildService
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Gilde verlassen fehlgeschlagen", ex);
             return false;
         }
     }
@@ -525,8 +531,9 @@ public sealed class GuildService : IGuildService
 
             return detail;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Gilden-Details laden fehlgeschlagen", ex);
             return null;
         }
     }
@@ -577,9 +584,9 @@ public sealed class GuildService : IGuildService
                 $"guild_members/{membership.GuildId}/{playerId}",
                 new Dictionary<string, object> { ["name"] = PlayerName ?? "Spieler" });
         }
-        catch
+        catch (Exception ex)
         {
-            // Fire-and-forget: Nächster Refresh aktualisiert den Namen
+            _log.Error("Spielername in Firebase aktualisieren fehlgeschlagen", ex);
         }
     }
 
@@ -636,8 +643,9 @@ public sealed class GuildService : IGuildService
 
             return code;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Einladungscode erstellen fehlgeschlagen", ex);
             return null;
         }
     }
@@ -669,8 +677,9 @@ public sealed class GuildService : IGuildService
 
             return await JoinGuildAsync(guildId);
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Beitritt per Einladungscode fehlgeschlagen", ex);
             return false;
         }
     }
@@ -709,8 +718,9 @@ public sealed class GuildService : IGuildService
 
             return result;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Verfügbare Spieler laden fehlgeschlagen", ex);
             return [];
         }
     }
@@ -736,9 +746,9 @@ public sealed class GuildService : IGuildService
                 LastActive = DateTime.UtcNow.ToString("O")
             });
         }
-        catch
+        catch (Exception ex)
         {
-            // Stille Fehlerbehandlung
+            _log.Error("Verfügbarkeits-Registrierung fehlgeschlagen", ex);
         }
     }
 
@@ -754,9 +764,9 @@ public sealed class GuildService : IGuildService
 
             await _firebaseService.DeleteAsync($"available_players/{uid}");
         }
-        catch
+        catch (Exception ex)
         {
-            // Stille Fehlerbehandlung
+            _log.Error("Verfügbarkeits-Abmeldung fehlgeschlagen", ex);
         }
     }
 
@@ -813,8 +823,9 @@ public sealed class GuildService : IGuildService
             await _firebaseService.SetAsync($"player_invites/{targetUid}/{guildId}", invite);
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Einladung senden fehlgeschlagen", ex);
             return false;
         }
     }
@@ -842,8 +853,9 @@ public sealed class GuildService : IGuildService
             result.Sort((a, b) => string.Compare(b.invite.InvitedAt, a.invite.InvitedAt, StringComparison.Ordinal));
             return result;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Einladungen laden fehlgeschlagen", ex);
             return [];
         }
     }
@@ -863,8 +875,9 @@ public sealed class GuildService : IGuildService
             await _firebaseService.DeleteAsync($"player_invites/{uid}");
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Einladung annehmen fehlgeschlagen", ex);
             return false;
         }
     }
@@ -879,8 +892,9 @@ public sealed class GuildService : IGuildService
             await _firebaseService.DeleteAsync($"player_invites/{uid}/{guildId}");
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Einladung ablehnen fehlgeschlagen", ex);
             return false;
         }
     }
@@ -912,8 +926,9 @@ public sealed class GuildService : IGuildService
             GuildUpdated?.Invoke();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Beförderung zum Officer fehlgeschlagen", ex);
             return false;
         }
     }
@@ -941,8 +956,9 @@ public sealed class GuildService : IGuildService
             GuildUpdated?.Invoke();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Degradierung zum Member fehlgeschlagen", ex);
             return false;
         }
     }
@@ -979,8 +995,9 @@ public sealed class GuildService : IGuildService
             GuildUpdated?.Invoke();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Mitglied kicken fehlgeschlagen", ex);
             return false;
         }
     }
@@ -1017,8 +1034,9 @@ public sealed class GuildService : IGuildService
             GuildUpdated?.Invoke();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Führung übertragen fehlgeschlagen", ex);
             return false;
         }
     }
@@ -1040,9 +1058,9 @@ public sealed class GuildService : IGuildService
                     ["lastActiveAt"] = DateTime.UtcNow.ToString("O")
                 });
         }
-        catch
+        catch (Exception ex)
         {
-            // Fire-and-forget: Keine Exceptions werfen
+            _log.Error("LastActive aktualisieren fehlgeschlagen", ex);
         }
     }
 

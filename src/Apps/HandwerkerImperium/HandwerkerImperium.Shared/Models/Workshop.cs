@@ -157,20 +157,22 @@ public class Workshop
     /// Meilenstein 225 (BAL-13) schließt die Grind-Wall 200→250.
     /// Meilenstein 350 schließt die Durststrecke 250→500 (BAL-1).
     /// </summary>
+    // BAL-PROGRESSION: Meilenstein-Multiplikatoren um ~40% reduziert
+    // Kumulativ: 1.15 × 1.3 × 1.3 × 1.45 × 1.6 × 1.45 × 1.3 × 1.6 × 1.6 × 2.0 × 3.0 ≈ 84.6x (vorher ~1551x)
     public decimal GetMilestoneMultiplier()
     {
         decimal mult = 1.0m;
-        if (Level >= 25) mult *= 1.25m;
-        if (Level >= 50) mult *= 1.5m;
-        if (Level >= 75) mult *= 1.5m;
-        if (Level >= 100) mult *= 1.75m;
-        if (Level >= 150) mult *= 2.0m;
-        if (Level >= 200) mult *= 1.75m;
-        if (Level >= 225) mult *= 1.5m;   // BAL-13: Neuer Meilenstein gegen Grind-Wall 200→250
-        if (Level >= 250) mult *= 2.0m;
-        if (Level >= 350) mult *= 2.0m;   // BAL-1: Neuer Meilenstein gegen Mid-Game-Durststrecke
-        if (Level >= 500) mult *= 3.0m;
-        if (Level >= 1000) mult *= 5.0m;
+        if (Level >= 25) mult *= 1.15m;    // BAL-PROGRESSION: von 1.25 reduziert
+        if (Level >= 50) mult *= 1.3m;     // BAL-PROGRESSION: von 1.5 reduziert
+        if (Level >= 75) mult *= 1.3m;     // BAL-PROGRESSION: von 1.5 reduziert
+        if (Level >= 100) mult *= 1.45m;   // BAL-PROGRESSION: von 1.75 reduziert
+        if (Level >= 150) mult *= 1.6m;    // BAL-PROGRESSION: von 2.0 reduziert
+        if (Level >= 200) mult *= 1.45m;   // BAL-PROGRESSION: von 1.75 reduziert
+        if (Level >= 225) mult *= 1.3m;    // BAL-PROGRESSION: von 1.5 reduziert (BAL-13 Meilenstein)
+        if (Level >= 250) mult *= 1.6m;    // BAL-PROGRESSION: von 2.0 reduziert
+        if (Level >= 350) mult *= 1.6m;    // BAL-PROGRESSION: von 2.0 reduziert (BAL-1 Meilenstein)
+        if (Level >= 500) mult *= 2.0m;    // BAL-PROGRESSION: von 3.0 reduziert
+        if (Level >= 1000) mult *= 3.0m;   // BAL-PROGRESSION: von 5.0 reduziert
         return mult;
     }
 
@@ -183,19 +185,20 @@ public class Workshop
     /// <summary>
     /// Gibt den Multiplikator für ein bestimmtes Meilenstein-Level zurück.
     /// </summary>
+    // BAL-PROGRESSION: Meilenstein-Multiplikatoren um ~40% reduziert
     public static decimal GetMilestoneMultiplierForLevel(int level) => level switch
     {
-        25 => 1.25m,
-        50 => 1.5m,
-        75 => 1.5m,
-        100 => 1.75m,
-        150 => 2.0m,
-        200 => 1.75m,
-        225 => 1.5m,   // BAL-13: Neuer Meilenstein gegen Grind-Wall
-        250 => 2.0m,
-        350 => 2.0m,   // BAL-1: Neuer Meilenstein
-        500 => 3.0m,
-        1000 => 5.0m,
+        25 => 1.15m,    // BAL-PROGRESSION: von 1.25 reduziert
+        50 => 1.3m,     // BAL-PROGRESSION: von 1.5 reduziert
+        75 => 1.3m,     // BAL-PROGRESSION: von 1.5 reduziert
+        100 => 1.45m,   // BAL-PROGRESSION: von 1.75 reduziert
+        150 => 1.6m,    // BAL-PROGRESSION: von 2.0 reduziert
+        200 => 1.45m,   // BAL-PROGRESSION: von 1.75 reduziert
+        225 => 1.3m,    // BAL-PROGRESSION: von 1.5 reduziert (BAL-13 Meilenstein)
+        250 => 1.6m,    // BAL-PROGRESSION: von 2.0 reduziert
+        350 => 1.6m,    // BAL-PROGRESSION: von 2.0 reduziert (BAL-1 Meilenstein)
+        500 => 2.0m,    // BAL-PROGRESSION: von 3.0 reduziert
+        1000 => 3.0m,   // BAL-PROGRESSION: von 5.0 reduziert
         _ => 1.0m
     };
 
@@ -245,9 +248,9 @@ public class Workshop
 
     /// <summary>
     /// Kosten fuer Upgrade auf naechstes Level.
-    /// Formel: 200 * 1.05^(Level-1), reduziert durch Prestige-Shop UpgradeDiscount.
-    /// Steilere Kostenkurve (1.05 statt 1.035) → Upgrades werden schneller teuer,
-    /// Spieler müssen länger sparen oder Ads schauen für Boost.
+    /// Formel: 200 * 1.07^(Level-1), reduziert durch Prestige-Shop UpgradeDiscount.
+    /// BAL-PROGRESSION: von 1.05 auf 1.07 erhöht - Upgrades werden bei hohen Leveln deutlich teurer
+    /// (Level 500 ~9.600x teurer als vorher). Streckt Progression von ~1 Woche auf ~2-3 Monate.
     /// </summary>
     [JsonIgnore]
     public decimal UpgradeCost
@@ -255,7 +258,8 @@ public class Workshop
         get
         {
             if (Level >= MaxLevel) return 0;
-            decimal baseCost = Level == 1 ? 100m : 200m * (decimal)Math.Pow(1.05, Level - 1);
+            // BAL-PROGRESSION: von 1.05 auf 1.07 erhöht - Upgrades werden bei hohen Leveln deutlich teurer
+            decimal baseCost = Level == 1 ? 100m : 200m * (decimal)Math.Pow(1.07, Level - 1);
 
             // Prestige-Shop Upgrade-Rabatt anwenden
             if (UpgradeDiscount > 0)
@@ -278,7 +282,8 @@ public class Workshop
         for (int i = 0; i < maxUpgrades; i++)
         {
             int lvl = Level + i;
-            decimal cost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.05, lvl - 1);
+            // BAL-PROGRESSION: von 1.05 auf 1.07 erhöht
+            decimal cost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.07, lvl - 1);
             total += cost * discountFactor;
         }
         return total;
@@ -295,7 +300,8 @@ public class Workshop
         for (int i = 0; i < MaxLevel - Level; i++)
         {
             int lvl = Level + i;
-            decimal lvlCost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.05, lvl - 1);
+            // BAL-PROGRESSION: von 1.05 auf 1.07 erhöht
+            decimal lvlCost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.07, lvl - 1);
             if (total + lvlCost > budget) break;
             total += lvlCost;
             count++;

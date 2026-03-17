@@ -19,31 +19,15 @@ using HandwerkerImperium.ViewModels.MiniGames;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// Event args für den Daily-Reward-Dialog.
-/// </summary>
-public class DailyRewardEventArgs : EventArgs
-{
-    public List<DailyReward> Rewards { get; }
-    public int CurrentDay { get; }
-    public int CurrentStreak { get; }
-
-    public DailyRewardEventArgs(List<DailyReward> rewards, int currentDay, int currentStreak)
-    {
-        Rewards = rewards;
-        CurrentDay = currentDay;
-        CurrentStreak = currentStreak;
-    }
-}
-
-/// <summary>
 /// Haupt-ViewModel für den Spielbildschirm.
 /// Aufgeteilt in Partial Classes:
 ///   MainViewModel.cs          - Felder, Constructor, Properties, Event-Handlers, Helpers, Dispose
 ///   MainViewModel.Navigation.cs - Tab-Auswahl, Child-Navigation, Back-Button
-///   MainViewModel.Dialogs.cs    - Alert/Confirm, Story, Tutorial, Prestige-Bestätigung
+///   MainViewModel.Dialogs.cs    - Weiterleitungen an DialogVM, Prestige-Durchführung
 ///   MainViewModel.Economy.cs    - Workshop-Kauf/Upgrade, Orders, Rush, Delivery, Prestige-Banner
 ///   MainViewModel.Missions.cs   - Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin
 ///   MainViewModel.Init.cs       - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
+/// Dialog-Logik extrahiert nach DialogViewModel.cs (Alert, Confirm, Story, Hint, Achievement, Prestige-Dialog).
 /// </summary>
 public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
@@ -73,6 +57,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly ILuckySpinService _luckySpinService;
     private readonly IEquipmentService _equipmentService;
     private readonly IGoalService _goalService;
+    private readonly IWorkerService _workerService;
     private bool _disposed;
     private decimal _pendingOfflineEarnings;
     private QuickJob? _activeQuickJob;
@@ -82,6 +67,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private bool _hasDeferredDailyReward;
     private bool _hasDeferredStory;
     private bool _hasDeferredWelcomeHint;
+
+    // Gecachtes Dictionary vermeidet Allokation bei jedem MoneyChanged-Tick im Max-Modus
+    private readonly Dictionary<WorkshopType, Workshop> _workshopLookupCache = new(10);
 
     // Statisches Array vermeidet Allokation bei jedem RefreshWorkshops()-Aufruf
     private static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
@@ -355,21 +343,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private double _nextPrestigeTierProgress;
 
-    /// <summary>Ob mehrere Prestige-Tiers verfügbar sind (für Tier-Auswahl im Dialog).</summary>
-    [ObservableProperty]
-    private bool _hasMultiplePrestigeTiers;
-
-    /// <summary>Anzahl verfügbarer Prestige-Tiers.</summary>
-    [ObservableProperty]
-    private int _availablePrestigeTierCount;
-
-    /// <summary>Aktuell ausgewählter Tier im Bestätigungsdialog (Index in AvailableTiers).</summary>
-    [ObservableProperty]
-    private int _selectedPrestigeTierIndex;
-
-    /// <summary>Tier-Auswahl-Chips für den Dialog.</summary>
-    [ObservableProperty]
-    private List<PrestigeTierOption> _availablePrestigeTierOptions = [];
+    // Prestige-Tier-Dialog Properties sind jetzt in DialogVM
 
     // ═══════════════════════════════════════════════════════════════════════
     // NÄCHSTES ZIEL (GoalService)
@@ -635,20 +609,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private string _seasonalModifierText = "";
 
     // ═══════════════════════════════════════════════════════════════════════
-    // DIALOG STATE
+    // DIALOG STATE (delegiert an DialogVM, außer Offline/DailyReward/Starter)
     // ═══════════════════════════════════════════════════════════════════════
 
-    [ObservableProperty]
-    private bool _isLevelUpDialogVisible;
-
-    [ObservableProperty]
-    private bool _isLevelUpPulsing;
-
-    [ObservableProperty]
-    private int _levelUpNewLevel;
-
-    [ObservableProperty]
-    private string _levelUpUnlockedText = "";
+    /// <summary>Eigenständiges ViewModel für Alert, Confirm, Story, Achievement, LevelUp, Hint, Prestige-Dialoge.</summary>
+    public DialogViewModel DialogVM { get; private set; } = null!;
 
     [ObservableProperty]
     private bool _isOfflineEarningsDialogVisible;
@@ -674,153 +639,21 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _dailyRewardAmountText = "";
 
+    // Starter-Offer (einmaliges zeitlich begrenztes Premium-Angebot)
     [ObservableProperty]
-    private bool _isAchievementDialogVisible;
-
-    [ObservableProperty]
-    private string _achievementName = "";
+    private bool _isStarterOfferVisible;
 
     [ObservableProperty]
-    private string _achievementDescription = "";
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // STORY-DIALOG (Meister Hans NPC)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _isStoryDialogVisible;
-
-    [ObservableProperty]
-    private string _storyTitle = "";
-
-    [ObservableProperty]
-    private string _storyText = "";
-
-    [ObservableProperty]
-    private string _storyMood = "happy";
-
-    [ObservableProperty]
-    private string _storyRewardText = "";
-
-    [ObservableProperty]
-    private string _storyChapterId = "";
-
-    [ObservableProperty]
-    private bool _hasNewStory;
-
-    [ObservableProperty]
-    private int _storyChapterNumber;
-
-    [ObservableProperty]
-    private int _storyTotalChapters = 25;
-
-    [ObservableProperty]
-    private bool _isStoryTutorial;
-
-    [ObservableProperty]
-    private string _storyChapterBadge = "";
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // KONTEXTUELLER HINT (Tooltip-Bubbles / Dialog)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _isHintVisible;
-
-    [ObservableProperty]
-    private string _activeHintTitle = "";
-
-    [ObservableProperty]
-    private string _activeHintText = "";
-
-    /// <summary>
-    /// True wenn der Hint als zentrierter Dialog angezeigt wird (z.B. Welcome).
-    /// </summary>
-    [ObservableProperty]
-    private bool _isHintDialog;
-
-    /// <summary>
-    /// True wenn Tooltip-Bubble oben positioniert ist (HintPosition.Below → Bubble zeigt von oben nach unten).
-    /// </summary>
-    [ObservableProperty]
-    private bool _isHintTooltipAbove;
-
-    /// <summary>
-    /// True wenn Tooltip-Bubble unten positioniert ist (HintPosition.Above → Bubble zeigt von unten nach oben).
-    /// </summary>
-    [ObservableProperty]
-    private bool _isHintTooltipBelow;
-
-    [ObservableProperty]
-    private string _hintDismissButtonText = "Verstanden";
-
-    // Generic Alert/Confirm Dialog
-    [ObservableProperty]
-    private bool _isAlertDialogVisible;
-
-    [ObservableProperty]
-    private string _alertDialogTitle = "";
-
-    [ObservableProperty]
-    private string _alertDialogMessage = "";
-
-    [ObservableProperty]
-    private string _alertDialogButtonText = "OK";
-
-    [ObservableProperty]
-    private bool _isConfirmDialogVisible;
-
-    [ObservableProperty]
-    private string _confirmDialogTitle = "";
-
-    [ObservableProperty]
-    private string _confirmDialogMessage = "";
-
-    [ObservableProperty]
-    private string _confirmDialogAcceptText = "OK";
-
-    [ObservableProperty]
-    private string _confirmDialogCancelText = "";
-
-    private TaskCompletionSource<bool>? _confirmDialogTcs;
-
-    /// <summary>Ob die Tier-Auswahl-Chips im Bestätigungsdialog sichtbar sind.</summary>
-    [ObservableProperty]
-    private bool _isPrestigeTierSelectionVisible;
-
-    // Post-Prestige Zusammenfassung
-    [ObservableProperty]
-    private bool _isPrestigeSummaryVisible;
-
-    [ObservableProperty]
-    private string _prestigeSummaryTier = "";
-
-    [ObservableProperty]
-    private string _prestigeSummaryTierIcon = "";
-
-    [ObservableProperty]
-    private string _prestigeSummaryTierColor = "#FFD700";
-
-    [ObservableProperty]
-    private string _prestigeSummaryPoints = "";
-
-    [ObservableProperty]
-    private string _prestigeSummaryMultiplier = "";
-
-    [ObservableProperty]
-    private string _prestigeSummaryCount = "";
+    private string _starterOfferCountdown = string.Empty;
 
     /// <summary>
     /// True wenn irgendein Overlay-Dialog sichtbar ist.
-    /// Verhindert dass Hints oder andere Dialoge gleichzeitig erscheinen.
+    /// Kombiniert MainViewModel-eigene Dialoge mit DialogVM.IsAnyDialogVisible.
     /// </summary>
     private bool IsAnyDialogVisible =>
         IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible ||
         IsWelcomeOfferVisible || IsDailyRewardDialogVisible ||
-        IsStoryDialogVisible || IsHintVisible ||
-        IsLevelUpDialogVisible || IsAchievementDialogVisible ||
-        IsAlertDialogVisible || IsConfirmDialogVisible ||
-        IsPrestigeSummaryVisible;
+        IsStarterOfferVisible || DialogVM.IsAnyDialogVisible;
 
     /// <summary>
     /// Indicates whether ads should be shown (not premium).
@@ -994,11 +827,23 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isTournamentActive;
 
+    /// <summary>Turnier-Button sichtbar ab Level 50 (Progressive Disclosure).</summary>
+    [ObservableProperty]
+    private bool _showTournamentSection;
+
     [ObservableProperty]
     private bool _isSeasonalEventActive;
 
+    /// <summary>Saison-Event-Button sichtbar ab Level 60.</summary>
+    [ObservableProperty]
+    private bool _showSeasonalEventSection;
+
     [ObservableProperty]
     private bool _isBattlePassActive;
+
+    /// <summary>Battle-Pass-Button sichtbar ab Level 70.</summary>
+    [ObservableProperty]
+    private bool _showBattlePassSection;
 
     [ObservableProperty]
     private bool _isGuildActive;
@@ -1209,14 +1054,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         SettingsViewModel settingsViewModel,
         WorkshopViewModel workshopViewModel,
         OrderViewModel orderViewModel,
-        SawingGameViewModel sawingGameViewModel,
-        PipePuzzleViewModel pipePuzzleViewModel,
-        WiringGameViewModel wiringGameViewModel,
-        PaintingGameViewModel paintingGameViewModel,
-        RoofTilingGameViewModel roofTilingGameViewModel,
-        BlueprintGameViewModel blueprintGameViewModel,
-        DesignPuzzleGameViewModel designPuzzleGameViewModel,
-        InspectionGameViewModel inspectionGameViewModel,
+        MiniGameViewModels miniGames,
         WorkerMarketViewModel workerMarketViewModel,
         WorkerProfileViewModel workerProfileViewModel,
         BuildingsViewModel buildingsViewModel,
@@ -1232,10 +1070,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         ILuckySpinService luckySpinService,
         IEquipmentService equipmentService,
         LuckySpinViewModel luckySpinViewModel,
-        ForgeGameViewModel forgeGameViewModel,
-        InventGameViewModel inventGameViewModel,
         GameJuiceEngine gameJuiceEngine,
         IGoalService goalService,
+        IWorkerService workerService,
         IContextualHintService contextualHintService,
         IStoryService? storyService = null,
         IReviewService? reviewService = null,
@@ -1265,10 +1102,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _luckySpinService = luckySpinService;
         _equipmentService = equipmentService;
         _goalService = goalService;
+        _workerService = workerService;
         GameJuiceEngine = gameJuiceEngine;
 
         // Delegate-Felder zuweisen (statt anonymer Lambdas, damit Dispose() abmelden kann)
-        _adUnavailableHandler = () => ShowAlertDialog(
+        _adUnavailableHandler = () => DialogVM.ShowAlertDialog(
             _localizationService.GetString("AdVideoNotAvailableTitle"),
             _localizationService.GetString("AdVideoNotAvailableMessage"),
             _localizationService.GetString("OK"));
@@ -1276,7 +1114,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         // SaveGame-Fehler an den Benutzer weiterleiten
         _saveGameErrorHandler = (titleKey, msgKey) =>
-            Dispatcher.UIThread.Post(() => ShowAlertDialog(
+            Dispatcher.UIThread.Post(() => DialogVM.ShowAlertDialog(
                 _localizationService.GetString(titleKey),
                 _localizationService.GetString(msgKey),
                 _localizationService.GetString("OK")));
@@ -1289,14 +1127,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         SettingsViewModel = settingsViewModel;
         WorkshopViewModel = workshopViewModel;
         OrderViewModel = orderViewModel;
-        SawingGameViewModel = sawingGameViewModel;
-        PipePuzzleViewModel = pipePuzzleViewModel;
-        WiringGameViewModel = wiringGameViewModel;
-        PaintingGameViewModel = paintingGameViewModel;
-        RoofTilingGameViewModel = roofTilingGameViewModel;
-        BlueprintGameViewModel = blueprintGameViewModel;
-        DesignPuzzleGameViewModel = designPuzzleGameViewModel;
-        InspectionGameViewModel = inspectionGameViewModel;
+        SawingGameViewModel = miniGames.Sawing;
+        PipePuzzleViewModel = miniGames.PipePuzzle;
+        WiringGameViewModel = miniGames.Wiring;
+        PaintingGameViewModel = miniGames.Painting;
+        RoofTilingGameViewModel = miniGames.RoofTiling;
+        BlueprintGameViewModel = miniGames.Blueprint;
+        DesignPuzzleGameViewModel = miniGames.DesignPuzzle;
+        InspectionGameViewModel = miniGames.Inspection;
         WorkerMarketViewModel = workerMarketViewModel;
         WorkerProfileViewModel = workerProfileViewModel;
         BuildingsViewModel = buildingsViewModel;
@@ -1308,8 +1146,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         GuildViewModel = guildViewModel;
         CraftingViewModel = craftingViewModel;
         LuckySpinViewModel = luckySpinViewModel;
-        ForgeGameViewModel = forgeGameViewModel;
-        InventGameViewModel = inventGameViewModel;
+        ForgeGameViewModel = miniGames.Forge;
+        InventGameViewModel = miniGames.Invent;
         // Delegate-Feld zuweisen (statt anonymem Lambda)
         _luckySpinNavHandler = _ => HideLuckySpin();
         LuckySpinViewModel.NavigationRequested += _luckySpinNavHandler;
@@ -1348,8 +1186,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         ResearchViewModel.NavigationRequested += _researchNavHandler;
 
         // Wire up child VM alert/confirmation events (gespeicherte Delegates fuer Dispose-Unsubscribe)
-        _alertHandler = (t, m, b) => ShowAlertDialog(t, m, b);
-        _confirmHandler = (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
+        _alertHandler = (t, m, b) => DialogVM.ShowAlertDialog(t, m, b);
+        _confirmHandler = (t, m, a, c) => DialogVM.ShowConfirmDialog(t, m, a, c);
         _guildCelebrationHandler = () => CelebrationRequested?.Invoke();
         _guildFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         _workerProfileFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
@@ -1406,15 +1244,25 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _weeklyMissionService.MissionProgressChanged += OnWeeklyMissionProgressChanged;
         _welcomeBackService.OfferGenerated += OnWelcomeOfferGenerated;
 
-        // Kontextuelles Hint-System verdrahten
+        // Kontextuelles Hint-System (wird an DialogVM delegiert)
         _contextualHintService = contextualHintService;
-        _contextualHintService.HintChanged += OnHintChanged;
 
         // ReviewService + PrestigeService verdrahten (per Constructor Injection)
         _reviewService = reviewService;
         _prestigeService = prestigeService
                            ?? throw new InvalidOperationException("IPrestigeService required");
+
+        // DialogViewModel erstellen und Events verdrahten
+        DialogVM = new DialogViewModel(
+            _localizationService, _storyService, _contextualHintService,
+            _gameStateService, _prestigeService, _adService);
+        DialogVM.DeferredDialogCheckRequested += CheckDeferredDialogs;
+        DialogVM.PrestigeSummaryGoToShopRequested += () => SelectBuildingsTab();
+        DialogVM.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         _prestigeService.PrestigeCompleted += OnPrestigeCompleted;
+
+        // Worker-Level-Up Feedback (Sound + FloatingText)
+        _workerService.WorkerLevelUp += OnWorkerLevelUp;
 
         // Notification + PlayGames Services (per Constructor Injection)
         _notificationService = notificationService;
@@ -1448,13 +1296,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             // Max-Modus: Anzahl leistbarer Upgrades hängt vom Geld ab → muss neu berechnet werden
             var stateWorkshops = _gameStateService.State.Workshops;
-            var stateDict = new Dictionary<WorkshopType, Workshop>(stateWorkshops.Count);
+            _workshopLookupCache.Clear();
             for (int i = 0; i < stateWorkshops.Count; i++)
-                stateDict[stateWorkshops[i].Type] = stateWorkshops[i];
+                _workshopLookupCache[stateWorkshops[i].Type] = stateWorkshops[i];
 
             foreach (var workshop in Workshops)
             {
-                stateDict.TryGetValue(workshop.Type, out var ws);
+                _workshopLookupCache.TryGetValue(workshop.Type, out var ws);
                 SetBulkUpgradeCost(workshop, ws, e.NewAmount);
                 workshop.CanAffordWorker = e.NewAmount >= workshop.HireWorkerCost;
             }
@@ -1498,7 +1346,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Progressive Disclosure: Wird automatisch via [NotifyPropertyChangedFor] auf _playerLevel ausgelöst
 
         // Pulse-Animation bei JEDEM Level-Up (dezent, kein Dialog)
-        IsLevelUpPulsing = true;
+        DialogVM.IsLevelUpPulsing = true;
         _levelPulseTimer?.Stop();
         _levelPulseTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _levelPulseTimer.Tick -= OnLevelPulseTimeout;
@@ -1566,7 +1414,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private void OnLevelPulseTimeout(object? sender, EventArgs e)
     {
-        IsLevelUpPulsing = false;
+        DialogVM.IsLevelUpPulsing = false;
         _levelPulseTimer?.Stop();
     }
 
@@ -1592,6 +1440,21 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             _reviewService.MarkReviewPrompted();
             App.ReviewPromptRequested?.Invoke();
         }
+    }
+
+    /// <summary>
+    /// Worker-Level-Up: FloatingText mit Name + neuem Level und Sound.
+    /// </summary>
+    private void OnWorkerLevelUp(object? sender, Worker worker)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var levelUpText = string.Format(
+                _localizationService.GetString("WorkerLevelUp") ?? "{0} ist jetzt Level {1}!",
+                worker.Name, worker.ExperienceLevel);
+            FloatingTextRequested?.Invoke(levelUpText, "level");
+            _audioService.PlaySoundAsync(GameSound.MoneyEarned).FireAndForget();
+        });
     }
 
     private void OnXpGained(object? sender, XpGainedEventArgs e)
@@ -1886,10 +1749,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
 
         var title = _localizationService.GetString(achievement.TitleKey);
-        AchievementName = string.IsNullOrEmpty(title) ? achievement.TitleFallback : title;
+        DialogVM.AchievementName = string.IsNullOrEmpty(title) ? achievement.TitleFallback : title;
         var desc = _localizationService.GetString(achievement.DescriptionKey);
-        AchievementDescription = string.IsNullOrEmpty(desc) ? achievement.DescriptionFallback : desc;
-        IsAchievementDialogVisible = true;
+        DialogVM.AchievementDescription = string.IsNullOrEmpty(desc) ? achievement.DescriptionFallback : desc;
+        DialogVM.IsAchievementDialogVisible = true;
         CelebrationRequested?.Invoke();
 
         ShowAchievementUnlocked?.Invoke(this, achievement);
@@ -2034,6 +1897,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             // Soft-Cap-Indikator aktualisieren (nur wenn Dashboard sichtbar)
             if (IsDashboardActive)
             {
+                // Einmaliger Hinweis beim ersten Erreichen des Soft-Caps
+                if (state.IsSoftCapActive && !IsSoftCapActive)
+                {
+                    FloatingTextRequested?.Invoke(
+                        _localizationService.GetString("SoftCapReached") ?? "Bonus-Decke erreicht!",
+                        "warning");
+                }
+
                 IsSoftCapActive = state.IsSoftCapActive;
                 if (state.IsSoftCapActive && state.SoftCapReductionPercent > 0)
                     SoftCapText = $"-{state.SoftCapReductionPercent}%";
@@ -2391,9 +2262,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _weeklyMissionService.MissionProgressChanged -= OnWeeklyMissionProgressChanged;
         _welcomeBackService.OfferGenerated -= OnWelcomeOfferGenerated;
 
-        _contextualHintService.HintChanged -= OnHintChanged;
+        DialogVM.Cleanup();
 
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
+        _workerService.WorkerLevelUp -= OnWorkerLevelUp;
         _backPressHelper.ExitHintRequested -= OnBackPressExitHint;
 
         GuildViewModel.Dispose();

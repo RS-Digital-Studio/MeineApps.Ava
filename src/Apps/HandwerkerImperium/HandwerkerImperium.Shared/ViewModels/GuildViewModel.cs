@@ -1095,6 +1095,8 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
 
     /// <summary>
     /// Laedt die letzten 50 Chat-Nachrichten der Gilde.
+    /// Diff-basiert: Nur neue Nachrichten werden angehängt, alte getrimmt.
+    /// Vermeidet kompletten UI-Rebuild bei jedem Polling-Zyklus.
     /// </summary>
     public async Task LoadChatMessagesAsync()
     {
@@ -1104,9 +1106,44 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
         try
         {
             var messages = await _chatService.GetRecentMessagesAsync(membership.GuildId);
-            ChatMessages = new ObservableCollection<ChatMessageDisplay>(messages.TakeLast(50));
-            ChatSubtitle = messages.Count > 0
-                ? messages[^1].Text
+            var latest = messages.TakeLast(50).ToList();
+
+            if (ChatMessages.Count == 0)
+            {
+                // Erstbefüllung: Komplett initialisieren
+                ChatMessages = new ObservableCollection<ChatMessageDisplay>(latest);
+            }
+            else
+            {
+                // Diff-Update: Nur neue Nachrichten anhängen (Vergleich per Timestamp + Uid)
+                var lastKnownTimestamp = ChatMessages[^1].Timestamp;
+                var lastKnownUid = ChatMessages[^1].Uid;
+
+                var newMessages = new List<ChatMessageDisplay>();
+                var foundLast = false;
+                foreach (var msg in latest)
+                {
+                    if (foundLast)
+                    {
+                        newMessages.Add(msg);
+                    }
+                    else if (msg.Timestamp == lastKnownTimestamp && msg.Uid == lastKnownUid)
+                    {
+                        foundLast = true;
+                    }
+                }
+
+                // Neue Nachrichten anhängen
+                foreach (var msg in newMessages)
+                    ChatMessages.Add(msg);
+
+                // Alte Nachrichten am Anfang trimmen wenn > 50
+                while (ChatMessages.Count > 50)
+                    ChatMessages.RemoveAt(0);
+            }
+
+            ChatSubtitle = latest.Count > 0
+                ? latest[^1].Text
                 : (_localizationService.GetString("NoChatMessages") ?? "Noch keine Nachrichten");
         }
         catch

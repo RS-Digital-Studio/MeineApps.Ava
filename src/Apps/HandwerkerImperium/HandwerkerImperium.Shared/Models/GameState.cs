@@ -47,6 +47,13 @@ public class GameState
     [JsonPropertyName("totalMoneyEarned")]
     public decimal TotalMoneyEarned { get; set; }
 
+    /// <summary>
+    /// Geld verdient seit dem letzten Prestige. Wird bei Prestige zurückgesetzt.
+    /// Basis für die Prestige-Punkte-Berechnung (statt TotalMoneyEarned).
+    /// </summary>
+    [JsonPropertyName("currentRunMoney")]
+    public decimal CurrentRunMoney { get; set; }
+
     [JsonPropertyName("totalMoneySpent")]
     public decimal TotalMoneySpent { get; set; }
 
@@ -233,7 +240,10 @@ public class GameState
     [JsonPropertyName("prestige")]
     public PrestigeData Prestige { get; set; } = new();
 
-    /// <summary>Ascension-Daten (Meta-Prestige).</summary>
+    /// <summary>
+    /// Ascension-Daten (Meta-Prestige). Reserviert für zukünftige Ascension-Funktionalität.
+    /// Property wird persistiert (JSON) - nicht löschen wegen Save-Kompatibilität.
+    /// </summary>
     [JsonPropertyName("ascension")]
     public AscensionData Ascension { get; set; } = new();
 
@@ -535,7 +545,7 @@ public class GameState
 
     /// <summary>
     /// Zähler für Perfect-Ratings pro MiniGame-Typ (Key = MiniGameType als int).
-    /// Wird für Auto-Complete-Feature verwendet (50x Perfect → Auto-Ergebnis, Premium 25x).
+    /// Wird für Auto-Complete-Feature verwendet (30x Perfect → Auto-Ergebnis, Premium 15x).
     /// </summary>
     [JsonPropertyName("perfectRatingCounts")]
     public Dictionary<int, int> PerfectRatingCounts { get; set; } = new();
@@ -577,6 +587,22 @@ public class GameState
     /// </summary>
     [JsonPropertyName("claimedLevelOffers")]
     public List<int> ClaimedLevelOffers { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STARTER OFFER (einmaliges zeitlich begrenztes Premium-Angebot)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Ob das Starter-Offer bereits angezeigt wurde (nur 1x pro Spieler).
+    /// </summary>
+    [JsonPropertyName("starterOfferShown")]
+    public bool StarterOfferShown { get; set; }
+
+    /// <summary>
+    /// Zeitpunkt an dem das Starter-Offer aktiviert wurde (für 24h-Countdown).
+    /// </summary>
+    [JsonPropertyName("starterOfferTimestamp")]
+    public DateTime? StarterOfferTimestamp { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // GUILD (Welle 6)
@@ -803,7 +829,7 @@ public class GameState
             totalIncome += Workshops[i].GrossIncomePerSecond;
             totalCosts += Workshops[i].TotalCostsPerHour;
         }
-        decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 200.0m);
+        decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 50.0m);
         _cachedIncome = totalIncome * multiplier;
         _cachedCosts = totalCosts / 3600m;
         _incomeCacheDirty = false;
@@ -825,52 +851,6 @@ public class GameState
     {
         if (level <= 1) return 0;
         return (int)(100 * Math.Pow(level - 1, 1.2));
-    }
-
-    /// <summary>
-    /// Fügt XP hinzu. Wendet XP-Boost (2x) und Prestige-Shop-XP-Bonus an.
-    /// </summary>
-    public int AddXp(int amount)
-    {
-        // XP-Boost aus DailyReward (2x)
-        if (IsXpBoostActive)
-            amount *= 2;
-
-        // Prestige-Shop XP-Multiplikator
-        var xpBonus = GetPrestigeXpBonus();
-        if (xpBonus > 0)
-            amount = (int)(amount * (1m + xpBonus));
-
-        CurrentXp += amount;
-        TotalXp += amount;
-
-        int levelUps = 0;
-        // Level-Cap: Endlos-Schleife bei manipulierten Saves oder extremen XP verhindern
-        while (CurrentXp >= XpForNextLevel && PlayerLevel < LevelThresholds.MaxPlayerLevel)
-        {
-            PlayerLevel++;
-            levelUps++;
-        }
-
-        return levelUps;
-    }
-
-    /// <summary>
-    /// Berechnet den XP-Multiplikator-Bonus aus gekauften Prestige-Shop-Items.
-    /// </summary>
-    private decimal GetPrestigeXpBonus()
-    {
-        var purchased = Prestige.PurchasedShopItems;
-        if (purchased.Count == 0) return 0m;
-
-        var allItems = PrestigeShop.GetAllItems();
-        decimal bonus = 0m;
-        foreach (var item in allItems)
-        {
-            if (purchased.Contains(item.Id) && item.Effect.XpMultiplier > 0)
-                bonus += item.Effect.XpMultiplier;
-        }
-        return bonus;
     }
 
     public Workshop GetOrCreateWorkshop(WorkshopType type)
@@ -960,68 +940,4 @@ public class GameState
         return state;
     }
 
-    /// <summary>
-    /// Migrates a v1 save to v2 format.
-    /// </summary>
-    public static GameState MigrateFromV1(GameState old)
-    {
-        if (old.Version >= 2) return old;
-
-        old.Version = 2;
-
-        // Migrate workers: old workers had flat 1.0 efficiency
-        foreach (var ws in old.Workshops)
-        {
-            ws.IsUnlocked = true;
-            foreach (var worker in ws.Workers)
-            {
-                worker.Tier = WorkerTier.E;
-                worker.Talent = 3;
-                worker.Personality = WorkerPersonality.Steady;
-                worker.Mood = 80m;
-                worker.Fatigue = 0m;
-                worker.ExperienceLevel = Math.Min(10, worker.SkillLevel);
-                worker.WagePerHour = WorkerTier.E.GetWagePerHour();
-                worker.AssignedWorkshop = ws.Type;
-            }
-
-            if (!old.UnlockedWorkshopTypes.Contains(ws.Type))
-                old.UnlockedWorkshopTypes.Add(ws.Type);
-        }
-
-        // Migrate prestige
-        old.Prestige = new PrestigeData
-        {
-            BronzeCount = old.PrestigeLevel,
-            PermanentMultiplier = old.PrestigeMultiplier,
-            CurrentTier = old.PrestigeLevel > 0 ? Enums.PrestigeTier.Bronze : Enums.PrestigeTier.None
-        };
-
-        // Initialize reputation
-        old.Reputation ??= new CustomerReputation();
-
-        // Initialize empty collections
-        old.Buildings ??= [];
-        old.EventHistory ??= [];
-
-        // Initialize research tree
-        if (old.Researches == null || old.Researches.Count == 0)
-        {
-            old.Researches = ResearchTree.CreateAll();
-        }
-        else
-        {
-            // Prerequisites aus der aktuellen ResearchTree-Definition synchronisieren
-            // (damit Änderungen am Baum-Layout auch bei bestehenden Spielständen wirken)
-            var template = ResearchTree.CreateAll();
-            foreach (var tmpl in template)
-            {
-                var existing = old.Researches.FirstOrDefault(r => r.Id == tmpl.Id);
-                if (existing != null)
-                    existing.Prerequisites = tmpl.Prerequisites;
-            }
-        }
-
-        return old;
-    }
 }

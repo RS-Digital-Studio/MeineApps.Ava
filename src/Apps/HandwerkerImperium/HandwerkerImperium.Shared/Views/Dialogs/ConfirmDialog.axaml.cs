@@ -16,7 +16,7 @@ public partial class ConfirmDialog : UserControl
     /// </summary>
     private void OnConfirmOverlayPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (DataContext is MainViewModel vm)
+        if (DataContext is DialogViewModel vm)
             vm.ConfirmDialogCancelCommand.Execute(null);
     }
 

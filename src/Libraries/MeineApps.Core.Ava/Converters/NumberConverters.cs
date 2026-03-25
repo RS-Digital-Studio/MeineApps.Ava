@@ -50,16 +50,17 @@ public sealed class CurrencyConverter : IValueConverter
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value == null) return $"0.00 {CurrencySymbol}";
+        if (value == null) return $"0,00 {CurrencySymbol}";
 
         var symbol = parameter as string ?? CurrencySymbol;
 
+        // culture-Parameter verwenden für korrekte Dezimal-/Tausenderzeichen
         return value switch
         {
-            double d => $"{d:N2} {symbol}",
-            decimal dec => $"{dec:N2} {symbol}",
-            float f => $"{f:N2} {symbol}",
-            int i => $"{i:N0} {symbol}",
+            double d => $"{d.ToString("N2", culture)} {symbol}",
+            decimal dec => $"{dec.ToString("N2", culture)} {symbol}",
+            float f => $"{f.ToString("N2", culture)} {symbol}",
+            int i => $"{i.ToString("N0", culture)} {symbol}",
             _ => $"{value} {symbol}"
         };
     }

@@ -29,7 +29,11 @@ public sealed class DateTimeFormatConverter : IValueConverter
 }
 
 /// <summary>
-/// Formats a DateTime as relative time (e.g., "2 hours ago")
+/// Formatiert eine DateTime als relative Zeitangabe (z.B. "vor 2 Stunden").
+/// Erwartet UTC-Zeitstempel (DateTime.UtcNow Konvention).
+/// HINWEIS: Texte sind kompakt/sprachneutral gehalten (Kurzform).
+/// Für vollständige Lokalisierung wäre ein ILocalizationService nötig,
+/// der in einem IValueConverter nicht per DI verfügbar ist.
 /// </summary>
 public sealed class RelativeTimeConverter : IValueConverter
 {
@@ -39,22 +43,23 @@ public sealed class RelativeTimeConverter : IValueConverter
     {
         if (value is not DateTime dt) return string.Empty;
 
-        var diff = DateTime.Now - dt;
+        // UTC verwenden um korrekte Differenz zu berechnen
+        var diff = DateTime.UtcNow - dt;
 
         if (diff.TotalSeconds < 60)
-            return "just now";
+            return "< 1 min";
         if (diff.TotalMinutes < 60)
-            return $"{(int)diff.TotalMinutes} min ago";
+            return $"{(int)diff.TotalMinutes} min";
         if (diff.TotalHours < 24)
-            return $"{(int)diff.TotalHours} h ago";
+            return $"{(int)diff.TotalHours} h";
         if (diff.TotalDays < 7)
-            return $"{(int)diff.TotalDays} d ago";
+            return $"{(int)diff.TotalDays} d";
         if (diff.TotalDays < 30)
-            return $"{(int)(diff.TotalDays / 7)} w ago";
+            return $"{(int)(diff.TotalDays / 7)} w";
         if (diff.TotalDays < 365)
-            return $"{(int)(diff.TotalDays / 30)} mo ago";
+            return $"{(int)(diff.TotalDays / 30)} mo";
 
-        return $"{(int)(diff.TotalDays / 365)} y ago";
+        return $"{(int)(diff.TotalDays / 365)} y";
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

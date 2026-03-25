@@ -30,10 +30,10 @@ public class SkiaCelebrationOverlay : SKCanvasView
 
     private readonly Random _rng = new();
 
-    // Gecachter SKPath für Stern-Partikel (vermeidet ~1560 Allokationen/s)
-    private static readonly SKPath StarPath = new();
+    // Gecachter SKPath pro Instanz (nicht static wegen Thread-Safety bei mehreren Overlays)
+    private readonly SKPath _starPath = new();
 
-    // Konfetti-Farben (erweiterte Palette)
+    // Konfetti-Farben (erweiterte Palette, immutable - static ist hier sicher)
     private static readonly SKColor[] ConfettiColors =
     [
         new(0xFF, 0xD7, 0x00), // Gold
@@ -46,21 +46,21 @@ public class SkiaCelebrationOverlay : SKCanvasView
         new(0xF5, 0x9E, 0x0B), // Amber
     ];
 
-    // Gecachte Paints
-    private static readonly SKPaint FillPaint = new()
+    // Gecachte Paints pro Instanz (nicht static wegen Thread-Safety / konkurrierender Color-Setzung)
+    private readonly SKPaint _fillPaint = new()
     {
         IsAntialias = true,
         Style = SKPaintStyle.Fill
     };
 
-    private static readonly SKPaint GlowPaint = new()
+    private readonly SKPaint _glowPaint = new()
     {
         IsAntialias = true,
         Style = SKPaintStyle.Fill,
         MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f)
     };
 
-    private static readonly SKPaint FlashPaint = new()
+    private readonly SKPaint _flashPaint = new()
     {
         IsAntialias = true,
         Style = SKPaintStyle.Fill,
@@ -260,8 +260,8 @@ public class SkiaCelebrationOverlay : SKCanvasView
         // Initialer Blitz-Flash
         if (_flashAlpha > 0)
         {
-            FlashPaint.Color = SKColors.White.WithAlpha((byte)(_flashAlpha * 255));
-            canvas.DrawRect(bounds, FlashPaint);
+            _flashPaint.Color = SKColors.White.WithAlpha((byte)(_flashAlpha * 255));
+            canvas.DrawRect(bounds, _flashPaint);
         }
 
         // Partikel zeichnen
@@ -280,24 +280,24 @@ public class SkiaCelebrationOverlay : SKCanvasView
             // Glow-Hintergrund (optional)
             if (p.HasGlow)
             {
-                GlowPaint.Color = p.Color.WithAlpha((byte)(alpha * 0.3f));
-                canvas.DrawCircle(0, 0, p.Size * 2.5f, GlowPaint);
+                _glowPaint.Color = p.Color.WithAlpha((byte)(alpha * 0.3f));
+                canvas.DrawCircle(0, 0, p.Size * 2.5f, _glowPaint);
             }
 
-            FillPaint.Color = p.Color.WithAlpha(alpha);
+            _fillPaint.Color = p.Color.WithAlpha(alpha);
 
             switch (p.Shape)
             {
                 case ParticleShape.Rectangle:
-                    canvas.DrawRect(-p.Size, -p.Size * 0.6f, p.Size * 2, p.Size * 1.2f, FillPaint);
+                    canvas.DrawRect(-p.Size, -p.Size * 0.6f, p.Size * 2, p.Size * 1.2f, _fillPaint);
                     break;
 
                 case ParticleShape.Circle:
-                    canvas.DrawCircle(0, 0, p.Size, FillPaint);
+                    canvas.DrawCircle(0, 0, p.Size, _fillPaint);
                     break;
 
                 case ParticleShape.Star:
-                    DrawStar(canvas, p.Size, FillPaint);
+                    DrawStar(canvas, p.Size, _fillPaint);
                     break;
             }
 
@@ -308,9 +308,9 @@ public class SkiaCelebrationOverlay : SKCanvasView
     /// <summary>
     /// Zeichnet einen 5-zackigen Stern. Nutzt gecachten SKPath (vermeidet native Allokationen pro Frame).
     /// </summary>
-    private static void DrawStar(SKCanvas canvas, float size, SKPaint paint)
+    private void DrawStar(SKCanvas canvas, float size, SKPaint paint)
     {
-        StarPath.Rewind();
+        _starPath.Rewind();
         const int points = 5;
         float outerRadius = size;
         float innerRadius = size * 0.4f;
@@ -323,13 +323,13 @@ public class SkiaCelebrationOverlay : SKCanvasView
             float y = MathF.Sin(angle) * radius;
 
             if (i == 0)
-                StarPath.MoveTo(x, y);
+                _starPath.MoveTo(x, y);
             else
-                StarPath.LineTo(x, y);
+                _starPath.LineTo(x, y);
         }
 
-        StarPath.Close();
-        canvas.DrawPath(StarPath, paint);
+        _starPath.Close();
+        canvas.DrawPath(_starPath, paint);
     }
 
     private void StopAnimation()

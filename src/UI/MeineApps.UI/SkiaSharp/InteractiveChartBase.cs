@@ -98,15 +98,21 @@ public abstract class InteractiveChartBase : SKCanvasView
 
     private void StartHideTimer()
     {
-        _hideTimer?.Stop();
-        _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(HideDelayMs) };
-        _hideTimer.Tick += (_, _) =>
+        // Timer einmalig erstellen und wiederverwenden (Stop/Start statt jedes Mal New)
+        if (_hideTimer == null)
         {
-            _hideTimer.Stop();
-            _activeDataPointIndex = -1;
-            InvalidateSurface();
-        };
+            _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(HideDelayMs) };
+            _hideTimer.Tick += OnHideTimerTick;
+        }
+        _hideTimer.Stop();
         _hideTimer.Start();
+    }
+
+    private void OnHideTimerTick(object? sender, EventArgs e)
+    {
+        _hideTimer?.Stop();
+        _activeDataPointIndex = -1;
+        InvalidateSurface();
     }
 
     /// <summary>

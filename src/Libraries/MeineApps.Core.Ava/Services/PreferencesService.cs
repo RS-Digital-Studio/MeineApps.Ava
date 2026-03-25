@@ -95,12 +95,18 @@ public sealed class PreferencesService : IPreferencesService, IDisposable
     }
 
     /// <summary>
-    /// Debounced Save: Setzt/resettet Timer auf 500ms nach letztem Aufruf
+    /// Debounced Save: Setzt/resettet Timer auf 500ms nach letztem Aufruf.
+    /// Verwendet Change() statt Dispose+New um Race Conditions zu vermeiden.
     /// </summary>
     private void ScheduleSave()
     {
-        _saveTimer?.Dispose();
-        _saveTimer = new Timer(_ => SaveNow(), null, 500, Timeout.Infinite);
+        lock (_lock)
+        {
+            if (_saveTimer == null)
+                _saveTimer = new Timer(_ => SaveNow(), null, 500, Timeout.Infinite);
+            else
+                _saveTimer.Change(500, Timeout.Infinite);
+        }
     }
 
     /// <summary>

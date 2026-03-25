@@ -38,14 +38,14 @@ public sealed class SkiaParticleManager
     private int _count;
     private readonly Random _random = new();
 
-    // Gecachte Paints (werden wiederverwendet)
-    private static readonly SKPaint _fillPaint = new()
+    // Gecachte Paints pro Instanz (nicht static wegen Thread-Safety bei mehreren Managern)
+    private readonly SKPaint _fillPaint = new()
     {
         IsAntialias = true,
         Style = SKPaintStyle.Fill
     };
 
-    private static readonly SKPaint _glowPaint = new()
+    private readonly SKPaint _glowPaint = new()
     {
         IsAntialias = true,
         Style = SKPaintStyle.Fill,

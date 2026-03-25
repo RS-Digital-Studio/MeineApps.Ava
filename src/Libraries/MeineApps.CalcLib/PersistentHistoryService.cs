@@ -8,6 +8,7 @@ namespace MeineApps.CalcLib;
 public sealed class PersistentHistoryService : IHistoryService
 {
     private readonly List<CalculationHistoryEntry> _history = new();
+    private readonly object _lockObj = new();
     private const int MAX_ENTRIES = 100;
     private const string HISTORY_FILE = "calculator_history.json";
 
@@ -83,40 +84,44 @@ public sealed class PersistentHistoryService : IHistoryService
 
     private void LoadHistory()
     {
-        try
+        lock (_lockObj)
         {
-            if (File.Exists(_filePath))
+            try
             {
-                var json = File.ReadAllText(_filePath);
-                var entries = JsonSerializer.Deserialize<List<CalculationHistoryEntry>>(json);
-
-                if (entries != null)
+                if (File.Exists(_filePath))
                 {
-                    _history.Clear();
-                    _history.AddRange(entries);
+                    var json = File.ReadAllText(_filePath);
+                    var entries = JsonSerializer.Deserialize<List<CalculationHistoryEntry>>(json);
+
+                    if (entries != null)
+                    {
+                        _history.Clear();
+                        _history.AddRange(entries);
+                    }
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"PersistentHistoryService: Fehler beim Laden: {ex.Message}");
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"PersistentHistoryService: Fehler beim Laden: {ex.Message}");
+            }
         }
     }
 
+    private static readonly JsonSerializerOptions _writeOptions = new() { WriteIndented = true };
+
     private void SaveHistory()
     {
-        try
+        lock (_lockObj)
         {
-            var json = JsonSerializer.Serialize(_history, new JsonSerializerOptions
+            try
             {
-                WriteIndented = true
-            });
-
-            File.WriteAllText(_filePath, json);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"PersistentHistoryService: Fehler beim Speichern: {ex.Message}");
+                var json = JsonSerializer.Serialize(_history, _writeOptions);
+                File.WriteAllText(_filePath, json);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"PersistentHistoryService: Fehler beim Speichern: {ex.Message}");
+            }
         }
     }
 }

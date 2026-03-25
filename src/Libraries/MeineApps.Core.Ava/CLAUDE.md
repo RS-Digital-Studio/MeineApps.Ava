@@ -4,8 +4,8 @@
 Shared Library für alle Avalonia Apps:
 - PreferencesService (JSON-basiert)
 - Converters (Bool, String, Number, DateTime)
-- Behaviors (TapScale, FadeIn)
 - Design Tokens (ThemeColors.axaml)
+- HINWEIS: Behaviors (TapScale, FadeIn) wurden nach MeineApps.UI verschoben
 
 ## Struktur
 
@@ -24,9 +24,7 @@ MeineApps.Core.Ava/
 │   ├── NumberConverters.cs
 │   ├── DateTimeConverters.cs
 │   └── ColorConverters.cs
-└── Behaviors/
-    ├── TapScaleBehavior.cs
-    └── FadeInBehavior.cs
+└── (Behaviors/ entfernt → MeineApps.UI.Behaviors nutzen)
 ```
 
 ## App-spezifische Farbpaletten
@@ -112,27 +110,12 @@ return _backPressHelper.HandleDoubleBack(exitMessage);
 - `NumberFormatConverter` - Double → "1,234.56"
 - `CurrencyConverter` - Decimal → "€ 1,234.56"
 - `DateTimeFormatConverter` - DateTime → "dd.MM.yyyy"
-- `RelativeTimeConverter` - DateTime → "2 hours ago"
+- `RelativeTimeConverter` - DateTime → "2 h" (UTC-basiert, Kurzformat)
 - `StringTruncateConverter` - "Long text..." → "Long..."
 - `StringToColorBrushConverter` - "#RRGGBB" → SolidColorBrush (Gray Fallback, statische `Instance` Property)
 - `StringToColorConverter` - "#RRGGBB" → Color (Gray Fallback, für SolidColorBrush.Color Bindings mit Opacity)
 
-## Behaviors
+## Behaviors (ENTFERNT)
 
-### TapScaleBehavior
-```axaml
-<Border>
-  <Interaction.Behaviors>
-    <behaviors:TapScaleBehavior PressedScale="0.95" Duration="100" />
-  </Interaction.Behaviors>
-</Border>
-```
-
-### FadeInBehavior
-```axaml
-<Border>
-  <Interaction.Behaviors>
-    <behaviors:FadeInBehavior Duration="300" Delay="100" />
-  </Interaction.Behaviors>
-</Border>
-```
+Behaviors wurden nach `MeineApps.UI.Behaviors` verschoben (kanonische Quelle).
+Alle XAML-Imports müssen `xmlns:behaviors="using:MeineApps.UI.Behaviors"` verwenden.

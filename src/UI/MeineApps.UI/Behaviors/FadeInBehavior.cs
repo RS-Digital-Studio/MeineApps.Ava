@@ -4,6 +4,7 @@ using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 
@@ -11,6 +12,8 @@ namespace MeineApps.UI.Behaviors;
 
 /// <summary>
 /// Animiert ein Control beim Laden mit Fade-In und optionalem Slide von unten.
+/// Slide-Animation wird per DispatcherTimer interpoliert (CubicEaseOut),
+/// da Avalonia KeyFrame-Animationen auf TranslateTransform.Y nicht direkt funktionieren.
 /// </summary>
 public class FadeInBehavior : Behavior<Control>
 {
@@ -54,6 +57,13 @@ public class FadeInBehavior : Behavior<Control>
         set => SetValue(SlideDistanceProperty, value);
     }
 
+    // Slide-Animation State
+    private DispatcherTimer? _slideTimer;
+    private int _slideFrame;
+    private int _slideTotalFrames;
+    private double _slideFrom;
+    private const int FrameIntervalMs = 16;
+
     protected override void OnAttached()
     {
         base.OnAttached();
@@ -83,7 +93,10 @@ public class FadeInBehavior : Behavior<Control>
             AssociatedObject.AttachedToVisualTree -= OnAttachedToVisualTree;
             // Sicherstellen dass Element sichtbar bleibt
             AssociatedObject.Opacity = 1;
+            if (SlideFromBottom && AssociatedObject.RenderTransform is TranslateTransform tt)
+                tt.Y = 0;
         }
+        StopSlideAnimation();
         base.OnDetaching();
     }
 
@@ -94,6 +107,7 @@ public class FadeInBehavior : Behavior<Control>
 
     /// <summary>
     /// Führt die Fade-In-Animation aus und stellt sicher, dass Opacity am Ende IMMER 1 ist.
+    /// Slide-Animation läuft parallel per DispatcherTimer mit CubicEaseOut.
     /// </summary>
     private async Task RunFadeInAsync()
     {
@@ -107,6 +121,13 @@ public class FadeInBehavior : Behavior<Control>
 
             if (AssociatedObject is null) return;
 
+            // Slide-Animation parallel starten (per DispatcherTimer)
+            if (SlideFromBottom && AssociatedObject.RenderTransform is TranslateTransform)
+            {
+                StartSlideAnimation();
+            }
+
+            // Opacity-Animation per KeyFrame (funktioniert zuverlässig)
             var animation = new Avalonia.Animation.Animation
             {
                 Duration = TimeSpan.FromMilliseconds(Duration),
@@ -146,5 +167,51 @@ public class FadeInBehavior : Behavior<Control>
                     tt.Y = 0;
             }
         }
+    }
+
+    /// <summary>
+    /// Startet die Slide-Animation per DispatcherTimer (TranslateTransform.Y interpolieren).
+    /// </summary>
+    private void StartSlideAnimation()
+    {
+        StopSlideAnimation();
+        _slideFrom = SlideDistance;
+        _slideFrame = 0;
+        _slideTotalFrames = Math.Max(1, Duration / FrameIntervalMs);
+
+        _slideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(FrameIntervalMs) };
+        _slideTimer.Tick += OnSlideTick;
+        _slideTimer.Start();
+    }
+
+    private void OnSlideTick(object? sender, EventArgs e)
+    {
+        if (AssociatedObject?.RenderTransform is not TranslateTransform tt)
+        {
+            StopSlideAnimation();
+            return;
+        }
+
+        _slideFrame++;
+
+        if (_slideFrame >= _slideTotalFrames)
+        {
+            tt.Y = 0;
+            StopSlideAnimation();
+            return;
+        }
+
+        // CubicEaseOut: 1 - (1 - t)^3
+        var t = (double)_slideFrame / _slideTotalFrames;
+        var eased = 1.0 - Math.Pow(1.0 - t, 3);
+        tt.Y = _slideFrom * (1.0 - eased);
+    }
+
+    private void StopSlideAnimation()
+    {
+        if (_slideTimer == null) return;
+        _slideTimer.Stop();
+        _slideTimer.Tick -= OnSlideTick;
+        _slideTimer = null;
     }
 }

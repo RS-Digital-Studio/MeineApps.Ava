@@ -16,10 +16,10 @@
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
             },
             "points": {
-              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999 && (data.val() == null || newData.val() >= data.val())"
             },
             "updatedUtc": {
-              ".validate": "newData.isString() && newData.val().length <= 30"
+              ".validate": "newData.isString() && newData.val().length <= 30 && newData.val() != data.val() && newData.val() <= now"
             }
           }
         }

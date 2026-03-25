@@ -100,6 +100,26 @@
     <PackageVersion Include="Skender.Stock.Indicators" Version="2.7.1" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- ML / OPTIMIERUNG (BingXBot ATI - Adaptive Trading Intelligence) -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="Microsoft.ML" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.ML.LightGbm" Version="5.0.0" />
+    <PackageVersion Include="GeneticSharp" Version="3.1.4" />
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- KARTEN & BLE (SmartMeasure)                                       -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="Mapsui.Avalonia" Version="5.0.2" />
+    <PackageVersion Include="InTheHand.BluetoothLE" Version="4.0.44" />
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- IOT / RASPBERRY PI (GardenControl)                               -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="System.Device.Gpio" Version="3.2.0" />
+    <PackageVersion Include="Iot.Device.Bindings" Version="3.2.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.0" />
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TESTING                                                          -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />

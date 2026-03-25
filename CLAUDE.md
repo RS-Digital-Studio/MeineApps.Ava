@@ -59,7 +59,7 @@ F:\Meine_Apps_Ava\
 │   ├── UI/
 │   │   └── MeineApps.UI/           # Shared UI Components
 │   │
-│   └── Apps/                       # 10 Apps, jeweils Shared/Android/Desktop
+│   └── Apps/                       # 11 Apps, jeweils Shared/Android/Desktop
 │       ├── RechnerPlus/            # Taschenrechner (werbefrei)
 │       ├── ZeitManager/            # Timer/Stoppuhr/Alarm (werbefrei)
 │       ├── FinanzRechner/          # 6 Finanzrechner + Budget-Tracker
@@ -69,7 +69,9 @@ F:\Meine_Apps_Ava\
 │       ├── HandwerkerImperium/     # Idle-Game (Werkstaetten + Arbeiter)
 │       ├── BomberBlast/            # Bomberman-Klon (SkiaSharp, Landscape)
 │       ├── RebornSaga/             # Anime Isekai-RPG (Volle SkiaSharp-Engine)
-│       └── BingXBot/               # Trading Bot (BingX Futures, Desktop-only)
+│       ├── BingXBot/               # Trading Bot (BingX Futures, Desktop-only)
+│       ├── GardenControl/          # Bewässerungssteuerung (Pi-Server + Desktop + Android)
+│       └── SmartMeasure/          # 3D-Grundstücksvermessung + Gartenplanung (RTK-GPS, privat)
 │
 ├── tools/
 │   ├── AppChecker/              # 10 Check-Kategorien, 100+ Pruefungen
@@ -93,10 +95,12 @@ F:\Meine_Apps_Ava\
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.0.22 | Banner + Rewarded | 4,99 Premium | Produktion |
-| BomberBlast | v2.0.27 | Banner + Rewarded | 1,99 remove_ads | Geschlossener Test |
+| HandwerkerImperium | v2.0.25 | Banner + Rewarded | 4,99 Premium | Produktion |
+| BomberBlast | v2.0.28 | Banner + Rewarded | 1,99 remove_ads | Geschlossener Test |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
 | BingXBot | v1.0.0 | Nein | Nein | Entwicklung (Desktop-only) |
+| GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
+| SmartMeasure | v1.0.0 | Nein | Nein | Entwicklung (privat, RTK-GPS Vermessung) |
 
 ---
 
@@ -116,6 +120,8 @@ Jede App hat eine eigene `Themes/AppPalette.axaml` im Shared-Projekt, statisch i
 | BomberBlast | #FF6B35 Orange | Neon Arcade |
 | RebornSaga | #4A90D9 Blau | Isekai System Blue |
 | BingXBot | #3B82F6 Blau | Dark Trading Terminal |
+| GardenControl | #2E7D32 Grün | Natur/Garten Dashboard |
+| SmartMeasure | #FF6B00 Orange | Technisch-Professionell, Vermessung |
 
 Implementierung: Jede App laedt `<StyleInclude Source="/Themes/AppPalette.axaml" />` in App.axaml. Alle DynamicResource-Keys bleiben identisch. Design-Tokens (Spacing, Radius, Fonts) kommen weiterhin aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml`.
 
@@ -389,6 +395,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Service-Caches stale nach Prestige/Import/Reset | GameLoopService/CraftingService subscriben nicht auf StateLoaded → Caches zeigen auf verwaiste Objekte | ALLE Services mit internen Caches MUESSEN `StateLoaded += ResetCaches` im Konstruktor haben |
 | Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel | `PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium` Key fehlt | `IPurchaseService.InitializeAsync()` in Loading-Pipeline aufrufen (parallel zum ersten Schritt). Stellt Käufe + Abos via Google Play Billing wieder her |
 | SKCanvasView Game-Loop startet nicht (Countdown stuck) | ContentControl+ViewLocator setzt DataContext verzögert → `InvalidateCanvasRequested` hat beim `StartGameLoop()` keinen Subscriber → Render-Timer startet nie | 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded als Backup, (3) OnPaintSurface Safety-Net startet Timer nach. `TrySubscribeToViewModel()` als zentrale idempotente Methode |
+| Gilden-Mitglieder doppelt angezeigt | App-Datenverlust → neue PlayerId → Spieler tritt erneut bei → alter Eintrag bleibt in Firebase | 3-Maßnahmen-Fix: (1) `RemoveDuplicateMemberAsync` beim Join prüft auf gleichen Namen, (2) `CleanupStaleMembersAsync` entfernt >30d inaktive beim Laden, (3) UID→PlayerId Migration mit Retry auf DeleteAsync |
 
 ---
 

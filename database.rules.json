@@ -267,14 +267,49 @@
     "guild_hall": {
       "$guildId": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
+        ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+        "forge": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+        },
+        "library": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+        },
+        "workshop": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+        },
+        "treasury": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+        },
+        "barracks": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50"
+        },
+        "$other": {
+          ".validate": false
+        }
       }
     },
 
     "guild_bosses": {
       "$guildId": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
+        ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+        "current_hp": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "max_hp": {
+          ".validate": "newData.isNumber() && newData.val() > 0 && (!data.exists() || newData.val() == data.val())"
+        },
+        "boss_id": {
+          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+        },
+        "boss_name": {
+          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+        },
+        "damage_log": {
+          "$playerId": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && root.child('auth_to_player/' + auth.uid).val() == $playerId"
+          }
+        }
       }
     },
 

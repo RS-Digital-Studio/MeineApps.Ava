@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="WorkTimePro.Views.StatisticsView"
-             x:DataType="vm:StatisticsViewModel">
+             x:DataType="vm:StatisticsViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,Auto,Auto,*" AutomationProperties.AutomationId="Stats_RootPanel">
 
@@ -220,7 +221,9 @@
     </Border>
 
     <!-- Row 3: ScrollViewer mit Content -->
-    <ScrollViewer Grid.Row="3" AutomationProperties.AutomationId="Stats_ScrollViewer" VerticalScrollBarVisibility="Auto">
+    <!-- IsHitTestVisible=False wenn Overlay aktiv (verhindert Touch-Durchfall auf Android) -->
+    <ScrollViewer Grid.Row="3" AutomationProperties.AutomationId="Stats_ScrollViewer" VerticalScrollBarVisibility="Auto"
+                  IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
       <StackPanel Spacing="12" Margin="16,0,16,0">
 
         <!-- CHARTS MODE -->
@@ -416,7 +419,9 @@
                       <TextBlock Grid.Column="0" Text="{Binding DateDisplay}" FontSize="10"
                                  Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding StatusIcon}" FontSize="12" />
+                        <mi:MaterialIcon Kind="{Binding StatusIconKind}" Width="14" Height="14"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"
+                                         VerticalAlignment="Center" />
                         <TextBlock Text="{Binding StatusName}" FontSize="9"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -496,6 +501,72 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
             </Button>
           </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Export-Format Overlay -->
+    <Border Grid.RowSpan="4"
+            AutomationProperties.AutomationId="Stats_ExportFormatOverlay"
+            IsVisible="{Binding ShowExportFormatOverlay}"
+            Background="#CC000000" ZIndex="101">
+      <Border Background="{DynamicResource CardBrush}" CornerRadius="16" Padding="24"
+              MaxWidth="340" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+          <TextBlock Text="{loc:Translate ExportFormat}" FontSize="22" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" />
+
+          <!-- PDF -->
+          <Button Classes="Outlined" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Padding="16,14" CornerRadius="12"
+                  Command="{Binding ExportWithFormatCommand}" CommandParameter="PDF">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <mi:MaterialIcon Kind="FilePdfBox" Width="24" Height="24" Foreground="#E53935" />
+              <StackPanel>
+                <TextBlock Text="PDF" FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ExportPdfDesc}" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </Button>
+
+          <!-- Excel -->
+          <Button Classes="Outlined" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Padding="16,14" CornerRadius="12"
+                  Command="{Binding ExportWithFormatCommand}" CommandParameter="Excel">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <mi:MaterialIcon Kind="FileExcel" Width="24" Height="24" Foreground="#1B5E20" />
+              <StackPanel>
+                <TextBlock Text="Excel" FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ExportExcelDesc}" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </Button>
+
+          <!-- CSV -->
+          <Button Classes="Outlined" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Padding="16,14" CornerRadius="12"
+                  Command="{Binding ExportWithFormatCommand}" CommandParameter="CSV">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <mi:MaterialIcon Kind="FileDelimited" Width="24" Height="24" Foreground="#1565C0" />
+              <StackPanel>
+                <TextBlock Text="CSV" FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ExportCsvDesc}" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </Button>
+
+          <!-- Abbrechen -->
+          <Button Classes="Text" Command="{Binding CancelExportFormatCommand}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12,10">
+            <TextBlock Text="{loc:Translate Cancel}" FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </Button>
         </StackPanel>
       </Border>
     </Border>

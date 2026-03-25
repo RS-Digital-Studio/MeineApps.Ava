@@ -6,6 +6,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="WorkTimePro.Views.ShiftPlanView"
              x:DataType="vm:ShiftPlanViewModel"
+             x:CompileBindings="True"
              Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="ShiftPlan_RootPanel">

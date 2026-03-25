@@ -3,7 +3,10 @@ using WorkTimePro.Models;
 namespace WorkTimePro.Services;
 
 /// <summary>
-/// Service for time tracking (check-in/out, pauses)
+/// Service für Zeiterfassung (Check-in/out, Pausen).
+/// WICHTIG: Arbeitszeiten (Check-in/out, Pausen) nutzen DateTime.Now (Ortszeit),
+/// da alle Anzeigen (HH:mm) lokale Uhrzeiten erwarten.
+/// Audit-Timestamps (CreatedAt/ModifiedAt) nutzen DateTime.UtcNow.
 /// </summary>
 public sealed class TimeTrackingService : ITimeTrackingService
 {
@@ -91,7 +94,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
 
             await _database.SaveTimeEntryAsync(entry);
 
-            // First check-in of the day?
+            // Erster Check-in des Tages?
             if (today.FirstCheckIn == null)
             {
                 today.FirstCheckIn = now;
@@ -286,12 +289,12 @@ public sealed class TimeTrackingService : ITimeTrackingService
             totalWork += DateTime.Now - lastCheckIn.Timestamp;
         }
 
-        // Subtract pauses
+        // Pausen abziehen
         var totalPauses = pauses
             .Where(p => p.EndTime != null)
             .Sum(p => p.Duration.TotalMinutes);
 
-        // Active pause
+        // Aktive Pause
         var activePause = pauses.FirstOrDefault(p => p.EndTime == null);
         if (activePause != null)
         {
@@ -315,7 +318,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
             .Where(p => !p.IsAutoPause && p.EndTime != null)
             .Sum(p => p.Duration.TotalMinutes);
 
-        // Active pause
+        // Aktive Pause
         var activePause = pauses.FirstOrDefault(p => p.EndTime == null);
         if (activePause != null)
         {
@@ -479,7 +482,9 @@ public sealed class TimeTrackingService : ITimeTrackingService
             totalWork += DateTime.Now - lastCheckIn.Timestamp;
         }
 
-        // Abgeschlossene Pausen abziehen
+        // ALLE Pausen abziehen (manuell + auto) für korrekte Netto-Arbeitszeit.
+        // Die PauseTime-Anzeige weiter unten zeigt nur manuelle Pausen (ohne Auto-Pause),
+        // weil Auto-Pause separat in der TodayView als Warnung angezeigt wird.
         var totalPauseMinutes = pauses
             .Where(p => p.EndTime != null)
             .Sum(p => p.Duration.TotalMinutes);

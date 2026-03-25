@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:conv="using:WorkTimePro.Converters"
              x:Class="WorkTimePro.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
+             x:DataType="vm:SettingsViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <conv:RoundingDisplayConverter x:Key="RoundingDisplayConverter" />
@@ -394,7 +395,7 @@
                      Foreground="{DynamicResource TextSecondaryBrush}" />
 
           <ComboBox AutomationProperties.AutomationId="Settings_CmbRegion"
-                    ItemsSource="{Binding GermanRegions}"
+                    ItemsSource="{Binding HolidayRegions}"
                     SelectedIndex="{Binding SelectedRegionIndex}"
                     HorizontalAlignment="Stretch" />
         </StackPanel>
@@ -529,6 +530,65 @@
                       Margin="0,0,8,8" />
             </Panel>
           </WrapPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- ==================== Backup ==================== -->
+      <Border Classes="SettingsCard" AutomationProperties.AutomationId="Settings_BackupCard">
+        <StackPanel Spacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="CloudUpload" Width="20" Height="20"
+                             Foreground="{DynamicResource PrimaryBrush}" />
+            <TextBlock Text="{loc:Translate Backup}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Lokales Backup -->
+          <TextBlock Text="{loc:Translate LocalBackup}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     Margin="0,4,0,0" />
+
+          <Button AutomationProperties.AutomationId="Settings_BtnExportBackup"
+                  Content="{loc:Translate ExportBackup}"
+                  Classes="Secondary"
+                  Command="{Binding ExportBackupCommand}"
+                  FontSize="13"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center" />
+
+          <Button AutomationProperties.AutomationId="Settings_BtnImportBackup"
+                  Content="{loc:Translate ImportBackup}"
+                  Classes="Secondary"
+                  Command="{Binding ImportBackupCommand}"
+                  FontSize="13"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center" />
+
+          <Separator Margin="0,4" />
+
+          <!-- Cloud-Backup (noch nicht verfügbar) -->
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{loc:Translate CloudBackup}"
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" />
+            <Border Background="{DynamicResource PrimaryBrush}"
+                    CornerRadius="8" Padding="8,2"
+                    VerticalAlignment="Center"
+                    Opacity="0.8">
+              <TextBlock Text="{loc:Translate ComingSoon}"
+                         FontSize="10" FontWeight="Bold"
+                         Foreground="White" />
+            </Border>
+          </StackPanel>
+
+          <TextBlock Text="{loc:Translate CloudBackupNotAvailable}"
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 

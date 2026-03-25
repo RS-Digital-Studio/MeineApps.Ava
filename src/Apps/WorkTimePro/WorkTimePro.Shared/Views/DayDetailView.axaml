@@ -7,6 +7,7 @@
              xmlns:controls="using:MeineApps.UI.Controls"
              x:Class="WorkTimePro.Views.DayDetailView"
              x:DataType="vm:DayDetailViewModel"
+             x:CompileBindings="True"
              Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="DayDetail_RootGrid">
@@ -32,7 +33,9 @@
     </Border>
 
     <!-- Content -->
-    <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="DayDetail_ScrollViewer">
+    <!-- IsHitTestVisible=False wenn ein Overlay aktiv ist (verhindert Touch-Durchfall auf Android) -->
+    <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="DayDetail_ScrollViewer"
+                  IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
       <StackPanel Spacing="12" Margin="16">
 
         <!-- ==================== Header with Date and Status ==================== -->
@@ -572,6 +575,71 @@
                     Classes="Danger" Content="{loc:Translate Yes}"
                     Command="{Binding ConfirmDeleteCommand}" />
           </StackPanel>
+
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- ==================== Status-Auswahl Overlay ==================== -->
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            AutomationProperties.AutomationId="DayDetail_StatusSelectionOverlay"
+            IsVisible="{Binding IsStatusSelectionVisible}"
+            Background="#80000000"
+            ZIndex="10">
+      <Border Classes="Card" Margin="0"
+              VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+              CornerRadius="20,20,0,0"
+              Padding="24,24,24,32">
+        <StackPanel Spacing="12">
+
+          <!-- Titel -->
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="TagOutline" Width="24" Height="24"
+                             Foreground="{DynamicResource PrimaryBrush}" />
+            <TextBlock Text="{loc:Translate SelectStatus}"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Status-Liste (2-spaltig) -->
+          <ItemsControl ItemsSource="{Binding AvailableStatuses}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:StatusOption">
+                <Button Width="170" Margin="4"
+                        Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).SelectStatusCommand}"
+                        CommandParameter="{Binding Status}"
+                        HorizontalContentAlignment="Left"
+                        Padding="12,10"
+                        CornerRadius="12"
+                        Background="Transparent">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <mi:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" Width="20" Height="20"
+                                     Foreground="{DynamicResource PrimaryBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"
+                               Margin="10,0,0,0" />
+                    <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="16" Height="16"
+                                     Foreground="{DynamicResource SuccessBrush}"
+                                     IsVisible="{Binding IsSelected}" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Abbrechen -->
+          <Button Classes="Text"
+                  Content="{loc:Translate Cancel}"
+                  Command="{Binding CancelStatusSelectionCommand}"
+                  HorizontalAlignment="Right" />
 
         </StackPanel>
       </Border>

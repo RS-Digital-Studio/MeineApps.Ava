@@ -6,7 +6,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="WorkTimePro.Views.WeekOverviewView"
-             x:DataType="vm:WeekOverviewViewModel">
+             x:DataType="vm:WeekOverviewViewModel"
+             x:CompileBindings="True">
 
   <ScrollViewer AutomationProperties.AutomationId="Week_ScrollViewer">
     <StackPanel Spacing="16" Margin="16" AutomationProperties.AutomationId="Week_RootPanel">
@@ -207,11 +208,12 @@
                               CornerRadius="12,0,0,12" />
 
                       <!-- Status Icon -->
-                      <TextBlock Grid.Column="1"
-                                 Text="{Binding StatusIcon}"
-                                 FontSize="24"
-                                 VerticalAlignment="Center"
-                                 Margin="12,0,12,0" />
+                      <mi:MaterialIcon Grid.Column="1"
+                                       Kind="{Binding StatusIconKind}"
+                                       Width="24" Height="24"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="12,0,12,0" />
 
                       <!-- Date and Status -->
                       <StackPanel Grid.Column="2" VerticalAlignment="Center">

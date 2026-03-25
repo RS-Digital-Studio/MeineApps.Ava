@@ -386,6 +386,28 @@ public sealed class CalculationService : ICalculationService
             warnings.Add(string.Format(AppStrings.WarningDailyWorkTimeExceeds, settings.MaxDailyHours));
         }
 
+        // §3 ArbZG: 6-Monats-Durchschnitt darf 8h/Tag nicht überschreiten
+        // (Nur prüfen wenn der aktuelle Tag über 8h liegt, sonst immer konform)
+        if (workDay.ActualWorkMinutes > 8 * 60)
+        {
+            var sixMonthsAgo = workDay.Date.AddMonths(-6);
+            var recentDays = await _database.GetWorkDaysAsync(sixMonthsAgo, workDay.Date);
+            var workingDays = recentDays.Where(w =>
+                w.Status == DayStatus.WorkDay || w.Status == DayStatus.HomeOffice).ToList();
+
+            if (workingDays.Count >= 20) // Mindestens 20 Arbeitstage für aussagekräftigen Durchschnitt
+            {
+                var avgMinutes = workingDays.Average(w => (double)w.ActualWorkMinutes);
+                if (avgMinutes > 8 * 60)
+                {
+                    var avgHours = avgMinutes / 60.0;
+                    warnings.Add(string.Format(
+                        AppStrings.WarningSixMonthAvgExceeds ?? "§3 ArbZG: 6-Monats-Durchschnitt {0:F1}h/Tag übersteigt 8h-Grenze",
+                        avgHours));
+                }
+            }
+        }
+
         // Pausenregelung
         if (workDay.ActualWorkMinutes > 6 * 60 && workDay.ManualPauseMinutes + workDay.AutoPauseMinutes < 30)
         {

@@ -6,6 +6,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="WorkTimePro.Views.VacationView"
              x:DataType="vm:VacationViewModel"
+             x:CompileBindings="True"
              Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Vacation_RootPanel">
@@ -44,7 +45,9 @@
       </Grid>
     </Border>
 
-    <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="Vacation_ScrollViewer">
+    <!-- IsHitTestVisible=False wenn Overlay aktiv (verhindert Touch-Durchfall auf Android) -->
+    <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="Vacation_ScrollViewer"
+                  IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
       <StackPanel Spacing="16" Margin="16">
 
         <!-- ==================== Quota Card ==================== -->

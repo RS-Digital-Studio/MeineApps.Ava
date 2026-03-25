@@ -94,17 +94,26 @@ public interface IDatabaseService
     Task<int> GetTotalOvertimeMinutesAsync(DateTime startDate, DateTime endDate);
     Task<Dictionary<int, double>> GetProjectHoursAsync(DateTime startDate, DateTime endDate);
 
-    // === Achievement ===
-    Task CreateAchievementTableAsync();
-    Task<List<Achievement>> GetAllAchievementsAsync();
-    Task SaveAchievementAsync(Achievement achievement);
-
     // === Clear (für Restore) ===
     /// <summary>
     /// Löscht alle Daten aus allen Tabellen (für sauberes Restore).
     /// Settings werden nicht gelöscht (werden überschrieben).
     /// </summary>
     Task ClearAllDataAsync();
+
+    /// <summary>
+    /// Batch-Insert aller Backup-Daten in einer Transaction (5-10x schneller als einzelne SaveAsync-Aufrufe).
+    /// Daten werden direkt eingefügt (keine Upsert-Logik, DB muss vorher geleert sein).
+    /// </summary>
+    Task BulkRestoreAsync(
+        List<WorkDay>? workDays,
+        List<TimeEntry>? timeEntries,
+        List<PauseEntry>? pauseEntries,
+        List<VacationEntry>? vacationEntries,
+        List<VacationQuota>? vacationQuotas,
+        List<Project>? projects,
+        List<Employer>? employers,
+        List<ShiftPattern>? shiftPatterns);
 
     // === Backup methods ===
     Task<List<WorkDay>> GetAllWorkDaysAsync();

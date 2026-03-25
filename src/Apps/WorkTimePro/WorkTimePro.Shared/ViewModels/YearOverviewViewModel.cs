@@ -78,6 +78,11 @@ public sealed partial class YearOverviewViewModel : ViewModelBase
     public string VacationDaysTakenDisplay => VacationDaysTaken.ToString();
     public string SickDaysDisplay => SickDays.ToString();
 
+    /// <summary>True wenn ein Overlay aktiv ist → ScrollViewer deaktiviert (kein Touch-Durchfall auf Android)</summary>
+    public bool IsAnyOverlayVisible => ShowRewardedAdOverlay;
+
+    partial void OnShowRewardedAdOverlayChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
+
     // SkiaSharp Chart-Daten (ersetzen LiveCharts)
     [ObservableProperty]
     private string[] _monthLabels = Array.Empty<string>();

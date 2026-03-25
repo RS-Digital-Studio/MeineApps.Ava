@@ -1,3 +1,4 @@
+using Material.Icons;
 using SQLite;
 using WorkTimePro.Helpers;
 using static WorkTimePro.Helpers.TimeFormatter;
@@ -177,7 +178,7 @@ public class WorkDay
     public bool HasAutoPause => AutoPauseMinutes > 0;
 
     /// <summary>
-    /// Status-Icon
+    /// Status-Icon als MDI-Glyph-String (veraltet, nur für Abwärtskompatibilität)
     /// </summary>
     [Ignore]
     public string StatusIcon => Status switch
@@ -192,5 +193,23 @@ public class WorkDay
         DayStatus.OvertimeCompensation => Icons.ClockAlert,
         DayStatus.SpecialLeave => Icons.Gift,
         _ => Icons.CalendarMonth
+    };
+
+    /// <summary>
+    /// Status-Icon als MaterialIconKind für mi:MaterialIcon (kein MDI-Font nötig)
+    /// </summary>
+    [Ignore]
+    public MaterialIconKind StatusIconKind => Status switch
+    {
+        DayStatus.WorkDay => MaterialIconKind.Briefcase,
+        DayStatus.Weekend => MaterialIconKind.Sleep,
+        DayStatus.Vacation => MaterialIconKind.Beach,
+        DayStatus.Holiday => MaterialIconKind.PartyPopper,
+        DayStatus.Sick => MaterialIconKind.Thermometer,
+        DayStatus.HomeOffice => MaterialIconKind.HomeAccount,
+        DayStatus.BusinessTrip => MaterialIconKind.Airplane,
+        DayStatus.OvertimeCompensation => MaterialIconKind.ClockAlert,
+        DayStatus.SpecialLeave => MaterialIconKind.Gift,
+        _ => MaterialIconKind.CalendarMonth
     };
 }

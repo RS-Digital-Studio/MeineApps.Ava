@@ -6,6 +6,7 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="WorkTimePro.Views.YearOverviewView"
              x:DataType="vm:YearOverviewViewModel"
+             x:CompileBindings="True"
              Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Year_RootPanel">
@@ -54,7 +55,8 @@
                  VerticalAlignment="Top"
                  ZIndex="100" />
 
-    <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="Year_ScrollViewer">
+    <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="Year_ScrollViewer"
+                  IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
       <StackPanel Spacing="16" Margin="16">
 
         <!-- ==================== Year Summary Card ==================== -->

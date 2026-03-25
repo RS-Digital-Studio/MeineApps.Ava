@@ -221,7 +221,6 @@ public partial class MainView : UserControl
         {
             "success" => Color.Parse("#22C55E"),
             "overtime" => Color.Parse("#F59E0B"),
-            "achievement" => Color.Parse("#FFD700"),
             "error" => Color.Parse("#F44336"),
             _ => Color.Parse("#3B82F6")
         };

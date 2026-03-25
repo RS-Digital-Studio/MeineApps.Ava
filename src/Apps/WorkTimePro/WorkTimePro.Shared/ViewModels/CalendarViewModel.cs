@@ -23,7 +23,6 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private readonly ITrialService _trialService;
     private readonly IVacationService _vacationService;
 
-    public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
 
     public CalendarViewModel(

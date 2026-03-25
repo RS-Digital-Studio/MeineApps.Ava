@@ -139,6 +139,14 @@ public sealed partial class DayDetailViewModel : ViewModelBase
     [ObservableProperty]
     private string _pauseNote = "";
 
+    // === Status-Auswahl Overlay Properties ===
+
+    [ObservableProperty]
+    private bool _isStatusSelectionVisible;
+
+    [ObservableProperty]
+    private ObservableCollection<StatusOption> _availableStatuses = new();
+
     // === Confirm Delete Overlay Properties ===
 
     [ObservableProperty]
@@ -153,6 +161,13 @@ public sealed partial class DayDetailViewModel : ViewModelBase
     public bool HasWarnings => Warnings.Count > 0;
     public bool HasNoTimeEntries => TimeEntries.Count == 0;
     public bool HasNoPauseEntries => PauseEntries.Count == 0;
+
+    /// <summary>
+    /// True wenn irgendein Overlay aktiv ist → ScrollViewer wird deaktiviert (kein Touch-Durchfall auf Android)
+    /// </summary>
+    public bool IsAnyOverlayVisible =>
+        IsTimeEntryOverlayVisible || IsPauseOverlayVisible ||
+        IsConfirmDeleteVisible || IsStatusSelectionVisible;
 
     public MaterialIconKind StatusIconKind => WorkDay?.Status switch
     {
@@ -169,6 +184,12 @@ public sealed partial class DayDetailViewModel : ViewModelBase
     };
 
     // === Lifecycle ===
+
+    // Änderungen an Overlay-Sichtbarkeit → IsAnyOverlayVisible aktualisieren
+    partial void OnIsTimeEntryOverlayVisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
+    partial void OnIsPauseOverlayVisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
+    partial void OnIsConfirmDeleteVisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
+    partial void OnIsStatusSelectionVisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
 
     partial void OnDateStringChanged(string value)
     {
@@ -237,27 +258,59 @@ public sealed partial class DayDetailViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task ChangeStatusAsync()
+    private void ChangeStatus()
     {
         if (WorkDay == null || IsLocked) return;
 
-        WorkDay.Status = WorkDay.Status switch
+        // Alle verfügbaren Status laden (ohne Weekend - wird automatisch gesetzt)
+        var statuses = new List<StatusOption>
         {
-            DayStatus.WorkDay => DayStatus.HomeOffice,
-            DayStatus.HomeOffice => DayStatus.Vacation,
-            DayStatus.Vacation => DayStatus.Sick,
-            DayStatus.Sick => DayStatus.Holiday,
-            DayStatus.Holiday => DayStatus.BusinessTrip,
-            DayStatus.BusinessTrip => DayStatus.SpecialLeave,
-            DayStatus.SpecialLeave => DayStatus.UnpaidLeave,
-            DayStatus.UnpaidLeave => DayStatus.OvertimeCompensation,
-            DayStatus.OvertimeCompensation => DayStatus.Training,
-            DayStatus.Training => DayStatus.CompensatoryTime,
-            _ => DayStatus.WorkDay
+            new() { Status = DayStatus.WorkDay, DisplayName = TimeFormatter.GetStatusName(DayStatus.WorkDay), Icon = MaterialIconKind.Briefcase },
+            new() { Status = DayStatus.HomeOffice, DisplayName = TimeFormatter.GetStatusName(DayStatus.HomeOffice), Icon = MaterialIconKind.HomeAccount },
+            new() { Status = DayStatus.Vacation, DisplayName = TimeFormatter.GetStatusName(DayStatus.Vacation), Icon = MaterialIconKind.Beach },
+            new() { Status = DayStatus.Sick, DisplayName = TimeFormatter.GetStatusName(DayStatus.Sick), Icon = MaterialIconKind.Thermometer },
+            new() { Status = DayStatus.Holiday, DisplayName = TimeFormatter.GetStatusName(DayStatus.Holiday), Icon = MaterialIconKind.PartyPopper },
+            new() { Status = DayStatus.BusinessTrip, DisplayName = TimeFormatter.GetStatusName(DayStatus.BusinessTrip), Icon = MaterialIconKind.Airplane },
+            new() { Status = DayStatus.SpecialLeave, DisplayName = TimeFormatter.GetStatusName(DayStatus.SpecialLeave), Icon = MaterialIconKind.Gift },
+            new() { Status = DayStatus.UnpaidLeave, DisplayName = TimeFormatter.GetStatusName(DayStatus.UnpaidLeave), Icon = MaterialIconKind.CurrencyUsdOff },
+            new() { Status = DayStatus.OvertimeCompensation, DisplayName = TimeFormatter.GetStatusName(DayStatus.OvertimeCompensation), Icon = MaterialIconKind.ClockAlert },
+            new() { Status = DayStatus.Training, DisplayName = TimeFormatter.GetStatusName(DayStatus.Training), Icon = MaterialIconKind.School },
+            new() { Status = DayStatus.CompensatoryTime, DisplayName = TimeFormatter.GetStatusName(DayStatus.CompensatoryTime), Icon = MaterialIconKind.CalendarClock },
         };
+
+        // Aktuellen Status markieren
+        foreach (var s in statuses)
+            s.IsSelected = s.Status == WorkDay.Status;
+
+        AvailableStatuses = new ObservableCollection<StatusOption>(statuses);
+        IsStatusSelectionVisible = true;
+    }
+
+    [RelayCommand]
+    private async Task SelectStatusAsync(object? statusObj)
+    {
+        if (WorkDay == null || statusObj == null) return;
+
+        // CommandParameter kann DayStatus-Enum (Binding) oder string (hardcoded) sein
+        DayStatus status;
+        if (statusObj is DayStatus ds)
+            status = ds;
+        else if (statusObj is string str && Enum.TryParse<DayStatus>(str, out var parsed))
+            status = parsed;
+        else
+            return;
+
+        WorkDay.Status = status;
+        IsStatusSelectionVisible = false;
 
         await _database.SaveWorkDayAsync(WorkDay);
         await LoadDataAsync();
+    }
+
+    [RelayCommand]
+    private void CancelStatusSelection()
+    {
+        IsStatusSelectionVisible = false;
     }
 
     // === TimeEntry Overlay Commands ===
@@ -581,4 +634,15 @@ public sealed partial class DayDetailViewModel : ViewModelBase
         return true;
     }
 
+}
+
+/// <summary>
+/// Anzeige-Element für die Status-Auswahl
+/// </summary>
+public class StatusOption
+{
+    public DayStatus Status { get; set; }
+    public string DisplayName { get; set; } = "";
+    public MaterialIconKind Icon { get; set; }
+    public bool IsSelected { get; set; }
 }

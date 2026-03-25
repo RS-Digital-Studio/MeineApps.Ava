@@ -4,7 +4,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="WorkTimePro.Views.CalendarView"
-             x:DataType="vm:CalendarViewModel">
+             x:DataType="vm:CalendarViewModel"
+             x:CompileBindings="True">
 
   <Grid>
     <!-- Main Calendar Content -->

@@ -64,45 +64,6 @@ public enum PauseType
 }
 
 /// <summary>
-/// Bundesland für Feiertags-Kalender
-/// </summary>
-public enum GermanState
-{
-    /// <summary>Baden-Württemberg</summary>
-    BW,
-    /// <summary>Bayern</summary>
-    BY,
-    /// <summary>Berlin</summary>
-    BE,
-    /// <summary>Brandenburg</summary>
-    BB,
-    /// <summary>Bremen</summary>
-    HB,
-    /// <summary>Hamburg</summary>
-    HH,
-    /// <summary>Hessen</summary>
-    HE,
-    /// <summary>Mecklenburg-Vorpommern</summary>
-    MV,
-    /// <summary>Niedersachsen</summary>
-    NI,
-    /// <summary>Nordrhein-Westfalen</summary>
-    NW,
-    /// <summary>Rheinland-Pfalz</summary>
-    RP,
-    /// <summary>Saarland</summary>
-    SL,
-    /// <summary>Sachsen</summary>
-    SN,
-    /// <summary>Sachsen-Anhalt</summary>
-    ST,
-    /// <summary>Schleswig-Holstein</summary>
-    SH,
-    /// <summary>Thüringen</summary>
-    TH
-}
-
-/// <summary>
 /// Schichttyp
 /// </summary>
 public enum ShiftType

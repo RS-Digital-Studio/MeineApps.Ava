@@ -6,7 +6,8 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:skiaControls="using:MeineApps.UI.SkiaSharp"
              x:Class="WorkTimePro.Views.TodayView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <!-- Styles fuer Animationen und Effekte -->
   <UserControl.Styles>
@@ -162,20 +163,6 @@
             </StackPanel>
           </Button>
         </Grid>
-      </Border>
-
-      <!-- ==================== Streak-Anzeige ==================== -->
-      <Border AutomationProperties.AutomationId="Today_StreakBadge" Background="{DynamicResource WarningLightBrush}" CornerRadius="12" Padding="10,6"
-              HorizontalAlignment="Center"
-              IsVisible="{Binding HasStreak}">
-        <StackPanel Orientation="Horizontal" Spacing="6">
-          <mi:MaterialIcon Kind="Fire" Width="20" Height="20"
-                           Foreground="{DynamicResource WarningBrush}" />
-          <TextBlock Text="{Binding StreakDisplayText}"
-                     FontSize="15" FontWeight="Bold"
-                     Foreground="{DynamicResource WarningBrush}"
-                     VerticalAlignment="Center" />
-        </StackPanel>
       </Border>
 
       <!-- ==================== Time Metrics Card ==================== -->
@@ -337,6 +324,29 @@
         </StackPanel>
       </Border>
 
+      <!-- ==================== Tagesnotiz ==================== -->
+      <Border Classes="Card StatsCard" Padding="12"
+              AutomationProperties.AutomationId="Today_NoteCard"
+              CornerRadius="12">
+        <StackPanel Spacing="8">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="NoteTextOutline" Width="18" Height="18"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Translate DayNote}"
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBox AutomationProperties.AutomationId="Today_TxtNote"
+                   Text="{Binding TodayNote, Mode=TwoWay}"
+                   Watermark="{loc:Translate DayNotePlaceholder}"
+                   AcceptsReturn="True"
+                   TextWrapping="Wrap"
+                   MinHeight="40"
+                   MaxHeight="120" />
+        </StackPanel>
+      </Border>
+
       <!-- SkiaSharp Tages-Timeline (Arbeitsblöcke + Pausen) -->
       <Border Classes="Card StatsCard" Padding="8"
               AutomationProperties.AutomationId="Today_TimelineCard"
@@ -361,7 +371,7 @@
                  Foreground="{DynamicResource TextPrimaryBrush}"
                  Margin="0,8,0,0" />
 
-      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto"
+      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
             ColumnSpacing="12" RowSpacing="12"
             Margin="0,0,0,16">
 
@@ -476,36 +486,6 @@
                              HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate ShiftPlan}"
                        FontSize="11" Foreground="White"
-                       HorizontalAlignment="Center"
-                       TextAlignment="Center" />
-          </StackPanel>
-        </Button>
-
-        <!-- Achievements -->
-        <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                AutomationProperties.AutomationId="Today_BtnAchievements"
-                Classes="QuickNav"
-                Command="{Binding NavigateToAchievementsCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                VerticalContentAlignment="Center"
-                Height="64"
-                CornerRadius="12"
-                Background="#FFD700"
-                RenderTransform="scale(1)">
-          <Button.Transitions>
-            <Transitions>
-              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
-            </Transitions>
-          </Button.Transitions>
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="Trophy"
-                             Width="24" Height="24"
-                             Foreground="#1A1A2E"
-                             HorizontalAlignment="Center" />
-            <TextBlock Text="{loc:Translate Achievements}"
-                       FontSize="14" FontWeight="Bold"
-                       Foreground="#1A1A2E"
                        HorizontalAlignment="Center"
                        TextAlignment="Center" />
           </StackPanel>

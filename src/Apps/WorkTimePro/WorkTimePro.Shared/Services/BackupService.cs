@@ -10,6 +10,22 @@ namespace WorkTimePro.Services;
 /// </summary>
 public sealed class BackupService : IBackupService
 {
+    // Gecachte JSON-Optionen (vermeidet Neuanlage bei jedem Serialize/Deserialize)
+    private static readonly JsonSerializerOptions s_jsonWriteOptions = new()
+    {
+        WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+    private static readonly JsonSerializerOptions s_jsonWriteIndentedOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+    private static readonly JsonSerializerOptions s_jsonReadOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     private readonly IDatabaseService _database;
     private readonly IPreferencesService _preferences;
     private readonly IFileShareService _fileShareService;
@@ -200,11 +216,7 @@ public sealed class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 40);
 
             // Serialize to JSON
-            var json = JsonSerializer.Serialize(backupData, new JsonSerializerOptions
-            {
-                WriteIndented = false,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var json = JsonSerializer.Serialize(backupData, s_jsonWriteOptions);
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
             var fileName = $"worktime_backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
@@ -250,7 +262,6 @@ public sealed class BackupService : IBackupService
         var projects = await _database.GetProjectsAsync(true).ConfigureAwait(false);
         var employers = await _database.GetEmployersAsync(true).ConfigureAwait(false);
         var shiftPatterns = await _database.GetShiftPatternsAsync().ConfigureAwait(false);
-        var achievements = await _database.GetAllAchievementsAsync().ConfigureAwait(false);
 
         return new BackupData
         {
@@ -266,8 +277,7 @@ public sealed class BackupService : IBackupService
             VacationQuotas = vacationQuotas,
             Projects = projects,
             Employers = employers,
-            ShiftPatterns = shiftPatterns,
-            Achievements = achievements
+            ShiftPatterns = shiftPatterns
         };
     }
 
@@ -327,10 +337,7 @@ public sealed class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 30);
 
             var json = await File.ReadAllTextAsync(localPath).ConfigureAwait(false);
-            var backupData = JsonSerializer.Deserialize<BackupData>(json, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var backupData = JsonSerializer.Deserialize<BackupData>(json, s_jsonReadOptions);
 
             if (backupData == null)
             {
@@ -376,87 +383,25 @@ public sealed class BackupService : IBackupService
 
     private async Task RestoreDataAsync(BackupData data)
     {
-        // Alle bestehenden Daten loeschen fuer sauberes Restore (keine Mischung alt+neu)
+        // Alle bestehenden Daten löschen für sauberes Restore (keine Mischung alt+neu)
         await _database.ClearAllDataAsync().ConfigureAwait(false);
 
+        // Settings separat (Upsert-Logik, nicht Batch-fähig)
         if (data.Settings != null)
         {
             await _database.SaveSettingsAsync(data.Settings).ConfigureAwait(false);
         }
 
-        if (data.WorkDays != null)
-        {
-            foreach (var item in data.WorkDays)
-            {
-                await _database.SaveWorkDayAsync(item).ConfigureAwait(false);
-            }
-        }
-
-        if (data.TimeEntries != null)
-        {
-            foreach (var item in data.TimeEntries)
-            {
-                await _database.SaveTimeEntryAsync(item).ConfigureAwait(false);
-            }
-        }
-
-        if (data.PauseEntries != null)
-        {
-            foreach (var item in data.PauseEntries)
-            {
-                await _database.SavePauseEntryAsync(item).ConfigureAwait(false);
-            }
-        }
-
-        if (data.VacationEntries != null)
-        {
-            foreach (var item in data.VacationEntries)
-            {
-                await _database.SaveVacationEntryAsync(item).ConfigureAwait(false);
-            }
-        }
-
-        if (data.VacationQuotas != null)
-        {
-            foreach (var item in data.VacationQuotas)
-            {
-                await _database.SaveVacationQuotaAsync(item).ConfigureAwait(false);
-            }
-        }
-
-        if (data.Projects != null)
-        {
-            foreach (var item in data.Projects)
-            {
-                await _database.SaveProjectAsync(item).ConfigureAwait(false);
-            }
-        }
-
-        if (data.Employers != null)
-        {
-            foreach (var item in data.Employers)
-            {
-                await _database.SaveEmployerAsync(item).ConfigureAwait(false);
-            }
-        }
-
-        if (data.ShiftPatterns != null)
-        {
-            foreach (var item in data.ShiftPatterns)
-            {
-                await _database.SaveShiftPatternAsync(item).ConfigureAwait(false);
-            }
-        }
-
-        if (data.Achievements != null)
-        {
-            // Achievement-Tabelle sicherstellen (fuer aeltere Backups ohne Tabelle)
-            await _database.CreateAchievementTableAsync().ConfigureAwait(false);
-            foreach (var item in data.Achievements)
-            {
-                await _database.SaveAchievementAsync(item).ConfigureAwait(false);
-            }
-        }
+        // Alle anderen Daten in einer Transaction (5-10x schneller als einzelne Inserts)
+        await _database.BulkRestoreAsync(
+            data.WorkDays,
+            data.TimeEntries,
+            data.PauseEntries,
+            data.VacationEntries,
+            data.VacationQuotas,
+            data.Projects,
+            data.Employers,
+            data.ShiftPatterns).ConfigureAwait(false);
     }
 
     public async Task<bool> DeleteBackupAsync(string backupId)
@@ -496,11 +441,7 @@ public sealed class BackupService : IBackupService
 
             ProgressChanged?.Invoke(this, 50);
 
-            var json = JsonSerializer.Serialize(backupData, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var json = JsonSerializer.Serialize(backupData, s_jsonWriteIndentedOptions);
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
             var fileName = $"worktime_backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
@@ -562,10 +503,7 @@ public sealed class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 10);
 
             var json = await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
-            var backupData = JsonSerializer.Deserialize<BackupData>(json, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var backupData = JsonSerializer.Deserialize<BackupData>(json, s_jsonReadOptions);
 
             if (backupData == null)
                 return false;
@@ -717,5 +655,4 @@ public class BackupData
     public List<Project>? Projects { get; set; }
     public List<Employer>? Employers { get; set; }
     public List<ShiftPattern>? ShiftPatterns { get; set; }
-    public List<Achievement>? Achievements { get; set; }
 }

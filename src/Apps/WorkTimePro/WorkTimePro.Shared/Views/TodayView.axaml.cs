@@ -132,7 +132,8 @@ public partial class TodayView : UserControl
     {
         if (EarningsTextBlock != null)
         {
-            EarningsTextBlock.Text = value.ToString("C2");
+            // Explizit aktuelle Kultur verwenden (konsistent mit App-Spracheinstellung)
+            EarningsTextBlock.Text = value.ToString("C2", System.Globalization.CultureInfo.CurrentCulture);
         }
     }
 

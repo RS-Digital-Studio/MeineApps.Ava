@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Material.Icons;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
@@ -35,6 +36,10 @@ public sealed partial class StatisticsViewModel : ViewModelBase
     // Rewarded Ad Overlay
     [ObservableProperty]
     private bool _showRewardedAdOverlay;
+
+    // Export-Format-Auswahl Overlay
+    [ObservableProperty]
+    private bool _showExportFormatOverlay;
 
     /// <summary>Aufgeschobene Aktion nach erfolgreicher Ad-Wiedergabe</summary>
     private Func<Task>? _pendingAction;
@@ -76,6 +81,10 @@ public sealed partial class StatisticsViewModel : ViewModelBase
     public bool IsMonthSelected => SelectedPeriod == StatisticsPeriod.Month;
     public bool IsQuarterSelected => SelectedPeriod == StatisticsPeriod.Quarter;
     public bool IsYearSelected => SelectedPeriod == StatisticsPeriod.Year;
+
+    // Overlay-Änderungen → IsAnyOverlayVisible aktualisieren
+    partial void OnShowRewardedAdOverlayChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
+    partial void OnShowExportFormatOverlayChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
 
     partial void OnSelectedPeriodChanged(StatisticsPeriod value)
     {
@@ -198,6 +207,9 @@ public sealed partial class StatisticsViewModel : ViewModelBase
     private ObservableCollection<WorkDayTableItem> _tableDays = new();
 
     // Abgeleitete Properties
+    /// <summary>True wenn ein Overlay aktiv ist → ScrollViewer deaktiviert (kein Touch-Durchfall auf Android)</summary>
+    public bool IsAnyOverlayVisible => ShowRewardedAdOverlay || ShowExportFormatOverlay;
+
     public bool HasPauseChartData => PauseSegments.Length > 0;
     public bool HasOvertimeData => OvertimeDailyBalance.Length > 0;
     public bool HasWeeklyData => WeeklyHoursData.Length > 0;
@@ -327,10 +339,32 @@ public sealed partial class StatisticsViewModel : ViewModelBase
             return;
         }
 
+        // Format-Auswahl Overlay anzeigen
+        ShowExportFormatOverlay = true;
+    }
+
+    [RelayCommand]
+    private async Task ExportWithFormatAsync(string formatStr)
+    {
+        ShowExportFormatOverlay = false;
+
         try
         {
             IsLoading = true;
-            string? filePath = await _exportService.ExportRangeToPdfAsync(StartDate, EndDate);
+            string? filePath = null;
+
+            switch (formatStr)
+            {
+                case "PDF":
+                    filePath = await _exportService.ExportRangeToPdfAsync(StartDate, EndDate);
+                    break;
+                case "Excel":
+                    filePath = await _exportService.ExportRangeToExcelAsync(StartDate, EndDate);
+                    break;
+                case "CSV":
+                    filePath = await _exportService.ExportRangeToCsvAsync(StartDate, EndDate);
+                    break;
+            }
 
             if (!string.IsNullOrEmpty(filePath))
             {
@@ -345,6 +379,12 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         {
             IsLoading = false;
         }
+    }
+
+    [RelayCommand]
+    private void CancelExportFormat()
+    {
+        ShowExportFormatOverlay = false;
     }
 
     public string ExportButtonText => $"{Icons.Export} {AppStrings.Export}";
@@ -662,7 +702,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
                 Date = w.Date,
                 DateDisplay = w.Date.ToString("ddd, dd.MM"),
                 Status = w.Status,
-                StatusIcon = GetStatusIcon(w.Status),
+                StatusIconKind = GetStatusIconKind(w.Status),
                 StatusName = TimeFormatter.GetStatusName(w.Status),
                 CheckInTime = w.FirstCheckIn?.ToString("HH:mm") ?? "--:--",
                 CheckOutTime = w.LastCheckOut?.ToString("HH:mm") ?? "--:--",
@@ -678,17 +718,17 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         TableDays = new ObservableCollection<WorkDayTableItem>(items);
     }
 
-    private static string GetStatusIcon(DayStatus status)
+    private static MaterialIconKind GetStatusIconKind(DayStatus status)
     {
         return status switch
         {
-            DayStatus.WorkDay => Icons.Briefcase,
-            DayStatus.HomeOffice => Icons.HomeAccount,
-            DayStatus.Vacation => Icons.Beach,
-            DayStatus.Sick => Icons.Thermometer,
-            DayStatus.Holiday => Icons.PartyPopper,
-            DayStatus.Weekend => Icons.Sleep,
-            _ => ""
+            DayStatus.WorkDay => MaterialIconKind.Briefcase,
+            DayStatus.HomeOffice => MaterialIconKind.HomeAccount,
+            DayStatus.Vacation => MaterialIconKind.Beach,
+            DayStatus.Sick => MaterialIconKind.Thermometer,
+            DayStatus.Holiday => MaterialIconKind.PartyPopper,
+            DayStatus.Weekend => MaterialIconKind.Sleep,
+            _ => MaterialIconKind.CalendarMonth
         };
     }
 }
@@ -701,7 +741,7 @@ public class WorkDayTableItem
     public DateTime Date { get; set; }
     public string DateDisplay { get; set; } = "";
     public DayStatus Status { get; set; }
-    public string StatusIcon { get; set; } = "";
+    public MaterialIconKind StatusIconKind { get; set; } = MaterialIconKind.CalendarMonth;
     public string StatusName { get; set; } = "";
     public string CheckInTime { get; set; } = "--:--";
     public string CheckOutTime { get; set; } = "--:--";

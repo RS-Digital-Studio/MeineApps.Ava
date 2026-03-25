@@ -9,7 +9,7 @@ using WorkTimePro.ViewModels;
 namespace WorkTimePro.Loading;
 
 /// <summary>
-/// WorkTimePro Lade-Pipeline: DB + Shader parallel, dann Achievement, Reminder, ViewModel.
+/// WorkTimePro Lade-Pipeline: DB + Shader parallel, dann Reminder, ViewModel.
 /// Gewichtung spiegelt tatsächliche Ladezeiten auf Android wider.
 /// </summary>
 public sealed class WorkTimeProLoadingPipeline : LoadingPipelineBase
@@ -34,16 +34,7 @@ public sealed class WorkTimeProLoadingPipeline : LoadingPipelineBase
             }
         });
 
-        // Schritt 2: Achievement-Service initialisieren (Tabelle + Definitionen)
-        AddStep(new LoadingStep
-        {
-            Name = "Achievement",
-            DisplayName = loc.GetString("LoadingAchievements") ?? "Erfolge werden geladen...",
-            Weight = 8,
-            ExecuteAsync = () => services.GetRequiredService<IAchievementService>().InitializeAsync()
-        });
-
-        // Schritt 3: Reminder-Service initialisieren
+        // Schritt 2: Reminder-Service initialisieren
         AddStep(new LoadingStep
         {
             Name = "Reminder",
@@ -52,7 +43,7 @@ public sealed class WorkTimeProLoadingPipeline : LoadingPipelineBase
             ExecuteAsync = () => services.GetRequiredService<IReminderService>().InitializeAsync()
         });
 
-        // Schritt 4: MainViewModel erstellen + initiale Daten laden
+        // Schritt 3: MainViewModel erstellen + initiale Daten laden
         AddStep(new LoadingStep
         {
             Name = "ViewModel",

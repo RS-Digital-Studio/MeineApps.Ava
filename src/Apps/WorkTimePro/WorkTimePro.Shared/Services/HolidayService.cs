@@ -3,7 +3,7 @@ using WorkTimePro.Models;
 namespace WorkTimePro.Services;
 
 /// <summary>
-/// Holiday service with calculation for all German states
+/// Feiertagsberechnung für Deutschland (16 Bundesländer), Österreich (9 Bundesländer) und Schweiz (12 Kantone)
 /// </summary>
 public sealed class HolidayService : IHolidayService
 {
@@ -60,6 +60,7 @@ public sealed class HolidayService : IHolidayService
     {
         return new List<(string, string)>
         {
+            // Deutschland (16 Bundesländer)
             ("DE-BW", "Baden-Württemberg"),
             ("DE-BY", "Bayern"),
             ("DE-BE", "Berlin"),
@@ -75,7 +76,32 @@ public sealed class HolidayService : IHolidayService
             ("DE-SN", "Sachsen"),
             ("DE-ST", "Sachsen-Anhalt"),
             ("DE-SH", "Schleswig-Holstein"),
-            ("DE-TH", "Thüringen")
+            ("DE-TH", "Thüringen"),
+
+            // Österreich (9 Bundesländer)
+            ("AT-1", "Burgenland"),
+            ("AT-2", "Kärnten"),
+            ("AT-3", "Niederösterreich"),
+            ("AT-4", "Oberösterreich"),
+            ("AT-5", "Salzburg"),
+            ("AT-6", "Steiermark"),
+            ("AT-7", "Tirol"),
+            ("AT-8", "Vorarlberg"),
+            ("AT-9", "Wien"),
+
+            // Schweiz (12 Kantone)
+            ("CH-ZH", "Zürich"),
+            ("CH-BE", "Bern"),
+            ("CH-LU", "Luzern"),
+            ("CH-SG", "St. Gallen"),
+            ("CH-AG", "Aargau"),
+            ("CH-BS", "Basel-Stadt"),
+            ("CH-BL", "Basel-Landschaft"),
+            ("CH-TI", "Tessin"),
+            ("CH-GE", "Genf"),
+            ("CH-VD", "Waadt"),
+            ("CH-VS", "Wallis"),
+            ("CH-GR", "Graubünden")
         };
     }
 
@@ -96,7 +122,14 @@ public sealed class HolidayService : IHolidayService
             return cached;
         }
 
-        var holidays = CalculateGermanHolidays(year, region);
+        List<HolidayEntry> holidays;
+        if (region.StartsWith("AT-"))
+            holidays = CalculateAustrianHolidays(year, region);
+        else if (region.StartsWith("CH-"))
+            holidays = CalculateSwissHolidays(year, region);
+        else
+            holidays = CalculateGermanHolidays(year, region);
+
         _cache[cacheKey] = holidays;
         return holidays;
     }
@@ -105,10 +138,22 @@ public sealed class HolidayService : IHolidayService
     {
         return region switch
         {
+            // Deutschland (1-16)
             "DE-BW" => 1, "DE-BY" => 2, "DE-BE" => 3, "DE-BB" => 4,
             "DE-HB" => 5, "DE-HH" => 6, "DE-HE" => 7, "DE-MV" => 8,
             "DE-NI" => 9, "DE-NW" => 10, "DE-RP" => 11, "DE-SL" => 12,
             "DE-SN" => 13, "DE-ST" => 14, "DE-SH" => 15, "DE-TH" => 16,
+
+            // Österreich (17-25)
+            "AT-1" => 17, "AT-2" => 18, "AT-3" => 19, "AT-4" => 20,
+            "AT-5" => 21, "AT-6" => 22, "AT-7" => 23, "AT-8" => 24,
+            "AT-9" => 25,
+
+            // Schweiz (26-37)
+            "CH-ZH" => 26, "CH-BE" => 27, "CH-LU" => 28, "CH-SG" => 29,
+            "CH-AG" => 30, "CH-BS" => 31, "CH-BL" => 32, "CH-TI" => 33,
+            "CH-GE" => 34, "CH-VD" => 35, "CH-VS" => 36, "CH-GR" => 37,
+
             _ => 0
         };
     }
@@ -271,7 +316,153 @@ public sealed class HolidayService : IHolidayService
     }
 
     /// <summary>
-    /// Calculate Easter date using the Gaussian Easter formula
+    /// Österreichische Feiertage berechnen (13 nationale + 1 regionaler für Kärnten)
+    /// </summary>
+    private static List<HolidayEntry> CalculateAustrianHolidays(int year, string region)
+    {
+        var holidays = new List<HolidayEntry>();
+        var easter = CalculateEaster(year);
+
+        // Nationale Feiertage (gelten für alle 9 Bundesländer)
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 1, 1), Name = "Neujahr", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 1, 6), Name = "Heilige Drei Könige", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = easter.AddDays(1), Name = "Ostermontag", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 5, 1), Name = "Staatsfeiertag", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = easter.AddDays(39), Name = "Christi Himmelfahrt", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = easter.AddDays(50), Name = "Pfingstmontag", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = easter.AddDays(60), Name = "Fronleichnam", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 8, 15), Name = "Mariä Himmelfahrt", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 10, 26), Name = "Nationalfeiertag", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 11, 1), Name = "Allerheiligen", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 12, 8), Name = "Mariä Empfängnis", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 12, 25), Name = "Christtag", IsNational = true });
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 12, 26), Name = "Stefanitag", IsNational = true });
+
+        // Regionaler Feiertag: Kärnten
+        if (region == "AT-2")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 10, 10), Name = "Tag der Volksabstimmung" });
+        }
+
+        return holidays.OrderBy(h => h.Date).ToList();
+    }
+
+    /// <summary>
+    /// Schweizer Feiertage berechnen (1 Bundesfeiertag + kantonsspezifische Feiertage)
+    /// </summary>
+    private static List<HolidayEntry> CalculateSwissHolidays(int year, string region)
+    {
+        var holidays = new List<HolidayEntry>();
+        var easter = CalculateEaster(year);
+
+        // Bundesfeiertag (einziger nationaler Feiertag)
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 8, 1), Name = "Bundesfeiertag", IsNational = true });
+
+        // Neujahr (in allen Kantonen)
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 1, 1), Name = "Neujahr", IsNational = true });
+
+        // Auffahrt / Christi Himmelfahrt (in allen Kantonen)
+        holidays.Add(new HolidayEntry { Date = easter.AddDays(39), Name = "Auffahrt", IsNational = true });
+
+        // Weihnachtstag (in allen Kantonen)
+        holidays.Add(new HolidayEntry { Date = new DateTime(year, 12, 25), Name = "Weihnachtstag", IsNational = true });
+
+        // Berchtoldstag (2. Januar) - ZH, BE, SG, VD
+        if (region is "CH-ZH" or "CH-BE" or "CH-SG" or "CH-VD")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 1, 2), Name = "Berchtoldstag" });
+        }
+
+        // Josefstag (19. März) - TI, VS
+        if (region is "CH-TI" or "CH-VS")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 3, 19), Name = "Josefstag" });
+        }
+
+        // Karfreitag - alle außer TI
+        if (region != "CH-TI")
+        {
+            holidays.Add(new HolidayEntry { Date = easter.AddDays(-2), Name = "Karfreitag" });
+        }
+
+        // Ostermontag - alle außer VS, GR (GR hat ihn doch laut Aufgabe)
+        // ZH, BE, SG, BS, BL, LU, AG, TI, GE, VD, GR
+        if (region is "CH-ZH" or "CH-BE" or "CH-SG" or "CH-BS" or "CH-BL" or "CH-LU"
+            or "CH-AG" or "CH-TI" or "CH-GE" or "CH-VD" or "CH-GR")
+        {
+            holidays.Add(new HolidayEntry { Date = easter.AddDays(1), Name = "Ostermontag" });
+        }
+
+        // Tag der Arbeit (1. Mai) - BS, BL
+        if (region is "CH-BS" or "CH-BL")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 5, 1), Name = "Tag der Arbeit" });
+        }
+
+        // Pfingstmontag - ZH, BE, SG, BS, BL, VD, GR
+        if (region is "CH-ZH" or "CH-BE" or "CH-SG" or "CH-BS" or "CH-BL" or "CH-VD" or "CH-GR")
+        {
+            holidays.Add(new HolidayEntry { Date = easter.AddDays(50), Name = "Pfingstmontag" });
+        }
+
+        // Fronleichnam - LU, AG, TI, VS
+        if (region is "CH-LU" or "CH-AG" or "CH-TI" or "CH-VS")
+        {
+            holidays.Add(new HolidayEntry { Date = easter.AddDays(60), Name = "Fronleichnam" });
+        }
+
+        // Peter und Paul (29. Juni) - TI
+        if (region == "CH-TI")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 6, 29), Name = "Peter und Paul" });
+        }
+
+        // Mariä Himmelfahrt (15. August) - LU, AG, TI, VS
+        if (region is "CH-LU" or "CH-AG" or "CH-TI" or "CH-VS")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 8, 15), Name = "Mariä Himmelfahrt" });
+        }
+
+        // Lundi du Jeûne fédéral (3. Montag im September) - VD
+        if (region == "CH-VD")
+        {
+            var septFirst = new DateTime(year, 9, 1);
+            var daysUntilMonday = ((int)DayOfWeek.Monday - (int)septFirst.DayOfWeek + 7) % 7;
+            var firstMonday = septFirst.AddDays(daysUntilMonday);
+            var thirdMonday = firstMonday.AddDays(14);
+            holidays.Add(new HolidayEntry { Date = thirdMonday, Name = "Lundi du Jeûne fédéral" });
+        }
+
+        // Allerheiligen (1. November) - LU, AG, TI, VS
+        if (region is "CH-LU" or "CH-AG" or "CH-TI" or "CH-VS")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 11, 1), Name = "Allerheiligen" });
+        }
+
+        // Mariä Empfängnis (8. Dezember) - LU, AG, TI, VS
+        if (region is "CH-LU" or "CH-AG" or "CH-TI" or "CH-VS")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 12, 8), Name = "Mariä Empfängnis" });
+        }
+
+        // Stephanstag (26. Dezember) - ZH, BE, SG, LU, AG, BS, BL, TI, GE
+        if (region is "CH-ZH" or "CH-BE" or "CH-SG" or "CH-LU" or "CH-AG"
+            or "CH-BS" or "CH-BL" or "CH-TI" or "CH-GE")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 12, 26), Name = "Stephanstag" });
+        }
+
+        // Restauration de la République (31. Dezember) - GE
+        if (region == "CH-GE")
+        {
+            holidays.Add(new HolidayEntry { Date = new DateTime(year, 12, 31), Name = "Restauration de la République" });
+        }
+
+        return holidays.OrderBy(h => h.Date).ToList();
+    }
+
+    /// <summary>
+    /// Osterdatum berechnen (Gaußsche Osterformel)
     /// </summary>
     private static DateTime CalculateEaster(int year)
     {

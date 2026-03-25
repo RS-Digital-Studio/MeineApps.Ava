@@ -101,8 +101,12 @@ public sealed partial class VacationViewModel : ViewModelBase
     // Derived properties
     public string CalculatedDaysDisplay => CalculatedDays.ToString();
     public bool HasNoVacations => VacationEntries.Count == 0;
+    /// <summary>True wenn ein Overlay aktiv ist → ScrollViewer deaktiviert (kein Touch-Durchfall auf Android)</summary>
+    public bool IsAnyOverlayVisible => IsEditingQuota || ShowRewardedAdOverlay;
 
     partial void OnCalculatedDaysChanged(int value) => OnPropertyChanged(nameof(CalculatedDaysDisplay));
+    partial void OnIsEditingQuotaChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
+    partial void OnShowRewardedAdOverlayChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
 
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;

@@ -28,7 +28,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IAdService _adService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IHapticService _haptic;
-    private readonly IAchievementService _achievementService;
 
     private System.Timers.Timer? _updateTimer;
     private bool _disposed;
@@ -37,8 +36,17 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // Gecachte Settings (werden in LoadDataAsync und OnSettingsChanged aktualisiert)
     private WorkSettings? _cachedSettings;
 
+    // Gecachte SolidColorBrush-Instanzen (vermeidet Parse() im 1s-Timer)
+    private static readonly SolidColorBrush s_statusIdleBrush = SolidColorBrush.Parse(AppColors.StatusIdle);
+    private static readonly SolidColorBrush s_statusActiveBrush = SolidColorBrush.Parse(AppColors.StatusActive);
+    private static readonly SolidColorBrush s_statusPausedBrush = SolidColorBrush.Parse(AppColors.StatusPaused);
+    private static readonly SolidColorBrush s_balancePositiveBrush = SolidColorBrush.Parse(AppColors.BalancePositive);
+    private static readonly SolidColorBrush s_balanceNegativeBrush = SolidColorBrush.Parse(AppColors.BalanceNegative);
+
     // Undo-Mechanismus (5 Sekunden Fenster nach CheckIn/CheckOut)
     private CancellationTokenSource? _undoCts;
+    private CancellationTokenSource? _noteDebounce;
+    private bool _suppressNoteDebounce; // Verhindert Debounce-Speichern während LoadDataAsync
     private TimeEntry? _lastUndoEntry;
     private TrackingStatus _statusBeforeUndo;
 
@@ -62,10 +70,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isShiftPlanActive;
 
-    [ObservableProperty]
-    private bool _isAchievementActive;
-
-    public bool IsSubPageActive => IsDayDetailActive || IsMonthActive || IsYearActive || IsVacationActive || IsShiftPlanActive || IsAchievementActive;
+    public bool IsSubPageActive => IsDayDetailActive || IsMonthActive || IsYearActive || IsVacationActive || IsShiftPlanActive;
 
     // === Child ViewModels (for tab pages and sub-pages) ===
     public WeekOverviewViewModel WeekVm { get; }
@@ -77,7 +82,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public YearOverviewViewModel YearVm { get; }
     public VacationViewModel VacationVm { get; }
     public ShiftPlanViewModel ShiftPlanVm { get; }
-    public AchievementViewModel AchievementVm { get; }
 
     [ObservableProperty]
     private bool _isAdBannerVisible;
@@ -103,10 +107,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         YearOverviewViewModel yearVm,
         VacationViewModel vacationVm,
         ShiftPlanViewModel shiftPlanVm,
-        AchievementViewModel achievementVm,
         IRewardedAdService rewardedAdService,
-        IHapticService haptic,
-        IAchievementService achievementService)
+        IHapticService haptic)
     {
         _timeTracking = timeTracking;
         _calculation = calculation;
@@ -117,7 +119,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _adService = adService;
         _rewardedAdService = rewardedAdService;
         _haptic = haptic;
-        _achievementService = achievementService;
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
 
         IsAdBannerVisible = _adService.BannerVisible;
@@ -137,10 +138,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         YearVm = yearVm;
         VacationVm = vacationVm;
         ShiftPlanVm = shiftPlanVm;
-        AchievementVm = achievementVm;
-
-        // Achievement-Events verdrahten
-        _achievementService.AchievementUnlocked += OnAchievementUnlocked;
 
         // Navigation-Events verdrahten (Sub-Pages + Tab-VMs die navigieren können)
         WireSubPageNavigation(dayDetailVm);
@@ -148,7 +145,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         WireSubPageNavigation(yearVm);
         WireSubPageNavigation(vacationVm);
         WireSubPageNavigation(shiftPlanVm);
-        WireSubPageNavigation(achievementVm);
         // Tab-VMs die DayDetail-Navigation auslösen können
         WireSubPageNavigation(weekVm);
         WireSubPageNavigation(calendarVm);
@@ -365,7 +361,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private string _statusIcon = Icons.Play;
 
     [ObservableProperty]
-    private IBrush _statusColor = SolidColorBrush.Parse(AppColors.StatusIdle);
+    private IBrush _statusColor = s_statusIdleBrush;
 
     [ObservableProperty]
     private string _currentWorkTime = "0:00";
@@ -380,7 +376,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private string _balanceTime = "+0:00";
 
     [ObservableProperty]
-    private IBrush _balanceColor = SolidColorBrush.Parse(AppColors.BalancePositive);
+    private IBrush _balanceColor = s_balancePositiveBrush;
 
     /// <summary>
     /// True wenn die Tagesbalance negativ ist (für pulsierende Animation).
@@ -475,22 +471,36 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _undoMessage = "";
 
-    // === Streak (aufeinanderfolgende Arbeitstage) ===
+    // === Tagesnotiz ===
 
     [ObservableProperty]
-    private int _streakCount;
+    private string _todayNote = "";
 
-    public bool HasStreak => StreakCount >= 2;
+    [ObservableProperty]
+    private bool _isNoteExpanded;
 
-    /// <summary>
-    /// Lokalisierter Streak-Text, z.B. "5 Tage" / "5 days"
-    /// </summary>
-    public string StreakDisplayText => $"{StreakCount} {AppStrings.DayStreak}";
-
-    partial void OnStreakCountChanged(int value)
+    partial void OnTodayNoteChanged(string value)
     {
-        OnPropertyChanged(nameof(HasStreak));
-        OnPropertyChanged(nameof(StreakDisplayText));
+        // Kein Debounce-Speichern während LoadDataAsync (vermeidet unnötigen DB-Write)
+        if (_suppressNoteDebounce) return;
+
+        // Debounce: Notiz nach 1.5s Inaktivität automatisch speichern
+        _noteDebounce?.Cancel();
+        _noteDebounce = new CancellationTokenSource();
+        var token = _noteDebounce.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(1500, token);
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await SaveNoteAsync();
+                });
+            }
+            catch (TaskCanceledException) { }
+        });
     }
 
     // Wochenziel-Celebration (einmal pro Session)
@@ -560,9 +570,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             }
 
             await LoadDataAsync();
-
-            // Achievements asynchron prüfen (nach CheckIn/CheckOut)
-            _ = _achievementService.CheckAchievementsAsync();
         }
         catch (Exception ex)
         {
@@ -632,6 +639,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             FirstCheckIn = today.FirstCheckIn?.ToString("HH:mm") ?? "--:--";
             LastCheckOut = today.LastCheckOut?.ToString("HH:mm") ?? "--:--";
 
+            // Tagesnotiz laden (Debounce unterdrücken, da gleicher Wert aus DB)
+            _suppressNoteDebounce = true;
+            TodayNote = today.Note ?? "";
+            _suppressNoteDebounce = false;
+
             // Auto-Pause Info
             HasAutoPause = today.HasAutoPause;
             if (HasAutoPause)
@@ -642,9 +654,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             // Week progress
             WeekProgress = await _calculation.GetWeekProgressAsync();
             WeekProgressText = $"{WeekProgress:F0}%";
-
-            // Streak berechnen (zentralisiert in AchievementService, Batch-Query)
-            StreakCount = await _achievementService.GetCurrentStreakAsync();
 
             // Settings cachen (für UpdateLiveDataAsync, wird nur hier und bei OnSettingsChanged aktualisiert)
             _cachedSettings = await _database.GetSettingsAsync();
@@ -718,15 +727,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    private async Task NavigateToAchievementsAsync()
-    {
-        CloseAllSubPages();
-        IsAchievementActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
-        await AchievementVm.LoadDataAsync();
-    }
-
-    [RelayCommand]
     public void GoBack()
     {
         CloseAllSubPages();
@@ -739,7 +739,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IsYearActive = false;
         IsVacationActive = false;
         IsShiftPlanActive = false;
-        IsAchievementActive = false;
         OnPropertyChanged(nameof(IsSubPageActive));
     }
 
@@ -841,20 +840,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         }
     }
 
-    // === Helper methods ===
-
-    /// <summary>
-    /// Wird aufgerufen wenn ein Achievement freigeschaltet wird.
-    /// Zeigt FloatingText mit Gold-Farbe und Confetti.
-    /// </summary>
-    private void OnAchievementUnlocked(object? sender, Achievement achievement)
+    [RelayCommand]
+    private async Task SaveNoteAsync()
     {
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        try
         {
-            FloatingTextRequested?.Invoke(achievement.DisplayName, "achievement");
-            CelebrationRequested?.Invoke();
-        });
+            var today = await _timeTracking.GetTodayAsync();
+            today.Note = string.IsNullOrWhiteSpace(TodayNote) ? null : TodayNote.Trim();
+            await _database.SaveWorkDayAsync(today);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Notiz-Speicher-Fehler: {ex.Message}");
+        }
     }
+
+    // === Helper methods ===
 
     private void OnAdUnavailable()
     {
@@ -907,19 +908,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             case TrackingStatus.Idle:
                 StatusText = _localization.GetString("Status_Idle") ?? AppStrings.Status_Idle;
                 StatusIcon = Icons.Play;
-                StatusColor = SolidColorBrush.Parse(AppColors.StatusIdle);
+                StatusColor = s_statusIdleBrush;
                 break;
 
             case TrackingStatus.Working:
                 StatusText = _localization.GetString("Status_Working") ?? AppStrings.Status_Working;
                 StatusIcon = Icons.Stop;
-                StatusColor = SolidColorBrush.Parse(AppColors.StatusActive);
+                StatusColor = s_statusActiveBrush;
                 break;
 
             case TrackingStatus.OnBreak:
                 StatusText = _localization.GetString("Status_OnBreak") ?? AppStrings.Status_OnBreak;
                 StatusIcon = Icons.Play;
-                StatusColor = SolidColorBrush.Parse(AppColors.StatusPaused);
+                StatusColor = s_statusPausedBrush;
                 break;
         }
     }
@@ -946,7 +947,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 TimeUntilEnd = timeUntilEnd.HasValue ? TimeFormatter.FormatMinutes((int)timeUntilEnd.Value.TotalMinutes) : "--:--";
 
                 BalanceTime = TimeFormatter.FormatBalance((int)balance.TotalMinutes);
-                BalanceColor = SolidColorBrush.Parse(balance.TotalMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative);
+                BalanceColor = balance.TotalMinutes >= 0 ? s_balancePositiveBrush : s_balanceNegativeBrush;
                 IsBalanceNegative = balance.TotalMinutes < -1; // Nur bei deutlich negativer Balance
 
                 // Tages-Fortschritt
@@ -994,7 +995,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 if (settings.HourlyRate > 0)
                 {
                     var earnings = workTime.TotalHours * settings.HourlyRate;
-                    TodayEarnings = earnings.ToString("C2");
+                    // Explizit aktuelle Kultur verwenden (konsistent mit App-Spracheinstellung)
+                    TodayEarnings = earnings.ToString("C2", System.Globalization.CultureInfo.CurrentCulture);
                     HasEarnings = true;
                 }
                 else
@@ -1032,11 +1034,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _updateTimer?.Dispose();
         _undoCts?.Cancel();
         _undoCts?.Dispose();
+        _noteDebounce?.Cancel();
+        _noteDebounce?.Dispose();
         _timeTracking.StatusChanged -= OnStatusChanged;
         _localization.LanguageChanged -= OnLanguageChanged;
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         _adService.AdsStateChanged -= OnAdsStateChanged;
-        _achievementService.AchievementUnlocked -= OnAchievementUnlocked;
         SettingsVm.SettingsChanged -= OnSettingsChanged;
 
         // Sub-Page Navigation Events abmelden

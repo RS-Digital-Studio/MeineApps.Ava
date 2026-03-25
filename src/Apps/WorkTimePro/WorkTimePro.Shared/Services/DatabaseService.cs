@@ -432,12 +432,7 @@ public sealed class DatabaseService : IDatabaseService
             .OrderBy(h => h.Date)
             .ToListAsync();
 
-        // Generate holidays if none exist
-        if (holidays.Count == 0 && Enum.TryParse<GermanState>(region.Replace("DE-", ""), out var state))
-        {
-            holidays = GermanHolidays.GetHolidays(year, state);
-            await SaveHolidaysAsync(holidays);
-        }
+        // Feiertage werden über HolidayService berechnet (In-Memory, kein DB-Fallback nötig)
 
         return holidays;
     }
@@ -804,35 +799,6 @@ public sealed class DatabaseService : IDatabaseService
             .ToDictionary(g => g.Key, g => g.Sum(e => e.Minutes) / 60.0);
     }
 
-    // ==================== Achievement ====================
-
-    public async Task CreateAchievementTableAsync()
-    {
-        var db = await GetDatabaseAsync();
-        await db.CreateTableAsync<Achievement>();
-        await db.ExecuteAsync("CREATE UNIQUE INDEX IF NOT EXISTS idx_achievement_key ON Achievements([Key])");
-    }
-
-    public async Task<List<Achievement>> GetAllAchievementsAsync()
-    {
-        var db = await GetDatabaseAsync();
-        return await db.Table<Achievement>().ToListAsync();
-    }
-
-    public async Task SaveAchievementAsync(Achievement achievement)
-    {
-        var db = await GetDatabaseAsync();
-        if (achievement.Id == 0)
-        {
-            // sqlite-net setzt die ID direkt auf dem Objekt
-            await db.InsertAsync(achievement);
-        }
-        else
-        {
-            await db.UpdateAsync(achievement);
-        }
-    }
-
     // ==================== Clear (für Restore) ====================
 
     public async Task ClearAllDataAsync()
@@ -850,10 +816,59 @@ public sealed class DatabaseService : IDatabaseService
         await db.DeleteAllAsync<WorkDay>();
         await db.DeleteAllAsync<Project>();
         await db.DeleteAllAsync<Employer>();
-        // Achievement-Tabelle existiert möglicherweise nicht bei älteren DBs
-        try { await db.DeleteAllAsync<Achievement>(); }
-        catch { /* Tabelle existiert noch nicht */ }
         // Settings werden NICHT gelöscht (werden beim Restore überschrieben)
+    }
+
+    // ==================== Bulk Restore (Batch-Transaction) ====================
+
+    public async Task BulkRestoreAsync(
+        List<WorkDay>? workDays,
+        List<TimeEntry>? timeEntries,
+        List<PauseEntry>? pauseEntries,
+        List<VacationEntry>? vacationEntries,
+        List<VacationQuota>? vacationQuotas,
+        List<Project>? projects,
+        List<Employer>? employers,
+        List<ShiftPattern>? shiftPatterns)
+    {
+        var db = await GetDatabaseAsync();
+
+        // Alles in einer Transaction: 1 Roundtrip statt 1000+ einzelne
+        // Reihenfolge: Stammdaten zuerst (Employer, Project), dann abhängige Tabellen
+        await db.RunInTransactionAsync(conn =>
+        {
+            if (employers != null)
+                foreach (var item in employers)
+                    conn.Insert(item);
+
+            if (projects != null)
+                foreach (var item in projects)
+                    conn.Insert(item);
+
+            if (workDays != null)
+                foreach (var item in workDays)
+                    conn.Insert(item);
+
+            if (timeEntries != null)
+                foreach (var item in timeEntries)
+                    conn.Insert(item);
+
+            if (pauseEntries != null)
+                foreach (var item in pauseEntries)
+                    conn.Insert(item);
+
+            if (vacationEntries != null)
+                foreach (var item in vacationEntries)
+                    conn.Insert(item);
+
+            if (vacationQuotas != null)
+                foreach (var item in vacationQuotas)
+                    conn.Insert(item);
+
+            if (shiftPatterns != null)
+                foreach (var item in shiftPatterns)
+                    conn.Insert(item);
+        });
     }
 
     // ==================== Backup methods ====================

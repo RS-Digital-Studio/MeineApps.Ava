@@ -4,7 +4,7 @@
 
 ## App-Beschreibung
 
-Zeiterfassung & Arbeitszeitmanagement mit Pausen, Kalender-Heatmap, Statistiken, Export, Urlaubsverwaltung, Feiertage (16 Bundeslaender), Projekten, Arbeitgebern und Schichtplanung.
+Zeiterfassung & Arbeitszeitmanagement mit Pausen, Kalender-Heatmap, Statistiken, Export, Urlaubsverwaltung, Feiertage (DE/AT/CH), Projekten, Arbeitgebern und Schichtplanung.
 
 **Version:** 2.0.6 | **Package-ID:** com.meineapps.worktimepro | **Status:** Geschlossener Test
 
@@ -21,9 +21,10 @@ Zeiterfassung & Arbeitszeitmanagement mit Pausen, Kalender-Heatmap, Statistiken,
 - **Zeiterfassung**: Check-in/out mit Pausen-Management, Auto-Pause
 - **Kalender-Heatmap**: Monatsuebersicht mit Status-Overlay (Urlaub, Krank, HomeOffice etc.)
 - **Statistiken**: Charts (SkiaSharp) + Tabelle, Taeglich/Woechentlich/Monatlich/Quartal/Jahr
-- **Export**: PDF, Excel (XLSX), CSV via PdfSharpCore + ClosedXML
+- **Export**: PDF, Excel (XLSX), CSV via PdfSharpCore + ClosedXML (Format-Auswahl-Overlay in StatisticsView)
 - **Urlaubsverwaltung**: 9 Status-Typen, Resturlaub, Uebertrag, Urlaubsanspruch
-- **Feiertage**: 16 deutsche Bundeslaender
+- **Feiertage**: Deutschland (16 Bundesländer), Österreich (9 Bundesländer), Schweiz (12 Kantone)
+- **§3 ArbZG Compliance**: 6-Monats-Durchschnitt darf 8h/Tag nicht überschreiten (Warnung in CheckLegalCompliance)
 - **Schichtplanung**: Wiederkehrende Muster mit Tagesnamen-Lokalisierung
 - **Projekte + Arbeitgeber**: CRUD mit Zuweisung zu Zeiteintraegen
 - **Smart Notifications**: 5 Reminder-Typen (Morgen/Abend/Pause/Überstunden/Wochenzusammenfassung), plattformübergreifend
@@ -31,32 +32,31 @@ Zeiterfassung & Arbeitszeitmanagement mit Pausen, Kalender-Heatmap, Statistiken,
 - **Stundenlohn**: Verdienst-Berechnung mit Anzeige auf TodayView
 - **Fortschrittsring**: Kreisförmiger Tages-Fortschritt um den Start/Stop-Button mit Puls-Animation (IsPulsing)
 - **Haptic Feedback**: Vibration bei CheckIn/CheckOut/Pause (Android)
-- **Streak-Anzeige**: Feuer-Icon + aufeinanderfolgende Arbeitstage (>=2) auf TodayView
 - **Wochenziel-Celebration**: Confetti + FloatingText wenn WeekProgress >= 100%
 - **Tab-Indikator**: Animierter farbiger Balken unter aktivem Tab (TransformOperationsTransition)
 - **Tab-Highlighting**: Aktiver Tab-Icon+Label in PrimaryBrush, Rest TextSecondaryBrush
-- **Achievement/Badge-System**: 10 Achievements (Stunden, Streaks, Perfekte Woche, Frühaufsteher, Überstundenkönig), DB-persistiert, Celebration bei Unlock
 - **Predictive Insights**: Wochenziel-Restzeit und Monatstrend auf WeekOverviewView (Insight-Card)
 - **Earnings-Ticker**: CountUp-Animation auf TodayView (800ms EaseOut) bei Earnings-Änderung
 - **Balance-Glow**: Pulsierende Opacity-Animation auf Balance-TextBlock bei negativer Balance (2s Zyklus)
+- **Tagesnotiz**: TextBox auf TodayView mit Auto-Save (1.5s Debounce), gespeichert in WorkDay.Note, lokalisiert in 6 Sprachen
+- **Export-Format-Auswahl**: Overlay in StatisticsView mit PDF/Excel/CSV-Buttons statt direktem PDF-Export
 
-### ViewModels & Views (12 VMs, 14 Views)
-MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOverview, YearOverview, Vacation, ShiftPlan, Achievement
+### ViewModels & Views (10 VMs, 12 Views)
+MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOverview, YearOverview, Vacation, ShiftPlan
 
 ## App-spezifische Services
 
 | Service | Zweck |
 |---------|-------|
 | IDatabaseService | SQLite (TimeEntry, WorkDay, PauseEntry, VacationEntry etc.) |
-| ICalculationService | Arbeitszeit-Berechnung, Auto-Pause, Saldo |
+| ICalculationService | Arbeitszeit-Berechnung, Auto-Pause, Saldo, §3 ArbZG 6-Monats-Durchschnitt |
 | ITimeTrackingService | Check-in/out Logik, Pausen-Management |
 | IExportService | PDF/Excel/CSV Export + FileShare |
 | IVacationService | Urlaubsverwaltung + 9 Status-Typen |
-| IHolidayService | Feiertagsberechnung (16 Bundeslaender) |
+| IHolidayService | Feiertagsberechnung (DE 16 Bundesländer, AT 9 Bundesländer, CH 12 Kantone) |
 | IProjectService | Projekt-Verwaltung |
 | IShiftService | Schichtplanung |
 | IEmployerService | Arbeitgeber-Verwaltung |
-| IAchievementService | Achievement/Badge-System (10 Achievements, DB-Persistenz, Unlock-Events) |
 | ICalendarSyncService | Kalender-Export (ICS) |
 | IBackupService | Backup/Restore |
 | INotificationService | Plattform-Notifications (Desktop: Toast/notify-send, Android: NotificationChannel + AlarmManager) |
@@ -127,6 +127,13 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 - **FloatingText**: "Feierabend!" bei CheckOut + optionale Ueberstunden-Anzeige ("+X.Xh")
 - **Celebration**: Confetti bei Feierabend (MainViewModel.ToggleTrackingAsync)
 
+## UI-Conventions
+
+- **Compiled Bindings**: Alle Views haben `x:CompileBindings="True"` + `x:DataType="vm:XxxViewModel"` → Compile-Time-Checks, kein Reflection
+- **StatusIconKind vs. StatusIcon**: `WorkDay.StatusIconKind` (MaterialIconKind) für `mi:MaterialIcon` verwenden. `WorkDay.StatusIcon` (MDI-Glyph-String) ist veraltet - keine MDI-Schriftart registriert → würde Tofu zeigen. WeekOverviewView + StatisticsView nutzen `StatusIconKind`.
+- **IsHitTestVisible für Overlays**: Bei ZIndex-Overlays über ScrollViewern → `IsHitTestVisible="{Binding !IsAnyOverlayVisible}"` auf dem ScrollViewer setzen. ViewModels mit Overlays müssen `IsAnyOverlayVisible` berechnete Property + partial OnXxxChanged Callbacks haben. Betroffen: DayDetailView, StatisticsView, VacationView, YearOverviewView.
+- **IsAnyOverlayVisible Pattern**: `public bool IsAnyOverlayVisible => Overlay1Visible || Overlay2Visible;` + `partial void OnOverlay1VisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));`
+
 ## Architektur-Hinweise
 
 - **DateTime-Konvention**: Arbeitszeiten (Check-in/out, Pausen) nutzen `DateTime.Now` (Ortszeit). Audit-Timestamps (CreatedAt/ModifiedAt) nutzen `DateTime.UtcNow`. Export-Footer und Backup-Dateinamen bleiben Ortszeit (menschenlesbar).
@@ -136,7 +143,7 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 
 - **Settings Auto-Save**: SettingsViewModel speichert automatisch per Debounce-Timer (800ms). Kein Speichern-Button. `ScheduleAutoSave()` wird von allen `OnXxxChanged` partial-Methods aufgerufen. `_isInitializing` Flag verhindert Speichern während `LoadDataAsync`.
 - **Tab-Reload**: MainViewModel.OnCurrentTabChanged lädt Daten für den jeweiligen Tab automatisch neu (LoadTabDataAsync). Stellt sicher, dass z.B. die Wochenansicht aktuelle Settings berücksichtigt.
-- **Loading-Pipeline**: `WorkTimeProLoadingPipeline` (in `Loading/`) führt echtes Preloading aus: DB-Init + Shader-Kompilierung parallel, dann Achievement, Reminder, ViewModel-Erstellung. `SkiaLoadingSplash` zeigt Fortschrittsring + Statustext. App.axaml.cs setzt DataContext erst nach Pipeline-Abschluss. MainViewModel exponiert `WaitForInitializationAsync()` für die Pipeline.
+- **Loading-Pipeline**: `WorkTimeProLoadingPipeline` (in `Loading/`) führt echtes Preloading aus: DB-Init + Shader-Kompilierung parallel, dann Reminder, ViewModel-Erstellung. `SkiaLoadingSplash` zeigt Fortschrittsring + Statustext. App.axaml.cs setzt DataContext erst nach Pipeline-Abschluss. MainViewModel exponiert `WaitForInitializationAsync()` für die Pipeline.
 - **Initiale Datenladung**: MainViewModel-Konstruktor speichert `_initTask = InitializeAsync()`. `WaitForInitializationAsync()` / `EnsureInitializedAsync()` wird in ToggleTracking/TogglePause und von der Loading-Pipeline aufgerufen um Race Conditions zu vermeiden.
 - **Sub-Seiten-Datenladung**: Alle Navigate-Commands (DayDetail, Month, Year, Vacation, ShiftPlan) sind async und awaiten `LoadDataAsync()` auf dem Ziel-VM.
 - **Settings-Propagation**: `SettingsViewModel.SettingsChanged` Event wird nach jedem `SaveSettingsAsync` gefeuert. MainViewModel subscribed darauf und lädt den aktiven Tab neu. Bei Arbeitszeit-relevanten Änderungen (DailyHours, WeeklyHours, Arbeitstage) wird eine Warnung angezeigt wenn bestehende WorkDays betroffen sind (`SettingsChangedWarning` RESX-Key).

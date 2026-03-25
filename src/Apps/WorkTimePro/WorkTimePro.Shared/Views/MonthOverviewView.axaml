@@ -6,6 +6,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="WorkTimePro.Views.MonthOverviewView"
              x:DataType="vm:MonthOverviewViewModel"
+             x:CompileBindings="True"
              Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Month_RootPanel">

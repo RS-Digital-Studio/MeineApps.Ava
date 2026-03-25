@@ -26,6 +26,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly IPurchaseService _purchaseService;
     private readonly IReminderService _reminderService;
     private readonly IBackupService _backupService;
+    private readonly IHolidayService _holidayService;
 
     private WorkSettings? _settings;
     private bool _disposed;
@@ -34,13 +35,17 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     private CancellationTokenSource? _autoSaveCts;
     private CancellationTokenSource? _reminderRescheduleCts;
 
+    // Region-Codes parallel zum Display-Array (für Speicherung)
+    private string[] _regionCodes = Array.Empty<string>();
+
     public SettingsViewModel(
         IDatabaseService database,
         ILocalizationService localization,
         ITrialService trialService,
         IPurchaseService purchaseService,
         IReminderService reminderService,
-        IBackupService backupService)
+        IBackupService backupService,
+        IHolidayService holidayService)
     {
         _database = database;
         _localization = localization;
@@ -48,6 +53,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         _purchaseService = purchaseService;
         _reminderService = reminderService;
         _backupService = backupService;
+        _holidayService = holidayService;
+
+        // Regionen aus HolidayService laden (DE + AT + CH)
+        var regions = _holidayService.GetAvailableRegions();
+        _regionCodes = regions.Select(r => r.Code).ToArray();
+        HolidayRegions = regions.Select(r => r.Name).ToArray();
 
         _purchaseService.PremiumStatusChanged += OnPurchaseStatusChanged;
     }
@@ -261,13 +272,10 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private int _selectedRegionIndex = 1; // Bayern
 
-    public string[] GermanRegions { get; } = new[]
-    {
-        "Baden-W\u00fcrttemberg", "Bayern", "Berlin", "Brandenburg", "Bremen",
-        "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen",
-        "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen",
-        "Sachsen-Anhalt", "Schleswig-Holstein", "Th\u00fcringen"
-    };
+    /// <summary>
+    /// Verfügbare Feiertags-Regionen (DE + AT + CH, geladen aus HolidayService)
+    /// </summary>
+    public string[] HolidayRegions { get; private set; } = Array.Empty<string>();
 
     // === Work time law ===
 
@@ -480,9 +488,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
             OvertimeWarningEnabled = _settings.OvertimeWarningEnabled;
             OvertimeWarningHours = _settings.OvertimeWarningHours;
 
-            // Holidays
-            var regionCode = _settings.HolidayRegion.Replace("DE-", "");
-            var regionIndex = Array.IndexOf(Enum.GetNames<GermanState>(), regionCode);
+            // Holidays - Region-Code im Array finden
+            var regionIndex = Array.IndexOf(_regionCodes, _settings.HolidayRegion);
             SelectedRegionIndex = regionIndex >= 0 ? regionIndex : 1;
 
             // Work time law
@@ -566,11 +573,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
             _settings.OvertimeWarningEnabled = OvertimeWarningEnabled;
             _settings.OvertimeWarningHours = OvertimeWarningHours;
 
-            // Holidays
-            var stateNames = Enum.GetNames<GermanState>();
-            var regionIdx = Math.Clamp(SelectedRegionIndex, 0, stateNames.Length - 1);
-            var stateName = stateNames[regionIdx];
-            _settings.HolidayRegion = $"DE-{stateName}";
+            // Holidays - Region-Code direkt aus Array
+            var regionIdx = Math.Clamp(SelectedRegionIndex, 0, _regionCodes.Length - 1);
+            _settings.HolidayRegion = _regionCodes[regionIdx];
 
             // Work time law
             _settings.LegalComplianceEnabled = LegalComplianceEnabled;
@@ -844,6 +849,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
         _autoSaveCts?.Cancel();
         _autoSaveCts?.Dispose();
+        _reminderRescheduleCts?.Cancel();
+        _reminderRescheduleCts?.Dispose();
         _purchaseService.PremiumStatusChanged -= OnPurchaseStatusChanged;
         GC.SuppressFinalize(this);
     }

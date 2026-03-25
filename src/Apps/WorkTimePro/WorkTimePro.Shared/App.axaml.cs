@@ -117,8 +117,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            // Mindestens 2s anzeigen damit die Stechuhr-Animation sichtbar ist
-            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 800ms anzeigen damit die Stechuhr-Animation sichtbar ist
+            var remaining = 800 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             // DataContext setzen (ViewModel wurde in Pipeline erstellt)
@@ -191,9 +191,6 @@ public partial class App : Application
         services.AddSingleton<ICalendarSyncService, CalendarSyncService>();
         services.AddSingleton<IBackupService, BackupService>();
 
-        // Achievement Service
-        services.AddSingleton<IAchievementService, AchievementService>();
-
         // Notification + Reminder Services
         if (NotificationServiceFactory != null)
             services.AddSingleton(NotificationServiceFactory());
@@ -208,7 +205,6 @@ public partial class App : Application
             services.AddSingleton<IHapticService, NoOpHapticService>();
 
         // ViewModels (alle Singleton - MainVM hält Child-VMs per Constructor Injection)
-        services.AddSingleton<AchievementViewModel>();
         services.AddSingleton<WeekOverviewViewModel>();
         services.AddSingleton<CalendarViewModel>();
         services.AddSingleton<StatisticsViewModel>();

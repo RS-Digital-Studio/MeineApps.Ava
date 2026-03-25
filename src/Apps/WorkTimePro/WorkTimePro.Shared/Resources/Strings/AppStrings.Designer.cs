@@ -2484,15 +2484,6 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die days ähnelt.
-        /// </summary>
-        internal static string DayStreak {
-            get {
-                return ResourceManager.GetString("DayStreak", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die per hour ähnelt.
         /// </summary>
         internal static string PerHour {
@@ -2513,102 +2504,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string AbsenceOverview {
             get {
                 return ResourceManager.GetString("AbsenceOverview", resourceCulture);
-            }
-        }
-
-        internal static string Achievements {
-            get {
-                return ResourceManager.GetString("Achievements", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Night Owl ähnelt.
-        /// </summary>
-        internal static string Achievement_night_owl_Name {
-            get {
-                return ResourceManager.GetString("Achievement_night_owl_Name", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Check out after 20:00 ten times ähnelt.
-        /// </summary>
-        internal static string Achievement_night_owl_Desc {
-            get {
-                return ResourceManager.GetString("Achievement_night_owl_Desc", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Marathon Day ähnelt.
-        /// </summary>
-        internal static string Achievement_marathon_Name {
-            get {
-                return ResourceManager.GetString("Achievement_marathon_Name", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Work 10+ hours in a single day ähnelt.
-        /// </summary>
-        internal static string Achievement_marathon_Desc {
-            get {
-                return ResourceManager.GetString("Achievement_marathon_Desc", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Half Year ähnelt.
-        /// </summary>
-        internal static string Achievement_half_year_Name {
-            get {
-                return ResourceManager.GetString("Achievement_half_year_Name", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Log 130 work days ähnelt.
-        /// </summary>
-        internal static string Achievement_half_year_Desc {
-            get {
-                return ResourceManager.GetString("Achievement_half_year_Desc", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Full Year ähnelt.
-        /// </summary>
-        internal static string Achievement_full_year_Name {
-            get {
-                return ResourceManager.GetString("Achievement_full_year_Name", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Log 250 work days ähnelt.
-        /// </summary>
-        internal static string Achievement_full_year_Desc {
-            get {
-                return ResourceManager.GetString("Achievement_full_year_Desc", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Pause Master ähnelt.
-        /// </summary>
-        internal static string Achievement_pause_master_Name {
-            get {
-                return ResourceManager.GetString("Achievement_pause_master_Name", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Take 50 breaks ähnelt.
-        /// </summary>
-        internal static string Achievement_pause_master_Desc {
-            get {
-                return ResourceManager.GetString("Achievement_pause_master_Desc", resourceCulture);
             }
         }
 
@@ -2705,6 +2600,78 @@ namespace WorkTimePro.Resources.Strings {
         internal static string ImportBackup {
             get {
                 return ResourceManager.GetString("ImportBackup", resourceCulture);
+            }
+        }
+
+        internal static string SelectStatus {
+            get {
+                return ResourceManager.GetString("SelectStatus", resourceCulture);
+            }
+        }
+
+        internal static string ExportFormat {
+            get {
+                return ResourceManager.GetString("ExportFormat", resourceCulture);
+            }
+        }
+
+        internal static string ExportPdfDesc {
+            get {
+                return ResourceManager.GetString("ExportPdfDesc", resourceCulture);
+            }
+        }
+
+        internal static string ExportExcelDesc {
+            get {
+                return ResourceManager.GetString("ExportExcelDesc", resourceCulture);
+            }
+        }
+
+        internal static string ExportCsvDesc {
+            get {
+                return ResourceManager.GetString("ExportCsvDesc", resourceCulture);
+            }
+        }
+
+        internal static string DayNote {
+            get {
+                return ResourceManager.GetString("DayNote", resourceCulture);
+            }
+        }
+
+        internal static string DayNotePlaceholder {
+            get {
+                return ResourceManager.GetString("DayNotePlaceholder", resourceCulture);
+            }
+        }
+
+        internal static string CloudBackupNotAvailable {
+            get {
+                return ResourceManager.GetString("CloudBackupNotAvailable", resourceCulture);
+            }
+        }
+
+        internal static string ComingSoon {
+            get {
+                return ResourceManager.GetString("ComingSoon", resourceCulture);
+            }
+        }
+
+        internal static string LocalBackup {
+            get {
+                return ResourceManager.GetString("LocalBackup", resourceCulture);
+            }
+        }
+
+        internal static string CloudBackup {
+            get {
+                return ResourceManager.GetString("CloudBackup", resourceCulture);
+            }
+        }
+
+        internal static string WarningSixMonthAvgExceeds {
+            get {
+                return ResourceManager.GetString("WarningSixMonthAvgExceeds", resourceCulture);
             }
         }
     }

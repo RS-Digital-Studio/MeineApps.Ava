@@ -1,0 +1,329 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerRechner.ViewModels.Premium"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             x:Class="HandwerkerRechner.Views.Premium.HourlyRateView"
+             x:DataType="vm:HourlyRateViewModel"
+             Background="Transparent">
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        AutomationProperties.AutomationId="HourlyRate_RootGrid">
+
+    <!-- Zeile 0: Header -->
+    <Border Grid.Row="0"
+            Background="{DynamicResource AccentBrush}"
+            Padding="16,12,16,20"
+            CornerRadius="0,0,24,24"
+            AutomationProperties.AutomationId="HourlyRate_HeaderBorder">
+      <Grid ColumnDefinitions="Auto,*">
+        <Button Command="{Binding GoBackCommand}"
+                Background="#33FFFFFF"
+                CornerRadius="20"
+                Width="40" Height="40"
+                Padding="0"
+                AutomationProperties.Name="Zurück"
+                AutomationProperties.AutomationId="HourlyRate_BtnBack">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
+        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                    Margin="12,0,0,0" VerticalAlignment="Center">
+          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+            <mi:MaterialIcon Kind="CurrencyEur" Width="22" Height="22"
+                             Foreground="White"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{Binding PageTitle}"
+                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     VerticalAlignment="Center"
+                     TextWrapping="Wrap"
+                     AutomationProperties.AutomationId="HourlyRate_TxtTitle" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Zeile 1: Scrollbarer Inhalt -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  AutomationProperties.AutomationId="HourlyRate_ScrollViewer">
+      <StackPanel Spacing="16" Margin="16,16,16,120">
+
+        <!-- Eingabe-Card: Stundensatz & Zeiten -->
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="HourlyRate_CardTimeInput">
+          <i:Interaction.Behaviors>
+            <behaviors:FadeInBehavior Duration="250" />
+          </i:Interaction.Behaviors>
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate WorkTime}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <!-- Stundensatz -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding HourlyRateLabel}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding HourlyRate}" Watermark="€/h" Classes="Outlined"
+                       AutomationProperties.AutomationId="HourlyRate_TxtBoxHourlyRate" />
+            </StackPanel>
+
+            <!-- Arbeitszeit -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding WorkHoursLabel}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding WorkHours}" Watermark="h" Classes="Outlined"
+                       AutomationProperties.AutomationId="HourlyRate_TxtBoxWorkHours" />
+            </StackPanel>
+
+            <!-- Pause -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding BreakMinutesLabel}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding BreakMinutes}" Watermark="min" Classes="Outlined"
+                       AutomationProperties.AutomationId="HourlyRate_TxtBoxBreakMinutes" />
+            </StackPanel>
+
+            <!-- Mitarbeiter -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding WorkerCountLabel}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding Workers}" Watermark="1" Classes="Outlined"
+                       AutomationProperties.AutomationId="HourlyRate_TxtBoxWorkers" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Eingabe-Card: Aufschläge -->
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="HourlyRate_CardMarkupInput">
+          <i:Interaction.Behaviors>
+            <behaviors:FadeInBehavior Duration="300" />
+          </i:Interaction.Behaviors>
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate Markups}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <!-- Overhead -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding OverheadPercentLabel}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding OverheadPercent}" Watermark="%" Classes="Outlined"
+                       AutomationProperties.AutomationId="HourlyRate_TxtBoxOverhead" />
+            </StackPanel>
+
+            <!-- MwSt -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding VatPercentLabel}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding VatPercent}" Watermark="%" Classes="Outlined"
+                       AutomationProperties.AutomationId="HourlyRate_TxtBoxVat" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Visualisierung -->
+        <Border Classes="Card" Padding="0" Height="220"
+                IsVisible="{Binding HasResult}" ClipToBounds="True" CornerRadius="12"
+                AutomationProperties.AutomationId="HourlyRate_CardVisualization">
+          <skia:SKCanvasView x:Name="HourlyRateCanvas" PaintSurface="OnPaintVisualization"
+                             AutomationProperties.AutomationId="HourlyRate_Canvas" />
+        </Border>
+
+        <!-- Ergebnis-Card -->
+        <Border Classes="Card Elevated StatsCard"
+                IsVisible="{Binding HasResult}"
+                AutomationProperties.AutomationId="HourlyRate_CardResult">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate Result}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource PrimaryBrush}"
+                       AutomationProperties.AutomationId="HourlyRate_TxtResultHeader" />
+
+            <!-- Hero-Value: Gesamtbetrag brutto -->
+            <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                    Margin="0,4,0,8">
+              <StackPanel>
+                <TextBlock Text="{Binding TotalGrossLabel}" FontSize="12" Foreground="#CCFFFFFF" />
+                <TextBlock Text="{Binding TotalGross, StringFormat='{}{0:F2} €'}"
+                           FontSize="28" FontWeight="Bold" Foreground="White"
+                           AutomationProperties.AutomationId="HourlyRate_TxtTotalGross" />
+              </StackPanel>
+            </Border>
+
+            <!-- Effektive Arbeitszeit -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding NetWorkHoursLabel}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap" />
+              <TextBlock Grid.Column="1" Text="{Binding NetWorkHours, StringFormat='{}{0:F2} h'}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="HourlyRate_TxtNetWorkHours" />
+            </Grid>
+
+            <!-- Lohnkosten netto -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding NetLaborCostLabel}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap" />
+              <TextBlock Grid.Column="1" Text="{Binding NetLaborCost, StringFormat='{}{0:F2} €'}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="HourlyRate_TxtNetLaborCost" />
+            </Grid>
+
+            <!-- Aufschlag -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding OverheadAmountLabel}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap" />
+              <TextBlock Grid.Column="1" Text="{Binding OverheadAmount, StringFormat='{}{0:F2} €'}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="HourlyRate_TxtOverheadAmount" />
+            </Grid>
+
+            <!-- Gesamt netto -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding TotalNetLabel}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap" />
+              <TextBlock Grid.Column="1" Text="{Binding TotalNet, StringFormat='{}{0:F2} €'}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="HourlyRate_TxtTotalNet" />
+            </Grid>
+
+            <!-- MwSt-Betrag -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding VatAmountLabel}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap" />
+              <TextBlock Grid.Column="1" Text="{Binding VatAmount, StringFormat='{}{0:F2} €'}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="HourlyRate_TxtVatAmount" />
+            </Grid>
+
+            <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4" />
+
+            <!-- Aktions-Buttons -->
+            <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+              <Button Grid.Column="0"
+                      Command="{Binding CopyResultCommand}"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      AutomationProperties.Name="Ergebnis kopieren"
+                      AutomationProperties.AutomationId="HourlyRate_BtnCopy">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="ContentCopy" Width="18" Height="18"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ShareResult}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="2"
+                      Command="{Binding ExportPdfCommand}"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      AutomationProperties.Name="PDF exportieren"
+                      AutomationProperties.AutomationId="HourlyRate_BtnExport">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ExportMaterialList}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+                      <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
+                        <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                         Foreground="{DynamicResource AccentBrush}" />
+                      </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Zeile 2: Aktions-Buttons unten -->
+    <Border Grid.Row="2" Padding="16,12" Background="{DynamicResource BackgroundBrush}"
+            AutomationProperties.AutomationId="HourlyRate_BottomBar">
+      <Grid ColumnDefinitions="*,8,*,8,*">
+        <Button Grid.Column="0"
+                Classes="Outlined"
+                Command="{Binding CalculateCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                AutomationProperties.Name="Berechnen"
+                AutomationProperties.AutomationId="HourlyRate_BtnCalculate">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Calculator" Width="18" Height="18"
+                             Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="{loc:Translate Calculate}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="2"
+                Classes="Primary"
+                Command="{Binding OpenSaveDialogCommand}"
+                IsVisible="{Binding HasResult}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                AutomationProperties.Name="Projekt speichern"
+                AutomationProperties.AutomationId="HourlyRate_BtnSave">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />
+            <TextBlock Text="{loc:Translate Save}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- Speichern-Dialog Overlay -->
+    <Border Grid.Row="0" Grid.RowSpan="3"
+            Background="#80000000"
+            IsVisible="{Binding ShowSaveDialog}"
+            AutomationProperties.AutomationId="HourlyRate_SaveDialogOverlay">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="340"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              AutomationProperties.AutomationId="HourlyRate_SaveDialogCard">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{loc:Translate SaveProject}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="HourlyRate_TxtSaveDialogTitle" />
+          <TextBox Text="{Binding SaveProjectName}"
+                   Watermark="{loc:Translate ProjectName}"
+                   Classes="Outlined"
+                   AutomationProperties.AutomationId="HourlyRate_TxtBoxProjectName" />
+          <Grid ColumnDefinitions="*,12,*">
+            <Button Grid.Column="0"
+                    Classes="Outlined"
+                    Command="{Binding CancelSaveDialogCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate Cancel}"
+                    AutomationProperties.AutomationId="HourlyRate_BtnCancelSave" />
+            <Button Grid.Column="2"
+                    Classes="Primary"
+                    Command="{Binding ConfirmSaveProjectCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate Save}"
+                    AutomationProperties.AutomationId="HourlyRate_BtnConfirmSave" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+
+  </Grid>
+
+</UserControl>

@@ -164,4 +164,56 @@ public sealed class MaterialExportService : IMaterialExportService
             return filePath;
         });
     }
+
+    public Task<string> ExportToCsvAsync(string calculatorType, Dictionary<string, string> inputs, Dictionary<string, string> results)
+    {
+        return Task.Run(() =>
+        {
+            var sb = new System.Text.StringBuilder();
+
+            // UTF-8 BOM + Excel-Semikolon-Direktive
+            sb.AppendLine("sep=;");
+
+            // Header
+            sb.AppendLine($"Typ;{calculatorType}");
+            sb.AppendLine($"Datum;{DateTime.Now:dd.MM.yyyy HH:mm}");
+            sb.AppendLine();
+
+            // Eingaben
+            var inputsLabel = _localization.GetString("RoomDimensions") ?? "Eingaben";
+            sb.AppendLine($"{inputsLabel};;");
+            sb.AppendLine("Parameter;Wert");
+            foreach (var input in inputs)
+                sb.AppendLine($"{EscapeCsv(input.Key)};{EscapeCsv(input.Value)}");
+
+            sb.AppendLine();
+
+            // Ergebnisse
+            var resultLabel = _localization.GetString("Result") ?? "Ergebnisse";
+            sb.AppendLine($"{resultLabel};;");
+            sb.AppendLine("Ergebnis;Wert");
+            foreach (var result in results)
+                sb.AppendLine($"{EscapeCsv(result.Key)};{EscapeCsv(result.Value)}");
+
+            // Speichern mit UTF-8 BOM
+            var exportDir = _fileShareService.GetExportDirectory("HandwerkerRechner");
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var safeCalcType = string.Join("_", calculatorType.Split(Path.GetInvalidFileNameChars()));
+            var fileName = $"{safeCalcType}_{timestamp}.csv";
+            var filePath = Path.Combine(exportDir, fileName);
+
+            File.WriteAllText(filePath, sb.ToString(), new System.Text.UTF8Encoding(true));
+
+            return filePath;
+        });
+    }
+
+    /// <summary>Escapet CSV-Werte die Semikolons oder Anführungszeichen enthalten</summary>
+    private static string EscapeCsv(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        return value;
+    }
 }

@@ -8,13 +8,14 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
 /// <summary>
 /// ViewModel für den Fugenmasse-Rechner (Fläche, Fliesenmaße, Fugenbreite, Fugentiefe → kg, Eimer, Kosten)
 /// </summary>
-public sealed partial class GroutViewModel : ViewModelBase, IDisposable
+public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;
@@ -25,6 +26,7 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     public event Action<string>? NavigationRequested;
@@ -41,7 +43,8 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _engine = engine;
         _projectService = projectService;
@@ -51,6 +54,10 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
+
+        // Standard-Materialpreis laden
+        PricePerKg = _priceService.GetPrice("grout_standard")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -321,6 +328,53 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Fehler", _localization.GetString("PdfExportFailed") ?? "Export fehlgeschlagen.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = _localization.GetString("CalcGrout") ?? "Fugenmasse";
+            var inputs = new Dictionary<string, string>
+            {
+                [_localization.GetString("GroutArea") ?? "Fl\u00e4che"] = $"{AreaSqm:F1} m\u00b2",
+                [_localization.GetString("GroutTileSize") ?? "Fliesengr\u00f6\u00dfe"] = $"{TileLengthCm:F0} \u00d7 {TileWidthCm:F0} cm",
+                [_localization.GetString("GroutWidth") ?? "Fugenbreite"] = $"{GroutWidthMm:F1} mm",
+                [_localization.GetString("GroutDepth") ?? "Fugentiefe"] = $"{GroutDepthMm:F1} mm"
+            };
+
+            var results = new Dictionary<string, string>
+            {
+                [_localization.GetString("GroutConsumption") ?? "Verbrauch"] = ConsumptionDisplay,
+                [_localization.GetString("GroutTotal") ?? "Gesamt"] = TotalWithReserveDisplay,
+                [_localization.GetString("UnitBuckets") ?? "Eimer"] = BucketsDisplay,
+                [_localization.GetString("ResultCost") ?? "Kosten"] = CostDisplay
+            };
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Erfolg", _localization.GetString("PdfExportSuccess") ?? "PDF exportiert!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Fehler", _localization.GetString("CsvExportFailed") ?? "Export fehlgeschlagen.");
         }
         finally
         {

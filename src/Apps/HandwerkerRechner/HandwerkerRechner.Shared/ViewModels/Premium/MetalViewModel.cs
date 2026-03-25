@@ -8,10 +8,11 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
-public sealed partial class MetalViewModel : ViewModelBase, IDisposable
+public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;
@@ -22,6 +23,7 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     public event Action<string>? NavigationRequested;
@@ -38,7 +40,8 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _engine = engine;
         _projectService = projectService;
@@ -48,6 +51,10 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
+
+        // Standard-Materialpreis laden
+        PricePerKg = _priceService.GetPrice("steel_flat")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -525,6 +532,62 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = Calculators[SelectedCalculator];
+            var inputs = new Dictionary<string, string>();
+            var results = new Dictionary<string, string>();
+
+            switch (SelectedCalculator)
+            {
+                case 0 when WeightResult != null:
+                    inputs[_localization.GetString("LabelMetal") ?? "Metal"] = Metals[SelectedMetal];
+                    inputs[_localization.GetString("LabelProfile") ?? "Profile"] = Profiles[SelectedProfile];
+                    inputs[_localization.GetString("LabelLengthM") ?? "Length"] = $"{Length:F2} m";
+                    inputs[_localization.GetString("LabelDimension1Mm") ?? "Dim 1"] = $"{Dimension1} mm";
+                    results[_localization.GetString("ResultWeight") ?? "Weight"] = $"{WeightResult.Weight:F2} kg";
+                    results[_localization.GetString("ResultVolume") ?? "Volume"] = $"{WeightResult.Volume:F4} cm\u00b3";
+                    if (PricePerKg > 0)
+                        results[_localization.GetString("ResultMaterialCost") ?? "Cost"] = $"{WeightResult.Weight * PricePerKg:F2} {_localization.GetString("CurrencySymbol")}";
+                    break;
+                case 1 when ThreadResult != null:
+                    inputs[_localization.GetString("LabelThreadSize") ?? "Thread"] = ThreadSizes[SelectedThread];
+                    results[_localization.GetString("ResultThread") ?? "Thread"] = ThreadSizes[SelectedThread];
+                    results[_localization.GetString("ResultCoreDrill") ?? "Core drill"] = $"{ThreadResult.DrillSize:F2} mm";
+                    break;
+                default:
+                    return;
+            }
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "Export failed.");
         }
         finally
         {

@@ -1864,4 +1864,293 @@ Valores típicos:
   <data name="SplashStep_Starting" xml:space="preserve">
     <value>Iniciando app</value>
   </data>
+
+  <!-- Favoriten -->
+  <data name="FavoritesTitle" xml:space="preserve">
+    <value>Acceso rápido</value>
+  </data>
+  <data name="FavoriteAdded" xml:space="preserve">
+    <value>Añadido a favoritos</value>
+  </data>
+  <data name="FavoriteRemoved" xml:space="preserve">
+    <value>Eliminado de favoritos</value>
+  </data>
+
+  <!-- Stundenrechner -->
+  <data name="CalcHourlyRate" xml:space="preserve">
+    <value>Tarifa horaria</value>
+  </data>
+  <data name="CalcHourlyRateDesc" xml:space="preserve">
+    <value>Trabajo + recargo + IVA</value>
+  </data>
+  <data name="HourlyRate" xml:space="preserve">
+    <value>Tarifa (€/h)</value>
+  </data>
+  <data name="WorkHours" xml:space="preserve">
+    <value>Horas de trabajo (h)</value>
+  </data>
+  <data name="BreakMinutes" xml:space="preserve">
+    <value>Descanso (min)</value>
+  </data>
+  <data name="OverheadPercent" xml:space="preserve">
+    <value>Recargo (%)</value>
+  </data>
+  <data name="VatPercent" xml:space="preserve">
+    <value>IVA (%)</value>
+  </data>
+  <data name="WorkerCount" xml:space="preserve">
+    <value>Trabajadores</value>
+  </data>
+  <data name="NetWorkHours" xml:space="preserve">
+    <value>Horas efectivas</value>
+  </data>
+  <data name="NetLaborCost" xml:space="preserve">
+    <value>Coste laboral neto</value>
+  </data>
+  <data name="OverheadAmount" xml:space="preserve">
+    <value>Recargo</value>
+  </data>
+  <data name="TotalNet" xml:space="preserve">
+    <value>Total neto</value>
+  </data>
+  <data name="VatAmount" xml:space="preserve">
+    <value>Importe IVA</value>
+  </data>
+  <data name="TotalGross" xml:space="preserve">
+    <value>Total bruto</value>
+  </data>
+
+  <!-- Material-Vergleich -->
+  <data name="CalcMaterialCompare" xml:space="preserve">
+    <value>Comparación de material</value>
+  </data>
+  <data name="CalcMaterialCompareDesc" xml:space="preserve">
+    <value>Comparación A/B</value>
+  </data>
+  <data name="ProductA" xml:space="preserve">
+    <value>Producto A</value>
+  </data>
+  <data name="ProductB" xml:space="preserve">
+    <value>Producto B</value>
+  </data>
+  <data name="ProductName" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="PricePerUnit" xml:space="preserve">
+    <value>Precio por unidad (€)</value>
+  </data>
+  <data name="ConsumptionPerSqm" xml:space="preserve">
+    <value>Consumo por m²</value>
+  </data>
+  <data name="Savings" xml:space="preserve">
+    <value>Ahorro</value>
+  </data>
+  <data name="CheaperOption" xml:space="preserve">
+    <value>Opción más barata</value>
+  </data>
+
+  <!-- Aufmaß-Rechner -->
+  <data name="CalcAreaMeasure" xml:space="preserve">
+    <value>Medición de área</value>
+  </data>
+  <data name="CalcAreaMeasureDesc" xml:space="preserve">
+    <value>Forma L, trapecio y más</value>
+  </data>
+  <data name="ShapeRectangle" xml:space="preserve">
+    <value>Rectángulo</value>
+  </data>
+  <data name="ShapeLShape" xml:space="preserve">
+    <value>Forma L</value>
+  </data>
+  <data name="ShapeTShape" xml:space="preserve">
+    <value>Forma T</value>
+  </data>
+  <data name="ShapeTrapezoid" xml:space="preserve">
+    <value>Trapecio</value>
+  </data>
+  <data name="ShapeTriangle" xml:space="preserve">
+    <value>Triángulo</value>
+  </data>
+  <data name="ShapeCircle" xml:space="preserve">
+    <value>Círculo</value>
+  </data>
+  <data name="AddArea" xml:space="preserve">
+    <value>Añadir área parcial</value>
+  </data>
+  <data name="CopyArea" xml:space="preserve">
+    <value>Copiar área</value>
+  </data>
+  <data name="AreaParts" xml:space="preserve">
+    <value>Áreas parciales</value>
+  </data>
+  <data name="CurrentArea" xml:space="preserve">
+    <value>Área actual</value>
+  </data>
+  <data name="Diameter" xml:space="preserve">
+    <value>Diámetro (m)</value>
+  </data>
+  <data name="BaseA" xml:space="preserve">
+    <value>Lado a (m)</value>
+  </data>
+  <data name="HeightTriangle" xml:space="preserve">
+    <value>Altura (m)</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>Forma</value>
+  </data>
+
+  <!-- Business/Angebote -->
+  <data name="SectionBusiness" xml:space="preserve">
+    <value>Negocio</value>
+  </data>
+  <data name="Quotes" xml:space="preserve">
+    <value>Presupuestos</value>
+  </data>
+  <data name="NewQuote" xml:space="preserve">
+    <value>Nuevo presupuesto</value>
+  </data>
+  <data name="QuoteNumber" xml:space="preserve">
+    <value>Número de presupuesto</value>
+  </data>
+  <data name="CustomerName" xml:space="preserve">
+    <value>Nombre del cliente</value>
+  </data>
+  <data name="CustomerAddress" xml:space="preserve">
+    <value>Dirección</value>
+  </data>
+  <data name="ProjectDescription" xml:space="preserve">
+    <value>Descripción del proyecto</value>
+  </data>
+  <data name="ValidUntil" xml:space="preserve">
+    <value>Válido hasta</value>
+  </data>
+  <data name="QuoteItems" xml:space="preserve">
+    <value>Partidas</value>
+  </data>
+  <data name="AddItem" xml:space="preserve">
+    <value>Añadir partida</value>
+  </data>
+  <data name="ItemDescription" xml:space="preserve">
+    <value>Descripción</value>
+  </data>
+  <data name="ItemUnit" xml:space="preserve">
+    <value>Unidad</value>
+  </data>
+  <data name="ItemQuantity" xml:space="preserve">
+    <value>Cantidad</value>
+  </data>
+  <data name="ItemUnitPrice" xml:space="preserve">
+    <value>Precio unitario (€)</value>
+  </data>
+  <data name="SubtotalNet" xml:space="preserve">
+    <value>Subtotal neto</value>
+  </data>
+  <data name="MarginPercent" xml:space="preserve">
+    <value>Margen (%)</value>
+  </data>
+  <data name="ExportQuote" xml:space="preserve">
+    <value>Exportar presupuesto</value>
+  </data>
+  <data name="QuoteExported" xml:space="preserve">
+    <value>Presupuesto exportado!</value>
+  </data>
+  <data name="QuoteSaved" xml:space="preserve">
+    <value>Presupuesto guardado!</value>
+  </data>
+  <data name="QuoteDeleted" xml:space="preserve">
+    <value>Presupuesto eliminado</value>
+  </data>
+  <data name="ItemTypeMaterial" xml:space="preserve">
+    <value>Material</value>
+  </data>
+  <data name="ItemTypeLabor" xml:space="preserve">
+    <value>Trabajo</value>
+  </data>
+  <data name="ItemTypeOther" xml:space="preserve">
+    <value>Otros</value>
+  </data>
+
+  <!-- Vorlagen -->
+  <data name="ProjectTemplates" xml:space="preserve">
+    <value>Plantillas</value>
+  </data>
+  <data name="BuiltinTemplates" xml:space="preserve">
+    <value>Plantillas integradas</value>
+  </data>
+  <data name="CustomTemplates" xml:space="preserve">
+    <value>Plantillas personalizadas</value>
+  </data>
+  <data name="ApplyTemplate" xml:space="preserve">
+    <value>Aplicar plantilla</value>
+  </data>
+  <data name="TemplateApplied" xml:space="preserve">
+    <value>Plantilla aplicada!</value>
+  </data>
+  <data name="NoCustomTemplates" xml:space="preserve">
+    <value>Sin plantillas personalizadas</value>
+  </data>
+  <data name="TemplateDeleted" xml:space="preserve">
+    <value>Plantilla eliminada</value>
+  </data>
+  <data name="TemplateBathroom" xml:space="preserve">
+    <value>Alicatar baño</value>
+  </data>
+  <data name="TemplateBathroomDesc" xml:space="preserve">
+    <value>Azulejos + lechada para baño estándar</value>
+  </data>
+  <data name="TemplateLivingRoom" xml:space="preserve">
+    <value>Pintar salón</value>
+  </data>
+  <data name="TemplateLivingRoomDesc" xml:space="preserve">
+    <value>Cálculo de pintura + papel</value>
+  </data>
+  <data name="TemplateGarden" xml:space="preserve">
+    <value>Pavimentar jardín</value>
+  </data>
+  <data name="TemplateGardenDesc" xml:space="preserve">
+    <value>Adoquines para zona de jardín</value>
+  </data>
+  <data name="TemplateDrywall" xml:space="preserve">
+    <value>Tabique de pladur</value>
+  </data>
+  <data name="TemplateDrywallDesc" xml:space="preserve">
+    <value>Doble cara con perfiles CW75</value>
+  </data>
+  <data name="TemplateFlooring" xml:space="preserve">
+    <value>Renovación de suelo</value>
+  </data>
+  <data name="TemplateFlooringDesc" xml:space="preserve">
+    <value>Cálculo laminado + solera</value>
+  </data>
+  <data name="TemplateEmpty" xml:space="preserve">
+    <value>La plantilla no contiene calculadoras</value>
+  </data>
+
+  <!-- CSV/Export -->
+  <data name="ExportCsv" xml:space="preserve">
+    <value>Exportar como CSV</value>
+  </data>
+  <data name="CsvExportSuccess" xml:space="preserve">
+    <value>CSV exportado!</value>
+  </data>
+
+  <!-- CalculatorType für neue Rechner -->
+  <data name="CalcTypeHourlyRate" xml:space="preserve">
+    <value>Tarifa horaria</value>
+  </data>
+  <data name="CalcTypeMaterialCompare" xml:space="preserve">
+    <value>Comparación de material</value>
+  </data>
+  <data name="CalcTypeAreaMeasure" xml:space="preserve">
+    <value>Medición de área</value>
+  </data>
+  <data name="CsvExportFailed" xml:space="preserve">
+    <value>Error al exportar CSV</value>
+  </data>
+  <data name="ProjectPhotos" xml:space="preserve">
+    <value>Fotos del proyecto</value>
+  </data>
+  <data name="MaxPhotosReached" xml:space="preserve">
+    <value>Máximo 5 fotos por proyecto</value>
+  </data>
 </root>

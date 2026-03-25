@@ -29,6 +29,12 @@ public class Project
     /// <summary>Letzte Änderung</summary>
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
 
+    /// <summary>Freitext-Notizen zum Projekt (Besonderheiten, Aufmaß-Details)</summary>
+    public string Notes { get; set; } = string.Empty;
+
+    /// <summary>Foto-Dateipfade (max. 5 pro Projekt)</summary>
+    public List<string> PhotoPaths { get; set; } = [];
+
     // Cache für deserialisierte Daten (vermeidet wiederholte Deserialisierung)
     [System.Text.Json.Serialization.JsonIgnore]
     private Dictionary<string, object>? _cachedData;

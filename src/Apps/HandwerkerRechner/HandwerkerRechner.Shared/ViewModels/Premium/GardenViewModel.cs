@@ -8,10 +8,11 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
-public sealed partial class GardenViewModel : ViewModelBase, IDisposable
+public sealed partial class GardenViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;
@@ -22,6 +23,7 @@ public sealed partial class GardenViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     public event Action<string>? NavigationRequested;
@@ -38,7 +40,8 @@ public sealed partial class GardenViewModel : ViewModelBase, IDisposable
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _engine = engine;
         _projectService = projectService;
@@ -48,6 +51,12 @@ public sealed partial class GardenViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
+
+        // Standard-Materialpreise laden
+        PricePerStone = _priceService.GetPrice("paving_standard")?.EffectivePrice ?? 0;
+        PricePerBag = _priceService.GetPrice("soil_bag")?.EffectivePrice ?? 0;
+        PricePerSqmLiner = _priceService.GetPrice("pond_liner")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -666,6 +675,74 @@ public sealed partial class GardenViewModel : ViewModelBase, IDisposable
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = Calculators[SelectedCalculator];
+            var inputs = new Dictionary<string, string>();
+            var results = new Dictionary<string, string>();
+
+            switch (SelectedCalculator)
+            {
+                case 0 when PavingResult != null:
+                    inputs[_localization.GetString("LabelAreaSqm") ?? "Area"] = $"{PavingArea:F1} m\u00b2";
+                    inputs[_localization.GetString("LabelStoneLengthCm") ?? "Stone length"] = $"{StoneLength} cm";
+                    inputs[_localization.GetString("LabelStoneWidthCm") ?? "Stone width"] = $"{StoneWidth} cm";
+                    results[_localization.GetString("ResultStonesNeeded") ?? "Stones"] = $"{PavingResult.StonesNeeded}";
+                    results[_localization.GetString("ResultWithReserveFivePercent") ?? "+5%"] = $"{PavingResult.StonesWithReserve}";
+                    if (PricePerStone > 0)
+                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{PavingResult.StonesWithReserve * PricePerStone:F2} {_localization.GetString("CurrencySymbol")}";
+                    break;
+                case 1 when SoilResult != null:
+                    inputs[_localization.GetString("LabelAreaSqm") ?? "Area"] = $"{SoilArea:F1} m\u00b2";
+                    inputs[_localization.GetString("LabelDepthCm") ?? "Depth"] = $"{SoilDepth} cm";
+                    results[_localization.GetString("ResultVolumeNeeded") ?? "Volume"] = $"{SoilResult.VolumeLiters:F1} L";
+                    results[_localization.GetString("ResultBagsNeeded") ?? "Bags"] = $"{SoilResult.BagsNeeded}";
+                    if (PricePerBag > 0)
+                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{SoilResult.BagsNeeded * PricePerBag:F2} {_localization.GetString("CurrencySymbol")}";
+                    break;
+                case 2 when PondResult != null:
+                    inputs[_localization.GetString("LabelLengthM") ?? "Length"] = $"{PondLength:F1} m";
+                    inputs[_localization.GetString("LabelWidthM") ?? "Width"] = $"{PondWidth:F1} m";
+                    inputs[_localization.GetString("LabelDepthM") ?? "Depth"] = $"{PondDepth:F1} m";
+                    results[_localization.GetString("ResultLinerLength") ?? "Liner length"] = $"{PondResult.LinerLength:F2} m";
+                    results[_localization.GetString("ResultLinerWidth") ?? "Liner width"] = $"{PondResult.LinerWidth:F2} m";
+                    results[_localization.GetString("ResultLinerArea") ?? "Liner area"] = $"{PondResult.LinerArea:F2} m\u00b2";
+                    if (PricePerSqmLiner > 0)
+                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{PondResult.LinerArea * PricePerSqmLiner:F2} {_localization.GetString("CurrencySymbol")}";
+                    break;
+                default:
+                    return;
+            }
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "Export failed.");
         }
         finally
         {

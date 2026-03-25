@@ -45,6 +45,12 @@ public partial class App : Application
     /// </summary>
     public static Func<IServiceProvider, IPurchaseService>? PurchaseServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen IPhotoPickerService (Android setzt Intent-basiert).
+    /// Desktop nutzt Default DesktopPhotoPickerService wenn nicht gesetzt.
+    /// </summary>
+    public static Func<IPhotoPickerService>? PhotoPickerServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -114,8 +120,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
-            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 800ms anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 800 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();
@@ -164,6 +170,10 @@ public partial class App : Application
         // App Services
         services.AddSingleton<IProjectService, ProjectService>();
         services.AddSingleton<IPremiumAccessService, PremiumAccessService>();
+        services.AddSingleton<IFavoritesService, FavoritesService>();
+        services.AddSingleton<IProjectTemplateService, ProjectTemplateService>();
+        services.AddSingleton<IMaterialPriceService, MaterialPriceService>();
+        services.AddSingleton<IQuoteService, QuoteService>();
 
         // Export Services - Plattformspezifisch: Android setzt Factory, Desktop nutzt Default
         if (FileShareServiceFactory != null)
@@ -171,6 +181,12 @@ public partial class App : Application
         else
             services.AddSingleton<IFileShareService, DesktopFileShareService>();
         services.AddSingleton<IMaterialExportService, MaterialExportService>();
+
+        // Photo-Picker: Plattformspezifisch via Factory oder Desktop-Default
+        if (PhotoPickerServiceFactory != null)
+            services.AddSingleton(PhotoPickerServiceFactory());
+        else
+            services.AddSingleton<IPhotoPickerService, DesktopPhotoPickerService>();
 
         // Engine
         services.AddSingleton<CraftEngine>();
@@ -180,6 +196,8 @@ public partial class App : Application
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<ProjectsViewModel>();
         services.AddSingleton<HistoryViewModel>();
+        services.AddSingleton<ProjectTemplatesViewModel>();
+        services.AddSingleton<QuoteViewModel>();
 
         // Floor Calculator ViewModels
         services.AddTransient<TileCalculatorViewModel>();
@@ -187,6 +205,11 @@ public partial class App : Application
         services.AddTransient<WallpaperCalculatorViewModel>();
         services.AddTransient<FlooringCalculatorViewModel>();
         services.AddTransient<ConcreteCalculatorViewModel>();
+
+        // Profi-Werkzeuge ViewModels
+        services.AddTransient<HourlyRateViewModel>();
+        services.AddTransient<MaterialCompareViewModel>();
+        services.AddTransient<AreaMeasureViewModel>();
 
         // Premium Calculator ViewModels
         services.AddTransient<DrywallViewModel>();
@@ -201,22 +224,7 @@ public partial class App : Application
         services.AddTransient<CableSizingViewModel>();
         services.AddTransient<GroutViewModel>();
 
-        // Func<T> Factories fuer Calculator-VMs (Constructor Injection statt Service-Locator)
-        services.AddSingleton<Func<TileCalculatorViewModel>>(sp => () => sp.GetRequiredService<TileCalculatorViewModel>());
-        services.AddSingleton<Func<WallpaperCalculatorViewModel>>(sp => () => sp.GetRequiredService<WallpaperCalculatorViewModel>());
-        services.AddSingleton<Func<PaintCalculatorViewModel>>(sp => () => sp.GetRequiredService<PaintCalculatorViewModel>());
-        services.AddSingleton<Func<FlooringCalculatorViewModel>>(sp => () => sp.GetRequiredService<FlooringCalculatorViewModel>());
-        services.AddSingleton<Func<ConcreteCalculatorViewModel>>(sp => () => sp.GetRequiredService<ConcreteCalculatorViewModel>());
-        services.AddSingleton<Func<DrywallViewModel>>(sp => () => sp.GetRequiredService<DrywallViewModel>());
-        services.AddSingleton<Func<ElectricalViewModel>>(sp => () => sp.GetRequiredService<ElectricalViewModel>());
-        services.AddSingleton<Func<MetalViewModel>>(sp => () => sp.GetRequiredService<MetalViewModel>());
-        services.AddSingleton<Func<GardenViewModel>>(sp => () => sp.GetRequiredService<GardenViewModel>());
-        services.AddSingleton<Func<RoofSolarViewModel>>(sp => () => sp.GetRequiredService<RoofSolarViewModel>());
-        services.AddSingleton<Func<StairsViewModel>>(sp => () => sp.GetRequiredService<StairsViewModel>());
-        services.AddSingleton<Func<PlasterViewModel>>(sp => () => sp.GetRequiredService<PlasterViewModel>());
-        services.AddSingleton<Func<ScreedViewModel>>(sp => () => sp.GetRequiredService<ScreedViewModel>());
-        services.AddSingleton<Func<InsulationViewModel>>(sp => () => sp.GetRequiredService<InsulationViewModel>());
-        services.AddSingleton<Func<CableSizingViewModel>>(sp => () => sp.GetRequiredService<CableSizingViewModel>());
-        services.AddSingleton<Func<GroutViewModel>>(sp => () => sp.GetRequiredService<GroutViewModel>());
+        // Zentraler Factory-Service für alle 19 Calculator-VMs (statt 19 einzelne Func<T>)
+        services.AddSingleton<ICalculatorFactoryService, CalculatorFactoryService>();
     }
 }

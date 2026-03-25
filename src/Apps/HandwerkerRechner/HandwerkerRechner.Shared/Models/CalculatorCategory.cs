@@ -77,5 +77,10 @@ public enum CalculatorType
     CableSizing,    // Leitungsquerschnitt
 
     // Fugenmasse (PREMIUM)
-    Grout           // Fugenmasse
+    Grout,          // Fugenmasse
+
+    // Profi-Werkzeuge (PREMIUM)
+    HourlyRate,     // Stundenrechner (Lohn + Aufschlag + MwSt)
+    MaterialCompare,// Material-Vergleich (A/B Preisvergleich)
+    AreaMeasure     // Aufmaß-Rechner (L-Form, Trapez, Dreieck...)
 }

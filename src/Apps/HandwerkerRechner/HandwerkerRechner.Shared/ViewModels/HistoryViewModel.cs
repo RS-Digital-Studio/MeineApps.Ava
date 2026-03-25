@@ -113,6 +113,9 @@ public sealed partial class HistoryViewModel : ViewModelBase
         "InsulationCalculator" => _localization.GetString("CalcInsulation") ?? "Insulation",
         "CableSizingCalculator" => _localization.GetString("CalcCableSizing") ?? "Cable Sizing",
         "GroutCalculator" => _localization.GetString("CalcGrout") ?? "Grout",
+        "HourlyRateCalculator" => _localization.GetString("CalcHourlyRate") ?? "Hourly Rate",
+        "MaterialCompareCalculator" => _localization.GetString("CalcMaterialCompare") ?? "Material Compare",
+        "AreaMeasureCalculator" => _localization.GetString("CalcAreaMeasure") ?? "Area Measure",
         _ => calculatorId
     };
 
@@ -134,6 +137,9 @@ public sealed partial class HistoryViewModel : ViewModelBase
         "InsulationCalculator" => "Snowflake",
         "CableSizingCalculator" => "CableData",
         "GroutCalculator" => "Texture",
+        "HourlyRateCalculator" => "ClockOutline",
+        "MaterialCompareCalculator" => "ScaleBalance",
+        "AreaMeasureCalculator" => "RulerSquare",
         _ => "Calculator"
     };
 
@@ -155,6 +161,9 @@ public sealed partial class HistoryViewModel : ViewModelBase
         "InsulationCalculator" => "InsulationPage",
         "CableSizingCalculator" => "CableSizingPage",
         "GroutCalculator" => "GroutPage",
+        "HourlyRateCalculator" => "HourlyRatePage",
+        "MaterialCompareCalculator" => "MaterialComparePage",
+        "AreaMeasureCalculator" => "AreaMeasurePage",
         _ => null
     };
 }

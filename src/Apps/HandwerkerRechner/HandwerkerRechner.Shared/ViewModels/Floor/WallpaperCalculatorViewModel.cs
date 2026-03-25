@@ -8,10 +8,11 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDisposable
+public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _craftEngine;
     private Timer? _debounceTimer;
@@ -23,6 +24,7 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     /// <summary>
@@ -62,7 +64,8 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _craftEngine = craftEngine;
         _projectService = projectService;
@@ -73,8 +76,12 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
 
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
+
+        // Standard-Materialpreis laden
+        PricePerRoll = _priceService.GetPrice("wallpaper_standard")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -544,6 +551,59 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = _localization.GetString("CalcWallpaper") ?? "Wallpaper";
+            var inputs = new Dictionary<string, string>
+            {
+                [_localization.GetString("WallLength") ?? "Wall length"] = $"{WallLength:F1} m",
+                [_localization.GetString("RoomHeight") ?? "Room height"] = $"{RoomHeight:F1} m",
+                [_localization.GetString("RollLength") ?? "Roll length"] = $"{RollLength:F2} m",
+                [_localization.GetString("RollWidth") ?? "Roll width"] = $"{RollWidth} cm",
+                [_localization.GetString("PatternRepeat") ?? "Pattern repeat"] = $"{PatternRepeat} cm"
+            };
+
+            var deduction = CalculateDeductionArea();
+            if (deduction > 0)
+                inputs[_localization.GetString("DeductedArea") ?? "Deducted area"] = $"-{deduction:F1} m²";
+
+            var results = new Dictionary<string, string>
+            {
+                [_localization.GetString("WallArea") ?? "Wall area"] = AreaDisplay,
+                [_localization.GetString("RollsNeeded") ?? "Rolls needed"] = RollsNeededDisplay
+            };
+            if (ShowCost && PricePerRoll > 0)
+                results[_localization.GetString("TotalCost") ?? "Total cost"] = TotalCostDisplay;
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "Export failed.");
         }
         finally
         {

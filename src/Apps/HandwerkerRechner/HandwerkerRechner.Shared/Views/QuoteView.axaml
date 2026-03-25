@@ -1,0 +1,483 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerRechner.ViewModels"
+             xmlns:models="using:HandwerkerRechner.Models"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             x:Class="HandwerkerRechner.Views.QuoteView"
+             x:DataType="vm:QuoteViewModel"
+             Background="Transparent">
+
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="Quote_RootGrid">
+
+    <!-- Zeile 0: Header -->
+    <Border Grid.Row="0"
+            Background="{DynamicResource AccentBrush}"
+            Padding="16,12,16,20"
+            CornerRadius="0,0,24,24"
+            AutomationProperties.AutomationId="Quote_HeaderBorder">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Command="{Binding GoBackCommand}"
+                Background="#33FFFFFF"
+                CornerRadius="20"
+                Width="40" Height="40"
+                Padding="0"
+                AutomationProperties.Name="Zurück"
+                AutomationProperties.AutomationId="Quote_BtnBack">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
+        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                    Margin="12,0,0,0" VerticalAlignment="Center">
+          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+            <mi:MaterialIcon Kind="FileDocumentEditOutline" Width="22" Height="22"
+                             Foreground="White"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{Binding PageTitle}"
+                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     VerticalAlignment="Center"
+                     AutomationProperties.AutomationId="Quote_TxtTitle" />
+        </StackPanel>
+        <!-- Neues Angebot Button (nur in Listen-Ansicht) -->
+        <Button Grid.Column="2"
+                Command="{Binding CreateNewQuoteCommand}"
+                Background="#33FFFFFF"
+                CornerRadius="20"
+                Width="40" Height="40"
+                Padding="0"
+                IsVisible="{Binding !IsEditing}"
+                AutomationProperties.Name="Neues Angebot"
+                AutomationProperties.AutomationId="Quote_BtnNew">
+          <mi:MaterialIcon Kind="Plus" Width="22" Height="22" Foreground="White" />
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- Zeile 1: Inhalt - entweder Liste ODER Editor -->
+    <Panel Grid.Row="1">
+
+      <!-- ==== LISTEN-ANSICHT ==== -->
+      <Grid RowDefinitions="*"
+            IsVisible="{Binding !IsEditing}"
+            AutomationProperties.AutomationId="Quote_ListView">
+
+        <!-- Loading -->
+        <ProgressBar IsIndeterminate="True"
+                     IsVisible="{Binding IsLoading}"
+                     Width="120"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     AutomationProperties.AutomationId="Quote_ProgressLoading" />
+
+        <!-- Leer-Zustand -->
+        <StackPanel IsVisible="{Binding !HasQuotes}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="16"
+                    Margin="32"
+                    AutomationProperties.AutomationId="Quote_EmptyState">
+          <mi:MaterialIcon Kind="FileDocumentOutline" Width="64" Height="64"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Translate NoQuotesSaved}"
+                     FontSize="16" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     HorizontalAlignment="Center"
+                     TextWrapping="Wrap"
+                     TextAlignment="Center" />
+          <Button Command="{Binding CreateNewQuoteCommand}"
+                  Classes="Primary"
+                  HorizontalAlignment="Center"
+                  MinHeight="44"
+                  AutomationProperties.Name="Erstes Angebot erstellen"
+                  AutomationProperties.AutomationId="Quote_BtnFirstNew">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
+              <TextBlock Text="{Binding NewQuoteText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <!-- Angebots-Liste -->
+        <ScrollViewer IsVisible="{Binding HasQuotes}"
+                      AutomationProperties.AutomationId="Quote_ScrollList">
+          <ItemsControl ItemsSource="{Binding Quotes}"
+                        Margin="16,16,16,120">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:Quote">
+                <Border Classes="Card" Margin="0,0,0,12" CornerRadius="12"
+                        AutomationProperties.AutomationId="Quote_ItemCard">
+                  <i:Interaction.Behaviors>
+                    <behaviors:TapScaleBehavior PressedScale="0.97" />
+                    <behaviors:FadeInBehavior Duration="250" />
+                  </i:Interaction.Behaviors>
+                  <Grid ColumnDefinitions="*,Auto">
+
+                    <!-- Angebot-Info (klickbar → Editor öffnen) -->
+                    <Button Grid.Column="0"
+                            Command="{Binding $parent[UserControl].((vm:QuoteViewModel)DataContext).EditQuoteCommand}"
+                            CommandParameter="{Binding}"
+                            Background="Transparent"
+                            HorizontalContentAlignment="Stretch"
+                            HorizontalAlignment="Stretch"
+                            Padding="16,12"
+                            MinHeight="64">
+                      <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Grid.Column="0" Text="{Binding QuoteNumber}"
+                                     FontSize="15" FontWeight="Bold"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                          <TextBlock Grid.Column="1" Text="{Binding TotalGross, StringFormat='{}{0:F2} €'}"
+                                     FontSize="15" FontWeight="Bold"
+                                     Foreground="{DynamicResource PrimaryBrush}" />
+                        </Grid>
+                        <TextBlock Text="{Binding CustomerName}"
+                                   FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="{Binding ProjectDescription}"
+                                   FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   MaxLines="2" />
+                      </StackPanel>
+                    </Button>
+
+                    <!-- Löschen-Button -->
+                    <Button Grid.Column="1"
+                            Command="{Binding $parent[UserControl].((vm:QuoteViewModel)DataContext).DeleteQuoteCommand}"
+                            CommandParameter="{Binding}"
+                            Background="Transparent"
+                            Padding="12"
+                            MinHeight="44" MinWidth="44"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="Angebot löschen">
+                      <mi:MaterialIcon Kind="DeleteOutline" Width="22" Height="22"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </Button>
+
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+      </Grid>
+
+      <!-- ==== EDITOR-ANSICHT ==== -->
+      <ScrollViewer IsVisible="{Binding IsEditing}"
+                    VerticalScrollBarVisibility="Auto"
+                    AutomationProperties.AutomationId="Quote_EditorView">
+        <StackPanel Spacing="16" Margin="16,16,16,120">
+
+          <!-- Kundendaten -->
+          <Border Classes="Card StatsCard"
+                  AutomationProperties.AutomationId="Quote_CardCustomer">
+            <i:Interaction.Behaviors>
+              <behaviors:FadeInBehavior Duration="250" />
+            </i:Interaction.Behaviors>
+            <StackPanel Spacing="12">
+              <TextBlock Text="{loc:Translate CustomerData}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+
+              <!-- Angebotsnummer -->
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding QuoteNumberLabel}"
+                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBox Text="{Binding QuoteNumber}" Classes="Outlined"
+                         AutomationProperties.AutomationId="Quote_TxtBoxNumber" />
+              </StackPanel>
+
+              <!-- Kundenname -->
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding CustomerNameLabel}"
+                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBox Text="{Binding CustomerName}" Classes="Outlined"
+                         AutomationProperties.AutomationId="Quote_TxtBoxCustomerName" />
+              </StackPanel>
+
+              <!-- Adresse -->
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding CustomerAddressLabel}"
+                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBox Text="{Binding CustomerAddress}" Classes="Outlined"
+                         AutomationProperties.AutomationId="Quote_TxtBoxAddress" />
+              </StackPanel>
+
+              <!-- Projektbeschreibung -->
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding ProjectDescriptionLabel}"
+                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBox Text="{Binding ProjectDescription}"
+                         Classes="Outlined"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         MinHeight="72"
+                         AutomationProperties.AutomationId="Quote_TxtBoxDescription" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Positionen -->
+          <Border Classes="Card StatsCard"
+                  AutomationProperties.AutomationId="Quote_CardItems">
+            <i:Interaction.Behaviors>
+              <behaviors:FadeInBehavior Duration="300" />
+            </i:Interaction.Behaviors>
+            <StackPanel Spacing="12">
+              <TextBlock Text="{Binding QuoteItemsLabel}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+
+              <!-- Vorhandene Positionen -->
+              <ItemsControl ItemsSource="{Binding CurrentItems}"
+                            AutomationProperties.AutomationId="Quote_ItemsList">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:QuoteItem">
+                    <Border Background="{DynamicResource SurfaceBrush}"
+                            CornerRadius="8" Padding="12,8" Margin="0,0,0,6">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                          <TextBlock Text="{Binding Description}"
+                                     FontSize="14" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                          <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
+                            <Run Text="{Binding Quantity, StringFormat='{}{0:F2}'}" />
+                            <Run Text="{Binding Unit}" />
+                            <Run Text="×" />
+                            <Run Text="{Binding UnitPrice, StringFormat='{}{0:F2} €'}" />
+                          </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                    VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Total, StringFormat='{}{0:F2} €'}"
+                                     FontSize="14" FontWeight="Bold"
+                                     Foreground="{DynamicResource PrimaryBrush}" />
+                          <Button Command="{Binding $parent[UserControl].((vm:QuoteViewModel)DataContext).RemoveItemCommand}"
+                                  CommandParameter="{Binding}"
+                                  Background="Transparent"
+                                  Padding="4"
+                                  MinHeight="36" MinWidth="36"
+                                  AutomationProperties.Name="Position entfernen">
+                            <mi:MaterialIcon Kind="Close" Width="16" Height="16"
+                                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                          </Button>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <!-- Neue Position hinzufügen -->
+              <Border Background="{DynamicResource SurfaceBrush}"
+                      CornerRadius="8" Padding="12"
+                      AutomationProperties.AutomationId="Quote_AddItemSection">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="{Binding AddItemLabel}"
+                             FontSize="13" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                  <!-- Bezeichnung -->
+                  <TextBox Text="{Binding NewItemDescription}"
+                           Watermark="{Binding ItemDescriptionLabel}"
+                           Classes="Outlined"
+                           AutomationProperties.AutomationId="Quote_TxtBoxNewDesc" />
+
+                  <Grid ColumnDefinitions="*,8,*">
+                    <!-- Menge -->
+                    <TextBox Grid.Column="0"
+                             Text="{Binding NewItemQuantity}"
+                             Watermark="{Binding ItemQuantityLabel}"
+                             Classes="Outlined"
+                             AutomationProperties.AutomationId="Quote_TxtBoxNewQty" />
+                    <!-- Einheit -->
+                    <ComboBox Grid.Column="2"
+                              ItemsSource="{Binding UnitOptions}"
+                              SelectedItem="{Binding NewItemUnit}"
+                              HorizontalAlignment="Stretch"
+                              AutomationProperties.AutomationId="Quote_CbUnit" />
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,8,*">
+                    <!-- Einzelpreis -->
+                    <TextBox Grid.Column="0"
+                             Text="{Binding NewItemUnitPrice}"
+                             Watermark="{Binding ItemUnitPriceLabel}"
+                             Classes="Outlined"
+                             AutomationProperties.AutomationId="Quote_TxtBoxNewPrice" />
+                    <!-- Typ (Material/Arbeit/Sonstiges) -->
+                    <ComboBox Grid.Column="2"
+                              ItemsSource="{Binding ItemTypeOptions}"
+                              SelectedIndex="{Binding NewItemTypeIndex}"
+                              HorizontalAlignment="Stretch"
+                              AutomationProperties.AutomationId="Quote_CbItemType" />
+                  </Grid>
+
+                  <Button Command="{Binding AddItemCommand}"
+                          Classes="Secondary"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center"
+                          MinHeight="44"
+                          AutomationProperties.Name="Position hinzufügen"
+                          AutomationProperties.AutomationId="Quote_BtnAddItem">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
+                      <TextBlock Text="{Binding AddItemLabel}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </Border>
+
+          <!-- Kalkulation: MwSt + Marge -->
+          <Border Classes="Card StatsCard"
+                  AutomationProperties.AutomationId="Quote_CardCalculation">
+            <i:Interaction.Behaviors>
+              <behaviors:FadeInBehavior Duration="350" />
+            </i:Interaction.Behaviors>
+            <StackPanel Spacing="12">
+              <TextBlock Text="{loc:Translate Calculation}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+
+              <Grid ColumnDefinitions="*,8,*">
+                <!-- Marge -->
+                <StackPanel Grid.Column="0" Spacing="4">
+                  <TextBlock Text="{Binding MarginLabel}"
+                             FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBox Text="{Binding MarginPercent}" Watermark="%" Classes="Outlined"
+                           AutomationProperties.AutomationId="Quote_TxtBoxMargin" />
+                </StackPanel>
+                <!-- MwSt -->
+                <StackPanel Grid.Column="2" Spacing="4">
+                  <TextBlock Text="{Binding VatLabel}"
+                             FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBox Text="{Binding VatPercent}" Watermark="%" Classes="Outlined"
+                           AutomationProperties.AutomationId="Quote_TxtBoxVat" />
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <!-- Summen-Block -->
+          <Border Classes="Card Elevated StatsCard"
+                  AutomationProperties.AutomationId="Quote_CardTotals">
+            <StackPanel Spacing="10">
+              <TextBlock Text="{loc:Translate Summary}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource PrimaryBrush}" />
+
+              <!-- Zwischensumme -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding SubtotalNetLabel}"
+                           FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding SubtotalNet, StringFormat='{}{0:F2} €'}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="Quote_TxtSubtotal" />
+              </Grid>
+
+              <!-- Marge -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding MarginLabel}"
+                           FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding MarginAmount, StringFormat='{}{0:F2} €'}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="Quote_TxtMargin" />
+              </Grid>
+
+              <!-- Gesamt netto -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding TotalNetLabel}"
+                           FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding TotalNet, StringFormat='{}{0:F2} €'}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="Quote_TxtTotalNet" />
+              </Grid>
+
+              <!-- MwSt -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding VatLabel}"
+                           FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding VatAmount, StringFormat='{}{0:F2} €'}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="Quote_TxtVat" />
+              </Grid>
+
+              <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4" />
+
+              <!-- Gesamt brutto (Hero) -->
+              <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding TotalGrossLabel}"
+                             FontSize="15" FontWeight="Bold" Foreground="White" />
+                  <TextBlock Grid.Column="1" Text="{Binding TotalGross, StringFormat='{}{0:F2} €'}"
+                             FontSize="22" FontWeight="Bold" Foreground="White"
+                             AutomationProperties.AutomationId="Quote_TxtTotalGross" />
+                </Grid>
+              </Border>
+
+              <!-- Export-Button -->
+              <Button Command="{Binding ExportQuoteCommand}"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      MinHeight="44"
+                      Margin="0,4,0,0"
+                      AutomationProperties.Name="Angebot als PDF exportieren"
+                      AutomationProperties.AutomationId="Quote_BtnExport">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{Binding ExportQuoteText}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <!-- Speichern + Abbrechen -->
+          <Grid ColumnDefinitions="*,12,*">
+            <Button Grid.Column="0"
+                    Command="{Binding CancelEditCommand}"
+                    Classes="Outlined"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    MinHeight="48"
+                    AutomationProperties.Name="Abbrechen"
+                    AutomationProperties.AutomationId="Quote_BtnCancelEdit">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Close" Width="18" Height="18"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{loc:Translate Cancel}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="2"
+                    Command="{Binding SaveQuoteCommand}"
+                    Classes="Primary"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    MinHeight="48"
+                    AutomationProperties.Name="Angebot speichern"
+                    AutomationProperties.AutomationId="Quote_BtnSave">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />
+                <TextBlock Text="{loc:Translate Save}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+        </StackPanel>
+      </ScrollViewer>
+
+    </Panel>
+
+  </Grid>
+
+</UserControl>

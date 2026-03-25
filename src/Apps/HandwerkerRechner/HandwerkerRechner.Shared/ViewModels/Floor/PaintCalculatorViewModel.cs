@@ -8,10 +8,11 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposable
+public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _craftEngine;
     private Timer? _debounceTimer;
@@ -23,6 +24,7 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     /// <summary>
@@ -62,7 +64,8 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _craftEngine = craftEngine;
         _projectService = projectService;
@@ -73,8 +76,12 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
 
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
+
+        // Standard-Materialpreis laden
+        PricePerLiter = _priceService.GetPrice("paint_standard")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -505,6 +512,55 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = _localization.GetString("CalcPaint") ?? "Paint";
+            var inputs = new Dictionary<string, string>
+            {
+                [_localization.GetString("Area") ?? "Area"] = $"{Area:F1} m\u00b2",
+                [_localization.GetString("Coverage") ?? "Coverage"] = $"{CoveragePerLiter:F1} m\u00b2/L",
+                [_localization.GetString("Coats") ?? "Coats"] = $"{NumberOfCoats}"
+            };
+
+            var deduction = CalculateDeductionArea();
+            if (deduction > 0)
+                inputs[_localization.GetString("DeductedArea") ?? "Deducted area"] = $"-{deduction:F1} m²";
+
+            var results = new Dictionary<string, string>
+            {
+                [_localization.GetString("TotalArea") ?? "Total area"] = TotalAreaDisplay,
+                [_localization.GetString("LitersNeeded") ?? "Liters needed"] = LitersNeededDisplay
+            };
+            if (ShowCost && PricePerLiter > 0)
+                results[_localization.GetString("TotalCost") ?? "Total cost"] = TotalCostDisplay;
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "CSV export failed.");
         }
         finally
         {

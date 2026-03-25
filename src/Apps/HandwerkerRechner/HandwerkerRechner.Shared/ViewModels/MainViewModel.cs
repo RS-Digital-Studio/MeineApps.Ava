@@ -1,8 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Services;
-using HandwerkerRechner.ViewModels.Floor;
-using HandwerkerRechner.ViewModels.Premium;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
@@ -22,24 +20,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localization;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPremiumAccessService _premiumAccessService;
+    private readonly IFavoritesService _favoritesService;
 
-    // Factories fuer Calculator-VMs (statt Service-Locator via App.Services)
-    private readonly Func<TileCalculatorViewModel> _tileVmFactory;
-    private readonly Func<WallpaperCalculatorViewModel> _wallpaperVmFactory;
-    private readonly Func<PaintCalculatorViewModel> _paintVmFactory;
-    private readonly Func<FlooringCalculatorViewModel> _flooringVmFactory;
-    private readonly Func<ConcreteCalculatorViewModel> _concreteVmFactory;
-    private readonly Func<DrywallViewModel> _drywallVmFactory;
-    private readonly Func<ElectricalViewModel> _electricalVmFactory;
-    private readonly Func<MetalViewModel> _metalVmFactory;
-    private readonly Func<GardenViewModel> _gardenVmFactory;
-    private readonly Func<RoofSolarViewModel> _roofSolarVmFactory;
-    private readonly Func<StairsViewModel> _stairsVmFactory;
-    private readonly Func<PlasterViewModel> _plasterVmFactory;
-    private readonly Func<ScreedViewModel> _screedVmFactory;
-    private readonly Func<InsulationViewModel> _insulationVmFactory;
-    private readonly Func<CableSizingViewModel> _cableSizingVmFactory;
-    private readonly Func<GroutViewModel> _groutVmFactory;
+    // Sub-ViewModels
+    public ProjectTemplatesViewModel ProjectTemplatesViewModel { get; }
+    public QuoteViewModel QuoteViewModel { get; }
+
+    // Zentraler Factory-Service für alle 19 Calculator-VMs
+    private readonly ICalculatorFactoryService _calculatorFactory;
 
     /// <summary>
     /// Event für Alerts/Nachrichten an den Benutzer (Titel, Nachricht)
@@ -66,44 +54,20 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         HistoryViewModel historyViewModel,
         IRewardedAdService rewardedAdService,
         IPremiumAccessService premiumAccessService,
-        Func<TileCalculatorViewModel> tileVmFactory,
-        Func<WallpaperCalculatorViewModel> wallpaperVmFactory,
-        Func<PaintCalculatorViewModel> paintVmFactory,
-        Func<FlooringCalculatorViewModel> flooringVmFactory,
-        Func<ConcreteCalculatorViewModel> concreteVmFactory,
-        Func<DrywallViewModel> drywallVmFactory,
-        Func<ElectricalViewModel> electricalVmFactory,
-        Func<MetalViewModel> metalVmFactory,
-        Func<GardenViewModel> gardenVmFactory,
-        Func<RoofSolarViewModel> roofSolarVmFactory,
-        Func<StairsViewModel> stairsVmFactory,
-        Func<PlasterViewModel> plasterVmFactory,
-        Func<ScreedViewModel> screedVmFactory,
-        Func<InsulationViewModel> insulationVmFactory,
-        Func<CableSizingViewModel> cableSizingVmFactory,
-        Func<GroutViewModel> groutVmFactory)
+        ICalculatorFactoryService calculatorFactory,
+        IFavoritesService favoritesService,
+        ProjectTemplatesViewModel projectTemplatesViewModel,
+        QuoteViewModel quoteViewModel)
     {
         _purchaseService = purchaseService;
         _adService = adService;
         _localization = localization;
         _rewardedAdService = rewardedAdService;
         _premiumAccessService = premiumAccessService;
-        _tileVmFactory = tileVmFactory;
-        _wallpaperVmFactory = wallpaperVmFactory;
-        _paintVmFactory = paintVmFactory;
-        _flooringVmFactory = flooringVmFactory;
-        _concreteVmFactory = concreteVmFactory;
-        _drywallVmFactory = drywallVmFactory;
-        _electricalVmFactory = electricalVmFactory;
-        _metalVmFactory = metalVmFactory;
-        _gardenVmFactory = gardenVmFactory;
-        _roofSolarVmFactory = roofSolarVmFactory;
-        _stairsVmFactory = stairsVmFactory;
-        _plasterVmFactory = plasterVmFactory;
-        _screedVmFactory = screedVmFactory;
-        _insulationVmFactory = insulationVmFactory;
-        _cableSizingVmFactory = cableSizingVmFactory;
-        _groutVmFactory = groutVmFactory;
+        _calculatorFactory = calculatorFactory;
+        _favoritesService = favoritesService;
+        ProjectTemplatesViewModel = projectTemplatesViewModel;
+        QuoteViewModel = quoteViewModel;
         SettingsViewModel = settingsViewModel;
         ProjectsViewModel = projectsViewModel;
         HistoryViewModel = historyViewModel;
@@ -136,12 +100,102 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Wire feedback to open email
         SettingsViewModel.FeedbackRequested += OnFeedbackRequested;
 
+        // Wire Templates navigation
+        ProjectTemplatesViewModel.NavigationRequested += OnTemplateNavigation;
+        ProjectTemplatesViewModel.MessageRequested += OnChildMessage;
+        ProjectTemplatesViewModel.FloatingTextRequested += OnChildFloatingText;
+
+        // Wire Quote navigation
+        QuoteViewModel.NavigationRequested += OnQuoteNavigation;
+        QuoteViewModel.MessageRequested += OnChildMessage;
+        QuoteViewModel.FloatingTextRequested += OnChildFloatingText;
+
+        // Favoriten
+        _favoritesService.FavoritesChanged += OnFavoritesChanged;
+        UpdateFavorites();
+
         // Back-Press Helper verdrahten
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
         UpdateStatus();
         UpdateNavTexts();
     }
+
+    #region Favoriten
+
+    [ObservableProperty]
+    private System.Collections.ObjectModel.ObservableCollection<FavoriteItem> _favoriteCalculators = [];
+
+    public bool HasFavorites => FavoriteCalculators.Count > 0;
+
+    [RelayCommand]
+    private void ToggleFavorite(string key)
+    {
+        _favoritesService.Toggle(key);
+        var msg = _favoritesService.IsFavorite(key)
+            ? _localization.GetString("FavoriteAdded") ?? "Favorit hinzugefügt"
+            : _localization.GetString("FavoriteRemoved") ?? "Favorit entfernt";
+        FloatingTextRequested?.Invoke(msg, "info");
+    }
+
+    public bool IsFavorite(string key) => _favoritesService.IsFavorite(key);
+
+    /// <summary>
+    /// Öffnet einen Favoriten-Rechner über die Schnellzugriff-Leiste.
+    /// Premium-Check wird berücksichtigt.
+    /// </summary>
+    [RelayCommand]
+    private void OpenFavorite(string route)
+    {
+        if (string.IsNullOrEmpty(route)) return;
+
+        if (IsPremiumRoute(route))
+            NavigatePremium(route);
+        else
+            NavigateTo(route);
+    }
+
+    private void OnFavoritesChanged(object? sender, EventArgs e) => UpdateFavorites();
+
+    private void UpdateFavorites()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            FavoriteCalculators.Clear();
+            foreach (var key in _favoritesService.Favorites)
+            {
+                var (label, icon, isPremium) = GetCalculatorInfo(key);
+                FavoriteCalculators.Add(new FavoriteItem(key, label, icon, isPremium));
+            }
+            OnPropertyChanged(nameof(HasFavorites));
+        });
+    }
+
+    private (string Label, string Icon, bool IsPremium) GetCalculatorInfo(string route) => route switch
+    {
+        "TileCalculatorPage" => (CalcTilesLabel, "ViewGrid", false),
+        "WallpaperCalculatorPage" => (CalcWallpaperLabel, "Wallpaper", false),
+        "PaintCalculatorPage" => (CalcPaintLabel, "FormatPaint", false),
+        "FlooringCalculatorPage" => (CalcFlooringLabel, "Layers", false),
+        "ConcretePage" => (CalcConcreteLabel, "CubeOutline", false),
+        "DrywallPage" => (CategoryDrywallLabel, "Wall", true),
+        "ElectricalPage" => (CategoryElectricalLabel, "Flash", true),
+        "MetalPage" => (CategoryMetalLabel, "Wrench", true),
+        "GardenPage" => (CategoryGardenLabel, "Flower", true),
+        "RoofSolarPage" => (CategoryRoofSolarLabel, "SolarPanel", true),
+        "StairsPage" => (CalcStairsLabel, "Stairs", true),
+        "PlasterPage" => (CalcPlasterLabel, "FormatPaint", true),
+        "ScreedPage" => (CalcScreedLabel, "Layers", true),
+        "InsulationPage" => (CalcInsulationLabel, "Snowflake", true),
+        "CableSizingPage" => (CalcCableSizingLabel, "CableData", true),
+        "GroutPage" => (CalcGroutLabel, "Texture", true),
+        "HourlyRatePage" => (CalcHourlyRateLabel, "ClockOutline", true),
+        "MaterialComparePage" => (CalcMaterialCompareLabel, "ScaleBalance", true),
+        "AreaMeasurePage" => (CalcAreaMeasureLabel, "RulerSquare", true),
+        _ => (route, "Calculator", false)
+    };
+
+    #endregion
 
     #region Tab Navigation
 
@@ -240,7 +294,17 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         CleanupCurrentCalculator();
 
         OnPropertyChanged(nameof(IsCalculatorOpen));
-        if (value != null)
+        if (value == "ProjectTemplatesPage")
+        {
+            CurrentCalculatorVm = ProjectTemplatesViewModel;
+            _ = ProjectTemplatesViewModel.LoadTemplatesAsync();
+        }
+        else if (value == "QuotePage")
+        {
+            CurrentCalculatorVm = QuoteViewModel;
+            _ = QuoteViewModel.LoadQuotesAsync();
+        }
+        else if (value != null)
             CurrentCalculatorVm = CreateCalculatorVm(value);
         else
             CurrentCalculatorVm = null;
@@ -248,27 +312,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private void CleanupCurrentCalculator()
     {
-        switch (CurrentCalculatorVm)
-        {
-            // Free-Rechner
-            case TileCalculatorViewModel t: t.Cleanup(); break;
-            case WallpaperCalculatorViewModel w: w.Cleanup(); break;
-            case PaintCalculatorViewModel p: p.Cleanup(); break;
-            case FlooringCalculatorViewModel f: f.Cleanup(); break;
-            case ConcreteCalculatorViewModel c: c.Cleanup(); break;
-            // Premium-Rechner
-            case DrywallViewModel dw: dw.Cleanup(); break;
-            case ElectricalViewModel e: e.Cleanup(); break;
-            case MetalViewModel m: m.Cleanup(); break;
-            case GardenViewModel g: g.Cleanup(); break;
-            case RoofSolarViewModel r: r.Cleanup(); break;
-            case StairsViewModel s: s.Cleanup(); break;
-            case PlasterViewModel pl: pl.Cleanup(); break;
-            case ScreedViewModel sc: sc.Cleanup(); break;
-            case InsulationViewModel ins: ins.Cleanup(); break;
-            case CableSizingViewModel cab: cab.Cleanup(); break;
-            case GroutViewModel gr: gr.Cleanup(); break;
-        }
+        if (CurrentCalculatorVm is ICalculatorViewModel calc)
+            calc.Cleanup();
     }
 
     private ObservableObject? CreateCalculatorVm(string page)
@@ -285,26 +330,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 projectId = query["projectId=".Length..];
         }
 
-        ObservableObject? vm = route switch
-        {
-            "TileCalculatorPage" => _tileVmFactory(),
-            "WallpaperCalculatorPage" => _wallpaperVmFactory(),
-            "PaintCalculatorPage" => _paintVmFactory(),
-            "FlooringCalculatorPage" => _flooringVmFactory(),
-            "DrywallPage" => _drywallVmFactory(),
-            "ElectricalPage" => _electricalVmFactory(),
-            "MetalPage" => _metalVmFactory(),
-            "GardenPage" => _gardenVmFactory(),
-            "RoofSolarPage" => _roofSolarVmFactory(),
-            "ConcretePage" => _concreteVmFactory(),
-            "StairsPage" => _stairsVmFactory(),
-            "PlasterPage" => _plasterVmFactory(),
-            "ScreedPage" => _screedVmFactory(),
-            "InsulationPage" => _insulationVmFactory(),
-            "CableSizingPage" => _cableSizingVmFactory(),
-            "GroutPage" => _groutVmFactory(),
-            _ => null
-        };
+        ObservableObject? vm = _calculatorFactory.Create(route);
 
         if (vm != null)
             WireCalculatorEvents(vm, projectId);
@@ -314,121 +340,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private void WireCalculatorEvents(ObservableObject vm, string? projectId)
     {
-        // Wire NavigationRequested + MessageRequested events per VM type
-        switch (vm)
+        if (vm is ICalculatorViewModel calc)
         {
-            case TileCalculatorViewModel t:
-                t.NavigationRequested += OnCalculatorGoBack;
-                t.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                t.FloatingTextRequested += OnChildFloatingText;
-                t.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = t.LoadFromProjectIdAsync(projectId);
-                break;
-            case WallpaperCalculatorViewModel w:
-                w.NavigationRequested += OnCalculatorGoBack;
-                w.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                w.FloatingTextRequested += OnChildFloatingText;
-                w.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = w.LoadFromProjectIdAsync(projectId);
-                break;
-            case PaintCalculatorViewModel p:
-                p.NavigationRequested += OnCalculatorGoBack;
-                p.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                p.FloatingTextRequested += OnChildFloatingText;
-                p.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = p.LoadFromProjectIdAsync(projectId);
-                break;
-            case FlooringCalculatorViewModel f:
-                f.NavigationRequested += OnCalculatorGoBack;
-                f.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                f.FloatingTextRequested += OnChildFloatingText;
-                f.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = f.LoadFromProjectIdAsync(projectId);
-                break;
-            case DrywallViewModel d:
-                d.NavigationRequested += OnCalculatorGoBack;
-                d.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                d.FloatingTextRequested += OnChildFloatingText;
-                d.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = d.LoadFromProjectIdAsync(projectId);
-                break;
-            case ElectricalViewModel e:
-                e.NavigationRequested += OnCalculatorGoBack;
-                e.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                e.FloatingTextRequested += OnChildFloatingText;
-                e.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = e.LoadFromProjectIdAsync(projectId);
-                break;
-            case MetalViewModel m:
-                m.NavigationRequested += OnCalculatorGoBack;
-                m.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                m.FloatingTextRequested += OnChildFloatingText;
-                m.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = m.LoadFromProjectIdAsync(projectId);
-                break;
-            case GardenViewModel g:
-                g.NavigationRequested += OnCalculatorGoBack;
-                g.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                g.FloatingTextRequested += OnChildFloatingText;
-                g.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = g.LoadFromProjectIdAsync(projectId);
-                break;
-            case RoofSolarViewModel r:
-                r.NavigationRequested += OnCalculatorGoBack;
-                r.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                r.FloatingTextRequested += OnChildFloatingText;
-                r.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = r.LoadFromProjectIdAsync(projectId);
-                break;
-            case ConcreteCalculatorViewModel c:
-                c.NavigationRequested += OnCalculatorGoBack;
-                c.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                c.FloatingTextRequested += OnChildFloatingText;
-                c.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = c.LoadFromProjectIdAsync(projectId);
-                break;
-            case StairsViewModel s:
-                s.NavigationRequested += OnCalculatorGoBack;
-                s.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                s.FloatingTextRequested += OnChildFloatingText;
-                s.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = s.LoadFromProjectIdAsync(projectId);
-                break;
-            case PlasterViewModel pl:
-                pl.NavigationRequested += OnCalculatorGoBack;
-                pl.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                pl.FloatingTextRequested += OnChildFloatingText;
-                pl.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = pl.LoadFromProjectIdAsync(projectId);
-                break;
-            case ScreedViewModel sc:
-                sc.NavigationRequested += OnCalculatorGoBack;
-                sc.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                sc.FloatingTextRequested += OnChildFloatingText;
-                sc.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = sc.LoadFromProjectIdAsync(projectId);
-                break;
-            case InsulationViewModel ins:
-                ins.NavigationRequested += OnCalculatorGoBack;
-                ins.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                ins.FloatingTextRequested += OnChildFloatingText;
-                ins.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = ins.LoadFromProjectIdAsync(projectId);
-                break;
-            case CableSizingViewModel cab:
-                cab.NavigationRequested += OnCalculatorGoBack;
-                cab.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                cab.FloatingTextRequested += OnChildFloatingText;
-                cab.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = cab.LoadFromProjectIdAsync(projectId);
-                break;
-            case GroutViewModel gr:
-                gr.NavigationRequested += OnCalculatorGoBack;
-                gr.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
-                gr.FloatingTextRequested += OnChildFloatingText;
-                gr.ClipboardRequested += OnClipboardRequested;
-                if (projectId != null) _ = gr.LoadFromProjectIdAsync(projectId);
-                break;
+            calc.NavigationRequested += OnCalculatorGoBack;
+            calc.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+            calc.FloatingTextRequested += OnChildFloatingText;
+            calc.ClipboardRequested += OnClipboardRequested;
+            if (projectId != null) _ = calc.LoadFromProjectIdAsync(projectId);
         }
     }
 
@@ -463,7 +381,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (qIdx >= 0)
             routeName = route[..qIdx];
 
-        return routeName is "DrywallPage" or "ElectricalPage" or "MetalPage" or "GardenPage" or "RoofSolarPage" or "StairsPage" or "PlasterPage" or "ScreedPage" or "InsulationPage" or "CableSizingPage" or "GroutPage";
+        return routeName is "DrywallPage" or "ElectricalPage" or "MetalPage" or "GardenPage" or "RoofSolarPage" or "StairsPage" or "PlasterPage" or "ScreedPage" or "InsulationPage" or "CableSizingPage" or "GroutPage" or "HourlyRatePage" or "MaterialComparePage" or "AreaMeasurePage";
     }
 
     private void OnProjectNavigation(string route)
@@ -538,6 +456,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public string CalcCableSizingDescLabel => _localization.GetString("CalcCableSizingDesc") ?? "";
     public string CalcGroutLabel => _localization.GetString("CalcGrout") ?? "Grout";
     public string CalcGroutDescLabel => _localization.GetString("CalcGroutDesc") ?? "";
+
+    // Profi-Werkzeuge Labels
+    public string CalcHourlyRateLabel => _localization.GetString("CalcHourlyRate") ?? "Stundenrechner";
+    public string CalcHourlyRateDescLabel => _localization.GetString("CalcHourlyRateDesc") ?? "";
+    public string CalcMaterialCompareLabel => _localization.GetString("CalcMaterialCompare") ?? "Material-Vergleich";
+    public string CalcMaterialCompareDescLabel => _localization.GetString("CalcMaterialCompareDesc") ?? "";
+    public string CalcAreaMeasureLabel => _localization.GetString("CalcAreaMeasure") ?? "Aufmaß-Rechner";
+    public string CalcAreaMeasureDescLabel => _localization.GetString("CalcAreaMeasureDesc") ?? "";
+
+    // Favoriten Labels
+    public string FavoritesTitleText => _localization.GetString("FavoritesTitle") ?? "Schnellzugriff";
+
+    // Business Labels
+    public string TemplatesLabel => _localization.GetString("ProjectTemplates") ?? "Vorlagen";
+    public string QuotesLabel => _localization.GetString("Quotes") ?? "Angebote";
+    public string SectionBusinessText => _localization.GetString("SectionBusiness") ?? "Business";
 
     // Design-Redesign Properties
     public string SectionFloorWallText => _localization.GetString("SectionFloorWall") ?? "Floor & Wall";
@@ -615,6 +549,23 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     [RelayCommand]
     private void NavigateToGrout() => NavigatePremium("GroutPage");
+
+    // Profi-Werkzeuge Navigation
+    [RelayCommand]
+    private void NavigateToHourlyRate() => NavigatePremium("HourlyRatePage");
+
+    [RelayCommand]
+    private void NavigateToMaterialCompare() => NavigatePremium("MaterialComparePage");
+
+    [RelayCommand]
+    private void NavigateToAreaMeasure() => NavigatePremium("AreaMeasurePage");
+
+    // Vorlagen + Angebote Navigation
+    [RelayCommand]
+    private void NavigateToTemplates() => CurrentPage = "ProjectTemplatesPage";
+
+    [RelayCommand]
+    private void NavigateToQuotes() => CurrentPage = "QuotePage";
 
     /// <summary>
     /// Prueft Premium-Zugang vor Navigation zu Premium-Rechnern.
@@ -767,6 +718,24 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private void OnAdUnavailable()
         => MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
 
+    private void OnTemplateNavigation(string route)
+    {
+        if (route == "..") { CurrentPage = null; return; }
+        // Template-Navigation: Kann Premium-Routen enthalten
+        if (IsPremiumRoute(route) && !_premiumAccessService.HasAccess)
+        {
+            PendingPremiumRoute = route;
+            ShowPremiumAccessOverlay = true;
+            return;
+        }
+        CurrentPage = route;
+    }
+
+    private void OnQuoteNavigation(string route)
+    {
+        if (route == "..") { CurrentPage = null; return; }
+    }
+
     private void OnFeedbackRequested(string appName)
     {
         var uri = $"mailto:info@rs-digital.org?subject={Uri.EscapeDataString(appName + " Feedback")}";
@@ -793,55 +762,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (ShowExtendedHistoryOverlay) { CancelExtendedHistoryAd(); return true; }
 
         // 2. SaveDialog im aktuellen Calculator schließen
-        if (CurrentCalculatorVm != null)
+        if (CurrentCalculatorVm is ICalculatorViewModel calc)
         {
-            var hasSaveDialog = CurrentCalculatorVm switch
+            if (calc.ShowSaveDialog)
             {
-                Floor.TileCalculatorViewModel t => t.ShowSaveDialog,
-                Floor.WallpaperCalculatorViewModel w => w.ShowSaveDialog,
-                Floor.PaintCalculatorViewModel p => p.ShowSaveDialog,
-                Floor.FlooringCalculatorViewModel f => f.ShowSaveDialog,
-                Floor.ConcreteCalculatorViewModel c => c.ShowSaveDialog,
-                DrywallViewModel d => d.ShowSaveDialog,
-                ElectricalViewModel e => e.ShowSaveDialog,
-                MetalViewModel m => m.ShowSaveDialog,
-                GardenViewModel g => g.ShowSaveDialog,
-                RoofSolarViewModel r => r.ShowSaveDialog,
-                StairsViewModel s => s.ShowSaveDialog,
-                PlasterViewModel pl => pl.ShowSaveDialog,
-                ScreedViewModel sc => sc.ShowSaveDialog,
-                InsulationViewModel ins => ins.ShowSaveDialog,
-                CableSizingViewModel cab => cab.ShowSaveDialog,
-                GroutViewModel gr => gr.ShowSaveDialog,
-                _ => false
-            };
-
-            if (hasSaveDialog)
-            {
-                // Dialog schließen
-                switch (CurrentCalculatorVm)
-                {
-                    case Floor.TileCalculatorViewModel t: t.ShowSaveDialog = false; break;
-                    case Floor.WallpaperCalculatorViewModel w: w.ShowSaveDialog = false; break;
-                    case Floor.PaintCalculatorViewModel p: p.ShowSaveDialog = false; break;
-                    case Floor.FlooringCalculatorViewModel f: f.ShowSaveDialog = false; break;
-                    case Floor.ConcreteCalculatorViewModel c: c.ShowSaveDialog = false; break;
-                    case DrywallViewModel d: d.ShowSaveDialog = false; break;
-                    case ElectricalViewModel e: e.ShowSaveDialog = false; break;
-                    case MetalViewModel m: m.ShowSaveDialog = false; break;
-                    case GardenViewModel g: g.ShowSaveDialog = false; break;
-                    case RoofSolarViewModel r: r.ShowSaveDialog = false; break;
-                    case StairsViewModel s: s.ShowSaveDialog = false; break;
-                    case PlasterViewModel pl: pl.ShowSaveDialog = false; break;
-                    case ScreedViewModel sc: sc.ShowSaveDialog = false; break;
-                    case InsulationViewModel ins: ins.ShowSaveDialog = false; break;
-                    case CableSizingViewModel cab: cab.ShowSaveDialog = false; break;
-                    case GroutViewModel gr: gr.ShowSaveDialog = false; break;
-                }
+                calc.ShowSaveDialog = false;
                 return true;
             }
 
             // 3. Calculator schließen → zurück zur Tab-Ansicht
+            CurrentPage = null;
+            return true;
+        }
+
+        // Nicht-Calculator-Seiten (Templates, Quotes) → zurück zur Tab-Ansicht
+        if (CurrentCalculatorVm != null)
+        {
             CurrentPage = null;
             return true;
         }
@@ -864,6 +800,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
 
+        // Aktiven Rechner aufräumen (Timer stoppen, Events abmelden)
+        CleanupCurrentCalculator();
+
         _adService.AdsStateChanged -= OnAdsStateChanged;
         _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
         _premiumAccessService.AccessExpired -= OnAccessExpired;
@@ -876,6 +815,17 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         HistoryViewModel.NavigationRequested -= OnHistoryNavigation;
         HistoryViewModel.MessageRequested -= OnChildMessage;
 
+        ProjectTemplatesViewModel.NavigationRequested -= OnTemplateNavigation;
+        ProjectTemplatesViewModel.MessageRequested -= OnChildMessage;
+        ProjectTemplatesViewModel.FloatingTextRequested -= OnChildFloatingText;
+        QuoteViewModel.NavigationRequested -= OnQuoteNavigation;
+        QuoteViewModel.MessageRequested -= OnChildMessage;
+        QuoteViewModel.FloatingTextRequested -= OnChildFloatingText;
+        _favoritesService.FavoritesChanged -= OnFavoritesChanged;
+
         _disposed = true;
     }
 }
+
+/// <summary>Favorit-Eintrag für die Schnellzugriff-Leiste im HomeTab</summary>
+public record FavoriteItem(string Route, string Label, string IconKind, bool IsPremium);

@@ -8,13 +8,14 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
 /// <summary>
 /// ViewModel für den Dämmung-Rechner (Fläche, U-Werte, Dämmstofftyp → Dicke, Platten, Kosten)
 /// </summary>
-public sealed partial class InsulationViewModel : ViewModelBase, IDisposable
+public sealed partial class InsulationViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;
@@ -25,6 +26,7 @@ public sealed partial class InsulationViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     public event Action<string>? NavigationRequested;
@@ -41,7 +43,8 @@ public sealed partial class InsulationViewModel : ViewModelBase, IDisposable
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _engine = engine;
         _projectService = projectService;
@@ -51,6 +54,10 @@ public sealed partial class InsulationViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
+
+        // Standard-Materialpreis laden
+        PricePerSqm = _priceService.GetPrice("insulation_eps")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -396,6 +403,54 @@ public sealed partial class InsulationViewModel : ViewModelBase, IDisposable
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = _localization.GetString("CalcInsulation") ?? "Insulation";
+            var inputs = new Dictionary<string, string>
+            {
+                [_localization.GetString("InsulationArea") ?? "Area"] = $"{Area:F1} m\u00b2",
+                [_localization.GetString("CurrentUValue") ?? "Current U-Value"] = $"{CurrentUValue:F2} W/(m\u00b2\u00b7K)",
+                [_localization.GetString("TargetUValue") ?? "Target U-Value"] = $"{TargetUValue:F2} W/(m\u00b2\u00b7K)",
+                [_localization.GetString("InsulationType") ?? "Type"] = InsulationTypeDisplay
+            };
+            var results = new Dictionary<string, string>
+            {
+                [_localization.GetString("InsulationThickness") ?? "Thickness"] = ThicknessDisplay,
+                [_localization.GetString("InsulationLambda") ?? "Lambda"] = LambdaDisplay,
+                [_localization.GetString("UnitPieces") ?? "Pieces"] = PiecesDisplay
+            };
+            if (ShowCost && PricePerSqm > 0)
+                results[_localization.GetString("TotalCost") ?? "Total cost"] = TotalCostDisplay;
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "Export failed.");
         }
         finally
         {

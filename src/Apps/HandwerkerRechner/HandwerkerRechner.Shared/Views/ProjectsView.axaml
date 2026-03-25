@@ -74,6 +74,15 @@
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  TextTrimming="CharacterEllipsis"
                                  MaxLines="2" />
+                      <!-- Notizen-Vorschau (falls vorhanden) -->
+                      <StackPanel Orientation="Horizontal" Spacing="4"
+                                  IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <mi:MaterialIcon Kind="NoteTextOutline" Width="12" Height="12"
+                                         Foreground="{DynamicResource AccentBrush}" />
+                        <TextBlock Text="{Binding Notes}" FontSize="11" MaxLines="1"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                      </StackPanel>
                       <TextBlock Text="{Binding LastModifiedDisplay}"
                                  FontSize="11"
                                  Foreground="{DynamicResource TextMutedBrush}" />
@@ -84,6 +93,14 @@
                   <StackPanel Grid.Column="1" Spacing="0"
                               VerticalAlignment="Top"
                               Margin="0,4,4,0">
+                    <!-- Notizen bearbeiten -->
+                    <Button Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).EditNotesCommand}"
+                            CommandParameter="{Binding}"
+                            Classes="Text"
+                            Padding="12">
+                      <mi:MaterialIcon Kind="NoteEditOutline" Width="20" Height="20"
+                                       Foreground="{DynamicResource AccentBrush}" />
+                    </Button>
                     <!-- Export als PDF -->
                     <Button Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).ExportProjectCommand}"
                             CommandParameter="{Binding}"
@@ -154,6 +171,106 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Content="{loc:Translate Delete}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Notizen-Editor Overlay -->
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            ZIndex="100"
+            Background="#80000000"
+            IsVisible="{Binding ShowNotesEditor}">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="380"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="NoteEditOutline" Width="24" Height="24"
+                             Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="{loc:Translate ProjectNotes}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </StackPanel>
+
+          <TextBox Text="{Binding EditingNotes, Mode=TwoWay}"
+                   Watermark="{loc:Translate ProjectNotesPlaceholder}"
+                   AcceptsReturn="True"
+                   TextWrapping="Wrap"
+                   MinHeight="120" MaxHeight="200" />
+
+          <!-- Foto-Galerie -->
+          <TextBlock Text="{loc:Translate ProjectPhotos}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     Margin="0,8,0,4" />
+          <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                        VerticalScrollBarVisibility="Disabled"
+                        MaxHeight="100">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <ItemsControl ItemsSource="{Binding CurrentProjectPhotos}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="8" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <Border CornerRadius="8" ClipToBounds="True"
+                            Width="80" Height="80"
+                            Background="{DynamicResource CardBrush}">
+                      <Grid>
+                        <Image Source="{Binding}" Stretch="UniformToFill"
+                               Width="80" Height="80" />
+                        <!-- Löschen-Button oben rechts -->
+                        <Button Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).DeletePhotoCommand}"
+                                CommandParameter="{Binding}"
+                                Background="#AA000000" CornerRadius="0,8,0,8"
+                                Padding="4" MinWidth="24" MinHeight="24"
+                                HorizontalAlignment="Right" VerticalAlignment="Top">
+                          <mi:MaterialIcon Kind="Close" Width="14" Height="14"
+                                           Foreground="White" />
+                        </Button>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <!-- Foto hinzufügen (Plus-Button) -->
+              <Button Command="{Binding AddPhotoCommand}"
+                      CommandParameter="{Binding NotesProject}"
+                      Background="{DynamicResource CardBrush}"
+                      CornerRadius="8"
+                      Width="80" Height="80"
+                      Padding="0"
+                      HorizontalContentAlignment="Center"
+                      VerticalContentAlignment="Center">
+                <mi:MaterialIcon Kind="CameraPlus" Width="28" Height="28"
+                                 Foreground="{DynamicResource AccentBrush}" />
+              </Button>
+            </StackPanel>
+          </ScrollViewer>
+
+          <Grid ColumnDefinitions="*,12,*">
+            <Button Grid.Column="0"
+                    Classes="Outlined"
+                    Command="{Binding CancelNotesEditCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate Cancel}" />
+            <Button Grid.Column="2"
+                    Classes="Primary"
+                    Command="{Binding SaveNotesCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
+                <TextBlock Text="{loc:Translate Save}" />
+              </StackPanel>
+            </Button>
           </Grid>
         </StackPanel>
       </Border>

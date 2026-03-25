@@ -1,0 +1,452 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerRechner.ViewModels.Premium"
+             xmlns:models="using:HandwerkerRechner.ViewModels.Premium"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             x:Class="HandwerkerRechner.Views.Premium.AreaMeasureView"
+             x:DataType="vm:AreaMeasureViewModel"
+             Background="Transparent">
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        AutomationProperties.AutomationId="AreaMeasure_RootGrid">
+
+    <!-- Zeile 0: Header -->
+    <Border Grid.Row="0"
+            Background="{DynamicResource AccentBrush}"
+            Padding="16,12,16,20"
+            CornerRadius="0,0,24,24"
+            AutomationProperties.AutomationId="AreaMeasure_HeaderBorder">
+      <Grid ColumnDefinitions="Auto,*">
+        <Button Command="{Binding GoBackCommand}"
+                Background="#33FFFFFF"
+                CornerRadius="20"
+                Width="40" Height="40"
+                Padding="0"
+                AutomationProperties.Name="Zurück"
+                AutomationProperties.AutomationId="AreaMeasure_BtnBack">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
+        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                    Margin="12,0,0,0" VerticalAlignment="Center">
+          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+            <mi:MaterialIcon Kind="RulerSquare" Width="22" Height="22"
+                             Foreground="White"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{Binding PageTitle}"
+                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     VerticalAlignment="Center"
+                     TextWrapping="Wrap"
+                     AutomationProperties.AutomationId="AreaMeasure_TxtTitle" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Zeile 1: Scrollbarer Inhalt -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  AutomationProperties.AutomationId="AreaMeasure_ScrollViewer">
+      <StackPanel Spacing="16" Margin="16,16,16,120">
+
+        <!-- Form-Picker: 6 Buttons in 3×2 Grid -->
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="AreaMeasure_CardShapePicker">
+          <i:Interaction.Behaviors>
+            <behaviors:FadeInBehavior Duration="250" />
+          </i:Interaction.Behaviors>
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate SelectShape}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <Grid ColumnDefinitions="*,8,*,8,*" RowDefinitions="Auto,8,Auto">
+
+              <!-- Rechteck -->
+              <Button Grid.Row="0" Grid.Column="0"
+                      Command="{Binding CalculateCommand}"
+                      CommandParameter="0"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      MinHeight="44"
+                      AutomationProperties.Name="Rechteck"
+                      AutomationProperties.AutomationId="AreaMeasure_BtnShapeRect">
+                <StackPanel Orientation="Vertical" Spacing="2" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="VectorRectangle" Width="20" Height="20"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ShapeRectangle}" FontSize="11"
+                             VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- L-Form -->
+              <Button Grid.Row="0" Grid.Column="2"
+                      Command="{Binding CalculateCommand}"
+                      CommandParameter="1"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      MinHeight="44"
+                      AutomationProperties.Name="L-Form"
+                      AutomationProperties.AutomationId="AreaMeasure_BtnShapeL">
+                <StackPanel Orientation="Vertical" Spacing="2" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="AlphaL" Width="20" Height="20"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ShapeLShape}" FontSize="11"
+                             VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- T-Form -->
+              <Button Grid.Row="0" Grid.Column="4"
+                      Command="{Binding CalculateCommand}"
+                      CommandParameter="2"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      MinHeight="44"
+                      AutomationProperties.Name="T-Form"
+                      AutomationProperties.AutomationId="AreaMeasure_BtnShapeT">
+                <StackPanel Orientation="Vertical" Spacing="2" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="AlphaT" Width="20" Height="20"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ShapeTShape}" FontSize="11"
+                             VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- Trapez -->
+              <Button Grid.Row="2" Grid.Column="0"
+                      Command="{Binding CalculateCommand}"
+                      CommandParameter="3"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      MinHeight="44"
+                      AutomationProperties.Name="Trapez"
+                      AutomationProperties.AutomationId="AreaMeasure_BtnShapeTrap">
+                <StackPanel Orientation="Vertical" Spacing="2" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="VectorPolygon" Width="20" Height="20"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ShapeTrapezoid}" FontSize="11"
+                             VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- Dreieck -->
+              <Button Grid.Row="2" Grid.Column="2"
+                      Command="{Binding CalculateCommand}"
+                      CommandParameter="4"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      MinHeight="44"
+                      AutomationProperties.Name="Dreieck"
+                      AutomationProperties.AutomationId="AreaMeasure_BtnShapeTriangle">
+                <StackPanel Orientation="Vertical" Spacing="2" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Triangle" Width="20" Height="20"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ShapeTriangle}" FontSize="11"
+                             VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- Kreis -->
+              <Button Grid.Row="2" Grid.Column="4"
+                      Command="{Binding CalculateCommand}"
+                      CommandParameter="5"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      MinHeight="44"
+                      AutomationProperties.Name="Kreis"
+                      AutomationProperties.AutomationId="AreaMeasure_BtnShapeCircle">
+                <StackPanel Orientation="Vertical" Spacing="2" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Circle" Width="20" Height="20"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ShapeCircle}" FontSize="11"
+                             VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Kontextabhängige Eingaben -->
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="AreaMeasure_CardInputs">
+          <i:Interaction.Behaviors>
+            <behaviors:FadeInBehavior Duration="300" />
+          </i:Interaction.Behaviors>
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate Dimensions}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <!-- Dimension 1: Länge / Basis / Durchmesser - immer sichtbar -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding Dim1Label}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding Dimension1}" Watermark="m" Classes="Outlined"
+                       AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim1" />
+            </StackPanel>
+
+            <!-- Dimension 2: Breite / Höhe - außer bei Kreis -->
+            <StackPanel Spacing="4" IsVisible="{Binding ShowDim2}">
+              <TextBlock Text="{Binding Dim2Label}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding Dimension2}" Watermark="m" Classes="Outlined"
+                       AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim2" />
+            </StackPanel>
+
+            <!-- Dimension 3: Ausschnitt-Länge - nur bei L/T-Form -->
+            <StackPanel Spacing="4" IsVisible="{Binding ShowDim3}">
+              <TextBlock Text="{loc:Translate CutoutLength}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding Dimension3}" Watermark="m" Classes="Outlined"
+                       AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim3" />
+            </StackPanel>
+
+            <!-- Dimension 4: Ausschnitt-Breite - nur bei L/T-Form -->
+            <StackPanel Spacing="4" IsVisible="{Binding ShowDim4}">
+              <TextBlock Text="{loc:Translate CutoutWidth}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding Dimension4}" Watermark="m" Classes="Outlined"
+                       AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim4" />
+            </StackPanel>
+
+            <!-- Dimension 5: Parallelseite b - nur bei Trapez -->
+            <StackPanel Spacing="4" IsVisible="{Binding ShowDim5}">
+              <TextBlock Text="{loc:Translate BaseB}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding Dimension5}" Watermark="m" Classes="Outlined"
+                       AutomationProperties.AutomationId="AreaMeasure_TxtBoxDim5" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Visualisierung -->
+        <Border Classes="Card" Padding="0" Height="220"
+                IsVisible="{Binding HasResult}" ClipToBounds="True" CornerRadius="12"
+                AutomationProperties.AutomationId="AreaMeasure_CardVisualization">
+          <skia:SKCanvasView x:Name="AreaMeasureCanvas" PaintSurface="OnPaintVisualization"
+                             AutomationProperties.AutomationId="AreaMeasure_Canvas" />
+        </Border>
+
+        <!-- Aktuelle Fläche + Teilfläche hinzufügen -->
+        <Border Classes="Card Elevated StatsCard"
+                IsVisible="{Binding HasResult}"
+                AutomationProperties.AutomationId="AreaMeasure_CardCurrentArea">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+              <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                <TextBlock Text="{Binding CurrentAreaLabel}"
+                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding CurrentShapeArea, StringFormat='{}{0:F2} m²'}"
+                           FontSize="26" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryBrush}"
+                           AutomationProperties.AutomationId="AreaMeasure_TxtCurrentArea" />
+              </StackPanel>
+
+              <!-- Teilfläche hinzufügen -->
+              <Button Grid.Row="0" Grid.Column="1"
+                      Command="{Binding AddCurrentShapeCommand}"
+                      Classes="Secondary"
+                      VerticalAlignment="Center"
+                      MinHeight="44"
+                      AutomationProperties.Name="Teilfläche hinzufügen"
+                      AutomationProperties.AutomationId="AreaMeasure_BtnAddPart">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
+                  <TextBlock Text="{Binding AddAreaLabel}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Teilflächen-Liste -->
+        <Border Classes="Card StatsCard"
+                IsVisible="{Binding HasParts}"
+                AutomationProperties.AutomationId="AreaMeasure_CardParts">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding AreaPartsLabel}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <Button Grid.Column="1"
+                      Command="{Binding ClearPartsCommand}"
+                      Classes="Outlined"
+                      Padding="8,4"
+                      MinHeight="36"
+                      AutomationProperties.Name="Alle Teilflächen löschen"
+                      AutomationProperties.AutomationId="AreaMeasure_BtnClearParts">
+                <mi:MaterialIcon Kind="DeleteOutline" Width="18" Height="18"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+              </Button>
+            </Grid>
+
+            <!-- Liste der Teilflächen -->
+            <ItemsControl ItemsSource="{Binding AreaParts}"
+                          AutomationProperties.AutomationId="AreaMeasure_PartsList">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:AreaPart">
+                  <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,6">
+                    <TextBlock Grid.Column="0" Text="{Binding Label}"
+                               FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Area, StringFormat='{}{0:F2} m²'}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" Margin="8,0" />
+                    <Button Grid.Column="2"
+                            Command="{Binding $parent[UserControl].((vm:AreaMeasureViewModel)DataContext).RemovePartCommand}"
+                            CommandParameter="{Binding}"
+                            Background="Transparent"
+                            Padding="4"
+                            MinHeight="36" MinWidth="36"
+                            AutomationProperties.Name="Teilfläche entfernen">
+                      <mi:MaterialIcon Kind="Close" Width="16" Height="16"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </Button>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4" />
+
+            <!-- Gesamtfläche -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding TotalAreaLabel}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding TotalArea, StringFormat='{}{0:F2} m²'}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource PrimaryBrush}"
+                         AutomationProperties.AutomationId="AreaMeasure_TxtTotalArea" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Ergebnis-Aktionen -->
+        <Border Classes="Card StatsCard"
+                IsVisible="{Binding HasResult}"
+                AutomationProperties.AutomationId="AreaMeasure_CardActions">
+          <Grid ColumnDefinitions="*,8,*,8,*">
+            <Button Grid.Column="0"
+                    Command="{Binding CopyTotalAreaCommand}"
+                    Classes="Outlined"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    MinHeight="44"
+                    AutomationProperties.Name="Fläche kopieren"
+                    AutomationProperties.AutomationId="AreaMeasure_BtnCopyArea">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="ContentCopy" Width="18" Height="18"
+                                 Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="{Binding CopyAreaLabel}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="2"
+                    Command="{Binding ExportPdfCommand}"
+                    Classes="Outlined"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    MinHeight="44"
+                    AutomationProperties.Name="PDF exportieren"
+                    AutomationProperties.AutomationId="AreaMeasure_BtnExport">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18"
+                                 Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="{loc:Translate ExportMaterialList}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+                    <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
+                      <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                       Foreground="{DynamicResource AccentBrush}" />
+                    </Button>
+            <Button Grid.Column="4"
+                    Command="{Binding OpenSaveDialogCommand}"
+                    Classes="Primary"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    MinHeight="44"
+                    AutomationProperties.Name="Projekt speichern"
+                    AutomationProperties.AutomationId="AreaMeasure_BtnSave">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />
+                <TextBlock Text="{loc:Translate Save}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Zeile 2: Berechnen-Button -->
+    <Border Grid.Row="2" Padding="16,12" Background="{DynamicResource BackgroundBrush}"
+            AutomationProperties.AutomationId="AreaMeasure_BottomBar">
+      <Button Classes="Primary"
+              Command="{Binding CalculateCommand}"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Center"
+              MinHeight="44"
+              AutomationProperties.Name="Berechnen"
+              AutomationProperties.AutomationId="AreaMeasure_BtnCalculate">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <mi:MaterialIcon Kind="Calculator" Width="20" Height="20" />
+          <TextBlock Text="{loc:Translate Calculate}" VerticalAlignment="Center" FontSize="16" />
+        </StackPanel>
+      </Button>
+    </Border>
+
+    <!-- Speichern-Dialog Overlay -->
+    <Border Grid.Row="0" Grid.RowSpan="3"
+            Background="#80000000"
+            IsVisible="{Binding ShowSaveDialog}"
+            AutomationProperties.AutomationId="AreaMeasure_SaveDialogOverlay">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="340"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              AutomationProperties.AutomationId="AreaMeasure_SaveDialogCard">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{loc:Translate SaveProject}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+          <TextBox Text="{Binding SaveProjectName}"
+                   Watermark="{loc:Translate ProjectName}"
+                   Classes="Outlined"
+                   AutomationProperties.AutomationId="AreaMeasure_TxtBoxProjectName" />
+          <Grid ColumnDefinitions="*,12,*">
+            <Button Grid.Column="0"
+                    Classes="Outlined"
+                    Command="{Binding CancelSaveDialogCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate Cancel}"
+                    AutomationProperties.AutomationId="AreaMeasure_BtnCancelSave" />
+            <Button Grid.Column="2"
+                    Classes="Primary"
+                    Command="{Binding ConfirmSaveProjectCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate Save}"
+                    AutomationProperties.AutomationId="AreaMeasure_BtnConfirmSave" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+
+  </Grid>
+
+</UserControl>

@@ -8,13 +8,14 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
 /// <summary>
 /// ViewModel für den Leitungsquerschnitt-Rechner (Strom, Länge, Spannung → Querschnitt, Spannungsabfall, VDE)
 /// </summary>
-public sealed partial class CableSizingViewModel : ViewModelBase, IDisposable
+public sealed partial class CableSizingViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;
@@ -25,6 +26,7 @@ public sealed partial class CableSizingViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     public event Action<string>? NavigationRequested;
@@ -41,7 +43,8 @@ public sealed partial class CableSizingViewModel : ViewModelBase, IDisposable
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _engine = engine;
         _projectService = projectService;
@@ -51,6 +54,7 @@ public sealed partial class CableSizingViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
     }
 
     /// <summary>
@@ -386,6 +390,54 @@ public sealed partial class CableSizingViewModel : ViewModelBase, IDisposable
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = _localization.GetString("CalcCableSizing") ?? "Cable Sizing";
+            var inputs = new Dictionary<string, string>
+            {
+                [_localization.GetString("CableCurrent") ?? "Current"] = $"{CurrentAmps:F1} A",
+                [_localization.GetString("CableLength") ?? "Cable length"] = $"{CableLength:F1} m",
+                [_localization.GetString("CableVoltage") ?? "Voltage"] = VoltageDisplay,
+                [_localization.GetString("CableMaterial") ?? "Material"] = MaterialDisplay,
+                [_localization.GetString("MaxVoltageDrop") ?? "Max. drop"] = $"{MaxDropPercent:F1} %"
+            };
+            var results = new Dictionary<string, string>
+            {
+                [_localization.GetString("RecommendedCrossSection") ?? "Recommended"] = RecommendedSizeDisplay,
+                [_localization.GetString("MinCrossSection") ?? "Minimum"] = MinSizeDisplay,
+                [_localization.GetString("VoltageDrop") ?? "Voltage drop"] = DropDisplay,
+                ["VDE"] = VdeStatusDisplay
+            };
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "Export failed.");
         }
         finally
         {

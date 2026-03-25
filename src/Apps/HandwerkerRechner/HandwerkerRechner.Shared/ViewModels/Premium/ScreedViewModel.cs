@@ -8,13 +8,14 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
 /// <summary>
 /// ViewModel für den Estrich-Rechner (Fläche, Dicke, Typ → Volumen, Gewicht, Säcke, Trocknungszeit)
 /// </summary>
-public sealed partial class ScreedViewModel : ViewModelBase, IDisposable
+public sealed partial class ScreedViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;
@@ -25,6 +26,7 @@ public sealed partial class ScreedViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     public event Action<string>? NavigationRequested;
@@ -41,7 +43,8 @@ public sealed partial class ScreedViewModel : ViewModelBase, IDisposable
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _engine = engine;
         _projectService = projectService;
@@ -51,6 +54,10 @@ public sealed partial class ScreedViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
+
+        // Standard-Materialpreis laden
+        PricePerBag = _priceService.GetPrice("screed_sack")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -391,6 +398,54 @@ public sealed partial class ScreedViewModel : ViewModelBase, IDisposable
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = _localization.GetString("CalcScreed") ?? "Screed";
+            var inputs = new Dictionary<string, string>
+            {
+                [_localization.GetString("FloorArea") ?? "Floor area"] = $"{FloorArea:F1} m\u00b2",
+                [_localization.GetString("ScreedThickness") ?? "Thickness"] = $"{ThicknessCm:F1} cm",
+                [_localization.GetString("ScreedType") ?? "Type"] = ScreedTypeDisplay
+            };
+            var results = new Dictionary<string, string>
+            {
+                [_localization.GetString("ScreedVolume") ?? "Volume"] = VolumeDisplay,
+                [_localization.GetString("ScreedWeight") ?? "Weight"] = WeightDisplay,
+                [_localization.GetString("ResultBagsNeeded") ?? "Bags"] = BagsNeededDisplay,
+                [_localization.GetString("DryingTime") ?? "Drying time"] = DryingTimeDisplay
+            };
+            if (ShowCost && PricePerBag > 0)
+                results[_localization.GetString("TotalCost") ?? "Total cost"] = TotalCostDisplay;
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "Export failed.");
         }
         finally
         {

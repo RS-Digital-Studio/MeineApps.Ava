@@ -36,6 +36,8 @@ public sealed class ProjectService : IProjectService
                 existingProject.Description = project.Description;
                 existingProject.CalculatorType = project.CalculatorType;
                 existingProject.DataJson = project.DataJson;
+                existingProject.Notes = project.Notes;
+                existingProject.PhotoPaths = project.PhotoPaths;
                 existingProject.LastModified = DateTime.UtcNow;
             }
             else

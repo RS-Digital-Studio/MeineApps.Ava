@@ -8,10 +8,11 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
-public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable
+public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private Timer? _debounceTimer;
     #region Default Values
@@ -40,6 +41,7 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     public event Action<string>? NavigationRequested;
@@ -56,7 +58,8 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _engine = engine;
         _projectService = projectService;
@@ -66,6 +69,10 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
+
+        // Standard-Materialpreis laden
+        CablePrice = _priceService.GetPrice("cable_2_5mm")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -644,6 +651,71 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = Calculators[SelectedCalculator];
+            var inputs = new Dictionary<string, string>();
+            var results = new Dictionary<string, string>();
+
+            switch (SelectedCalculator)
+            {
+                case 0 when VoltageDropResult != null:
+                    inputs[_localization.GetString("Voltage") ?? "Voltage"] = $"{Voltage} V";
+                    inputs[_localization.GetString("Current") ?? "Current"] = $"{Current} A";
+                    inputs[_localization.GetString("CableLength") ?? "Cable length"] = $"{CableLength} m";
+                    inputs[_localization.GetString("CrossSection") ?? "Cross-section"] = $"{CrossSection} mm\u00b2";
+                    results[_localization.GetString("InfoVoltageDrop") ?? "Voltage drop"] = $"{VoltageDropResult.VoltageDrop:F2} V ({VoltageDropResult.PercentDrop:F1} %)";
+                    break;
+                case 1 when PowerCostResult != null:
+                    inputs[_localization.GetString("Power") ?? "Power"] = $"{Watts} W";
+                    inputs[_localization.GetString("HoursPerDay") ?? "hrs/day"] = $"{HoursPerDay}";
+                    inputs[_localization.GetString("PricePerKwh") ?? "EUR/kWh"] = $"{PricePerKwh:F2}";
+                    results[_localization.GetString("CostPerDay") ?? "Cost/day"] = $"{PowerCostResult.CostPerDay:F2} {_localization.GetString("CurrencySymbol")}";
+                    results[_localization.GetString("CostPerMonth") ?? "Cost/month"] = $"{PowerCostResult.CostPerMonth:F2} {_localization.GetString("CurrencySymbol")}";
+                    results[_localization.GetString("CostPerYear") ?? "Cost/year"] = $"{PowerCostResult.CostPerYear:F2} {_localization.GetString("CurrencySymbol")}";
+                    break;
+                case 2 when OhmsLawResult != null:
+                    inputs[_localization.GetString("VoltageULabel") ?? "Voltage U"] = OhmsVoltage;
+                    inputs[_localization.GetString("CurrentILabel") ?? "Current I"] = OhmsCurrent;
+                    inputs[_localization.GetString("ResistanceRLabel") ?? "Resistance R"] = OhmsResistance;
+                    results[_localization.GetString("VoltageULabel") ?? "U"] = $"{OhmsLawResult.Voltage:F2} V";
+                    results[_localization.GetString("CurrentILabel") ?? "I"] = $"{OhmsLawResult.Current:F3} A";
+                    results[_localization.GetString("ResistanceRLabel") ?? "R"] = $"{OhmsLawResult.Resistance:F2} \u03a9";
+                    results[_localization.GetString("PowerPLabel") ?? "P"] = $"{OhmsLawResult.Power:F2} W";
+                    break;
+                default:
+                    return;
+            }
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "Export failed.");
         }
         finally
         {

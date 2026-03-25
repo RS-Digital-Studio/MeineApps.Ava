@@ -8,10 +8,11 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
+public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _craftEngine;
     private Timer? _debounceTimer;
@@ -23,6 +24,7 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     /// <summary>
@@ -62,7 +64,8 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _craftEngine = craftEngine;
         _projectService = projectService;
@@ -73,9 +76,13 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
 
         // Subscribe to unit system changes
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
+
+        // Standard-Materialpreis laden
+        PricePerTile = _priceService.GetPrice("tile_standard")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -484,6 +491,56 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = _localization.GetString("CalcTiles") ?? "Tiles";
+            var inputs = new Dictionary<string, string>
+            {
+                [_localization.GetString("RoomLength") ?? "Room length"] = $"{RoomLength:F1} m",
+                [_localization.GetString("RoomWidth") ?? "Room width"] = $"{RoomWidth:F1} m",
+                [_localization.GetString("TileLength") ?? "Tile length"] = $"{TileLength} cm",
+                [_localization.GetString("TileWidth") ?? "Tile width"] = $"{TileWidth} cm",
+                [_localization.GetString("Waste") ?? "Waste"] = $"{WastePercentage} %",
+                [_localization.GetString("GroutWidth") ?? "Grout width"] = $"{GroutWidthMm} mm"
+            };
+            var results = new Dictionary<string, string>
+            {
+                [_localization.GetString("Area") ?? "Area"] = AreaDisplay,
+                [_localization.GetString("TilesNeeded") ?? "Tiles needed"] = TilesNeededDisplay,
+                [_localization.GetString("TilesWithWaste") ?? "With waste"] = TilesWithWasteDisplay
+            };
+            if (ShowCost && PricePerTile > 0)
+                results[_localization.GetString("TotalCost") ?? "Total cost"] = TotalCostDisplay;
+            if (!string.IsNullOrEmpty(GroutMassDisplay))
+                results[_localization.GetString("GroutMass") ?? "Grout mass"] = GroutMassDisplay;
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "CSV export failed.");
         }
         finally
         {

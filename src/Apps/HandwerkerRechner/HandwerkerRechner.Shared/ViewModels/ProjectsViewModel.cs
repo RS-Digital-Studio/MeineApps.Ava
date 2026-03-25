@@ -22,6 +22,7 @@ public sealed partial class ProjectsViewModel : ViewModelBase
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IPhotoPickerService _photoPickerService;
 
     /// <summary>
     /// Raised when the VM wants to navigate to a page.
@@ -62,7 +63,8 @@ public sealed partial class ProjectsViewModel : ViewModelBase
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IPhotoPickerService photoPickerService)
     {
         _projectService = projectService;
         _localization = localization;
@@ -70,6 +72,7 @@ public sealed partial class ProjectsViewModel : ViewModelBase
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _photoPickerService = photoPickerService;
     }
 
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
@@ -247,6 +250,106 @@ public sealed partial class ProjectsViewModel : ViewModelBase
         CalculatorType.CableSizing => "CableSizingPage",
         CalculatorType.Grout => "GroutPage",
 
+        // Profi-Werkzeuge
+        CalculatorType.HourlyRate => "HourlyRatePage",
+        CalculatorType.MaterialCompare => "MaterialComparePage",
+        CalculatorType.AreaMeasure => "AreaMeasurePage",
+
         _ => string.Empty
     };
+
+    #region Notizen
+
+    [ObservableProperty]
+    private bool _showNotesEditor;
+
+    [ObservableProperty]
+    private string _editingNotes = "";
+
+    [ObservableProperty]
+    private Project? _notesProject;
+
+    /// <summary>Fotos des aktuellen Projekts im Notizen-Editor</summary>
+    public ObservableCollection<string> CurrentProjectPhotos { get; } = [];
+
+    /// <summary>Öffnet den Notizen-Editor für ein Projekt</summary>
+    [RelayCommand]
+    private void EditNotes(Project? project)
+    {
+        if (project == null) return;
+        NotesProject = project;
+        EditingNotes = project.Notes;
+
+        // Fotos laden
+        CurrentProjectPhotos.Clear();
+        foreach (var photo in project.PhotoPaths)
+            CurrentProjectPhotos.Add(photo);
+
+        ShowNotesEditor = true;
+    }
+
+    /// <summary>Speichert die Notizen</summary>
+    [RelayCommand]
+    private async Task SaveNotesAsync()
+    {
+        if (NotesProject == null) return;
+
+        NotesProject.Notes = EditingNotes.Trim();
+        await _projectService.SaveProjectAsync(NotesProject);
+        ShowNotesEditor = false;
+        CurrentProjectPhotos.Clear();
+        NotesProject = null;
+
+        // Projektliste aktualisieren damit Notiz-Vorschau sichtbar wird
+        await LoadProjectsAsync();
+    }
+
+    /// <summary>Bricht den Notizen-Editor ab</summary>
+    [RelayCommand]
+    private void CancelNotesEdit()
+    {
+        ShowNotesEditor = false;
+        NotesProject = null;
+        CurrentProjectPhotos.Clear();
+    }
+
+    #endregion
+
+    #region Foto-Dokumentation
+
+    /// <summary>Öffnet den Photo-Picker und fügt ein Foto zum Projekt hinzu (max. 5)</summary>
+    [RelayCommand]
+    private async Task AddPhoto(Project? project)
+    {
+        if (project == null) return;
+
+        if (project.PhotoPaths.Count >= 5)
+        {
+            MessageRequested?.Invoke(
+                _localization.GetString("Error") ?? "Fehler",
+                _localization.GetString("MaxPhotosReached") ?? "Maximal 5 Fotos pro Projekt");
+            return;
+        }
+
+        var photoPath = await _photoPickerService.PickPhotoAsync();
+        if (string.IsNullOrEmpty(photoPath)) return;
+
+        project.PhotoPaths.Add(photoPath);
+        CurrentProjectPhotos.Add(photoPath);
+        await _projectService.SaveProjectAsync(project);
+    }
+
+    /// <summary>Löscht ein Foto aus dem Projekt und vom Dateisystem</summary>
+    [RelayCommand]
+    private async Task DeletePhoto(string? photoPath)
+    {
+        if (string.IsNullOrEmpty(photoPath) || NotesProject == null) return;
+
+        NotesProject.PhotoPaths.Remove(photoPath);
+        CurrentProjectPhotos.Remove(photoPath);
+        await _photoPickerService.DeletePhotoAsync(photoPath);
+        await _projectService.SaveProjectAsync(NotesProject);
+    }
+
+    #endregion
 }

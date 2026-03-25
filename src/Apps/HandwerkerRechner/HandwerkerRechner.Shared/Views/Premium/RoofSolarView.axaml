@@ -166,6 +166,10 @@
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
+                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
+                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                             Foreground="{DynamicResource AccentBrush}" />
+                          </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -290,6 +294,10 @@
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
+                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
+                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                             Foreground="{DynamicResource AccentBrush}" />
+                          </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -453,6 +461,10 @@
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
+                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
+                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                             Foreground="{DynamicResource AccentBrush}" />
+                          </Button>
                 </Grid>
               </StackPanel>
             </Border>

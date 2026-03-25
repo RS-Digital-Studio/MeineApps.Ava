@@ -8,10 +8,11 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDisposable
+public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _craftEngine;
     private Timer? _debounceTimer;
@@ -23,6 +24,7 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     /// <summary>
@@ -62,7 +64,8 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _craftEngine = craftEngine;
         _projectService = projectService;
@@ -73,9 +76,13 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
 
         // Einheitensystem-Änderungen abonnieren
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
+
+        // Standard-Materialpreis laden
+        PricePerBag = _priceService.GetPrice("concrete_sack_25kg")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -695,6 +702,78 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            // Premium: Direkt. Free: Rewarded Ad
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = Calculators[SelectedCalculator];
+            var inputs = new Dictionary<string, string>();
+            var results = new Dictionary<string, string>();
+
+            switch (SelectedCalculator)
+            {
+                case 0: // Platte
+                    inputs[_localization.GetString("SlabLength") ?? "Length"] = $"{SlabLength:F1} m";
+                    inputs[_localization.GetString("SlabWidth") ?? "Width"] = $"{SlabWidth:F1} m";
+                    inputs[_localization.GetString("SlabHeight") ?? "Height"] = $"{SlabHeight} cm";
+                    inputs[_localization.GetString("BagWeight") ?? "Bag weight"] = $"{BagWeight} kg";
+                    break;
+
+                case 1: // Streifenfundament
+                    inputs[_localization.GetString("StripLength") ?? "Length"] = $"{StripLength:F1} m";
+                    inputs[_localization.GetString("StripWidth") ?? "Width"] = $"{StripWidth} cm";
+                    inputs[_localization.GetString("StripDepth") ?? "Depth"] = $"{StripDepth} cm";
+                    inputs[_localization.GetString("BagWeight") ?? "Bag weight"] = $"{BagWeight} kg";
+                    break;
+
+                case 2: // Säule
+                    inputs[_localization.GetString("ColumnDiameter") ?? "Diameter"] = $"{ColumnDiameter} cm";
+                    inputs[_localization.GetString("ColumnHeight") ?? "Height"] = $"{ColumnHeight} cm";
+                    inputs[_localization.GetString("BagWeight") ?? "Bag weight"] = $"{BagWeight} kg";
+                    break;
+            }
+
+            // Ergebnisse (gleich fuer alle Sub-Rechner)
+            results[_localization.GetString("ResultVolume") ?? "Volume"] = VolumeDisplay;
+            results[_localization.GetString("ResultCite") ?? "Cement"] = CementDisplay;
+            results[_localization.GetString("ResultSand") ?? "Sand"] = SandDisplay;
+            results[_localization.GetString("ResultGravel") ?? "Gravel"] = GravelDisplay;
+            results[_localization.GetString("ResultWater") ?? "Water"] = WaterDisplay;
+            results[_localization.GetString("ResultBags") ?? "Bags"] = BagsDisplay;
+
+            if (ShowBagCost && PricePerBag > 0)
+                results[_localization.GetString("PricePerBag") ?? "Bag cost"] = BagCostDisplay;
+            if (ShowCubicMeterCost && PricePerCubicMeter > 0)
+                results[_localization.GetString("PricePerCubicMeter") ?? "m\u00b3 cost"] = CubicMeterCostDisplay;
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "Export failed.");
         }
         finally
         {

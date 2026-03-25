@@ -8,13 +8,14 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
 /// <summary>
 /// Treppen-Rechner ViewModel (Premium) - Berechnet Treppenmaße nach DIN 18065
 /// </summary>
-public sealed partial class StairsViewModel : ViewModelBase, IDisposable
+public sealed partial class StairsViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;
@@ -25,6 +26,7 @@ public sealed partial class StairsViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
     public event Action<string>? NavigationRequested;
@@ -41,7 +43,8 @@ public sealed partial class StairsViewModel : ViewModelBase, IDisposable
         IMaterialExportService exportService,
         IFileShareService fileShareService,
         IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IMaterialPriceService priceService)
     {
         _engine = engine;
         _projectService = projectService;
@@ -51,6 +54,10 @@ public sealed partial class StairsViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
+        _priceService = priceService;
+
+        // Standard-Materialpreis laden
+        PricePerStep = _priceService.GetPrice("stair_step_wood")?.EffectivePrice ?? 0;
     }
 
     /// <summary>
@@ -469,6 +476,67 @@ public sealed partial class StairsViewModel : ViewModelBase, IDisposable
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task ExportCsv()
+    {
+        if (!HasResult) return;
+        if (IsExporting) return;
+
+        try
+        {
+            IsExporting = true;
+
+            if (!_purchaseService.IsPremium)
+            {
+                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
+                if (!adResult) return;
+            }
+
+            var calcType = _localization.GetString("CalcStairs");
+            var inputs = new Dictionary<string, string>();
+            var results = new Dictionary<string, string>();
+
+            if (StairsResult != null)
+            {
+                inputs[_localization.GetString("FloorHeight") ?? "Geschosshöhe"] = $"{FloorHeight:F1} cm";
+                inputs[_localization.GetString("StairWidth") ?? "Treppenbreite"] = $"{StairWidth:F1} cm";
+                if (CustomStepCount > 0)
+                    inputs[_localization.GetString("CustomStepCount") ?? "Stufenanzahl"] = $"{CustomStepCount}";
+
+                results[_localization.GetString("ResultStepCount") ?? "Stufen"] = $"{StairsResult.StepCount}";
+                results[_localization.GetString("ResultStepHeight") ?? "Stufenhöhe"] = $"{StairsResult.StepHeight:F1} cm";
+                results[_localization.GetString("ResultTreadDepth") ?? "Auftritt"] = $"{StairsResult.TreadDepth:F1} cm";
+                results[_localization.GetString("ResultRunLength") ?? "Lauflänge"] = $"{StairsResult.RunLength / 100:F2} m";
+                results[_localization.GetString("ResultAngle") ?? "Steigungswinkel"] = $"{StairsResult.Angle:F1}\u00b0";
+                results[_localization.GetString("ResultStepMeasure") ?? "Schrittmaß"] = $"{StairsResult.StepMeasure:F1} cm";
+                results[_localization.GetString("ResultStairLength") ?? "Treppenlänge"] = $"{StairsResult.StairLength / 100:F2} m";
+                results[_localization.GetString("DinCompliant") ?? "DIN 18065"] = StairsResult.IsDinCompliant
+                    ? _localization.GetString("DinCompliant") ?? "DIN 18065 \u2713"
+                    : _localization.GetString("NotDinCompliant") ?? "Nicht DIN-konform";
+
+                if (PricePerStep > 0)
+                    results[_localization.GetString("TotalCost") ?? "Gesamtkosten"] = $"{StairsResult.StepCount * PricePerStep:F2} {_localization.GetString("CurrencySymbol")}";
+            }
+            else
+            {
+                return;
+            }
+
+            var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
+            await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+        }
+        catch (Exception)
+        {
+            MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("CsvExportFailed") ?? "Export failed.");
         }
         finally
         {

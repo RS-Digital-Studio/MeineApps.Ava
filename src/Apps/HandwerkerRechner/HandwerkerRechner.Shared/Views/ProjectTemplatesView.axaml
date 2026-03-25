@@ -1,0 +1,324 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerRechner.ViewModels"
+             xmlns:models="using:HandwerkerRechner.Models"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             x:Class="HandwerkerRechner.Views.ProjectTemplatesView"
+             x:DataType="vm:ProjectTemplatesViewModel"
+             Background="Transparent">
+
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="Templates_RootGrid">
+
+    <!-- Zeile 0: Header -->
+    <Border Grid.Row="0"
+            Background="{DynamicResource AccentBrush}"
+            Padding="16,12,16,20"
+            CornerRadius="0,0,24,24"
+            AutomationProperties.AutomationId="Templates_HeaderBorder">
+      <Grid ColumnDefinitions="Auto,*">
+        <Button Command="{Binding GoBackCommand}"
+                Background="#33FFFFFF"
+                CornerRadius="20"
+                Width="40" Height="40"
+                Padding="0"
+                AutomationProperties.Name="Zurück"
+                AutomationProperties.AutomationId="Templates_BtnBack">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
+        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                    Margin="12,0,0,0" VerticalAlignment="Center">
+          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+            <mi:MaterialIcon Kind="ViewGridOutline" Width="22" Height="22"
+                             Foreground="White"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{Binding PageTitle}"
+                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     VerticalAlignment="Center"
+                     AutomationProperties.AutomationId="Templates_TxtTitle" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Zeile 1: Scrollbarer Inhalt -->
+    <Panel Grid.Row="1">
+
+      <!-- Loading -->
+      <ProgressBar IsIndeterminate="True"
+                   IsVisible="{Binding IsLoading}"
+                   Width="120"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   AutomationProperties.AutomationId="Templates_ProgressLoading" />
+
+      <!-- Inhalt -->
+      <ScrollViewer VerticalScrollBarVisibility="Auto"
+                    AutomationProperties.AutomationId="Templates_ScrollViewer">
+        <StackPanel Spacing="24" Margin="16,16,16,120">
+
+          <!-- Sektion: Eingebaute Vorlagen -->
+          <StackPanel Spacing="12"
+                      AutomationProperties.AutomationId="Templates_BuiltinSection">
+
+            <!-- Sektions-Header -->
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Grid.Column="0" Background="{DynamicResource AccentBrush}"
+                      CornerRadius="6" Width="4" Margin="0,0,10,0" />
+              <TextBlock Grid.Column="1" Text="{Binding BuiltinLabel}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center"
+                         AutomationProperties.AutomationId="Templates_TxtBuiltinLabel" />
+            </Grid>
+
+            <!-- Eingebaute Vorlagen als Cards -->
+            <ItemsControl ItemsSource="{Binding BuiltinTemplates}"
+                          AutomationProperties.AutomationId="Templates_BuiltinList">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:ProjectTemplate">
+                  <Border Classes="Card" Margin="0,0,0,10" CornerRadius="12"
+                          AutomationProperties.AutomationId="Templates_BuiltinCard">
+                    <i:Interaction.Behaviors>
+                      <behaviors:FadeInBehavior Duration="250" />
+                    </i:Interaction.Behaviors>
+                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="16,12">
+
+                      <!-- Icon-Kreis -->
+                      <Border Grid.Column="0"
+                              Background="{DynamicResource AccentBrush}"
+                              CornerRadius="24" Width="48" Height="48"
+                              Margin="0,0,14,0">
+                        <mi:MaterialIcon Kind="{Binding IconKind}"
+                                         Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                      </Border>
+
+                      <!-- Name + Beschreibung -->
+                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Category}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                      </StackPanel>
+
+                      <!-- Anwenden-Button -->
+                      <Button Grid.Column="2"
+                              Command="{Binding $parent[UserControl].((vm:ProjectTemplatesViewModel)DataContext).SelectTemplateCommand}"
+                              CommandParameter="{Binding}"
+                              Classes="Primary"
+                              Padding="12,8"
+                              MinHeight="44"
+                              VerticalAlignment="Center"
+                              AutomationProperties.Name="Vorlage anwenden">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                          <mi:MaterialIcon Kind="PlayOutline" Width="16" Height="16" />
+                          <TextBlock Text="{loc:Translate ApplyTemplate}"
+                                     FontSize="12" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+          </StackPanel>
+
+          <!-- Sektion: Eigene Vorlagen -->
+          <StackPanel Spacing="12"
+                      AutomationProperties.AutomationId="Templates_CustomSection">
+
+            <!-- Sektions-Header -->
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Grid.Column="0" Background="#A855F7"
+                      CornerRadius="6" Width="4" Margin="0,0,10,0" />
+              <TextBlock Grid.Column="1" Text="{Binding CustomLabel}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center"
+                         AutomationProperties.AutomationId="Templates_TxtCustomLabel" />
+            </Grid>
+
+            <!-- Keine eigenen Vorlagen: Hinweis -->
+            <Border Classes="Card" CornerRadius="12" Padding="24"
+                    IsVisible="{Binding !HasCustomTemplates}"
+                    AutomationProperties.AutomationId="Templates_EmptyCustom">
+              <StackPanel Spacing="12" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="FolderPlusOutline" Width="48" Height="48"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding NoCustomLabel}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center" />
+                <TextBlock Text="{loc:Translate SaveProjectHint}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- Eigene Vorlagen als Cards -->
+            <ItemsControl ItemsSource="{Binding CustomTemplates}"
+                          IsVisible="{Binding HasCustomTemplates}"
+                          AutomationProperties.AutomationId="Templates_CustomList">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:ProjectTemplate">
+                  <Border Classes="Card" Margin="0,0,0,10" CornerRadius="12"
+                          AutomationProperties.AutomationId="Templates_CustomCard">
+                    <i:Interaction.Behaviors>
+                      <behaviors:FadeInBehavior Duration="250" />
+                    </i:Interaction.Behaviors>
+                    <Grid ColumnDefinitions="Auto,*,Auto,8,Auto" Margin="16,12">
+
+                      <!-- Icon -->
+                      <Border Grid.Column="0"
+                              Background="#A855F7"
+                              CornerRadius="24" Width="48" Height="48"
+                              Margin="0,0,14,0">
+                        <mi:MaterialIcon Kind="{Binding IconKind}"
+                                         Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                      </Border>
+
+                      <!-- Name -->
+                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding CreatedDate, StringFormat='{}{0:d}'}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </StackPanel>
+
+                      <!-- Anwenden -->
+                      <Button Grid.Column="2"
+                              Command="{Binding $parent[UserControl].((vm:ProjectTemplatesViewModel)DataContext).SelectTemplateCommand}"
+                              CommandParameter="{Binding}"
+                              Classes="Primary"
+                              Padding="12,8"
+                              MinHeight="44"
+                              VerticalAlignment="Center"
+                              AutomationProperties.Name="Vorlage anwenden">
+                        <mi:MaterialIcon Kind="PlayOutline" Width="18" Height="18" />
+                      </Button>
+
+                      <!-- Löschen -->
+                      <Button Grid.Column="4"
+                              Command="{Binding $parent[UserControl].((vm:ProjectTemplatesViewModel)DataContext).DeleteCustomTemplateCommand}"
+                              CommandParameter="{Binding}"
+                              Background="Transparent"
+                              Padding="8"
+                              MinHeight="44"
+                              VerticalAlignment="Center"
+                              AutomationProperties.Name="Vorlage löschen">
+                        <mi:MaterialIcon Kind="DeleteOutline" Width="20" Height="20"
+                                         Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </Button>
+
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+          </StackPanel>
+
+        </StackPanel>
+      </ScrollViewer>
+
+    </Panel>
+
+    <!-- Vorlage-Anwenden Dialog Overlay -->
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            Background="#80000000"
+            IsVisible="{Binding ShowApplyDialog}"
+            AutomationProperties.AutomationId="Templates_ApplyDialogOverlay">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="340"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              AutomationProperties.AutomationId="Templates_ApplyDialogCard">
+        <StackPanel Spacing="16">
+
+          <!-- Dialog-Titel -->
+          <TextBlock Text="{Binding ApplyLabel}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Templates_TxtApplyTitle" />
+
+          <!-- Ausgewählte Vorlage -->
+          <Border Background="{DynamicResource AccentBrush}"
+                  CornerRadius="10" Padding="12,8">
+            <TextBlock Text="{Binding SelectedTemplate.Name}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="White"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       AutomationProperties.AutomationId="Templates_TxtSelectedName" />
+          </Border>
+
+          <!-- Projektname Eingabe -->
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding ProjectNameLabel}"
+                       FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBox Text="{Binding NewProjectName}"
+                     Watermark="{Binding ProjectNameLabel}"
+                     Classes="Outlined"
+                     AutomationProperties.AutomationId="Templates_TxtBoxProjectName" />
+          </StackPanel>
+
+          <!-- Dialog-Buttons -->
+          <Grid ColumnDefinitions="*,12,*">
+            <Button Grid.Column="0"
+                    Classes="Outlined"
+                    Command="{Binding CancelApplyDialogCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    MinHeight="44"
+                    Content="{loc:Translate Cancel}"
+                    AutomationProperties.AutomationId="Templates_BtnCancelApply" />
+            <Button Grid.Column="2"
+                    Classes="Primary"
+                    Command="{Binding ConfirmApplyTemplateCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    MinHeight="44"
+                    AutomationProperties.Name="Vorlage anwenden"
+                    AutomationProperties.AutomationId="Templates_BtnConfirmApply">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Check" Width="16" Height="16" />
+                <TextBlock Text="{loc:Translate Apply}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+        </StackPanel>
+      </Border>
+    </Border>
+
+  </Grid>
+
+</UserControl>

@@ -1,0 +1,49 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Touch-optimierte Styles für 7" Raspberry Pi Display (800x480 / 1024x600).
+        Größere Touch-Targets (min. 48dp), größere Schrift, mehr Padding.
+        Werden zusätzlich zu den normalen Styles geladen.
+    -->
+
+    <!-- Alle Buttons: Minimum 44dp Höhe für Touch -->
+    <Style Selector="Button">
+        <Setter Property="MinHeight" Value="44" />
+        <Setter Property="MinWidth" Value="44" />
+    </Style>
+
+    <!-- Tab-Buttons: Größer und deutlicher -->
+    <Style Selector="Button.tab">
+        <Setter Property="MinHeight" Value="56" />
+        <Setter Property="Padding" Value="6,10" />
+    </Style>
+
+    <!-- Toggle-Switches: Größer -->
+    <Style Selector="ToggleSwitch">
+        <Setter Property="MinHeight" Value="44" />
+    </Style>
+
+    <!-- TextBox: Größere Eingabefelder -->
+    <Style Selector="TextBox">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="FontSize" Value="15" />
+    </Style>
+
+    <!-- NumericUpDown: Touch-freundlich -->
+    <Style Selector="NumericUpDown">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="FontSize" Value="15" />
+    </Style>
+
+    <!-- ScrollViewer: Momentum-Scrolling-Verhalten -->
+    <Style Selector="ScrollViewer">
+        <Setter Property="AllowAutoHide" Value="False" />
+    </Style>
+
+    <!-- Cards: Mehr Padding für Touch -->
+    <Style Selector="Border.card">
+        <Setter Property="Padding" Value="20" />
+    </Style>
+
+</Styles>

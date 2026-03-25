@@ -1,0 +1,121 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SmartMeasure Farbpalette - Technisch-Professionell      -->
+    <!-- Dunkles Thema mit Orange-Akzenten fuer Messpunkte       -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+
+    <!-- Primaerfarbe: Orange (Messpunkte, CTA) -->
+    <Color x:Key="PrimaryColor">#FF6B00</Color>
+    <Color x:Key="PrimaryLightColor">#FF8F3F</Color>
+    <Color x:Key="PrimaryDarkColor">#CC5500</Color>
+
+    <!-- Sekundaer: Blau (Linien, Karte) -->
+    <Color x:Key="SecondaryColor">#2196F3</Color>
+    <Color x:Key="SecondaryLightColor">#64B5F6</Color>
+    <Color x:Key="SecondaryDarkColor">#1565C0</Color>
+
+    <!-- Akzent: Gruen (RTK Fix, Rasen, Erfolg) -->
+    <Color x:Key="AccentColor">#4CAF50</Color>
+    <Color x:Key="AccentLightColor">#66BB6A</Color>
+    <Color x:Key="AccentDarkColor">#2E7D32</Color>
+
+    <!-- Status -->
+    <Color x:Key="SuccessColor">#4CAF50</Color>
+    <Color x:Key="WarningColor">#FFC107</Color>
+    <Color x:Key="DangerColor">#EF5350</Color>
+    <Color x:Key="InfoColor">#2196F3</Color>
+
+    <!-- RTK Fix-Status Farben -->
+    <Color x:Key="RtkFixColor">#4CAF50</Color>
+    <Color x:Key="RtkFloatColor">#FFC107</Color>
+    <Color x:Key="RtkNoFixColor">#EF5350</Color>
+
+    <!-- Terrain-Hoehenstufen -->
+    <Color x:Key="TerrainLowColor">#1B5E20</Color>
+    <Color x:Key="TerrainMidLowColor">#4CAF50</Color>
+    <Color x:Key="TerrainMidColor">#FDD835</Color>
+    <Color x:Key="TerrainMidHighColor">#FF8F00</Color>
+    <Color x:Key="TerrainHighColor">#5D4037</Color>
+
+    <!-- Gartenplan-Elemente -->
+    <Color x:Key="GardenPathColor">#78909C</Color>
+    <Color x:Key="GardenBedColor">#6D4C41</Color>
+    <Color x:Key="GardenLawnColor">#66BB6A</Color>
+    <Color x:Key="GardenWallColor">#EF5350</Color>
+    <Color x:Key="GardenTerraceColor">#D7CCC8</Color>
+
+    <!-- Hintergrund (Premium Dark) -->
+    <Color x:Key="BgPrimaryColor">#1A1A2E</Color>
+    <Color x:Key="BgSecondaryColor">#16213E</Color>
+    <Color x:Key="BgCardColor">#1E2A45</Color>
+    <Color x:Key="BgCardHoverColor">#253555</Color>
+    <Color x:Key="BgElevatedColor">#2A3F60</Color>
+
+    <!-- Text -->
+    <Color x:Key="TextPrimaryColor">#E8E8E8</Color>
+    <Color x:Key="TextSecondaryColor">#8899AA</Color>
+    <Color x:Key="TextMutedColor">#556677</Color>
+
+    <!-- Solid Brushes -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+    <SolidColorBrush x:Key="PrimaryLightBrush" Color="{StaticResource PrimaryLightColor}" />
+    <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryDarkColor}" />
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}" />
+    <SolidColorBrush x:Key="SecondaryLightBrush" Color="{StaticResource SecondaryLightColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentLightBrush" Color="{StaticResource AccentLightColor}" />
+    <SolidColorBrush x:Key="BgPrimaryBrush" Color="{StaticResource BgPrimaryColor}" />
+    <SolidColorBrush x:Key="BgSecondaryBrush" Color="{StaticResource BgSecondaryColor}" />
+    <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCardColor}" />
+    <SolidColorBrush x:Key="BgElevatedBrush" Color="{StaticResource BgElevatedColor}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+    <SolidColorBrush x:Key="RtkFixBrush" Color="{StaticResource RtkFixColor}" />
+    <SolidColorBrush x:Key="RtkFloatBrush" Color="{StaticResource RtkFloatColor}" />
+    <SolidColorBrush x:Key="RtkNoFixBrush" Color="{StaticResource RtkNoFixColor}" />
+
+    <!-- Gradient Brushes -->
+    <LinearGradientBrush x:Key="CardGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#1E2A45" Offset="0" />
+        <GradientStop Color="#1A2540" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="HeaderGradientBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Color="#1A1A2E" Offset="0" />
+        <GradientStop Color="#1E2A45" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#FF6B00" Offset="0" />
+        <GradientStop Color="#FF8F3F" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="TabBarGradientBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#16213E" Offset="0" />
+        <GradientStop Color="#1A1A2E" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="AccentGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#2E7D32" Offset="0" />
+        <GradientStop Color="#4CAF50" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="DangerGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#C62828" Offset="0" />
+        <GradientStop Color="#EF5350" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Spacing / Design Tokens -->
+    <CornerRadius x:Key="CardRadius">16</CornerRadius>
+    <CornerRadius x:Key="ButtonRadius">12</CornerRadius>
+    <CornerRadius x:Key="SmallRadius">8</CornerRadius>
+    <Thickness x:Key="CardPadding">20</Thickness>
+    <Thickness x:Key="PagePadding">16</Thickness>
+
+</ResourceDictionary>

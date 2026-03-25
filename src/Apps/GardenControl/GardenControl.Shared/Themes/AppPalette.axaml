@@ -1,0 +1,116 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- GardenControl Premium Farbpalette - Natur/Garten   -->
+    <!-- Dunkles Thema mit lebendigen Akzentfarben          -->
+    <!-- ═══════════════════════════════════════════════════ -->
+
+    <!-- Primärfarbe: Sattes Grün (Natur) -->
+    <Color x:Key="PrimaryColor">#2E7D32</Color>
+    <Color x:Key="PrimaryLightColor">#66BB6A</Color>
+    <Color x:Key="PrimaryDarkColor">#1B5E20</Color>
+
+    <!-- Akzent: Warmes Erd-Braun -->
+    <Color x:Key="AccentColor">#8D6E63</Color>
+    <Color x:Key="AccentLightColor">#A1887F</Color>
+
+    <!-- Wasser-Blau (Bewässerung aktiv) -->
+    <Color x:Key="WaterColor">#1E88E5</Color>
+    <Color x:Key="WaterLightColor">#42A5F5</Color>
+    <Color x:Key="WaterDarkColor">#1565C0</Color>
+
+    <!-- Status -->
+    <Color x:Key="SuccessColor">#4CAF50</Color>
+    <Color x:Key="WarningColor">#FFA726</Color>
+    <Color x:Key="DangerColor">#EF5350</Color>
+    <Color x:Key="InfoColor">#42A5F5</Color>
+
+    <!-- Feuchtigkeit: Gradient von trocken → nass -->
+    <Color x:Key="MoistureCriticalColor">#EF5350</Color>
+    <Color x:Key="MoistureLowColor">#FFA726</Color>
+    <Color x:Key="MoistureOptimalColor">#66BB6A</Color>
+    <Color x:Key="MoistureHighColor">#42A5F5</Color>
+
+    <!-- Hintergrund (Premium Dark) -->
+    <Color x:Key="BgPrimaryColor">#0F1923</Color>
+    <Color x:Key="BgSecondaryColor">#162333</Color>
+    <Color x:Key="BgCardColor">#1C2E42</Color>
+    <Color x:Key="BgCardHoverColor">#243A52</Color>
+    <Color x:Key="BgElevatedColor">#253D57</Color>
+
+    <!-- Text -->
+    <Color x:Key="TextPrimaryColor">#F0F4F8</Color>
+    <Color x:Key="TextSecondaryColor">#8BA4BC</Color>
+    <Color x:Key="TextMutedColor">#5A7A96</Color>
+
+    <!-- Solid Brushes -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+    <SolidColorBrush x:Key="PrimaryLightBrush" Color="{StaticResource PrimaryLightColor}" />
+    <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryDarkColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="WaterBrush" Color="{StaticResource WaterColor}" />
+    <SolidColorBrush x:Key="WaterLightBrush" Color="{StaticResource WaterLightColor}" />
+    <SolidColorBrush x:Key="BgPrimaryBrush" Color="{StaticResource BgPrimaryColor}" />
+    <SolidColorBrush x:Key="BgSecondaryBrush" Color="{StaticResource BgSecondaryColor}" />
+    <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCardColor}" />
+    <SolidColorBrush x:Key="BgElevatedBrush" Color="{StaticResource BgElevatedColor}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+
+    <!-- Gradient Brushes (Premium-Look) -->
+    <LinearGradientBrush x:Key="CardGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#1C2E42" Offset="0" />
+        <GradientStop Color="#1A3350" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="HeaderGradientBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Color="#0F1923" Offset="0" />
+        <GradientStop Color="#162840" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#2E7D32" Offset="0" />
+        <GradientStop Color="#388E3C" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="WaterGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#1565C0" Offset="0" />
+        <GradientStop Color="#42A5F5" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="DangerGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#C62828" Offset="0" />
+        <GradientStop Color="#EF5350" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="TabBarGradientBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#162333" Offset="0" />
+        <GradientStop Color="#0F1923" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Glow-Effekt-Brush (für aktive Elemente) -->
+    <LinearGradientBrush x:Key="GlowGreenBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#1B5E20" Offset="0" />
+        <GradientStop Color="#2E7D32" Offset="0.5" />
+        <GradientStop Color="#43A047" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="GlowBlueBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#0D47A1" Offset="0" />
+        <GradientStop Color="#1E88E5" Offset="0.5" />
+        <GradientStop Color="#42A5F5" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Spacing / Design Tokens -->
+    <CornerRadius x:Key="CardRadius">16</CornerRadius>
+    <CornerRadius x:Key="ButtonRadius">12</CornerRadius>
+    <CornerRadius x:Key="SmallRadius">8</CornerRadius>
+    <Thickness x:Key="CardPadding">20</Thickness>
+    <Thickness x:Key="PagePadding">16</Thickness>
+
+</ResourceDictionary>

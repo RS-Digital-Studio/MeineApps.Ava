@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GardenControl.Shared.ViewModels"
+             xmlns:views="using:GardenControl.Shared.Views"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="GardenControl.Shared.Views.MainView"
+             x:DataType="vm:MainViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource BgPrimaryBrush}">
+
+        <!-- ═══ Header (Premium Gradient) ═══ -->
+        <Border Grid.Row="0" Background="{DynamicResource HeaderGradientBrush}"
+                Padding="20,14" BorderBrush="#10FFFFFF" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Logo + Titel -->
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Border Width="36" Height="36" CornerRadius="10"
+                            Background="{DynamicResource PrimaryGradientBrush}">
+                        <mi:MaterialIcon Kind="Sprinkler" Width="22" Height="22"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="GardenControl" FontSize="18" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="Bewässerungssteuerung" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Verbindungsstatus -->
+                <Border Grid.Column="2" CornerRadius="20" Padding="12,6"
+                        Background="{Binding IsConnected, Converter={x:Static views:MainView.ConnectionBgConverter}}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse Width="8" Height="8"
+                                 Fill="{Binding IsConnected, Converter={x:Static views:MainView.ConnectionBrushConverter}}" />
+                        <TextBlock Text="{Binding ConnectionStatus}" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Fehler-Banner ═══ -->
+        <Border Grid.Row="1" Background="#E65100" Padding="10,6" IsVisible="{Binding HasError}"
+                HorizontalAlignment="Stretch">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <mi:MaterialIcon Kind="AlertCircle" Width="16" Height="16" Foreground="White"
+                                 VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBlock Grid.Column="1" Text="{Binding ErrorMessage}" FontSize="12"
+                           Foreground="White" TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+                <Button Grid.Column="2" Command="{Binding ClearErrorCommand}"
+                        Background="Transparent" Padding="4" Margin="8,0,0,0">
+                    <mi:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="White" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Content ═══ -->
+        <Grid Grid.Row="2">
+            <views:DashboardView DataContext="{Binding Dashboard}"
+                                  IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsDashboardActive}" />
+            <views:ZoneControlView DataContext="{Binding ZoneControl}"
+                                    IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsZoneControlActive}" />
+            <views:ScheduleView DataContext="{Binding Schedule}"
+                                 IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsScheduleActive}" />
+            <views:CalibrationView DataContext="{Binding Calibration}"
+                                    IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsCalibrationActive}" />
+            <views:HistoryView DataContext="{Binding History}"
+                                IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsHistoryActive}" />
+            <views:SettingsView DataContext="{Binding Settings}"
+                                 IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsSettingsActive}" />
+        </Grid>
+
+        <!-- ═══ Tab-Bar (Premium) ═══ -->
+        <Border Grid.Row="3" Background="{DynamicResource TabBarGradientBrush}"
+                Padding="4,6" BorderBrush="#10FFFFFF" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,*,*,*,*,*">
+                <Button Grid.Column="0" Command="{Binding NavigateCommand}" CommandParameter="Dashboard"
+                        Classes="tab" Classes.active="{Binding IsDashboardActive}">
+                    <StackPanel Spacing="3" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="ViewDashboard" Width="22" Height="22"
+                                         HorizontalAlignment="Center" />
+                        <TextBlock Text="Dashboard" FontSize="9" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="1" Command="{Binding NavigateCommand}" CommandParameter="ZoneControl"
+                        Classes="tab" Classes.active="{Binding IsZoneControlActive}">
+                    <StackPanel Spacing="3" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="WaterPump" Width="22" Height="22"
+                                         HorizontalAlignment="Center" />
+                        <TextBlock Text="Steuerung" FontSize="9" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="2" Command="{Binding NavigateCommand}" CommandParameter="Schedule"
+                        Classes="tab" Classes.active="{Binding IsScheduleActive}">
+                    <StackPanel Spacing="3" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="CalendarClock" Width="22" Height="22"
+                                         HorizontalAlignment="Center" />
+                        <TextBlock Text="Automatik" FontSize="9" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="3" Command="{Binding NavigateCommand}" CommandParameter="Calibration"
+                        Classes="tab" Classes.active="{Binding IsCalibrationActive}">
+                    <StackPanel Spacing="3" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="Tune" Width="22" Height="22"
+                                         HorizontalAlignment="Center" />
+                        <TextBlock Text="Kalibrierung" FontSize="9" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="4" Command="{Binding NavigateCommand}" CommandParameter="History"
+                        Classes="tab" Classes.active="{Binding IsHistoryActive}">
+                    <StackPanel Spacing="3" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="ChartLine" Width="22" Height="22"
+                                         HorizontalAlignment="Center" />
+                        <TextBlock Text="Verlauf" FontSize="9" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="5" Command="{Binding NavigateCommand}" CommandParameter="Settings"
+                        Classes="tab" Classes.active="{Binding IsSettingsActive}">
+                    <StackPanel Spacing="3" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="Cog" Width="22" Height="22"
+                                         HorizontalAlignment="Center" />
+                        <TextBlock Text="Einstellungen" FontSize="9" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+    </Grid>
+
+    <UserControl.Styles>
+        <!-- Tab-Button Base -->
+        <Style Selector="Button.tab">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+            <Setter Property="Padding" Value="4,10" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- Tab-Button Aktiv -->
+        <Style Selector="Button.tab.active">
+            <Setter Property="Background" Value="{DynamicResource PrimaryGradientBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <!-- Tab-Button Hover -->
+        <Style Selector="Button.tab:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#15FFFFFF" />
+        </Style>
+        <Style Selector="Button.tab:pointerover">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+    </UserControl.Styles>
+</UserControl>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:allowBackup="true"
+        android:label="GardenControl"
+        android:supportsRtl="true"
+        android:theme="@style/MyTheme.NoActionBar">
+    </application>
+
+    <!-- Internet für Verbindung zum Pi -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Lokales Netzwerk (Android 12+) -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+</manifest>

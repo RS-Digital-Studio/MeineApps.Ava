@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Shared Libraries -->
+    <ProjectReference Include="..\..\..\Libraries\MeineApps.Core.Ava\MeineApps.Core.Ava.csproj" />
+    <ProjectReference Include="..\..\..\UI\MeineApps.UI\MeineApps.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Avalonia -->
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Material.Icons.Avalonia" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Avalonia.Skia" />
+    <PackageReference Include="Avalonia.Labs.Controls" />
+
+    <!-- MVVM -->
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+
+    <!-- DI -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+
+    <!-- Karten (OpenStreetMap) -->
+    <PackageReference Include="Mapsui.Avalonia" />
+
+    <!-- Datenbank -->
+    <PackageReference Include="sqlite-net-pcl" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" />
+  </ItemGroup>
+
+  <!-- Lokalisierung (erst einbinden wenn RESX-Dateien erstellt sind)
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\Strings\AppStrings.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>AppStrings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  -->
+</Project>

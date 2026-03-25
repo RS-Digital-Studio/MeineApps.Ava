@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GardenControl.Shared.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:views="using:GardenControl.Shared.Views"
+             x:Class="GardenControl.Shared.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12" Margin="16">
+
+            <TextBlock Text="Einstellungen" FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <!-- Server-Verbindung -->
+            <Border Background="{DynamicResource CardGradientBrush}" CornerRadius="{DynamicResource CardRadius}" Padding="16" BorderBrush="#15FFFFFF" BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Server-Verbindung" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                    <TextBlock Text="IP-Adresse des Raspberry Pi im Netzwerk"
+                               FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                        <TextBox Text="{Binding ServerUrl}" Watermark="http://192.168.178.XX:5000"
+                                 FontSize="14" />
+                        <Button Grid.Column="1" Margin="8,0,0,0" Padding="12,8" CornerRadius="8"
+                                Background="{DynamicResource PrimaryBrush}"
+                                Command="{Binding SaveServerUrlCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
+                                <TextBlock Text="Verbinden" Foreground="White" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <Button Content="Verbindung testen" Command="{Binding TestConnectionCommand}"
+                            Padding="12,8" CornerRadius="8" Margin="0,4,0,0" />
+
+                    <TextBlock Text="{Binding ConnectionTestResult}" FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                    <!-- Verbindungsstatus -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                        <Ellipse Width="10" Height="10">
+                            <Ellipse.Fill>
+                                <Binding Path="IsConnected">
+                                    <Binding.Converter>
+                                        <x:Static Member="views:MainView.ConnectionBrushConverter" />
+                                    </Binding.Converter>
+                                </Binding>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                        <TextBlock Text="{Binding IsConnected, Converter={x:Static views:SettingsView.ConnectedTextConverter}}"
+                                   FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Server-Info -->
+            <Border Background="{DynamicResource CardGradientBrush}" CornerRadius="{DynamicResource CardRadius}" Padding="16" BorderBrush="#15FFFFFF" BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Server-Konfiguration" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <Button Grid.Column="1" Command="{Binding RefreshServerInfoCommand}"
+                                Padding="8,4" CornerRadius="6">
+                            <mi:MaterialIcon Kind="Refresh" Width="18" Height="18" />
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Text="{Binding ServerInfo}" FontSize="12" FontFamily="Consolas"
+                               Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- App-Info -->
+            <Border Background="{DynamicResource CardGradientBrush}" CornerRadius="{DynamicResource CardRadius}" Padding="16" BorderBrush="#15FFFFFF" BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="GardenControl" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="v1.0.0 - Bewässerungssteuerung" FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="RS Digital" FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+            </Border>
+
+            <Border Height="60" /> <!-- Spacer -->
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SmartMeasure.Shared.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:models="using:SmartMeasure.Shared.Models"
+             xmlns:labs="using:Avalonia.Labs.Controls"
+             x:Class="SmartMeasure.Shared.Views.GardenPlanView"
+             x:DataType="vm:GardenPlanViewModel">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Toolbar oben -->
+        <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}" Padding="8,4">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Weg"
+                            Background="{DynamicResource BgCardBrush}"
+                            Command="{Binding}" CommandParameter="Weg">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="Road" Width="16" Height="16" Foreground="#78909C" />
+                            <TextBlock Text="Weg" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Button>
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Beet"
+                            Background="{DynamicResource BgCardBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="Flower" Width="16" Height="16" Foreground="#6D4C41" />
+                            <TextBlock Text="Beet" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Button>
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Rasen"
+                            Background="{DynamicResource BgCardBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="Grass" Width="16" Height="16" Foreground="#66BB6A" />
+                            <TextBlock Text="Rasen" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Button>
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Mauer"
+                            Background="{DynamicResource BgCardBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="Wall" Width="16" Height="16" Foreground="#EF5350" />
+                            <TextBlock Text="Mauer" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Button>
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Terrasse"
+                            Background="{DynamicResource BgCardBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="ViewDashboard" Width="16" Height="16" Foreground="#D7CCC8" />
+                            <TextBlock Text="Terrasse" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Separator -->
+                    <Border Width="1" Background="{DynamicResource BgCardBrush}" Margin="4,2" />
+
+                    <!-- Undo -->
+                    <Button Padding="8,6" CornerRadius="6" Command="{Binding UndoCommand}"
+                            IsEnabled="{Binding CanUndo}" Background="{DynamicResource BgCardBrush}">
+                        <mi:MaterialIcon Kind="Undo" Width="16" Height="16"
+                                         Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </Button>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- SkiaSharp Canvas -->
+        <Panel Grid.Row="1">
+            <labs:SKCanvasView x:Name="PlanCanvas" PaintSurface="OnPaintSurface" />
+        </Panel>
+
+        <!-- Materialliste unten -->
+        <Border Grid.Row="2" Background="{DynamicResource BgSecondaryBrush}"
+                Padding="12,6" MaxHeight="120">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Materialliste" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <ItemsControl ItemsSource="{Binding Materials}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:MaterialEstimate">
+                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <TextBlock Text="{Binding Material}" FontSize="11"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    <TextBlock Grid.Column="1" FontSize="11" FontWeight="Bold" Margin="8,0"
+                                               Foreground="{DynamicResource PrimaryBrush}">
+                                        <Run Text="{Binding QuantityWithSafety, StringFormat='{}{0:F1}'}" />
+                                    </TextBlock>
+                                    <TextBlock Grid.Column="2" Text="{Binding Unit}" FontSize="11"
+                                               Foreground="{DynamicResource TextMutedBrush}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock FontSize="11" Margin="0,4,0,0"
+                               Foreground="{DynamicResource TextMutedBrush}">
+                        <Run Text="Werte inkl. 15% Sicherheitszuschlag" />
+                    </TextBlock>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,164 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SmartMeasure.Shared.ViewModels"
+             xmlns:svc="using:SmartMeasure.Shared.Services"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="SmartMeasure.Shared.Views.ConnectView"
+             x:DataType="vm:ConnectViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12" Margin="16">
+
+            <!-- BLE-Verbindung -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="{DynamicResource CardPadding}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Stab-Verbindung" FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
+                        <TextBlock Text="{Binding ConnectionStatus}" FontSize="14"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Command="{Binding ScanCommand}"
+                                IsEnabled="{Binding !IsScanning}"
+                                CornerRadius="{DynamicResource ButtonRadius}"
+                                Background="{DynamicResource SecondaryBrush}"
+                                Foreground="White" Padding="16,8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <mi:MaterialIcon Kind="BluetoothSearching" Width="18" Height="18" />
+                                <TextBlock Text="Scannen" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- Gefundene Geräte -->
+                    <ItemsControl ItemsSource="{Binding FoundDevices}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="svc:BleDevice">
+                                <Button Margin="0,4" Padding="12,10"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left"
+                                        CornerRadius="{DynamicResource SmallRadius}"
+                                        Background="{DynamicResource BgElevatedBrush}"
+                                        Command="{Binding $parent[ItemsControl].((vm:ConnectViewModel)DataContext).ConnectToDeviceCommand}"
+                                        CommandParameter="{Binding}">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                                            <TextBlock Text="{Binding Address}" FontSize="11"
+                                                       Foreground="{DynamicResource TextMutedBrush}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                                   FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
+                                            <Run Text="{Binding Rssi}" /><Run Text=" dBm" />
+                                        </TextBlock>
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Trennen -->
+                    <Button Content="Trennen" IsVisible="{Binding IsConnected}"
+                            Command="{Binding DisconnectCommand}"
+                            HorizontalAlignment="Stretch" Padding="0,10"
+                            HorizontalContentAlignment="Center"
+                            CornerRadius="{DynamicResource ButtonRadius}"
+                            Background="{DynamicResource DangerGradientBrush}"
+                            Foreground="White" />
+                </StackPanel>
+            </Border>
+
+            <!-- NTRIP-Konfiguration -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="{DynamicResource CardPadding}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="NTRIP (Korrekturdaten)" FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                    <TextBox Text="{Binding NtripServer}" Watermark="Server (IP oder Hostname)"
+                             Background="{DynamicResource BgElevatedBrush}"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBox Grid.Column="0" Text="{Binding NtripMountpoint}" Watermark="Mountpoint"
+                                 Background="{DynamicResource BgElevatedBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBox Grid.Column="1" Text="{Binding NtripPort}" Watermark="Port" Width="80"
+                                 Background="{DynamicResource BgElevatedBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <TextBox Grid.Column="0" Text="{Binding NtripUser}" Watermark="Benutzer"
+                                 Background="{DynamicResource BgElevatedBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBox Grid.Column="1" Text="{Binding NtripPassword}" Watermark="Passwort"
+                                 PasswordChar="*"
+                                 Background="{DynamicResource BgElevatedBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </Grid>
+
+                    <Button Content="NTRIP senden" Command="{Binding SendNtripConfigCommand}"
+                            HorizontalAlignment="Stretch" Padding="0,10"
+                            HorizontalContentAlignment="Center"
+                            CornerRadius="{DynamicResource ButtonRadius}"
+                            Background="{DynamicResource AccentGradientBrush}"
+                            Foreground="White" />
+                </StackPanel>
+            </Border>
+
+            <!-- WiFi -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="{DynamicResource CardPadding}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="WiFi (Hotspot)" FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                    <TextBox Text="{Binding WifiSsid}" Watermark="SSID"
+                             Background="{DynamicResource BgElevatedBrush}"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBox Text="{Binding WifiPassword}" Watermark="Passwort" PasswordChar="*"
+                             Background="{DynamicResource BgElevatedBrush}"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                    <Button Content="WiFi senden" Command="{Binding SendWiFiConfigCommand}"
+                            HorizontalAlignment="Stretch" Padding="0,10"
+                            HorizontalContentAlignment="Center"
+                            CornerRadius="{DynamicResource ButtonRadius}"
+                            Background="{DynamicResource SecondaryBrush}"
+                            Foreground="White" />
+                </StackPanel>
+            </Border>
+
+            <!-- Stablänge (Antenne oben → Spitze unten) -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="{DynamicResource CardPadding}"
+                    Margin="0,0,0,60">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Stablänge" FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="Abstand GPS-Antenne (oben) bis Spitze (Boden)"
+                               FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                        <TextBox Grid.Column="0" Text="{Binding StabHeight}"
+                                 Background="{DynamicResource BgElevatedBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Grid.Column="1" Text="m" FontSize="16"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Content="Setzen"
+                                Command="{Binding UpdateStabHeightCommand}"
+                                CornerRadius="{DynamicResource ButtonRadius}"
+                                Background="{DynamicResource PrimaryBrush}"
+                                Foreground="White" Padding="16,8" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

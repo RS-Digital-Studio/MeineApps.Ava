@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SmartMeasure.Shared.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:labs="using:Avalonia.Labs.Controls"
+             x:Class="SmartMeasure.Shared.Views.TerrainView"
+             x:DataType="vm:TerrainViewModel">
+
+    <Grid RowDefinitions="*,Auto">
+        <!-- 3D SkiaSharp Canvas -->
+        <Panel Grid.Row="0">
+            <labs:SKCanvasView x:Name="TerrainCanvas" PaintSurface="OnPaintSurface" />
+
+            <!-- Overlay: Statistiken oben links -->
+            <Border Background="#80000000" CornerRadius="8" Padding="10,6"
+                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12">
+                <StackPanel Spacing="2">
+                    <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
+                        <Run Text="Punkte: " /><Run Text="{Binding PointCount}" FontWeight="Bold" />
+                    </TextBlock>
+                    <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
+                        <Run Text="Fläche: " /><Run Text="{Binding AreaText}" FontWeight="Bold" />
+                    </TextBlock>
+                    <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
+                        <Run Text="Höhe: " /><Run Text="{Binding HeightRangeText}" FontWeight="Bold" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Reset-Button oben rechts -->
+            <Button HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12"
+                    Command="{Binding ResetViewCommand}"
+                    Background="#80000000" CornerRadius="8" Padding="8">
+                <mi:MaterialIcon Kind="Refresh" Width="20" Height="20"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Button>
+        </Panel>
+
+        <!-- Steuerleiste unten -->
+        <Border Grid.Row="1" Background="{DynamicResource BgSecondaryBrush}" Padding="12,8">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                <!-- Überhöhung -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Höhe:" FontSize="11" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <Slider Value="{Binding Exaggeration}" Minimum="1" Maximum="10"
+                            Width="80" VerticalAlignment="Center" />
+                    <TextBlock FontSize="11" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextMutedBrush}">
+                        <Run Text="{Binding Exaggeration, StringFormat='{}{0:F0}'}" /><Run Text="x" />
+                    </TextBlock>
+                </StackPanel>
+
+                <Panel Grid.Column="1" /> <!-- Spacer -->
+
+                <!-- Wireframe Toggle -->
+                <ToggleButton Grid.Column="2" IsChecked="{Binding ShowWireframe}"
+                              Background="Transparent" Padding="6">
+                    <mi:MaterialIcon Kind="Grid" Width="18" Height="18"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                </ToggleButton>
+
+                <!-- Konturen Toggle -->
+                <ToggleButton Grid.Column="3" IsChecked="{Binding ShowContours}"
+                              Background="Transparent" Padding="6">
+                    <mi:MaterialIcon Kind="ChartLine" Width="18" Height="18"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                </ToggleButton>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

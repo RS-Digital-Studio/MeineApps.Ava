@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GardenControl.Core\GardenControl.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Avalonia (Views liegen im Shared-Projekt) -->
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Material.Icons.Avalonia" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Avalonia.Skia" />
+
+    <!-- MVVM -->
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+
+    <!-- SignalR Client für Echtzeit-Updates vom Pi -->
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+
+    <!-- DI -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

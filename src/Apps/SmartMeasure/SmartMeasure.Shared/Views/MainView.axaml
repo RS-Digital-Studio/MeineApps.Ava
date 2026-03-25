@@ -1,0 +1,199 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SmartMeasure.Shared.ViewModels"
+             xmlns:views="using:SmartMeasure.Shared.Views"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="SmartMeasure.Shared.Views.MainView"
+             x:DataType="vm:MainViewModel"
+             Background="{DynamicResource BgPrimaryBrush}">
+
+    <UserControl.Styles>
+        <!-- Tab-Content Fade -->
+        <Style Selector="Border.TabContent">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.TabContent:not(.Active)">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+        <Style Selector="Border.TabContent.Active">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="True" />
+        </Style>
+
+        <!-- Tab-Buttons -->
+        <Style Selector="Button.TabBtn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+            <Setter Property="Padding" Value="0,4" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="MinHeight" Value="52" />
+            <Setter Property="MinWidth" Value="48" />
+        </Style>
+        <Style Selector="Button.TabBtn.Active">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+        </Style>
+        <Style Selector="Ellipse.TabDot">
+            <Setter Property="Width" Value="4" />
+            <Setter Property="Height" Value="4" />
+            <Setter Property="Fill" Value="Transparent" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Ellipse.TabDot.Active">
+            <Setter Property="Fill" Value="{DynamicResource PrimaryBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Status-Bar oben -->
+        <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}" Padding="12,6">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+                <!-- BLE-Status -->
+                <mi:MaterialIcon Grid.Column="0" Kind="Bluetooth"
+                                 IsVisible="{Binding IsBleConnected}"
+                                 Foreground="{DynamicResource AccentBrush}"
+                                 Width="16" Height="16" />
+                <mi:MaterialIcon Grid.Column="0" Kind="BluetoothOff"
+                                 IsVisible="{Binding !IsBleConnected}"
+                                 Foreground="{DynamicResource DangerBrush}"
+                                 Width="16" Height="16" />
+
+                <!-- Fix-Status -->
+                <Border Grid.Column="1" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
+                        Background="{DynamicResource BgCardBrush}">
+                    <TextBlock Text="{Binding FixStatusText}"
+                               FontWeight="Bold" FontSize="11"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Border>
+
+                <!-- Spacer -->
+                <Panel Grid.Column="2" />
+
+                <!-- Genauigkeit -->
+                <TextBlock Grid.Column="3" VerticalAlignment="Center"
+                           FontSize="10" Margin="0,0,8,0"
+                           Foreground="{DynamicResource TextSecondaryBrush}">
+                    <Run Text="±" /><Run Text="{Binding HorizontalAccuracy, StringFormat='{}{0:F1}'}" /><Run Text="cm" />
+                </TextBlock>
+
+                <!-- Satelliten -->
+                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="3" Margin="0,0,8,0">
+                    <mi:MaterialIcon Kind="Satellite" Width="12" Height="12"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                    <TextBlock Text="{Binding SatelliteCount}" FontSize="10"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                </StackPanel>
+
+                <!-- Akku -->
+                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="3">
+                    <mi:MaterialIcon Kind="Battery80" Width="12" Height="12"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                    <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}">
+                        <Run Text="{Binding BatteryLevel}" /><Run Text="%" />
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Content (alle Views, per Opacity umgeschaltet) -->
+        <Panel Grid.Row="1">
+            <Border Classes="TabContent" Classes.Active="{Binding IsSurveyActive}">
+                <views:SurveyView DataContext="{Binding SurveyVm}" />
+            </Border>
+            <Border Classes="TabContent" Classes.Active="{Binding IsTerrainActive}">
+                <views:TerrainView DataContext="{Binding TerrainVm}" />
+            </Border>
+            <Border Classes="TabContent" Classes.Active="{Binding IsGardenActive}">
+                <views:GardenPlanView DataContext="{Binding GardenPlanVm}" />
+            </Border>
+            <Border Classes="TabContent" Classes.Active="{Binding IsMapActive}">
+                <views:MapView DataContext="{Binding MapVm}" />
+            </Border>
+            <Border Classes="TabContent" Classes.Active="{Binding IsProjectsActive}">
+                <views:ProjectsView DataContext="{Binding ProjectsVm}" />
+            </Border>
+            <Border Classes="TabContent" Classes.Active="{Binding IsConnectActive}">
+                <views:ConnectView DataContext="{Binding ConnectVm}" />
+            </Border>
+            <Border Classes="TabContent" Classes.Active="{Binding IsSettingsActive}">
+                <views:SettingsView DataContext="{Binding SettingsVm}" />
+            </Border>
+        </Panel>
+
+        <!-- Tab-Bar unten (5 Haupttabs + Verbinden/Optionen im Overflow) -->
+        <Border Grid.Row="2" Background="{DynamicResource TabBarGradientBrush}"
+                BorderBrush="{DynamicResource BgCardBrush}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,*,*,*,*,*,*" Height="56">
+                <!-- Messung -->
+                <Button Grid.Column="0" Classes="TabBtn" Classes.Active="{Binding IsSurveyActive}"
+                        Command="{Binding NavigateCommand}" CommandParameter="Survey">
+                    <StackPanel Spacing="1" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="MapMarkerRadius" Width="22" Height="22" />
+                        <TextBlock Text="Messen" FontSize="9" HorizontalAlignment="Center" />
+                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsSurveyActive}" />
+                    </StackPanel>
+                </Button>
+                <!-- 3D-Gelände -->
+                <Button Grid.Column="1" Classes="TabBtn" Classes.Active="{Binding IsTerrainActive}"
+                        Command="{Binding NavigateCommand}" CommandParameter="Terrain">
+                    <StackPanel Spacing="1" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="Terrain" Width="22" Height="22" />
+                        <TextBlock Text="3D" FontSize="9" HorizontalAlignment="Center" />
+                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsTerrainActive}" />
+                    </StackPanel>
+                </Button>
+                <!-- Gartenplan -->
+                <Button Grid.Column="2" Classes="TabBtn" Classes.Active="{Binding IsGardenActive}"
+                        Command="{Binding NavigateCommand}" CommandParameter="Garden">
+                    <StackPanel Spacing="1" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="FlowerOutline" Width="22" Height="22" />
+                        <TextBlock Text="Garten" FontSize="9" HorizontalAlignment="Center" />
+                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsGardenActive}" />
+                    </StackPanel>
+                </Button>
+                <!-- Karte -->
+                <Button Grid.Column="3" Classes="TabBtn" Classes.Active="{Binding IsMapActive}"
+                        Command="{Binding NavigateCommand}" CommandParameter="Map">
+                    <StackPanel Spacing="1" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="Map" Width="22" Height="22" />
+                        <TextBlock Text="Karte" FontSize="9" HorizontalAlignment="Center" />
+                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsMapActive}" />
+                    </StackPanel>
+                </Button>
+                <!-- Projekte -->
+                <Button Grid.Column="4" Classes="TabBtn" Classes.Active="{Binding IsProjectsActive}"
+                        Command="{Binding NavigateCommand}" CommandParameter="Projects">
+                    <StackPanel Spacing="1" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="FolderMultiple" Width="22" Height="22" />
+                        <TextBlock Text="Projekte" FontSize="9" HorizontalAlignment="Center" />
+                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsProjectsActive}" />
+                    </StackPanel>
+                </Button>
+                <!-- Verbinden -->
+                <Button Grid.Column="5" Classes="TabBtn" Classes.Active="{Binding IsConnectActive}"
+                        Command="{Binding NavigateCommand}" CommandParameter="Connect">
+                    <StackPanel Spacing="1" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="BluetoothConnect" Width="22" Height="22" />
+                        <TextBlock Text="BLE" FontSize="9" HorizontalAlignment="Center" />
+                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsConnectActive}" />
+                    </StackPanel>
+                </Button>
+                <!-- Optionen -->
+                <Button Grid.Column="6" Classes="TabBtn" Classes.Active="{Binding IsSettingsActive}"
+                        Command="{Binding NavigateCommand}" CommandParameter="Settings">
+                    <StackPanel Spacing="1" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="Cog" Width="22" Height="22" />
+                        <TextBlock Text="Optionen" FontSize="9" HorizontalAlignment="Center" />
+                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsSettingsActive}" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

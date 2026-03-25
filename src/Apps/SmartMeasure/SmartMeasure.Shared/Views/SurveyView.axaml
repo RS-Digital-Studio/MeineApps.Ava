@@ -1,0 +1,186 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SmartMeasure.Shared.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="SmartMeasure.Shared.Views.SurveyView"
+             x:DataType="vm:SurveyViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12" Margin="16">
+
+            <!-- Koordinaten-Anzeige -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="{DynamicResource CardPadding}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Position" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="6">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Lat" FontSize="12"
+                                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LatText}"
+                                   FontSize="20" FontWeight="Bold" FontFamily="Consolas,monospace"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Lon" FontSize="12"
+                                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LonText}"
+                                   FontSize="20" FontWeight="Bold" FontFamily="Consolas,monospace"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Höhe" FontSize="12"
+                                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding AltText}"
+                                   FontSize="20" FontWeight="Bold" FontFamily="Consolas,monospace"
+                                   Foreground="{DynamicResource SecondaryBrush}" />
+                    </Grid>
+
+                    <!-- Genauigkeit + Satelliten -->
+                    <Grid ColumnDefinitions="*,*,*" Margin="0,8,0,0">
+                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                            <TextBlock Text="H-Genauigkeit" FontSize="10"
+                                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                            <TextBlock FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource AccentBrush}">
+                                <Run Text="±" /><Run Text="{Binding HorizontalAccuracy, StringFormat='{}{0:F1}'}" /><Run Text="cm" />
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                            <TextBlock Text="V-Genauigkeit" FontSize="10"
+                                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                            <TextBlock FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource AccentBrush}">
+                                <Run Text="±" /><Run Text="{Binding VerticalAccuracy, StringFormat='{}{0:F1}'}" /><Run Text="cm" />
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                            <TextBlock Text="Neigung" FontSize="10"
+                                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                            <TextBlock FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}">
+                                <Run Text="{Binding TiltAngle, StringFormat='{}{0:F1}'}" /><Run Text="°" />
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Schnell-Labels -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="12,8">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Punkt-Label" FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Content="Ecke" Margin="4,2" Padding="12,4"
+                                CornerRadius="{DynamicResource SmallRadius}"
+                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Ecke"
+                                Background="{DynamicResource BgElevatedBrush}"
+                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <Button Content="Grenze" Margin="4,2" Padding="12,4"
+                                CornerRadius="{DynamicResource SmallRadius}"
+                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Grenze"
+                                Background="{DynamicResource BgElevatedBrush}"
+                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <Button Content="Baum" Margin="4,2" Padding="12,4"
+                                CornerRadius="{DynamicResource SmallRadius}"
+                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Baum"
+                                Background="{DynamicResource BgElevatedBrush}"
+                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <Button Content="Pfosten" Margin="4,2" Padding="12,4"
+                                CornerRadius="{DynamicResource SmallRadius}"
+                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Pfosten"
+                                Background="{DynamicResource BgElevatedBrush}"
+                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <Button Content="Weg" Margin="4,2" Padding="12,4"
+                                CornerRadius="{DynamicResource SmallRadius}"
+                                Command="{Binding SetQuickLabelCommand}" CommandParameter="Weg"
+                                Background="{DynamicResource BgElevatedBrush}"
+                                Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                    </WrapPanel>
+                    <TextBox Text="{Binding PointLabel}" Watermark="Eigenes Label..."
+                             FontSize="14" Margin="0,4,0,0"
+                             Background="{DynamicResource BgElevatedBrush}"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+            </Border>
+
+            <!-- PUNKT SETZEN Button -->
+            <Button Command="{Binding SetPointCommand}"
+                    HorizontalAlignment="Stretch" Height="64"
+                    CornerRadius="{DynamicResource ButtonRadius}"
+                    Background="{DynamicResource PrimaryGradientBrush}"
+                    Foreground="White" FontSize="18" FontWeight="Bold"
+                    HorizontalContentAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <mi:MaterialIcon Kind="MapMarkerPlus" Width="28" Height="28" />
+                    <TextBlock Text="PUNKT SETZEN" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+
+            <!-- Abstand zum letzten Punkt -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource SmallRadius}"
+                    Padding="12,8" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="RulerSquare" Width="16" Height="16"
+                                     Foreground="{DynamicResource SecondaryBrush}" />
+                    <TextBlock Text="Abstand:" FontSize="13"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="{Binding DistanceToLast}" FontSize="13" FontWeight="Bold"
+                               Foreground="{DynamicResource SecondaryBrush}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Letzte Punkte -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="{DynamicResource CardPadding}"
+                    Margin="0,0,0,60">
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Messpunkte" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <Button Grid.Column="1" Content="Löschen" FontSize="11" Padding="8,2"
+                                Command="{Binding ClearPointsCommand}"
+                                Background="Transparent"
+                                Foreground="{DynamicResource DangerBrush}" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding RecentPoints}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SurveyPointDisplay">
+                                <Border Background="{DynamicResource BgElevatedBrush}"
+                                        CornerRadius="{DynamicResource SmallRadius}"
+                                        Padding="12,8" Margin="0,2">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <TextBlock Grid.Column="0" FontSize="13" FontWeight="Bold"
+                                                   Foreground="{DynamicResource PrimaryBrush}"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <Run Text="#" /><Run Text="{Binding Number}" />
+                                        </TextBlock>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Label}" FontSize="13"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                                            <TextBlock FontSize="11"
+                                                       Foreground="{DynamicResource TextMutedBrush}">
+                                                <Run Text="{Binding Altitude}" />
+                                                <Run Text=" | " />
+                                                <Run Text="{Binding Accuracy}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding Distance}"
+                                                   FontSize="12" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource SecondaryBrush}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

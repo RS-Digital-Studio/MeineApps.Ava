@@ -10,4 +10,5 @@ public class BotSettings
     public TradingMode LastMode { get; set; } = TradingMode.Paper;
     public string? LastStrategyName { get; set; }
     public Dictionary<string, string> StrategyParameters { get; set; } = new();
+    public bool ShowBtcTicker { get; set; } = true;
 }

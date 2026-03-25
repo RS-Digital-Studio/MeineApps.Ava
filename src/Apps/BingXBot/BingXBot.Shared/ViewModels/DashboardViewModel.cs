@@ -3,6 +3,7 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine;
+using BingXBot.Engine.ATI;
 using BingXBot.Engine.Strategies;
 using BingXBot.Exchange;
 using BingXBot.Services;
@@ -17,14 +18,15 @@ namespace BingXBot.ViewModels;
 /// <summary>
 /// Anzeige-Modell fuer einen einzelnen Activity-Feed-Eintrag.
 /// </summary>
-public record ActivityItem(DateTime Time, string Category, string Message, string Level, string? Symbol)
+public record ActivityItem(DateTime Time, string Category, string Message, Core.Enums.LogLevel Level, string? Symbol)
 {
     public string TimeText => Time.ToLocalTime().ToString("HH:mm:ss");
+    public string LevelText => Level.ToString();
     public string LevelColor => Level switch
     {
-        "Error" => "#EF4444",
-        "Warning" => "#F59E0B",
-        "Trade" => "#10B981",
+        Core.Enums.LogLevel.Error => "#EF4444",
+        Core.Enums.LogLevel.Warning => "#F59E0B",
+        Core.Enums.LogLevel.Trade => "#10B981",
         _ => "#94A3B8"
     };
 }
@@ -45,12 +47,21 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly ISecureStorageService? _secureStorage;
     private readonly RiskSettings _riskSettings;
     private readonly ScannerSettings _scannerSettings;
+    private readonly AdaptiveTradingIntelligence? _ati;
     private PeriodicTimer? _equityTimer;
     private PeriodicTimer? _accountUpdateTimer;
 
     // === Live-Trading Client + Service (erstellt zur Laufzeit mit API-Keys) ===
     private BingXRestClient? _liveClient;
     private LiveTradingService? _liveService;
+
+    // === Sub-ViewModels (delegierte Verantwortlichkeiten) ===
+
+    /// <summary>BTC-USDT Live-Ticker und Chart (vollständig unabhängig).</summary>
+    public BtcTickerViewModel BtcTicker { get; }
+
+    /// <summary>Activity-Feed: Letzte 20 Bot-Aktionen (vollständig unabhängig).</summary>
+    public ActivityFeedViewModel Activity { get; }
 
     // === Modus ===
     [ObservableProperty] private bool _isPaperMode = true;
@@ -64,7 +75,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
     // === Bot-Status ===
     [ObservableProperty] private string _botStatusText = "Gestoppt";
-    [ObservableProperty] private string _botStatusColor = "#EF4444"; // Rot
+    [ObservableProperty] private BotState _botStatusState = BotState.Stopped;
     [ObservableProperty] private bool _isRunning;
     [ObservableProperty] private bool _canStart = true;
 
@@ -85,18 +96,14 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _hasOpenPositions;
     [ObservableProperty] private string _positionsStatusText = "Keine offenen Positionen";
 
-    // === BTC Live-Chart ===
-    public ObservableCollection<Candle> BtcCandles { get; } = new();
-    [ObservableProperty] private decimal _btcPrice;
-    [ObservableProperty] private decimal _btcPriceChange;
-    [ObservableProperty] private bool _isBtcLoading = true;
-    [ObservableProperty] private string _btcStatusText = "Lade BTC-Daten...";
-
     // === Equity-Kurve ===
     public ObservableCollection<EquityPoint> EquityData { get; } = new();
 
-    // === Activity-Feed: Letzte 20 Aktionen des Bots ===
-    public ObservableCollection<ActivityItem> RecentActivity { get; } = new();
+    // === Bestätigungs-Dialog ===
+    [ObservableProperty] private bool _showConfirmDialog;
+    [ObservableProperty] private string _confirmDialogTitle = "";
+    [ObservableProperty] private string _confirmDialogMessage = "";
+    private Func<Task>? _confirmDialogAction;
 
     // === Hinweise/Onboarding ===
     [ObservableProperty] private bool _showWelcomeHint = true;
@@ -110,7 +117,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         ScannerSettings scannerSettings,
         IPublicMarketDataClient? publicClient = null,
         BotDatabaseService? dbService = null,
-        ISecureStorageService? secureStorage = null)
+        ISecureStorageService? secureStorage = null,
+        AdaptiveTradingIntelligence? ati = null)
     {
         _eventBus = eventBus;
         _strategyManager = strategyManager;
@@ -120,6 +128,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _publicClient = publicClient;
         _dbService = dbService;
         _secureStorage = secureStorage;
+        _ati = ati;
+
+        // Sub-ViewModels erstellen
+        BtcTicker = new BtcTickerViewModel(publicClient, eventBus);
+        Activity = new ActivityFeedViewModel(eventBus);
 
         // Keine Fake-Daten! Zeige ehrlichen Zustand.
         HasAccountData = false;
@@ -130,38 +143,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         if (HasApiKeys)
             LiveStatusText = "API-Keys vorhanden";
 
-        // Activity-Feed: Auf BotEventBus subscriben (nur relevante Log-Kategorien)
-        _eventBus.LogEmitted += OnLogEmitted;
-
         // Initiale Strategie-Beschreibung laden
         OnSelectedStrategyChanged(SelectedStrategy);
-
-        // BTC-Daten laden (echt, kein Fake)
-        _ = LoadBtcDataAsync();
-        _ = StartAutoRefreshAsync();
-    }
-
-    /// <summary>
-    /// Empfängt Log-Einträge vom EventBus und fügt relevante in den Activity-Feed ein.
-    /// </summary>
-    private void OnLogEmitted(object? sender, LogEntry entry)
-    {
-        // Nur relevante Kategorien anzeigen (kein Debug-Spam)
-        if (entry.Level == Core.Enums.LogLevel.Debug) return;
-
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-        {
-            RecentActivity.Insert(0, new ActivityItem(
-                entry.Timestamp,
-                entry.Category,
-                entry.Message,
-                entry.Level.ToString(),
-                entry.Symbol));
-
-            // Max 20 Einträge
-            while (RecentActivity.Count > 20)
-                RecentActivity.RemoveAt(RecentActivity.Count - 1);
-        });
     }
 
     partial void OnSelectedStrategyChanged(string value)
@@ -182,7 +165,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     {
         if (IsPaperMode)
         {
-            StartPaperTrading();
+            await StartPaperTradingAsync();
         }
         else
         {
@@ -193,11 +176,24 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Startet den Paper-Trading-Modus mit simuliertem Kapital.
     /// </summary>
-    private void StartPaperTrading()
+    private async Task StartPaperTradingAsync()
     {
         // Strategie aktivieren
         var strategy = StrategyFactory.Create(SelectedStrategy);
         _strategyManager.SetStrategy(strategy);
+
+        // ATI: Alle Strategien im Ensemble registrieren und an Service übergeben
+        if (_ati != null)
+        {
+            _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
+            _paperService.ATI = _ati;
+
+            // ATI-Lernzustand aus DB laden (Training bleibt über Neustarts erhalten)
+            await LoadAtiStateAsync();
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
+                $"Adaptive Trading Intelligence aktiviert ({StrategyFactory.AvailableStrategies.Length} Strategien im Ensemble)"));
+        }
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
             $"Strategie: {SelectedStrategy}"));
@@ -208,7 +204,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         IsRunning = true;
         CanStart = false;
         BotStatusText = "Laeuft (Paper)";
-        BotStatusColor = "#10B981"; // Gruen
+        BotStatusState = BotState.Running;
         ShowWelcomeHint = false;
 
         // Account-Daten anzeigen
@@ -235,7 +231,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         if (_secureStorage == null || !_secureStorage.HasCredentials)
         {
             BotStatusText = "API-Keys fehlen";
-            BotStatusColor = "#EF4444";
+            BotStatusState = BotState.Error;
             WelcomeHintText = "Gehe zu Einstellungen und hinterlege deine BingX API-Keys für Live-Trading.";
             ShowWelcomeHint = true;
 
@@ -249,7 +245,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         if (creds == null)
         {
             BotStatusText = "API-Keys konnten nicht geladen werden";
-            BotStatusColor = "#EF4444";
+            BotStatusState = BotState.Error;
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
                 "API-Keys konnten nicht entschlüsselt werden. Bitte erneut eingeben."));
@@ -258,15 +254,17 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
         // BingXRestClient erstellen + Verbindungstest
         BotStatusText = "Verbinde mit BingX...";
-        BotStatusColor = "#F59E0B";
+        BotStatusState = BotState.Starting;
         CanStart = false;
 
         try
         {
-            var httpClient = App.Services.GetRequiredService<HttpClient>();
-            var rateLimiter = App.Services.GetRequiredService<RateLimiter>();
+            // Eigener HttpClient für Live-Client (teilt nicht den globalen mit PublicClient,
+            // da Timeout-Änderungen sonst alle Requests betreffen)
+            var httpClient = new HttpClient();
+            var liveRateLimiter = new RateLimiter();
             var logger = NullLogger<BingXRestClient>.Instance;
-            _liveClient = new BingXRestClient(creds.Value.ApiKey, creds.Value.ApiSecret, httpClient, rateLimiter, logger);
+            _liveClient = new BingXRestClient(creds.Value.ApiKey, creds.Value.ApiSecret, httpClient, liveRateLimiter, logger);
 
             // Verbindung testen: Account-Info abrufen
             var account = await _liveClient.GetAccountInfoAsync();
@@ -276,7 +274,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 Balance = account.Balance;
                 AvailableBalance = account.AvailableBalance;
                 UnrealizedPnl = account.UnrealizedPnl;
-                TotalPnl = account.UnrealizedPnl;
+                TotalPnl = account.RealizedPnl + account.UnrealizedPnl;
                 HasAccountData = true;
             });
 
@@ -294,10 +292,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 OpenPositions.Clear();
                 foreach (var item in posItems)
                     OpenPositions.Add(item);
-                HasOpenPositions = OpenPositions.Count > 0;
-                PositionsStatusText = HasOpenPositions
-                    ? $"{OpenPositions.Count} offene Position(en)"
-                    : "Keine offenen Positionen";
+                UpdatePositionsStatus();
             });
 
             if (positions.Count > 0)
@@ -310,7 +305,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             if (_publicClient == null)
             {
                 BotStatusText = "Marktdaten-Client nicht verfuegbar";
-                BotStatusColor = "#EF4444";
+                BotStatusState = BotState.Error;
                 CanStart = true;
                 _liveClient = null;
                 return;
@@ -329,6 +324,19 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             var strategy = StrategyFactory.Create(SelectedStrategy);
             _strategyManager.SetStrategy(strategy);
 
+            // ATI: Alle Strategien im Ensemble registrieren und an Service übergeben
+            if (_ati != null)
+            {
+                _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
+                _liveService.ATI = _ati;
+
+                // ATI-Lernzustand aus DB laden (Training bleibt über Neustarts erhalten)
+                await LoadAtiStateAsync();
+
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
+                    $"Adaptive Trading Intelligence aktiviert ({StrategyFactory.AvailableStrategies.Length} Strategien im Ensemble)"));
+            }
+
             // WARNUNG im Activity-Feed
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
                 $"LIVE-TRADING AKTIV mit Strategie '{SelectedStrategy}'. Echtes Geld!"));
@@ -336,10 +344,16 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             // Live-Trading starten
             _liveService.Start();
 
+            // Bestehende Positionen mit SL/TP-Orders abgleichen und im Service registrieren
+            if (positions.Count > 0)
+            {
+                await RestorePositionSignalsAsync(positions);
+            }
+
             IsRunning = true;
             CanStart = false;
             BotStatusText = "LIVE - Handelt aktiv!";
-            BotStatusColor = "#EF4444"; // ROT um Aufmerksamkeit zu erzeugen
+            BotStatusState = BotState.Running; // Live-Trading aktiv
             ShowWelcomeHint = false;
             LiveStatusText = "Handelt aktiv";
             IsLiveActive = true;
@@ -350,7 +364,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             BotStatusText = "Verbindung fehlgeschlagen";
-            BotStatusColor = "#EF4444";
+            BotStatusState = BotState.Error;
             CanStart = true;
             _liveClient = null;
             _liveService = null;
@@ -370,7 +384,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             {
                 _liveService.Resume();
                 BotStatusText = "LIVE - Handelt aktiv!";
-                BotStatusColor = "#EF4444"; // Rot
+                BotStatusState = BotState.Running;
                 _ = StartAccountUpdateAsync();
             }
             else
@@ -379,7 +393,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 _accountUpdateTimer?.Dispose();
                 _accountUpdateTimer = null;
                 BotStatusText = "LIVE - Pausiert";
-                BotStatusColor = "#F59E0B"; // Amber
+                BotStatusState = BotState.Paused;
             }
             return;
         }
@@ -389,20 +403,23 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             // Resume
             _paperService.Resume();
             BotStatusText = "Laeuft (Paper)";
-            BotStatusColor = "#10B981"; // Gruen
+            BotStatusState = BotState.Running;
         }
         else
         {
             // Pause
             _paperService.Pause();
             BotStatusText = "Pausiert";
-            BotStatusColor = "#F59E0B"; // Amber
+            BotStatusState = BotState.Paused;
         }
     }
 
     [RelayCommand]
     private async Task StopBot()
     {
+        // ATI-Lernzustand in DB speichern bevor der Service gestoppt wird
+        await SaveAtiStateAsync();
+
         _accountUpdateTimer?.Dispose();
         _accountUpdateTimer = null;
         StopEquitySnapshotTimer();
@@ -431,7 +448,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         IsRunning = false;
         CanStart = true;
         BotStatusText = "Gestoppt";
-        BotStatusColor = "#EF4444"; // Rot
+        BotStatusState = BotState.Stopped;
         PositionsStatusText = "Keine offenen Positionen";
     }
 
@@ -463,7 +480,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         IsRunning = false;
         CanStart = true;
         BotStatusText = "Notfall-Stop ausgefuehrt";
-        BotStatusColor = "#EF4444";
+        BotStatusState = BotState.Error;
 
         // Positionen aus UI entfernen
         OpenPositions.Clear();
@@ -519,11 +536,26 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     /// Schliesst eine einzelne Position (Paper oder Live).
     /// </summary>
     [RelayCommand]
-    private async Task ClosePosition(PositionDisplayItem? position)
+    /// <summary>
+    /// Zeigt den Bestätigungs-Dialog bevor eine einzelne Position geschlossen wird.
+    /// </summary>
+    private void RequestClosePosition(PositionDisplayItem? position)
     {
         if (position == null) return;
 
-        var side = position.Side == "Buy" ? Side.Buy : Side.Sell;
+        var pnlText = position.Pnl >= 0 ? $"+{position.Pnl:N2}" : $"{position.Pnl:N2}";
+        ConfirmDialogTitle = "Position schließen?";
+        ConfirmDialogMessage = $"{position.Symbol} ({position.Side}, {position.Leverage}x)\nPnL: {pnlText} USDT ({position.PnlPercentText})";
+        _confirmDialogAction = async () => await ExecuteClosePosition(position);
+        ShowConfirmDialog = true;
+    }
+
+    /// <summary>
+    /// Führt das Schließen einer Position tatsächlich aus (nach Bestätigung).
+    /// </summary>
+    private async Task ExecuteClosePosition(PositionDisplayItem position)
+    {
+        var side = position.Side;
 
         try
         {
@@ -531,51 +563,82 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             {
                 _paperService.Exchange.SetCurrentPrice(position.Symbol, position.MarkPrice);
                 await _paperService.Exchange.ClosePositionAsync(position.Symbol, side);
-                // Signal aus dem Service entfernen, damit PriceTickerLoop nicht erneut schliesst
                 _paperService.RemovePositionSignal(position.Symbol, side);
             }
             else if (!IsPaperMode && _liveClient != null)
             {
+                // Position-Daten für CompletedTrade merken
+                var entryPrice = position.EntryPrice;
+                var exitPrice = position.MarkPrice;
+                var qty = position.Quantity;
+
                 await _liveClient.ClosePositionAsync(position.Symbol, side);
-                // Signal aus dem Service entfernen, damit PriceTickerLoop nicht erneut schliesst
                 _liveService?.RemovePositionSignal(position.Symbol, side);
+
+                // CompletedTrade erstellen damit ATI + RiskManager Feedback bekommen
+                var fee = qty * entryPrice * 0.0005m + qty * exitPrice * 0.0005m;
+                var rawPnl = side == Side.Buy
+                    ? (exitPrice - entryPrice) * qty
+                    : (entryPrice - exitPrice) * qty;
+                var trade = new CompletedTrade(position.Symbol, side, entryPrice, exitPrice,
+                    qty, rawPnl - fee, fee, DateTime.UtcNow, DateTime.UtcNow,
+                    "Manuell geschlossen", Core.Enums.TradingMode.Live);
+                _eventBus.PublishTrade(trade);
             }
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Trade, "Trade",
                 $"{position.Symbol}: Position manuell geschlossen ({position.Side})", position.Symbol));
 
-            // Position aus der Liste entfernen
             OpenPositions.Remove(position);
-            HasOpenPositions = OpenPositions.Count > 0;
-            PositionsStatusText = HasOpenPositions
-                ? $"{OpenPositions.Count} offene Position(en)"
-                : "Keine offenen Positionen";
+            UpdatePositionsStatus();
         }
         catch (Exception ex)
         {
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Trade",
-                $"{position.Symbol}: Schliessen fehlgeschlagen - {ex.Message}", position.Symbol));
+                $"{position.Symbol}: Schließen fehlgeschlagen - {ex.Message}", position.Symbol));
         }
     }
 
     /// <summary>
-    /// Schliesst alle offenen Positionen nacheinander.
+    /// Zeigt den Bestätigungs-Dialog bevor alle Positionen geschlossen werden.
     /// </summary>
     [RelayCommand]
-    private async Task CloseAllPositions()
+    private void CloseAllPositions()
     {
         if (OpenPositions.Count == 0) return;
 
-        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Trade",
-            $"Schliesse alle {OpenPositions.Count} Positionen..."));
-
-        // Kopie der Liste (wird waehrend Iteration modifiziert)
-        var positionsCopy = OpenPositions.ToList();
-
-        foreach (var pos in positionsCopy)
+        var totalPnl = OpenPositions.Sum(p => p.Pnl);
+        var pnlText = totalPnl >= 0 ? $"+{totalPnl:N2}" : $"{totalPnl:N2}";
+        ConfirmDialogTitle = "Alle Positionen schließen?";
+        ConfirmDialogMessage = $"{OpenPositions.Count} offene Position(en)\nGesamter unrealisierter PnL: {pnlText} USDT";
+        _confirmDialogAction = async () =>
         {
-            await ClosePosition(pos);
-        }
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Trade",
+                $"Schließe alle {OpenPositions.Count} Positionen..."));
+
+            var positionsCopy = OpenPositions.ToList();
+            foreach (var pos in positionsCopy)
+                await ExecuteClosePosition(pos);
+        };
+        ShowConfirmDialog = true;
+    }
+
+    /// <summary>Bestätigungs-Dialog: Ja → Aktion ausführen.</summary>
+    [RelayCommand]
+    private async Task ConfirmDialogYes()
+    {
+        ShowConfirmDialog = false;
+        if (_confirmDialogAction != null)
+            await _confirmDialogAction();
+        _confirmDialogAction = null;
+    }
+
+    /// <summary>Bestätigungs-Dialog: Abbrechen.</summary>
+    [RelayCommand]
+    private void ConfirmDialogCancel()
+    {
+        ShowConfirmDialog = false;
+        _confirmDialogAction = null;
     }
 
     /// <summary>
@@ -586,7 +649,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         var item = new PositionDisplayItem
         {
             Symbol = p.Symbol,
-            Side = p.Side.ToString(),
+            Side = p.Side,
             EntryPrice = p.EntryPrice,
             MarkPrice = p.MarkPrice,
             Quantity = p.Quantity,
@@ -595,9 +658,12 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         };
 
         // Close-Action verdrahten
-        item.CloseRequested = async (pos) => await ClosePosition(pos);
+        item.CloseRequested = (pos) => { RequestClosePosition(pos); return Task.CompletedTask; };
 
-        // SL/TP aus dem Service laden
+        // SL/TP aus dem Service laden (programmatisch, OHNE PropertyChanged-Handler zu triggern)
+        // Flag verhindert, dass die initiale Zuweisung das gespeicherte Signal überschreibt
+        var suppressSlTpEvents = true;
+
         if (IsPaperMode)
         {
             var signal = _paperService.GetPositionSignal(p.Symbol, p.Side);
@@ -617,44 +683,143 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             }
         }
 
-        // SL/TP-Aenderungen an den Service zurueckschreiben
-        // Guard: Nur wenn das Item noch in der aktiven Positions-Liste ist (verhindert veraltete Updates
-        // nach Positions-Refresh, da alle 5s neue Items erstellt werden)
+        suppressSlTpEvents = false;
+
+        // SL/TP-Änderungen an den Service zurückschreiben (NUR bei User-Edits, nicht bei programmatischer Zuweisung)
         item.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(PositionDisplayItem.StopLoss) or nameof(PositionDisplayItem.TakeProfit))
+            if (suppressSlTpEvents) return;
+            if (e.PropertyName is not (nameof(PositionDisplayItem.StopLoss) or nameof(PositionDisplayItem.TakeProfit)))
+                return;
+            if (!OpenPositions.Contains(item)) return;
+
+            var side = item.Side;
+            if (IsPaperMode)
             {
-                if (!OpenPositions.Contains(item)) return;
-
-                var side = item.Side == "Buy" ? Side.Buy : Side.Sell;
-                if (IsPaperMode)
-                {
-                    _paperService.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
-                }
-                else
-                {
-                    _liveService?.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
-                }
-
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Trade",
-                    $"{item.Symbol}: SL={item.StopLoss?.ToString("N2") ?? "---"} / TP={item.TakeProfit?.ToString("N2") ?? "---"}", item.Symbol));
+                _paperService.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
             }
+            else
+            {
+                _liveService?.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
+            }
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Trade",
+                $"{item.Symbol}: SL={item.StopLoss?.ToString("G8") ?? "---"} / TP={item.TakeProfit?.ToString("G8") ?? "---"}", item.Symbol));
         };
 
         return item;
     }
 
-    private PeriodicTimer? _refreshTimer;
+    /// <summary>
+    /// Stellt SL/TP-Signale für bestehende Positionen wieder her (nach App-Neustart).
+    /// Liest offene Conditional Orders (STOP_MARKET / TAKE_PROFIT_MARKET) von BingX
+    /// und registriert sie im LiveTradingService für clientseitiges Monitoring + Trailing-Stop.
+    /// </summary>
+    private async Task RestorePositionSignalsAsync(IReadOnlyList<Position> positions)
+    {
+        if (_liveClient == null || _liveService == null) return;
+
+        try
+        {
+            // Alle offenen Orders holen (inkl. SL/TP Conditional Orders)
+            var openOrders = await _liveClient.GetOpenOrdersAsync();
+
+            var restored = 0;
+            foreach (var pos in positions)
+            {
+                // SL/TP für diese Position finden
+                decimal? sl = null;
+                decimal? tp = null;
+
+                foreach (var order in openOrders)
+                {
+                    if (order.Symbol != pos.Symbol) continue;
+
+                    if (order.Type == Core.Enums.OrderType.StopMarket && order.StopPrice.HasValue)
+                        sl = order.StopPrice.Value;
+                    else if (order.Type == Core.Enums.OrderType.TakeProfitMarket && order.StopPrice.HasValue)
+                        tp = order.StopPrice.Value;
+                }
+
+                if (sl.HasValue || tp.HasValue)
+                {
+                    // Signal im Service registrieren (für PriceTicker-Loop + Trailing-Stop)
+                    var signal = new SignalResult(
+                        pos.Side == Side.Buy ? Core.Enums.Signal.Long : Core.Enums.Signal.Short,
+                        0.5m, pos.EntryPrice, sl, tp,
+                        "Wiederhergestellt nach Neustart");
+
+                    _liveService.RegisterPositionSignal(pos.Symbol, pos.Side, signal, pos.MarkPrice);
+
+                    restored++;
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Trade",
+                        $"{pos.Symbol}: SL/TP wiederhergestellt (SL={sl?.ToString("G8") ?? "---"} TP={tp?.ToString("G8") ?? "---"})",
+                        pos.Symbol));
+                }
+            }
+
+            if (restored > 0)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+                    $"{restored} Position(en) mit SL/TP wiederhergestellt"));
+            }
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
+                $"SL/TP-Wiederherstellung fehlgeschlagen: {ex.Message}"));
+        }
+    }
+
+    /// <summary>
+    /// Aktualisiert Positionen direkt aus Position-Daten:
+    /// - Bestehende Items: Nur volatile Werte updaten (MarkPrice, Pnl, Qty, Leverage)
+    /// - Neue Positionen: CreatePositionItem nur für wirklich neue Positionen aufrufen
+    /// - Geschlossene Positionen: entfernen
+    /// Vermeidet Wegwerf-Objekte + Event-Handler-Leaks bei jedem 5s-Update.
+    /// </summary>
+    private void UpdatePositionsFromData(IReadOnlyList<Position> positions)
+    {
+        // Map der neuen Positionen nach Symbol_Side
+        var posMap = new Dictionary<string, Position>();
+        foreach (var p in positions)
+            posMap[$"{p.Symbol}_{p.Side}"] = p;
+
+        // Bestehende Items updaten oder entfernen
+        for (int i = OpenPositions.Count - 1; i >= 0; i--)
+        {
+            var existing = OpenPositions[i];
+            if (posMap.TryGetValue(existing.PositionKey, out var updated))
+            {
+                // Update: Nur volatile Werte aktualisieren (SL/TP + PropertyChanged-Handler bleiben erhalten)
+                existing.MarkPrice = updated.MarkPrice;
+                existing.Pnl = updated.UnrealizedPnl;
+                existing.Quantity = updated.Quantity;
+                existing.Leverage = updated.Leverage;
+                posMap.Remove(existing.PositionKey);
+            }
+            else
+            {
+                // Position geschlossen: entfernen
+                OpenPositions.RemoveAt(i);
+            }
+        }
+
+        // Nur für wirklich neue Positionen Items erstellen (mit Event-Handler + SL/TP)
+        foreach (var p in posMap.Values)
+            OpenPositions.Add(CreatePositionItem(p));
+    }
+
     private bool _disposed;
 
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        _eventBus.LogEmitted -= OnLogEmitted;
-        _refreshTimer?.Dispose();
         _equityTimer?.Dispose();
         _accountUpdateTimer?.Dispose();
+        BtcTicker.Dispose();
+        Activity.Dispose();
         _paperService.Dispose();
         _liveService?.Dispose();
         _liveService = null;
@@ -700,31 +865,28 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                     var pos = positions ?? Array.Empty<Position>();
                     var isPaper = IsPaperMode;
 
-                    // Items vorab erstellen (inkl. SL/TP aus dem Service)
-                    var posItems = pos.Select(p => CreatePositionItem(p)).ToList();
-
                     Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                     {
-                        Balance = acct.Balance;
+                        // Paper: Balance ist Equity (Wallet + Unrealisiert) → Wallet extrahieren
+                        // Live: BingX liefert Wallet-Balance direkt im "balance" Feld
+                        var walletBalance = acct.Balance - acct.UnrealizedPnl;
+                        Balance = isPaper ? walletBalance : acct.Balance;
                         AvailableBalance = acct.AvailableBalance;
                         UnrealizedPnl = acct.UnrealizedPnl;
+                        // TotalPnl: Paper = Equity - Startkapital, Live = Realisiert + Unrealisiert
                         TotalPnl = isPaper
-                            ? acct.Balance - 10_000m + acct.UnrealizedPnl
-                            : acct.UnrealizedPnl;
+                            ? acct.Balance - 10_000m
+                            : acct.RealizedPnl + acct.UnrealizedPnl;
 
-                        // Positionen aktualisieren
-                        OpenPositions.Clear();
-                        foreach (var item in posItems)
-                            OpenPositions.Add(item);
-                        HasOpenPositions = OpenPositions.Count > 0;
-                        PositionsStatusText = HasOpenPositions
-                            ? $"{OpenPositions.Count} offene Position(en)"
-                            : "Keine offenen Positionen";
+                        // Inkrementell: bestehende Items updaten, nur für neue CreatePositionItem aufrufen
+                        UpdatePositionsFromData(pos);
+                        UpdatePositionsStatus();
                     });
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Account-Update Fehler: {ex.Message}");
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Dashboard",
+                        $"Account-Update Fehler: {ex.Message}"));
 
                     // Im Live-Modus bei Verbindungsproblemen Warnung zeigen
                     if (!IsPaperMode)
@@ -740,97 +902,43 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         catch (OperationCanceledException) { }
     }
 
-    /// <summary>
-    /// Laedt BTC-Klinendaten von BingX (oeffentlich, kein API-Key noetig).
-    /// </summary>
-    private async Task LoadBtcDataAsync()
+    // === ATI-Persistenz ===
+
+    private async Task LoadAtiStateAsync()
     {
+        if (_ati == null || _dbService == null) return;
         try
         {
-            if (_publicClient == null)
+            var json = await _dbService.LoadAtiStateAsync();
+            if (!string.IsNullOrEmpty(json))
             {
-                IsBtcLoading = false;
-                BtcStatusText = "Keine Verbindung";
-                return;
+                _ati.DeserializeState(json);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
+                    "Lernzustand wiederhergestellt"));
             }
-
-            var candles = await _publicClient.GetKlinesAsync(
-                "BTC-USDT", TimeFrame.H1,
-                DateTime.UtcNow.AddHours(-100), DateTime.UtcNow);
-
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                BtcCandles.Clear();
-                foreach (var c in candles)
-                    BtcCandles.Add(c);
-
-                if (candles.Count > 0)
-                {
-                    BtcPrice = candles[^1].Close;
-                    BtcPriceChange = candles.Count > 1 && candles[0].Close != 0
-                        ? (candles[^1].Close - candles[0].Close) / candles[0].Close * 100m
-                        : 0m;
-                    BtcStatusText = $"BTC-USDT | {candles.Count} Candles (1h)";
-                }
-                IsBtcLoading = false;
-            });
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"BTC-Daten Ladefehler: {ex.Message}");
-            IsBtcLoading = false;
-            BtcStatusText = "Daten nicht verfuegbar (offline?)";
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "ATI",
+                $"Lernzustand konnte nicht geladen werden: {ex.Message}"));
         }
     }
 
-    /// <summary>
-    /// Aktualisiert BTC-Preis alle 10 Sekunden, volle Candles alle 60 Sekunden.
-    /// </summary>
-    private async Task StartAutoRefreshAsync()
+    private async Task SaveAtiStateAsync()
     {
-        _refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
-        var tickCount = 0;
+        if (_ati == null || _dbService == null) return;
         try
         {
-            while (await _refreshTimer.WaitForNextTickAsync())
-            {
-                tickCount++;
-
-                if (tickCount % 6 == 0)
-                {
-                    // Alle 60s: Volle Candle-Daten laden
-                    await LoadBtcDataAsync();
-                }
-                else
-                {
-                    // Alle 10s: Nur den aktuellen BTC-Preis aktualisieren
-                    await UpdateBtcPriceAsync();
-                }
-            }
+            var json = _ati.SerializeState();
+            await _dbService.SaveAtiStateAsync(json);
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
+                "Lernzustand gespeichert"));
         }
-        catch (OperationCanceledException) { }
-    }
-
-    /// <summary>
-    /// Aktualisiert nur den BTC-Preis (schnell, ein API-Call).
-    /// </summary>
-    private async Task UpdateBtcPriceAsync()
-    {
-        if (_publicClient == null) return;
-        try
+        catch (Exception ex)
         {
-            var tickers = await _publicClient.GetAllTickersAsync();
-            var btc = tickers.FirstOrDefault(t => t.Symbol == "BTC-USDT");
-            if (btc != null)
-            {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                {
-                    BtcPrice = btc.LastPrice;
-                    BtcPriceChange = btc.PriceChangePercent24h;
-                });
-            }
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "ATI",
+                $"Lernzustand konnte nicht gespeichert werden: {ex.Message}"));
         }
-        catch { /* Stille Fehlerbehandlung - nächster Tick versucht es erneut */ }
     }
 
     /// <summary>
@@ -864,12 +972,18 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             var point = new EquityPoint(DateTime.UtcNow, Balance + UnrealizedPnl);
             await _dbService.SaveEquitySnapshotAsync(point);
 
-            // Auch in die ObservableCollection für das UI
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => EquityData.Add(point));
+            // Auch in die ObservableCollection für das UI (max 500 Punkte, älteste entfernen)
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                EquityData.Add(point);
+                while (EquityData.Count > 500)
+                    EquityData.RemoveAt(0);
+            });
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Equity-Snapshot speichern fehlgeschlagen: {ex.Message}");
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Debug, "Dashboard",
+                $"Equity-Snapshot speichern fehlgeschlagen: {ex.Message}"));
         }
     }
 
@@ -881,6 +995,15 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _equityTimer?.Dispose();
         _equityTimer = null;
     }
+
+    /// <summary>Aktualisiert HasOpenPositions + PositionsStatusText (3x genutzt).</summary>
+    private void UpdatePositionsStatus()
+    {
+        HasOpenPositions = OpenPositions.Count > 0;
+        PositionsStatusText = HasOpenPositions
+            ? $"{OpenPositions.Count} offene Position(en)"
+            : "Keine offenen Positionen";
+    }
 }
 
 /// <summary>
@@ -891,7 +1014,7 @@ public partial class PositionDisplayItem : ObservableObject
 {
     // Basis-Daten (werden bei jedem Account-Update gesetzt)
     [ObservableProperty] private string _symbol = "";
-    [ObservableProperty] private string _side = "";
+    [ObservableProperty] private Side _side;
     [ObservableProperty] private decimal _entryPrice;
     [ObservableProperty] private decimal _markPrice;
     [ObservableProperty] private decimal _quantity;
@@ -906,10 +1029,11 @@ public partial class PositionDisplayItem : ObservableObject
     // Berechnete Properties
     public bool IsProfit => Pnl > 0;
     public string PnlColor => Pnl >= 0 ? "#10B981" : "#EF4444";
-    public string SideColor => Side == "Buy" ? "#10B981" : "#EF4444";
+    public string SideText => Side.ToString();
+    public string SideColor => Side == Side.Buy ? "#10B981" : "#EF4444";
     public string PnlText => $"{Pnl:+0.00;-0.00}";
     public decimal PnlPercent => EntryPrice > 0 && Quantity > 0
-        ? (MarkPrice - EntryPrice) / EntryPrice * 100m * (Side == "Buy" ? 1 : -1)
+        ? (MarkPrice - EntryPrice) / EntryPrice * 100m * (Side == Side.Buy ? 1 : -1)
         : 0m;
     public string PnlPercentText => $"{PnlPercent:+0.00;-0.00}%";
 
@@ -936,8 +1060,9 @@ public partial class PositionDisplayItem : ObservableObject
         OnPropertyChanged(nameof(PnlPercentText));
     }
 
-    partial void OnSideChanged(string value)
+    partial void OnSideChanged(Side value)
     {
+        OnPropertyChanged(nameof(SideText));
         OnPropertyChanged(nameof(SideColor));
         OnPropertyChanged(nameof(PositionKey));
         OnPropertyChanged(nameof(PnlPercent));

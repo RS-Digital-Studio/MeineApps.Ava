@@ -23,8 +23,6 @@ public partial class RiskSettingsViewModel : ObservableObject
     [ObservableProperty] private int _maxOpenPositions;
     [ObservableProperty] private int _maxOpenPositionsPerSymbol;
     [ObservableProperty] private decimal _maxLeverage;
-    [ObservableProperty] private bool _useKellyCriterion;
-    [ObservableProperty] private bool _useAtrSizing;
     [ObservableProperty] private bool _checkCorrelation;
     [ObservableProperty] private decimal _maxCorrelation;
     [ObservableProperty] private bool _enableTrailingStop;
@@ -58,8 +56,6 @@ public partial class RiskSettingsViewModel : ObservableObject
             _riskSettings.MaxOpenPositions = settings.Risk.MaxOpenPositions;
             _riskSettings.MaxOpenPositionsPerSymbol = settings.Risk.MaxOpenPositionsPerSymbol;
             _riskSettings.MaxLeverage = settings.Risk.MaxLeverage;
-            _riskSettings.UseKellyCriterion = settings.Risk.UseKellyCriterion;
-            _riskSettings.UseAtrSizing = settings.Risk.UseAtrSizing;
             _riskSettings.CheckCorrelation = settings.Risk.CheckCorrelation;
             _riskSettings.MaxCorrelation = settings.Risk.MaxCorrelation;
             _riskSettings.EnableTrailingStop = settings.Risk.EnableTrailingStop;
@@ -85,8 +81,6 @@ public partial class RiskSettingsViewModel : ObservableObject
         MaxOpenPositions = _riskSettings.MaxOpenPositions;
         MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol;
         MaxLeverage = _riskSettings.MaxLeverage;
-        UseKellyCriterion = _riskSettings.UseKellyCriterion;
-        UseAtrSizing = _riskSettings.UseAtrSizing;
         CheckCorrelation = _riskSettings.CheckCorrelation;
         MaxCorrelation = _riskSettings.MaxCorrelation;
         EnableTrailingStop = _riskSettings.EnableTrailingStop;
@@ -103,8 +97,6 @@ public partial class RiskSettingsViewModel : ObservableObject
         _riskSettings.MaxOpenPositions = MaxOpenPositions;
         _riskSettings.MaxOpenPositionsPerSymbol = MaxOpenPositionsPerSymbol;
         _riskSettings.MaxLeverage = MaxLeverage;
-        _riskSettings.UseKellyCriterion = UseKellyCriterion;
-        _riskSettings.UseAtrSizing = UseAtrSizing;
         _riskSettings.CheckCorrelation = CheckCorrelation;
         _riskSettings.MaxCorrelation = MaxCorrelation;
         _riskSettings.EnableTrailingStop = EnableTrailingStop;
@@ -145,8 +137,6 @@ public partial class RiskSettingsViewModel : ObservableObject
         MaxOpenPositions = defaults.MaxOpenPositions;
         MaxOpenPositionsPerSymbol = defaults.MaxOpenPositionsPerSymbol;
         MaxLeverage = defaults.MaxLeverage;
-        UseKellyCriterion = defaults.UseKellyCriterion;
-        UseAtrSizing = defaults.UseAtrSizing;
         CheckCorrelation = defaults.CheckCorrelation;
         MaxCorrelation = defaults.MaxCorrelation;
         EnableTrailingStop = defaults.EnableTrailingStop;

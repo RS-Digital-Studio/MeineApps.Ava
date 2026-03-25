@@ -205,15 +205,16 @@ public class SimulatedExchange : IExchangeClient
             // Nur PnL und Closing-Fee auf Balance anrechnen (Opening-Fee wurde bereits abgezogen)
             _balance += pnl - closingFee;
 
-            // CompletedTrade: Gesamte Fee (Opening + Closing) fuer korrektes Reporting
+            // CompletedTrade: PnL NACH Fees (netto), damit Trade-History und RiskManager korrekte Werte haben
             var totalFee = openingFee + closingFee;
+            var netPnl = pnl - totalFee;
             _completedTrades.Add(new CompletedTrade(
                 pos.Symbol,
                 pos.Side,
                 pos.EntryPrice,
                 exitPriceWithSlippage,
                 pos.Quantity,
-                pnl,
+                netPnl,
                 totalFee,
                 pos.OpenTime,
                 DateTime.UtcNow,

@@ -28,6 +28,17 @@ public class BotDatabaseService
         await _db.CreateTableAsync<EquityEntity>();
         await _db.CreateTableAsync<LogEntity>();
         await _db.CreateTableAsync<SettingEntity>();
+        await _db.CreateTableAsync<FeatureSnapshotEntity>();
+
+        // Indices für häufige Abfragen (idempotent dank IF NOT EXISTS)
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Trades_ExitTime ON Trades (ExitTime DESC)");
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Trades_Mode ON Trades (Mode)");
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Trades_Symbol ON Trades (Symbol)");
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_EquitySnapshots_Time ON EquitySnapshots (Time)");
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_LogEntries_Timestamp ON LogEntries (Timestamp DESC)");
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_LogEntries_Level ON LogEntries (Level)");
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_FeatureSnapshots_Timestamp ON FeatureSnapshots (Timestamp DESC)");
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_FeatureSnapshots_Outcome ON FeatureSnapshots (Outcome)");
     }
 
     // === Trades ===
@@ -90,6 +101,56 @@ public class BotDatabaseService
             System.Diagnostics.Debug.WriteLine("BotSettings JSON korrupt, verwende Defaults");
             return new BotSettings();
         }
+    }
+
+    // === ATI State ===
+
+    public async Task SaveAtiStateAsync(string stateJson)
+    {
+        EnsureInitialized();
+        await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "AtiState", Value = stateJson });
+    }
+
+    public async Task<string?> LoadAtiStateAsync()
+    {
+        EnsureInitialized();
+        var entity = await _db!.FindAsync<SettingEntity>("AtiState");
+        return entity?.Value;
+    }
+
+    // === Feature Snapshots (ATI ML-Training) ===
+
+    public async Task SaveFeatureSnapshotAsync(FeatureSnapshotEntity snapshot)
+    {
+        EnsureInitialized();
+        await _db!.InsertAsync(snapshot);
+    }
+
+    public async Task<List<FeatureSnapshotEntity>> GetFeatureSnapshotsAsync(int limit = 1000)
+    {
+        EnsureInitialized();
+        return await _db!.Table<FeatureSnapshotEntity>()
+            .OrderByDescending(f => f.Timestamp)
+            .Take(limit)
+            .ToListAsync();
+    }
+
+    public async Task<List<FeatureSnapshotEntity>> GetLabeledSnapshotsAsync(int limit = 5000)
+    {
+        EnsureInitialized();
+        return await _db!.Table<FeatureSnapshotEntity>()
+            .Where(f => f.Outcome != 0)
+            .OrderByDescending(f => f.Timestamp)
+            .Take(limit)
+            .ToListAsync();
+    }
+
+    public async Task UpdateSnapshotOutcomeAsync(int snapshotId, int outcome, decimal pnl, int holdTimeMinutes)
+    {
+        EnsureInitialized();
+        await _db!.ExecuteAsync(
+            "UPDATE FeatureSnapshots SET Outcome = ?, Pnl = ?, HoldTimeMinutes = ? WHERE Id = ?",
+            outcome, pnl, holdTimeMinutes, snapshotId);
     }
 
     // === Logs ===

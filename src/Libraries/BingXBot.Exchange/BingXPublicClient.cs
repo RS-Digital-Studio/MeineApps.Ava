@@ -23,6 +23,9 @@ public class BingXPublicClient : IPublicMarketDataClient
     /// <summary>Timeout für einzelne HTTP-Requests (30s statt Endlos-Default).</summary>
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
 
+    /// <summary>Maximale Retry-Versuche bei transienten Fehlern (HTTP 429, 5xx, Timeout).</summary>
+    private const int MaxRetries = 3;
+
     public BingXPublicClient(HttpClient httpClient, RateLimiter rateLimiter, ILogger<BingXPublicClient> logger)
     {
         _httpClient = httpClient;
@@ -107,27 +110,31 @@ public class BingXPublicClient : IPublicMarketDataClient
 
     /// <summary>
     /// Lädt alle Ticker (öffentlich, kein API-Key nötig).
+    /// Retry bei transienten Fehlern (HTTP 429, 5xx, Timeout) mit exponentiellem Backoff.
     /// </summary>
     public async Task<List<Ticker>> GetAllTickersAsync(CancellationToken ct = default)
     {
-        await _rateLimiter.WaitForSlotAsync("queries", ct).ConfigureAwait(false);
+        return await SendWithRetryAsync(async () =>
+        {
+            await _rateLimiter.WaitForSlotAsync("queries", ct).ConfigureAwait(false);
 
-        var url = $"{BaseUrl}/openApi/swap/v2/quote/ticker";
-        var response = await _httpClient.GetStringAsync(url, ct).ConfigureAwait(false);
-        var result = JsonSerializer.Deserialize<BingXResponse<List<BingXTickerDetail>>>(response);
+            var url = $"{BaseUrl}/openApi/swap/v2/quote/ticker";
+            var response = await _httpClient.GetStringAsync(url, ct).ConfigureAwait(false);
+            var result = JsonSerializer.Deserialize<BingXResponse<List<BingXTickerDetail>>>(response);
 
-        if (result?.Code != 0 || result.Data == null)
-            return new List<Ticker>();
+            if (result?.Code != 0 || result.Data == null)
+                return new List<Ticker>();
 
-        return result.Data.Select(t => new Ticker(
-            t.Symbol,
-            ParseDecimal(t.LastPrice),
-            ParseDecimal(t.BidPrice),
-            ParseDecimal(t.AskPrice),
-            ParseDecimal(t.Volume),
-            ParseDecimal(t.PriceChangePercent),
-            DateTime.UtcNow
-        )).ToList();
+            return result.Data.Select(t => new Ticker(
+                t.Symbol,
+                ParseDecimal(t.LastPrice),
+                ParseDecimal(t.BidPrice),
+                ParseDecimal(t.AskPrice),
+                ParseDecimal(t.Volume),
+                ParseDecimal(t.PriceChangePercent),
+                DateTime.UtcNow
+            )).ToList();
+        }, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -140,6 +147,42 @@ public class BingXPublicClient : IPublicMarketDataClient
             .OrderByDescending(t => t.Volume24h)
             .Select(t => t.Symbol)
             .ToList();
+    }
+
+    /// <summary>
+    /// Führt eine Funktion mit Retry bei transienten Fehlern aus (analog zu BingXRestClient).
+    /// Exponentieller Backoff: 2s, 4s, 8s.
+    /// </summary>
+    private async Task<T> SendWithRetryAsync<T>(Func<Task<T>> action, CancellationToken ct)
+    {
+        for (int attempt = 0; attempt <= MaxRetries; attempt++)
+        {
+            try
+            {
+                return await action().ConfigureAwait(false);
+            }
+            catch (TaskCanceledException ex) when (!ex.CancellationToken.IsCancellationRequested && attempt < MaxRetries)
+            {
+                // Timeout (nicht manuell abgebrochen) - muss VOR OperationCanceledException stehen (Vererbung)
+                var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
+                _logger.LogWarning("Request Timeout, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
+                    backoff.TotalSeconds, attempt + 1, MaxRetries);
+                await Task.Delay(backoff, ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw; // Nicht retrien bei manuellem Abbruch
+            }
+            catch (HttpRequestException ex) when (attempt < MaxRetries)
+            {
+                var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
+                _logger.LogWarning(ex, "Netzwerkfehler, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
+                    backoff.TotalSeconds, attempt + 1, MaxRetries);
+                await Task.Delay(backoff, ct).ConfigureAwait(false);
+            }
+        }
+
+        throw new HttpRequestException($"Request fehlgeschlagen nach {MaxRetries + 1} Versuchen");
     }
 
     private static decimal ParseDecimal(string? value) =>

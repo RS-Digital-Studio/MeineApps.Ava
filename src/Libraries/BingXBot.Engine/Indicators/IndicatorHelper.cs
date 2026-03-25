@@ -5,6 +5,63 @@ using BingXBot.Core.Models;
 namespace BingXBot.Engine.Indicators;
 
 /// <summary>
+/// Indikator-Typ für den Cache-Key (Enum statt String → kein Heap-Alloc).
+/// </summary>
+public enum IndicatorType : byte
+{
+    EMA, SMA, RSI, MACD, BollingerBands, ATR, ADX, Stochastic
+}
+
+/// <summary>
+/// Struct-basierter Cache-Key für IndicatorHelper.
+/// Vermeidet String-Allokationen bei jedem Cache-Lookup.
+/// </summary>
+public readonly struct IndicatorCacheKey : IEquatable<IndicatorCacheKey>
+{
+    public readonly long ScanGeneration;
+    public readonly int CandleCount;
+    public readonly decimal LastClose;
+    public readonly long LastOpenTimeTicks;
+    public readonly IndicatorType Indicator;
+    public readonly int Param1; // Erste Periode (EMA, SMA, RSI, ATR, ADX, Stochastik lookback)
+    public readonly int Param2; // Zweite Periode (MACD slow, BB stdDev*1000, Stochastik signal)
+    public readonly int Param3; // Dritte Periode (MACD signal, Stochastik smooth)
+
+    public IndicatorCacheKey(long gen, IReadOnlyList<Candle> candles, IndicatorType indicator,
+        int p1 = 0, int p2 = 0, int p3 = 0)
+    {
+        ScanGeneration = gen;
+        CandleCount = candles.Count;
+        if (candles.Count > 0)
+        {
+            var last = candles[^1];
+            LastClose = last.Close;
+            LastOpenTimeTicks = last.OpenTime.Ticks;
+        }
+        Indicator = indicator;
+        Param1 = p1;
+        Param2 = p2;
+        Param3 = p3;
+    }
+
+    public bool Equals(IndicatorCacheKey other) =>
+        ScanGeneration == other.ScanGeneration &&
+        CandleCount == other.CandleCount &&
+        LastClose == other.LastClose &&
+        LastOpenTimeTicks == other.LastOpenTimeTicks &&
+        Indicator == other.Indicator &&
+        Param1 == other.Param1 &&
+        Param2 == other.Param2 &&
+        Param3 == other.Param3;
+
+    public override bool Equals(object? obj) => obj is IndicatorCacheKey k && Equals(k);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(ScanGeneration, CandleCount, LastClose, LastOpenTimeTicks,
+            Indicator, Param1, Param2, Param3);
+}
+
+/// <summary>
 /// Wrapper um Skender.Stock.Indicators.
 /// Konvertiert BingXBot Candle Records zu Quote Objekten und berechnet Indikatoren.
 /// Integrierter Cache: Wenn dieselbe Candle-Sequenz (gleiche Anzahl + letzter Close)
@@ -13,20 +70,17 @@ namespace BingXBot.Engine.Indicators;
 /// </summary>
 public static class IndicatorHelper
 {
-    // Cache: Gleiche Candle-Daten + gleicher Indikator + gleiche Parameter → gecachtes Ergebnis
-    private static readonly ConcurrentDictionary<string, object> _cache = new();
+    // Cache: Struct-basierter Key vermeidet String-Allokationen pro Lookup.
+    // Scan-Generation verhindert Race Conditions bei parallelen Scan-Durchläufen:
+    // ClearCache() erhöht den Zähler, alte Cache-Einträge mit altem Zähler werden ignoriert
+    private static readonly ConcurrentDictionary<IndicatorCacheKey, object> _cache = new();
+    private static long _scanGeneration;
 
-    /// <summary>Cache leeren (am Ende eines Scan-Durchlaufs aufrufen).</summary>
-    public static void ClearCache() => _cache.Clear();
-
-    /// <summary>Erzeugt einen Cache-Key basierend auf Candle-Daten und Indikator-Parametern.</summary>
-    private static string CacheKey(IReadOnlyList<Candle> candles, string indicator, params object[] parameters)
+    /// <summary>Cache leeren (am Ende eines Scan-Durchlaufs aufrufen). Thread-safe per Generation.</summary>
+    public static void ClearCache()
     {
-        if (candles.Count == 0)
-            return $"0_empty_{indicator}_{string.Join("_", parameters)}";
-
-        var last = candles[^1];
-        return $"{candles.Count}_{last.Close}_{last.OpenTime.Ticks}_{indicator}_{string.Join("_", parameters)}";
+        Interlocked.Increment(ref _scanGeneration);
+        _cache.Clear();
     }
 
     /// <summary>Candles zu Quotes konvertieren</summary>
@@ -46,7 +100,7 @@ public static class IndicatorHelper
     /// <summary>EMA: gibt Liste von decimal? zurück (null für Warmup-Phase)</summary>
     public static IReadOnlyList<decimal?> CalculateEma(IReadOnlyList<Candle> candles, int period)
     {
-        var key = CacheKey(candles, "EMA", period);
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.EMA, period);
         if (_cache.TryGetValue(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
@@ -60,7 +114,7 @@ public static class IndicatorHelper
     /// <summary>SMA</summary>
     public static IReadOnlyList<decimal?> CalculateSma(IReadOnlyList<Candle> candles, int period)
     {
-        var key = CacheKey(candles, "SMA", period);
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.SMA, period);
         if (_cache.TryGetValue(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
@@ -74,7 +128,7 @@ public static class IndicatorHelper
     /// <summary>RSI</summary>
     public static IReadOnlyList<decimal?> CalculateRsi(IReadOnlyList<Candle> candles, int period = 14)
     {
-        var key = CacheKey(candles, "RSI", period);
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.RSI, period);
         if (_cache.TryGetValue(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
@@ -89,7 +143,7 @@ public static class IndicatorHelper
     public static (IReadOnlyList<decimal?> Macd, IReadOnlyList<decimal?> Signal, IReadOnlyList<decimal?> Histogram)
         CalculateMacd(IReadOnlyList<Candle> candles, int fastPeriod = 12, int slowPeriod = 26, int signalPeriod = 9)
     {
-        var key = CacheKey(candles, "MACD", fastPeriod, slowPeriod, signalPeriod);
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.MACD, fastPeriod, slowPeriod, signalPeriod);
         if (_cache.TryGetValue(key, out var cached))
             return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
 
@@ -107,7 +161,8 @@ public static class IndicatorHelper
     public static (IReadOnlyList<decimal?> Upper, IReadOnlyList<decimal?> Middle, IReadOnlyList<decimal?> Lower)
         CalculateBollinger(IReadOnlyList<Candle> candles, int period = 20, decimal stdDev = 2m)
     {
-        var key = CacheKey(candles, "BB", period, stdDev);
+        // stdDev (z.B. 2.0m) wird als int*1000 gespeichert (2000), da Struct nur ints hat
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.BollingerBands, period, (int)(stdDev * 1000));
         if (_cache.TryGetValue(key, out var cached))
             return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
 
@@ -124,7 +179,7 @@ public static class IndicatorHelper
     /// <summary>ATR (Average True Range)</summary>
     public static IReadOnlyList<decimal?> CalculateAtr(IReadOnlyList<Candle> candles, int period = 14)
     {
-        var key = CacheKey(candles, "ATR", period);
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.ATR, period);
         if (_cache.TryGetValue(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
@@ -138,7 +193,7 @@ public static class IndicatorHelper
     /// <summary>ADX (Average Directional Index) - misst Trend-Stärke (nicht Richtung).</summary>
     public static IReadOnlyList<decimal?> CalculateAdx(IReadOnlyList<Candle> candles, int period = 14)
     {
-        var key = CacheKey(candles, "ADX", period);
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.ADX, period);
         if (_cache.TryGetValue(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
@@ -175,7 +230,7 @@ public static class IndicatorHelper
     public static (IReadOnlyList<decimal?> K, IReadOnlyList<decimal?> D) CalculateStochastic(
         IReadOnlyList<Candle> candles, int lookbackPeriods = 14, int signalPeriods = 3, int smoothPeriods = 3)
     {
-        var key = CacheKey(candles, "STOCH", lookbackPeriods, signalPeriods, smoothPeriods);
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.Stochastic, lookbackPeriods, signalPeriods, smoothPeriods);
         if (_cache.TryGetValue(key, out var cached))
             return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
 

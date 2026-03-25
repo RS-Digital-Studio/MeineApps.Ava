@@ -65,28 +65,28 @@ public class RiskManagerTests
     }
 
     [Fact]
-    public void CalculatePositionSize_NullStopLoss_ShouldUseConservativeFallback()
+    public void CalculatePositionSize_Margin_basiert()
     {
-        // Ohne SL: halbes Risiko als Margin, max 5x Leverage (statt 10x)
-        // 2% von 10000 = 200 USDT Risiko, halbe = 100 USDT Margin, 5x Lev = 500 USDT Position
-        // 500 / 50000 = 0.01 BTC
+        // 2% von 10.000 = 200 USDT Margin, * 10x Leverage = 2.000 USDT Position
+        // 2.000 / 50.000 = 0,04 BTC
         var settings = new RiskSettings { MaxPositionSizePercent = 2m, MaxLeverage = 10m };
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
         var size = risk.CalculatePositionSize("BTC-USDT", 50000m, null, account);
-        size.Should().Be(0.01m);
+        size.Should().Be(0.04m);
     }
 
     [Fact]
-    public void CalculatePositionSize_NullStopLoss_ShouldBeSmallerThanWithStopLoss()
+    public void CalculatePositionSize_MitUndOhneSL_GleicheGroesse()
     {
-        // Position ohne SL muss kleiner sein als die gleiche mit engem SL (unter sonst gleichen Bedingungen)
+        // Positionsgröße hängt NUR von Margin ab, nicht vom SL.
+        // SL bestimmt wo ausgestiegen wird, nicht wie groß die Position ist.
         var settings = new RiskSettings { MaxPositionSizePercent = 2m, MaxLeverage = 10m };
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
         var withSl = risk.CalculatePositionSize("BTC-USDT", 50000m, 49000m, account);
         var withoutSl = risk.CalculatePositionSize("BTC-USDT", 50000m, null, account);
-        withoutSl.Should().BeLessThan(withSl, "Ohne SL muss konservativer gehandelt werden");
+        withoutSl.Should().Be(withSl, "Positionsgröße ist Margin-basiert, unabhängig vom SL");
     }
 
     [Fact]
@@ -123,7 +123,8 @@ public class RiskManagerTests
     public void DailyDrawdown_WithUnrealizedLoss_ShouldBlockEarlier()
     {
         // Realisierte Verluste allein reichen nicht (1% < 5%), aber mit unrealisierten
-        // Verlusten (-300 = 3%) + neuem Position-Risiko (2%) kommen wir auf 6% >= 5% -> blockiert
+        // Verlusten (-300 = 3%) + neuem Position-Risiko kommen wir über 5% -> blockiert
+        // Neues Risiko bei SL: slDistance * posSize = 1000 * 0.04 = 40 USDT (0.4%)
         var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10 };
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
@@ -132,13 +133,13 @@ public class RiskManagerTests
 
         var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
 
-        // Ohne unrealisierte Verluste: 1% realisiert + neues Position-Risiko (ca. 2%) = ~3% < 5% -> erlaubt
+        // Ohne unrealisierte Verluste: 1% realisiert + 0.4% neues Risiko = 1.4% < 5% -> erlaubt
         var resultOk = risk.ValidateTrade(signal, CreateContext(balance: 10000m));
         resultOk.IsAllowed.Should().BeTrue();
 
-        // Mit -300 unrealisierten Verlusten auf offener Position:
-        // 1% realisiert + 3% unrealisiert + 2% neues Risiko = 6% >= 5% -> blockiert
-        var losingPosition = new Position("ETH-USDT", Side.Buy, 3000m, 2700m, 1m, -300m, 10m, MarginType.Cross, DateTime.UtcNow);
+        // Mit -400 unrealisierten Verlusten auf offener Position:
+        // 1% realisiert + 4% unrealisiert + 0.4% neues Risiko = 5.4% >= 5% -> blockiert
+        var losingPosition = new Position("ETH-USDT", Side.Buy, 3000m, 2600m, 1m, -400m, 10m, MarginType.Cross, DateTime.UtcNow);
         var resultBlocked = risk.ValidateTrade(signal, CreateContext(balance: 10000m, customPositions: new List<Position> { losingPosition }));
         resultBlocked.IsAllowed.Should().BeFalse();
         resultBlocked.RejectionReason.Should().Contain("Drawdown");

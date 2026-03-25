@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Interfaces;
 using BingXBot.Engine;
+using BingXBot.Engine.ATI;
 using BingXBot.Exchange;
 using BingXBot.Services;
 using BingXBot.ViewModels;
@@ -82,6 +83,9 @@ public partial class App : Application
 
         // Engine
         services.AddSingleton<StrategyManager>();
+
+        // ATI - Adaptive Trading Intelligence
+        services.AddSingleton<AdaptiveTradingIntelligence>();
 
         // Paper-Trading Service
         services.AddSingleton<PaperTradingService>();

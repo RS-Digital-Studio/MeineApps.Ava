@@ -112,15 +112,29 @@ public class SecureStorageService : ISecureStorageService
         }
     }
 
-    /// <summary>Neues Format: Zufälliger IV in den ersten 16 Bytes.</summary>
+    /// <summary>Neues Format: Zufälliger IV in den ersten 16 Bytes (PBKDF2-Key, Fallback auf Legacy SHA-256-Key).</summary>
     private static byte[] UnprotectWithRandomIv(byte[] data)
     {
-        var key = DeriveLinuxKey();
         var iv = new byte[16];
         Array.Copy(data, 0, iv, 0, 16);
         var ciphertext = new byte[data.Length - 16];
         Array.Copy(data, 16, ciphertext, 0, ciphertext.Length);
 
+        // Zuerst mit PBKDF2-Key versuchen
+        try
+        {
+            return DecryptAes(DeriveLinuxKey(), iv, ciphertext);
+        }
+        catch (CryptographicException)
+        {
+            // Fallback: Legacy SHA-256-Key (Migration von altem Format)
+            return DecryptAes(DeriveLinuxKeyLegacy(), iv, ciphertext);
+        }
+    }
+
+    /// <summary>AES-256-CBC Entschlüsselung mit gegebenem Key und IV.</summary>
+    private static byte[] DecryptAes(byte[] key, byte[] iv, byte[] ciphertext)
+    {
         using var aes = Aes.Create();
         aes.Key = key;
         aes.IV = iv;
@@ -132,33 +146,34 @@ public class SecureStorageService : ISecureStorageService
         return ms.ToArray();
     }
 
-    /// <summary>Altes Format: Statischer IV (Abwärtskompatibilität für bestehende Credentials).</summary>
+    /// <summary>Altes Format: Statischer IV + Legacy SHA-256-Key (Abwärtskompatibilität).</summary>
     private static byte[] UnprotectLegacy(byte[] data)
     {
-        var key = DeriveLinuxKey();
+        // Legacy-Format nutzt immer den alten SHA-256-Key
+        var key = DeriveLinuxKeyLegacy();
         var ivSource = $"{Environment.MachineName}:{Environment.UserName}:BingXBot:iv";
-        using var sha = SHA256.Create();
-        var ivHash = sha.ComputeHash(Encoding.UTF8.GetBytes(ivSource));
+        var ivHash = SHA256.HashData(Encoding.UTF8.GetBytes(ivSource));
         var iv = new byte[16];
         Array.Copy(ivHash, iv, 16);
 
-        using var aes = Aes.Create();
-        aes.Key = key;
-        aes.IV = iv;
-
-        using var ms = new MemoryStream();
-        using var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write);
-        cs.Write(data);
-        cs.FlushFinalBlock();
-        return ms.ToArray();
+        return DecryptAes(key, iv, data);
     }
 
-    /// <summary>Leitet den AES-Key aus maschinenspezifischen Daten ab.</summary>
+    /// <summary>Leitet den AES-Key via PBKDF2 aus maschinenspezifischen Daten ab (100.000 Iterationen).</summary>
     private static byte[] DeriveLinuxKey()
     {
+        var password = $"{Environment.MachineName}:{Environment.UserName}:BingXBot:key";
+        // Salt deterministisch aus Maschine+User, damit bestehende Daten lesbar bleiben
+        var saltSource = $"{Environment.MachineName}:{Environment.UserName}:BingXBot:salt";
+        var salt = SHA256.HashData(Encoding.UTF8.GetBytes(saltSource));
+        return Rfc2898DeriveBytes.Pbkdf2(password, salt, 100_000, HashAlgorithmName.SHA256, 32);
+    }
+
+    /// <summary>Legacy-Key via einfachem SHA-256 (fuer Migration bestehender Daten).</summary>
+    private static byte[] DeriveLinuxKeyLegacy()
+    {
         var keySource = $"{Environment.MachineName}:{Environment.UserName}:BingXBot:key";
-        using var sha = SHA256.Create();
-        return sha.ComputeHash(Encoding.UTF8.GetBytes(keySource));
+        return SHA256.HashData(Encoding.UTF8.GetBytes(keySource));
     }
 
     private class CredentialData

@@ -155,8 +155,6 @@ public partial class BacktestViewModel : ObservableObject
                 MaxOpenPositions = _riskSettings.MaxOpenPositions,
                 MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol,
                 MaxLeverage = Leverage,
-                UseKellyCriterion = _riskSettings.UseKellyCriterion,
-                UseAtrSizing = _riskSettings.UseAtrSizing,
                 CheckCorrelation = _riskSettings.CheckCorrelation,
                 MaxCorrelation = _riskSettings.MaxCorrelation,
                 EnableTrailingStop = _riskSettings.EnableTrailingStop,

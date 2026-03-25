@@ -96,6 +96,7 @@
     </Style>
   </UserControl.Styles>
 
+  <Grid>
   <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="16" Margin="0,0,0,24">
 
@@ -428,7 +429,7 @@
                                  Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
                       <Border Background="{Binding SideColor}" CornerRadius="4" Padding="8,2"
                               VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Side}" FontSize="11" FontWeight="Bold"
+                        <TextBlock Text="{Binding SideText}" FontSize="11" FontWeight="Bold"
                                    Foreground="White" />
                       </Border>
                       <TextBlock Text="{Binding Leverage, StringFormat='{}{0:F0}x'}" FontSize="12"
@@ -455,20 +456,21 @@
                     </StackPanel>
 
                     <!-- Zeile 2: Einstieg / Aktuell / Menge -->
+                    <!-- G8 statt N4: Krypto-Preise haben variable Dezimalstellen (Micro-Cap Tokens) -->
                     <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="20" Margin="0,10,0,0">
                       <StackPanel>
                         <TextBlock Text="Einstieg" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-                        <TextBlock Text="{Binding EntryPrice, StringFormat='{}{0:N4}'}" FontSize="13"
+                        <TextBlock Text="{Binding EntryPrice, StringFormat='{}{0:G8}'}" FontSize="13"
                                    Foreground="{DynamicResource AppTextBrush}" />
                       </StackPanel>
                       <StackPanel>
                         <TextBlock Text="Aktuell" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-                        <TextBlock Text="{Binding MarkPrice, StringFormat='{}{0:N4}'}" FontSize="13"
+                        <TextBlock Text="{Binding MarkPrice, StringFormat='{}{0:G8}'}" FontSize="13"
                                    Foreground="{DynamicResource AppTextBrush}" />
                       </StackPanel>
                       <StackPanel>
                         <TextBlock Text="Menge" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-                        <TextBlock Text="{Binding Quantity, StringFormat='{}{0:N4}'}" FontSize="13"
+                        <TextBlock Text="{Binding Quantity, StringFormat='{}{0:N2}'}" FontSize="13"
                                    Foreground="{DynamicResource AppTextBrush}" />
                       </StackPanel>
                     </StackPanel>
@@ -541,7 +543,7 @@
             <TextBlock Text="Bot-Aktivität" Classes="SectionTitle" />
             <Border CornerRadius="10" Padding="8,3" Margin="8,0,0,0"
                     Background="{DynamicResource CardBrush}">
-              <TextBlock Text="{Binding RecentActivity.Count, StringFormat='{}{0}'}"
+              <TextBlock Text="{Binding Activity.RecentActivity.Count, StringFormat='{}{0}'}"
                          FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
             </Border>
           </StackPanel>
@@ -556,7 +558,7 @@
           <ScrollViewer Grid.Row="1" MaxHeight="200"
                         VerticalScrollBarVisibility="Auto"
                         IsVisible="{Binding IsRunning}">
-            <ItemsControl ItemsSource="{Binding RecentActivity}">
+            <ItemsControl ItemsSource="{Binding Activity.RecentActivity}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ActivityItem">
                   <Border Padding="4,3" Margin="0,1">
@@ -600,26 +602,26 @@
             </StackPanel>
 
             <!-- Preis (nur sichtbar wenn geladen) -->
-            <TextBlock Text="{Binding BtcPrice, StringFormat='{}{0:N2} USDT'}"
+            <TextBlock Text="{Binding BtcTicker.BtcPrice, StringFormat='{}{0:N2} USDT'}"
                        FontWeight="Bold" FontSize="16"
                        Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center"
-                       IsVisible="{Binding !IsBtcLoading}" />
+                       IsVisible="{Binding !BtcTicker.IsBtcLoading}" />
 
             <!-- Aenderung (nur sichtbar wenn geladen) -->
             <TextBlock x:Name="BtcChangeText"
-                       Text="{Binding BtcPriceChange, StringFormat='{}{0:+0.00;-0.00}%'}"
+                       Text="{Binding BtcTicker.BtcPriceChange, StringFormat='{}{0:+0.00;-0.00}%'}"
                        FontSize="14" VerticalAlignment="Center"
-                       IsVisible="{Binding !IsBtcLoading}" />
+                       IsVisible="{Binding !BtcTicker.IsBtcLoading}" />
 
             <!-- Status-Text -->
-            <TextBlock Text="{Binding BtcStatusText}" FontSize="11"
+            <TextBlock Text="{Binding BtcTicker.BtcStatusText}" FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}"
                        VerticalAlignment="Center" />
 
             <!-- Lade-Indikator -->
             <mi:MaterialIcon Kind="Loading" Width="16" Height="16"
                              Foreground="{DynamicResource AppPrimaryBrush}"
-                             IsVisible="{Binding IsBtcLoading}" />
+                             IsVisible="{Binding BtcTicker.IsBtcLoading}" />
           </StackPanel>
 
           <!-- Candlestick Chart -->
@@ -651,4 +653,32 @@
 
     </StackPanel>
   </ScrollViewer>
+
+  <!-- Bestätigungs-Dialog Overlay -->
+  <Border IsVisible="{Binding ShowConfirmDialog}"
+          Background="#80000000"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Border Background="{DynamicResource AppCardBrush}"
+            CornerRadius="12" Padding="24" MaxWidth="400"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 8 32 0 #60000000">
+      <StackPanel Spacing="16">
+        <TextBlock Text="{Binding ConfirmDialogTitle}"
+                   FontSize="18" FontWeight="Bold"
+                   Foreground="{DynamicResource AppTextBrush}" />
+        <TextBlock Text="{Binding ConfirmDialogMessage}"
+                   FontSize="14" TextWrapping="Wrap"
+                   Foreground="{DynamicResource AppTextSecondaryBrush}" />
+        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+          <Button Content="Abbrechen" Command="{Binding ConfirmDialogCancelCommand}"
+                  Background="Transparent" Foreground="{DynamicResource AppTextSecondaryBrush}"
+                  Padding="16,8" CornerRadius="6" />
+          <Button Content="Ja, schließen" Command="{Binding ConfirmDialogYesCommand}"
+                  Background="#EF4444" Foreground="#FFFFFF"
+                  Padding="16,8" CornerRadius="6" FontWeight="SemiBold" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Border>
+  </Grid>
 </UserControl>

@@ -19,8 +19,10 @@ public class BingXBalanceData
 public class BingXBalanceDetail
 {
     [JsonPropertyName("balance")] public string Balance { get; set; } = "";
+    [JsonPropertyName("equity")] public string Equity { get; set; } = "";
     [JsonPropertyName("availableMargin")] public string AvailableMargin { get; set; } = "";
     [JsonPropertyName("unrealizedProfit")] public string UnrealizedProfit { get; set; } = "";
+    [JsonPropertyName("realisedProfit")] public string RealisedProfit { get; set; } = "";
     [JsonPropertyName("usedMargin")] public string UsedMargin { get; set; } = "";
 }
 

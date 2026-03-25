@@ -18,9 +18,9 @@ Automatisierter Trading Bot mit modularem Strategie-System, Market Scanner, Back
 ```
 BingXBot.Core        <- Domain (Models, Enums, Interfaces, SimulatedExchange, DB-Entities)
 BingXBot.Exchange    <- BingX REST + WebSocket API Client
-BingXBot.Engine      <- Trading-Logik (Strategien, Scanner, Risk, TradingEngine)
+BingXBot.Engine      <- Trading-Logik (Strategien, Scanner, Risk, Indikatoren mit Struct-Cache)
 BingXBot.Backtest    <- Backtesting + Paper-Trading
-BingXBot.Shared      <- Avalonia UI (ViewModels, Views)
+BingXBot.Shared      <- Avalonia UI (ViewModels inkl. Sub-VMs, Views, Services mit TradingServiceBase)
 BingXBot.Desktop     <- Desktop Entry-Point
 ```
 
@@ -49,42 +49,40 @@ Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Suppo
 - Beschreibung wird automatisch angezeigt
 - Gesperrt während Bot läuft
 
-## Paper-Trading (PaperTradingService)
+## Trading-Services (TradingServiceBase Architektur)
 
-Echter Paper-Trading-Service mit REST-Polling (implementiert IDisposable):
-- Alle 30 Sekunden: Ticker holen, Scanner filtern, Klines laden
-- Strategie evaluieren, RiskManager pruefen, Order auf SimulatedExchange platzieren
-- Account-Update im Dashboard alle 5 Sekunden
-- Pause/Resume: Loop laeuft weiter, ueberspringt Scans bei Pause
-- EmergencyStopAsync: Async statt blockierendem GetAwaiter().GetResult()
-- CancellationTokenSource wird korrekt disposed (Start, Stop, Dispose)
-- Events ueber BotEventBus (Trades, Logs, Account-Updates)
+Gemeinsame Basisklasse `TradingServiceBase` enthält die gesamte Trading-Logik:
+- **RunLoopAsync** (30s): Ticker → Scanner → Klines → Strategie → Risk → Order
+- **PriceTickerLoopAsync** (5s): SL/TP-Check, Trailing-Stop, Preis-Updates
+- Tageswechsel-Reset, Korrelations-Check, gemeinsame Signal-Verwaltung
+- Abstrakte Methoden für exchange-spezifische Operationen
+- Virtuelle Hooks für Live-spezifische Logik (Grace Period, 60s Fehler-Delay)
+- Datei: `Services/TradingServiceBase.cs`
+
+### PaperTradingService (erbt von TradingServiceBase)
+- Nutzt `SimulatedExchange` als Backend
+- ~130 Zeilen (vorher ~485 Zeilen)
 - Datei: `Services/PaperTradingService.cs`
 
-## Live-Trading (v2.0 - Voll funktional)
-
-Live-Trading-Service handelt automatisch mit echtem Geld über BingXRestClient:
-- `LiveTradingService` (analog zu PaperTradingService, aber mit echtem BingXRestClient)
-- BingXRestClient wird zur Laufzeit mit gespeicherten API-Keys erstellt
-- Verbindungstest: GetAccountInfoAsync() beim Start
-- Echte Balance + Positionen werden alle 5 Sekunden aktualisiert
-- **Scan-Loop alle 30s**: Ticker holen, Scanner filtern, Klines laden, Strategie evaluieren, echte Orders platzieren
-- **SL/TP-Loop alle 5s**: Prüft offene Positionen gegen gespeicherte SL/TP-Levels, schließt bei Hit
-- **Normaler Stop**: Positionen bleiben offen (User entscheidet manuell)
-- **Notfall-Stop**: Schließt ALLE echten Positionen sofort über BingXRestClient
-- **Sicherheitsmaßnahmen**: Roter Status-Banner, "LIVE ORDER:" Prefix im Activity-Feed, 60s Pause bei API-Fehlern
-- SettingsViewModel feuert `ApiKeysAvailableChanged` Event bei Save/Delete
-- `IsLiveActive` Property für roten UI-Rahmen im Dashboard
+### LiveTradingService (erbt von TradingServiceBase)
+- Nutzt `BingXRestClient` für echte Orders
+- WebSocket User-Data-Stream (optional)
+- ~280 Zeilen (vorher ~683 Zeilen)
 - Datei: `Services/LiveTradingService.cs`
 
-## Activity-Feed (Dashboard)
+## Sub-ViewModels (aus DashboardViewModel extrahiert)
 
-Live-Feed der letzten 20 Bot-Aktionen direkt im Dashboard:
+### BtcTickerViewModel
+- Vollständig unabhängig - BTC-USDT Preis + Candlestick-Chart
+- Auto-Refresh: Preis alle 10s, Candles alle 60s
+- `IsEnabled` Property für abschaltbaren Ticker (via BotSettings.ShowBtcTicker)
+- Datei: `ViewModels/BtcTickerViewModel.cs`
+
+### ActivityFeedViewModel
+- Vollständig unabhängig - Letzte 20 Bot-Aktionen
 - Subscribet auf `BotEventBus.LogEmitted` (filtert Debug-Level aus)
-- ActivityItem Record: Time, Category, Message, Level, Symbol
-- Farbcodiert: Rot=Error, Amber=Warning, Gruen=Trade, Grau=Info
-- Max 200px Höhe, scrollbar
-- Zeigt "Bot ist gestoppt" wenn nicht aktiv
+- Farbcodiert: Rot=Error, Amber=Warning, Grün=Trade, Grau=Info
+- Datei: `ViewModels/ActivityFeedViewModel.cs`
 
 ## Risikomanagement
 
@@ -99,7 +97,7 @@ Live-Feed der letzten 20 Bot-Aktionen direkt im Dashboard:
 
 | View | Zweck | Engine-Verdrahtung |
 |------|-------|--------------------|
-| Dashboard | Balance, Positionen, Activity-Feed, Bot-Controls, Strategie-Auswahl, Equity-Chart, BTC-Live-Candlestick-Chart, Live-Trading (voll funktional) | BotEventBus, StrategyManager, PaperTradingService, LiveTradingService, RiskSettings, ScannerSettings, IPublicMarketDataClient, ISecureStorageService, BingXRestClient (Live), Auto-Refresh |
+| Dashboard | Balance, Positionen, Bot-Controls, Strategie-Auswahl, Equity-Chart, Live-Trading | BotEventBus, StrategyManager, PaperTradingService, RiskSettings, ScannerSettings, IPublicMarketDataClient?, BotDatabaseService?, ISecureStorageService? + Sub-VMs: BtcTickerViewModel, ActivityFeedViewModel |
 | Scanner | Live-Scan mit Volumen/Momentum-Filter | BotEventBus, ScannerSettings, IMarketScanner (optional) |
 | Strategie | Auswahl + dynamischer Parameter-Editor + Parameter-Rückschreibung | BotEventBus, StrategyManager, IStrategy-Instanzen |
 | Backtest | Historischer Test mit PerformanceReport, publiziert Ergebnisse an TradeHistory + Log | BotEventBus, BacktestEngine, RiskManager, SimulatedExchange |
@@ -123,7 +121,7 @@ Live-Feed der letzten 20 Bot-Aktionen direkt im Dashboard:
 |-------|-----------|------------|
 | `TradeCompleted` | DashboardVM (Bot-Trades), PaperTradingService | TradeHistoryVM |
 | `BacktestCompleted` | BacktestVM | TradeHistoryVM |
-| `LogEmitted` | Alle ViewModels, PaperTradingService | LogVM, DashboardVM (Activity-Feed) |
+| `LogEmitted` | Alle ViewModels, TradingServiceBase | LogVM, ActivityFeedViewModel |
 | `BotStateChanged` | DashboardVM, PaperTradingService | MainVM (Status-Bar) |
 
 Datei: `Services/BotEventBus.cs`
@@ -246,7 +244,7 @@ Alle DB-Parameter sind optional (`BotDatabaseService?`), damit Tests ohne DB fun
 | Multi-Timeframe Konfirmation | MarketContext.cs, PaperTradingService.cs, LiveTradingService.cs, TrendFollowStrategy.cs | 4h-Candles als HigherTimeframeCandles. EMA50 auf HTF → bullish/bearish/neutral. Gegen-Trend reduziert Confidence um 15% |
 | CorrelationChecker aktiviert | CorrelationChecker.cs, PaperTradingService.cs, LiveTradingService.cs | Pearson-Korrelation gegen offene Positionen. Gated durch `RiskSettings.CheckCorrelation` (default: true, MaxCorrelation: 0.7). Nutzt IPublicMarketDataClient (funktioniert in Paper + Live) |
 | Stochastik-Indikator | IndicatorHelper.cs | Neuer Indikator verfügbar: `CalculateStochastic(%K, %D)` mit konfigurierbarer Glättung |
-| Indikator-Caching | IndicatorHelper.cs | ConcurrentDictionary-Cache: Gleiche Candle-Daten + Indikator-Parameter → gecachtes Ergebnis. ClearCache() am Ende jedes Scan-Durchlaufs. Spart ~60 List-Allokationen/Scan |
+| Indikator-Caching (Struct-Key) | IndicatorHelper.cs | ConcurrentDictionary mit `IndicatorCacheKey` Struct (statt String). Vermeidet String-Allokationen pro Lookup. IndicatorType Enum, IEquatable<T>, HashCode.Combine. ClearCache() am Ende jedes Scan-Durchlaufs |
 
 ### Sonstige Verbesserungen
 | Verbesserung | Datei | Beschreibung |
@@ -292,7 +290,136 @@ Alle DB-Parameter sind optional (`BotDatabaseService?`), damit Tests ohne DB fun
 | ResetDailyStats bei Tageswechsel | PaperTradingService.cs, LiveTradingService.cs | RunLoopAsync prüft UTC-Date und ruft ResetDailyStats() bei neuem Tag auf |
 | Signal-Bereinigung mit Grace Period | LiveTradingService.cs | Verwaiste Signale erst nach 30s entfernt (Grace Period für BingX API-Latenz). _signalCreatedAt trackt Zeitpunkt |
 
-## Tests (198 Tests)
+## Fixes Runde 3 (17.03.2026)
+
+### Kritische Bugfixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Ghost-Trade bei Eröffnung entfernt | LiveTradingService.cs | CompletedTrade mit Pnl=-entryFee bei Order-Eröffnung entfernt. Verfälschte PnL + doppelte Fee-Zählung. Fee wird jetzt nur beim Close eingerechnet |
+| Trailing-Stop implementiert | LiveTradingService.cs, PaperTradingService.cs | Wenn EnableTrailingStop aktiv: SL wird in Gewinnrichtung nachgezogen. _extremePriceSinceEntry trackt Höchst-/Tiefstpreis pro Position. Konfigurierbar via RiskSettings (TrailingStopPercent) |
+| EmergencyStop parallelisiert | LiveTradingService.cs | Task.WhenAll statt sequentiellem foreach beim Schließen aller Positionen. Reduziert Close-Zeit von N*Latenz auf 1*Latenz |
+
+### Performance
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Positions inkrementell updaten | DashboardViewModel.cs | UpdatePositionsIncrementally() statt Clear+Add alle 5s. Bestehende Items behalten SL/TP + PropertyChanged-Handler. Nur MarkPrice/Pnl/Qty/Leverage werden aktualisiert |
+| Separater RateLimiter für Live-Client | DashboardViewModel.cs | Eigener RateLimiter pro BingXRestClient statt globalen zu teilen (Public + Private API throttlen sich nicht mehr gegenseitig) |
+| BingXPublicClient Retry | BingXPublicClient.cs | SendWithRetryAsync() mit 3 Versuchen + exponentiellem Backoff (2s, 4s, 8s) bei HTTP-/Netzwerkfehlern |
+
+### Stabilität
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| WebSocket unbekannter Message-Typ | BingXWebSocketClient.cs | Nur Text und Binary (gzip) verarbeiten, unbekannte Typen überspringen |
+| IndicatorHelper Cache Race | IndicatorHelper.cs | Scan-Generation im CacheKey verhindert Race Conditions bei parallelen Scan-Durchläufen |
+| Debug.WriteLine → EventBus | DashboardViewModel.cs | Account-Update/BTC/Equity-Fehler jetzt im Activity-Feed sichtbar statt nur in Debug-Output |
+
+### Cleanup
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| UseKellyCriterion/UseAtrSizing entfernt | RiskSettings.cs, RiskSettingsViewModel.cs, RiskSettingsView.axaml, BacktestViewModel.cs | Nicht implementierte Settings aus UI und Code entfernt (User-Irreführung vermeiden) |
+
+## Security-Fixes (17.03.2026)
+
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| PBKDF2 statt SHA-256 Key-Ableitung | SecureStorageService.cs | DeriveLinuxKey() nutzt jetzt Rfc2898DeriveBytes.Pbkdf2 mit 100.000 Iterationen + deterministischem Salt. Legacy SHA-256-Key als Fallback bei Decrypt fuer Migration bestehender Daten |
+
+## Refactoring (20.03.2026)
+
+### Architektur-Verbesserungen
+| Änderung | Dateien | Beschreibung |
+|----------|---------|--------------|
+| TradingServiceBase | TradingServiceBase.cs (NEU), PaperTradingService.cs, LiveTradingService.cs | Gemeinsame Trading-Logik (RunLoop, PriceTickerLoop, SL/TP, Trailing-Stop) in abstrakte Basisklasse extrahiert. ~700 Zeilen Duplikation eliminiert |
+| IndicatorHelper Struct-Cache | IndicatorHelper.cs | String-basierte Cache-Keys durch `IndicatorCacheKey` Struct ersetzt. IndicatorType Enum. Vermeidet ~120 String-Allokationen pro Scan-Durchlauf |
+| DashboardViewModel Split | BtcTickerViewModel.cs (NEU), ActivityFeedViewModel.cs (NEU), DashboardViewModel.cs | BTC-Ticker und Activity-Feed in unabhängige Sub-ViewModels extrahiert. DashboardViewModel ~150 Zeilen reduziert |
+| TradeJournal CancelledCount | TradeJournal.cs | Abgebrochene Trades (Margin/Rejected/Notfall) werden erkannt und aus WinRate-Berechnung ausgeschlossen |
+| Database-Indices | BotDatabaseService.cs | CREATE INDEX für Trades (ExitTime, Mode, Symbol), Equity (Time), Logs (Timestamp, Level) |
+| ScanHelper HTF-Error-Handling | ScanHelper.cs | Blankes `catch {}` durch spezifisches Exception-Handling ersetzt. OperationCanceledException wird re-thrown, Rest wird geloggt |
+| BTC-Ticker abschaltbar | BotSettings.cs, BtcTickerViewModel.cs | `ShowBtcTicker` Setting + `IsEnabled` Property im BtcTickerViewModel |
+
+## ATI - Adaptive Trading Intelligence (20.03.2026)
+
+Selbstlernendes Trading-System mit 6 Schichten. Alle Komponenten in `BingXBot.Engine/ATI/`.
+
+### Architektur
+
+```
+Candles → [1] FeatureEngine → [2] RegimeDetector → [3] AdaptiveEnsemble
+       → [4] ConfidenceGate → [5] ExitOptimizer → [6] LearningLoop → Trade
+```
+
+### Komponenten
+
+| Komponente | Datei | Beschreibung |
+|------------|-------|--------------|
+| FeatureEngine | ATI/FeatureEngine.cs | Extrahiert 19 normalisierte Features aus MarketContext (Preis, Momentum, Volatilität, Trend, Volumen, Session) |
+| RegimeDetector | ATI/RegimeDetector.cs | HMM-basierte Regime-Erkennung (TrendingBull/Bear, Range, Chaotic). Regelbasiert + gelernte Übergangswahrscheinlichkeiten. EMA-Glättung gegen Flackern |
+| AdaptiveEnsemble | ATI/AdaptiveEnsemble.cs | Alle 6 Strategien parallel, dynamische Gewichte pro Regime (Bayesian Update). Konsens-Filter: Min 2 Strategien müssen übereinstimmen |
+| ConfidenceGate | ATI/ConfidenceGate.cs | Bayesian Naive Bayes auf diskretisierten Feature-Buckets. Lernt P(Win|Features) aus eigenen Trade-Ergebnissen. Online-Lernen ab Trade 1 |
+| ExitOptimizer | ATI/ExitOptimizer.cs | Adaptive SL/TP-Multiplikatoren pro Regime + Confidence. Lernt optimale Exit-Parameter aus Trade-Outcomes |
+| WalkForwardOptimizer | ATI/WalkForwardOptimizer.cs | Walk-Forward Parameter-Optimierung mit GeneticSharp. Rollierende Fenster (Train:Test = 2:1) |
+| AdaptiveTradingIntelligence | ATI/AdaptiveTradingIntelligence.cs | Hauptorchestrator. Verbindet alle Komponenten, erstellt Audit-Trails, verwaltet offene Trade-Kontexte |
+
+### Core Models (in BingXBot.Core/Models/ATI/)
+
+| Model | Beschreibung |
+|-------|--------------|
+| MarketRegime | Enum: TrendingBull, TrendingBear, Range, Chaotic |
+| RegimeState | Regime + Confidence + 4 Wahrscheinlichkeiten |
+| FeatureSnapshot | 19 normalisierte Features + Metadaten + ToFeatureArray() |
+| EnsembleVote | Konsens-Signal + Gewichte + Einzelstimmen |
+| TradeAudit | Vollständiger Audit-Trail jeder Entscheidung |
+| FeatureSnapshotEntity | DB-Entity für ML-Training (19 Features + Outcome) |
+
+### NuGet-Pakete (neu)
+
+| Paket | Version | Zweck |
+|-------|---------|-------|
+| Microsoft.ML | 5.0.0 | ML-Framework (LightGBM Phase 2) |
+| Microsoft.ML.LightGbm | 5.0.0 | Gradient Boosted Trees Classifier |
+| GeneticSharp | 3.1.4 | Genetischer Algorithmus für Walk-Forward |
+
+### Integration
+
+- TradingServiceBase: `ATI` Property, ATI-Branch in ScanAndTradeAsync, `ProcessCompletedTrade()` Methode
+- PaperTradingService/LiveTradingService: `ProcessCompletedTrade()` statt `_riskManager.UpdateDailyStats()`
+- DashboardViewModel: ATI per DI injiziert, Strategien beim Bot-Start ins Ensemble registriert
+- BotDatabaseService: FeatureSnapshots-Tabelle + CRUD-Methoden
+- App.axaml.cs: `AdaptiveTradingIntelligence` als Singleton registriert
+
+### Lernzyklus
+
+```
+Trade geschlossen → ProcessCompletedTrade()
+  → AdaptiveEnsemble.RecordOutcome() → Strategie-Gewichte aktualisieren
+  → ConfidenceGate.RecordOutcome() → Bayesian Buckets updaten
+  → ExitOptimizer.RecordExitOutcome() → SL/TP-Multiplikatoren anpassen
+```
+
+### Persistenz (ATI-State)
+
+- Alle Lernzustände werden beim Bot-Stop als JSON in die DB gespeichert (SettingEntity, Key: `"AtiState"`)
+- Beim Bot-Start (Paper + Live) wird der Zustand aus der DB geladen
+- Serialisierung pro Komponente: ConfidenceGate (BucketStats), AdaptiveEnsemble (Gewichte/Regime), ExitOptimizer (ExitStats), RegimeDetector (Übergangsmatrix)
+- Korrupte Daten werden ignoriert (frischer Start mit leeren Modellen)
+- `BotDatabaseService.SaveAtiStateAsync()` / `LoadAtiStateAsync()`
+
+## Exchange-Features (20.03.2026)
+
+### Native SL/TP-Orders
+- `BingXRestClient.PlaceOrderAsync()` sendet `stopLoss` und `takeProfit` als JSON-String-Parameter
+- Typ: `STOP_MARKET` (SL) / `TAKE_PROFIT_MARKET` (TP), `workingType: MARK_PRICE`
+- `PlaceOrderOnExchangeAsync()` hat optionalen `SignalResult? signal` Parameter
+- LiveTradingService: Signal wird durchgereicht, SL/TP nativ auf BingX gesetzt
+- PaperTradingService: Signal-Parameter wird ignoriert (SimulatedExchange ohne native SL/TP)
+- Bot-seitige SL/TP-Pruefung (PriceTickerLoop) bleibt als Fallback aktiv
+
+### Dedizierter closeAllPositions Endpunkt
+- `BingXRestClient.CloseAllPositionsAsync()` nutzt `/openApi/swap/v2/trade/closeAllPositions`
+- Ein API-Call pro Symbol statt pro Position (effizienter bei mehreren Positionen pro Symbol)
+- Parallel via `Task.WhenAll`
+
+## Tests (201 Tests)
 
 ## Farbpalette
 

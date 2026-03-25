@@ -67,8 +67,9 @@ public class RiskManager : IRiskManager
             }
             else
             {
-                // Ohne SL: konservativ das gesamte riskAmount als Worst-Case annehmen
-                newPositionRisk = context.Account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
+                // Ohne SL: Worst-Case = gesamte Margin (Positionsgröße in %)
+                var leverage = _settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m;
+                newPositionRisk = context.Account.AvailableBalance * _settings.MaxPositionSizePercent / 100m * leverage;
             }
 
             var effectiveDailyPnl = _dailyPnl + unrealizedLoss - newPositionRisk;
@@ -100,30 +101,13 @@ public class RiskManager : IRiskManager
 
         // MaxLeverage muss > 0 sein, sonst Fallback auf 1
         var leverage = _settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m;
-        var riskAmount = account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
 
-        if (stopLoss.HasValue && stopLoss.Value > 0 && stopLoss.Value != entryPrice)
-        {
-            // Risiko-basiertes Sizing: riskAmount / SL-Distanz
-            var slDistance = Math.Abs(entryPrice - stopLoss.Value);
-            var slPercent = slDistance / entryPrice;
+        // MaxPositionSizePercent = Anteil der Balance der als Margin gesetzt wird.
+        // 2% bei 10.000 USDT = 200 USDT Margin → mit 10x Leverage = 2.000 USDT Positionswert.
+        var marginAmount = account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
+        var positionValue = marginAmount * leverage;
 
-            if (slPercent > 0)
-            {
-                var positionValue = riskAmount / slPercent;
-                // Leverage begrenzen
-                var maxPositionValue = account.AvailableBalance * leverage;
-                positionValue = Math.Min(positionValue, maxPositionValue);
-                return positionValue / entryPrice;
-            }
-        }
-
-        // Fallback ohne StopLoss: Konservativ - halbes Risiko als Margin, max 5x Leverage.
-        // Ohne SL ist das Verlustrisiko unbekannt, daher deutlich vorsichtiger.
-        var fallbackMargin = riskAmount * 0.5m;
-        var fallbackLeverage = Math.Min(leverage, 5m);
-        var fallbackValue = fallbackMargin * fallbackLeverage;
-        return fallbackValue / entryPrice;
+        return positionValue / entryPrice;
     }
 
     public void UpdateDailyStats(CompletedTrade completedTrade)

@@ -156,7 +156,15 @@ public class BingXWebSocketClient : IAsyncDisposable
                     break;
                 }
 
-                // BingX sendet gzip-komprimierte Nachrichten
+                // Nur Text und Binary (gzip-komprimiert) verarbeiten, Rest überspringen
+                if (result.MessageType != WebSocketMessageType.Text &&
+                    result.MessageType != WebSocketMessageType.Binary)
+                {
+                    _logger.LogDebug("Unbekannter WebSocket-Nachrichtentyp ignoriert: {Type}", result.MessageType);
+                    continue;
+                }
+
+                // BingX sendet gzip-komprimierte Nachrichten (Binary) oder Text
                 string message;
                 try
                 {
@@ -329,6 +337,11 @@ public class BingXWebSocketClient : IAsyncDisposable
                     _logger.LogWarning("User-Data-Stream: Close empfangen");
                     break;
                 }
+
+                // Nur Text und Binary (gzip-komprimiert) verarbeiten
+                if (result.MessageType != WebSocketMessageType.Text &&
+                    result.MessageType != WebSocketMessageType.Binary)
+                    continue;
 
                 // BingX User-Data kann gzip-komprimiert sein
                 string message;

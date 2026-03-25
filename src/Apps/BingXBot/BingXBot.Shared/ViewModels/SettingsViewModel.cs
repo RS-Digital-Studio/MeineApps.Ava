@@ -1,9 +1,11 @@
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Exchange;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BingXBot.ViewModels;
 
@@ -175,10 +177,20 @@ public partial class SettingsViewModel : ObservableObject
 
         try
         {
-            if (_exchangeClient != null)
+            // Temporären BingXRestClient mit gespeicherten Keys erstellen und testen
+            if (_secureStorage != null)
             {
-                // Echten Verbindungstest: Account-Info abrufen
-                var account = await _exchangeClient.GetAccountInfoAsync();
+                var creds = await _secureStorage.LoadCredentialsAsync();
+                if (creds == null)
+                {
+                    ConnectionStatus = "API-Keys konnten nicht entschlüsselt werden";
+                    return;
+                }
+
+                using var httpClient = new HttpClient();
+                var testClient = new BingXRestClient(creds.Value.ApiKey, creds.Value.ApiSecret,
+                    httpClient, new RateLimiter(), NullLogger<BingXRestClient>.Instance);
+                var account = await testClient.GetAccountInfoAsync();
                 ConnectionStatus = $"Verbunden (Balance: {account.Balance:F2} USDT)";
 
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
@@ -186,12 +198,7 @@ public partial class SettingsViewModel : ObservableObject
             }
             else
             {
-                // Kein Exchange-Client verfügbar
-                await Task.Delay(500);
-                ConnectionStatus = "Exchange-Client nicht konfiguriert (Demo-Modus)";
-
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
-                    "Kein Exchange-Client konfiguriert (Demo-Modus)"));
+                ConnectionStatus = "Secure Storage nicht verfügbar";
             }
         }
         catch (Exception ex)

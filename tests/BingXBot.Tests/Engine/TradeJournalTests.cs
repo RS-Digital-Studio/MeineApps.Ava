@@ -11,9 +11,9 @@ namespace BingXBot.Tests.Engine;
 /// </summary>
 public class TradeJournalTests
 {
-    private static CompletedTrade MakeTrade(decimal pnl) => new(
+    private static CompletedTrade MakeTrade(decimal pnl, string reason = "Test") => new(
         "BTC-USDT", Side.Buy, 50000m, 50000m + pnl * 100, 0.1m, pnl, 1m,
-        DateTime.UtcNow.AddMinutes(-10), DateTime.UtcNow, "Test", TradingMode.Paper);
+        DateTime.UtcNow.AddMinutes(-10), DateTime.UtcNow, reason, TradingMode.Paper);
 
     [Fact]
     public async Task RecordTrade_ShouldAddToList()
@@ -74,5 +74,41 @@ public class TradeJournalTests
 
         received.Should().NotBeNull();
         received!.Pnl.Should().Be(100m);
+    }
+
+    // === Tests für abgebrochene Trades ===
+
+    [Fact]
+    public async Task CancelledCount_MitRejectedTrade_ZaehltKorrekt()
+    {
+        var journal = new TradeJournal();
+        await journal.RecordTradeAsync(MakeTrade(100));
+        await journal.RecordTradeAsync(MakeTrade(-10, "Order rejected - nicht genug Margin"));
+        await journal.RecordTradeAsync(MakeTrade(-5, "Notfall-Stop"));
+        await journal.RecordTradeAsync(MakeTrade(50));
+
+        journal.CancelledCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task WinRate_SchliesstAbgebrocheneTradesAus()
+    {
+        var journal = new TradeJournal();
+        await journal.RecordTradeAsync(MakeTrade(100));          // Win
+        await journal.RecordTradeAsync(MakeTrade(-50));           // Loss
+        await journal.RecordTradeAsync(MakeTrade(-10, "Margin")); // Abgebrochen → nicht gezählt
+
+        // 2 reguläre Trades: 1 Win, 1 Loss → 50%
+        journal.WinRate.Should().Be(50m);
+    }
+
+    [Fact]
+    public async Task CancelledCount_OhneAbgebrochene_GibtNullZurueck()
+    {
+        var journal = new TradeJournal();
+        await journal.RecordTradeAsync(MakeTrade(100));
+        await journal.RecordTradeAsync(MakeTrade(-50));
+
+        journal.CancelledCount.Should().Be(0);
     }
 }

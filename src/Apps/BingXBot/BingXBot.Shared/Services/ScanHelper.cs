@@ -41,7 +41,8 @@ public static class ScanHelper
         ScannerSettings scannerSettings,
         IReadOnlyList<Position> positions,
         AccountInfo account,
-        CancellationToken ct)
+        CancellationToken ct,
+        BotEventBus? eventBus = null)
     {
         // Klines laden (letzte 100 Stunden-Candles)
         var candles = await publicClient.GetKlinesAsync(
@@ -58,7 +59,13 @@ public static class ScanHelper
                 ticker.Symbol, TimeFrame.H4,
                 DateTime.UtcNow.AddDays(-14), DateTime.UtcNow, ct).ConfigureAwait(false);
         }
-        catch { /* HTF-Daten optional, nicht blockierend */ }
+        catch (OperationCanceledException) { throw; } // Cancellation nicht verschlucken
+        catch (Exception ex)
+        {
+            // HTF-Daten optional, aber Fehler loggen für Diagnose
+            eventBus?.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Scanner",
+                $"{ticker.Symbol}: HTF-Candles nicht verfügbar: {ex.Message}", ticker.Symbol));
+        }
 
         // Strategie evaluieren
         var strategy = strategyManager.GetOrCreateForSymbol(ticker.Symbol);

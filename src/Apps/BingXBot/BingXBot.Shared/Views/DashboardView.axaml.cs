@@ -27,6 +27,7 @@ public partial class DashboardView : UserControl
     private static readonly SolidColorBrush CardBrush = new(Color.Parse("#363650"));
     private static readonly SolidColorBrush WhiteBrush = new(Color.Parse("#FFFFFF"));
     private static readonly SolidColorBrush MutedBrush = new(Color.Parse("#94A3B8"));
+    private static readonly SolidColorBrush InactiveBorderBrush = new(Color.Parse("#3F3F5C"));
 
     // Farben fuer P&L
     private static readonly SolidColorBrush ProfitBrush = new(Color.Parse("#10B981"));
@@ -43,8 +44,8 @@ public partial class DashboardView : UserControl
         {
             _vm = dashVm;
 
-            // BtcCandles-Aenderungen invalidieren den Canvas
-            dashVm.BtcCandles.CollectionChanged += (_, _) =>
+            // BtcCandles-Aenderungen invalidieren den Canvas (delegiert an BtcTicker Sub-VM)
+            dashVm.BtcTicker.BtcCandles.CollectionChanged += (_, _) =>
             {
                 if (this.FindControl<SKCanvasView>("BtcChartCanvas") is { } canvas)
                     canvas.InvalidateSurface();
@@ -59,6 +60,7 @@ public partial class DashboardView : UserControl
 
             // Property-Aenderungen abonnieren fuer dynamische UI-Updates
             dashVm.PropertyChanged += OnViewModelPropertyChanged;
+            dashVm.BtcTicker.PropertyChanged += OnBtcTickerPropertyChanged;
 
             // Initiale Zuweisung
             UpdateStatusDot();
@@ -72,7 +74,7 @@ public partial class DashboardView : UserControl
     {
         switch (e.PropertyName)
         {
-            case nameof(DashboardViewModel.BotStatusColor):
+            case nameof(DashboardViewModel.BotStatusState):
                 UpdateStatusDot();
                 break;
             case nameof(DashboardViewModel.IsPaperMode):
@@ -82,10 +84,13 @@ public partial class DashboardView : UserControl
             case nameof(DashboardViewModel.TotalPnl):
                 UpdatePnlColors();
                 break;
-            case nameof(DashboardViewModel.BtcPriceChange):
-                UpdateBtcChangeColor();
-                break;
         }
+    }
+
+    private void OnBtcTickerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(BtcTickerViewModel.BtcPriceChange))
+            UpdateBtcChangeColor();
     }
 
     /// <summary>
@@ -97,10 +102,10 @@ public partial class DashboardView : UserControl
         var dot = this.FindControl<Ellipse>("StatusDot");
         if (dot == null) return;
 
-        dot.Fill = _vm.BotStatusColor switch
+        dot.Fill = _vm.BotStatusState switch
         {
-            "#10B981" => GreenBrush,
-            "#F59E0B" => AmberBrush,
+            BingXBot.Core.Enums.BotState.Running => GreenBrush,
+            BingXBot.Core.Enums.BotState.Paused or BingXBot.Core.Enums.BotState.Starting => AmberBrush,
             _ => RedBrush
         };
     }
@@ -123,13 +128,13 @@ public partial class DashboardView : UserControl
             paperBtn.BorderBrush = PrimaryBrush;
             liveBtn.Background = CardBrush;
             liveBtn.Foreground = MutedBrush;
-            liveBtn.BorderBrush = new SolidColorBrush(Color.Parse("#3F3F5C"));
+            liveBtn.BorderBrush = InactiveBorderBrush;
         }
         else
         {
             paperBtn.Background = CardBrush;
             paperBtn.Foreground = MutedBrush;
-            paperBtn.BorderBrush = new SolidColorBrush(Color.Parse("#3F3F5C"));
+            paperBtn.BorderBrush = InactiveBorderBrush;
             liveBtn.Background = LossBrush;
             liveBtn.Foreground = WhiteBrush;
             liveBtn.BorderBrush = LossBrush;
@@ -183,7 +188,7 @@ public partial class DashboardView : UserControl
         var changeText = this.FindControl<TextBlock>("BtcChangeText");
         if (changeText != null)
         {
-            changeText.Foreground = _vm.BtcPriceChange >= 0 ? ProfitBrush : LossBrush;
+            changeText.Foreground = _vm.BtcTicker.BtcPriceChange >= 0 ? ProfitBrush : LossBrush;
         }
     }
 
@@ -204,12 +209,15 @@ public partial class DashboardView : UserControl
 
         var canvas = e.Surface.Canvas;
         var bounds = canvas.LocalClipBounds; // NICHT e.Info.Width/Height (DPI-Problem!)
-        BtcPriceChartRenderer.Render(canvas, bounds, _vm.BtcCandles.ToList());
+        BtcPriceChartRenderer.Render(canvas, bounds, _vm.BtcTicker.BtcCandles.ToList());
     }
 
     private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)
     {
         if (_vm != null)
+        {
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
+            _vm.BtcTicker.PropertyChanged -= OnBtcTickerPropertyChanged;
+        }
     }
 }

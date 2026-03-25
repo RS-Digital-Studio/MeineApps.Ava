@@ -8,8 +8,6 @@ public class RiskSettings
     public int MaxOpenPositions { get; set; } = 3;
     public int MaxOpenPositionsPerSymbol { get; set; } = 1;
     public decimal MaxLeverage { get; set; } = 10m;
-    public bool UseKellyCriterion { get; set; } = false;
-    public bool UseAtrSizing { get; set; } = true;
     public bool CheckCorrelation { get; set; } = true;
     public decimal MaxCorrelation { get; set; } = 0.7m;
     public bool EnableTrailingStop { get; set; } = true;

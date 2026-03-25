@@ -19,7 +19,11 @@ public class NullableDecimalConverter : IValueConverter
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is decimal d)
-            return d.ToString($"N{DecimalPlaces}", CultureInfo.InvariantCulture);
+        {
+            // G-Format: Zeigt signifikante Stellen statt fixe Dezimalstellen.
+            // Verhindert Rundung auf 0.00 bei Micro-Cap Token-Preisen (z.B. 0.0000301)
+            return d.ToString("G10", CultureInfo.InvariantCulture);
+        }
 
         // null → leerer String (zeigt Watermark)
         return "";

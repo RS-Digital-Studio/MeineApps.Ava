@@ -116,33 +116,6 @@
             </StackPanel>
           </Grid>
 
-          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
-
-          <!-- Kelly Criterion -->
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="Kelly-Kriterium" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Optimale Positionsgröße nach Kelly-Formel" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" Classes="RiskToggle"
-                          IsChecked="{Binding UseKellyCriterion}" />
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
-
-          <!-- ATR Sizing -->
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="ATR-Sizing" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Positionsgröße basierend auf Average True Range" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" Classes="RiskToggle"
-                          IsChecked="{Binding UseAtrSizing}" />
-          </Grid>
         </StackPanel>
       </Border>
 

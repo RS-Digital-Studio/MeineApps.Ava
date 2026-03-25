@@ -6,6 +6,12 @@ namespace FitnessRechner;
 /// </summary>
 public static class PreferenceKeys
 {
+    // Benutzerprofil
+    public const string ProfileHeight = "profile_height";
+    public const string ProfileAge = "profile_age";
+    public const string ProfileIsMale = "profile_is_male";
+    public const string ProfileActivityLevel = "profile_activity_level";
+
     // Ziel-Einstellungen
     public const string CalorieGoal = "daily_calorie_goal";
     public const string WaterGoal = "daily_water_goal";
@@ -13,6 +19,14 @@ public static class PreferenceKeys
     public const string MacroProteinGoal = "macro_goal_protein";
     public const string MacroCarbsGoal = "macro_goal_carbs";
     public const string MacroFatGoal = "macro_goal_fat";
+    public const string MacroAutoCalculated = "macro_auto_calculated";
+
+    // Intervallfasten
+    public const string FastingPlan = "fasting_plan";
+    public const string FastingStartTime = "fasting_start_time";
+    public const string FastingIsActive = "fasting_is_active";
+    public const string FastingHistory = "fasting_history";
+    public const string FastingCustomHours = "fasting_custom_hours";
 
     // Erweiterte Food-DB
     public const string ExtendedFoodDbExpiry = "ExtendedFoodDbExpiry";

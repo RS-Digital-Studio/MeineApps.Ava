@@ -1,0 +1,331 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FitnessRechner.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="FitnessRechner.Views.FastingView"
+             x:DataType="vm:FastingViewModel"
+             x:CompileBindings="True"
+             Background="Transparent">
+
+  <!-- Medical-Styling: MedicalBackground scheint durch das transparente UserControl -->
+  <UserControl.Styles>
+    <!-- SettingsCard-Override: Medical Surface mit Cyan-Rand -->
+    <Style Selector="Border.SettingsCard">
+      <Setter Property="Background" Value="#D91E3844" />
+      <Setter Property="BorderBrush" Value="#1A06B6D4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <!-- Plan-Button-Styles -->
+    <Style Selector="Button.PlanButton">
+      <Setter Property="Background" Value="#D91E3844" />
+      <Setter Property="Foreground" Value="#94A3B8" />
+      <Setter Property="BorderBrush" Value="#1A06B6D4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.PlanButton:pointerover">
+      <Setter Property="RenderTransform" Value="scale(1.03)" />
+    </Style>
+    <Style Selector="Button.PlanButton.Selected">
+      <Setter Property="Background" Value="#3306B6D4" />
+      <Setter Property="BorderBrush" Value="#06B6D4" />
+      <Setter Property="Foreground" Value="#06B6D4" />
+    </Style>
+
+    <!-- History-Item Styles -->
+    <Style Selector="Border.HistoryItem">
+      <Setter Property="Background" Value="#1A1E3844" />
+      <Setter Property="BorderBrush" Value="#0D06B6D4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="Margin" Value="0,4" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="16" Margin="16,8,16,80">
+
+      <!-- ========== Header ========== -->
+      <Grid ColumnDefinitions="Auto,*">
+        <Button Grid.Column="0" Command="{Binding NavigateBackCommand}"
+                Background="Transparent" Padding="4"
+                VerticalAlignment="Center">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="#06B6D4" />
+        </Button>
+        <TextBlock Grid.Column="1" Text="{Binding TitleText}"
+                   FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   VerticalAlignment="Center" Margin="12,0,0,0" />
+      </Grid>
+
+      <!-- ========== Plan-Auswahl ========== -->
+      <Border Classes="SettingsCard">
+        <StackPanel Spacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="FoodAppleOutline" Width="20" Height="20" Foreground="#06B6D4" />
+            <!-- Plan-Abschnitt-Titel -->
+            <TextBlock Text="{loc:Translate FastingTitle}"
+                       FontSize="15" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+            <!-- 16:8 -->
+            <Button Grid.Column="0"
+                    Classes.Selected="{Binding SelectedPlanIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
+                    Classes="PlanButton"
+                    Command="{Binding SelectPlanCommand}" CommandParameter="0"
+                    IsEnabled="{Binding !IsActive}">
+              <TextBlock Text="16:8" HorizontalAlignment="Center" />
+            </Button>
+            <!-- 18:6 -->
+            <Button Grid.Column="1"
+                    Classes.Selected="{Binding SelectedPlanIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}"
+                    Classes="PlanButton"
+                    Command="{Binding SelectPlanCommand}" CommandParameter="1"
+                    IsEnabled="{Binding !IsActive}">
+              <TextBlock Text="18:6" HorizontalAlignment="Center" />
+            </Button>
+            <!-- 20:4 -->
+            <Button Grid.Column="2"
+                    Classes.Selected="{Binding SelectedPlanIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}"
+                    Classes="PlanButton"
+                    Command="{Binding SelectPlanCommand}" CommandParameter="2"
+                    IsEnabled="{Binding !IsActive}">
+              <TextBlock Text="20:4" HorizontalAlignment="Center" />
+            </Button>
+            <!-- Custom -->
+            <Button Grid.Column="3"
+                    Classes.Selected="{Binding SelectedPlanIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}"
+                    Classes="PlanButton"
+                    Command="{Binding SelectPlanCommand}" CommandParameter="3"
+                    IsEnabled="{Binding !IsActive}">
+              <TextBlock Text="{Binding PlanCustomText}" HorizontalAlignment="Center" />
+            </Button>
+          </Grid>
+
+          <!-- Custom-Stunden-Slider (nur bei Custom) -->
+          <StackPanel Spacing="6" IsVisible="{Binding IsCustomPlan}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding FastingHoursLabel}"
+                         FontSize="13" Foreground="#94A3B8" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding FastingHoursDisplay}"
+                         FontSize="15" FontWeight="Bold" Foreground="#06B6D4"
+                         VerticalAlignment="Center" />
+            </Grid>
+            <Slider Minimum="4" Maximum="23"
+                    Value="{Binding CustomFastingHours}"
+                    IsEnabled="{Binding !IsActive}"
+                    Foreground="#06B6D4" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- ========== Countdown-Ring + Timer ========== -->
+      <Border Classes="SettingsCard">
+        <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <!-- Ring-Container -->
+          <Grid Width="220" Height="220" HorizontalAlignment="Center">
+            <!-- Hintergrund-Ring -->
+            <Border Width="220" Height="220" CornerRadius="110"
+                    BorderBrush="#1A06B6D4" BorderThickness="6"
+                    Background="Transparent" />
+            <!-- Fortschritts-Anzeige als Arc (vereinfachte Border-Variante) -->
+            <ProgressBar Width="200" Height="200"
+                         Minimum="0" Maximum="1"
+                         Value="{Binding ProgressFraction}"
+                         Classes="circular"
+                         Foreground="#06B6D4"
+                         Background="#0D06B6D4"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                         IsVisible="{Binding IsActive}" />
+            <!-- Zentrale Zeitanzeige -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="4">
+              <TextBlock Text="{Binding TimeDisplay}"
+                         FontSize="36" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center"
+                         FontFamily="JetBrains Mono, Consolas, monospace" />
+              <TextBlock Text="{Binding StatusText}"
+                         FontSize="13" Foreground="#06B6D4"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Fasten/Essen Stunden-Anzeige -->
+          <Grid ColumnDefinitions="*,Auto,*" Margin="0,4,0,0">
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
+              <TextBlock Text="{Binding FastingHoursDisplay}"
+                         FontSize="24" FontWeight="Bold" Foreground="#F59E0B"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding FastingHoursLabel}"
+                         FontSize="12" Foreground="#94A3B8"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+            <Border Grid.Column="1" Width="1" Height="36" Background="#1A94A3B8" />
+            <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="2">
+              <TextBlock Text="{Binding EatingHoursDisplay}"
+                         FontSize="24" FontWeight="Bold" Foreground="#22C55E"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding EatingHoursLabel}"
+                         FontSize="12" Foreground="#94A3B8"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Vergangen / Verbleibend (nur wenn aktiv) -->
+          <Grid ColumnDefinitions="*,*" IsVisible="{Binding IsActive}" Margin="0,4,0,0">
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
+              <TextBlock Text="{Binding ElapsedDisplay}"
+                         FontSize="15" FontWeight="SemiBold" Foreground="#94A3B8"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding ElapsedLabel}"
+                         FontSize="11" Foreground="#64748B"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
+              <TextBlock Text="{Binding RemainingDisplay}"
+                         FontSize="15" FontWeight="SemiBold" Foreground="#06B6D4"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding RemainingLabel}"
+                         FontSize="11" Foreground="#64748B"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Start / Stop Button -->
+          <Button HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Command="{Binding StartFastingCommand}"
+                  IsVisible="{Binding !IsActive}"
+                  CornerRadius="12" Padding="0,14"
+                  RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+            <Button.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#06B6D4" Offset="0" />
+                <GradientStop Color="#14B8A6" Offset="1" />
+              </LinearGradientBrush>
+            </Button.Background>
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="PlayCircleOutline" Width="22" Height="22" Foreground="White" />
+              <TextBlock Text="{Binding StartButtonText}"
+                         FontSize="16" FontWeight="Bold" Foreground="White"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Command="{Binding StopFastingCommand}"
+                  IsVisible="{Binding IsActive}"
+                  CornerRadius="12" Padding="0,14"
+                  Background="#33EF4444"
+                  RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="StopCircleOutline" Width="22" Height="22" Foreground="#EF4444" />
+              <TextBlock Text="{Binding StopButtonText}"
+                         FontSize="16" FontWeight="Bold" Foreground="#EF4444"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- ========== History ========== -->
+      <Border Classes="SettingsCard">
+        <StackPanel Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="History" Width="20" Height="20" Foreground="#06B6D4" />
+            <TextBlock Text="{Binding HistoryText}"
+                       FontSize="15" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Keine History -->
+          <TextBlock Text="{Binding NoHistoryText}"
+                     FontSize="13" Foreground="#64748B"
+                     IsVisible="{Binding HasNoHistory}"
+                     HorizontalAlignment="Center"
+                     Margin="0,8" />
+
+          <!-- History-Liste -->
+          <ItemsControl ItemsSource="{Binding History}" IsVisible="{Binding HasHistory}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:FastingRecordDisplay">
+                <Border Classes="HistoryItem">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Status-Icon -->
+                    <Panel Grid.Column="0" Width="32" Height="32"
+                           VerticalAlignment="Center" Margin="0,0,10,0">
+                      <!-- Erfolgreich (grün) -->
+                      <Border Width="32" Height="32" CornerRadius="16"
+                              Background="#1A22C55E"
+                              IsVisible="{Binding IsCompleted}">
+                        <mi:MaterialIcon Kind="Check" Width="18" Height="18"
+                                         Foreground="#22C55E"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <!-- Abgebrochen (rot) -->
+                      <Border Width="32" Height="32" CornerRadius="16"
+                              Background="#1AEF4444"
+                              IsVisible="{Binding !IsCompleted}">
+                        <mi:MaterialIcon Kind="Close" Width="18" Height="18"
+                                         Foreground="#EF4444"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                    </Panel>
+                    <!-- Info -->
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock FontSize="14" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}">
+                        <TextBlock.Text>
+                          <MultiBinding StringFormat="{}{0} - {1}">
+                            <Binding Path="PlanText" />
+                            <Binding Path="DurationText" />
+                          </MultiBinding>
+                        </TextBlock.Text>
+                      </TextBlock>
+                      <TextBlock Text="{Binding DateText}"
+                                 FontSize="12" Foreground="#64748B" />
+                    </StackPanel>
+                    <!-- Status -->
+                    <Panel Grid.Column="2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding StatusText}"
+                                 FontSize="12" FontWeight="SemiBold"
+                                 Foreground="#22C55E"
+                                 IsVisible="{Binding IsCompleted}" />
+                      <TextBlock Text="{Binding StatusText}"
+                                 FontSize="12" FontWeight="SemiBold"
+                                 Foreground="#EF4444"
+                                 IsVisible="{Binding !IsCompleted}" />
+                    </Panel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -4,19 +4,26 @@
 
 ## App-Beschreibung
 
-Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), Tracking mit Charts und Nahrungsmittel-Suche (114 Foods + Barcode-Scanner).
+Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), Tracking mit Charts, Nahrungsmittel-Suche (114 lokale + Open Food Facts API), Intervallfasten-Timer, Aktivitäts-Tracking und Rezept-Editor.
 
 **Version:** 2.0.6 | **Package-ID:** com.meineapps.fitnessrechner | **Status:** Geschlossener Test
 
 ## Features
 
-- **4 Tabs**: Home (Dashboard + Streak-Card + Tageszeit-Begrüßung), Progress (Tracking + 4 Sub-Tabs), Food Search (+ Quick-Add), Settings
-- **5 Rechner**: BMI, Calories, Water, IdealWeight, BodyFat
+- **4 Tabs**: Home (Dashboard + Streak-Card + Fasten-Status + Tageszeit-Begrüßung), Progress (Tracking + 5 Sub-Tabs inkl. Aktivitäten), Food Search (+ Quick-Add + Rezepte), Settings (+ Benutzerprofil)
+- **5 Rechner**: BMI, Calories, Water, IdealWeight, BodyFat (alle mit Profil-Vorausfüllung)
+- **Benutzerprofil**: Größe, Alter, Geschlecht, Aktivitätslevel in Settings → automatische Vorausfüllung aller Rechner
 - **Tracking**: Gewicht (+ Gewichtsziel mit ProgressBar), BMI, Koerperfett, Wasser, Kalorien (JSON-basiert, TrackingService)
+- **Aktivitäts-Tracking**: 30 Aktivitäten mit MET-Werten, verbrannte Kalorien berechnen (kcal = MET * Gewicht * Dauer), Tages-Übersicht
 - **Charts**: SkiaSharp (HealthTrendVisualization für Gewicht/BMI/BodyFat, WeeklyCaloriesBarVisualization für Wochen-Kalorien), Chart-Zeitraum wählbar (7T/30T/90T)
 - **Mahlzeiten**: Gruppiert nach Typ (Frühstück/Mittag/Abend/Snack mit Icons + Subtotals), "Gestern kopieren" Funktion
-- **Food Search**: Fuzzy Matching, Favorites, Recipes (FoodDatabase mit 114 Items + Aliase)
+- **Food Search**: Lokale DB (114 Items) + Open Food Facts API-Textsuche (3M+ Produkte), Fuzzy Matching, Favorites
+- **Rezept-Editor**: RecipeViewModel + RecipeView (Erstellen/Bearbeiten/Löschen von Rezepten mit Zutaten-Suche, Nährwertberechnung, Als-Mahlzeit-Loggen mit Portionsauswahl)
+- **Intervallfasten-Timer**: 4 Pläne (16:8, 18:6, 20:4, Custom), Countdown-Timer, History der letzten 30 Perioden
+- **Automatische Makro-Berechnung**: Wenn Kalorienziel gesetzt wird → Default-Makros (30% Protein, 40% Carbs, 30% Fett)
+- **Wasser Quick-Add**: 4 Mengenoptionen (150ml Tasse, 250ml Glas, 500ml Flasche, 750ml große Flasche)
 - **Barcode Scanner**: Nativer CameraX + ML Kit Scanner (Android), manuelle Eingabe (Desktop), Open Food Facts API (BarcodeLookupService)
+- **Premium-Features**: Gewichts-Trendprognose ("Ziel erreicht bis..."), Makro-Verteilungs-Analyse
 - **SkiaSharp-Visualisierungen**: BMI-Gauge (BmiGaugeRenderer, Medical Grid + Nadel-Glow + Scan-Line), Körperfett-Grafik (BodyFatRenderer, Cyan-Kontur + Scan-Linie + Prozent-Ring Glow), Kalorien-Ringe (CalorieRingRenderer, Medical Grid + pulsierender 72BPM Glow + Data-Stream Partikel), Wasserglas (inline in WaterView), HealthTrendVisualization (Catmull-Rom Spline mit Gradient-Fill, Target-Zones, Milestones), WeeklyCaloriesBarVisualization (Gradient-Balken mit Target-Linie), FitnessRechnerSplashRenderer (EKG-Herzschlag-Splash), VitalSignsHeroRenderer (kreisförmiger Monitor mit EKG-Ring, 4 Quadranten, Center-Score, Data-Stream Partikel), MedicalBackgroundRenderer (animierter Hintergrund), MedicalTabBarRenderer (holografische Tab-Bar), MedicalCardRenderer (glassmorphe Cards), CalculatorHeaderRenderer (Medical-Style Header für alle 5 Rechner mit Feature-Farb-Gradient, Medical Grid, Mini-EKG, holografischem Back-Button). HomeView nutzt VitalSignsHeroRenderer (ersetzt Hero-Header + Score-Card + Dashboard-Grid) + LinearProgressVisualization (XP-Bar, Challenge-Bar). Alle 3 Calculator-Renderer haben optionalen `time`-Parameter (Default 0f) für Animationen (Render-Loop wird in späterem Task aktiviert)
 - **Medical-Styling (XAML-Cards)**: Alle verbleibenden Cards (Empty-State, Badges, Heatmap, Weekly Comparison, Disclaimer, Calculator-Buttons) nutzen Surface `#D90F1D32` + Cyan-Border `#1A06B6D4`. Weight Quick-Add + Evening Summary haben holografischen Cyan-Rand `#4D06B6D4`. Calculator-Buttons: `#D90F1D32` statt CardColor-Gradient, Feature-Farben auf Icon-Container beibehalten
 
@@ -29,6 +36,11 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 - **BarcodeLookupService**: Open Food Facts API, _barcodeCache Dictionary mit SemaphoreSlim
 - **IScanLimitService / ScanLimitService**: Tages-Limit (3 Scans/Tag), Bonus-Scans via Rewarded Ad
 - **IBarcodeService**: Plattform-Interface fuer nativen Barcode-Scan (Android: CameraX + ML Kit, Desktop: null → manuelle Eingabe)
+- **IFastingService / FastingService**: Intervallfasten-Timer (16:8, 18:6, 20:4, Custom), Start/Stop, History (letzte 30 Perioden), Preferences-basiert
+- **IActivityService / ActivityService**: Sport-/Aktivitäts-Tracking mit MET-Werten, JSON-Persistenz (activity_log.json), Thread-safe
+- **ActivityDatabase**: 30 Aktivitäten mit MET-Werten in 4 Kategorien (Cardio/Kraft/Sport/Alltag), statische Liste
+- **IActivityService / ActivityService**: Aktivitäts-/Sport-Tracking mit MET-basierter Kalorienberechnung, JSON-Persistenz (activity_log.json), `ActivityAdded`-Event, Thread-Safe (SemaphoreSlim)
+- **ActivityDatabase**: 30 häufige Aktivitäten in 4 Kategorien (Cardio/Kraft/Sport/Alltag) mit MET-Werten, Material Icons, RESX-Keys. Formel: kcal = MET * Gewicht_kg * Dauer_h
 
 ## Premium & Ads
 

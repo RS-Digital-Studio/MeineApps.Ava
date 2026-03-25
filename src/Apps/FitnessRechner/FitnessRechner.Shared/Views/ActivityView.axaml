@@ -1,0 +1,318 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FitnessRechner.ViewModels"
+             xmlns:models="using:FitnessRechner.Models"
+             xmlns:svc="using:FitnessRechner.Services"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:conv="using:FitnessRechner.Converters"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             x:Class="FitnessRechner.Views.ActivityView"
+             x:DataType="vm:ActivityViewModel"
+             x:CompileBindings="True"
+             Background="Transparent">
+
+  <UserControl.Resources>
+    <conv:LocalizeKeyConverter x:Key="LocalizeKey" />
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="*">
+
+    <!-- Hauptinhalt (scrollbar) -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="16" Margin="12,8,12,80">
+
+        <!-- ========== Header: Titel + verbrannte Kalorien heute ========== -->
+        <Border CornerRadius="16" Padding="16"
+                Background="#D91E3844" BorderBrush="#1A06B6D4" BorderThickness="1"
+                BoxShadow="{DynamicResource CardShadow}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <!-- Flammen-Icon -->
+            <Border Width="48" Height="48" CornerRadius="24">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#F59E0B" Offset="0" />
+                  <GradientStop Color="#EF4444" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <mi:MaterialIcon Kind="Fire" Width="24" Height="24"
+                               Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <!-- Titel + Untertitel -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
+              <TextBlock Text="{Binding TodayBurnedLabel}"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding TodayBurnedCaloriesDisplay}"
+                         FontSize="24" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <!-- Aktivitäten-Zähler -->
+            <Border Grid.Column="2" CornerRadius="12" Padding="10,6"
+                    Background="#2206B6D4" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <mi:MaterialIcon Kind="LightningBolt" Width="14" Height="14"
+                                 Foreground="{DynamicResource PrimaryBrush}" />
+                <TextBlock Text="{Binding TodayActivities.Count}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryBrush}" />
+              </StackPanel>
+            </Border>
+          </Grid>
+        </Border>
+
+        <!-- ========== Aktivitäten-Liste (heute) ========== -->
+        <!-- Empty-State -->
+        <Border CornerRadius="12" Padding="20"
+                Background="#D91E3844" BorderBrush="#1A06B6D4" BorderThickness="1"
+                IsVisible="{Binding !HasActivities}">
+          <StackPanel Spacing="8" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="RunFast" Width="36" Height="36"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding NoActivitiesLabel}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       TextAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Aktivitäten-Einträge -->
+        <ItemsControl ItemsSource="{Binding TodayActivities}"
+                       IsVisible="{Binding HasActivities}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="models:ActivityEntry" x:DataType="models:ActivityEntry">
+              <Border CornerRadius="12" Padding="12" Margin="0,0,0,8"
+                      Background="#D91E3844" BorderBrush="#1A06B6D4" BorderThickness="1">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                  <!-- Aktivitäts-Icon -->
+                  <Border Width="40" Height="40" CornerRadius="20"
+                          Background="#2206B6D4" VerticalAlignment="Center">
+                    <mi:MaterialIcon Kind="RunFast" Width="20" Height="20"
+                                     Foreground="{DynamicResource PrimaryBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <!-- Name + Dauer -->
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <TextBlock Text="{Binding ActivityName}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock FontSize="12"
+                               Foreground="{DynamicResource TextMutedBrush}">
+                      <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0} min">
+                          <Binding Path="DurationMinutes" />
+                        </MultiBinding>
+                      </TextBlock.Text>
+                    </TextBlock>
+                  </StackPanel>
+                  <!-- Kalorien -->
+                  <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="8,0"
+                             FontSize="14" FontWeight="Bold"
+                             Foreground="#F59E0B">
+                    <TextBlock.Text>
+                      <MultiBinding StringFormat="{}{0:F0} kcal">
+                        <Binding Path="CaloriesBurned" />
+                      </MultiBinding>
+                    </TextBlock.Text>
+                  </TextBlock>
+                  <!-- Delete-Button -->
+                  <Button Grid.Column="3" Classes="Text" Padding="6"
+                          VerticalAlignment="Center"
+                          Command="{Binding $parent[ItemsControl].((vm:ActivityViewModel)DataContext).DeleteActivityCommand}"
+                          CommandParameter="{Binding Id}">
+                    <mi:MaterialIcon Kind="DeleteOutline" Width="18" Height="18"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                  </Button>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- ========== Add-Formular (einblendbar) ========== -->
+        <Border CornerRadius="16" Padding="16"
+                BorderBrush="#4D06B6D4" BorderThickness="1"
+                BoxShadow="{DynamicResource CardShadow}"
+                IsVisible="{Binding ShowAddForm}">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#1E293B" Offset="0" />
+              <GradientStop Color="#0F172A" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Spacing="14">
+
+            <!-- Formular-Titel -->
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="PlusCircleOutline" Width="20" Height="20"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+              <TextBlock Text="{Binding AddActivityLabel}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Aktivitäts-Suche -->
+            <TextBox Watermark="{Binding ActivitySearchPlaceholder}"
+                     Text="{Binding ActivitySearchQuery, Mode=TwoWay}"
+                     FontSize="14" CornerRadius="8" />
+
+            <!-- Aktivitäts-Auswahl-Liste -->
+            <Border CornerRadius="8" MaxHeight="200"
+                    Background="#0D06B6D4">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding AvailableActivities}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="svc:ActivityDefinition" x:DataType="svc:ActivityDefinition">
+                      <Button Classes="Text" Padding="10,8"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              Command="{Binding $parent[ItemsControl].((vm:ActivityViewModel)DataContext).SelectActivityItemCommand}"
+                              CommandParameter="{Binding}">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18"
+                                           Foreground="{DynamicResource PrimaryBrush}"
+                                           VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Margin="10,0,0,0"
+                                     Text="{Binding NameKey, Converter={StaticResource LocalizeKey}}"
+                                     FontSize="13"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     VerticalAlignment="Center"
+                                     TextTrimming="CharacterEllipsis" />
+                          <TextBlock Grid.Column="2"
+                                     FontSize="11"
+                                     Foreground="{DynamicResource TextMutedBrush}"
+                                     VerticalAlignment="Center">
+                            <TextBlock.Text>
+                              <MultiBinding StringFormat="{}{0:F1} MET">
+                                <Binding Path="Met" />
+                              </MultiBinding>
+                            </TextBlock.Text>
+                          </TextBlock>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Border>
+
+            <!-- Ausgewählte Aktivität anzeigen -->
+            <Border CornerRadius="10" Padding="12" Margin="0,2,0,0"
+                    IsVisible="{Binding SelectedActivity, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#06B6D4" Offset="0" />
+                  <GradientStop Color="#0891B2" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18" Foreground="White" />
+                <TextBlock Text="{Binding SelectedActivity.NameKey, Converter={StaticResource LocalizeKey}}"
+                           FontSize="14" FontWeight="SemiBold" Foreground="White"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- Dauer (Slider + Anzeige) -->
+            <StackPanel Spacing="6">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{Binding ActivityDurationLabel}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryBrush}">
+                  <TextBlock.Text>
+                    <MultiBinding StringFormat="{}{0} min">
+                      <Binding Path="DurationMinutes" />
+                    </MultiBinding>
+                  </TextBlock.Text>
+                </TextBlock>
+              </Grid>
+              <Slider Minimum="5" Maximum="180" Value="{Binding DurationMinutes}"
+                      TickFrequency="5" IsSnapToTickEnabled="True"
+                      Foreground="{DynamicResource PrimaryBrush}" />
+            </StackPanel>
+
+            <!-- Berechnete Kalorien -->
+            <Border CornerRadius="10" Padding="12"
+                    Background="#22F59E0B"
+                    IsVisible="{Binding SelectedActivity, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <mi:MaterialIcon Kind="Fire" Width="20" Height="20"
+                                 Foreground="#F59E0B" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Margin="8,0,0,0"
+                           Text="{Binding CaloriesBurnedLabel}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2"
+                           Text="{Binding CalculatedCaloriesDisplay}"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="#F59E0B"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+
+            <!-- Notiz (optional) -->
+            <TextBox Watermark="{loc:Translate NoteOptional}"
+                     Text="{Binding ActivityNote, Mode=TwoWay}"
+                     FontSize="14" CornerRadius="8"
+                     MaxLength="200" />
+
+            <!-- Buttons: Abbrechen / Speichern -->
+            <Grid ColumnDefinitions="*,12,*" Margin="0,4,0,0">
+              <Button Grid.Column="0" CornerRadius="10" Height="42"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Background="#33FFFFFF"
+                      Command="{Binding CloseAddFormCommand}">
+                <TextBlock Text="{loc:Translate Cancel}" FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Button>
+              <Button Grid.Column="2" CornerRadius="10" Height="42"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      IsEnabled="{Binding SelectedActivity, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Command="{Binding AddActivityCommand}">
+                <Button.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="#06B6D4" Offset="0" />
+                    <GradientStop Color="#0891B2" Offset="1" />
+                  </LinearGradientBrush>
+                </Button.Background>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" Foreground="White" />
+                  <TextBlock Text="{loc:Translate Save}" FontSize="14" FontWeight="Bold"
+                             Foreground="White" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ========== FAB: Aktivität hinzufügen ========== -->
+    <Button CornerRadius="28" Width="56" Height="56" Padding="0"
+            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+            Margin="0,0,16,16"
+            IsVisible="{Binding !ShowAddForm}"
+            Command="{Binding OpenAddFormCommand}">
+      <i:Interaction.Behaviors>
+        <behaviors:TapScaleBehavior PressedScale="0.9" />
+      </i:Interaction.Behaviors>
+      <Button.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#06B6D4" Offset="0" />
+          <GradientStop Color="#0891B2" Offset="1" />
+        </LinearGradientBrush>
+      </Button.Background>
+      <mi:MaterialIcon Kind="Plus" Width="28" Height="28" Foreground="White" />
+    </Button>
+
+  </Grid>
+
+</UserControl>

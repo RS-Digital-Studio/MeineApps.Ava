@@ -30,6 +30,22 @@ public sealed partial class WaterViewModel : ViewModelBase
         _fitnessEngine = fitnessEngine;
         _preferences = preferences;
         _localization = localization;
+
+        // Letztes Gewicht aus Tracking vorausfüllen (wird von MainViewModel gesetzt)
+        // Profil hat kein Gewicht (ändert sich), aber Aktivitätsminuten aus Profil-Level schätzen
+        var profileActivity = _preferences.Get(PreferenceKeys.ProfileActivityLevel, -1);
+        if (profileActivity >= 0)
+        {
+            _activityMinutes = profileActivity switch
+            {
+                0 => 0,    // Sedentary
+                1 => 15,   // Light
+                2 => 30,   // Moderate
+                3 => 45,   // Active
+                4 => 60,   // Very Active
+                _ => 30
+            };
+        }
     }
 
     [ObservableProperty]

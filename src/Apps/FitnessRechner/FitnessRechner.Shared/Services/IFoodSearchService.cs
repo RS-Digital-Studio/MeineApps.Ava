@@ -13,12 +13,15 @@ public interface IFoodSearchService
     event Action? FoodLogAdded;
 
     /// <summary>
-    /// Searches for foods with fuzzy matching
+    /// Searches for foods with fuzzy matching (nur lokale DB).
     /// </summary>
-    /// <param name="query">Search term</param>
-    /// <param name="maxResults">Maximum number of results</param>
-    /// <returns>Sorted list by relevance</returns>
     IReadOnlyList<FoodSearchResult> Search(string query, int maxResults = 10);
+
+    /// <summary>
+    /// Kombinierte Suche: Lokale DB + Open Food Facts API.
+    /// Lokale Ergebnisse kommen sofort, API-Ergebnisse werden nachgeladen.
+    /// </summary>
+    Task<IReadOnlyList<FoodSearchResult>> SearchWithApiAsync(string query, int maxResults = 30);
 
     /// <summary>
     /// Returns all foods of a category

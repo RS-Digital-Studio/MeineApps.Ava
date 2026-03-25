@@ -6,7 +6,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:conv="using:FitnessRechner.Converters"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
-             xmlns:behaviors="using:MeineApps.Core.Ava.Behaviors"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:uiControls="using:MeineApps.UI.Controls"
              x:Class="FitnessRechner.Views.FoodSearchView"

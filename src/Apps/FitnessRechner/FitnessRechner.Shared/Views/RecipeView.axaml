@@ -1,0 +1,626 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FitnessRechner.ViewModels"
+             xmlns:models="using:FitnessRechner.Models"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             x:Class="FitnessRechner.Views.RecipeView"
+             x:DataType="vm:RecipeViewModel"
+             x:CompileBindings="True"
+             Background="Transparent">
+
+  <!-- Medical-Styling: SettingsCard-Override -->
+  <UserControl.Styles>
+    <Style Selector="Border.SettingsCard">
+      <Setter Property="Background" Value="#D91E3844" />
+      <Setter Property="BorderBrush" Value="#1A06B6D4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+    <!-- ================================================================ -->
+    <!-- Hauptansicht: Rezeptliste (sichtbar wenn NICHT bearbeitet wird)   -->
+    <!-- ================================================================ -->
+    <Grid RowDefinitions="Auto,*"
+          IsVisible="{Binding !IsEditing}">
+
+      <!-- Header -->
+      <Border Grid.Row="0"
+              Background="#D91E3844"
+              BorderThickness="0,0,0,1"
+              BorderBrush="#4D06B6D4"
+              Padding="16,12">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{loc:Translate RecipesTitle}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="Primary Small"
+                  Command="{Binding CreateRecipeCommand}"
+                  BorderBrush="#6606B6D4"
+                  CornerRadius="12">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
+              <TextBlock Text="{loc:Translate CreateRecipe}"
+                         FontSize="13" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+
+      <!-- Rezeptliste -->
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12" Margin="12,12,12,80">
+
+          <!-- Empty State -->
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Spacing="12" Margin="0,60"
+                      IsVisible="{Binding !HasRecipes}">
+            <mi:MaterialIcon Kind="BookOpenPageVariantOutline" Width="56" Height="56"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:Translate NoRecipes}"
+                       Classes="Caption"
+                       HorizontalAlignment="Center" />
+            <Button Classes="Outlined"
+                    Command="{Binding CreateRecipeCommand}"
+                    HorizontalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
+                <TextBlock Text="{loc:Translate CreateRecipe}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+
+          <!-- Rezeptliste -->
+          <ItemsControl ItemsSource="{Binding Recipes}"
+                        IsVisible="{Binding HasRecipes}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:Recipe">
+                <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+                <Border Classes="Card Interactive Compact" Margin="0,4" Padding="14"
+                        Background="#D91E3844"
+                        BorderBrush="#1A06B6D4"
+                        CornerRadius="12">
+                  <i:Interaction.Behaviors>
+                    <behaviors:TapScaleBehavior PressedScale="0.97" />
+                  </i:Interaction.Behaviors>
+                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+
+                    <!-- Rezeptname + Beschreibung -->
+                    <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                      <TextBlock Text="{Binding Name}"
+                                 FontSize="16" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding Description}"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource TextMutedBrush}"
+                                 TextTrimming="CharacterEllipsis"
+                                 IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+
+                    <!-- Aktions-Buttons -->
+                    <StackPanel Grid.Row="0" Grid.Column="1"
+                                Orientation="Horizontal" Spacing="2"
+                                VerticalAlignment="Top">
+                      <!-- Als Mahlzeit loggen -->
+                      <Button Classes="Icon"
+                              Command="{Binding $parent[ItemsControl].((vm:RecipeViewModel)DataContext).UseRecipeCommand}"
+                              CommandParameter="{Binding .}"
+                              ToolTip.Tip="{loc:Translate UseAsRecipe}">
+                        <mi:MaterialIcon Kind="FoodForkDrink" Width="20" Height="20"
+                                         Foreground="#06B6D4" />
+                      </Button>
+                      <!-- Bearbeiten -->
+                      <Button Classes="Icon"
+                              Command="{Binding $parent[ItemsControl].((vm:RecipeViewModel)DataContext).EditRecipeCommand}"
+                              CommandParameter="{Binding .}"
+                              ToolTip.Tip="{loc:Translate EditRecipe}">
+                        <mi:MaterialIcon Kind="Pencil" Width="18" Height="18"
+                                         Foreground="{DynamicResource TextMutedBrush}" />
+                      </Button>
+                      <!-- Löschen -->
+                      <Button Classes="Icon"
+                              Command="{Binding $parent[ItemsControl].((vm:RecipeViewModel)DataContext).DeleteRecipeCommand}"
+                              CommandParameter="{Binding .}"
+                              ToolTip.Tip="{loc:Translate DeleteRecipe}">
+                        <mi:MaterialIcon Kind="Delete" Width="18" Height="18"
+                                         Foreground="{DynamicResource ErrorBrush}" />
+                      </Button>
+                    </StackPanel>
+
+                    <!-- Nährwerte pro Portion -->
+                    <Grid Grid.Row="1" Grid.ColumnSpan="2"
+                          ColumnDefinitions="*,*,*,*" Margin="0,8,0,0">
+                      <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding CaloriesPerServing, StringFormat='{}{0:F0}'}"
+                                   FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="kcal" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   HorizontalAlignment="Center" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding ProteinPerServing, StringFormat='{}{0:F1}g'}"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="{loc:Translate Protein}" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   HorizontalAlignment="Center" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding CarbsPerServing, StringFormat='{}{0:F1}g'}"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="{loc:Translate Carbs}" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   HorizontalAlignment="Center" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding FatPerServing, StringFormat='{}{0:F1}g'}"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="{loc:Translate Fat}" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   HorizontalAlignment="Center" />
+                      </StackPanel>
+                    </Grid>
+
+                    <!-- Meta-Info: Portionen + Verwendungshäufigkeit -->
+                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2"
+                                Orientation="Horizontal" Spacing="12" Margin="0,6,0,0">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <mi:MaterialIcon Kind="AccountGroup" Width="14" Height="14"
+                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
+                          <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0}x {1}">
+                              <Binding Path="Servings" />
+                              <Binding Path="$parent[ItemsControl].((vm:RecipeViewModel)DataContext).ServingsLabel" />
+                            </MultiBinding>
+                          </TextBlock.Text>
+                        </TextBlock>
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <mi:MaterialIcon Kind="Counter" Width="14" Height="14"
+                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <TextBlock Text="{Binding TimesUsed, StringFormat='{}{0}x'}"
+                                   FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <mi:MaterialIcon Kind="FoodApple" Width="14" Height="14"
+                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
+                          <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0} {1}">
+                              <Binding Path="Ingredients.Count" />
+                              <Binding Path="$parent[ItemsControl].((vm:RecipeViewModel)DataContext).IngredientsLabel" />
+                            </MultiBinding>
+                          </TextBlock.Text>
+                        </TextBlock>
+                      </StackPanel>
+                    </StackPanel>
+
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+        </StackPanel>
+      </ScrollViewer>
+
+    </Grid>
+
+    <!-- ================================================================ -->
+    <!-- Editor-Ansicht (sichtbar wenn bearbeitet wird)                   -->
+    <!-- ================================================================ -->
+    <Grid RowDefinitions="Auto,*,Auto"
+          IsVisible="{Binding IsEditing}">
+
+      <!-- Editor Header -->
+      <Border Grid.Row="0"
+              Background="#D91E3844"
+              BorderThickness="0,0,0,1"
+              BorderBrush="#4D06B6D4"
+              Padding="16,12">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <Button Grid.Column="0" Classes="Icon"
+                  Command="{Binding CancelEditCommand}">
+            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Button>
+          <TextBlock Grid.Column="1"
+                     Text="{loc:Translate EditRecipe}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="Primary Small"
+                  Command="{Binding SaveRecipeCommand}"
+                  BorderBrush="#6606B6D4"
+                  CornerRadius="12">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />
+              <TextBlock Text="{loc:Translate SaveRecipe}"
+                         FontSize="13" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+
+      <!-- Editor Inhalt -->
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12" Margin="16,12,16,80">
+
+          <!-- Rezeptname -->
+          <Border Classes="SettingsCard" Padding="12">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{loc:Translate RecipeName}"
+                         FontSize="13" FontWeight="SemiBold"
+                         Foreground="#06B6D4" />
+              <TextBox Text="{Binding RecipeName}"
+                       Watermark="{loc:Translate RecipeName}"
+                       Background="Transparent"
+                       BorderBrush="#2606B6D4"
+                       Height="NaN" />
+            </StackPanel>
+          </Border>
+
+          <!-- Beschreibung -->
+          <Border Classes="SettingsCard" Padding="12">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{loc:Translate RecipeDescription}"
+                         FontSize="13" FontWeight="SemiBold"
+                         Foreground="#06B6D4" />
+              <TextBox Text="{Binding RecipeDescription}"
+                       Watermark="{loc:Translate RecipeDescription}"
+                       Background="Transparent"
+                       BorderBrush="#2606B6D4"
+                       Height="NaN"
+                       AcceptsReturn="True"
+                       TextWrapping="Wrap"
+                       MinHeight="60" />
+            </StackPanel>
+          </Border>
+
+          <!-- Portionen -->
+          <Border Classes="SettingsCard" Padding="12">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <TextBlock Text="{loc:Translate RecipeServings}"
+                         FontSize="13" FontWeight="SemiBold"
+                         Foreground="#06B6D4"
+                         VerticalAlignment="Center" />
+              <NumericUpDown Grid.Column="1"
+                             Value="{Binding RecipeServings}"
+                             Minimum="1" Maximum="100"
+                             Increment="1"
+                             FormatString="F0"
+                             MinWidth="120" />
+            </Grid>
+          </Border>
+
+          <!-- Zutaten Section -->
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="FoodApple" Width="18" Height="18"
+                               Foreground="#06B6D4" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Translate RecipeIngredients}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="#06B6D4"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Vorhandene Zutaten -->
+            <ItemsControl ItemsSource="{Binding Ingredients}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:RecipeIngredient">
+                  <Border Classes="Card Compact" Margin="0,3" Padding="12"
+                          Background="#D91E3844"
+                          BorderBrush="#1A06B6D4"
+                          CornerRadius="12">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                      <StackPanel>
+                        <TextBlock Text="{Binding Food.Name}"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Text="{Binding Grams, StringFormat='{}{0:F0}g'}"
+                                     FontSize="12" Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text="|" FontSize="12"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text="{Binding Calories, StringFormat='{}{0:F0} kcal'}"
+                                     FontSize="12" Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text=" P:" FontSize="11"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text="{Binding Protein, StringFormat='{}{0:F1}'}"
+                                     FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text=" C:" FontSize="11"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text="{Binding Carbs, StringFormat='{}{0:F1}'}"
+                                     FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text=" F:" FontSize="11"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text="{Binding Fat, StringFormat='{}{0:F1}'}"
+                                     FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                      </StackPanel>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Calories, StringFormat='{}{0:F0}'}"
+                                 FontSize="16" FontWeight="Bold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 VerticalAlignment="Center" />
+                      <Button Grid.Column="2" Classes="Icon"
+                              Command="{Binding $parent[ItemsControl].((vm:RecipeViewModel)DataContext).RemoveIngredientCommand}"
+                              CommandParameter="{Binding .}">
+                        <mi:MaterialIcon Kind="Close" Width="18" Height="18"
+                                         Foreground="{DynamicResource ErrorBrush}" />
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Zutat hinzufügen Button -->
+            <Button Classes="Outlined" Margin="0,4"
+                    Command="{Binding StartAddIngredientCommand}"
+                    IsVisible="{Binding !IsSearchingIngredient}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
+                <TextBlock Text="{loc:Translate AddIngredient}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <!-- Zutatsuche Panel -->
+            <Border Classes="SettingsCard" Padding="12"
+                    IsVisible="{Binding IsSearchingIngredient}"
+                    BorderBrush="#4D06B6D4">
+              <StackPanel Spacing="10">
+                <TextBlock Text="{loc:Translate RecipeIngredientSearch}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="#06B6D4" />
+
+                <!-- Suchleiste -->
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                  <mi:MaterialIcon Kind="Magnify" Width="18" Height="18"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   VerticalAlignment="Center" />
+                  <TextBox Grid.Column="1"
+                           Text="{Binding IngredientSearchQuery}"
+                           Watermark="{loc:Translate SearchFoodPlaceholder}"
+                           Background="Transparent"
+                           BorderThickness="0"
+                           Height="NaN" />
+                  <Button Grid.Column="2" Classes="Icon"
+                          Command="{Binding CancelAddIngredientCommand}">
+                    <mi:MaterialIcon Kind="Close" Width="18" Height="18"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                  </Button>
+                </Grid>
+
+                <!-- Suchergebnisse -->
+                <ItemsControl ItemsSource="{Binding IngredientSearchResults}"
+                              IsVisible="{Binding HasIngredientResults}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:FoodSearchResult">
+                      <Button Classes="Text" Padding="0" Height="NaN" Margin="0,2"
+                              Command="{Binding $parent[ItemsControl].((vm:RecipeViewModel)DataContext).SelectIngredientFoodCommand}"
+                              CommandParameter="{Binding .}"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Stretch">
+                        <Border Padding="8,6" CornerRadius="8"
+                                Background="#0D06B6D4"
+                                Cursor="Hand">
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBlock Text="{Binding Food.Name}"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Food.CaloriesPer100g, StringFormat='{}{0:F0} kcal/100g'}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       VerticalAlignment="Center" />
+                          </Grid>
+                        </Border>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Mengen-Eingabe (nach Auswahl eines Lebensmittels) -->
+                <Border Padding="12" CornerRadius="10"
+                        Background="{DynamicResource PrimaryBrush}"
+                        IsVisible="{Binding ShowIngredientPanel}">
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding SelectedIngredientFood.Name}"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="White" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <NumericUpDown Value="{Binding IngredientGrams}"
+                                     Minimum="1" Maximum="10000"
+                                     Increment="10"
+                                     FormatString="F0"
+                                     Watermark="g"
+                                     HorizontalAlignment="Stretch" />
+                      <TextBlock Grid.Column="1" Text="g" Foreground="White"
+                                 VerticalAlignment="Center" FontSize="14" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,8,*">
+                      <Button Grid.Column="0"
+                              Command="{Binding CancelAddIngredientCommand}"
+                              Background="Transparent"
+                              Foreground="White"
+                              BorderBrush="White"
+                              BorderThickness="1"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Center">
+                        <TextBlock Text="{loc:Translate Cancel}" />
+                      </Button>
+                      <Button Grid.Column="2" Classes="Success"
+                              Command="{Binding ConfirmAddIngredientCommand}"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
+                          <TextBlock Text="{loc:Translate Add}" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Gesamtnährwerte -->
+          <Border Classes="SettingsCard" Padding="14"
+                  BorderBrush="#4D06B6D4">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{loc:Translate TotalNutrition}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="#06B6D4" />
+              <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                <StackPanel HorizontalAlignment="Center">
+                  <TextBlock Text="{Binding TotalCalories, StringFormat='{}{0:F0}'}"
+                             FontSize="20" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             HorizontalAlignment="Center" />
+                  <TextBlock Text="kcal" FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                  <TextBlock Text="{Binding TotalProtein, StringFormat='{}{0:F1}g'}"
+                             FontSize="14"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate Protein}" FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                  <TextBlock Text="{Binding TotalCarbs, StringFormat='{}{0:F1}g'}"
+                             FontSize="14"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate Carbs}" FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                  <TextBlock Text="{Binding TotalFat, StringFormat='{}{0:F1}g'}"
+                             FontSize="14"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate Fat}" FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" />
+                </StackPanel>
+              </Grid>
+              <!-- Pro Portion -->
+              <Border CornerRadius="8" Padding="8,6"
+                      Background="#0D06B6D4">
+                <TextBlock HorizontalAlignment="Center"
+                           FontSize="12" FontWeight="SemiBold"
+                           Foreground="#06B6D4">
+                  <TextBlock.Text>
+                    <MultiBinding StringFormat="{}{0:F0} kcal / {1}">
+                      <Binding Path="CaloriesPerServing" />
+                      <Binding Path="$parent[UserControl].((vm:RecipeViewModel)DataContext).ServingsLabel" />
+                    </MultiBinding>
+                  </TextBlock.Text>
+                </TextBlock>
+              </Border>
+            </StackPanel>
+          </Border>
+
+        </StackPanel>
+      </ScrollViewer>
+
+    </Grid>
+
+    <!-- ================================================================ -->
+    <!-- Log-Overlay (Rezept als Mahlzeit verwenden)                       -->
+    <!-- ================================================================ -->
+    <Border Background="#CC000000"
+            IsVisible="{Binding ShowLogPanel}"
+            ZIndex="80">
+      <!-- Medical-Styling: Teal-Deep Dialog + Cyan-Rand -->
+      <Border Background="#142832"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="360"
+              BorderBrush="#4D06B6D4"
+              BorderThickness="1"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <mi:MaterialIcon Kind="FoodForkDrink" Width="48" Height="48"
+                           Foreground="#06B6D4"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Translate UseAsRecipe}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+
+          <!-- Rezeptname -->
+          <TextBlock Text="{Binding SelectedRecipe.Name}"
+                     FontSize="16"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center"
+                     TextWrapping="Wrap"
+                     TextAlignment="Center" />
+
+          <!-- Portionen-Auswahl -->
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <TextBlock Text="{loc:Translate RecipeServings}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+            <NumericUpDown Grid.Column="1"
+                           Value="{Binding LogServingCount}"
+                           Minimum="1" Maximum="20"
+                           Increment="1"
+                           FormatString="F0"
+                           MinWidth="100" />
+          </Grid>
+
+          <!-- Mahlzeit-Auswahl -->
+          <ComboBox ItemsSource="{Binding Meals}"
+                    SelectedIndex="{Binding LogMealType}"
+                    HorizontalAlignment="Stretch" />
+
+          <!-- Buttons -->
+          <Button Classes="Primary"
+                  Command="{Binding ConfirmUseRecipeCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Plus" Width="20" Height="20" />
+              <TextBlock Text="{loc:Translate Add}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="Text"
+                  Command="{Binding CancelUseRecipeCommand}"
+                  HorizontalAlignment="Center">
+            <TextBlock Text="{loc:Translate Cancel}"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+          </Button>
+        </StackPanel>
+      </Border>
+    </Border>
+
+  </Panel>
+</UserControl>

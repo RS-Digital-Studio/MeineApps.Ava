@@ -31,6 +31,18 @@ public sealed partial class CaloriesViewModel : ViewModelBase
         _fitnessEngine = fitnessEngine;
         _preferences = preferences;
         _localization = localization;
+
+        // Profil-Daten vorausfüllen
+        var profileHeight = _preferences.Get(PreferenceKeys.ProfileHeight, 0.0);
+        if (profileHeight >= 80) _height = profileHeight;
+
+        var profileAge = _preferences.Get(PreferenceKeys.ProfileAge, 0);
+        if (profileAge >= 8) _age = profileAge;
+
+        _isMale = _preferences.Get(PreferenceKeys.ProfileIsMale, true);
+
+        var profileActivity = _preferences.Get(PreferenceKeys.ProfileActivityLevel, -1);
+        if (profileActivity >= 0 && profileActivity <= 4) _activityLevelIndex = profileActivity;
     }
 
     [ObservableProperty]
@@ -136,15 +148,13 @@ public sealed partial class CaloriesViewModel : ViewModelBase
 
         try
         {
-            // In Avalonia we don't have DisplayActionSheet, so we save the TDEE as default goal.
-            // The UI can provide a selection mechanism separately.
             _preferences.Set(PreferenceKeys.CalorieGoal, Result.Tdee);
+            CalculateAutoMacros(Result.Tdee);
 
             MessageRequested?.Invoke(
                 _localization.GetString("AlertSuccess"),
                 _localization.GetString("AlertCalorieGoalSaved"));
 
-            // Navigate back
             NavigateTo("..");
         }
         catch (Exception ex)
@@ -185,6 +195,7 @@ public sealed partial class CaloriesViewModel : ViewModelBase
         try
         {
             _preferences.Set(PreferenceKeys.CalorieGoal, selectedGoal);
+            CalculateAutoMacros(selectedGoal);
 
             MessageRequested?.Invoke(
                 _localization.GetString("AlertSuccess"),
@@ -198,5 +209,30 @@ public sealed partial class CaloriesViewModel : ViewModelBase
                 _localization.GetString("AlertError"),
                 string.Format(_localization.GetString("AlertSaveError"), ex.Message));
         }
+    }
+
+    /// <summary>
+    /// Berechnet automatische Makro-Ziele basierend auf Kalorienziel.
+    /// Verteilung: 30% Protein, 40% Kohlenhydrate, 30% Fett.
+    /// Nur wenn keine manuellen Makro-Ziele gesetzt sind.
+    /// </summary>
+    private void CalculateAutoMacros(double calorieGoal)
+    {
+        // Nur automatisch berechnen wenn keine manuellen Ziele existieren
+        // oder wenn die vorherigen auch automatisch berechnet waren
+        var isAutoCalculated = _preferences.Get(PreferenceKeys.MacroAutoCalculated, true);
+        var hasManualProtein = _preferences.Get(PreferenceKeys.MacroProteinGoal, 0.0) > 0;
+
+        if (hasManualProtein && !isAutoCalculated) return;
+
+        // 30% Protein (4 kcal/g), 40% Carbs (4 kcal/g), 30% Fett (9 kcal/g)
+        var proteinGrams = calorieGoal * 0.30 / 4.0;
+        var carbsGrams = calorieGoal * 0.40 / 4.0;
+        var fatGrams = calorieGoal * 0.30 / 9.0;
+
+        _preferences.Set(PreferenceKeys.MacroProteinGoal, Math.Round(proteinGrams));
+        _preferences.Set(PreferenceKeys.MacroCarbsGoal, Math.Round(carbsGrams));
+        _preferences.Set(PreferenceKeys.MacroFatGoal, Math.Round(fatGrams));
+        _preferences.Set(PreferenceKeys.MacroAutoCalculated, true);
     }
 }

@@ -189,7 +189,7 @@ public partial class HomeView : UserControl
         _waterPressed = true;
         BtnQuickWater?.InvalidateSurface();
         if (DataContext is MainViewModel vm)
-            vm.QuickAddWaterCommand.Execute("250"); // XAML CommandParameter ist immer string
+            vm.OpenWaterQuickAddCommand.Execute(null);
         e.Handled = true;
     }
 

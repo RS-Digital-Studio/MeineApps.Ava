@@ -2413,5 +2413,41 @@ namespace FitnessRechner.Resources.Strings {
                 return ResourceManager.GetString("RatingTomorrowBetter", resourceCulture);
             }
         }
+
+        public static string TrendStable {
+            get {
+                return ResourceManager.GetString("TrendStable", resourceCulture);
+            }
+        }
+
+        public static string TrendGaining {
+            get {
+                return ResourceManager.GetString("TrendGaining", resourceCulture);
+            }
+        }
+
+        public static string TrendLosing {
+            get {
+                return ResourceManager.GetString("TrendLosing", resourceCulture);
+            }
+        }
+
+        public static string TrendForecast {
+            get {
+                return ResourceManager.GetString("TrendForecast", resourceCulture);
+            }
+        }
+
+        public static string PremiumFeature {
+            get {
+                return ResourceManager.GetString("PremiumFeature", resourceCulture);
+            }
+        }
+
+        public static string UpgradeToPremium {
+            get {
+                return ResourceManager.GetString("UpgradeToPremium", resourceCulture);
+            }
+        }
     }
 }

@@ -247,6 +247,7 @@ public sealed partial class FoodSearchViewModel : ViewModelBase, IDisposable
     {
         IsSearching = true;
 
+        // Lokale Ergebnisse sofort anzeigen
         _allSearchResults = _foodSearchService.Search(query, 200).ToList();
 
         SearchResults.Clear();
@@ -260,6 +261,53 @@ public sealed partial class FoodSearchViewModel : ViewModelBase, IDisposable
         HasMoreResults = _allSearchResults.Count > RESULTS_PAGE_SIZE;
         IsSearching = false;
         UpdateExtendedDbHint();
+
+        // API-Suche im Hintergrund nachladen (wenn wenige lokale Ergebnisse)
+        if (_allSearchResults.Count < 10 && query.Length >= 3)
+        {
+            _ = LoadApiResultsAsync(query);
+        }
+    }
+
+    /// <summary>
+    /// Lädt API-Ergebnisse von Open Food Facts im Hintergrund nach
+    /// und fügt sie zu den bestehenden Ergebnissen hinzu.
+    /// </summary>
+    private async Task LoadApiResultsAsync(string query)
+    {
+        try
+        {
+            var apiResults = await _foodSearchService.SearchWithApiAsync(query, 20);
+            if (apiResults.Count == 0) return;
+
+            // Nur API-Ergebnisse die noch nicht in der Liste sind
+            var existingNames = new HashSet<string>(
+                _allSearchResults.Select(r => r.Food.Name.ToLowerInvariant()));
+
+            var newResults = apiResults
+                .Where(r => r.IsFromApi && !existingNames.Contains(r.Food.Name.ToLowerInvariant()))
+                .ToList();
+
+            if (newResults.Count == 0) return;
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                foreach (var result in newResults)
+                {
+                    _allSearchResults.Add(result);
+                    // Nur zur sichtbaren Liste hinzufügen wenn noch Platz
+                    if (SearchResults.Count < RESULTS_PAGE_SIZE * 2)
+                        SearchResults.Add(result);
+                }
+
+                HasResults = SearchResults.Count > 0;
+                HasMoreResults = _allSearchResults.Count > SearchResults.Count;
+            });
+        }
+        catch
+        {
+            // API-Fehler ignorieren - lokale Ergebnisse bleiben
+        }
     }
 
     [RelayCommand]

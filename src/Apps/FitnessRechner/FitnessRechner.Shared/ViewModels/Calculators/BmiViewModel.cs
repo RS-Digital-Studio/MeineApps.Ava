@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using FitnessRechner.Models;
 using FitnessRechner.Services;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels.Calculators;
@@ -12,6 +13,7 @@ public sealed partial class BmiViewModel : ViewModelBase
     private readonly IFitnessEngine _fitnessEngine;
     private readonly ITrackingService _trackingService;
     private readonly ILocalizationService _localization;
+    private readonly IPreferencesService _preferences;
 
     /// <summary>
     /// Event for navigation requests (replaces Shell.Current.GoToAsync)
@@ -25,11 +27,31 @@ public sealed partial class BmiViewModel : ViewModelBase
 
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
-    public BmiViewModel(IFitnessEngine fitnessEngine, ITrackingService trackingService, ILocalizationService localization)
+    public BmiViewModel(IFitnessEngine fitnessEngine, ITrackingService trackingService,
+        ILocalizationService localization, IPreferencesService preferences)
     {
         _fitnessEngine = fitnessEngine;
         _trackingService = trackingService;
         _localization = localization;
+        _preferences = preferences;
+
+        // Profil-Daten vorausfüllen
+        var profileHeight = _preferences.Get(PreferenceKeys.ProfileHeight, 0.0);
+        if (profileHeight >= 80) _height = profileHeight;
+
+        // Letztes Gewicht aus Tracking laden
+        _ = LoadLastWeightAsync();
+    }
+
+    private async Task LoadLastWeightAsync()
+    {
+        try
+        {
+            var lastWeight = await _trackingService.GetLatestEntryAsync(TrackingType.Weight);
+            if (lastWeight != null)
+                Weight = lastWeight.Value;
+        }
+        catch { /* Standardwert beibehalten */ }
     }
 
     [ObservableProperty]

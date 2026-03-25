@@ -137,8 +137,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
-            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 800ms anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 800 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();
@@ -203,8 +203,10 @@ public partial class App : Application
         services.AddSingleton<ILevelService, LevelService>();
         services.AddSingleton<IChallengeService, ChallengeService>();
         services.AddSingleton<ITrackingService, TrackingService>();
-        services.AddSingleton<IFoodSearchService, FoodSearchService>();
         services.AddSingleton<IBarcodeLookupService, BarcodeLookupService>();
+        services.AddSingleton<IFoodSearchService, FoodSearchService>();
+        services.AddSingleton<IFastingService, FastingService>();
+        services.AddSingleton<IActivityService, ActivityService>();
 
         // Plattform-Services (Haptic, Sound, Reminders)
         if (HapticServiceFactory != null)
@@ -227,6 +229,9 @@ public partial class App : Application
         services.AddSingleton<ProgressViewModel>();
         services.AddSingleton<FoodSearchViewModel>();
         services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<RecipeViewModel>();
+        services.AddSingleton<FastingViewModel>();
+        services.AddSingleton<ActivityViewModel>();
 
         // Calculator-VMs als Transient (jedes Oeffnen erzeugt frische Instanz)
         services.AddTransient<BmiViewModel>();

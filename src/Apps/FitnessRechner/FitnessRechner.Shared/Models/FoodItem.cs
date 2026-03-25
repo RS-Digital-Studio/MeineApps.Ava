@@ -46,6 +46,9 @@ public class FoodSearchResult
     public FoodItem Food { get; set; } = null!;
     public double Score { get; set; }
     public string MatchedOn { get; set; } = "";
+
+    /// <summary>Kennzeichnet ob das Ergebnis von der Open Food Facts API stammt.</summary>
+    public bool IsFromApi { get; set; }
 }
 
 /// <summary>

@@ -12,6 +12,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ILocalizationService _localizationService;
+    private readonly IPreferencesService _preferences;
     private readonly IPurchaseService _purchaseService;
     private readonly IHapticService _hapticService;
     private readonly IFitnessSoundService _soundService;
@@ -37,14 +38,21 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     /// </summary>
     public event Action<string>? FeedbackRequested;
 
+    /// <summary>
+    /// Wird ausgelöst wenn sich Profildaten ändern (Größe, Alter, Geschlecht, Aktivitätslevel).
+    /// </summary>
+    public event Action? ProfileChanged;
+
     public SettingsViewModel(
         ILocalizationService localizationService,
+        IPreferencesService preferences,
         IPurchaseService purchaseService,
         IHapticService hapticService,
         IFitnessSoundService soundService,
         IReminderService reminderService)
     {
         _localizationService = localizationService;
+        _preferences = preferences;
         _purchaseService = purchaseService;
         _hapticService = hapticService;
         _soundService = soundService;
@@ -52,6 +60,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
         _selectedLanguage = _localizationService.CurrentLanguage;
         _isPremium = _purchaseService.IsPremium;
+
+        // Profil-Daten laden
+        _profileHeight = _preferences.Get(PreferenceKeys.ProfileHeight, 175.0);
+        _profileAge = _preferences.Get(PreferenceKeys.ProfileAge, 30);
+        _profileIsMale = _preferences.Get(PreferenceKeys.ProfileIsMale, true);
+        _profileActivityLevel = _preferences.Get(PreferenceKeys.ProfileActivityLevel, 2);
 
         // Haptic/Sound-Status aus Service laden
         _isHapticEnabled = _hapticService.IsEnabled;
@@ -114,6 +128,64 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsItalianSelected));
         OnPropertyChanged(nameof(IsPortugueseSelected));
     }
+
+    #endregion
+
+    #region Benutzerprofil
+
+    [ObservableProperty]
+    private double _profileHeight;
+
+    [ObservableProperty]
+    private int _profileAge;
+
+    [ObservableProperty]
+    private bool _profileIsMale;
+
+    [ObservableProperty]
+    private int _profileActivityLevel;
+
+    /// <summary>Profil vollständig ausgefüllt (Größe und Alter gesetzt)?</summary>
+    public bool HasProfile => ProfileHeight > 0 && ProfileAge > 0;
+
+    partial void OnProfileHeightChanged(double value)
+    {
+        if (value >= 80 && value <= 250)
+        {
+            _preferences.Set(PreferenceKeys.ProfileHeight, value);
+            ProfileChanged?.Invoke();
+        }
+    }
+
+    partial void OnProfileAgeChanged(int value)
+    {
+        if (value >= 8 && value <= 120)
+        {
+            _preferences.Set(PreferenceKeys.ProfileAge, value);
+            ProfileChanged?.Invoke();
+        }
+    }
+
+    partial void OnProfileIsMaleChanged(bool value)
+    {
+        _preferences.Set(PreferenceKeys.ProfileIsMale, value);
+        ProfileChanged?.Invoke();
+    }
+
+    partial void OnProfileActivityLevelChanged(int value)
+    {
+        if (value >= 0 && value <= 4)
+        {
+            _preferences.Set(PreferenceKeys.ProfileActivityLevel, value);
+            ProfileChanged?.Invoke();
+        }
+    }
+
+    [RelayCommand]
+    private void SetGenderMale() => ProfileIsMale = true;
+
+    [RelayCommand]
+    private void SetGenderFemale() => ProfileIsMale = false;
 
     #endregion
 

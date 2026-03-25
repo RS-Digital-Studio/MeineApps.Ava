@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using FitnessRechner.Models;
 using FitnessRechner.Services;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels.Calculators;
@@ -25,11 +26,21 @@ public sealed partial class BodyFatViewModel : ViewModelBase
 
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
-    public BodyFatViewModel(IFitnessEngine fitnessEngine, ITrackingService trackingService, ILocalizationService localization)
+    private readonly IPreferencesService _preferences;
+
+    public BodyFatViewModel(IFitnessEngine fitnessEngine, ITrackingService trackingService,
+        ILocalizationService localization, IPreferencesService preferences)
     {
         _fitnessEngine = fitnessEngine;
         _trackingService = trackingService;
         _localization = localization;
+        _preferences = preferences;
+
+        // Profil-Daten vorausfüllen
+        var profileHeight = _preferences.Get(PreferenceKeys.ProfileHeight, 0.0);
+        if (profileHeight >= 80) _height = profileHeight;
+
+        _isMale = _preferences.Get(PreferenceKeys.ProfileIsMale, true);
     }
 
     [ObservableProperty]

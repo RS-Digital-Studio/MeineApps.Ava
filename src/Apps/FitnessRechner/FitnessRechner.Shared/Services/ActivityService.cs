@@ -4,30 +4,31 @@ using FitnessRechner.Models;
 namespace FitnessRechner.Services;
 
 /// <summary>
-/// JSON-based tracking service
+/// JSON-basierter Aktivitäts-Tracking-Service.
+/// Speichert alle Aktivitäten in einer JSON-Datei im AppData-Verzeichnis.
+/// Thread-Safe durch SemaphoreSlim.
 /// </summary>
-public sealed class TrackingService : ITrackingService, IDisposable
+public sealed class ActivityService : IActivityService, IDisposable
 {
     private bool _disposed;
     private static readonly JsonSerializerOptions s_jsonOptions = new() { WriteIndented = true };
-    private const string TRACKING_FILE = "tracking.json";
-    private const int DEFAULT_STATS_DAYS = 30;
+    private const string ACTIVITY_FILE = "activity_log.json";
     private static readonly TimeSpan BackupInterval = TimeSpan.FromMinutes(1);
     private readonly string _filePath;
-    private List<TrackingEntry> _entries = [];
+    private List<ActivityEntry> _entries = [];
     private readonly SemaphoreSlim _loadLock = new(1, 1);
     private readonly SemaphoreSlim _writeLock = new(1, 1);
-    private bool _isLoaded = false;
+    private bool _isLoaded;
     private DateTime _lastBackupTime = DateTime.MinValue;
 
-    public event Action? EntryAdded;
+    public event Action? ActivityAdded;
 
-    public TrackingService()
+    public ActivityService()
     {
-        _filePath = Path.Combine(GetDataDirectory(), TRACKING_FILE);
+        _filePath = Path.Combine(GetDataDirectory(), ACTIVITY_FILE);
     }
 
-    public async Task<TrackingEntry> AddEntryAsync(TrackingEntry entry)
+    public async Task<ActivityEntry> AddActivityAsync(ActivityEntry entry)
     {
         await EnsureLoadedAsync();
 
@@ -43,27 +44,21 @@ public sealed class TrackingService : ITrackingService, IDisposable
             _writeLock.Release();
         }
 
-        EntryAdded?.Invoke();
+        ActivityAdded?.Invoke();
         return entry;
     }
 
-    public async Task<bool> UpdateEntryAsync(TrackingEntry entry)
+    public async Task<IReadOnlyList<ActivityEntry>> GetActivitiesAsync(DateTime date)
     {
         await EnsureLoadedAsync();
 
         await _writeLock.WaitAsync();
         try
         {
-            var existing = _entries.FirstOrDefault(e => e.Id == entry.Id);
-            if (existing == null) return false;
-
-            existing.Date = entry.Date;
-            existing.Type = entry.Type;
-            existing.Value = entry.Value;
-            existing.Note = entry.Note;
-
-            await SaveEntriesAsync();
-            return true;
+            return _entries
+                .Where(e => e.Date.Date == date.Date)
+                .OrderByDescending(e => e.Date)
+                .ToList();
         }
         finally
         {
@@ -71,7 +66,25 @@ public sealed class TrackingService : ITrackingService, IDisposable
         }
     }
 
-    public async Task<bool> DeleteEntryAsync(string id)
+    public async Task<IReadOnlyList<ActivityEntry>> GetActivitiesInRangeAsync(DateTime start, DateTime end)
+    {
+        await EnsureLoadedAsync();
+
+        await _writeLock.WaitAsync();
+        try
+        {
+            return _entries
+                .Where(e => e.Date.Date >= start.Date && e.Date.Date <= end.Date)
+                .OrderByDescending(e => e.Date)
+                .ToList();
+        }
+        finally
+        {
+            _writeLock.Release();
+        }
+    }
+
+    public async Task<bool> DeleteActivityAsync(string id)
     {
         await EnsureLoadedAsync();
 
@@ -91,84 +104,29 @@ public sealed class TrackingService : ITrackingService, IDisposable
         }
     }
 
-    public async Task<IReadOnlyList<TrackingEntry>> GetEntriesAsync(TrackingType type, int limit = DEFAULT_STATS_DAYS)
+    public async Task<double> GetTodayBurnedCaloriesAsync()
     {
         await EnsureLoadedAsync();
 
-        // Kein _writeLock noetig: Lese-Zugriff auf _entries, Schreib-Ops aendern nur via Add/Remove unter Lock
-        return _entries
-            .Where(e => e.Type == type)
-            .OrderByDescending(e => e.Date)
-            .Take(limit)
-            .ToList();
-    }
-
-    public async Task<IReadOnlyList<TrackingEntry>> GetEntriesAsync(TrackingType type, DateTime startDate, DateTime endDate)
-    {
-        await EnsureLoadedAsync();
-
-        return _entries
-            .Where(e => e.Type == type && e.Date.Date >= startDate.Date && e.Date.Date <= endDate.Date)
-            .OrderByDescending(e => e.Date)
-            .ToList();
-    }
-
-    public async Task<TrackingEntry?> GetLatestEntryAsync(TrackingType type)
-    {
-        await EnsureLoadedAsync();
-
-        return _entries
-            .Where(e => e.Type == type)
-            .OrderByDescending(e => e.Date)
-            .FirstOrDefault();
-    }
-
-    public async Task<TrackingStats?> GetStatsAsync(TrackingType type, int days = DEFAULT_STATS_DAYS)
-    {
-        await EnsureLoadedAsync();
-
-        var cutoffDate = DateTime.Today.AddDays(-days);
-        var typeEntries = _entries
-            .Where(e => e.Type == type && e.Date.Date >= cutoffDate.Date)
-            .OrderByDescending(e => e.Date)
-            .ToList();
-
-        if (typeEntries.Count == 0)
-            return null;
-
-        var current = typeEntries.First().Value;
-        var values = typeEntries.Select(e => e.Value).ToList();
-
-        // Trend: Differenz zwischen letztem und vorletztem Eintrag
-        double trend = 0;
-        if (typeEntries.Count >= 2)
-        {
-            trend = typeEntries[0].Value - typeEntries[1].Value;
-        }
-
-        return new TrackingStats(
-            type,
-            current,
-            values.Average(),
-            values.Min(),
-            values.Max(),
-            trend,
-            typeEntries.Count);
-    }
-
-    public async Task ClearAllAsync()
-    {
         await _writeLock.WaitAsync();
         try
         {
-            _entries.Clear();
-            await SaveEntriesAsync();
+            return _entries
+                .Where(e => e.Date.Date == DateTime.Today)
+                .Sum(e => e.CaloriesBurned);
         }
         finally
         {
             _writeLock.Release();
         }
     }
+
+    public double CalculateCalories(double metValue, double weightKg, int durationMinutes)
+        => ActivityDatabase.CalculateCalories(metValue, weightKg, durationMinutes);
+
+    // =====================================================================
+    // Persistenz (analog zu TrackingService)
+    // =====================================================================
 
     private async Task EnsureLoadedAsync()
     {
@@ -197,18 +155,18 @@ public sealed class TrackingService : ITrackingService, IDisposable
         try
         {
             var json = await File.ReadAllTextAsync(_filePath);
-            _entries = JsonSerializer.Deserialize<List<TrackingEntry>>(json) ?? [];
+            _entries = JsonSerializer.Deserialize<List<ActivityEntry>>(json) ?? [];
         }
         catch (Exception)
         {
-            // Try to restore from backup
+            // Backup versuchen
             var backupPath = _filePath + ".backup";
             if (File.Exists(backupPath))
             {
                 try
                 {
                     var backupJson = await File.ReadAllTextAsync(backupPath);
-                    _entries = JsonSerializer.Deserialize<List<TrackingEntry>>(backupJson) ?? [];
+                    _entries = JsonSerializer.Deserialize<List<ActivityEntry>>(backupJson) ?? [];
                 }
                 catch
                 {
@@ -224,15 +182,14 @@ public sealed class TrackingService : ITrackingService, IDisposable
 
     private async Task SaveEntriesAsync()
     {
-        // Atomic file operations with temp file and backup
         var tempFilePath = _filePath + ".tmp";
         try
         {
-            // 1. Write to temp file
+            // 1. In Temp-Datei schreiben
             var json = JsonSerializer.Serialize(_entries, s_jsonOptions);
             await File.WriteAllTextAsync(tempFilePath, json);
 
-            // 2. Backup erstellen (max. alle 1 Minute, vermeidet unnötige Disk-IO bei Quick-Add)
+            // 2. Backup erstellen (max. alle 1 Minute)
             if (File.Exists(_filePath) && DateTime.UtcNow - _lastBackupTime > BackupInterval)
             {
                 var backupPath = _filePath + ".backup";
@@ -240,12 +197,12 @@ public sealed class TrackingService : ITrackingService, IDisposable
                 _lastBackupTime = DateTime.UtcNow;
             }
 
-            // 3. Atomic move: temp -> final
+            // 3. Atomic Move: temp → final
             File.Move(tempFilePath, _filePath, overwrite: true);
         }
         catch
         {
-            // Cleanup on error
+            // Aufräumen bei Fehler
             if (File.Exists(tempFilePath))
             {
                 File.Delete(tempFilePath);

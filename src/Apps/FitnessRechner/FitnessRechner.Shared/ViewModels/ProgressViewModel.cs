@@ -16,7 +16,8 @@ public enum ProgressTab
     Weight,
     Body,
     Water,
-    Calories
+    Calories,
+    Activity
 }
 
 /// <summary>
@@ -84,6 +85,7 @@ public sealed partial class ProgressViewModel : ViewModelBase, IDisposable
     public bool IsBodyTab => SelectedTab == ProgressTab.Body;
     public bool IsWaterTab => SelectedTab == ProgressTab.Water;
     public bool IsCaloriesTab => SelectedTab == ProgressTab.Calories;
+    public bool IsActivityTab => SelectedTab == ProgressTab.Activity;
 
     partial void OnSelectedTabChanged(ProgressTab value)
     {
@@ -91,6 +93,7 @@ public sealed partial class ProgressViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsBodyTab));
         OnPropertyChanged(nameof(IsWaterTab));
         OnPropertyChanged(nameof(IsCaloriesTab));
+        OnPropertyChanged(nameof(IsActivityTab));
 
         // Laufenden Undo committen um falsche Collection-Zuordnung zu vermeiden
         if (_recentlyDeletedEntry != null || _recentlyDeletedMeal != null)
@@ -376,6 +379,119 @@ public sealed partial class ProgressViewModel : ViewModelBase, IDisposable
 
     #endregion
 
+    #region Premium-Features (Trendprognose + Makro-Donut)
+
+    /// <summary>Trendprognose: "Bei diesem Tempo erreichst du dein Ziel am..."</summary>
+    [ObservableProperty] private string _trendForecastDisplay = "";
+    [ObservableProperty] private bool _hasTrendForecast;
+    [ObservableProperty] private bool _showPremiumUpgradeHint;
+
+    /// <summary>Makro-Verteilung als Prozent-Werte für Donut-Chart</summary>
+    [ObservableProperty] private double _macroProteinPercent;
+    [ObservableProperty] private double _macroCarbsPercent;
+    [ObservableProperty] private double _macroFatPercent;
+    [ObservableProperty] private bool _hasMacroDistribution;
+
+    /// <summary>
+    /// Berechnet die Gewichts-Trendprognose basierend auf den letzten 14 Tagen.
+    /// Premium-Only Feature.
+    /// </summary>
+    public void CalculateTrendForecast()
+    {
+        if (!_purchaseService.IsPremium)
+        {
+            ShowPremiumUpgradeHint = true;
+            HasTrendForecast = false;
+            return;
+        }
+
+        ShowPremiumUpgradeHint = false;
+
+        var weightGoal = _preferences.Get(PreferenceKeys.WeightGoal, 0.0);
+        if (weightGoal <= 0 || WeightEntries.Count < 3)
+        {
+            HasTrendForecast = false;
+            return;
+        }
+
+        // Lineare Regression über die letzten Einträge
+        var sorted = WeightEntries.OrderBy(e => e.Date).ToList();
+        var recent = sorted.TakeLast(Math.Min(14, sorted.Count)).ToList();
+
+        if (recent.Count < 3)
+        {
+            HasTrendForecast = false;
+            return;
+        }
+
+        var firstDate = recent[0].Date;
+        var xs = recent.Select(e => (e.Date - firstDate).TotalDays).ToList();
+        var ys = recent.Select(e => e.Value).ToList();
+
+        var n = xs.Count;
+        var sumX = xs.Sum();
+        var sumY = ys.Sum();
+        var sumXY = xs.Zip(ys, (x, y) => x * y).Sum();
+        var sumXX = xs.Select(x => x * x).Sum();
+
+        var slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        var intercept = (sumY - slope * sumX) / n;
+
+        if (Math.Abs(slope) < 0.01) // Kein nennenswerter Trend
+        {
+            TrendForecastDisplay = AppStrings.ResourceManager.GetString("TrendStable") ?? "Weight is stable";
+            HasTrendForecast = true;
+            return;
+        }
+
+        // Tage bis Ziel
+        var currentWeight = ys.Last();
+        var daysToGoal = (weightGoal - currentWeight) / slope;
+
+        if (daysToGoal <= 0) // Ziel bereits überschritten oder falsche Richtung
+        {
+            var direction = slope > 0
+                ? (AppStrings.ResourceManager.GetString("TrendGaining") ?? "Gaining weight")
+                : (AppStrings.ResourceManager.GetString("TrendLosing") ?? "Losing weight");
+            TrendForecastDisplay = direction;
+            HasTrendForecast = true;
+            return;
+        }
+
+        var goalDate = DateTime.Today.AddDays(daysToGoal);
+        TrendForecastDisplay = string.Format(
+            AppStrings.ResourceManager.GetString("TrendForecast") ?? "Goal by {0:d}",
+            goalDate);
+        HasTrendForecast = true;
+    }
+
+    /// <summary>
+    /// Berechnet die Makro-Verteilung des Tages als Prozent-Werte.
+    /// Premium-Only Feature.
+    /// </summary>
+    public void CalculateMacroDistribution()
+    {
+        if (!_purchaseService.IsPremium)
+        {
+            HasMacroDistribution = false;
+            return;
+        }
+
+        var totalMacroKcal = (ProteinConsumed * 4) + (CarbsConsumed * 4) + (FatConsumed * 9);
+        if (totalMacroKcal <= 0)
+        {
+            HasMacroDistribution = false;
+            return;
+        }
+
+        MacroProteinPercent = (ProteinConsumed * 4) / totalMacroKcal * 100;
+        MacroCarbsPercent = (CarbsConsumed * 4) / totalMacroKcal * 100;
+        MacroFatPercent = (FatConsumed * 9) / totalMacroKcal * 100;
+        HasMacroDistribution = true;
+    }
+
+    #endregion
+
     #region Tracking Export
 
     [ObservableProperty] private bool _showExportAdOverlay;
@@ -527,6 +643,10 @@ public sealed partial class ProgressViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(HasMacroGoals));
 
         await LoadCurrentTabDataAsync();
+
+        // Premium-Features berechnen
+        CalculateTrendForecast();
+        CalculateMacroDistribution();
     }
 
     // IDisposable: Chart-Daten freigeben

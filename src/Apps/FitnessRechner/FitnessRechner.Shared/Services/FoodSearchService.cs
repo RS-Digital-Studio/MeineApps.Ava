@@ -9,6 +9,7 @@ namespace FitnessRechner.Services;
 public sealed class FoodSearchService : IFoodSearchService, IDisposable
 {
     private bool _disposed;
+    private static readonly JsonSerializerOptions s_jsonOptions = new() { WriteIndented = true };
     public event Action? FoodLogAdded;
 
     private const string FOOD_LOG_FILE = "food_log.json";
@@ -20,6 +21,7 @@ public sealed class FoodSearchService : IFoodSearchService, IDisposable
     private readonly string _archivePath;
     private readonly string _favoritesPath;
     private readonly string _recipesPath;
+    private readonly IBarcodeLookupService _barcodeLookupService;
     private List<FoodLogEntry> _foodLog = [];
     private List<FavoriteFoodEntry> _favorites = [];
     private List<Recipe> _recipes = [];
@@ -45,8 +47,9 @@ public sealed class FoodSearchService : IFoodSearchService, IDisposable
         }
     }
 
-    public FoodSearchService()
+    public FoodSearchService(IBarcodeLookupService barcodeLookupService)
     {
+        _barcodeLookupService = barcodeLookupService;
         var dataDir = GetDataDirectory();
         _filePath = Path.Combine(dataDir, FOOD_LOG_FILE);
         _archivePath = Path.Combine(dataDir, FOOD_LOG_ARCHIVE_FILE);
@@ -192,6 +195,56 @@ public sealed class FoodSearchService : IFoodSearchService, IDisposable
         return previousRow[n];
     }
 
+    /// <summary>
+    /// Kombinierte Suche: Lokale DB + Open Food Facts API.
+    /// Lokale Ergebnisse haben Priorität, API-Ergebnisse ergänzen.
+    /// </summary>
+    public async Task<IReadOnlyList<FoodSearchResult>> SearchWithApiAsync(string query, int maxResults = 30)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return [];
+
+        // Lokale Suche sofort
+        var localResults = Search(query, maxResults);
+
+        // API-Suche parallel (HttpClient hat eigenen 10s-Timeout)
+        try
+        {
+            var apiResults = await _barcodeLookupService.SearchByTextAsync(query, maxResults);
+
+            if (apiResults.Count == 0)
+                return localResults;
+
+            // Lokale Ergebnisse + API-Ergebnisse zusammenführen (Duplikate vermeiden)
+            var localNames = new HashSet<string>(
+                localResults.Select(r => r.Food.Name.ToLowerInvariant()));
+
+            var combined = new List<FoodSearchResult>(localResults);
+            foreach (var apiFood in apiResults)
+            {
+                var lowerName = apiFood.Name.ToLowerInvariant();
+                if (!localNames.Contains(lowerName))
+                {
+                    combined.Add(new FoodSearchResult
+                    {
+                        Food = apiFood,
+                        Score = 0.5, // API-Ergebnisse unter lokalen sortieren
+                        MatchedOn = apiFood.Name,
+                        IsFromApi = true
+                    });
+                    localNames.Add(lowerName);
+                }
+            }
+
+            return combined.Take(maxResults).ToList();
+        }
+        catch
+        {
+            // API-Fehler → nur lokale Ergebnisse zurückgeben
+            return localResults;
+        }
+    }
+
     #endregion
 
     #region Categories
@@ -226,7 +279,7 @@ public sealed class FoodSearchService : IFoodSearchService, IDisposable
             var tempFilePath = _filePath + ".tmp";
             try
             {
-                var json = JsonSerializer.Serialize(tempLog, new JsonSerializerOptions { WriteIndented = true });
+                var json = JsonSerializer.Serialize(tempLog, s_jsonOptions);
                 await File.WriteAllTextAsync(tempFilePath, json);
 
                 if (File.Exists(_filePath))
@@ -353,7 +406,7 @@ public sealed class FoodSearchService : IFoodSearchService, IDisposable
             var tempFilePath = _filePath + ".tmp";
             try
             {
-                var json = JsonSerializer.Serialize(tempLog, new JsonSerializerOptions { WriteIndented = true });
+                var json = JsonSerializer.Serialize(tempLog, s_jsonOptions);
                 await File.WriteAllTextAsync(tempFilePath, json);
 
                 if (File.Exists(_filePath))
@@ -435,7 +488,7 @@ public sealed class FoodSearchService : IFoodSearchService, IDisposable
         var tempFilePath = _filePath + ".tmp";
         try
         {
-            var json = JsonSerializer.Serialize(_foodLog, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(_foodLog, s_jsonOptions);
             await File.WriteAllTextAsync(tempFilePath, json);
 
             if (File.Exists(_filePath))
@@ -592,7 +645,7 @@ public sealed class FoodSearchService : IFoodSearchService, IDisposable
 
     private async Task SaveFavoritesToFileAsync()
     {
-        var json = JsonSerializer.Serialize(_favorites, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(_favorites, s_jsonOptions);
         await File.WriteAllTextAsync(_favoritesPath, json);
     }
 
@@ -619,7 +672,7 @@ public sealed class FoodSearchService : IFoodSearchService, IDisposable
             var tempArchivePath = _archivePath + ".tmp";
             try
             {
-                var archiveJson = JsonSerializer.Serialize(archive, new JsonSerializerOptions { WriteIndented = true });
+                var archiveJson = JsonSerializer.Serialize(archive, s_jsonOptions);
                 await File.WriteAllTextAsync(tempArchivePath, archiveJson);
 
                 if (File.Exists(_archivePath))
@@ -837,7 +890,7 @@ public sealed class FoodSearchService : IFoodSearchService, IDisposable
         var tempFilePath = _recipesPath + ".tmp";
         try
         {
-            var json = JsonSerializer.Serialize(_recipes, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(_recipes, s_jsonOptions);
             await File.WriteAllTextAsync(tempFilePath, json);
 
             if (File.Exists(_recipesPath))

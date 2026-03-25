@@ -24,4 +24,10 @@ public interface IBarcodeLookupService
     /// Clears the entire scan history.
     /// </summary>
     Task ClearScanHistoryAsync();
+
+    /// <summary>
+    /// Durchsucht die Open Food Facts Datenbank per Textsuche.
+    /// Gibt bis zu maxResults Ergebnisse zurück.
+    /// </summary>
+    Task<IReadOnlyList<FoodItem>> SearchByTextAsync(string query, int maxResults = 20);
 }

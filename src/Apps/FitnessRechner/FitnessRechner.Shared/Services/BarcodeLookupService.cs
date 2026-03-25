@@ -8,10 +8,16 @@ namespace FitnessRechner.Services;
 
 public sealed class BarcodeLookupService : IBarcodeLookupService
 {
-    // Static HttpClient for efficient socket usage (Microsoft Best Practice)
+    // Static HttpClient für Barcode-Lookup (BaseAddress = API v2)
     private static readonly HttpClient _httpClient = new()
     {
         BaseAddress = new Uri("https://world.openfoodfacts.org/api/v2/"),
+        Timeout = TimeSpan.FromSeconds(10)
+    };
+
+    // Separater Client für Textsuche (andere URL-Basis: /cgi/)
+    private static readonly HttpClient _searchClient = new()
+    {
         Timeout = TimeSpan.FromSeconds(10)
     };
 
@@ -26,6 +32,7 @@ public sealed class BarcodeLookupService : IBarcodeLookupService
     static BarcodeLookupService()
     {
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "FitnessRechner - Avalonia - Version 1.0");
+        _searchClient.DefaultRequestHeaders.Add("User-Agent", "FitnessRechner - Avalonia - Version 1.0");
     }
 
     public BarcodeLookupService(IFoodSearchService foodSearchService)
@@ -162,6 +169,60 @@ public sealed class BarcodeLookupService : IBarcodeLookupService
         }
     }
 
+    /// <summary>
+    /// Durchsucht Open Food Facts per Textsuche (cgi/search.pl API).
+    /// </summary>
+    public async Task<IReadOnlyList<FoodItem>> SearchByTextAsync(string query, int maxResults = 20)
+    {
+        if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+            return [];
+
+        try
+        {
+            var encodedQuery = Uri.EscapeDataString(query.Trim());
+            var url = $"https://world.openfoodfacts.org/cgi/search.pl?search_terms={encodedQuery}&search_simple=1&action=process&json=1&page_size={maxResults}&fields=product_name,product_name_de,product_name_en,brands,nutriments,categories_tags";
+
+            var response = await _searchClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+                return [];
+
+            var searchResponse = await response.Content.ReadFromJsonAsync<OpenFoodFactsSearchResponse>();
+            if (searchResponse?.Products == null || searchResponse.Products.Length == 0)
+                return [];
+
+            var results = new List<FoodItem>();
+            foreach (var product in searchResponse.Products)
+            {
+                var calories = product.Nutriments?.EnergyKcal100g ?? 0;
+                if (calories <= 0) continue; // Produkte ohne Nährwerte überspringen
+
+                var name = product.ProductName ?? product.ProductNameDe ?? product.ProductNameEn;
+                if (string.IsNullOrWhiteSpace(name)) continue;
+
+                // Markenname anhängen wenn vorhanden
+                if (!string.IsNullOrWhiteSpace(product.Brands))
+                    name = $"{name} ({product.Brands.Split(',')[0].Trim()})";
+
+                results.Add(new FoodItem
+                {
+                    Name = name,
+                    Category = DetermineCategoryFromProduct(product),
+                    CaloriesPer100g = calories,
+                    ProteinPer100g = product.Nutriments?.Proteins100g ?? 0,
+                    CarbsPer100g = product.Nutriments?.Carbohydrates100g ?? 0,
+                    FatPer100g = product.Nutriments?.Fat100g ?? 0,
+                    DefaultPortionGrams = 100
+                });
+            }
+
+            return results;
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
+
     private async Task LoadCacheAsync()
     {
         await _cacheLock.WaitAsync();
@@ -256,6 +317,15 @@ public sealed class BarcodeLookupService : IBarcodeLookupService
 }
 
 #region Open Food Facts API Models
+
+public class OpenFoodFactsSearchResponse
+{
+    [JsonPropertyName("count")]
+    public int Count { get; set; }
+
+    [JsonPropertyName("products")]
+    public OpenFoodFactsProduct[]? Products { get; set; }
+}
 
 public class OpenFoodFactsResponse
 {

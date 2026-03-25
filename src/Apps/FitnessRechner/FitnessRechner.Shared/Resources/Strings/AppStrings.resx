@@ -551,4 +551,104 @@
   <data name="SplashStep_Starting" xml:space="preserve">
     <value>Starting app</value>
   </data>
+
+  <!-- User Profile -->
+  <data name="ProfileTitle" xml:space="preserve"><value>My Profile</value></data>
+  <data name="ProfileDescription" xml:space="preserve"><value>Your data will be used to pre-fill the calculators.</value></data>
+
+  <!-- Water Quick-Add -->
+  <data name="WaterQuickAddTitle" xml:space="preserve"><value>Add Water</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+
+  <!-- Recipe Editor -->
+  <data name="RecipesTitle" xml:space="preserve"><value>My Recipes</value></data>
+  <data name="RecipeName" xml:space="preserve"><value>Recipe Name</value></data>
+  <data name="RecipeDescription" xml:space="preserve"><value>Description (optional)</value></data>
+  <data name="RecipeServings" xml:space="preserve"><value>Servings</value></data>
+  <data name="AddIngredient" xml:space="preserve"><value>Add Ingredient</value></data>
+  <data name="RemoveIngredient" xml:space="preserve"><value>Remove</value></data>
+  <data name="CreateRecipe" xml:space="preserve"><value>Create Recipe</value></data>
+  <data name="EditRecipe" xml:space="preserve"><value>Edit Recipe</value></data>
+  <data name="UseAsRecipe" xml:space="preserve"><value>Log as Meal</value></data>
+  <data name="NoRecipes" xml:space="preserve"><value>No recipes yet. Create your first!</value></data>
+  <data name="TotalNutrition" xml:space="preserve"><value>Total per serving</value></data>
+  <data name="RecipeIngredientSearch" xml:space="preserve"><value>Search ingredient...</value></data>
+  <data name="RecipeIngredientsLabel" xml:space="preserve"><value>Ingredients</value></data>
+
+  <!-- Intermittent Fasting -->
+  <data name="FastingTitle" xml:space="preserve"><value>Intermittent Fasting</value></data>
+  <data name="FastingStart" xml:space="preserve"><value>Start Fasting</value></data>
+  <data name="FastingStop" xml:space="preserve"><value>Stop Fasting</value></data>
+  <data name="FastingActive" xml:space="preserve"><value>Fasting in progress</value></data>
+  <data name="FastingCompleted" xml:space="preserve"><value>Fasting completed!</value></data>
+  <data name="FastingHistory" xml:space="preserve"><value>History</value></data>
+  <data name="FastingPlan168" xml:space="preserve"><value>16:8</value></data>
+  <data name="FastingPlan186" xml:space="preserve"><value>18:6</value></data>
+  <data name="FastingPlan204" xml:space="preserve"><value>20:4</value></data>
+  <data name="FastingPlanCustom" xml:space="preserve"><value>Custom</value></data>
+  <data name="FastingHours" xml:space="preserve"><value>Fasting</value></data>
+  <data name="EatingHours" xml:space="preserve"><value>Eating</value></data>
+  <data name="FastingElapsed" xml:space="preserve"><value>Elapsed</value></data>
+  <data name="FastingRemaining" xml:space="preserve"><value>Remaining</value></data>
+  <data name="FastingNoHistory" xml:space="preserve"><value>No fasting sessions yet</value></data>
+  <data name="FastingCompletedCongrats" xml:space="preserve"><value>Great job! You completed your fast!</value></data>
+
+  <!-- Activity Tracking -->
+  <data name="ActivitiesTitle" xml:space="preserve"><value>Activities</value></data>
+  <data name="AddActivity" xml:space="preserve"><value>Add Activity</value></data>
+  <data name="ActivityDuration" xml:space="preserve"><value>Duration (min)</value></data>
+  <data name="CaloriesBurned" xml:space="preserve"><value>Calories Burned</value></data>
+  <data name="TodayBurned" xml:space="preserve"><value>Burned Today</value></data>
+  <data name="NoActivities" xml:space="preserve"><value>No activities logged today</value></data>
+  <data name="SelectActivity" xml:space="preserve"><value>Select Activity</value></data>
+  <data name="ActivitySaved" xml:space="preserve"><value>Activity saved!</value></data>
+  <data name="ActivitySearchPlaceholder" xml:space="preserve"><value>Search activity...</value></data>
+
+  <!-- Activity Names -->
+  <data name="ActivityWalking" xml:space="preserve"><value>Walking</value></data>
+  <data name="ActivityJogging" xml:space="preserve"><value>Jogging</value></data>
+  <data name="ActivityRunning" xml:space="preserve"><value>Running</value></data>
+  <data name="ActivityCycling" xml:space="preserve"><value>Cycling</value></data>
+  <data name="ActivitySwimming" xml:space="preserve"><value>Swimming</value></data>
+  <data name="ActivityStrength" xml:space="preserve"><value>Strength Training</value></data>
+  <data name="ActivityYoga" xml:space="preserve"><value>Yoga</value></data>
+  <data name="ActivityHiit" xml:space="preserve"><value>HIIT</value></data>
+  <data name="ActivityTennis" xml:space="preserve"><value>Tennis</value></data>
+  <data name="ActivitySoccer" xml:space="preserve"><value>Soccer</value></data>
+  <data name="ActivityBasketball" xml:space="preserve"><value>Basketball</value></data>
+  <data name="ActivityHiking" xml:space="preserve"><value>Hiking</value></data>
+  <data name="ActivityDancing" xml:space="preserve"><value>Dancing</value></data>
+  <data name="ActivityGardening" xml:space="preserve"><value>Gardening</value></data>
+  <data name="ActivityCleaning" xml:space="preserve"><value>Cleaning</value></data>
+  <data name="ActivityRowing" xml:space="preserve"><value>Rowing</value></data>
+  <data name="ActivityBoxing" xml:space="preserve"><value>Boxing</value></data>
+  <data name="ActivityPilates" xml:space="preserve"><value>Pilates</value></data>
+  <data name="ActivityStretching" xml:space="preserve"><value>Stretching</value></data>
+  <data name="ActivityVolleyball" xml:space="preserve"><value>Volleyball</value></data>
+  <data name="ActivityBadminton" xml:space="preserve"><value>Badminton</value></data>
+  <data name="ActivitySkating" xml:space="preserve"><value>Skating</value></data>
+  <data name="ActivitySkiing" xml:space="preserve"><value>Skiing</value></data>
+  <data name="ActivityMartialArts" xml:space="preserve"><value>Martial Arts</value></data>
+  <data name="ActivityClimbing" xml:space="preserve"><value>Climbing</value></data>
+  <data name="ActivityElliptical" xml:space="preserve"><value>Elliptical</value></data>
+  <data name="ActivityJumpRope" xml:space="preserve"><value>Jump Rope</value></data>
+  <data name="ActivityStairs" xml:space="preserve"><value>Stair Climbing</value></data>
+  <data name="ActivityTableTennis" xml:space="preserve"><value>Table Tennis</value></data>
+  <data name="ActivityGolf" xml:space="preserve"><value>Golf</value></data>
+  <data name="ActivityBriskWalking" xml:space="preserve"><value>Brisk Walking</value></data>
+  <data name="ActivityCyclingFast" xml:space="preserve"><value>Fast Cycling</value></data>
+  <data name="ActivityWeightTraining" xml:space="preserve"><value>Weight Training</value></data>
+  <data name="ActivityBodyweight" xml:space="preserve"><value>Bodyweight Training</value></data>
+  <data name="ActivityCrossFit" xml:space="preserve"><value>CrossFit</value></data>
+  <data name="ActivityCooking" xml:space="preserve"><value>Cooking</value></data>
+  <data name="ActivityStairClimbing" xml:space="preserve"><value>Stair Climbing</value></data>
+  <data name="ActivityPlayingWithKids" xml:space="preserve"><value>Playing with Kids</value></data>
+
+  <!-- Premium Features -->
+  <data name="TrendStable" xml:space="preserve"><value>Weight is stable</value></data>
+  <data name="TrendGaining" xml:space="preserve"><value>Gaining weight</value></data>
+  <data name="TrendLosing" xml:space="preserve"><value>Losing weight</value></data>
+  <data name="TrendForecast" xml:space="preserve"><value>Goal by {0:d}</value></data>
+  <data name="PremiumFeature" xml:space="preserve"><value>Premium Feature</value></data>
+  <data name="UpgradeToPremium" xml:space="preserve"><value>Upgrade to unlock</value></data>
 </root>

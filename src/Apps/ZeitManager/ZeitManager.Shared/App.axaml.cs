@@ -92,8 +92,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
-            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 800ms anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 800 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             // DataContext setzen (ViewModel wurde in Pipeline erstellt)

@@ -4,7 +4,7 @@
   <!-- AD_ID explizit entfernen - keine Werbe-ID noetig -->
   <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
   <application
-      android:allowBackup="true"
+      android:allowBackup="false"
       android:largeHeap="true"
       android:icon="@mipmap/appicon"
       android:roundIcon="@mipmap/appicon_round"

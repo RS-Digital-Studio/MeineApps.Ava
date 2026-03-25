@@ -87,6 +87,7 @@ public sealed partial class GameEngine : IDisposable
     private bool _isQuickPlayMode;
     private int _quickPlayDifficulty;
     private bool _isDungeonRun;
+    private LevelMutator _activeMutator = LevelMutator.None;
     private bool _levelCompleteHandled;
     private bool _continueUsed;
 
@@ -205,6 +206,7 @@ public sealed partial class GameEngine : IDisposable
         _hudLabelPower = _localizationService.GetString("HudPower") ?? "POWER";
         _hudLabelDeck = _localizationService.GetString("HudDeck") ?? "DECK";
         _hudLabelBuffs = _localizationService.GetString("HudBuffs") ?? "BUFFS";
+        CacheOverlayStrings();
     }
 
     // Slow-Motion bei letztem Kill / hohem Combo
@@ -315,12 +317,16 @@ public sealed partial class GameEngine : IDisposable
     public GameState State => _state;
     public int Score => _player?.Score ?? 0;
     public int Lives => _player?.Lives ?? 0;
+    public int PlayerGridX => _player?.GridX ?? 0;
+    public int PlayerGridY => _player?.GridY ?? 0;
     public int CurrentLevel => _currentLevelNumber;
     public float RemainingTime => _timer?.RemainingTime ?? 0;
     public bool IsDailyChallenge => _isDailyChallenge;
     public bool IsSurvivalMode => _isSurvivalMode;
     public bool IsQuickPlayMode => _isQuickPlayMode;
     public bool IsDungeonRun => _isDungeonRun;
+    public LevelMutator ActiveMutator => _activeMutator;
+    public bool HasActiveMutator => _activeMutator != LevelMutator.None;
     public bool IsTimeFreezeActive => _timeFreezeTimer > 0;
     public float TimeFreezeTimer => _timeFreezeTimer;
     public bool IsPhantomAvailable => _phantomWalkAvailable;
@@ -851,9 +857,10 @@ public sealed partial class GameEngine : IDisposable
         // Detonator-Button Sichtbarkeit aktualisieren
         _inputManager.HasDetonator = _player.HasDetonator;
 
-        // Input anwenden (ReverseControls-Curse invertiert die Richtung)
+        // Input anwenden (ReverseControls-Curse oder MirrorControls-Mutator invertiert die Richtung)
         var inputDir = _inputManager.MovementDirection;
-        if (_player.ActiveCurse == CurseType.ReverseControls && inputDir != Direction.None)
+        if ((_player.ActiveCurse == CurseType.ReverseControls || _activeMutator == LevelMutator.MirrorControls)
+            && inputDir != Direction.None)
         {
             inputDir = inputDir switch
             {
@@ -962,6 +969,7 @@ public sealed partial class GameEngine : IDisposable
             if (_player.Lives <= 0)
             {
                 _state = GameState.GameOver;
+                CacheGameOverOverlayStrings();
                 _soundManager.PlaySound(SoundManager.SFX_GAME_OVER);
                 _soundManager.StopMusic();
 
@@ -1006,6 +1014,7 @@ public sealed partial class GameEngine : IDisposable
         _state = GameState.Starting;
         _stateTimer = 0;
         _hitPauseTimer = 0; // Defensiv: Hit-Pause zuruecksetzen (verhindert blockierten Countdown)
+        CacheStartingOverlayStrings();
 
         // Bomben und Explosionen leeren
         foreach (var bomb in _bombs)
@@ -1781,6 +1790,7 @@ public sealed partial class GameEngine : IDisposable
         _tutorialOverlay.Dispose();
         _discoveryOverlay.Dispose();
         _inputManager.Dispose();
+        _soundManager.Dispose();
         _irisClipPath.Dispose();
         _starPath.Dispose();
     }

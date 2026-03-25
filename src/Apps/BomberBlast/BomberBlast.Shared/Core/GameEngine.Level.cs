@@ -25,26 +25,39 @@ public sealed partial class GameEngine
         _isDungeonRun = false;
         _currentLevelNumber = levelNumber;
         _currentLevel = LevelGenerator.GenerateLevel(levelNumber, _progressService.HighestCompletedLevel);
+        _activeMutator = _currentLevel.Mutator;
         _continueUsed = false;
 
         _player.ResetForNewGame();
         ApplyUpgrades();
+        ApplyMutatorEffects();
         await LoadLevelAsync();
 
-        _soundManager.PlayMusic(_currentLevel.MusicTrack == "boss"
-            ? SoundManager.MUSIC_BOSS
-            : SoundManager.MUSIC_GAMEPLAY);
-
-        // Welt-/Boss-Ankündigung
+        // Welt-spezifische Musik (Boss-Track hat Priorität, sonst Welt-Track mit Gameplay-Fallback)
         int world = (_currentLevelNumber - 1) / 10 + 1;
+        if (_currentLevel.MusicTrack == "boss")
+            _soundManager.PlayMusic(SoundManager.MUSIC_BOSS);
+        else
+            _soundManager.PlayMusicWithFallback(SoundManager.GetWorldMusicKey(world - 1), SoundManager.MUSIC_GAMEPLAY);
+
+        // Welt-/Boss-/Mutator-Ankündigung
         if (_currentLevel.IsBossLevel)
         {
-            _worldAnnouncementText = $"BOSS FIGHT!";
+            _worldAnnouncementText = _localizationService.GetString("AnnounceBossFight") ?? "BOSS FIGHT!";
+            _worldAnnouncementTimer = 2.5f;
+        }
+        else if (_activeMutator != LevelMutator.None)
+        {
+            // Mutator-Ankündigung (z.B. "MUTATOR: Double Speed")
+            var mutatorName = GetMutatorDisplayName(_activeMutator);
+            var format = _localizationService.GetString("MutatorActive") ?? "Mutator: {0}";
+            _worldAnnouncementText = string.Format(format, mutatorName);
             _worldAnnouncementTimer = 2.5f;
         }
         else
         {
-            _worldAnnouncementText = $"WORLD {world}";
+            _worldAnnouncementText = string.Format(
+                _localizationService.GetString("AnnounceWorld") ?? "WORLD {0}", world);
             _worldAnnouncementTimer = 2.0f;
         }
     }
@@ -58,6 +71,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
+        _activeMutator = LevelMutator.None;
         _currentLevelNumber = 99;
         _currentLevel = LevelGenerator.GenerateDailyChallengeLevel(seed);
         _continueUsed = false;
@@ -81,6 +95,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = true;
         _isDungeonRun = false;
+        _activeMutator = LevelMutator.None;
         _quickPlayDifficulty = difficulty;
         _currentLevelNumber = difficulty * 10; // Für Welt-Palette
         _currentLevel = LevelGenerator.GenerateQuickPlayLevel(seed, difficulty);
@@ -107,6 +122,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = true;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
+        _activeMutator = LevelMutator.None;
         _currentLevelNumber = 1;
         _currentLevel = LevelGenerator.GenerateSurvivalLevel();
         _continueUsed = true; // Kein Continue im Survival
@@ -136,6 +152,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = true;
+        _activeMutator = LevelMutator.None;
         _currentLevelNumber = Math.Min(floor * 10, 100); // Floor → Schwierigkeit (World-Mapping)
 
         // Raum-Typ + Modifikator aus DungeonService lesen
@@ -177,19 +194,21 @@ public sealed partial class GameEngine
         ApplyDungeonFloorModifier(floorModifier);
 
         var isBoss = DungeonBuffCatalog.IsBossFloor(floor);
-        _soundManager.PlayMusic(isBoss ? SoundManager.MUSIC_BOSS : SoundManager.MUSIC_GAMEPLAY);
+        _soundManager.PlayMusic(isBoss ? SoundManager.MUSIC_BOSS : SoundManager.MUSIC_DUNGEON);
 
-        // Ankündigung mit Raum-Typ
+        // Ankündigung mit Raum-Typ (lokalisiert)
         string roomLabel = roomType switch
         {
-            DungeonRoomType.Elite => "ELITE",
-            DungeonRoomType.Treasure => "TREASURE",
-            DungeonRoomType.Challenge => "CHALLENGE",
+            DungeonRoomType.Elite => _localizationService.GetString("AnnounceElite") ?? "ELITE",
+            DungeonRoomType.Treasure => _localizationService.GetString("AnnounceTreasure") ?? "TREASURE",
+            DungeonRoomType.Challenge => _localizationService.GetString("AnnounceChallenge") ?? "CHALLENGE",
             _ => ""
         };
-        string floorText = isBoss ? $"BOSS - FLOOR {floor}" : $"FLOOR {floor}";
+        string floorText = isBoss
+            ? string.Format(_localizationService.GetString("AnnounceBossFloor") ?? "BOSS - FLOOR {0}", floor)
+            : string.Format(_localizationService.GetString("AnnounceFloor") ?? "FLOOR {0}", floor);
         if (!string.IsNullOrEmpty(roomLabel))
-            floorText = $"{roomLabel} - FLOOR {floor}";
+            floorText = $"{roomLabel} - {string.Format(_localizationService.GetString("AnnounceFloor") ?? "FLOOR {0}", floor)}";
         _worldAnnouncementText = floorText;
         _worldAnnouncementTimer = 2.5f;
     }
@@ -211,15 +230,15 @@ public sealed partial class GameEngine
                 {
                     var top = _grid.TryGetCell(x, 0);
                     var bottom = _grid.TryGetCell(x, GameGrid.HEIGHT - 1);
-                    if (top != null && top.Type == CellType.Empty) { top.IsLavaActive = true; top.LavaTimer = 999f; }
-                    if (bottom != null && bottom.Type == CellType.Empty) { bottom.IsLavaActive = true; bottom.LavaTimer = 999f; }
+                    if (top != null && top.Type == CellType.Empty) { top.IsLavaActive = true; top.LavaTimer = 999f; _specialEffectCells.Add(top); }
+                    if (bottom != null && bottom.Type == CellType.Empty) { bottom.IsLavaActive = true; bottom.LavaTimer = 999f; _specialEffectCells.Add(bottom); }
                 }
                 for (int y = 1; y < GameGrid.HEIGHT - 1; y++)
                 {
                     var left = _grid.TryGetCell(0, y);
                     var right = _grid.TryGetCell(GameGrid.WIDTH - 1, y);
-                    if (left != null && left.Type == CellType.Empty) { left.IsLavaActive = true; left.LavaTimer = 999f; }
-                    if (right != null && right.Type == CellType.Empty) { right.IsLavaActive = true; right.LavaTimer = 999f; }
+                    if (left != null && left.Type == CellType.Empty) { left.IsLavaActive = true; left.LavaTimer = 999f; _specialEffectCells.Add(left); }
+                    if (right != null && right.Type == CellType.Empty) { right.IsLavaActive = true; right.LavaTimer = 999f; _specialEffectCells.Add(right); }
                 }
                 break;
 
@@ -372,6 +391,7 @@ public sealed partial class GameEngine
         // State zurücksetzen
         _state = GameState.Starting;
         _stateTimer = 0;
+        CacheStartingOverlayStrings();
         _bombsUsed = 0;
         _enemiesKilled = 0;
         _exitRevealed = false;
@@ -528,6 +548,63 @@ public sealed partial class GameEngine
         // Ausgerüstete Karten für dieses Level laden (mit frischen Uses pro Level)
         _player.EquippedCards = _tracking.Cards.GetEquippedCardsForGameplay();
         _player.ActiveCardSlot = -1; // Startet immer auf Normalbombe
+    }
+
+    /// <summary>
+    /// Wendet Mutator-Effekte auf den Spieler und Level an.
+    /// Wird nach ApplyUpgrades() aufgerufen.
+    /// </summary>
+    private void ApplyMutatorEffects()
+    {
+        switch (_activeMutator)
+        {
+            case LevelMutator.DoubleSpeed:
+                // Spieler bewegt sich deutlich schneller (+2 Speed-Stufen)
+                _player.SpeedLevel = Math.Min(_player.SpeedLevel + 2, 3);
+                // Gegner-Speed wird per _activeMutator in UpdateEnemies() geprüft (1.5x Multiplikator)
+                break;
+
+            case LevelMutator.AllPowerBombs:
+                // Jede Bombe ist eine PowerBomb (Range = Fire + MaxBombs - 1)
+                _player.HasPowerBomb = true;
+                _player.FireRange = Math.Max(_player.FireRange, 4);
+                break;
+
+            case LevelMutator.NoTimer:
+                // Timer bereits auf 99999 im LevelGenerator gesetzt
+                break;
+
+            // MirrorControls: Wird in Update() bei Input-Verarbeitung geprüft
+            // InvisibleBlocks: Wird in GameRenderer.Grid.cs bei Block-Rendering geprüft
+        }
+    }
+
+    /// <summary>Lokalisierter Anzeigename für einen Mutator</summary>
+    private string GetMutatorDisplayName(LevelMutator mutator)
+    {
+        string key = mutator switch
+        {
+            LevelMutator.AllPowerBombs => "MutatorAllPowerBombs",
+            LevelMutator.DoubleSpeed => "MutatorDoubleSpeed",
+            LevelMutator.InvisibleBlocks => "MutatorInvisibleWalls",
+            LevelMutator.NoTimer => "MutatorNoTimer",
+            LevelMutator.MirrorControls => "MutatorMirrorControls",
+            _ => ""
+        };
+
+        if (string.IsNullOrEmpty(key)) return "";
+
+        string fallback = mutator switch
+        {
+            LevelMutator.AllPowerBombs => "All PowerBombs",
+            LevelMutator.DoubleSpeed => "Double Speed",
+            LevelMutator.InvisibleBlocks => "Invisible Walls",
+            LevelMutator.NoTimer => "No Timer",
+            LevelMutator.MirrorControls => "Mirror Controls",
+            _ => ""
+        };
+
+        return _localizationService.GetString(key) ?? fallback;
     }
 
     private void PlacePowerUps(Random random)
@@ -713,37 +790,56 @@ public sealed partial class GameEngine
             }
         }
 
-        // Boss spawnen wenn Boss-Level
+        // Boss(e) spawnen wenn Boss-Level
         if (_currentLevel.BossKind.HasValue)
         {
-            // Boss in der Arena-Mitte platzieren (weit vom Spieler)
-            int bossX = GameGrid.WIDTH / 2;
-            int bossY = GameGrid.HEIGHT / 2;
+            bool isDuoBoss = _currentLevel.BossKind2.HasValue;
+            var bossType1 = _currentLevel.BossKind.Value;
 
-            // Sicherstellen dass die Boss-Zellen frei sind (Blöcke entfernen)
-            var bossType = _currentLevel.BossKind.Value;
-            int bossSize = bossType == BossType.FinalBoss ? 3 : 2;
-            for (int dy = 0; dy < bossSize; dy++)
+            // Einzel-Boss: Mitte. Duo-Boss: Links und Rechts getrennt
+            int boss1X = isDuoBoss ? GameGrid.WIDTH / 4 : GameGrid.WIDTH / 2;
+            int boss1Y = GameGrid.HEIGHT / 2;
+
+            SpawnBossAtPosition(boss1X, boss1Y, bossType1);
+
+            // Zweiter Boss (Duo-Encounter Welt 9+10)
+            if (isDuoBoss)
             {
-                for (int dx = 0; dx < bossSize; dx++)
+                var bossType2 = _currentLevel.BossKind2.Value;
+                int boss2X = GameGrid.WIDTH * 3 / 4;
+                int boss2Y = GameGrid.HEIGHT / 2;
+
+                SpawnBossAtPosition(boss2X, boss2Y, bossType2);
+            }
+        }
+    }
+
+    /// <summary>Spawnt einen Boss an einer Grid-Position und räumt die Zellen frei</summary>
+    private void SpawnBossAtPosition(int gridX, int gridY, BossType bossType)
+    {
+        int bossSize = bossType == BossType.FinalBoss ? 3 : 2;
+
+        // Sicherstellen dass die Boss-Zellen frei sind (Blöcke entfernen)
+        for (int dy = 0; dy < bossSize; dy++)
+        {
+            for (int dx = 0; dx < bossSize; dx++)
+            {
+                var cell = _grid.TryGetCell(gridX + dx, gridY + dy);
+                if (cell != null && cell.Type == CellType.Block)
                 {
-                    var cell = _grid.TryGetCell(bossX + dx, bossY + dy);
-                    if (cell != null && cell.Type == CellType.Block)
-                    {
-                        cell.Type = CellType.Empty;
-                        cell.HasHiddenExit = false;
-                        cell.HiddenPowerUp = null;
-                    }
+                    cell.Type = CellType.Empty;
+                    cell.HasHiddenExit = false;
+                    cell.HiddenPowerUp = null;
                 }
             }
-
-            var boss = BossEnemy.CreateAtGrid(bossX, bossY, bossType);
-            _enemies.Add(boss);
-            _enemiesRemainingDirty = true;
-
-            // Sammlungs-Album: Boss als angetroffen melden
-            _tracking.OnBossEncountered(bossType);
         }
+
+        var boss = BossEnemy.CreateAtGrid(gridX, gridY, bossType);
+        _enemies.Add(boss);
+        _enemiesRemainingDirty = true;
+
+        // Sammlungs-Album: Boss als angetroffen melden
+        _tracking.OnBossEncountered(bossType);
     }
 
     private void CheckExitReveal()
@@ -876,7 +972,8 @@ public sealed partial class GameEngine
                 if (boss.IsActive && !boss.IsDying)
                 {
                     // Verlangsamung: Frost (50%), TimeWarp (50%), BlackHole (70%) - kumulativ
-                    float bossDt = deltaTime;
+                    // DoubleSpeed-Mutator: Gegner 50% schneller
+                    float bossDt = _activeMutator == LevelMutator.DoubleSpeed ? deltaTime * 1.5f : deltaTime;
                     var bossCell = _grid.TryGetCell(boss.GridX, boss.GridY);
                     if (bossCell != null)
                     {
@@ -900,7 +997,8 @@ public sealed partial class GameEngine
             if (enemy.IsActive && !enemy.IsDying)
             {
                 // Verlangsamung: Frost (50%), TimeWarp (50%), BlackHole (70%) - kumulativ
-                float enemyDt = deltaTime;
+                // DoubleSpeed-Mutator: Gegner 50% schneller
+                float enemyDt = _activeMutator == LevelMutator.DoubleSpeed ? deltaTime * 1.5f : deltaTime;
                 var enemyCell = _grid.TryGetCell(enemy.GridX, enemy.GridY);
                 if (enemyCell != null)
                 {
@@ -960,6 +1058,27 @@ public sealed partial class GameEngine
         {
             var dirs = new[] { Direction.Up, Direction.Down, Direction.Left, Direction.Right };
             preferred = dirs[_pontanRandom.Next(dirs.Length)];
+        }
+
+        // Duo-Boss: Ausweichen wenn bevorzugte Richtung zu Kollision mit anderem Boss führt
+        if (_currentLevel?.BossKind2.HasValue == true)
+        {
+            foreach (var other in _enemies)
+            {
+                if (other == boss || other is not BossEnemy otherBoss || otherBoss.IsDying) continue;
+
+                // Prüfe ob die nächste Position in der BoundingBox des anderen Bosses liegt
+                int nextX = boss.GridX + preferred.GetDeltaX();
+                int nextY = boss.GridY + preferred.GetDeltaY();
+                if (otherBoss.OccupiesCell(nextX, nextY))
+                {
+                    // Ausweich-Richtung: senkrecht zur bevorzugten Richtung
+                    preferred = preferred is Direction.Up or Direction.Down
+                        ? (dx > 0 ? Direction.Right : Direction.Left)
+                        : (dy > 0 ? Direction.Down : Direction.Up);
+                    break;
+                }
+            }
         }
 
         boss.MovementDirection = preferred;
@@ -1081,6 +1200,7 @@ public sealed partial class GameEngine
         LastTimeBonus = timeBonus;
         LastEfficiencyBonus = efficiencyBonus;
         LastScoreMultiplier = scoreMultiplier;
+        CacheLevelCompleteOverlayStrings();
 
         _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
         ScoreChanged?.Invoke(_player.Score);
@@ -1096,8 +1216,10 @@ public sealed partial class GameEngine
         }
 
         // Coins basierend auf Level-Score (nicht kumuliert, verhindert Inflation)
+        // Welt 1 (Level 1-10): Score/2 statt Score/3 für bessere Früh-Progression
         int levelScore = _player.Score - _scoreAtLevelStart;
-        int coins = levelScore / 3;
+        int coinDivisor = _currentLevelNumber <= 10 ? 2 : 3;
+        int coins = levelScore / coinDivisor;
 
         // CoinBonus-Upgrade: +25% / +50% extra Coins
         int coinBonusLevel = _shopService.Upgrades.GetLevel(UpgradeType.CoinBonus);
@@ -1108,7 +1230,7 @@ public sealed partial class GameEngine
         }
 
         if (_purchaseService.IsPremium)
-            coins *= 3;
+            coins *= 2;
         CoinsEarned?.Invoke(coins, _player.Score, true);
 
         // Coin-Floating-Text über dem Exit (gold, groß)
@@ -1158,10 +1280,21 @@ public sealed partial class GameEngine
         // Quick-Play: Kein Progress/Sterne/Achievements speichern (Spaß-Modus ohne Fortschritt)
         if (!_isQuickPlayMode)
         {
+            // Gem-Trickle: 1 Gem bei erstmaligem 3-Sterne-Abschluss (nachhaltige Gem-Quelle)
+            int oldStars = _progressService.GetLevelStars(_currentLevelNumber);
             _progressService.SetLevelBestScore(_currentLevelNumber, _player.Score);
 
             int stars = _progressService.GetLevelStars(_currentLevelNumber);
             _levelCompleteStars = stars;
+
+            // Story-Modus: Erstmaliger 3-Sterne → 1 Gem Bonus (nachhaltige Gem-Quelle)
+            if (stars == 3 && oldStars < 3 && !_isDailyChallenge && !_isSurvivalMode)
+            {
+                _tracking.OnFirstThreeStars();
+                float gemX = _player.X;
+                float gemY = _player.Y - Models.Grid.GameGrid.CELL_SIZE * 1.5f;
+                _floatingText.Spawn(gemX, gemY, "+1 Gem", new SKColor(0, 188, 212), 16f, 1.5f);
+            }
             float timeUsed = _currentLevel!.TimeLimit - _timer.RemainingTime;
 
             // Tracking: Level-Complete (Achievement + Liga + BattlePass + Missionen)
@@ -1366,21 +1499,41 @@ public sealed partial class GameEngine
             _victoryTimer = 0;
             _victoryHandled = false;
             _timer.Pause();
+            CacheVictoryOverlayStrings();
             _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
             return;
         }
         _currentLevel = LevelGenerator.GenerateLevel(_currentLevelNumber, _progressService.HighestCompletedLevel);
+        _activeMutator = _currentLevel.Mutator;
 
-        // Welt-Ankündigung bei neuem Welt-Start (Level 11, 21, 31, 41)
-        if ((_currentLevelNumber - 1) % 10 == 0)
+        // Welt-/Boss-/Mutator-Ankündigung
+        if (_currentLevel.IsBossLevel)
+        {
+            _worldAnnouncementText = _localizationService.GetString("AnnounceBossFight") ?? "BOSS FIGHT!";
+            _worldAnnouncementTimer = 2.5f;
+        }
+        else if (_activeMutator != LevelMutator.None)
+        {
+            var mutatorName = GetMutatorDisplayName(_activeMutator);
+            var format = _localizationService.GetString("MutatorActive") ?? "Mutator: {0}";
+            _worldAnnouncementText = string.Format(format, mutatorName);
+            _worldAnnouncementTimer = 2.5f;
+        }
+        else if ((_currentLevelNumber - 1) % 10 == 0)
         {
             int world = (_currentLevelNumber - 1) / 10 + 1;
-            _worldAnnouncementText = $"WORLD {world}";
+            _worldAnnouncementText = string.Format(
+                _localizationService.GetString("AnnounceWorld") ?? "WORLD {0}", world);
             _worldAnnouncementTimer = 2.0f;
         }
 
-        // Upgrades erneut anwenden (Leben, Schild, Spezial-Bomben zurücksetzen)
+        // Upgrades + Mutator-Effekte anwenden
         ApplyUpgrades();
+        ApplyMutatorEffects();
+
+        // Musik-Wechsel bei Boss-Level
+        if (_currentLevel.MusicTrack == "boss")
+            _soundManager.PlayMusic(SoundManager.MUSIC_BOSS);
 
         await LoadLevelAsync();
     }

@@ -16,7 +16,7 @@ public sealed class DungeonService : IDungeonService
     private const string RUN_STATE_KEY = "DungeonRunData";
     private const string STATS_KEY = "DungeonStatsData";
     private const int PAID_RUN_COIN_COST = 500;
-    private const int PAID_RUN_GEM_COST = 10;
+    private const int PAID_RUN_GEM_COST = 5;
 
     private readonly IPreferencesService _preferences;
     private readonly ICoinService _coinService;
@@ -70,6 +70,41 @@ public sealed class DungeonService : IDungeonService
         // Aktiven Run laden (falls App geschlossen wurde während Run)
         _runState = LoadRunState();
         _stats = LoadStats();
+
+        // Migration: Datum-Tracking von RunState in Stats verschieben (einmalig)
+        MigrateDatesFromRunState();
+    }
+
+    /// <summary>
+    /// Einmalige Migration: LastFreeRunDate/LastAdRunDate aus altem RunState in Stats übernehmen.
+    /// Verhindert Free-Run-Exploit nach App-Restart (RunState wird bei inaktivem Run auf null gesetzt).
+    /// </summary>
+    private void MigrateDatesFromRunState()
+    {
+        if (!string.IsNullOrEmpty(_stats.LastFreeRunDate)) return; // Bereits migriert
+
+        var json = _preferences.Get(RUN_STATE_KEY, "");
+        if (string.IsNullOrEmpty(json)) return;
+
+        try
+        {
+            var rawState = JsonSerializer.Deserialize<DungeonRunState>(json, JsonOptions);
+            if (rawState == null) return;
+
+            bool migrated = false;
+            if (!string.IsNullOrEmpty(rawState.LastFreeRunDate))
+            {
+                _stats.LastFreeRunDate = rawState.LastFreeRunDate;
+                migrated = true;
+            }
+            if (!string.IsNullOrEmpty(rawState.LastAdRunDate))
+            {
+                _stats.LastAdRunDate = rawState.LastAdRunDate;
+                migrated = true;
+            }
+            if (migrated) SaveStats();
+        }
+        catch { /* Migration-Fehler ignorieren */ }
     }
 
     /// <summary>
@@ -88,11 +123,9 @@ public sealed class DungeonService : IDungeonService
         get
         {
             if (_runState is { IsActive: true }) return false;
-            if (string.IsNullOrEmpty(_stats.TotalRuns == 0 ? "" : _runState?.LastFreeRunDate ?? ""))
-                return true;
-            var lastFree = _runState?.LastFreeRunDate ?? "";
-            if (string.IsNullOrEmpty(lastFree)) return true;
-            var lastDate = DateTime.Parse(lastFree, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            // Datum aus Stats lesen (überlebt App-Restart, kein Exploit möglich)
+            if (string.IsNullOrEmpty(_stats.LastFreeRunDate)) return true;
+            var lastDate = DateTime.Parse(_stats.LastFreeRunDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
             return lastDate.Date < DateTime.UtcNow.Date;
         }
     }
@@ -102,9 +135,9 @@ public sealed class DungeonService : IDungeonService
         get
         {
             if (_runState is { IsActive: true }) return false;
-            var lastAd = _runState?.LastAdRunDate ?? "";
-            if (string.IsNullOrEmpty(lastAd)) return true;
-            var lastDate = DateTime.Parse(lastAd, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            // Datum aus Stats lesen (überlebt App-Restart, kein Exploit möglich)
+            if (string.IsNullOrEmpty(_stats.LastAdRunDate)) return true;
+            var lastDate = DateTime.Parse(_stats.LastAdRunDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
             return lastDate.Date < DateTime.UtcNow.Date;
         }
     }
@@ -142,6 +175,18 @@ public sealed class DungeonService : IDungeonService
         var roomType = firstNode.RoomType;
         var modifier = firstNode.Modifier;
 
+        // Datum-Tracking in Stats (überlebt App-Restart)
+        if (entryType == DungeonEntryType.Free)
+        {
+            _stats.LastFreeRunDate = DateTime.UtcNow.ToString("O");
+            SaveStats();
+        }
+        else if (entryType == DungeonEntryType.Ad)
+        {
+            _stats.LastAdRunDate = DateTime.UtcNow.ToString("O");
+            SaveStats();
+        }
+
         _runState = new DungeonRunState
         {
             CurrentFloor = 1,
@@ -149,12 +194,6 @@ public sealed class DungeonService : IDungeonService
             IsActive = true,
             RunSeed = runSeed,
             RunAscension = _stats.AscensionLevel,
-            LastFreeRunDate = entryType == DungeonEntryType.Free
-                ? DateTime.UtcNow.ToString("O")
-                : _runState?.LastFreeRunDate ?? "",
-            LastAdRunDate = entryType == DungeonEntryType.Ad
-                ? DateTime.UtcNow.ToString("O")
-                : _runState?.LastAdRunDate ?? "",
             CurrentRoomType = roomType,
             CurrentModifier = modifier,
             MapData = mapData
@@ -589,45 +628,20 @@ public sealed class DungeonService : IDungeonService
                 }
                 else
                 {
-                    // Raum-Typ per Seed generieren (analog GenerateRoomType, aber eigener Seed pro Node)
-                    var nodeRng = new Random(seed + floor * 777 + col * 111);
-                    bool canRest = restRoomsUsed < (floor / 5 + 1); // Max ~1 pro 5 Floors
-                    int ascension = _stats.AscensionLevel;
-                    int normalW = 40, eliteW = ascension >= 2 ? 30 : 20, treasureW = 15, challengeW = 15;
-                    int restW = canRest ? 10 : 0;
-                    int total = normalW + eliteW + treasureW + challengeW + restW;
-                    int roll = nodeRng.Next(total);
-
-                    if (roll < normalW) roomType = DungeonRoomType.Normal;
-                    else if ((roll -= normalW) < eliteW) roomType = DungeonRoomType.Elite;
-                    else if ((roll -= eliteW) < treasureW) roomType = DungeonRoomType.Treasure;
-                    else if ((roll - treasureW) < challengeW) roomType = DungeonRoomType.Challenge;
-                    else roomType = DungeonRoomType.Rest;
+                    // Raum-Typ und Modifikator per existierender Methoden generieren (kein duplizierter Code)
+                    int nodeSeed = seed + col * 111;
+                    roomType = GenerateRoomType(floor, nodeSeed);
 
                     if (roomType == DungeonRoomType.Rest)
                         restRoomsUsed++;
 
                     if (roomType == DungeonRoomType.Challenge)
-                        challengeMode = (DungeonChallengeMode)(nodeRng.Next(3));
-
-                    // Modifikator ab Floor 3 (Ascension 3+: ab Floor 1, 100% Chance)
-                    bool canHaveModifier = ascension >= 3 || floor >= 3;
-                    if (canHaveModifier)
                     {
-                        var modRng = new Random(seed + floor * 333 + col * 222);
-                        double modChance = ascension >= 3 ? 1.0 : 0.3;
-                        if (modRng.NextDouble() < modChance)
-                        {
-                            var mods = new[]
-                            {
-                                DungeonFloorModifier.LavaBorders, DungeonFloorModifier.Darkness,
-                                DungeonFloorModifier.DoubleSpawns, DungeonFloorModifier.FastBombs,
-                                DungeonFloorModifier.BigExplosions, DungeonFloorModifier.Regeneration,
-                                DungeonFloorModifier.Wealthy
-                            };
-                            modifier = mods[modRng.Next(mods.Length)];
-                        }
+                        var challengeRng = new Random(nodeSeed + floor * 777);
+                        challengeMode = (DungeonChallengeMode)(challengeRng.Next(3));
                     }
+
+                    modifier = GenerateFloorModifier(floor, seed + col * 222);
                 }
 
                 row.Add(new DungeonMapNode

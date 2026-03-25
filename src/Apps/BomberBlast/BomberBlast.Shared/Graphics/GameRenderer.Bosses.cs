@@ -57,7 +57,11 @@ public sealed partial class GameRenderer
         }
     }
 
-    private static readonly SKPaint _bossBitmapPaint = new() { IsAntialias = true };
+    private readonly SKPaint _bossBitmapPaint = new() { IsAntialias = true };
+
+    // Gecachter Enrage-ColorFilter (vermeidet native Allokation pro Frame)
+    private SKColorFilter? _enrageColorFilter;
+    private byte _lastEnrageAlpha;
 
     /// <summary>
     /// Rendert Boss als AI-Bitmap mit Animationseffekten.
@@ -109,13 +113,19 @@ public sealed partial class GameRenderer
         // AI-Boss-Bitmap (skaliert + animiert)
         var dest = new SKRect(cx - half, cy - half, cx + half, cy + half);
 
-        // Enrage: Roter/Oranger Overlay-Tint
+        // Enrage: Roter/Oranger Overlay-Tint (gecachter ColorFilter, nur bei Alpha-Änderung neu erstellt)
         if (boss.IsEnraged)
         {
             float pulse = 0.7f + MathF.Sin(_globalTimer * 10f) * 0.3f;
             byte alpha = (byte)(60 * pulse);
-            _bossBitmapPaint.ColorFilter = SKColorFilter.CreateBlendMode(
-                new SKColor(255, 50, 0, alpha), SKBlendMode.SrcATop);
+            if (alpha != _lastEnrageAlpha || _enrageColorFilter == null)
+            {
+                _enrageColorFilter?.Dispose();
+                _enrageColorFilter = SKColorFilter.CreateBlendMode(
+                    new SKColor(255, 50, 0, alpha), SKBlendMode.SrcATop);
+                _lastEnrageAlpha = alpha;
+            }
+            _bossBitmapPaint.ColorFilter = _enrageColorFilter;
         }
         else
         {
@@ -123,7 +133,6 @@ public sealed partial class GameRenderer
         }
 
         canvas.DrawBitmap(bitmap, dest, _bossBitmapPaint);
-        _bossBitmapPaint.ColorFilter?.Dispose();
         _bossBitmapPaint.ColorFilter = null;
 
         return true;

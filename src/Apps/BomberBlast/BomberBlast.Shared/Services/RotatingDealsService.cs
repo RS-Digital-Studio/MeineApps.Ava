@@ -141,7 +141,7 @@ public sealed class RotatingDealsService : IRotatingDealsService
     private RotatingDeal GenerateDailyDeal(Random rng, int dayId, int index, HashSet<string> usedTypes)
     {
         // Deal-Typ auswählen (ohne Wiederholung am selben Tag)
-        string[] dealTypes = ["CoinPack", "GemPack", "CardPack", "UpgradeDiscount"];
+        string[] dealTypes = ["CoinPack", "LargeCoinPack", "CardPack", "UpgradeDiscount"];
         string selectedType;
         do
         {
@@ -164,16 +164,16 @@ public sealed class RotatingDealsService : IRotatingDealsService
                 RewardType = "Coins",
                 RewardAmount = 1000
             },
-            "GemPack" => new RotatingDeal
+            "LargeCoinPack" => new RotatingDeal
             {
                 Id = dealId,
-                TitleKey = "DealGemPack",
-                OriginalPrice = 4000,
-                DiscountedPrice = 3000,
-                DiscountPercent = 25,
+                TitleKey = "DealLargeCoinPack",
+                OriginalPrice = 5000,
+                DiscountedPrice = 3500,
+                DiscountPercent = 30,
                 Currency = "Coins",
-                RewardType = "Gems",
-                RewardAmount = 15
+                RewardType = "Coins",
+                RewardAmount = 5000
             },
             "CardPack" => new RotatingDeal
             {

@@ -2,8 +2,8 @@ namespace BomberBlast.Models.BattlePass;
 
 /// <summary>
 /// Statische Tier-Definitionen für den Battle Pass (30 Tiers).
-/// XP-Skalierung: 400 (Tier 1-5), 500 (6-10), 600 (11-15), 700 (16-20), 800 (21-25), 900 (26-30).
-/// Total: 19.500 XP für alle 30 Tiers.
+/// XP-Skalierung: 320 (Tier 1-5), 400 (6-10), 480 (11-15), 560 (16-20), 640 (21-25), 720 (26-30).
+/// Total: 15.600 XP für alle 30 Tiers (20% reduziert, erreichbar mit ~520 XP/Tag).
 /// </summary>
 public static class BattlePassTierDefinitions
 {
@@ -15,12 +15,12 @@ public static class BattlePassTierDefinitions
     /// </summary>
     public static int GetXpForTier(int tier) => tier switch
     {
-        <= 5 => 400,
-        <= 10 => 500,
-        <= 15 => 600,
-        <= 20 => 700,
-        <= 25 => 800,
-        _ => 900
+        <= 5 => 320,
+        <= 10 => 400,
+        <= 15 => 480,
+        <= 20 => 560,
+        <= 25 => 640,
+        _ => 720
     };
 
     /// <summary>
@@ -67,15 +67,16 @@ public static class BattlePassTierDefinitions
         // Gem-Tiers: 5,10,15,20,25,30
         if (tier % 5 == 0)
         {
+            // Erhöhte Free-Track Gems (gesamt 52 statt 28)
             int gemAmount = tier switch
             {
-                5 => 2,
-                10 => 3,
-                15 => 4,
-                20 => 5,
-                25 => 6,
-                30 => 8,
-                _ => 2
+                5 => 3,
+                10 => 5,
+                15 => 7,
+                20 => 10,
+                25 => 12,
+                30 => 15,
+                _ => 3
             };
             return new BattlePassReward
             {

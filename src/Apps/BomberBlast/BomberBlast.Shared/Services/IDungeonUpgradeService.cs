@@ -23,7 +23,10 @@ public interface IDungeonUpgradeService
     /// <summary>Kauft die nächste Stufe eines Upgrades. Gibt true zurück bei Erfolg.</summary>
     bool TryBuyUpgrade(string upgradeId);
 
-    /// <summary>Fügt DungeonCoins hinzu (Floor-Belohnungen)</summary>
+    /// <summary>Ob der Dungeon Master Pass aktiv ist (permanenter 2x DC-Boost, IAP)</summary>
+    bool HasDungeonMasterPass { get; set; }
+
+    /// <summary>Fügt DungeonCoins hinzu (Floor-Belohnungen, 2x bei DungeonMasterPass)</summary>
     void AddDungeonCoins(int amount);
 
     /// <summary>Gibt die Kosten für die nächste Stufe zurück (0 wenn Max-Level)</summary>

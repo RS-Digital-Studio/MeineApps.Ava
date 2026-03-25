@@ -89,6 +89,12 @@ public class DungeonStats
 
     /// <summary>Höchstes jemals erreichtes Ascension-Level</summary>
     public int HighestAscension { get; set; }
+
+    /// <summary>Datum des letzten Gratis-Runs (UTC, ISO 8601) - hier statt RunState um App-Restart-Exploit zu verhindern</summary>
+    public string LastFreeRunDate { get; set; } = "";
+
+    /// <summary>Datum des letzten Ad-Runs (UTC, ISO 8601) - hier statt RunState um App-Restart-Exploit zu verhindern</summary>
+    public string LastAdRunDate { get; set; } = "";
 }
 
 /// <summary>

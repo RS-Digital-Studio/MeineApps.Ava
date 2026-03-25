@@ -1,6 +1,7 @@
 using BomberBlast.Models;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
+using BomberBlast.Models.Levels;
 using BomberBlast.Services;
 using SkiaSharp;
 
@@ -134,9 +135,22 @@ public sealed partial class GameRenderer
 
                     case CellType.Block:
                         if (cell.IsDestroying)
+                        {
                             RenderBlockDestruction(canvas, px, py, cs, cell.DestructionProgress, isNeon);
+                        }
+                        else if (ActiveMutator == LevelMutator.InvisibleBlocks)
+                        {
+                            // InvisibleBlocks-Mutator: Blöcke nur sichtbar wenn Spieler direkt daneben (1 Zelle)
+                            int dx = Math.Abs(x - PlayerGridX);
+                            int dy = Math.Abs(y - PlayerGridY);
+                            if (dx + dy <= 1)
+                                RenderBlockTile(canvas, px, py, cs, x, y, isNeon);
+                            // Sonst unsichtbar (normaler Boden wird darunter gerendert)
+                        }
                         else
+                        {
                             RenderBlockTile(canvas, px, py, cs, x, y, isNeon);
+                        }
                         break;
 
                     case CellType.Ice:

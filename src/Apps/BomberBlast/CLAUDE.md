@@ -7,7 +7,7 @@
 Bomberman-Klon mit SkiaSharp Rendering, AI Pathfinding und mehreren Input-Methoden.
 Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/Cyberpunk.
 
-**Version:** 2.0.27 (VersionCode 37) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
+**Version:** 2.0.28 (VersionCode 38) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
 
 ## Icon-System (Eigene Neon Arcade Icons)
 
@@ -43,7 +43,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - Zwei Visual Styles: Classic HD + Neon/Cyberpunk (IGameStyleService)
 - 60fps Game Loop via DispatcherTimer (16ms) in GameView.axaml.cs, InvalidateSurface() treibt PaintSurface
 - DPI-Handling: `canvas.LocalClipBounds` statt `e.Info.Width/Height`
-- GC-Optimierung: Gepoolte SKPaint/SKFont/SKPath, HUD-String-Caching, gecachter SKMaskFilter. Statische Cleanup()-Methoden in ExplosionShaders, MenuBackgroundRenderer, HelpIconRenderer
+- GC-Optimierung: Gepoolte SKPaint/SKFont/SKPath, HUD-String-Caching (inkl. SurvivalKills), gecachter SKMaskFilter, gecachter Enrage-SKColorFilter, separater Combo-SKFont. Statische Cleanup()-Methoden in ExplosionShaders, MenuBackgroundRenderer, HelpIconRenderer. GameOverVisualization/HudVisualization/RarityRenderer: Gecachte MaskFilter+Font+SolidColor statt pro-Frame-Allokation
 - **SKPath-Pooling**: _charPath1/_charPath2, _bgPath, _irisClipPath/_starPath, _torchPath, _tempPath, _poolPath1/_poolPath2. Alle mit Rewind() wiederverwendet
 - **Shader-Optimierung**: Alle per-Frame SKShader-Allokationen eliminiert. Background/Vignette/DynamicLighting-Shader beim Init gecacht. Grid-Border-Transitions nutzen 2-Step-Alpha statt LinearGradient. DynamicLighting: 3 statische MaskFilter-Tiers statt pro-Licht Allokation
 - **EnemyPositionCache**: Lists via Clear() wiederverwendet, periodischer Cleanup alle 120 Frames
@@ -58,12 +58,14 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **HeatShimmer**: Direkte Koordinaten statt canvas.Save/Translate/Restore pro Band
 - **GameAssetService**: LINQ-freies EvictOldest (manuelles Min statt OrderBy)
 - **Compiled Bindings**: Alle 23 Views nutzen `x:CompileBindings="True"` + `x:DataType`
-- **RarityRenderer**: 4 statische gecachte MaskFilter (3 Glow-Radien + 1 Shimmer) statt pro-Aufruf CreateBlur
-- **CollectLightSources**: Exit-Doppel-Add entfernt (Grid-Scan findet Exit bereits)
+- **RarityRenderer**: 4 statische gecachte MaskFilter (3 Glow-Radien + 1 Shimmer), gecachter BadgeFont, SolidColor statt Shader in DrawRarityBackground
+- **CollectLightSources**: Kein 150-Zellen-Grid-Scan mehr. Lava/Eis via `specialEffectCells` Dirty-Liste, Exit direkt via `exitCell` Parameter
 - **ShadowRealm**: MaskFilter-Blur auf dekorativen DrawOvals entfernt (alpha=40, kaum sichtbar)
 - **Splitter-Offsets**: Statisches Array statt pro-Kill Heap-Allokation
 - **Touch-Targets**: Alle Buttons auf min. 44dp (Haupt-Navigation 48dp) - Android-Mindestgröße
 - **KeyFrame-Safety**: Keine TranslateTransform.Y in Style.Animations (nur Opacity in KeyFrames)
+- **Overlay-String-Caching**: Alle State-Overlay-Texte (Starting/Paused/LevelComplete/GameOver/Victory) gecacht bei State-Wechsel statt pro-Frame GetString()+Format()
+- **_bossBitmapPaint**: Instanz-Feld statt static (Thread-Safety bei per-Frame ColorFilter-Mutation)
 
 ### Atmosphärische Subsysteme (5 Systeme, alle struct-basiert)
 | System | Beschreibung |
@@ -118,11 +120,17 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - 5 Boss-Typen: StoneGolem, IceDragon, FireDemon, ShadowMaster, FinalBoss
 - Jedes 10. Level = Boss-Level (L10-L100), Boss-Typ Repeat alle 2 Welten
 - BossEnemy erbt von Enemy, eigene BoundingBox (Multi-Cell), HP 3-8, Enrage bei 50%
+- **Duo-Boss-Encounter**: Welt 9 (L90) = FinalBoss + ShadowMaster, Welt 10 (L100) = 2x FinalBoss
+- `Level.BossKind2`: Optionaler zweiter Boss-Typ. `SpawnBossAtPosition()` für getrennte Links/Rechts-Platzierung
+- `UpdateBossAI()`: Boss-zu-Boss-Kollisionsprüfung via `OccupiesCell()`, Ausweichen senkrecht zur Zielrichtung
+- Keine Begleitgegner in Duo-Boss-Leveln (2 Bosse = genug Bedrohung). Timer erhöht (300s/360s)
 - Spezial-Angriffe: Telegraph (2s) → Attack (1.5s) → Cooldown (12-18s, kürzer bei Enrage)
 - Arena-Mitte platziert, Blöcke werden freigeräumt
 
 ### Coin-Economy + Shop
-- **CoinService**: Level-Score / 3 → Coins bei Complete, / 6 bei Game Over
+- **CoinService**: Level-Score / 3 → Coins bei Complete (Welt 1: Score/2 für bessere Früh-Progression), / 6 bei Game Over
+- **Gem-Trickle**: 1 Gem bei erstmaligem 3-Sterne-Abschluss (Story-Modus) via GameTrackingService.OnFirstThreeStars()
+- **Premium-Multiplikator**: 2x Coins bei LevelComplete (IsPremium), 3x bei GameOver-Trostcoins
 - **Effizienz-Bonus**: Skaliert nach Welt (1-10), belohnt wenige Bomben
 - **ShopService**: 9 permanente Upgrades (StartBombs, StartFire, StartSpeed, ExtraLives, ScoreMultiplier, TimeBonus, ShieldStart, CoinBonus, PowerUpLuck)
 - **Preise**: 1.500 - 35.000 Coins, Max-Levels: 1-3, Gesamt: ~190.000 Coins
@@ -212,7 +220,8 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Touch-Koordinaten**: Proportionale Skalierung (Render-Bounds / Control-Bounds Ratio)
 - **Invalidierung**: IMMER `InvalidateSurface()` (nicht InvalidateVisual)
 - **Keyboard Input**: Window-Level KeyDown/KeyUp in MainWindow.axaml.cs → GameViewModel
-- **DI**: 23 ViewModels (Singleton), 29 Services. Lazy-Injection für zirkuläre Abhängigkeiten (4 Services erhalten IAchievementService via SetAchievementService(), GemService/CardService erhalten MissionServices, CustomizationService erhält GemService)
+- **DI**: 23 ViewModels (Singleton), 29 Services. Lazy-Injection für zirkuläre Abhängigkeiten (4 Services erhalten IAchievementService via Concrete-Cast, GemService/CardService erhalten MissionServices, CustomizationService erhält GemService). SetXxx-Methoden sind NICHT in Interfaces (nur auf Concrete Classes)
+- **IGameJuiceEmitter**: Einheitliches Interface für FloatingText+Celebration Events. Implementiert von: LevelSelectVM, MainMenuVM, ShopVM, GameOverVM, ProfileVM und weiteren
 - **GameEngine Partial Classes**: GameEngine.cs (Kern), .Collision.cs, .Explosion.cs, .Level.cs, .Render.cs
 - **GameEngine Events**: Kein "On"-Prefix: `GameOver`, `LevelComplete`, `Victory`, `ScoreChanged`, `CoinsEarned`, `PauseRequested`, `DirectionChanged`, `DungeonFloorComplete`, `DungeonBuffSelection`, `DungeonRunEnd`
 - **GameEngine Dispose**: Via `App.DisposeServices()` (Desktop: ShutdownRequested, Android: OnDestroy)
@@ -292,6 +301,42 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - Gegner-Eskalation nach Zeit: <20s Ballom → 150s+ alle Typen inkl. Ghost/Pontan/Splitter
 - Arena-Layout: BlockDensity 0.2, 4 Basis-PowerUps
 - Timer: 99999 (kein Pontan), HUD zeigt KILLS + überlebte Zeit
+- **Meilenstein-Belohnungen**: 60s=500C, 120s=1500C+3G, 180s=3000C+5G, 300s=5000C+10G
+- Erstmalig volle Belohnung, danach 20% Coins (Gems nur beim ersten Mal)
+- Persistenz: `SurvivalMilestonesReached` in Preferences (JSON HashSet<int>)
+- Belohnungen direkt in `OnSurvivalEnded()` vergeben (kein separates Event)
+
+## Challenge a Friend (Quick-Play)
+
+- Seed + Schwierigkeit via UriLauncher.ShareText teilen
+- QuickPlayViewModel: `ShareChallengeCommand`, `SetLastScore(int)` für Score-Sharing
+- RESX-Key: `ChallengeShareText` mit Platzhaltern für Seed/Difficulty/Score
+
+## Mutator-System (Story-Modus ab Welt 6)
+
+- **5 Mutatoren**: AllPowerBombs, DoubleSpeed, InvisibleBlocks, NoTimer, MirrorControls
+- **Zuweisung**: Level x3, x6, x9 jeder Welt ab Welt 6 (deterministisch via levelNumber % 5)
+- **Level.Mutator**: Property auf Level-Model, `LevelMutator` Enum
+- **GameEngine._activeMutator**: Wird bei Level-Start gesetzt, in allen 5 Modi zurückgesetzt (Story/Daily/Quick/Survival/Dungeon)
+- **AllPowerBombs**: `_player.HasPowerBomb = true` + erhöhte FireRange
+- **DoubleSpeed**: Spieler SpeedLevel +2, Gegner+Bosse 1.5x deltaTime-Multiplikator in UpdateEnemies()
+- **InvisibleBlocks**: Blöcke in GameRenderer.Grid.cs nur sichtbar wenn Spieler Manhattan-Distanz <= 1
+- **MirrorControls**: Nutzt bestehende ReverseControls-Logik (OR-Verknüpfung)
+- **NoTimer**: TimeLimit 99999 im LevelGenerator
+- **Renderer-Properties**: `ActiveMutator`, `PlayerGridX`, `PlayerGridY` auf GameRenderer, gesetzt in GameEngine.Render.cs
+- **Ankündigung**: "Mutator: {Name}" als World-Announcement (2.5s)
+
+## Feature-Freischaltungs-Celebrations
+
+- Bei Erreichen einer Feature-Schwelle (L3/5/8/10/15/20/30) wird Celebration + FloatingText gezeigt
+- Preferences-Key: `feature_celebration_level` verhindert Mehrfach-Auslösung
+- Höchste neu erreichte Schwelle hat Priorität
+
+## Gem-Trickle-System (erweitert)
+
+- **Boss-Kill Gem-Drop**: 50% Chance auf 2-3 Gems bei jedem Boss-Kill (GameTrackingService)
+- **Survival-Meilensteine**: Gems bei 120s/180s/300s (siehe Survival-Modus)
+- **Gesamt-Quellen**: 3-Sterne (1G), Boss-Level-Erst (5G), Boss-Kill-Drop (2-3G/50%), Survival, BP, Weekly, Daily, Comeback
 
 ## Glücksrad / Lucky Spin
 
@@ -301,6 +346,10 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ## Weekly Challenge + Daily Missions
 
+- **Architektur**: `TimedMissionServiceBase` (abstrakte Basisklasse) mit `DailyMissionService` und `WeeklyChallengeService` als Subtypen
+- **Basisklasse**: Enthält gemeinsame Logik (GenerateMissions, RestoreMissions, TrackProgress, Load/Save, CheckPeriodReset)
+- **Abstrakte Methoden**: GetPeriodId(), GetMissionPool(), OnMissionCompleted(), OnAllCompleteBonusClaimed(), NextResetDate
+- **WeeklyMission-Modell**: Generischer Missions-Typ (wird für beide Perioden verwendet, Name historisch bedingt)
 - **Weekly**: 5 Missionen/Woche aus 14er-Pool, Montag-Reset, 350-700 Coins + 2.000 All-Complete-Bonus
 - **Daily**: 3 Missionen/Tag aus 14er-Pool, Mitternacht-UTC-Reset, 100-300 Coins + 500 All-Complete-Bonus
 - **14 Missions-Typen**: CompleteLevels, DefeatEnemies, CollectPowerUps, EarnCoins, SurvivalKills, UseSpecialBombs, AchieveCombo, WinBossFights, CompleteDungeonFloors, CollectCards, EarnGems, PlayQuickPlay, SpinLuckyWheel, UpgradeCards
@@ -342,9 +391,14 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ## Audio-System
 
-- **AndroidSoundService**: SoundPool für SFX (12 Sounds) + MediaPlayer für Musik (4 Tracks)
-- **SoundManager**: Crossfade-Logik, `PlayBombExplosion(BombType)` mit Sound-Layering je Bomben-Kategorie
-- **Sound-Assets**: CC0 Lizenz, ~8.5 MB
+- **AndroidSoundService**: SoundPool für SFX (12+6 Sounds) + MediaPlayer für Musik (4+6 Tracks)
+- **SoundManager**: Crossfade-Logik, `PlayBombExplosion(BombType)` mit dediziertem SFX + Layering-Fallback
+- **Dedizierte Bomben-SFX**: `bomb_ice`, `bomb_fire`, `bomb_lightning`, `bomb_gravity`, `bomb_vortex`, `bomb_blackhole`
+- **ISoundService.TryPlaySound()**: Default-Interface-Methode (false), ermöglicht Fallback bei fehlenden Assets
+- **Welt-Musik-Keys**: `world_forest` bis `world_inferno` (GetWorldMusicKey()), Fallback auf `gameplay`
+- **Dungeon-Musik**: `MUSIC_DUNGEON` Key
+- **Sound-Assets**: CC0 Lizenz, ~17.6 MB (12 Basis + 6 Bomben-SFX + 6 Musik-Tracks)
+- **Lizenzen**: `Assets/sounds/LICENSES.md` (Kenney.nl, OpenGameArt CC0)
 - **Thread-Safety**: `lock(_musicLock)` für MediaPlayer
 
 ## Architektur-Details
@@ -381,12 +435,13 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ### Dungeon Run / Roguelike-Modus
 - **Ablauf**: Floor 1-4 normal, Floor 5 Mini-Boss, Floor 6-9 härter, Floor 10 End-Boss + Truhe, ab Floor 11 +50% Skalierung
-- **Eintritt**: 1x/Tag gratis, 500 Coins, 10 Gems, oder Rewarded Ad (1x/Tag)
+- **Eintritt**: 1x/Tag gratis, 500 Coins, 5 Gems (BAL-31: von 10 gesenkt), oder Rewarded Ad (1x/Tag)
+- **Datum-Tracking**: LastFreeRunDate/LastAdRunDate in DungeonStats (nicht RunState) um App-Restart-Exploit zu verhindern
 - **16 Buffs**: 5 Common, 5 Rare, 2 Epic, 4 Legendary (Berserker/TimeFreeze/GoldRush/Phantom)
 - **Buff-Auswahl**: Nach Floor 2/4/5/7/9, 3 zufällige gewichtet per Rarität. 1x Reroll gratis, weitere 5 Gems
 - **5 Synergies**: Bombardier, Blitzkrieg, Festung, Midas, Elementar
-- **5 Raum-Typen**: Normal (W40), Elite (W20), Treasure (W15), Challenge (W15), Rest (W10)
-- **8 Floor-Modifikatoren**: Ab Floor 3, 30% Chance (LavaBorders, Darkness, DoubleSpawns, etc.)
+- **5 Raum-Typen**: Normal (W40), Elite (W20), Treasure (W15), Challenge (W15), Rest (W10). GenerateRoomType() zentral, Node-Map nutzt dieselbe Methode
+- **8 Floor-Modifikatoren**: Ab Floor 3, 30% Chance. GenerateFloorModifier() zentral (LavaBorders registriert Zellen in specialEffectCells)
 - **Node-Map**: 10x3 (Slay the Spire), Pfad-Auswahl
 - **8 Permanente Upgrades**: DungeonCoins (50-300 DC)
 - **Ascension 0-5**: Eskalierende Schwierigkeit + Belohnungen nach Floor 10 Clear
@@ -414,8 +469,9 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ### Battle Pass
 - 30-Tier Saison (30 Tage), XP-basiert, Free/Premium-Track
+- **XP pro Tier**: 320 (T1-5), 400 (T6-10), 480 (T11-15), 560 (T16-20), 640 (T21-25), 720 (T26-30). Gesamt: 15.600 XP
 - **13 XP-Quellen**: StoryLevel (100), ThreeStars (50), DailyChallenge (200), DailyMission (80), WeeklyMission (120), DungeonFloor (50), BossKill (200), Survival60s (100), DailyLogin (50), LuckySpin (30), CollectionMilestone (100-500), CardUpgrade (80), LeagueReward (150)
-- **XP-Boost**: 2x für 20 Gems, 24h Dauer
+- **XP-Boost**: 2x für 20 Gems, 24h Dauer. Ablaufdatum gecacht als DateTime? (kein DateTime.Parse pro Aufruf)
 
 ### Menü-Hintergründe (MenuBackgroundCanvas)
 - **7 Themes** (BackgroundTheme Enum): Default, Dungeon, Shop, League, BattlePass, Victory, LuckySpin
@@ -429,10 +485,12 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - Aktiver Skin + Frame
 
 ### Monetarisierungs-Features
-- **Starter Pack**: 5000C + 20G + 3 Rare-Karten (ab Level 5, einmalig 4999 Coins)
-- **Rotating Deals**: 3 tägliche + 1 wöchentliches Angebot, 20-50% Rabatt, Seeded Random
-- **Extended Gem-Sinks**: Karten für Gems, Extra Spin (3G), Dungeon-Revive (15G), 5. Deck-Slot (20G)
-- **Gem-IAP**: 3 Pakete (100G/0,99EUR, 500G/3,99EUR, 1500G/7,99EUR)
+- **Starter Pack**: 2500C + 10G + 2 Rare-Karten (ab Level 5, einmaliges Gratis-Geschenk)
+- **Rotating Deals**: 3 tägliche + 1 wöchentliches Angebot, 20-50% Rabatt, Seeded Random. Kein Coins→Gems-Pathway (Economy-Trennung)
+- **Extended Gem-Sinks**: Karten für Gems, Extra Spin (3G), Dungeon-Revive (15G), 5. Deck-Slot (20G), BP Premium (150G)
+- **Gem-IAP**: 4 Pakete (100G/0,99EUR, 500G/3,99EUR, 1500G/7,99EUR, 5000G/14,99EUR)
+- **Dungeon Master Pass**: Permanenter 2x DungeonCoin-Boost (IAP), gespeichert in DungeonUpgradeData
+- **Battle Pass Premium**: Kaufbar via IAP (2,99 EUR) ODER 150 Gems. Gem-Alternative in BattlePassViewModel
 
 ## AAA Visual Redesign (21 Content-Views)
 
@@ -456,12 +514,12 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | MainMenu | 10-32 | 12 |
 | GameOver | 40-45 | 6 |
 | Victory | 50-51 | 2 |
-| QuickPlay | 60-61 | 2 |
+| QuickPlay | 60-62 | 3 |
 | Dungeon | 70-74 | 5 |
 | LuckySpin | 80-82 | 2 |
 | DailyChallenge | 90 | 1 |
-| BattlePass | 100-103 | 4 |
-| GemShop | 110-112 | 3 |
+| BattlePass | 100-104 | 5 |
+| GemShop | 110-113 | 4 |
 | LevelSelect | 120 | 1 |
 | Shop | 130-132 | 3 |
 | Deck | 140-142 | 2-3 |

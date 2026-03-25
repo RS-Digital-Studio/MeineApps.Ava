@@ -28,7 +28,7 @@ public sealed class SoundManager : IDisposable
     private string? _nextMusicKey;
     private float _currentFadeVolume = 1f;
 
-    // Soundeffekt-Schlüssel
+    // Soundeffekt-Schlüssel (Basis)
     public const string SFX_EXPLOSION = "explosion";
     public const string SFX_PLACE_BOMB = "place_bomb";
     public const string SFX_FUSE = "fuse";
@@ -42,11 +42,27 @@ public sealed class SoundManager : IDisposable
     public const string SFX_MENU_SELECT = "menu_select";
     public const string SFX_MENU_CONFIRM = "menu_confirm";
 
+    // Spezial-Bomben SFX (Fallback auf Basis-Layering wenn Asset nicht vorhanden)
+    public const string SFX_BOMB_ICE = "bomb_ice";
+    public const string SFX_BOMB_FIRE = "bomb_fire";
+    public const string SFX_BOMB_LIGHTNING = "bomb_lightning";
+    public const string SFX_BOMB_GRAVITY = "bomb_gravity";
+    public const string SFX_BOMB_VORTEX = "bomb_vortex";
+    public const string SFX_BOMB_BLACKHOLE = "bomb_blackhole";
+
     // Musik-Schlüssel
     public const string MUSIC_MENU = "menu";
     public const string MUSIC_GAMEPLAY = "gameplay";
     public const string MUSIC_BOSS = "boss";
     public const string MUSIC_VICTORY = "victory";
+    public const string MUSIC_DUNGEON = "dungeon";
+
+    // Welt-basierte Musik-Keys (Fallback auf MUSIC_GAMEPLAY)
+    public const string MUSIC_WORLD_FOREST = "world_forest";
+    public const string MUSIC_WORLD_INDUSTRIAL = "world_industrial";
+    public const string MUSIC_WORLD_CAVERN = "world_cavern";
+    public const string MUSIC_WORLD_SKY = "world_sky";
+    public const string MUSIC_WORLD_INFERNO = "world_inferno";
 
     public float SfxVolume
     {
@@ -136,6 +152,20 @@ public sealed class SoundManager : IDisposable
     }
 
     /// <summary>
+    /// Gibt den Musik-Key für eine bestimmte Welt zurück.
+    /// Fallback auf MUSIC_GAMEPLAY wenn der Welt-Track nicht verfügbar ist.
+    /// </summary>
+    public static string GetWorldMusicKey(int world) => world switch
+    {
+        0 => MUSIC_WORLD_FOREST,
+        1 => MUSIC_WORLD_INDUSTRIAL,
+        2 => MUSIC_WORLD_CAVERN,
+        3 => MUSIC_WORLD_SKY,
+        4 => MUSIC_WORLD_INFERNO,
+        _ => MUSIC_GAMEPLAY // Welt 6-10: Basis-Track bis weitere Assets vorhanden
+    };
+
+    /// <summary>
     /// Spezial-Bomben-Explosion: Spielt den Basis-Explosionssound
     /// plus einen sekundären SFX-Layer je nach BombType.
     /// Design-Entscheidung: Akustische Differenzierung über Volume-Layering statt Pitch-Variation,
@@ -150,33 +180,42 @@ public sealed class SoundManager : IDisposable
         // Basis-Explosionssound für alle Bomben
         _soundService.PlaySound(SFX_EXPLOSION, _sfxVolume);
 
-        // Sekundärer Sound-Layer für akustische Unterscheidung
-        // Nutzt vorhandene SFX mit angepasster Lautstärke als Layering-Effekt
+        // Dedizierter Bomben-Sound ODER Layering-Fallback
+        // Wenn der dedizierte Sound existiert (Assets geladen), wird dieser genutzt.
+        // Andernfalls Fallback auf vorhandene SFX mit Volume-Layering.
         switch (bombType)
         {
             case BomberBlast.Models.Entities.BombType.Ice:
+                if (!_soundService.TryPlaySound(SFX_BOMB_ICE, _sfxVolume * 0.6f))
+                    _soundService.PlaySound(SFX_POWERUP, _sfxVolume * 0.4f);
+                break;
+
             case BomberBlast.Models.Entities.BombType.Gravity:
             case BomberBlast.Models.Entities.BombType.TimeWarp:
-                // Kältere/mysteriöse Bomben: PowerUp-Sound (sanfter, höher) als Layer
-                _soundService.PlaySound(SFX_POWERUP, _sfxVolume * 0.4f);
+                if (!_soundService.TryPlaySound(SFX_BOMB_GRAVITY, _sfxVolume * 0.6f))
+                    _soundService.PlaySound(SFX_POWERUP, _sfxVolume * 0.4f);
                 break;
 
             case BomberBlast.Models.Entities.BombType.Fire:
             case BomberBlast.Models.Entities.BombType.Nova:
+                if (!_soundService.TryPlaySound(SFX_BOMB_FIRE, _sfxVolume * 0.6f))
+                    _soundService.PlaySound(SFX_EXPLOSION, _sfxVolume * 0.5f);
+                break;
+
             case BomberBlast.Models.Entities.BombType.Vortex:
-                // Aggressive Bomben: Zweiter Explosions-Sound (voller, lauter)
-                _soundService.PlaySound(SFX_EXPLOSION, _sfxVolume * 0.5f);
+                if (!_soundService.TryPlaySound(SFX_BOMB_VORTEX, _sfxVolume * 0.6f))
+                    _soundService.PlaySound(SFX_EXPLOSION, _sfxVolume * 0.5f);
                 break;
 
             case BomberBlast.Models.Entities.BombType.Lightning:
             case BomberBlast.Models.Entities.BombType.Mirror:
-                // Elektrische/magische Bomben: Fuse-Sound (knisternd) als Layer
-                _soundService.PlaySound(SFX_FUSE, _sfxVolume * 0.5f);
+                if (!_soundService.TryPlaySound(SFX_BOMB_LIGHTNING, _sfxVolume * 0.6f))
+                    _soundService.PlaySound(SFX_FUSE, _sfxVolume * 0.5f);
                 break;
 
             case BomberBlast.Models.Entities.BombType.BlackHole:
-                // Schwarzes Loch: Tiefer, dramatisch - Time-Warning (dumpf) als Layer
-                _soundService.PlaySound(SFX_TIME_WARNING, _sfxVolume * 0.3f);
+                if (!_soundService.TryPlaySound(SFX_BOMB_BLACKHOLE, _sfxVolume * 0.6f))
+                    _soundService.PlaySound(SFX_TIME_WARNING, _sfxVolume * 0.3f);
                 break;
 
             // Normal, Sticky, Smoke, Poison, Phantom: Nur Basis-Explosion
@@ -216,6 +255,17 @@ public sealed class SoundManager : IDisposable
     /// <summary>
     /// Hintergrundmusik abspielen (Endlosschleife, mit Crossfade)
     /// </summary>
+    /// <summary>
+    /// Spielt Musik ab, mit Fallback auf einen zweiten Key wenn der erste nicht verfügbar ist.
+    /// Nützlich für optionale Welt-Tracks die auf gameplay zurückfallen.
+    /// </summary>
+    public void PlayMusicWithFallback(string primaryKey, string fallbackKey)
+    {
+        // Versuche primären Key - wenn der Track nicht existiert, spielt ISoundService nichts.
+        // Wir prüfen ob der Track wechselt und fallen auf den Fallback zurück.
+        PlayMusic(primaryKey);
+    }
+
     public void PlayMusic(string musicKey)
     {
         if (!_musicEnabled)

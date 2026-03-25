@@ -55,6 +55,9 @@ public interface IGameTrackingService
     /// <summary>Boss-Level Erst-Abschluss: 5 Gems Belohnung (L10, L20, ..., L100)</summary>
     void OnBossLevelFirstComplete(int level);
 
+    /// <summary>Gem-Trickle: 1 Gem bei erstmaligem 3-Sterne-Abschluss</summary>
+    void OnFirstThreeStars();
+
     // --- Persistenz ---
     void FlushIfDirty();
 }

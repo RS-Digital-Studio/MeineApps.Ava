@@ -372,7 +372,7 @@ public sealed partial class GameRenderer
     private void CollectLightSources(SKCanvas canvas, GameGrid grid,
         List<Bomb> bombs, List<Explosion> explosions,
         List<Enemy> enemies, List<PowerUp> powerUps,
-        Player? player, Cell? exitCell)
+        Player? player, Cell? exitCell, List<Cell>? specialEffectCells)
     {
         int cs = GameGrid.CELL_SIZE;
 
@@ -396,27 +396,29 @@ public sealed partial class GameRenderer
             _dynamicLighting.AddExplosionLight(ex, ey, range, progress, cs);
         }
 
-        // 3) Grid-Zellen: Lava + Eis + Exit
-        for (int gy = 0; gy < grid.Height; gy++)
+        // 3) Spezialeffekt-Zellen: Lava + Eis (Dirty-Liste statt 150-Zellen-Grid-Scan)
+        if (specialEffectCells != null)
         {
-            for (int gx = 0; gx < grid.Width; gx++)
+            foreach (var cell in specialEffectCells)
             {
-                var cell = grid[gx, gy];
-                float cx = gx * cs + cs * 0.5f;
-                float cy = gy * cs + cs * 0.5f;
+                float cx = cell.X * cs + cs * 0.5f;
+                float cy = cell.Y * cs + cs * 0.5f;
 
                 if (cell.IsLavaActive)
-                    _dynamicLighting.AddLavaLight(cx, cy, cs, _globalTimer, gx, gy);
+                    _dynamicLighting.AddLavaLight(cx, cy, cs, _globalTimer, cell.X, cell.Y);
 
                 if (cell.IsFrozen)
                     _dynamicLighting.AddIceLight(cx, cy, cs);
-
-                if (cell.Type == CellType.Exit)
-                    _dynamicLighting.AddExitLight(cx, cy, cs, _globalTimer);
             }
         }
 
-        // 4) Exit-Portal: Bereits im Grid-Scan (3) abgedeckt - kein doppelter Add nötig
+        // 4) Exit-Portal: Direkt aus Parameter (kein Grid-Scan nötig)
+        if (exitCell != null && exitCell.Type == CellType.Exit)
+        {
+            float ecx = exitCell.X * cs + cs * 0.5f;
+            float ecy = exitCell.Y * cs + cs * 0.5f;
+            _dynamicLighting.AddExitLight(ecx, ecy, cs, _globalTimer);
+        }
 
         // 5) Spieler-Schild: Cyan Glow
         if (player is { HasShield: true, IsActive: true })

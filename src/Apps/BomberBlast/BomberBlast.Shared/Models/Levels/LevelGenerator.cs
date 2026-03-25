@@ -93,6 +93,9 @@ public static class LevelGenerator
         // Layout-Variation (nicht jedes Level Classic)
         AssignLayout(level, levelNumber, world);
 
+        // Mutator-Level ab Welt 6: Jedes 3. Level in der Welt (Level x3, x6, x9 aber nicht x5/x10)
+        AssignMutator(level, levelNumber, world);
+
         // Boss music für Welt 5+ und letzte Level jeder Welt
         if (world >= 5)
             level.MusicTrack = "boss";
@@ -343,6 +346,39 @@ public static class LevelGenerator
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // MUTATOR-LEVEL (ab Welt 6)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Weist Mutator-Regeln zu: Ab Welt 6, jedes 3. Level in der Welt (aber nicht Boss/Bonus).
+    /// Deterministisch basierend auf Level-Nummer.
+    /// </summary>
+    private static void AssignMutator(Level level, int levelNumber, int world)
+    {
+        if (world < 5) return; // Ab Welt 6 (world ist 0-basiert)
+
+        int levelInWorld = ((levelNumber - 1) % 10) + 1;
+        // Level 3, 6, 9 in der Welt (nicht 5/10 = Bonus/Boss)
+        if (levelInWorld != 3 && levelInWorld != 6 && levelInWorld != 9) return;
+
+        // Deterministischer Mutator basierend auf Level-Nummer
+        var mutators = new[]
+        {
+            LevelMutator.AllPowerBombs,
+            LevelMutator.DoubleSpeed,
+            LevelMutator.InvisibleBlocks,
+            LevelMutator.NoTimer,
+            LevelMutator.MirrorControls
+        };
+
+        level.Mutator = mutators[levelNumber % mutators.Length];
+
+        // NoTimer: Zeitlimit auf max setzen (Pontan-System prüft Timer)
+        if (level.Mutator == LevelMutator.NoTimer)
+            level.TimeLimit = 99999;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // BOSS-LEVEL (jedes 10. Level)
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -417,16 +453,17 @@ public static class LevelGenerator
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Mimic, Count = 2 });
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Pass, Count = 2 });
                 break;
-            case 9: // L90: FinalBoss
-                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Tanker, Count = 1 });
-                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ghost, Count = 1 });
-                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Splitter, Count = 1 });
+            case 9: // L90: Duo-Boss! FinalBoss + ShadowMaster
+                level.BossKind2 = BossType.ShadowMaster;
+                level.TimeLimit = 300; // Mehr Zeit für 2 Bosse
+                level.Name = "Duo Boss - World 9";
+                // Keine Begleitgegner - 2 Bosse sind genug Bedrohung
                 break;
-            case 10: // L100: FinalBoss (Repeat) - Maximale Schwierigkeit
-                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Tanker, Count = 2 });
-                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ghost, Count = 2 });
-                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Mimic, Count = 2 });
-                level.TimeLimit = 300; // Mehr Zeit für Endboss
+            case 10: // L100: FINAL ENCOUNTER - 2x FinalBoss
+                level.BossKind2 = BossType.FinalBoss;
+                level.TimeLimit = 360; // Maximale Zeit für den Endkampf
+                level.Name = "FINAL ENCOUNTER";
+                // Keine Begleitgegner - maximale Boss-Fokus
                 break;
         }
 

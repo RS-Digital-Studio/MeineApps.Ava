@@ -57,8 +57,6 @@ public interface ILeagueService : IDisposable
     event EventHandler? SeasonEnded;
     event EventHandler? LeaderboardUpdated;
 
-    /// <summary>Lazy-Injection: IAchievementService nach DI-Build setzen (zirkuläre Abhängigkeit)</summary>
-    void SetAchievementService(IAchievementService achievementService);
 }
 
 /// <summary>Einzelner Eintrag in der Liga-Rangliste.</summary>

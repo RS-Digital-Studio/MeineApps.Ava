@@ -48,12 +48,6 @@ public interface ICardService
     /// <summary>Wird ausgelöst wenn sich Sammlung oder Deck ändert</summary>
     event EventHandler? CollectionChanged;
 
-    /// <summary>Lazy-Injection: IAchievementService nach DI-Build setzen (zirkuläre Abhängigkeit)</summary>
-    void SetAchievementService(IAchievementService achievementService);
-
-    /// <summary>Lazy-Injection: Mission-Services nach DI-Build setzen (Phase 9.4)</summary>
-    void SetMissionServices(IWeeklyChallengeService weeklyService, IDailyMissionService dailyMissionService);
-
     /// <summary>Ob der 5. Deck-Slot freigeschaltet ist</summary>
     bool IsSlot5Unlocked { get; }
 

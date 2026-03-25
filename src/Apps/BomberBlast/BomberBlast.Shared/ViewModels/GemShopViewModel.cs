@@ -98,6 +98,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
         var smallName = _localizationService.GetString("GemPackSmall") ?? "Small Pack";
         var mediumName = _localizationService.GetString("GemPackMedium") ?? "Medium Pack";
         var largeName = _localizationService.GetString("GemPackLarge") ?? "Large Pack";
+        var megaName = _localizationService.GetString("GemPackMega") ?? "Mega Pack";
         var popularBadge = _localizationService.GetString("GemPackPopular");
         var bestValueBadge = _localizationService.GetString("GemPackBestValue");
 
@@ -138,6 +139,18 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 BadgeText = bestValueBadge,
                 IsPopular = false,
                 ButtonSeed = 112
+            },
+            new GemPackageItem
+            {
+                ProductId = "gem_pack_mega",
+                DisplayName = megaName,
+                GemAmount = 5000,
+                PriceText = "14,99 \u20ac",
+                IconKind = GameIconKind.Crown,
+                IconColor = "#FF6B35",
+                BadgeText = _localizationService.GetString("GemPackWhale") ?? "3.3x Value!",
+                IsPopular = false,
+                ButtonSeed = 113
             }
         ];
     }

@@ -34,33 +34,12 @@ public sealed class BattlePassService : IBattlePassService
     public int CurrentTier => _data.CurrentTier;
     public int DaysRemaining => _data.DaysRemaining;
 
-    public bool IsXpBoostActive
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(_data.XpBoostExpiresAt)) return false;
-            try
-            {
-                var expires = DateTime.Parse(_data.XpBoostExpiresAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-                return DateTime.UtcNow < expires;
-            }
-            catch { return false; }
-        }
-    }
+    // Gecachtes XP-Boost-Ablaufdatum (vermeidet DateTime.Parse bei jedem Aufruf)
+    private DateTime? _xpBoostExpires;
 
-    public DateTime? XpBoostExpiresAt
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(_data.XpBoostExpiresAt)) return null;
-            try
-            {
-                var expires = DateTime.Parse(_data.XpBoostExpiresAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-                return DateTime.UtcNow < expires ? expires : null;
-            }
-            catch { return null; }
-        }
-    }
+    public bool IsXpBoostActive => _xpBoostExpires.HasValue && DateTime.UtcNow < _xpBoostExpires.Value;
+
+    public DateTime? XpBoostExpiresAt => IsXpBoostActive ? _xpBoostExpires : null;
 
     public event Action? BattlePassChanged;
     public event Action<int>? TierUpReached;
@@ -83,8 +62,27 @@ public sealed class BattlePassService : IBattlePassService
         _freeRewards = BattlePassTierDefinitions.GetFreeRewards();
         _premiumRewards = BattlePassTierDefinitions.GetPremiumRewards();
 
+        // XP-Boost-Cache initialisieren
+        CacheXpBoostExpiry();
+
         // Prüfen ob neue Saison nötig
         CheckAndStartNewSeason();
+    }
+
+    /// <summary>Parst XpBoostExpiresAt einmalig und cacht als DateTime</summary>
+    private void CacheXpBoostExpiry()
+    {
+        if (string.IsNullOrEmpty(_data.XpBoostExpiresAt))
+        {
+            _xpBoostExpires = null;
+            return;
+        }
+        try
+        {
+            var expires = DateTime.Parse(_data.XpBoostExpiresAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            _xpBoostExpires = DateTime.UtcNow < expires ? expires : null;
+        }
+        catch { _xpBoostExpires = null; }
     }
 
     public bool ActivateXpBoost()
@@ -92,7 +90,9 @@ public sealed class BattlePassService : IBattlePassService
         if (IsXpBoostActive) return false;
         if (!_gemService.TrySpendGems(XP_BOOST_GEM_COST)) return false;
 
-        _data.XpBoostExpiresAt = DateTime.UtcNow.AddHours(XP_BOOST_DURATION_HOURS).ToString("O");
+        var expiry = DateTime.UtcNow.AddHours(XP_BOOST_DURATION_HOURS);
+        _data.XpBoostExpiresAt = expiry.ToString("O");
+        _xpBoostExpires = expiry;
         SaveData();
         BattlePassChanged?.Invoke();
         return true;
@@ -200,9 +200,16 @@ public sealed class BattlePassService : IBattlePassService
                 }
                 break;
             case BattlePassRewardType.Cosmetic:
-                // Cosmetic-Rewards werden über ItemId verwaltet
-                // Temporärer Fallback bis Kosmetik-Items existieren
-                _coinService.AddCoins(5000);
+                // Cosmetic-Rewards: Gems als Fallback bis Kosmetik-Items existieren
+                // Tier 10 (Rare) = 15 Gems, Tier 20 (Epic) = 25 Gems, Tier 30 (Legendary) = 50 Gems
+                int cosmeticGems = reward.ItemId switch
+                {
+                    "season_skin_rare" => 15,
+                    "season_skin_epic" => 25,
+                    "season_skin_legendary" => 50,
+                    _ => 15
+                };
+                _gemService.AddGems(cosmeticGems);
                 break;
         }
     }

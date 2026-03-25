@@ -147,29 +147,54 @@
               </StackPanel>
             </Border>
 
-            <!-- Wenn kein Premium: Upgrade-Button -->
-            <Panel MinHeight="44" IsVisible="{Binding !IsPremiumPass}">
-              <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.6" ButtonSeed="103" />
-              <Button AutomationProperties.AutomationId="BP_BtnUpgrade"
-                      Classes="GameButton"
-                      Command="{Binding UpgradeToPremiumCommand}"
-                      Background="Transparent"
-                      Foreground="White"
-                      HorizontalAlignment="Stretch"
-                      HorizontalContentAlignment="Center"
-                      VerticalContentAlignment="Center"
-                      Padding="12,10"
-                      CornerRadius="10">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <icons:GameIcon Kind="Crown" Width="18" Height="18"
-                                   Foreground="White" />
-                  <TextBlock Text="{Binding UpgradeButtonText}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="White"
-                             VerticalAlignment="Center" />
-                </StackPanel>
-              </Button>
-            </Panel>
+            <!-- Wenn kein Premium: Upgrade-Buttons (IAP + Gems) -->
+            <StackPanel Spacing="6" IsVisible="{Binding !IsPremiumPass}">
+              <Panel MinHeight="44">
+                <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.6" ButtonSeed="103" />
+                <Button AutomationProperties.AutomationId="BP_BtnUpgrade"
+                        Classes="GameButton"
+                        Command="{Binding UpgradeToPremiumCommand}"
+                        Background="Transparent"
+                        Foreground="White"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Padding="12,10"
+                        CornerRadius="10">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <icons:GameIcon Kind="Crown" Width="18" Height="18"
+                                     Foreground="White" />
+                    <TextBlock Text="{Binding UpgradeButtonText}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="White"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </Panel>
+              <!-- Gem-Alternative -->
+              <Panel MinHeight="44">
+                <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.3" ButtonSeed="104" />
+                <Button AutomationProperties.AutomationId="BP_BtnUpgradeGems"
+                        Classes="GameButton"
+                        Command="{Binding UpgradeWithGemsCommand}"
+                        Background="Transparent"
+                        Foreground="White"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Padding="12,10"
+                        CornerRadius="10">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <icons:GameIcon Kind="DiamondStone" Width="18" Height="18"
+                                     Foreground="#00BCD4" />
+                    <TextBlock Text="{Binding UpgradeWithGemsText}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="White"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </Panel>
+            </StackPanel>
 
             <!-- XP-Boost Button -->
             <Panel MinHeight="44">

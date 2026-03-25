@@ -1,5 +1,6 @@
 using BomberBlast.Models;
 using BomberBlast.Models.Dungeon;
+using BomberBlast.Models.Levels;
 using SkiaSharp;
 
 namespace BomberBlast.Core;
@@ -14,6 +15,67 @@ public sealed partial class GameEngine
 
     // Gepoolter SKPath für Stern-Rendering in LevelComplete
     private readonly SKPath _starPath = new();
+
+    // Gecachte Overlay-Strings (vermeidet GetString()+Format() pro Frame in Overlay-Phasen)
+    private string _overlayPaused = "PAUSED";
+    private string _overlayTapToResume = "Tap to resume";
+    private string _overlayLevelComplete = "LEVEL COMPLETE!";
+    private string _overlayFirstVictory = "FIRST VICTORY!";
+    private string _overlayGameOver = "GAME OVER";
+    private string _overlayVictoryTitle = "VICTORY!";
+    private string _overlayAllComplete = "All levels complete!";
+    // Dynamische Overlay-Strings (gecacht bei State-Wechsel)
+    private string _overlayStageText = "";
+    private string _overlayScoreText = "";
+    private string _overlayTimeBonusText = "";
+    private string _overlayFinalScoreText = "";
+    private string _overlayLevelText = "";
+
+    /// <summary>
+    /// Statische Overlay-Strings cachen (bei Init + Sprachwechsel).
+    /// Wird von CacheHudLabels() mitaufgerufen.
+    /// </summary>
+    private void CacheOverlayStrings()
+    {
+        _overlayPaused = _localizationService.GetString("Paused") ?? "PAUSED";
+        _overlayTapToResume = _localizationService.GetString("TapToResume") ?? "Tap to resume";
+        _overlayLevelComplete = _localizationService.GetString("LevelComplete") ?? "LEVEL COMPLETE!";
+        _overlayFirstVictory = _localizationService.GetString("FirstVictory") ?? "FIRST VICTORY!";
+        _overlayGameOver = _localizationService.GetString("GameOver") ?? "GAME OVER";
+        _overlayVictoryTitle = _localizationService.GetString("VictoryTitle") ?? "VICTORY!";
+        _overlayAllComplete = _localizationService.GetString("AllLevelsComplete") ?? "All levels complete!";
+    }
+
+    /// <summary>
+    /// Dynamische Overlay-Strings cachen (bei State-Wechsel, nicht pro Frame).
+    /// </summary>
+    private void CacheStartingOverlayStrings()
+    {
+        var fmt = _localizationService.GetString("StageOverlay") ?? "Stage {0}";
+        _overlayStageText = string.Format(fmt, _currentLevelNumber);
+    }
+
+    private void CacheLevelCompleteOverlayStrings()
+    {
+        var scoreFmt = _localizationService.GetString("ScoreFormat") ?? "Score: {0}";
+        _overlayScoreText = string.Format(scoreFmt, _player.Score);
+        var timeFmt = _localizationService.GetString("TimeBonusFormat") ?? "Time Bonus: +{0}";
+        _overlayTimeBonusText = string.Format(timeFmt, LastTimeBonus);
+    }
+
+    private void CacheGameOverOverlayStrings()
+    {
+        var scoreFmt = _localizationService.GetString("FinalScore") ?? "Final Score: {0}";
+        _overlayFinalScoreText = string.Format(scoreFmt, _player.Score);
+        var levelFmt = _localizationService.GetString("LevelFormat") ?? "Level {0}";
+        _overlayLevelText = string.Format(levelFmt, _currentLevelNumber);
+    }
+
+    private void CacheVictoryOverlayStrings()
+    {
+        var scoreFmt = _localizationService.GetString("FinalScore") ?? "Final Score: {0}";
+        _overlayFinalScoreText = string.Format(scoreFmt, _player.Score);
+    }
     /// <summary>
     /// Welt-spezifische Iris-Wipe-Farbe (statt immer Schwarz).
     /// </summary>
@@ -69,6 +131,11 @@ public sealed partial class GameEngine
         _renderer.DungeonRoomType = _isDungeonRun ? _dungeonService.RunState?.CurrentRoomType ?? DungeonRoomType.Normal : DungeonRoomType.Normal;
         _renderer.DungeonFloorModifier = _isDungeonRun ? _dungeonFloorModifier : DungeonFloorModifier.None;
 
+        // Mutator-Daten an Renderer übergeben
+        _renderer.ActiveMutator = _activeMutator;
+        _renderer.PlayerGridX = _player?.GridX ?? 0;
+        _renderer.PlayerGridY = _player?.GridY ?? 0;
+
         // Lokalisierte HUD-Labels übergeben (gecacht, nicht pro Frame laden)
         _renderer.HudLabelKills = _hudLabelKills;
         _renderer.HudLabelTime = _hudLabelTime;
@@ -82,10 +149,10 @@ public sealed partial class GameEngine
         // Survival-Modus: Verstrichene Zeit anzeigen statt Countdown
         float displayTime = _isSurvivalMode ? _survivalTimeElapsed : _timer.RemainingTime;
 
-        // Spiel rendern (gecachte Exit-Zelle übergeben für Performance)
+        // Spiel rendern (gecachte Exit-Zelle + Spezialeffekt-Zellen übergeben für Performance)
         _renderer.Render(canvas, _grid, _player,
             _enemies, _bombs, _explosions, _powerUps,
-            displayTime, _player.Score, _player.Lives, _exitCell);
+            displayTime, _player.Score, _player.Lives, _exitCell, _specialEffectCells);
 
         // Partikel rendern (über dem Spielfeld, unter den Controls)
         if (_particleSystem.HasActiveParticles)
@@ -212,9 +279,7 @@ public sealed partial class GameEngine
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = _overlayGlowFilter;
 
-        string text = string.Format(_localizationService.GetString("StageOverlay"), _currentLevelNumber);
-
-        canvas.DrawText(text, screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayStageText, screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         // Countdown
         int countdown = (int)MathF.Ceiling(START_DELAY - _stateTimer);
@@ -232,11 +297,11 @@ public sealed partial class GameEngine
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = _overlayGlowFilter;
 
-        canvas.DrawText(_localizationService.GetString("Paused"), screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayPaused, screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         _overlayFont.Size = 24;
         _overlayTextPaint.MaskFilter = null;
-        canvas.DrawText(_localizationService.GetString("TapToResume"), screenWidth / 2, screenHeight / 2 + 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayTapToResume, screenWidth / 2, screenHeight / 2 + 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
     }
 
     private void RenderLevelCompleteOverlay(SKCanvas canvas, float screenWidth, float screenHeight)
@@ -272,7 +337,7 @@ public sealed partial class GameEngine
         _overlayTextPaint.Color = SKColors.Green;
         _overlayTextPaint.MaskFilter = _overlayGlowFilterLarge;
 
-        canvas.DrawText(_localizationService.GetString("LevelComplete"), screenWidth / 2, screenHeight / 2 - 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayLevelComplete, screenWidth / 2, screenHeight / 2 - 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         // Erster Sieg: Extra goldener Text über "Level Complete"
         if (_isFirstVictory)
@@ -283,20 +348,18 @@ public sealed partial class GameEngine
             canvas.Save();
             canvas.Translate(screenWidth / 2, screenHeight / 2 - 100);
             canvas.Scale(victoryPulse);
-            string firstVictoryText = _localizationService.GetString("FirstVictory") ?? "FIRST VICTORY!";
-            canvas.DrawText(firstVictoryText, 0, 0, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+            canvas.DrawText(_overlayFirstVictory, 0, 0, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
             canvas.Restore();
         }
 
         _overlayTextPaint.Color = SKColors.Yellow;
         _overlayTextPaint.MaskFilter = null;
         _overlayFont.Size = 32;
-        canvas.DrawText(string.Format(_localizationService.GetString("ScoreFormat"), _player.Score), screenWidth / 2, screenHeight / 2 + 20, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayScoreText, screenWidth / 2, screenHeight / 2 + 20, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         _overlayTextPaint.Color = SKColors.Cyan;
         _overlayFont.Size = 24;
-        // Gecachten TimeBonus verwenden (berechnet in CompleteLevel, nicht neu berechnen)
-        canvas.DrawText(string.Format(_localizationService.GetString("TimeBonusFormat"), LastTimeBonus), screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayTimeBonusText, screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         // Sterne-Anzeige (nur Story-Modus, mit Bounce-Animation)
         if (_levelCompleteStars > 0)
@@ -373,15 +436,15 @@ public sealed partial class GameEngine
         _overlayTextPaint.Color = SKColors.Red;
         _overlayTextPaint.MaskFilter = _overlayGlowFilterLarge;
 
-        canvas.DrawText(_localizationService.GetString("GameOver"), screenWidth / 2, screenHeight / 2 - 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayGameOver, screenWidth / 2, screenHeight / 2 - 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = null;
         _overlayFont.Size = 32;
-        canvas.DrawText(string.Format(_localizationService.GetString("FinalScore"), _player.Score), screenWidth / 2, screenHeight / 2 + 20, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayFinalScoreText, screenWidth / 2, screenHeight / 2 + 20, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         _overlayFont.Size = 24;
-        canvas.DrawText(string.Format(_localizationService.GetString("LevelFormat"), _currentLevelNumber), screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayLevelText, screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
     }
 
     private void RenderVictoryOverlay(SKCanvas canvas, float screenWidth, float screenHeight)
@@ -402,21 +465,17 @@ public sealed partial class GameEngine
         _overlayTextPaint.Color = new SKColor(255, 215, 0); // Gold
         _overlayTextPaint.MaskFilter = _overlayGlowFilterLarge;
 
-        string victoryText = _localizationService.GetString("VictoryTitle");
-        if (string.IsNullOrEmpty(victoryText)) victoryText = "VICTORY!";
-        canvas.DrawText(victoryText, screenWidth / 2, screenHeight / 2 - 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayVictoryTitle, screenWidth / 2, screenHeight / 2 - 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         _overlayFont.Size = 28;
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = null;
 
-        string allComplete = _localizationService.GetString("AllLevelsComplete");
-        if (string.IsNullOrEmpty(allComplete)) allComplete = "All 50 levels complete!";
-        canvas.DrawText(allComplete, screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.DrawText(_overlayAllComplete, screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         _overlayTextPaint.Color = new SKColor(255, 215, 0);
         _overlayFont.Size = 32;
-        canvas.DrawText(string.Format(_localizationService.GetString("FinalScore"), _player.Score),
+        canvas.DrawText(_overlayFinalScoreText,
             screenWidth / 2, screenHeight / 2 + 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
     }
 

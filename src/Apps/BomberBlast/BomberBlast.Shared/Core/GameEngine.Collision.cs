@@ -281,7 +281,9 @@ public sealed partial class GameEngine
                     // Feedback: Spieler steht auf Exit, aber Gegner leben noch (mit Cooldown)
                     if (_defeatAllCooldown <= 0)
                     {
-                        _floatingText.Spawn(_player.X, _player.Y - 16, "DEFEAT ALL!", SKColors.Red, 14f, 1.5f);
+                        _floatingText.Spawn(_player.X, _player.Y - 16,
+                            _localizationService.GetString("FloatDefeatAll") ?? "DEFEAT ALL!",
+                            SKColors.Red, 14f, 1.5f);
                         _defeatAllCooldown = 2f; // Nur alle 2 Sekunden anzeigen
                     }
                 }
@@ -326,24 +328,30 @@ public sealed partial class GameEngine
                             // Boss: HP-Anzeige + stärkerer Shake
                             if (enemy is BossEnemy bossHit)
                             {
+                                var hitBossText = string.Format(
+                                    _localizationService.GetString("FloatHitBoss") ?? "HIT! {0}/{1}",
+                                    bossHit.HitPoints, bossHit.MaxHitPoints);
                                 _floatingText.Spawn(enemy.X, enemy.Y - 16,
-                                    $"HIT! {bossHit.HitPoints}/{bossHit.MaxHitPoints}",
+                                    hitBossText,
                                     new SKColor(255, 100, 50), 16f, 1.2f);
                                 _screenShake.Trigger(3f, 0.2f);
                                     _vibration.VibrateMedium();
 
-                                // Enrage-Warnung bei 50% HP
-                                if (bossHit.IsEnraged && bossHit.HitPoints == bossHit.MaxHitPoints / 2)
+                                // Enrage-Warnung bei 50% HP (VOR BossEnemy.Update, daher !IsEnraged + HP-Check)
+                                if (!bossHit.IsEnraged && bossHit.HitPoints <= bossHit.MaxHitPoints / 2)
                                 {
                                     _floatingText.Spawn(enemy.X, enemy.Y - 32,
-                                        "ENRAGED!", new SKColor(255, 0, 0), 18f, 1.5f);
+                                        _localizationService.GetString("FloatEnraged") ?? "ENRAGED!",
+                                        new SKColor(255, 0, 0), 18f, 1.5f);
                                     _particleSystem.Emit(enemy.X, enemy.Y, 12,
                                         new SKColor(255, 50, 0), 100f, 0.6f);
                                 }
                             }
                             else
                             {
-                                _floatingText.Spawn(enemy.X, enemy.Y - 12, "HIT!", new SKColor(255, 200, 50), 14f, 1.0f);
+                                _floatingText.Spawn(enemy.X, enemy.Y - 12,
+                                    _localizationService.GetString("FloatHit") ?? "HIT!",
+                                    new SKColor(255, 200, 50), 14f, 1.0f);
                                 _screenShake.Trigger(2f, 0.15f);
                             }
                         }
@@ -397,7 +405,8 @@ public sealed partial class GameEngine
         // Boss-Tod: Extra Celebration
         if (enemy is BossEnemy deadBoss)
         {
-            _floatingText.Spawn(enemy.X, enemy.Y, $"BOSS DEFEATED! +{points}",
+            _floatingText.Spawn(enemy.X, enemy.Y,
+                string.Format(_localizationService.GetString("FloatBossDefeated") ?? "BOSS DEFEATED! +{0}", points),
                 new SKColor(255, 215, 0), 20f, 2.0f);
             _screenShake.Trigger(6f, 0.4f);
             _particleSystem.EmitShaped(enemy.X, enemy.Y, 24, new SKColor(255, 215, 0),
@@ -460,7 +469,8 @@ public sealed partial class GameEngine
             SKColor comboColor;
             if (isChainKill)
             {
-                comboText = $"CHAIN x{_comboCount}!";
+                comboText = string.Format(
+                    _localizationService.GetString("FloatChain") ?? "CHAIN x{0}!", _comboCount);
                 comboColor = new SKColor(255, 200, 0); // Gold für Chain-Kills
             }
             else
@@ -468,7 +478,9 @@ public sealed partial class GameEngine
                 comboText = $"x{_comboCount}!";
                 comboColor = new SKColor(255, 150, 0); // Orange für niedrige Combos
             }
-            if (_comboCount >= 5) comboText = $"MEGA x{_comboCount}!";
+            if (_comboCount >= 5)
+                comboText = string.Format(
+                    _localizationService.GetString("FloatMega") ?? "MEGA x{0}!", _comboCount);
             if (_comboCount >= 4) comboColor = new SKColor(255, 50, 0); // Rot für hohe Combos
 
             _floatingText.Spawn(enemy.X, enemy.Y - 12, comboText, comboColor, 18f, 1.5f);
@@ -554,20 +566,20 @@ public sealed partial class GameEngine
     // POWERUP FLOATING TEXT HELPER
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static string GetPowerUpShortName(PowerUpType type) => type switch
+    private string GetPowerUpShortName(PowerUpType type) => type switch
     {
-        PowerUpType.BombUp => "+BOMB",
-        PowerUpType.Fire => "+FIRE",
-        PowerUpType.Speed => "+SPEED",
-        PowerUpType.Wallpass => "+WALL",
-        PowerUpType.Detonator => "+DET",
-        PowerUpType.Bombpass => "+BPASS",
-        PowerUpType.Flamepass => "+FLAME",
-        PowerUpType.Mystery => "+INVINCIBLE",
-        PowerUpType.Kick => "+KICK",
-        PowerUpType.LineBomb => "+LINE",
-        PowerUpType.PowerBomb => "+POWER",
-        PowerUpType.Skull => "CURSED!",
+        PowerUpType.BombUp => _localizationService.GetString("FloatBombUp") ?? "+BOMB",
+        PowerUpType.Fire => _localizationService.GetString("FloatFireUp") ?? "+FIRE",
+        PowerUpType.Speed => _localizationService.GetString("FloatSpeedUp") ?? "+SPEED",
+        PowerUpType.Wallpass => _localizationService.GetString("FloatWallpass") ?? "+WALL",
+        PowerUpType.Detonator => _localizationService.GetString("FloatDetonator") ?? "+DET",
+        PowerUpType.Bombpass => _localizationService.GetString("FloatBombpass") ?? "+BPASS",
+        PowerUpType.Flamepass => _localizationService.GetString("FloatFlamepass") ?? "+FLAME",
+        PowerUpType.Mystery => _localizationService.GetString("FloatInvincible") ?? "+INVINCIBLE",
+        PowerUpType.Kick => _localizationService.GetString("FloatKick") ?? "+KICK",
+        PowerUpType.LineBomb => _localizationService.GetString("FloatLineBomb") ?? "+LINE",
+        PowerUpType.PowerBomb => _localizationService.GetString("FloatPowerBomb") ?? "+POWER",
+        PowerUpType.Skull => _localizationService.GetString("FloatCursed") ?? "CURSED!",
         _ => "+???"
     };
 

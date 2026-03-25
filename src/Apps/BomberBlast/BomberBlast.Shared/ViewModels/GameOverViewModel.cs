@@ -13,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// Zeigt Score, Coins, Verdopplungs- und Continue-Option.
 /// Bei Level-Complete: Score-Aufschlüsselung und Sterne.
 /// </summary>
-public sealed partial class GameOverViewModel : ViewModelBase, INavigable
+public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly IPurchaseService _purchaseService;
     private readonly ILocalizationService _localizationService;
@@ -33,6 +33,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable
 
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action? CelebrationRequested;
 
     /// <summary>Bestätigungsdialog anfordern (Titel, Nachricht, Akzeptieren, Abbrechen)</summary>
     public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
@@ -238,10 +239,15 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable
             LevelText = string.Format(
                 _localizationService.GetString("SurvivalKills") ?? "Kills: {0}",
                 survivalKills);
+
+            // Meilenstein-Text aufbauen (höchster erreichter Meilenstein)
+            BuildSurvivalMilestoneText(survivalTime);
         }
         else
         {
             HasSurvivalStats = false;
+            HasSurvivalMilestone = false;
+            SurvivalMilestoneText = "";
             LevelText = string.Format(_localizationService.GetString("LevelFormat"), level);
         }
 
@@ -534,6 +540,14 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable
     [ObservableProperty]
     private bool _hasSurvivalStats;
 
+    /// <summary>Text für erreichte Survival-Meilensteine (z.B. "120s: +1500 Coins +3 Gems")</summary>
+    [ObservableProperty]
+    private string _survivalMilestoneText = "";
+
+    /// <summary>Ob Meilenstein-Text angezeigt werden soll</summary>
+    [ObservableProperty]
+    private bool _hasSurvivalMilestone;
+
     /// <summary>
     /// Verdiente Coins dem CoinService gutschreiben (nur einmal pro Session)
     /// </summary>
@@ -551,6 +565,40 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable
             _weeklyService.TrackProgress(Models.WeeklyMissionType.EarnCoins, CoinsEarned);
             _dailyMissionService.TrackProgress(Models.WeeklyMissionType.EarnCoins, CoinsEarned);
         }
+    }
+
+    /// <summary>Baut den Meilenstein-Text für Survival auf (höchster erreichter)</summary>
+    private void BuildSurvivalMilestoneText(float survivalTime)
+    {
+        // Meilensteine: 60s, 120s, 180s, 300s
+        (int seconds, string label)? bestMilestone = null;
+
+        if (survivalTime >= 300) bestMilestone = (300, "5:00");
+        else if (survivalTime >= 180) bestMilestone = (180, "3:00");
+        else if (survivalTime >= 120) bestMilestone = (120, "2:00");
+        else if (survivalTime >= 60) bestMilestone = (60, "1:00");
+
+        if (bestMilestone == null)
+        {
+            HasSurvivalMilestone = false;
+            SurvivalMilestoneText = "";
+            return;
+        }
+
+        var format = _localizationService.GetString("SurvivalMilestoneReward") ?? "{0}s survived: +{1}";
+        // Belohnungs-Text (Coins + ggf. Gems)
+        var (sec, label) = bestMilestone.Value;
+        string reward = sec switch
+        {
+            60 => "500 Coins",
+            120 => "1,500 Coins + 3 Gems",
+            180 => "3,000 Coins + 5 Gems",
+            300 => "5,000 Coins + 10 Gems",
+            _ => ""
+        };
+
+        SurvivalMilestoneText = string.Format(format, label, reward);
+        HasSurvivalMilestone = true;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

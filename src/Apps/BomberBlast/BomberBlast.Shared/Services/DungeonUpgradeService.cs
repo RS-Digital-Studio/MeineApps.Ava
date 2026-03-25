@@ -75,9 +75,24 @@ public sealed class DungeonUpgradeService : IDungeonUpgradeService
         return true;
     }
 
+    /// <summary>Ob der Dungeon Master Pass aktiv ist (permanenter 2x DC-Boost)</summary>
+    public bool HasDungeonMasterPass
+    {
+        get => _data.HasDungeonMasterPass;
+        set
+        {
+            if (_data.HasDungeonMasterPass == value) return;
+            _data.HasDungeonMasterPass = value;
+            Save();
+        }
+    }
+
     public void AddDungeonCoins(int amount)
     {
         if (amount <= 0) return;
+        // Dungeon Master Pass: Permanenter 2x-Multiplikator
+        if (_data.HasDungeonMasterPass)
+            amount *= 2;
         _data.DungeonCoins += amount;
         Save();
         BalanceChanged?.Invoke();
@@ -133,4 +148,6 @@ public class DungeonUpgradeData
 {
     public int DungeonCoins { get; set; }
     public List<DungeonUpgradeState> Upgrades { get; set; } = [];
+    /// <summary>Dungeon Master Pass (permanenter 2x DC-Boost, IAP)</summary>
+    public bool HasDungeonMasterPass { get; set; }
 }

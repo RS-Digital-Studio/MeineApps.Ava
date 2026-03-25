@@ -77,18 +77,23 @@ public partial class App : Application
         // Statischer Accessor für AI-Asset-Renderer (statische Klassen ohne DI)
         GameAssetService.Current = Services.GetRequiredService<IGameAssetService>();
 
-        // Lazy-Injection: AchievementService in Services verdrahten (vermeidet zirkuläre DI)
+        // Lazy-Injection: AchievementService in Concrete-Services verdrahten (vermeidet zirkuläre DI)
         var achievementService = Services.GetRequiredService<IAchievementService>();
-        Services.GetRequiredService<IBattlePassService>().SetAchievementService(achievementService);
-        Services.GetRequiredService<ICardService>().SetAchievementService(achievementService);
-        Services.GetRequiredService<ILeagueService>().SetAchievementService(achievementService);
-        Services.GetRequiredService<IDailyMissionService>().SetAchievementService(achievementService);
+        var cardSvc = Services.GetRequiredService<ICardService>() as CardService;
+        if (Services.GetRequiredService<IBattlePassService>() is BattlePassService battlePassSvc)
+            battlePassSvc.SetAchievementService(achievementService);
+        cardSvc?.SetAchievementService(achievementService);
+        if (Services.GetRequiredService<ILeagueService>() is LeagueService leagueSvc)
+            leagueSvc.SetAchievementService(achievementService);
+        if (Services.GetRequiredService<IDailyMissionService>() is DailyMissionService dailyMissionSvc)
+            dailyMissionSvc.SetAchievementService(achievementService);
 
-        // Lazy-Injection: Mission-Services in GemService + CardService verdrahten (Phase 9.4)
+        // Lazy-Injection: Mission-Services in GemService + CardService verdrahten
         var weeklyService = Services.GetRequiredService<IWeeklyChallengeService>();
         var dailyMissionService = Services.GetRequiredService<IDailyMissionService>();
-        Services.GetRequiredService<IGemService>().SetMissionServices(weeklyService, dailyMissionService);
-        Services.GetRequiredService<ICardService>().SetMissionServices(weeklyService, dailyMissionService);
+        if (Services.GetRequiredService<IGemService>() is GemService gemSvcImpl)
+            gemSvcImpl.SetMissionServices(weeklyService, dailyMissionService);
+        cardSvc?.SetMissionServices(weeklyService, dailyMissionService);
 
         // Lazy-Injection: CustomizationService braucht IGemService für Gem-Skins
         var gemService = Services.GetRequiredService<IGemService>();
@@ -159,8 +164,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
-            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 800ms anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 800 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();

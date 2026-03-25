@@ -60,8 +60,12 @@ public sealed partial class GameRenderer
 
             _textPaint.Color = new SKColor(255, 80, 50); // Rot für Kills
             _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-            string killStr = SurvivalKills.ToString();
-            canvas.DrawText(killStr, cx, cy, SKTextAlign.Center, _hudFontLarge, _textPaint);
+            if (SurvivalKills != _lastSurvivalKills)
+            {
+                _lastSurvivalKills = SurvivalKills;
+                _lastSurvivalKillsString = SurvivalKills.ToString();
+            }
+            canvas.DrawText(_lastSurvivalKillsString, cx, cy, SKTextAlign.Center, _hudFontLarge, _textPaint);
             _textPaint.MaskFilter = null;
             cy += 20;
 
@@ -146,10 +150,9 @@ public sealed partial class GameRenderer
             }
             _textPaint.Color = comboColor;
             _textPaint.MaskFilter = isNeon ? _hudTextGlow : _hudComboBlur;
-            float originalFontSize = _hudFontMedium.Size;
-            _hudFontMedium.Size = originalFontSize * comboScale;
-            canvas.DrawText(_lastComboString, cx, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
-            _hudFontMedium.Size = originalFontSize;
+            // Separater Combo-Font (vermeidet SKFont.Size-Mutation auf _hudFontMedium pro Frame)
+            _hudFontCombo.Size = _hudFontMedium.Size * comboScale;
+            canvas.DrawText(_lastComboString, cx, cy, SKTextAlign.Center, _hudFontCombo, _textPaint);
             _textPaint.MaskFilter = null;
             cy += 16;
 
@@ -551,11 +554,16 @@ public sealed partial class GameRenderer
                 canvas.DrawCircle(iconCx, iconCy, 5, _fillPaint);
             }
 
-            // Verbleibende Uses
+            // Verbleibende Uses (gecacht, vermeidet ToString() pro Frame pro Karte)
+            if (card.RemainingUses != _lastRemainingUses[i])
+            {
+                _lastRemainingUses[i] = card.RemainingUses;
+                _lastRemainingUsesStr[i] = card.RemainingUses.ToString();
+            }
             _textPaint.Color = card.HasUsesLeft
                 ? (isActive ? SKColors.White : new SKColor(200, 200, 200))
                 : new SKColor(80, 80, 80);
-            canvas.DrawText(card.RemainingUses.ToString(), iconCx,
+            canvas.DrawText(_lastRemainingUsesStr[i], iconCx,
                 startY + CARD_SLOT_SIZE - 2, SKTextAlign.Center, _hudFontSmall, _textPaint);
 
             // Aktiver Slot: Pulsierender Glow-Rand

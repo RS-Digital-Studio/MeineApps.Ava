@@ -43,6 +43,9 @@ public class Level
     /// <summary>Welcher Boss in diesem Level spawnt (null = kein Boss)</summary>
     public BossType? BossKind { get; set; }
 
+    /// <summary>Zweiter Boss für Duo-Encounter (Welt 9+10, null = Einzel-Boss)</summary>
+    public BossType? BossKind2 { get; set; }
+
     /// <summary>Background music track</summary>
     public string MusicTrack { get; set; } = "gameplay";
 
@@ -51,6 +54,9 @@ public class Level
 
     /// <summary>Vorgefertigtes Layout-Pattern (null = klassisches Random)</summary>
     public LevelLayout? Layout { get; set; }
+
+    /// <summary>Aktiver Mutator für dieses Level (ab Welt 6, alle 5 Level die kein Boss/Bonus sind)</summary>
+    public LevelMutator Mutator { get; set; } = LevelMutator.None;
 }
 
 /// <summary>
@@ -153,4 +159,24 @@ public class PowerUpPlacement
     public PowerUpType Type { get; set; }
     public int? X { get; set; }
     public int? Y { get; set; }
+}
+
+/// <summary>
+/// Mutator-Regeln die ein Level modifizieren (ab Welt 6, alle paar Level).
+/// Werden in GameEngine.InitLevel() angewendet.
+/// </summary>
+public enum LevelMutator
+{
+    /// <summary>Kein Mutator (Standard)</summary>
+    None,
+    /// <summary>Jede Bombe ist eine PowerBomb (Range = Fire + MaxBombs - 1)</summary>
+    AllPowerBombs,
+    /// <summary>Alle Entitäten bewegen sich mit doppelter Geschwindigkeit</summary>
+    DoubleSpeed,
+    /// <summary>Zerstörbare Blöcke sind unsichtbar bis man in sie läuft oder sie sprengt</summary>
+    InvisibleBlocks,
+    /// <summary>Kein Zeitlimit (Pontan spawnt nie)</summary>
+    NoTimer,
+    /// <summary>Steuerung ist gespiegelt (Links=Rechts, Oben=Unten)</summary>
+    MirrorControls
 }

@@ -4419,6 +4419,8 @@ namespace BomberBlast.Resources.Strings {
 
         internal static string DealGemPack => ResourceManager.GetString("DealGemPack", resourceCulture)!;
 
+        internal static string DealLargeCoinPack => ResourceManager.GetString("DealLargeCoinPack", resourceCulture)!;
+
         internal static string DealMegaCoinPack => ResourceManager.GetString("DealMegaCoinPack", resourceCulture)!;
 
         internal static string DealMegaGemPack => ResourceManager.GetString("DealMegaGemPack", resourceCulture)!;
@@ -4935,6 +4937,53 @@ namespace BomberBlast.Resources.Strings {
         internal static string DungeonUpgradesTitle => ResourceManager.GetString("DungeonUpgradesTitle", resourceCulture)!;
 
         internal static string DungeonSelectNode => ResourceManager.GetString("DungeonSelectNode", resourceCulture)!;
+
+        // Battle Pass Premium (Gem-Alternative)
+        internal static string BattlePassUpgradeGems => ResourceManager.GetString("BattlePassUpgradeGems", resourceCulture)!;
+
+        internal static string BattlePassPremiumActivated => ResourceManager.GetString("BattlePassPremiumActivated", resourceCulture)!;
+
+        // Survival-Meilensteine
+        internal static string SurvivalMilestone => ResourceManager.GetString("SurvivalMilestone", resourceCulture)!;
+
+        internal static string SurvivalMilestoneReward => ResourceManager.GetString("SurvivalMilestoneReward", resourceCulture)!;
+
+        // Feature-Freischaltung
+        internal static string FeatureUnlocked => ResourceManager.GetString("FeatureUnlocked", resourceCulture)!;
+
+        internal static string FeatureUnlockedDesc => ResourceManager.GetString("FeatureUnlockedDesc", resourceCulture)!;
+
+        // Challenge a Friend
+        internal static string ChallengeAFriend => ResourceManager.GetString("ChallengeAFriend", resourceCulture)!;
+
+        internal static string ChallengeShareText => ResourceManager.GetString("ChallengeShareText", resourceCulture)!;
+
+        internal static string ChallengeResult => ResourceManager.GetString("ChallengeResult", resourceCulture)!;
+
+        internal static string ChallengeShared => ResourceManager.GetString("ChallengeShared", resourceCulture)!;
+
+        // Mutatoren
+        internal static string MutatorActive => ResourceManager.GetString("MutatorActive", resourceCulture)!;
+
+        internal static string MutatorAllPowerBombs => ResourceManager.GetString("MutatorAllPowerBombs", resourceCulture)!;
+
+        internal static string MutatorDoubleSpeed => ResourceManager.GetString("MutatorDoubleSpeed", resourceCulture)!;
+
+        internal static string MutatorInvisibleWalls => ResourceManager.GetString("MutatorInvisibleWalls", resourceCulture)!;
+
+        internal static string MutatorNoTimer => ResourceManager.GetString("MutatorNoTimer", resourceCulture)!;
+
+        internal static string MutatorMirrorControls => ResourceManager.GetString("MutatorMirrorControls", resourceCulture)!;
+
+        // Dungeon Master Pass
+        internal static string DungeonMasterPass => ResourceManager.GetString("DungeonMasterPass", resourceCulture)!;
+
+        internal static string DungeonMasterPassDesc => ResourceManager.GetString("DungeonMasterPassDesc", resourceCulture)!;
+
+        // Gem Shop (Mega-Paket)
+        internal static string GemPackMega => ResourceManager.GetString("GemPackMega", resourceCulture)!;
+
+        internal static string GemPackWhale => ResourceManager.GetString("GemPackWhale", resourceCulture)!;
 
     }
 }

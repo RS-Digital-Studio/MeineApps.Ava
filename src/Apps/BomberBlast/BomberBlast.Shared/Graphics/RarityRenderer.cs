@@ -40,6 +40,9 @@ public static class RarityRenderer
     private static readonly SKMaskFilter GlowBlur8 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
     private static readonly SKMaskFilter ShimmerBlur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
 
+    // Gecachter Font für Badge-Text (vermeidet pro-Aufruf SKFont-Allokation)
+    private static readonly SKFont BadgeFont = new();
+
     /// <summary>
     /// Statische Felder vorinitialisieren (SKPaint).
     /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Render zu vermeiden.
@@ -182,15 +185,11 @@ public static class RarityRenderer
             _ => 15
         };
 
-        FillPaint.Shader?.Dispose();
-        FillPaint.Shader = SKShader.CreateLinearGradient(
-            new SKPoint(rect.Left, rect.MidY),
-            new SKPoint(rect.Right, rect.MidY),
-            new[] { color.WithAlpha(bgAlpha), color.WithAlpha(0) },
-            SKShaderTileMode.Clamp);
-
-        canvas.DrawRoundRect(rect, 4f, 4f, FillPaint);
+        // Solid Color statt Shader (bei Alpha 15-35 kaum sichtbarer Gradient-Unterschied,
+        // spart native SKShader-Allokation pro Aufruf)
         FillPaint.Shader = null;
+        FillPaint.Color = color.WithAlpha(bgAlpha);
+        canvas.DrawRoundRect(rect, 4f, 4f, FillPaint);
     }
 
     /// <summary>
@@ -216,14 +215,14 @@ public static class RarityRenderer
             _ => "?"
         };
 
-        using var font = new SKFont { Size = size * 0.65f };
+        BadgeFont.Size = size * 0.65f;
         BorderPaint.Color = rarity == Rarity.Common ? SKColors.Black : SKColors.White;
         BorderPaint.Style = SKPaintStyle.Fill;
         BorderPaint.StrokeWidth = 0;
 
         var textBounds = new SKRect();
-        font.MeasureText(letter, out textBounds);
-        canvas.DrawText(letter, x - textBounds.MidX, y - textBounds.MidY, font, BorderPaint);
+        BadgeFont.MeasureText(letter, out textBounds);
+        canvas.DrawText(letter, x - textBounds.MidX, y - textBounds.MidY, BadgeFont, BorderPaint);
 
         // Paint zurücksetzen
         BorderPaint.Style = SKPaintStyle.Stroke;

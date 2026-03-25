@@ -99,7 +99,7 @@ public sealed class DailyChallengeService : IDailyChallengeService
 
         try
         {
-            var lastDate = DateTime.ParseExact(_data.LastPlayDate, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var lastDate = DateTime.ParseExact(_data.LastPlayDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None);
             var daysDiff = (DateTime.UtcNow.Date - lastDate).Days;
             return daysDiff == 1;
         }
@@ -118,7 +118,7 @@ public sealed class DailyChallengeService : IDailyChallengeService
 
         try
         {
-            var lastDate = DateTime.ParseExact(_data.LastPlayDate, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var lastDate = DateTime.ParseExact(_data.LastPlayDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None);
             var daysDiff = (DateTime.UtcNow.Date - lastDate).Days;
 
             // Mehr als 1 Tag verpasst → Streak zurücksetzen

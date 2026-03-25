@@ -130,6 +130,24 @@
                 </StackPanel>
               </StackPanel>
             </Border>
+
+            <!-- Survival-Meilenstein -->
+            <Border AutomationProperties.AutomationId="GameOver_SurvivalMilestone"
+                    IsVisible="{Binding HasSurvivalMilestone}"
+                    Background="#25FFD700"
+                    CornerRadius="8"
+                    Padding="12,8"
+                    HorizontalAlignment="Center"
+                    BorderBrush="#40FFD700"
+                    BorderThickness="1">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <icons:GameIcon Kind="Trophy" Width="18" Height="18"
+                                 Foreground="#FFD700" />
+                <TextBlock Text="{Binding SurvivalMilestoneText}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="#FFD700" />
+              </StackPanel>
+            </Border>
           </StackPanel>
 
           <!-- High Score Badge -->

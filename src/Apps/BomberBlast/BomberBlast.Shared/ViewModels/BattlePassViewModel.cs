@@ -17,6 +17,8 @@ public sealed partial class BattlePassViewModel : ViewModelBase, INavigable, IGa
     private readonly ILocalizationService _localizationService;
     private readonly IGemService _gemService;
 
+    private const int PREMIUM_GEM_COST = 150;
+
     // Gecachte Tier-Definitionen (statisch, ändern sich nicht)
     private readonly BattlePassReward[] _freeRewards;
     private readonly BattlePassReward[] _premiumRewards;
@@ -62,6 +64,10 @@ public sealed partial class BattlePassViewModel : ViewModelBase, INavigable, IGa
 
     [ObservableProperty]
     private string _upgradeButtonText = "";
+
+    /// <summary>Text für den Gem-basierten Upgrade-Button (z.B. "oder 150 Gems")</summary>
+    [ObservableProperty]
+    private string _upgradeWithGemsText = "";
 
     [ObservableProperty]
     private List<BattlePassTierDisplayItem> _tiers = [];
@@ -118,6 +124,8 @@ public sealed partial class BattlePassViewModel : ViewModelBase, INavigable, IGa
         Title = _localizationService.GetString("BattlePassTitle") ?? "Battle Pass";
         TierLabel = _localizationService.GetString("BattlePassTierLabel") ?? "Tier";
         UpgradeButtonText = _localizationService.GetString("BattlePassUpgrade") ?? "Premium (2,99 EUR)";
+        var gemsFormat = _localizationService.GetString("BattlePassUpgradeGems") ?? "or {0} Gems";
+        UpgradeWithGemsText = string.Format(gemsFormat, PREMIUM_GEM_COST);
 
         var data = _battlePassService.Data;
 
@@ -238,6 +246,33 @@ public sealed partial class BattlePassViewModel : ViewModelBase, INavigable, IGa
     {
         if (IsPremiumPass) return;
         PremiumPurchaseRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// Battle Pass Premium mit Gems kaufen (Alternative zum IAP).
+    /// 150 Gems = Premium-Pass für die aktuelle Saison.
+    /// </summary>
+    [RelayCommand]
+    private void UpgradeWithGems()
+    {
+        if (IsPremiumPass) return;
+
+        if (!_gemService.CanAfford(PREMIUM_GEM_COST))
+        {
+            var noGems = _localizationService.GetString("ShopNotEnoughGems") ?? "Not enough Gems!";
+            FloatingTextRequested?.Invoke(noGems, "red");
+            return;
+        }
+
+        if (!_gemService.TrySpendGems(PREMIUM_GEM_COST)) return;
+
+        _battlePassService.ActivatePremium();
+        RefreshState();
+        UpdateLocalizedTexts();
+
+        var premiumText = _localizationService.GetString("BattlePassPremiumActivated") ?? "Premium activated!";
+        FloatingTextRequested?.Invoke(premiumText, "gold");
+        CelebrationRequested?.Invoke();
     }
 
     /// <summary>

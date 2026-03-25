@@ -3076,6 +3076,9 @@
   <data name="DealGemPack" xml:space="preserve">
     <value>Pack de gemas</value>
   </data>
+  <data name="DealLargeCoinPack" xml:space="preserve">
+    <value>Gran pack de monedas</value>
+  </data>
   <data name="DealCardPack" xml:space="preserve">
     <value>Carta rara</value>
   </data>
@@ -3303,5 +3306,161 @@
   </data>
   <data name="SplashStep_Starting" xml:space="preserve">
     <value>Iniciando juego</value>
+  </data>
+
+  <!-- Floating-Texte / Ankündigungen (GameEngine) -->
+  <data name="FloatDefeatAll" xml:space="preserve">
+    <value>DERROTA A TODOS!</value>
+  </data>
+  <data name="FloatHitBoss" xml:space="preserve">
+    <value>GOLPE! {0}/{1}</value>
+  </data>
+  <data name="FloatEnraged" xml:space="preserve">
+    <value>ENFURECIDO!</value>
+  </data>
+  <data name="FloatHit" xml:space="preserve">
+    <value>GOLPE!</value>
+  </data>
+  <data name="FloatBossDefeated" xml:space="preserve">
+    <value>JEFE DERROTADO! +{0}</value>
+  </data>
+  <data name="FloatChain" xml:space="preserve">
+    <value>CADENA x{0}!</value>
+  </data>
+  <data name="FloatMega" xml:space="preserve">
+    <value>MEGA x{0}!</value>
+  </data>
+  <data name="FloatCursed" xml:space="preserve">
+    <value>MALDITO!</value>
+  </data>
+  <data name="FloatBombUp" xml:space="preserve">
+    <value>+BOMBA</value>
+  </data>
+  <data name="FloatFireUp" xml:space="preserve">
+    <value>+FUEGO</value>
+  </data>
+  <data name="FloatSpeedUp" xml:space="preserve">
+    <value>+VELOZ</value>
+  </data>
+  <data name="FloatWallpass" xml:space="preserve">
+    <value>+MURO</value>
+  </data>
+  <data name="FloatDetonator" xml:space="preserve">
+    <value>+DET</value>
+  </data>
+  <data name="FloatBombpass" xml:space="preserve">
+    <value>+BPASO</value>
+  </data>
+  <data name="FloatFlamepass" xml:space="preserve">
+    <value>+LLAMA</value>
+  </data>
+  <data name="FloatInvincible" xml:space="preserve">
+    <value>+INVENCIBLE</value>
+  </data>
+  <data name="FloatKick" xml:space="preserve">
+    <value>+PATADA</value>
+  </data>
+  <data name="FloatLineBomb" xml:space="preserve">
+    <value>+LINEA</value>
+  </data>
+  <data name="FloatPowerBomb" xml:space="preserve">
+    <value>+PODER</value>
+  </data>
+  <data name="AnnounceBossFight" xml:space="preserve">
+    <value>PELEA DE JEFE!</value>
+  </data>
+  <data name="AnnounceWorld" xml:space="preserve">
+    <value>MUNDO {0}</value>
+  </data>
+  <data name="AnnounceFloor" xml:space="preserve">
+    <value>PISO {0}</value>
+  </data>
+  <data name="AnnounceBossFloor" xml:space="preserve">
+    <value>JEFE - PISO {0}</value>
+  </data>
+  <data name="AnnounceElite" xml:space="preserve">
+    <value>ELITE</value>
+  </data>
+  <data name="AnnounceTreasure" xml:space="preserve">
+    <value>TESORO</value>
+  </data>
+  <data name="AnnounceChallenge" xml:space="preserve">
+    <value>DESAFIO</value>
+  </data>
+
+  <!-- Battle Pass -->
+  <data name="BattlePassUpgradeGems" xml:space="preserve">
+    <value>o {0} Gemas</value>
+  </data>
+  <data name="BattlePassPremiumActivated" xml:space="preserve">
+    <value>Premium activado!</value>
+  </data>
+
+  <!-- Survival -->
+  <data name="SurvivalMilestone" xml:space="preserve">
+    <value>Hito de Supervivencia!</value>
+  </data>
+  <data name="SurvivalMilestoneReward" xml:space="preserve">
+    <value>{0}s sobrevividos: +{1}</value>
+  </data>
+
+  <!-- Feature Unlock -->
+  <data name="FeatureUnlocked" xml:space="preserve">
+    <value>Nueva función!</value>
+  </data>
+  <data name="FeatureUnlockedDesc" xml:space="preserve">
+    <value>{0} ya está disponible!</value>
+  </data>
+
+  <!-- Challenge a Friend -->
+  <data name="ChallengeAFriend" xml:space="preserve">
+    <value>Desafiar a un amigo</value>
+  </data>
+  <data name="ChallengeShareText" xml:space="preserve">
+    <value>¿Puedes superar mi puntuación? Juega BomberBlast Semilla: {0} Dificultad: {1} - Mi puntuación: {2}</value>
+  </data>
+  <data name="ChallengeResult" xml:space="preserve">
+    <value>Resultado del desafío</value>
+  </data>
+
+  <!-- Mutatoren -->
+  <data name="MutatorActive" xml:space="preserve">
+    <value>Mutador: {0}</value>
+  </data>
+  <data name="MutatorAllPowerBombs" xml:space="preserve">
+    <value>Todas PowerBombs</value>
+  </data>
+  <data name="MutatorDoubleSpeed" xml:space="preserve">
+    <value>Doble velocidad</value>
+  </data>
+  <data name="MutatorInvisibleWalls" xml:space="preserve">
+    <value>Paredes invisibles</value>
+  </data>
+  <data name="MutatorNoTimer" xml:space="preserve">
+    <value>Sin temporizador</value>
+  </data>
+  <data name="MutatorMirrorControls" xml:space="preserve">
+    <value>Controles espejo</value>
+  </data>
+
+  <!-- Dungeon Master Pass -->
+  <data name="DungeonMasterPass" xml:space="preserve">
+    <value>Dungeon Master Pass</value>
+  </data>
+  <data name="DungeonMasterPassDesc" xml:space="preserve">
+    <value>Permanente 2x monedas de mazmorra</value>
+  </data>
+
+  <!-- Gem Shop Packs -->
+  <data name="GemPackMega" xml:space="preserve">
+    <value>Paquete Mega</value>
+  </data>
+  <data name="GemPackWhale" xml:space="preserve">
+    <value>3,3x Valor!</value>
+  </data>
+
+  <!-- Challenge Sharing -->
+  <data name="ChallengeShared" xml:space="preserve">
+    <value>¡Desafío compartido!</value>
   </data>
 </root>

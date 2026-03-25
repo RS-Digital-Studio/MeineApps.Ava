@@ -1,5 +1,7 @@
+using System.Text.Json;
 using BomberBlast.Models;
 using BomberBlast.Models.Entities;
+using MeineApps.Core.Ava.Services;
 
 namespace BomberBlast.Services;
 
@@ -16,6 +18,22 @@ public sealed class GameTrackingService : IGameTrackingService
     private readonly ILeagueService _league;
     private readonly IBattlePassService _battlePass;
     private readonly IGemService _gems;
+    private readonly ICoinService _coins;
+    private readonly IPreferencesService _preferences;
+
+    // Survival-Meilensteine: Schwelle in Sekunden → (Coins, Gems)
+    private static readonly (int Seconds, int Coins, int Gems)[] SurvivalMilestones =
+    [
+        (60, 500, 0),
+        (120, 1500, 3),
+        (180, 3000, 5),
+        (300, 5000, 10)
+    ];
+
+    private const string SURVIVAL_MILESTONES_KEY = "SurvivalMilestonesReached";
+
+    // Seeded Random für Boss-Gem-Drops (Thread-sicher genug für Single-Thread Game-Loop)
+    private readonly Random _rng = new();
 
     public ICardService Cards { get; }
     public int TotalEnemyKills => _achievements.TotalEnemyKills;
@@ -28,7 +46,9 @@ public sealed class GameTrackingService : IGameTrackingService
         ILeagueService league,
         IBattlePassService battlePass,
         ICardService cards,
-        IGemService gems)
+        IGemService gems,
+        ICoinService coins,
+        IPreferencesService preferences)
     {
         _achievements = achievements;
         _weekly = weekly;
@@ -38,6 +58,8 @@ public sealed class GameTrackingService : IGameTrackingService
         _battlePass = battlePass;
         Cards = cards;
         _gems = gems;
+        _coins = coins;
+        _preferences = preferences;
     }
 
     // --- Bomben ---
@@ -98,6 +120,15 @@ public sealed class GameTrackingService : IGameTrackingService
         _collection.RecordBossDefeat(kind, bossTime);
         _weekly.TrackProgress(WeeklyMissionType.WinBossFights);
         _daily.TrackProgress(WeeklyMissionType.WinBossFights);
+
+        // Boss-Kill Gem-Drop: 50% Chance auf 2-3 Gems
+        if (_rng.Next(2) == 0)
+        {
+            int gemDrop = _rng.Next(2, 4); // 2 oder 3
+            _gems.AddGems(gemDrop);
+            _weekly.TrackProgress(WeeklyMissionType.EarnGems, gemDrop);
+            _daily.TrackProgress(WeeklyMissionType.EarnGems, gemDrop);
+        }
     }
 
     public void OnBossEncountered(BossType bossType) => _collection.RecordBossEncounter(bossType);
@@ -172,6 +203,46 @@ public sealed class GameTrackingService : IGameTrackingService
         _achievements.OnSurvivalKillsReached(enemiesKilled);
         if (timeElapsed >= 60f)
             _battlePass.AddXp(100, "survival_60s");
+
+        // Survival-Meilensteine: Coins + Gems bei erreichten Schwellen
+        var reached = GetReachedMilestones();
+        foreach (var (seconds, coins, gems) in SurvivalMilestones)
+        {
+            if (timeElapsed < seconds) break;
+
+            bool isFirstTime = !reached.Contains(seconds);
+            int awardedCoins = isFirstTime ? coins : coins / 5; // Erstmalig voll, danach 20%
+            int awardedGems = isFirstTime ? gems : 0; // Gems nur beim ersten Mal
+
+            if (awardedCoins > 0)
+                _coins.AddCoins(awardedCoins);
+            if (awardedGems > 0)
+            {
+                _gems.AddGems(awardedGems);
+                _weekly.TrackProgress(WeeklyMissionType.EarnGems, awardedGems);
+                _daily.TrackProgress(WeeklyMissionType.EarnGems, awardedGems);
+            }
+
+            if (isFirstTime)
+                reached.Add(seconds);
+
+        }
+
+        SaveReachedMilestones(reached);
+    }
+
+    /// <summary>Geladene Survival-Meilensteine aus Preferences</summary>
+    private HashSet<int> GetReachedMilestones()
+    {
+        var json = _preferences.Get(SURVIVAL_MILESTONES_KEY, "");
+        if (string.IsNullOrEmpty(json)) return [];
+        try { return JsonSerializer.Deserialize<HashSet<int>>(json) ?? []; }
+        catch { return []; }
+    }
+
+    private void SaveReachedMilestones(HashSet<int> reached)
+    {
+        _preferences.Set(SURVIVAL_MILESTONES_KEY, JsonSerializer.Serialize(reached));
     }
 
     // --- Gems ---
@@ -182,6 +253,14 @@ public sealed class GameTrackingService : IGameTrackingService
         _gems.AddGems(5);
         _weekly.TrackProgress(WeeklyMissionType.EarnGems, 5);
         _daily.TrackProgress(WeeklyMissionType.EarnGems, 5);
+    }
+
+    public void OnFirstThreeStars()
+    {
+        // 1 Gem bei erstmaligem 3-Sterne-Abschluss (nachhaltige Gem-Quelle, ~1G pro perfektes Level)
+        _gems.AddGems(1);
+        _weekly.TrackProgress(WeeklyMissionType.EarnGems, 1);
+        _daily.TrackProgress(WeeklyMissionType.EarnGems, 1);
     }
 
     // --- Persistenz ---

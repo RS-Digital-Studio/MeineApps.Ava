@@ -2,6 +2,7 @@ using BomberBlast.Models;
 using BomberBlast.Models.Cosmetics;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
+using BomberBlast.Models.Levels;
 using BomberBlast.Services;
 using SkiaSharp;
 
@@ -38,6 +39,11 @@ public sealed partial class GameRenderer : IDisposable
     public bool IsSurvivalMode { get; set; }
     public int SurvivalKills { get; set; }
     public int EnemiesRemaining { get; set; }
+
+    // Mutator-Daten (gesetzt von GameEngine vor jedem Render)
+    public LevelMutator ActiveMutator { get; set; }
+    public int PlayerGridX { get; set; }
+    public int PlayerGridY { get; set; }
 
     // Dungeon-Buffs (gesetzt von GameEngine vor jedem Render im Dungeon-Modus)
     public bool IsDungeonRun { get; set; }
@@ -504,6 +510,7 @@ public sealed partial class GameRenderer : IDisposable
     private readonly SKPaint _textPaint = new() { Color = SKColors.White, IsAntialias = true };
     private readonly SKFont _hudFontLarge = new(SKTypeface.FromFamilyName("monospace", SKFontStyle.Bold), 22);
     private readonly SKFont _hudFontMedium = new(SKTypeface.FromFamilyName("monospace", SKFontStyle.Bold), 16);
+    private readonly SKFont _hudFontCombo = new(SKTypeface.FromFamilyName("monospace", SKFontStyle.Bold), 16);
     private readonly SKFont _hudFontSmall = new(SKTypeface.FromFamilyName("monospace"), 13);
     private readonly SKFont _powerUpFont = new() { Size = 14, Embolden = true };
     private readonly SKPath _fusePath = new();
@@ -536,6 +543,8 @@ public sealed partial class GameRenderer : IDisposable
     private int _lastSurvivalMins = -1;
     private int _lastSurvivalSecs = -1;
     private string _lastSurvivalTimeString = "";
+    private int _lastSurvivalKills = -1;
+    private string _lastSurvivalKillsString = "";
     private int _lastComboCount = -1;
     private string _lastComboString = "";
     private int _lastEnemiesRemaining = -1;
@@ -545,6 +554,9 @@ public sealed partial class GameRenderer : IDisposable
     private int _lastCurseTimer = -1;
     private CurseType _lastCurseType = (CurseType)(-1);
     private string _lastCurseString = "";
+    // Gecachte RemainingUses-Strings pro Kartenslot (vermeidet Int.ToString() pro Frame pro Karte)
+    private readonly int[] _lastRemainingUses = { -1, -1, -1, -1, -1 };
+    private readonly string[] _lastRemainingUsesStr = { "", "", "", "", "" };
     // Gecachter Blur-Filter für Combo-/Card-Glow im HUD (statt pro-Frame CreateBlur)
     private readonly SKMaskFilter _hudComboBlur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
 
@@ -678,7 +690,8 @@ public sealed partial class GameRenderer : IDisposable
     public void Render(SKCanvas canvas, GameGrid grid, Player player,
         List<Enemy> enemies, List<Bomb> bombs,
         List<Explosion> explosions, List<PowerUp> powerUps,
-        float remainingTime, int score, int lives, Cell? exitCell = null)
+        float remainingTime, int score, int lives, Cell? exitCell = null,
+        List<Cell>? specialEffectCells = null)
     {
         // Rainbow-Explosion: Farben nur alle 3 Frames aktualisieren (HSL-Berechnung sparen)
         if (_customizationService.ExplosionSkin.Id == "expl_rainbow")
@@ -763,7 +776,7 @@ public sealed partial class GameRenderer : IDisposable
         if (!ReducedEffects)
         {
             _dynamicLighting.Clear();
-            CollectLightSources(canvas, grid, bombs, explosions, enemies, powerUps, player, exitCell);
+            CollectLightSources(canvas, grid, bombs, explosions, enemies, powerUps, player, exitCell, specialEffectCells);
             _dynamicLighting.Render(canvas);
         }
 
@@ -840,13 +853,17 @@ public sealed partial class GameRenderer : IDisposable
         _textPaint.Dispose();
         _hudFontLarge.Dispose();
         _hudFontMedium.Dispose();
+        _hudFontCombo.Dispose();
         _hudFontSmall.Dispose();
+        _enrageColorFilter?.Dispose();
+        _bossBitmapPaint.Dispose();
         _powerUpFont.Dispose();
         _fusePath.Dispose();
         _smallGlow.Dispose();
         _mediumGlow.Dispose();
         _outerGlow.Dispose();
         _hudTextGlow.Dispose();
+        _bossAuraFilter.Dispose();
         _hudGradientShader?.Dispose();
         _dynamicLighting.Dispose();
         _weatherSystem.Dispose();

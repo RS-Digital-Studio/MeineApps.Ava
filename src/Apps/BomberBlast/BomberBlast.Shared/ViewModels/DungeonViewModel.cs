@@ -96,6 +96,13 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
     [ObservableProperty] private bool _hasAscension;
     [ObservableProperty] private string _summaryAscensionText = "";
 
+    // === Dungeon Master Pass (permanenter 2x DC-Boost) ===
+    [ObservableProperty] private bool _hasDungeonMasterPass;
+    [ObservableProperty] private string _dungeonMasterPassText = "";
+
+    /// <summary>IAP-Kauf für Dungeon Master Pass anfordern (MainViewModel verdrahtet)</summary>
+    public event Action? DungeonMasterPassRequested;
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -127,6 +134,7 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
         RefreshState();
         RefreshUpgrades();
         UpdateLocalizedTexts();
+        HasDungeonMasterPass = _dungeonUpgradeService.HasDungeonMasterPass;
     }
 
     public void UpdateLocalizedTexts()
@@ -141,6 +149,13 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
             _dungeonService.PaidRunGemCost);
         AdEntryText = _localizationService.GetString("DungeonStartAd") ?? "Watch Ad";
         ReviveForGemsText = _localizationService.GetString("DungeonReviveGems") ?? "Revive (15 Gems)";
+
+        // Dungeon Master Pass
+        if (!HasDungeonMasterPass)
+        {
+            var dmpDesc = _localizationService.GetString("DungeonMasterPassDesc") ?? "Permanent 2x Dungeon Coins";
+            DungeonMasterPassText = $"Dungeon Master Pass - {dmpDesc} (2,99 \u20ac)";
+        }
 
         // Stats-Texte aktualisieren
         var stats = _dungeonService.Stats;
@@ -505,6 +520,28 @@ public sealed partial class DungeonViewModel : ViewModelBase, INavigable, IGameJ
 
     [RelayCommand]
     private void Back() => NavigationRequested?.Invoke(new GoBack());
+
+    /// <summary>
+    /// Dungeon Master Pass kaufen (IAP, wird an MainViewModel delegiert).
+    /// </summary>
+    [RelayCommand]
+    private void BuyDungeonMasterPass()
+    {
+        if (HasDungeonMasterPass) return;
+        DungeonMasterPassRequested?.Invoke();
+    }
+
+    /// <summary>Wird von MainViewModel nach erfolgreichem IAP-Kauf aufgerufen.</summary>
+    public void OnDungeonMasterPassPurchased()
+    {
+        _dungeonUpgradeService.HasDungeonMasterPass = true;
+        HasDungeonMasterPass = true;
+
+        var title = _localizationService.GetString("DungeonMasterPass") ?? "Dungeon Master Pass";
+        FloatingTextRequested?.Invoke($"{title}!", "gold");
+        CelebrationRequested?.Invoke();
+        RefreshUpgrades();
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // DUNGEON-FLOOR CALLBACKS

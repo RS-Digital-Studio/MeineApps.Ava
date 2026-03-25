@@ -17,6 +17,12 @@ public interface ISoundService : IDisposable
     void PlaySound(string soundKey, float volume);
 
     /// <summary>
+    /// Versucht einen Sound abzuspielen. Gibt false zurück wenn der Sound nicht geladen ist.
+    /// Ermöglicht Fallback-Logik für optionale Sounds (z.B. dedizierte Bomben-SFX).
+    /// </summary>
+    bool TryPlaySound(string soundKey, float volume) => false;
+
+    /// <summary>
     /// Play background music (loops continuously)
     /// </summary>
     void PlayMusic(string musicKey, float volume);

@@ -19,6 +19,10 @@ public static class GameOverVisualization
     private static readonly SKFont _valueFont = new() { Size = 14f };
     private static readonly SKFont _medalFont = new() { Size = 10f };
 
+    // Gecachte MaskFilter (vermeidet CreateBlur pro Frame → OOM-Risiko auf Android)
+    private static readonly SKMaskFilter _scoreGlow12 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 12f);
+    private static readonly SKMaskFilter _medalGlow6 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
+
     // Medaillen-Farben
     private static readonly SKColor _gold = new(0xFF, 0xD7, 0x00);
     private static readonly SKColor _silver = new(0xC0, 0xC0, 0xC0);
@@ -65,12 +69,9 @@ public static class GameOverVisualization
         {
             float pulse = 0.5f + 0.5f * MathF.Sin(animTime * 4f);
             _glowPaint.Color = _gold.WithAlpha((byte)(pulse * 80));
-            _glowPaint.MaskFilter?.Dispose();
-
-            _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 12f);
+            _glowPaint.MaskFilter = _scoreGlow12;
             _scoreFont.Size = 42f;
             canvas.DrawText(scoreStr, cx, y, SKTextAlign.Center, _scoreFont, _glowPaint);
-            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = null;
 
             // Lokalisierter "NEW HIGH SCORE!" Text darüber
@@ -166,13 +167,10 @@ public static class GameOverVisualization
 
         float shimmer = 0.85f + 0.15f * MathF.Sin(animTime * 3f + rank);
 
-        // Glow
+        // Glow (gecachter MaskFilter)
         _glowPaint.Color = color.WithAlpha(40);
-        _glowPaint.MaskFilter?.Dispose();
-
-        _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
+        _glowPaint.MaskFilter = _medalGlow6;
         canvas.DrawCircle(cx, cy, radius * 1.2f, _glowPaint);
-        _glowPaint.MaskFilter?.Dispose();
         _glowPaint.MaskFilter = null;
 
         // Medaillen-Körper

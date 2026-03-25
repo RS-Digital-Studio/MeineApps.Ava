@@ -18,6 +18,10 @@ public static class HudVisualization
     private static readonly SKFont _timerFont = new() { Size = 22f };
     private static readonly SKFont _labelFont = new() { Size = 10f };
 
+    // Gecachte MaskFilter (vermeidet CreateBlur pro Frame → OOM-Risiko auf Android)
+    private static readonly SKMaskFilter _scoreGlow6 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
+    private static readonly SKMaskFilter _timerGlow8 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
+
     // Score-Counter Animation
     private static int _displayScore;
     private static int _targetScore;
@@ -62,12 +66,9 @@ public static class HudVisualization
         {
             float glowAlpha = Math.Max(0, 1f - _scoreAnimTime * 3f);
             _glowPaint.Color = new SKColor(0xFF, 0xD7, 0x00, (byte)(glowAlpha * 80));
-            _glowPaint.MaskFilter?.Dispose();
-
-            _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
+            _glowPaint.MaskFilter = _scoreGlow6;
             _scoreFont.Size = fontSize;
             canvas.DrawText(scoreStr, x, y, SKTextAlign.Left, _scoreFont, _glowPaint);
-            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = null;
         }
         else
@@ -130,12 +131,9 @@ public static class HudVisualization
             // Glow
             float glowAlpha = (0.5f + pulse * 0.5f) * pulseIntensity;
             _glowPaint.Color = timerColor.WithAlpha((byte)(glowAlpha * 100));
-            _glowPaint.MaskFilter?.Dispose();
-
-            _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
+            _glowPaint.MaskFilter = _timerGlow8;
             _timerFont.Size = fontSize * scale;
             canvas.DrawText(timerStr, cx, y, SKTextAlign.Center, _timerFont, _glowPaint);
-            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = null;
 
             // Text mit Scale
@@ -167,10 +165,9 @@ public static class HudVisualization
         float r = size / 2f;
         float pulse = 0.6f + 0.4f * MathF.Sin(animTime * 4f);
 
-        // Glow-Aura (pulsierend)
+        // Glow-Aura (pulsierend) - dynamischer Radius, daher nicht cachebar
         _glowPaint.Color = color.WithAlpha((byte)(pulse * 50));
         _glowPaint.MaskFilter?.Dispose();
-
         _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.4f);
         canvas.DrawCircle(cx, cy, r * 1.2f, _glowPaint);
         _glowPaint.MaskFilter?.Dispose();

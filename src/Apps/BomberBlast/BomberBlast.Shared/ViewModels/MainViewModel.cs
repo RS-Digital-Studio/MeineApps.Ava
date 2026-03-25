@@ -334,10 +334,6 @@ public sealed partial class MainViewModel : ViewModelBase
             }
         }
 
-        // FloatingText für VMs die nur FloatingText haben (kein IGameJuiceEmitter)
-        GameOverVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        ProfileVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-
         // Battle Pass Premium-Kauf anfordern
         BattlePassVm.PremiumPurchaseRequested += async () =>
         {
@@ -357,12 +353,19 @@ public sealed partial class MainViewModel : ViewModelBase
             }
         };
 
+        // Dungeon Master Pass: IAP-Kauf (permanenter 2x DungeonCoin-Boost)
+        DungeonVm.DungeonMasterPassRequested += async () =>
+        {
+            var success = await _purchaseService.PurchaseConsumableAsync("dungeon_master_pass");
+            if (success)
+                DungeonVm.OnDungeonMasterPassPurchased();
+        };
+
         // Dialog-Events von SettingsVM + ShopVM verdrahten
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
         settingsVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
         shopVm.MessageRequested += (t, m) => ShowAlertDialog(t, m, "OK");
         shopVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
-        shopVm.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
         gemShopVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
 
         localization.LanguageChanged += (_, _) =>
@@ -596,6 +599,10 @@ public sealed partial class MainViewModel : ViewModelBase
 
                     GameOverVm.SetParameters(score, level, isHighScore, mode, coins, levelComplete, canContinue, fails,
                         enemyPts, timeBonus, effBonus, multiplier, survivalKills, survivalTime);
+
+                    // Quick-Play Score an QuickPlayVM für Challenge-Sharing weiterreichen
+                    if (mode == "quick" && score > 0)
+                        QuickPlayVm.SetLastScore(score);
 
                     // Daily Challenge: Score melden + Streak-Bonus vergeben
                     if (mode == "daily" && score > 0)

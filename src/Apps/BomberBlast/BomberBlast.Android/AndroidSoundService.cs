@@ -35,13 +35,19 @@ public sealed class AndroidSoundService : ISoundService
         "explosion", "place_bomb", "fuse", "powerup",
         "player_death", "enemy_death", "exit_appear",
         "level_complete", "game_over", "time_warning",
-        "menu_select", "menu_confirm"
+        "menu_select", "menu_confirm",
+        // Spezial-Bomben SFX (optional, Fallback im SoundManager)
+        "bomb_ice", "bomb_fire", "bomb_lightning",
+        "bomb_gravity", "bomb_vortex", "bomb_blackhole"
     ];
 
     // Alle bekannten Musik-Keys
     private static readonly string[] MusicKeys =
     [
-        "menu", "gameplay", "boss", "victory"
+        "menu", "gameplay", "boss", "victory",
+        // Welt-Musik + Dungeon
+        "world_forest", "world_industrial", "world_cavern",
+        "world_sky", "world_inferno", "dungeon"
     ];
 
     public AndroidSoundService(Context context)
@@ -99,6 +105,17 @@ public sealed class AndroidSoundService : ISoundService
 
         var clampedVol = Math.Clamp(volume, 0f, 1f);
         _soundPool.Play(soundId, clampedVol, clampedVol, 1, 0, 1.0f);
+    }
+
+    /// <summary>Versucht Sound abzuspielen. Gibt false zurück wenn der Sound nicht geladen ist.</summary>
+    public bool TryPlaySound(string soundKey, float volume)
+    {
+        if (_soundPool == null || !_sfxIds.TryGetValue(soundKey, out var soundId))
+            return false;
+
+        var clampedVol = Math.Clamp(volume, 0f, 1f);
+        _soundPool.Play(soundId, clampedVol, clampedVol, 1, 0, 1.0f);
+        return true;
     }
 
     public void PlayMusic(string musicKey, float volume)

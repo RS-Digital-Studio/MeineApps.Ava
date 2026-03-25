@@ -135,6 +135,30 @@
               </StackPanel>
             </Border>
 
+            <!-- Dungeon Master Pass (2x DC-Boost, IAP) -->
+            <Panel MinHeight="44" IsVisible="{Binding !HasDungeonMasterPass}">
+              <controls:GameButtonCanvas ButtonColor="#E040FB" DamageLevel="0.5" ButtonSeed="75" />
+              <Button AutomationProperties.AutomationId="Dungeon_BtnMasterPass"
+                      Classes="GameButton"
+                      Command="{Binding BuyDungeonMasterPassCommand}"
+                      Background="Transparent"
+                      Foreground="White"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      VerticalContentAlignment="Center"
+                      Padding="12,10"
+                      CornerRadius="10">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <icons:GameIcon Kind="Crown" Width="18" Height="18"
+                                   Foreground="#FFD700" />
+                  <TextBlock Text="{Binding DungeonMasterPassText}"
+                             FontSize="13" FontWeight="SemiBold"
+                             Foreground="White"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Panel>
+
             <!-- Permanente Upgrades (DungeonCoins-Währung) -->
             <Border Classes="CardElevated" Padding="16" CornerRadius="16">
               <StackPanel Spacing="10">

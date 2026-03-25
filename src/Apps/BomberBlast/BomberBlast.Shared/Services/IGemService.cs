@@ -25,6 +25,4 @@ public interface IGemService
     /// <summary>Gem-Stand hat sich geändert</summary>
     event EventHandler? BalanceChanged;
 
-    /// <summary>Lazy-Injection: Mission-Services nach DI-Build setzen (Phase 9.4)</summary>
-    void SetMissionServices(IWeeklyChallengeService weeklyService, IDailyMissionService dailyMissionService);
 }

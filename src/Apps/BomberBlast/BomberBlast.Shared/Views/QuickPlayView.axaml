@@ -202,6 +202,30 @@
             </Button>
           </Panel>
 
+          <!-- Challenge a Friend Button -->
+          <Panel MinHeight="44">
+            <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.4" ButtonSeed="62" />
+            <Button AutomationProperties.AutomationId="QuickPlay_BtnChallenge"
+                    Classes="GameButton"
+                    Background="Transparent"
+                    Foreground="White"
+                    Command="{Binding ShareChallengeCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Padding="14,12"
+                    CornerRadius="12">
+              <StackPanel Orientation="Horizontal" Spacing="10"
+                          HorizontalAlignment="Center">
+                <icons:GameIcon Kind="LinkVariant" Width="20" Height="20" Foreground="White" />
+                <TextBlock Text="{Binding ChallengeButtonText}"
+                           FontSize="16" FontWeight="SemiBold"
+                           Foreground="White"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Panel>
+
         </StackPanel>
 
       </Grid>

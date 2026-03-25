@@ -67,9 +67,6 @@ public interface IBattlePassService
 
     /// <summary>Event wenn ein Tier aufgestiegen wurde (mit Tier-Nummer)</summary>
     event Action<int>? TierUpReached;
-
-    /// <summary>Lazy-Injection: IAchievementService nach DI-Build setzen (zirkuläre Abhängigkeit)</summary>
-    void SetAchievementService(IAchievementService achievementService);
 }
 
 /// <summary>

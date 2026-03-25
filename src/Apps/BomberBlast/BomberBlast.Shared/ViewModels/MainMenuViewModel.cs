@@ -243,6 +243,9 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
 
         // Progressive Feature-Freischaltung basierend auf hoechstem abgeschlossenen Level
         UpdateFeatureUnlocks();
+
+        // Feature-Celebration bei erstmaligem Unlock
+        CheckForNewFeatureUnlocks();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -341,6 +344,47 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         IsBattlePassUnlocked = level >= 30;
         IsLeagueNew = IsLeagueUnlocked && !HasSeenFeature("league");
         IsBattlePassNew = IsBattlePassUnlocked && !HasSeenFeature("battle_pass");
+    }
+
+    /// <summary>
+    /// Prüft ob seit dem letzten Besuch neue Features freigeschaltet wurden.
+    /// Zeigt eine Celebration + FloatingText für das wichtigste neue Feature.
+    /// Verwendet "feature_celebration_level" um nur einmal pro Level-Schwelle zu feuern.
+    /// </summary>
+    private void CheckForNewFeatureUnlocks()
+    {
+        int level = _progressService.HighestCompletedLevel;
+        int lastCelebratedLevel = _preferencesService.Get("feature_celebration_level", 0);
+        if (level <= lastCelebratedLevel) return;
+
+        // Feature-Schwellen mit zugehörigem Feature-Namen (höchste Priorität zuerst)
+        (int threshold, string featureName)[] featureThresholds =
+        [
+            (30, "League + Battle Pass"),
+            (20, "Dungeon"),
+            (15, "Deck + Missions"),
+            (10, "Achievements + Collection"),
+            (8, "Daily Challenge + Lucky Spin"),
+            (5, "Survival + Quick Play"),
+            (3, "Shop")
+        ];
+
+        // Höchste neu erreichte Schwelle finden
+        foreach (var (threshold, featureName) in featureThresholds)
+        {
+            if (level >= threshold && lastCelebratedLevel < threshold)
+            {
+                var title = _localizationService.GetString("FeatureUnlocked") ?? "New Feature!";
+                var descFormat = _localizationService.GetString("FeatureUnlockedDesc") ?? "{0} is now available!";
+                var desc = string.Format(descFormat, featureName);
+
+                FloatingTextRequested?.Invoke($"{title} {desc}", "gold");
+                CelebrationRequested?.Invoke();
+                break; // Nur die wichtigste Celebration zeigen
+            }
+        }
+
+        _preferencesService.Set("feature_celebration_level", level);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

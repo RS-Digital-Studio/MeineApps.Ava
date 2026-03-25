@@ -17,7 +17,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel fuer den Shop - zeigt Upgrades, PowerUp-Übersicht, Skins und Coin-Stand.
 /// Implementiert IDisposable fuer BalanceChanged-Unsubscription.
 /// </summary>
-public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposable
+public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
 {
     private readonly IShopService _shopService;
     private readonly ICoinService _coinService;
@@ -37,6 +37,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action? CelebrationRequested;
 
     /// <summary>Kauf erfolgreich (Upgrade-Name)</summary>
     public event Action<string>? PurchaseSucceeded;

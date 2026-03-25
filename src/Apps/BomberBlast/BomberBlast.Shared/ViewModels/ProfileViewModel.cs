@@ -10,7 +10,7 @@ namespace BomberBlast.ViewModels;
 /// <summary>
 /// Profil-Seite: Spielername editieren, aktiver Skin/Frame, Stats-Übersicht.
 /// </summary>
-public sealed partial class ProfileViewModel : ViewModelBase, INavigable
+public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly ILeagueService _leagueService;
     private readonly ICustomizationService _customizationService;
@@ -22,6 +22,7 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable
 
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action? CelebrationRequested;
 
     // === OBSERVABLE PROPERTIES ===
 

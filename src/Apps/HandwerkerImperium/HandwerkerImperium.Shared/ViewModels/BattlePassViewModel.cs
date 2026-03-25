@@ -10,7 +10,7 @@ using MeineApps.Core.Ava.ViewModels;
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
-/// ViewModel für den Battle Pass (30 Tiers, Free + Premium Track, 30-Tage-Saison).
+/// ViewModel für den Battle Pass (50 Tiers, Free + Premium Track, 42-Tage-Saison).
 /// </summary>
 public sealed partial class BattlePassViewModel : ViewModelBase
 {
@@ -23,9 +23,6 @@ public sealed partial class BattlePassViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
-#pragma warning disable CS0067 // Event wird vorbereitet fuer zukuenftige Battle-Pass-Alerts
-    public event Action<string, string, string>? AlertRequested;
-#pragma warning restore CS0067
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES

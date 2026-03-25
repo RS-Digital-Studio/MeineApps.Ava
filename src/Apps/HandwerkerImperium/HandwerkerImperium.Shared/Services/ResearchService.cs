@@ -7,6 +7,9 @@ namespace HandwerkerImperium.Services;
 public sealed class ResearchService : IResearchService
 {
     private readonly IGameStateService _gameState;
+    private readonly IAscensionService _ascensionService;
+    private readonly IChallengeConstraintService _challengeConstraints;
+    private readonly IPrestigeService _prestigeService;
     private ResearchEffect? _cachedEffects;
     private bool _effectsDirty = true;
     // Cache fuer aktive Forschung (vermeidet FirstOrDefault ueber 45 Eintraege pro Tick)
@@ -20,15 +23,25 @@ public sealed class ResearchService : IResearchService
 
     public event EventHandler<Research>? ResearchCompleted;
 
-    public ResearchService(IGameStateService gameState)
+    public ResearchService(
+        IGameStateService gameState,
+        IAscensionService ascensionService,
+        IChallengeConstraintService challengeConstraints,
+        IPrestigeService prestigeService)
     {
         _gameState = gameState;
+        _ascensionService = ascensionService;
+        _challengeConstraints = challengeConstraints;
+        _prestigeService = prestigeService;
         // Bei State-Wechsel (Load/Import/Reset) Caches invalidieren
         _gameState.StateLoaded += (_, _) => InvalidateCaches();
     }
 
     public bool StartResearch(string researchId)
     {
+        // Challenge: OhneForschung blockiert alle Forschung
+        if (_challengeConstraints.IsResearchBlocked()) return false;
+
         var state = _gameState.State;
         if (state.ActiveResearchId != null) return false;
 
@@ -48,6 +61,8 @@ public sealed class ResearchService : IResearchService
         _gameState.TrySpendMoney(research.Cost);
         research.IsActive = true;
         research.StartedAt = DateTime.UtcNow;
+        research.BonusSeconds = 0; // BonusSeconds zurücksetzen bei neuem Research-Start
+        research.EffectiveDuration = CalculateEffectiveDuration(research);
         state.ActiveResearchId = researchId;
         // Active-Research-Cache aktualisieren
         _activeResearchCache = research;
@@ -220,12 +235,11 @@ public sealed class ResearchService : IResearchService
         if (active == null || !active.IsActive) return false;
 
         // Effektive Restzeit berechnen (inkl. Gilden-Bonus)
-        var effectiveDuration = active.Duration;
-        var guildSpeedBonus = _gameState.State.GuildMembership?.ResearchSpeedBonus ?? 0m;
-        if (guildSpeedBonus > 0)
-            effectiveDuration = TimeSpan.FromSeconds(effectiveDuration.TotalSeconds / (double)(1m + guildSpeedBonus));
+        var effectiveDuration = CalculateEffectiveDuration(active);
 
-        var elapsed = active.StartedAt.HasValue ? DateTime.UtcNow - active.StartedAt.Value : TimeSpan.Zero;
+        var elapsed = active.StartedAt.HasValue
+            ? DateTime.UtcNow - active.StartedAt.Value + TimeSpan.FromSeconds(active.BonusSeconds)
+            : TimeSpan.Zero;
         var remaining = effectiveDuration - elapsed;
         if (remaining <= TimeSpan.Zero) return false;
 
@@ -258,19 +272,16 @@ public sealed class ResearchService : IResearchService
 
         percentage = Math.Clamp(percentage, 0.0, 1.0);
 
-        // Effektive Dauer inkl. Gilden-Forschungs-Bonus berechnen (identisch mit UpdateTimer)
-        var effectiveDuration = active.Duration;
-        var guildSpeedBonus = _gameState.State.GuildMembership?.ResearchSpeedBonus ?? 0m;
-        if (guildSpeedBonus > 0)
-            effectiveDuration = TimeSpan.FromSeconds(effectiveDuration.TotalSeconds / (double)(1m + guildSpeedBonus));
+        // Effektive Dauer inkl. Gilden-Forschungs-Bonus
+        var effectiveDuration = CalculateEffectiveDuration(active);
 
-        var elapsed = DateTime.UtcNow - active.StartedAt.Value;
+        var elapsed = DateTime.UtcNow - active.StartedAt.Value + TimeSpan.FromSeconds(active.BonusSeconds);
         var effectiveRemaining = effectiveDuration - elapsed;
         if (effectiveRemaining <= TimeSpan.Zero) return false;
 
-        // StartedAt nach vorne verschieben → Restzeit wird kürzer
-        var reduction = TimeSpan.FromSeconds(effectiveRemaining.TotalSeconds * percentage);
-        active.StartedAt = active.StartedAt.Value - reduction;
+        // BonusSeconds erhöhen statt StartedAt manipulieren
+        var reductionSeconds = effectiveRemaining.TotalSeconds * percentage;
+        active.BonusSeconds += reductionSeconds;
 
         return true;
     }
@@ -280,14 +291,13 @@ public sealed class ResearchService : IResearchService
         var active = GetActiveResearch();
         if (active == null) return;
 
-        // Gilden-Forschung: Beschleunigung (+20%)
-        var effectiveDuration = active.Duration;
-        var guildSpeedBonus = _gameState.State.GuildMembership?.ResearchSpeedBonus ?? 0m;
-        if (guildSpeedBonus > 0)
-            effectiveDuration = TimeSpan.FromSeconds(effectiveDuration.TotalSeconds / (double)(1m + guildSpeedBonus));
+        // EffectiveDuration aktualisieren (Gilden-Bonus kann sich zur Laufzeit ändern)
+        var effectiveDuration = CalculateEffectiveDuration(active);
+        active.EffectiveDuration = effectiveDuration;
 
-        // Check if completed
-        if (active.StartedAt != null && DateTime.UtcNow >= active.StartedAt.Value + effectiveDuration)
+        // Check if completed (berücksichtigt BonusSeconds aus InnovationLab)
+        if (active.StartedAt != null &&
+            DateTime.UtcNow >= active.StartedAt.Value + effectiveDuration - TimeSpan.FromSeconds(active.BonusSeconds))
         {
             active.IsResearched = true;
             active.IsActive = false;
@@ -300,5 +310,31 @@ public sealed class ResearchService : IResearchService
 
             ResearchCompleted?.Invoke(this, active);
         }
+    }
+
+    /// <summary>
+    /// Berechnet die effektive Forschungsdauer inkl. Gilden- und Ascension-Bonus.
+    /// Wird auf Research.EffectiveDuration gesetzt damit RemainingTime/Progress korrekt sind.
+    /// </summary>
+    private TimeSpan CalculateEffectiveDuration(Research research)
+    {
+        var duration = research.Duration;
+
+        // Gilden-Forschungs-Bonus (additiv auf Geschwindigkeit, z.B. 0.2 = +20% schneller)
+        var guildSpeedBonus = _gameState.State.GuildMembership?.ResearchSpeedBonus ?? 0m;
+        if (guildSpeedBonus > 0)
+            duration = TimeSpan.FromSeconds(duration.TotalSeconds / (double)(1m + guildSpeedBonus));
+
+        // Ascension Timeless-Research-Perk (reduziert Dauer, z.B. 0.1 = -10% Dauer)
+        var ascensionBonus = _ascensionService.GetResearchSpeedBonus();
+        if (ascensionBonus > 0)
+            duration = TimeSpan.FromSeconds(duration.TotalSeconds * (double)(1m - ascensionBonus));
+
+        // Prestige-Shop Forschungs-Turbo (z.B. 0.25 = -25% Dauer)
+        var shopResearchBonus = _prestigeService.GetResearchSpeedBonus();
+        if (shopResearchBonus > 0)
+            duration = TimeSpan.FromSeconds(duration.TotalSeconds * (double)(1m - shopResearchBonus));
+
+        return duration;
     }
 }

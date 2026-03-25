@@ -77,18 +77,19 @@ public sealed partial class MainViewModel
         // Quick Jobs initialisieren
         if (_gameStateService.State.QuickJobs.Count == 0)
             _quickJobService.GenerateJobs();
-        RefreshQuickJobs();
+        MissionsVM.RefreshQuickJobs();
 
         // Daily Challenges initialisieren
         _dailyChallengeService.CheckAndResetIfNewDay();
-        RefreshChallenges();
+        MissionsVM.MarkChallengesDirty();
+        MissionsVM.RefreshChallenges();
 
         // Weekly Missions initialisieren
         _weeklyMissionService.CheckAndResetIfNewWeek();
-        RefreshWeeklyMissions();
+        MissionsVM.RefreshWeeklyMissions();
 
         // Lucky Spin Status
-        HasFreeSpin = _luckySpinService.HasFreeSpin;
+        MissionsVM.HasFreeSpin = _luckySpinService.HasFreeSpin;
 
         IsLoading = false;
 
@@ -108,7 +109,7 @@ public sealed partial class MainViewModel
         CheckCombinedWelcomeDialog();
 
         // Zählen ob ein Dialog gezeigt wurde
-        if (IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible || IsWelcomeOfferVisible)
+        if (IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible || MissionsVM.IsWelcomeOfferVisible)
             dialogsShown++;
 
         // Daily Reward nur wenn noch Platz für Dialog
@@ -198,6 +199,7 @@ public sealed partial class MainViewModel
             return;
 
         _pendingOfflineEarnings = earnings;
+        MissionsVM.PendingOfflineEarnings = earnings;
         var maxDuration = _offlineProgressService.GetMaxOfflineDuration();
         bool wasCapped = offlineDuration > maxDuration;
         var effectiveDuration = wasCapped ? maxDuration : offlineDuration;
@@ -255,8 +257,8 @@ public sealed partial class MainViewModel
         }
         else if (hasWelcome)
         {
-            // Nur Welcome-Back-Dialog (wird durch OnWelcomeOfferGenerated angezeigt)
-            OnWelcomeOfferGenerated();
+            // Nur Welcome-Back-Dialog (wird durch MissionsVM.OnWelcomeOfferGenerated angezeigt)
+            MissionsVM.OnWelcomeOfferGenerated();
         }
     }
 
@@ -348,14 +350,14 @@ public sealed partial class MainViewModel
 
         // Streak-Rettung prüfen: War der Streak unterbrochen und kann gerettet werden?
         var state = _gameStateService.State;
-        CanRescueStreak = state.StreakBeforeBreak > 1
+        MissionsVM.CanRescueStreak = state.StreakBeforeBreak > 1
                           && state.DailyRewardStreak <= 1
                           && !state.StreakRescueUsed
                           && state.GoldenScrews >= 3;  // BAL-7: Von 5 auf 3 reduziert
-        if (CanRescueStreak)
+        if (MissionsVM.CanRescueStreak)
         {
             var costText = _localizationService.GetString("StreakRescueCost") ?? "Rescue streak ({0})";
-            StreakRescueText = string.Format(costText, 3);
+            MissionsVM.StreakRescueText = string.Format(costText, 3);
         }
 
         if (HasDailyReward)

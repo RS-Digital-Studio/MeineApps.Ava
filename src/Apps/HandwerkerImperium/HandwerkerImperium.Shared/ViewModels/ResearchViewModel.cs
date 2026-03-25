@@ -21,23 +21,13 @@ public sealed partial class ResearchViewModel : ViewModelBase
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IDialogService _dialogService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     public event EventHandler<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event to show an alert dialog. Parameters: title, message, buttonText.
-    /// </summary>
-    public event Action<string, string, string>? AlertRequested;
-
-    /// <summary>
-    /// Event to request a confirmation dialog.
-    /// Parameters: title, message, acceptText, cancelText. Returns bool.
-    /// </summary>
-    public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
 
     /// <summary>
     /// Event für die Celebration-Animation bei abgeschlossener Forschung.
@@ -158,12 +148,14 @@ public sealed partial class ResearchViewModel : ViewModelBase
         IResearchService researchService,
         IGameStateService gameStateService,
         ILocalizationService localizationService,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService,
+        IDialogService dialogService)
     {
         _researchService = researchService;
         _gameStateService = gameStateService;
         _localizationService = localizationService;
         _rewardedAdService = rewardedAdService;
+        _dialogService = dialogService;
 
         _researchService.ResearchCompleted += OnResearchCompleted;
 
@@ -295,7 +287,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
 
         if (HasActiveResearch)
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("ResearchInProgress"),
                 _localizationService.GetString("ResearchInProgressDesc"),
                 _localizationService.GetString("OK") ?? "OK");
@@ -314,7 +306,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
         bool prerequisitesMet = target.Prerequisites.All(p => _researchService.IsResearched(p));
         if (!prerequisitesMet)
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("ResearchLocked"),
                 _localizationService.GetString("ResearchLockedDesc"),
                 _localizationService.GetString("OK") ?? "OK");
@@ -324,7 +316,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
         // Kosten prüfen
         if (!_gameStateService.CanAfford(target.Cost))
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NotEnoughMoney"),
                 string.Format(_localizationService.GetString("ResearchCostFormat"), MoneyFormatter.Format(target.Cost, 0)),
                 _localizationService.GetString("OK") ?? "OK");
@@ -342,16 +334,11 @@ public sealed partial class ResearchViewModel : ViewModelBase
                        $"{_localizationService.GetString("ResearchConfirmCost")}: {costText}\n" +
                        $"{_localizationService.GetString("ResearchConfirmDuration")}: {durationText}";
 
-        bool confirm = true;
-        if (ConfirmationRequested != null)
-        {
-            confirm = await ConfirmationRequested.Invoke(
+        var confirm = await _dialogService.ShowConfirmDialog(
                 name,
                 body,
                 _localizationService.GetString("StartResearch"),
                 _localizationService.GetString("Cancel"));
-        }
-
         if (!confirm) return;
 
         bool success = _researchService.StartResearch(researchId);
@@ -361,7 +348,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
         }
         else
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("ResearchFailed"),
                 _localizationService.GetString("ResearchFailedDesc"),
                 _localizationService.GetString("OK") ?? "OK");
@@ -377,23 +364,18 @@ public sealed partial class ResearchViewModel : ViewModelBase
 
         if (!_gameStateService.CanAffordGoldenScrews(cost))
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NotEnoughScrews"),
                 string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), cost),
                 _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
-        bool confirm = true;
-        if (ConfirmationRequested != null)
-        {
-            confirm = await ConfirmationRequested.Invoke(
+        var confirm = await _dialogService.ShowConfirmDialog(
                 _localizationService.GetString("InstantFinish"),
                 string.Format(_localizationService.GetString("InstantFinishDesc"), cost),
                 _localizationService.GetString("Confirm"),
                 _localizationService.GetString("Cancel"));
-        }
-
         if (!confirm) return;
 
         if (_researchService.InstantFinishResearch())
@@ -414,7 +396,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
             _researchService.ReduceResearchTime(0.50);
             LoadResearchTree();
 
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("ResearchSpeedUp") ?? "Forschung beschleunigt",
                 _localizationService.GetString("ResearchSpeedUpDesc") ?? "Forschungszeit um 50% reduziert!",
                 _localizationService.GetString("Great"));
@@ -437,7 +419,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
 
         if (!_gameStateService.CanAffordGoldenScrews(cost))
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NotEnoughScrews"),
                 string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), cost),
                 _localizationService.GetString("OK") ?? "OK");
@@ -448,16 +430,11 @@ public sealed partial class ResearchViewModel : ViewModelBase
             _localizationService.GetString("ResearchInstantComplete") ?? "Sofort fertig ({0} GS)",
             cost);
 
-        bool confirm = true;
-        if (ConfirmationRequested != null)
-        {
-            confirm = await ConfirmationRequested.Invoke(
+        var confirm = await _dialogService.ShowConfirmDialog(
                 _localizationService.GetString("InstantFinish"),
                 buttonText,
                 _localizationService.GetString("Confirm"),
                 _localizationService.GetString("Cancel"));
-        }
-
         if (!confirm) return;
 
         if (_researchService.InstantCompleteResearch())
@@ -471,16 +448,11 @@ public sealed partial class ResearchViewModel : ViewModelBase
     {
         if (!HasActiveResearch || ActiveResearch == null) return;
 
-        bool confirm = true;
-        if (ConfirmationRequested != null)
-        {
-            confirm = await ConfirmationRequested.Invoke(
+        var confirm = await _dialogService.ShowConfirmDialog(
                 _localizationService.GetString("CancelResearch"),
                 _localizationService.GetString("CancelResearchDesc"),
                 _localizationService.GetString("Confirm"),
                 _localizationService.GetString("Cancel"));
-        }
-
         if (!confirm) return;
 
         bool success = _researchService.CancelResearch();
@@ -586,7 +558,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
         string bonusText = _localizationService.GetString(research.NameKey);
         CelebrationRequested?.Invoke(this, (research.Branch, bonusText));
 
-        AlertRequested?.Invoke(
+        _dialogService.ShowAlertDialog(
             _localizationService.GetString("ResearchComplete"),
             string.Format(
                 _localizationService.GetString("ResearchCompleteFormat"),

@@ -81,11 +81,9 @@ public sealed partial class MainViewModel
             return;
         }
 
-        // Navigate to workshop detail page
+        // Zur Workshop-Detailseite navigieren
         WorkshopViewModel.SetWorkshopType(workshop.Type);
-        DeactivateAllTabs();
-        IsWorkshopDetailActive = true;
-        NotifyTabBarVisibility();
+        ActivePage = ActivePage.WorkshopDetail;
     }
 
     /// <summary>
@@ -206,30 +204,6 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>
-    /// Navigation zum Workshop-Detail direkt aus der City-Szene (Tap auf Gebäude).
-    /// Nur für freigeschaltete Workshops.
-    /// </summary>
-    public void NavigateToWorkshopFromCity(WorkshopType type)
-    {
-        WorkshopViewModel.SetWorkshopType(type);
-        DeactivateAllTabs();
-        IsWorkshopDetailActive = true;
-        NotifyTabBarVisibility();
-    }
-
-    /// <summary>
-    /// Gibt den lokalisierten Workshop-Namen zurück (für City-Tap-Label).
-    /// </summary>
-    public string GetLocalizedWorkshopName(WorkshopType type)
-        => _localizationService.GetString(type.GetLocalizationKey()) ?? type.ToString();
-
-    /// <summary>
-    /// Gibt den lokalisierten Gebäude-Namen zurück (für City-Tap-Label).
-    /// </summary>
-    public string GetLocalizedBuildingName(BuildingType type)
-        => _localizationService.GetString(type.GetLocalizationKey()) ?? type.ToString();
-
-    /// <summary>
     /// Gibt die lokalisierten Tab-Labels für die SkiaSharp Tab-Bar zurück.
     /// </summary>
     public string[] GetTabLabels() =>
@@ -274,17 +248,62 @@ public sealed partial class MainViewModel
     {
         if (HasActiveOrder) return;
 
+        // Lieferaufträge: Items direkt abgeben, kein MiniGame
+        if (order.OrderType == OrderType.MaterialOrder)
+        {
+            await CompleteMaterialOrderAsync(order);
+            return;
+        }
+
         _gameStateService.StartOrder(order);
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
         // Hint beim ersten Auftrag
         _contextualHintService.TryShowHint(ContextualHints.FirstOrder);
 
-        // Show order detail
+        // Auftragsdetail anzeigen
         OrderViewModel.SetOrder(order);
-        DeactivateAllTabs();
-        IsOrderDetailActive = true;
-        NotifyTabBarVisibility();
+        ActivePage = ActivePage.OrderDetail;
+    }
+
+    /// <summary>
+    /// Schließt einen Lieferauftrag ab: Items prüfen, abziehen, Belohnung gutschreiben.
+    /// </summary>
+    private async Task CompleteMaterialOrderAsync(Order order)
+    {
+        if (order.RequiredMaterials == null) return;
+
+        // Prüfen ob alle Items vorhanden
+        var state = _gameStateService.State;
+        foreach (var (productId, required) in order.RequiredMaterials)
+        {
+            int available = state.CraftingInventory.GetValueOrDefault(productId, 0);
+            if (available < required)
+            {
+                // Nicht genug Materialien
+                var msg = _localizationService.GetString("InsufficientMaterials") ?? "Nicht genügend Materialien";
+                DialogVM.ShowAlertDialog(
+                    _localizationService.GetString("MaterialsRequired") ?? "Materialien benötigt",
+                    msg,
+                    "OK");
+                return;
+            }
+        }
+
+        // Auftrag abschließen
+        var reward = _gameStateService.CompleteMaterialOrder(order);
+        if (reward <= 0) return;
+
+        // Tracking für Daily/Weekly Challenges
+        _dailyChallengeService?.OnMaterialOrderCompleted();
+
+        await _audioService.PlaySoundAsync(GameSound.Perfect);
+        FloatingTextRequested?.Invoke($"+{MoneyFormatter.Format(reward, 0)}", "money");
+        CelebrationRequested?.Invoke();
+
+        // Orders aktualisieren
+        _orderGeneratorService.RefreshOrders();
+        RefreshOrders();
     }
 
     [RelayCommand]
@@ -489,10 +508,10 @@ public sealed partial class MainViewModel
         UpdateRushDisplay();
         UpdateBoostIndicator();
         UpdateDeliveryDisplay();
-        MasterToolsCollected = state.CollectedMasterTools.Count;
-        MasterToolsTotal = MasterTool.GetAllDefinitions().Count;
+        MissionsVM.MasterToolsCollected = state.CollectedMasterTools.Count;
+        MissionsVM.MasterToolsTotal = MasterTool.GetAllDefinitions().Count;
         var totalMtBonus = MasterTool.GetTotalIncomeBonus(state.CollectedMasterTools);
-        MasterToolsBonusDisplay = totalMtBonus > 0 ? $"+{(int)(totalMtBonus * 100)}%" : "";
+        MissionsVM.MasterToolsBonusDisplay = totalMtBonus > 0 ? $"+{(int)(totalMtBonus * 100)}%" : "";
 
         // Prestige-Shop ab bestimmtem Level (oder wenn bereits prestigiert → Shop bleibt zugänglich nach Reset)
         IsPrestigeShopUnlocked = state.PlayerLevel >= LevelThresholds.PrestigeShopUnlock || state.Prestige.TotalPrestigeCount > 0;
@@ -594,7 +613,8 @@ public sealed partial class MainViewModel
             CanUpgrade = workshop?.CanUpgrade ?? true,
             CanHireWorker = workshop?.CanHireWorker ?? false,
             CanAffordUpgrade = state.Money >= (workshop?.UpgradeCost ?? 100),
-            CanAffordWorker = state.Money >= (workshop?.HireWorkerCost ?? 50)
+            CanAffordWorker = state.Money >= (workshop?.HireWorkerCost ?? 50),
+            RebirthStars = workshop?.RebirthStars ?? 0
         };
         // BulkBuy-Kosten berechnen
         SetBulkUpgradeCost(model, workshop, state.Money);
@@ -913,8 +933,96 @@ public sealed partial class MainViewModel
 
         // Tier-Auswahl wird dynamisch beim Öffnen des Prestige-Dialogs in DialogVM gesetzt
 
+        // Challenge-Anzeige aktualisieren
+        RefreshChallengeDisplay();
+
+        // Speedrun-Timer aktualisieren
+        var runDuration = _prestigeService.GetCurrentRunDuration();
+        CurrentRunDuration = runDuration.HasValue
+            ? $"{(int)runDuration.Value.TotalHours}h {runDuration.Value.Minutes:D2}m"
+            : "";
+
         // Prestige-Tier-Badge im Dashboard-Header aktualisieren
         UpdatePrestigeTierBadge(state);
+    }
+
+    /// <summary>
+    /// Aktualisiert die Challenge-Anzeige (Anzahl + Text).
+    /// </summary>
+    private void RefreshChallengeDisplay()
+    {
+        var challenges = _challengeConstraints?.GetActiveChallenges();
+        if (challenges == null || challenges.Count == 0)
+        {
+            ActiveChallengeCount = 0;
+            ActiveChallengesText = "";
+            return;
+        }
+
+        ActiveChallengeCount = challenges.Count;
+        var parts = new List<string>(challenges.Count);
+        for (int i = 0; i < challenges.Count; i++)
+        {
+            var c = challenges[i];
+            var name = _localizationService.GetString(c.GetNameKey()) ?? c.ToString();
+            parts.Add($"{name} +{c.GetPpBonus() * 100:0}%");
+        }
+        ActiveChallengesText = string.Join(", ", parts);
+    }
+
+    /// <summary>
+    /// Challenge aktivieren/deaktivieren (Toggle). Aufgerufen aus UI (ImperiumView).
+    /// </summary>
+    [RelayCommand]
+    private void ToggleChallenge(string challengeName)
+    {
+        if (!Enum.TryParse<PrestigeChallengeType>(challengeName, out var challenge))
+            return;
+
+        bool success = _challengeConstraints?.ToggleChallenge(challenge) ?? false;
+        if (!success)
+        {
+            // SoloMeister + QuickStart oder Max erreicht
+            var msg = _localizationService.GetString("ChallengesMaxReached") ?? "Maximal 3 Herausforderungen";
+            FloatingTextRequested?.Invoke(msg, "warning");
+            return;
+        }
+
+        RefreshChallengeDisplay();
+        // Dirty-Flag zurücksetzen damit Prestige-Banner PP-Vorschau aktualisiert wird
+        _lastPrestigeBannerPrestigeCount = -1;
+    }
+
+    /// <summary>
+    /// Bricht den aktuellen Challenge-Run ab. Spieler erhält 50% der Basis-PP
+    /// und spielt ohne Modifikatoren weiter.
+    /// </summary>
+    [RelayCommand]
+    private async Task AbandonChallengeRun()
+    {
+        if (!_prestigeService.HasActiveChallenges) return;
+
+        var title = _localizationService.GetString("AbandonChallengeTitle") ?? "Herausforderung aufgeben?";
+        var msg = _localizationService.GetString("AbandonChallengeMessage")
+                  ?? "Du erhältst 50% der Basis-Prestige-Punkte (ohne Challenge-Bonus). Die Herausforderungen werden deaktiviert.";
+
+        var acceptText = _localizationService.GetString("AbandonChallengeButton") ?? "Aufgeben";
+        var cancelText = _localizationService.GetString("Cancel") ?? "Abbrechen";
+        bool confirmed = await DialogVM.ShowConfirmDialog(title, msg, acceptText, cancelText);
+        if (!confirmed) return;
+
+        int awardedPp = _prestigeService.AbandonChallengeRun();
+
+        RefreshChallengeDisplay();
+        _lastPrestigeBannerPrestigeCount = -1;
+        RefreshPrestigeBanner(_gameStateService.State);
+
+        if (awardedPp > 0)
+        {
+            var text = $"+{awardedPp} PP";
+            FloatingTextRequested?.Invoke(text, "info");
+            _audioService?.PlaySoundAsync(GameSound.CoinCollect).FireAndForget();
+        }
     }
 
     /// <summary>
@@ -1018,6 +1126,7 @@ public sealed partial class MainViewModel
         model.CanHireWorker = workshop?.CanHireWorker ?? false;
         model.CanAffordUpgrade = state.Money >= (workshop?.UpgradeCost ?? 100);
         model.CanAffordWorker = state.Money >= (workshop?.HireWorkerCost ?? 50);
+        model.RebirthStars = workshop?.RebirthStars ?? 0;
 
         // BulkBuy-Kosten aktualisieren
         SetBulkUpgradeCost(model, workshop, state.Money);
@@ -1050,9 +1159,26 @@ public sealed partial class MainViewModel
                 OrderType.Large => "#EA580C",
                 OrderType.Weekly => "#FFD700",
                 OrderType.Cooperation => "#0E7490",
+                OrderType.MaterialOrder => "#10B981",
                 _ => ""
             };
             order.ShowOrderTypeBadge = order.OrderType != OrderType.Standard && order.OrderType != OrderType.Quick;
+
+            // Lieferaufträge: Materialien-Info im Titel anzeigen
+            if (order.OrderType == OrderType.MaterialOrder && order.RequiredMaterials != null)
+            {
+                var allProducts = CraftingProduct.GetAllProducts();
+                var parts = new List<string>();
+                foreach (var (productId, count) in order.RequiredMaterials)
+                {
+                    string name = allProducts.TryGetValue(productId, out var p)
+                        ? _localizationService.GetString(p.NameKey) ?? p.NameKey
+                        : productId;
+                    int have = state.CraftingInventory.GetValueOrDefault(productId, 0);
+                    parts.Add($"{name} {have}/{count}");
+                }
+                order.DisplayDescription = string.Join(", ", parts);
+            }
 
             newOrders.Add(order);
         }

@@ -13,7 +13,22 @@ public enum WeeklyMissionType
     HireWorkers,
     PlayMiniGames,
     CompleteDailyChallenges,
-    AchievePerfectRatings
+    AchievePerfectRatings,
+
+    /// <summary>Mehrere Arbeiter trainieren innerhalb einer Woche.</summary>
+    TrainWorkers = 7,
+
+    /// <summary>Viele Crafting-Aufträge in einer Woche abschließen.</summary>
+    CompleteCraftings = 8,
+
+    /// <summary>Lange Serie fehlerfreier Aufträge erreichen.</summary>
+    AchievePerfectStreak = 9,
+
+    /// <summary>Werkstätten auf bestimmtes Level bringen.</summary>
+    ReachWorkshopLevels = 10,
+
+    /// <summary>Viele Items durch Auto-Produktion herstellen.</summary>
+    ProduceItems = 11
 }
 
 /// <summary>

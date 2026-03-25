@@ -1,11 +1,12 @@
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Verwaltet den Battle Pass (30 Tiers, Free + Premium Track, 30-Tage-Saison).
+/// Verwaltet den Battle Pass (50 Tiers, Free + Premium Track, 42-Tage-Saison).
 /// Automatische XP-Vergabe bei Aufträgen, MiniGames und Workshop-Upgrades.
 /// Premium-Track kann per IAP freigeschaltet werden.
 /// </summary>
@@ -118,6 +119,7 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
 
     /// <summary>
     /// Wendet eine Battle-Pass-Belohnung an.
+    /// SpeedBoost-Rewards setzen den SpeedBoostEndTime im GameState (stackt mit laufenden Boosts).
     /// </summary>
     private void ApplyReward(BattlePassReward reward)
     {
@@ -129,6 +131,15 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
 
         if (reward.GoldenScrewReward > 0)
             _gameState.AddGoldenScrews(reward.GoldenScrewReward);
+
+        // SpeedBoost: Dauer zum bestehenden Boost addieren (stackt mit laufenden Boosts)
+        if (reward.RewardType == BattlePassRewardType.SpeedBoost && reward.SpeedBoostMinutes > 0)
+        {
+            var state = _gameState.State;
+            var now = DateTime.UtcNow;
+            var currentEnd = state.SpeedBoostEndTime > now ? state.SpeedBoostEndTime : now;
+            state.SpeedBoostEndTime = currentEnd.AddMinutes(reward.SpeedBoostMinutes);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

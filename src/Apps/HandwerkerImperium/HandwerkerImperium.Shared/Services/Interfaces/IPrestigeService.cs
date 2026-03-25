@@ -72,4 +72,68 @@ public interface IPrestigeService
     /// Event fired when prestige is completed.
     /// </summary>
     event EventHandler? PrestigeCompleted;
+
+    /// <summary>
+    /// Berechnet die Bonus-PP aus Spielleistung im aktuellen Run (flat, nach Tier-Multi).
+    /// Quellen: Perfect Ratings, Research-Branches, Gebäude, Level-Überschuss.
+    /// </summary>
+    int CalculateBonusPrestigePoints(PrestigeTier tier);
+
+    /// <summary>
+    /// Prüft und vergibt Prestige-Meilensteine nach einem Prestige.
+    /// Gibt die verdienten GS zurück (0 = kein neuer Meilenstein).
+    /// </summary>
+    int CheckAndAwardMilestones();
+
+    /// <summary>
+    /// Event wenn ein Prestige-Meilenstein erreicht wird.
+    /// EventArgs enthält Meilenstein-ID und GS-Belohnung.
+    /// </summary>
+    event EventHandler<PrestigeMilestoneEventArgs>? MilestoneReached;
+
+    /// <summary>
+    /// Gibt die aktuelle Run-Dauer zurück (seit letztem Prestige).
+    /// Null wenn RunStartTime nicht gesetzt (erster Run).
+    /// </summary>
+    TimeSpan? GetCurrentRunDuration();
+
+    /// <summary>
+    /// Gibt die Bestzeiten pro Tier zurück.
+    /// </summary>
+    IReadOnlyDictionary<string, long> GetBestRunTimes();
+
+    /// <summary>
+    /// Berechnet die Auftragsbelohnungs-Bonus aus Prestige-Shop
+    /// (wiederholbar pp_order_reward_rep). Gecacht.
+    /// </summary>
+    decimal GetOrderRewardBonus();
+
+    /// <summary>
+    /// Berechnet den Forschungs-Geschwindigkeitsbonus aus Prestige-Shop.
+    /// Gecacht.
+    /// </summary>
+    decimal GetResearchSpeedBonus();
+
+    /// <summary>
+    /// Bricht den aktuellen Challenge-Run ab. Der Spieler erhält 50% der Basis-PP
+    /// (ohne Challenge-Bonus) und die Challenges werden deaktiviert.
+    /// Der Fortschritt wird NICHT zurückgesetzt — der Spieler spielt ohne Modifikatoren weiter.
+    /// </summary>
+    /// <returns>Vergebene PP (0 wenn keine Challenges aktiv).</returns>
+    int AbandonChallengeRun();
+
+    /// <summary>
+    /// Prüft ob aktuell ein Challenge-Run aktiv ist.
+    /// </summary>
+    bool HasActiveChallenges { get; }
+}
+
+/// <summary>
+/// EventArgs für Prestige-Meilensteine.
+/// </summary>
+public class PrestigeMilestoneEventArgs : EventArgs
+{
+    public required string MilestoneId { get; init; }
+    public required int GoldenScrewReward { get; init; }
+    public required int RequiredPrestigeCount { get; init; }
 }

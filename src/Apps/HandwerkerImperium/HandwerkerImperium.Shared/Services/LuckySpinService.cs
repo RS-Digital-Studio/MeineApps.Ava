@@ -37,24 +37,11 @@ public sealed class LuckySpinService : ILuckySpinService
     public bool HasFreeSpin => _gameStateService.State.LuckySpin.HasFreeSpin;
 
     /// <summary>
-    /// Steigende Kosten: 5 → 8 → 12 → 18 → 25 → 35 → 50 (danach +20 pro Spin).
-    /// Reset bei Tageswechsel.
+    /// Festpreis 5 Goldschrauben pro Spin (eskalierende Kosten entfernt - negativer Erwartungswert war frustrierend).
     /// </summary>
-    private static readonly int[] SpinCostTiers = [5, 8, 12, 18, 25, 35, 50];
+    private const int FlatSpinCost = 5;
 
-    public int SpinCost
-    {
-        get
-        {
-            var spinState = _gameStateService.State.LuckySpin;
-            spinState.ResetDailyIfNeeded();
-            int paidSpins = spinState.PaidSpinsToday;
-            if (paidSpins < SpinCostTiers.Length)
-                return SpinCostTiers[paidSpins];
-            // Ab Tier 7+: 50 + 20 pro weiteren Spin
-            return 50 + (paidSpins - SpinCostTiers.Length + 1) * 20;
-        }
-    }
+    public int SpinCost => FlatSpinCost;
 
     public LuckySpinPrizeType Spin()
     {

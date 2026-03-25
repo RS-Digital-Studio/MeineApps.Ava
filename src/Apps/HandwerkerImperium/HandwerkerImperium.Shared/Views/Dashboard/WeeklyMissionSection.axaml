@@ -6,7 +6,7 @@
              xmlns:models="using:HandwerkerImperium.Models"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.Dashboard.WeeklyMissionSection"
-             x:DataType="vm:MainViewModel"
+             x:DataType="vm:MissionsFeatureViewModel"
              x:CompileBindings="True">
 
         <Border Classes="CardElevated" Padding="12" IsVisible="{Binding HasWeeklyMissions}"
@@ -46,7 +46,7 @@
                                  AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionDescription" />
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
                                   VerticalAlignment="Center">
-                        <TextBlock Text="{Binding MoneyReward, StringFormat='{}{0:N0} €'}" FontSize="12"
+                        <TextBlock Text="{Binding MoneyReward, Converter={StaticResource MoneyDisplay}}" FontSize="12"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionRewardMoney" />
                         <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -65,7 +65,7 @@
                         <Button Classes="Text" Padding="8,8" MinHeight="44" MinWidth="44"
                                 IsVisible="{Binding IsCompleted}"
                                 IsEnabled="{Binding !IsClaimed}"
-                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).ClaimWeeklyMissionCommand}"
+                                Command="{Binding $parent[ItemsControl].((vm:MissionsFeatureViewModel)DataContext).ClaimWeeklyMissionCommand}"
                                 CommandParameter="{Binding Id}"
                                 AutomationProperties.AutomationId="Dashboard_Btn_ClaimWeeklyMission">
                           <icons:GameIcon Kind="Gift" Width="20" Height="20"

@@ -5,12 +5,12 @@ namespace HandwerkerImperium.Models;
 
 /// <summary>
 /// The complete game state, persisted between sessions.
-/// Version 2: New worker system, buildings, research, events, prestige, reputation.
+/// Version 3: Workshop Rebirth Stars (Late-Game Prestige pro Workshop).
 /// </summary>
 public class GameState
 {
     [JsonPropertyName("version")]
-    public int Version { get; set; } = 2;
+    public int Version { get; set; } = 3;
 
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -253,6 +253,17 @@ public class GameState
 
     [JsonPropertyName("prestigeMultiplier")]
     public decimal PrestigeMultiplier { get; set; } = 1.0m;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WORKSHOP REBIRTH (Late-Game Prestige pro Workshop)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Rebirth-Sterne pro Workshop (Key = WorkshopType.ToString(), Value = 0-5).
+    /// Permanent: überlebt Prestige + Ascension. Nur über RebirthService änderbar.
+    /// </summary>
+    [JsonPropertyName("workshopStars")]
+    public Dictionary<string, int> WorkshopStars { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // SETTINGS
@@ -531,9 +542,25 @@ public class GameState
     [JsonPropertyName("totalWorkersTrained")]
     public int TotalWorkersTrained { get; set; }
 
-    /// <summary>Anzahl hergestellter Crafting-Items (Lifetime).</summary>
+    /// <summary>Anzahl hergestellter Crafting-Items (Lifetime, manuell + auto).</summary>
     [JsonPropertyName("totalItemsCrafted")]
     public int TotalItemsCrafted { get; set; }
+
+    /// <summary>Anzahl automatisch produzierter Items (Lifetime). Für Achievements.</summary>
+    [JsonPropertyName("totalItemsAutoProduced")]
+    public long TotalItemsAutoProduced { get; set; }
+
+    /// <summary>Anzahl abgeschlossener Lieferaufträge (Lifetime). Für Achievements.</summary>
+    [JsonPropertyName("totalMaterialOrdersCompleted")]
+    public int TotalMaterialOrdersCompleted { get; set; }
+
+    /// <summary>Anzahl heute abgeschlossener Lieferaufträge.</summary>
+    [JsonPropertyName("materialOrdersCompletedToday")]
+    public int MaterialOrdersCompletedToday { get; set; }
+
+    /// <summary>Datum des letzten Lieferauftrags-Resets.</summary>
+    [JsonPropertyName("lastMaterialOrderReset")]
+    public string LastMaterialOrderReset { get; set; } = "";
 
     /// <summary>Set der abgeschlossenen Crafting-Rezept-IDs.</summary>
     [JsonPropertyName("completedRecipeIds")]
@@ -829,7 +856,8 @@ public class GameState
             totalIncome += Workshops[i].GrossIncomePerSecond;
             totalCosts += Workshops[i].TotalCostsPerHour;
         }
-        decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 50.0m);
+        // BAL-37: Konsistent mit PrestigeService.MaxPermanentMultiplier (20x)
+        decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 20.0m);
         _cachedIncome = totalIncome * multiplier;
         _cachedCosts = totalCosts / 3600m;
         _incomeCacheDirty = false;

@@ -906,10 +906,13 @@ public sealed class GuildResearchTreeRenderer : IDisposable
     }
 
     /// <summary>
-    /// Kompakte Zahl mit B/M/K-Suffix.
+    /// Kompakte Zahl mit Sx/Qi/Qa/T/B/M/K-Suffix.
     /// </summary>
     private static string FormatCompact(long value)
     {
+        if (value >= 1_000_000_000_000_000_000L) return $"{value / 1_000_000_000_000_000_000.0:0.#}Qi";
+        if (value >= 1_000_000_000_000_000L) return $"{value / 1_000_000_000_000_000.0:0.#}Qa";
+        if (value >= 1_000_000_000_000L) return $"{value / 1_000_000_000_000.0:0.#}T";
         if (value >= 1_000_000_000) return $"{value / 1_000_000_000.0:0.#}B";
         if (value >= 1_000_000) return $"{value / 1_000_000.0:0.#}M";
         if (value >= 1_000) return $"{value / 1_000.0:0.#}K";

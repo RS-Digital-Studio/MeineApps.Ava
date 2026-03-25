@@ -276,7 +276,9 @@ public sealed class CityWeatherSystem : IDisposable
             canvas.RotateDegrees(rotation);
             canvas.DrawOval(0, 0, leafW, leafH, _particlePaint);
             // Blattader (dünne Linie)
-            _particlePaint.Color = CityBuildingShapes.DarkenColor(color, 0.3f).WithAlpha((byte)(alpha * 0.6f));
+            // Blattader-Farbe: 30% dunkler (DarkenColor inlined, CityBuildingShapes entfernt)
+            float df = 0.7f;
+            _particlePaint.Color = new SKColor((byte)(color.Red * df), (byte)(color.Green * df), (byte)(color.Blue * df), (byte)(alpha * 0.6f));
             _particlePaint.StrokeWidth = 0.5f;
             _particlePaint.Style = SKPaintStyle.Stroke;
             canvas.DrawLine(-leafW * 0.7f, 0, leafW * 0.7f, 0, _particlePaint);

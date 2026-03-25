@@ -1,49 +1,23 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
-using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
-using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
-/// ViewModel for the Pipe Puzzle mini-game.
-/// Player must rotate pipe segments to connect water from source to drain.
-/// Grid is non-square (cols x rows), start/end positions are randomized and locked.
+/// ViewModel für das Rohr-Puzzle-Minispiel.
+/// Spieler dreht Rohrsegmente, um Wasser von der Quelle zum Abfluss zu verbinden.
+/// Grid ist nicht-quadratisch (Spalten x Zeilen), Start-/Endpositionen sind zufällig und gesperrt.
 /// </summary>
-public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
+public sealed partial class PipePuzzleViewModel : BaseMiniGameViewModel
 {
-    private readonly IGameStateService _gameStateService;
-    private readonly IAudioService _audioService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly ILocalizationService _localizationService;
-    private DispatcherTimer? _timer;
-    private bool _disposed;
-    private bool _isEnding;
-
     // ═══════════════════════════════════════════════════════════════════════
-    // EVENTS
+    // SPIEL-SPEZIFISCHE PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
-
-    public event Action<string>? NavigationRequested;
-
-    /// <summary>Wird nach Spielende mit Rating (0-3 Sterne) gefeuert.</summary>
-    public event EventHandler<int>? GameCompleted;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // OBSERVABLE PROPERTIES
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private string _orderId = string.Empty;
-
-    [ObservableProperty]
-    private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
     private ObservableCollection<PipeTile> _tiles = [];
@@ -64,105 +38,27 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
     private int _maxTime = 60;
 
     [ObservableProperty]
-    private bool _isPlaying;
-
-    [ObservableProperty]
     private bool _isPuzzleSolved;
 
     [ObservableProperty]
     private int _maxConnectionDistance;
 
-    [ObservableProperty]
-    private bool _isResultShown;
-
-    [ObservableProperty]
-    private MiniGameRating _result;
-
-    [ObservableProperty]
-    private string _resultText = "";
-
-    [ObservableProperty]
-    private string _resultEmoji = "";
-
-    [ObservableProperty]
-    private decimal _rewardAmount;
-
-    [ObservableProperty]
-    private int _xpAmount;
-
-    [ObservableProperty]
-    private bool _canWatchAd;
-
-    [ObservableProperty]
-    private bool _adWatched;
-
-    [ObservableProperty]
-    private string _taskProgressDisplay = "";
-
-    [ObservableProperty]
-    private bool _isLastTask;
-
-    [ObservableProperty]
-    private string _continueButtonText = "";
-
-    // Countdown vor Spielstart
-    [ObservableProperty]
-    private bool _isCountdownActive;
-
-    [ObservableProperty]
-    private string _countdownText = "";
-
-    // Sterne-Anzeige
-    [ObservableProperty]
-    private double _star1Opacity;
-
-    [ObservableProperty]
-    private double _star2Opacity;
-
-    [ObservableProperty]
-    private double _star3Opacity;
-
-    // Tutorial (beim ersten Spielstart anzeigen)
-    [ObservableProperty]
-    private bool _showTutorial;
-
-    [ObservableProperty]
-    private string _tutorialTitle = "";
-
-    [ObservableProperty]
-    private string _tutorialText = "";
-
-    // Auto-Complete (nach 50x bzw. 25x Perfect freigeschaltet)
-    [ObservableProperty]
-    private bool _canAutoComplete;
-
-    [ObservableProperty]
-    private string _autoCompleteHint = "";
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // COMPUTED PROPERTIES
-    // ═══════════════════════════════════════════════════════════════════════
-
-    public string DifficultyStars => Difficulty switch
-    {
-        OrderDifficulty.Easy => "★☆☆",
-        OrderDifficulty.Medium => "★★☆",
-        OrderDifficulty.Hard => "★★★",
-        OrderDifficulty.Expert => "★★★★",
-        _ => "★☆☆"
-    };
-
     /// <summary>
-    /// Width of the puzzle grid in pixels for WrapPanel constraint.
-    /// Each tile is 52px + 4px margin = 56px.
+    /// Breite des Puzzle-Grids in Pixeln für WrapPanel-Constraint.
+    /// Jedes Tile: 52px + 4px Margin = 56px.
     /// </summary>
     public double PuzzleGridWidth => GridCols * 56;
 
-    partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
     partial void OnGridColsChanged(int value) => OnPropertyChanged(nameof(PuzzleGridWidth));
 
-    // Source/Drain position tracking
+    // Quell-/Abfluss-Positionen
     private int _sourceRow, _sourceCol, _drainRow, _drainCol;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BASIS-KLASSE IMPLEMENTIERUNG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    protected override MiniGameType GameMiniGameType => MiniGameType.PipePuzzle;
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -173,58 +69,17 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
         ILocalizationService localizationService)
+        : base(gameStateService, audioService, rewardedAdService, localizationService)
     {
-        _gameStateService = gameStateService;
-        _audioService = audioService;
-        _rewardedAdService = rewardedAdService;
-        _localizationService = localizationService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // INITIALIZATION
+    // SPIEL-INITIALISIERUNG
     // ═══════════════════════════════════════════════════════════════════════
 
-    public void SetOrderId(string orderId)
+    protected override void InitializeGame()
     {
-        OrderId = orderId;
-
-        var activeOrder = _gameStateService.GetActiveOrder();
-        if (activeOrder != null)
-        {
-            Difficulty = activeOrder.Difficulty;
-
-            int totalTasks = activeOrder.Tasks.Count;
-            int currentTaskNum = activeOrder.CurrentTaskIndex + 1;
-            TaskProgressDisplay = totalTasks > 1
-                ? string.Format(_localizationService.GetString("TaskProgress"), currentTaskNum, totalTasks)
-                : "";
-            IsLastTask = currentTaskNum >= totalTasks;
-            ContinueButtonText = IsLastTask
-                ? _localizationService.GetString("Continue")
-                : _localizationService.GetString("NextTask");
-        }
-        else
-        {
-            TaskProgressDisplay = "";
-            IsLastTask = true;
-            ContinueButtonText = _localizationService.GetString("Continue");
-        }
-
-        InitializePuzzle();
-
-        UpdateAutoCompleteStatus(MiniGameType.PipePuzzle);
-
-        CheckAndShowTutorial(MiniGameType.PipePuzzle);
-        if (!ShowTutorial && !CanAutoComplete) StartGameAsync().SafeFireAndForget();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // GAME LOGIC
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void InitializePuzzle()
-    {
-        // Grid sizes: Cols x Rows (wider than tall)
+        // Grid-Größen: Spalten x Zeilen (breiter als hoch)
         (GridCols, GridRows, MaxTime) = Difficulty switch
         {
             OrderDifficulty.Easy => (5, 4, 40),
@@ -238,25 +93,49 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
         var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.PipeWrench);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
         MovesCount = 0;
-        IsPlaying = false;
         IsPuzzleSolved = false;
-        IsResultShown = false;
 
         GeneratePuzzle();
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TIMER-TICK
+    // ═══════════════════════════════════════════════════════════════════════
+
+    protected override async void OnGameTimerTick(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (!IsPlaying || _isEnding) return;
+
+            TimeRemaining--;
+
+            if (TimeRemaining <= 0)
+            {
+                await EndGameAsync(false);
+            }
+        }
+        catch
+        {
+            // Timer-Fehler still behandelt
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SPIEL-LOGIK: Puzzle-Generierung
+    // ═══════════════════════════════════════════════════════════════════════
 
     private void GeneratePuzzle()
     {
         Tiles.Clear();
         var random = Random.Shared;
 
-        // Randomize source position on left edge
+        // Zufällige Quell-Position am linken Rand
         _sourceRow = random.Next(GridRows);
         _sourceCol = 0;
 
-        // Randomize drain position on right edge (different row preferred)
+        // Zufällige Abfluss-Position am rechten Rand (andere Zeile bevorzugt)
         _drainCol = GridCols - 1;
-        // Ensure drain is at least 1 row away from source for interesting paths
         if (GridRows >= 3)
         {
             do
@@ -269,10 +148,10 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
             _drainRow = random.Next(GridRows);
         }
 
-        // Generate a solvable path from source to drain
+        // Lösbaren Pfad von Quelle zu Abfluss generieren
         var path = GeneratePath(random);
 
-        // Fill the grid with pipes
+        // Grid mit Rohren füllen
         for (int row = 0; row < GridRows; row++)
         {
             for (int col = 0; col < GridCols; col++)
@@ -284,7 +163,7 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
                     Index = row * GridCols + col
                 };
 
-                // Check if this cell is on the path
+                // Prüfen ob diese Zelle auf dem Pfad liegt
                 var pathCell = path.FirstOrDefault(p => p.Row == row && p.Col == col);
                 if (pathCell != null)
                 {
@@ -298,24 +177,22 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
                     tile.SolvedRotation = -1;
                 }
 
-                // Mark source and drain (NOT rotatable)
+                // Quelle und Abfluss markieren (NICHT drehbar)
                 if (col == _sourceCol && row == _sourceRow)
                 {
                     tile.IsSource = true;
                     tile.IsLocked = true;
-                    // Source tile should connect from left (external) to path
                     tile.Rotation = tile.SolvedRotation >= 0 ? tile.SolvedRotation : 0;
                 }
                 else if (col == _drainCol && row == _drainRow)
                 {
                     tile.IsDrain = true;
                     tile.IsLocked = true;
-                    // Drain tile stays at solved rotation
                     tile.Rotation = tile.SolvedRotation >= 0 ? tile.SolvedRotation : 0;
                 }
                 else
                 {
-                    // Randomize initial rotation (player needs to fix it)
+                    // Zufällige Anfangsrotation (Spieler muss korrigieren)
                     tile.Rotation = random.Next(4) * 90;
                 }
 
@@ -323,7 +200,7 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
             }
         }
 
-        // Initial-Verbindungen berechnen (Source + zufällig passende Nachbarn)
+        // Initiale Verbindungen berechnen
         UpdateConnections();
     }
 
@@ -332,22 +209,18 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
         var path = new List<PathCell>();
         var visited = new HashSet<(int row, int col)>();
 
-        // Use BFS/DFS to find a path from source to drain with interesting turns
         var result = new List<(int row, int col)>();
         if (FindPath(_sourceRow, _sourceCol, _drainRow, _drainCol, visited, result, random))
         {
-            // Convert coordinate path to pipe types with correct rotations
             for (int i = 0; i < result.Count; i++)
             {
                 var (row, col) = result[i];
 
-                // Determine entry and exit directions
                 Direction? entryDir = null;
                 Direction? exitDir = null;
 
                 if (i == 0)
                 {
-                    // Source tile: entry from Left (external)
                     entryDir = Direction.Left;
                 }
                 else
@@ -358,7 +231,6 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
 
                 if (i == result.Count - 1)
                 {
-                    // Drain tile: exit to Right (external)
                     exitDir = Direction.Right;
                 }
                 else
@@ -392,30 +264,28 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
         if (row == targetRow && col == targetCol)
             return true;
 
-        // Prioritize going Right, but add randomness for Up/Down
+        // Priorisiert rechts, aber mit Zufall für hoch/runter
         var neighbors = new List<(int r, int c)>
         {
-            (row, col + 1),     // Right (primary direction)
-            (row - 1, col),     // Up
-            (row + 1, col),     // Down
+            (row, col + 1),     // Rechts (Hauptrichtung)
+            (row - 1, col),     // Hoch
+            (row + 1, col),     // Runter
         };
 
-        // Shuffle neighbors with bias towards right
-        // Right stays at front with high probability
+        // Nachbarn mischen mit Bias Richtung rechts
         if (random.Next(3) > 0)
         {
-            // Keep right first but shuffle up/down
             if (random.Next(2) == 0)
                 (neighbors[1], neighbors[2]) = (neighbors[2], neighbors[1]);
         }
         else
         {
-            // Occasionally try vertical first for more interesting paths
+            // Gelegentlich vertikal zuerst für interessantere Pfade
             var verticalFirst = random.Next(2) == 0 ? 1 : 2;
             (neighbors[0], neighbors[verticalFirst]) = (neighbors[verticalFirst], neighbors[0]);
         }
 
-        // Add going left as rare option for really winding paths (medium+ only)
+        // Links als seltene Option für verschlungene Pfade (ab Medium)
         if (GridCols >= 6 && random.Next(8) == 0 && col > 1)
         {
             neighbors.Add((row, col - 1));
@@ -435,7 +305,6 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
 
     private static Direction GetDirectionFrom(int fromRow, int fromCol, int toRow, int toCol)
     {
-        // Direction water comes FROM when entering toRow/toCol from fromRow/fromCol
         if (fromRow < toRow) return Direction.Up;
         if (fromRow > toRow) return Direction.Down;
         if (fromCol < toCol) return Direction.Left;
@@ -444,7 +313,6 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
 
     private static Direction GetDirectionTo(int fromRow, int fromCol, int toRow, int toCol)
     {
-        // Direction water goes TO from fromRow/fromCol to toRow/toCol
         if (toRow < fromRow) return Direction.Up;
         if (toRow > fromRow) return Direction.Down;
         if (toCol < fromCol) return Direction.Left;
@@ -452,23 +320,19 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Determines the pipe type and rotation needed to connect entry→exit.
+    /// Bestimmt Rohr-Typ und Rotation für eine Eingang-Ausgang-Verbindung.
     /// </summary>
     private static (PipeType type, int rotation) GetPipeTypeAndRotation(Direction entry, Direction exit)
     {
-        // Straight pipe: connects opposite sides
+        // Gerades Rohr: verbindet gegenüberliegende Seiten
         if (AreOpposite(entry, exit))
         {
             return (entry == Direction.Left || entry == Direction.Right)
                 ? (PipeType.Straight, 0)    // Horizontal
-                : (PipeType.Straight, 90);  // Vertical
+                : (PipeType.Straight, 90);  // Vertikal
         }
 
-        // Corner pipe: connects two adjacent sides (L-shape)
-        // Base corner at rotation 0: opens Right + Down
-        // Rotation  90: opens Down + Left
-        // Rotation 180: opens Left + Up
-        // Rotation 270: opens Up + Right
+        // Eck-Rohr: verbindet zwei angrenzende Seiten (L-Form)
         var pair = (entry, exit);
         return pair switch
         {
@@ -499,60 +363,16 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
         };
     }
 
-    [RelayCommand]
-    private async Task StartGameAsync()
-    {
-        if (IsPlaying || IsCountdownActive) return;
-
-        IsResultShown = false;
-        _isEnding = false;
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-
-        // Countdown 3-2-1-Los!
-        IsCountdownActive = true;
-        foreach (var text in new[] { "3", "2", "1", _localizationService.GetString("CountdownGo") })
-        {
-            CountdownText = text;
-            await Task.Delay(700);
-        }
-        IsCountdownActive = false;
-
-        // Spiel starten
-        IsPlaying = true;
-        if (_timer != null) { _timer.Stop(); _timer.Tick -= OnTimerTick; }
-        _timer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(1)
-        };
-        _timer.Tick += OnTimerTick;
-        _timer.Start();
-    }
-
-    private async void OnTimerTick(object? sender, EventArgs e)
-    {
-        try
-        {
-            if (!IsPlaying || _isEnding) return;
-
-            TimeRemaining--;
-
-            if (TimeRemaining <= 0)
-            {
-                await EndGameAsync(false);
-            }
-        }
-        catch
-        {
-            // Timer-Fehler still behandelt
-        }
-    }
+    // ═══════════════════════════════════════════════════════════════════════
+    // SPIEL-LOGIK: Tile-Rotation und Verbindungsprüfung
+    // ═══════════════════════════════════════════════════════════════════════
 
     [RelayCommand]
     private async Task RotateTileAsync(PipeTile? tile)
     {
         if (tile == null || !IsPlaying || IsResultShown) return;
 
-        // Source and Drain tiles cannot be rotated
+        // Quelle und Abfluss können nicht gedreht werden
         if (tile.IsLocked) return;
 
         tile.Rotation = (tile.Rotation + 90) % 360;
@@ -706,14 +526,15 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
         };
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // SPIELENDE
+    // ═══════════════════════════════════════════════════════════════════════
+
     private async Task EndGameAsync(bool solved)
     {
-        if (_isEnding) return;
-        _isEnding = true;
+        if (!StopGame()) return;
 
-        IsPlaying = false;
-        _timer?.Stop();
-
+        MiniGameRating rating;
         if (solved)
         {
             double timeRatio = (double)TimeRemaining / MaxTime;
@@ -721,260 +542,18 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
             double moveEfficiency = optimalMoves / (double)Math.Max(MovesCount, 1);
 
             if (timeRatio > 0.5 && moveEfficiency > 0.4)
-                Result = MiniGameRating.Perfect;
+                rating = MiniGameRating.Perfect;
             else if (timeRatio > 0.25 && moveEfficiency > 0.25)
-                Result = MiniGameRating.Good;
+                rating = MiniGameRating.Good;
             else
-                Result = MiniGameRating.Ok;
+                rating = MiniGameRating.Ok;
         }
         else
         {
-            Result = MiniGameRating.Miss;
+            rating = MiniGameRating.Miss;
         }
 
-        _gameStateService.RecordMiniGameResult(Result);
-
-        // Perfect-Rating für Auto-Complete zählen
-        if (Result == MiniGameRating.Perfect)
-            _gameStateService.RecordPerfectRating(MiniGameType.PipePuzzle);
-
-        var sound = Result switch
-        {
-            MiniGameRating.Perfect => GameSound.Perfect,
-            MiniGameRating.Good => GameSound.Good,
-            MiniGameRating.Ok => GameSound.ButtonTap,
-            _ => GameSound.Miss
-        };
-        await _audioService.PlaySoundAsync(sound);
-
-        // Belohnungen berechnen
-        var order = _gameStateService.GetActiveOrder();
-        if (order != null && IsLastTask)
-        {
-            // Gesamt-Belohnung
-            RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
-            XpAmount = order.FinalXp;
-        }
-        else if (order != null)
-        {
-            // Zwischen-Runde: Keine Belohnung anzeigen, nur Gesamt am Ende
-        }
-        else
-        {
-            // QuickJob: Belohnung aus aktivem QuickJob lesen
-            var quickJob = _gameStateService.State.ActiveQuickJob;
-            RewardAmount = quickJob?.Reward ?? 0;
-            XpAmount = quickJob?.XpReward ?? 0;
-        }
-
-        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
-        ResultEmoji = Result switch
-        {
-            MiniGameRating.Perfect => "\u2b50\u2b50\u2b50",
-            MiniGameRating.Good => "\u2b50\u2b50",
-            MiniGameRating.Ok => "\u2b50",
-            _ => "\ud83d\udca8"
-        };
-
-        IsResultShown = true;
-
-        // Sterne-Bewertung berechnen
-        int starCount = Result switch
-        {
-            MiniGameRating.Perfect => 3,
-            MiniGameRating.Good => 2,
-            MiniGameRating.Ok => 1,
-            _ => 0
-        };
-
-        if (IsLastTask)
-        {
-            // Aggregierte Sterne berechnen (alle Runden zusammen)
-            if (order != null && order.TaskResults.Count > 1)
-            {
-                int totalStarSum = order.TaskResults.Sum(r => r switch
-                {
-                    MiniGameRating.Perfect => 3,
-                    MiniGameRating.Good => 2,
-                    MiniGameRating.Ok => 1,
-                    _ => 0
-                });
-                int totalPossible = order.TaskResults.Count * 3;
-                starCount = totalPossible > 0
-                    ? (int)Math.Round((double)totalStarSum / totalPossible * 3.0)
-                    : 0;
-                starCount = Math.Clamp(starCount, 0, 3);
-            }
-
-            // Sterne staggered einblenden
-            Star1Opacity = 0; Star2Opacity = 0; Star3Opacity = 0;
-            if (starCount >= 1) { await Task.Delay(200); Star1Opacity = 1.0; }
-            if (starCount >= 2) { await Task.Delay(200); Star2Opacity = 1.0; }
-            if (starCount >= 3) { await Task.Delay(200); Star3Opacity = 1.0; }
-
-            // Visuelles Event fuer Result-Polish in der View
-            GameCompleted?.Invoke(this, starCount);
-        }
-        else
-        {
-            // Zwischen-Runde: Sterne sofort setzen, keine Animation
-            Star1Opacity = starCount >= 1 ? 1.0 : 0.3;
-            Star2Opacity = starCount >= 2 ? 1.0 : 0.3;
-            Star3Opacity = starCount >= 3 ? 1.0 : 0.3;
-        }
-
-        AdWatched = false;
-        CanWatchAd = IsLastTask && _rewardedAdService.IsAvailable;
-    }
-
-    [RelayCommand]
-    private async Task WatchAdAsync()
-    {
-        if (!CanWatchAd || AdWatched) return;
-
-        var success = await _rewardedAdService.ShowAdAsync("score_double");
-        if (success)
-        {
-            // Belohnungen verdoppeln (Anzeige + Flag für Auszahlung)
-            RewardAmount *= 2;
-            XpAmount *= 2;
-            var order = _gameStateService.GetActiveOrder();
-            if (order != null) order.IsScoreDoubled = true;
-            AdWatched = true;
-            CanWatchAd = false;
-
-            await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
-        }
-    }
-
-    [RelayCommand]
-    private void Continue()
-    {
-        var order = _gameStateService.GetActiveOrder();
-        if (order == null)
-        {
-            NavigationRequested?.Invoke("../..");
-            return;
-        }
-
-        if (order.IsCompleted)
-        {
-            _gameStateService.CompleteActiveOrder();
-            NavigationRequested?.Invoke("../..");
-        }
-        else
-        {
-            var nextTask = order.CurrentTask;
-            if (nextTask != null)
-            {
-                NavigationRequested?.Invoke($"../{nextTask.GameType.GetRoute()}?orderId={order.Id}");
-            }
-            else
-            {
-                NavigationRequested?.Invoke("../..");
-            }
-        }
-    }
-
-    [RelayCommand]
-    private void DismissTutorial()
-    {
-        ShowTutorial = false;
-        // Als gesehen markieren und speichern
-        var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.PipePuzzle))
-        {
-            state.SeenMiniGameTutorials.Add(MiniGameType.PipePuzzle);
-            _gameStateService.MarkDirty();
-        }
-        StartGameAsync().SafeFireAndForget();
-    }
-
-    [RelayCommand]
-    private void Cancel()
-    {
-        _timer?.Stop();
-        IsPlaying = false;
-
-        _gameStateService.CancelActiveOrder();
-        NavigationRequested?.Invoke("../..");
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // AUTO-COMPLETE
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void UpdateAutoCompleteStatus(MiniGameType gameType)
-    {
-        var state = _gameStateService.State;
-        bool canAuto = _gameStateService.CanAutoComplete(gameType, state.IsPremium);
-        CanAutoComplete = canAuto;
-        if (canAuto)
-        {
-            int count = state.PerfectRatingCounts.TryGetValue((int)gameType, out int c) ? c : 0;
-            var hint = _localizationService.GetString("AutoCompleteHint") ?? "";
-            AutoCompleteHint = string.Format(hint, count);
-        }
-    }
-
-    [RelayCommand]
-    private async Task AutoCompleteGameAsync()
-    {
-        if (!CanAutoComplete) return;
-
-        var order = _gameStateService.GetActiveOrder();
-        if (order == null) { NavigationRequested?.Invoke("../..");  return; }
-
-        while (!order.IsCompleted)
-            _gameStateService.RecordMiniGameResult(MiniGameRating.Good);
-
-        await _audioService.PlaySoundAsync(GameSound.Good);
-
-        RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
-        XpAmount = order.FinalXp;
-        Result = MiniGameRating.Good;
-        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
-        ResultEmoji = "★★";
-        IsLastTask = true;
-        IsResultShown = true;
-        Star1Opacity = 1.0; Star2Opacity = 1.0; Star3Opacity = 0.3;
-        GameCompleted?.Invoke(this, 2);
-        AdWatched = false;
-        CanWatchAd = _rewardedAdService.IsAvailable;
-        CanAutoComplete = false;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // HELPERS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void CheckAndShowTutorial(MiniGameType gameType)
-    {
-        var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(gameType))
-        {
-            TutorialTitle = _localizationService.GetString($"Tutorial{gameType}Title") ?? "";
-            TutorialText = _localizationService.GetString($"Tutorial{gameType}Text") ?? "";
-            ShowTutorial = true;
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // DISPOSAL
-    // ═══════════════════════════════════════════════════════════════════════
-
-    public void Dispose()
-    {
-        if (_disposed) return;
-
-        _timer?.Stop();
-        if (_timer != null)
-        {
-            _timer.Tick -= OnTimerTick;
-        }
-
-        _disposed = true;
-        GC.SuppressFinalize(this);
+        await ShowResultAsync(rating);
     }
 }
 
@@ -984,10 +563,10 @@ public sealed partial class PipePuzzleViewModel : ViewModelBase, IDisposable
 
 public enum PipeType
 {
-    Straight,   // Connects two opposite sides
-    Corner,     // Connects two adjacent sides (L-shape)
-    TJunction,  // Connects three sides (T-shape)
-    Cross       // Connects all four sides
+    Straight,   // Verbindet zwei gegenüberliegende Seiten
+    Corner,     // Verbindet zwei angrenzende Seiten (L-Form)
+    TJunction,  // Verbindet drei Seiten (T-Form)
+    Cross       // Verbindet alle vier Seiten
 }
 
 public enum Direction
@@ -1008,10 +587,10 @@ public partial class PipeTile : ObservableObject
     public bool IsDrain { get; set; }
     public bool IsPartOfSolution { get; set; }
 
-    /// <summary>Whether this tile is locked (cannot be rotated). Source/Drain are locked.</summary>
+    /// <summary>Ob dieses Tile gesperrt ist (nicht drehbar). Quelle/Abfluss sind gesperrt.</summary>
     public bool IsLocked { get; set; }
 
-    /// <summary>The rotation at which this tile is part of the solution (-1 if not on path).</summary>
+    /// <summary>Die Rotation, bei der dieses Tile Teil der Lösung ist (-1 wenn nicht auf dem Pfad).</summary>
     public int SolvedRotation { get; set; } = -1;
 
     /// <summary>BFS-Distanz von der Quelle (-1 wenn nicht verbunden). Für progressive Wasser-Animation.</summary>
@@ -1081,6 +660,6 @@ public partial class PipeTile : ObservableObject
 }
 
 /// <summary>
-/// Helper class for path generation.
+/// Hilfsklasse für die Pfad-Generierung.
 /// </summary>
 internal record PathCell(int Row, int Col, PipeType Type, Direction ExitDirection, int SolvedRotation);

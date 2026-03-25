@@ -23,6 +23,7 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localizationService;
     private readonly IPurchaseService _purchaseService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IRebirthService _rebirthService;
     private bool _disposed;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -124,6 +125,9 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
     private decimal _totalEarned;
 
     [ObservableProperty]
+    private string _totalEarnedDisplay = "";
+
+    [ObservableProperty]
     private int _ordersCompleted;
 
     [ObservableProperty]
@@ -161,6 +165,31 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private bool _canAffordHire;
+
+    /// <summary>
+    /// Anzahl der Rebirth-Sterne dieses Workshops (0-5).
+    /// </summary>
+    [ObservableProperty]
+    private int _rebirthStars;
+
+    /// <summary>
+    /// Ob mindestens ein Rebirth-Stern vorhanden ist (fuer UI-Sichtbarkeit).
+    /// </summary>
+    public bool HasRebirthStars => RebirthStars > 0;
+
+    partial void OnRebirthStarsChanged(int value) => OnPropertyChanged(nameof(HasRebirthStars));
+
+    /// <summary>
+    /// Ob der Workshop wiedergeboren werden kann (Level 1000, weniger als 5 Sterne).
+    /// </summary>
+    [ObservableProperty]
+    private bool _canRebirth;
+
+    /// <summary>
+    /// Formatierte Kosten fuer den naechsten Rebirth (z.B. "100 GS + 10%").
+    /// </summary>
+    [ObservableProperty]
+    private string _rebirthCostDisplay = "";
 
     /// <summary>
     /// Ob ein Extra-Worker-Slot per Ad verfügbar ist (Workshop voll + Werbung aktiv).
@@ -216,13 +245,15 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
         IAudioService audioService,
         ILocalizationService localizationService,
         IPurchaseService purchaseService,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService,
+        IRebirthService rebirthService)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
         _localizationService = localizationService;
         _purchaseService = purchaseService;
         _rewardedAdService = rewardedAdService;
+        _rebirthService = rebirthService;
 
         _gameStateService.MoneyChanged += OnMoneyChanged;
         _gameStateService.WorkshopUpgraded += OnWorkshopUpgraded;
@@ -263,6 +294,7 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
         IncomePerSecond = workshop.IncomePerSecond;
         IncomeDisplay = MoneyFormatter.FormatPerSecond(IncomePerSecond, 1);
         TotalEarned = workshop.TotalEarned;
+        TotalEarnedDisplay = MoneyFormatter.FormatCompact(workshop.TotalEarned);
         OrdersCompleted = workshop.OrdersCompleted;
 
         Workers.Clear();
@@ -312,6 +344,19 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
         CanAffordHire = _gameStateService.CanAfford(HireWorkerCost);
         // Extra-Slot per Ad: nur wenn Workshop voll und Werbung aktiv
         CanWatchSlotAd = !CanHireWorker && ShowAds && workshop.Workers.Count > 0;
+
+        // Rebirth-Sterne
+        RebirthStars = _rebirthService.GetStars(WorkshopType);
+        CanRebirth = _rebirthService.CanRebirth(WorkshopType);
+        if (CanRebirth)
+        {
+            var cost = _rebirthService.GetRebirthCost(WorkshopType);
+            RebirthCostDisplay = $"{cost.goldenScrews} GS + {cost.moneyPercent * 100:F0}%";
+        }
+        else
+        {
+            RebirthCostDisplay = "";
+        }
     }
 
     [RelayCommand]
@@ -371,6 +416,18 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
     {
         // Bug 2 Fix: Zum Arbeitermarkt navigieren statt zufaelligen Worker erstellen
         NavigationRequested?.Invoke("workers");
+    }
+
+    [RelayCommand]
+    private void DoRebirth()
+    {
+        if (!_rebirthService.CanRebirth(WorkshopType)) return;
+
+        if (_rebirthService.DoRebirth(WorkshopType))
+        {
+            LoadWorkshop();
+            UpgradeEffectRequested?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     [RelayCommand]

@@ -249,7 +249,7 @@ public partial class InventGameView : UserControl
             if (moneyText != null && _vm != null)
             {
                 await MiniGameEffectHelper.AnimateRewardTextAsync(
-                    moneyText, $"+{_vm.RewardAmount:N0} \u20ac");
+                    moneyText, _vm.RewardAmountDisplay);
             }
 
             if (xpText != null && _vm != null)

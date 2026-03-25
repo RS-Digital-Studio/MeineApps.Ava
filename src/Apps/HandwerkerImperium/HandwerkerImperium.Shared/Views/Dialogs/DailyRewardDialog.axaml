@@ -80,17 +80,17 @@
                 AutomationProperties.AutomationId="Main_Btn_ClaimDailyReward" />
 
         <!-- Streak-Rettung Button (nur sichtbar wenn Streak gebrochen) -->
-        <Border IsVisible="{Binding CanRescueStreak}"
+        <Border IsVisible="{Binding MissionsVM.CanRescueStreak}"
                 Background="#20FF5722" CornerRadius="12" Padding="12,8"
                 AutomationProperties.AutomationId="Main_Border_StreakRescue">
           <StackPanel Spacing="6">
-            <TextBlock Text="{Binding StreakRescueText}"
+            <TextBlock Text="{Binding MissionsVM.StreakRescueText}"
                        FontSize="13" FontWeight="SemiBold"
                        HorizontalAlignment="Center"
                        Foreground="{DynamicResource WarningBrush}"
                        AutomationProperties.AutomationId="Main_Txt_StreakRescueWarning" />
             <Button Classes="Primary" Background="#FF5722"
-                    Command="{Binding RescueStreakCommand}"
+                    Command="{Binding MissionsVM.RescueStreakCommand}"
                     HorizontalAlignment="Center" MinWidth="160"
                     AutomationProperties.AutomationId="Main_Btn_RescueStreak">
               <StackPanel Orientation="Horizontal" Spacing="6">

@@ -214,7 +214,7 @@
 
                   <!-- Row 0, Col 2: Wage -->
                   <TextBlock Grid.Column="2"
-                             Text="{Binding WagePerHour, StringFormat='{}{0:N0} €/h'}"
+                             Text="{Binding WagePerHour, Converter={StaticResource MoneyDisplay}, ConverterParameter='perhour'}"
                              FontSize="13" FontWeight="SemiBold"
                              Foreground="{DynamicResource WarningBrush}"
                              VerticalAlignment="Center"
@@ -285,7 +285,7 @@
                                 HorizontalAlignment="Center">
                       <icons:GameIcon Kind="AccountPlus" Width="20" Height="20"
                                        AutomationProperties.AutomationId="WorkerMarket_Icon_Hire" />
-                      <TextBlock Text="{Binding HiringCost, StringFormat='{}{0:N0} €'}"
+                      <TextBlock Text="{Binding HiringCost, Converter={StaticResource MoneyDisplay}}"
                                  FontSize="13" FontWeight="SemiBold"
                                  AutomationProperties.AutomationId="WorkerMarket_Txt_HiringCost" />
                       <!-- Goldschrauben-Kosten (nur Tier A+S) -->

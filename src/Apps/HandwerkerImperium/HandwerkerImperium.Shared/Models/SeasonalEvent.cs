@@ -29,6 +29,45 @@ public class SeasonalItemEffect
 
     [JsonPropertyName("speedBoostMinutes")]
     public int SpeedBoostMinutes { get; set; }
+
+    // Saison-einzigartige Effekte (Phase 2.9)
+    // Effekt wird in GameLoopService/OfflineProgressService ausgewertet
+
+    /// <summary>Temporaerer Extra-Worker-Slot (Dauer in Tagen).</summary>
+    [JsonPropertyName("extraWorkerDays")]
+    public int ExtraWorkerDays { get; set; }
+
+    /// <summary>Temporaerer Research-Speed-Bonus in Prozent (Dauer in Tagen).</summary>
+    [JsonPropertyName("researchSpeedBonusPercent")]
+    public int ResearchSpeedBonusPercent { get; set; }
+
+    /// <summary>Dauer fuer temporaere Boni in Tagen (ExtraWorker, ResearchSpeed, OfflineEarnings).</summary>
+    [JsonPropertyName("effectDurationDays")]
+    public int EffectDurationDays { get; set; }
+
+    /// <summary>Naechster Prestige gibt doppelte PP (einmalig).</summary>
+    [JsonPropertyName("doubleNextPrestige")]
+    public bool DoubleNextPrestige { get; set; }
+
+    /// <summary>Temporaerer Offline-Earnings-Bonus in Prozent (Dauer via EffectDurationDays).</summary>
+    [JsonPropertyName("offlineEarningsBonusPercent")]
+    public int OfflineEarningsBonusPercent { get; set; }
+
+    /// <summary>Sofortige Goldschrauben-Belohnung.</summary>
+    [JsonPropertyName("instantGoldenScrews")]
+    public int InstantGoldenScrews { get; set; }
+
+    /// <summary>Setzt alle Worker-Mood auf diesen Wert (0 = inaktiv).</summary>
+    [JsonPropertyName("workerMoodResetTo")]
+    public int WorkerMoodResetTo { get; set; }
+
+    /// <summary>Speed-Boost-Dauer in Stunden (2x Geschwindigkeit).</summary>
+    [JsonPropertyName("speedBoostHours")]
+    public int SpeedBoostHours { get; set; }
+
+    /// <summary>Naechster Daily-Reward wird verdoppelt (einmalig).</summary>
+    [JsonPropertyName("doubleDailyReward")]
+    public bool DoubleDailyReward { get; set; }
 }
 
 /// <summary>

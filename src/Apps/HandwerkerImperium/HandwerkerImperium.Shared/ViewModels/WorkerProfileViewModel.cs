@@ -22,6 +22,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
     private readonly IEquipmentService _equipmentService;
+    private readonly IDialogService _dialogService;
 
     private string? _workerId;
 
@@ -30,17 +31,6 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     public event EventHandler<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event to show an alert dialog. Parameters: title, message, buttonText.
-    /// </summary>
-    public event Action<string, string, string>? AlertRequested;
-
-    /// <summary>
-    /// Event to request a confirmation dialog.
-    /// Parameters: title, message, acceptText, cancelText. Returns bool.
-    /// </summary>
-    public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
 
     /// <summary>
     /// Event für kurze FloatingText-Benachrichtigungen. Parameters: text, category.
@@ -256,12 +246,14 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
         IWorkerService workerService,
         IGameStateService gameStateService,
         ILocalizationService localizationService,
-        IEquipmentService equipmentService)
+        IEquipmentService equipmentService,
+        IDialogService dialogService)
     {
         _workerService = workerService;
         _gameStateService = gameStateService;
         _localizationService = localizationService;
         _equipmentService = equipmentService;
+        _dialogService = dialogService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -304,7 +296,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
             if (workshop != null)
             {
                 var contribution = workshop.BaseIncomePerWorker * Worker.EffectiveEfficiency;
-                IncomeContributionDisplay = $"+{contribution:N2} €/s";
+                IncomeContributionDisplay = $"+{MoneyFormatter.FormatPerSecond(contribution, 1)}";
             }
             else
             {
@@ -568,30 +560,25 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
         var cost = Worker.WagePerHour * 24m;
         var costText = MoneyFormatter.Format(cost, 0);
 
-        bool confirm = true;
-        if (ConfirmationRequested != null)
-        {
-            confirm = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("GiveBonus"),
-                string.Format(_localizationService.GetString("GiveBonusConfirmFormat"), costText),
-                _localizationService.GetString("Confirm"),
-                _localizationService.GetString("Cancel"));
-        }
-
+        var confirm = await _dialogService.ShowConfirmDialog(
+            _localizationService.GetString("GiveBonus"),
+            string.Format(_localizationService.GetString("GiveBonusConfirmFormat"), costText),
+            _localizationService.GetString("Confirm"),
+            _localizationService.GetString("Cancel"));
         if (!confirm) return;
 
         bool success = _workerService.GiveBonus(_workerId);
         if (success)
         {
             RefreshDisplayProperties();
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("BonusGiven"),
                 string.Format(_localizationService.GetString("BonusGivenFormat"), Worker.Name),
                 _localizationService.GetString("Great"));
         }
         else
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NotEnoughMoney"),
                 _localizationService.GetString("NotEnoughMoneyDesc"),
                 _localizationService.GetString("OK") ?? "OK");
@@ -603,16 +590,11 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
     {
         if (_workerId == null || Worker == null) return;
 
-        bool confirm = false;
-        if (ConfirmationRequested != null)
-        {
-            confirm = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("FireWorker"),
-                string.Format(_localizationService.GetString("FireWorkerConfirmFormat"), Worker.Name),
-                _localizationService.GetString("Fire"),
-                _localizationService.GetString("Cancel"));
-        }
-
+        var confirm = await _dialogService.ShowConfirmDialog(
+            _localizationService.GetString("FireWorker"),
+            string.Format(_localizationService.GetString("FireWorkerConfirmFormat"), Worker.Name),
+            _localizationService.GetString("Fire"),
+            _localizationService.GetString("Cancel"));
         if (!confirm) return;
 
         // Worker-Daten vor dem Feuern merken (für Undo)
@@ -691,7 +673,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
         }
         else
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("TransferFailed"),
                 _localizationService.GetString("TransferFailedDesc"),
                 _localizationService.GetString("OK") ?? "OK");

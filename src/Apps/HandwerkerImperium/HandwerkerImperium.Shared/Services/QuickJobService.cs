@@ -1,3 +1,4 @@
+using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
@@ -258,7 +259,7 @@ public sealed class QuickJobService : IQuickJobService
         var title = _localizationService.GetString(job.TitleKey);
         job.DisplayTitle = string.IsNullOrEmpty(title) ? job.TitleKey : title;
         job.DisplayWorkshopName = _localizationService.GetString(job.WorkshopType.GetLocalizationKey());
-        job.RewardDisplay = $"{job.Reward:N0} € + {job.XpReward} XP";
+        job.RewardDisplay = $"{MoneyFormatter.FormatCompact(job.Reward)} + {job.XpReward} XP";
     }
 
     /// <summary>

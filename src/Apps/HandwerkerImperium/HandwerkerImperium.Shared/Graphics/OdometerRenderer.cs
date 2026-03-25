@@ -332,6 +332,16 @@ public sealed class OdometerRenderer : IDisposable
     {
         if (value < 0) value = 0;
 
+        if (value >= 1_000_000_000_000_000_000_000_000_000m)
+            return (FormatDigits(value / 1_000_000_000_000_000_000_000_000_000m), "Oc");
+        if (value >= 1_000_000_000_000_000_000_000_000m)
+            return (FormatDigits(value / 1_000_000_000_000_000_000_000_000m), "Sp");
+        if (value >= 1_000_000_000_000_000_000_000m)
+            return (FormatDigits(value / 1_000_000_000_000_000_000_000m), "Sx");
+        if (value >= 1_000_000_000_000_000_000m)
+            return (FormatDigits(value / 1_000_000_000_000_000_000m), "Qi");
+        if (value >= 1_000_000_000_000_000m)
+            return (FormatDigits(value / 1_000_000_000_000_000m), "Qa");
         if (value >= 1_000_000_000_000m)
             return (FormatDigits(value / 1_000_000_000_000m), "T");
         if (value >= 1_000_000_000m)

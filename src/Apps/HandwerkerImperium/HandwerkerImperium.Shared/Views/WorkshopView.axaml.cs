@@ -18,7 +18,7 @@ namespace HandwerkerImperium.Views;
 public partial class WorkshopView : UserControl
 {
     private WorkshopViewModel? _workshopVm;
-    private readonly WorkshopInteriorRenderer _interiorRenderer = new();
+    // WorkshopInteriorRenderer entfernt - AI-Bilder ersetzen den prozeduralen Hintergrund komplett
     private readonly WorkshopSceneRenderer _sceneRenderer = new();
     private readonly AnimationManager _animationManager = new();
     private DispatcherTimer? _renderTimer;
@@ -81,7 +81,7 @@ public partial class WorkshopView : UserControl
             _workshopCanvas = null;
         }
 
-        _interiorRenderer.Dispose();
+        // WorkshopInteriorRenderer entfernt (AI-Bilder)
         _sceneRenderer.Dispose();
     }
 
@@ -143,9 +143,6 @@ public partial class WorkshopView : UserControl
         var workshop = _workshopVm?.GetWorkshopForRendering();
         if (workshop != null)
         {
-            // Dezenter Hintergrund (mit dynamischer Beleuchtung + Wand-Details)
-            _interiorRenderer.Render(canvas, bounds, workshop, _workerAnimPhase);
-
             // Aktive Worker zählen (For-Schleife statt LINQ, vermeidet Closure+Enumerator pro Frame)
             int activeWorkers = 0;
             for (int i = 0; i < workshop.Workers.Count; i++)

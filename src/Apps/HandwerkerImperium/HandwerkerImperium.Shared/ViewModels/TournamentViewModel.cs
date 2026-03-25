@@ -19,17 +19,13 @@ public sealed partial class TournamentViewModel : ViewModelBase
     private readonly IGameStateService _gameStateService;
     private readonly ITournamentService _tournamentService;
     private readonly ILocalizationService _localizationService;
+    private readonly IDialogService _dialogService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event für Alert-Dialoge. Parameter: Titel, Nachricht, Button-Text.
-    /// </summary>
-    public event Action<string, string, string>? AlertRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES
@@ -90,11 +86,13 @@ public sealed partial class TournamentViewModel : ViewModelBase
     public TournamentViewModel(
         IGameStateService gameStateService,
         ITournamentService tournamentService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IDialogService dialogService)
     {
         _gameStateService = gameStateService;
         _tournamentService = tournamentService;
         _localizationService = localizationService;
+        _dialogService = dialogService;
 
         UpdateLocalizedTexts();
         RefreshTournament();
@@ -109,7 +107,7 @@ public sealed partial class TournamentViewModel : ViewModelBase
     {
         if (!_tournamentService.CanEnter)
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("TournamentFull") ?? "Turnier",
                 _localizationService.GetString("TournamentNoEntries") ?? "Keine Teilnahmen mehr verfügbar.",
                 _localizationService.GetString("OK") ?? "OK");
@@ -135,7 +133,7 @@ public sealed partial class TournamentViewModel : ViewModelBase
                 _ => ""
             };
 
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("TournamentReward") ?? "Turnier-Belohnung",
                 $"{tierName}: {screws} \u2699",
                 _localizationService.GetString("OK") ?? "OK");

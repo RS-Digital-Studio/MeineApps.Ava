@@ -25,17 +25,13 @@ public sealed partial class StatisticsViewModel : ViewModelBase
     private readonly IPurchaseService _purchaseService;
     private readonly IPlayGamesService? _playGamesService;
     private readonly IGameLoopService _gameLoopService;
+    private readonly IDialogService _dialogService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event to show an alert dialog. Parameters: title, message, buttonText.
-    /// </summary>
-    public event Action<string, string, string>? AlertRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // PLAYER STATISTICS
@@ -273,7 +269,9 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         IAudioService audioService,
         ILocalizationService localizationService,
         IPurchaseService purchaseService,
-        IGameLoopService gameLoopService)
+        IGameLoopService gameLoopService,
+        IDialogService dialogService,
+        IPlayGamesService? playGamesService = null)
     {
         _gameStateService = gameStateService;
         _prestigeService = prestigeService;
@@ -281,7 +279,8 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         _localizationService = localizationService;
         _purchaseService = purchaseService;
         _gameLoopService = gameLoopService;
-        _playGamesService = App.Services?.GetService(typeof(IPlayGamesService)) as IPlayGamesService;
+        _dialogService = dialogService;
+        _playGamesService = playGamesService;
 
         LoadStatistics();
     }
@@ -477,7 +476,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         IsPrestigePassActive = true;
         CanBuyPrestigePass = false;
 
-        AlertRequested?.Invoke(
+        _dialogService.ShowAlertDialog(
             _localizationService.GetString("PrestigePassTitle") ?? "Prestige-Pass",
             _localizationService.GetString("PrestigePassActive") ?? "Prestige-Pass aktiviert! +50% Prestige-Punkte beim nächsten Prestige.",
             _localizationService.GetString("Great") ?? "Super!");
@@ -516,7 +515,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
                 PrestigeTier.Bronze.GetRequiredLevel(),
                 state.PlayerLevel);
 
-            AlertRequested?.Invoke(title, message, _localizationService.GetString("OK") ?? "OK");
+            _dialogService.ShowAlertDialog(title, message, _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -719,7 +718,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
             lines.Add($"{completedLabel}: {count}x");
         }
 
-        AlertRequested?.Invoke(tierName, string.Join("\n", lines), _localizationService.GetString("OK") ?? "OK");
+        _dialogService.ShowAlertDialog(tierName, string.Join("\n", lines), _localizationService.GetString("OK") ?? "OK");
     }
 
     // ═══════════════════════════════════════════════════════════════════════

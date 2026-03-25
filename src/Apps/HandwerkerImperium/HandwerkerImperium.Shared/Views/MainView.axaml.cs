@@ -219,7 +219,7 @@ public partial class MainView : UserControl
         {
             _tabBadgeCounts[0] = (_vm.HasPendingDelivery ? 1 : 0) + (_vm.CanActivateRush ? 1 : 0);
             _tabBadgeCounts[1] = _vm.HasWorkerWarning ? 1 : 0;
-            _tabBadgeCounts[2] = _vm.ClaimableMissionsCount + (_vm.HasFreeSpin ? 1 : 0);
+            _tabBadgeCounts[2] = _vm.MissionsVM.ClaimableMissionsCount + (_vm.MissionsVM.HasFreeSpin ? 1 : 0);
             _tabBadgeCounts[3] = 0;
             _tabBadgeCounts[4] = 0;
         }

@@ -17,11 +17,28 @@ public class AscensionPerk
     /// <summary>Effekt-Werte pro Level (Index 0 = Level 1, etc.).</summary>
     public decimal[] ValuesPerLevel { get; set; } = [];
 
+    /// <summary>Kosten für ein bestimmtes Level (1-basiert).</summary>
+    public int GetCost(int level)
+    {
+        if (level < 1 || level > CostsPerLevel.Length) return int.MaxValue;
+        return CostsPerLevel[level - 1];
+    }
+
+    /// <summary>Effekt-Wert für ein bestimmtes Level (0 = nicht gekauft). Clampt auf MaxLevel für Save-Kompatibilität.</summary>
+    public decimal GetValue(int level)
+    {
+        // Clamp: Alte Saves mit Level > MaxLevel bekommen den Max-Wert
+        int clamped = Math.Min(level, ValuesPerLevel.Length);
+        if (clamped < 1) return 0m;
+        return ValuesPerLevel[clamped - 1];
+    }
+
     /// <summary>
     /// Alle 6 Ascension-Perks.
     /// </summary>
     public static List<AscensionPerk> GetAll()
     {
+        // MaxLevel 3 statt 5: Gesamt 61 AP (statt 120), erreichbar in 4-6 Ascensions
         return
         [
             new AscensionPerk
@@ -30,10 +47,10 @@ public class AscensionPerk
                 NameKey = "AscStartCapital",
                 DescriptionKey = "AscStartCapitalDesc",
                 Icon = "Bank",
-                MaxLevel = 5,
-                CostsPerLevel = [1, 2, 3, 5, 8],
-                // +50%, +100%, +200%, +500%, +1000% Startgeld nach Prestige
-                ValuesPerLevel = [0.50m, 1.00m, 2.00m, 5.00m, 10.00m]
+                MaxLevel = 3,
+                CostsPerLevel = [1, 3, 6],
+                // +100%, +500%, +1000% Startgeld nach Prestige
+                ValuesPerLevel = [1.00m, 5.00m, 10.00m]
             },
             new AscensionPerk
             {
@@ -41,10 +58,10 @@ public class AscensionPerk
                 NameKey = "AscEternalTools",
                 DescriptionKey = "AscEternalToolsDesc",
                 Icon = "Wrench",
-                MaxLevel = 5,
-                CostsPerLevel = [2, 3, 5, 7, 10],
-                // Meisterwerkzeuge bleiben ab Bronze(1), immer(2), +1 Tool(3), +2(4), alle(5)
-                ValuesPerLevel = [1m, 2m, 3m, 4m, 5m]
+                MaxLevel = 3,
+                CostsPerLevel = [2, 4, 8],
+                // Erste 2 behalten, erste 4 behalten, alle behalten
+                ValuesPerLevel = [2m, 4m, 5m]
             },
             new AscensionPerk
             {
@@ -52,10 +69,10 @@ public class AscensionPerk
                 NameKey = "AscQuickStart",
                 DescriptionKey = "AscQuickStartDesc",
                 Icon = "RocketLaunch",
-                MaxLevel = 5,
-                CostsPerLevel = [1, 2, 4, 6, 10],
-                // Start mit 2/3/4/5/alle Workshops freigeschaltet
-                ValuesPerLevel = [2m, 3m, 4m, 5m, 8m]
+                MaxLevel = 3,
+                CostsPerLevel = [1, 3, 7],
+                // Start mit 2/4/alle Workshops freigeschaltet
+                ValuesPerLevel = [2m, 4m, 8m]
             },
             new AscensionPerk
             {
@@ -63,10 +80,10 @@ public class AscensionPerk
                 NameKey = "AscTimelessResearch",
                 DescriptionKey = "AscTimelessResearchDesc",
                 Icon = "FlaskOutline",
-                MaxLevel = 5,
-                CostsPerLevel = [1, 2, 3, 4, 6],
-                // Research-Dauer -10%/-20%/-30%/-40%/-50%
-                ValuesPerLevel = [0.10m, 0.20m, 0.30m, 0.40m, 0.50m]
+                MaxLevel = 3,
+                CostsPerLevel = [1, 2, 5],
+                // Research-Dauer -15%/-30%/-50%
+                ValuesPerLevel = [0.15m, 0.30m, 0.50m]
             },
             new AscensionPerk
             {
@@ -74,10 +91,10 @@ public class AscensionPerk
                 NameKey = "AscGoldenEra",
                 DescriptionKey = "AscGoldenEraDesc",
                 Icon = "Screwdriver",
-                MaxLevel = 5,
-                CostsPerLevel = [1, 2, 3, 5, 8],
-                // Goldschrauben-Verdienst +10%/+20%/+30%/+50%/+100%
-                ValuesPerLevel = [0.10m, 0.20m, 0.30m, 0.50m, 1.00m]
+                MaxLevel = 3,
+                CostsPerLevel = [1, 3, 6],
+                // Goldschrauben-Verdienst +20%/+50%/+100%
+                ValuesPerLevel = [0.20m, 0.50m, 1.00m]
             },
             new AscensionPerk
             {
@@ -85,10 +102,10 @@ public class AscensionPerk
                 NameKey = "AscLegendaryReputation",
                 DescriptionKey = "AscLegendaryReputationDesc",
                 Icon = "StarCircle",
-                MaxLevel = 5,
-                CostsPerLevel = [1, 2, 3, 4, 6],
-                // Reputation startet bei 60/70/80/90/100 statt 50
-                ValuesPerLevel = [60m, 70m, 80m, 90m, 100m]
+                MaxLevel = 3,
+                CostsPerLevel = [1, 2, 5],
+                // Reputation startet bei 65/80/100 statt 50
+                ValuesPerLevel = [65m, 80m, 100m]
             }
         ];
     }

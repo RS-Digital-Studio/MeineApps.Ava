@@ -19,17 +19,13 @@ public sealed partial class AchievementsViewModel : ViewModelBase
     private readonly ILocalizationService _localizationService;
     private readonly IAudioService _audioService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IDialogService _dialogService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event to show an alert dialog. Parameters: title, message, buttonText.
-    /// </summary>
-    public event Action<string, string, string>? AlertRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -60,12 +56,14 @@ public sealed partial class AchievementsViewModel : ViewModelBase
         IAchievementService achievementService,
         ILocalizationService localizationService,
         IAudioService audioService,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService,
+        IDialogService dialogService)
     {
         _achievementService = achievementService;
         _localizationService = localizationService;
         _audioService = audioService;
         _rewardedAdService = rewardedAdService;
+        _dialogService = dialogService;
 
         LoadAchievements();
     }
@@ -128,7 +126,7 @@ public sealed partial class AchievementsViewModel : ViewModelBase
             _achievementService.BoostAchievement(achievement.Id, 0.20);
             LoadAchievements();
 
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("AchievementBoostedFormat"),
                 achievement.Title,
                 _localizationService.GetString("Great"));

@@ -26,7 +26,42 @@ public interface IWeeklyMissionService
     void ClaimMission(string missionId);
 
     /// <summary>
-    /// Beansprucht den Bonus wenn alle 5 Missionen abgeschlossen sind (50 Goldschrauben).
+    /// Tier-basierter Alle-fertig-Bonus (GS).
+    /// </summary>
+    int AllCompletedBonusScrews { get; }
+
+    /// <summary>
+    /// Beansprucht den Bonus wenn alle Missionen abgeschlossen sind.
     /// </summary>
     void ClaimAllCompletedBonus();
+
+    /// <summary>
+    /// Extern aufgerufen wenn eine Daily Challenge abgeschlossen wird.
+    /// </summary>
+    void OnDailyChallengeCompleted();
+
+    /// <summary>
+    /// Extern aufgerufen wenn ein Arbeiter-Training abgeschlossen wird.
+    /// </summary>
+    void OnWorkerTrained();
+
+    /// <summary>
+    /// Extern aufgerufen wenn ein Crafting-Produkt eingesammelt wird.
+    /// </summary>
+    void OnCraftingCompleted();
+
+    /// <summary>
+    /// Extern aufgerufen wenn ein Workshop ein neues Level erreicht.
+    /// </summary>
+    void OnWorkshopLevelReached();
+
+    /// <summary>
+    /// Extern aufgerufen nach einem MiniGame mit PerfectStreak-Info.
+    /// </summary>
+    void OnPerfectStreakUpdated(int currentStreak);
+
+    /// <summary>
+    /// Wird aufgerufen wenn Items durch Auto-Produktion hergestellt werden.
+    /// </summary>
+    void OnItemsAutoProduced(int count);
 }

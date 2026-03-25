@@ -1,3 +1,5 @@
+using HandwerkerImperium.Models.Enums;
+
 namespace HandwerkerImperium.Models;
 
 /// <summary>
@@ -237,6 +239,41 @@ public static class PrestigeShop
                 Category = PrestigeShopCategory.IncomeAndCosts,
                 IsRepeatable = true,
                 Effect = new PrestigeEffect { IncomeMultiplier = 0.05m }  // +5% pro Kauf
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_order_reward_rep",
+                NameKey = "PrestigeOrderRewardRep",
+                DescriptionKey = "PrestigeOrderRewardRepDesc",
+                Icon = "ClipboardCheck",
+                Cost = 20,  // Basiskosten, verdoppeln sich pro Kauf (20/40/80/160...)
+                Category = PrestigeShopCategory.IncomeAndCosts,
+                IsRepeatable = true,
+                Effect = new PrestigeEffect { OrderRewardBonus = 0.05m }  // +5% Auftragsbelohnungen pro Kauf
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_delivery_interval_rep",
+                NameKey = "PrestigeDeliveryIntervalRep",
+                DescriptionKey = "PrestigeDeliveryIntervalRepDesc",
+                Icon = "TruckFast",
+                Cost = 25,  // Basiskosten, verdoppeln sich pro Kauf (25/50/100/200...)
+                Category = PrestigeShopCategory.SpeedAndAutomation,
+                IsRepeatable = true,
+                Effect = new PrestigeEffect { DeliverySpeedBonus = 0.10m }  // +10% schnellerer Lieferant pro Kauf
+            },
+
+            // ── Tier-locked Items (sichtbar erst ab bestimmtem Prestige-Tier) ──
+            new PrestigeShopItem
+            {
+                Id = "pp_research_speed_tier",
+                NameKey = "PrestigeResearchSpeedTier",
+                DescriptionKey = "PrestigeResearchSpeedTierDesc",
+                Icon = "FlaskRoundBottom",
+                Cost = 45,
+                Category = PrestigeShopCategory.SpeedAndAutomation,
+                RequiredTier = PrestigeTier.Diamant,
+                Effect = new PrestigeEffect { ResearchSpeedBonus = 0.25m }  // -25% Forschungszeit
             },
     ];
 

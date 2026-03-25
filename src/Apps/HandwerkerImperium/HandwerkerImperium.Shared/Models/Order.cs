@@ -79,6 +79,13 @@ public class Order
     public List<WorkshopType>? RequiredWorkshops { get; set; }
 
     /// <summary>
+    /// Benötigte Materialien für Lieferaufträge (MaterialOrder).
+    /// Key = Produkt-ID, Value = benötigte Menge.
+    /// </summary>
+    [JsonPropertyName("requiredMaterials")]
+    public Dictionary<string, int>? RequiredMaterials { get; set; }
+
+    /// <summary>
     /// Reputation bonus/penalty on completion.
     /// </summary>
     [JsonPropertyName("reputationBonus")]
@@ -113,6 +120,12 @@ public class Order
     /// </summary>
     [JsonIgnore]
     public string DisplayOrderType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Beschreibung der benötigten Materialien (nur Lieferaufträge).
+    /// </summary>
+    [JsonIgnore]
+    public string DisplayDescription { get; set; } = string.Empty;
 
     /// <summary>
     /// Icon für den Auftragstyp (z.B. ⚡, 📦, 📅, 🤝).

@@ -1730,5 +1730,13 @@ public sealed class BlueprintGameRenderer : IDisposable
         _numberFont?.Dispose();
         _numberLightFont?.Dispose();
         _numberGlowFont?.Dispose();
+
+    }
+
+    /// <summary>Statische MaskFilter freigeben (bei App-Shutdown aufrufen).</summary>
+    public static void DisposeStaticResources()
+    {
+        _blur3?.Dispose();
+        _blur4?.Dispose();
     }
 }

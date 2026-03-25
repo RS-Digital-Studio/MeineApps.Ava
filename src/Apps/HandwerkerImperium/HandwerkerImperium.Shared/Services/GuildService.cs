@@ -13,7 +13,7 @@ namespace HandwerkerImperium.Services;
 /// Spieler erstellen/beitreten echte Gilden, arbeiten gemeinsam an Wochenzielen.
 /// IncomeBonus wird lokal gecacht für GameLoop/OfflineProgress.
 /// </summary>
-public sealed class GuildService : IGuildService
+public sealed class GuildService : IGuildService, IDisposable
 {
     private const string PrefKeyPlayerName = "guild_player_name";
     private const int BaseMaxGuildMembers = 20;
@@ -127,13 +127,26 @@ public sealed class GuildService : IGuildService
         // Gilden-Zuordnung migrieren
         await _firebaseService.SetAsync($"player_guilds/{playerId}", oldGuildId);
 
-        // Mitglieds-Eintrag migrieren
+        // Mitglieds-Eintrag migrieren (Set + Delete mit Retry)
         var memberData = await _firebaseService.GetAsync<FirebaseGuildMember>(
             $"guild_members/{oldGuildId}/{firebaseUid}");
         if (memberData != null)
         {
             await _firebaseService.SetAsync($"guild_members/{oldGuildId}/{playerId}", memberData);
-            await _firebaseService.DeleteAsync($"guild_members/{oldGuildId}/{firebaseUid}");
+
+            // Delete mit Retry — wenn das fehlschlägt, existieren beide Einträge (Duplikat)
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                try
+                {
+                    await _firebaseService.DeleteAsync($"guild_members/{oldGuildId}/{firebaseUid}");
+                    break; // Erfolgreich
+                }
+                catch when (attempt < 2)
+                {
+                    await Task.Delay(500 * (attempt + 1)); // 500ms, 1000ms Backoff
+                }
+            }
         }
 
         // Einladungen migrieren
@@ -143,12 +156,12 @@ public sealed class GuildService : IGuildService
         {
             foreach (var (guildId, invite) in invites)
                 await _firebaseService.SetAsync($"player_invites/{playerId}/{guildId}", invite);
-            await _firebaseService.DeleteAsync($"player_invites/{firebaseUid}");
+            try { await _firebaseService.DeleteAsync($"player_invites/{firebaseUid}"); } catch { /* Nicht-kritisch */ }
         }
 
-        // Alte Einträge aufräumen
-        await _firebaseService.DeleteAsync($"player_guilds/{firebaseUid}");
-        await _firebaseService.DeleteAsync($"available_players/{firebaseUid}");
+        // Alte Einträge aufräumen (jeweils try/catch, damit ein Fehler nicht den Rest blockiert)
+        try { await _firebaseService.DeleteAsync($"player_guilds/{firebaseUid}"); } catch { /* Nicht-kritisch */ }
+        try { await _firebaseService.DeleteAsync($"available_players/{firebaseUid}"); } catch { /* Nicht-kritisch */ }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -304,11 +317,12 @@ public sealed class GuildService : IGuildService
             if (actualCount >= guildData.MaxMembers) return false;
 
             var now = DateTime.UtcNow;
+            var playerName = PlayerName ?? "Spieler";
 
-            // Mitglied eintragen
+            // Mitglied eintragen (ZUERST — damit wir danach als Mitglied Duplikate löschen dürfen)
             var member = new FirebaseGuildMember
             {
-                Name = PlayerName ?? "Spieler",
+                Name = playerName,
                 Role = "member",
                 Contribution = 0,
                 PlayerLevel = state.PlayerLevel,
@@ -495,8 +509,42 @@ public sealed class GuildService : IGuildService
 
             if (membersRaw != null)
             {
+                // Client-seitige Filterung: Duplikate (gleicher Name) und verwaiste
+                // Mitglieder (>30 Tage inaktiv) aus der Anzeige ausblenden.
+                // Firebase-Daten bleiben unverändert (nur Leader darf Mitglieder löschen).
+                var seenNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var duplicateIds = new HashSet<string>();
+
                 foreach (var (memberUid, memberData) in membersRaw)
                 {
+                    if (seenNames.TryGetValue(memberData.Name, out var existingUid))
+                    {
+                        // Duplikat: Den mit dem älteren LastActiveAt aus der Anzeige filtern
+                        var existingActive = ParseLastActive(membersRaw[existingUid].LastActiveAt);
+                        var currentActive = ParseLastActive(memberData.LastActiveAt);
+
+                        if (currentActive > existingActive)
+                        {
+                            duplicateIds.Add(existingUid);
+                            seenNames[memberData.Name] = memberUid;
+                        }
+                        else
+                        {
+                            duplicateIds.Add(memberUid);
+                        }
+                    }
+                    else
+                    {
+                        seenNames[memberData.Name] = memberUid;
+                    }
+                }
+
+                foreach (var (memberUid, memberData) in membersRaw)
+                {
+                    // Duplikate und verwaiste Mitglieder aus der Anzeige filtern
+                    if (duplicateIds.Contains(memberUid)) continue;
+                    if (IsStaleMember(memberData)) continue;
+
                     members.Add(new GuildMemberInfo
                     {
                         Uid = memberUid,
@@ -1121,6 +1169,34 @@ public sealed class GuildService : IGuildService
     }
 
     /// <summary>
+    /// Parst LastActiveAt mit RoundtripKind. Gibt DateTime.MinValue bei Fehler zurück.
+    /// </summary>
+    private static DateTime ParseLastActive(string? lastActiveAt)
+    {
+        if (string.IsNullOrEmpty(lastActiveAt)) return DateTime.MinValue;
+        return DateTime.TryParse(lastActiveAt, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.RoundtripKind, out var dt) ? dt : DateTime.MinValue;
+    }
+
+    /// <summary>
+    /// Prüft ob ein Spieler unter einer anderen PlayerId bereits Mitglied ist (gleicher Name).
+    /// Entsteht wenn App-Daten verloren gehen und eine neue PlayerId generiert wird.
+    /// Entfernt den verwaisten Eintrag aus guild_members und player_guilds.
+    /// </summary>
+    /// <summary>
+    /// Prüft ob ein Mitglied als verwaist gilt (>30 Tage inaktiv, kein Leader/Founder).
+    /// Verwaiste Mitglieder werden aus der Anzeige gefiltert, aber nicht aus Firebase gelöscht
+    /// (Firebase-Rules erlauben nur Self-Delete und Leader-Delete).
+    /// </summary>
+    private static bool IsStaleMember(FirebaseGuildMember memberData)
+    {
+        if (memberData.Role is "founder" or "leader") return false;
+
+        var lastActive = ParseLastActive(memberData.LastActiveAt);
+        return lastActive < DateTime.UtcNow.AddDays(-30) && lastActive > DateTime.MinValue;
+    }
+
+    /// <summary>
     /// Prüft ob ein neuer Wochenstart ist und resettet ggf. das Wochenziel.
     /// Verteilt Belohnungen wenn das Ziel erreicht wurde.
     /// </summary>
@@ -1219,5 +1295,10 @@ public sealed class GuildService : IGuildService
         var today = DateTime.UtcNow.Date;
         int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
         return today.AddDays(-diff);
+    }
+
+    public void Dispose()
+    {
+        _lock.Dispose();
     }
 }

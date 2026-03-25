@@ -22,4 +22,10 @@ public interface IOrderGeneratorService
     /// Refreshes the available orders (removes old, adds new).
     /// </summary>
     void RefreshOrders();
+
+    /// <summary>
+    /// Generiert einen Lieferauftrag (MaterialOrder) mit Item-Anforderungen.
+    /// Gibt null zurück wenn keine Workshops für Auto-Produktion qualifiziert sind.
+    /// </summary>
+    Order? GenerateMaterialOrder();
 }

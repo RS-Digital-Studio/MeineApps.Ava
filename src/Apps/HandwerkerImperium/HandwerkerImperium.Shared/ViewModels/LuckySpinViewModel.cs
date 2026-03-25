@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
@@ -262,7 +263,7 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
             // Format-String bereinigen: alles ab " (" oder "({" entfernen
             var idx = costFormat.IndexOf(" (", StringComparison.Ordinal);
             SpinButtonText = idx > 0 ? costFormat[..idx] : string.Format(costFormat, _luckySpinService.SpinCost);
-            SpinCostDisplay = _luckySpinService.SpinCost.ToString();
+            SpinCostDisplay = _luckySpinService.SpinCost.ToString("N0");
         }
 
         // Countdown aktualisieren
@@ -385,12 +386,6 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
     /// </summary>
     private static string FormatMoney(decimal amount)
     {
-        return amount switch
-        {
-            >= 1_000_000_000m => $"+{amount / 1_000_000_000m:F1}B\u20AC",
-            >= 1_000_000m => $"+{amount / 1_000_000m:F1}M\u20AC",
-            >= 1_000m => $"+{amount / 1_000m:F1}K\u20AC",
-            _ => $"+{amount:F0}\u20AC"
-        };
+        return $"+{MoneyFormatter.FormatCompact(amount)}";
     }
 }

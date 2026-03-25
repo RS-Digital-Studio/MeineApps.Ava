@@ -50,6 +50,20 @@ public class Research
     [JsonPropertyName("completedAt")]
     public DateTime? CompletedAt { get; set; }
 
+    /// <summary>
+    /// Kumulierte Bonus-Sekunden durch InnovationLab (wird in UpdateTimer berücksichtigt).
+    /// Vermeidet direkte Manipulation von StartedAt.
+    /// </summary>
+    [JsonPropertyName("bonusSeconds")]
+    public double BonusSeconds { get; set; }
+
+    /// <summary>
+    /// Effektive Dauer inkl. Gilden-Forschungs-Bonus (transient, vom ResearchService gesetzt).
+    /// Wird für RemainingTime/Progress verwendet statt Duration.
+    /// </summary>
+    [JsonIgnore]
+    public TimeSpan? EffectiveDuration { get; set; }
+
     [JsonPropertyName("effect")]
     public ResearchEffect Effect { get; set; } = new();
 
@@ -60,7 +74,8 @@ public class Research
     public List<string> Prerequisites { get; set; } = [];
 
     /// <summary>
-    /// Remaining time until research completes.
+    /// Remaining time until research completes (berücksichtigt BonusSeconds + GuildSpeedBonus).
+    /// Verwendet EffectiveDuration wenn vom ResearchService gesetzt, sonst Basis-Duration.
     /// </summary>
     [JsonIgnore]
     public TimeSpan? RemainingTime
@@ -68,8 +83,9 @@ public class Research
         get
         {
             if (!IsActive || StartedAt == null) return null;
-            var elapsed = DateTime.UtcNow - StartedAt.Value;
-            var remaining = Duration - elapsed;
+            var elapsed = DateTime.UtcNow - StartedAt.Value + TimeSpan.FromSeconds(BonusSeconds);
+            var duration = EffectiveDuration ?? Duration;
+            var remaining = duration - elapsed;
             return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
         }
     }
@@ -103,7 +119,7 @@ public class Research
     public bool CanInstantFinish => IsActive && InstantFinishScrewCost > 0;
 
     /// <summary>
-    /// Progress percentage (0-100).
+    /// Progress percentage (0-100, berücksichtigt BonusSeconds + GuildSpeedBonus).
     /// </summary>
     [JsonIgnore]
     public double Progress
@@ -112,8 +128,9 @@ public class Research
         {
             if (IsResearched) return 100.0;
             if (!IsActive || StartedAt == null) return 0.0;
-            var elapsed = DateTime.UtcNow - StartedAt.Value;
-            return Math.Clamp(elapsed / Duration * 100.0, 0.0, 100.0);
+            var elapsed = DateTime.UtcNow - StartedAt.Value + TimeSpan.FromSeconds(BonusSeconds);
+            var duration = EffectiveDuration ?? Duration;
+            return Math.Clamp(elapsed / duration * 100.0, 0.0, 100.0);
         }
     }
 }

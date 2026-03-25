@@ -13,7 +13,28 @@ public enum DailyChallengeType
     HireWorker,
     CompleteQuickJob,
     PlayMiniGames,
-    AchieveMinigameScore
+    AchieveMinigameScore,
+
+    /// <summary>Arbeiter trainieren (Skill-Training abschließen).</summary>
+    TrainWorker = 7,
+
+    /// <summary>Crafting-Aufträge fertigstellen.</summary>
+    CompleteCrafting = 8,
+
+    /// <summary>Mehrere Aufträge in Folge ohne Fehler abschließen.</summary>
+    AchievePerfectStreak = 9,
+
+    /// <summary>Eine Werkstatt auf ein bestimmtes Level bringen.</summary>
+    ReachWorkshopLevel = 10,
+
+    /// <summary>Items durch Auto-Produktion herstellen.</summary>
+    ProduceItems = 11,
+
+    /// <summary>Items manuell verkaufen.</summary>
+    SellItems = 12,
+
+    /// <summary>Lieferauftrag abschließen.</summary>
+    CompleteMaterialOrder = 13
 }
 
 /// <summary>

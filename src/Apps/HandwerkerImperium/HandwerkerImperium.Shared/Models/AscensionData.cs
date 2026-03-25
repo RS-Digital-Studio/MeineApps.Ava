@@ -21,9 +21,13 @@ public class AscensionData
     [JsonPropertyName("totalAscensionPoints")]
     public int TotalAscensionPoints { get; set; }
 
-    /// <summary>Gekaufte Perks mit Stufe: PerkId → Level (1-5).</summary>
+    /// <summary>Gekaufte Perks mit Stufe: PerkId → Level (1-3). Alte Saves mit Level >3 werden geclampt.</summary>
     [JsonPropertyName("perks")]
     public Dictionary<string, int> Perks { get; set; } = new();
+
+    /// <summary>Zeitpunkt der letzten Ascension (UTC).</summary>
+    [JsonPropertyName("lastAscensionDate")]
+    public DateTime LastAscensionDate { get; set; } = DateTime.MinValue;
 
     /// <summary>Gibt die Stufe eines Perks zurück (0 = nicht gekauft).</summary>
     public int GetPerkLevel(string perkId)

@@ -14,11 +14,12 @@ namespace HandwerkerImperium.Services;
 /// HP wird client-seitig aggregiert: currentHp = bossHp - SUM(allDamage).
 /// Firebase-Pfade: guild_bosses/{guildId}/, guild_boss_damage/{guildId}/{uid}/
 /// </summary>
-public sealed class GuildBossService : IGuildBossService
+public sealed class GuildBossService : IGuildBossService, IDisposable
 {
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;
     private readonly IPreferencesService _preferences;
+    private readonly ILogService _log;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     // Cache
@@ -37,11 +38,13 @@ public sealed class GuildBossService : IGuildBossService
     public GuildBossService(
         IFirebaseService firebase,
         IGameStateService gameStateService,
-        IPreferencesService preferences)
+        IPreferencesService preferences,
+        ILogService log)
     {
         _firebase = firebase;
         _gameStateService = gameStateService;
         _preferences = preferences;
+        _log = log;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -115,9 +118,9 @@ public sealed class GuildBossService : IGuildBossService
                 Leaderboard = leaderboard
             };
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Aktiven Boss laden fehlgeschlagen", ex);
             return null;
         }
         finally
@@ -191,9 +194,9 @@ public sealed class GuildBossService : IGuildBossService
             // Nur eigenen Eintrag schreiben (Race-Condition-frei)
             await _firebase.SetAsync(damagePath, ownDamage);
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Schaden zufügen fehlgeschlagen", ex);
         }
         finally
         {
@@ -261,9 +264,9 @@ public sealed class GuildBossService : IGuildBossService
                 _cachedBoss = null;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Boss-Status prüfen fehlgeschlagen", ex);
         }
         finally
         {
@@ -342,9 +345,9 @@ public sealed class GuildBossService : IGuildBossService
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Boss spawnen fehlgeschlagen", ex);
             return false;
         }
         finally
@@ -412,9 +415,9 @@ public sealed class GuildBossService : IGuildBossService
 
             return leaderboard.OrderByDescending(e => e.Damage).ToList();
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Leaderboard laden fehlgeschlagen", ex);
             return [];
         }
     }
@@ -439,8 +442,9 @@ public sealed class GuildBossService : IGuildBossService
             var damages = JsonSerializer.Deserialize<Dictionary<string, GuildBossDamage>>(json);
             return damages?.Values.Sum(d => d.TotalDamage) ?? 0;
         }
-        catch
+        catch (Exception ex)
         {
+            _log.Error("Gesamtschaden berechnen fehlgeschlagen", ex);
             return 0;
         }
     }
@@ -488,9 +492,14 @@ public sealed class GuildBossService : IGuildBossService
             _gameStateService.AddGoldenScrews(gsReward);
             _preferences.Set(rewardKey, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // Netzwerkfehler still behandelt
+            _log.Error("Boss-Belohnungen verteilen fehlgeschlagen", ex);
         }
+    }
+
+    public void Dispose()
+    {
+        _lock.Dispose();
     }
 }

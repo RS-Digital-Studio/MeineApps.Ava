@@ -19,17 +19,13 @@ public sealed partial class BuildingsViewModel : ViewModelBase
     private readonly IBuildingService _buildingService;
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
+    private readonly IDialogService _dialogService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     public event EventHandler<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event für Alert-Dialog. Parameter: title, message, buttonText.
-    /// </summary>
-    public event Action<string, string, string>? AlertRequested;
 
     /// <summary>
     /// Event für FloatingText (leichtgewichtiges Feedback). Parameter: text, style.
@@ -83,11 +79,13 @@ public sealed partial class BuildingsViewModel : ViewModelBase
     public BuildingsViewModel(
         IBuildingService buildingService,
         IGameStateService gameStateService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IDialogService dialogService)
     {
         _buildingService = buildingService;
         _gameStateService = gameStateService;
         _localizationService = localizationService;
+        _dialogService = dialogService;
 
         UpdateLocalizedTexts();
     }
@@ -190,7 +188,7 @@ public sealed partial class BuildingsViewModel : ViewModelBase
         }
         else
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NotEnoughMoney"),
                 _localizationService.GetString("NotEnoughMoneyDesc"),
                 _localizationService.GetString("OK") ?? "OK");
@@ -214,7 +212,7 @@ public sealed partial class BuildingsViewModel : ViewModelBase
         }
         else
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NotEnoughMoney"),
                 _localizationService.GetString("NotEnoughMoneyDesc"),
                 _localizationService.GetString("OK") ?? "OK");

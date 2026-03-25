@@ -76,6 +76,37 @@ public class CraftingRecipe
             RequiredWorkshopLevel = 150, Tier = 2,
             InputProducts = new() { { "roof_tiles", 3 } },
             OutputProductId = "roofing_system", DurationSeconds = 120 },
+        // Dachdecker Tier 3 (ab Level 300)
+        new() { Id = "r_roof_structure", NameKey = "CraftRoofStructure", WorkshopType = WorkshopType.Roofer,
+            RequiredWorkshopLevel = 300, Tier = 3,
+            InputProducts = new() { { "roofing_system", 2 } },
+            OutputProductId = "roof_structure", DurationSeconds = 300 },
+
+        // Maler Tier 3 (ab Level 300)
+        new() { Id = "r_artwork", NameKey = "CraftArtwork", WorkshopType = WorkshopType.Painter,
+            RequiredWorkshopLevel = 300, Tier = 3,
+            InputProducts = new() { { "wall_design", 2 } },
+            OutputProductId = "artwork", DurationSeconds = 300 },
+
+        // Bauunternehmer Tier 1 (ab Level 50)
+        new() { Id = "r_concrete", NameKey = "CraftConcrete", WorkshopType = WorkshopType.Contractor,
+            RequiredWorkshopLevel = 50, Tier = 1, OutputProductId = "concrete", DurationSeconds = 30 },
+
+        // Architekt Tier 1 (ab Level 50)
+        new() { Id = "r_blueprint", NameKey = "CraftBlueprint", WorkshopType = WorkshopType.Architect,
+            RequiredWorkshopLevel = 50, Tier = 1, OutputProductId = "blueprint", DurationSeconds = 30 },
+
+        // Generalunternehmer Tier 1 (ab Level 50)
+        new() { Id = "r_contract", NameKey = "CraftContract", WorkshopType = WorkshopType.GeneralContractor,
+            RequiredWorkshopLevel = 50, Tier = 1, OutputProductId = "contract", DurationSeconds = 30 },
+
+        // Meisterschmiede Tier 1 (ab Level 50)
+        new() { Id = "r_fittings", NameKey = "CraftFittings", WorkshopType = WorkshopType.MasterSmith,
+            RequiredWorkshopLevel = 50, Tier = 1, OutputProductId = "fittings", DurationSeconds = 30 },
+
+        // Innovationslabor Tier 1 (ab Level 50)
+        new() { Id = "r_prototype", NameKey = "CraftPrototype", WorkshopType = WorkshopType.InnovationLab,
+            RequiredWorkshopLevel = 50, Tier = 1, OutputProductId = "prototype", DurationSeconds = 30 },
     ];
 }
 
@@ -106,6 +137,15 @@ public class CraftingProduct
             ["wall_design"] = new() { Id = "wall_design", NameKey = "ProductWallDesign", Tier = 2, BaseValue = 2000m },
             ["roof_tiles"] = new() { Id = "roof_tiles", NameKey = "ProductRoofTiles", Tier = 1, BaseValue = 600m },
             ["roofing_system"] = new() { Id = "roofing_system", NameKey = "ProductRoofing", Tier = 2, BaseValue = 3000m },
+            // Neue Tier-3 Produkte (Maler + Dachdecker)
+            ["artwork"] = new() { Id = "artwork", NameKey = "ProductArtwork", Tier = 3, BaseValue = 8000m },
+            ["roof_structure"] = new() { Id = "roof_structure", NameKey = "ProductRoofStructure", Tier = 3, BaseValue = 12000m },
+            // Neue Tier-1 Produkte (5 fehlende Workshops)
+            ["concrete"] = new() { Id = "concrete", NameKey = "ProductConcrete", Tier = 1, BaseValue = 800m },
+            ["blueprint"] = new() { Id = "blueprint", NameKey = "ProductBlueprint", Tier = 1, BaseValue = 1000m },
+            ["contract"] = new() { Id = "contract", NameKey = "ProductContract", Tier = 1, BaseValue = 1500m },
+            ["fittings"] = new() { Id = "fittings", NameKey = "ProductFittings", Tier = 1, BaseValue = 1200m },
+            ["prototype"] = new() { Id = "prototype", NameKey = "ProductPrototype", Tier = 1, BaseValue = 2000m },
         };
         return products;
     }
@@ -116,6 +156,10 @@ public class CraftingProduct
 /// </summary>
 public class CraftingJob
 {
+    /// <summary>Eindeutige Job-ID (GUID). Verhindert Verwechslung bei mehreren Jobs desselben Rezepts.</summary>
+    [JsonPropertyName("jobId")]
+    public string JobId { get; set; } = Guid.NewGuid().ToString("N");
+
     [JsonPropertyName("recipeId")]
     public string RecipeId { get; set; } = "";
 

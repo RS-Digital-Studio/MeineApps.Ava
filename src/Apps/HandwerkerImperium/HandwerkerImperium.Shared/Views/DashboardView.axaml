@@ -143,18 +143,18 @@
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                           VerticalAlignment="Center">
                 <!-- MasterTools Badge (antippbar für Info) -->
-                <Button Command="{Binding ShowMasterToolsInfoCommand}"
+                <Button Command="{Binding MissionsVM.ShowMasterToolsInfoCommand}"
                         Background="#30000000" CornerRadius="12" Padding="8,4"
                         MinHeight="44"
                         BorderThickness="0" Cursor="Hand"
-                        IsVisible="{Binding MasterToolsCollected, Converter={StaticResource GreaterThanZero}}"
+                        IsVisible="{Binding MissionsVM.MasterToolsCollected, Converter={StaticResource GreaterThanZero}}"
                         AutomationProperties.AutomationId="Dashboard_Btn_MasterTools">
                   <StackPanel Orientation="Horizontal" Spacing="4">
                     <icons:GameIcon Kind="Wrench" Width="18" Height="18" Foreground="{DynamicResource WarningBrush}"
                                      AutomationProperties.AutomationId="Dashboard_Icon_MasterTools" />
                     <TextBlock FontSize="12" FontWeight="Bold" Foreground="{DynamicResource WarningBrush}"
                                AutomationProperties.AutomationId="Dashboard_Txt_MasterToolsCount">
-                      <Run Text="{Binding MasterToolsCollected}" />/<Run Text="{Binding MasterToolsTotal}" />
+                      <Run Text="{Binding MissionsVM.MasterToolsCollected}" />/<Run Text="{Binding MissionsVM.MasterToolsTotal}" />
                     </TextBlock>
                   </StackPanel>
                 </Button>
@@ -385,7 +385,7 @@
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <Border Background="{StaticResource CraftPrimaryLightBrush}"
                         CornerRadius="10" Padding="6,2">
-                  <TextBlock Text="{Binding QuickJobs.Count}" FontSize="11"
+                  <TextBlock Text="{Binding MissionsVM.QuickJobs.Count}" FontSize="11"
                              FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}" />
                 </Border>
               </StackPanel>
@@ -500,7 +500,7 @@
                       <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="4">
                         <icons:GameIcon Kind="CashMultiple" Width="24" Height="24"
                                          Foreground="{DynamicResource SuccessBrush}" />
-                        <TextBlock Text="{Binding EstimatedReward, StringFormat='~{0:N0}'}"
+                        <TextBlock Text="{Binding EstimatedReward, Converter={StaticResource MoneyDisplay}, ConverterParameter='~'}"
                                    FontSize="14" FontWeight="Bold"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    VerticalAlignment="Center" />
@@ -532,12 +532,12 @@
             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" Margin="0,0,0,4">
               <icons:GameIcon Kind="TimerRefresh" Width="18" Height="18"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Text="{Binding QuickJobTimerDisplay}" FontSize="12"
+              <TextBlock Text="{Binding MissionsVM.QuickJobTimerDisplay}" FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
             </StackPanel>
 
             <!-- QuickJobs-Liste -->
-            <ListBox ItemsSource="{Binding QuickJobs}"
+            <ListBox ItemsSource="{Binding MissionsVM.QuickJobs}"
                      Background="Transparent" BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      AutomationProperties.AutomationId="Dashboard_Items_QuickJobs">
@@ -579,7 +579,7 @@
                               Background="{StaticResource CraftPrimaryBrush}"
                               Content="{loc:Translate Start}"
                               IsVisible="{Binding !IsCompleted}"
-                              Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).StartQuickJobCommand}"
+                              Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).MissionsVM.StartQuickJobCommand}"
                               CommandParameter="{Binding .}" />
                       <icons:GameIcon Grid.Column="1" Kind="Check" Width="24" Height="24"
                                        Foreground="{DynamicResource SuccessBrush}"

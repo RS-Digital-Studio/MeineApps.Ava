@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// Letzte 50 Nachrichten, Polling bei Tab-Wechsel.
 /// Spam-Schutz: 5 Sekunden Cooldown, max 200 Zeichen.
 /// </summary>
-public sealed class GuildChatService : IGuildChatService
+public sealed class GuildChatService : IGuildChatService, IDisposable
 {
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;
@@ -125,5 +125,10 @@ public sealed class GuildChatService : IGuildChatService
         }
 
         return result;
+    }
+
+    public void Dispose()
+    {
+        _sendLock.Dispose();
     }
 }

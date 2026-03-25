@@ -15,7 +15,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Alert, Confirm, Story, Achievement, LevelUp, Hint, Prestige-Summary, Prestige-Tier-Auswahl.
 /// Extrahiert aus MainViewModel zur Reduktion der Klassengröße.
 /// </summary>
-public sealed partial class DialogViewModel : ObservableObject
+public sealed partial class DialogViewModel : ObservableObject, IDialogService
 {
     private readonly ILocalizationService _localizationService;
     private readonly IStoryService? _storyService;
@@ -23,6 +23,7 @@ public sealed partial class DialogViewModel : ObservableObject
     private readonly IGameStateService _gameStateService;
     private readonly IPrestigeService _prestigeService;
     private readonly IAdService _adService;
+    private readonly IChallengeConstraintService? _challengeConstraints;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS (für Kommunikation mit MainViewModel)
@@ -225,6 +226,18 @@ public sealed partial class DialogViewModel : ObservableObject
     /// <summary>Zugriff auf den gewählten Tier für MainViewModel nach Bestätigung.</summary>
     public PrestigeTier DialogSelectedTier => _dialogSelectedTier;
 
+    /// <summary>Bonus-PP-Vorschau aus Spielleistung (flat).</summary>
+    [ObservableProperty]
+    private string _bonusPpPreview = string.Empty;
+
+    /// <summary>Challenge-PP-Vorschau (additiver Bonus).</summary>
+    [ObservableProperty]
+    private string _challengePpPreview = string.Empty;
+
+    /// <summary>Aktuelle Run-Dauer (für Speedrun-Anzeige im Dialog).</summary>
+    [ObservableProperty]
+    private string _currentRunDurationText = string.Empty;
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -235,7 +248,8 @@ public sealed partial class DialogViewModel : ObservableObject
         IContextualHintService contextualHintService,
         IGameStateService gameStateService,
         IPrestigeService prestigeService,
-        IAdService adService)
+        IAdService adService,
+        IChallengeConstraintService? challengeConstraints = null)
     {
         _localizationService = localizationService;
         _storyService = storyService;
@@ -243,6 +257,7 @@ public sealed partial class DialogViewModel : ObservableObject
         _gameStateService = gameStateService;
         _prestigeService = prestigeService;
         _adService = adService;
+        _challengeConstraints = challengeConstraints;
 
         // Kontextuelles Hint-System verdrahten
         _contextualHintService.HintChanged += OnHintChanged;
@@ -488,6 +503,23 @@ public sealed partial class DialogViewModel : ObservableObject
                     nextTierLevel - currentLevel, nextTierName, nextTierLevel)}";
             }
         }
+
+        // 5. BONUS-PP + CHALLENGES
+        int bonusPp = _prestigeService.CalculateBonusPrestigePoints(tier);
+        BonusPpPreview = bonusPp > 0
+            ? $"+{bonusPp} PP ({_localizationService.GetString("BonusPP") ?? "Bonus"})"
+            : string.Empty;
+
+        decimal challengeMult = _challengeConstraints?.GetChallengePpMultiplier() ?? 1.0m;
+        ChallengePpPreview = challengeMult > 1.0m
+            ? $"x{challengeMult:F2} ({_localizationService.GetString("Challenges") ?? "Herausforderungen"})"
+            : string.Empty;
+
+        // 6. SPEEDRUN-TIMER
+        var runDuration = _prestigeService.GetCurrentRunDuration();
+        CurrentRunDurationText = runDuration.HasValue
+            ? $"{runDuration.Value.Hours}h {runDuration.Value.Minutes:D2}m"
+            : string.Empty;
 
         ConfirmDialogTitle = $"{_localizationService.GetString("Prestige") ?? "Prestige"} \u2192 {tierName}";
         ConfirmDialogMessage = string.Join("\n", gains)

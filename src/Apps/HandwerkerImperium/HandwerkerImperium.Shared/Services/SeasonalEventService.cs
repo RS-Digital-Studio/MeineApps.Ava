@@ -137,6 +137,7 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
 
     /// <summary>
     /// Gibt die Shop-Items für eine bestimmte Saison zurück.
+    /// 4 Basis-Items (alle Saisons gleich) + 2 saison-einzigartige Items.
     /// </summary>
     public static List<SeasonalShopItem> GetShopItems(Season season)
     {
@@ -151,9 +152,9 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
             _ => "CalendarStar"
         };
 
-        return
-        [
-            new SeasonalShopItem
+        var items = new List<SeasonalShopItem>
+        {
+            new()
             {
                 Id = $"{prefix}_income_boost",
                 NameKey = $"Seasonal{season}IncomeBoost",
@@ -162,7 +163,7 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
                 Icon = icon,
                 Effect = new SeasonalItemEffect { IncomeBonus = 0.10m }
             },
-            new SeasonalShopItem
+            new()
             {
                 Id = $"{prefix}_xp_pack",
                 NameKey = $"Seasonal{season}XpPack",
@@ -171,7 +172,7 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
                 Icon = icon,
                 Effect = new SeasonalItemEffect { XpBonus = 500 }
             },
-            new SeasonalShopItem
+            new()
             {
                 Id = $"{prefix}_screw_bundle",
                 NameKey = $"Seasonal{season}ScrewBundle",
@@ -180,7 +181,7 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
                 Icon = icon,
                 Effect = new SeasonalItemEffect { GoldenScrews = 15 }
             },
-            new SeasonalShopItem
+            new()
             {
                 Id = $"{prefix}_speed_boost",
                 NameKey = $"Seasonal{season}SpeedBoost",
@@ -189,11 +190,123 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
                 Icon = icon,
                 Effect = new SeasonalItemEffect { SpeedBoostMinutes = 120 }
             }
-        ];
+        };
+
+        // 2 saison-einzigartige Items (Phase 2.9)
+        // Effekte werden in GameLoopService/OfflineProgressService ausgewertet
+        items.AddRange(GetUniqueSeasonItems(season, icon));
+
+        return items;
     }
 
     /// <summary>
+    /// Gibt die 2 saison-einzigartigen Items zurück.
+    /// </summary>
+    private static List<SeasonalShopItem> GetUniqueSeasonItems(Season season, string icon) => season switch
+    {
+        Season.Spring =>
+        [
+            // Frühling: +1 Max-Worker fuer 14 Tage
+            new SeasonalShopItem
+            {
+                Id = "spring_extra_worker",
+                NameKey = "SeasonalSpringExtraWorker",
+                DescriptionKey = "SeasonalSpringExtraWorkerDesc",
+                Cost = 150,
+                Icon = icon,
+                Effect = new SeasonalItemEffect { ExtraWorkerDays = 1, EffectDurationDays = 14 }
+            },
+            // Frühling: +30% Research-Speed fuer 14 Tage
+            new SeasonalShopItem
+            {
+                Id = "spring_research_speed",
+                NameKey = "SeasonalSpringResearchSpeed",
+                DescriptionKey = "SeasonalSpringResearchSpeedDesc",
+                Cost = 80,
+                Icon = icon,
+                Effect = new SeasonalItemEffect { ResearchSpeedBonusPercent = 30, EffectDurationDays = 14 }
+            }
+        ],
+
+        Season.Summer =>
+        [
+            // Sommer: 2x PP beim naechsten Prestige
+            new SeasonalShopItem
+            {
+                Id = "summer_double_prestige",
+                NameKey = "SeasonalSummerDoublePrestige",
+                DescriptionKey = "SeasonalSummerDoublePrestigeDesc",
+                Cost = 200,
+                Icon = icon,
+                Effect = new SeasonalItemEffect { DoubleNextPrestige = true }
+            },
+            // Sommer: +50% Offline-Earnings fuer 14 Tage
+            new SeasonalShopItem
+            {
+                Id = "summer_offline_boost",
+                NameKey = "SeasonalSummerOfflineBoost",
+                DescriptionKey = "SeasonalSummerOfflineBoostDesc",
+                Cost = 120,
+                Icon = icon,
+                Effect = new SeasonalItemEffect { OfflineEarningsBonusPercent = 50, EffectDurationDays = 14 }
+            }
+        ],
+
+        Season.Autumn =>
+        [
+            // Herbst: 500 Goldschrauben sofort
+            new SeasonalShopItem
+            {
+                Id = "autumn_instant_screws",
+                NameKey = "SeasonalAutumnInstantScrews",
+                DescriptionKey = "SeasonalAutumnInstantScrewsDesc",
+                Cost = 250,
+                Icon = icon,
+                Effect = new SeasonalItemEffect { InstantGoldenScrews = 500 }
+            },
+            // Herbst: Alle Worker Mood auf 100
+            new SeasonalShopItem
+            {
+                Id = "autumn_mood_reset",
+                NameKey = "SeasonalAutumnMoodReset",
+                DescriptionKey = "SeasonalAutumnMoodResetDesc",
+                Cost = 60,
+                Icon = icon,
+                Effect = new SeasonalItemEffect { WorkerMoodResetTo = 100 }
+            }
+        ],
+
+        Season.Winter =>
+        [
+            // Winter: 4h Speed-Boost (2x Geschwindigkeit)
+            new SeasonalShopItem
+            {
+                Id = "winter_speed_4h",
+                NameKey = "SeasonalWinterSpeed4h",
+                DescriptionKey = "SeasonalWinterSpeed4hDesc",
+                Cost = 100,
+                Icon = icon,
+                Effect = new SeasonalItemEffect { SpeedBoostHours = 4 }
+            },
+            // Winter: +100% Daily-Reward am naechsten Tag
+            new SeasonalShopItem
+            {
+                Id = "winter_double_daily",
+                NameKey = "SeasonalWinterDoubleDaily",
+                DescriptionKey = "SeasonalWinterDoubleDailyDesc",
+                Cost = 150,
+                Icon = icon,
+                Effect = new SeasonalItemEffect { DoubleDailyReward = true }
+            }
+        ],
+
+        _ => []
+    };
+
+    /// <summary>
     /// Wendet den Effekt eines saisonalen Shop-Items an.
+    /// Sofort-Effekte werden hier direkt ausgefuehrt.
+    /// Temporaere/passive Effekte werden in GameLoopService/OfflineProgressService ausgewertet.
     /// </summary>
     private void ApplySeasonalItemEffect(SeasonalItemEffect effect)
     {
@@ -212,5 +325,40 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
         }
 
         // IncomeBonus wird passiv vom GameLoop berücksichtigt wenn das Item gekauft ist
+
+        // --- Saison-einzigartige Effekte (Phase 2.9) ---
+
+        // Sofort: Goldschrauben-Belohnung (z.B. Herbst: 500 GS)
+        if (effect.InstantGoldenScrews > 0)
+            _gameState.AddGoldenScrews(effect.InstantGoldenScrews);
+
+        // Sofort: Speed-Boost in Stunden (z.B. Winter: 4h 2x-Speed)
+        if (effect.SpeedBoostHours > 0)
+        {
+            var state = _gameState.State;
+            var newEnd = DateTime.UtcNow.AddHours(effect.SpeedBoostHours);
+            if (newEnd > state.SpeedBoostEndTime)
+                state.SpeedBoostEndTime = newEnd;
+        }
+
+        // Sofort: Alle Worker Mood auf Zielwert setzen (z.B. Herbst: 100)
+        if (effect.WorkerMoodResetTo > 0)
+        {
+            var state = _gameState.State;
+            foreach (var workshop in state.Workshops)
+            {
+                foreach (var worker in workshop.Workers)
+                {
+                    worker.Mood = effect.WorkerMoodResetTo;
+                }
+            }
+        }
+
+        // Temporaere/passive Effekte (werden von anderen Services geprueft):
+        // - ExtraWorkerDays + EffectDurationDays → GameLoopService prueft PurchasedItems
+        // - ResearchSpeedBonusPercent + EffectDurationDays → ResearchService prueft PurchasedItems
+        // - OfflineEarningsBonusPercent + EffectDurationDays → OfflineProgressService prueft PurchasedItems
+        // - DoubleNextPrestige → PrestigeService prueft PurchasedItems
+        // - DoubleDailyReward → DailyRewardService prueft PurchasedItems
     }
 }

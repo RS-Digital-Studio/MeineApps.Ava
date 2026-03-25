@@ -144,6 +144,13 @@ public sealed class SaveGameService : ISaveGameService
                     state = MigrateFromV1(state);
                 }
 
+                // v2 -> v3 Migration: Workshop Rebirth Stars
+                if (state.Version < 3)
+                {
+                    state.WorkshopStars ??= new Dictionary<string, int>();
+                    state.Version = 3;
+                }
+
                 SanitizeState(state);
                 _gameStateService.Initialize(state);
             }
@@ -271,9 +278,9 @@ public sealed class SaveGameService : ISaveGameService
         if (state.Prestige.DiamantCount < 0) state.Prestige.DiamantCount = 0;
         if (state.Prestige.MeisterCount < 0) state.Prestige.MeisterCount = 0;
         if (state.Prestige.LegendeCount < 0) state.Prestige.LegendeCount = 0;
-        // PermanentMultiplier: Minimum 1.0 (kein Prestige), Maximum 50.0
+        // PermanentMultiplier: Minimum 1.0 (kein Prestige), Maximum 20.0 (konsistent mit PrestigeService.MaxPermanentMultiplier)
         if (state.Prestige.PermanentMultiplier < 1.0m) state.Prestige.PermanentMultiplier = 1.0m;
-        if (state.Prestige.PermanentMultiplier > 50.0m) state.Prestige.PermanentMultiplier = 50.0m;
+        if (state.Prestige.PermanentMultiplier > 20.0m) state.Prestige.PermanentMultiplier = 20.0m;
         state.Prestige.PurchasedShopItems ??= [];
         // Prestige-Shop-Items: Nur gültige IDs behalten (Exploit-Schutz)
         var validShopIds = PrestigeShop.GetAllItems().Select(i => i.Id).ToHashSet();
@@ -358,6 +365,15 @@ public sealed class SaveGameService : ISaveGameService
         state.ClaimedLevelOffers ??= [];
         state.CompletedRecipeIds ??= [];
         state.PerfectMiniGameTypes ??= [];
+
+        // Workshop Rebirth Stars validieren (0-5 pro Workshop)
+        state.WorkshopStars ??= new Dictionary<string, int>();
+        var invalidStarKeys = state.WorkshopStars
+            .Where(kv => kv.Value < 0 || kv.Value > 5)
+            .Select(kv => kv.Key)
+            .ToList();
+        foreach (var key in invalidStarKeys)
+            state.WorkshopStars[key] = Math.Clamp(state.WorkshopStars[key], 0, 5);
 
         // Ascension-Daten validieren (reserviert für zukünftige Funktionalität, Save-Kompatibilität)
         state.Ascension ??= new AscensionData();

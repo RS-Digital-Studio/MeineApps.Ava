@@ -27,37 +27,49 @@ public static class VipTierExtensions
     };
 
     /// <summary>
-    /// Einkommens-Bonus der VIP-Stufe.
+    /// Einkommens-Bonus der VIP-Stufe (gedeckelt — kein Pay-to-Win).
+    /// Maximal +5% statt vorher +25%. VIP belohnt primär mit QoL, nicht Gameplay-Vorteil.
     /// </summary>
     public static decimal GetIncomeBonus(this VipTier tier) => tier switch
     {
-        VipTier.Bronze => 0.05m,
-        VipTier.Silver => 0.10m,
-        VipTier.Gold => 0.15m,
-        VipTier.Platinum => 0.25m,
+        VipTier.Bronze => 0.02m,
+        VipTier.Silver => 0.03m,
+        VipTier.Gold => 0.04m,
+        VipTier.Platinum => 0.05m,
         _ => 0m
     };
 
     /// <summary>
-    /// XP-Bonus der VIP-Stufe.
+    /// XP-Bonus der VIP-Stufe (gedeckelt).
     /// </summary>
     public static decimal GetXpBonus(this VipTier tier) => tier switch
     {
-        VipTier.Silver => 0.05m,
-        VipTier.Gold => 0.10m,
-        VipTier.Platinum => 0.15m,
+        VipTier.Silver => 0.02m,
+        VipTier.Gold => 0.03m,
+        VipTier.Platinum => 0.05m,
         _ => 0m
     };
 
     /// <summary>
-    /// Kosten-Reduktion der VIP-Stufe.
+    /// Kosten-Reduktion der VIP-Stufe (entfernt — kein Pay-to-Win).
+    /// Vorher Gold=5%, Platinum=10%. Jetzt 0% für alle.
     /// </summary>
-    public static decimal GetCostReduction(this VipTier tier) => tier switch
-    {
-        VipTier.Gold => 0.05m,
-        VipTier.Platinum => 0.10m,
-        _ => 0m
-    };
+    public static decimal GetCostReduction(this VipTier tier) => 0m;
+
+    /// <summary>
+    /// Ob VIP Auto-Claim für tägliche Login-Belohnungen freigeschaltet ist (Bronze+).
+    /// </summary>
+    public static bool HasAutoClaimDailyRewards(this VipTier tier) => tier >= VipTier.Bronze;
+
+    /// <summary>
+    /// Ob VIP den Lieferanten-Timer sehen kann (Silver+, QoL: Countdown statt Überraschung).
+    /// </summary>
+    public static bool HasDeliveryTimer(this VipTier tier) => tier >= VipTier.Silver;
+
+    /// <summary>
+    /// Ob VIP einen exklusiven Avatar-Rahmen hat (Gold+, rein kosmetisch).
+    /// </summary>
+    public static bool HasExclusiveFrame(this VipTier tier) => tier >= VipTier.Gold;
 
     /// <summary>
     /// Farbe der VIP-Stufe.

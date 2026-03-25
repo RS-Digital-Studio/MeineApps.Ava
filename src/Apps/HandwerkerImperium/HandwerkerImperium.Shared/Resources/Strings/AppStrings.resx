@@ -2180,6 +2180,18 @@
   <data name="ChallengeAchieveScore" xml:space="preserve">
     <value>Achieve {0}% in a mini-game</value>
   </data>
+  <data name="ChallengeTrainWorker" xml:space="preserve">
+    <value>Train {0} workers</value>
+  </data>
+  <data name="ChallengeCompleteCrafting" xml:space="preserve">
+    <value>Craft {0} items</value>
+  </data>
+  <data name="ChallengePerfectStreak" xml:space="preserve">
+    <value>Achieve {0} perfect ratings in a row</value>
+  </data>
+  <data name="ChallengeReachWorkshopLevel" xml:space="preserve">
+    <value>Reach workshop level {0}</value>
+  </data>
   <data name="AllChallengesBonus" xml:space="preserve">
     <value>All complete - claim bonus!</value>
   </data>
@@ -3592,6 +3604,18 @@
   <data name="WeeklyMission_AchievePerfectRatings" xml:space="preserve">
     <value>Achieve {0} perfect ratings</value>
   </data>
+  <data name="WeeklyMission_TrainWorkers" xml:space="preserve">
+    <value>Train {0} workers</value>
+  </data>
+  <data name="WeeklyMission_CompleteCraftings" xml:space="preserve">
+    <value>Craft {0} items</value>
+  </data>
+  <data name="WeeklyMission_AchievePerfectStreak" xml:space="preserve">
+    <value>Achieve a perfect streak of {0}</value>
+  </data>
+  <data name="WeeklyMission_ReachWorkshopLevels" xml:space="preserve">
+    <value>Reach workshop level {0}</value>
+  </data>
 
   <!-- Automation Settings -->
   <data name="AutomationTitle" xml:space="preserve">
@@ -4010,6 +4034,18 @@
   <data name="BPCapstoneWinter" xml:space="preserve">
     <value>Winter Frost Crown</value>
   </data>
+  <data name="BPFreeCapstone" xml:space="preserve">
+    <value>50 Golden Screws + Mega Reward</value>
+  </data>
+  <data name="BPPremiumMilestone40" xml:space="preserve">
+    <value>30 Golden Screws Milestone</value>
+  </data>
+  <data name="BPPremiumSpeedBoost2h" xml:space="preserve">
+    <value>2h Speed Boost + 5 Golden Screws</value>
+  </data>
+  <data name="BPPremiumSpeedBoost4h" xml:space="preserve">
+    <value>4h Speed Boost + 10 Golden Screws</value>
+  </data>
   <data name="PrestigePassTitle" xml:space="preserve">
     <value>Prestige Pass</value>
   </data>
@@ -4274,6 +4310,9 @@
   <data name="Today" xml:space="preserve">
     <value>Today</value>
   </data>
+  <data name="Competitions" xml:space="preserve">
+    <value>Competitions</value>
+  </data>
   <data name="Yesterday" xml:space="preserve">
     <value>Yesterday</value>
   </data>
@@ -4326,11 +4365,23 @@
   <data name="EventShop" xml:space="preserve">
     <value>Event Shop</value>
   </data>
+  <data name="SeasonalSpringExtraWorker" xml:space="preserve">
+    <value>+1 Worker (14 days)</value>
+  </data>
+  <data name="SeasonalSpringExtraWorkerDesc" xml:space="preserve">
+    <value>Temporary extra worker slot for 14 days.</value>
+  </data>
   <data name="SeasonalSpringIncomeBoost" xml:space="preserve">
     <value>Spring Income Boost</value>
   </data>
   <data name="SeasonalSpringIncomeBoostDesc" xml:space="preserve">
     <value>+10% income for the rest of the season</value>
+  </data>
+  <data name="SeasonalSpringResearchSpeed" xml:space="preserve">
+    <value>+30% Research (14 days)</value>
+  </data>
+  <data name="SeasonalSpringResearchSpeedDesc" xml:space="preserve">
+    <value>Reduces research duration by 30% for 14 days.</value>
   </data>
   <data name="SeasonalSpringXpPack" xml:space="preserve">
     <value>Spring XP Pack</value>
@@ -4350,11 +4401,23 @@
   <data name="SeasonalSpringSpeedBoostDesc" xml:space="preserve">
     <value>2x production speed for 2 hours</value>
   </data>
+  <data name="SeasonalSummerDoublePrestige" xml:space="preserve">
+    <value>2x Prestige Points</value>
+  </data>
+  <data name="SeasonalSummerDoublePrestigeDesc" xml:space="preserve">
+    <value>Your next prestige gives double points!</value>
+  </data>
   <data name="SeasonalSummerIncomeBoost" xml:space="preserve">
     <value>Summer Income Boost</value>
   </data>
   <data name="SeasonalSummerIncomeBoostDesc" xml:space="preserve">
     <value>+10% income for the rest of the season</value>
+  </data>
+  <data name="SeasonalSummerOfflineBoost" xml:space="preserve">
+    <value>+50% Offline (14 days)</value>
+  </data>
+  <data name="SeasonalSummerOfflineBoostDesc" xml:space="preserve">
+    <value>Increases offline earnings by 50% for 14 days.</value>
   </data>
   <data name="SeasonalSummerXpPack" xml:space="preserve">
     <value>Summer XP Pack</value>
@@ -4380,6 +4443,18 @@
   <data name="SeasonalAutumnIncomeBoostDesc" xml:space="preserve">
     <value>+10% income for the rest of the season</value>
   </data>
+  <data name="SeasonalAutumnInstantScrews" xml:space="preserve">
+    <value>500 Golden Screws</value>
+  </data>
+  <data name="SeasonalAutumnInstantScrewsDesc" xml:space="preserve">
+    <value>Receive 500 golden screws instantly!</value>
+  </data>
+  <data name="SeasonalAutumnMoodReset" xml:space="preserve">
+    <value>Mood Reset</value>
+  </data>
+  <data name="SeasonalAutumnMoodResetDesc" xml:space="preserve">
+    <value>Resets all workers' mood to 100.</value>
+  </data>
   <data name="SeasonalAutumnXpPack" xml:space="preserve">
     <value>Autumn XP Pack</value>
   </data>
@@ -4398,6 +4473,12 @@
   <data name="SeasonalAutumnSpeedBoostDesc" xml:space="preserve">
     <value>2x production speed for 2 hours</value>
   </data>
+  <data name="SeasonalWinterDoubleDaily" xml:space="preserve">
+    <value>2x Daily Reward</value>
+  </data>
+  <data name="SeasonalWinterDoubleDailyDesc" xml:space="preserve">
+    <value>Doubles your next daily login reward.</value>
+  </data>
   <data name="SeasonalWinterIncomeBoost" xml:space="preserve">
     <value>Winter Income Boost</value>
   </data>
@@ -4415,6 +4496,12 @@
   </data>
   <data name="SeasonalWinterScrewBundleDesc" xml:space="preserve">
     <value>Receive 15 golden screws</value>
+  </data>
+  <data name="SeasonalWinterSpeed4h" xml:space="preserve">
+    <value>4h Speed Boost</value>
+  </data>
+  <data name="SeasonalWinterSpeed4hDesc" xml:space="preserve">
+    <value>2x speed for 4 hours!</value>
   </data>
   <data name="SeasonalWinterSpeedBoost" xml:space="preserve">
     <value>Winter Speed Boost</value>
@@ -5387,37 +5474,178 @@
     <value>Start Capital</value>
   </data>
   <data name="AscStartCapitalDesc" xml:space="preserve">
-    <value>Begin with additional gold after prestige</value>
+    <value>Increases starting money after each prestige.</value>
   </data>
   <data name="AscEternalTools" xml:space="preserve">
     <value>Eternal Tools</value>
   </data>
   <data name="AscEternalToolsDesc" xml:space="preserve">
-    <value>Keep some of your tools after prestige</value>
+    <value>Keep master tools after prestige.</value>
   </data>
   <data name="AscQuickStart" xml:space="preserve">
     <value>Quick Start</value>
   </data>
   <data name="AscQuickStartDesc" xml:space="preserve">
-    <value>Unlock the first workshops immediately</value>
+    <value>Workshops are immediately unlocked after prestige.</value>
   </data>
   <data name="AscTimelessResearch" xml:space="preserve">
     <value>Timeless Research</value>
   </data>
   <data name="AscTimelessResearchDesc" xml:space="preserve">
-    <value>Keep part of your research</value>
+    <value>Permanently reduces research duration.</value>
   </data>
   <data name="AscGoldenEra" xml:space="preserve">
     <value>Golden Era</value>
   </data>
   <data name="AscGoldenEraDesc" xml:space="preserve">
-    <value>Start with a temporary income boost</value>
+    <value>Permanently increases golden screw earnings.</value>
   </data>
   <data name="AscLegendaryReputation" xml:space="preserve">
     <value>Legendary Reputation</value>
   </data>
   <data name="AscLegendaryReputationDesc" xml:space="preserve">
-    <value>Start with higher reputation</value>
+    <value>Start with higher reputation after prestige.</value>
+  </data>
+
+  <!-- Ascension System -->
+  <data name="AscensionTitle" xml:space="preserve">
+    <value>Ascension</value>
+  </data>
+  <data name="AscensionDescription" xml:space="preserve">
+    <value>Reset your progress and receive powerful permanent perks.</value>
+  </data>
+  <data name="AscensionPoints" xml:space="preserve">
+    <value>Ascension Points</value>
+  </data>
+  <data name="AscensionLevel" xml:space="preserve">
+    <value>Ascension Level</value>
+  </data>
+  <data name="AscensionAvailable" xml:space="preserve">
+    <value>Ascension available!</value>
+  </data>
+  <data name="AscensionRequirement" xml:space="preserve">
+    <value>Requires 3 Legend Prestiges</value>
+  </data>
+  <data name="AscensionConfirm" xml:space="preserve">
+    <value>Ascend? Your entire prestige progress will be reset!</value>
+  </data>
+  <data name="AscensionComplete" xml:space="preserve">
+    <value>Ascension complete! You received {0} AP.</value>
+  </data>
+
+  <!-- Late-Game Goals -->
+  <data name="GoalAllWorkshopsLevel" xml:space="preserve">
+    <value>All workshops at Level {0}</value>
+  </data>
+  <data name="GoalAllWorkshopsMax" xml:space="preserve">
+    <value>All workshops at Lv.1000 ({0}/8)</value>
+  </data>
+  <data name="GoalAscensionAvailable" xml:space="preserve">
+    <value>Ascension available! Receive {0} points.</value>
+  </data>
+  <data name="GoalCollectStars" xml:space="preserve">
+    <value>Collect Rebirth Stars ({0}/{1})</value>
+  </data>
+  <data name="GoalNextRebirthStar" xml:space="preserve">
+    <value>{0}: {1} more levels until next star</value>
+  </data>
+  <data name="GoalRebirthReady" xml:space="preserve">
+    <value>{0} ready for Rebirth!</value>
+  </data>
+  <data name="GoalReadyForRebirth" xml:space="preserve">
+    <value>ready for Rebirth!</value>
+  </data>
+  <data name="GoalMaxRebirthAccess" xml:space="preserve">
+    <value>Maximum Rebirth access!</value>
+  </data>
+  <data name="GoalPermanentBonus" xml:space="preserve">
+    <value>Permanent bonus!</value>
+  </data>
+  <data name="GoalUltimatePower" xml:space="preserve">
+    <value>Ultimate power!</value>
+  </data>
+  <data name="GoalKeepGrowing" xml:space="preserve">
+    <value>Keep growing!</value>
+  </data>
+  <data name="GoalNextHundred" xml:space="preserve">
+    <value>Bring {0} to Level {1}</value>
+  </data>
+  <data name="GoalCollectRebirthStars" xml:space="preserve">
+    <value>Collect Rebirth stars ({0}/{1})</value>
+  </data>
+  <data name="AscensionPointsShort" xml:space="preserve">
+    <value>AP</value>
+  </data>
+
+  <!-- Missions (extended) -->
+  <data name="MissionCompleteCrafting" xml:space="preserve">
+    <value>Craft {0} items</value>
+  </data>
+  <data name="MissionTrainWorkers" xml:space="preserve">
+    <value>Train {0} workers</value>
+  </data>
+
+  <!-- Perk System -->
+  <data name="PerkCost" xml:space="preserve">
+    <value>Cost: {0} AP</value>
+  </data>
+  <data name="PerkMaxLevel" xml:space="preserve">
+    <value>MAX</value>
+  </data>
+  <data name="PerkUpgrade" xml:space="preserve">
+    <value>Upgrade</value>
+  </data>
+
+  <!-- Rebirth System -->
+  <data name="RebirthTitle" xml:space="preserve">
+    <value>Rebirth</value>
+  </data>
+  <data name="RebirthDescription" xml:space="preserve">
+    <value>Reset the workshop to Level 1 and receive a permanent star.</value>
+  </data>
+  <data name="RebirthStars" xml:space="preserve">
+    <value>Stars</value>
+  </data>
+  <data name="RebirthCost" xml:space="preserve">
+    <value>Cost</value>
+  </data>
+  <data name="RebirthConfirm" xml:space="preserve">
+    <value>Rebirth workshop? Level will be reset to 1!</value>
+  </data>
+  <data name="RebirthComplete" xml:space="preserve">
+    <value>Rebirth complete! Star {0} received.</value>
+  </data>
+  <data name="RebirthBonus" xml:space="preserve">
+    <value>Bonus per star</value>
+  </data>
+  <data name="RebirthMaxStars" xml:space="preserve">
+    <value>Maximum stars reached!</value>
+  </data>
+
+  <!-- VIP System -->
+  <data name="VipTitle" xml:space="preserve">
+    <value>VIP Status</value>
+  </data>
+  <data name="VipCurrentTier" xml:space="preserve">
+    <value>Current: {0}</value>
+  </data>
+  <data name="VipNextTier" xml:space="preserve">
+    <value>Next tier: {0}</value>
+  </data>
+  <data name="VipIncomeBonus" xml:space="preserve">
+    <value>+{0}% Income</value>
+  </data>
+  <data name="VipXpBonus" xml:space="preserve">
+    <value>+{0}% Experience</value>
+  </data>
+  <data name="VipCostReduction" xml:space="preserve">
+    <value>-{0}% Cost</value>
+  </data>
+  <data name="VipExtraChallenges" xml:space="preserve">
+    <value>+{0} daily challenge</value>
+  </data>
+  <data name="VipExtraMissions" xml:space="preserve">
+    <value>+{0} weekly mission</value>
   </data>
 
   <!-- GuildAchievementUnlocked, PrestigeHistory, SplashStep, GuildTip -->
@@ -5694,5 +5922,287 @@
   </data>
   <data name="AutoCompleteHint" xml:space="preserve">
     <value>You've mastered this game {0}x perfectly!</value>
+  </data>
+  <data name="LevelAbbrev" xml:space="preserve">
+    <value>Lv.</value>
+  </data>
+  <data name="MaxShort" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="LevelUpExclamation" xml:space="preserve">
+    <value>+1 Level!</value>
+  </data>
+  <data name="AchAscFirst" xml:space="preserve">
+    <value>First Ascension</value>
+  </data>
+  <data name="AchAscFirstDesc" xml:space="preserve">
+    <value>Perform your first ascension</value>
+  </data>
+  <data name="AchAsc5" xml:space="preserve">
+    <value>Master Ascender</value>
+  </data>
+  <data name="AchAsc5Desc" xml:space="preserve">
+    <value>Perform 5 ascensions</value>
+  </data>
+  <data name="AchAsc10" xml:space="preserve">
+    <value>Transcendence</value>
+  </data>
+  <data name="AchAsc10Desc" xml:space="preserve">
+    <value>Perform 10 ascensions</value>
+  </data>
+  <data name="AchAscPerkFirst" xml:space="preserve">
+    <value>Perk Enthusiast</value>
+  </data>
+  <data name="AchAscPerkFirstDesc" xml:space="preserve">
+    <value>Purchase your first ascension perk</value>
+  </data>
+  <data name="AchAscPerksMax" xml:space="preserve">
+    <value>Fully Upgraded</value>
+  </data>
+  <data name="AchAscPerksMaxDesc" xml:space="preserve">
+    <value>Upgrade all 6 ascension perks to maximum level</value>
+  </data>
+  <data name="AchRebirthFirst" xml:space="preserve">
+    <value>First Star</value>
+  </data>
+  <data name="AchRebirthFirstDesc" xml:space="preserve">
+    <value>Perform your first workshop rebirth</value>
+  </data>
+  <data name="AchRebirthStars10" xml:space="preserve">
+    <value>Star Collector</value>
+  </data>
+  <data name="AchRebirthStars10Desc" xml:space="preserve">
+    <value>Collect 10 rebirth stars across all workshops</value>
+  </data>
+  <data name="AchRebirthWs5Stars" xml:space="preserve">
+    <value>Perfection</value>
+  </data>
+  <data name="AchRebirthWs5StarsDesc" xml:space="preserve">
+    <value>Upgrade a workshop to 5 rebirth stars</value>
+  </data>
+  <data name="AchRebirthAllWs" xml:space="preserve">
+    <value>Galaxy</value>
+  </data>
+  <data name="AchRebirthAllWsDesc" xml:space="preserve">
+    <value>Get at least 1 rebirth star on all 8 workshops</value>
+  </data>
+  <data name="AchAllWsLevel1000" xml:space="preserve">
+    <value>On the Summit</value>
+  </data>
+  <data name="AchAllWsLevel1000Desc" xml:space="preserve">
+    <value>Upgrade all 8 workshops to level 1000</value>
+  </data>
+  <data name="HintAscensionAvailableTitle" xml:space="preserve">
+    <value>Ascension Available!</value>
+  </data>
+  <data name="HintAscensionAvailableText" xml:space="preserve">
+    <value>You have mastered the legend prestige 3 times! You can now perform an Ascension - a meta-reset that grants permanent Ascension Points for powerful perks.</value>
+  </data>
+  <data name="HintRebirthReadyTitle" xml:space="preserve">
+    <value>Rebirth Ready!</value>
+  </data>
+  <data name="HintRebirthReadyText" xml:space="preserve">
+    <value>Your workshop has reached the maximum level! You can now perform a Rebirth to earn a permanent star. Stars give income bonuses, upgrade discounts and extra worker slots.</value>
+  </data>
+  <data name="HintFirstStarTitle" xml:space="preserve">
+    <value>First Star Earned!</value>
+  </data>
+  <data name="HintFirstStarText" xml:space="preserve">
+    <value>Congratulations on your first rebirth star! Stars are permanent and survive prestige and ascension. Each star gives: +15-150% income, -5-25% upgrade costs, and up to +2 worker slots.</value>
+  </data>
+  <data name="ProductArtwork" xml:space="preserve">
+    <value>Artwork</value>
+  </data>
+  <data name="ProductRoofStructure" xml:space="preserve">
+    <value>Roof Structure</value>
+  </data>
+  <data name="ProductConcrete" xml:space="preserve">
+    <value>Concrete</value>
+  </data>
+  <data name="ProductBlueprint" xml:space="preserve">
+    <value>Blueprint</value>
+  </data>
+  <data name="ProductContract" xml:space="preserve">
+    <value>Contract</value>
+  </data>
+  <data name="ProductFittings" xml:space="preserve">
+    <value>Fittings</value>
+  </data>
+  <data name="ProductPrototype" xml:space="preserve">
+    <value>Prototype</value>
+  </data>
+  <data name="CraftArtwork" xml:space="preserve">
+    <value>Craft Artwork</value>
+  </data>
+  <data name="CraftRoofStructure" xml:space="preserve">
+    <value>Build Roof Structure</value>
+  </data>
+  <data name="CraftConcrete" xml:space="preserve">
+    <value>Mix Concrete</value>
+  </data>
+  <data name="CraftBlueprint" xml:space="preserve">
+    <value>Draw Blueprint</value>
+  </data>
+  <data name="CraftContract" xml:space="preserve">
+    <value>Draft Contract</value>
+  </data>
+  <data name="CraftFittings" xml:space="preserve">
+    <value>Forge Fittings</value>
+  </data>
+  <data name="CraftPrototype" xml:space="preserve">
+    <value>Build Prototype</value>
+  </data>
+  <data name="AutoProduction" xml:space="preserve">
+    <value>Auto Production</value>
+  </data>
+  <data name="AutoProductionUnlocked" xml:space="preserve">
+    <value>Auto production unlocked!</value>
+  </data>
+  <data name="SellAll" xml:space="preserve">
+    <value>Sell All</value>
+  </data>
+  <data name="ItemsPerHour" xml:space="preserve">
+    <value>{0} items/h</value>
+  </data>
+  <data name="OrderTypeMaterialOrder" xml:space="preserve">
+    <value>Delivery Order</value>
+  </data>
+  <data name="MaterialOrderDescription" xml:space="preserve">
+    <value>Deliver materials for instant reward</value>
+  </data>
+  <data name="DeliverMaterials" xml:space="preserve">
+    <value>Deliver</value>
+  </data>
+  <data name="MaterialsRequired" xml:space="preserve">
+    <value>Materials Required</value>
+  </data>
+  <data name="InsufficientMaterials" xml:space="preserve">
+    <value>Not enough materials</value>
+  </data>
+
+  <!-- Challenge-Modus -->
+  <data name="Challenge_Spartaner" xml:space="preserve">
+    <value>Spartan</value>
+  </data>
+  <data name="Challenge_Spartaner_Desc" xml:space="preserve">
+    <value>Maximum 3 workers</value>
+  </data>
+  <data name="Challenge_OhneForschung" xml:space="preserve">
+    <value>No Research</value>
+  </data>
+  <data name="Challenge_OhneForschung_Desc" xml:space="preserve">
+    <value>No research allowed</value>
+  </data>
+  <data name="Challenge_Inflationszeit" xml:space="preserve">
+    <value>Inflation</value>
+  </data>
+  <data name="Challenge_Inflationszeit_Desc" xml:space="preserve">
+    <value>Double upgrade costs</value>
+  </data>
+  <data name="Challenge_SoloMeister" xml:space="preserve">
+    <value>Solo Master</value>
+  </data>
+  <data name="Challenge_SoloMeister_Desc" xml:space="preserve">
+    <value>Only 1 workshop allowed</value>
+  </data>
+  <data name="Challenge_Sprint" xml:space="preserve">
+    <value>Sprint</value>
+  </data>
+  <data name="Challenge_Sprint_Desc" xml:space="preserve">
+    <value>No offline income</value>
+  </data>
+  <data name="Challenge_KeinNetz" xml:space="preserve">
+    <value>No Network</value>
+  </data>
+  <data name="Challenge_KeinNetz_Desc" xml:space="preserve">
+    <value>No suppliers</value>
+  </data>
+  <data name="Challenges" xml:space="preserve">
+    <value>Challenges</value>
+  </data>
+  <data name="ChallengesMaxReached" xml:space="preserve">
+    <value>Maximum 3 challenges</value>
+  </data>
+  <data name="BonusPP" xml:space="preserve">
+    <value>Bonus PP</value>
+  </data>
+  <data name="CurrentRunTime" xml:space="preserve">
+    <value>Run Time</value>
+  </data>
+  <data name="BestRunTime" xml:space="preserve">
+    <value>Best Time</value>
+  </data>
+  <data name="PrestigeMilestoneReached" xml:space="preserve">
+    <value>Prestige milestone! +{0} golden screws</value>
+  </data>
+  <data name="PrestigeOrderRewardRep" xml:space="preserve">
+    <value>Order Bonus</value>
+  </data>
+  <data name="PrestigeOrderRewardRepDesc" xml:space="preserve">
+    <value>+5% order rewards per purchase</value>
+  </data>
+  <data name="PrestigeDeliveryIntervalRep" xml:space="preserve">
+    <value>Delivery Turbo</value>
+  </data>
+  <data name="PrestigeDeliveryIntervalRepDesc" xml:space="preserve">
+    <value>+10% faster deliveries per purchase</value>
+  </data>
+  <data name="PrestigeResearchSpeedTier" xml:space="preserve">
+    <value>Research Turbo</value>
+  </data>
+  <data name="PrestigeResearchSpeedTierDesc" xml:space="preserve">
+    <value>-25% research time</value>
+  </data>
+
+  <!-- Auto-Produktion: Daily Challenge Beschreibungen -->
+  <data name="ChallengeProduceItems" xml:space="preserve">
+    <value>Auto-produce {0} items</value>
+  </data>
+  <data name="ChallengeSellItems" xml:space="preserve">
+    <value>Sell {0} items</value>
+  </data>
+  <data name="ChallengeCompleteMaterialOrder" xml:space="preserve">
+    <value>Complete {0} delivery orders</value>
+  </data>
+
+  <!-- Auto-Produktion: Achievement Titel + Beschreibungen -->
+  <data name="AchAutoCraftFirst" xml:space="preserve">
+    <value>First Prototype</value>
+  </data>
+  <data name="AchAutoCraftFirstDesc" xml:space="preserve">
+    <value>Auto-produce your first item</value>
+  </data>
+  <data name="AchAutoCraft100" xml:space="preserve">
+    <value>Serial Production</value>
+  </data>
+  <data name="AchAutoCraft100Desc" xml:space="preserve">
+    <value>Auto-produce 100 items</value>
+  </data>
+  <data name="AchAutoCraft1000" xml:space="preserve">
+    <value>Mass Production</value>
+  </data>
+  <data name="AchAutoCraft1000Desc" xml:space="preserve">
+    <value>Auto-produce 1000 items</value>
+  </data>
+  <data name="AchMaterialOrder10" xml:space="preserve">
+    <value>Material Master</value>
+  </data>
+  <data name="AchMaterialOrder10Desc" xml:space="preserve">
+    <value>Complete 10 delivery orders</value>
+  </data>
+  <data name="AchCraftTier3First" xml:space="preserve">
+    <value>Masterpiece</value>
+  </data>
+  <data name="AchCraftTier3FirstDesc" xml:space="preserve">
+    <value>Craft your first tier 3 item</value>
+  </data>
+  <data name="AbandonChallengeTitle" xml:space="preserve">
+    <value>Abandon Challenge?</value>
+  </data>
+  <data name="AbandonChallengeMessage" xml:space="preserve">
+    <value>You will receive 50% of the base Prestige Points (without challenge bonus). The challenges will be deactivated.</value>
+  </data>
+  <data name="AbandonChallengeButton" xml:space="preserve">
+    <value>Abandon</value>
   </data>
 </root>

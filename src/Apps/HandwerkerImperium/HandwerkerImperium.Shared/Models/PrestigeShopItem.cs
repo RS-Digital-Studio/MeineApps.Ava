@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using HandwerkerImperium.Models.Enums;
 
 namespace HandwerkerImperium.Models;
 
@@ -66,6 +67,13 @@ public class PrestigeShopItem
     /// </summary>
     [JsonIgnore]
     public int PurchaseCount { get; set; }
+
+    /// <summary>
+    /// Mindest-Prestige-Tier um dieses Item im Shop zu sehen.
+    /// None = immer sichtbar. Bereits gekaufte Items bleiben unabhängig vom Tier wirksam.
+    /// </summary>
+    [JsonIgnore]
+    public PrestigeTier RequiredTier { get; set; } = PrestigeTier.None;
 }
 
 /// <summary>
@@ -132,4 +140,18 @@ public class PrestigeEffect
     /// </summary>
     [JsonPropertyName("upgradeDiscount")]
     public decimal UpgradeDiscount { get; set; }
+
+    /// <summary>
+    /// Bonus auf Auftragsbelohnungen (z.B. 0.05 = +5%).
+    /// Angewendet in GameStateService.GetOrderRewardMultiplier().
+    /// </summary>
+    [JsonPropertyName("orderRewardBonus")]
+    public decimal OrderRewardBonus { get; set; }
+
+    /// <summary>
+    /// Forschungs-Geschwindigkeitsbonus (z.B. 0.25 = -25% Forschungszeit).
+    /// Angewendet in ResearchService.CalculateResearchDuration().
+    /// </summary>
+    [JsonPropertyName("researchSpeedBonus")]
+    public decimal ResearchSpeedBonus { get; set; }
 }

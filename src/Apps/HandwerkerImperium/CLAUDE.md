@@ -6,7 +6,7 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Auftraege oder spiele Mini-Games.
 
-**Version:** 2.0.22 (VersionCode 30) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
+**Version:** 2.0.25 (VersionCode 33) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
 
 ## Icon-System (Bitmap-Icons, AI + Programmatisch)
 
@@ -31,45 +31,51 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Goldschrauben-Economy** (Premium-Waehrung fuer Boosts/Unlock)
 - **Research Tree** (45 Upgrades in 3 Branches: Tools, Management, Marketing)
 - **7 Gebaeude** (Canteen, Storage, Office, Showroom, TrainingCenter, VehicleFleet, WorkshopExtension)
-- **Daily Challenges** (3/Tag) + **Weekly Missions** (5/Woche, 50 Goldschrauben Komplett-Bonus)
+- **Daily Challenges** (3/Tag, 11 Typen inkl. TrainWorker/CompleteCrafting/AchievePerfectStreak/ReachWorkshopLevel) + **Weekly Missions** (5/Woche, 11 Typen, 50 Goldschrauben Komplett-Bonus)
 - **Daily Login Rewards** (30-Tage-Zyklus) + **Streak-Rettung** (3 Goldschrauben)
-- **Achievements** (94 Erfolge) + **Milestone-Celebrations** (Spieler-Level + Workshop-Level)
-- **Prestige-System** (7 Stufen Bronze-Legende, verschärfte Bewahrung, Soft-Cap 5x, Tier-skalierendes Startgeld, wiederholbares Shop-Item, permanenter Prestige-Pass, Diminishing Returns auf Multiplikator)
+- **Achievements** (110 Erfolge in 17 Kategorien inkl. Ascension/Rebirth) + **Milestone-Celebrations** (Spieler-Level + Workshop-Level)
+- **Prestige-System** (7 Stufen Bronze-Legende, verschärfte Bewahrung, Soft-Cap 8x, Tier-skalierendes Startgeld, 3 wiederholbare Shop-Items, permanenter Prestige-Pass, Diminishing Returns auf Multiplikator, 6 Challenge-Modifikatoren, Bonus-PP, Meilensteine, Speedrun-Tracking)
 - **Events** (8 zufaellige + saisonaler Multiplikator, Intervall skaliert mit Prestige)
 - **Auftragstypen** (Standard/Large 1.8x/Weekly 3.0x/Cooperation 2.5x) + **Stammkunden** (bis 1.5x Bonus)
 - **Bulk Buy** (x1/x10/x100/Max) + **Hold-to-Upgrade** (schnelles Hochleveln)
-- **Naechstes-Ziel-System** (GoalService: dynamischer Gold-Banner, 5 Prioritäten inkl. Worker-Tier-Ziel)
-- **Offline-Earnings** (100% erste 2h, 40% bis 4h, 25% bis 8h, 10% danach)
+- **Naechstes-Ziel-System** (GoalService: dynamischer Gold-Banner, 10 Prioritäten: Anfänger→Meilenstein→Prestige→Workshop-Unlock→Gebäude→Worker→Rebirth→Ascension→AllMax→NextStar→Stretch)
+- **Offline-Earnings** (80% erste 2h, 35% bis 4h, 15% bis 8h, 5% danach — ~2.8h Äquivalent für 8h Nacht)
 - **Feierabend-Rush** (2h 2x-Boost, 1x taeglich gratis, danach 10 Goldschrauben)
 - **Meisterwerkzeuge** (12 Artefakte, 5 Seltenheiten, passive Einkommens-Boni)
 - **Lieferant-System** (Variable Rewards alle 2-5 Min: Geld, Schrauben, XP, Mood, Speed)
 - **Prestige-Shop** (23 Items in 4 Kategorien, 1 wiederholbar) + **Prestige-Pass** (2,99 EUR IAP, +50% Prestige-Punkte, permanent nach Kauf). Shop-Effekte: OfflineHoursBonus (GameState.MaxOfflineHours), CraftingSpeedBonus (CraftingService.StartCrafting), ExtraQuickJobLimit (QuickJobService.GetMaxQuickJobsPerDay), UpgradeDiscount (GameLoopService-Cache), Income/Rush/Delivery (GameLoopService-Cache), CostReduction/MoodDecay/XP (PrestigeService-Getter), GoldenScrews (GameStateService.AddGoldenScrews), StartMoney/StartWorkerTier (PrestigeService.ResetProgress)
 - **Story-System** (25 Kapitel von NPC "Meister Hans" mit SkiaSharp-Portrait)
-- **Kontextuelles Tutorial** (17 Tooltip-Bubbles + Welcome-Dialog, ContextualHintService, SeenHints-Tracking)
+- **Kontextuelles Tutorial** (20 Tooltip-Bubbles + Welcome-Dialog, ContextualHintService, SeenHints-Tracking, inkl. Ascension/Rebirth/FirstStar-Hints)
 - **In-App Review** (Level 20/50/100, erstes Prestige, 50 Auftraege)
 - **Benachrichtigungen** (4 Typen, AlarmManager + BroadcastReceiver, BootReceiver, 6 Sprachen)
 - **Google Play Games** (Leaderboards, kein Cloud-Save im NuGet v121.0.0.2)
 - **Audio + Haptik** (15 Sounds via SoundPool, 7 Vibrations-Muster, Hintergrundmusik)
 - **Vorarbeiter-System** (14 Manager, Lv.1-5, Workshop-Boni)
-- **Turniere** (Woechentlich, 9 simulierte Gegner, 3x/Tag gratis)
-- **Battle Pass** (30 Tiers, Free/Premium Track, 30-Tage-Saisons, Premium: 10 GS/3 Tiers + 50 GS Capstone)
-- **Saisonale Events** (4/Jahr mit Saisonwaehrung und Event-Shop)
+- **Turniere** (Woechentlich, 9 simulierte Gegner, 3x/Tag gratis, alle 10 MiniGame-Typen)
+- **Battle Pass** (50 Tiers, Free/Premium Track, 42-Tage-Saisons, Premium: 10 GS/3 Tiers + 50 GS Capstone, BattlePassRewardType: Standard/SpeedBoost)
+- **Saisonale Events** (4/Jahr mit Saisonwaehrung und Event-Shop, 6 Items/Saison: 4 Basis + 2 saison-einzigartige)
 - **Gilden/Innungen** (Firebase Realtime Database, Wochenziele, 18 Forschungen mit Timer+Auto-Completion, Einladungs-Inbox mit Accept/Decline)
-- **Crafting-System** (13 Rezepte in 3 Tiers, Inventar + Verkauf)
+- **Crafting-System** (20 Rezepte in 3 Tiers, Inventar + Verkauf, skalierende Preise)
+- **Auto-Produktion** (alle 10 Workshops produzieren passiv Tier-1 Items ab Lv50, Rate: 180s/Worker Standard, 120s InnovationLab, 60s MasterSmith)
+- **Lieferaufträge** (MaterialOrder: Kein MiniGame, Items liefern für sofortige Belohnung, 1.8x Reward, 4h Deadline, max 3/Tag)
 - **Automatisierung** (Auto-Collect Lv15+, Auto-Accept Lv25+, Auto-Assign Lv20+, Auto-ClaimDaily Premium) — eigenes Dashboard-Panel (nicht in Settings)
-- **Welcome Back Angebote** + **Gluecksrad** (taeglich gratis)
+- **Welcome Back Angebote** + **Gluecksrad** (taeglich gratis, Festpreis 5 GS pro Extra-Spin)
 - **Ausruestungs-System** (4 Typen x 4 Seltenheiten fuer Arbeiter, Equip/Unequip im Worker-Profil, Inventar-Browser)
 - **Grafik-Einstellungen** (Low/Medium/High, GraphicsQuality in GameState, steuert Wetter-Effekte etc.)
 - **MiniGame-Direktstart** (Auto-Start nach Tutorial-Check + 3-2-1-Countdown, kein Start-Button)
 - **MiniGame Auto-Complete** (ab 30 Perfect-Ratings "Auto-Ergebnis" mit Good-Rating, Premium ab 15, PerfectRatingCounts in GameState)
 - **Gilden-Browser** (offene Gilden suchen+beitreten ohne Einladung, Firebase REST-Abfrage, Browse-UI in GuildView)
-- **Soft-Cap-Transparenz** (IsSoftCapActive + SoftCapReductionPercent im GameState, UI-Indikator im Dashboard)
+- **Soft-Cap-Transparenz** (IsSoftCapActive + SoftCapReductionPercent im GameState, UI-Indikator im Dashboard, Schwelle 8x)
+- **Workshop Rebirth** (0-5 Sterne pro Workshop, permanent über Prestige+Ascension, Einkommens-Bonus +15-150%, Upgrade-Rabatt 5-25%, Extra-Worker +1-3)
+- **Challenge-Abbruch** (Aufgeben-Button bei aktiven Prestige-Challenges, gibt 50% Basis-PP ohne Challenge-Bonus, Challenges werden deaktiviert)
+- **Prestige-Freischaltung** (Nach erstem Prestige alle Tabs, Features und Automatisierungen permanent freigeschaltet — Spieler verliert nie Zugang zu Gilde/Forschung/etc.)
+- **Ascension-System** (Meta-Prestige nach 3x Legende, 6 permanente Perks je MaxLevel 3 (61 AP gesamt), +2 AP/Ascension Skalierung, AscensionViewModel + Route "ascension" als Imperium-Sub-View)
 
 ### Prestige-System (Details)
 
 **PP-Formel**: `floor(sqrt(CurrentRunMoney / 100_000))` - nur Geld aus dem aktuellen Durchlauf zählt (nicht kumulativ). `CurrentRunMoney` wird bei jedem Prestige auf 0 zurückgesetzt.
 
-**Multiplikator mit Diminishing Returns**: Bonus pro Prestige sinkt mit Anzahl bereits durchgeführter Prestiges desselben Tiers. Formel: `baseBonus * 1/(1 + 0.1 * tierCount)`. Erster Prestige voller Bonus, 10. nur noch 50%. Cap bei 50x (statt 200x).
+**Multiplikator mit Diminishing Returns**: Bonus pro Prestige sinkt mit Anzahl bereits durchgeführter Prestiges desselben Tiers. Formel: `baseBonus * 1/(1 + 0.1 * tierCount)`. Erster Prestige voller Bonus, 10. nur noch 50%. Cap bei 20x.
 
 **Tier-Multiplikator-Boni (Basis)**: Bronze +20%, Silver +25%, Gold +50%, Platin +100%, Diamant +200%, Meister +400%, Legende +800%.
 
@@ -83,6 +89,116 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 | Diamant+ | + MasterTools bleiben |
 | Meister+ | + Gebäude (Level→1) + Equipment |
 | Legende | + Manager (Level→1) + beste Worker |
+
+### Prestige-Herausforderungen (Run-Modifikatoren)
+
+Optionale Erschwerungen, wählbar VOR dem Prestige. Max 3 gleichzeitig. PP-Boni stacken additiv.
+Daten in `PrestigeData.ActiveChallenges`. Constraints zentral via `IChallengeConstraintService`.
+
+| Challenge | Effekt | PP-Bonus |
+|-----------|--------|----------|
+| Spartaner | Max 3 Worker | +40% |
+| OhneForschung | Keine Forschung möglich | +30% |
+| Inflationszeit | Doppelte Upgrade-Kosten | +25% |
+| SoloMeister | Nur 1 Workshop | +60% |
+| Sprint | Kein Offline-Einkommen | +35% |
+| KeinNetz | Keine Lieferanten | +20% |
+
+**Constraint-Enforcement**: `ChallengeConstraintService` (Singleton) → Consumer-Services fragen `IChallengeConstraintService` ab.
+**SoloMeister + QuickStart**: Inkompatibel (Toggle wird abgelehnt).
+**Enum**: `Models/Enums/PrestigeChallengeType.cs`
+
+### Bonus-PP-Quellen (flat, NACH Tier-Multi)
+
+Kleine Boni für Spielleistung im Run, addiert NACH dem Tier-Multiplikator (nicht multipliziert).
+
+| Bedingung | Bonus-PP | Cap |
+|-----------|----------|-----|
+| Je 10 Perfect Ratings | +1 PP | max +5 |
+| Volle Research-Branch | +2 PP | max +6 |
+| Alle 7 Gebäude Lv5 | +1 PP | — |
+| Pro Level über Tier-Min | +0.05 PP | max +5 |
+
+Konstanten in `GameBalanceConstants.cs`. Berechnung in `PrestigeService.CalculateBonusPrestigePoints()`.
+
+### Prestige-Meilensteine (permanent)
+
+GS-Belohnungen für kumulative Prestige-Zähler. Werden NICHT bei Ascension zurückgesetzt.
+Daten in `PrestigeData.ClaimedMilestones`. Event: `IPrestigeService.MilestoneReached`.
+
+| Prestiges | ID | GS |
+|-----------|-----|-----|
+| 1 | pm_first | 10 |
+| 5 | pm_5 | 20 |
+| 10 | pm_10 | 35 |
+| 25 | pm_25 | 50 |
+| 50 | pm_50 | 75 |
+| 100 | pm_100 | 100 |
+
+### Speedrun-Tracking
+
+- `PrestigeData.RunStartTime` (UTC, gesetzt bei jedem Prestige-Reset)
+- `PrestigeData.BestRunTimes` (Dictionary pro Tier, max 7 Einträge)
+- `PrestigeHistoryEntry.RunDurationTicks` + `.Challenges` + `.BonusPrestigePoints`
+- Kein Balance-Impact, rein motivational
+
+### Prestige-Shop-Erweiterung (27 Items, davon 3 wiederholbar)
+
+4 neue Items (2 wiederholbar, 1 Tier-locked):
+
+| ID | Typ | Kosten | Effekt | Tier-Lock |
+|----|-----|--------|--------|-----------|
+| pp_order_reward_rep | Wiederholbar | 20 (×2) | +5% Auftragsbelohnungen | — |
+| pp_delivery_interval_rep | Wiederholbar | 25 (×2) | +10% schnellerer Lieferant | — |
+| pp_research_speed_tier | Einmalig | 45 PP | -25% Forschungszeit | Diamant+ |
+
+Tier-Lock: Items mit `RequiredTier` nur sichtbar wenn Tier erreicht ODER bereits gekauft.
+Effekt-Verdrahtung: `OrderRewardBonus` → `GameStateService.GetPrestigeShopOrderRewardBonus()`, `ResearchSpeedBonus` → `ResearchService.CalculateEffectiveDuration()`.
+
+### Workshop Rebirth (Late-Game)
+
+Pro Workshop können 0-5 Rebirth-Sterne verdient werden. Sterne sind permanent (überleben Prestige + Ascension).
+Daten in `GameState.WorkshopStars` (Dictionary<string, int>), Runtime-Properties auf `Workshop` (JsonIgnore).
+
+| Sterne | Einkommens-Bonus | Upgrade-Rabatt | Extra Worker | GS-Kosten |
+|--------|-----------------|----------------|-------------|-----------|
+| 1 | +15% | -5% | +1 | 100 |
+| 2 | +35% | -10% | +1 | 250 |
+| 3 | +60% | -15% | +2 | 500 |
+| 4 | +100% | -20% | +2 | 500 |
+| 5 | +150% | -25% | +3 | 1000 |
+
+### Late-Game Achievements (Phase 4)
+
+17 Achievement-Kategorien. 11 neue Achievements fuer Ascension/Rebirth/Late-Game:
+
+| ID | Name | Bedingung | Belohnung |
+|----|------|-----------|-----------|
+| asc_first | Erster Aufstieg | 1 Ascension | 500k + 5000 XP + 100 GS |
+| asc_5 | Meister-Aufsteiger | 5 Ascensions | 5M + 12500 XP + 250 GS |
+| asc_10 | Transzendenz | 10 Ascensions | 50M + 25000 XP + 500 GS |
+| asc_perk_first | Perk-Enthusiast | 1 Perk kaufen | 100k + 2500 XP + 50 GS |
+| asc_perks_max | Voll ausgebaut | Alle 6 Perks Max | 100M + 50000 XP + 1000 GS |
+| rebirth_first | Erster Stern | 1 Rebirth | 1M + 5000 XP + 100 GS |
+| rebirth_stars_10 | Sternensammler | 10 Sterne gesamt | 10M + 15000 XP + 300 GS |
+| rebirth_ws_5stars | Vollendung | 1 WS auf 5 Sterne | 25M + 20000 XP + 500 GS |
+| rebirth_all_ws | Galaxie | Alle 8 WS 1+ Stern | 50M + 25000 XP + 750 GS |
+| all_ws_level1000 | Auf dem Gipfel | Alle 8 WS Level 1000 | 100M + 50000 XP + 1000 GS |
+
+### Contextual Hints (Late-Game, Phase 4)
+
+3 neue Dialog-Hints fuer Late-Game-Features:
+- **ascension_available**: Erscheint nach 3. Legende-Prestige (OnPrestigeCompleted)
+- **rebirth_ready**: Erscheint wenn ein Workshop Level 1000 erreicht (OnWorkshopUpgraded)
+- **first_star**: Erscheint nach erstem Rebirth (OnRebirthCompleted)
+
+### SaveGame-Versionen
+
+| Version | Beschreibung |
+|---------|-------------|
+| 1 | Legacy (Altes Worker-System) |
+| 2 | Neues Worker-System, Buildings, Research, Events, Prestige, Reputation |
+| 3 | Workshop Rebirth Stars (WorkshopStars Dictionary) |
 
 ### Neuer-Spieler-Einstieg
 
@@ -111,6 +227,28 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 
 ## Architektur-Besonderheiten
 
+### BaseMiniGameViewModel (Refactoring 20.03.2026)
+
+Alle 10 MiniGame-ViewModels erben von `BaseMiniGameViewModel` (ViewModels/MiniGames/BaseMiniGameViewModel.cs).
+Eliminiert ~2.500 Zeilen Duplikation. Basis-Klasse enthält:
+- 25 gemeinsame ObservableProperties (OrderId, Difficulty, IsPlaying, Stars, Tutorial, AutoComplete etc.)
+- 7 gemeinsame Commands (StartGame, Continue, Cancel, WatchAd, DismissTutorial, AutoComplete)
+- Countdown-Logik (3-2-1-Los), Timer-Management, Ergebnis-Anzeige mit Sterne-Animation
+- SetOrderId(), ShowResultAsync(), StopGame(), CheckAndShowTutorial(), UpdateAutoCompleteStatus()
+- Virtual Hooks: InitializeGame(), OnGameTimerTick(), OnPreGameStartAsync(), CalculateAndSetRewards(), GetCurrentMiniGameType()
+- SawingGame/ForgeGame überschreiben GetCurrentMiniGameType() für dynamische Sub-Typen
+- PaintingGame überschreibt CalculateAndSetRewards() für Combo-Multiplikator
+- Blueprint/InventGame nutzen OnPreGameStartAsync() für Memorisierungsphase
+
+### GameBalanceConstants (20.03.2026)
+
+`Models/GameBalanceConstants.cs` — Zentrale Balancing-Konstanten statt Magic Numbers. Enthält:
+- Workshop-Einkommen (IncomeBaseMultiplier=1.02, MilestoneMultipliers-Array, Upgrade-Kosten)
+- Workshop-Rebirth (Einkommensboni, Rabatte, Extra-Worker als Arrays)
+- Worker-Stimmung/Müdigkeit (Mood-Thresholds, Fatigue-Raten, XP-Werte, Level-Fit-Parameter)
+- Building-Boni (Kosten-Exponenten, Kantine/Lager/Fuhrpark-Boni als Arrays)
+- WorkshopFormulas.cs und Workshop.cs referenzieren diese Konstanten
+
 ### Dispose / Memory Leak Prevention
 
 `App.DisposeServices()` gibt alle IDisposable-Singletons frei (IGameLoopService, GameJuiceEngine, MainViewModel, IFirebaseService).
@@ -120,20 +258,49 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 
 ### MainViewModel Partial-Class-Split
 
-MainViewModel ist in 6 partielle Dateien aufgeteilt (~5.150 Zeilen, 165 ObservableProperties):
+MainViewModel ist in 6 partielle Dateien aufgeteilt. Architektur-Refactoring (19.03.2026):
+
+**ActivePage Enum-Navigation**: 35+ einzelne `IsXxxActive` Bool-Properties ersetzt durch eine einzige `ActivePage`-Enum-Property (`Models/Enums/ActivePage.cs`). Die Bool-Properties existieren weiterhin als berechnete Properties (XAML-kompatibel), aber die Source-of-Truth ist `ActivePage`. `DeactivateAllTabs()` (39 Zeilen) und `NotifyTabBarVisibility()` eliminiert. `IsTabBarVisible` basiert auf `HashSet<ActivePage>` (5 Haupt-Tabs). Nur 2-3 PropertyChanged-Notifications pro Seitenwechsel statt 36+. Worker-Profile und LuckySpin sind Overlay-States (eigene `[ObservableProperty]` Bools, ActivePage bleibt erhalten).
 
 | Datei | Inhalt |
 |-------|--------|
-| `MainViewModel.cs` | Felder, Constructor, ~165 ObservableProperties, Event-Handler, GameTick, Dispose |
-| `MainViewModel.Navigation.cs` | Tab-Auswahl, NavigateTo-Commands, HandleBackPressed, MiniGame-Navigation |
+| `MainViewModel.cs` | Felder, Constructor, Properties, ActivePage-Enum + berechnete IsXxxActive, Event-Handler, GameTick, Dispose |
+| `MainViewModel.Navigation.cs` | Tab-Auswahl via `ActivePage = ...`, HandleBackPressed (Switch auf ActivePage), Child-Navigation-Routing |
 | `MainViewModel.Dialogs.cs` | Weiterleitungsmethoden an DialogVM, Prestige-Durchfuehrungslogik |
 | `MainViewModel.Economy.cs` | Workshop-Kauf/Upgrade, Auftraege, Rush, Lieferant, BulkBuy, Hold-to-Upgrade |
-| `MainViewModel.Missions.cs` | Weekly Missions, Welcome-Back, Lucky Spin, Streak-Rettung, Quick Jobs, Daily Challenges, Meisterwerkzeuge |
+| `MainViewModel.Missions.cs` | Nur noch LuckySpin-Overlay-Steuerung (ShowLuckySpin/HideLuckySpinOverlay). Gesamte Logik extrahiert nach MissionsFeatureViewModel |
 | `MainViewModel.Init.cs` | InitializeAsync, Cloud-Save, Offline-Earnings, Daily Reward |
 
-### DialogViewModel (extrahiert aus MainViewModel)
+### MissionsFeatureViewModel (extrahiert 19.03.2026)
 
-`DialogViewModel.cs` (785 Zeilen, 45 ObservableProperties) enthaelt alle Dialog-bezogenen Properties und Methoden:
+`ViewModels/MissionsFeatureViewModel.cs` — Eigenstaendiges ViewModel fuer den Missionen-Bereich. Als Singleton in DI registriert. Zugriff via `MainViewModel.MissionsVM`.
+
+**Enthaelt**: Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin, Streak-Rettung, Welcome-Back-Angebote, Meisterwerkzeuge-Info. Alle zugehoerigen Commands und ObservableProperties.
+
+**Services** (per Constructor Injection): IWeeklyMissionService, ILuckySpinService, IQuickJobService, IDailyChallengeService, IGameStateService, IAudioService, ILocalizationService, IDialogService, IRewardedAdService, IWelcomeBackService, IAdService, IContextualHintService, LuckySpinViewModel.
+
+**Events** (Kommunikation zurueck zu MainViewModel):
+- `FloatingTextRequested` → MainViewModel.FloatingTextRequested
+- `CelebrationRequested` → MainViewModel.CelebrationRequested
+- `NavigateToMiniGameRequested` → MainViewModel setzt QuickJob-State + NavigateToMiniGame()
+- `CheckDeferredDialogsRequested` → MainViewModel.CheckDeferredDialogs()
+- `StreakRescued` → MainViewModel aktualisiert LoginStreak/ShowStreakBadge Properties
+
+**GameTick-Integration**: `UpdateQuickJobTimer()` (jede Sekunde), `UpdatePeriodicState()` (alle 10 Ticks fuer LuckySpin + WelcomeBack-Timer).
+
+**AXAML-Bindings**: DailyChallengeSection und WeeklyMissionSection nutzen `x:DataType="vm:MissionsFeatureViewModel"` und bekommen `DataContext="{Binding MissionsVM}"`. WelcomeBackOfferDialog ebenso. DashboardView/MissionenView/ImperiumView nutzen `MissionsVM.PropertyName` Bindings. DailyRewardDialog nutzt `MissionsVM.CanRescueStreak` etc.
+
+### IncomeCalculatorService (extrahiert 19.03.2026)
+
+`Services/IncomeCalculatorService.cs` (IIncomeCalculatorService) — Zentrale Einkommens- und Kostenberechnung.
+Eliminiert die Code-Duplikation zwischen GameLoopService (pro Tick) und OfflineProgressService (bei App-Start).
+3 Methoden: `CalculateGrossIncome()`, `CalculateCosts()`, `ApplySoftCap()`.
+Alle Modifikatoren (Prestige-Shop, Research, Events, MasterTools, Gilden, VIP, Soft-Cap) an einer Stelle.
+Änderungen an der Einkommens-Pipeline müssen NUR NOCH HIER gemacht werden.
+
+### DialogViewModel + IDialogService (per DI injiziert)
+
+`DialogViewModel.cs` (785 Zeilen, 45 ObservableProperties) — als Singleton in DI registriert. Implementiert `IDialogService` (Interface in `Services/Interfaces/IDialogService.cs`). Enthaelt alle Dialog-bezogenen Properties und Methoden:
 - **Alert-Dialog**: ShowAlertDialog(), DismissAlertDialog
 - **Confirm-Dialog**: ShowConfirmDialog() mit TaskCompletionSource, ConfirmDialogAccept/Cancel
 - **Story-Dialog**: CheckForNewStoryChapter(), ShowStoryDialog(), DismissStoryDialog (Meister Hans NPC)
@@ -144,10 +311,12 @@ MainViewModel ist in 6 partielle Dateien aufgeteilt (~5.150 Zeilen, 165 Observab
 - **Prestige-Tier-Auswahl**: ShowPrestigeConfirmationDialogAsync(), SelectPrestigeTier, UpdatePrestigeDialogContent
 - **IsAnyDialogVisible**: Aggregierte Property fuer alle Dialog-Sichtbarkeiten
 
+**IDialogService-Pattern**: Child-ViewModels nutzen `IDialogService` direkt per Constructor Injection (kein Event-Routing ueber MainViewModel). 13 ViewModels refactored (19.03.2026): SettingsVM, ShopVM, OrderVM, StatisticsVM, WorkerMarketVM, WorkerProfileVM, BuildingsVM, ResearchVM, TournamentVM, BattlePassVM, GuildVM, AchievementsVM, AscensionVM. AlertRequested/ConfirmationRequested Events durch `_dialogService.ShowAlertDialog()` / `_dialogService.ShowConfirmDialog()` ersetzt.
+
 **Kommunikation mit MainViewModel** via Events:
-- `DeferredDialogCheckRequested` → MainViewModel.CheckDeferredDialogs()
-- `PrestigeSummaryGoToShopRequested` → MainViewModel.SelectBuildingsTab()
-- `FloatingTextRequested` → MainViewModel.FloatingTextRequested Event
+- `DeferredDialogCheckRequested` -> MainViewModel.CheckDeferredDialogs()
+- `PrestigeSummaryGoToShopRequested` -> MainViewModel.SelectBuildingsTab()
+- `FloatingTextRequested` -> MainViewModel.FloatingTextRequested Event
 
 MainViewModel erstellt DialogVM im Constructor und verdrahtet Events. Dialog-Views in MainView.axaml binden per `DataContext="{Binding DialogVM}"`.
 
@@ -165,7 +334,7 @@ Die Dialog-Controls `AchievementDialog`, `ContextualHintDialog`, `StoryDialog`, 
 |-----|-------|------|--------|
 | Werkstatt | 0 | DashboardView | City-Szene (CityRenderer), Workshop-Karten, Automation-Panel, Quick-Jobs |
 | Imperium | 1 | ImperiumView | Gebaeude, Crafting+Research, Workers/Manager/MasterTools, Prestige (am Ende) |
-| Missionen | 2 | MissionenView | Daily Challenges, Weekly Missions, Turnier/BattlePass/SaisonEvent/Erfolge, Gluecksrad |
+| Missionen | 2 | MissionenView | 2 Sub-Tabs: "Heute" (Daily Challenges, Quick Jobs, Gluecksrad) + "Wettbewerbe" (Weekly Missions, Turnier/BattlePass/SaisonEvent/Erfolge). Tab-State in MissionsFeatureViewModel (IsTodayTabActive/IsCompetitionsTabActive) |
 | Gilde | 3 | GuildView | Guild-Hub, Research/Members/Invite Sub-Seiten |
 | Shop | 4 | ShopView | IAP, Goldschrauben-Pakete, Ausruestungs-Shop |
 
@@ -290,26 +459,30 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `GameStateService` | Zentraler State mit Thread-Safety (lock), GetOrderRewardMultiplier(), AddXp() (aus GameState verschoben) |
 | `SaveGameService` | JSON-Persistenz (Load/Save/Import/Export/Reset), MigrateFromV1() (aus GameState verschoben) |
 | `WorkerService` | Mood, Fatigue, Training, Ruhe, Kündigung, ReinstateWorker, Research-basierte Markt-Generierung (S-Tier+Headhunter) |
-| `PrestigeService` | 7-Tier Prestige + Shop-Effekte + verschärfte Bewahrung + Diminishing Returns (Cap 50x) |
+| `PrestigeService` | 7-Tier Prestige + Shop-Effekte + verschärfte Bewahrung + Diminishing Returns (Cap 20x) + Bonus-PP + Meilensteine + Speedrun-Tracking (Partial: PrestigeService.Challenges.cs) |
+| `ChallengeConstraintService` | Zentrales Constraint-Interface für 6 Prestige-Challenges (Spartaner/OhneForschung/Inflationszeit/SoloMeister/Sprint/KeinNetz) |
+| `AscensionService` | Meta-Prestige nach 3x Legende, 6 permanente Perks (AP-basiert), kompletter Reset inkl. Prestige-Daten |
 | `ResearchService` | 45 Research-Nodes, Timer, Effekt-Berechnung |
 | `EventService` | 8 Event-Typen + saisonaler Multiplikator |
 | `DailyChallengeService` | 3 Challenges/Tag (00:00 Reset) |
 | `DailyRewardService` | 30-Tage Login-Zyklus |
 | `QuickJobService` | Schnelle MiniGame-Jobs (Rotation 8-15min, Limit 20-40/Tag) |
 | `StoryService` | 25 Kapitel von Meister Hans, fortschrittsbasiert |
-| `AchievementService` | 94 Erfolge + Goldschrauben-Rewards, PrestigeCompleted-Event |
-| `OfflineProgressService` | Offline-Einnahmen (Staffelung 100%/40%/25%/10%, Events+Boosts anteilig) + Worker-State-Simulation (2-Phasen: Aktivität→Rest-Recovery, dynamische Fatigue, Training-Fortschritt+Kosten, Arbeits-XP, Level-Ups, alle GameLoop-Modifikatoren) |
-| `GoalService` | Dynamisches Naechstes-Ziel-System (4 Prioritaeten, Cache mit Dirty-Flag) |
+| `AchievementService` | 110 Erfolge + Goldschrauben-Rewards, PrestigeCompleted/AscensionCompleted/RebirthCompleted-Events |
+| `RebirthService` | Workshop-Rebirth (0-5 Sterne), permanent über Prestige+Ascension, Einkommens-Bonus/Upgrade-Rabatt/Extra-Worker |
+| `VipService` | VIP-System basierend auf IAP-Gesamtausgaben (None/Bronze/Silver/Gold/Platin), primär QoL-Vorteile (AutoClaim, DeliveryTimer, ExclusiveFrame), minimale Gameplay-Boni (max +5% Income, +5% XP, keine Kosten-Reduktion), Extra-Challenges |
+| `OfflineProgressService` | Offline-Einnahmen (Staffelung 80%/25%/10%/3%, Soft-Cap 8.0x, Events+Boosts anteilig) + Worker-State-Simulation (2-Phasen: Aktivität→Rest-Recovery, dynamische Fatigue, Training-Fortschritt+Kosten, Arbeits-XP, Level-Ups, alle GameLoop-Modifikatoren) |
+| `GoalService` | Dynamisches Naechstes-Ziel-System (10 Prioritaeten inkl. Late-Game: Rebirth/Ascension/AllMax/NextStar/Stretch, Cache mit Dirty-Flag) |
 | `OrderGeneratorService` | 4 OrderTypes, Stammkunden-Zuweisung, Reputation beeinflusst Qualitaet |
 | `ReviewService` | In-App Review (14-Tage Cooldown, 5 Trigger) |
 | `AudioService` | SoundPool (15 Sounds), Vibrator (7 Muster), MediaPlayer (Musik). Factory-Pattern |
 | `NotificationService` | 4 Typen, AlarmManager+BroadcastReceiver, BootReceiver, 6 Sprachen |
 | `PlayGamesService` | Leaderboards, kein Cloud-Save (NuGet-Limitation). Factory-Pattern |
 | `ManagerService` | 14 Vorarbeiter: Unlock/Upgrade (Lv.1-5), Workshop-Boni |
-| `TournamentService` | Woechentliche MiniGame-Turniere, 9 simulierte Gegner |
-| `BattlePassService` | 30-Tier Battle Pass, Free/Premium, 30-Tage-Saisons |
-| `SeasonalEventService` | 4 Events/Jahr (Mär/Jun/Sep/Dez, 1.-14.), SP-Waehrung (5+Bonus pro Auftrag), Event-Shop (4 Items/Saison), IDisposable (OrderCompleted-Subscription) |
-| `GuildService` | Firebase REST API, Gilden-CRUD, Wochenziele, Einladungen, GetMaxMembers(), CountAndSyncMemberCountAsync (Race-Condition-frei) |
+| `TournamentService` | Woechentliche MiniGame-Turniere (alle 10 MiniGame-Typen), 9 simulierte Gegner |
+| `BattlePassService` | 50-Tier Battle Pass, Free/Premium, 42-Tage-Saisons |
+| `SeasonalEventService` | 4 Events/Jahr (Mär/Jun/Sep/Dez, 1.-14.), SP-Waehrung (5+Bonus pro Auftrag), Event-Shop (6 Items/Saison: 4 Basis + 2 einzigartige), IDisposable (OrderCompleted-Subscription) |
+| `GuildService` | Firebase REST API, Gilden-CRUD, Wochenziele, Einladungen, GetMaxMembers(), CountAndSyncMemberCountAsync (Race-Condition-frei), Duplikat-Erkennung (RemoveDuplicateMemberAsync), Verwaiste-Mitglieder-Bereinigung (CleanupStaleMembersAsync, >30d inaktiv) |
 | `GuildResearchService` | 18 Gilden-Forschungen (6 Kategorien), Timer, Effekt-Cache, SemaphoreSlim |
 | `GuildWarSeasonService` | Einziger Gilden-Krieg-Service (Saison-System, Matchmaking, Scoring, Ligen, Bonus-Missionen). Legacy GuildWarService entfernt |
 | `GuildHallService` | Interaktives Gilden-HQ mit 10 Gebäuden (Level 1-5), Upgrade-Timer, Effekt-Cache |
@@ -318,7 +491,8 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `GuildAchievementService` | 30 Gilden-Achievements (10 Typen x 3 Tiers), Firebase-Tracking |
 | `FirebaseService` | Anonymous Auth, Token-Refresh (55min, Retry bei Netzwerkfehler), CRUD, 5s Timeout, SemaphoreSlim. PlayerId-GUID (stabile Spieler-Identität, überlebt Account-Wechsel), auth_to_player Mapping via SyncAuthToPlayerMappingAsync() |
 | `GameAssetService` | LRU-Cache 50MB, WebP→SKBitmap + animierte WebP Multi-Frame, PlatformAssetLoader. Statischer `GameAssetService.Current` Zugriff für Views (kein Service-Locator) |
-| `CraftingService` | 13 Rezepte in 3 Tiers, Produktionsketten, Echtzeit-Timer |
+| `CraftingService` | 20 Rezepte in 3 Tiers, Produktionsketten, Echtzeit-Timer, skalierende Verkaufspreise (log₂-Formel × alle Einkommens-Multiplikatoren) |
+| `AutoProductionService` | Automatische Tier-1-Produktion: 180s/Worker (Standard), 120s (InnovationLab), 60s (MasterSmith). Unlock ab WS-Level 50. Offline-Produktion mit Staffelung |
 | `WeeklyMissionService` | 5 Wochenmissionen, Montag-Reset, 50 Goldschrauben Bonus |
 | `WelcomeBackService` | Angebote nach 24h+ Abwesenheit, Starter-Paket (einmalig) |
 | `LuckySpinService` | Taeglicher Gratis-Spin, 8 Preiskategorien (gewichtet) |
@@ -340,8 +514,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | Bottom Sheets | CSS translateY(800→0px), CubicEaseOut |
 | Hold-to-Upgrade | DispatcherTimer 120ms, stilles Upgrade, Zusammenfassung am Ende |
 | Tab-Wechsel | FadeIn 150ms CubicEaseOut |
-| Workshop-Szenen | WorkshopSceneRenderer: 10 ikonische Szenen mit Level-Visuals (Glow Lv50+, Sterne Lv250+, Premium-Aura Lv500+, Shimmer Lv1000) |
-| Workshop-Interieur | WorkshopInteriorRenderer: Gradient+Boden+Vignette+Wand-Details, Ambient-Partikel |
+| Workshop-Szenen | WorkshopSceneRenderer: AI-Bitmap + Level-Overlays (Sterne Lv250+, Gold-Aura Lv500+, Shimmer Lv1000) |
 | MiniGame Result | Staggered Stars, Rating-Farbe, Border-Pulse, MiniGameEffectHelper |
 | MiniGame Countdown | Pulsierendes 3-2-1-GO! Overlay |
 | Muenz-Partikel | Goldene Coin-Partikel im City-Header via AnimationManager |
@@ -352,12 +525,8 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | OdometerRenderer | Animierte Geld-Anzeige mit rollenden Ziffern, Suffix-Crossfade, Gold-Flash |
 | CoinFlyAnimation | 8-16 Muenzen auf Bezier-Kurven, Euro-Praegung, HUD-Pulse bei Ankunft |
 | SkiaShimmerEffect | GPU-Shimmer auf Goldschrauben-Bereich (permanent wenn > 0) |
-| City 2.5D | CityRenderer: 5-Layer Parallax, isometrische Gebaeude, Tag/Nacht, 8 Welt-Stufen |
-| City Buildings | CityBuildingShapes: Workshop-Farben, Dach-Details, Fenster-Blinken, Level-Rahmen, Mini-Arbeiter |
+| City-Szene | CityRenderer: AI-Bitmap + Wetter-Overlay (kein HitTest, kein prozeduraler Fallback) |
 | City Weather | CityWeatherSystem: Regen+Regenbogen, Sonne+Shimmer, Blaetter, Schnee (80 Struct-Pool, canvas.ClipRect auf City-Bounds, nur bei GraphicsQuality >= Medium) |
-| City Progression | CityProgressionHelper: Strassen-Upgrade, Dekorationen (Buesche/Baeume/Laternen/Baenke/Brunnen) |
-| City Touch | Tap auf Workshop → RadialBurst + TapLabel + Navigation. Tap auf Gebaeude → Imperium-Tab |
-| City Details | Workshop-Mini-Icons, Spotlight+Fahnen, Lieferwagen+Fussgaenger, Fenster-Glow, Laternen-Lichtkegel, Wolken-Schatten, Sonnenauf-/Untergang, Boden-Wetter |
 | Reward-Zeremonie | Full-Screen Overlay: Scale-In, Confetti (120), Feuerwerk, 5 CeremonyTypes, 4s Tap-to-Dismiss |
 | Loading-Screen | Zahnraeder, Funken-Partikel, Gradient-Fortschrittsbalken, rotierende Tipps |
 | Splash-Screen | "Die Schmiede": Zahnraeder, Amboss, Hammer-Animation, Glut-Partikel |
@@ -383,7 +552,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 
 ## Visual Upgrade (Phase 0-3, deployt)
 
-AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL / Juggernaut-X. Hybrid-Rendering: AI-Hintergrund (1x DrawBitmap) + prozedurale Overlays.
+AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL / Juggernaut-X. Reines Bitmap-Rendering: AI-Hintergrund (DrawBitmap) + minimale Overlays (Level-Effekte, Wetter). Kein prozeduraler Fallback.
 
 - **Status:** 47 Assets deployt (~6.2 MB WebP), Shared+Android Build OK
 - **GameAssetService** (IGameAssetService): LRU-Cache 50MB, WebP→SKBitmap + animierte WebP Multi-Frame-Decodierung, PlatformAssetLoader
@@ -397,7 +566,7 @@ AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL / Jugg
 - **Shared csproj:** `<AvaloniaResource Include="Assets\**" />` (Wildcard)
 - **Android csproj:** `<AndroidAsset Include="..\..\Shared\Assets\visuals\**\*.webp" Link="..." />`
 - **Generierungs-Script**: `F:\AI\ComfyUI_workflows\handwerkerimperium\generate_animated_scenes.py`
-- **Offen:** Android-Benchmark, alte prozedurale Hintergründe entfernen (erst nach Verifikation auf Gerät)
+- **Erledigt:** Prozedurale Hintergründe komplett entfernt (18.03.2026). WorkshopSceneRenderer: 2570→200 Zeilen, CityRenderer: 1297→352 Zeilen
 
 ## IsBusy-Pattern
 
@@ -425,9 +594,68 @@ AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL / Jugg
 | Large | WS-Level 10+ | 1.8x | Mehr Aufgaben |
 | Cooperation | WS-Level 15+, >=2 Workshops | 2.5x | Gemischte Aufgaben |
 | Weekly | WS-Level 20+ | 3.0x | 7-Tage-Deadline (BAL-14: von 2.5 auf 3.0, eigene Identität vs. Cooperation) |
+| MaterialOrder | WS-Level 50+ | 1.8x | Kein MiniGame, Items liefern, 4h Deadline, max 3/Tag |
 
 - **Stammkunden**: 20% Chance, BonusMultiplier 1.1-1.5x, max 20
 - **Abgelaufene Orders**: GameLoop prueft alle 60 Ticks
+- **Lieferaufträge**: Erfordern Crafting-Items aus Inventar, keine MiniGames, sofortige Belohnung. Cross-Workshop-Items ab Spieler-Level 100
+
+## Auto-Produktions-System (NEU 21.03.2026)
+
+Alle 10 Workshops produzieren passiv Tier-1 Items basierend auf arbeitenden Workern.
+
+### Produktionsraten
+
+| Workshop | Intervall | Items/h (5 Worker) |
+|----------|-----------|---------------------|
+| Standard (8 WS) | 180s/Worker | 100 |
+| InnovationLab | 120s/Worker | 150 |
+| MasterSmith | 60s/Worker (Spezialeffekt) | 300 |
+
+**Unlock:** Workshop Level 50 (gleich wie erstes Crafting-Rezept)
+**Offline:** Gleiche Staffelung wie Offline-Earnings (80%/25%/10%/3%)
+**GameLoop:** Alle 180 Ticks (Offset 90), `AutoProductionService.ProduceForAllWorkshops()`
+
+### Skalierende Verkaufspreise
+
+Formel: `BaseValue × (1 + log₂(1 + Level/25)) × CraftingSellMultiplier`
+
+CraftingSellMultiplier = Prestige × PrestigeShop × Research × Events × MasterTools × Gilden × VIP × Rebirth × Premium (KEIN Soft-Cap, KEIN Speed/Rush)
+
+| Level | Level-Multi | Beispiel Bretter (Basis 500€) |
+|-------|------------|-------------------------------|
+| 50 | ×2.0 | 1.000€ |
+| 100 | ×3.3 | 1.650€ |
+| 200 | ×4.2 | 2.100€ |
+| 500 | ×5.4 | 2.700€ |
+
+### 20 Rezepte (7 neue + 13 bestehende)
+
+| Workshop | Tier-1 (Lv50) | Tier-2 (Lv150) | Tier-3 (Lv300) |
+|----------|--------------|----------------|----------------|
+| Schreiner | planks 500€ | furniture 2.500€ | luxury_furniture 10.000€ |
+| Klempner | pipes 500€ | plumbing_system 2.500€ | bathroom_installation 10.000€ |
+| Elektriker | cables 500€ | circuit 2.500€ | smart_home 10.000€ |
+| Maler | paint_mix 400€ | wall_design 2.000€ | **artwork 8.000€ (NEU)** |
+| Dachdecker | roof_tiles 600€ | roofing_system 3.000€ | **roof_structure 12.000€ (NEU)** |
+| Bauunternehmer | **concrete 800€** | - | - |
+| Architekt | **blueprint 1.000€** | - | - |
+| Generalunternehmer | **contract 1.500€** | - | - |
+| Meisterschmiede | **fittings 1.200€** | - | - |
+| Innovationslabor | **prototype 2.000€** | - | - |
+
+### GameBalanceConstants (Auto-Produktion)
+
+| Konstante | Wert | Beschreibung |
+|-----------|------|-------------|
+| AutoProductionIntervalSeconds | 180 | Standard-Rate |
+| AutoProductionInnovationLabInterval | 120 | InnovationLab |
+| AutoProductionMasterSmithInterval | 60 | MasterSmith |
+| AutoProductionUnlockLevel | 50 | Unlock-Level |
+| CraftingSellPriceLogDivisor | 25.0 | Log₂-Skalierung |
+| MaterialOrderRewardMultiplier | 1.8 | Lieferauftrags-Belohnung |
+| MaterialOrdersPerDay | 3 | Max pro Tag |
+| MaterialOrderDeadlineHours | 4 | Deadline |
 
 ## Event-Mechanik
 
@@ -596,7 +824,7 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 | MiniGame Views: Gecachte Render-Arrays | WiringGameView/PaintingGameView: .Select().ToArray() → gecachte Arrays mit For-Schleife (0 Allokation/Frame) |
 | MiniGame Views: SKColor.Parse-Cache | InspectionGameView/RoofTilingGameView: Dictionary-Cache fuer Hex→SKColor/uint (0 String-Parsing/Frame) |
 | PaintingGameView: Farb-Cache | SelectedColor nur bei Aenderung neu geparst statt pro Frame |
-| MiniGame Shader-Cache | ForgeGame (6), Wiring (3), WorkshopInterior (2), Sawing (1), CraftTextures (1): Bounds-basierter Cache statt pro-Frame-Erstellung. Spart ~13 Shader/Frame = ~390 Shader/s |
+| MiniGame Shader-Cache | ForgeGame (6), Wiring (3), Sawing (1), CraftTextures (1): Bounds-basierter Cache statt pro-Frame-Erstellung |
 
 ## IDisposable auf allen Renderern
 
@@ -615,7 +843,7 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 | GameBackgroundRenderer | 6 SKPaint + 1 SKShader |
 | GameJuiceEngine | 6 SKPaint + 1 SKFont + 1 SKPath |
 | GameTabBarRenderer | 5 SKPaint + 1 SKFont + 2 MaskFilter + 7 SKPath |
-| CityRenderer | 12 SKPaint + 2 SKFont + 3 SKPath + CityWeatherSystem |
+| CityRenderer | 3 SKPaint + 1 SKFont + CityWeatherSystem |
 | GuildResearchTreeRenderer | 4 SKPaint (_fill, _stroke, _text, _glowPaint) + 3 SKFont + 3 SKPath |
 | GuildHallHeaderRenderer | 1 SKShader |
 | GuildLeagueBadgeRenderer | 3 SKPaint + 2 SKFont + 1 SKPath |
@@ -634,8 +862,7 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 | InventGameRenderer | 23 SKPaint + 1 SKPath |
 | WiringGameRenderer | 8 SKPaint + 3 SKMaskFilter + 1 SKPath + 1 SKFont + 3 SKShader (gecacht) |
 | DesignPuzzleRenderer | 7 SKPaint + 1 SKFont |
-| WorkshopSceneRenderer | 8 SKPaint |
-| WorkshopInteriorRenderer | 10 SKPaint + 2 SKShader (gecacht) |
+| WorkshopSceneRenderer | 2 SKPaint (nur Level-Overlays + Idle-Warnung) |
 | PaintingGameRenderer | 13 SKPaint |
 | InspectionGameRenderer | 8 SKPaint + 1 SKPath (_fillNoAA, _fillAA, _fillAA2, _fillAA3, _strokeNoAA, _strokeAA, _strokeAA2, _strokeAA3, _cachedPath) |
 | RoofTilingRenderer | 5 SKPaint (_fillPaint, _strokePaint, _iconPaint, _fillPaintAA, _borderPaint) |

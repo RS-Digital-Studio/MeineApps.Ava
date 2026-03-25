@@ -14,13 +14,14 @@ public sealed class TournamentService : ITournamentService
 {
     private readonly IGameStateService _gameState;
     private readonly IPlayGamesService? _playGamesService;
+    private readonly IAscensionService? _ascensionService;
 
     /// <summary>Leaderboard-IDs für Turnier-Scores in Play Games.</summary>
     private const string LeaderboardWeeklyScore = "CgkloeDjOZMKEAIQFA";
     private const string LeaderboardTournamentWins = "CgkloeDjOZMKEAIQFQ";
     private const string LeaderboardHighScore = "CgkloeDjOZMKEAIQFg";
 
-    /// <summary>Verfügbare MiniGame-Typen für Turniere (nur die tatsächlich spielbaren).</summary>
+    /// <summary>Verfügbare MiniGame-Typen für Turniere (alle 10 MiniGames, Prestige-Gate der Workshops ist ausreichend).</summary>
     private static readonly MiniGameType[] TournamentGameTypes =
     [
         MiniGameType.Sawing,
@@ -30,17 +31,20 @@ public sealed class TournamentService : ITournamentService
         MiniGameType.RoofTiling,
         MiniGameType.Blueprint,
         MiniGameType.DesignPuzzle,
-        MiniGameType.Inspection
+        MiniGameType.Inspection,
+        MiniGameType.ForgeGame,
+        MiniGameType.InventGame
     ];
 
     public event Action? TournamentUpdated;
 
     public bool IsPlayGamesSignedIn => _playGamesService?.IsSignedIn == true;
 
-    public TournamentService(IGameStateService gameState, IPlayGamesService playGamesService)
+    public TournamentService(IGameStateService gameState, IPlayGamesService playGamesService, IAscensionService ascensionService)
     {
         _gameState = gameState;
         _playGamesService = playGamesService;
+        _ascensionService = ascensionService;
     }
 
     public bool CanEnter
@@ -151,15 +155,26 @@ public sealed class TournamentService : ITournamentService
         var rewardTier = tournament.GetRewardTier();
         if (rewardTier == TournamentRewardTier.None) return null;
 
-        // Belohnungen berechnen basierend auf Rang
-        // Gold (Top 3): 30 Schrauben + 100K Geld
-        // Silver (Rang 4-7): 15 Schrauben + 50K Geld
-        // Bronze (Rang 8-10): 5 Schrauben + 20K Geld
+        // Dynamische Geld-Belohnung: max(statischer Betrag, X Sekunden Netto-Einkommen)
+        decimal netPerSecond = Math.Max(0m, _gameState.State.NetIncomePerSecond);
+
+        // GS-Belohnung skaliert mit Ascension-Level
+        int ascensionLevel = _gameState.State.Ascension.AscensionLevel;
+
         var (screws, money) = rewardTier switch
         {
-            TournamentRewardTier.Gold => (30, 100_000m),
-            TournamentRewardTier.Silver => (15, 50_000m),
-            TournamentRewardTier.Bronze => (5, 20_000m),
+            // Gold (Top 3): 30+Asc*5 GS, max(100K, 10min Netto-Einkommen)
+            TournamentRewardTier.Gold => (
+                30 + ascensionLevel * 5,
+                Math.Max(100_000m, netPerSecond * 600m)),
+            // Silver (Rang 4-7): 15+Asc*3 GS, max(50K, 5min Netto-Einkommen)
+            TournamentRewardTier.Silver => (
+                15 + ascensionLevel * 3,
+                Math.Max(50_000m, netPerSecond * 300m)),
+            // Bronze (Rang 8-10): 5+Asc*1 GS, max(20K, 2min Netto-Einkommen)
+            TournamentRewardTier.Bronze => (
+                5 + ascensionLevel,
+                Math.Max(20_000m, netPerSecond * 120m)),
             _ => (0, 0m)
         };
 

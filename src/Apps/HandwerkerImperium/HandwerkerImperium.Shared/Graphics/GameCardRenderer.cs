@@ -597,4 +597,17 @@ public static class GameCardRenderer
             (byte)(c.Blue * (1f - amount)),
             c.Alpha);
     }
+
+    /// <summary>Statische SKMaskFilter/Paint-Ressourcen freigeben (bei App-Shutdown aufrufen).</summary>
+    public static void DisposeStaticResources()
+    {
+        _progressGlowFilter?.Dispose();
+        _fillPaint?.Dispose();
+        _strokePaint?.Dispose();
+        _progressPaint?.Dispose();
+        _glowPaint?.Dispose();
+        _textPaint?.Dispose();
+        _textFont?.Dispose();
+        _textFontBold?.Dispose();
+    }
 }

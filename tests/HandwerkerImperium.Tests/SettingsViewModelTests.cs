@@ -33,6 +33,7 @@ public class SettingsViewModelTests
         var purchaseSvc = Substitute.For<IPurchaseService>();
         var playGamesSvc = Substitute.For<IPlayGamesService>();
         var hintSvc = Substitute.For<IContextualHintService>();
+        var dialogSvc = Substitute.For<IDialogService>();
 
         // Lokalisierung: Gibt den Schlüssel als Fallback zurück
         localizationSvc.GetString(Arg.Any<string>()).Returns(callInfo => callInfo.Arg<string>());
@@ -66,7 +67,8 @@ public class SettingsViewModelTests
             stateSvc,
             purchaseSvc,
             playGamesSvc,
-            hintSvc);
+            hintSvc,
+            dialogSvc);
 
         return (vm, stateSvc, purchaseSvc);
     }

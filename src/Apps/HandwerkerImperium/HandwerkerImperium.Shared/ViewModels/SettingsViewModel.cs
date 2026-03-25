@@ -23,23 +23,13 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly IPurchaseService _purchaseService;
     private readonly IPlayGamesService _playGamesService;
     private readonly IContextualHintService _contextualHintService;
+    private readonly IDialogService _dialogService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event to show an alert dialog. Parameters: title, message, buttonText.
-    /// </summary>
-    public event Action<string, string, string>? AlertRequested;
-
-    /// <summary>
-    /// Event to request a confirmation dialog.
-    /// Parameters: title, message, acceptText, cancelText. Returns bool.
-    /// </summary>
-    public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -135,7 +125,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         IGameStateService gameStateService,
         IPurchaseService purchaseService,
         IPlayGamesService playGamesService,
-        IContextualHintService contextualHintService)
+        IContextualHintService contextualHintService,
+        IDialogService dialogService)
     {
         _audioService = audioService;
         _localizationService = localizationService;
@@ -144,6 +135,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _purchaseService = purchaseService;
         _playGamesService = playGamesService;
         _contextualHintService = contextualHintService;
+        _dialogService = dialogService;
 
         // Grafik-Qualitäts-Optionen lokalisiert befüllen
         GraphicsQualities.Add(new(localizationService.GetString("GraphicsLow") ?? "Low", GraphicsQuality.Low));
@@ -507,17 +499,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 return;
             }
 
-            // Bestätigungsdialog: Lokaler Spielstand wird überschrieben
-            bool confirmed = false;
-            if (ConfirmationRequested != null)
-            {
-                confirmed = await ConfirmationRequested.Invoke(
-                    _localizationService.GetString("RestoreFromCloud"),
-                    _localizationService.GetString("RestoreFromCloudConfirmation"),
-                    _localizationService.GetString("YesRestore"),
-                    _localizationService.GetString("Cancel"));
-            }
-
+            // Bestaetigungsdialog: Lokaler Spielstand wird ueberschrieben
+            var confirmed = await _dialogService.ShowConfirmDialog(
+                _localizationService.GetString("RestoreFromCloud"),
+                _localizationService.GetString("RestoreFromCloudConfirmation"),
+                _localizationService.GetString("YesRestore"),
+                _localizationService.GetString("Cancel"));
             if (!confirmed) return;
 
             var json = await _playGamesService.LoadCloudSaveAsync();
@@ -568,20 +555,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private async Task ResetGameAsync()
     {
-        bool confirmed = false;
-        if (ConfirmationRequested != null)
-        {
-            confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("ResetGameTitle"),
-                _localizationService.GetString("ResetGameConfirmation"),
-                _localizationService.GetString("YesReset"),
-                _localizationService.GetString("Cancel"));
-        }
-        else
-        {
-            return;
-        }
-
+        var confirmed = await _dialogService.ShowConfirmDialog(
+            _localizationService.GetString("ResetGameTitle"),
+            _localizationService.GetString("ResetGameConfirmation"),
+            _localizationService.GetString("YesReset"),
+            _localizationService.GetString("Cancel"));
         if (confirmed)
         {
             _gameStateService.Reset();
@@ -637,7 +615,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     private void ShowAlert(string title, string message, string buttonText)
     {
-        AlertRequested?.Invoke(title, message, buttonText);
+        _dialogService.ShowAlertDialog(title, message, buttonText);
     }
 }
 

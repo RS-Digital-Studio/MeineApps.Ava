@@ -72,6 +72,14 @@ public partial class App : Application
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
+        // Ascension GS-Bonus + Challenge-Constraints an GameStateService anbinden (vermeidet zirkuläre DI-Abhängigkeit)
+        var ascensionService = Services.GetService<IAscensionService>();
+        if (ascensionService != null && Services.GetService<IGameStateService>() is GameStateService gss)
+        {
+            gss.ExternalGoldenScrewBonusProvider = ascensionService.GetGoldenScrewBonus;
+            gss.ChallengeConstraints = Services.GetService<IChallengeConstraintService>();
+        }
+
         // Initialize localization
         var locService = Services.GetRequiredService<ILocalizationService>();
         locService.Initialize();
@@ -119,10 +127,16 @@ public partial class App : Application
 
     private static SkiaLoadingSplash CreateSplash()
     {
+        // Version aus Assembly lesen statt hardcoded
+        var version = typeof(App).Assembly.GetName().Version;
+        var appVersion = version != null
+            ? $"v{version.Major}.{version.Minor}.{version.Build}"
+            : "v2.0.22";
+
         return new SkiaLoadingSplash
         {
             AppName = "HandwerkerImperium",
-            AppVersion = "v2.0.20",
+            AppVersion = appVersion,
             Renderer = new HandwerkerImperiumSplashRenderer()
         };
     }
@@ -142,8 +156,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
-            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 800ms anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 800 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();
@@ -253,9 +267,11 @@ public partial class App : Application
             services.AddSingleton<IPlayGamesService>(sp => PlayGamesServiceFactory!(sp));
 
         services.AddSingleton<IDailyRewardService, DailyRewardService>();
+        services.AddSingleton<IIncomeCalculatorService, IncomeCalculatorService>();
         services.AddSingleton<IOfflineProgressService, OfflineProgressService>();
         services.AddSingleton<IOrderGeneratorService, OrderGeneratorService>();
         services.AddSingleton<IPrestigeService, PrestigeService>();
+        services.AddSingleton<IChallengeConstraintService, ChallengeConstraintService>();
         services.AddSingleton<IContextualHintService, ContextualHintService>();
 
         // New Game Services (v2.0)
@@ -284,12 +300,15 @@ public partial class App : Application
         services.AddSingleton<IFirebaseService, FirebaseService>();
         services.AddSingleton<IGuildService, GuildService>();
         services.AddSingleton<ICraftingService, CraftingService>();
+        services.AddSingleton<IAutoProductionService, AutoProductionService>();
 
-        // Masterplan-Services (Phasen 2-6)
-        // Entfernt: IFriendService, IAscensionService, IGiftService, ICosmeticService
-        // (registriert aber nirgends injiziert - Dateien bleiben als Referenz)
-        services.AddSingleton<ILeaderboardService, LeaderboardService>();
-        services.AddSingleton<IBountyService, BountyService>();
+        // Late-Game-Services (Ascension, Rebirth, VIP)
+        services.AddSingleton<IAscensionService, AscensionService>();
+        services.AddSingleton<IRebirthService, RebirthService>();
+        services.AddSingleton<IVipService, VipService>();
+
+        // Masterplan-Services
+        // LeaderboardService + BountyService entfernt (19.03.2026): Keine UI-Integration, kein Aufrufer
         services.AddSingleton<IGuildChatService, GuildChatService>();
         services.AddSingleton<IGoalService, GoalService>();
 
@@ -300,9 +319,13 @@ public partial class App : Application
         services.AddSingleton<IGuildBossService, GuildBossService>();
         services.AddSingleton<IGuildTipService, GuildTipService>();
         services.AddSingleton<IGuildAchievementService, GuildAchievementService>();
+        services.AddSingleton<IGuildTickService, GuildTickService>();
 
         // ViewModels (Singleton because MainViewModel holds references to child VMs)
         services.AddSingleton<MiniGameViewModels>();
+        services.AddSingleton<DialogViewModel>();
+        services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<DialogViewModel>());
+        services.AddSingleton<MissionsFeatureViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<AchievementsViewModel>();
         services.AddSingleton<OrderViewModel>();
@@ -334,5 +357,6 @@ public partial class App : Application
         services.AddSingleton<GuildHallViewModel>();
         services.AddSingleton<CraftingViewModel>();
         services.AddSingleton<LuckySpinViewModel>();
+        services.AddSingleton<AscensionViewModel>();
     }
 }

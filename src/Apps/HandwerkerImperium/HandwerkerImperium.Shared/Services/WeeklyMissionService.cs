@@ -14,35 +14,53 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
+    private readonly IVipService _vipService;
+    private readonly IWorkerService _workerService;
     private bool _disposed;
-    private bool _initialized;
 
     private static readonly WeeklyMissionType[] AllMissionTypes = Enum.GetValues<WeeklyMissionType>();
 
-    /// <summary>
-    /// Bonus-Goldschrauben wenn alle 5 Missionen abgeschlossen sind.
-    /// </summary>
-    private const int AllCompletedBonusScrews = 50;
-
     public event Action? MissionProgressChanged;
 
-    public WeeklyMissionService(IGameStateService gameStateService, ILocalizationService localizationService)
+    /// <summary>
+    /// Tier-basierter Alle-fertig-Bonus (GS). Tiers 0-4: 50, Tiers 5-8: 60/75/90/120.
+    /// </summary>
+    public int AllCompletedBonusScrews
+    {
+        get
+        {
+            int tier = GetTier(_gameStateService.State.PlayerLevel);
+            return tier switch
+            {
+                <= 4 => 50,
+                5 => 60,
+                6 => 75,
+                7 => 90,
+                _ => 120
+            };
+        }
+    }
+
+    public WeeklyMissionService(IGameStateService gameStateService, ILocalizationService localizationService, IVipService vipService, IWorkerService workerService)
     {
         _gameStateService = gameStateService;
         _localizationService = localizationService;
-    }
+        _vipService = vipService;
+        _workerService = workerService;
 
-    public void Initialize()
-    {
-        if (_initialized) return;
-        _initialized = true;
-
-        // Event-Subscriptions für automatisches Tracking
+        // Event-Subscriptions fuer automatisches Tracking
         _gameStateService.OrderCompleted += OnOrderCompleted;
         _gameStateService.MoneyChanged += OnMoneyChanged;
         _gameStateService.WorkshopUpgraded += OnWorkshopUpgraded;
         _gameStateService.WorkerHired += OnWorkerHired;
         _gameStateService.MiniGameResultRecorded += OnMiniGameResultRecorded;
+        _workerService.WorkerLevelUp += OnWorkerLevelUp;
+    }
+
+    public void Initialize()
+    {
+        // Event-Subscriptions sind im Konstruktor verdrahtet.
+        // Initialize() bleibt als Interface-Methode erhalten.
     }
 
     public void CheckAndResetIfNewWeek()
@@ -125,9 +143,14 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         state.AllCompletedBonusClaimed = false;
         state.LastWeeklyReset = DateTime.UtcNow;
 
-        // 5 zufällige Typen (keine Duplikate)
-        var availableTypes = new List<WeeklyMissionType>(AllMissionTypes);
-        for (int i = 0; i < 5 && availableTypes.Count > 0; i++)
+        int tier = GetTier(level);
+
+        // VIP-Extra: Gold+ bekommt +1 Mission pro Woche
+        int missionCount = 5 + _vipService.ExtraWeeklyMissions;
+
+        // Verfuegbare Typen nach Tier filtern
+        var availableTypes = GetAvailableTypesForTier(tier);
+        for (int i = 0; i < missionCount && availableTypes.Count > 0; i++)
         {
             var idx = Random.Shared.Next(availableTypes.Count);
             var type = availableTypes[idx];
@@ -140,17 +163,62 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         MissionProgressChanged?.Invoke();
     }
 
+    /// <summary>
+    /// Gibt die fuer den Tier verfuegbaren Missions-Typen zurueck.
+    /// Neue Typen werden erst ab bestimmten Tiers freigeschaltet.
+    /// </summary>
+    private static List<WeeklyMissionType> GetAvailableTypesForTier(int tier)
+    {
+        var types = new List<WeeklyMissionType>
+        {
+            // Basis-Typen (immer verfuegbar)
+            WeeklyMissionType.CompleteOrders,
+            WeeklyMissionType.EarnMoney,
+            WeeklyMissionType.UpgradeWorkshops,
+            WeeklyMissionType.HireWorkers,
+            WeeklyMissionType.PlayMiniGames,
+            WeeklyMissionType.CompleteDailyChallenges,
+            WeeklyMissionType.AchievePerfectRatings
+        };
+
+        // Tier 5+: Arbeiter trainieren, Crafting abschliessen
+        if (tier >= 5)
+        {
+            types.Add(WeeklyMissionType.TrainWorkers);
+            types.Add(WeeklyMissionType.CompleteCraftings);
+        }
+
+        // Tier 6+: Perfekte Serie erreichen
+        if (tier >= 6)
+            types.Add(WeeklyMissionType.AchievePerfectStreak);
+
+        // Tier 7+: Werkstatt-Level erreichen
+        if (tier >= 7)
+            types.Add(WeeklyMissionType.ReachWorkshopLevels);
+
+        return types;
+    }
+
+    /// <summary>
+    /// Berechnet den Tier basierend auf dem Spieler-Level.
+    /// Identisch mit DailyChallengeService.GetTier().
+    /// </summary>
+    private static int GetTier(int level) => level switch
+    {
+        <= 5 => 0,
+        <= 15 => 1,
+        <= 30 => 2,
+        <= 50 => 3,
+        <= 100 => 4,
+        <= 300 => 5,
+        <= 500 => 6,
+        <= 750 => 7,
+        _ => 8
+    };
+
     private WeeklyMission CreateMission(WeeklyMissionType type, int level)
     {
-        // Level-Stufe (0-4)
-        int tier = level switch
-        {
-            <= 5 => 0,
-            <= 15 => 1,
-            <= 30 => 2,
-            <= 50 => 3,
-            _ => 4
-        };
+        int tier = GetTier(level);
 
         // Einkommens-Basis: ~50 Minuten Netto-Einkommen (5x Daily), mindestens Level * 150
         var netPerSecond = Math.Max(0m, _gameStateService.State.NetIncomePerSecond);
@@ -162,11 +230,11 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
             Type = type
         };
 
-        // Zielwerte sind 3-5x der täglichen Äquivalente
+        // Zielwerte sind 3-5x der taeglichen Aequivalente
         switch (type)
         {
             case WeeklyMissionType.CompleteOrders:
-                mission.TargetValue = tier switch { 0 => 10, 1 => 15, 2 => 20, 3 => 25, _ => 30 };
+                mission.TargetValue = tier switch { 0 => 10, 1 => 15, 2 => 20, 3 => 25, 4 => 30, 5 => 35, 6 => 40, 7 => 50, _ => 60 };
                 mission.MoneyReward = Math.Round(incomeBase * 0.8m, 0);
                 mission.XpReward = 100 + level * 5;
                 break;
@@ -178,40 +246,102 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
                 break;
 
             case WeeklyMissionType.UpgradeWorkshops:
-                mission.TargetValue = tier switch { 0 => 5, 1 => 8, 2 => 12, 3 => 15, _ => 20 };
+                mission.TargetValue = tier switch { 0 => 5, 1 => 8, 2 => 12, 3 => 15, 4 => 20, 5 => 25, 6 => 30, 7 => 40, _ => 50 };
                 mission.MoneyReward = Math.Round(incomeBase * 1.0m, 0);
                 mission.XpReward = 125 + level * 5;
                 break;
 
             case WeeklyMissionType.HireWorkers:
-                mission.TargetValue = tier switch { 0 => 2, 1 => 3, 2 => 4, 3 => 5, _ => 7 };
+                mission.TargetValue = tier switch { 0 => 2, 1 => 3, 2 => 4, 3 => 5, 4 => 7, 5 => 8, 6 => 10, 7 => 12, _ => 15 };
                 mission.MoneyReward = Math.Round(incomeBase * 0.7m, 0);
                 mission.XpReward = 100 + level * 5;
                 break;
 
             case WeeklyMissionType.PlayMiniGames:
-                mission.TargetValue = tier switch { 0 => 15, 1 => 20, 2 => 25, 3 => 30, _ => 40 };
+                mission.TargetValue = tier switch { 0 => 15, 1 => 20, 2 => 25, 3 => 30, 4 => 40, 5 => 45, 6 => 50, 7 => 60, _ => 75 };
                 mission.MoneyReward = Math.Round(incomeBase * 0.7m, 0);
                 mission.XpReward = 100 + level * 5;
                 break;
 
             case WeeklyMissionType.CompleteDailyChallenges:
-                mission.TargetValue = tier switch { 0 => 5, 1 => 7, 2 => 10, 3 => 12, _ => 15 };
+                mission.TargetValue = tier switch { 0 => 5, 1 => 7, 2 => 10, 3 => 12, 4 => 15, 5 => 18, 6 => 20, 7 => 21, _ => 21 };
                 mission.MoneyReward = Math.Round(incomeBase * 0.9m, 0);
                 mission.XpReward = 110 + level * 5;
                 break;
 
             case WeeklyMissionType.AchievePerfectRatings:
-                mission.TargetValue = tier switch { 0 => 5, 1 => 8, 2 => 12, 3 => 15, _ => 20 };
+                mission.TargetValue = tier switch { 0 => 5, 1 => 8, 2 => 12, 3 => 15, 4 => 20, 5 => 25, 6 => 30, 7 => 35, _ => 40 };
                 mission.MoneyReward = Math.Round(incomeBase * 1.0m, 0);
+                mission.XpReward = 125 + level * 5;
+                break;
+
+            // Neue Typen (Tier 5+): Zielwerte 3-5x der Daily-Aequivalente
+            case WeeklyMissionType.TrainWorkers:
+                mission.TargetValue = tier switch { 5 => 8, 6 => 12, 7 => 16, _ => 20 };
+                mission.MoneyReward = Math.Round(incomeBase * 0.9m, 0);
+                mission.XpReward = 125 + level * 5;
+                break;
+
+            case WeeklyMissionType.CompleteCraftings:
+                mission.TargetValue = tier switch { 5 => 4, 6 => 7, 7 => 10, _ => 15 };
+                mission.MoneyReward = Math.Round(incomeBase * 1.0m, 0);
+                mission.XpReward = 150 + level * 5;
+                break;
+
+            // Tier 6+
+            case WeeklyMissionType.AchievePerfectStreak:
+                mission.TargetValue = tier switch { 6 => 10, 7 => 15, _ => 20 };
+                mission.MoneyReward = Math.Round(incomeBase * 1.2m, 0);
+                mission.XpReward = 175 + level * 5;
+                break;
+
+            // Tier 7+: Zielwert abhaengig vom aktuellen hoechsten Workshop-Level
+            case WeeklyMissionType.ReachWorkshopLevels:
+                int highestLevel = GetHighestWorkshopLevel();
+                int increment = tier >= 8 ? 150 : 50;
+                mission.TargetValue = highestLevel + increment;
+                mission.MoneyReward = Math.Round(incomeBase * 1.5m, 0);
+                mission.XpReward = 200 + level * 5;
+                break;
+
+            // Tier 5+: Viele Items auto-produzieren (3-5x Daily)
+            case WeeklyMissionType.ProduceItems:
+                mission.TargetValue = tier switch { 5 => 100, 6 => 250, 7 => 500, _ => 1000 };
+                mission.MoneyReward = Math.Round(incomeBase * 0.8m, 0);
                 mission.XpReward = 125 + level * 5;
                 break;
         }
 
-        // Goldschrauben-Belohnung: 5x Daily (5-15 je nach Stufe)
-        mission.GoldenScrewReward = Math.Min(5 + tier * 2, 15);
+        // Goldschrauben-Belohnung nach Tier
+        mission.GoldenScrewReward = tier switch
+        {
+            0 => 5,
+            1 => 7,
+            2 => 9,
+            3 => 11,
+            4 => 15,
+            5 => 18,
+            6 => 22,
+            7 => 28,
+            _ => 35
+        };
 
         return mission;
+    }
+
+    /// <summary>
+    /// Ermittelt das hoechste Workshop-Level aller freigeschalteten Werkstaetten.
+    /// </summary>
+    private int GetHighestWorkshopLevel()
+    {
+        int max = 1;
+        var workshops = _gameStateService.State.Workshops;
+        for (int i = 0; i < workshops.Count; i++)
+        {
+            if (workshops[i].Level > max)
+                max = workshops[i].Level;
+        }
+        return max;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -219,21 +349,46 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Erhöht den Fortschritt aller passenden Missionen.
+    /// Erhoeht den Fortschritt aller passenden Missionen.
     /// </summary>
     private void IncrementMission(WeeklyMissionType type, long amount = 1)
     {
         var missions = _gameStateService.State.WeeklyMissionState.Missions;
         bool changed = false;
 
-        foreach (var mission in missions.Where(m => m.Type == type && !m.IsCompleted))
+        // For-Schleife statt LINQ .Where() (wird bei Events haeufig aufgerufen)
+        for (int i = 0; i < missions.Count; i++)
         {
+            var mission = missions[i];
+            if (mission.Type != type || mission.IsCompleted) continue;
             mission.CurrentValue += amount;
-            if (mission.CurrentValue >= mission.TargetValue)
-            {
-                // IsCompleted ist eine berechnete Property
-            }
             changed = true;
+        }
+
+        if (changed)
+        {
+            _gameStateService.MarkDirty();
+            MissionProgressChanged?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Setzt den Fortschritt einer Mission auf den Maximalwert (fuer Highscore-basierte wie PerfectStreak/WorkshopLevel).
+    /// </summary>
+    private void SetMissionMax(WeeklyMissionType type, long value)
+    {
+        var missions = _gameStateService.State.WeeklyMissionState.Missions;
+        bool changed = false;
+
+        for (int i = 0; i < missions.Count; i++)
+        {
+            var mission = missions[i];
+            if (mission.Type != type || mission.IsCompleted) continue;
+            if (value > mission.CurrentValue)
+            {
+                mission.CurrentValue = value;
+                changed = true;
+            }
         }
 
         if (changed)
@@ -269,6 +424,8 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
     private void OnWorkshopUpgraded(object? sender, WorkshopUpgradedEventArgs e)
     {
         IncrementMission(WeeklyMissionType.UpgradeWorkshops);
+        // Workshop-Level koennte ein Ziel fuer ReachWorkshopLevels-Mission sein
+        OnWorkshopLevelReached();
     }
 
     private void OnWorkerHired(object? sender, WorkerHiredEventArgs e)
@@ -279,6 +436,15 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
     private void OnMiniGameResultRecorded(object? sender, MiniGameResultRecordedEventArgs e)
     {
         IncrementMission(WeeklyMissionType.PlayMiniGames);
+
+        // PerfectStreak aus GameState lesen (wird von GameStateService.RecordMiniGameResult aktualisiert)
+        OnPerfectStreakUpdated(_gameStateService.State.PerfectStreak);
+    }
+
+    private void OnWorkerLevelUp(object? sender, Worker worker)
+    {
+        // Worker-Training wird als "Worker ausgebildet" gezaehlt
+        OnWorkerTrained();
     }
 
     /// <summary>
@@ -287,6 +453,48 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
     public void OnDailyChallengeCompleted()
     {
         IncrementMission(WeeklyMissionType.CompleteDailyChallenges);
+    }
+
+    /// <summary>
+    /// Extern aufgerufen wenn ein Arbeiter-Training abgeschlossen wird.
+    /// </summary>
+    public void OnWorkerTrained()
+    {
+        IncrementMission(WeeklyMissionType.TrainWorkers);
+    }
+
+    /// <summary>
+    /// Extern aufgerufen wenn ein Crafting-Produkt eingesammelt wird.
+    /// </summary>
+    public void OnCraftingCompleted()
+    {
+        IncrementMission(WeeklyMissionType.CompleteCraftings);
+    }
+
+    /// <summary>
+    /// Extern aufgerufen wenn ein Workshop ein neues Level erreicht.
+    /// Setzt den Fortschritt auf den hoechsten Workshop-Level.
+    /// </summary>
+    public void OnWorkshopLevelReached()
+    {
+        int maxLevel = GetHighestWorkshopLevel();
+        SetMissionMax(WeeklyMissionType.ReachWorkshopLevels, maxLevel);
+    }
+
+    /// <summary>
+    /// Extern aufgerufen nach einem MiniGame mit PerfectStreak-Info.
+    /// </summary>
+    public void OnPerfectStreakUpdated(int currentStreak)
+    {
+        SetMissionMax(WeeklyMissionType.AchievePerfectStreak, currentStreak);
+    }
+
+    /// <summary>
+    /// Wird vom GameLoopService aufgerufen wenn Items auto-produziert wurden.
+    /// </summary>
+    public void OnItemsAutoProduced(int count)
+    {
+        IncrementMission(WeeklyMissionType.ProduceItems, count);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -314,6 +522,7 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         _gameStateService.WorkshopUpgraded -= OnWorkshopUpgraded;
         _gameStateService.WorkerHired -= OnWorkerHired;
         _gameStateService.MiniGameResultRecorded -= OnMiniGameResultRecorded;
+        _workerService.WorkerLevelUp -= OnWorkerLevelUp;
 
         _disposed = true;
         GC.SuppressFinalize(this);

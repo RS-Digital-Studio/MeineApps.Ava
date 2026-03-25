@@ -96,6 +96,9 @@
 
     <!-- Converter: Hex-String → SolidColorBrush (für Gilden-Farben) -->
     <converters:StringToColorBrushConverter x:Key="ColorBrushConverter" />
+
+    <!-- Converter: decimal → kompakter Geld-String (z.B. 1,5T €) -->
+    <localConverters:MoneyDisplayConverter x:Key="MoneyDisplay" />
   </Application.Resources>
 
   <Application.Styles>

@@ -28,12 +28,13 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     private readonly ISeasonalEventService? _seasonalEventService;
     private readonly IBattlePassService? _battlePassService;
     private readonly ICraftingService? _craftingService;
-    private readonly ILeaderboardService? _leaderboardService;
-    private readonly IBountyService? _bountyService;
-    private readonly IGuildWarSeasonService? _guildWarSeasonService;
-    private readonly IGuildBossService? _guildBossService;
-    private readonly IGuildHallService? _guildHallService;
-    private readonly IGuildAchievementService? _guildAchievementService;
+    private readonly IGuildTickService? _guildTickService;
+    private readonly IVipService? _vipService;
+    private readonly IRebirthService? _rebirthService;
+    private readonly IAscensionService? _ascensionService;
+    private readonly IIncomeCalculatorService? _incomeCalculator;
+    private readonly IAutoProductionService? _autoProductionService;
+    private readonly IChallengeConstraintService? _challengeConstraints;
     private DispatcherTimer? _timer;
     private DateTime _sessionStart;
     private bool _isPaused;
@@ -61,14 +62,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     private const int BattlePassSeasonCheckIntervalTicks = 300; // Battle Pass Saison alle 5 Minuten prüfen
     private const int AutomationCheckIntervalTicks = 5; // Automation alle 5 Ticks
     private const int AutoAssignIntervalTicks = 60; // AutoAssign alle 60 Ticks
-    private const int LeaderboardSubmitIntervalTicks = 300; // Leaderboard-Score alle 5 Minuten submitten
-    private const int BountyCheckIntervalTicks = 120; // Bounty-Fortschritt alle 2 Minuten prüfen
-    // GuildWarCheckIntervalTicks entfällt (konsolidiert in GuildWarSeasonService)
     private const int QuickJobCheckIntervalTicks = 60; // QuickJob Rotation + Deadline-Check alle 60 Ticks
-    private const int GuildBossCheckIntervalTicks = 60; // Boss-Status alle 60s prüfen
-    private const int GuildHallCheckIntervalTicks = 60; // Gebäude-Upgrades alle 60s prüfen
-    private const int GuildAchievementCheckIntervalTicks = 300; // Achievements alle 5 Minuten prüfen
-    private const int GuildWarSeasonCheckIntervalTicks = 300; // War-Saison Phasen alle 5 Minuten prüfen
 
     // Tier-1-Crafting-Materialien für MasterSmith (static readonly, keine Allokation pro Aufruf)
     private static readonly string[] Tier1CraftingProducts = ["planks", "pipes", "cables", "paint_mix", "roof_tiles"];
@@ -119,12 +113,13 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         ISeasonalEventService? seasonalEventService = null,
         IBattlePassService? battlePassService = null,
         ICraftingService? craftingService = null,
-        ILeaderboardService? leaderboardService = null,
-        IBountyService? bountyService = null,
-        IGuildWarSeasonService? guildWarSeasonService = null,
-        IGuildBossService? guildBossService = null,
-        IGuildHallService? guildHallService = null,
-        IGuildAchievementService? guildAchievementService = null)
+        IGuildTickService? guildTickService = null,
+        IVipService? vipService = null,
+        IRebirthService? rebirthService = null,
+        IAscensionService? ascensionService = null,
+        IIncomeCalculatorService? incomeCalculator = null,
+        IAutoProductionService? autoProductionService = null,
+        IChallengeConstraintService? challengeConstraints = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
@@ -140,15 +135,20 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         _seasonalEventService = seasonalEventService;
         _battlePassService = battlePassService;
         _craftingService = craftingService;
-        _leaderboardService = leaderboardService;
-        _bountyService = bountyService;
-        _guildWarSeasonService = guildWarSeasonService;
-        _guildBossService = guildBossService;
-        _guildHallService = guildHallService;
-        _guildAchievementService = guildAchievementService;
+        _guildTickService = guildTickService;
+        _vipService = vipService;
+        _rebirthService = rebirthService;
+        _ascensionService = ascensionService;
+        _incomeCalculator = incomeCalculator;
+        _autoProductionService = autoProductionService;
+        _challengeConstraints = challengeConstraints;
 
         // Bei State-Wechsel (Load/Import/Reset/Prestige) alle Caches invalidieren
         _gameStateService.StateLoaded += (_, _) => ResetAllCaches();
+
+        // Bei VIP-Level-Wechsel Prestige-Effekte invalidieren (aktualisiert VipCostReduction auf Workshops)
+        if (_vipService != null)
+            _vipService.VipLevelChanged += () => _prestigeEffectsDirty = true;
     }
 
     /// <summary>
@@ -238,48 +238,17 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         var researchEffects = _researchService?.GetTotalEffects();
         UpdateExtraWorkerSlots(state, researchEffects);
 
-        // 1. Brutto-Einkommen berechnen (inkl. Research-Effizienz-Bonus, gekappt bei +50%)
-        decimal grossIncome = state.TotalIncomePerSecond;
+        // 1-3. Einkommen + Kosten via IncomeCalculatorService (eliminiert Duplikation mit OfflineProgress)
+        if (_cachedMasterToolBonus < 0)
+            _cachedMasterToolBonus = MasterTool.GetTotalIncomeBonus(state.CollectedMasterTools);
 
-        // Prestige-Shop Income-Boni anwenden (gecacht)
-        decimal shopIncomeBonus = _cachedPrestigeIncomeBonus;
-        if (shopIncomeBonus > 0)
-            grossIncome *= (1m + shopIncomeBonus);
-
-        if (researchEffects != null && researchEffects.EfficiencyBonus > 0)
-            grossIncome *= (1m + Math.Min(researchEffects.EfficiencyBonus, 0.50m));
-
-        // 2. Event-Multiplikatoren anwenden
-        var eventEffects = _eventService?.GetCurrentEffects();
-        if (eventEffects != null)
-        {
-            grossIncome *= eventEffects.IncomeMultiplier;
-        }
-
-        // 3. Laufende Kosten berechnen (Prestige-Shop + Research + Storage-Gebäude)
-        decimal costs = state.TotalCostsPerSecond;
-
-        // Research CostReduction + WageReduction kombinieren
-        decimal totalCostReduction = 0m;
-        if (_prestigeService != null)
-            totalCostReduction += _prestigeService.GetCostReduction();
-        if (researchEffects != null)
-            totalCostReduction += researchEffects.CostReduction + researchEffects.WageReduction;
-
-        // Storage-Gebäude: Materialkosten-Reduktion
-        var storage = state.GetBuilding(BuildingType.Storage);
-        if (storage != null)
-            totalCostReduction += storage.MaterialCostReduction * 0.5m; // 50% des Gebäude-Effekts auf Gesamtkosten
-
-        if (totalCostReduction > 0)
-            costs *= (1m - Math.Min(totalCostReduction, 0.50m)); // Cap bei 50% (verhindert Kosten → 0 Exploit)
-
-        if (eventEffects != null)
-        {
-            costs *= eventEffects.CostMultiplier;
-        }
+        decimal grossIncome = _incomeCalculator?.CalculateGrossIncome(state, _cachedPrestigeIncomeBonus, _cachedMasterToolBonus)
+                              ?? state.TotalIncomePerSecond;
+        grossIncome = _incomeCalculator?.ApplySoftCap(state, grossIncome) ?? grossIncome;
+        decimal costs = _incomeCalculator?.CalculateCosts(state) ?? state.TotalCostsPerSecond;
 
         // 3b. Event-Einmaleffekte + SpecialEffects verarbeiten
+        var eventEffects = _eventService?.GetCurrentEffects();
         var currentEventId = state.ActiveEvent?.Id;
         if (currentEventId != null && currentEventId != _lastAppliedSpecialEffectId)
         {
@@ -303,66 +272,6 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         else if (currentEventId == null)
         {
             _lastAppliedSpecialEffectId = null;
-        }
-
-        // TaxAudit: 10% Steuer auf Einkommen (dauerhaft während Event)
-        if (eventEffects?.SpecialEffect == "tax_10_percent")
-        {
-            grossIncome *= 0.90m;
-        }
-
-        // 3c. Meisterwerkzeuge: Passiver Einkommens-Bonus (gecacht, Invalidierung in CheckMasterTools)
-        if (_cachedMasterToolBonus < 0)
-            _cachedMasterToolBonus = MasterTool.GetTotalIncomeBonus(state.CollectedMasterTools);
-        decimal masterToolBonus = _cachedMasterToolBonus;
-        if (masterToolBonus > 0)
-            grossIncome *= (1m + masterToolBonus);
-
-        // 3d. Gilden-Bonus: +1% pro Gilden-Level, max +20%
-        if (state.GuildMembership != null && state.GuildMembership.IncomeBonus > 0)
-            grossIncome *= (1m + state.GuildMembership.IncomeBonus);
-
-        // 3e. Gilden-Forschungs-Boni anwenden
-        if (state.GuildMembership != null)
-        {
-            var gm = state.GuildMembership;
-
-            // Einkommens-Bonus (+20% bei allen Forschungen)
-            if (gm.ResearchIncomeBonus > 0)
-                grossIncome *= (1m + gm.ResearchIncomeBonus);
-
-            // Kosten-Reduktion (-10%)
-            if (gm.ResearchCostReduction > 0)
-                costs *= (1m - Math.Min(gm.ResearchCostReduction, 0.50m));
-
-            // Effizienz-Bonus (+5%) - stackt mit Research-Effizienz
-            if (gm.ResearchEfficiencyBonus > 0)
-                grossIncome *= (1m + gm.ResearchEfficiencyBonus);
-        }
-
-        // BAL-PROGRESSION: Soft-Cap von 10x auf 5x gesenkt - Multiplikator-Stacking wird früher gebremst
-        // Diminishing Returns ab 5.0x Einkommens-Multiplikator.
-        // Nur Shop/Research/Event/Guild/MasterTool-Boni betroffen (Prestige-Multiplikator ist bereits in TotalIncomePerSecond).
-        // Logarithmisch: Jeder Bonus bringt etwas, aber immer weniger.
-        const decimal softCapThreshold = 5.0m;
-        if (state.TotalIncomePerSecond > 0)
-        {
-            decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
-            if (effectiveMultiplier > softCapThreshold)
-            {
-                decimal excess = effectiveMultiplier - softCapThreshold;
-                decimal softened = softCapThreshold + (decimal)Math.Log(1.0 + (double)excess, 2.0);
-                grossIncome = state.TotalIncomePerSecond * softened;
-
-                // Soft-Cap-Info für UI-Transparenz (wie viel % verloren gehen)
-                state.IsSoftCapActive = true;
-                state.SoftCapReductionPercent = (int)Math.Round((1.0m - softened / effectiveMultiplier) * 100m);
-            }
-            else
-            {
-                state.IsSoftCapActive = false;
-                state.SoftCapReductionPercent = 0;
-            }
         }
 
         // 4. Net earnings (can be negative!)
@@ -428,160 +337,16 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         // 8. Update research timer
         _researchService?.UpdateTimer(1.0);
 
-        // 9. Check for events periodically
+        // Periodische Checks (gestaffelte Intervalle mit Offsets, vermeidet Lastspitzen)
         _tickCount++;
-        if (_tickCount % EventCheckIntervalTicks == 0)
-        {
-            _eventService?.CheckForNewEvent();
-        }
+        ProcessPeriodicChecks(state, now);
 
-        // 9b. Quick Job Rotation + Daily Challenge Reset + Deadline-Check
-        if (_tickCount % QuickJobCheckIntervalTicks == 0)
-        {
-            _quickJobService?.RotateIfNeeded();
-            _dailyChallengeService?.CheckAndResetIfNewDay();
-
-            // Abgelaufene Orders aus AvailableOrders entfernen
-            state.AvailableOrders.RemoveAll(o => o.IsExpired);
-
-            // Aktiven Order abbrechen wenn Deadline abgelaufen
-            if (state.ActiveOrder?.IsExpired == true)
-            {
-                state.ActiveOrder.CurrentTaskIndex = 0;
-                state.ActiveOrder.TaskResults.Clear();
-                state.ActiveOrder = null;
-                OrderExpired?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
-        // 9d. Lieferant: Prüfen ob neue Lieferung generiert werden soll
-        if (_tickCount % DeliveryCheckIntervalTicks == 0)
-        {
-            CheckAndGenerateDelivery(state, now);
-        }
-
-        // 9e. Meisterwerkzeuge: Prüfen ob neue Tools freigeschaltet werden
-        if (_tickCount % MasterToolCheckIntervalTicks == 0)
-        {
-            CheckMasterTools(state);
-        }
-
-        // 9f. Crafting-Timer jedes Tick aktualisieren
-        _craftingService?.UpdateTimers();
-
-        // 9f2. MasterSmith: Passiv Crafting-Materialien produzieren (alle 60 Ticks = 1 Minute)
-        if (_tickCount % 60 == 45)
-        {
-            ProduceMasterSmithMaterials(state);
-        }
-
-        // 9f3. InnovationLab: Research-Geschwindigkeit verdoppeln (jedes Tick 1 Extra-Sekunde)
-        ApplyInnovationLabBonus(state);
-
-        // 9g. Weekly Mission Reset (alle 60 Ticks, Offset 15)
-        if (_tickCount % WeeklyMissionCheckIntervalTicks == 15)
-        {
-            _weeklyMissionService?.CheckAndResetIfNewWeek();
-        }
-
-        // 9h. Manager Unlock Check (alle 120 Ticks, Offset 60)
-        if (_tickCount % ManagerCheckIntervalTicks == 60)
-        {
-            _managerService?.CheckAndUnlockManagers();
-        }
-
-        // 9i. Gilden-Wochenziel: Firebase übernimmt Weekly-Reset bei RefreshGuildDetailsAsync()
-
-        // 9j. Saisonales Event prüfen (alle 300 Ticks, Offset 150)
-        if (_tickCount % SeasonalEventCheckIntervalTicks == 150)
-        {
-            _seasonalEventService?.CheckSeasonalEvent();
-        }
-
-        // 9k. Battle Pass Saison prüfen (alle 300 Ticks, Offset 200)
-        if (_tickCount % BattlePassSeasonCheckIntervalTicks == 200)
-        {
-            _battlePassService?.CheckNewSeason();
-        }
-
-        // 9l. Automation: AutoCollect + AutoAccept (alle 5 Ticks)
-        if (_tickCount % AutomationCheckIntervalTicks == 3)
-        {
-            ProcessAutomation(state);
-        }
-
-        // 9m. Automation: AutoAssign (alle 60 Ticks, Offset 30)
-        if (_tickCount % AutoAssignIntervalTicks == 30)
-        {
-            ProcessAutoAssign(state);
-        }
-
-        // 9n. Leaderboard Score-Submit (alle 5 Minuten, Offset 180)
-        if (_tickCount % LeaderboardSubmitIntervalTicks == 180 && _leaderboardService != null)
-            _leaderboardService.SubmitScoresAsync().FireAndForget();
-
-        // 9o. Community-Bounty Prüfung (alle 2 Minuten, Offset 90)
-        if (_tickCount % BountyCheckIntervalTicks == 90 && _bountyService != null)
-            _bountyService.CheckAndFinalizeBountyAsync().FireAndForget();
-
-        // 9p. Guild-War Prüfung entfällt (ersetzt durch GuildWarSeasonService in 9t.)
-
-        // Gilden-Services nur prüfen wenn Spieler Gildenmitglied ist (spart 4+ Firebase-Calls/min für Solo-Spieler)
-        var hasGuild = state.GuildMembership?.GuildId != null;
-
-        // 9q. Gilden-Boss Status prüfen (alle 60s, Offset 20)
-        // Sequentiell: Erst Status prüfen, dann ggf. Spawn (sonst Race Condition)
-        if (hasGuild && _tickCount % GuildBossCheckIntervalTicks == 20 && _guildBossService != null)
-        {
-            CheckBossSequentialAsync().FireAndForget();
-        }
-
-        // 9r. Gilden-Hauptquartier Upgrade-Completion prüfen (alle 60s, Offset 40)
-        if (hasGuild && _tickCount % GuildHallCheckIntervalTicks == 40 && _guildHallService != null)
-            _guildHallService.CheckUpgradeCompletionAsync().FireAndForget();
-
-        // 9s. Gilden-Achievements prüfen (alle 5 Minuten, Offset 250)
-        if (hasGuild && _tickCount % GuildAchievementCheckIntervalTicks == 250 && _guildAchievementService != null)
-            _guildAchievementService.CheckAllAchievementsAsync().FireAndForget();
-
-        // 9t. War-Saison Phasenwechsel + Saisonende prüfen (alle 5 Minuten, Offset 260)
-        // Sequentiell: CheckPhaseTransition kann _cachedWar nullen → CheckSeasonEnd braucht den alten Cache
-        if (hasGuild && _tickCount % GuildWarSeasonCheckIntervalTicks == 260 && _guildWarSeasonService != null)
-        {
-            CheckWarSeasonSequentialAsync().FireAndForget();
-        }
-
-        // 9c. Reputation: Showroom-DailyReputationGain + Decay (einmal pro Tag, persistiert)
-        if ((now - state.LastReputationDecay).TotalHours >= 24)
-        {
-            state.LastReputationDecay = now;
-
-            // Showroom-Gebäude: Passive Reputation-Steigerung
-            var showroom = state.GetBuilding(BuildingType.Showroom);
-            if (showroom != null && showroom.DailyReputationGain > 0)
-            {
-                state.Reputation.ReputationScore = Math.Min(100,
-                    state.Reputation.ReputationScore + (int)Math.Ceiling(showroom.DailyReputationGain));
-            }
-
-            // Reputation-Decay: Langsamer Abbau wenn keine Aufträge abgeschlossen werden
-            state.Reputation.DecayReputation();
-        }
-
-        // 10. Update last played time
+        // Housekeeping
         state.LastPlayedAt = now;
-
-        // 11. Auto-save periodically
         if (_tickCount % AutoSaveIntervalTicks == 0)
-        {
             _saveGameService.SaveAsync().FireAndForget();
-        }
 
-        // 12. Fire tick event
-        OnTick?.Invoke(this, new GameTickEventArgs(
-            netEarnings,
-            state.Money,
-            SessionDuration));
+        OnTick?.Invoke(this, new GameTickEventArgs(netEarnings, state.Money, SessionDuration));
     }
 
     /// <summary>
@@ -605,6 +370,9 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     /// </summary>
     private void CheckAndGenerateDelivery(GameState state, DateTime now)
     {
+        // Challenge: KeinNetz blockiert Lieferanten komplett
+        if (_challengeConstraints?.IsDeliveryBlocked() == true) return;
+
         // Lieferung nur wenn keine wartet und Intervall abgelaufen
         if (state.PendingDelivery != null)
         {
@@ -695,6 +463,8 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                 {
                     if (item.Effect.IncomeMultiplier > 0)
                         _cachedPrestigeIncomeBonus += item.Effect.IncomeMultiplier * count;
+                    if (item.Effect.DeliverySpeedBonus > 0)
+                        _cachedPrestigeDeliveryBonus += item.Effect.DeliverySpeedBonus * count;
                 }
                 continue;
             }
@@ -711,10 +481,14 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                 _cachedPrestigeUpgradeDiscount += item.Effect.UpgradeDiscount;
         }
 
-        // Upgrade-Discount auf alle Workshops setzen (nur bei Invalidierung statt pro Tick)
+        // Upgrade-Discount + VIP-Kosten-Reduktion auf alle Workshops setzen (nur bei Invalidierung statt pro Tick)
         // Immer setzen, auch bei 0 → nach Prestige-Reset muessen alte Discounts geloescht werden
+        decimal vipCostReduction = _vipService?.CostReduction ?? 0m;
         for (int i = 0; i < state.Workshops.Count; i++)
+        {
             state.Workshops[i].UpgradeDiscount = _cachedPrestigeUpgradeDiscount;
+            state.Workshops[i].VipCostReduction = vipCostReduction;
+        }
     }
 
     /// <summary>
@@ -815,32 +589,86 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     /// War-Saison: Phasenwechsel prüfen, DANN Saisonende (sequentiell, nicht parallel).
     /// CheckPhaseTransition kann _cachedWar nullen, was CheckSeasonEnd braucht.
     /// </summary>
-    private async Task CheckWarSeasonSequentialAsync()
-    {
-        try
-        {
-            await _guildWarSeasonService!.CheckPhaseTransitionAsync();
-            await _guildWarSeasonService.CheckSeasonEndAsync();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[GameLoop] CheckWarSeasonSequential fehlgeschlagen: {ex.Message}");
-        }
-    }
-
     /// <summary>
-    /// Boss-Status prüfen und dann ggf. neuen Boss spawnen (sequentiell, nicht parallel).
+    /// Alle periodischen Checks mit gestaffelten Intervallen und Offsets.
+    /// Klar gruppiert statt inline in OnTimerTick.
     /// </summary>
-    private async Task CheckBossSequentialAsync()
+    private void ProcessPeriodicChecks(GameState state, DateTime now)
     {
-        try
+        // Jedes Tick: Crafting-Timer + Workshop-Spezialeffekte
+        _craftingService?.UpdateTimers();
+        ApplyInnovationLabBonus(state);
+
+        // Alle 5 Ticks: Automation (AutoCollect, AutoAccept)
+        if (_tickCount % AutomationCheckIntervalTicks == 3)
+            ProcessAutomation(state);
+
+        // Alle 10 Ticks: Lieferant-System
+        if (_tickCount % DeliveryCheckIntervalTicks == 0)
+            CheckAndGenerateDelivery(state, now);
+
+        // Alle 60 Ticks (1 Min): Jobs, Orders, Weekly, AutoAssign, MasterSmith
+        if (_tickCount % QuickJobCheckIntervalTicks == 0)
         {
-            await _guildBossService!.CheckBossStatusAsync();
-            await _guildBossService.SpawnBossIfNeededAsync();
+            _quickJobService?.RotateIfNeeded();
+            _dailyChallengeService?.CheckAndResetIfNewDay();
+            state.AvailableOrders.RemoveAll(o => o.IsExpired);
+            if (state.ActiveOrder?.IsExpired == true)
+            {
+                state.ActiveOrder.CurrentTaskIndex = 0;
+                state.ActiveOrder.TaskResults.Clear();
+                state.ActiveOrder = null;
+                OrderExpired?.Invoke(this, EventArgs.Empty);
+            }
         }
-        catch (Exception ex)
+        if (_tickCount % WeeklyMissionCheckIntervalTicks == 15)
+            _weeklyMissionService?.CheckAndResetIfNewWeek();
+        if (_tickCount % AutoAssignIntervalTicks == 30)
+            ProcessAutoAssign(state);
+        if (_tickCount % 60 == 45)
+            ProduceMasterSmithMaterials(state);
+
+        // Auto-Produktion: Alle 180 Ticks (3 Min) für Standard-Workshops, Offset 90
+        if (_tickCount % GameBalanceConstants.AutoProductionIntervalSeconds == 90 && _autoProductionService != null)
         {
-            System.Diagnostics.Debug.WriteLine($"[GameLoop] CheckBossSequential fehlgeschlagen: {ex.Message}");
+            long before = state.TotalItemsAutoProduced;
+            _autoProductionService.ProduceForAllWorkshops(state);
+            int produced = (int)(state.TotalItemsAutoProduced - before);
+            if (produced > 0)
+            {
+                _dailyChallengeService?.OnItemsAutoProduced(produced);
+                _weeklyMissionService?.OnItemsAutoProduced(produced);
+            }
+        }
+
+        // Alle 120 Ticks (2 Min): Manager, Meisterwerkzeuge
+        if (_tickCount % ManagerCheckIntervalTicks == 60)
+            _managerService?.CheckAndUnlockManagers();
+        if (_tickCount % MasterToolCheckIntervalTicks == 0)
+            CheckMasterTools(state);
+
+        // Alle 300 Ticks (5 Min): Events, Saison, BattlePass
+        if (_tickCount % EventCheckIntervalTicks == 0)
+            _eventService?.CheckForNewEvent();
+        if (_tickCount % SeasonalEventCheckIntervalTicks == 150)
+            _seasonalEventService?.CheckSeasonalEvent();
+        if (_tickCount % BattlePassSeasonCheckIntervalTicks == 200)
+            _battlePassService?.CheckNewSeason();
+
+        // Gilden-Checks via GuildTickService (Boss, Hall, Achievements, War-Season)
+        _guildTickService?.ProcessTick(state, _tickCount);
+
+        // Täglich: Reputation (Showroom + Decay)
+        if ((now - state.LastReputationDecay).TotalHours >= 24)
+        {
+            state.LastReputationDecay = now;
+            var showroom = state.GetBuilding(BuildingType.Showroom);
+            if (showroom != null && showroom.DailyReputationGain > 0)
+            {
+                state.Reputation.ReputationScore = Math.Min(100,
+                    state.Reputation.ReputationScore + (int)Math.Ceiling(showroom.DailyReputationGain));
+            }
+            state.Reputation.DecayReputation();
         }
     }
 
@@ -925,8 +753,8 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         if (activeResearch?.StartedAt != null)
         {
             // Proportionaler Bonus: 0.5s pro Worker (skaliert mit Belegschaft)
-            double bonusSeconds = workingWorkers * 0.5;
-            activeResearch.StartedAt = activeResearch.StartedAt.Value.AddSeconds(-bonusSeconds);
+            // BonusSeconds-Feld statt StartedAt-Manipulation (sauber, persistierbar)
+            activeResearch.BonusSeconds += workingWorkers * 0.5;
         }
     }
 

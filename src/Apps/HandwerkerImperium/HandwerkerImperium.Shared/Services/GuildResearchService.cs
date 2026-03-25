@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services;
 /// Extrahiert aus GuildService für bessere Trennung.
 /// Firebase-Pfad: guild_research/{guildId}/{researchId}
 /// </summary>
-public sealed class GuildResearchService : IGuildResearchService
+public sealed class GuildResearchService : IGuildResearchService, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IFirebaseService _firebaseService;
@@ -397,5 +397,10 @@ public sealed class GuildResearchService : IGuildResearchService
         {
             // Bei Fehler alten Cache behalten
         }
+    }
+
+    public void Dispose()
+    {
+        _semaphore.Dispose();
     }
 }

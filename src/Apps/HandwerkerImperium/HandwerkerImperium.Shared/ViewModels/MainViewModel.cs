@@ -50,6 +50,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IContextualHintService _contextualHintService;
     private readonly IReviewService? _reviewService;
     private readonly IPrestigeService _prestigeService;
+    private readonly IChallengeConstraintService? _challengeConstraints;
     private readonly INotificationService? _notificationService;
     private readonly IPlayGamesService? _playGamesService;
     private readonly IWeeklyMissionService _weeklyMissionService;
@@ -58,6 +59,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IEquipmentService _equipmentService;
     private readonly IGoalService _goalService;
     private readonly IWorkerService _workerService;
+    private readonly IRebirthService? _rebirthService;
     private bool _disposed;
     private decimal _pendingOfflineEarnings;
     private QuickJob? _activeQuickJob;
@@ -84,8 +86,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // Zaehler fuer Ziel-Aktualisierung (alle 60 Ticks)
     private int _tickForGoal;
 
-    // QuickJob-Timer: Letzte Minuten/Sekunden für int-Vergleich statt String-Allokation
-    private int _lastQjMins = -1, _lastQjSecs = -1;
+    // QuickJob-Timer → extrahiert nach MissionsFeatureViewModel
+
+    // Dirty-Flag fuer RefreshChallenges → extrahiert nach MissionsFeatureViewModel
 
     // Gecachter lokalisierter "Netto"-Label (aendert sich nur bei Sprachwechsel)
     private string _cachedNetIncomeLabel = "Netto";
@@ -113,8 +116,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly EventHandler<string> _researchNavHandler;
 
     // Gespeicherte Delegate-Referenzen fuer Alert/Confirmation Events (fuer Dispose-Unsubscribe)
-    private readonly Action<string, string, string> _alertHandler;
-    private readonly Func<string, string, string, string, Task<bool>> _confirmHandler;
     private Action? _guildCelebrationHandler;
     private readonly Action<string, string> _guildFloatingTextHandler;
     private readonly Action<string, string> _workerProfileFloatingTextHandler;
@@ -126,6 +127,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     // Gespeicherte Delegate-Referenz fuer BuildingsVM FloatingText (Event-Leak-Fix)
     private readonly Action<string, string> _buildingsFloatingTextHandler;
+
+    // Gespeicherte Delegate-Referenzen fuer AscensionVM Events (Dispose-sicher)
+    private readonly Action<string, string> _ascensionFloatingTextHandler;
+    private readonly Action _ascensionCelebrationHandler;
+
+    // Gespeicherte Delegate-Referenzen fuer MissionsVM Events (Dispose-sicher)
+    private readonly Action<string, string> _missionsFloatingTextHandler;
+    private readonly Action _missionsCelebrationHandler;
+    private readonly Action _missionsStreakRescuedHandler;
+
+    // Gespeicherte Delegate-Referenzen fuer DialogVM Events (Dispose-sicher)
+    private readonly Action _dialogPrestigeSummaryGoToShopHandler;
+    private readonly Action<string, string> _dialogFloatingTextHandler;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS FOR NAVIGATION AND DIALOGS
@@ -254,33 +268,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _goldenScrewsDisplay = "0";
 
-    // Quick Jobs + Daily Challenges
-    [ObservableProperty]
-    private List<QuickJob> _quickJobs = [];
-
-    [ObservableProperty]
-    private List<DailyChallenge> _dailyChallenges = [];
-
-    [ObservableProperty]
-    private bool _hasDailyChallenges;
-
-    [ObservableProperty]
-    private bool _isChallengesExpanded = false;
-
-    [ObservableProperty]
-    private bool _canClaimAllBonus;
-
-    [ObservableProperty]
-    private string _quickJobTimerDisplay = string.Empty;
-
-    [ObservableProperty]
-    private bool _isQuickJobsExpanded = true;
-
-    [ObservableProperty]
-    private string _quickJobsExpandIconKind = "ChevronUp";
-
-    [ObservableProperty]
-    private string _challengesExpandIconKind = "ChevronDown";
+    // Quick Jobs + Daily Challenges → extrahiert nach MissionsFeatureViewModel
 
     // ═══════════════════════════════════════════════════════════════════════
     // REPUTATION (Task #6)
@@ -299,8 +287,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hasNoOrders;
 
-    [ObservableProperty]
-    private bool _allQuickJobsDone;
+    // AllQuickJobsDone → extrahiert nach MissionsFeatureViewModel
 
     // Dashboard Aufträge/Schnelljobs Umschalter
     [ObservableProperty]
@@ -334,6 +321,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Ob ein nächsthöherer Prestige-Tier existiert (für Fortschritts-Anzeige).</summary>
     [ObservableProperty]
     private bool _hasNextPrestigeTier;
+
+    /// <summary>Anzahl aktiver Challenges (für Badge-Anzeige im Prestige-Banner).</summary>
+    [ObservableProperty]
+    private int _activeChallengeCount;
+
+    /// <summary>Text-Anzeige aktiver Challenges (z.B. "Spartaner +40%, Sprint +35%").</summary>
+    [ObservableProperty]
+    private string _activeChallengesText = "";
+
+    /// <summary>Aktuelle Run-Dauer als Text (für Prestige-Banner).</summary>
+    [ObservableProperty]
+    private string _currentRunDuration = "";
 
     /// <summary>Kompakter Fortschrittstext zum nächsten Tier (z.B. "Lv. 45/100 → Silver").</summary>
     [ObservableProperty]
@@ -398,71 +397,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _craftingStatusText = "";
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // WEEKLY MISSIONS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private List<WeeklyMission> _weeklyMissions = [];
-
-    [ObservableProperty]
-    private bool _hasWeeklyMissions;
-
-    [ObservableProperty]
-    private bool _allWeeklyMissionsCompleted;
-
-    [ObservableProperty]
-    private bool _canClaimWeeklyBonus;
-
-    [ObservableProperty]
-    private string _weeklyMissionResetDisplay = "";
-
-    [ObservableProperty]
-    private bool _isWeeklyMissionsExpanded = false;
-
-    [ObservableProperty]
-    private string _weeklyMissionsExpandIconKind = "ChevronDown";
-
-    /// <summary>
-    /// Anzahl claimbarer Daily Challenges + Weekly Missions (für Tab-Bar Badge).
-    /// </summary>
-    [ObservableProperty]
-    private int _claimableMissionsCount;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // WELCOME BACK OFFER
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _isWelcomeOfferVisible;
-
-    [ObservableProperty]
-    private string _welcomeOfferTitle = "";
-
-    [ObservableProperty]
-    private string _welcomeOfferDescription = "";
-
-    [ObservableProperty]
-    private string _welcomeOfferMoneyReward = "";
-
-    [ObservableProperty]
-    private string _welcomeOfferScrewReward = "";
-
-    [ObservableProperty]
-    private string _welcomeOfferTimerDisplay = "";
-
-    /// <summary>
-    /// Ob im Welcome-Back-Dialog auch Offline-Earnings angezeigt werden sollen.
-    /// Wird gesetzt wenn sowohl ein Welcome-Angebot ALS AUCH Offline-Earnings vorliegen.
-    /// </summary>
-    [ObservableProperty]
-    private bool _hasOfflineEarningsInWelcome;
-
-    /// <summary>
-    /// Formatierte Anzeige der Offline-Earnings im Welcome-Back-Dialog (z.B. "+1.5K").
-    /// </summary>
-    [ObservableProperty]
-    private string _combinedOfflineDisplay = "";
+    // Weekly Missions, Welcome Back Offer → extrahiert nach MissionsFeatureViewModel
 
     // ═══════════════════════════════════════════════════════════════════════
     // KOMBINIERTER WELCOME-BACK-DIALOG (Offline + Welcome in einem)
@@ -486,25 +421,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _combinedOfferTimer = "";
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // LUCKY SPIN
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _isLuckySpinVisible;
-
-    [ObservableProperty]
-    private bool _hasFreeSpin;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // STREAK-RETTUNG
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _canRescueStreak;
-
-    [ObservableProperty]
-    private string _streakRescueText = "";
+    // Lucky Spin, Streak-Rettung → extrahiert nach MissionsFeatureViewModel
 
     // Bulk Buy Multiplikator (1, 10, 100, 0=Max)
     [ObservableProperty]
@@ -570,21 +487,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _deliveryTimeRemaining = "";
 
-    // Meisterwerkzeuge
-    [ObservableProperty]
-    private int _masterToolsCollected;
-
-    [ObservableProperty]
-    private int _masterToolsTotal;
+    // Meisterwerkzeuge → extrahiert nach MissionsFeatureViewModel
 
     /// <summary>
-    /// Gesamt-Einkommensbonus durch gesammelte Meisterwerkzeuge (z.B. "+12%").
-    /// </summary>
-    [ObservableProperty]
-    private string _masterToolsBonusDisplay = "";
-
-    /// <summary>
-    /// Prestige-Shop ist ab Level 500 freigeschaltet.
+    /// Prestige-Shop ist ab Level 50 freigeschaltet (oder wenn bereits prestigiert).
     /// </summary>
     [ObservableProperty]
     private bool _isPrestigeShopUnlocked;
@@ -652,7 +558,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     private bool IsAnyDialogVisible =>
         IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible ||
-        IsWelcomeOfferVisible || IsDailyRewardDialogVisible ||
+        MissionsVM.IsWelcomeOfferVisible || IsDailyRewardDialogVisible ||
         IsStarterOfferVisible || DialogVM.IsAnyDialogVisible;
 
     /// <summary>
@@ -669,12 +575,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public bool ShowReputationBadge => ReputationScore < LevelThresholds.ReputationWarningThreshold
                                       || ReputationScore >= LevelThresholds.ReputationHighlightThreshold;
 
-    // Progressive Disclosure: Sections erst ab bestimmtem Level anzeigen
-    public bool ShowCraftingResearch => PlayerLevel >= LevelThresholds.CraftingResearch;
-    public bool ShowManagerSection => PlayerLevel >= LevelThresholds.ManagerSection;
-    public bool ShowMasterToolsSection => PlayerLevel >= LevelThresholds.MasterToolsSection;
-    public bool IsQuickJobsUnlocked => PlayerLevel >= LevelThresholds.QuickJobs;
-    public bool ShowBannerStrip => PlayerLevel >= LevelThresholds.BannerStrip;
+    // Progressive Disclosure: Sections erst ab bestimmtem Level anzeigen.
+    // Nach dem ersten Prestige sind ALLE Features permanent freigeschaltet
+    // (Spieler verliert sonst Zugang zu Gilde, Forschung etc. nach dem Reset).
+    private bool HasEverPrestiged => _gameStateService.State.Prestige.TotalPrestigeCount > 0;
+    public bool ShowCraftingResearch => HasEverPrestiged || PlayerLevel >= LevelThresholds.CraftingResearch;
+    public bool ShowManagerSection => HasEverPrestiged || PlayerLevel >= LevelThresholds.ManagerSection;
+    public bool ShowMasterToolsSection => HasEverPrestiged || PlayerLevel >= LevelThresholds.MasterToolsSection;
+    public bool IsQuickJobsUnlocked => HasEverPrestiged || PlayerLevel >= LevelThresholds.QuickJobs;
+    public bool ShowBannerStrip => HasEverPrestiged || PlayerLevel >= LevelThresholds.BannerStrip;
     public int QuickAccessColumns => 1 + (ShowManagerSection ? 1 : 0) + (ShowMasterToolsSection ? 1 : 0);
 
     // FloatingText Event fuer Dashboard-Animationen
@@ -761,131 +670,92 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public bool IsAutoClaimUnlocked => _purchaseService.IsPremium;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // TAB NAVIGATION STATE
+    // ZENTRALES NAVIGATION-STATE (ActivePage Enum statt 35+ Booleans)
     // ═══════════════════════════════════════════════════════════════════════
 
     [ObservableProperty]
-    private bool _isDashboardActive = true;
+    private ActivePage _activePage = ActivePage.Dashboard;
 
-    [ObservableProperty]
-    private bool _isShopActive;
+    /// <summary>
+    /// Zentrale Seitenumschaltung mit Seiteneffekten (GuildChat stoppen, PropertyChanged).
+    /// Wird von CommunityToolkit automatisch aufgerufen wenn ActivePage sich ändert.
+    /// </summary>
+    partial void OnActivePageChanged(ActivePage oldValue, ActivePage newValue)
+    {
+        // GuildChat-Polling stoppen wenn Chat verlassen wird
+        if (oldValue == ActivePage.GuildChat)
+            GuildViewModel.StopChatPolling();
 
-    [ObservableProperty]
-    private bool _isStatisticsActive;
+        // PropertyChanged für die berechneten IsXxxActive-Properties (nur die 2 geänderten)
+        var oldProp = ActivePagePropertyName(oldValue);
+        var newProp = ActivePagePropertyName(newValue);
+        if (oldProp != null) OnPropertyChanged(oldProp);
+        if (newProp != null) OnPropertyChanged(newProp);
+        OnPropertyChanged(nameof(IsTabBarVisible));
+    }
 
-    [ObservableProperty]
-    private bool _isAchievementsActive;
+    // Berechnete Navigation-Properties (XAML-Bindings bleiben unverändert)
+    public bool IsDashboardActive => ActivePage == ActivePage.Dashboard;
+    public bool IsShopActive => ActivePage == ActivePage.Shop;
+    public bool IsStatisticsActive => ActivePage == ActivePage.Statistics;
+    public bool IsAchievementsActive => ActivePage == ActivePage.Achievements;
+    public bool IsSettingsActive => ActivePage == ActivePage.Settings;
+    public bool IsWorkshopDetailActive => ActivePage == ActivePage.WorkshopDetail;
+    public bool IsOrderDetailActive => ActivePage == ActivePage.OrderDetail;
+    public bool IsSawingGameActive => ActivePage == ActivePage.SawingGame;
+    public bool IsPipePuzzleActive => ActivePage == ActivePage.PipePuzzle;
+    public bool IsWiringGameActive => ActivePage == ActivePage.WiringGame;
+    public bool IsPaintingGameActive => ActivePage == ActivePage.PaintingGame;
+    public bool IsRoofTilingGameActive => ActivePage == ActivePage.RoofTilingGame;
+    public bool IsBlueprintGameActive => ActivePage == ActivePage.BlueprintGame;
+    public bool IsDesignPuzzleGameActive => ActivePage == ActivePage.DesignPuzzleGame;
+    public bool IsInspectionGameActive => ActivePage == ActivePage.InspectionGame;
+    public bool IsWorkerMarketActive => ActivePage == ActivePage.WorkerMarket;
+    public bool IsBuildingsActive => ActivePage == ActivePage.Buildings;
+    public bool IsResearchActive => ActivePage == ActivePage.Research;
+    public bool IsManagerActive => ActivePage == ActivePage.Manager;
+    public bool IsTournamentActive => ActivePage == ActivePage.Tournament;
+    public bool IsSeasonalEventActive => ActivePage == ActivePage.SeasonalEvent;
+    public bool IsBattlePassActive => ActivePage == ActivePage.BattlePass;
+    public bool IsGuildActive => ActivePage == ActivePage.Guild;
+    public bool IsMissionenActive => ActivePage == ActivePage.Missionen;
+    public bool IsGuildResearchActive => ActivePage == ActivePage.GuildResearch;
+    public bool IsGuildMembersActive => ActivePage == ActivePage.GuildMembers;
+    public bool IsGuildInviteActive => ActivePage == ActivePage.GuildInvite;
+    public bool IsGuildWarSeasonActive => ActivePage == ActivePage.GuildWarSeason;
+    public bool IsGuildBossActive => ActivePage == ActivePage.GuildBoss;
+    public bool IsGuildHallActive => ActivePage == ActivePage.GuildHall;
+    public bool IsGuildAchievementsActive => ActivePage == ActivePage.GuildAchievements;
+    public bool IsGuildChatActive => ActivePage == ActivePage.GuildChat;
+    public bool IsGuildWarActive => ActivePage == ActivePage.GuildWar;
+    public bool IsCraftingActive => ActivePage == ActivePage.Crafting;
+    public bool IsForgeGameActive => ActivePage == ActivePage.ForgeGame;
+    public bool IsInventGameActive => ActivePage == ActivePage.InventGame;
+    public bool IsAscensionActive => ActivePage == ActivePage.Ascension;
 
-    [ObservableProperty]
-    private bool _isSettingsActive;
-
-    [ObservableProperty]
-    private bool _isWorkshopDetailActive;
-
-    [ObservableProperty]
-    private bool _isOrderDetailActive;
-
-    [ObservableProperty]
-    private bool _isSawingGameActive;
-
-    [ObservableProperty]
-    private bool _isPipePuzzleActive;
-
-    [ObservableProperty]
-    private bool _isWiringGameActive;
-
-    [ObservableProperty]
-    private bool _isPaintingGameActive;
-
-    [ObservableProperty]
-    private bool _isRoofTilingGameActive;
-
-    [ObservableProperty]
-    private bool _isBlueprintGameActive;
-
-    [ObservableProperty]
-    private bool _isDesignPuzzleGameActive;
-
-    [ObservableProperty]
-    private bool _isInspectionGameActive;
-
-    [ObservableProperty]
-    private bool _isWorkerMarketActive;
-
+    // Overlay-States (überlagern die aktuelle Seite, ActivePage bleibt unverändert)
     [ObservableProperty]
     private bool _isWorkerProfileActive;
 
-    [ObservableProperty]
-    private bool _isBuildingsActive;
+    partial void OnIsWorkerProfileActiveChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsTabBarVisible));
+    }
 
     [ObservableProperty]
-    private bool _isResearchActive;
-
-    [ObservableProperty]
-    private bool _isManagerActive;
-
-    [ObservableProperty]
-    private bool _isTournamentActive;
+    private bool _isLuckySpinVisible;
 
     /// <summary>Turnier-Button sichtbar ab Level 50 (Progressive Disclosure).</summary>
     [ObservableProperty]
     private bool _showTournamentSection;
 
-    [ObservableProperty]
-    private bool _isSeasonalEventActive;
-
     /// <summary>Saison-Event-Button sichtbar ab Level 60.</summary>
     [ObservableProperty]
     private bool _showSeasonalEventSection;
 
-    [ObservableProperty]
-    private bool _isBattlePassActive;
-
     /// <summary>Battle-Pass-Button sichtbar ab Level 70.</summary>
     [ObservableProperty]
     private bool _showBattlePassSection;
-
-    [ObservableProperty]
-    private bool _isGuildActive;
-
-    [ObservableProperty]
-    private bool _isMissionenActive;
-
-    [ObservableProperty]
-    private bool _isGuildResearchActive;
-
-    [ObservableProperty]
-    private bool _isGuildMembersActive;
-
-    [ObservableProperty]
-    private bool _isGuildInviteActive;
-
-    [ObservableProperty]
-    private bool _isGuildWarSeasonActive;
-
-    [ObservableProperty]
-    private bool _isGuildBossActive;
-
-    [ObservableProperty]
-    private bool _isGuildHallActive;
-
-    [ObservableProperty]
-    private bool _isGuildAchievementsActive;
-
-    [ObservableProperty]
-    private bool _isGuildChatActive;
-
-    [ObservableProperty]
-    private bool _isGuildWarActive;
-
-    [ObservableProperty]
-    private bool _isCraftingActive;
-
-    [ObservableProperty]
-    private bool _isForgeGameActive;
-
-    [ObservableProperty]
-    private bool _isInventGameActive;
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROGRESSIVE TAB-FREISCHALTUNG
@@ -903,6 +773,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public bool IsTabLocked(int tabIndex)
     {
         if (tabIndex < 0 || tabIndex >= TabUnlockLevels.Length) return false;
+        // Nach dem ersten Prestige alle Tabs permanent freigeschaltet
+        if (HasEverPrestiged) return false;
         return PlayerLevel < TabUnlockLevels[tabIndex];
     }
 
@@ -926,70 +798,64 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Whether the bottom tab bar should be visible (hidden during mini-games and detail views).
+    /// Haupt-Tabs bei denen die Tab-Bar sichtbar ist (5 Hauptseiten).
     /// </summary>
-    public bool IsTabBarVisible => !IsWorkshopDetailActive && !IsOrderDetailActive &&
-                                    !IsSawingGameActive && !IsPipePuzzleActive &&
-                                    !IsWiringGameActive && !IsPaintingGameActive &&
-                                    !IsRoofTilingGameActive && !IsBlueprintGameActive &&
-                                    !IsDesignPuzzleGameActive && !IsInspectionGameActive &&
-                                    !IsForgeGameActive && !IsInventGameActive &&
-                                    !IsWorkerProfileActive && !IsWorkerMarketActive &&
-                                    !IsResearchActive && !IsManagerActive &&
-                                    !IsTournamentActive && !IsSeasonalEventActive &&
-                                    !IsBattlePassActive && !IsCraftingActive &&
-                                    !IsGuildResearchActive && !IsGuildMembersActive &&
-                                    !IsGuildInviteActive && !IsGuildWarSeasonActive &&
-                                    !IsGuildBossActive && !IsGuildHallActive &&
-                                    !IsGuildAchievementsActive && !IsGuildChatActive &&
-                                    !IsGuildWarActive;
+    private static readonly HashSet<ActivePage> s_mainTabs =
+    [
+        ActivePage.Dashboard, ActivePage.Buildings, ActivePage.Missionen,
+        ActivePage.Guild, ActivePage.Shop
+    ];
 
-    private void DeactivateAllTabs()
-    {
-        IsDashboardActive = false;
-        IsShopActive = false;
-        IsStatisticsActive = false;
-        IsAchievementsActive = false;
-        IsSettingsActive = false;
-        IsWorkshopDetailActive = false;
-        IsOrderDetailActive = false;
-        IsSawingGameActive = false;
-        IsPipePuzzleActive = false;
-        IsWiringGameActive = false;
-        IsPaintingGameActive = false;
-        IsRoofTilingGameActive = false;
-        IsBlueprintGameActive = false;
-        IsDesignPuzzleGameActive = false;
-        IsInspectionGameActive = false;
-        IsWorkerMarketActive = false;
-        IsWorkerProfileActive = false;
-        IsBuildingsActive = false;
-        IsMissionenActive = false;
-        IsResearchActive = false;
-        IsManagerActive = false;
-        IsTournamentActive = false;
-        IsSeasonalEventActive = false;
-        IsBattlePassActive = false;
-        IsGuildActive = false;
-        IsGuildResearchActive = false;
-        IsGuildMembersActive = false;
-        IsGuildInviteActive = false;
-        IsGuildWarSeasonActive = false;
-        IsGuildBossActive = false;
-        IsGuildHallActive = false;
-        IsGuildAchievementsActive = false;
-        if (IsGuildChatActive) GuildViewModel.StopChatPolling();
-        IsGuildChatActive = false;
-        IsGuildWarActive = false;
-        IsCraftingActive = false;
-        IsForgeGameActive = false;
-        IsInventGameActive = false;
-    }
+    /// <summary>
+    /// Tab-Bar sichtbar nur auf den 5 Haupt-Tabs und wenn kein Overlay aktiv ist.
+    /// </summary>
+    public bool IsTabBarVisible => s_mainTabs.Contains(ActivePage) && !IsWorkerProfileActive;
 
-    private void NotifyTabBarVisibility()
+    /// <summary>
+    /// Mapping ActivePage → Property-Name für gezielte PropertyChanged-Benachrichtigungen.
+    /// Nur 2 Notifications pro Seitenwechsel statt 36 (alter Ansatz mit DeactivateAllTabs).
+    /// </summary>
+    private static string? ActivePagePropertyName(ActivePage page) => page switch
     {
-        OnPropertyChanged(nameof(IsTabBarVisible));
-    }
+        ActivePage.Dashboard => nameof(IsDashboardActive),
+        ActivePage.Shop => nameof(IsShopActive),
+        ActivePage.Statistics => nameof(IsStatisticsActive),
+        ActivePage.Achievements => nameof(IsAchievementsActive),
+        ActivePage.Settings => nameof(IsSettingsActive),
+        ActivePage.WorkshopDetail => nameof(IsWorkshopDetailActive),
+        ActivePage.OrderDetail => nameof(IsOrderDetailActive),
+        ActivePage.SawingGame => nameof(IsSawingGameActive),
+        ActivePage.PipePuzzle => nameof(IsPipePuzzleActive),
+        ActivePage.WiringGame => nameof(IsWiringGameActive),
+        ActivePage.PaintingGame => nameof(IsPaintingGameActive),
+        ActivePage.RoofTilingGame => nameof(IsRoofTilingGameActive),
+        ActivePage.BlueprintGame => nameof(IsBlueprintGameActive),
+        ActivePage.DesignPuzzleGame => nameof(IsDesignPuzzleGameActive),
+        ActivePage.InspectionGame => nameof(IsInspectionGameActive),
+        ActivePage.WorkerMarket => nameof(IsWorkerMarketActive),
+        ActivePage.Buildings => nameof(IsBuildingsActive),
+        ActivePage.Research => nameof(IsResearchActive),
+        ActivePage.Manager => nameof(IsManagerActive),
+        ActivePage.Tournament => nameof(IsTournamentActive),
+        ActivePage.SeasonalEvent => nameof(IsSeasonalEventActive),
+        ActivePage.BattlePass => nameof(IsBattlePassActive),
+        ActivePage.Guild => nameof(IsGuildActive),
+        ActivePage.Missionen => nameof(IsMissionenActive),
+        ActivePage.GuildResearch => nameof(IsGuildResearchActive),
+        ActivePage.GuildMembers => nameof(IsGuildMembersActive),
+        ActivePage.GuildInvite => nameof(IsGuildInviteActive),
+        ActivePage.GuildWarSeason => nameof(IsGuildWarSeasonActive),
+        ActivePage.GuildBoss => nameof(IsGuildBossActive),
+        ActivePage.GuildHall => nameof(IsGuildHallActive),
+        ActivePage.GuildAchievements => nameof(IsGuildAchievementsActive),
+        ActivePage.GuildChat => nameof(IsGuildChatActive),
+        ActivePage.GuildWar => nameof(IsGuildWarActive),
+        ActivePage.Crafting => nameof(IsCraftingActive),
+        ActivePage.ForgeGame => nameof(IsForgeGameActive),
+        ActivePage.InventGame => nameof(IsInventGameActive),
+        ActivePage.Ascension => nameof(IsAscensionActive),
+        _ => null
+    };
 
     // ═══════════════════════════════════════════════════════════════════════
     // CHILD VIEWMODELS
@@ -1022,6 +888,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public LuckySpinViewModel LuckySpinViewModel { get; }
     public ForgeGameViewModel ForgeGameViewModel { get; }
     public InventGameViewModel InventGameViewModel { get; }
+    public AscensionViewModel AscensionViewModel { get; }
+
+    /// <summary>Eigenstaendiges ViewModel fuer Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin etc.</summary>
+    public MissionsFeatureViewModel MissionsVM { get; }
 
     /// <summary>
     /// Zentrale Effekt-Engine (Singleton aus DI). Wird von DashboardView direkt genutzt.
@@ -1065,6 +935,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         BattlePassViewModel battlePassViewModel,
         GuildViewModel guildViewModel,
         CraftingViewModel craftingViewModel,
+        AscensionViewModel ascensionViewModel,
         IWeeklyMissionService weeklyMissionService,
         IWelcomeBackService welcomeBackService,
         ILuckySpinService luckySpinService,
@@ -1074,11 +945,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IGoalService goalService,
         IWorkerService workerService,
         IContextualHintService contextualHintService,
+        DialogViewModel dialogViewModel,
+        MissionsFeatureViewModel missionsFeatureViewModel,
+        IRebirthService? rebirthService = null,
         IStoryService? storyService = null,
         IReviewService? reviewService = null,
         IPrestigeService? prestigeService = null,
         INotificationService? notificationService = null,
-        IPlayGamesService? playGamesService = null)
+        IPlayGamesService? playGamesService = null,
+        IChallengeConstraintService? challengeConstraints = null)
     {
         _gameStateService = gameStateService;
         _gameLoopService = gameLoopService;
@@ -1103,6 +978,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _equipmentService = equipmentService;
         _goalService = goalService;
         _workerService = workerService;
+        _rebirthService = rebirthService;
         GameJuiceEngine = gameJuiceEngine;
 
         // Delegate-Felder zuweisen (statt anonymer Lambdas, damit Dispose() abmelden kann)
@@ -1145,11 +1021,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         BattlePassViewModel = battlePassViewModel;
         GuildViewModel = guildViewModel;
         CraftingViewModel = craftingViewModel;
+        AscensionViewModel = ascensionViewModel;
         LuckySpinViewModel = luckySpinViewModel;
         ForgeGameViewModel = miniGames.Forge;
         InventGameViewModel = miniGames.Invent;
-        // Delegate-Feld zuweisen (statt anonymem Lambda)
-        _luckySpinNavHandler = _ => HideLuckySpin();
+        // Delegate-Feld zuweisen (statt anonymem Lambda). MissionsVM wird weiter unten gesetzt,
+        // aber das Lambda captured `this` und liest MissionsVM erst bei Aufruf (nach dem Konstruktor).
+        _luckySpinNavHandler = _ => { MissionsVM?.HideLuckySpinCommand.Execute(null); IsLuckySpinVisible = false; };
         LuckySpinViewModel.NavigationRequested += _luckySpinNavHandler;
 
         // Wire up child VM navigation events
@@ -1175,6 +1053,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         BattlePassViewModel.NavigationRequested += OnChildNavigation;
         GuildViewModel.NavigationRequested += OnChildNavigation;
         CraftingViewModel.NavigationRequested += OnChildNavigation;
+        AscensionViewModel.NavigationRequested += OnChildNavigation;
 
         _workerMarketNavHandler = (_, route) => OnChildNavigation(route);
         _workerProfileNavHandler = (_, route) => OnChildNavigation(route);
@@ -1185,35 +1064,24 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         BuildingsViewModel.NavigationRequested += _buildingsNavHandler;
         ResearchViewModel.NavigationRequested += _researchNavHandler;
 
-        // Wire up child VM alert/confirmation events (gespeicherte Delegates fuer Dispose-Unsubscribe)
-        _alertHandler = (t, m, b) => DialogVM.ShowAlertDialog(t, m, b);
-        _confirmHandler = (t, m, a, c) => DialogVM.ShowConfirmDialog(t, m, a, c);
+        // Child-VM Events verdrahten (benannte Delegates fuer Dispose-Unsubscribe)
         _guildCelebrationHandler = () => CelebrationRequested?.Invoke();
         _guildFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         _workerProfileFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        // Benanntes Delegate-Feld fuer BuildingsVM FloatingText (statt anonymem Lambda → Dispose-sicher)
+        // Benanntes Delegate-Feld fuer BuildingsVM FloatingText (statt anonymem Lambda -> Dispose-sicher)
         _buildingsFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
 
-        SettingsViewModel.AlertRequested += _alertHandler;
-        SettingsViewModel.ConfirmationRequested += _confirmHandler;
-        ShopViewModel.AlertRequested += _alertHandler;
-        ShopViewModel.ConfirmationRequested += _confirmHandler;
-        OrderViewModel.ConfirmationRequested += _confirmHandler;
-        StatisticsViewModel.AlertRequested += _alertHandler;
         StatisticsViewModel.ShowPrestigeDialog += OnShowPrestigeDialog;
-        WorkerMarketViewModel.AlertRequested += _alertHandler;
-        WorkerProfileViewModel.AlertRequested += _alertHandler;
-        WorkerProfileViewModel.ConfirmationRequested += _confirmHandler;
         WorkerProfileViewModel.FloatingTextRequested += _workerProfileFloatingTextHandler;
-        BuildingsViewModel.AlertRequested += _alertHandler;
         BuildingsViewModel.FloatingTextRequested += _buildingsFloatingTextHandler;
-        ResearchViewModel.AlertRequested += _alertHandler;
-        ResearchViewModel.ConfirmationRequested += _confirmHandler;
-        TournamentViewModel.AlertRequested += _alertHandler;
-        BattlePassViewModel.AlertRequested += _alertHandler;
-        GuildViewModel.ConfirmationRequested += _confirmHandler;
         GuildViewModel.CelebrationRequested += _guildCelebrationHandler;
         GuildViewModel.FloatingTextRequested += _guildFloatingTextHandler;
+
+        // AscensionVM Events verdrahten (benannte Delegates fuer Dispose)
+        _ascensionFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        _ascensionCelebrationHandler = () => CelebrationRequested?.Invoke();
+        AscensionViewModel.FloatingTextRequested += _ascensionFloatingTextHandler;
+        AscensionViewModel.CelebrationRequested += _ascensionCelebrationHandler;
 
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
@@ -1240,9 +1108,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _localizationService.LanguageChanged += OnLanguageChanged;
         _eventService.EventStarted += OnEventStarted;
         _eventService.EventEnded += OnEventEnded;
-        _dailyChallengeService.ChallengeProgressChanged += OnChallengeProgressChanged;
-        _weeklyMissionService.MissionProgressChanged += OnWeeklyMissionProgressChanged;
-        _welcomeBackService.OfferGenerated += OnWelcomeOfferGenerated;
 
         // Kontextuelles Hint-System (wird an DialogVM delegiert)
         _contextualHintService = contextualHintService;
@@ -1252,14 +1117,35 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _prestigeService = prestigeService
                            ?? throw new InvalidOperationException("IPrestigeService required");
 
-        // DialogViewModel erstellen und Events verdrahten
-        DialogVM = new DialogViewModel(
-            _localizationService, _storyService, _contextualHintService,
-            _gameStateService, _prestigeService, _adService);
+        // MissionsFeatureViewModel per DI injiziert und Events verdrahten (benannte Delegates fuer Dispose)
+        MissionsVM = missionsFeatureViewModel;
+        _missionsFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        _missionsCelebrationHandler = () => CelebrationRequested?.Invoke();
+        _missionsStreakRescuedHandler = () =>
+        {
+            OnPropertyChanged(nameof(LoginStreak));
+            OnPropertyChanged(nameof(HasLoginStreak));
+            OnPropertyChanged(nameof(ShowStreakBadge));
+        };
+        MissionsVM.FloatingTextRequested += _missionsFloatingTextHandler;
+        MissionsVM.CelebrationRequested += _missionsCelebrationHandler;
+        MissionsVM.NavigateToMiniGameRequested += OnMissionsNavigateToMiniGame;
+        MissionsVM.CheckDeferredDialogsRequested += CheckDeferredDialogs;
+        MissionsVM.StreakRescued += _missionsStreakRescuedHandler;
+
+        // DialogViewModel per DI injiziert und Events verdrahten (benannte Delegates fuer Dispose)
+        DialogVM = dialogViewModel;
         DialogVM.DeferredDialogCheckRequested += CheckDeferredDialogs;
-        DialogVM.PrestigeSummaryGoToShopRequested += () => SelectBuildingsTab();
-        DialogVM.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        _dialogPrestigeSummaryGoToShopHandler = () => SelectBuildingsTab();
+        _dialogFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        DialogVM.PrestigeSummaryGoToShopRequested += _dialogPrestigeSummaryGoToShopHandler;
+        DialogVM.FloatingTextRequested += _dialogFloatingTextHandler;
         _prestigeService.PrestigeCompleted += OnPrestigeCompleted;
+        _prestigeService.MilestoneReached += OnPrestigeMilestoneReached;
+
+        // Rebirth-Event fuer First-Star-Hint
+        if (_rebirthService != null)
+            _rebirthService.RebirthCompleted += OnRebirthCompleted;
 
         // Worker-Level-Up Feedback (Sound + FloatingText)
         _workerService.WorkerLevelUp += OnWorkerLevelUp;
@@ -1267,6 +1153,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Notification + PlayGames Services (per Constructor Injection)
         _notificationService = notificationService;
         _playGamesService = playGamesService;
+        _challengeConstraints = challengeConstraints;
 
         // Back-Press Helper verdrahten (benannte Methode statt Lambda fuer Dispose-Abmeldung)
         _backPressHelper.ExitHintRequested += OnBackPressExitHint;
@@ -1429,8 +1316,28 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         FloatingTextRequested?.Invoke($"Prestige #{prestigeCount}!", "level");
 
+        // Ascension-Hint: Prüfen ob erstmals 3+ Legende-Prestiges erreicht
+        if (_gameStateService.State.Prestige.LegendeCount >= 3)
+            _contextualHintService.TryShowHint(ContextualHints.AscensionAvailable);
+
         _reviewService?.OnMilestone("prestige", prestigeCount);
         CheckReviewPrompt();
+    }
+
+    private void OnPrestigeMilestoneReached(object? sender, PrestigeMilestoneEventArgs e)
+    {
+        var text = string.Format(
+            _localizationService.GetString("PrestigeMilestoneReached") ?? "Prestige-Meilenstein! +{0} Goldschrauben",
+            e.GoldenScrewReward);
+        FloatingTextRequested?.Invoke(text, "currency");
+        CelebrationRequested?.Invoke();
+        _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+    }
+
+    private void OnRebirthCompleted(object? sender, WorkshopType type)
+    {
+        // Erster-Stern-Hint nach erstem Rebirth (erklärt Stern-Boni)
+        _contextualHintService.TryShowHint(ContextualHints.FirstStar);
     }
 
     private void CheckReviewPrompt()
@@ -1476,6 +1383,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             ShowTutorialHint = false;
             _contextualHintService.TryShowHint(ContextualHints.WorkshopDetail);
         }
+
+        // Rebirth-Hint: Erster Workshop erreicht Level 1000
+        if (e.NewLevel >= Workshop.MaxLevel)
+            _contextualHintService.TryShowHint(ContextualHints.RebirthReady);
 
         // Multiplikator-Meilensteine (Bumpy Progression)
         if (!IsHoldingUpgrade && Workshop.IsMilestoneLevel(e.NewLevel))
@@ -1561,14 +1472,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _goalService.Invalidate();
     }
 
-    /// <summary>
-    /// Wird vom DailyChallengeService bei jeder Fortschrittsänderung ausgelöst.
-    /// Aktualisiert die Challenge-Anzeige sofort statt nur alle 5 Ticks.
-    /// </summary>
-    private void OnChallengeProgressChanged(object? sender, EventArgs e)
-    {
-        Dispatcher.UIThread.Post(RefreshChallenges);
-    }
+    // OnChallengeProgressChanged → extrahiert nach MissionsFeatureViewModel
 
     private async void OnShowPrestigeDialog(object? sender, EventArgs e)
     {
@@ -1599,7 +1503,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             CeremonyRequested?.Invoke(CeremonyType.MasterTool, name, $"+{(int)(tool.IncomeBonus * 100)}% Einkommen");
             _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
 
-            MasterToolsCollected = _gameStateService.State.CollectedMasterTools.Count;
+            MissionsVM.MasterToolsCollected = _gameStateService.State.CollectedMasterTools.Count;
         });
     }
 
@@ -1771,8 +1675,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _lastPrestigeBannerLevel = -1; // Prestige-Banner mit neuen Texten neu berechnen
 
         // Alle lokalisierten Display-Texte aktualisieren
-        RefreshQuickJobs();
-        RefreshChallenges();
+        MissionsVM.RefreshQuickJobs();
+        MissionsVM.MarkChallengesDirty();
+        MissionsVM.RefreshChallenges();
         RefreshWorkshops();
 
         // Child-VMs aktualisieren
@@ -1810,22 +1715,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Tick-Counter für zeitgesteuerte UI-Updates (Worker-Warnung, etc.)
         _floatingTextCounter++;
 
-        // QuickJob-Timer aktualisieren + Rotation wenn abgelaufen
-        if (_quickJobService.NeedsRotation())
-        {
-            _quickJobService.RotateIfNeeded();
-            RefreshQuickJobs();
-        }
-        // Int-Vergleich statt String-Allokation pro Tick (spart ~1 String/s GC-Pressure)
-        var remaining = _quickJobService.TimeUntilNextRotation;
-        int qjMins = (int)remaining.TotalMinutes;
-        int qjSecs = remaining.Seconds;
-        if (qjMins != _lastQjMins || qjSecs != _lastQjSecs)
-        {
-            _lastQjMins = qjMins;
-            _lastQjSecs = qjSecs;
-            QuickJobTimerDisplay = qjMins >= 1 ? $"{qjMins}:{qjSecs:D2}" : $"0:{qjSecs:D2}";
-        }
+        // QuickJob-Timer aktualisieren + Rotation (delegiert an MissionsVM)
+        MissionsVM.UpdateQuickJobTimer();
 
         // Forschungs-Timer aktualisieren (laeuft im Hintergrund weiter)
         if (ResearchViewModel.HasActiveResearch)
@@ -1858,7 +1749,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             // Dashboard/Missionen-spezifische Updates nur wenn sichtbar (spart ~20 PropertyChanged)
             if (IsDashboardActive || IsMissionenActive)
             {
-                RefreshChallenges();
+                MissionsVM.RefreshChallenges();
             }
 
             // Imperium-spezifische Updates nur wenn sichtbar
@@ -1883,11 +1774,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Weekly Missions + Lucky Spin + Welcome Back + Worker-Warnung periodisch aktualisieren (alle 10 Ticks)
         if (_floatingTextCounter % 10 == 0)
         {
-            // Lucky Spin nur prüfen wenn Missionen-Tab sichtbar
+            // Lucky Spin + Welcome Back Timer (delegiert an MissionsVM)
             if (IsMissionenActive || IsDashboardActive)
             {
-                var newFreeSpin = _luckySpinService.HasFreeSpin;
-                if (newFreeSpin != HasFreeSpin) HasFreeSpin = newFreeSpin;
+                MissionsVM.UpdatePeriodicState();
             }
 
             // Worker-Warnung nur aktualisieren wenn Imperium/Dashboard sichtbar
@@ -1912,22 +1802,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                     SoftCapText = "";
             }
 
-            // Welcome Back Timer aktualisieren
-            if (IsWelcomeOfferVisible)
-            {
-                var offer = state.ActiveWelcomeBackOffer;
-                if (offer == null || offer.IsExpired)
-                {
-                    IsWelcomeOfferVisible = false;
-                }
-                else
-                {
-                    var offerRemaining = offer.TimeRemaining;
-                    WelcomeOfferTimerDisplay = offerRemaining.TotalHours >= 1
-                        ? $"{(int)offerRemaining.TotalHours}h {offerRemaining.Minutes:D2}m"
-                        : $"{offerRemaining.Minutes}m";
-                }
-            }
+            // Welcome Back Timer ist jetzt in MissionsVM.UpdatePeriodicState()
         }
 
         // Arbeitsmarkt Rotations-Timer jede Sekunde aktualisieren
@@ -2205,34 +2080,21 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         BattlePassViewModel.NavigationRequested -= OnChildNavigation;
         GuildViewModel.NavigationRequested -= OnChildNavigation;
         CraftingViewModel.NavigationRequested -= OnChildNavigation;
+        AscensionViewModel.NavigationRequested -= OnChildNavigation;
         LuckySpinViewModel.NavigationRequested -= _luckySpinNavHandler;
         WorkerMarketViewModel.NavigationRequested -= _workerMarketNavHandler;
         WorkerProfileViewModel.NavigationRequested -= _workerProfileNavHandler;
         BuildingsViewModel.NavigationRequested -= _buildingsNavHandler;
         ResearchViewModel.NavigationRequested -= _researchNavHandler;
 
-        // Unsubscribe child VM alert/confirmation events
-        SettingsViewModel.AlertRequested -= _alertHandler;
-        SettingsViewModel.ConfirmationRequested -= _confirmHandler;
-        ShopViewModel.AlertRequested -= _alertHandler;
-        ShopViewModel.ConfirmationRequested -= _confirmHandler;
-        OrderViewModel.ConfirmationRequested -= _confirmHandler;
-        StatisticsViewModel.AlertRequested -= _alertHandler;
+        // Unsubscribe child VM events
         StatisticsViewModel.ShowPrestigeDialog -= OnShowPrestigeDialog;
-        WorkerMarketViewModel.AlertRequested -= _alertHandler;
-        WorkerProfileViewModel.AlertRequested -= _alertHandler;
-        WorkerProfileViewModel.ConfirmationRequested -= _confirmHandler;
         WorkerProfileViewModel.FloatingTextRequested -= _workerProfileFloatingTextHandler;
-        BuildingsViewModel.AlertRequested -= _alertHandler;
-        // Benanntes Feld statt anonymem Lambda → korrekte Abmeldung
         BuildingsViewModel.FloatingTextRequested -= _buildingsFloatingTextHandler;
-        ResearchViewModel.AlertRequested -= _alertHandler;
-        ResearchViewModel.ConfirmationRequested -= _confirmHandler;
-        TournamentViewModel.AlertRequested -= _alertHandler;
-        BattlePassViewModel.AlertRequested -= _alertHandler;
-        GuildViewModel.ConfirmationRequested -= _confirmHandler;
         GuildViewModel.CelebrationRequested -= _guildCelebrationHandler;
         GuildViewModel.FloatingTextRequested -= _guildFloatingTextHandler;
+        AscensionViewModel.FloatingTextRequested -= _ascensionFloatingTextHandler;
+        AscensionViewModel.CelebrationRequested -= _ascensionCelebrationHandler;
 
         // Lambda-basierte Service-Subscriptions abmelden
         _rewardedAdService.AdUnavailable -= _adUnavailableHandler;
@@ -2258,206 +2120,33 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _localizationService.LanguageChanged -= OnLanguageChanged;
         _eventService.EventStarted -= OnEventStarted;
         _eventService.EventEnded -= OnEventEnded;
-        _dailyChallengeService.ChallengeProgressChanged -= OnChallengeProgressChanged;
-        _weeklyMissionService.MissionProgressChanged -= OnWeeklyMissionProgressChanged;
-        _welcomeBackService.OfferGenerated -= OnWelcomeOfferGenerated;
+        // Daily/Weekly/WelcomeBack Event-Unsubscribes sind in MissionsFeatureViewModel.Dispose()
 
+        DialogVM.DeferredDialogCheckRequested -= CheckDeferredDialogs;
+        DialogVM.PrestigeSummaryGoToShopRequested -= _dialogPrestigeSummaryGoToShopHandler;
+        DialogVM.FloatingTextRequested -= _dialogFloatingTextHandler;
         DialogVM.Cleanup();
 
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
+        _prestigeService.MilestoneReached -= OnPrestigeMilestoneReached;
+        if (_rebirthService != null)
+            _rebirthService.RebirthCompleted -= OnRebirthCompleted;
         _workerService.WorkerLevelUp -= OnWorkerLevelUp;
         _backPressHelper.ExitHintRequested -= OnBackPressExitHint;
 
+        // MissionsFeatureVM Events abmelden + disposen
+        MissionsVM.FloatingTextRequested -= _missionsFloatingTextHandler;
+        MissionsVM.CelebrationRequested -= _missionsCelebrationHandler;
+        MissionsVM.StreakRescued -= _missionsStreakRescuedHandler;
+        MissionsVM.NavigateToMiniGameRequested -= OnMissionsNavigateToMiniGame;
+        MissionsVM.CheckDeferredDialogsRequested -= CheckDeferredDialogs;
+        MissionsVM.Dispose();
+
         GuildViewModel.Dispose();
         ShopViewModel.Dispose();
+        WorkshopViewModel.Dispose();
 
         _disposed = true;
         GC.SuppressFinalize(this);
-    }
-}
-
-/// <summary>
-/// Display model for workshops in the UI.
-/// </summary>
-public partial class WorkshopDisplayModel : ObservableObject
-{
-    public WorkshopType Type { get; set; }
-    public string Icon { get; set; } = "";
-    public GameIconKind IconKind { get; set; } = GameIconKind.Wrench;
-    public string Name { get; set; } = "";
-    public int Level { get; set; }
-    public int WorkerCount { get; set; }
-    public int MaxWorkers { get; set; }
-    public decimal IncomePerSecond { get; set; }
-    public decimal UpgradeCost { get; set; }
-    public decimal HireWorkerCost { get; set; }
-    public bool IsUnlocked { get; set; }
-    public int UnlockLevel { get; set; }
-    public bool CanUpgrade { get; set; }
-    public bool CanHireWorker { get; set; }
-
-    [ObservableProperty]
-    private bool _canAffordUpgrade;
-
-    [ObservableProperty]
-    private bool _canAffordWorker;
-
-    public int RequiredPrestige { get; set; }
-    public decimal UnlockCost { get; set; }
-    public string UnlockDisplay { get; set; } = "";
-    public string UnlockCostDisplay => MoneyFormatter.FormatCompact(UnlockCost);
-    /// <summary>
-    /// Ob das Level für die Freischaltung erreicht ist (aber noch nicht gekauft).
-    /// </summary>
-    public bool CanBuyUnlock { get; set; }
-    /// <summary>
-    /// Ob genug Geld für die Freischaltung vorhanden ist.
-    /// </summary>
-    [ObservableProperty]
-    private bool _canAffordUnlock;
-    /// <summary>
-    /// Bulk-Buy Gesamtkosten (gesetzt von RefreshWorkshops basierend auf BulkBuyAmount).
-    /// </summary>
-    public decimal BulkUpgradeCost { get; set; }
-
-    /// <summary>
-    /// Beschriftung auf dem Upgrade-Button (z.B. "x10" oder "Max (47)").
-    /// </summary>
-    public string BulkUpgradeLabel { get; set; } = "";
-
-    /// <summary>
-    /// Vorschau der Einkommens-Steigerung nach Upgrade (z.B. "+1,5 €/s").
-    /// </summary>
-    public string UpgradeIncomePreview { get; set; } = "";
-
-    /// <summary>
-    /// Geschätzte Zeit bis zum nächsten Upgrade (z.B. "~3 Min", "~1,2 Std").
-    /// Leer wenn sofort leistbar.
-    /// </summary>
-    public string TimeToUpgrade { get; set; } = "";
-
-    /// <summary>
-    /// Netto-Einkommen pro Sekunde (Brutto - Kosten), formatiert.
-    /// </summary>
-    public string NetIncomeDisplay { get; set; } = "";
-
-    /// <summary>
-    /// Ob das Netto-Einkommen negativ ist (Verlust).
-    /// </summary>
-    public bool IsNetNegative { get; set; }
-
-    /// <summary>
-    /// Ob der Workshop laufende Kosten hat (Worker vorhanden oder Level > 1).
-    /// </summary>
-    public bool HasCosts { get; set; }
-
-    public string WorkerDisplay => $"{WorkerCount}x";
-    public string IncomeDisplay => IncomePerSecond > 0 ? MoneyFormatter.FormatPerSecond(IncomePerSecond, 1) : "-";
-    public string UpgradeCostDisplay => MoneyFormatter.FormatCompact(BulkUpgradeCost > 0 ? BulkUpgradeCost : UpgradeCost);
-    public string HireCostDisplay => MoneyFormatter.FormatCompact(HireWorkerCost);
-    public double LevelProgress => Level / (double)Workshop.MaxLevel;
-
-    // Level-basierte Farb-Intensitaet fuer Workshop-Streifen
-    // Freischaltbare gesperrte Workshops bekommen etwas mehr Farbe
-    public double ColorIntensity => !IsUnlocked
-        ? (CanBuyUnlock ? 0.30 : 0.10)
-        : Level switch
-        {
-            >= 1000 => 1.00, // Max Level → voll leuchtend
-            >= 500 => 0.85,
-            >= 250 => 0.70,
-            >= 100 => 0.55,
-            >= 50 => 0.45,
-            >= 25 => 0.35,
-            _ => 0.20       // Basis
-        };
-
-    // Max Level Gold-Glow
-    public bool IsMaxLevel => Level >= Workshop.MaxLevel;
-
-    // Dynamischer BoxShadow: Max-Level Gold-Glow, Upgrade leistbar dezenter Glow, freischaltbar+leistbar Craft-Glow, sonst keiner
-    public string GlowShadow => IsMaxLevel
-        ? "0 0 12 0 #60FFD700"
-        : CanAffordUpgrade && IsUnlocked
-            ? "0 0 8 0 #40D97706"
-            : CanAffordUnlock && !IsUnlocked
-                ? "0 0 10 0 #50E8A00E"
-                : "none";
-
-    // Phase 12.2: "Fast geschafft" Puls wenn >= 80% des Upgrade-Preises vorhanden
-    public bool IsAlmostAffordable => !CanAffordUpgrade && IsUnlocked && UpgradeCost > 0;
-
-    // Milestone-System: Naechstes Milestone-Level und Fortschritt
-    private static readonly int[] Milestones = [25, 50, 75, 100, 150, 200, 225, 250, 350, 500, 1000];  // BAL-1: 350, BAL-13: 225
-
-    public int NextMilestone
-    {
-        get
-        {
-            foreach (var m in Milestones)
-                if (Level < m) return m;
-            return 0; // Max erreicht
-        }
-    }
-
-    public double MilestoneProgress
-    {
-        get
-        {
-            int prev = 1;
-            foreach (var m in Milestones)
-            {
-                if (Level < m)
-                    return (Level - prev) / (double)(m - prev);
-                prev = m;
-            }
-            return 1.0;
-        }
-    }
-
-    public string MilestoneDisplay => NextMilestone > 0 ? $"\u2192 Lv.{NextMilestone}" : "";
-    public bool ShowMilestone => IsUnlocked && NextMilestone > 0;
-
-    /// <summary>
-    /// Benachrichtigt die UI ueber alle Property-Aenderungen nach einem In-Place-Update.
-    /// </summary>
-    public void NotifyAllChanged()
-    {
-        OnPropertyChanged(nameof(Name));
-        OnPropertyChanged(nameof(Level));
-        OnPropertyChanged(nameof(IconKind));
-        OnPropertyChanged(nameof(WorkerCount));
-        OnPropertyChanged(nameof(MaxWorkers));
-        OnPropertyChanged(nameof(IncomePerSecond));
-        OnPropertyChanged(nameof(UpgradeCost));
-        OnPropertyChanged(nameof(HireWorkerCost));
-        OnPropertyChanged(nameof(IsUnlocked));
-        OnPropertyChanged(nameof(UnlockDisplay));
-        OnPropertyChanged(nameof(UnlockCost));
-        OnPropertyChanged(nameof(UnlockCostDisplay));
-        OnPropertyChanged(nameof(CanBuyUnlock));
-        OnPropertyChanged(nameof(CanAffordUnlock));
-        OnPropertyChanged(nameof(CanUpgrade));
-        OnPropertyChanged(nameof(CanHireWorker));
-        OnPropertyChanged(nameof(WorkerDisplay));
-        OnPropertyChanged(nameof(IncomeDisplay));
-        OnPropertyChanged(nameof(UpgradeCostDisplay));
-        OnPropertyChanged(nameof(HireCostDisplay));
-        OnPropertyChanged(nameof(LevelProgress));
-        OnPropertyChanged(nameof(ColorIntensity));
-        OnPropertyChanged(nameof(IsMaxLevel));
-        OnPropertyChanged(nameof(GlowShadow));
-        OnPropertyChanged(nameof(IsAlmostAffordable));
-        OnPropertyChanged(nameof(NextMilestone));
-        OnPropertyChanged(nameof(MilestoneProgress));
-        OnPropertyChanged(nameof(MilestoneDisplay));
-        OnPropertyChanged(nameof(ShowMilestone));
-        OnPropertyChanged(nameof(BulkUpgradeCost));
-        OnPropertyChanged(nameof(BulkUpgradeLabel));
-        OnPropertyChanged(nameof(UpgradeIncomePreview));
-        OnPropertyChanged(nameof(TimeToUpgrade));
-        OnPropertyChanged(nameof(NetIncomeDisplay));
-        OnPropertyChanged(nameof(IsNetNegative));
-        OnPropertyChanged(nameof(HasCosts));
     }
 }

@@ -54,19 +54,36 @@
                      AutomationProperties.AutomationId="Workshop_Txt_Name" />
         </StackPanel>
 
-        <!-- Level Badge (animiert bei Upgrade) -->
-        <Border x:Name="LevelBadge"
-                Grid.Column="2"
-                Background="{StaticResource CraftGoldBrush}"
-                CornerRadius="8"
-                Padding="12,6"
-                RenderTransformOrigin="0.5,0.5"
-                AutomationProperties.AutomationId="Workshop_Border_LevelBadge">
-          <TextBlock Text="{Binding Level, StringFormat='Lvl {0}'}"
-                     FontWeight="Bold"
-                     Foreground="{DynamicResource SurfaceBrush}"
-                     AutomationProperties.AutomationId="Workshop_Txt_Level" />
-        </Border>
+        <!-- Level Badge + Rebirth-Sterne -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="Workshop_Panel_LevelAndStars">
+
+          <!-- Rebirth-Sterne (nur sichtbar wenn > 0) -->
+          <Border Background="#40FFD700"
+                  CornerRadius="8"
+                  Padding="8,6"
+                  IsVisible="{Binding HasRebirthStars}"
+                  AutomationProperties.AutomationId="Workshop_Border_RebirthStars">
+            <TextBlock Text="{Binding RebirthStars, StringFormat='{}{0}'}"
+                       FontWeight="Bold" FontSize="14"
+                       Foreground="{StaticResource CraftGoldBrush}"
+                       AutomationProperties.AutomationId="Workshop_Txt_RebirthStars" />
+          </Border>
+
+          <!-- Level Badge (animiert bei Upgrade) -->
+          <Border x:Name="LevelBadge"
+                  Background="{StaticResource CraftGoldBrush}"
+                  CornerRadius="8"
+                  Padding="12,6"
+                  RenderTransformOrigin="0.5,0.5"
+                  AutomationProperties.AutomationId="Workshop_Border_LevelBadge">
+            <TextBlock Text="{Binding Level, StringFormat='Lvl {0}'}"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource SurfaceBrush}"
+                       AutomationProperties.AutomationId="Workshop_Txt_Level" />
+          </Border>
+        </StackPanel>
 
       </Grid>
     </Border>
@@ -130,6 +147,28 @@
                        HorizontalAlignment="Center"
                        IsVisible="{Binding !CanUpgrade}"
                        AutomationProperties.AutomationId="Workshop_Txt_MaxLevel" />
+
+            <!-- Rebirth-Button (nur sichtbar bei Max-Level + weniger als 5 Sterne) -->
+            <Button Classes="Primary"
+                    Command="{Binding DoRebirthCommand}"
+                    IsVisible="{Binding CanRebirth}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Margin="0,8,0,0"
+                    AutomationProperties.AutomationId="Workshop_Btn_Rebirth">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <icons:GameIcon Kind="StarOutline" Width="24" Height="24"
+                                 Foreground="{StaticResource CraftGoldBrush}"
+                                 AutomationProperties.AutomationId="Workshop_Icon_Rebirth" />
+                <TextBlock Text="Wiedergeburt"
+                           FontSize="14" FontWeight="SemiBold"
+                           AutomationProperties.AutomationId="Workshop_Txt_RebirthLabel" />
+                <TextBlock Text="{Binding RebirthCostDisplay}"
+                           FontSize="12" Opacity="0.7"
+                           VerticalAlignment="Center"
+                           AutomationProperties.AutomationId="Workshop_Txt_RebirthCost" />
+              </StackPanel>
+            </Button>
           </StackPanel>
         </Border>
 
@@ -268,7 +307,7 @@
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              AutomationProperties.AutomationId="Workshop_Txt_TotalEarnedLabel" />
                 </StackPanel>
-                <TextBlock Text="{Binding TotalEarned, StringFormat='{}{0:N0} EUR'}"
+                <TextBlock Text="{Binding TotalEarnedDisplay}"
                            FontSize="13" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            AutomationProperties.AutomationId="Workshop_Txt_TotalEarnedValue" />

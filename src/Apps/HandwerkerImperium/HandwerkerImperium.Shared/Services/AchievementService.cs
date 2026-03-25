@@ -12,14 +12,22 @@ public sealed class AchievementService : IAchievementService, IDisposable
     private bool _disposed;
     private readonly IGameStateService _gameStateService;
     private readonly IPrestigeService _prestigeService;
+    private readonly IAscensionService _ascensionService;
+    private readonly IRebirthService _rebirthService;
     private readonly List<Achievement> _achievements;
 
     public event EventHandler<Achievement>? AchievementUnlocked;
 
-    public AchievementService(IGameStateService gameStateService, IPrestigeService prestigeService)
+    public AchievementService(
+        IGameStateService gameStateService,
+        IPrestigeService prestigeService,
+        IAscensionService ascensionService,
+        IRebirthService rebirthService)
     {
         _gameStateService = gameStateService;
         _prestigeService = prestigeService;
+        _ascensionService = ascensionService;
+        _rebirthService = rebirthService;
         _achievements = Achievements.GetAll();
 
         // Load unlocked status from game state
@@ -32,6 +40,8 @@ public sealed class AchievementService : IAchievementService, IDisposable
         _gameStateService.WorkshopUpgraded += OnWorkshopUpgraded;
         _gameStateService.MoneyChanged += OnMoneyChanged;
         _prestigeService.PrestigeCompleted += OnPrestigeCompleted;
+        _ascensionService.AscensionCompleted += OnAscensionCompleted;
+        _rebirthService.RebirthCompleted += OnRebirthCompleted;
     }
 
     private int _unlockedCount;
@@ -128,16 +138,26 @@ public sealed class AchievementService : IAchievementService, IDisposable
         var state = _gameStateService.State;
 
         // Vorab-Berechnung aller abgeleiteten Werte (vermeidet LINQ-Kaskaden im switch)
-        int maxWsLevel = 0, totalWorkers = 0, wsLevel100Count = 0;
+        int maxWsLevel = 0, totalWorkers = 0, wsLevel100Count = 0, wsLevel1000Count = 0;
         int builtCount = 0, maxBldLevel = 0;
         bool hasCanteen = false, hasTraining = false;
         bool hasSS = false, hasSSS = false, hasLegendary = false;
+
+        // Rebirth-Sterne Vorab-Berechnung
+        int totalRebirthStars = 0, maxRebirthStars = 0, wsWithAtLeast1Star = 0;
+        foreach (var kvp in state.WorkshopStars)
+        {
+            totalRebirthStars += kvp.Value;
+            if (kvp.Value > maxRebirthStars) maxRebirthStars = kvp.Value;
+            if (kvp.Value >= 1) wsWithAtLeast1Star++;
+        }
 
         for (int i = 0; i < state.Workshops.Count; i++)
         {
             var ws = state.Workshops[i];
             if (ws.Level > maxWsLevel) maxWsLevel = ws.Level;
             if (ws.Level >= 100) wsLevel100Count++;
+            if (ws.Level >= 1000) wsLevel1000Count++;
             totalWorkers += ws.Workers.Count;
             for (int w = 0; w < ws.Workers.Count; w++)
             {
@@ -281,9 +301,62 @@ public sealed class AchievementService : IAchievementService, IDisposable
                 "all_mastertools" => state.CollectedMasterTools?.Count ?? 0,
                 "equipment_all_rarities" => distinctRarities,
 
+                // === ASCENSION-ACHIEVEMENTS (Phase 4) ===
+                "asc_first" or "asc_5" or "asc_10"
+                    => state.Ascension.AscensionLevel,
+                "asc_perk_first" => state.Ascension.Perks.Count > 0 ? 1 : 0,
+                "asc_perks_max" => CountMaxedPerks(state),
+
+                // === REBIRTH-ACHIEVEMENTS (Phase 4) ===
+                "rebirth_first" => totalRebirthStars > 0 ? 1 : 0,
+                "rebirth_stars_10" => totalRebirthStars,
+                "rebirth_ws_5stars" => maxRebirthStars,
+                "rebirth_all_ws" => wsWithAtLeast1Star,
+
+                // === LATE-GAME (Phase 4) ===
+                "all_ws_level1000" => wsLevel1000Count,
+
+                // === AUTO-PRODUKTION & CRAFTING ===
+                "auto_craft_first" or "auto_craft_100" or "auto_craft_1000"
+                    => state.TotalItemsAutoProduced,
+                "material_order_10" => state.TotalMaterialOrdersCompleted,
+                "craft_tier3_first" => CountTier3Items(state),
+
                 _ => achievement.CurrentValue
             };
         }
+    }
+
+    /// <summary>Zählt wie viele Tier-3 Items der Spieler je hergestellt hat (im Inventar oder verkauft).</summary>
+    private static long CountTier3Items(GameState state)
+    {
+        var tier3Products = CraftingProduct.GetAllProducts()
+            .Where(p => p.Value.Tier == 3)
+            .Select(p => p.Key);
+        long count = 0;
+        foreach (var id in tier3Products)
+            count += state.CraftingInventory.GetValueOrDefault(id, 0);
+        // Mindestens 1 wenn je ein Tier-3 Rezept abgeschlossen
+        if (count == 0 && state.CompletedRecipeIds != null)
+        {
+            var tier3Recipes = CraftingRecipe.GetAllRecipes().Where(r => r.Tier == 3);
+            foreach (var recipe in tier3Recipes)
+                if (state.CompletedRecipeIds.Contains(recipe.Id)) return 1;
+        }
+        return count;
+    }
+
+    /// <summary>Zählt Perks die ihr MaxLevel erreicht haben.</summary>
+    private static int CountMaxedPerks(GameState state)
+    {
+        int count = 0;
+        var allPerks = AscensionPerk.GetAll();
+        for (int i = 0; i < allPerks.Count; i++)
+        {
+            if (state.Ascension.Perks.TryGetValue(allPerks[i].Id, out var level) && level >= allPerks[i].MaxLevel)
+                count++;
+        }
+        return count;
     }
 
     private void UnlockAchievement(Achievement achievement)
@@ -343,18 +416,39 @@ public sealed class AchievementService : IAchievementService, IDisposable
         CheckAchievements();
     }
 
+    // Debounce: Geld-Achievements nur alle 30 Sekunden prüfen statt bei jedem Tick
+    private DateTime _lastMoneyCheck = DateTime.MinValue;
+    private const int MoneyCheckIntervalSeconds = 30;
+
     private void OnMoneyChanged(object? sender, Models.Events.MoneyChangedEventArgs e)
     {
-        // Only check when money increases (earnings)
+        // Debounce: Nur alle 30 Sekunden prüfen (MoneyChanged feuert jede Sekunde durch GameLoop)
         if (e.NewAmount > e.OldAmount)
         {
-            CheckAchievements();
+            var now = DateTime.UtcNow;
+            if ((now - _lastMoneyCheck).TotalSeconds >= MoneyCheckIntervalSeconds)
+            {
+                _lastMoneyCheck = now;
+                CheckAchievements();
+            }
         }
     }
 
     private void OnPrestigeCompleted(object? sender, EventArgs e)
     {
         // Sofort Prestige-Achievements prüfen (Tier-Counts, Total, Punkte)
+        CheckAchievements();
+    }
+
+    private void OnAscensionCompleted(object? sender, EventArgs e)
+    {
+        // Ascension- und Perk-Achievements prüfen
+        CheckAchievements();
+    }
+
+    private void OnRebirthCompleted(object? sender, WorkshopType type)
+    {
+        // Rebirth-Achievements prüfen (Sterne, Galaxie, etc.)
         CheckAchievements();
     }
 
@@ -368,6 +462,8 @@ public sealed class AchievementService : IAchievementService, IDisposable
         _gameStateService.WorkshopUpgraded -= OnWorkshopUpgraded;
         _gameStateService.MoneyChanged -= OnMoneyChanged;
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
+        _ascensionService.AscensionCompleted -= OnAscensionCompleted;
+        _rebirthService.RebirthCompleted -= OnRebirthCompleted;
 
         _disposed = true;
         GC.SuppressFinalize(this);

@@ -26,23 +26,14 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
     private readonly IPurchaseService _purchaseService;
     private readonly ILocalizationService _localizationService;
     private readonly IEquipmentService _equipmentService;
+    private readonly IVipService _vipService;
+    private readonly IDialogService _dialogService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event to show an alert dialog. Parameters: title, message, buttonText.
-    /// </summary>
-    public event Action<string, string, string>? AlertRequested;
-
-    /// <summary>
-    /// Event to request a confirmation dialog.
-    /// Parameters: title, message, acceptText, cancelText. Returns bool.
-    /// </summary>
-    public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -102,7 +93,9 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
         IRewardedAdService rewardedAdService,
         IPurchaseService purchaseService,
         ILocalizationService localizationService,
-        IEquipmentService equipmentService)
+        IEquipmentService equipmentService,
+        IVipService vipService,
+        IDialogService dialogService)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
@@ -111,6 +104,8 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
         _purchaseService = purchaseService;
         _localizationService = localizationService;
         _equipmentService = equipmentService;
+        _vipService = vipService;
+        _dialogService = dialogService;
 
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
@@ -353,7 +348,7 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 IconKind = iconKind,
                 RarityColor = eq.RarityColor,
                 BonusDescription = bonusText,
-                PriceDisplay = eq.ShopPrice.ToString(),
+                PriceDisplay = eq.ShopPrice.ToString("N0"),
                 CanAfford = _gameStateService.CanAffordGoldenScrews(eq.ShopPrice)
             });
         }
@@ -514,19 +509,11 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            bool watchAd = false;
-            if (ConfirmationRequested != null)
-            {
-                watchAd = await ConfirmationRequested.Invoke(
-                    item.Name,
-                    $"{item.Description}\n\n{_localizationService.GetString("WatchVideoQuestion")}",
-                    _localizationService.GetString("WatchVideo"),
-                    _localizationService.GetString("Cancel"));
-            }
-            else
-            {
-                watchAd = true;
-            }
+            var watchAd = await _dialogService.ShowConfirmDialog(
+                item.Name,
+                $"{item.Description}\n\n{_localizationService.GetString("WatchVideoQuestion")}",
+                _localizationService.GetString("WatchVideo"),
+                _localizationService.GetString("Cancel"));
 
             if (watchAd)
             {
@@ -541,19 +528,11 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
         }
         else if (item.IsPremiumItem)
         {
-            bool confirm = false;
-            if (ConfirmationRequested != null)
-            {
-                confirm = await ConfirmationRequested.Invoke(
-                    item.Name,
-                    $"{item.Description}\n\n{_localizationService.GetString("Price")}: {item.Price}",
-                    _localizationService.GetString("Buy"),
-                    _localizationService.GetString("Cancel"));
-            }
-            else
-            {
-                confirm = true;
-            }
+            var confirm = await _dialogService.ShowConfirmDialog(
+                item.Name,
+                $"{item.Description}\n\n{_localizationService.GetString("Price")}: {item.Price}",
+                _localizationService.GetString("Buy"),
+                _localizationService.GetString("Cancel"));
 
             if (confirm)
             {
@@ -631,6 +610,10 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                         }
                     }
                 }
+
+                // VIP-System: Echtgeld-Kauf registrieren
+                if (success)
+                    RecordVipPurchase(item.Id);
             }
         }
         }
@@ -683,7 +666,32 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
 
     private void ShowAlert(string title, string message, string buttonText)
     {
-        AlertRequested?.Invoke(title, message, buttonText);
+        _dialogService.ShowAlertDialog(title, message, buttonText);
+    }
+
+    /// <summary>
+    /// Registriert einen Echtgeld-Kauf für das VIP-System.
+    /// Preise basierend auf Item-ID.
+    /// </summary>
+    private void RecordVipPurchase(string itemId)
+    {
+        decimal amount = itemId switch
+        {
+            "premium" => 4.99m,
+            "prestige_pass" => 2.99m,
+            "battle_pass_season" => 1.99m,
+            "booster_2x_2h" => 1.99m,
+            "instant_cash_large" => 0.99m,
+            "instant_cash_huge" => 2.49m,
+            "instant_cash_mega" => 3.99m,
+            "golden_screws_50" => 0.99m,
+            "golden_screws_150" => 2.49m,
+            "golden_screws_450" => 4.99m,
+            "starter_pack" => 2.99m,
+            _ => 0m
+        };
+        if (amount > 0)
+            _vipService.RecordPurchase(amount);
     }
 
     private async Task ApplyReward(ShopItem item)

@@ -20,18 +20,13 @@ public sealed partial class OrderViewModel : ViewModelBase
     private readonly IAudioService _audioService;
     private readonly ILocalizationService _localizationService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IDialogService _dialogService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event to request a confirmation dialog from the view.
-    /// The bool result indicates if the user confirmed.
-    /// </summary>
-    public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -98,12 +93,14 @@ public sealed partial class OrderViewModel : ViewModelBase
         IGameStateService gameStateService,
         IAudioService audioService,
         ILocalizationService localizationService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IDialogService dialogService)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
         _localizationService = localizationService;
         _purchaseService = purchaseService;
+        _dialogService = dialogService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -208,21 +205,12 @@ public sealed partial class OrderViewModel : ViewModelBase
     {
         if (Order == null) return;
 
-        // Try to get confirmation from the view
-        bool confirmed = false;
-        if (ConfirmationRequested != null)
-        {
-            confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("ConfirmCancelOrder"),
-                _localizationService.GetString("ConfirmCancelOrderDesc"),
-                _localizationService.GetString("YesCancel"),
-                _localizationService.GetString("No"));
-        }
-        else
-        {
-            // Fallback: just cancel without confirmation
-            confirmed = true;
-        }
+        // Bestaetigungsdialog via DialogService
+        var confirmed = await _dialogService.ShowConfirmDialog(
+            _localizationService.GetString("ConfirmCancelOrder"),
+            _localizationService.GetString("ConfirmCancelOrderDesc"),
+            _localizationService.GetString("YesCancel"),
+            _localizationService.GetString("No"));
 
         if (confirmed)
         {

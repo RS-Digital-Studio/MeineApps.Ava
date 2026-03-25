@@ -1,48 +1,30 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
-using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
-using HandwerkerImperium.Helpers;
 
 namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
-/// ViewModel for the Painting mini-game.
-/// Player must paint all target cells without painting outside the lines.
+/// ViewModel für das Maler-MiniGame.
+/// Spieler muss alle Zielzellen bemalen ohne daneben zu streichen.
+/// Hat ein Combo-System das die Belohnung erhöht.
 /// </summary>
-public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
+public sealed partial class PaintingGameViewModel : BaseMiniGameViewModel
 {
-    private readonly IGameStateService _gameStateService;
-    private readonly IAudioService _audioService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly ILocalizationService _localizationService;
-    private DispatcherTimer? _timer;
-    private bool _disposed;
-    private bool _isEnding;
-
     // ═══════════════════════════════════════════════════════════════════════
-    // EVENTS
+    // EVENTS (spiel-spezifisch)
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event Action<string>? NavigationRequested;
-
-    /// <summary>Wird nach Spielende mit Rating (0-3 Sterne) gefeuert.</summary>
-    public event EventHandler<int>? GameCompleted;
+    /// <summary>Event für Combo-Animation in der View.</summary>
+    public event EventHandler? ComboIncreased;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // OBSERVABLE PROPERTIES
+    // SPIEL-SPEZIFISCHE PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private string _orderId = string.Empty;
-
-    [ObservableProperty]
-    private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
     private ObservableCollection<PaintCell> _cells = [];
@@ -66,82 +48,12 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
     private int _maxTime = 30;
 
     [ObservableProperty]
-    private bool _isPlaying;
-
-    [ObservableProperty]
-    private bool _isResultShown;
-
-    [ObservableProperty]
     private string _selectedColor = "#4169E1";
-
-    [ObservableProperty]
-    private MiniGameRating _result;
-
-    [ObservableProperty]
-    private string _resultText = "";
-
-    [ObservableProperty]
-    private string _resultEmoji = "";
-
-    [ObservableProperty]
-    private decimal _rewardAmount;
-
-    [ObservableProperty]
-    private int _xpAmount;
 
     [ObservableProperty]
     private double _paintProgress;
 
-    [ObservableProperty]
-    private bool _canWatchAd;
-
-    [ObservableProperty]
-    private bool _adWatched;
-
-    [ObservableProperty]
-    private string _taskProgressDisplay = "";
-
-    [ObservableProperty]
-    private bool _isLastTask;
-
-    [ObservableProperty]
-    private string _continueButtonText = "";
-
-    // Countdown vor Spielstart
-    [ObservableProperty]
-    private bool _isCountdownActive;
-
-    [ObservableProperty]
-    private string _countdownText = "";
-
-    // Sterne-Anzeige
-    [ObservableProperty]
-    private double _star1Opacity;
-
-    [ObservableProperty]
-    private double _star2Opacity;
-
-    [ObservableProperty]
-    private double _star3Opacity;
-
-    // Tutorial (beim ersten Spielstart anzeigen)
-    [ObservableProperty]
-    private bool _showTutorial;
-
-    [ObservableProperty]
-    private string _tutorialTitle = "";
-
-    [ObservableProperty]
-    private string _tutorialText = "";
-
-    // Auto-Complete (nach 50x bzw. 25x Perfect freigeschaltet)
-    [ObservableProperty]
-    private bool _canAutoComplete;
-
-    [ObservableProperty]
-    private string _autoCompleteHint = "";
-
-    // Combo-System: Aufeinanderfolgende korrekte Treffer
+    // Combo-System
     [ObservableProperty]
     private int _comboCount;
 
@@ -151,46 +63,41 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isComboActive;
 
-    /// <summary>
-    /// Bester Combo im aktuellen Spiel (fuer Bonus-Berechnung).
-    /// </summary>
     private int _bestCombo;
 
-    /// <summary>
-    /// Combo-Multiplikator: 1.0 + (bestCombo / 5) * 0.25
-    /// z.B. Combo 5 → 1.25x, Combo 10 → 1.5x, Combo 20 → 2.0x
-    /// </summary>
+    /// <summary>Combo-Multiplikator: 1.0 + (bestCombo / 5) * 0.25</summary>
     public decimal ComboMultiplier => 1.0m + (_bestCombo / 5) * 0.25m;
 
-    /// <summary>
-    /// Event fuer Combo-Animation in der View.
-    /// </summary>
-    public event EventHandler? ComboIncreased;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // COMPUTED PROPERTIES
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Gets the difficulty as star display string.
-    /// </summary>
-    public string DifficultyStars => Difficulty switch
-    {
-        OrderDifficulty.Easy => "★☆☆",
-        OrderDifficulty.Medium => "★★☆",
-        OrderDifficulty.Hard => "★★★",
-        OrderDifficulty.Expert => "★★★★",
-        _ => "★☆☆"
-    };
-
-    /// <summary>
-    /// Width of the paint grid in pixels for WrapPanel constraint.
-    /// Each cell is 50px + 4px margin = 54px.
-    /// </summary>
+    /// <summary>Breite des Paint-Grids in Pixeln für WrapPanel.</summary>
     public double PaintGridWidth => GridSize * 54;
 
-    partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
     partial void OnGridSizeChanged(int value) => OnPropertyChanged(nameof(PaintGridWidth));
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ABSTRACT/VIRTUAL IMPLEMENTIERUNG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    protected override MiniGameType GameMiniGameType => MiniGameType.PaintingGame;
+
+    /// <summary>PaintingGame: Combo-Multiplikator auf Belohnungen anwenden.</summary>
+    protected override void CalculateAndSetRewards()
+    {
+        var comboMult = ComboMultiplier;
+        var order = _gameStateService.GetActiveOrder();
+        if (order != null && IsLastTask)
+        {
+            // Combo-Multiplikator auf Order setzen für Auszahlung in CompleteActiveOrder()
+            order.ComboMultiplier = comboMult;
+            RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order) * comboMult;
+            XpAmount = (int)(order.FinalXp * comboMult);
+        }
+        else if (order == null)
+        {
+            var quickJob = _gameStateService.State.ActiveQuickJob;
+            RewardAmount = (quickJob?.Reward ?? 0) * comboMult;
+            XpAmount = (int)((quickJob?.XpReward ?? 0) * comboMult);
+        }
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -201,61 +108,16 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
         ILocalizationService localizationService)
+        : base(gameStateService, audioService, rewardedAdService, localizationService)
     {
-        _gameStateService = gameStateService;
-        _audioService = audioService;
-        _rewardedAdService = rewardedAdService;
-        _localizationService = localizationService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // INITIALIZATION (replaces IQueryAttributable)
+    // SPIELLOGIK
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Initialize the game with an order ID.
-    /// </summary>
-    public void SetOrderId(string orderId)
+    protected override void InitializeGame()
     {
-        OrderId = orderId;
-
-        var activeOrder = _gameStateService.GetActiveOrder();
-        if (activeOrder != null)
-        {
-            Difficulty = activeOrder.Difficulty;
-
-            int totalTasks = activeOrder.Tasks.Count;
-            int currentTaskNum = activeOrder.CurrentTaskIndex + 1;
-            TaskProgressDisplay = totalTasks > 1
-                ? string.Format(_localizationService.GetString("TaskProgress"), currentTaskNum, totalTasks)
-                : "";
-            IsLastTask = currentTaskNum >= totalTasks;
-            ContinueButtonText = IsLastTask
-                ? _localizationService.GetString("Continue")
-                : _localizationService.GetString("NextTask");
-        }
-        else
-        {
-            TaskProgressDisplay = "";
-            IsLastTask = true;
-            ContinueButtonText = _localizationService.GetString("Continue");
-        }
-
-        InitializeGame();
-
-        UpdateAutoCompleteStatus(MiniGameType.PaintingGame);
-
-        CheckAndShowTutorial(MiniGameType.PaintingGame);
-        if (!ShowTutorial && !CanAutoComplete) StartGameAsync().SafeFireAndForget();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // GAME LOGIC
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void InitializeGame()
-    {
-        // Set grid size and time based on difficulty
         (GridSize, MaxTime) = Difficulty switch
         {
             OrderDifficulty.Easy => (4, 24),
@@ -270,39 +132,31 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
         PaintedTargetCount = 0;
         MistakeCount = 0;
-        IsPlaying = false;
-        IsResultShown = false;
         PaintProgress = 0;
         ComboCount = 0;
         _bestCombo = 0;
         IsComboActive = false;
         ComboDisplay = "";
 
-        // Choose a random paint color
         SelectedColor = GetRandomPaintColor();
-
         GenerateCanvas();
     }
 
     private void GenerateCanvas()
     {
         Cells.Clear();
-
-        // Generate a shape pattern for the target area
         var targetPattern = GenerateTargetPattern();
 
         for (int row = 0; row < GridSize; row++)
         {
             for (int col = 0; col < GridSize; col++)
             {
-                bool isTarget = targetPattern[row, col];
-
                 Cells.Add(new PaintCell
                 {
                     Row = row,
                     Column = col,
                     Index = row * GridSize + col,
-                    IsTarget = isTarget,
+                    IsTarget = targetPattern[row, col],
                     TargetColor = SelectedColor
                 });
             }
@@ -314,21 +168,13 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
     private bool[,] GenerateTargetPattern()
     {
         var pattern = new bool[GridSize, GridSize];
-
-        // Generate different shapes based on difficulty
         int shapeType = Random.Shared.Next(3);
 
         switch (shapeType)
         {
-            case 0: // Rectangle
-                GenerateRectangle(pattern);
-                break;
-            case 1: // L-Shape
-                GenerateLShape(pattern);
-                break;
-            case 2: // T-Shape
-                GenerateTShape(pattern);
-                break;
+            case 0: GenerateRectangle(pattern); break;
+            case 1: GenerateLShape(pattern); break;
+            case 2: GenerateTShape(pattern); break;
         }
 
         return pattern;
@@ -342,104 +188,42 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
         int width = Random.Shared.Next(2, GridSize - startCol);
 
         for (int r = startRow; r < startRow + height; r++)
-        {
             for (int c = startCol; c < startCol + width; c++)
-            {
                 pattern[r, c] = true;
-            }
-        }
     }
 
     private void GenerateLShape(bool[,] pattern)
     {
-        // Vertical part
         int startCol = Random.Shared.Next(1, GridSize - 2);
         for (int r = 0; r < GridSize - 1; r++)
-        {
             pattern[r, startCol] = true;
-        }
-
-        // Horizontal part at bottom
         for (int c = startCol; c < GridSize; c++)
-        {
             pattern[GridSize - 2, c] = true;
-        }
     }
 
     private void GenerateTShape(bool[,] pattern)
     {
-        int midRow = GridSize / 2;
         int midCol = GridSize / 2;
-
-        // Vertical part
         for (int r = 0; r < GridSize; r++)
-        {
             pattern[r, midCol] = true;
-        }
-
-        // Horizontal part at top
         for (int c = 1; c < GridSize - 1; c++)
-        {
             pattern[1, c] = true;
-        }
     }
 
     private static string GetRandomPaintColor()
     {
-        var colors = new[]
-        {
-            "#4169E1", // Royal Blue
-            "#32CD32", // Lime Green
-            "#FF6347", // Tomato
-            "#FFD700", // Gold
-            "#9370DB", // Medium Purple
-            "#20B2AA"  // Light Sea Green
-        };
-
+        var colors = new[] { "#4169E1", "#32CD32", "#FF6347", "#FFD700", "#9370DB", "#20B2AA" };
         return colors[Random.Shared.Next(colors.Length)];
     }
 
-    [RelayCommand]
-    private async Task StartGameAsync()
-    {
-        if (IsPlaying || IsCountdownActive) return;
-
-        IsResultShown = false;
-        _isEnding = false;
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-
-        // Countdown 3-2-1-Los!
-        IsCountdownActive = true;
-        foreach (var text in new[] { "3", "2", "1", _localizationService.GetString("CountdownGo") })
-        {
-            CountdownText = text;
-            await Task.Delay(700);
-        }
-        IsCountdownActive = false;
-
-        // Spiel starten
-        IsPlaying = true;
-        if (_timer != null) { _timer.Stop(); _timer.Tick -= OnTimerTick; }
-        _timer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(1)
-        };
-        _timer.Tick += OnTimerTick;
-        _timer.Start();
-    }
-
-    private async void OnTimerTick(object? sender, EventArgs e)
+    protected override async void OnGameTimerTick(object? sender, EventArgs e)
     {
         try
         {
             if (!IsPlaying || _isEnding) return;
-
             TimeRemaining--;
-
             if (TimeRemaining <= 0)
-            {
                 await EndGameAsync();
-            }
         }
         catch
         {
@@ -452,7 +236,6 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
     {
         if (cell == null || !IsPlaying || IsResultShown || cell.IsPainted) return;
 
-        // Paint the cell
         cell.IsPainted = true;
         cell.PaintedAt = DateTime.UtcNow;
         cell.PaintColor = SelectedColor;
@@ -460,16 +243,13 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
         if (cell.IsTarget)
         {
             PaintedTargetCount++;
-
-            // Combo erhoehen
             ComboCount++;
             if (ComboCount > _bestCombo) _bestCombo = ComboCount;
 
             if (ComboCount >= 3)
             {
                 IsComboActive = true;
-                ComboDisplay = string.Format(
-                    _localizationService.GetString("ComboX"), ComboCount);
+                ComboDisplay = string.Format(_localizationService.GetString("ComboX"), ComboCount);
                 ComboIncreased?.Invoke(this, EventArgs.Empty);
                 await _audioService.PlaySoundAsync(GameSound.ComboHit);
             }
@@ -482,310 +262,33 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
         {
             MistakeCount++;
             cell.HasError = true;
-
-            // Combo zuruecksetzen
             ComboCount = 0;
             IsComboActive = false;
             ComboDisplay = "";
-
             await _audioService.PlaySoundAsync(GameSound.Miss);
         }
 
-        // Update progress (avoid division by zero)
-        PaintProgress = TargetCellCount > 0
-            ? (double)PaintedTargetCount / TargetCellCount
-            : 0;
+        PaintProgress = TargetCellCount > 0 ? (double)PaintedTargetCount / TargetCellCount : 0;
 
-        // Check if all target cells are painted
         if (PaintedTargetCount >= TargetCellCount)
-        {
             await EndGameAsync();
-        }
     }
 
     private async Task EndGameAsync()
     {
-        if (_isEnding) return;
-        _isEnding = true;
+        if (!StopGame()) return;
 
-        IsPlaying = false;
-        _timer?.Stop();
-
-        // Calculate rating based on performance (avoid division by zero)
-        double completionRatio = TargetCellCount > 0
-            ? (double)PaintedTargetCount / TargetCellCount
-            : 0;
+        double completionRatio = TargetCellCount > 0 ? (double)PaintedTargetCount / TargetCellCount : 0;
         int totalAttempts = PaintedTargetCount + MistakeCount;
-        double accuracy = totalAttempts > 0
-            ? (double)PaintedTargetCount / totalAttempts
-            : 0;
+        double accuracy = totalAttempts > 0 ? (double)PaintedTargetCount / totalAttempts : 0;
 
-        if (completionRatio >= 1.0 && MistakeCount == 0)
-        {
-            Result = MiniGameRating.Perfect;
-        }
-        else if (completionRatio >= 0.9 && accuracy >= 0.8)
-        {
-            Result = MiniGameRating.Good;
-        }
-        else if (completionRatio >= 0.7 && accuracy >= 0.6)
-        {
-            Result = MiniGameRating.Ok;
-        }
-        else
-        {
-            Result = MiniGameRating.Miss;
-        }
+        MiniGameRating rating;
+        if (completionRatio >= 1.0 && MistakeCount == 0) rating = MiniGameRating.Perfect;
+        else if (completionRatio >= 0.9 && accuracy >= 0.8) rating = MiniGameRating.Good;
+        else if (completionRatio >= 0.7 && accuracy >= 0.6) rating = MiniGameRating.Ok;
+        else rating = MiniGameRating.Miss;
 
-        // Record result
-        _gameStateService.RecordMiniGameResult(Result);
-
-        // Perfect-Rating für Auto-Complete zählen
-        if (Result == MiniGameRating.Perfect)
-            _gameStateService.RecordPerfectRating(MiniGameType.PaintingGame);
-
-        // Play sound
-        var sound = Result switch
-        {
-            MiniGameRating.Perfect => GameSound.Perfect,
-            MiniGameRating.Good => GameSound.Good,
-            MiniGameRating.Ok => GameSound.ButtonTap,
-            _ => GameSound.Miss
-        };
-        await _audioService.PlaySoundAsync(sound);
-
-        // Belohnungen berechnen (Combo-Multiplikator anwenden)
-        var comboMult = ComboMultiplier;
-        var order = _gameStateService.GetActiveOrder();
-        if (order != null && IsLastTask)
-        {
-            // Combo-Multiplikator auf Order setzen für Auszahlung in CompleteActiveOrder()
-            order.ComboMultiplier = comboMult;
-            // Gesamt-Belohnung mit Combo-Multiplikator
-            RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order) * comboMult;
-            XpAmount = (int)(order.FinalXp * comboMult);
-        }
-        else if (order != null)
-        {
-            // Zwischen-Runde: Keine Belohnung anzeigen, nur Gesamt am Ende
-        }
-        else
-        {
-            // QuickJob: Belohnung aus aktivem QuickJob lesen mit Combo-Multiplikator
-            var quickJob = _gameStateService.State.ActiveQuickJob;
-            RewardAmount = (quickJob?.Reward ?? 0) * comboMult;
-            XpAmount = (int)((quickJob?.XpReward ?? 0) * comboMult);
-        }
-
-        // Set result display
-        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
-        ResultEmoji = Result switch
-        {
-            MiniGameRating.Perfect => "★★★",
-            MiniGameRating.Good => "★★",
-            MiniGameRating.Ok => "★",
-            _ => "💨"
-        };
-
-        IsResultShown = true;
-
-        // Sterne-Bewertung berechnen
-        int starCount = Result switch
-        {
-            MiniGameRating.Perfect => 3,
-            MiniGameRating.Good => 2,
-            MiniGameRating.Ok => 1,
-            _ => 0
-        };
-
-        if (IsLastTask)
-        {
-            // Aggregierte Sterne berechnen (alle Runden zusammen)
-            if (order != null && order.TaskResults.Count > 1)
-            {
-                int totalStarSum = order.TaskResults.Sum(r => r switch
-                {
-                    MiniGameRating.Perfect => 3,
-                    MiniGameRating.Good => 2,
-                    MiniGameRating.Ok => 1,
-                    _ => 0
-                });
-                int totalPossible = order.TaskResults.Count * 3;
-                starCount = totalPossible > 0
-                    ? (int)Math.Round((double)totalStarSum / totalPossible * 3.0)
-                    : 0;
-                starCount = Math.Clamp(starCount, 0, 3);
-            }
-
-            // Sterne staggered einblenden
-            Star1Opacity = 0; Star2Opacity = 0; Star3Opacity = 0;
-            if (starCount >= 1) { await Task.Delay(200); Star1Opacity = 1.0; }
-            if (starCount >= 2) { await Task.Delay(200); Star2Opacity = 1.0; }
-            if (starCount >= 3) { await Task.Delay(200); Star3Opacity = 1.0; }
-
-            // Visuelles Event fuer Result-Polish in der View
-            GameCompleted?.Invoke(this, starCount);
-        }
-        else
-        {
-            // Zwischen-Runde: Sterne sofort setzen, keine Animation
-            Star1Opacity = starCount >= 1 ? 1.0 : 0.3;
-            Star2Opacity = starCount >= 2 ? 1.0 : 0.3;
-            Star3Opacity = starCount >= 3 ? 1.0 : 0.3;
-        }
-
-        AdWatched = false;
-        CanWatchAd = IsLastTask && _rewardedAdService.IsAvailable;
-    }
-
-    [RelayCommand]
-    private async Task WatchAdAsync()
-    {
-        if (!CanWatchAd || AdWatched) return;
-
-        var success = await _rewardedAdService.ShowAdAsync("score_double");
-        if (success)
-        {
-            // Belohnungen verdoppeln (Anzeige + Flag für Auszahlung)
-            RewardAmount *= 2;
-            XpAmount *= 2;
-            var order = _gameStateService.GetActiveOrder();
-            if (order != null) order.IsScoreDoubled = true;
-            AdWatched = true;
-            CanWatchAd = false;
-
-            await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
-        }
-    }
-
-    [RelayCommand]
-    private void Continue()
-    {
-        var order = _gameStateService.GetActiveOrder();
-        if (order == null)
-        {
-            NavigationRequested?.Invoke("../..");
-            return;
-        }
-
-        if (order.IsCompleted)
-        {
-            _gameStateService.CompleteActiveOrder();
-            NavigationRequested?.Invoke("../..");
-        }
-        else
-        {
-            var nextTask = order.CurrentTask;
-            if (nextTask != null)
-            {
-                NavigationRequested?.Invoke($"../{nextTask.GameType.GetRoute()}?orderId={order.Id}");
-            }
-            else
-            {
-                NavigationRequested?.Invoke("../..");
-            }
-        }
-    }
-
-    [RelayCommand]
-    private void DismissTutorial()
-    {
-        ShowTutorial = false;
-        // Als gesehen markieren und speichern
-        var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.PaintingGame))
-        {
-            state.SeenMiniGameTutorials.Add(MiniGameType.PaintingGame);
-            _gameStateService.MarkDirty();
-        }
-        StartGameAsync().SafeFireAndForget();
-    }
-
-    [RelayCommand]
-    private void Cancel()
-    {
-        _timer?.Stop();
-        IsPlaying = false;
-
-        _gameStateService.CancelActiveOrder();
-        NavigationRequested?.Invoke("../..");
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // HELPERS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void CheckAndShowTutorial(MiniGameType gameType)
-    {
-        var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(gameType))
-        {
-            TutorialTitle = _localizationService.GetString($"Tutorial{gameType}Title") ?? "";
-            TutorialText = _localizationService.GetString($"Tutorial{gameType}Text") ?? "";
-            ShowTutorial = true;
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // AUTO-COMPLETE
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void UpdateAutoCompleteStatus(MiniGameType gameType)
-    {
-        var state = _gameStateService.State;
-        bool canAuto = _gameStateService.CanAutoComplete(gameType, state.IsPremium);
-        CanAutoComplete = canAuto;
-        if (canAuto)
-        {
-            int count = state.PerfectRatingCounts.TryGetValue((int)gameType, out int c) ? c : 0;
-            var hint = _localizationService.GetString("AutoCompleteHint") ?? "";
-            AutoCompleteHint = string.Format(hint, count);
-        }
-    }
-
-    [RelayCommand]
-    private async Task AutoCompleteGameAsync()
-    {
-        if (!CanAutoComplete) return;
-
-        var order = _gameStateService.GetActiveOrder();
-        if (order == null) { NavigationRequested?.Invoke("../..");  return; }
-
-        while (!order.IsCompleted)
-            _gameStateService.RecordMiniGameResult(MiniGameRating.Good);
-
-        await _audioService.PlaySoundAsync(GameSound.Good);
-
-        RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
-        XpAmount = order.FinalXp;
-        Result = MiniGameRating.Good;
-        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
-        ResultEmoji = "★★";
-        IsLastTask = true;
-        IsResultShown = true;
-        Star1Opacity = 1.0; Star2Opacity = 1.0; Star3Opacity = 0.3;
-        GameCompleted?.Invoke(this, 2);
-        AdWatched = false;
-        CanWatchAd = _rewardedAdService.IsAvailable;
-        CanAutoComplete = false;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // DISPOSAL
-    // ═══════════════════════════════════════════════════════════════════════
-
-    public void Dispose()
-    {
-        if (_disposed) return;
-
-        _timer?.Stop();
-        if (_timer != null)
-        {
-            _timer.Tick -= OnTimerTick;
-        }
-
-        _disposed = true;
-        GC.SuppressFinalize(this);
+        await ShowResultAsync(rating);
     }
 }
 
@@ -793,10 +296,8 @@ public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
 // SUPPORTING TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// <summary>
-/// Represents a single cell in the painting canvas.
-/// </summary>
-public partial class PaintCell : ObservableObject
+/// <summary>Repräsentiert eine Zelle im Maler-Canvas.</summary>
+public partial class PaintCell : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
 {
     public int Row { get; set; }
     public int Column { get; set; }
@@ -807,7 +308,6 @@ public partial class PaintCell : ObservableObject
     [ObservableProperty]
     private bool _isPainted;
 
-    /// <summary>Zeitpunkt des Streichens (fuer Frisch-Effekt im Renderer).</summary>
     public DateTime PaintedAt { get; set; }
 
     [ObservableProperty]
@@ -816,35 +316,15 @@ public partial class PaintCell : ObservableObject
     [ObservableProperty]
     private bool _hasError;
 
-    // Notify computed display properties when paint state changes
     partial void OnIsPaintedChanged(bool value)
     {
         OnPropertyChanged(nameof(DisplayColor));
         OnPropertyChanged(nameof(IsPaintedCorrectly));
     }
 
-    partial void OnPaintColorChanged(string value)
-    {
-        OnPropertyChanged(nameof(DisplayColor));
-    }
+    partial void OnPaintColorChanged(string value) => OnPropertyChanged(nameof(DisplayColor));
 
-    /// <summary>
-    /// Gets the background color for display.
-    /// Target cells show a faint outline, non-target cells are wall color.
-    /// </summary>
-    public string DisplayColor => IsPainted
-        ? PaintColor
-        : IsTarget
-            ? "#30FFFFFF"  // Faint target indication
-            : "#4A5568";   // Wall color
-
-    /// <summary>
-    /// Gets the border color.
-    /// </summary>
+    public string DisplayColor => IsPainted ? PaintColor : IsTarget ? "#30FFFFFF" : "#4A5568";
     public string BorderColor => IsTarget ? "#60FFFFFF" : "#2D3748";
-
-    /// <summary>
-    /// Whether this cell is correctly painted (target cell that was painted).
-    /// </summary>
     public bool IsPaintedCorrectly => IsTarget && IsPainted;
 }

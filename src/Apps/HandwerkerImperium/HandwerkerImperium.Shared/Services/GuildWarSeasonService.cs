@@ -13,7 +13,7 @@ namespace HandwerkerImperium.Services;
 /// Phasen: Angriff (Mo-Mi) → Verteidigung (Do-Fr) → Auswertung (Sa-So).
 /// Race-Condition-frei: Nur eigene Spieler-Scores schreiben, Gesamtscore wird bei Abfrage berechnet.
 /// </summary>
-public sealed class GuildWarSeasonService : IGuildWarSeasonService
+public sealed class GuildWarSeasonService : IGuildWarSeasonService, IDisposable
 {
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;
@@ -142,6 +142,17 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             var playerScore = await _firebase.GetAsync<GuildWarPlayerScore>(scorePath)
                               ?? new GuildWarPlayerScore();
 
+            // Aktuelle Scores VOR dem Multiplikator-Check laden (statt stale Cache)
+            var opponentGuildId = _cachedWar != null
+                ? (_cachedWar.GuildAId == guildId ? _cachedWar.GuildBId : _cachedWar.GuildAId)
+                : null;
+            var freshOwnScore = await CalculateGuildTotalScoreAsync(_activeWarId, guildId);
+            var freshOpponentScore = 0L;
+            if (!string.IsNullOrEmpty(opponentGuildId) && opponentGuildId != "waiting")
+                freshOpponentScore = await CalculateGuildTotalScoreAsync(_activeWarId, opponentGuildId);
+            _cachedOwnTotalScore = freshOwnScore;
+            _cachedOpponentTotalScore = freshOpponentScore;
+
             // Punkte berechnen mit Phasen-Multiplikator
             var effectivePoints = points;
 
@@ -150,8 +161,7 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
                 effectivePoints = (long)(points * 0.5);
 
             // Aufhol-Multiplikator prüfen (1.5x wenn zurückliegend)
-            // Nutzt gecachte Live-Scores aus GetCurrentWarDataAsync()
-            if (_cachedOpponentTotalScore > _cachedOwnTotalScore)
+            if (freshOpponentScore > freshOwnScore)
                 effectivePoints = (long)(effectivePoints * 1.5);
 
             // Hall-Kriegspunkte-Bonus anwenden
@@ -1132,4 +1142,8 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
         };
     }
 
+    public void Dispose()
+    {
+        _lock.Dispose();
+    }
 }

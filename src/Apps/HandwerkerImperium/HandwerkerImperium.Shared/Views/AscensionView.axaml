@@ -1,0 +1,238 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             x:Class="HandwerkerImperium.Views.AscensionView"
+             x:DataType="vm:AscensionViewModel"
+             x:CompileBindings="True">
+
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="Ascension_Grid_Root">
+
+    <!-- ================================================================= -->
+    <!-- HEADER: Zurueck + Titel + Level-Badge                             -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Ascension_Border_Header"
+            Padding="16,12"
+            CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#92400E" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Zurueck-Button -->
+        <Button Classes="Text"
+                AutomationProperties.AutomationId="Ascension_Btn_Back"
+                Command="{Binding GoBackCommand}">
+          <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"
+                           AutomationProperties.AutomationId="Ascension_Icon_Back"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+        </Button>
+
+        <!-- Titel (zentriert) -->
+        <StackPanel Grid.Column="1"
+                    AutomationProperties.AutomationId="Ascension_Panel_Title"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+          <icons:GameIcon Kind="ArrowUpBold" Width="28" Height="28"
+                           AutomationProperties.AutomationId="Ascension_Icon_Title"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          <TextBlock Text="Aufstieg"
+                     AutomationProperties.AutomationId="Ascension_Txt_Title"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+        </StackPanel>
+
+        <!-- Level-Badge -->
+        <Border Grid.Column="2"
+                AutomationProperties.AutomationId="Ascension_Border_LevelBadge"
+                Background="{StaticResource CraftGoldBrush}"
+                CornerRadius="8"
+                Padding="12,6">
+          <TextBlock Text="{Binding AscensionLevel, StringFormat='Stufe {0}'}"
+                     AutomationProperties.AutomationId="Ascension_Txt_Level"
+                     FontWeight="Bold"
+                     Foreground="{DynamicResource SurfaceBrush}" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- CONTENT                                                           -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="12" Margin="16"
+                  AutomationProperties.AutomationId="Ascension_Panel_Content">
+
+        <!-- ============================================================= -->
+        <!-- AP-Anzeige Card                                                -->
+        <!-- ============================================================= -->
+        <Border Classes="CardElevated" CornerRadius="12" Padding="16"
+                AutomationProperties.AutomationId="Ascension_Border_APCard">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Aufstiegs-Punkte"
+                       AutomationProperties.AutomationId="Ascension_Txt_APLabel"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding AvailablePoints, StringFormat='{}{0} AP verfuegbar'}"
+                         AutomationProperties.AutomationId="Ascension_Txt_APAvailable"
+                         FontSize="24" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}" />
+              <TextBlock Grid.Column="1"
+                         Text="{Binding TotalPoints, StringFormat='Gesamt: {0}'}"
+                         AutomationProperties.AutomationId="Ascension_Txt_APTotal"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         VerticalAlignment="Bottom" />
+            </Grid>
+            <!-- Vorschau naechster Aufstieg -->
+            <Border Background="#15FFD700" CornerRadius="8" Padding="10,6"
+                    IsVisible="{Binding CanAscend}"
+                    AutomationProperties.AutomationId="Ascension_Border_PendingPreview">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <icons:GameIcon Kind="Creation" Width="18" Height="18"
+                                 Foreground="{StaticResource CraftGoldBrush}" />
+                <TextBlock Text="{Binding PendingPoints, StringFormat='Naechster Aufstieg: +{0} AP'}"
+                           AutomationProperties.AutomationId="Ascension_Txt_PendingPoints"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <!-- ============================================================= -->
+        <!-- 6 Perks als 2-Spalten-Grid                                     -->
+        <!-- ============================================================= -->
+        <ItemsControl ItemsSource="{Binding Perks}"
+                      AutomationProperties.AutomationId="Ascension_Items_Perks">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="2" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:AscensionPerkDisplay">
+              <Border CornerRadius="12" Padding="12" Margin="4"
+                      Opacity="{Binding DisplayOpacity}"
+                      AutomationProperties.AutomationId="Ascension_Border_PerkCard">
+                <Border.Background>
+                  <SolidColorBrush Color="{Binding BorderColor}" />
+                </Border.Background>
+                <!-- Innere Card mit Standard-Hintergrund -->
+                <Border Classes="CardElevated" CornerRadius="10" Padding="12">
+                  <StackPanel Spacing="6">
+                    <!-- Icon + Name -->
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <icons:GameIcon Kind="{Binding IconKind, Converter={StaticResource IconKindConverter}}"
+                                       Width="22" Height="22"
+                                       Foreground="{StaticResource CraftGoldBrush}" />
+                      <TextBlock Text="{Binding Name}"
+                                 AutomationProperties.AutomationId="Ascension_Txt_PerkName"
+                                 FontWeight="Bold" FontSize="13"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <!-- Beschreibung -->
+                    <TextBlock Text="{Binding Description}"
+                               AutomationProperties.AutomationId="Ascension_Txt_PerkDesc"
+                               FontSize="11" Opacity="0.7"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" MaxLines="2" />
+
+                    <!-- Level-Anzeige -->
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding LevelDisplay}"
+                                 AutomationProperties.AutomationId="Ascension_Txt_PerkLevel"
+                                 FontSize="12" FontWeight="SemiBold"
+                                 Foreground="{StaticResource CraftGoldBrush}" />
+                      <!-- Fortschrittsbalken -->
+                      <ProgressBar Grid.Column="1"
+                                   Value="{Binding Progress}" Maximum="1"
+                                   MinHeight="4" Width="50"
+                                   CornerRadius="2"
+                                   Foreground="{StaticResource CraftGoldBrush}">
+                        <ProgressBar.Background>
+                          <SolidColorBrush Color="#FFFFFF" Opacity="0.10" />
+                        </ProgressBar.Background>
+                      </ProgressBar>
+                    </Grid>
+
+                    <!-- Effekt-Anzeige -->
+                    <TextBlock Text="{Binding EffectDisplay}"
+                               AutomationProperties.AutomationId="Ascension_Txt_PerkEffect"
+                               FontSize="11"
+                               Foreground="{DynamicResource SuccessBrush}"
+                               TextWrapping="Wrap" />
+
+                    <!-- Upgrade-Button (nur wenn nicht max) -->
+                    <Button Command="{Binding $parent[ItemsControl].((vm:AscensionViewModel)DataContext).UpgradePerkCommand}"
+                            CommandParameter="{Binding Id}"
+                            IsVisible="{Binding !IsMaxLevel}"
+                            IsEnabled="{Binding CanUpgrade}"
+                            Classes="Primary"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="8,6"
+                            AutomationProperties.AutomationId="Ascension_Btn_UpgradePerk">
+                      <TextBlock Text="{Binding CostDisplay}"
+                                 FontSize="12" FontWeight="SemiBold" />
+                    </Button>
+
+                    <!-- MAX-Badge (wenn max erreicht) -->
+                    <Border CornerRadius="8" Padding="8,6"
+                            IsVisible="{Binding IsMaxLevel}"
+                            Background="#1522C55E"
+                            HorizontalAlignment="Stretch"
+                            AutomationProperties.AutomationId="Ascension_Border_PerkMax">
+                      <StackPanel Orientation="Horizontal" Spacing="4"
+                                  HorizontalAlignment="Center">
+                        <icons:GameIcon Kind="CheckCircle" Width="16" Height="16"
+                                         Foreground="{DynamicResource SuccessBrush}" />
+                        <TextBlock Text="MAX" FontSize="12" FontWeight="Bold"
+                                   Foreground="{DynamicResource SuccessBrush}" />
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </Border>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- ============================================================= -->
+        <!-- Aufstiegs-Button                                               -->
+        <!-- ============================================================= -->
+        <Button Command="{Binding AscendCommand}"
+                IsVisible="{Binding CanAscend}"
+                Classes="Primary"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Padding="16,12"
+                Margin="0,8,0,0"
+                AutomationProperties.AutomationId="Ascension_Btn_Ascend">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <icons:GameIcon Kind="ArrowUpBold" Width="24" Height="24"
+                             AutomationProperties.AutomationId="Ascension_Icon_Ascend" />
+            <TextBlock Text="Aufsteigen" FontSize="16" FontWeight="Bold"
+                       AutomationProperties.AutomationId="Ascension_Txt_Ascend" />
+          </StackPanel>
+        </Button>
+
+        <!-- Bottom Spacer (80dp fuer Tab-Bar 68dp + Margin) -->
+        <Border Height="80" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

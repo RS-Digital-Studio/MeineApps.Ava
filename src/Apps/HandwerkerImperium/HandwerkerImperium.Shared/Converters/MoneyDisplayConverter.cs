@@ -5,8 +5,7 @@ namespace HandwerkerImperium.Converters;
 
 /// <summary>
 /// Konvertiert decimal-Geldbetrag in formatierten Anzeige-String.
-/// Konsistente Schwellen wie MoneyFormatter: T >= 1T, B >= 1B, M >= 1M, K >= 1K.
-/// Unterstützt negative Werte (Netto-Verlust).
+/// ConverterParameter: "perhour" → €/h, "persecond" → €/s, "~" → Prefix "~", sonst kompakt.
 /// </summary>
 public class MoneyDisplayConverter : IValueConverter
 {
@@ -15,17 +14,13 @@ public class MoneyDisplayConverter : IValueConverter
         if (value is not decimal money)
             return "0 \u20AC";
 
-        bool isNegative = money < 0;
-        decimal abs = Math.Abs(money);
-        string prefix = isNegative ? "\u2212" : "";
-
-        return abs switch
+        var param = parameter as string ?? "";
+        return param switch
         {
-            >= 1_000_000_000_000 => $"{prefix}{abs / 1_000_000_000_000:F1}T \u20AC",
-            >= 1_000_000_000 => $"{prefix}{abs / 1_000_000_000:F1}B \u20AC",
-            >= 1_000_000 => $"{prefix}{abs / 1_000_000:F1}M \u20AC",
-            >= 1_000 => $"{prefix}{abs / 1_000:F1}K \u20AC",
-            _ => $"{prefix}{abs:N0} \u20AC"
+            "perhour" => Helpers.MoneyFormatter.FormatPerHour(money),
+            "persecond" => Helpers.MoneyFormatter.FormatPerSecond(money),
+            "~" => $"~{Helpers.MoneyFormatter.FormatCompact(money)}",
+            _ => Helpers.MoneyFormatter.FormatCompact(money)
         };
     }
 

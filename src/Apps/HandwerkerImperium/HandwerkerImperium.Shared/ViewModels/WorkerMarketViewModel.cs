@@ -22,6 +22,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IDialogService _dialogService;
     private bool _isBusy;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -29,11 +30,6 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     public event EventHandler<string>? NavigationRequested;
-
-    /// <summary>
-    /// Event to show an alert dialog. Parameters: title, message, buttonText.
-    /// </summary>
-    public event Action<string, string, string>? AlertRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -122,12 +118,14 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
         IWorkerService workerService,
         IGameStateService gameStateService,
         ILocalizationService localizationService,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService,
+        IDialogService dialogService)
     {
         _workerService = workerService;
         _gameStateService = gameStateService;
         _localizationService = localizationService;
         _rewardedAdService = rewardedAdService;
+        _dialogService = dialogService;
 
         UpdateLocalizedTexts();
     }
@@ -277,7 +275,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
             }
             else
             {
-                AlertRequested?.Invoke(
+                _dialogService.ShowAlertDialog(
                     _localizationService.GetString("Info"),
                     _localizationService.GetString("WatchAdToRefresh"),
                     _localizationService.GetString("OK") ?? "OK");
@@ -320,7 +318,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
                 // Cap bei MaxAdBonusWorkerSlots pro Workshop (Exploit-Schutz)
                 if (fullWorkshop.AdBonusWorkerSlots >= Workshop.MaxAdBonusWorkerSlots)
                 {
-                    AlertRequested?.Invoke(
+                    _dialogService.ShowAlertDialog(
                         _localizationService.GetString("Info"),
                         _localizationService.GetString("MaxSlotReached"),
                         _localizationService.GetString("OK") ?? "OK");
@@ -331,7 +329,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
                 _gameStateService.MarkDirty();
                 LoadMarket();
 
-                AlertRequested?.Invoke(
+                _dialogService.ShowAlertDialog(
                     _localizationService.GetString("WorkerSlotBonusDesc"),
                     _localizationService.GetString(fullWorkshop.Type.GetLocalizationKey()),
                     _localizationService.GetString("Great"));
@@ -353,7 +351,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
 
         if (!_gameStateService.CanAfford(hiringCost))
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NotEnoughMoney"),
                 string.Format(_localizationService.GetString("HiringCostFormat"), MoneyFormatter.Format(hiringCost, 0)),
                 _localizationService.GetString("OK") ?? "OK");
@@ -364,7 +362,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
         var hiringScrewCost = worker.Tier.GetHiringScrewCost();
         if (hiringScrewCost > 0 && !_gameStateService.CanAffordGoldenScrews(hiringScrewCost))
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NotEnoughScrews"),
                 string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), hiringScrewCost),
                 _localizationService.GetString("OK") ?? "OK");
@@ -378,7 +376,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
 
         if (workshopsWithSlots.Count == 0)
         {
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NoFreeSlot"),
                 _localizationService.GetString("NoFreeSlotDesc"),
                 _localizationService.GetString("OK") ?? "OK");
@@ -420,7 +418,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
             ShowWorkshopSelection = false;
             PendingWorker = null;
 
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("WorkerHired"),
                 string.Format(_localizationService.GetString("WorkerHiredFormat"), worker.Name),
                 _localizationService.GetString("Great"));
@@ -438,7 +436,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
         {
             ShowWorkshopSelection = false;
             PendingWorker = null;
-            AlertRequested?.Invoke(
+            _dialogService.ShowAlertDialog(
                 _localizationService.GetString("NoFreeSlot"),
                 _localizationService.GetString("NoFreeSlotDesc"),
                 _localizationService.GetString("OK") ?? "OK");

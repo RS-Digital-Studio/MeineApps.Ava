@@ -68,7 +68,7 @@ public static class LevelThresholds
     public const int HintMasterTools = 20;
 
     /// <summary>Hint: Prestige verfügbar.</summary>
-    public const int HintPrestige = 30;
+    public const int HintPrestige = 50;
 
     // ═══════════════════════════════════════════════════════════════════════
     // FEATURE-GATES
@@ -84,7 +84,7 @@ public static class LevelThresholds
     public const int BattlePassSection = 70;
 
     /// <summary>Prestige-Shop freischalten (oder wenn bereits prestigiert).</summary>
-    public const int PrestigeShopUnlock = 500;
+    public const int PrestigeShopUnlock = 50;
 
     /// <summary>Tutorial-Hint (pulsierender Rahmen) nur unter diesem Level anzeigen.</summary>
     public const int TutorialHintMaxLevel = 3;

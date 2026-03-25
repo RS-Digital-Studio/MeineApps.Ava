@@ -374,7 +374,7 @@
                 HorizontalAlignment="Stretch" VerticalAlignment="Top"
                 HorizontalContentAlignment="Stretch"
                 IsVisible="{Binding ShowMasterToolsSection}"
-                Command="{Binding ShowMasterToolsInfoCommand}"
+                Command="{Binding MissionsVM.ShowMasterToolsInfoCommand}"
                 AutomationProperties.AutomationId="Imperium_Btn_MasterTools">
           <Border Classes="CardElevated" Padding="8,10" CornerRadius="10">
             <StackPanel Spacing="4" HorizontalAlignment="Center">
@@ -396,12 +396,12 @@
               <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
                 <TextBlock FontSize="9"
                            Foreground="{DynamicResource TextSecondaryBrush}">
-                  <Run Text="{Binding MasterToolsCollected}" />/<Run Text="{Binding MasterToolsTotal}" />
+                  <Run Text="{Binding MissionsVM.MasterToolsCollected}" />/<Run Text="{Binding MissionsVM.MasterToolsTotal}" />
                 </TextBlock>
-                <TextBlock Text="{Binding MasterToolsBonusDisplay}" FontSize="9"
+                <TextBlock Text="{Binding MissionsVM.MasterToolsBonusDisplay}" FontSize="9"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource CraftGoldBrush}"
-                           IsVisible="{Binding MasterToolsCollected}" />
+                           IsVisible="{Binding MissionsVM.MasterToolsCollected}" />
               </StackPanel>
             </StackPanel>
           </Border>
@@ -457,6 +457,81 @@
           </Grid>
         </Border>
       </Button>
+
+      <!-- Prestige-Herausforderungen (Challenge-Toggles, max 3) -->
+      <Border IsVisible="{Binding IsPrestigeAvailable}"
+              CornerRadius="8" Padding="10,8" Margin="0,6,0,0"
+              Background="#12D97706">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{loc:Translate Challenges}" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{StaticResource CraftGoldBrush}" />
+          <!-- Challenge-Chips: Je ein ToggleButton pro Challenge -->
+          <WrapPanel Orientation="Horizontal">
+            <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Command="{Binding ToggleChallengeCommand}" CommandParameter="Spartaner">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="Spartaner +40%" />
+              </TextBlock>
+            </Button>
+            <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Command="{Binding ToggleChallengeCommand}" CommandParameter="OhneForschung">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="Forschung +30%" />
+              </TextBlock>
+            </Button>
+            <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Command="{Binding ToggleChallengeCommand}" CommandParameter="Inflationszeit">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="Inflation +25%" />
+              </TextBlock>
+            </Button>
+            <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Command="{Binding ToggleChallengeCommand}" CommandParameter="SoloMeister">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="Solo +60%" />
+              </TextBlock>
+            </Button>
+            <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Command="{Binding ToggleChallengeCommand}" CommandParameter="Sprint">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="Sprint +35%" />
+              </TextBlock>
+            </Button>
+            <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Command="{Binding ToggleChallengeCommand}" CommandParameter="KeinNetz">
+              <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
+                <Run Text="Kein Netz +20%" />
+              </TextBlock>
+            </Button>
+          </WrapPanel>
+          <!-- Aktive Challenges Zusammenfassung -->
+          <TextBlock Text="{Binding ActiveChallengesText}" FontSize="11"
+                     Foreground="#FFFFFFAA" TextWrapping="Wrap"
+                     IsVisible="{Binding ActiveChallengeCount}" />
+          <!-- Challenge-Abbruch: Spieler kann den Run aufgeben und 50% Basis-PP erhalten -->
+          <Button Classes="Danger"
+                  AutomationProperties.AutomationId="Prestige_Btn_AbandonChallenge"
+                  Command="{Binding AbandonChallengeRunCommand}"
+                  IsVisible="{Binding ActiveChallengeCount}"
+                  Padding="8,4" Margin="0,4,0,0"
+                  HorizontalAlignment="Left">
+            <TextBlock Text="{loc:Translate AbandonChallengeButton}"
+                       FontSize="11" FontWeight="SemiBold" />
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- Speedrun-Timer (aktuelle Run-Dauer) -->
+      <Border IsVisible="{Binding IsPrestigeAvailable}"
+              CornerRadius="6" Padding="8,4" Margin="0,4,0,0"
+              Background="#10FFFFFF">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <icons:GameIcon Kind="TimerOutline" Width="14" Height="14" Foreground="#FFFFFFAA" VerticalAlignment="Center" />
+          <TextBlock FontSize="11" Foreground="#FFFFFFAA" VerticalAlignment="Center">
+            <Run Text="{loc:Translate CurrentRunTime}" /><Run Text=": " /><Run Text="{Binding CurrentRunDuration}" />
+          </TextBlock>
+        </StackPanel>
+      </Border>
 
       <!-- Fortschritt zum nächsten Prestige-Tier -->
       <Border IsVisible="{Binding HasNextPrestigeTier}"

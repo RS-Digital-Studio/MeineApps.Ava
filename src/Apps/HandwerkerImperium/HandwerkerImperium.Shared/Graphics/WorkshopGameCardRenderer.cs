@@ -33,6 +33,7 @@ public struct WorkshopCardData
     public bool IsNetNegative;
     public int UnlockLevel;
     public string TimeToUpgrade;
+    public int RebirthStars;
 }
 
 /// <summary>
@@ -208,6 +209,12 @@ public static class WorkshopGameCardRenderer
         if (data.Level >= 1000)
         {
             GameCardRenderer.DrawCrown(canvas, inner.Right - 16f, inner.Top - 2f, 16f, 10f);
+        }
+
+        // Rebirth-Sterne oben-links (gold gefuellt fuer aktive, leer fuer fehlende)
+        if (data.RebirthStars > 0)
+        {
+            DrawRebirthStars(canvas, inner.Left + 6f, inner.Top + 6f, data.RebirthStars, 5);
         }
 
         // === Stats-Bereich (35%): Worker + Income ===
@@ -455,4 +462,82 @@ public static class WorkshopGameCardRenderer
         return bmp;
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // Rebirth-Sterne
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Gecachter Stern-Pfad (5-zackig)
+    private static SKPath? _starPath;
+
+    /// <summary>
+    /// Zeichnet Rebirth-Sterne: gold gefuellt fuer aktive, halbtransparent fuer fehlende.
+    /// </summary>
+    private static void DrawRebirthStars(SKCanvas canvas, float x, float y, int activeStars, int maxStars)
+    {
+        float starSize = 7f;
+        float spacing = 11f;
+
+        for (int i = 0; i < maxStars; i++)
+        {
+            float cx = x + i * spacing + starSize;
+            float cy = y + starSize;
+            bool isActive = i < activeStars;
+
+            _fillPaint.Color = isActive
+                ? new SKColor(0xFF, 0xD7, 0x00, 230)   // Gold gefuellt
+                : new SKColor(0xFF, 0xD7, 0x00, 50);   // Halbtransparent
+
+            DrawStar(canvas, cx, cy, starSize, _fillPaint);
+
+            // Goldener Rand fuer aktive Sterne
+            if (isActive)
+            {
+                _strokePaint.Color = new SKColor(0xD9, 0x77, 0x06, 180);
+                _strokePaint.StrokeWidth = 0.8f;
+                DrawStar(canvas, cx, cy, starSize, _strokePaint);
+                _strokePaint.StrokeWidth = 1f;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Zeichnet einen 5-zackigen Stern mit gecachtem Pfad.
+    /// </summary>
+    private static void DrawStar(SKCanvas canvas, float cx, float cy, float radius, SKPaint paint)
+    {
+        _starPath ??= CreateStarPath();
+
+        canvas.Save();
+        canvas.Translate(cx, cy);
+        canvas.Scale(radius / 10f);
+        canvas.DrawPath(_starPath, paint);
+        canvas.Restore();
+    }
+
+    /// <summary>
+    /// Erstellt einen 5-zackigen Stern-Pfad (zentriert bei 0,0, Radius 10).
+    /// </summary>
+    private static SKPath CreateStarPath()
+    {
+        var path = new SKPath();
+        const int points = 5;
+        const float outerR = 10f;
+        const float innerR = 4f;
+        const float startAngle = -MathF.PI / 2; // Spitze nach oben
+
+        for (int i = 0; i < points * 2; i++)
+        {
+            float r = (i % 2 == 0) ? outerR : innerR;
+            float angle = startAngle + i * MathF.PI / points;
+            float px = r * MathF.Cos(angle);
+            float py = r * MathF.Sin(angle);
+
+            if (i == 0)
+                path.MoveTo(px, py);
+            else
+                path.LineTo(px, py);
+        }
+        path.Close();
+        return path;
+    }
 }

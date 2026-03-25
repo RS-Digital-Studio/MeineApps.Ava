@@ -42,7 +42,7 @@ public class Workshop
     /// <summary>
     /// Maximales Workshop-Level.
     /// </summary>
-    public const int MaxLevel = 1000;
+    public const int MaxLevel = GameBalanceConstants.WorkshopMaxLevel;
 
     /// <summary>
     /// Maximum workers allowed at current level.
@@ -53,11 +53,11 @@ public class Workshop
     public int BaseMaxWorkers => Math.Min(20, 1 + (Level - 1) / 50);
 
     /// <summary>
-    /// Total max workers including building bonus + Ad-Bonus.
+    /// Total max workers including building bonus + Ad-Bonus + Rebirth-Sterne.
     /// Set by external systems that know about buildings.
     /// </summary>
     [JsonIgnore]
-    public int MaxWorkers => BaseMaxWorkers + ExtraWorkerSlots + AdBonusWorkerSlots;
+    public int MaxWorkers => BaseMaxWorkers + ExtraWorkerSlots + AdBonusWorkerSlots + RebirthExtraWorkers;
 
     /// <summary>
     /// Extra worker slots from buildings/research (set externally).
@@ -90,135 +90,76 @@ public class Workshop
     [JsonIgnore]
     public decimal UpgradeDiscount { get; set; }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // REBIRTH (Late-Game Prestige pro Workshop, 0-5 Sterne)
+    // ═══════════════════════════════════════════════════════════════════════
+
     /// <summary>
-    /// Base income per worker per second at current level.
-    /// Formel: 1 * 1.02^(Level-1) * TypeMultiplier
-    /// Langsameres Wachstum (1.02 statt 1.025) → Progression dauert länger,
-    /// Spieler müssen mehr upgraden/optimieren bevor es "explodiert".
+    /// Anzahl der Rebirth-Sterne (0-5). Permanent, überlebt Prestige + Ascension.
+    /// Wird extern über RebirthService aus GameState.WorkshopStars gesetzt.
     /// </summary>
     [JsonIgnore]
-    public decimal BaseIncomePerWorker
-    {
-        get
-        {
-            decimal baseIncome = (decimal)Math.Pow(1.02, Level - 1);
-            return baseIncome * Type.GetBaseIncomeMultiplier() * GetMilestoneMultiplier();
-        }
-    }
+    public int RebirthStars { get; set; }
 
     /// <summary>
-    /// Total gross income per second from all workers.
-    /// Berücksichtigt den Level-Anforderungsmalus pro Worker (höhere Tiers sind resistenter)
-    /// und Worker-Aura-Bonus (S-Tier+ geben passiven Einkommens-Bonus).
+    /// Einkommens-Bonus durch Rebirth-Sterne (0% bis +150%).
     /// </summary>
     [JsonIgnore]
-    public decimal GrossIncomePerSecond
-    {
-        get
-        {
-            if (Workers.Count == 0) return 0;
-            decimal baseIncome = Workers.Sum(w => BaseIncomePerWorker * w.EffectiveEfficiency * GetWorkerLevelFitFactor(w));
-
-            // Worker-Aura: S-Tier+ Worker geben passiven Einkommens-Bonus
-            decimal auraBonus = 0m;
-            for (int i = 0; i < Workers.Count; i++)
-                auraBonus += Workers[i].Tier.GetAuraBonus();
-
-            if (auraBonus > 0)
-                baseIncome *= (1m + auraBonus);
-
-            return baseIncome;
-        }
-    }
+    public decimal RebirthIncomeBonus => RebirthStars >= 1 && RebirthStars <= 5
+        ? GameBalanceConstants.RebirthIncomeBonuses[RebirthStars - 1]
+        : 0m;
 
     /// <summary>
-    /// Berechnet den Level-Anforderungsfaktor für einen Worker.
-    /// Höhere Workshop-Level sind anspruchsvoller → niedrige Tiers verlieren Effizienz.
-    /// Basis: -2% alle 30 Level. Reduziert durch Tier-Resistenz + Forschung.
-    /// </summary>
-    public decimal GetWorkerLevelFitFactor(Worker worker)
-    {
-        if (Level <= 30) return 1.0m; // Kein Malus unter Level 30
-
-        int steps = Level / 30;
-        decimal basePenalty = steps * 0.02m;
-        decimal tierResistance = worker.Tier.GetLevelResistance();
-        decimal totalResistance = Math.Min(1.0m, tierResistance + LevelResistanceBonus);
-        decimal adjustedPenalty = basePenalty * (1m - totalResistance);
-        return Math.Max(0.20m, 1m - adjustedPenalty); // Min 20% (Worker wird nie komplett nutzlos)
-    }
-
-    /// <summary>
-    /// Multiplikator-Meilensteine bei bestimmten Workshop-Leveln.
-    /// Erzeugt "Bumpy Progression" (AdVenture-Capitalist-Pattern):
-    /// Vor einem Meilenstein verlangsamt es sich, danach explodiert das Einkommen.
-    /// Meilensteine bei 25/50/75/100/150/200/225/250/350/500/1000.
-    /// Meilenstein 200 schließt die Lücke zwischen 150 und 250.
-    /// Meilenstein 225 (BAL-13) schließt die Grind-Wall 200→250.
-    /// Meilenstein 350 schließt die Durststrecke 250→500 (BAL-1).
-    /// </summary>
-    // BAL-PROGRESSION: Meilenstein-Multiplikatoren um ~40% reduziert
-    // Kumulativ: 1.15 × 1.3 × 1.3 × 1.45 × 1.6 × 1.45 × 1.3 × 1.6 × 1.6 × 2.0 × 3.0 ≈ 84.6x (vorher ~1551x)
-    public decimal GetMilestoneMultiplier()
-    {
-        decimal mult = 1.0m;
-        if (Level >= 25) mult *= 1.15m;    // BAL-PROGRESSION: von 1.25 reduziert
-        if (Level >= 50) mult *= 1.3m;     // BAL-PROGRESSION: von 1.5 reduziert
-        if (Level >= 75) mult *= 1.3m;     // BAL-PROGRESSION: von 1.5 reduziert
-        if (Level >= 100) mult *= 1.45m;   // BAL-PROGRESSION: von 1.75 reduziert
-        if (Level >= 150) mult *= 1.6m;    // BAL-PROGRESSION: von 2.0 reduziert
-        if (Level >= 200) mult *= 1.45m;   // BAL-PROGRESSION: von 1.75 reduziert
-        if (Level >= 225) mult *= 1.3m;    // BAL-PROGRESSION: von 1.5 reduziert (BAL-13 Meilenstein)
-        if (Level >= 250) mult *= 1.6m;    // BAL-PROGRESSION: von 2.0 reduziert
-        if (Level >= 350) mult *= 1.6m;    // BAL-PROGRESSION: von 2.0 reduziert (BAL-1 Meilenstein)
-        if (Level >= 500) mult *= 2.0m;    // BAL-PROGRESSION: von 3.0 reduziert
-        if (Level >= 1000) mult *= 3.0m;   // BAL-PROGRESSION: von 5.0 reduziert
-        return mult;
-    }
-
-    /// <summary>
-    /// Prüft ob das aktuelle Level ein Multiplikator-Meilenstein ist.
-    /// </summary>
-    public static bool IsMilestoneLevel(int level) =>
-        level is 25 or 50 or 75 or 100 or 150 or 200 or 225 or 250 or 350 or 500 or 1000;
-
-    /// <summary>
-    /// Gibt den Multiplikator für ein bestimmtes Meilenstein-Level zurück.
-    /// </summary>
-    // BAL-PROGRESSION: Meilenstein-Multiplikatoren um ~40% reduziert
-    public static decimal GetMilestoneMultiplierForLevel(int level) => level switch
-    {
-        25 => 1.15m,    // BAL-PROGRESSION: von 1.25 reduziert
-        50 => 1.3m,     // BAL-PROGRESSION: von 1.5 reduziert
-        75 => 1.3m,     // BAL-PROGRESSION: von 1.5 reduziert
-        100 => 1.45m,   // BAL-PROGRESSION: von 1.75 reduziert
-        150 => 1.6m,    // BAL-PROGRESSION: von 2.0 reduziert
-        200 => 1.45m,   // BAL-PROGRESSION: von 1.75 reduziert
-        225 => 1.3m,    // BAL-PROGRESSION: von 1.5 reduziert (BAL-13 Meilenstein)
-        250 => 1.6m,    // BAL-PROGRESSION: von 2.0 reduziert
-        350 => 1.6m,    // BAL-PROGRESSION: von 2.0 reduziert (BAL-1 Meilenstein)
-        500 => 2.0m,    // BAL-PROGRESSION: von 3.0 reduziert
-        1000 => 3.0m,   // BAL-PROGRESSION: von 5.0 reduziert
-        _ => 1.0m
-    };
-
-    /// <summary>
-    /// Rent cost per hour (scales with level).
+    /// Upgrade-Kosten-Rabatt durch Rebirth-Sterne (0% bis -25%).
     /// </summary>
     [JsonIgnore]
-    public decimal RentPerHour => Level <= 100
-        ? 10m * Level
-        : 1000m * (decimal)Math.Pow(1.005, Level - 100);
+    public decimal RebirthUpgradeDiscount => RebirthStars >= 1 && RebirthStars <= 5
+        ? GameBalanceConstants.RebirthUpgradeDiscounts[RebirthStars - 1]
+        : 0m;
 
     /// <summary>
-    /// Material-Kosten pro Stunde (hybrid: linear bis Lv.100, dann exponentiell).
-    /// Bis Level 100 unverändet (bestehende Savegames safe).
-    /// Ab 100 wachsen Kosten moderat exponentiell → spürbar bei hohen Leveln.
+    /// Extra Worker-Slots durch Rebirth-Sterne (0 bis +2).
     /// </summary>
     [JsonIgnore]
-    public decimal MaterialCostPerHour => Level <= 100
-        ? 5m * Level * Type.GetBaseIncomeMultiplier()
-        : 500m * (decimal)Math.Pow(1.005, Level - 100) * Type.GetBaseIncomeMultiplier();
+    public int RebirthExtraWorkers => RebirthStars < GameBalanceConstants.RebirthExtraWorkers.Length
+        ? GameBalanceConstants.RebirthExtraWorkers[RebirthStars]
+        : GameBalanceConstants.RebirthExtraWorkers[^1];
+
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BERECHNETE PROPERTIES (delegieren an WorkshopFormulas für Testbarkeit)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Basis-Einkommen pro Worker pro Sekunde.</summary>
+    [JsonIgnore]
+    public decimal BaseIncomePerWorker => WorkshopFormulas.CalculateBaseIncomePerWorker(Level, Type);
+
+    /// <summary>Brutto-Einkommen pro Sekunde (alle Worker, Aura, Rebirth).</summary>
+    [JsonIgnore]
+    public decimal GrossIncomePerSecond =>
+        WorkshopFormulas.CalculateGrossIncome(Level, Type, Workers, LevelResistanceBonus, RebirthIncomeBonus);
+
+    /// <summary>Level-Anforderungsfaktor für einen Worker (Tier-Resistenz + Forschung).</summary>
+    public decimal GetWorkerLevelFitFactor(Worker worker) =>
+        WorkshopFormulas.CalculateLevelFitFactor(Level, worker.Tier.GetLevelResistance(), LevelResistanceBonus);
+
+    /// <summary>Kumulativer Meilenstein-Multiplikator für das aktuelle Level.</summary>
+    public decimal GetMilestoneMultiplier() => WorkshopFormulas.CalculateMilestoneMultiplier(Level);
+
+    /// <summary>Prüft ob ein Level ein Meilenstein ist.</summary>
+    public static bool IsMilestoneLevel(int level) => WorkshopFormulas.IsMilestoneLevel(level);
+
+    /// <summary>Einzel-Multiplikator für ein bestimmtes Meilenstein-Level.</summary>
+    public static decimal GetMilestoneMultiplierForLevel(int level) => WorkshopFormulas.GetMilestoneMultiplierForLevel(level);
+
+    /// <summary>Miete pro Stunde (skaliert mit Level).</summary>
+    [JsonIgnore]
+    public decimal RentPerHour => WorkshopFormulas.CalculateRentPerHour(Level);
+
+    /// <summary>Materialkosten pro Stunde (hybrid: linear bis Lv.100, dann exponentiell).</summary>
+    [JsonIgnore]
+    public decimal MaterialCostPerHour => WorkshopFormulas.CalculateMaterialCostPerHour(Level, Type);
 
     /// <summary>
     /// Total worker wages per hour.
@@ -246,68 +187,28 @@ public class Workshop
     [JsonIgnore]
     public decimal IncomePerSecond => GrossIncomePerSecond;
 
+    /// <summary>Upgrade-Kosten mit allen Rabatten (Rebirth, Prestige-Shop, VIP).</summary>
+    [JsonIgnore]
+    public decimal UpgradeCost =>
+        WorkshopFormulas.CalculateUpgradeCost(Level, RebirthUpgradeDiscount, UpgradeDiscount, VipCostReduction);
+
     /// <summary>
-    /// Kosten fuer Upgrade auf naechstes Level.
-    /// Formel: 200 * 1.07^(Level-1), reduziert durch Prestige-Shop UpgradeDiscount.
-    /// BAL-PROGRESSION: von 1.05 auf 1.07 erhöht - Upgrades werden bei hohen Leveln deutlich teurer
-    /// (Level 500 ~9.600x teurer als vorher). Streckt Progression von ~1 Woche auf ~2-3 Monate.
+    /// VIP-Kosten-Reduktion (0.0-0.10). Wird extern von GameLoopService gesetzt.
     /// </summary>
     [JsonIgnore]
-    public decimal UpgradeCost
-    {
-        get
-        {
-            if (Level >= MaxLevel) return 0;
-            // BAL-PROGRESSION: von 1.05 auf 1.07 erhöht - Upgrades werden bei hohen Leveln deutlich teurer
-            decimal baseCost = Level == 1 ? 100m : 200m * (decimal)Math.Pow(1.07, Level - 1);
+    public decimal VipCostReduction { get; set; }
 
-            // Prestige-Shop Upgrade-Rabatt anwenden
-            if (UpgradeDiscount > 0)
-                baseCost *= (1m - Math.Min(UpgradeDiscount, 0.50m));
+    /// <summary>Kombinierter Rabattfaktor aus Rebirth + Prestige-Shop + VIP.</summary>
+    private decimal GetCombinedDiscountFactor() =>
+        WorkshopFormulas.CalculateDiscountFactor(RebirthUpgradeDiscount, UpgradeDiscount, VipCostReduction);
 
-            return baseCost;
-        }
-    }
+    /// <summary>Bulk-Upgrade Gesamtkosten für N Level.</summary>
+    public decimal GetBulkUpgradeCost(int count) =>
+        WorkshopFormulas.CalculateBulkUpgradeCost(Level, count, GetCombinedDiscountFactor());
 
-    /// <summary>
-    /// Berechnet die Gesamtkosten fuer N Upgrades ab dem aktuellen Level.
-    /// Beruecksichtigt die exponentielle Kostensteigerung pro Level und Prestige-Shop-Rabatt.
-    /// </summary>
-    public decimal GetBulkUpgradeCost(int count)
-    {
-        if (count <= 0 || Level >= MaxLevel) return 0;
-        decimal total = 0;
-        decimal discountFactor = UpgradeDiscount > 0 ? (1m - Math.Min(UpgradeDiscount, 0.50m)) : 1m;
-        int maxUpgrades = Math.Min(count, MaxLevel - Level);
-        for (int i = 0; i < maxUpgrades; i++)
-        {
-            int lvl = Level + i;
-            // BAL-PROGRESSION: von 1.05 auf 1.07 erhöht
-            decimal cost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.07, lvl - 1);
-            total += cost * discountFactor;
-        }
-        return total;
-    }
-
-    /// <summary>
-    /// Berechnet wie viele Upgrades mit dem gegebenen Budget moeglich sind.
-    /// </summary>
-    public (int count, decimal cost) GetMaxAffordableUpgrades(decimal budget)
-    {
-        if (budget <= 0 || Level >= MaxLevel) return (0, 0);
-        decimal total = 0;
-        int count = 0;
-        for (int i = 0; i < MaxLevel - Level; i++)
-        {
-            int lvl = Level + i;
-            // BAL-PROGRESSION: von 1.05 auf 1.07 erhöht
-            decimal lvlCost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.07, lvl - 1);
-            if (total + lvlCost > budget) break;
-            total += lvlCost;
-            count++;
-        }
-        return (count, total);
-    }
+    /// <summary>Maximale leistbare Upgrades bei gegebenem Budget.</summary>
+    public (int count, decimal cost) GetMaxAffordableUpgrades(decimal budget) =>
+        WorkshopFormulas.CalculateMaxAffordableUpgrades(Level, budget, GetCombinedDiscountFactor());
 
     /// <summary>
     /// Cost to unlock this workshop (one-time).
@@ -324,9 +225,9 @@ public class Workshop
     [JsonIgnore]
     public string Icon => Type.GetIcon();
 
-    // Kosten fuer naechsten Worker (sanfter als 2^n)
+    /// <summary>Einstellungskosten für den nächsten Worker.</summary>
     [JsonIgnore]
-    public decimal HireWorkerCost => 50m * (decimal)Math.Pow(1.5, Workers.Count);
+    public decimal HireWorkerCost => WorkshopFormulas.CalculateHireWorkerCost(Workers.Count);
 
     public static Workshop Create(WorkshopType type)
     {

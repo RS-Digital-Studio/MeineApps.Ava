@@ -138,9 +138,6 @@ public partial class DashboardView : UserControl
         var offset = Math.Min(scrollViewer.Offset.Y * 0.3, 20);
         _headerTranslate.Y = -offset;
 
-        // Parallax auf CityRenderer (5-Layer)
-        _cityRenderer.ScrollOffset = (float)scrollViewer.Offset.Y;
-
         // Performance: Scroll-Zustand tracken für Render-Timer-Drosselung
         _isScrolling = true;
         _lastScrollTime = DateTime.UtcNow;
@@ -183,10 +180,6 @@ public partial class DashboardView : UserControl
             {
                 _cityCanvas.PaintSurface -= OnCityPaintSurface;
                 _cityCanvas.PaintSurface += OnCityPaintSurface;
-
-                // Touch-Handler: Tap auf Workshop → Navigation
-                _cityCanvas.PointerPressed -= OnCityCanvasTapped;
-                _cityCanvas.PointerPressed += OnCityCanvasTapped;
 
                 if (_vm.IsDashboardActive)
                     StartCityRenderLoop();
@@ -555,7 +548,8 @@ public partial class DashboardView : UserControl
             NetIncomeText = model.NetIncomeDisplay,
             IsNetNegative = model.IsNetNegative,
             UnlockLevel = model.UnlockLevel,
-            TimeToUpgrade = model.TimeToUpgrade
+            TimeToUpgrade = model.TimeToUpgrade,
+            RebirthStars = model.RebirthStars
         };
     }
 
@@ -768,64 +762,8 @@ public partial class DashboardView : UserControl
     // CITY-CANVAS: Touch-Handler für Workshop-Tap
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Tap auf City-Canvas: HitTest auf Workshop-/Building-Gebäude → Navigation + RadialBurst.
-    /// </summary>
-    private void OnCityCanvasTapped(object? sender, PointerPressedEventArgs e)
-    {
-        if (_vm == null || _cityCanvas == null) return;
-
-        var point = e.GetPosition(_cityCanvas);
-        var avBounds = _cityCanvas.Bounds;
-        if (avBounds.Width < 10 || avBounds.Height < 10) return;
-
-        // Avalonia → SkiaSharp Koordinaten
-        // CityCanvas nutzt LocalClipBounds im PaintSurface, daher verwenden wir
-        // die gleichen Bounds wie beim Rendern
-        var gameState = _vm.GetGameStateForRendering();
-        if (gameState == null) return;
-
-        // Für den HitTest verwenden wir die Canvas-Bounds direkt
-        // (da OnCityPaintSurface canvas.LocalClipBounds verwendet)
-        var skBounds = new SKRect(0, 0, (float)avBounds.Width, (float)avBounds.Height);
-
-        float touchX = (float)point.X;
-        float touchY = (float)point.Y;
-
-        var result = _cityRenderer.HitTest(skBounds, touchX, touchY, gameState, gameState.Buildings);
-
-        if (result.Target == CityTapTarget.Workshop && result.WorkshopType.HasValue)
-        {
-            if (gameState.IsWorkshopUnlocked(result.WorkshopType.Value))
-            {
-                // RadialBurst-Effekt am Tap-Punkt
-                var wsColor = CityBuildingShapes.GetWorkshopColor(result.WorkshopType.Value);
-                _juiceEngine?.RadialBurst(touchX, touchY, wsColor, maxRadius: 50f);
-
-                // Tap-Label: Lokalisierter Workshop-Name über dem Gebäude
-                var wsName = _vm.GetLocalizedWorkshopName(result.WorkshopType.Value);
-                _cityRenderer.ShowTapLabel(wsName, touchX, touchY,
-                    result.HitX, result.HitY, result.HitW, result.HitH, wsColor);
-
-                // Zum Workshop navigieren
-                _vm.NavigateToWorkshopFromCity(result.WorkshopType.Value);
-            }
-        }
-        else if (result.Target == CityTapTarget.Building && result.BuildingType.HasValue)
-        {
-            // RadialBurst-Effekt am Tap-Punkt
-            _juiceEngine?.RadialBurst(touchX, touchY, new SKColor(0xD9, 0x77, 0x06), maxRadius: 40f);
-
-            // Tap-Label: Lokalisierter Gebäude-Name über dem Gebäude
-            var buildingName = _vm.GetLocalizedBuildingName(result.BuildingType.Value);
-            _cityRenderer.ShowTapLabel(buildingName, touchX, touchY,
-                result.HitX, result.HitY, result.HitW, result.HitH,
-                new SKColor(0xD9, 0x77, 0x06));
-
-            // Zum Imperium-Tab wechseln (dort werden die Gebäude angezeigt)
-            _vm.SelectBuildingsTabCommand.Execute(null);
-        }
-    }
+    // City-Tap-Handler entfernt: AI-Hintergrundbild hat keine interaktiven Gebäude-Zonen.
+    // Navigation zu Workshops/Gebäuden erfolgt über Workshop-Karten und Imperium-Tab.
 
     #region ProgressBar Paint-Handler
 

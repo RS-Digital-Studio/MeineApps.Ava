@@ -9,17 +9,31 @@ namespace HandwerkerImperium.Services;
 /// Jeder Tier setzt Fortschritt zurück, gewährt permanente Multiplikatoren und Prestige-Punkte.
 /// Höhere Tiers bewahren progressiv mehr Spielfortschritt.
 /// </summary>
-public sealed class PrestigeService : IPrestigeService
+public sealed partial class PrestigeService : IPrestigeService
 {
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
+    private readonly IAscensionService _ascensionService;
+
+    // Gecachte Prestige-Shop-Effekte (invalidiert bei Shop-Kauf und State-Load)
+    private bool _effectCacheDirty = true;
+    private decimal _cachedCostReduction;
+    private decimal _cachedMoodDecayReduction;
+    private decimal _cachedXpMultiplier;
 
     public event EventHandler? PrestigeCompleted;
 
-    public PrestigeService(IGameStateService gameStateService, ISaveGameService saveGameService)
+    public PrestigeService(
+        IGameStateService gameStateService,
+        ISaveGameService saveGameService,
+        IAscensionService ascensionService)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
+        _ascensionService = ascensionService;
+
+        // Bei State-Wechsel (Load/Import/Reset/Prestige) Cache invalidieren
+        _gameStateService.StateLoaded += (_, _) => _effectCacheDirty = true;
     }
 
     public bool CanPrestige(PrestigeTier tier)
@@ -51,6 +65,15 @@ public sealed class PrestigeService : IPrestigeService
         if (tier == PrestigeTier.Bronze && tierPoints < 15)
             tierPoints = 15;
 
+        // Challenge-PP: Additiver Bonus für aktive Run-Modifikatoren
+        // z.B. Spartaner (+40%) + Sprint (+35%) = ×1.75
+        if (prestige.ActiveChallenges.Count > 0)
+        {
+            decimal challengeMultiplier = ((IReadOnlyList<PrestigeChallengeType>)prestige.ActiveChallenges)
+                .GetTotalPpMultiplier();
+            tierPoints = (int)Math.Round(tierPoints * challengeMultiplier);
+        }
+
         // Prestige-Pass: +50% Bonus auf Prestige-Punkte
         if (state.IsPrestigePassActive)
             tierPoints = (int)Math.Round(tierPoints * 1.5m);
@@ -59,25 +82,30 @@ public sealed class PrestigeService : IPrestigeService
         if (state.GuildMembership?.ResearchPrestigePointBonus > 0)
             tierPoints = (int)Math.Round(tierPoints * (1m + state.GuildMembership.ResearchPrestigePointBonus));
 
+        // Bonus-PP aus Spielleistung (flat, NACH Tier-Multiplikator addiert)
+        int bonusPp = CalculateBonusPrestigePoints(tier);
+        tierPoints += bonusPp;
+
         prestige.PrestigePoints += tierPoints;
         prestige.TotalPrestigePoints += tierPoints;
 
-        // History-Eintrag VOR dem Reset erstellen (damit Level/Geld noch stimmen)
-        prestige.History.Insert(0, new PrestigeHistoryEntry
+        // Speedrun-Tracking: Run-Dauer berechnen VOR dem Reset
+        var runDuration = prestige.RunStartTime > DateTime.MinValue
+            ? DateTime.UtcNow - prestige.RunStartTime
+            : TimeSpan.Zero;
+
+        // Bestzeit prüfen und aktualisieren
+        if (runDuration > TimeSpan.Zero)
         {
-            Tier = tier,
-            Date = DateTime.UtcNow,
-            PointsEarned = tierPoints,
-            PlayerLevel = state.PlayerLevel,
-            MultiplierAfter = prestige.PermanentMultiplier + tier.GetPermanentMultiplierBonus(),
-            TotalMoneyEarned = state.TotalMoneyEarned,
-        });
+            var tierKey = tier.ToString();
+            if (!prestige.BestRunTimes.TryGetValue(tierKey, out var bestTicks)
+                || runDuration.Ticks < bestTicks)
+            {
+                prestige.BestRunTimes[tierKey] = runDuration.Ticks;
+            }
+        }
 
-        // Auf 20 Einträge begrenzen
-        if (prestige.History.Count > 20)
-            prestige.History.RemoveRange(20, prestige.History.Count - 20);
-
-        // Tier-Zähler erhöhen
+        // Tier-Zaehler erhoehen (VOR Multiplikator-Berechnung, damit tierCount stimmt)
         switch (tier)
         {
             case PrestigeTier.Bronze:
@@ -109,7 +137,7 @@ public sealed class PrestigeService : IPrestigeService
 
         // Diminishing Returns: Jeder weitere Prestige desselben Tiers gibt weniger Bonus
         // Formel: baseBonus * 1/(1 + 0.1 * tierCount) - erster Prestige voller Bonus, 10. nur noch 50%
-        // tierCount ist NACH Inkrement (oben), daher -1 für den Wert VOR diesem Prestige
+        // tierCount ist NACH Inkrement (oben), daher -1 fuer den Wert VOR diesem Prestige
         decimal baseBonus = tier.GetPermanentMultiplierBonus();
         int tierCount = tier switch
         {
@@ -126,6 +154,25 @@ public sealed class PrestigeService : IPrestigeService
         decimal diminishedBonus = baseBonus * (1m / (1m + 0.1m * tierCount));
         prestige.PermanentMultiplier += diminishedBonus;
         prestige.PermanentMultiplier = Math.Min(Math.Round(prestige.PermanentMultiplier, 3), MaxPermanentMultiplier);
+
+        // History-Eintrag NACH Multiplikator-Berechnung (damit MultiplierAfter den echten Wert hat)
+        // Level/Geld sind noch nicht resettet - PlayerLevel und TotalMoneyEarned stimmen noch
+        prestige.History.Insert(0, new PrestigeHistoryEntry
+        {
+            Tier = tier,
+            Date = DateTime.UtcNow,
+            PointsEarned = tierPoints,
+            PlayerLevel = state.PlayerLevel,
+            MultiplierAfter = prestige.PermanentMultiplier,
+            TotalMoneyEarned = state.TotalMoneyEarned,
+            RunDurationTicks = runDuration.Ticks,
+            Challenges = new List<PrestigeChallengeType>(prestige.ActiveChallenges),
+            BonusPrestigePoints = bonusPp,
+        });
+
+        // Auf 20 Eintraege begrenzen
+        if (prestige.History.Count > 20)
+            prestige.History.RemoveRange(20, prestige.History.Count - 20);
 
         // Legacy-Felder synchron halten
         state.PrestigeLevel = prestige.TotalPrestigeCount;
@@ -148,6 +195,9 @@ public sealed class PrestigeService : IPrestigeService
 
         PrestigeCompleted?.Invoke(this, EventArgs.Empty);
 
+        // Meilensteine NACH dem Event prüfen (damit UI den Prestige-Erfolg zuerst zeigt)
+        CheckAndAwardMilestones();
+
         return true;
     }
 
@@ -165,11 +215,18 @@ public sealed class PrestigeService : IPrestigeService
         var allItems = PrestigeShop.GetAllItems();
         var prestige = _gameStateService.State.Prestige;
         var purchased = prestige.PurchasedShopItems;
+        var currentTier = prestige.CurrentTier;
 
         // Kopien erstellen damit statische Instanzen nicht mutiert werden
         var result = new List<PrestigeShopItem>(allItems.Count);
         foreach (var item in allItems)
         {
+            // Tier-locked Items: Nur sichtbar wenn Tier erreicht ODER bereits gekauft
+            if (item.RequiredTier != PrestigeTier.None
+                && currentTier < item.RequiredTier
+                && !purchased.Contains(item.Id))
+                continue;
+
             var copy = new PrestigeShopItem
             {
                 Id = item.Id,
@@ -179,7 +236,8 @@ public sealed class PrestigeService : IPrestigeService
                 Cost = item.Cost,
                 Effect = item.Effect,
                 Category = item.Category,
-                IsRepeatable = item.IsRepeatable
+                IsRepeatable = item.IsRepeatable,
+                RequiredTier = item.RequiredTier,
             };
 
             if (copy.IsRepeatable)
@@ -238,7 +296,8 @@ public sealed class PrestigeService : IPrestigeService
             prestige.PurchasedShopItems.Add(itemId);
         }
 
-        // MaxOfflineHours-Cache invalidieren (pp_offline_hours könnte gekauft worden sein)
+        // Caches invalidieren (Shop-Effekte und MaxOfflineHours)
+        _effectCacheDirty = true;
         _gameStateService.State.InvalidateMaxOfflineHoursCache();
         return true;
     }
@@ -246,8 +305,10 @@ public sealed class PrestigeService : IPrestigeService
     /// <summary>
     /// Maximaler Prestige-Multiplikator (nur Tier-Boni, nicht Shop-Income-Boni).
     /// Shop-Income-Boni werden separat im GameLoop/OfflineProgress angewendet.
+    /// BAL-FIX: Von 50x auf 20x gesenkt - realistisch erreichbarer Bereich nach ~48 Prestiges.
+    /// Diminishing Returns: 10. Prestige desselben Tiers bringt nur noch 50% Bonus.
     /// </summary>
-    private const decimal MaxPermanentMultiplier = 50.0m;
+    private const decimal MaxPermanentMultiplier = 20.0m;
 
     public decimal GetPermanentMultiplier()
     {
@@ -258,57 +319,89 @@ public sealed class PrestigeService : IPrestigeService
 
     public decimal GetCostReduction()
     {
-        var purchased = _gameStateService.State.Prestige.PurchasedShopItems;
-        var allItems = PrestigeShop.GetAllItems();
-        decimal reduction = 0m;
-
-        foreach (var item in allItems)
-        {
-            if (purchased.Contains(item.Id) && item.Effect.CostReduction > 0)
-                reduction += item.Effect.CostReduction;
-        }
-
-        // Cap bei 50% Reduktion
-        return Math.Min(reduction, 0.50m);
+        RefreshEffectCacheIfNeeded();
+        return _cachedCostReduction;
     }
 
     public decimal GetMoodDecayReduction()
     {
-        var purchased = _gameStateService.State.Prestige.PurchasedShopItems;
-        var allItems = PrestigeShop.GetAllItems();
-        decimal reduction = 0m;
-
-        foreach (var item in allItems)
-        {
-            if (purchased.Contains(item.Id) && item.Effect.MoodDecayReduction > 0)
-                reduction += item.Effect.MoodDecayReduction;
-        }
-
-        // Cap bei 50% Reduktion
-        return Math.Min(reduction, 0.50m);
+        RefreshEffectCacheIfNeeded();
+        return _cachedMoodDecayReduction;
     }
 
     public decimal GetXpMultiplier()
     {
-        var purchased = _gameStateService.State.Prestige.PurchasedShopItems;
-        var allItems = PrestigeShop.GetAllItems();
-        decimal bonus = 0m;
+        RefreshEffectCacheIfNeeded();
+        return _cachedXpMultiplier;
+    }
 
-        foreach (var item in allItems)
+    /// <summary>
+    /// Berechnet alle Prestige-Shop-Effekte in einem einzigen Durchlauf und cacht sie.
+    /// Wird bei Shop-Kauf und State-Load invalidiert.
+    /// </summary>
+    private void RefreshEffectCacheIfNeeded()
+    {
+        if (!_effectCacheDirty) return;
+        _effectCacheDirty = false;
+
+        decimal costReduction = 0m;
+        decimal moodDecayReduction = 0m;
+        decimal xpMultiplier = 0m;
+        decimal orderRewardBonus = 0m;
+        decimal researchSpeedBonus = 0m;
+
+        var prestige = _gameStateService.State.Prestige;
+        var purchased = prestige.PurchasedShopItems;
+        var allItems = PrestigeShop.GetAllItems();
+
+        for (int i = 0; i < allItems.Count; i++)
         {
-            if (purchased.Contains(item.Id) && item.Effect.XpMultiplier > 0)
-                bonus += item.Effect.XpMultiplier;
+            var item = allItems[i];
+
+            if (item.IsRepeatable)
+            {
+                // Wiederholbare Items: Effekt × Kaufanzahl
+                if (prestige.RepeatableItemCounts.TryGetValue(item.Id, out var count) && count > 0)
+                {
+                    if (item.Effect.OrderRewardBonus > 0)
+                        orderRewardBonus += item.Effect.OrderRewardBonus * count;
+                    if (item.Effect.DeliverySpeedBonus > 0)
+                    {
+                        // DeliverySpeedBonus wird im GameLoopService separat gecacht
+                        // → hier nicht nochmal cachen, nur über purchased-Loop
+                    }
+                }
+                continue;
+            }
+
+            if (!purchased.Contains(item.Id)) continue;
+
+            if (item.Effect.CostReduction > 0)
+                costReduction += item.Effect.CostReduction;
+            if (item.Effect.MoodDecayReduction > 0)
+                moodDecayReduction += item.Effect.MoodDecayReduction;
+            if (item.Effect.XpMultiplier > 0)
+                xpMultiplier += item.Effect.XpMultiplier;
+            if (item.Effect.OrderRewardBonus > 0)
+                orderRewardBonus += item.Effect.OrderRewardBonus;
+            if (item.Effect.ResearchSpeedBonus > 0)
+                researchSpeedBonus += item.Effect.ResearchSpeedBonus;
         }
 
-        return bonus;
+        _cachedCostReduction = Math.Min(costReduction, 0.50m);
+        _cachedMoodDecayReduction = Math.Min(moodDecayReduction, 0.50m);
+        _cachedXpMultiplier = xpMultiplier;
+        _cachedOrderRewardBonus = Math.Min(orderRewardBonus, 1.0m); // Cap bei +100%
+        _cachedResearchSpeedBonus = Math.Min(researchSpeedBonus, 0.50m); // Cap bei -50%
     }
 
     /// <summary>
     /// Setzt den Spielfortschritt basierend auf dem Prestige-Tier zurück.
     /// Verschärfte Erhaltung (eine Stufe höher): Gold=Research, Platin=ShopItems,
     /// Diamant=MasterTools, Meister=Buildings+Equipment, Legende=Manager+BestWorkers.
+    /// Ascension-Perks: StartCapital, QuickStart, EternalTools, LegendaryReputation.
     /// </summary>
-    private static void ResetProgress(GameState state, PrestigeTier tier)
+    private void ResetProgress(GameState state, PrestigeTier tier)
     {
         // Startgeld berechnen: Tier-Basis (skalierend) + Shop-Boni
         decimal startMoney = tier.GetTierStartMoney();
@@ -321,6 +414,11 @@ public sealed class PrestigeService : IPrestigeService
                 startMoney += item.Effect.ExtraStartMoney;
             }
         }
+
+        // Ascension-Perk: Start-Kapital-Multiplikator (1.0 = kein Bonus, 1.5 = +50%, etc.)
+        decimal ascCapitalMultiplier = _ascensionService.GetStartCapitalMultiplier();
+        if (ascCapitalMultiplier > 1.0m)
+            startMoney = Math.Round(startMoney * ascCapitalMultiplier, 0);
 
         // Start-Worker-Tier aus Shop bestimmen
         var startWorkerTier = WorkerTier.E;
@@ -388,6 +486,44 @@ public sealed class PrestigeService : IPrestigeService
 
         state.Workshops.Add(carpenter);
 
+        // === Ascension-Perk: Quick-Start - Workshops sofort freischalten ===
+        int quickStartCount = _ascensionService.GetQuickStartWorkshops();
+        if (quickStartCount > 0)
+        {
+            // Workshop-Reihenfolge (ohne Carpenter, der ist immer frei)
+            WorkshopType[] unlockOrder =
+            [
+                WorkshopType.Plumber, WorkshopType.Electrician, WorkshopType.Painter,
+                WorkshopType.Roofer, WorkshopType.Contractor, WorkshopType.Architect,
+                WorkshopType.GeneralContractor, WorkshopType.MasterSmith
+            ];
+
+            int toUnlock = Math.Min(quickStartCount, unlockOrder.Length);
+            for (int i = 0; i < toUnlock; i++)
+            {
+                var wsType = unlockOrder[i];
+                if (state.UnlockedWorkshopTypes.Contains(wsType)) continue;
+
+                state.UnlockedWorkshopTypes.Add(wsType);
+                var ws = Workshop.Create(wsType);
+                ws.IsUnlocked = true;
+
+                // Legende-Worker wiederverwenden (wenn besser als Start-Tier)
+                if (state.Prestige.KeptWorkers.TryGetValue(wsType.ToString(), out var keptWorker)
+                    && keptWorker.Tier >= startWorkerTier)
+                {
+                    ws.Workers.Add(keptWorker);
+                    state.Prestige.KeptWorkers.Remove(wsType.ToString());
+                }
+                else
+                {
+                    ws.Workers.Add(Worker.CreateForTier(startWorkerTier));
+                }
+
+                state.Workshops.Add(ws);
+            }
+        }
+
         // === RESET: Workers ===
         state.WorkerMarket = null;
         state.TotalWorkersHired = 0;
@@ -402,8 +538,9 @@ public sealed class PrestigeService : IPrestigeService
         state.LastOrderCooldownStart = DateTime.MinValue;
         state.WeeklyOrderReset = DateTime.UtcNow;
 
-        // === RESET: Reputation ===
-        state.Reputation = new CustomerReputation();
+        // === RESET: Reputation (Ascension-Perk: höhere Start-Reputation) ===
+        int startReputation = _ascensionService.GetStartReputation();
+        state.Reputation = new CustomerReputation { ReputationScore = startReputation };
         state.LastReputationDecay = DateTime.UtcNow;
 
         // === RESET: Buildings (Meister+ behält Gebäude, Level wird weiter unten auf 1 gesetzt) ===
@@ -456,9 +593,28 @@ public sealed class PrestigeService : IPrestigeService
         // === RESET: Story (pending Story leeren, viewed bleiben erhalten) ===
         state.PendingStoryId = null;
 
-        // === RESET: Meisterwerkzeuge (Diamant+ behält sie) ===
+        // === RESET: Meisterwerkzeuge (Diamant+ behält sie, Ascension-Perk: teilweise behalten) ===
         if (!tier.KeepsMasterTools())
-            state.CollectedMasterTools.Clear();
+        {
+            int eternalLevel = _ascensionService.GetEternalToolsLevel();
+            if (eternalLevel >= 3)
+            {
+                // Level 3 (Max): Alle Meisterwerkzeuge behalten
+            }
+            else if (eternalLevel > 0)
+            {
+                // Level 1: Erste 2 Tools, Level 2: Erste 4 Tools
+                int keepCount = Math.Min(eternalLevel * 2, state.CollectedMasterTools.Count);
+                var toolsToKeep = state.CollectedMasterTools.GetRange(0, keepCount);
+                state.CollectedMasterTools.Clear();
+                state.CollectedMasterTools.AddRange(toolsToKeep);
+            }
+            else
+            {
+                // Kein Perk: Alle löschen (bisheriges Verhalten)
+                state.CollectedMasterTools.Clear();
+            }
+        }
 
         // === RESET: Lucky Spin (immer zurücksetzen) ===
         state.LuckySpin = new LuckySpinState();
@@ -550,5 +706,11 @@ public sealed class PrestigeService : IPrestigeService
 
         // Gold prestige preserves shop items (already in PrestigeData.PurchasedShopItems,
         // which is not touched by reset). Nothing extra needed here.
+
+        // === Speedrun: Neuen Run starten ===
+        state.Prestige.RunStartTime = DateTime.UtcNow;
+
+        // === Challenges: Aktive Challenges bleiben für den neuen Run erhalten ===
+        // (Spieler hat sie VOR dem Prestige gewählt, Constraints werden ab jetzt enforced)
     }
 }

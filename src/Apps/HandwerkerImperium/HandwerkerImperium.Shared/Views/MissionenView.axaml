@@ -5,6 +5,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             xmlns:models="using:HandwerkerImperium.Models"
              xmlns:dashboard="using:HandwerkerImperium.Views.Dashboard"
              x:Class="HandwerkerImperium.Views.MissionenView"
              x:DataType="vm:MainViewModel"
@@ -22,232 +23,327 @@
     </Style>
   </UserControl.Styles>
 
-  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                Name="MissionenScrollViewer"
-                AutomationProperties.AutomationId="Missionen_Scroll_Main">
-    <StackPanel Spacing="16" Margin="16"
-                AutomationProperties.AutomationId="Missionen_Panel_MainContent">
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="Missionen_Grid_Root">
 
-      <!-- ================================================================= -->
-      <!-- 1. HEADER: Titel                                                  -->
-      <!-- ================================================================= -->
-      <TextBlock Text="{loc:Translate TabMissionen}"
-                 FontSize="22" FontWeight="Bold"
-                 Foreground="{DynamicResource TextPrimaryBrush}"
-                 AutomationProperties.AutomationId="Missionen_Txt_Title" />
-
-      <!-- ================================================================= -->
-      <!-- 2. DAILY CHALLENGES (wiederverwendetes UserControl)               -->
-      <!-- ================================================================= -->
-      <dashboard:DailyChallengeSection
-          AutomationProperties.AutomationId="Missionen_Section_DailyChallenges" />
-
-      <!-- ================================================================= -->
-      <!-- 3. WEEKLY MISSIONS (wiederverwendetes UserControl)                -->
-      <!-- ================================================================= -->
-      <dashboard:WeeklyMissionSection
-          AutomationProperties.AutomationId="Missionen_Section_WeeklyMissions" />
-
-      <!-- ================================================================= -->
-      <!-- 4. FEATURE-KARTEN (2 Spalten)                                     -->
-      <!-- ================================================================= -->
-      <StackPanel Spacing="8"
-                  AutomationProperties.AutomationId="Missionen_Panel_Features">
-        <TextBlock Text="{loc:Translate FeaturesTitle}"
-                   FontSize="16" FontWeight="Bold"
-                   Foreground="{DynamicResource TextPrimaryBrush}"
-                   AutomationProperties.AutomationId="Missionen_Txt_FeaturesTitle" />
-
-        <UniformGrid Columns="2"
-                     AutomationProperties.AutomationId="Missionen_Grid_Features">
-
-          <!-- Turnier (ab Level 50) -->
-          <Button Classes="Text" Margin="4" Padding="0"
-                  HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                  HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToTournamentCommand}"
-                  IsVisible="{Binding ShowTournamentSection}"
-                  AutomationProperties.AutomationId="Missionen_Btn_Tournament">
-            <Border Classes="CardElevated" Padding="10" MinHeight="80"
-                    AutomationProperties.AutomationId="Missionen_Border_Tournament">
-              <StackPanel Spacing="4" HorizontalAlignment="Center">
-                <Border CornerRadius="14" Width="40" Height="40"
-                        HorizontalAlignment="Center"
-                        AutomationProperties.AutomationId="Missionen_Border_TournamentIcon">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#35DC2626" Offset="0" />
-                      <GradientStop Color="#15FF6B6B" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <icons:GameIcon Kind="Trophy" Width="28" Height="28"
-                                   Foreground="{StaticResource TournamentBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Missionen_Icon_Tournament" />
-                </Border>
-                <TextBlock Text="{loc:Translate TournamentTitle}"
-                           FontSize="13" FontWeight="SemiBold"
-                           HorizontalAlignment="Center" TextAlignment="Center"
-                           TextTrimming="CharacterEllipsis" MaxLines="1"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Missionen_Txt_TournamentTitle" />
-                <TextBlock Text="{Binding TournamentStatusText}"
-                           FontSize="10"
-                           HorizontalAlignment="Center" TextAlignment="Center"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           AutomationProperties.AutomationId="Missionen_Txt_TournamentStatus" />
-              </StackPanel>
-            </Border>
-          </Button>
-
-          <!-- Battle Pass (ab Level 70) -->
-          <Button Classes="Text" Margin="4" Padding="0"
-                  HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                  HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToBattlePassCommand}"
-                  IsVisible="{Binding ShowBattlePassSection}"
-                  AutomationProperties.AutomationId="Missionen_Btn_BattlePass">
-            <Border Classes="CardElevated" Padding="10" MinHeight="80"
-                    AutomationProperties.AutomationId="Missionen_Border_BattlePass">
-              <StackPanel Spacing="4" HorizontalAlignment="Center">
-                <Border CornerRadius="14" Width="40" Height="40"
-                        HorizontalAlignment="Center"
-                        AutomationProperties.AutomationId="Missionen_Border_BattlePassIcon">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#357C3AED" Offset="0" />
-                      <GradientStop Color="#15A78BFA" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <icons:GameIcon Kind="ShieldStar" Width="28" Height="28"
-                                   Foreground="{StaticResource BattlePassBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Missionen_Icon_BattlePass" />
-                </Border>
-                <TextBlock Text="{loc:Translate BattlePassTitle}"
-                           FontSize="13" FontWeight="SemiBold"
-                           HorizontalAlignment="Center" TextAlignment="Center"
-                           TextTrimming="CharacterEllipsis" MaxLines="1"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Missionen_Txt_BattlePassTitle" />
-                <TextBlock Text="{Binding BattlePassStatusText}"
-                           FontSize="10"
-                           HorizontalAlignment="Center" TextAlignment="Center"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           AutomationProperties.AutomationId="Missionen_Txt_BattlePassStatus" />
-              </StackPanel>
-            </Border>
-          </Button>
-
-          <!-- Saison-Event (ab Level 60) -->
-          <Button Classes="Text" Margin="4" Padding="0"
-                  HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                  HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToSeasonalEventCommand}"
-                  IsVisible="{Binding ShowSeasonalEventSection}"
-                  AutomationProperties.AutomationId="Missionen_Btn_SeasonalEvent">
-            <Border Classes="CardElevated" Padding="10" MinHeight="80"
-                    AutomationProperties.AutomationId="Missionen_Border_SeasonalEvent">
-              <StackPanel Spacing="4" HorizontalAlignment="Center">
-                <Border CornerRadius="14" Width="40" Height="40"
-                        HorizontalAlignment="Center"
-                        AutomationProperties.AutomationId="Missionen_Border_SeasonalEventIcon">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#35059669" Offset="0" />
-                      <GradientStop Color="#1534D399" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <icons:GameIcon Kind="CalendarStar" Width="28" Height="28"
-                                   Foreground="{StaticResource SeasonalEventBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Missionen_Icon_SeasonalEvent" />
-                </Border>
-                <TextBlock Text="{loc:Translate SeasonalEventTitle}"
-                           FontSize="13" FontWeight="SemiBold"
-                           HorizontalAlignment="Center" TextAlignment="Center"
-                           TextTrimming="CharacterEllipsis" MaxLines="1"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Missionen_Txt_SeasonalEventTitle" />
-                <TextBlock Text="{Binding SeasonalEventStatusText}"
-                           FontSize="10"
-                           HorizontalAlignment="Center" TextAlignment="Center"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           AutomationProperties.AutomationId="Missionen_Txt_SeasonalEventStatus" />
-              </StackPanel>
-            </Border>
-          </Button>
-
-          <!-- Erfolge -->
-          <Button Classes="Text" Margin="4" Padding="0"
-                  HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                  HorizontalContentAlignment="Stretch"
-                  Command="{Binding SelectAchievementsTabCommand}"
-                  AutomationProperties.AutomationId="Missionen_Btn_Achievements">
-            <Border Classes="CardElevated" Padding="10" MinHeight="80"
-                    AutomationProperties.AutomationId="Missionen_Border_Achievements">
-              <StackPanel Spacing="4" HorizontalAlignment="Center">
-                <Border CornerRadius="14" Width="40" Height="40"
-                        HorizontalAlignment="Center"
-                        AutomationProperties.AutomationId="Missionen_Border_AchievementsIcon">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#30FFD700" Offset="0" />
-                      <GradientStop Color="#15FFF176" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <icons:GameIcon Kind="TrophyAward" Width="28" Height="28"
-                                   Foreground="{StaticResource CraftGoldBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Missionen_Icon_Achievements" />
-                </Border>
-                <TextBlock Text="{loc:Translate Achievements}"
-                           FontSize="13" FontWeight="SemiBold"
-                           HorizontalAlignment="Center" TextAlignment="Center"
-                           TextTrimming="CharacterEllipsis" MaxLines="1"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Missionen_Txt_AchievementsTitle" />
-              </StackPanel>
-            </Border>
-          </Button>
-
-        </UniformGrid>
-      </StackPanel>
-
-      <!-- ================================================================= -->
-      <!-- 5. GLUECKSRAD-BANNER (immer sichtbar, Gratis oder Goldschrauben) -->
-      <!-- ================================================================= -->
-      <Button Command="{Binding ShowLuckySpinCommand}"
-              Classes="Text" Padding="0" CornerRadius="12"
-              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-              AutomationProperties.AutomationId="Missionen_Btn_LuckySpin">
-        <Border CornerRadius="12" Padding="12,10"
-                Background="#20FFD700" BorderBrush="{StaticResource CraftGoldBrush}"
-                BorderThickness="1"
-                AutomationProperties.AutomationId="Missionen_Border_LuckySpin">
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <icons:GameIcon Kind="ChartDonut" Width="26" Height="26"
-                             Foreground="{StaticResource CraftGoldBrush}"
-                             AutomationProperties.AutomationId="Missionen_Icon_LuckySpin" />
-            <TextBlock Text="{loc:Translate LuckySpin}"
-                       FontSize="14" FontWeight="Bold"
-                       Foreground="{StaticResource CraftGoldBrush}"
-                       AutomationProperties.AutomationId="Missionen_Txt_LuckySpin" />
-            <!-- Gratis-Badge nur bei verfuegbarem Gratis-Spin -->
-            <Border IsVisible="{Binding HasFreeSpin}"
-                    Background="{StaticResource CraftGoldBrush}"
-                    CornerRadius="8" Padding="6,2">
-              <TextBlock Text="GRATIS" FontSize="10" FontWeight="Bold"
-                         Foreground="#1A1200" />
-            </Border>
-          </StackPanel>
-        </Border>
+    <!-- ================================================================= -->
+    <!-- TAB-HEADER: Heute / Wettbewerbe                                   -->
+    <!-- ================================================================= -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,*" RowDefinitions="Auto,2"
+          Margin="16,16,16,0"
+          AutomationProperties.AutomationId="Missionen_Grid_TabHeader">
+      <!-- Tab: Heute -->
+      <Button Grid.Column="0" Classes="Text" Padding="8,10"
+              Command="{Binding MissionsVM.SelectTodayTabCommand}"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+              AutomationProperties.AutomationId="Missionen_Btn_TabToday">
+        <TextBlock Text="{loc:Translate Today}" FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
       </Button>
+      <!-- Tab: Wettbewerbe -->
+      <Button Grid.Column="1" Classes="Text" Padding="8,10"
+              Command="{Binding MissionsVM.SelectCompetitionsTabCommand}"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+              AutomationProperties.AutomationId="Missionen_Btn_TabCompetitions">
+        <TextBlock Text="{loc:Translate Competitions}" FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+      </Button>
+      <!-- Unterstreichung aktiver Tab -->
+      <Border Grid.Row="1" Grid.Column="0" Height="2"
+              Background="{StaticResource CraftPrimaryBrush}"
+              IsVisible="{Binding MissionsVM.IsTodayTabActive}" />
+      <Border Grid.Row="1" Grid.Column="1" Height="2"
+              Background="{StaticResource CraftPrimaryBrush}"
+              IsVisible="{Binding MissionsVM.IsCompetitionsTabActive}" />
+    </Grid>
 
-      <!-- Bottom Spacer (80dp fuer Tab-Bar 68dp + Margin) -->
-      <Border Height="80" />
+    <!-- ================================================================= -->
+    <!-- SCROLLBARER CONTENT                                                -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1"
+                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                  Name="MissionenScrollViewer"
+                  AutomationProperties.AutomationId="Missionen_Scroll_Main">
+      <StackPanel Spacing="16" Margin="16"
+                  AutomationProperties.AutomationId="Missionen_Panel_MainContent">
 
-    </StackPanel>
-  </ScrollViewer>
+        <!-- ============================================================= -->
+        <!-- TAB 1: HEUTE (Daily Challenges, Quick Jobs, Gluecksrad)       -->
+        <!-- ============================================================= -->
+        <StackPanel Spacing="16"
+                    IsVisible="{Binding MissionsVM.IsTodayTabActive}"
+                    AutomationProperties.AutomationId="Missionen_Panel_TodayTab">
+
+          <!-- Daily Challenges (wiederverwendetes UserControl) -->
+          <dashboard:DailyChallengeSection DataContext="{Binding MissionsVM}"
+              AutomationProperties.AutomationId="Missionen_Section_DailyChallenges" />
+
+          <!-- Quick Jobs (Karte mit Timer) -->
+          <Border Classes="CardElevated" Padding="12" CornerRadius="10"
+                  AutomationProperties.AutomationId="Missionen_Border_QuickJobs">
+            <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Translate QuickJobs}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                  <icons:GameIcon Kind="TimerRefresh" Width="16" Height="16"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Text="{Binding MissionsVM.QuickJobTimerDisplay}" FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Grid>
+              <!-- QuickJobs-Liste -->
+              <ItemsControl ItemsSource="{Binding MissionsVM.QuickJobs}"
+                            AutomationProperties.AutomationId="Missionen_Items_QuickJobs">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:QuickJob">
+                    <Border Margin="0,4" Padding="8" CornerRadius="8"
+                            Background="{DynamicResource SurfaceBrush}"
+                            AutomationProperties.AutomationId="Missionen_Border_QuickJobItem">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding DisplayTitle}" FontSize="12" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding DisplayWorkshopName}" FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding RewardDisplay}" FontSize="11"
+                                       Foreground="{DynamicResource SuccessBrush}" />
+                          </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="1" Classes="Primary" Padding="10,4"
+                                Background="{StaticResource CraftPrimaryBrush}"
+                                Content="{loc:Translate Start}"
+                                IsVisible="{Binding !IsCompleted}"
+                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).MissionsVM.StartQuickJobCommand}"
+                                CommandParameter="{Binding .}" />
+                        <icons:GameIcon Grid.Column="1" Kind="Check" Width="24" Height="24"
+                                         Foreground="{DynamicResource SuccessBrush}"
+                                         IsVisible="{Binding IsCompleted}"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <!-- Gluecksrad-Banner (Gratis oder Goldschrauben) -->
+          <Button Command="{Binding ShowLuckySpinCommand}"
+                  Classes="Text" Padding="0" CornerRadius="12"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                  AutomationProperties.AutomationId="Missionen_Btn_LuckySpin">
+            <Border CornerRadius="12" Padding="12,10"
+                    Background="#20FFD700" BorderBrush="{StaticResource CraftGoldBrush}"
+                    BorderThickness="1"
+                    AutomationProperties.AutomationId="Missionen_Border_LuckySpin">
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                <icons:GameIcon Kind="ChartDonut" Width="26" Height="26"
+                                 Foreground="{StaticResource CraftGoldBrush}"
+                                 AutomationProperties.AutomationId="Missionen_Icon_LuckySpin" />
+                <TextBlock Text="{loc:Translate LuckySpin}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource CraftGoldBrush}"
+                           AutomationProperties.AutomationId="Missionen_Txt_LuckySpin" />
+                <!-- Gratis-Badge nur bei verfuegbarem Gratis-Spin -->
+                <Border IsVisible="{Binding MissionsVM.HasFreeSpin}"
+                        Background="{StaticResource CraftGoldBrush}"
+                        CornerRadius="8" Padding="6,2">
+                  <TextBlock Text="{loc:Translate Free}" FontSize="10" FontWeight="Bold"
+                             Foreground="#1A1200" />
+                </Border>
+              </StackPanel>
+            </Border>
+          </Button>
+
+        </StackPanel>
+
+        <!-- ============================================================= -->
+        <!-- TAB 2: WETTBEWERBE (Weekly, Turnier, BattlePass, Saison, Erfolge) -->
+        <!-- ============================================================= -->
+        <StackPanel Spacing="16"
+                    IsVisible="{Binding MissionsVM.IsCompetitionsTabActive}"
+                    AutomationProperties.AutomationId="Missionen_Panel_CompetitionsTab">
+
+          <!-- Weekly Missions (wiederverwendetes UserControl) -->
+          <dashboard:WeeklyMissionSection DataContext="{Binding MissionsVM}"
+              AutomationProperties.AutomationId="Missionen_Section_WeeklyMissions" />
+
+          <!-- Feature-Karten (2 Spalten) -->
+          <StackPanel Spacing="8"
+                      AutomationProperties.AutomationId="Missionen_Panel_Features">
+            <TextBlock Text="{loc:Translate FeaturesTitle}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       AutomationProperties.AutomationId="Missionen_Txt_FeaturesTitle" />
+
+            <UniformGrid Columns="2"
+                         AutomationProperties.AutomationId="Missionen_Grid_Features">
+
+              <!-- Turnier (ab Level 50) -->
+              <Button Classes="Text" Margin="4" Padding="0"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                      HorizontalContentAlignment="Stretch"
+                      Command="{Binding NavigateToTournamentCommand}"
+                      IsVisible="{Binding ShowTournamentSection}"
+                      AutomationProperties.AutomationId="Missionen_Btn_Tournament">
+                <Border Classes="CardElevated" Padding="10" MinHeight="80"
+                        AutomationProperties.AutomationId="Missionen_Border_Tournament">
+                  <StackPanel Spacing="4" HorizontalAlignment="Center">
+                    <Border CornerRadius="14" Width="40" Height="40"
+                            HorizontalAlignment="Center"
+                            AutomationProperties.AutomationId="Missionen_Border_TournamentIcon">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#35DC2626" Offset="0" />
+                          <GradientStop Color="#15FF6B6B" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <icons:GameIcon Kind="Trophy" Width="28" Height="28"
+                                       Foreground="{StaticResource TournamentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Missionen_Icon_Tournament" />
+                    </Border>
+                    <TextBlock Text="{loc:Translate TournamentTitle}"
+                               FontSize="13" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" MaxLines="1"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Missionen_Txt_TournamentTitle" />
+                    <TextBlock Text="{Binding TournamentStatusText}"
+                               FontSize="10"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               AutomationProperties.AutomationId="Missionen_Txt_TournamentStatus" />
+                  </StackPanel>
+                </Border>
+              </Button>
+
+              <!-- Battle Pass (ab Level 70) -->
+              <Button Classes="Text" Margin="4" Padding="0"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                      HorizontalContentAlignment="Stretch"
+                      Command="{Binding NavigateToBattlePassCommand}"
+                      IsVisible="{Binding ShowBattlePassSection}"
+                      AutomationProperties.AutomationId="Missionen_Btn_BattlePass">
+                <Border Classes="CardElevated" Padding="10" MinHeight="80"
+                        AutomationProperties.AutomationId="Missionen_Border_BattlePass">
+                  <StackPanel Spacing="4" HorizontalAlignment="Center">
+                    <Border CornerRadius="14" Width="40" Height="40"
+                            HorizontalAlignment="Center"
+                            AutomationProperties.AutomationId="Missionen_Border_BattlePassIcon">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#357C3AED" Offset="0" />
+                          <GradientStop Color="#15A78BFA" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <icons:GameIcon Kind="ShieldStar" Width="28" Height="28"
+                                       Foreground="{StaticResource BattlePassBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Missionen_Icon_BattlePass" />
+                    </Border>
+                    <TextBlock Text="{loc:Translate BattlePassTitle}"
+                               FontSize="13" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" MaxLines="1"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Missionen_Txt_BattlePassTitle" />
+                    <TextBlock Text="{Binding BattlePassStatusText}"
+                               FontSize="10"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               AutomationProperties.AutomationId="Missionen_Txt_BattlePassStatus" />
+                  </StackPanel>
+                </Border>
+              </Button>
+
+              <!-- Saison-Event (ab Level 60) -->
+              <Button Classes="Text" Margin="4" Padding="0"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                      HorizontalContentAlignment="Stretch"
+                      Command="{Binding NavigateToSeasonalEventCommand}"
+                      IsVisible="{Binding ShowSeasonalEventSection}"
+                      AutomationProperties.AutomationId="Missionen_Btn_SeasonalEvent">
+                <Border Classes="CardElevated" Padding="10" MinHeight="80"
+                        AutomationProperties.AutomationId="Missionen_Border_SeasonalEvent">
+                  <StackPanel Spacing="4" HorizontalAlignment="Center">
+                    <Border CornerRadius="14" Width="40" Height="40"
+                            HorizontalAlignment="Center"
+                            AutomationProperties.AutomationId="Missionen_Border_SeasonalEventIcon">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#35059669" Offset="0" />
+                          <GradientStop Color="#1534D399" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <icons:GameIcon Kind="CalendarStar" Width="28" Height="28"
+                                       Foreground="{StaticResource SeasonalEventBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Missionen_Icon_SeasonalEvent" />
+                    </Border>
+                    <TextBlock Text="{loc:Translate SeasonalEventTitle}"
+                               FontSize="13" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" MaxLines="1"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Missionen_Txt_SeasonalEventTitle" />
+                    <TextBlock Text="{Binding SeasonalEventStatusText}"
+                               FontSize="10"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               AutomationProperties.AutomationId="Missionen_Txt_SeasonalEventStatus" />
+                  </StackPanel>
+                </Border>
+              </Button>
+
+              <!-- Erfolge -->
+              <Button Classes="Text" Margin="4" Padding="0"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                      HorizontalContentAlignment="Stretch"
+                      Command="{Binding SelectAchievementsTabCommand}"
+                      AutomationProperties.AutomationId="Missionen_Btn_Achievements">
+                <Border Classes="CardElevated" Padding="10" MinHeight="80"
+                        AutomationProperties.AutomationId="Missionen_Border_Achievements">
+                  <StackPanel Spacing="4" HorizontalAlignment="Center">
+                    <Border CornerRadius="14" Width="40" Height="40"
+                            HorizontalAlignment="Center"
+                            AutomationProperties.AutomationId="Missionen_Border_AchievementsIcon">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#30FFD700" Offset="0" />
+                          <GradientStop Color="#15FFF176" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <icons:GameIcon Kind="TrophyAward" Width="28" Height="28"
+                                       Foreground="{StaticResource CraftGoldBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Missionen_Icon_Achievements" />
+                    </Border>
+                    <TextBlock Text="{loc:Translate Achievements}"
+                               FontSize="13" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" MaxLines="1"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Missionen_Txt_AchievementsTitle" />
+                  </StackPanel>
+                </Border>
+              </Button>
+
+            </UniformGrid>
+          </StackPanel>
+
+        </StackPanel>
+
+        <!-- Bottom Spacer (80dp fuer Tab-Bar 68dp + Margin) -->
+        <Border Height="80" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
 
 </UserControl>

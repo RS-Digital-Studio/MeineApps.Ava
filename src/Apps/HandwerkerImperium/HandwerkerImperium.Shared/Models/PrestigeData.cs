@@ -74,6 +74,45 @@ public class PrestigeData
     [JsonPropertyName("history")]
     public List<PrestigeHistoryEntry> History { get; set; } = [];
 
+    // ── Prestige-Herausforderungen ──
+
+    /// <summary>
+    /// Aktive Run-Modifikatoren für den nächsten/aktuellen Durchlauf.
+    /// Werden VOR dem Prestige gewählt und nach dem Reset angewendet.
+    /// Max 3 gleichzeitig (PrestigeChallengeExtensions.MaxActiveChallenges).
+    /// </summary>
+    [JsonPropertyName("activeChallenges")]
+    public List<PrestigeChallengeType> ActiveChallenges { get; set; } = [];
+
+    // ── Speedrun-Tracking ──
+
+    /// <summary>
+    /// Startzeit des aktuellen Durchlaufs (UTC). Gesetzt bei jedem Prestige-Reset.
+    /// DateTime.MinValue = erster Run (kein vorheriger Prestige).
+    /// </summary>
+    [JsonPropertyName("runStartTime")]
+    public DateTime RunStartTime { get; set; } = DateTime.MinValue;
+
+    /// <summary>
+    /// Bestzeiten pro Prestige-Tier (Key = PrestigeTier.ToString(), Value = Ticks).
+    /// Nur der schnellste Run pro Tier wird gespeichert (max 7 Einträge).
+    /// </summary>
+    [JsonPropertyName("bestRunTimes")]
+    public Dictionary<string, long> BestRunTimes { get; set; } = new();
+
+    /// <summary>Gibt die Bestzeit für einen Tier zurück (null = noch keine).</summary>
+    public TimeSpan? GetBestRunTime(PrestigeTier tier) =>
+        BestRunTimes.TryGetValue(tier.ToString(), out var ticks) ? TimeSpan.FromTicks(ticks) : null;
+
+    // ── Prestige-Meilensteine ──
+
+    /// <summary>
+    /// IDs bereits beanspruchter Prestige-Meilensteine.
+    /// Permanent (wird NICHT bei Ascension zurückgesetzt).
+    /// </summary>
+    [JsonPropertyName("claimedMilestones")]
+    public HashSet<string> ClaimedMilestones { get; set; } = [];
+
     /// <summary>
     /// Cumulative permanent income multiplier from all prestiges.
     /// Starts at 1.0 (no bonus).

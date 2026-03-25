@@ -13,7 +13,7 @@ namespace HandwerkerImperium.Services;
 /// Firebase-Pfad: guild_hall/{guildId}/buildings/{buildingId}/
 /// Effekte werden lokal auf GuildMembership gecacht.
 /// </summary>
-public sealed class GuildHallService : IGuildHallService
+public sealed class GuildHallService : IGuildHallService, IDisposable
 {
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;
@@ -385,5 +385,10 @@ public sealed class GuildHallService : IGuildHallService
             membership.GuildHallLevel = _hallLevel;
             _gameStateService.MarkDirty();
         }
+    }
+
+    public void Dispose()
+    {
+        _lock.Dispose();
     }
 }

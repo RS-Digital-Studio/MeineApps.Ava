@@ -48,5 +48,11 @@ public enum AchievementCategory
     Tournaments,
 
     /// <summary>Achievements related to collection/equipment.</summary>
-    Collection
+    Collection,
+
+    /// <summary>Achievements related to ascension (meta-prestige).</summary>
+    Ascension,
+
+    /// <summary>Achievements related to workshop rebirth.</summary>
+    Rebirth
 }

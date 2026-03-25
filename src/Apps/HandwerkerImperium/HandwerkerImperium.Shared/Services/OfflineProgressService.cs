@@ -14,26 +14,39 @@ namespace HandwerkerImperium.Services;
 public sealed class OfflineProgressService : IOfflineProgressService
 {
     private readonly IGameStateService _gameStateService;
-    private readonly IEventService? _eventService;
     private readonly IResearchService? _researchService;
     private readonly IPrestigeService? _prestigeService;
+    private readonly IIncomeCalculatorService? _incomeCalculator;
+    private readonly IChallengeConstraintService? _challengeConstraints;
+    private readonly IAutoProductionService? _autoProductionService;
 
     public event EventHandler<OfflineEarningsEventArgs>? OfflineEarningsCalculated;
 
+    /// <summary>Items die während Offline-Zeit auto-produziert wurden (für UI-Anzeige).</summary>
+    public Dictionary<string, int> LastOfflineItemsProduced { get; private set; } = new();
+
     public OfflineProgressService(
         IGameStateService gameStateService,
-        IEventService? eventService = null,
         IResearchService? researchService = null,
-        IPrestigeService? prestigeService = null)
+        IPrestigeService? prestigeService = null,
+        IIncomeCalculatorService? incomeCalculator = null,
+        IChallengeConstraintService? challengeConstraints = null,
+        IAutoProductionService? autoProductionService = null)
     {
         _gameStateService = gameStateService;
-        _eventService = eventService;
         _researchService = researchService;
         _prestigeService = prestigeService;
+        _incomeCalculator = incomeCalculator;
+        _challengeConstraints = challengeConstraints;
+        _autoProductionService = autoProductionService;
     }
 
     public decimal CalculateOfflineProgress()
     {
+        // Challenge: Sprint blockiert Offline-Einkommen komplett
+        if (_challengeConstraints?.IsOfflineIncomeBlocked() == true)
+            return 0;
+
         var state = _gameStateService.State;
 
         // Offline-Dauer berechnen
@@ -54,104 +67,53 @@ public sealed class OfflineProgressService : IOfflineProgressService
         foreach (var ws in state.Workshops)
             ws.LevelResistanceBonus = levelResistance;
 
-        // === Brutto-Einkommen berechnen (identisch mit GameLoopService) ===
-        decimal grossIncome = state.TotalIncomePerSecond;
-
-        // Prestige-Shop Income-Boni (pp_income_10/25/50)
-        decimal shopIncomeBonus = GetPrestigeIncomeBonus(state);
-        if (shopIncomeBonus > 0)
-            grossIncome *= (1m + shopIncomeBonus);
-        if (researchEffects != null && researchEffects.EfficiencyBonus > 0)
-            grossIncome *= (1m + Math.Min(researchEffects.EfficiencyBonus, 0.50m));
-
-        // Event-Multiplikatoren (IncomeMultiplier enthält bereits saisonalen Multiplikator)
-        var eventEffects = _eventService?.GetCurrentEffects();
-        if (eventEffects != null)
-            grossIncome *= eventEffects.IncomeMultiplier;
-
-        // TaxAudit: 10% Steuer auf Einkommen (dauerhaft während Event)
-        if (eventEffects?.SpecialEffect == "tax_10_percent")
-            grossIncome *= 0.90m;
-
-        // Meisterwerkzeuge: Passiver Einkommens-Bonus
-        decimal masterToolBonus = MasterTool.GetTotalIncomeBonus(state.CollectedMasterTools);
-        if (masterToolBonus > 0)
-            grossIncome *= (1m + masterToolBonus);
-
-        // Gilden-Bonus: +1% pro Gilden-Level, max +20%
-        if (state.GuildMembership != null && state.GuildMembership.IncomeBonus > 0)
-            grossIncome *= (1m + state.GuildMembership.IncomeBonus);
-
-        // Gilden-Forschungs-Boni: Einkommen + Effizienz (identisch mit GameLoopService)
-        if (state.GuildMembership != null)
-        {
-            var gm = state.GuildMembership;
-
-            // Einkommens-Bonus (+20% bei allen Forschungen)
-            if (gm.ResearchIncomeBonus > 0)
-                grossIncome *= (1m + gm.ResearchIncomeBonus);
-
-            // Effizienz-Bonus (+5%) - stackt mit Research-Effizienz
-            if (gm.ResearchEfficiencyBonus > 0)
-                grossIncome *= (1m + gm.ResearchEfficiencyBonus);
-        }
-
-        // Soft-Cap: Diminishing Returns ab 10.0x (identisch mit GameLoopService)
-        if (state.TotalIncomePerSecond > 0)
-        {
-            decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
-            if (effectiveMultiplier > 10.0m)
-            {
-                decimal excess = effectiveMultiplier - 10.0m;
-                decimal softened = 10.0m + (decimal)Math.Log(1.0 + (double)excess, 2.0);
-                grossIncome = state.TotalIncomePerSecond * softened;
-            }
-        }
-
-        // === Kosten berechnen (wie GameLoop) ===
-        decimal costs = state.TotalCostsPerSecond;
-
-        decimal totalCostReduction = 0m;
-        if (_prestigeService != null)
-            totalCostReduction += _prestigeService.GetCostReduction();
-        if (researchEffects != null)
-            totalCostReduction += researchEffects.CostReduction + researchEffects.WageReduction;
-
-        // Storage-Gebäude: Materialkosten-Reduktion
-        var storage = state.GetBuilding(BuildingType.Storage);
-        if (storage != null)
-            totalCostReduction += storage.MaterialCostReduction * 0.5m;
-
-        if (totalCostReduction > 0)
-            costs *= (1m - Math.Min(totalCostReduction, 0.50m));
-
-        // Event-Kosteneffekte (z.B. MaterialShortage)
-        if (eventEffects != null)
-            costs *= eventEffects.CostMultiplier;
-
-        // Gilden-Forschungs-Boni: Kosten-Reduktion (multiplikativ, identisch mit GameLoopService)
-        if (state.GuildMembership?.ResearchCostReduction > 0)
-            costs *= (1m - Math.Min(state.GuildMembership.ResearchCostReduction, 0.50m));
+        // === Einkommen + Kosten via IncomeCalculatorService (zentrale Berechnung) ===
+        decimal prestigeBonus = GetPrestigeIncomeBonus(state);
+        decimal grossIncome = _incomeCalculator?.CalculateGrossIncome(state, prestigeBonus)
+                              ?? state.TotalIncomePerSecond;
+        grossIncome = _incomeCalculator?.ApplySoftCap(state, grossIncome) ?? grossIncome;
+        decimal costs = _incomeCalculator?.CalculateCosts(state) ?? state.TotalCostsPerSecond;
 
         // Netto-Einkommen (mindestens 0 - offline kein Geld verlieren)
         decimal netPerSecond = Math.Max(0, grossIncome - costs);
 
         // Gestaffelte Offline-Earnings: 4 Stufen
-        // Optimiert für Mobile-Rhythmus: 2x am Tag reinschauen = optimaler Ertrag.
-        // 100% erste 2h, 40% bis 4h, 25% bis 8h, 10% danach
+        // Optimiert für Mobile-Rhythmus: Alle 2-3h reinschauen = optimaler Ertrag.
+        // 80%/35%/15%/5% → 8h Nacht: ~2.8h Äquivalent (genug für 2-3 spürbare Upgrades am Morgen)
         decimal totalSeconds = (decimal)effectiveDuration.TotalSeconds;
-        decimal first2h = Math.Min(totalSeconds, 7200m);                                    // 0-2h: 100%
-        decimal next2h = Math.Min(Math.Max(totalSeconds - 7200m, 0m), 7200m);               // 2-4h: 40%
-        decimal next4h = Math.Min(Math.Max(totalSeconds - 14400m, 0m), 14400m);             // 4-8h: 25%
-        decimal remaining = Math.Max(totalSeconds - 28800m, 0m);                             // 8h+: 10%
-        decimal earnings = netPerSecond * (first2h + next2h * 0.40m + next4h * 0.25m + remaining * 0.10m);
+        decimal first2h = Math.Min(totalSeconds, 7200m);                                    // 0-2h: 80%
+        decimal next2h = Math.Min(Math.Max(totalSeconds - 7200m, 0m), 7200m);               // 2-4h: 35%
+        decimal next4h = Math.Min(Math.Max(totalSeconds - 14400m, 0m), 14400m);             // 4-8h: 15%
+        decimal remaining = Math.Max(totalSeconds - 28800m, 0m);                             // 8h+: 5%
+        decimal earnings = netPerSecond * (first2h * 0.80m + next2h * 0.35m + next4h * 0.15m + remaining * 0.05m);
 
         // SpeedBoost/RushBoost: Anteilig für verbleibende Boost-Dauer anwenden
         earnings = ApplyBoostsProRata(state, earnings, effectiveDuration);
 
         // Worker-States simulieren: Mood-Decay, Fatigue, Training-Fortschritt, XP
         SimulateWorkerStatesOffline(state, effectiveDuration);
-        _gameStateService.MarkDirty(); // Worker-State-Änderungen persistieren
+
+        // Auto-Produktion: Items berechnen und ins Inventar legen
+        LastOfflineItemsProduced = new Dictionary<string, int>();
+        if (_autoProductionService != null)
+        {
+            var produced = _autoProductionService.CalculateOfflineProduction(state, effectiveDuration.TotalSeconds);
+            if (produced.Count > 0)
+            {
+                state.CraftingInventory ??= new Dictionary<string, int>();
+                foreach (var (productId, count) in produced)
+                {
+                    if (state.CraftingInventory.ContainsKey(productId))
+                        state.CraftingInventory[productId] += count;
+                    else
+                        state.CraftingInventory[productId] = count;
+                    state.TotalItemsAutoProduced += count;
+                }
+                LastOfflineItemsProduced = produced;
+            }
+        }
+
+        _gameStateService.MarkDirty();
 
         // Event feuern
         OfflineEarningsCalculated?.Invoke(this, new OfflineEarningsEventArgs(

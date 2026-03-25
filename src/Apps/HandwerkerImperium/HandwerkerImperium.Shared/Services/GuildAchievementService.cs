@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Services;
 /// Race-Condition-frei: Fortschritt wird nur client-seitig geprüft und bei Abschluss geschrieben.
 /// Firebase-Pfad: guild_achievements/{guildId}/{achievementId}/
 /// </summary>
-public sealed class GuildAchievementService : IGuildAchievementService
+public sealed class GuildAchievementService : IGuildAchievementService, IDisposable
 {
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;
@@ -298,5 +298,10 @@ public sealed class GuildAchievementService : IGuildAchievementService
         {
             _lock.Release();
         }
+    }
+
+    public void Dispose()
+    {
+        _lock.Dispose();
     }
 }

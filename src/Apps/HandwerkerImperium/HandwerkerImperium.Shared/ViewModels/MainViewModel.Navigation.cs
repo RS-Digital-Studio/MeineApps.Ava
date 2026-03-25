@@ -19,9 +19,7 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void SelectDashboardTab()
     {
-        DeactivateAllTabs();
-        IsDashboardActive = true;
-        NotifyTabBarVisibility();
+        ActivePage = ActivePage.Dashboard;
 
         // Dashboard-Sub-Tabs zurücksetzen wenn QuickJobs noch nicht freigeschaltet (z.B. nach Prestige)
         if (!IsQuickJobsUnlocked && IsQuickJobsTabActive)
@@ -41,76 +39,58 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void SelectStatisticsTab()
     {
-        DeactivateAllTabs();
-        IsStatisticsActive = true;
-        NotifyTabBarVisibility();
+        ActivePage = ActivePage.Statistics;
         StatisticsViewModel.RefreshStatisticsCommand.Execute(null);
     }
 
     [RelayCommand]
     private void SelectAchievementsTab()
     {
-        DeactivateAllTabs();
-        IsAchievementsActive = true;
+        ActivePage = ActivePage.Achievements;
         AchievementsViewModel.LoadAchievements();
-        NotifyTabBarVisibility();
     }
 
     [RelayCommand]
     private void SelectShopTab()
     {
-        // Tab gesperrt → zum Dashboard zurück
         if (IsTabLocked(4)) { SelectDashboardTab(); return; }
 
-        DeactivateAllTabs();
-        IsShopActive = true;
-        // Geldpakete-Beträge aktualisieren (basieren auf aktuellem Einkommen)
+        ActivePage = ActivePage.Shop;
         ShopViewModel.LoadShopData();
-        NotifyTabBarVisibility();
         _contextualHintService.TryShowHint(ContextualHints.ShopHint);
     }
 
     [RelayCommand]
     private void SelectSettingsTab()
     {
-        DeactivateAllTabs();
-        IsSettingsActive = true;
-        NotifyTabBarVisibility();
+        ActivePage = ActivePage.Settings;
     }
 
     [RelayCommand]
     private void SelectWorkerMarketTab()
     {
-        DeactivateAllTabs();
-        IsWorkerMarketActive = true;
+        ActivePage = ActivePage.WorkerMarket;
         WorkerMarketViewModel.LoadMarket();
-        NotifyTabBarVisibility();
     }
 
     [RelayCommand]
     private void SelectBuildingsTab()
     {
-        // Tab gesperrt → zum Dashboard zurück
         if (IsTabLocked(1)) { SelectDashboardTab(); return; }
 
-        DeactivateAllTabs();
-        IsBuildingsActive = true;
+        ActivePage = ActivePage.Buildings;
         BuildingsViewModel.LoadBuildings();
         CraftingViewModel.RefreshCrafting();
         ResearchViewModel.LoadResearchTree();
-        NotifyTabBarVisibility();
         _contextualHintService.TryShowHint(ContextualHints.BuildingHint);
     }
 
     [RelayCommand]
     private void SelectMissionenTab()
     {
-        // Tab gesperrt → zum Dashboard zurück
         if (IsTabLocked(2)) { SelectDashboardTab(); return; }
 
-        DeactivateAllTabs();
-        IsMissionenActive = true;
-        NotifyTabBarVisibility();
+        ActivePage = ActivePage.Missionen;
         _contextualHintService.TryShowHint(ContextualHints.DailyChallenge);
     }
 
@@ -138,23 +118,18 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void SelectResearchTab()
     {
-        DeactivateAllTabs();
-        IsResearchActive = true;
+        ActivePage = ActivePage.Research;
         ResearchViewModel.LoadResearchTree();
-        NotifyTabBarVisibility();
         _contextualHintService.TryShowHint(ContextualHints.ResearchHint);
     }
 
     [RelayCommand]
     private void SelectGuildTab()
     {
-        // Tab gesperrt → zum Dashboard zurück
         if (IsTabLocked(3)) { SelectDashboardTab(); return; }
 
-        DeactivateAllTabs();
-        IsGuildActive = true;
+        ActivePage = ActivePage.Guild;
         GuildViewModel.RefreshGuild();
-        NotifyTabBarVisibility();
         _contextualHintService.TryShowHint(ContextualHints.GuildHint);
     }
 
@@ -163,37 +138,22 @@ public sealed partial class MainViewModel
     // ═══════════════════════════════════════════════════════════════════════
 
     [RelayCommand]
-    private void NavigateToSettings()
-    {
-        SelectSettingsTab();
-    }
+    private void NavigateToSettings() => SelectSettingsTab();
 
     [RelayCommand]
-    private void NavigateToShop()
-    {
-        SelectShopTab();
-    }
+    private void NavigateToShop() => SelectShopTab();
 
     [RelayCommand]
-    private void NavigateToStatistics()
-    {
-        SelectStatisticsTab();
-    }
+    private void NavigateToStatistics() => SelectStatisticsTab();
 
     [RelayCommand]
-    private void NavigateToAchievements()
-    {
-        SelectAchievementsTab();
-    }
+    private void NavigateToAchievements() => SelectAchievementsTab();
 
     /// <summary>
     /// Navigiert zum Imperium-Tab (Gebäude sind dort inline).
     /// </summary>
     [RelayCommand]
-    private void NavigateToBuildings()
-    {
-        SelectBuildingsTab();
-    }
+    private void NavigateToBuildings() => SelectBuildingsTab();
 
     [RelayCommand]
     private void NavigateToWorkerMarket() => OnChildNavigation("workers");
@@ -237,15 +197,15 @@ public sealed partial class MainViewModel
     /// <summary>
     /// Behandelt die Zurück-Taste. Gibt true zurück wenn konsumiert (App bleibt offen),
     /// false wenn die App geschlossen werden darf (Double-Back).
-    /// Reihenfolge: Dialoge → MiniGame/Detail → Sub-Tabs → Dashboard → Double-Back-to-Exit.
+    /// Reihenfolge: Dialoge → Overlays → Sub-Seiten → Haupt-Tabs → Dashboard → Double-Back-to-Exit.
     /// </summary>
     public bool HandleBackPressed()
     {
-        // 1. Offene Dialoge/Overlays schließen (höchste Priorität)
+        // 1. Offene Dialoge schließen (höchste Priorität)
         if (DialogVM.IsHintVisible) { DialogVM.DismissHintCommand.Execute(null); return true; }
-        if (IsLuckySpinVisible) { HideLuckySpin(); return true; }
+        if (IsLuckySpinVisible) { HideLuckySpinOverlay(); return true; }
         if (IsCombinedWelcomeDialogVisible) { DismissCombinedDialog(); return true; }
-        if (IsWelcomeOfferVisible) { DismissWelcomeOffer(); return true; }
+        if (MissionsVM.IsWelcomeOfferVisible) { MissionsVM.DismissWelcomeOfferCommand.Execute(null); return true; }
         if (DialogVM.IsConfirmDialogVisible) { DialogVM.ConfirmDialogCancelCommand.Execute(null); return true; }
         if (DialogVM.IsPrestigeSummaryVisible) { DialogVM.DismissPrestigeSummaryCommand.Execute(null); return true; }
         if (DialogVM.IsAlertDialogVisible) { DialogVM.DismissAlertDialogCommand.Execute(null); return true; }
@@ -255,71 +215,59 @@ public sealed partial class MainViewModel
         if (IsDailyRewardDialogVisible) { IsDailyRewardDialogVisible = false; CheckDeferredDialogs(); return true; }
         if (DialogVM.IsStoryDialogVisible) { DialogVM.DismissStoryDialogCommand.Execute(null); return true; }
 
-        // 2. MiniGame aktiv → zurück zum Dashboard
-        if (IsSawingGameActive || IsPipePuzzleActive || IsWiringGameActive || IsPaintingGameActive ||
-            IsRoofTilingGameActive || IsBlueprintGameActive || IsDesignPuzzleGameActive || IsInspectionGameActive ||
-            IsForgeGameActive || IsInventGameActive)
-        {
-            SelectDashboardTab();
-            return true;
-        }
-
-        // 3. Worker-Profile Bottom-Sheet → nur Sheet schließen (darunterliegende View bleibt)
+        // 2. Overlay schließen (ActivePage bleibt erhalten)
         if (IsWorkerProfileActive)
         {
             IsWorkerProfileActive = false;
-            NotifyTabBarVisibility();
             return true;
         }
 
-        // 4. Detail-Views → zurück zum Dashboard
-        if (IsWorkshopDetailActive || IsOrderDetailActive)
+        // 3. Seitenbasierte Rücknavigation via ActivePage
+        switch (ActivePage)
         {
-            SelectDashboardTab();
-            return true;
-        }
+            // MiniGames → Dashboard
+            case ActivePage.SawingGame or ActivePage.PipePuzzle or ActivePage.WiringGame or
+                 ActivePage.PaintingGame or ActivePage.RoofTilingGame or ActivePage.BlueprintGame or
+                 ActivePage.DesignPuzzleGame or ActivePage.InspectionGame or
+                 ActivePage.ForgeGame or ActivePage.InventGame:
+            case ActivePage.WorkshopDetail or ActivePage.OrderDetail:
+                SelectDashboardTab();
+                return true;
 
-        // 5a. Guild-Sub-Seiten → zurück zum Guild-Hub
-        if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive ||
-            IsGuildWarSeasonActive || IsGuildBossActive || IsGuildHallActive ||
-            IsGuildAchievementsActive || IsGuildChatActive || IsGuildWarActive)
-        {
-            SelectGuildTab();
-            return true;
-        }
+            // Guild-Sub-Seiten → Guild-Hub
+            case ActivePage.GuildResearch or ActivePage.GuildMembers or ActivePage.GuildInvite or
+                 ActivePage.GuildWarSeason or ActivePage.GuildBoss or ActivePage.GuildHall or
+                 ActivePage.GuildAchievements or ActivePage.GuildChat or ActivePage.GuildWar:
+                SelectGuildTab();
+                return true;
 
-        // 5a. Imperium-Sub-Views → zurück zum Imperium-Tab (Buildings)
-        if (IsWorkerMarketActive || IsResearchActive || IsManagerActive || IsCraftingActive)
-        {
-            SelectBuildingsTab();
-            return true;
-        }
+            // Imperium-Sub-Views → Imperium-Tab
+            case ActivePage.WorkerMarket or ActivePage.Research or ActivePage.Manager or
+                 ActivePage.Crafting or ActivePage.Ascension:
+                SelectBuildingsTab();
+                return true;
 
-        // 5b. Missionen-Sub-Views → zurück zum Missionen-Tab
-        if (IsTournamentActive || IsSeasonalEventActive || IsBattlePassActive)
-        {
-            SelectMissionenTab();
-            return true;
-        }
+            // Missionen-Sub-Views → Missionen-Tab
+            case ActivePage.Tournament or ActivePage.SeasonalEvent or ActivePage.BattlePass:
+            case ActivePage.Statistics or ActivePage.Achievements:
+                SelectMissionenTab();
+                return true;
 
-        // 5c. Statistiken/Achievements → zurück zum Missionen-Tab (von dort erreichbar)
-        if (IsStatisticsActive || IsAchievementsActive)
-        {
-            SelectMissionenTab();
-            return true;
-        }
+            // Nicht-Dashboard Haupt-Tabs → Dashboard
+            case ActivePage.Shop or ActivePage.Settings or
+                 ActivePage.Buildings or ActivePage.Missionen or ActivePage.Guild:
+                SelectDashboardTab();
+                return true;
 
-        // 6. Nicht-Dashboard-Tabs → zum Dashboard
-        if (IsShopActive || IsSettingsActive ||
-            IsBuildingsActive || IsMissionenActive || IsGuildActive)
-        {
-            SelectDashboardTab();
-            return true;
-        }
+            // Dashboard → Double-Back-to-Exit
+            case ActivePage.Dashboard:
+                var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Erneut drücken zum Beenden";
+                return _backPressHelper.HandleDoubleBack(msg);
 
-        // 7. Auf Dashboard: Double-Back-to-Exit
-        var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Erneut drücken zum Beenden";
-        return _backPressHelper.HandleDoubleBack(msg);
+            default:
+                SelectDashboardTab();
+                return true;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -328,21 +276,20 @@ public sealed partial class MainViewModel
 
     private void OnChildNavigation(string route)
     {
-        // Relative route: "../minigame/..." → strip "../" and handle as minigame navigation
+        // Relative Route: "../minigame/..." → strip "../" und als MiniGame-Navigation behandeln
         if (route.StartsWith("../") && route.Length > 3 && route[3] != '.')
         {
             OnChildNavigation(route[3..]);
             return;
         }
 
-        // Pure back navigation: ".." or "../.."
+        // Zurück-Navigation: ".." oder "../.."
         if (route is ".." or "../..")
         {
-            // Worker-Profile Bottom-Sheet: nur schließen, darunterliegende View beibehalten
+            // Worker-Profile Overlay: nur schließen, darunterliegende View beibehalten
             if (IsWorkerProfileActive)
             {
                 IsWorkerProfileActive = false;
-                NotifyTabBarVisibility();
                 return;
             }
 
@@ -361,33 +308,32 @@ public sealed partial class MainViewModel
                 _activeQuickJob = null;
                 _quickJobMiniGamePlayed = false;
                 _gameStateService.State.ActiveQuickJob = null;
-                RefreshQuickJobs();
+                MissionsVM.RefreshQuickJobs();
             }
 
-            // Gilden-Sub-Seiten → zurück zum Guild-Hub
-            if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive ||
-                IsGuildWarSeasonActive || IsGuildBossActive || IsGuildHallActive ||
-                IsGuildAchievementsActive || IsGuildChatActive || IsGuildWarActive)
+            // Rücknavigation basierend auf aktuellem ActivePage
+            switch (ActivePage)
             {
-                SelectGuildTab();
-                return;
-            }
+                // Guild-Sub-Seiten → Guild-Hub
+                case ActivePage.GuildResearch or ActivePage.GuildMembers or ActivePage.GuildInvite or
+                     ActivePage.GuildWarSeason or ActivePage.GuildBoss or ActivePage.GuildHall or
+                     ActivePage.GuildAchievements or ActivePage.GuildChat or ActivePage.GuildWar:
+                    SelectGuildTab();
+                    return;
 
-            // Imperium-Sub-Views → zurück zum Imperium-Tab (Buildings)
-            if (IsWorkerMarketActive || IsResearchActive || IsManagerActive || IsCraftingActive)
-            {
-                SelectBuildingsTab();
-                RefreshFromState();
-                return;
-            }
+                // Imperium-Sub-Views → Imperium-Tab
+                case ActivePage.WorkerMarket or ActivePage.Research or ActivePage.Manager or
+                     ActivePage.Crafting or ActivePage.Ascension:
+                    SelectBuildingsTab();
+                    RefreshFromState();
+                    return;
 
-            // Missionen-Sub-Views → zurück zum Missionen-Tab
-            if (IsTournamentActive || IsSeasonalEventActive || IsBattlePassActive ||
-                IsStatisticsActive || IsAchievementsActive)
-            {
-                SelectMissionenTab();
-                RefreshFromState();
-                return;
+                // Missionen-Sub-Views → Missionen-Tab
+                case ActivePage.Tournament or ActivePage.SeasonalEvent or ActivePage.BattlePass or
+                     ActivePage.Statistics or ActivePage.Achievements:
+                    SelectMissionenTab();
+                    RefreshFromState();
+                    return;
             }
 
             SelectDashboardTab();
@@ -395,7 +341,7 @@ public sealed partial class MainViewModel
             return;
         }
 
-        // "//main" = reset to main (from settings)
+        // "//main" = Reset zur Hauptseite (z.B. von Einstellungen)
         if (route == "//main")
         {
             SelectDashboardTab();
@@ -403,28 +349,21 @@ public sealed partial class MainViewModel
             return;
         }
 
-        // "dashboard" = zum Werkstatt-Tab (z.B. von GoalService für Workshop-Meilensteine)
-        if (route == "dashboard")
-        {
-            SelectDashboardTab();
-            return;
-        }
+        // Direkt-Routen zu Haupt-Tabs
+        if (route == "dashboard") { SelectDashboardTab(); return; }
+        if (route == "imperium") { SelectBuildingsTab(); return; }
+        if (route == "statistics") { SelectStatisticsTab(); return; }
+        if (route == "research") { SelectResearchTab(); return; }
+        if (route == "workers") { SelectWorkerMarketTab(); return; }
 
-        // "imperium" = zum Imperium-Tab (z.B. von GoalService für Gebäude-Ziele)
-        if (route == "imperium")
-        {
-            SelectBuildingsTab();
-            return;
-        }
-
-        // "prestige" = Prestige-Bestätigung öffnen (von GoalService wenn Prestige verfügbar)
+        // Prestige-Bestätigung (z.B. von GoalService)
         if (route == "prestige")
         {
             NavigateToPrestigeAsync().SafeFireAndForget();
             return;
         }
 
-        // "minigame/sawing?orderId=X" or "minigame/sawing?difficulty=X" = navigate to mini-game
+        // MiniGame-Navigation: "minigame/sawing?orderId=X"
         if (route.StartsWith("minigame/"))
         {
             var routePart = route;
@@ -442,49 +381,40 @@ public sealed partial class MainViewModel
                 }
             }
 
-            // If orderId not in query, get from active order (e.g. difficulty-only route from OrderVM)
             if (string.IsNullOrEmpty(orderId))
                 orderId = _gameStateService.GetActiveOrder()?.Id ?? "";
 
-            DeactivateAllTabs();
             NavigateToMiniGame(routePart, orderId);
-            NotifyTabBarVisibility();
             return;
         }
 
-        // Neue Feature-Views (Welle 1-8)
-        // "statistics" = direkt zur Statistik-Ansicht (z.B. aus Einstellungen)
-        if (route == "statistics")
-        {
-            SelectStatisticsTab();
-            return;
-        }
-
+        // Feature-Views (Imperium/Missionen/Gilden Sub-Seiten)
         if (route is "manager" or "tournament" or "seasonal_event" or "battle_pass" or "guild" or "crafting")
         {
-            // Tab-Lock-Guards: guild (Tab 3), manager/crafting (Imperium-Sub-Views, Tab 1)
+            // Tab-Lock-Guards
             if (route == "guild" && IsTabLocked(3)) { SelectDashboardTab(); return; }
             if (route is "manager" or "crafting" && IsTabLocked(1)) { SelectDashboardTab(); return; }
 
-            DeactivateAllTabs();
             switch (route)
             {
-                case "manager": IsManagerActive = true; ManagerViewModel.RefreshManagers(); break;
-                case "tournament": IsTournamentActive = true; TournamentViewModel.RefreshTournament(); break;
-                case "seasonal_event": IsSeasonalEventActive = true; SeasonalEventViewModel.RefreshEvent(); break;
+                case "manager": ActivePage = ActivePage.Manager; ManagerViewModel.RefreshManagers(); break;
+                case "tournament": ActivePage = ActivePage.Tournament; TournamentViewModel.RefreshTournament(); break;
+                case "seasonal_event": ActivePage = ActivePage.SeasonalEvent; SeasonalEventViewModel.RefreshEvent(); break;
                 case "battle_pass":
-                    IsBattlePassActive = true;
+                    ActivePage = ActivePage.BattlePass;
                     BattlePassViewModel.RefreshBattlePass();
                     _contextualHintService.TryShowHint(ContextualHints.BattlePass);
                     break;
-                case "guild": IsGuildActive = true; GuildViewModel.RefreshGuild(); break;
+                case "guild":
+                    ActivePage = ActivePage.Guild;
+                    GuildViewModel.RefreshGuild();
+                    break;
                 case "crafting":
-                    IsCraftingActive = true;
+                    ActivePage = ActivePage.Crafting;
                     CraftingViewModel.RefreshCrafting();
                     _contextualHintService.TryShowHint(ContextualHints.CraftingHint);
                     break;
             }
-            NotifyTabBarVisibility();
             return;
         }
 
@@ -493,128 +423,106 @@ public sealed partial class MainViewModel
             "guild_war_season" or "guild_boss" or "guild_hall" or "guild_achievements" or
             "guild_chat" or "guild_war")
         {
-            // Gilden-Tab gesperrt → zum Dashboard
             if (IsTabLocked(3)) { SelectDashboardTab(); return; }
 
-            DeactivateAllTabs();
             switch (route)
             {
-                case "guild_research": IsGuildResearchActive = true; break;
-                case "guild_members": IsGuildMembersActive = true; break;
-                case "guild_invite": IsGuildInviteActive = true; break;
+                case "guild_research": ActivePage = ActivePage.GuildResearch; break;
+                case "guild_members": ActivePage = ActivePage.GuildMembers; break;
+                case "guild_invite": ActivePage = ActivePage.GuildInvite; break;
                 case "guild_war_season":
-                    IsGuildWarSeasonActive = true;
+                    ActivePage = ActivePage.GuildWarSeason;
                     GuildViewModel.WarSeasonViewModel.RefreshWar();
                     break;
                 case "guild_boss":
-                    IsGuildBossActive = true;
+                    ActivePage = ActivePage.GuildBoss;
                     GuildViewModel.BossViewModel.RefreshBoss();
                     break;
                 case "guild_hall":
-                    IsGuildHallActive = true;
+                    ActivePage = ActivePage.GuildHall;
                     GuildViewModel.HallViewModel.RefreshHall();
                     break;
                 case "guild_achievements":
-                    IsGuildAchievementsActive = true;
+                    ActivePage = ActivePage.GuildAchievements;
                     break;
                 case "guild_chat":
-                    IsGuildChatActive = true;
+                    ActivePage = ActivePage.GuildChat;
                     GuildViewModel.LoadChatMessagesAsync().SafeFireAndForget();
                     GuildViewModel.StartChatPolling();
                     break;
                 case "guild_war":
-                    IsGuildWarActive = true;
+                    ActivePage = ActivePage.GuildWar;
                     GuildViewModel.LoadWarStatusAsync().SafeFireAndForget();
                     break;
             }
-            NotifyTabBarVisibility();
             return;
         }
 
-        // "research" = navigiere zum Forschungsbaum (von GuildView aus)
-        if (route == "research")
+        // Ascension-Ansicht
+        if (route == "ascension")
         {
-            SelectResearchTab();
+            ActivePage = ActivePage.Ascension;
+            AscensionViewModel.LoadData();
             return;
         }
 
-        // "workers" = navigiere zum Arbeitermarkt (von WorkshopView/GuildView aus)
-        if (route == "workers")
-        {
-            SelectWorkerMarketTab();
-            return;
-        }
-
-        // "worker?id=X" = Worker-Profile als Bottom-Sheet Overlay (ohne Tabs zu deaktivieren)
+        // Worker-Profile als Overlay (ActivePage bleibt erhalten)
         if (route.StartsWith("worker?id="))
         {
             var workerId = route.Replace("worker?id=", "");
             WorkerProfileViewModel.SetWorker(workerId);
             IsWorkerProfileActive = true;
             _adService.HideBanner();
-            NotifyTabBarVisibility();
             return;
         }
 
-        // "workshop?type=X" = navigate to workshop detail
+        // Workshop-Detail
         if (route.StartsWith("workshop?type="))
         {
             var typeStr = route.Replace("workshop?type=", "");
             if (int.TryParse(typeStr, out var typeInt))
             {
                 WorkshopViewModel.SetWorkshopType(typeInt);
-                DeactivateAllTabs();
-                IsWorkshopDetailActive = true;
-                NotifyTabBarVisibility();
+                ActivePage = ActivePage.WorkshopDetail;
             }
             return;
         }
     }
 
+    /// <summary>
+    /// Handler fuer MissionsFeatureVM: QuickJob-State setzen und zum MiniGame navigieren.
+    /// </summary>
+    private void OnMissionsNavigateToMiniGame(string route, string orderId)
+    {
+        // QuickJob-State wird hier im MainViewModel verwaltet (Navigation braucht ihn)
+        var job = MissionsVM.QuickJobs.FirstOrDefault(j => j.MiniGameType.GetRoute() == route && !j.IsCompleted);
+        if (job != null)
+        {
+            _activeQuickJob = job;
+            _quickJobMiniGamePlayed = false;
+            _gameStateService.State.ActiveQuickJob = job;
+        }
+
+        NavigateToMiniGame(route, orderId);
+    }
+
+    /// <summary>
+    /// Navigiert zum MiniGame basierend auf der Route.
+    /// </summary>
     private void NavigateToMiniGame(string routePart, string orderId)
     {
         switch (routePart)
         {
-            case "minigame/sawing":
-                SawingGameViewModel.SetOrderId(orderId);
-                IsSawingGameActive = true;
-                break;
-            case "minigame/pipes":
-                PipePuzzleViewModel.SetOrderId(orderId);
-                IsPipePuzzleActive = true;
-                break;
-            case "minigame/wiring":
-                WiringGameViewModel.SetOrderId(orderId);
-                IsWiringGameActive = true;
-                break;
-            case "minigame/painting":
-                PaintingGameViewModel.SetOrderId(orderId);
-                IsPaintingGameActive = true;
-                break;
-            case "minigame/rooftiling":
-                RoofTilingGameViewModel.SetOrderId(orderId);
-                IsRoofTilingGameActive = true;
-                break;
-            case "minigame/blueprint":
-                BlueprintGameViewModel.SetOrderId(orderId);
-                IsBlueprintGameActive = true;
-                break;
-            case "minigame/designpuzzle":
-                DesignPuzzleGameViewModel.SetOrderId(orderId);
-                IsDesignPuzzleGameActive = true;
-                break;
-            case "minigame/inspection":
-                InspectionGameViewModel.SetOrderId(orderId);
-                IsInspectionGameActive = true;
-                break;
-            case "minigame/forge":
-                ForgeGameViewModel.SetOrderId(orderId);
-                IsForgeGameActive = true;
-                break;
-            case "minigame/invent":
-                InventGameViewModel.SetOrderId(orderId);
-                IsInventGameActive = true;
-                break;
+            case "minigame/sawing": SawingGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.SawingGame; break;
+            case "minigame/pipes": PipePuzzleViewModel.SetOrderId(orderId); ActivePage = ActivePage.PipePuzzle; break;
+            case "minigame/wiring": WiringGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.WiringGame; break;
+            case "minigame/painting": PaintingGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.PaintingGame; break;
+            case "minigame/rooftiling": RoofTilingGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.RoofTilingGame; break;
+            case "minigame/blueprint": BlueprintGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.BlueprintGame; break;
+            case "minigame/designpuzzle": DesignPuzzleGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.DesignPuzzleGame; break;
+            case "minigame/inspection": InspectionGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.InspectionGame; break;
+            case "minigame/forge": ForgeGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.ForgeGame; break;
+            case "minigame/invent": InventGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.InventGame; break;
         }
     }
 }

@@ -46,6 +46,7 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
     private readonly IGuildHallService _hallService;
     private readonly IGuildTipService _tipService;
     private readonly IGuildAchievementService _achievementService;
+    private readonly IDialogService _dialogService;
     private bool _isBusy;
     private DateTime _lastChatSend = DateTime.MinValue;
     private Avalonia.Threading.DispatcherTimer? _chatPollTimer;
@@ -67,7 +68,6 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
-    public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
     public event Action? CelebrationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -388,6 +388,7 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
         IGuildHallService hallService,
         IGuildTipService tipService,
         IGuildAchievementService achievementService,
+        IDialogService dialogService,
         GuildWarSeasonViewModel warSeasonViewModel,
         GuildBossViewModel bossViewModel,
         GuildHallViewModel hallViewModel)
@@ -402,6 +403,7 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
         _hallService = hallService;
         _tipService = tipService;
         _achievementService = achievementService;
+        _dialogService = dialogService;
 
         WarSeasonViewModel = warSeasonViewModel;
         BossViewModel = bossViewModel;
@@ -659,15 +661,12 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
     private async Task LeaveGuildAsync()
     {
         if (_isBusy) return;
-        if (ConfirmationRequested != null)
-        {
-            var confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("LeaveGuildTitle") ?? "Gilde verlassen",
-                _localizationService.GetString("LeaveGuildConfirm") ?? "Willst du die Gilde wirklich verlassen?",
-                _localizationService.GetString("Leave") ?? "Verlassen",
-                _localizationService.GetString("Cancel") ?? "Abbrechen");
-            if (!confirmed) return;
-        }
+        var confirmed = await _dialogService.ShowConfirmDialog(
+            _localizationService.GetString("LeaveGuildTitle") ?? "Gilde verlassen",
+            _localizationService.GetString("LeaveGuildConfirm") ?? "Willst du die Gilde wirklich verlassen?",
+            _localizationService.GetString("Leave") ?? "Verlassen",
+            _localizationService.GetString("Cancel") ?? "Abbrechen");
+        if (!confirmed) return;
         _isBusy = true;
         try
         {

@@ -95,6 +95,21 @@
                    HorizontalAlignment="Center"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    AutomationProperties.AutomationId="Main_Txt_ConfirmMessage" />
+
+        <!-- Prestige-Extras: Bonus-PP, Challenge-PP, Speedrun -->
+        <StackPanel Spacing="4" IsVisible="{Binding IsPrestigeTierSelectionVisible}"
+                    AutomationProperties.AutomationId="Main_Panel_PrestigeExtras">
+          <TextBlock Text="{Binding BonusPpPreview}" FontSize="12"
+                     Foreground="#A5D6A7" FontWeight="SemiBold"
+                     IsVisible="{Binding BonusPpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="{Binding ChallengePpPreview}" FontSize="12"
+                     Foreground="{StaticResource CraftGoldBrush}" FontWeight="SemiBold"
+                     IsVisible="{Binding ChallengePpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="{Binding CurrentRunDurationText}" FontSize="11"
+                     Foreground="#FFFFFFAA"
+                     IsVisible="{Binding CurrentRunDurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
         <StackPanel Spacing="8" HorizontalAlignment="Stretch"
                     AutomationProperties.AutomationId="Main_Panel_ConfirmButtons">
           <Button Classes="Primary" Content="{Binding ConfirmDialogAcceptText}"

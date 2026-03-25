@@ -3712,6 +3712,18 @@
   <data name="BPCapstoneWinter" xml:space="preserve">
     <value>Coroa de Gelo de Inverno</value>
   </data>
+  <data name="BPFreeCapstone" xml:space="preserve">
+    <value>50 Parafusos dourados + Mega recompensa</value>
+  </data>
+  <data name="BPPremiumMilestone40" xml:space="preserve">
+    <value>Marco de 30 Parafusos dourados</value>
+  </data>
+  <data name="BPPremiumSpeedBoost2h" xml:space="preserve">
+    <value>Boost de velocidade 2h + 5 Parafusos dourados</value>
+  </data>
+  <data name="BPPremiumSpeedBoost4h" xml:space="preserve">
+    <value>Boost de velocidade 4h + 10 Parafusos dourados</value>
+  </data>
   <data name="PrestigePassTitle" xml:space="preserve">
     <value>Passe de Prestígio</value>
   </data>
@@ -4074,6 +4086,9 @@
   <data name="Today" xml:space="preserve">
     <value>Hoje</value>
   </data>
+  <data name="Competitions" xml:space="preserve">
+    <value>Competi&#231;&#245;es</value>
+  </data>
   <data name="Yesterday" xml:space="preserve">
     <value>Ontem</value>
   </data>
@@ -4125,11 +4140,23 @@
   <data name="EventShop" xml:space="preserve">
     <value>Loja do evento</value>
   </data>
+  <data name="SeasonalSpringExtraWorker" xml:space="preserve">
+    <value>+1 Trabalhador (14 dias)</value>
+  </data>
+  <data name="SeasonalSpringExtraWorkerDesc" xml:space="preserve">
+    <value>Vaga temporária de trabalhador extra por 14 dias.</value>
+  </data>
   <data name="SeasonalSpringIncomeBoost" xml:space="preserve">
     <value>Boost de renda primaveril</value>
   </data>
   <data name="SeasonalSpringIncomeBoostDesc" xml:space="preserve">
     <value>+10% de renda pelo resto da temporada</value>
+  </data>
+  <data name="SeasonalSpringResearchSpeed" xml:space="preserve">
+    <value>+30% Pesquisa (14 dias)</value>
+  </data>
+  <data name="SeasonalSpringResearchSpeedDesc" xml:space="preserve">
+    <value>Reduz a duração da pesquisa em 30% por 14 dias.</value>
   </data>
   <data name="SeasonalSpringXpPack" xml:space="preserve">
     <value>Pacote XP primaveril</value>
@@ -4149,11 +4176,23 @@
   <data name="SeasonalSpringSpeedBoostDesc" xml:space="preserve">
     <value>2x velocidade de produção por 2 horas</value>
   </data>
+  <data name="SeasonalSummerDoublePrestige" xml:space="preserve">
+    <value>2x Pontos de Prestígio</value>
+  </data>
+  <data name="SeasonalSummerDoublePrestigeDesc" xml:space="preserve">
+    <value>Seu próximo prestígio dá pontos em dobro!</value>
+  </data>
   <data name="SeasonalSummerIncomeBoost" xml:space="preserve">
     <value>Boost de renda de verão</value>
   </data>
   <data name="SeasonalSummerIncomeBoostDesc" xml:space="preserve">
     <value>+10% de renda pelo resto da temporada</value>
+  </data>
+  <data name="SeasonalSummerOfflineBoost" xml:space="preserve">
+    <value>+50% Offline (14 dias)</value>
+  </data>
+  <data name="SeasonalSummerOfflineBoostDesc" xml:space="preserve">
+    <value>Aumenta os ganhos offline em 50% por 14 dias.</value>
   </data>
   <data name="SeasonalSummerXpPack" xml:space="preserve">
     <value>Pacote XP de verão</value>
@@ -4179,6 +4218,18 @@
   <data name="SeasonalAutumnIncomeBoostDesc" xml:space="preserve">
     <value>+10% de renda pelo resto da temporada</value>
   </data>
+  <data name="SeasonalAutumnInstantScrews" xml:space="preserve">
+    <value>500 Parafusos dourados</value>
+  </data>
+  <data name="SeasonalAutumnInstantScrewsDesc" xml:space="preserve">
+    <value>Receba 500 parafusos dourados instantaneamente!</value>
+  </data>
+  <data name="SeasonalAutumnMoodReset" xml:space="preserve">
+    <value>Reset de humor</value>
+  </data>
+  <data name="SeasonalAutumnMoodResetDesc" xml:space="preserve">
+    <value>Redefine o humor de todos os trabalhadores para 100.</value>
+  </data>
   <data name="SeasonalAutumnXpPack" xml:space="preserve">
     <value>Pacote XP outonal</value>
   </data>
@@ -4197,6 +4248,12 @@
   <data name="SeasonalAutumnSpeedBoostDesc" xml:space="preserve">
     <value>2x velocidade de produção por 2 horas</value>
   </data>
+  <data name="SeasonalWinterDoubleDaily" xml:space="preserve">
+    <value>2x Recompensa diária</value>
+  </data>
+  <data name="SeasonalWinterDoubleDailyDesc" xml:space="preserve">
+    <value>Dobra sua próxima recompensa de login diário.</value>
+  </data>
   <data name="SeasonalWinterIncomeBoost" xml:space="preserve">
     <value>Boost de renda invernal</value>
   </data>
@@ -4214,6 +4271,12 @@
   </data>
   <data name="SeasonalWinterScrewBundleDesc" xml:space="preserve">
     <value>Receba 15 parafusos dourados</value>
+  </data>
+  <data name="SeasonalWinterSpeed4h" xml:space="preserve">
+    <value>Boost de velocidade 4h</value>
+  </data>
+  <data name="SeasonalWinterSpeed4hDesc" xml:space="preserve">
+    <value>Velocidade 2x por 4 horas!</value>
   </data>
   <data name="SeasonalWinterSpeedBoost" xml:space="preserve">
     <value>Boost de velocidade invernal</value>
@@ -5492,5 +5555,436 @@
   </data>
   <data name="AutoCompleteHint" xml:space="preserve">
     <value>Você dominou este jogo {0}x perfeitamente!</value>
+  </data>
+  <data name="AchAscFirst" xml:space="preserve">
+    <value>Primeira Ascens&#227;o</value>
+  </data>
+  <data name="AchAscFirstDesc" xml:space="preserve">
+    <value>Realize sua primeira ascens&#227;o</value>
+  </data>
+  <data name="AchAsc5" xml:space="preserve">
+    <value>Mestre Ascendente</value>
+  </data>
+  <data name="AchAsc5Desc" xml:space="preserve">
+    <value>Realize 5 ascens&#245;es</value>
+  </data>
+  <data name="AchAsc10" xml:space="preserve">
+    <value>Transcend&#234;ncia</value>
+  </data>
+  <data name="AchAsc10Desc" xml:space="preserve">
+    <value>Realize 10 ascens&#245;es</value>
+  </data>
+  <data name="AchAscPerkFirst" xml:space="preserve">
+    <value>Entusiasta de Perks</value>
+  </data>
+  <data name="AchAscPerkFirstDesc" xml:space="preserve">
+    <value>Compre seu primeiro perk de ascens&#227;o</value>
+  </data>
+  <data name="AchAscPerksMax" xml:space="preserve">
+    <value>Totalmente Melhorado</value>
+  </data>
+  <data name="AchAscPerksMaxDesc" xml:space="preserve">
+    <value>Melhore todos os 6 perks de ascens&#227;o ao m&#225;ximo</value>
+  </data>
+  <data name="AchRebirthFirst" xml:space="preserve">
+    <value>Primeira Estrela</value>
+  </data>
+  <data name="AchRebirthFirstDesc" xml:space="preserve">
+    <value>Realize seu primeiro renascimento de oficina</value>
+  </data>
+  <data name="AchRebirthStars10" xml:space="preserve">
+    <value>Colecionador de Estrelas</value>
+  </data>
+  <data name="AchRebirthStars10Desc" xml:space="preserve">
+    <value>Colete 10 estrelas de renascimento em todas as oficinas</value>
+  </data>
+  <data name="AchRebirthWs5Stars" xml:space="preserve">
+    <value>Perfei&#231;&#227;o</value>
+  </data>
+  <data name="AchRebirthWs5StarsDesc" xml:space="preserve">
+    <value>Melhore uma oficina para 5 estrelas de renascimento</value>
+  </data>
+  <data name="AchRebirthAllWs" xml:space="preserve">
+    <value>Gal&#225;xia</value>
+  </data>
+  <data name="AchRebirthAllWsDesc" xml:space="preserve">
+    <value>Obtenha pelo menos 1 estrela de renascimento em todas as 8 oficinas</value>
+  </data>
+  <data name="AchAllWsLevel1000" xml:space="preserve">
+    <value>No Topo</value>
+  </data>
+  <data name="AchAllWsLevel1000Desc" xml:space="preserve">
+    <value>Melhore todas as 8 oficinas para o n&#237;vel 1000</value>
+  </data>
+  <data name="HintAscensionAvailableTitle" xml:space="preserve">
+    <value>Ascens&#227;o Dispon&#237;vel!</value>
+  </data>
+  <data name="HintAscensionAvailableText" xml:space="preserve">
+    <value>Voc&#234; dominou o prest&#237;gio lenda 3 vezes! Agora voc&#234; pode realizar uma Ascens&#227;o - um meta-reset que concede Pontos de Ascens&#227;o permanentes para perks poderosos.</value>
+  </data>
+  <data name="HintRebirthReadyTitle" xml:space="preserve">
+    <value>Renascimento Pronto!</value>
+  </data>
+  <data name="HintRebirthReadyText" xml:space="preserve">
+    <value>Sua oficina atingiu o n&#237;vel m&#225;ximo! Agora voc&#234; pode realizar um Renascimento para ganhar uma estrela permanente. Estrelas d&#227;o b&#244;nus de renda, descontos em melhorias e vagas extras para trabalhadores.</value>
+  </data>
+  <data name="HintFirstStarTitle" xml:space="preserve">
+    <value>Primeira Estrela Conquistada!</value>
+  </data>
+  <data name="HintFirstStarText" xml:space="preserve">
+    <value>Parab&#233;ns pela sua primeira estrela de renascimento! Estrelas s&#227;o permanentes e sobrevivem ao prest&#237;gio e &#224; ascens&#227;o. Cada estrela d&#225;: +15-150% renda, -5-25% custos de melhoria e at&#233; +2 vagas de trabalhadores.</value>
+  </data>
+  <data name="AscensionAvailable" xml:space="preserve">
+    <value>Ascens&#227;o dispon&#237;vel!</value>
+  </data>
+  <data name="AscensionComplete" xml:space="preserve">
+    <value>Ascens&#227;o conclu&#237;da! Voc&#234; recebeu {0} PA.</value>
+  </data>
+  <data name="AscensionConfirm" xml:space="preserve">
+    <value>Ascender? Todo o seu progresso de prest&#237;gio ser&#225; reiniciado!</value>
+  </data>
+  <data name="AscensionDescription" xml:space="preserve">
+    <value>Reinicie seu progresso e receba poderosos b&#244;nus permanentes.</value>
+  </data>
+  <data name="AscensionLevel" xml:space="preserve">
+    <value>N&#237;vel de Ascens&#227;o</value>
+  </data>
+  <data name="AscensionPoints" xml:space="preserve">
+    <value>Pontos de Ascens&#227;o</value>
+  </data>
+  <data name="AscensionRequirement" xml:space="preserve">
+    <value>Requer 3 Prest&#237;gios Lenda</value>
+  </data>
+  <data name="AscensionTitle" xml:space="preserve">
+    <value>Ascens&#227;o</value>
+  </data>
+  <data name="ChallengeCompleteCrafting" xml:space="preserve">
+    <value>Fabricar {0} itens</value>
+  </data>
+  <data name="ChallengePerfectStreak" xml:space="preserve">
+    <value>Conseguir {0} avalia&#231;&#245;es perfeitas seguidas</value>
+  </data>
+  <data name="ChallengeReachWorkshopLevel" xml:space="preserve">
+    <value>Alcan&#231;ar n&#237;vel de oficina {0}</value>
+  </data>
+  <data name="ChallengeTrainWorker" xml:space="preserve">
+    <value>Treinar {0} trabalhadores</value>
+  </data>
+  <data name="GoalAllWorkshopsLevel" xml:space="preserve">
+    <value>Todas as oficinas no N&#237;vel {0}</value>
+  </data>
+  <data name="GoalAllWorkshopsMax" xml:space="preserve">
+    <value>Todas as oficinas no Nv.1000 ({0}/8)</value>
+  </data>
+  <data name="GoalAscensionAvailable" xml:space="preserve">
+    <value>Ascens&#227;o dispon&#237;vel! Receba {0} pontos.</value>
+  </data>
+  <data name="GoalCollectStars" xml:space="preserve">
+    <value>Coletar Estrelas de Renascimento ({0}/{1})</value>
+  </data>
+  <data name="GoalNextRebirthStar" xml:space="preserve">
+    <value>{0}: {1} n&#237;veis at&#233; a pr&#243;xima estrela</value>
+  </data>
+  <data name="GoalRebirthReady" xml:space="preserve">
+    <value>{0} pronto para Renascimento!</value>
+  </data>
+  <data name="GoalReadyForRebirth" xml:space="preserve">
+    <value>pronto para Renascimento!</value>
+  </data>
+  <data name="GoalMaxRebirthAccess" xml:space="preserve">
+    <value>Acesso m&#225;ximo ao Rebirth!</value>
+  </data>
+  <data name="GoalPermanentBonus" xml:space="preserve">
+    <value>B&#243;nus permanente!</value>
+  </data>
+  <data name="GoalUltimatePower" xml:space="preserve">
+    <value>Poder definitivo!</value>
+  </data>
+  <data name="GoalKeepGrowing" xml:space="preserve">
+    <value>Continue crescendo!</value>
+  </data>
+  <data name="GoalNextHundred" xml:space="preserve">
+    <value>Levar {0} ao N&#237;vel {1}</value>
+  </data>
+  <data name="GoalCollectRebirthStars" xml:space="preserve">
+    <value>Coletar Estrelas de Renascimento ({0}/{1})</value>
+  </data>
+  <data name="AscensionPointsShort" xml:space="preserve">
+    <value>PA</value>
+  </data>
+  <data name="LevelAbbrev" xml:space="preserve">
+    <value>Nv.</value>
+  </data>
+  <data name="LevelUpExclamation" xml:space="preserve">
+    <value>+1 N&#237;vel!</value>
+  </data>
+  <data name="MaxShort" xml:space="preserve">
+    <value>M&#225;x</value>
+  </data>
+  <data name="MissionCompleteCrafting" xml:space="preserve">
+    <value>Fabricar {0} itens</value>
+  </data>
+  <data name="MissionTrainWorkers" xml:space="preserve">
+    <value>Treinar {0} trabalhadores</value>
+  </data>
+  <data name="PerkCost" xml:space="preserve">
+    <value>Custo: {0} PA</value>
+  </data>
+  <data name="PerkMaxLevel" xml:space="preserve">
+    <value>MAX</value>
+  </data>
+  <data name="PerkUpgrade" xml:space="preserve">
+    <value>Melhorar</value>
+  </data>
+  <data name="RebirthBonus" xml:space="preserve">
+    <value>B&#244;nus por estrela</value>
+  </data>
+  <data name="RebirthComplete" xml:space="preserve">
+    <value>Renascimento conclu&#237;do! Estrela {0} recebida.</value>
+  </data>
+  <data name="RebirthConfirm" xml:space="preserve">
+    <value>Renascer oficina? O n&#237;vel ser&#225; reiniciado para 1!</value>
+  </data>
+  <data name="RebirthCost" xml:space="preserve">
+    <value>Custo</value>
+  </data>
+  <data name="RebirthDescription" xml:space="preserve">
+    <value>Reinicie a oficina para o N&#237;vel 1 e receba uma estrela permanente.</value>
+  </data>
+  <data name="RebirthMaxStars" xml:space="preserve">
+    <value>M&#225;ximo de estrelas atingido!</value>
+  </data>
+  <data name="RebirthStars" xml:space="preserve">
+    <value>Estrelas</value>
+  </data>
+  <data name="RebirthTitle" xml:space="preserve">
+    <value>Renascimento</value>
+  </data>
+  <data name="VipCostReduction" xml:space="preserve">
+    <value>-{0}% Custo</value>
+  </data>
+  <data name="VipCurrentTier" xml:space="preserve">
+    <value>Atual: {0}</value>
+  </data>
+  <data name="VipExtraChallenges" xml:space="preserve">
+    <value>+{0} desafio di&#225;rio</value>
+  </data>
+  <data name="VipExtraMissions" xml:space="preserve">
+    <value>+{0} miss&#227;o semanal</value>
+  </data>
+  <data name="VipIncomeBonus" xml:space="preserve">
+    <value>+{0}% Renda</value>
+  </data>
+  <data name="VipNextTier" xml:space="preserve">
+    <value>Pr&#243;ximo n&#237;vel: {0}</value>
+  </data>
+  <data name="VipTitle" xml:space="preserve">
+    <value>Status VIP</value>
+  </data>
+  <data name="VipXpBonus" xml:space="preserve">
+    <value>+{0}% Experi&#234;ncia</value>
+  </data>
+  <data name="WeeklyMission_AchievePerfectStreak" xml:space="preserve">
+    <value>Conseguir uma sequ&#234;ncia perfeita de {0}</value>
+  </data>
+  <data name="WeeklyMission_CompleteCraftings" xml:space="preserve">
+    <value>Fabricar {0} itens</value>
+  </data>
+  <data name="WeeklyMission_ReachWorkshopLevels" xml:space="preserve">
+    <value>Alcan&#231;ar n&#237;vel de oficina {0}</value>
+  </data>
+  <data name="WeeklyMission_TrainWorkers" xml:space="preserve">
+    <value>Treinar {0} trabalhadores</value>
+  </data>
+
+  <!-- Challenge-Modus -->
+  <data name="Challenge_Spartaner" xml:space="preserve">
+    <value>Espartano</value>
+  </data>
+  <data name="Challenge_Spartaner_Desc" xml:space="preserve">
+    <value>Máximo 3 trabalhadores</value>
+  </data>
+  <data name="Challenge_OhneForschung" xml:space="preserve">
+    <value>Sem pesquisa</value>
+  </data>
+  <data name="Challenge_OhneForschung_Desc" xml:space="preserve">
+    <value>Nenhuma pesquisa permitida</value>
+  </data>
+  <data name="Challenge_Inflationszeit" xml:space="preserve">
+    <value>Inflação</value>
+  </data>
+  <data name="Challenge_Inflationszeit_Desc" xml:space="preserve">
+    <value>Custos de atualização duplicados</value>
+  </data>
+  <data name="Challenge_SoloMeister" xml:space="preserve">
+    <value>Mestre solo</value>
+  </data>
+  <data name="Challenge_SoloMeister_Desc" xml:space="preserve">
+    <value>Apenas 1 oficina permitida</value>
+  </data>
+  <data name="Challenge_Sprint" xml:space="preserve">
+    <value>Sprint</value>
+  </data>
+  <data name="Challenge_Sprint_Desc" xml:space="preserve">
+    <value>Sem renda offline</value>
+  </data>
+  <data name="Challenge_KeinNetz" xml:space="preserve">
+    <value>Sem rede</value>
+  </data>
+  <data name="Challenge_KeinNetz_Desc" xml:space="preserve">
+    <value>Sem fornecedores</value>
+  </data>
+  <data name="Challenges" xml:space="preserve">
+    <value>Desafios</value>
+  </data>
+  <data name="ChallengesMaxReached" xml:space="preserve">
+    <value>Máximo 3 desafios</value>
+  </data>
+  <data name="BonusPP" xml:space="preserve">
+    <value>PP bônus</value>
+  </data>
+  <data name="CurrentRunTime" xml:space="preserve">
+    <value>Tempo de jogo</value>
+  </data>
+  <data name="BestRunTime" xml:space="preserve">
+    <value>Melhor tempo</value>
+  </data>
+  <data name="PrestigeMilestoneReached" xml:space="preserve">
+    <value>Marco de prestígio! +{0} parafusos dourados</value>
+  </data>
+  <data name="PrestigeOrderRewardRep" xml:space="preserve">
+    <value>Bônus de pedido</value>
+  </data>
+  <data name="PrestigeOrderRewardRepDesc" xml:space="preserve">
+    <value>+5% recompensas de pedido por compra</value>
+  </data>
+  <data name="PrestigeDeliveryIntervalRep" xml:space="preserve">
+    <value>Turbo de entrega</value>
+  </data>
+  <data name="PrestigeDeliveryIntervalRepDesc" xml:space="preserve">
+    <value>+10% entregas mais rápidas por compra</value>
+  </data>
+  <data name="PrestigeResearchSpeedTier" xml:space="preserve">
+    <value>Turbo de pesquisa</value>
+  </data>
+  <data name="PrestigeResearchSpeedTierDesc" xml:space="preserve">
+    <value>-25% tempo de pesquisa</value>
+  </data>
+  <data name="ProductArtwork" xml:space="preserve">
+    <value>Obra de Arte</value>
+  </data>
+  <data name="ProductRoofStructure" xml:space="preserve">
+    <value>Estrutura do Telhado</value>
+  </data>
+  <data name="ProductConcrete" xml:space="preserve">
+    <value>Concreto</value>
+  </data>
+  <data name="ProductBlueprint" xml:space="preserve">
+    <value>Planta</value>
+  </data>
+  <data name="ProductContract" xml:space="preserve">
+    <value>Contrato</value>
+  </data>
+  <data name="ProductFittings" xml:space="preserve">
+    <value>Ferragens</value>
+  </data>
+  <data name="ProductPrototype" xml:space="preserve">
+    <value>Prot&#243;tipo</value>
+  </data>
+  <data name="CraftArtwork" xml:space="preserve">
+    <value>Criar Obra de Arte</value>
+  </data>
+  <data name="CraftRoofStructure" xml:space="preserve">
+    <value>Construir Estrutura</value>
+  </data>
+  <data name="CraftConcrete" xml:space="preserve">
+    <value>Misturar Concreto</value>
+  </data>
+  <data name="CraftBlueprint" xml:space="preserve">
+    <value>Desenhar Planta</value>
+  </data>
+  <data name="CraftContract" xml:space="preserve">
+    <value>Redigir Contrato</value>
+  </data>
+  <data name="CraftFittings" xml:space="preserve">
+    <value>Forjar Ferragens</value>
+  </data>
+  <data name="CraftPrototype" xml:space="preserve">
+    <value>Construir Prot&#243;tipo</value>
+  </data>
+  <data name="AutoProduction" xml:space="preserve">
+    <value>Produ&#231;&#227;o Autom&#225;tica</value>
+  </data>
+  <data name="AutoProductionUnlocked" xml:space="preserve">
+    <value>Produ&#231;&#227;o autom&#225;tica desbloqueada!</value>
+  </data>
+  <data name="SellAll" xml:space="preserve">
+    <value>Vender Tudo</value>
+  </data>
+  <data name="ItemsPerHour" xml:space="preserve">
+    <value>{0} un./h</value>
+  </data>
+  <data name="OrderTypeMaterialOrder" xml:space="preserve">
+    <value>Pedido de Entrega</value>
+  </data>
+  <data name="MaterialOrderDescription" xml:space="preserve">
+    <value>Entregar materiais para recompensa instant&#226;nea</value>
+  </data>
+  <data name="DeliverMaterials" xml:space="preserve">
+    <value>Entregar</value>
+  </data>
+  <data name="MaterialsRequired" xml:space="preserve">
+    <value>Materiais Necess&#225;rios</value>
+  </data>
+  <data name="InsufficientMaterials" xml:space="preserve">
+    <value>Materiais insuficientes</value>
+  </data>
+  <data name="ChallengeProduceItems" xml:space="preserve">
+    <value>Produza {0} itens</value>
+  </data>
+  <data name="ChallengeSellItems" xml:space="preserve">
+    <value>Venda {0} itens</value>
+  </data>
+  <data name="ChallengeCompleteMaterialOrder" xml:space="preserve">
+    <value>Complete {0} pedidos de entrega</value>
+  </data>
+  <data name="AchAutoCraftFirst" xml:space="preserve">
+    <value>Primeiro Prot&#243;tipo</value>
+  </data>
+  <data name="AchAutoCraftFirstDesc" xml:space="preserve">
+    <value>Produza seu primeiro item</value>
+  </data>
+  <data name="AchAutoCraft100" xml:space="preserve">
+    <value>Produ&#231;&#227;o em S&#233;rie</value>
+  </data>
+  <data name="AchAutoCraft100Desc" xml:space="preserve">
+    <value>Produza 100 itens</value>
+  </data>
+  <data name="AchAutoCraft1000" xml:space="preserve">
+    <value>Produ&#231;&#227;o em Massa</value>
+  </data>
+  <data name="AchAutoCraft1000Desc" xml:space="preserve">
+    <value>Produza 1000 itens</value>
+  </data>
+  <data name="AchMaterialOrder10" xml:space="preserve">
+    <value>Mestre dos Materiais</value>
+  </data>
+  <data name="AchMaterialOrder10Desc" xml:space="preserve">
+    <value>Complete 10 pedidos de entrega</value>
+  </data>
+  <data name="AchCraftTier3First" xml:space="preserve">
+    <value>Obra-Prima</value>
+  </data>
+  <data name="AchCraftTier3FirstDesc" xml:space="preserve">
+    <value>Produza seu primeiro item de n&#237;vel 3</value>
+  </data>
+  <data name="AbandonChallengeTitle" xml:space="preserve">
+    <value>Abandonar desafio?</value>
+  </data>
+  <data name="AbandonChallengeMessage" xml:space="preserve">
+    <value>Receberá 50% dos Pontos de Prestígio base (sem bónus de desafio). Os desafios serão desativados.</value>
+  </data>
+  <data name="AbandonChallengeButton" xml:space="preserve">
+    <value>Abandonar</value>
   </data>
 </root>

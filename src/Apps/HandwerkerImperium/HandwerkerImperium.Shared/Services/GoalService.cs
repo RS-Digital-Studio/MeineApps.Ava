@@ -7,24 +7,30 @@ namespace HandwerkerImperium.Services;
 
 /// <summary>
 /// Berechnet dynamisch das nächste empfohlene Ziel für den Spieler.
-/// Priorisiert nach: Meilenstein nahe → Prestige verfügbar → Neuer Workshop → Gebäude.
+/// Priorisiert nach: Meilenstein nahe → Prestige/Ascension/Rebirth → Neuer Workshop → Gebäude → Worker → Late-Game-Ziele → Stretch-Goals.
 /// </summary>
 public sealed class GoalService : IGoalService
 {
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
     private readonly IPrestigeService _prestigeService;
+    private readonly IAscensionService _ascensionService;
+    private readonly IRebirthService _rebirthService;
     private GameGoal? _cachedGoal;
     private bool _isDirty = true;
 
     public GoalService(
         IGameStateService gameStateService,
         ILocalizationService localizationService,
-        IPrestigeService prestigeService)
+        IPrestigeService prestigeService,
+        IAscensionService ascensionService,
+        IRebirthService rebirthService)
     {
         _gameStateService = gameStateService;
         _localizationService = localizationService;
         _prestigeService = prestigeService;
+        _ascensionService = ascensionService;
+        _rebirthService = rebirthService;
     }
 
     public GameGoal? GetCurrentGoal()
@@ -198,8 +204,240 @@ public sealed class GoalService : IGoalService
             }
         }
 
-        return bestGoal;
+        if (bestGoal != null && bestGoal.Priority <= 5)
+            return bestGoal;
+
+        // ═══════════════════════════════════════════════════════════════════
+        // LATE-GAME-ZIELE (Priorität 6-10, nach den Basis-Zielen)
+        // ═══════════════════════════════════════════════════════════════════
+
+        // 6. Workshop-Rebirth verfügbar (hohe Prio, wie Meilenstein)
+        bestGoal = FindWorkshopRebirthGoal(state);
+        if (bestGoal != null) return bestGoal;
+
+        // 7. Ascension verfügbar (hohe Prio, wie Prestige)
+        bestGoal = FindAscensionGoal();
+        if (bestGoal != null) return bestGoal;
+
+        // 8. Alle Workshops auf Level 1000 (mittlere Prio)
+        bestGoal = FindAllWorkshopsMaxGoal(state);
+        if (bestGoal != null) return bestGoal;
+
+        // 9. Nächster Rebirth-Stern (mittlere Prio, Workshop nahe Level 1000)
+        bestGoal = FindNextRebirthStarGoal(state);
+        if (bestGoal != null) return bestGoal;
+
+        // 10. Endlose Stretch-Goals (niedrigste Prio, Fallback)
+        return FindStretchGoal(state);
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LATE-GAME-ZIEL-METHODEN
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Workshop-Rebirth: Workshop hat Level >= 995 und Sterne kleiner 5 → Rebirth empfehlen.
+    /// </summary>
+    private GameGoal? FindWorkshopRebirthGoal(GameState state)
+    {
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            var ws = state.Workshops[i];
+            if (!ws.IsUnlocked || ws.Level < 995) continue;
+
+            int stars = _rebirthService.GetStars(ws.Type);
+            if (stars >= 5) continue;
+
+            var wsName = _localizationService.GetString(ws.Type.GetLocalizationKey()) ?? ws.Type.ToString();
+            return new GameGoal
+            {
+                Description = $"{wsName} {_localizationService.GetString("GoalReadyForRebirth") ?? "bereit für Wiedergeburt!"}",
+                RewardHint = $"★{stars + 1} (+{GetRebirthBonusText(stars + 1)})",
+                Progress = (double)ws.Level / Workshop.MaxLevel,
+                NavigationRoute = "dashboard",
+                IconKind = "StarShooting",
+                Priority = 6
+            };
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Ascension verfügbar: Meta-Prestige kann durchgeführt werden.
+    /// </summary>
+    private GameGoal? FindAscensionGoal()
+    {
+        if (!_ascensionService.CanAscend) return null;
+
+        int ap = _ascensionService.CalculateAscensionPoints();
+        return new GameGoal
+        {
+            Description = _localizationService.GetString("GoalAscensionAvailable") ?? "Aufstieg verfügbar!",
+            RewardHint = $"+{ap} {_localizationService.GetString("AscensionPointsShort") ?? "AP"}",
+            Progress = 1.0,
+            NavigationRoute = "prestige",
+            IconKind = "ArrowUpBoldCircle",
+            Priority = 7
+        };
+    }
+
+    /// <summary>
+    /// Alle Workshops auf Level 1000: Fortschrittsziel wenn mindestens 6 aber nicht alle 8 dort sind.
+    /// Zählt nur die 8 Basis-Workshops (ohne Prestige-exklusive MasterSmith/InnovationLab).
+    /// </summary>
+    private GameGoal? FindAllWorkshopsMaxGoal(GameState state)
+    {
+        int atMax = 0;
+        int totalUnlocked = 0;
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            var ws = state.Workshops[i];
+            if (!ws.IsUnlocked) continue;
+            totalUnlocked++;
+            if (ws.Level >= Workshop.MaxLevel) atMax++;
+        }
+
+        // Nur anzeigen wenn mindestens 6 auf Max, aber noch nicht alle
+        if (atMax < 6 || atMax >= totalUnlocked || totalUnlocked == 0) return null;
+
+        return new GameGoal
+        {
+            Description = string.Format(
+                _localizationService.GetString("GoalAllWorkshopsMax") ?? "Alle Werkstätten auf Lv.1000 ({0}/{1})",
+                atMax, totalUnlocked),
+            RewardHint = _localizationService.GetString("GoalMaxRebirthAccess") ?? "Maximale Rebirth-Möglichkeiten!",
+            Progress = (double)atMax / totalUnlocked,
+            NavigationRoute = "dashboard",
+            IconKind = "ChartBar",
+            Priority = 8
+        };
+    }
+
+    /// <summary>
+    /// Nächster Rebirth-Stern: Workshop mit Level >= 900, Sterne kleiner 5 → zeigt verbleibende Level.
+    /// </summary>
+    private GameGoal? FindNextRebirthStarGoal(GameState state)
+    {
+        Workshop? bestCandidate = null;
+        int bestLevel = 0;
+
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            var ws = state.Workshops[i];
+            if (!ws.IsUnlocked || ws.Level < 900) continue;
+
+            int stars = _rebirthService.GetStars(ws.Type);
+            if (stars >= 5) continue;
+
+            // Höchsten Level-Kandidat wählen (am nächsten an 1000)
+            if (ws.Level > bestLevel)
+            {
+                bestLevel = ws.Level;
+                bestCandidate = ws;
+            }
+        }
+
+        if (bestCandidate == null) return null;
+
+        int remaining = Workshop.MaxLevel - bestCandidate.Level;
+        var wsName = _localizationService.GetString(bestCandidate.Type.GetLocalizationKey()) ?? bestCandidate.Type.ToString();
+        return new GameGoal
+        {
+            Description = string.Format(
+                _localizationService.GetString("GoalNextRebirthStar") ?? "{0}: Noch {1} Level bis zum nächsten Stern",
+                wsName, remaining),
+            RewardHint = _localizationService.GetString("GoalPermanentBonus") ?? "Permanenter Bonus!",
+            Progress = (double)bestCandidate.Level / Workshop.MaxLevel,
+            NavigationRoute = "dashboard",
+            IconKind = "Star",
+            Priority = 9
+        };
+    }
+
+    /// <summary>
+    /// Endlose Stretch-Goals als Fallback: Nächste 100er-Stufe oder Rebirth-Sterne sammeln.
+    /// </summary>
+    private GameGoal? FindStretchGoal(GameState state)
+    {
+        // Zähle Gesamt-Rebirth-Sterne und Maximum
+        int totalStars = 0;
+        int maxPossibleStars = 0;
+        int lowestMaxLevel = int.MaxValue;
+        Workshop? lowestWorkshop = null;
+
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            var ws = state.Workshops[i];
+            if (!ws.IsUnlocked) continue;
+
+            int stars = _rebirthService.GetStars(ws.Type);
+            totalStars += stars;
+            maxPossibleStars += 5;
+
+            // Workshop mit dem niedrigsten Level finden (für Level-Stretch-Ziel)
+            if (ws.Level < lowestMaxLevel)
+            {
+                lowestMaxLevel = ws.Level;
+                lowestWorkshop = ws;
+            }
+        }
+
+        // Variante A: Rebirth-Sterne sammeln (wenn welche möglich sind)
+        if (totalStars > 0 && totalStars < maxPossibleStars)
+        {
+            return new GameGoal
+            {
+                Description = string.Format(
+                    _localizationService.GetString("GoalCollectRebirthStars") ?? "Sammle Rebirth-Sterne ({0}/{1})",
+                    totalStars, maxPossibleStars),
+                RewardHint = _localizationService.GetString("GoalUltimatePower") ?? "Ultimative Macht!",
+                Progress = maxPossibleStars > 0 ? (double)totalStars / maxPossibleStars : 0,
+                NavigationRoute = "dashboard",
+                IconKind = "StarCircle",
+                Priority = 10
+            };
+        }
+
+        // Variante B: Nächste 100er-Stufe für den niedrigsten Workshop
+        if (lowestWorkshop != null && lowestWorkshop.Level < Workshop.MaxLevel)
+        {
+            int nextHundred = ((lowestWorkshop.Level / 100) + 1) * 100;
+            nextHundred = Math.Min(nextHundred, Workshop.MaxLevel);
+            var wsName = _localizationService.GetString(lowestWorkshop.Type.GetLocalizationKey()) ?? lowestWorkshop.Type.ToString();
+
+            return new GameGoal
+            {
+                Description = string.Format(
+                    _localizationService.GetString("GoalNextHundred") ?? "{0} auf Level {1} bringen",
+                    wsName, nextHundred),
+                RewardHint = _localizationService.GetString("GoalKeepGrowing") ?? "Wachse weiter!",
+                Progress = (double)lowestWorkshop.Level / nextHundred,
+                NavigationRoute = "dashboard",
+                IconKind = "TrendingUp",
+                Priority = 10
+            };
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gibt einen kurzen Bonus-Text für die jeweilige Rebirth-Stern-Stufe zurück.
+    /// </summary>
+    private static string GetRebirthBonusText(int stars) => stars switch
+    {
+        1 => "+15%",
+        2 => "+35%",
+        3 => "+60%",
+        4 => "+100%",
+        5 => "+150%",
+        _ => ""
+    };
+
+    // ═══════════════════════════════════════════════════════════════════
+    // ANFÄNGER-ZIELE
+    // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Sucht das passende Anfänger-Ziel (Priorität 0).

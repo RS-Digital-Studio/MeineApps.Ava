@@ -20,6 +20,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
     private readonly IGameStateService _gameStateService;
     private readonly ICraftingService _craftingService;
     private readonly ILocalizationService _localizationService;
+    private readonly IDailyChallengeService? _dailyChallengeService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -81,11 +82,13 @@ public sealed partial class CraftingViewModel : ViewModelBase
     public CraftingViewModel(
         IGameStateService gameStateService,
         ICraftingService craftingService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IDailyChallengeService? dailyChallengeService = null)
     {
         _gameStateService = gameStateService;
         _craftingService = craftingService;
         _localizationService = localizationService;
+        _dailyChallengeService = dailyChallengeService;
 
         // Auto-Refresh wenn Timer abläuft
         _craftingService.CraftingUpdated += OnCraftingUpdated;
@@ -127,7 +130,59 @@ public sealed partial class CraftingViewModel : ViewModelBase
     {
         if (item == null || string.IsNullOrEmpty(item.ProductId)) return;
 
-        _craftingService.SellProduct(item.ProductId);
+        if (_craftingService.SellProduct(item.ProductId))
+            _dailyChallengeService?.OnItemsSold(1);
+        RefreshCrafting();
+    }
+
+    /// <summary>
+    /// Verkauft 10 Einheiten eines Produkts.
+    /// </summary>
+    [RelayCommand]
+    private void SellItem10(InventoryItemDisplay? item)
+    {
+        if (item == null || string.IsNullOrEmpty(item.ProductId)) return;
+
+        int before = _gameStateService.State.CraftingInventory.GetValueOrDefault(item.ProductId, 0);
+        _craftingService.SellProducts(item.ProductId, 10);
+        int sold = before - _gameStateService.State.CraftingInventory.GetValueOrDefault(item.ProductId, 0);
+        if (sold > 0) _dailyChallengeService?.OnItemsSold(sold);
+        RefreshCrafting();
+    }
+
+    /// <summary>
+    /// Verkauft alle Einheiten eines Produkts.
+    /// </summary>
+    [RelayCommand]
+    private void SellItemAll(InventoryItemDisplay? item)
+    {
+        if (item == null || string.IsNullOrEmpty(item.ProductId)) return;
+
+        int sold = item.Quantity;
+        _craftingService.SellProducts(item.ProductId, item.Quantity);
+        if (sold > 0) _dailyChallengeService?.OnItemsSold(sold);
+        RefreshCrafting();
+    }
+
+    /// <summary>
+    /// Verkauft alle Produkte im gesamten Inventar.
+    /// </summary>
+    [RelayCommand]
+    private void SellAll()
+    {
+        var state = _gameStateService.State;
+        var productIds = new List<string>(state.CraftingInventory.Keys);
+        int totalSold = 0;
+        foreach (var productId in productIds)
+        {
+            int count = state.CraftingInventory.GetValueOrDefault(productId, 0);
+            if (count > 0)
+            {
+                _craftingService.SellProducts(productId, count);
+                totalSold += count;
+            }
+        }
+        if (totalSold > 0) _dailyChallengeService?.OnItemsSold(totalSold);
         RefreshCrafting();
     }
 
@@ -215,7 +270,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
 
             jobItems.Add(new CraftingJobDisplay
             {
-                JobId = job.RecipeId,
+                JobId = job.JobId,
                 OutputName = productName,
                 OutputIcon = outputIcon,
                 Progress = job.Progress,
@@ -228,7 +283,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
 
         ActiveJobs = jobItems;
 
-        // Inventar
+        // Inventar (mit skalierten Preisen)
         var inventoryItemList = new ObservableCollection<InventoryItemDisplay>();
         foreach (var (productId, count) in state.CraftingInventory)
         {
@@ -238,7 +293,8 @@ public sealed partial class CraftingViewModel : ViewModelBase
                 ? _localizationService.GetString(invProduct.NameKey) ?? invProduct.NameKey
                 : productId;
 
-            decimal value = invProduct?.BaseValue ?? 0m;
+            // Skalierter Verkaufspreis (inkl. Level + alle Multiplikatoren)
+            decimal sellPrice = _craftingService.GetSellPrice(productId);
             var icon = GetProductIcon(productId);
 
             inventoryItemList.Add(new InventoryItemDisplay
@@ -246,8 +302,10 @@ public sealed partial class CraftingViewModel : ViewModelBase
                 ProductId = productId,
                 Name = name,
                 Icon = icon,
+                Quantity = count,
                 QuantityDisplay = $"x{count}",
-                ValueDisplay = MoneyFormatter.Format(value, 0)
+                ValueDisplay = MoneyFormatter.Format(sellPrice, 0),
+                TotalValueDisplay = MoneyFormatter.Format(sellPrice * count, 0)
             });
         }
 
@@ -271,16 +329,28 @@ public sealed partial class CraftingViewModel : ViewModelBase
     private void BuildWorkshopOptions()
     {
         var options = new ObservableCollection<WorkshopOption>();
-        var types = new[] { WorkshopType.Carpenter, WorkshopType.Plumber, WorkshopType.Electrician,
-                           WorkshopType.Painter, WorkshopType.Roofer };
+        var state = _gameStateService.State;
 
-        foreach (var type in types)
+        // Alle freigeschalteten Workshops mit Crafting-Rezepten anzeigen
+        for (int i = 0; i < state.Workshops.Count; i++)
         {
+            var ws = state.Workshops[i];
+            if (!state.IsWorkshopUnlocked(ws.Type)) continue;
+
+            // Nur Workshops anzeigen die mindestens 1 Rezept haben
+            var recipes = CraftingRecipe.GetAllRecipes();
+            bool hasRecipes = false;
+            for (int j = 0; j < recipes.Count; j++)
+            {
+                if (recipes[j].WorkshopType == ws.Type) { hasRecipes = true; break; }
+            }
+            if (!hasRecipes) continue;
+
             options.Add(new WorkshopOption
             {
-                Type = type,
-                Name = _localizationService.GetString(type.GetLocalizationKey()) ?? type.ToString(),
-                IconKind = GetWorkshopIconKind(type)
+                Type = ws.Type,
+                Name = _localizationService.GetString(ws.Type.GetLocalizationKey()) ?? ws.Type.ToString(),
+                IconKind = ws.Type.GetIconKind()
             });
         }
 
@@ -350,21 +420,25 @@ public sealed partial class CraftingViewModel : ViewModelBase
         // Maler
         "paint_mix" => GameIconKind.Palette,
         "wall_design" => GameIconKind.FormatPaint,
+        "artwork" => GameIconKind.Palette,
         // Dachdecker
         "roof_tiles" => GameIconKind.ViewGrid,
         "roofing_system" => GameIconKind.HomeRoof,
+        "roof_structure" => GameIconKind.HomeRoof,
+        // Bauunternehmer
+        "concrete" => GameIconKind.Wall,
+        // Architekt
+        "blueprint" => GameIconKind.Compass,
+        // Generalunternehmer
+        "contract" => GameIconKind.FileDocumentCheck,
+        // Meisterschmiede
+        "fittings" => GameIconKind.Anvil,
+        // Innovationslabor
+        "prototype" => GameIconKind.LightbulbOnOutline,
         _ => GameIconKind.PackageVariant
     };
 
-    private static string GetWorkshopIconKind(WorkshopType type) => type switch
-    {
-        WorkshopType.Carpenter => "Hammer",
-        WorkshopType.Plumber => "Pipe",
-        WorkshopType.Electrician => "LightningBolt",
-        WorkshopType.Painter => "FormatPaint",
-        WorkshopType.Roofer => "HomeRoof",
-        _ => "Cog"
-    };
+    // GetWorkshopIconKind entfernt - nutze WorkshopType.GetIconKind() Extension direkt
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -418,6 +492,10 @@ public class InventoryItemDisplay
     public string ProductId { get; set; } = "";
     public string Name { get; set; } = "";
     public GameIconKind Icon { get; set; } = GameIconKind.PackageVariant;
+    public int Quantity { get; set; }
     public string QuantityDisplay { get; set; } = "";
+    /// <summary>Skalierter Einzelpreis (inkl. Level + Multiplikatoren).</summary>
     public string ValueDisplay { get; set; } = "";
+    /// <summary>Gesamtwert (Einzelpreis × Menge).</summary>
+    public string TotalValueDisplay { get; set; } = "";
 }

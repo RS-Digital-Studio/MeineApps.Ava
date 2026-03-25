@@ -188,6 +188,10 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
                       IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsCraftingActive}"
                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                       AutomationProperties.AutomationId="Main_View_Crafting" />
+      <ContentControl Content="{Binding AscensionViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsAscensionActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_Ascension" />
 
       <!-- MiniGame Views (overlay when active) -->
       <ContentControl Content="{Binding SawingGameViewModel}"
@@ -269,7 +273,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
     <dialogs:DailyRewardDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Welcome Back Offer Dialog (extrahiert in UserControl) -->
-    <dialogs:WelcomeBackOfferDialog Grid.RowSpan="2" DataContext="{Binding}" />
+    <dialogs:WelcomeBackOfferDialog Grid.RowSpan="2" DataContext="{Binding MissionsVM}" />
 
     <!-- Starter Offer Dialog (einmaliges zeitlich begrenztes Premium-Angebot) -->
     <Border Grid.RowSpan="2"

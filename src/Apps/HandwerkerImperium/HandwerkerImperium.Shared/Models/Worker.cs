@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Enums;
 
 namespace HandwerkerImperium.Models;
@@ -293,7 +294,7 @@ public class Worker
     /// </summary>
     [JsonIgnore]
     public string IncomeContributionDisplay => IncomeContribution > 0
-        ? $"+{IncomeContribution:N2} €/s"
+        ? $"+{Helpers.MoneyFormatter.FormatPerSecond(IncomeContribution, 1)}"
         : "-";
 
     [JsonIgnore]

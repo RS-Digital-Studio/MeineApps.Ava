@@ -197,7 +197,7 @@
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
                        AutomationProperties.AutomationId="Inspection_Txt_RewardMoney"
-                       Text="{Binding RewardAmount, StringFormat='+{0:N0} &#x20AC;'}"
+                       Text="{Binding RewardAmountDisplay}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}"
                        VerticalAlignment="Center" />

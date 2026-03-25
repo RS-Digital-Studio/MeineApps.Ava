@@ -65,7 +65,7 @@ public sealed class GuildWarDashboardRenderer : IDisposable
         // Eigener Score (links)
         _scoreFont.Size = 22;
         _fillPaint.Color = OwnColor;
-        canvas.DrawText(data.OwnScore.ToString("N0"), cx - 60, y + 30,
+        canvas.DrawText(FormatScore(data.OwnScore), cx - 60, y + 30,
             SKTextAlign.Center, _scoreFont, _fillPaint);
 
         _labelFont.Size = 11;
@@ -82,7 +82,7 @@ public sealed class GuildWarDashboardRenderer : IDisposable
         // Gegner Score (rechts)
         _scoreFont.Size = 22;
         _fillPaint.Color = EnemyColor;
-        canvas.DrawText(data.OpponentScore.ToString("N0"), cx + 60, y + 30,
+        canvas.DrawText(FormatScore(data.OpponentScore), cx + 60, y + 30,
             SKTextAlign.Center, _scoreFont, _fillPaint);
 
         _labelFont.Size = 11;
@@ -183,5 +183,16 @@ public sealed class GuildWarDashboardRenderer : IDisposable
         _scoreFont.Dispose();
         _labelFont.Dispose();
         _vsFont.Dispose();
+    }
+
+    /// <summary>
+    /// Kompakte Score-Formatierung mit B/M/K-Suffix.
+    /// </summary>
+    private static string FormatScore(long value)
+    {
+        if (value >= 1_000_000_000) return $"{value / 1_000_000_000.0:0.#}B";
+        if (value >= 1_000_000) return $"{value / 1_000_000.0:0.#}M";
+        if (value >= 1_000) return $"{value / 1_000.0:0.#}K";
+        return value.ToString("N0");
     }
 }

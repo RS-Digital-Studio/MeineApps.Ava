@@ -22,12 +22,13 @@ public sealed class FireworksRenderer
     private int _particleCount;
 
     // --- Gecachte Paints ---
+    private static readonly SKMaskFilter _glowBlurFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
     private static readonly SKPaint _particlePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _glowPaint = new()
     {
         IsAntialias = true,
         Style = SKPaintStyle.Fill,
-        MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f)
+        MaskFilter = _glowBlurFilter
     };
     private static readonly SKPaint _trailPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
 
@@ -337,5 +338,14 @@ public sealed class FireworksRenderer
         public float Size;
         public float BurstY;        // Nur Rocket: Zielhöhe für Explosion
         public float BoundsHeight;  // Nur Rocket: Canvas-Höhe
+    }
+
+    /// <summary>Statische native Ressourcen freigeben (bei App-Shutdown aufrufen).</summary>
+    public static void DisposeStaticResources()
+    {
+        _glowBlurFilter?.Dispose();
+        _glowPaint?.Dispose();
+        _particlePaint?.Dispose();
+        _trailPaint?.Dispose();
     }
 }

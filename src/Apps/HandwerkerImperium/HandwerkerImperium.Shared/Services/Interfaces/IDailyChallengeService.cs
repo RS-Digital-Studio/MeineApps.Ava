@@ -21,12 +21,42 @@ public interface IDailyChallengeService
     bool RetryChallenge(string challengeId);
 
     /// <summary>
-    /// Wird aufgerufen wenn ein QuickJob abgeschlossen wird (für Challenge-Tracking).
+    /// Wird aufgerufen wenn ein QuickJob abgeschlossen wird (fuer Challenge-Tracking).
     /// </summary>
     void OnQuickJobCompleted();
 
     /// <summary>
-    /// Wird ausgelöst wenn sich der Fortschritt einer Challenge ändert.
+    /// Wird aufgerufen wenn ein Arbeiter-Training abgeschlossen wird.
+    /// </summary>
+    void OnWorkerTrained();
+
+    /// <summary>
+    /// Wird aufgerufen wenn ein Crafting-Produkt eingesammelt wird.
+    /// </summary>
+    void OnCraftingCompleted();
+
+    /// <summary>
+    /// Wird aufgerufen wenn ein Workshop ein neues Level erreicht.
+    /// </summary>
+    void OnWorkshopLevelReached();
+
+    /// <summary>
+    /// Wird aufgerufen wenn Items durch Auto-Produktion hergestellt werden.
+    /// </summary>
+    void OnItemsAutoProduced(int count);
+
+    /// <summary>
+    /// Wird aufgerufen wenn Items manuell verkauft werden.
+    /// </summary>
+    void OnItemsSold(int count);
+
+    /// <summary>
+    /// Wird aufgerufen wenn ein Lieferauftrag abgeschlossen wird.
+    /// </summary>
+    void OnMaterialOrderCompleted();
+
+    /// <summary>
+    /// Wird ausgeloest wenn sich der Fortschritt einer Challenge aendert.
     /// </summary>
     event EventHandler? ChallengeProgressChanged;
 }

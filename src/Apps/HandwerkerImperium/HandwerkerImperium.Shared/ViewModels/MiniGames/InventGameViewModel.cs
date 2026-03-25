@@ -1,11 +1,9 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
-using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using HandwerkerImperium.Helpers;
 
@@ -15,16 +13,8 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// ViewModel für das Erfinder-Puzzle-Minispiel.
 /// Der Spieler merkt sich die Montage-Reihenfolge der Bauteile und tippt sie danach korrekt an.
 /// </summary>
-public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
+public sealed partial class InventGameViewModel : BaseMiniGameViewModel
 {
-    private readonly IGameStateService _gameStateService;
-    private readonly IAudioService _audioService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly ILocalizationService _localizationService;
-    private DispatcherTimer? _gameTimer;
-    private bool _disposed;
-    private bool _isEnding;
-
     // Bauteil-Icons (Vektor-Identifikatoren für SkiaSharp-Rendering)
     private static readonly string[] PartIcons =
     {
@@ -51,23 +41,8 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
     };
 
     // ═══════════════════════════════════════════════════════════════════════
-    // EVENTS
+    // SPIEL-SPEZIFISCHE PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
-
-    public event Action<string>? NavigationRequested;
-
-    /// <summary>Wird nach Spielende mit Rating (0-3 Sterne) gefeuert.</summary>
-    public event EventHandler<int>? GameCompleted;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // OBSERVABLE PROPERTIES
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private string _orderId = string.Empty;
-
-    [ObservableProperty]
-    private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
     private ObservableCollection<InventPart> _parts = [];
@@ -93,92 +68,6 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private int _maxTime;
 
-    [ObservableProperty]
-    private bool _isPlaying;
-
-    [ObservableProperty]
-    private bool _isResultShown;
-
-    [ObservableProperty]
-    private MiniGameRating _result;
-
-    [ObservableProperty]
-    private string _resultText = "";
-
-    [ObservableProperty]
-    private string _resultEmoji = "";
-
-    [ObservableProperty]
-    private decimal _rewardAmount;
-
-    [ObservableProperty]
-    private int _xpAmount;
-
-    [ObservableProperty]
-    private bool _canWatchAd;
-
-    [ObservableProperty]
-    private bool _adWatched;
-
-    [ObservableProperty]
-    private string _taskProgressDisplay = "";
-
-    [ObservableProperty]
-    private bool _isLastTask;
-
-    [ObservableProperty]
-    private string _continueButtonText = "";
-
-    // Countdown vor Spielstart
-    [ObservableProperty]
-    private bool _isCountdownActive;
-
-    [ObservableProperty]
-    private string _countdownText = "";
-
-    // Sterne-Anzeige (staggered: 0→1 mit Verzögerung)
-    [ObservableProperty]
-    private double _star1Opacity;
-
-    [ObservableProperty]
-    private double _star2Opacity;
-
-    [ObservableProperty]
-    private double _star3Opacity;
-
-    // Tutorial (beim ersten Spielstart anzeigen)
-    [ObservableProperty]
-    private bool _showTutorial;
-
-    [ObservableProperty]
-    private string _tutorialTitle = "";
-
-    [ObservableProperty]
-    private string _tutorialText = "";
-
-    // Auto-Complete (nach 50x bzw. 25x Perfect freigeschaltet)
-    [ObservableProperty]
-    private bool _canAutoComplete;
-
-    [ObservableProperty]
-    private string _autoCompleteHint = "";
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // COMPUTED PROPERTIES
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Schwierigkeit als Sterne-Anzeige.
-    /// </summary>
-    public string DifficultyStars => Difficulty switch
-    {
-        OrderDifficulty.Easy => "★☆☆",
-        OrderDifficulty.Medium => "★★☆",
-        OrderDifficulty.Hard => "★★★",
-        OrderDifficulty.Expert => "★★★★",
-        _ => "★☆☆"
-    };
-
     /// <summary>
     /// Breite des Grids in Pixeln für WrapPanel-Constraint.
     /// Jedes Teil: 68px + 6px Margin = 74px.
@@ -187,7 +76,11 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
 
     private int _gridColumns = 3;
 
-    partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
+    // ═══════════════════════════════════════════════════════════════════════
+    // BASIS-KLASSE IMPLEMENTIERUNG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    protected override MiniGameType GameMiniGameType => MiniGameType.InventGame;
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -198,65 +91,15 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
         ILocalizationService localizationService)
+        : base(gameStateService, audioService, rewardedAdService, localizationService)
     {
-        _gameStateService = gameStateService;
-        _audioService = audioService;
-        _rewardedAdService = rewardedAdService;
-        _localizationService = localizationService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // INITIALIZATION
+    // SPIEL-INITIALISIERUNG
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Initialisiert das Spiel mit einer Auftrags-ID.
-    /// </summary>
-    public void SetOrderId(string orderId)
-    {
-        OrderId = orderId;
-
-        // Zustand zurücksetzen (sonst bleibt Ergebnis-Screen stehen)
-        IsPlaying = false;
-        IsResultShown = false;
-        IsMemorizing = false;
-        _isEnding = false;
-
-        var activeOrder = _gameStateService.GetActiveOrder();
-        if (activeOrder != null)
-        {
-            Difficulty = activeOrder.Difficulty;
-
-            int totalTasks = activeOrder.Tasks.Count;
-            int currentTaskNum = activeOrder.CurrentTaskIndex + 1;
-            TaskProgressDisplay = totalTasks > 1
-                ? string.Format(_localizationService.GetString("TaskProgress"), currentTaskNum, totalTasks)
-                : "";
-            IsLastTask = currentTaskNum >= totalTasks;
-            ContinueButtonText = IsLastTask
-                ? _localizationService.GetString("Continue")
-                : _localizationService.GetString("NextTask");
-        }
-        else
-        {
-            TaskProgressDisplay = "";
-            IsLastTask = true;
-            ContinueButtonText = _localizationService.GetString("Continue");
-        }
-
-        InitializeGame();
-
-        UpdateAutoCompleteStatus(MiniGameType.InventGame);
-
-        CheckAndShowTutorial(MiniGameType.InventGame);
-        if (!ShowTutorial && !CanAutoComplete) StartGameAsync().SafeFireAndForget();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // GAME LOGIC
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void InitializeGame()
+    protected override void InitializeGame()
     {
         // Schwierigkeit bestimmt Teileanzahl, Grid-Spalten und Spielzeit
         (TotalParts, _gridColumns, MaxTime) = Difficulty switch
@@ -274,14 +117,72 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
         CompletedParts = 0;
         MistakeCount = 0;
         NextExpectedPart = 1;
-        IsPlaying = false;
-        IsResultShown = false;
         IsMemorizing = false;
 
         OnPropertyChanged(nameof(GridWidth));
 
         GenerateParts();
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MEMORISIERUNGSPHASE (vor Timer-Start)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    protected override async Task OnPreGameStartAsync()
+    {
+        // Memorisierungsphase: Alle Nummern aufdecken
+        IsMemorizing = true;
+        foreach (var part in Parts)
+        {
+            part.IsRevealed = true;
+        }
+
+        // Memorisierungszeit je nach Schwierigkeit
+        int memorizeMs = Difficulty switch
+        {
+            OrderDifficulty.Easy => 3000,
+            OrderDifficulty.Medium => 2500,
+            OrderDifficulty.Hard => 2000,
+            OrderDifficulty.Expert => 1500,
+            _ => 2500
+        };
+
+        await Task.Delay(memorizeMs);
+
+        // Nummern verstecken
+        foreach (var part in Parts)
+        {
+            part.IsRevealed = false;
+        }
+        IsMemorizing = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TIMER-TICK
+    // ═══════════════════════════════════════════════════════════════════════
+
+    protected override async void OnGameTimerTick(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (!IsPlaying || _isEnding) return;
+
+            TimeRemaining--;
+
+            if (TimeRemaining <= 0)
+            {
+                await EndGameAsync();
+            }
+        }
+        catch
+        {
+            // Timer-Fehler still behandelt
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SPIEL-LOGIK
+    // ═══════════════════════════════════════════════════════════════════════
 
     private void GenerateParts()
     {
@@ -318,79 +219,6 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
         foreach (var part in shuffled)
         {
             Parts.Add(part);
-        }
-    }
-
-    [RelayCommand]
-    private async Task StartGameAsync()
-    {
-        if (IsPlaying || IsCountdownActive || IsMemorizing) return;
-
-        IsResultShown = false;
-        _isEnding = false;
-
-        // Countdown 3-2-1-Los!
-        IsCountdownActive = true;
-        foreach (var text in new[] { "3", "2", "1", _localizationService.GetString("CountdownGo") })
-        {
-            CountdownText = text;
-            await Task.Delay(700);
-        }
-        IsCountdownActive = false;
-
-        // Memorisierungsphase: Alle Nummern aufdecken
-        IsMemorizing = true;
-        foreach (var part in Parts)
-        {
-            part.IsRevealed = true;
-        }
-
-        // Memorisierungszeit je nach Schwierigkeit
-        int memorizeMs = Difficulty switch
-        {
-            OrderDifficulty.Easy => 3000,
-            OrderDifficulty.Medium => 2500,
-            OrderDifficulty.Hard => 2000,
-            OrderDifficulty.Expert => 1500,
-            _ => 2500
-        };
-
-        await Task.Delay(memorizeMs);
-
-        // Nummern verstecken, Spiel starten
-        foreach (var part in Parts)
-        {
-            part.IsRevealed = false;
-        }
-        IsMemorizing = false;
-
-        // Spiel starten mit Timer
-        IsPlaying = true;
-        if (_gameTimer != null) { _gameTimer.Stop(); _gameTimer.Tick -= OnGameTimerTick; }
-        _gameTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(1)
-        };
-        _gameTimer.Tick += OnGameTimerTick;
-        _gameTimer.Start();
-    }
-
-    private async void OnGameTimerTick(object? sender, EventArgs e)
-    {
-        try
-        {
-            if (!IsPlaying || _isEnding) return;
-
-            TimeRemaining--;
-
-            if (TimeRemaining <= 0)
-            {
-                await EndGameAsync();
-            }
-        }
-        catch
-        {
-            // Timer-Fehler still behandelt
         }
     }
 
@@ -436,283 +264,23 @@ public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
 
     private async Task EndGameAsync()
     {
-        if (_isEnding) return;
-        _isEnding = true;
-
-        IsPlaying = false;
-        _gameTimer?.Stop();
+        if (!StopGame()) return;
 
         // Rating berechnen basierend auf Leistung
         bool allCompleted = CompletedParts >= TotalParts;
         double timeRatio = MaxTime > 0 ? (double)TimeRemaining / MaxTime : 0;
 
+        MiniGameRating rating;
         if (allCompleted && MistakeCount == 0 && timeRatio > 0.4)
-        {
-            Result = MiniGameRating.Perfect;
-        }
+            rating = MiniGameRating.Perfect;
         else if (allCompleted && MistakeCount <= 2 && timeRatio > 0.2)
-        {
-            Result = MiniGameRating.Good;
-        }
+            rating = MiniGameRating.Good;
         else if (allCompleted)
-        {
-            Result = MiniGameRating.Ok;
-        }
+            rating = MiniGameRating.Ok;
         else
-        {
-            Result = MiniGameRating.Miss;
-        }
+            rating = MiniGameRating.Miss;
 
-        // Ergebnis aufzeichnen
-        _gameStateService.RecordMiniGameResult(Result);
-
-        // Perfect-Rating für Auto-Complete zählen
-        if (Result == MiniGameRating.Perfect)
-            _gameStateService.RecordPerfectRating(MiniGameType.InventGame);
-
-        // Sound abspielen
-        var sound = Result switch
-        {
-            MiniGameRating.Perfect => GameSound.Perfect,
-            MiniGameRating.Good => GameSound.Good,
-            MiniGameRating.Ok => GameSound.ButtonTap,
-            _ => GameSound.Miss
-        };
-        await _audioService.PlaySoundAsync(sound);
-
-        // Belohnungen berechnen
-        var order = _gameStateService.GetActiveOrder();
-        if (order != null && IsLastTask)
-        {
-            // Gesamt-Belohnung
-            RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
-            XpAmount = order.FinalXp;
-        }
-        else if (order != null)
-        {
-            // Zwischen-Runde: Keine Belohnung anzeigen, nur Gesamt am Ende
-        }
-        else
-        {
-            // QuickJob: Belohnung aus aktivem QuickJob lesen
-            var quickJob = _gameStateService.State.ActiveQuickJob;
-            RewardAmount = quickJob?.Reward ?? 0;
-            XpAmount = quickJob?.XpReward ?? 0;
-        }
-
-        // Ergebnis-Anzeige setzen
-        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
-        ResultEmoji = Result switch
-        {
-            MiniGameRating.Perfect => "\u2B50\u2B50\u2B50",
-            MiniGameRating.Good => "\u2B50\u2B50",
-            MiniGameRating.Ok => "\u2B50",
-            _ => "\U0001F4A8"
-        };
-
-        IsResultShown = true;
-
-        // Sterne-Bewertung berechnen
-        int starCount = Result switch
-        {
-            MiniGameRating.Perfect => 3,
-            MiniGameRating.Good => 2,
-            MiniGameRating.Ok => 1,
-            _ => 0
-        };
-
-        if (IsLastTask)
-        {
-            // Aggregierte Sterne berechnen (alle Runden zusammen)
-            if (order != null && order.TaskResults.Count > 1)
-            {
-                int totalStarSum = order.TaskResults.Sum(r => r switch
-                {
-                    MiniGameRating.Perfect => 3,
-                    MiniGameRating.Good => 2,
-                    MiniGameRating.Ok => 1,
-                    _ => 0
-                });
-                int totalPossible = order.TaskResults.Count * 3;
-                starCount = totalPossible > 0
-                    ? (int)Math.Round((double)totalStarSum / totalPossible * 3.0)
-                    : 0;
-                starCount = Math.Clamp(starCount, 0, 3);
-            }
-
-            // Sterne staggered einblenden
-            Star1Opacity = 0; Star2Opacity = 0; Star3Opacity = 0;
-            if (starCount >= 1) { await Task.Delay(200); Star1Opacity = 1.0; }
-            if (starCount >= 2) { await Task.Delay(200); Star2Opacity = 1.0; }
-            if (starCount >= 3) { await Task.Delay(200); Star3Opacity = 1.0; }
-
-            // Visuelles Event für Result-Polish in der View
-            GameCompleted?.Invoke(this, starCount);
-        }
-        else
-        {
-            // Zwischen-Runde: Sterne sofort setzen, keine Animation
-            Star1Opacity = starCount >= 1 ? 1.0 : 0.3;
-            Star2Opacity = starCount >= 2 ? 1.0 : 0.3;
-            Star3Opacity = starCount >= 3 ? 1.0 : 0.3;
-        }
-
-        AdWatched = false;
-        CanWatchAd = IsLastTask && _rewardedAdService.IsAvailable;
-    }
-
-    [RelayCommand]
-    private async Task WatchAdAsync()
-    {
-        if (!CanWatchAd || AdWatched) return;
-
-        var success = await _rewardedAdService.ShowAdAsync("score_double");
-        if (success)
-        {
-            // Belohnungen verdoppeln (Anzeige + Flag für Auszahlung)
-            RewardAmount *= 2;
-            XpAmount *= 2;
-            var order = _gameStateService.GetActiveOrder();
-            if (order != null) order.IsScoreDoubled = true;
-            AdWatched = true;
-            CanWatchAd = false;
-
-            await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
-        }
-    }
-
-    [RelayCommand]
-    private void Continue()
-    {
-        // Prüfen ob weitere Aufgaben in der Order sind
-        var order = _gameStateService.GetActiveOrder();
-        if (order == null)
-        {
-            NavigationRequested?.Invoke("../..");
-            return;
-        }
-
-        if (order.IsCompleted)
-        {
-            // Auftrag fertig - Belohnungen vergeben und zurück
-            _gameStateService.CompleteActiveOrder();
-            NavigationRequested?.Invoke("../..");
-        }
-        else
-        {
-            // Mehr Aufgaben - zum nächsten Mini-Game
-            var nextTask = order.CurrentTask;
-            if (nextTask != null)
-            {
-                NavigationRequested?.Invoke($"../{nextTask.GameType.GetRoute()}?orderId={order.Id}");
-            }
-            else
-            {
-                NavigationRequested?.Invoke("../..");
-            }
-        }
-    }
-
-    [RelayCommand]
-    private void DismissTutorial()
-    {
-        ShowTutorial = false;
-        // Als gesehen markieren und speichern
-        var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.InventGame))
-        {
-            state.SeenMiniGameTutorials.Add(MiniGameType.InventGame);
-            _gameStateService.MarkDirty();
-        }
-        StartGameAsync().SafeFireAndForget();
-    }
-
-    [RelayCommand]
-    private void Cancel()
-    {
-        _gameTimer?.Stop();
-        IsPlaying = false;
-        IsMemorizing = false;
-
-        _gameStateService.CancelActiveOrder();
-        NavigationRequested?.Invoke("../..");
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // HELPERS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void CheckAndShowTutorial(MiniGameType gameType)
-    {
-        var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(gameType))
-        {
-            TutorialTitle = _localizationService.GetString($"Tutorial{gameType}Title") ?? "";
-            TutorialText = _localizationService.GetString($"Tutorial{gameType}Text") ?? "";
-            ShowTutorial = true;
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // AUTO-COMPLETE
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void UpdateAutoCompleteStatus(MiniGameType gameType)
-    {
-        var state = _gameStateService.State;
-        bool canAuto = _gameStateService.CanAutoComplete(gameType, state.IsPremium);
-        CanAutoComplete = canAuto;
-        if (canAuto)
-        {
-            int count = state.PerfectRatingCounts.TryGetValue((int)gameType, out int c) ? c : 0;
-            var hint = _localizationService.GetString("AutoCompleteHint") ?? "";
-            AutoCompleteHint = string.Format(hint, count);
-        }
-    }
-
-    [RelayCommand]
-    private async Task AutoCompleteGameAsync()
-    {
-        if (!CanAutoComplete) return;
-
-        var order = _gameStateService.GetActiveOrder();
-        if (order == null) { NavigationRequested?.Invoke("../..");  return; }
-
-        while (!order.IsCompleted)
-            _gameStateService.RecordMiniGameResult(MiniGameRating.Good);
-
-        await _audioService.PlaySoundAsync(GameSound.Good);
-
-        RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
-        XpAmount = order.FinalXp;
-        Result = MiniGameRating.Good;
-        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
-        ResultEmoji = "★★";
-        IsLastTask = true;
-        IsResultShown = true;
-        Star1Opacity = 1.0; Star2Opacity = 1.0; Star3Opacity = 0.3;
-        GameCompleted?.Invoke(this, 2);
-        AdWatched = false;
-        CanWatchAd = _rewardedAdService.IsAvailable;
-        CanAutoComplete = false;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // DISPOSAL
-    // ═══════════════════════════════════════════════════════════════════════
-
-    public void Dispose()
-    {
-        if (_disposed) return;
-
-        _gameTimer?.Stop();
-        if (_gameTimer != null)
-        {
-            _gameTimer.Tick -= OnGameTimerTick;
-        }
-
-        _disposed = true;
-        GC.SuppressFinalize(this);
+        await ShowResultAsync(rating);
     }
 }
 

@@ -17,10 +17,15 @@ public sealed class GameStateService : IGameStateService
     public GameState State => _state;
     public bool IsInitialized { get; private set; }
 
+    // Lazy-Resolution für zirkuläre Dependencies (gesetzt in App.axaml.cs nach DI-Aufbau)
+    public IChallengeConstraintService? ChallengeConstraints { get; set; }
+
     // Automation Level-Gates (zentral, vermeidet Duplikation in ViewModels)
-    public bool IsAutoCollectUnlocked => _state.PlayerLevel >= LevelThresholds.AutoCollect;
-    public bool IsAutoAcceptUnlocked => _state.PlayerLevel >= LevelThresholds.AutoAccept;
-    public bool IsAutoAssignUnlocked => _state.PlayerLevel >= LevelThresholds.AutoAssign;
+    // Nach dem ersten Prestige sind alle Features permanent freigeschaltet
+    private bool HasEverPrestiged => _state.Prestige.TotalPrestigeCount > 0;
+    public bool IsAutoCollectUnlocked => HasEverPrestiged || _state.PlayerLevel >= LevelThresholds.AutoCollect;
+    public bool IsAutoAcceptUnlocked => HasEverPrestiged || _state.PlayerLevel >= LevelThresholds.AutoAccept;
+    public bool IsAutoAssignUnlocked => HasEverPrestiged || _state.PlayerLevel >= LevelThresholds.AutoAssign;
 
     // Events
     public event EventHandler<MoneyChangedEventArgs>? MoneyChanged;
@@ -39,13 +44,9 @@ public sealed class GameStateService : IGameStateService
 
     public void Initialize(GameState? loadedState = null)
     {
-        if (loadedState != null)
+        lock (_stateLock)
         {
-            _state = loadedState;
-        }
-        else
-        {
-            _state = GameState.CreateNew();
+            _state = loadedState ?? GameState.CreateNew();
         }
 
         IsInitialized = true;
@@ -121,6 +122,13 @@ public sealed class GameStateService : IGameStateService
     // GOLDEN SCREWS OPERATIONS (Thread-safe)
     // ===================================================================
 
+    /// <summary>
+    /// Externer GS-Bonus-Provider (z.B. Ascension Golden-Era-Perk).
+    /// Wird nach DI-Auflösung gesetzt, um zirkuläre Dependencies zu vermeiden.
+    /// Gibt den Bonus als Dezimalwert zurück (z.B. 0.2 = +20%).
+    /// </summary>
+    public Func<decimal>? ExternalGoldenScrewBonusProvider { get; set; }
+
     public void AddGoldenScrews(int amount, bool fromPurchase = false)
     {
         if (amount <= 0) return;
@@ -129,6 +137,11 @@ public sealed class GameStateService : IGameStateService
         if (!fromPurchase)
         {
             decimal bonus = GetGoldenScrewBonus();
+
+            // Ascension Golden-Era-Perk: GS-Verdienst-Bonus (stackt additiv mit Prestige-Shop)
+            decimal ascensionBonus = ExternalGoldenScrewBonusProvider?.Invoke() ?? 0m;
+            bonus += ascensionBonus;
+
             if (bonus > 0)
                 amount = (int)Math.Ceiling(amount * (1m + bonus));
 
@@ -210,6 +223,10 @@ public sealed class GameStateService : IGameStateService
 
         lock (_stateLock)
         {
+            // Bei Max-Level keine XP mehr addieren (verhindert int.MaxValue Overflow)
+            if (_state.PlayerLevel >= LevelThresholds.MaxPlayerLevel)
+                return;
+
             oldLevel = _state.PlayerLevel;
 
             // XP-Boost aus DailyReward (2x)
@@ -225,7 +242,6 @@ public sealed class GameStateService : IGameStateService
             _state.TotalXp += amount;
 
             levelUps = 0;
-            // Level-Cap: Endlos-Schleife bei manipulierten Saves oder extremen XP verhindern
             while (_state.CurrentXp >= _state.XpForNextLevel && _state.PlayerLevel < LevelThresholds.MaxPlayerLevel)
             {
                 _state.PlayerLevel++;
@@ -305,6 +321,12 @@ public sealed class GameStateService : IGameStateService
                 return false;
 
             cost = workshop.UpgradeCost;
+
+            // Challenge: Inflationszeit verdoppelt Upgrade-Kosten
+            var challengeMultiplier = ChallengeConstraints?.GetUpgradeCostMultiplier() ?? 1.0m;
+            if (challengeMultiplier > 1.0m)
+                cost = Math.Round(cost * challengeMultiplier, 0);
+
             if (_state.Money < cost)
                 return false;
 
@@ -353,11 +375,16 @@ public sealed class GameStateService : IGameStateService
             moneyBefore = _state.Money;
             int maxUpgrades = count == 0 ? Workshop.MaxLevel - workshop.Level : count;
 
+            // Challenge: Inflationszeit verdoppelt Upgrade-Kosten (identisch mit TryUpgradeWorkshop)
+            var challengeMultiplier = ChallengeConstraints?.GetUpgradeCostMultiplier() ?? 1.0m;
+
             for (int i = 0; i < maxUpgrades; i++)
             {
                 if (!workshop.CanUpgrade) break;
 
                 var cost = workshop.UpgradeCost;
+                if (challengeMultiplier > 1.0m)
+                    cost = Math.Round(cost * challengeMultiplier, 0);
                 if (_state.Money < cost) break;
 
                 _state.Money -= cost;
@@ -398,6 +425,11 @@ public sealed class GameStateService : IGameStateService
             if (workshop == null || !workshop.CanHireWorker)
                 return false;
 
+            // Challenge: Spartaner begrenzt Worker auf 3
+            int maxWorkers = ChallengeConstraints?.GetMaxWorkers(workshop.MaxWorkers) ?? workshop.MaxWorkers;
+            if (workshop.Workers.Count >= maxWorkers)
+                return false;
+
             cost = workshop.HireWorkerCost;
             if (_state.Money < cost)
                 return false;
@@ -431,6 +463,11 @@ public sealed class GameStateService : IGameStateService
             if (_state.UnlockedWorkshopTypes.Contains(type)) return false;
             if (_state.PlayerLevel < type.GetUnlockLevel()) return false;
             if (type.GetRequiredPrestige() > _state.Prestige.TotalPrestigeCount) return false;
+
+            // Challenge: SoloMeister blockiert Workshop-Unlock wenn schon 1 vorhanden
+            if (ChallengeConstraints?.IsWorkshopUnlockBlocked(_state.UnlockedWorkshopTypes.Count) == true)
+                return false;
+
             return true;
         }
     }
@@ -576,7 +613,41 @@ public sealed class GameStateService : IGameStateService
                 multiplier *= customer.BonusMultiplier;
         }
 
+        // Prestige-Shop: Auftragsbelohnungs-Bonus (wiederholbar pp_order_reward_rep)
+        decimal shopOrderBonus = GetPrestigeShopOrderRewardBonus();
+        if (shopOrderBonus > 0)
+            multiplier *= (1m + shopOrderBonus);
+
         return multiplier;
+    }
+
+    /// <summary>
+    /// Berechnet den Auftragsbelohnungs-Bonus aus Prestige-Shop-Items.
+    /// Liest direkt aus PrestigeData (kein IPrestigeService nötig, vermeidet zirkuläre Dependency).
+    /// </summary>
+    private decimal GetPrestigeShopOrderRewardBonus()
+    {
+        decimal bonus = 0m;
+        var prestige = _state.Prestige;
+        var allItems = PrestigeShop.GetAllItems();
+
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            var item = allItems[i];
+            if (item.Effect.OrderRewardBonus <= 0) continue;
+
+            if (item.IsRepeatable)
+            {
+                if (prestige.RepeatableItemCounts.TryGetValue(item.Id, out var count) && count > 0)
+                    bonus += item.Effect.OrderRewardBonus * count;
+            }
+            else if (prestige.PurchasedShopItems.Contains(item.Id))
+            {
+                bonus += item.Effect.OrderRewardBonus;
+            }
+        }
+
+        return Math.Min(bonus, 1.0m); // Cap bei +100%
     }
 
     public void CompleteActiveOrder()
@@ -730,5 +801,59 @@ public sealed class GameStateService : IGameStateService
             _state.AvailableOrders.Add(order);
             _state.ActiveOrder = null;
         }
+    }
+
+    public decimal CompleteMaterialOrder(Order order)
+    {
+        if (order.OrderType != OrderType.MaterialOrder || order.RequiredMaterials == null)
+            return 0m;
+
+        decimal reward;
+        int xpReward;
+
+        lock (_stateLock)
+        {
+            // Prüfen ob alle Items vorhanden
+            foreach (var (productId, required) in order.RequiredMaterials)
+            {
+                int available = _state.CraftingInventory.GetValueOrDefault(productId, 0);
+                if (available < required) return 0m;
+            }
+
+            // Items abziehen
+            foreach (var (productId, required) in order.RequiredMaterials)
+            {
+                _state.CraftingInventory[productId] -= required;
+                if (_state.CraftingInventory[productId] <= 0)
+                    _state.CraftingInventory.Remove(productId);
+            }
+
+            // Belohnung berechnen (innerhalb Lock, da CalculateOrderRewardMultiplierUnlocked State liest)
+            reward = order.EstimatedReward * CalculateOrderRewardMultiplierUnlocked(order);
+            xpReward = (int)(order.BaseXp * OrderType.MaterialOrder.GetXpMultiplier());
+
+            // Statistiken
+            _state.TotalOrdersCompleted++;
+            _state.MaterialOrdersCompletedToday++;
+            _state.TotalMaterialOrdersCompleted++;
+            var workshop = GetWorkshop(order.WorkshopType);
+            if (workshop != null)
+            {
+                workshop.TotalEarned += reward;
+                workshop.OrdersCompleted++;
+            }
+
+            // Order aus AvailableOrders entfernen
+            _state.AvailableOrders.Remove(order);
+        }
+
+        // Geld + XP gutschreiben + Events AUSSERHALB des Locks
+        // (AddMoney/AddXp nehmen eigene Locks und feuern Events die Event-Handler aufrufen)
+        AddMoney(reward);
+        AddXp(xpReward);
+
+        OrderCompleted?.Invoke(this, new OrderCompletedEventArgs(order, reward, xpReward, MiniGameRating.Good));
+
+        return reward;
     }
 }

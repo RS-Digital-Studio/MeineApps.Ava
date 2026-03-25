@@ -77,8 +77,8 @@ public static class MasterTool
             "mt_obsidian_drill" => state.Workshops.Any(w => w.Level >= 750),
             "mt_ruby_blade" => state.Prestige.SilverCount >= 1,
 
-            // Epic: Endgame-Meilensteine
-            "mt_emerald_toolbox" => state.Workshops.Any(w => w.Level >= 1500),
+            // Epic: Endgame-Meilensteine (BAL-38: von 1500 auf 500 gesenkt, MaxLevel ist 1000)
+            "mt_emerald_toolbox" => state.Workshops.Any(w => w.Level >= 500),
             "mt_dragon_anvil" => state.Prestige.GoldCount >= 1,
 
             // Legendary: Alle anderen Tools gesammelt

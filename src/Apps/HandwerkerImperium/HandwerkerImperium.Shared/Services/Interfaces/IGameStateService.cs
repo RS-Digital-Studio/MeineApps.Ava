@@ -219,4 +219,10 @@ public interface IGameStateService
     /// Marks the state as dirty (needs saving).
     /// </summary>
     void MarkDirty();
+
+    /// <summary>
+    /// Schließt einen Lieferauftrag ab: Items abziehen, Belohnung gutschreiben.
+    /// Gibt den Geld-Ertrag zurück (0 wenn nicht möglich).
+    /// </summary>
+    decimal CompleteMaterialOrder(Order order);
 }

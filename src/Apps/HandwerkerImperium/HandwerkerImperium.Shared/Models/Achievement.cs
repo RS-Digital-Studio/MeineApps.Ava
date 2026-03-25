@@ -269,7 +269,38 @@ public static class Achievements
 
             // Sammler/Collection-Achievements
             new() { Id = "all_mastertools", TitleKey = "AchAllMastertools", TitleFallback = "Tool Collector", DescriptionKey = "AchAllMastertoolsDesc", DescriptionFallback = "Collect all 12 master tools", Category = AchievementCategory.Collection, Icon = "Toolbox", TargetValue = 12, MoneyReward = 500_000, XpReward = 3000, GoldenScrewReward = 75 },
-            new() { Id = "equipment_all_rarities", TitleKey = "AchEquipmentAllRarities", TitleFallback = "Rarity Collector", DescriptionKey = "AchEquipmentAllRaritiesDesc", DescriptionFallback = "Collect equipment of all 4 rarity levels", Category = AchievementCategory.Collection, Icon = "DiamondOutline", TargetValue = 4, MoneyReward = 100_000, XpReward = 1500, GoldenScrewReward = 30 }
+            new() { Id = "equipment_all_rarities", TitleKey = "AchEquipmentAllRarities", TitleFallback = "Rarity Collector", DescriptionKey = "AchEquipmentAllRaritiesDesc", DescriptionFallback = "Collect equipment of all 4 rarity levels", Category = AchievementCategory.Collection, Icon = "DiamondOutline", TargetValue = 4, MoneyReward = 100_000, XpReward = 1500, GoldenScrewReward = 30 },
+
+            // ═══════════════════════════════════════════════════════════════
+            // ASCENSION-ACHIEVEMENTS (Phase 4 Late-Game)
+            // ═══════════════════════════════════════════════════════════════
+            new() { Id = "asc_first", TitleKey = "AchAscFirst", TitleFallback = "First Ascension", DescriptionKey = "AchAscFirstDesc", DescriptionFallback = "Perform your first ascension", Category = AchievementCategory.Ascension, Icon = "Creation", TargetValue = 1, MoneyReward = 500_000, XpReward = 5000, GoldenScrewReward = 100 },
+            new() { Id = "asc_5", TitleKey = "AchAsc5", TitleFallback = "Master Ascender", DescriptionKey = "AchAsc5Desc", DescriptionFallback = "Perform 5 ascensions", Category = AchievementCategory.Ascension, Icon = "Creation", TargetValue = 5, MoneyReward = 5_000_000, XpReward = 12500, GoldenScrewReward = 250 },
+            new() { Id = "asc_10", TitleKey = "AchAsc10", TitleFallback = "Transcendence", DescriptionKey = "AchAsc10Desc", DescriptionFallback = "Perform 10 ascensions", Category = AchievementCategory.Ascension, Icon = "Crown", TargetValue = 10, MoneyReward = 50_000_000, XpReward = 25000, GoldenScrewReward = 500 },
+            new() { Id = "asc_perk_first", TitleKey = "AchAscPerkFirst", TitleFallback = "Perk Enthusiast", DescriptionKey = "AchAscPerkFirstDesc", DescriptionFallback = "Purchase your first ascension perk", Category = AchievementCategory.Ascension, Icon = "StarShooting", TargetValue = 1, MoneyReward = 100_000, XpReward = 2500, GoldenScrewReward = 50 },
+            new() { Id = "asc_perks_max", TitleKey = "AchAscPerksMax", TitleFallback = "Fully Upgraded", DescriptionKey = "AchAscPerksMaxDesc", DescriptionFallback = "Upgrade all 6 ascension perks to maximum level", Category = AchievementCategory.Ascension, Icon = "CheckDecagram", TargetValue = 6, MoneyReward = 100_000_000, XpReward = 50000, GoldenScrewReward = 1000 },
+
+            // ═══════════════════════════════════════════════════════════════
+            // REBIRTH-ACHIEVEMENTS (Phase 4 Late-Game)
+            // ═══════════════════════════════════════════════════════════════
+            new() { Id = "rebirth_first", TitleKey = "AchRebirthFirst", TitleFallback = "First Star", DescriptionKey = "AchRebirthFirstDesc", DescriptionFallback = "Perform your first workshop rebirth", Category = AchievementCategory.Rebirth, Icon = "StarFourPoints", TargetValue = 1, MoneyReward = 1_000_000, XpReward = 5000, GoldenScrewReward = 100 },
+            new() { Id = "rebirth_stars_10", TitleKey = "AchRebirthStars10", TitleFallback = "Star Collector", DescriptionKey = "AchRebirthStars10Desc", DescriptionFallback = "Collect 10 rebirth stars across all workshops", Category = AchievementCategory.Rebirth, Icon = "StarCircle", TargetValue = 10, MoneyReward = 10_000_000, XpReward = 15000, GoldenScrewReward = 300 },
+            new() { Id = "rebirth_ws_5stars", TitleKey = "AchRebirthWs5Stars", TitleFallback = "Perfection", DescriptionKey = "AchRebirthWs5StarsDesc", DescriptionFallback = "Upgrade a workshop to 5 rebirth stars", Category = AchievementCategory.Rebirth, Icon = "Star", TargetValue = 5, MoneyReward = 25_000_000, XpReward = 20000, GoldenScrewReward = 500 },
+            new() { Id = "rebirth_all_ws", TitleKey = "AchRebirthAllWs", TitleFallback = "Galaxy", DescriptionKey = "AchRebirthAllWsDesc", DescriptionFallback = "Get at least 1 rebirth star on all 8 workshops", Category = AchievementCategory.Rebirth, Icon = "Orbit", TargetValue = 8, MoneyReward = 50_000_000, XpReward = 25000, GoldenScrewReward = 750 },
+
+            // ═══════════════════════════════════════════════════════════════
+            // LATE-GAME ACHIEVEMENT (Phase 4)
+            // ═══════════════════════════════════════════════════════════════
+            new() { Id = "all_ws_level1000", TitleKey = "AchAllWsLevel1000", TitleFallback = "On the Summit", DescriptionKey = "AchAllWsLevel1000Desc", DescriptionFallback = "Upgrade all 8 workshops to level 1000", Category = AchievementCategory.Workshops, Icon = "Crown", TargetValue = 8, MoneyReward = 100_000_000, XpReward = 50000, GoldenScrewReward = 1000 },
+
+            // ═══════════════════════════════════════════════════════════════
+            // CRAFTING & AUTO-PRODUKTION
+            // ═══════════════════════════════════════════════════════════════
+            new() { Id = "auto_craft_first", TitleKey = "AchAutoCraftFirst", TitleFallback = "First Prototype", DescriptionKey = "AchAutoCraftFirstDesc", DescriptionFallback = "Auto-produce your first item", Category = AchievementCategory.Crafting, Icon = "Cog", TargetValue = 1, MoneyReward = 1_000, XpReward = 500, GoldenScrewReward = 5 },
+            new() { Id = "auto_craft_100", TitleKey = "AchAutoCraft100", TitleFallback = "Serial Production", DescriptionKey = "AchAutoCraft100Desc", DescriptionFallback = "Auto-produce 100 items", Category = AchievementCategory.Crafting, Icon = "Cog", TargetValue = 100, MoneyReward = 25_000, XpReward = 2500, GoldenScrewReward = 25 },
+            new() { Id = "auto_craft_1000", TitleKey = "AchAutoCraft1000", TitleFallback = "Mass Production", DescriptionKey = "AchAutoCraft1000Desc", DescriptionFallback = "Auto-produce 1000 items", Category = AchievementCategory.Crafting, Icon = "Cog", TargetValue = 1000, MoneyReward = 250_000, XpReward = 10000, GoldenScrewReward = 100 },
+            new() { Id = "material_order_10", TitleKey = "AchMaterialOrder10", TitleFallback = "Material Master", DescriptionKey = "AchMaterialOrder10Desc", DescriptionFallback = "Complete 10 delivery orders", Category = AchievementCategory.Orders, Icon = "PackageVariantClosed", TargetValue = 10, MoneyReward = 50_000, XpReward = 5000, GoldenScrewReward = 50 },
+            new() { Id = "craft_tier3_first", TitleKey = "AchCraftTier3First", TitleFallback = "Masterpiece", DescriptionKey = "AchCraftTier3FirstDesc", DescriptionFallback = "Craft your first tier 3 item", Category = AchievementCategory.Crafting, Icon = "StarFourPoints", TargetValue = 1, MoneyReward = 100_000, XpReward = 5000, GoldenScrewReward = 50 }
         ];
     }
 }

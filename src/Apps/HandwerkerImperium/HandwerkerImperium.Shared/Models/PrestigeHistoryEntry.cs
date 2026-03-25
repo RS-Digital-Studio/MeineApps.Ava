@@ -32,4 +32,20 @@ public class PrestigeHistoryEntry
     /// <summary>Insgesamt verdientes Geld in diesem Durchlauf.</summary>
     [JsonPropertyName("moneyEarned")]
     public decimal TotalMoneyEarned { get; set; }
+
+    /// <summary>Dauer des Durchlaufs in Ticks (0 = unbekannt, alte Einträge).</summary>
+    [JsonPropertyName("runDurationTicks")]
+    public long RunDurationTicks { get; set; }
+
+    /// <summary>Dauer als TimeSpan (null bei alten Einträgen ohne Tracking).</summary>
+    [JsonIgnore]
+    public TimeSpan? RunDuration => RunDurationTicks > 0 ? TimeSpan.FromTicks(RunDurationTicks) : null;
+
+    /// <summary>Aktive Challenges während dieses Durchlaufs (leer = keine).</summary>
+    [JsonPropertyName("challenges")]
+    public List<PrestigeChallengeType> Challenges { get; set; } = [];
+
+    /// <summary>Bonus-PP aus Spielleistung (flat, nach Tier-Multi).</summary>
+    [JsonPropertyName("bonusPp")]
+    public int BonusPrestigePoints { get; set; }
 }

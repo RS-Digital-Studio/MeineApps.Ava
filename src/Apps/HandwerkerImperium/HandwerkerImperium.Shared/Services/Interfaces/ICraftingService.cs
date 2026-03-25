@@ -25,4 +25,10 @@ public interface ICraftingService
 
     /// <summary>Verkauft ein Produkt aus dem Inventar. Gibt true bei Erfolg zurück.</summary>
     bool SellProduct(string productId);
+
+    /// <summary>Verkauft mehrere Einheiten eines Produkts. Gibt den Gesamterlös zurück.</summary>
+    decimal SellProducts(string productId, int count);
+
+    /// <summary>Berechnet den aktuellen Verkaufspreis eines Produkts (1 Stück) inkl. aller Multiplikatoren.</summary>
+    decimal GetSellPrice(string productId);
 }

@@ -177,4 +177,25 @@ public static class ContextualHints
         Id = "master_tools_unlock", TitleKey = "HintMasterToolsUnlockTitle", TextKey = "HintMasterToolsUnlockText",
         Position = HintPosition.Below
     };
+
+    // Ascension verfügbar (erstmals CanAscend == true, nach 3x Legende-Prestige)
+    public static readonly ContextualHint AscensionAvailable = new()
+    {
+        Id = "ascension_available", TitleKey = "HintAscensionAvailableTitle", TextKey = "HintAscensionAvailableText",
+        Position = HintPosition.Below, IsDialog = true
+    };
+
+    // Rebirth bereit (erster Workshop erreicht Level 1000)
+    public static readonly ContextualHint RebirthReady = new()
+    {
+        Id = "rebirth_ready", TitleKey = "HintRebirthReadyTitle", TextKey = "HintRebirthReadyText",
+        Position = HintPosition.Below, IsDialog = true
+    };
+
+    // Erster Stern (nach erstem Rebirth, erklärt Stern-Boni)
+    public static readonly ContextualHint FirstStar = new()
+    {
+        Id = "first_star", TitleKey = "HintFirstStarTitle", TextKey = "HintFirstStarText",
+        Position = HintPosition.Below, IsDialog = true
+    };
 }

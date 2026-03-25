@@ -12,16 +12,22 @@ namespace HandwerkerImperium.Services;
 public sealed class CraftingService : ICraftingService
 {
     private readonly IGameStateService _gameState;
+    private readonly IIncomeCalculatorService _incomeCalculator;
+    // Lock verhindert Race Condition bei schnellem Doppelklick (Materialien doppelt verbraucht)
+    private readonly object _craftingLock = new();
     // Gecachter Crafting-Speed-Bonus (wird bei Prestige-Shop-Kauf invalidiert)
     private decimal _cachedCraftingSpeedBonus = -1m;
     private int _lastPurchasedCount = -1;
 
     public event Action? CraftingUpdated;
 
-    public CraftingService(IGameStateService gameState)
+    public CraftingService(
+        IGameStateService gameState,
+        IIncomeCalculatorService incomeCalculator)
     {
         _gameState = gameState;
-        // Bei State-Wechsel (Prestige/Import/Reset) Crafting-Speed-Cache invalidieren
+        _incomeCalculator = incomeCalculator;
+        // Bei State-Wechsel (Prestige/Import/Reset) Caches invalidieren
         _gameState.StateLoaded += (_, _) =>
         {
             _cachedCraftingSpeedBonus = -1m;
@@ -39,43 +45,48 @@ public sealed class CraftingService : ICraftingService
 
     public bool StartCrafting(string recipeId)
     {
-        var state = _gameState.State;
-
-        // Rezept finden
-        var recipe = CraftingRecipe.GetAllRecipes().FirstOrDefault(r => r.Id == recipeId);
-        if (recipe == null) return false;
-
-        // Input-Produkte prüfen und abziehen
-        foreach (var (productId, required) in recipe.InputProducts)
+        // Lock verhindert Race Condition: Doppelklick könnte Materialien doppelt verbrauchen
+        // wenn Prüfung und Abzug nicht atomar erfolgen
+        lock (_craftingLock)
         {
-            int available = state.CraftingInventory.GetValueOrDefault(productId, 0);
-            if (available < required) return false;
+            var state = _gameState.State;
+
+            // Rezept finden
+            var recipe = CraftingRecipe.GetAllRecipes().FirstOrDefault(r => r.Id == recipeId);
+            if (recipe == null) return false;
+
+            // Input-Produkte prüfen und abziehen (atomar innerhalb des Locks)
+            foreach (var (productId, required) in recipe.InputProducts)
+            {
+                int available = state.CraftingInventory.GetValueOrDefault(productId, 0);
+                if (available < required) return false;
+            }
+
+            foreach (var (productId, required) in recipe.InputProducts)
+            {
+                state.CraftingInventory[productId] -= required;
+                if (state.CraftingInventory[productId] <= 0)
+                    state.CraftingInventory.Remove(productId);
+            }
+
+            // Crafting-Job erstellen (Prestige-Shop CraftingSpeedBonus reduziert Dauer)
+            int effectiveDuration = recipe.DurationSeconds;
+            decimal craftingSpeedBonus = GetPrestigeCraftingSpeedBonus(state);
+            if (craftingSpeedBonus > 0)
+                effectiveDuration = Math.Max(1, (int)(effectiveDuration * (1m - Math.Min(craftingSpeedBonus, 0.50m))));
+
+            var job = new CraftingJob
+            {
+                RecipeId = recipeId,
+                StartedAt = DateTime.UtcNow,
+                DurationSeconds = effectiveDuration
+            };
+
+            state.ActiveCraftingJobs.Add(job);
+
+            _gameState.MarkDirty();
         }
 
-        // Inputs abziehen
-        foreach (var (productId, required) in recipe.InputProducts)
-        {
-            state.CraftingInventory[productId] -= required;
-            if (state.CraftingInventory[productId] <= 0)
-                state.CraftingInventory.Remove(productId);
-        }
-
-        // Crafting-Job erstellen (Prestige-Shop CraftingSpeedBonus reduziert Dauer)
-        int effectiveDuration = recipe.DurationSeconds;
-        decimal craftingSpeedBonus = GetPrestigeCraftingSpeedBonus(state);
-        if (craftingSpeedBonus > 0)
-            effectiveDuration = Math.Max(1, (int)(effectiveDuration * (1m - Math.Min(craftingSpeedBonus, 0.50m))));
-
-        var job = new CraftingJob
-        {
-            RecipeId = recipeId,
-            StartedAt = DateTime.UtcNow,
-            DurationSeconds = effectiveDuration
-        };
-
-        state.ActiveCraftingJobs.Add(job);
-
-        _gameState.MarkDirty();
         CraftingUpdated?.Invoke();
         return true;
     }
@@ -101,8 +112,8 @@ public sealed class CraftingService : ICraftingService
     {
         var state = _gameState.State;
 
-        // Job anhand der RecipeId finden (CraftingJob hat keine eigene ID)
-        var job = state.ActiveCraftingJobs.FirstOrDefault(j => j.RecipeId == jobId && j.IsComplete);
+        // Job anhand der eindeutigen JobId finden (nicht RecipeId — bei mehreren gleichen Rezepten sonst falsch)
+        var job = state.ActiveCraftingJobs.FirstOrDefault(j => j.JobId == jobId && j.IsComplete);
         if (job == null) return false;
 
         // Rezept nachschlagen für Output
@@ -126,29 +137,116 @@ public sealed class CraftingService : ICraftingService
         return true;
     }
 
-    public bool SellProduct(string productId)
+    public bool SellProduct(string productId) => SellProducts(productId, 1) > 0;
+
+    /// <summary>
+    /// Verkauft mehrere Einheiten eines Produkts. Gibt den Gesamterlös zurück (0 bei Fehler).
+    /// Verkaufspreis skaliert mit Workshop-Level und allen Einkommens-Multiplikatoren.
+    /// </summary>
+    public decimal SellProducts(string productId, int count)
     {
         var state = _gameState.State;
 
-        // Produkt im Inventar prüfen
         int available = state.CraftingInventory.GetValueOrDefault(productId, 0);
-        if (available <= 0) return false;
+        if (available <= 0 || count <= 0) return 0m;
 
-        // Verkaufspreis ermitteln
         var allProducts = CraftingProduct.GetAllProducts();
-        if (!allProducts.TryGetValue(productId, out var product)) return false;
+        if (!allProducts.TryGetValue(productId, out var product)) return 0m;
 
-        // Produkt verkaufen (1 Stück)
-        state.CraftingInventory[productId]--;
+        // Tatsächlich verkaufte Menge
+        int sellCount = Math.Min(count, available);
+
+        // Skalierenden Preis berechnen
+        decimal pricePerUnit = GetSellPrice(productId);
+        decimal totalRevenue = pricePerUnit * sellCount;
+
+        // Inventar reduzieren
+        state.CraftingInventory[productId] -= sellCount;
         if (state.CraftingInventory[productId] <= 0)
             state.CraftingInventory.Remove(productId);
 
         // Geld gutschreiben
-        _gameState.AddMoney(product.BaseValue);
+        _gameState.AddMoney(totalRevenue);
 
         _gameState.MarkDirty();
         CraftingUpdated?.Invoke();
-        return true;
+        return totalRevenue;
+    }
+
+    /// <summary>
+    /// Berechnet den aktuellen Verkaufspreis eines Produkts (1 Stück) inkl. aller Multiplikatoren.
+    /// Formel: BaseValue × LevelMultiplier × CraftingSellMultiplier (Prestige, Research, Events, etc.)
+    /// </summary>
+    public decimal GetSellPrice(string productId)
+    {
+        var allProducts = CraftingProduct.GetAllProducts();
+        if (!allProducts.TryGetValue(productId, out var product)) return 0m;
+
+        var state = _gameState.State;
+
+        // Workshop-Level für dieses Produkt ermitteln
+        int workshopLevel = GetWorkshopLevelForProduct(productId, state);
+
+        // Level-Multiplikator: logarithmisch skalierend
+        decimal levelMult = 1.0m + (decimal)Math.Log2(1.0 + workshopLevel / GameBalanceConstants.CraftingSellPriceLogDivisor);
+
+        // Prestige-Shop Income-Bonus (aus PrestigeShop-Items berechnen)
+        decimal prestigeIncomeBonus = GetPrestigeIncomeBonus(state);
+
+        // Rebirth-Bonus des Workshops
+        decimal rebirthBonus = GetRebirthBonusForProduct(productId, state);
+
+        // Alle Einkommens-Multiplikatoren (ohne Soft-Cap, ohne Speed/Rush)
+        decimal boostMult = _incomeCalculator.CalculateCraftingSellMultiplier(
+            state, prestigeIncomeBonus, rebirthBonus);
+
+        return Math.Round(product.BaseValue * levelMult * boostMult);
+    }
+
+    /// <summary>
+    /// Ermittelt das Workshop-Level für ein Produkt anhand seines Workshop-Typs.
+    /// </summary>
+    private static int GetWorkshopLevelForProduct(string productId, GameState state)
+    {
+        var recipe = FindRecipeByProductId(productId);
+        if (recipe == null) return 1;
+
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            if (state.Workshops[i].Type == recipe.WorkshopType)
+                return state.Workshops[i].Level;
+        }
+        return 1;
+    }
+
+    /// <summary>
+    /// Ermittelt den Rebirth-Einkommensbonus des Workshops für ein Produkt.
+    /// </summary>
+    private static decimal GetRebirthBonusForProduct(string productId, GameState state)
+    {
+        var recipe = FindRecipeByProductId(productId);
+        if (recipe == null) return 0m;
+
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            if (state.Workshops[i].Type == recipe.WorkshopType)
+                return state.Workshops[i].RebirthIncomeBonus;
+        }
+        return 0m;
+    }
+
+    /// <summary>
+    /// Findet das Rezept das ein bestimmtes Produkt herstellt.
+    /// </summary>
+    private static CraftingRecipe? FindRecipeByProductId(string productId)
+    {
+        var recipes = CraftingRecipe.GetAllRecipes();
+        for (int i = 0; i < recipes.Count; i++)
+        {
+            if (recipes[i].OutputProductId == productId)
+                return recipes[i];
+        }
+        return null;
     }
 
     /// <summary>
@@ -174,6 +272,33 @@ public sealed class CraftingService : ICraftingService
         }
         _cachedCraftingSpeedBonus = bonus;
         _lastPurchasedCount = purchased.Count;
+        return bonus;
+    }
+
+    /// <summary>
+    /// Berechnet den Prestige-Shop-Einkommensbonus aus gekauften Items.
+    /// </summary>
+    private static decimal GetPrestigeIncomeBonus(GameState state)
+    {
+        var purchased = state.Prestige.PurchasedShopItems;
+        var repeatableCounts = state.Prestige.RepeatableItemCounts;
+        if (purchased.Count == 0 && repeatableCounts.Count == 0) return 0m;
+
+        decimal bonus = 0m;
+        var allItems = PrestigeShop.GetAllItems();
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            var item = allItems[i];
+            if (item.IsRepeatable)
+            {
+                if (repeatableCounts.TryGetValue(item.Id, out var count) && count > 0
+                    && item.Effect.IncomeMultiplier > 0)
+                    bonus += item.Effect.IncomeMultiplier * count;
+                continue;
+            }
+            if (purchased.Contains(item.Id) && item.Effect.IncomeMultiplier > 0)
+                bonus += item.Effect.IncomeMultiplier;
+        }
         return bonus;
     }
 }

@@ -11,6 +11,7 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
 {
     private readonly IGameStateService _gameStateService;
     private readonly IResearchService? _researchService;
+    private readonly IAutoProductionService? _autoProductionService;
 
     // Order templates per workshop type
     private static readonly Dictionary<WorkshopType, List<OrderTemplate>> _templates = new()
@@ -98,10 +99,14 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         "Lehmann", "Schmid"
     };
 
-    public OrderGeneratorService(IGameStateService gameStateService, IResearchService? researchService = null)
+    public OrderGeneratorService(
+        IGameStateService gameStateService,
+        IResearchService? researchService = null,
+        IAutoProductionService? autoProductionService = null)
     {
         _gameStateService = gameStateService;
         _researchService = researchService;
+        _autoProductionService = autoProductionService;
     }
 
     /// <summary>
@@ -369,14 +374,127 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     {
         var state = _gameStateService.State;
 
-        // Clear old orders
+        // Bestehende Lieferaufträge beibehalten (nicht bei Refresh löschen)
+        var existingMaterialOrders = new List<Order>();
+        for (int i = 0; i < state.AvailableOrders.Count; i++)
+        {
+            if (state.AvailableOrders[i].OrderType == OrderType.MaterialOrder && !state.AvailableOrders[i].IsExpired)
+                existingMaterialOrders.Add(state.AvailableOrders[i]);
+        }
+
+        // Alte normale Orders entfernen
         state.AvailableOrders.Clear();
 
-        // Generate new orders
+        // Bestehende Lieferaufträge zurück hinzufügen
+        state.AvailableOrders.AddRange(existingMaterialOrders);
+
+        // Neue normale Orders generieren
         var newOrders = GenerateAvailableOrders(3);
         state.AvailableOrders.AddRange(newOrders);
 
+        // Lieferauftrag generieren (1 pro Refresh wenn unter Tageslimit)
+        if (existingMaterialOrders.Count == 0)
+        {
+            var materialOrder = GenerateMaterialOrder();
+            if (materialOrder != null)
+                state.AvailableOrders.Add(materialOrder);
+        }
+
         _gameStateService.MarkDirty();
+    }
+
+    public Order? GenerateMaterialOrder()
+    {
+        if (_autoProductionService == null) return null;
+        var state = _gameStateService.State;
+
+        // Tages-Reset prüfen
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        if (state.LastMaterialOrderReset != today)
+        {
+            state.MaterialOrdersCompletedToday = 0;
+            state.LastMaterialOrderReset = today;
+        }
+
+        // Tageslimit prüfen
+        if (state.MaterialOrdersCompletedToday >= GameBalanceConstants.MaterialOrdersPerDay)
+            return null;
+
+        // Qualifizierte Workshops finden (Auto-Produktion freigeschaltet)
+        var qualifiedWorkshops = new List<Workshop>();
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            var ws = state.Workshops[i];
+            if (state.IsWorkshopUnlocked(ws.Type) && _autoProductionService.IsAutoProductionUnlocked(ws))
+                qualifiedWorkshops.Add(ws);
+        }
+        if (qualifiedWorkshops.Count == 0) return null;
+
+        // Haupt-Workshop auswählen
+        var mainWorkshop = qualifiedWorkshops[Random.Shared.Next(qualifiedWorkshops.Count)];
+        var mainProduct = _autoProductionService.GetTier1ProductId(mainWorkshop.Type);
+        if (mainProduct == null) return null;
+
+        // Benötigte Materialien generieren
+        var materials = new Dictionary<string, int>();
+        int playerLevel = state.PlayerLevel;
+
+        // Basis: 5-10 Items vom Haupt-Workshop (skaliert mit Level)
+        int mainCount = 5 + Math.Min(playerLevel / 50, 10);
+        materials[mainProduct] = mainCount;
+
+        // Cross-Workshop ab Level 100: 3-5 Items von einem anderen Workshop
+        if (playerLevel >= GameBalanceConstants.MaterialOrderCrossWorkshopLevel && qualifiedWorkshops.Count >= 2)
+        {
+            Workshop? secondWorkshop = null;
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                var candidate = qualifiedWorkshops[Random.Shared.Next(qualifiedWorkshops.Count)];
+                if (candidate.Type != mainWorkshop.Type) { secondWorkshop = candidate; break; }
+            }
+            if (secondWorkshop != null)
+            {
+                var secondProduct = _autoProductionService.GetTier1ProductId(secondWorkshop.Type);
+                if (secondProduct != null)
+                    materials[secondProduct] = 3 + Math.Min(playerLevel / 100, 5);
+            }
+        }
+
+        // Belohnung berechnen (BaseReward-Formel wie normale Orders)
+        var netIncome = Math.Max(0m, state.NetIncomePerSecond);
+        var perItemReward = Math.Max(100m + playerLevel * 100m, netIncome * 300m);
+        int totalItems = 0;
+        foreach (var kv in materials) totalItems += kv.Value;
+        decimal baseReward = perItemReward * (1.0m + totalItems * 0.1m) * mainWorkshop.Type.GetBaseIncomeMultiplier();
+
+        // Gilden-Bonus
+        var guildRewardBonus = state.GuildMembership?.ResearchRewardBonus ?? 0m;
+        if (guildRewardBonus > 0) baseReward *= (1m + guildRewardBonus);
+
+        int baseXp = 25 * mainWorkshop.Level * Math.Max(1, totalItems / 3);
+
+        // Kundennamen
+        int nameSeed = (int)(DateTime.UtcNow.Ticks % int.MaxValue) ^ Random.Shared.Next();
+        string customerName = GenerateCustomerName(nameSeed);
+
+        var order = new Order
+        {
+            TitleKey = "OrderTypeMaterialOrder",
+            TitleFallback = "Delivery Order",
+            WorkshopType = mainWorkshop.Type,
+            OrderType = OrderType.MaterialOrder,
+            Difficulty = OrderDifficulty.Medium,
+            BaseReward = Math.Round(baseReward),
+            BaseXp = baseXp,
+            RequiredLevel = 1,
+            CustomerName = customerName,
+            CustomerAvatarSeed = nameSeed.ToString("X8"),
+            RequiredMaterials = materials,
+            Deadline = DateTime.UtcNow + OrderType.MaterialOrder.GetDeadline(),
+            Tasks = [] // Keine MiniGames
+        };
+
+        return order;
     }
 
     /// <summary>

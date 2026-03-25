@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Text.Json;
 using FinanzRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
@@ -14,6 +15,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly IPurchaseService _purchaseService;
     private readonly IExpenseService _expenseService;
     private readonly IPreferencesService _preferencesService;
+    private readonly IAccountService _accountService;
+    private readonly ISavingsGoalService _savingsGoalService;
+    private readonly IDebtService _debtService;
+    private readonly ICustomCategoryService _customCategoryService;
 
     public event Action<string, string>? MessageRequested;
 
@@ -23,15 +28,29 @@ public sealed partial class SettingsViewModel : ViewModelBase
         ILocalizationService localizationService,
         IPurchaseService purchaseService,
         IExpenseService expenseService,
-        IPreferencesService preferencesService)
+        IPreferencesService preferencesService,
+        IAccountService accountService,
+        ISavingsGoalService savingsGoalService,
+        IDebtService debtService,
+        ICustomCategoryService customCategoryService)
     {
         _localizationService = localizationService;
         _purchaseService = purchaseService;
         _expenseService = expenseService;
         _preferencesService = preferencesService;
+        _accountService = accountService;
+        _savingsGoalService = savingsGoalService;
+        _debtService = debtService;
+        _customCategoryService = customCategoryService;
 
         _selectedLanguage = _localizationService.CurrentLanguage;
         _isPremium = _purchaseService.IsPremium;
+
+        // Währung aus Preferences laden
+        var savedCurrency = _preferencesService.Get("currency_code", "EUR");
+        _selectedCurrencyIndex = CurrencyDisplayNames
+            .ToList().FindIndex(c => c.StartsWith(savedCurrency));
+        if (_selectedCurrencyIndex < 0) _selectedCurrencyIndex = 0;
     }
 
     #region Observable Properties
@@ -41,6 +60,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isPremium;
+
+    [ObservableProperty]
+    private int _selectedCurrencyIndex;
+
+    /// <summary>Währungs-Auswahlliste für ComboBox.</summary>
+    public static IReadOnlyList<string> CurrencyDisplayNames { get; } =
+        Models.CurrencySettings.Presets.Select(p => $"{p.CurrencyCode} ({p.CurrencySymbol})").ToList();
+
+    partial void OnSelectedCurrencyIndexChanged(int value)
+    {
+        if (value < 0 || value >= Models.CurrencySettings.Presets.Count) return;
+        var preset = Models.CurrencySettings.Presets[value];
+        _preferencesService.Set("currency_code", preset.CurrencyCode);
+        Helpers.CurrencyHelper.Configure(preset);
+    }
 
     public bool IsNotPremium => !IsPremium;
 
@@ -202,15 +236,30 @@ public sealed partial class SettingsViewModel : ViewModelBase
         {
             IsBackupInProgress = true;
 
-            var json = await _expenseService.ExportToJsonAsync();
+            // Alle Services exportieren und in Container-JSON zusammenfassen
+            var expenseJson = await _expenseService.ExportToJsonAsync();
+            var accountsJson = await _accountService.ExportToJsonAsync();
+            var goalsJson = await _savingsGoalService.ExportToJsonAsync();
+            var debtsJson = await _debtService.ExportToJsonAsync();
+            var categoriesJson = await _customCategoryService.ExportToJsonAsync();
+
+            // Wrapper-Objekt: Erweitertes Backup-Format (rückwärtskompatibel)
+            var fullBackup = new Dictionary<string, string>
+            {
+                ["version"] = "2.0",
+                ["expenses"] = expenseJson,
+                ["accounts"] = accountsJson,
+                ["savings_goals"] = goalsJson,
+                ["debts"] = debtsJson,
+                ["custom_categories"] = categoriesJson
+            };
+            var json = JsonSerializer.Serialize(fullBackup, new JsonSerializerOptions { WriteIndented = true });
+
             var fileName = $"FinanzRechner_Backup_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
             var filePath = Path.Combine(Path.GetTempPath(), fileName);
 
             await File.WriteAllTextAsync(filePath, json);
 
-            // Backup file ready for sharing
-
-            // Notify view to handle file sharing/saving
             BackupCreated?.Invoke(filePath);
         }
         catch (Exception ex)
@@ -297,16 +346,45 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     /// <summary>
     /// Fuehrt den eigentlichen Restore aus (Merge oder Replace).
+    /// Unterstuetzt sowohl das alte Format (nur Expenses) als auch das neue v2.0 Container-Format.
     /// </summary>
     private async Task ProcessRestoreFileAsync(string filePath, bool merge)
     {
         try
         {
             var json = await File.ReadAllTextAsync(filePath);
-            var count = await _expenseService.ImportFromJsonAsync(json, merge);
+            var totalCount = 0;
+
+            // Prüfen ob es ein v2.0 Container-Backup ist (hat "version" Key)
+            Dictionary<string, string>? container = null;
+            try
+            {
+                container = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            }
+            catch { /* Kein Container-Format - altes Format */ }
+
+            if (container != null && container.ContainsKey("version") && container.ContainsKey("expenses"))
+            {
+                // Neues v2.0 Format: Alle Services wiederherstellen
+                if (container.TryGetValue("expenses", out var expensesJson))
+                    totalCount += await _expenseService.ImportFromJsonAsync(expensesJson, merge);
+                if (container.TryGetValue("accounts", out var accountsJson))
+                    totalCount += await _accountService.ImportFromJsonAsync(accountsJson, merge);
+                if (container.TryGetValue("savings_goals", out var goalsJson))
+                    totalCount += await _savingsGoalService.ImportFromJsonAsync(goalsJson, merge);
+                if (container.TryGetValue("debts", out var debtsJson))
+                    totalCount += await _debtService.ImportFromJsonAsync(debtsJson, merge);
+                if (container.TryGetValue("custom_categories", out var categoriesJson))
+                    totalCount += await _customCategoryService.ImportFromJsonAsync(categoriesJson, merge);
+            }
+            else
+            {
+                // Altes Format (nur ExpenseService) - rückwärtskompatibel
+                totalCount = await _expenseService.ImportFromJsonAsync(json, merge);
+            }
 
             var title = _localizationService.GetString("Success") ?? "Success";
-            var message = string.Format(_localizationService.GetString("RestoreSuccess") ?? "{0} entries restored.", count);
+            var message = string.Format(_localizationService.GetString("RestoreSuccess") ?? "{0} entries restored.", totalCount);
             MessageRequested?.Invoke(title, message);
         }
         catch (Exception ex)

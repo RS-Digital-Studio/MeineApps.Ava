@@ -1,0 +1,246 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FinanzRechner.ViewModels"
+             xmlns:models="using:FinanzRechner.Models"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
+             x:Class="FinanzRechner.Views.AccountsView"
+             x:DataType="vm:AccountsViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="16,12">
+            <Button Grid.Column="0" Command="{Binding GoBackCommand}"
+                    Classes="icon" Padding="8"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+                </i:Interaction.Behaviors>
+                <materialIcons:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+            </Button>
+            <TextBlock Grid.Column="1" Text="{Binding TitleText}"
+                       FontSize="20" FontWeight="Bold"
+                       VerticalAlignment="Center" Margin="12,0,0,0" />
+            <Button Grid.Column="2" Command="{Binding OpenTransferDialogCommand}"
+                    Classes="icon" Padding="8" Margin="0,0,8,0"
+                    IsVisible="{Binding HasAccounts}"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+                </i:Interaction.Behaviors>
+                <materialIcons:MaterialIcon Kind="SwapHorizontal" Width="22" Height="22" />
+            </Button>
+            <Button Grid.Column="3" Command="{Binding OpenAddDialogCommand}"
+                    Classes="icon" Padding="8"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                </i:Interaction.Behaviors>
+                <materialIcons:MaterialIcon Kind="Plus" Width="24" Height="24" />
+            </Button>
+        </Grid>
+
+        <!-- Inhalt -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="12" Margin="16,0,16,80">
+                <i:Interaction.Behaviors>
+                    <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+                </i:Interaction.Behaviors>
+
+                <!-- Nettovermögen Karte -->
+                <Border Background="{DynamicResource CardBrush}"
+                        CornerRadius="16" Padding="20"
+                        BoxShadow="0 2 8 0 #20000000">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{Binding NetWorthDisplay}"
+                                   FontSize="32" FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryBrush}"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding NetWorthText}"
+                                   FontSize="13" Opacity="0.6"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Konten-Liste -->
+                <ItemsControl ItemsSource="{Binding AccountBalances}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="0">
+                                <i:Interaction.Behaviors>
+                                    <uiBehaviors:StaggerFadeInBehavior StaggerDelay="50" BaseDuration="300" />
+                                </i:Interaction.Behaviors>
+                            </StackPanel>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:AccountBalance">
+                            <Panel Margin="0,0,0,8">
+                                <Border Background="{DynamicResource CardBrush}"
+                                        CornerRadius="12" Padding="16"
+                                        BoxShadow="0 1 4 0 #10000000"
+                                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                                    <i:Interaction.Behaviors>
+                                        <uiBehaviors:TapScaleBehavior PressedScale="0.97" />
+                                    </i:Interaction.Behaviors>
+                                    <Border.ContextFlyout>
+                                        <MenuFlyout>
+                                            <MenuItem Header="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).EditText}"
+                                                      Command="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).EditAccountCommand}"
+                                                      CommandParameter="{Binding}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="Pencil" Width="18" Height="18" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).DeleteText}"
+                                                      Command="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).DeleteAccountCommand}"
+                                                      CommandParameter="{Binding}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                        </MenuFlyout>
+                                    </Border.ContextFlyout>
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Grid.Column="0" Width="44" Height="44"
+                                                CornerRadius="22"
+                                                Background="{DynamicResource SurfaceBrush}"
+                                                VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Account.Icon}"
+                                                       FontSize="22" HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{Binding Account.Name}"
+                                                       FontSize="16" FontWeight="SemiBold" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding MonthlyIncomeDisplay}"
+                                                           FontSize="12" Foreground="#22C55E" />
+                                                <TextBlock Text="{Binding MonthlyExpensesDisplay}"
+                                                           FontSize="12" Foreground="#EF4444" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding BalanceDisplay}"
+                                                   FontSize="18" FontWeight="Bold"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </Panel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Leerer Zustand -->
+                <StackPanel IsVisible="{Binding !HasAccounts}"
+                            HorizontalAlignment="Center" Spacing="8" Margin="0,40"
+                            Classes="EmptyPulse">
+                    <materialIcons:MaterialIcon Kind="BankOutline" Width="48" Height="48"
+                                                 Opacity="0.3" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding EmptyText}"
+                               Opacity="0.5" HorizontalAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Add/Edit Dialog Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                IsVisible="{Binding ShowAddDialog}"
+                Background="#80000000"
+                Classes="DialogOverlay">
+            <Border Background="{DynamicResource CardBrush}"
+                    CornerRadius="20" Padding="24" Margin="20"
+                    MaxWidth="400" VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    BoxShadow="0 8 32 0 #40000000">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{Binding AddAccountText}" FontSize="20" FontWeight="Bold" />
+                    <TextBox Text="{Binding EditName}" Watermark="{Binding AccountNameText}" />
+                    <TextBox Text="{Binding EditBalance}" Watermark="{Binding InitialBalanceText}" />
+                    <ComboBox SelectedIndex="{Binding EditTypeIndex}" HorizontalAlignment="Stretch">
+                        <ComboBoxItem Content="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).AccountCheckingText, FallbackValue=Girokonto}" />
+                        <ComboBoxItem Content="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).AccountSavingsText, FallbackValue=Sparkonto}" />
+                        <ComboBoxItem Content="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).AccountCashText, FallbackValue=Bargeld}" />
+                        <ComboBoxItem Content="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).AccountCreditCardText, FallbackValue=Kreditkarte}" />
+                        <ComboBoxItem Content="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).AccountInvestmentText, FallbackValue=Depot}" />
+                        <ComboBoxItem Content="{Binding $parent[UserControl].((vm:AccountsViewModel)DataContext).AccountOtherText, FallbackValue=Sonstiges}" />
+                    </ComboBox>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Button Grid.Column="0" Content="{Binding CancelText}"
+                                Command="{Binding CancelDialogCommand}"
+                                HorizontalAlignment="Stretch"
+                                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                            <i:Interaction.Behaviors>
+                                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                            </i:Interaction.Behaviors>
+                        </Button>
+                        <Button Grid.Column="1" Content="{Binding SaveText}"
+                                Command="{Binding SaveAccountCommand}"
+                                Classes="Primary" HorizontalAlignment="Stretch"
+                                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                            <i:Interaction.Behaviors>
+                                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                            </i:Interaction.Behaviors>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Transfer Dialog Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                IsVisible="{Binding ShowTransferDialog}"
+                Background="#80000000"
+                Classes="DialogOverlay">
+            <Border Background="{DynamicResource CardBrush}"
+                    CornerRadius="20" Padding="24" Margin="20"
+                    MaxWidth="400" VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    BoxShadow="0 8 32 0 #40000000">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{Binding TransferText}" FontSize="20" FontWeight="Bold" />
+                    <TextBox Text="{Binding TransferAmount}" Watermark="{Binding AmountText}" />
+                    <TextBox Text="{Binding TransferDescription}" Watermark="{Binding DescriptionOptionalText}" />
+                    <TextBlock Text="{Binding FromAccountText}" FontSize="13" Opacity="0.7" />
+                    <ComboBox SelectedIndex="{Binding TransferFromIndex}"
+                              ItemsSource="{Binding AccountBalances}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:AccountBalance">
+                                <TextBlock Text="{Binding Account.Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{Binding ToAccountText}" FontSize="13" Opacity="0.7" />
+                    <ComboBox SelectedIndex="{Binding TransferToIndex}"
+                              ItemsSource="{Binding AccountBalances}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:AccountBalance">
+                                <TextBlock Text="{Binding Account.Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Button Grid.Column="0" Content="{Binding CancelText}"
+                                Command="{Binding CancelDialogCommand}"
+                                HorizontalAlignment="Stretch"
+                                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                            <i:Interaction.Behaviors>
+                                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                            </i:Interaction.Behaviors>
+                        </Button>
+                        <Button Grid.Column="1" Content="{Binding TransferExecuteText}"
+                                Command="{Binding ExecuteTransferCommand}"
+                                Classes="Primary" HorizontalAlignment="Stretch"
+                                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                            <i:Interaction.Behaviors>
+                                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                            </i:Interaction.Behaviors>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

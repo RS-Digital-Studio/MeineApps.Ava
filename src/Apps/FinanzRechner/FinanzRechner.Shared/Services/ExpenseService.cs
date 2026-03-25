@@ -208,7 +208,9 @@ public sealed class ExpenseService : IExpenseService, IDisposable
         var totalIncome = transactions
             .Where(e => e.Type == TransactionType.Income).Sum(e => e.Amount);
         var balance = totalIncome - totalExpenses;
+        // Transfers aus Kategorie-Aufschlüsselung ausschließen (neutrale Umbuchung)
         var byCategory = transactions
+            .Where(e => e.Type != TransactionType.Transfer)
             .GroupBy(e => e.Category)
             .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
 

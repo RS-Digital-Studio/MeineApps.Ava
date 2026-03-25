@@ -58,9 +58,12 @@ public sealed class ExportService : IExportService
 
         foreach (var expense in expenses.OrderByDescending(e => e.Date))
         {
-            var type = expense.Type == TransactionType.Expense
-                ? _localizationService.GetString("Expense") ?? "Expense"
-                : _localizationService.GetString("Income") ?? "Income";
+            var type = expense.Type switch
+            {
+                TransactionType.Expense => _localizationService.GetString("Expense") ?? "Expense",
+                TransactionType.Transfer => _localizationService.GetString("Transfer") ?? "Transfer",
+                _ => _localizationService.GetString("Income") ?? "Income"
+            };
             var category = CategoryLocalizationHelper.GetLocalizedName(expense.Category, _localizationService);
             var description = EscapeCsvField(expense.Description);
             var note = EscapeCsvField(expense.Note ?? string.Empty);

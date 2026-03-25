@@ -12,7 +12,7 @@ namespace FinanzRechner.Converters;
 /// </summary>
 public class CategoryToColorBrushConverter : IValueConverter
 {
-    private static readonly IBrush FallbackGrayBrush = FallbackGrayBrush;
+    private static readonly IBrush FallbackGrayBrush = new SolidColorBrush(Color.Parse("#9E9E9E"));
 
     public static readonly CategoryToColorBrushConverter Instance = new();
 

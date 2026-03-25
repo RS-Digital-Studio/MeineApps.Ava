@@ -113,8 +113,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
-            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 800ms anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 800 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();
@@ -176,6 +176,20 @@ public partial class App : Application
                 sp.GetRequiredService<ILocalizationService>(),
                 sp.GetRequiredService<IFileShareService>()));
 
+        // Neue Finanz-Services
+        services.AddSingleton<IAccountService>(sp =>
+            new AccountService(sp.GetRequiredService<IExpenseService>()));
+        services.AddSingleton<ISavingsGoalService, SavingsGoalService>();
+        services.AddSingleton<IDebtService, DebtService>();
+        services.AddSingleton<ICustomCategoryService, CustomCategoryService>();
+        services.AddSingleton<IFinancialAnalysisService>(sp =>
+            new FinancialAnalysisService(
+                sp.GetRequiredService<IExpenseService>(),
+                sp.GetRequiredService<IAccountService>(),
+                sp.GetRequiredService<IDebtService>(),
+                sp.GetRequiredService<ISavingsGoalService>(),
+                sp.GetRequiredService<ILocalizationService>()));
+
         // Berechnungs-Engine
         services.AddSingleton<FinanceEngine>();
 
@@ -185,6 +199,10 @@ public partial class App : Application
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<BudgetsViewModel>();
         services.AddSingleton<RecurringTransactionsViewModel>();
+        services.AddSingleton<AccountsViewModel>();
+        services.AddSingleton<SavingsGoalsViewModel>();
+        services.AddSingleton<DebtTrackerViewModel>();
+        services.AddSingleton<CustomCategoriesViewModel>();
         services.AddSingleton<LoanViewModel>();
         services.AddSingleton<CompoundInterestViewModel>();
         services.AddSingleton<SavingsPlanViewModel>();

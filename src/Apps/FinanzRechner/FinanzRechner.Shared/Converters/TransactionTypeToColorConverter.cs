@@ -12,8 +12,8 @@ namespace FinanzRechner.Converters;
 /// </summary>
 public class TransactionTypeToColorConverter : IValueConverter
 {
-    private static readonly IBrush ExpenseBrush = ExpenseBrush;
-    private static readonly IBrush IncomeBrush = IncomeBrush;
+    private static readonly IBrush ExpenseBrush = new SolidColorBrush(Color.Parse("#EF4444"));
+    private static readonly IBrush IncomeBrush = new SolidColorBrush(Color.Parse("#22C55E"));
 
     public static readonly TransactionTypeToColorConverter Instance = new();
 
@@ -24,16 +24,27 @@ public class TransactionTypeToColorConverter : IValueConverter
         if (value is not TransactionType type)
             return FallbackGray;
 
-        var resourceKey = type == TransactionType.Expense ? "ExpenseColor" : "IncomeColor";
+        var resourceKey = type switch
+        {
+            TransactionType.Expense => "ExpenseColor",
+            TransactionType.Income => "IncomeColor",
+            _ => (string?)null // Transfer und zukünftige Typen → neutral
+        };
 
-        var app = Application.Current;
-        if (app != null && app.TryGetResource(resourceKey, app.ActualThemeVariant, out var brush) && brush is IBrush b)
-            return b;
+        if (resourceKey != null)
+        {
+            var app = Application.Current;
+            if (app != null && app.TryGetResource(resourceKey, app.ActualThemeVariant, out var brush) && brush is IBrush b)
+                return b;
+        }
 
-        // Fallback colors
-        return type == TransactionType.Expense
-            ? ExpenseBrush
-            : IncomeBrush;
+        // Fallback: Rot für Ausgaben, Grün für Einnahmen, Grau für Transfers
+        return type switch
+        {
+            TransactionType.Expense => ExpenseBrush,
+            TransactionType.Income => IncomeBrush,
+            _ => FallbackGray
+        };
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

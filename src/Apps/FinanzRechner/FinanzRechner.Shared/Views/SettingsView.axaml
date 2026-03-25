@@ -182,6 +182,25 @@
           </StackPanel>
         </Border>
 
+        <!-- ==================== Währung ==================== -->
+        <Border Background="{DynamicResource CardBrush}"
+                CornerRadius="16" Padding="20" Margin="0,0,0,12"
+                BoxShadow="0 2 8 0 #20000000">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <mi:MaterialIcon Kind="CurrencyUsd" Width="24" Height="24"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+              <TextBlock Text="Währung"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+            <ComboBox SelectedIndex="{Binding SelectedCurrencyIndex}"
+                      ItemsSource="{Binding CurrencyDisplayNames}"
+                      HorizontalAlignment="Stretch" />
+          </StackPanel>
+        </Border>
+
         <!-- ==================== Premium Section (mit Shimmer) ==================== -->
         <Border Classes="SettingsCard PremiumShimmer"
                 AutomationProperties.AutomationId="Settings_CardPremium"

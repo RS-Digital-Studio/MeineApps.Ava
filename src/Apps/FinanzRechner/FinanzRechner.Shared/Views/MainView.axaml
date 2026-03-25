@@ -312,6 +312,22 @@
               IsVisible="{Binding IsRecurringPageActive}">
         <ContentControl Content="{Binding RecurringTransactionsViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_RecurringTransactions" />
       </Border>
+      <Border AutomationProperties.AutomationId="Main_SubPageAccounts"
+              IsVisible="{Binding IsAccountsPageActive}">
+        <views:AccountsView DataContext="{Binding AccountsViewModel}" />
+      </Border>
+      <Border AutomationProperties.AutomationId="Main_SubPageSavingsGoals"
+              IsVisible="{Binding IsSavingsGoalsPageActive}">
+        <views:SavingsGoalsView DataContext="{Binding SavingsGoalsViewModel}" />
+      </Border>
+      <Border AutomationProperties.AutomationId="Main_SubPageDebtTracker"
+              IsVisible="{Binding IsDebtTrackerPageActive}">
+        <views:DebtTrackerView DataContext="{Binding DebtTrackerViewModel}" />
+      </Border>
+      <Border AutomationProperties.AutomationId="Main_SubPageCustomCategories"
+              IsVisible="{Binding IsCustomCategoriesPageActive}">
+        <views:CustomCategoriesView DataContext="{Binding CustomCategoriesViewModel}" />
+      </Border>
     </Panel>
 
     <!-- Quick-Add FAB (rechts unten ueber Tab-Bar) -->

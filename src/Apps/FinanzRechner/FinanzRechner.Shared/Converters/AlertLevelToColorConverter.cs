@@ -12,9 +12,9 @@ namespace FinanzRechner.Converters;
 /// </summary>
 public class AlertLevelToColorConverter : IValueConverter
 {
-    private static readonly IBrush SafeBrush = SafeBrush;
-    private static readonly IBrush WarningBrush = WarningBrush;
-    private static readonly IBrush ExceededBrush = ExceededBrush;
+    private static readonly IBrush SafeBrush = new SolidColorBrush(Color.Parse("#22C55E"));
+    private static readonly IBrush WarningBrush = new SolidColorBrush(Color.Parse("#F59E0B"));
+    private static readonly IBrush ExceededBrush = new SolidColorBrush(Color.Parse("#EF4444"));
 
     public static readonly AlertLevelToColorConverter Instance = new();
 

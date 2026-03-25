@@ -1082,4 +1082,300 @@
   <data name="SplashStep_Starting" xml:space="preserve">
     <value>Avvio dell'app</value>
   </data>
+
+  <!-- Konten (Accounts) -->
+  <data name="AccountsTitle" xml:space="preserve">
+    <value>Conti</value>
+  </data>
+  <data name="AddAccount" xml:space="preserve">
+    <value>Aggiungi conto</value>
+  </data>
+  <data name="Transfer" xml:space="preserve">
+    <value>Trasferimento</value>
+  </data>
+  <data name="NoAccountsYet" xml:space="preserve">
+    <value>Nessun conto ancora.</value>
+  </data>
+  <data name="AccountChecking" xml:space="preserve">
+    <value>Conto corrente</value>
+  </data>
+  <data name="AccountSavings" xml:space="preserve">
+    <value>Conto risparmio</value>
+  </data>
+  <data name="AccountCash" xml:space="preserve">
+    <value>Contanti</value>
+  </data>
+  <data name="AccountCreditCard" xml:space="preserve">
+    <value>Carta di credito</value>
+  </data>
+  <data name="AccountInvestment" xml:space="preserve">
+    <value>Investimento</value>
+  </data>
+  <data name="AccountOther" xml:space="preserve">
+    <value>Altro</value>
+  </data>
+  <data name="NetWorth" xml:space="preserve">
+    <value>Patrimonio netto</value>
+  </data>
+
+  <!-- Sparziele (Savings Goals) -->
+  <data name="SavingsGoalsTitle" xml:space="preserve">
+    <value>Obiettivi di risparmio</value>
+  </data>
+  <data name="AddSavingsGoal" xml:space="preserve">
+    <value>Aggiungi obiettivo</value>
+  </data>
+  <data name="NoSavingsGoalsYet" xml:space="preserve">
+    <value>Nessun obiettivo ancora.</value>
+  </data>
+  <data name="TotalSaved" xml:space="preserve">
+    <value>Totale risparmiato</value>
+  </data>
+  <data name="DaysRemaining" xml:space="preserve">
+    <value>giorni rimanenti</value>
+  </data>
+  <data name="GoalReached" xml:space="preserve">
+    <value>Obiettivo raggiunto!</value>
+  </data>
+
+  <!-- Schulden (Debt Tracker) -->
+  <data name="DebtTrackerTitle" xml:space="preserve">
+    <value>Tracciamento debiti</value>
+  </data>
+  <data name="AddDebt" xml:space="preserve">
+    <value>Aggiungi debito</value>
+  </data>
+  <data name="NoDebtsYet" xml:space="preserve">
+    <value>Nessun debito - ottimo!</value>
+  </data>
+  <data name="TotalDebt" xml:space="preserve">
+    <value>Debito totale</value>
+  </data>
+  <data name="TotalPaid" xml:space="preserve">
+    <value>Totale pagato</value>
+  </data>
+  <data name="MakePayment" xml:space="preserve">
+    <value>Effettua pagamento</value>
+  </data>
+  <data name="DebtPaidOff" xml:space="preserve">
+    <value>Debito estinto!</value>
+  </data>
+
+  <!-- Eigene Kategorien -->
+  <data name="CustomCategoriesTitle" xml:space="preserve">
+    <value>Categorie personalizzate</value>
+  </data>
+  <data name="AddCustomCategory" xml:space="preserve">
+    <value>Aggiungi categoria</value>
+  </data>
+  <data name="NoCustomCategoriesYet" xml:space="preserve">
+    <value>Nessuna categoria ancora.</value>
+  </data>
+  <data name="ExpenseCategories" xml:space="preserve">
+    <value>Categorie di spesa</value>
+  </data>
+  <data name="IncomeCategories" xml:space="preserve">
+    <value>Categorie di entrate</value>
+  </data>
+
+  <!-- Währung -->
+  <data name="CurrencyTitle" xml:space="preserve">
+    <value>Valuta</value>
+  </data>
+  <data name="CurrencyDescription" xml:space="preserve">
+    <value>Scegli la tua valuta</value>
+  </data>
+
+  <!-- Finanz-Score -->
+  <data name="FinancialScore" xml:space="preserve">
+    <value>Salute finanziaria</value>
+  </data>
+  <data name="ScoreSavingsRate" xml:space="preserve">
+    <value>Tasso di risparmio</value>
+  </data>
+  <data name="ScoreBudgetCompliance" xml:space="preserve">
+    <value>Rispetto budget</value>
+  </data>
+  <data name="ScoreDebtSituation" xml:space="preserve">
+    <value>Situazione debiti</value>
+  </data>
+  <data name="ScoreRegularity" xml:space="preserve">
+    <value>Regolarità e obiettivi</value>
+  </data>
+  <data name="ScoreDebtFree" xml:space="preserve">
+    <value>Senza debiti</value>
+  </data>
+  <data name="ScoreActiveGoals" xml:space="preserve">
+    <value>obiettivi</value>
+  </data>
+
+  <!-- Tipps -->
+  <data name="TipIncreaseSavings" xml:space="preserve">
+    <value>Cerca di risparmiare almeno il 20% del tuo reddito.</value>
+  </data>
+  <data name="TipBudgetExceeded" xml:space="preserve">
+    <value>{0} budget superato/i.</value>
+  </data>
+  <data name="TipSetBudgets" xml:space="preserve">
+    <value>Crea budget per controllare meglio le spese.</value>
+  </data>
+  <data name="TipReduceDebt" xml:space="preserve">
+    <value>Il tuo rapporto debito/reddito è alto. Dai priorità al rimborso.</value>
+  </data>
+  <data name="TipSetGoals" xml:space="preserve">
+    <value>Fissa obiettivi di risparmio per restare motivato.</value>
+  </data>
+
+  <!-- Monatsvergleich -->
+  <data name="MonthComparisonTitle" xml:space="preserve">
+    <value>Confronto mensile</value>
+  </data>
+  <data name="ComparedToPreviousMonth" xml:space="preserve">
+    <value>Rispetto al mese precedente</value>
+  </data>
+  <data name="ExpenseChange" xml:space="preserve">
+    <value>Variazione spese</value>
+  </data>
+  <data name="IncomeChange" xml:space="preserve">
+    <value>Variazione entrate</value>
+  </data>
+
+  <!-- Prognose -->
+  <data name="ForecastTitle" xml:space="preserve">
+    <value>Previsione</value>
+  </data>
+  <data name="ProjectedExpenses" xml:space="preserve">
+    <value>Spese previste</value>
+  </data>
+  <data name="DailyBudget" xml:space="preserve">
+    <value>Budget giornaliero</value>
+  </data>
+  <data name="AverageDailyExpense" xml:space="preserve">
+    <value>Spesa giornaliera media</value>
+  </data>
+
+  <!-- Allgemein (Buttons/Dialoge) -->
+  <data name="UndoDelete" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
+  <data name="ItemDeleted" xml:space="preserve">
+    <value>Eliminato</value>
+  </data>
+
+  <!-- Konten -->
+  <data name="AccountName" xml:space="preserve">
+    <value>Nome conto</value>
+  </data>
+  <data name="InitialBalance" xml:space="preserve">
+    <value>Saldo iniziale</value>
+  </data>
+  <data name="FromAccount" xml:space="preserve">
+    <value>Dal conto:</value>
+  </data>
+  <data name="ToAccount" xml:space="preserve">
+    <value>Al conto:</value>
+  </data>
+  <data name="TransferExecute" xml:space="preserve">
+    <value>Trasferisci</value>
+  </data>
+  <data name="DescriptionOptional" xml:space="preserve">
+    <value>Descrizione (opzionale)</value>
+  </data>
+
+  <!-- Sparziele -->
+  <data name="TotalSavedLabel" xml:space="preserve">
+    <value>Totale risparmiato</value>
+  </data>
+  <data name="DaysRemainingFormat" xml:space="preserve">
+    <value>giorni rimanenti</value>
+  </data>
+  <data name="AdjustAmount" xml:space="preserve">
+    <value>Regola importo</value>
+  </data>
+  <data name="Deposit" xml:space="preserve">
+    <value>Deposito</value>
+  </data>
+  <data name="Withdrawal" xml:space="preserve">
+    <value>Prelievo</value>
+  </data>
+  <data name="GoalNameHint" xml:space="preserve">
+    <value>Nome (es. Vacanza)</value>
+  </data>
+  <data name="TargetAmount" xml:space="preserve">
+    <value>Importo obiettivo</value>
+  </data>
+  <data name="AlreadySaved" xml:space="preserve">
+    <value>Già risparmiato</value>
+  </data>
+  <data name="DeadlineOptional" xml:space="preserve">
+    <value>Scadenza (opzionale)</value>
+  </data>
+
+  <!-- Schulden -->
+  <data name="StillOpen" xml:space="preserve">
+    <value>Ancora aperto</value>
+  </data>
+  <data name="AlreadyPaid" xml:space="preserve">
+    <value>Già pagato</value>
+  </data>
+  <data name="MonthlyRate" xml:space="preserve">
+    <value>Rata/mese</value>
+  </data>
+  <data name="InterestRateLabel" xml:space="preserve">
+    <value>Tasso d'interesse</value>
+  </data>
+  <data name="RemainingTerm" xml:space="preserve">
+    <value>Durata residua</value>
+  </data>
+  <data name="MonthsAbbrev" xml:space="preserve">
+    <value>mesi</value>
+  </data>
+  <data name="DebtNameHint" xml:space="preserve">
+    <value>Nome (es. Prestito auto)</value>
+  </data>
+  <data name="OriginalAmount" xml:space="preserve">
+    <value>Importo originale</value>
+  </data>
+  <data name="RemainingAmountLabel" xml:space="preserve">
+    <value>Importo residuo</value>
+  </data>
+  <data name="InterestRatePercent" xml:space="preserve">
+    <value>Tasso d'interesse (% a.)</value>
+  </data>
+  <data name="MonthlyPaymentLabel" xml:space="preserve">
+    <value>Rata mensile</value>
+  </data>
+  <data name="PaymentAmount" xml:space="preserve">
+    <value>Importo pagamento</value>
+  </data>
+  <data name="BookPayment" xml:space="preserve">
+    <value>Registra</value>
+  </data>
+
+  <!-- Eigene Kategorien -->
+  <data name="CategoryName" xml:space="preserve">
+    <value>Nome categoria</value>
+  </data>
+  <data name="CategoryTypeExpense" xml:space="preserve">
+    <value>Spesa</value>
+  </data>
+  <data name="CategoryTypeIncome" xml:space="preserve">
+    <value>Entrata</value>
+  </data>
+  <data name="IconLabel" xml:space="preserve">
+    <value>Icona:</value>
+  </data>
+
+  <!-- Währung -->
+  <data name="CurrencyLabel" xml:space="preserve">
+    <value>Valuta</value>
+  </data>
+
+  <!-- Score (HomeView) -->
+  <data name="FinancialHealthLabel" xml:space="preserve">
+    <value>Salute finanziaria</value>
+  </data>
+  <data name="DailyBudgetLabel" xml:space="preserve">
+    <value>Budget giornaliero</value>
+  </data>
 </root>

@@ -15,8 +15,8 @@ namespace FinanzRechner.Converters;
 /// </summary>
 public class TransactionTypeToggleColorConverter : IValueConverter
 {
-    private static readonly IBrush ExpenseToggleBrush = ExpenseToggleBrush;
-    private static readonly IBrush IncomeToggleBrush = IncomeToggleBrush;
+    private static readonly IBrush ExpenseToggleBrush = new SolidColorBrush(Color.Parse("#EF4444"));
+    private static readonly IBrush IncomeToggleBrush = new SolidColorBrush(Color.Parse("#22C55E"));
 
     public TransactionType TargetType { get; set; }
     public string SelectedColorKey { get; set; } = "ExpenseColor";

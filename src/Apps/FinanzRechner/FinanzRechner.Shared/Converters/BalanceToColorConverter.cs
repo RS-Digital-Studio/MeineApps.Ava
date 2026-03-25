@@ -14,8 +14,8 @@ public class BalanceToColorConverter : IValueConverter
     public static readonly BalanceToColorConverter Instance = new();
 
     private static readonly IBrush FallbackGray = new SolidColorBrush(Color.Parse("#9E9E9E"));
-    private static readonly IBrush FallbackIncome = FallbackIncome;
-    private static readonly IBrush FallbackExpense = FallbackExpense;
+    private static readonly IBrush FallbackIncome = new SolidColorBrush(Color.Parse("#22C55E"));
+    private static readonly IBrush FallbackExpense = new SolidColorBrush(Color.Parse("#EF4444"));
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {

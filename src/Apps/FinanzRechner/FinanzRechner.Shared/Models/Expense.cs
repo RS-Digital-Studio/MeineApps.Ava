@@ -3,7 +3,7 @@ using FinanzRechner.Helpers;
 namespace FinanzRechner.Models;
 
 /// <summary>
-/// Einzelne Transaktion (Ausgabe oder Einnahme).
+/// Einzelne Transaktion (Ausgabe, Einnahme oder Überweisung).
 /// </summary>
 public class Expense
 {
@@ -14,6 +14,24 @@ public class Expense
     public ExpenseCategory Category { get; set; } = ExpenseCategory.Other;
     public string? Note { get; set; }
     public TransactionType Type { get; set; } = TransactionType.Expense;
+
+    /// <summary>Zugeordnetes Konto (null = Standard-Konto / nicht zugeordnet).</summary>
+    public string? AccountId { get; set; }
+
+    /// <summary>Benutzerdefinierte Kategorie (überschreibt Category-Enum wenn gesetzt).</summary>
+    public string? CustomCategoryId { get; set; }
+
+    /// <summary>Zielkonto bei Überweisungen (nur wenn Type == Transfer).</summary>
+    public string? TransferToAccountId { get; set; }
+
+    /// <summary>Verknüpfungs-ID bei Überweisungen (beide Seiten haben dieselbe TransferId).</summary>
+    public string? TransferId { get; set; }
+
+    /// <summary>Split-Positionen wenn die Transaktion auf mehrere Kategorien aufgeteilt ist.</summary>
+    public List<SplitItem>? SplitItems { get; set; }
+
+    /// <summary>Ob die Transaktion gesplittet ist.</summary>
+    public bool IsSplit => SplitItems is { Count: > 0 };
 }
 
 /// <summary>
@@ -22,7 +40,8 @@ public class Expense
 public enum TransactionType
 {
     Expense,
-    Income
+    Income,
+    Transfer
 }
 
 /// <summary>

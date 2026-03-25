@@ -342,6 +342,9 @@ public sealed partial class MainViewModel
 
             // Letzte 3 Transaktionen laden
             await LoadRecentTransactionsAsync(today);
+
+            // Finanz-Score + Prognose laden (fire-and-forget, nicht-kritisch)
+            _ = LoadFinancialInsightsAsync();
         }
         catch (Exception ex)
         {
@@ -543,10 +546,11 @@ public sealed partial class MainViewModel
                         categoryExpenses[t.Category] = 0;
                     categoryExpenses[t.Category] += t.Amount;
                 }
-                else
+                else if (t.Type == TransactionType.Income)
                 {
                     totalIncome += t.Amount;
                 }
+                // TransactionType.Transfer wird bewusst ignoriert (neutrale Umbuchung)
             }
 
             // Vormonat laden
@@ -694,6 +698,64 @@ public sealed partial class MainViewModel
             MessageRequested?.Invoke(
                 _localizationService.GetString("Error") ?? "Error",
                 ex.Message);
+        }
+    }
+
+    #endregion
+
+    #region Finanz-Insights (Score + Prognose + Nettovermögen)
+
+    /// <summary>CancellationTokenSource für Insights-Ladevorgang. Wird bei neuem Tab-Wechsel gecancelt.</summary>
+    private CancellationTokenSource? _insightsCts;
+
+    /// <summary>
+    /// Lädt Finanz-Score, Prognose und Nettovermögen für das Home-Dashboard.
+    /// Gebündelter Aufruf: Alle Daten werden einmal geladen statt 3x redundant.
+    /// CancellationToken verhindert Race Conditions bei schnellem Tab-Wechsel.
+    /// </summary>
+    private async Task LoadFinancialInsightsAsync()
+    {
+        // Vorherigen Ladevorgang abbrechen und Dispose (Race-Condition-Schutz)
+        _insightsCts?.Cancel();
+        _insightsCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _insightsCts = cts;
+
+        try
+        {
+            // Gebündelter Aufruf: Score + Forecast + NetWorth in einem Durchgang
+            var bundle = await _financialAnalysisService.GetAllInsightsAsync();
+
+            // Prüfen ob dieser Ladevorgang noch aktuell ist
+            if (cts.Token.IsCancellationRequested) return;
+
+            // Score
+            FinancialScoreValue = bundle.Score.Score;
+            FinancialScoreGrade = bundle.Score.Grade;
+            FinancialScoreColorHex = bundle.Score.GradeColorHex;
+            FinancialScoreTrend = bundle.Score.TrendFromLastMonth switch
+            {
+                > 0 => $"+{bundle.Score.TrendFromLastMonth}",
+                < 0 => $"{bundle.Score.TrendFromLastMonth}",
+                _ => ""
+            };
+
+            // Nettovermögen
+            NetWorthDisplay = CurrencyHelper.Format(bundle.NetWorth);
+
+            // Prognose
+            ProjectedExpensesDisplay = CurrencyHelper.Format(bundle.Forecast.ProjectedMonthlyExpenses);
+            DailyBudgetDisplay = bundle.Forecast.DailyBudgetRemaining.HasValue
+                ? CurrencyHelper.Format(bundle.Forecast.DailyBudgetRemaining.Value)
+                : CurrencyHelper.Format(bundle.Forecast.AverageDailyExpense);
+        }
+        catch (OperationCanceledException)
+        {
+            // Erwartet bei Tab-Wechsel
+        }
+        catch (Exception)
+        {
+            // Score/Prognose sind nicht-kritisch, UI bleibt auf Defaults
         }
     }
 

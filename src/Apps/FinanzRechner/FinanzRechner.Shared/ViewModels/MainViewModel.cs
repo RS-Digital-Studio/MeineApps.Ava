@@ -12,8 +12,9 @@ using FinanzRechner.ViewModels.Calculators;
 
 namespace FinanzRechner.ViewModels;
 
-public sealed partial class MainViewModel : ViewModelBase
+public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
+    private bool _disposed;
     private readonly IPurchaseService _purchaseService;
     private readonly IAdService _adService;
     private readonly ILocalizationService _localizationService;
@@ -37,6 +38,10 @@ public sealed partial class MainViewModel : ViewModelBase
     public SettingsViewModel SettingsViewModel { get; }
     public BudgetsViewModel BudgetsViewModel { get; }
     public RecurringTransactionsViewModel RecurringTransactionsViewModel { get; }
+    public AccountsViewModel AccountsViewModel { get; }
+    public SavingsGoalsViewModel SavingsGoalsViewModel { get; }
+    public DebtTrackerViewModel DebtTrackerViewModel { get; }
+    public CustomCategoriesViewModel CustomCategoriesViewModel { get; }
     public CompoundInterestViewModel CompoundInterestViewModel { get; }
     public SavingsPlanViewModel SavingsPlanViewModel { get; }
     public LoanViewModel LoanViewModel { get; }
@@ -44,17 +49,37 @@ public sealed partial class MainViewModel : ViewModelBase
     public YieldViewModel YieldViewModel { get; }
     public InflationViewModel InflationViewModel { get; }
 
+    private readonly IFinancialAnalysisService _financialAnalysisService;
+
+    // Finanz-Score Daten (auf Home-Dashboard angezeigt)
+    [ObservableProperty] private int _financialScoreValue;
+    [ObservableProperty] private string _financialScoreGrade = "–";
+    [ObservableProperty] private string _financialScoreColorHex = "#9E9E9E";
+    [ObservableProperty] private string _financialScoreTrend = "";
+
+    // Nettovermögen (auf Home-Dashboard angezeigt)
+    [ObservableProperty] private string _netWorthDisplay = "–";
+
+    // Prognose-Daten
+    [ObservableProperty] private string _dailyBudgetDisplay = "–";
+    [ObservableProperty] private string _projectedExpensesDisplay = "–";
+
     public MainViewModel(
         IPurchaseService purchaseService,
         IAdService adService,
         ILocalizationService localizationService,
         IExpenseService expenseService,
         IRewardedAdService rewardedAdService,
+        IFinancialAnalysisService financialAnalysisService,
         ExpenseTrackerViewModel expenseTrackerViewModel,
         StatisticsViewModel statisticsViewModel,
         SettingsViewModel settingsViewModel,
         BudgetsViewModel budgetsViewModel,
         RecurringTransactionsViewModel recurringTransactionsViewModel,
+        AccountsViewModel accountsViewModel,
+        SavingsGoalsViewModel savingsGoalsViewModel,
+        DebtTrackerViewModel debtTrackerViewModel,
+        CustomCategoriesViewModel customCategoriesViewModel,
         CompoundInterestViewModel compoundInterestViewModel,
         SavingsPlanViewModel savingsPlanViewModel,
         LoanViewModel loanViewModel,
@@ -67,16 +92,14 @@ public sealed partial class MainViewModel : ViewModelBase
         _localizationService = localizationService;
         _expenseService = expenseService;
         _rewardedAdService = rewardedAdService;
-        _rewardedAdService.AdUnavailable += () => MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
+        _financialAnalysisService = financialAnalysisService;
+        _rewardedAdService.AdUnavailable += OnAdUnavailable;
 
         IsAdBannerVisible = _adService.BannerVisible;
-        _adService.AdsStateChanged += (_, _) => IsAdBannerVisible = _adService.BannerVisible;
+        _adService.AdsStateChanged += OnAdsStateChanged;
 
-        // Lade-Fehler an den User melden (4.7)
-        _expenseService.OnDataLoadError += msg =>
-            MessageRequested?.Invoke(
-                _localizationService.GetString("Error") ?? "Error",
-                $"{_localizationService.GetString("LoadError") ?? "Fehler beim Laden"}: {msg}");
+        // Lade-Fehler an den User melden
+        _expenseService.OnDataLoadError += OnDataLoadError;
 
         // Banner beim Start anzeigen (fuer Desktop + Fallback falls AdMobHelper fehlschlaegt)
         if (_adService.AdsEnabled && !_purchaseService.IsPremium)
@@ -85,31 +108,40 @@ public sealed partial class MainViewModel : ViewModelBase
         ExpenseTrackerViewModel = expenseTrackerViewModel;
 
         // ExpenseTracker FloatingText weiterleiten
-        expenseTrackerViewModel.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        expenseTrackerViewModel.FloatingTextRequested += OnChildFloatingText;
 
         // Datenänderungen im Tracker invalidieren Home + Statistics Cache
-        expenseTrackerViewModel.DataChanged += () =>
-        {
-            statisticsViewModel.InvalidateCache();
-            _isHomeDataStale = true;
-        };
+        expenseTrackerViewModel.DataChanged += OnTrackerDataChanged;
 
         StatisticsViewModel = statisticsViewModel;
         SettingsViewModel = settingsViewModel;
         BudgetsViewModel = budgetsViewModel;
         RecurringTransactionsViewModel = recurringTransactionsViewModel;
 
+        // Neue Feature-ViewModels
+        AccountsViewModel = accountsViewModel;
+        SavingsGoalsViewModel = savingsGoalsViewModel;
+        DebtTrackerViewModel = debtTrackerViewModel;
+        CustomCategoriesViewModel = customCategoriesViewModel;
+
         // Budget-/Dauerauftrags-Änderungen invalidieren Home + Statistics Cache
-        budgetsViewModel.DataChanged += () =>
-        {
-            statisticsViewModel.InvalidateCache();
-            _isHomeDataStale = true;
-        };
-        recurringTransactionsViewModel.DataChanged += () =>
-        {
-            statisticsViewModel.InvalidateCache();
-            _isHomeDataStale = true;
-        };
+        budgetsViewModel.DataChanged += OnTrackerDataChanged;
+        recurringTransactionsViewModel.DataChanged += OnTrackerDataChanged;
+        accountsViewModel.DataChanged += OnTrackerDataChanged;
+        savingsGoalsViewModel.DataChanged += OnTrackerDataChanged;
+        debtTrackerViewModel.DataChanged += OnTrackerDataChanged;
+        customCategoriesViewModel.DataChanged += OnTrackerDataChanged;
+
+        // FloatingText von neuen VMs weiterleiten
+        accountsViewModel.FloatingTextRequested += OnChildFloatingText;
+        savingsGoalsViewModel.FloatingTextRequested += OnChildFloatingText;
+        debtTrackerViewModel.FloatingTextRequested += OnChildFloatingText;
+        customCategoriesViewModel.FloatingTextRequested += OnChildFloatingText;
+
+        // Celebration von Sparzielen/Schulden weiterleiten
+        savingsGoalsViewModel.CelebrationRequested += (_, _) => CelebrationRequested?.Invoke();
+        debtTrackerViewModel.CelebrationRequested += (_, _) => CelebrationRequested?.Invoke();
+
         CompoundInterestViewModel = compoundInterestViewModel;
         SavingsPlanViewModel = savingsPlanViewModel;
         LoanViewModel = loanViewModel;
@@ -129,8 +161,12 @@ public sealed partial class MainViewModel : ViewModelBase
         ExpenseTrackerViewModel.NavigationRequested += OnExpenseTrackerNavigation;
         BudgetsViewModel.NavigationRequested += OnSubPageGoBack;
         RecurringTransactionsViewModel.NavigationRequested += OnSubPageGoBack;
+        AccountsViewModel.NavigationRequested += OnSubPageGoBack;
+        SavingsGoalsViewModel.NavigationRequested += OnSubPageGoBack;
+        DebtTrackerViewModel.NavigationRequested += OnSubPageGoBack;
+        CustomCategoriesViewModel.NavigationRequested += OnSubPageGoBack;
 
-        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+        _backPressHelper.ExitHintRequested += OnExitHint;
 
         // Set default tab
         _selectedTab = 0;
@@ -148,6 +184,10 @@ public sealed partial class MainViewModel : ViewModelBase
         StatisticsViewModel.UpdateLocalizedTexts();
         BudgetsViewModel.UpdateLocalizedTexts();
         RecurringTransactionsViewModel.UpdateLocalizedTexts();
+        AccountsViewModel.UpdateLocalizedTexts();
+        SavingsGoalsViewModel.UpdateLocalizedTexts();
+        DebtTrackerViewModel.UpdateLocalizedTexts();
+        CustomCategoriesViewModel.UpdateLocalizedTexts();
     }
 
     [ObservableProperty]
@@ -194,6 +234,26 @@ public sealed partial class MainViewModel : ViewModelBase
             if (IsRecurringPageActive && RecurringTransactionsViewModel.ShowAddDialog)
             {
                 RecurringTransactionsViewModel.CancelAddDialogCommand.Execute(null);
+                return true;
+            }
+            if (IsAccountsPageActive && (AccountsViewModel.ShowAddDialog || AccountsViewModel.ShowTransferDialog))
+            {
+                AccountsViewModel.CancelDialogCommand.Execute(null);
+                return true;
+            }
+            if (IsSavingsGoalsPageActive && (SavingsGoalsViewModel.ShowAddDialog || SavingsGoalsViewModel.ShowAdjustDialog))
+            {
+                SavingsGoalsViewModel.CancelDialogCommand.Execute(null);
+                return true;
+            }
+            if (IsDebtTrackerPageActive && (DebtTrackerViewModel.ShowAddDialog || DebtTrackerViewModel.ShowPaymentDialog))
+            {
+                DebtTrackerViewModel.CancelDialogCommand.Execute(null);
+                return true;
+            }
+            if (IsCustomCategoriesPageActive && CustomCategoriesViewModel.ShowAddDialog)
+            {
+                CustomCategoriesViewModel.CancelDialogCommand.Execute(null);
                 return true;
             }
             CurrentSubPage = null;
@@ -381,21 +441,48 @@ public sealed partial class MainViewModel : ViewModelBase
     public bool IsSubPageOpen => CurrentSubPage != null;
     public bool IsBudgetsPageActive => CurrentSubPage == "BudgetsPage";
     public bool IsRecurringPageActive => CurrentSubPage == "RecurringTransactionsPage";
+    public bool IsAccountsPageActive => CurrentSubPage == "AccountsPage";
+    public bool IsSavingsGoalsPageActive => CurrentSubPage == "SavingsGoalsPage";
+    public bool IsDebtTrackerPageActive => CurrentSubPage == "DebtTrackerPage";
+    public bool IsCustomCategoriesPageActive => CurrentSubPage == "CustomCategoriesPage";
 
     partial void OnCurrentSubPageChanged(string? value)
     {
         OnPropertyChanged(nameof(IsSubPageOpen));
         OnPropertyChanged(nameof(IsBudgetsPageActive));
         OnPropertyChanged(nameof(IsRecurringPageActive));
+        OnPropertyChanged(nameof(IsAccountsPageActive));
+        OnPropertyChanged(nameof(IsSavingsGoalsPageActive));
+        OnPropertyChanged(nameof(IsDebtTrackerPageActive));
+        OnPropertyChanged(nameof(IsCustomCategoriesPageActive));
+
+        // Daten laden wenn SubPage geöffnet wird
+        if (value == "AccountsPage") _ = AccountsViewModel.LoadDataAsync();
+        else if (value == "SavingsGoalsPage") _ = SavingsGoalsViewModel.LoadDataAsync();
+        else if (value == "DebtTrackerPage") _ = DebtTrackerViewModel.LoadDataAsync();
+        else if (value == "CustomCategoriesPage") _ = CustomCategoriesViewModel.LoadDataAsync();
     }
 
     private void OnExpenseTrackerNavigation(string route)
     {
-        if (route is "BudgetsPage" or "RecurringTransactionsPage")
+        if (route is "BudgetsPage" or "RecurringTransactionsPage"
+            or "AccountsPage" or "SavingsGoalsPage" or "DebtTrackerPage" or "CustomCategoriesPage")
         {
             CurrentSubPage = route;
         }
     }
+
+    [RelayCommand]
+    private void OpenAccounts() => CurrentSubPage = "AccountsPage";
+
+    [RelayCommand]
+    private void OpenSavingsGoals() => CurrentSubPage = "SavingsGoalsPage";
+
+    [RelayCommand]
+    private void OpenDebtTracker() => CurrentSubPage = "DebtTrackerPage";
+
+    [RelayCommand]
+    private void OpenCustomCategories() => CurrentSubPage = "CustomCategoriesPage";
 
     private void OnSubPageGoBack(string route)
     {
@@ -432,6 +519,14 @@ public sealed partial class MainViewModel : ViewModelBase
     public string PremiumPriceText => _localizationService.GetString("PremiumPrice") ?? "From \u20ac3.99";
     public string SectionCalculatorsShortText => _localizationService.GetString("SectionCalculatorsShort") ?? "Calculators";
 
+    // Finanz-Tools (HomeView)
+    public string AccountsToolText => _localizationService.GetString("AccountsTitle") ?? "Accounts";
+    public string SavingsGoalsToolText => _localizationService.GetString("SavingsGoalsTitle") ?? "Savings Goals";
+    public string DebtsToolText => _localizationService.GetString("DebtTrackerTitle") ?? "Debt Tracker";
+    public string CategoriesToolText => _localizationService.GetString("CustomCategoriesTitle") ?? "Categories";
+    public string FinancialHealthText => _localizationService.GetString("FinancialScore") ?? "Financial Health";
+    public string DailyBudgetLabelText => _localizationService.GetString("DailyBudgetLabel") ?? "Daily budget";
+
     private void UpdateHomeTexts()
     {
         OnPropertyChanged(nameof(HomeTitleText));
@@ -463,11 +558,75 @@ public sealed partial class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(ComparedToLastMonthText));
         OnPropertyChanged(nameof(WatchVideoReportText));
         OnPropertyChanged(nameof(CloseText));
+        OnPropertyChanged(nameof(AccountsToolText));
+        OnPropertyChanged(nameof(SavingsGoalsToolText));
+        OnPropertyChanged(nameof(DebtsToolText));
+        OnPropertyChanged(nameof(CategoriesToolText));
+        OnPropertyChanged(nameof(FinancialHealthText));
+        OnPropertyChanged(nameof(DailyBudgetLabelText));
         // Budget-Kategorie-Namen koennen sich bei Sprachwechsel aendern
         UpdateBudgetDisplayNames();
     }
 
     #endregion
+
+    // Benannte Event-Handler (fuer sauberes -= in Dispose)
+
+    private void OnAdUnavailable()
+        => MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
+
+    private void OnAdsStateChanged(object? sender, EventArgs e)
+        => IsAdBannerVisible = _adService.BannerVisible;
+
+    private void OnDataLoadError(string msg)
+        => MessageRequested?.Invoke(
+            _localizationService.GetString("Error") ?? "Error",
+            $"{_localizationService.GetString("LoadError") ?? "Fehler beim Laden"}: {msg}");
+
+    private void OnChildFloatingText(string text, string category)
+        => FloatingTextRequested?.Invoke(text, category);
+
+    private void OnTrackerDataChanged()
+    {
+        StatisticsViewModel.InvalidateCache();
+        _isHomeDataStale = true;
+    }
+
+    private void OnExitHint(string msg)
+        => ExitHintRequested?.Invoke(msg);
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        _rewardedAdService.AdUnavailable -= OnAdUnavailable;
+        _adService.AdsStateChanged -= OnAdsStateChanged;
+        _expenseService.OnDataLoadError -= OnDataLoadError;
+        ExpenseTrackerViewModel.FloatingTextRequested -= OnChildFloatingText;
+        ExpenseTrackerViewModel.DataChanged -= OnTrackerDataChanged;
+        BudgetsViewModel.DataChanged -= OnTrackerDataChanged;
+        RecurringTransactionsViewModel.DataChanged -= OnTrackerDataChanged;
+        AccountsViewModel.DataChanged -= OnTrackerDataChanged;
+        SavingsGoalsViewModel.DataChanged -= OnTrackerDataChanged;
+        DebtTrackerViewModel.DataChanged -= OnTrackerDataChanged;
+        CustomCategoriesViewModel.DataChanged -= OnTrackerDataChanged;
+        AccountsViewModel.FloatingTextRequested -= OnChildFloatingText;
+        SavingsGoalsViewModel.FloatingTextRequested -= OnChildFloatingText;
+        DebtTrackerViewModel.FloatingTextRequested -= OnChildFloatingText;
+        CustomCategoriesViewModel.FloatingTextRequested -= OnChildFloatingText;
+        ExpenseTrackerViewModel.NavigationRequested -= OnExpenseTrackerNavigation;
+        BudgetsViewModel.NavigationRequested -= OnSubPageGoBack;
+        RecurringTransactionsViewModel.NavigationRequested -= OnSubPageGoBack;
+        AccountsViewModel.NavigationRequested -= OnSubPageGoBack;
+        SavingsGoalsViewModel.NavigationRequested -= OnSubPageGoBack;
+        DebtTrackerViewModel.NavigationRequested -= OnSubPageGoBack;
+        CustomCategoriesViewModel.NavigationRequested -= OnSubPageGoBack;
+        _backPressHelper.ExitHintRequested -= OnExitHint;
+        SettingsViewModel.LanguageChanged -= OnLanguageChanged;
+
+        _disposed = true;
+        GC.SuppressFinalize(this);
+    }
 
     // Home-Dashboard Logik (Dashboard, Budget-Status, Recent Transactions,
     // Expense-Chart, Sparkline, Mini-Ringe, Quick-Add, Budget-Analyse)

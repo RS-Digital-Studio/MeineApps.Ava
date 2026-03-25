@@ -381,7 +381,113 @@
           </StackPanel>
         </Border>
 
-        <!-- ========== E) Finanz-Rechner (2x3 Grid) ========== -->
+        <!-- ========== E2) Finanz-Tools (Konten, Sparziele, Schulden, Kategorien) ========== -->
+        <UniformGrid Columns="2" Margin="0,4,0,0"
+                     AutomationProperties.AutomationId="Home_FinanceToolsGrid">
+          <!-- Konten -->
+          <Button Command="{Binding OpenAccountsCommand}"
+                  Background="{DynamicResource CardBrush}"
+                  CornerRadius="12" Padding="14" Margin="0,0,6,8"
+                  HorizontalContentAlignment="Left">
+            <StackPanel Spacing="6">
+              <Border Background="#204CAF50" Width="36" Height="36" CornerRadius="10"
+                      HorizontalAlignment="Left">
+                <mi:MaterialIcon Kind="BankOutline" Width="20" Height="20"
+                                 Foreground="#4CAF50" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="{Binding AccountsToolText}" FontSize="13" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding NetWorthDisplay}" FontSize="11" Opacity="0.6" />
+            </StackPanel>
+          </Button>
+
+          <!-- Sparziele -->
+          <Button Command="{Binding OpenSavingsGoalsCommand}"
+                  Background="{DynamicResource CardBrush}"
+                  CornerRadius="12" Padding="14" Margin="6,0,0,8"
+                  HorizontalContentAlignment="Left">
+            <StackPanel Spacing="6">
+              <Border Background="#2010B981" Width="36" Height="36" CornerRadius="10"
+                      HorizontalAlignment="Left">
+                <mi:MaterialIcon Kind="FlagOutline" Width="20" Height="20"
+                                 Foreground="#10B981" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="{Binding SavingsGoalsToolText}" FontSize="13" FontWeight="SemiBold" />
+            </StackPanel>
+          </Button>
+
+          <!-- Schulden -->
+          <Button Command="{Binding OpenDebtTrackerCommand}"
+                  Background="{DynamicResource CardBrush}"
+                  CornerRadius="12" Padding="14" Margin="0,0,6,8"
+                  HorizontalContentAlignment="Left">
+            <StackPanel Spacing="6">
+              <Border Background="#20EF4444" Width="36" Height="36" CornerRadius="10"
+                      HorizontalAlignment="Left">
+                <mi:MaterialIcon Kind="CreditCardOutline" Width="20" Height="20"
+                                 Foreground="#EF4444" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="{Binding DebtsToolText}" FontSize="13" FontWeight="SemiBold" />
+            </StackPanel>
+          </Button>
+
+          <!-- Eigene Kategorien -->
+          <Button Command="{Binding OpenCustomCategoriesCommand}"
+                  Background="{DynamicResource CardBrush}"
+                  CornerRadius="12" Padding="14" Margin="6,0,0,8"
+                  HorizontalContentAlignment="Left">
+            <StackPanel Spacing="6">
+              <Border Background="#203B82F6" Width="36" Height="36" CornerRadius="10"
+                      HorizontalAlignment="Left">
+                <mi:MaterialIcon Kind="TagPlusOutline" Width="20" Height="20"
+                                 Foreground="#3B82F6" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="{Binding CategoriesToolText}" FontSize="13" FontWeight="SemiBold" />
+            </StackPanel>
+          </Button>
+        </UniformGrid>
+
+        <!-- ========== E3) Finanz-Score ========== -->
+        <Border Background="{DynamicResource CardBrush}"
+                CornerRadius="16" Padding="16"
+                BoxShadow="0 2 8 0 #20000000"
+                AutomationProperties.AutomationId="Home_FinancialScore">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Border Grid.Column="0" Width="56" Height="56"
+                    CornerRadius="28" Background="#2010B981"
+                    VerticalAlignment="Center" Margin="0,0,14,0">
+              <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="{Binding FinancialScoreGrade}"
+                           FontSize="22" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+              <TextBlock Text="{Binding FinancialHealthText}" FontSize="14" FontWeight="SemiBold" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock FontSize="22" FontWeight="Bold">
+                  <TextBlock.Text>
+                    <MultiBinding StringFormat="{}{0}/100">
+                      <Binding Path="FinancialScoreValue" />
+                    </MultiBinding>
+                  </TextBlock.Text>
+                </TextBlock>
+                <TextBlock Text="{Binding FinancialScoreTrend}"
+                           FontSize="12" Opacity="0.6"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
+              <TextBlock Text="{Binding DailyBudgetDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         HorizontalAlignment="Right" />
+              <TextBlock Text="{Binding DailyBudgetLabelText}" FontSize="11" Opacity="0.5"
+                         HorizontalAlignment="Right" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- ========== F) Finanz-Rechner (2x3 Grid) ========== -->
         <StackPanel Spacing="12"
                     AutomationProperties.AutomationId="Home_SectionCalculators">
           <StackPanel Orientation="Horizontal" Spacing="8"

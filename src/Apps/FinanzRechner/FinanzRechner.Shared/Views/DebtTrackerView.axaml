@@ -1,0 +1,272 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FinanzRechner.ViewModels"
+             xmlns:models="using:FinanzRechner.Models"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:conv="using:FinanzRechner.Converters"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
+             x:Class="FinanzRechner.Views.DebtTrackerView"
+             x:DataType="vm:DebtTrackerViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="16,12">
+            <Button Grid.Column="0" Command="{Binding GoBackCommand}"
+                    Classes="icon" Padding="8"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+                </i:Interaction.Behaviors>
+                <materialIcons:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+            </Button>
+            <TextBlock Grid.Column="1" Text="{Binding TitleText}"
+                       FontSize="20" FontWeight="Bold"
+                       VerticalAlignment="Center" Margin="12,0,0,0" />
+            <Button Grid.Column="2" Command="{Binding OpenAddDialogCommand}"
+                    Classes="icon" Padding="8"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                </i:Interaction.Behaviors>
+                <materialIcons:MaterialIcon Kind="Plus" Width="24" Height="24" />
+            </Button>
+        </Grid>
+
+        <!-- Inhalt -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="12" Margin="16,0,16,80">
+                <i:Interaction.Behaviors>
+                    <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+                </i:Interaction.Behaviors>
+
+                <!-- Gesamtschulden Karte -->
+                <Border Background="{DynamicResource CardBrush}"
+                        CornerRadius="16" Padding="20"
+                        BoxShadow="0 2 8 0 #20000000">
+                    <Grid ColumnDefinitions="*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding TotalDebtDisplay}"
+                                       FontSize="24" FontWeight="Bold"
+                                       Foreground="#EF4444"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding StillOpenText}"
+                                       FontSize="12" Opacity="0.6"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding TotalPaidDisplay}"
+                                       FontSize="24" FontWeight="Bold"
+                                       Foreground="#22C55E"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding AlreadyPaidText}"
+                                       FontSize="12" Opacity="0.6"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Gesamtfortschritt -->
+                <ProgressBar Value="{Binding OverallProgress}"
+                             Maximum="100" Height="10"
+                             CornerRadius="5"
+                             Foreground="#22C55E"
+                             IsVisible="{Binding HasDebts}" />
+
+                <!-- Schulden-Liste -->
+                <ItemsControl ItemsSource="{Binding Debts}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="0">
+                                <i:Interaction.Behaviors>
+                                    <uiBehaviors:StaggerFadeInBehavior StaggerDelay="50" BaseDuration="300" />
+                                </i:Interaction.Behaviors>
+                            </StackPanel>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:DebtEntry">
+                            <Panel Margin="0,0,0,8">
+                                <Border Background="{DynamicResource CardBrush}"
+                                        CornerRadius="12" Padding="16"
+                                        BoxShadow="0 1 4 0 #10000000"
+                                        Opacity="{Binding IsActive, Converter={x:Static conv:BoolToDoubleConverter.Instance}, ConverterParameter='1,0.5'}"
+                                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                                    <i:Interaction.Behaviors>
+                                        <uiBehaviors:TapScaleBehavior PressedScale="0.97" />
+                                    </i:Interaction.Behaviors>
+                                    <Border.ContextFlyout>
+                                        <MenuFlyout>
+                                            <MenuItem Header="{Binding $parent[UserControl].((vm:DebtTrackerViewModel)DataContext).MakePaymentText}"
+                                                      Command="{Binding $parent[UserControl].((vm:DebtTrackerViewModel)DataContext).OpenPaymentDialogCommand}"
+                                                      CommandParameter="{Binding}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="CashMinus" Width="18" Height="18" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="{Binding $parent[UserControl].((vm:DebtTrackerViewModel)DataContext).EditText}"
+                                                      Command="{Binding $parent[UserControl].((vm:DebtTrackerViewModel)DataContext).EditDebtCommand}"
+                                                      CommandParameter="{Binding}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="Pencil" Width="18" Height="18" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="{Binding $parent[UserControl].((vm:DebtTrackerViewModel)DataContext).DeleteText}"
+                                                      Command="{Binding $parent[UserControl].((vm:DebtTrackerViewModel)DataContext).DeleteDebtCommand}"
+                                                      CommandParameter="{Binding}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                        </MenuFlyout>
+                                    </Border.ContextFlyout>
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding Icon}"
+                                                       FontSize="24" VerticalAlignment="Center"
+                                                       Margin="0,0,12,0" />
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontSize="16" FontWeight="SemiBold" />
+                                                <TextBlock FontSize="12" Opacity="0.6">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="{}{0} / {1}">
+                                                            <Binding Path="PaidDisplay" />
+                                                            <Binding Path="OriginalDisplay" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center"
+                                                        HorizontalAlignment="Right">
+                                                <TextBlock Text="{Binding RemainingDisplay}"
+                                                           FontSize="16" FontWeight="Bold"
+                                                           Foreground="#EF4444"
+                                                           HorizontalAlignment="Right" />
+                                                <TextBlock Text="{Binding PayoffPercentDisplay}"
+                                                           FontSize="12" Opacity="0.6"
+                                                           HorizontalAlignment="Right" />
+                                            </StackPanel>
+                                        </Grid>
+                                        <ProgressBar Value="{Binding PayoffPercent}"
+                                                     Maximum="100" Height="6"
+                                                     CornerRadius="3"
+                                                     Foreground="#22C55E" />
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                                                <TextBlock FontSize="11" Opacity="0.5">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="{}{0:F1}% p.a.">
+                                                            <Binding Path="InterestRate" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding MonthlyPaymentDisplay}"
+                                                           FontSize="11" Opacity="0.5" />
+                                            </StackPanel>
+                                            <!-- Zahlung-Button -->
+                                            <Button Grid.Column="1"
+                                                    Command="{Binding $parent[UserControl].((vm:DebtTrackerViewModel)DataContext).OpenPaymentDialogCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Classes="icon" Padding="4"
+                                                    IsVisible="{Binding IsActive}"
+                                                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                                                <i:Interaction.Behaviors>
+                                                    <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+                                                </i:Interaction.Behaviors>
+                                                <materialIcons:MaterialIcon Kind="CashMinus" Width="20" Height="20"
+                                                                             Foreground="#22C55E" />
+                                            </Button>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Panel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Leerer Zustand -->
+                <StackPanel IsVisible="{Binding !HasDebts}"
+                            HorizontalAlignment="Center" Spacing="8" Margin="0,40"
+                            Classes="EmptyPulse">
+                    <materialIcons:MaterialIcon Kind="CreditCardCheckOutline" Width="48" Height="48"
+                                                 Opacity="0.3" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding EmptyText}"
+                               Opacity="0.5" HorizontalAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Add/Edit Dialog Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                IsVisible="{Binding ShowAddDialog}"
+                Background="#80000000" Classes="DialogOverlay">
+            <Border Background="{DynamicResource CardBrush}"
+                    CornerRadius="20" Padding="24" Margin="20"
+                    MaxWidth="400" VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    BoxShadow="0 8 32 0 #40000000">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="{Binding AddDebtText}" FontSize="20" FontWeight="Bold" />
+                    <TextBox Text="{Binding EditName}" Watermark="{Binding AddDebtText}" />
+                    <TextBox Text="{Binding EditOriginalAmount}" Watermark="{Binding AmountText}" />
+                    <TextBox Text="{Binding EditRemainingAmount}" Watermark="{Binding AmountText}" />
+                    <TextBox Text="{Binding EditInterestRate}" Watermark="{Binding InterestRateLabelText}" />
+                    <TextBox Text="{Binding EditMonthlyPayment}" Watermark="{Binding MonthlyRateText}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Button Grid.Column="0" Content="{Binding CancelText}"
+                                Command="{Binding CancelDialogCommand}"
+                                HorizontalAlignment="Stretch"
+                                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                            <i:Interaction.Behaviors>
+                                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                            </i:Interaction.Behaviors>
+                        </Button>
+                        <Button Grid.Column="1" Content="{Binding SaveText}"
+                                Command="{Binding SaveDebtCommand}"
+                                Classes="Primary" HorizontalAlignment="Stretch"
+                                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                            <i:Interaction.Behaviors>
+                                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                            </i:Interaction.Behaviors>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Payment Dialog Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                IsVisible="{Binding ShowPaymentDialog}"
+                Background="#80000000" Classes="DialogOverlay">
+            <Border Background="{DynamicResource CardBrush}"
+                    CornerRadius="20" Padding="24" Margin="20"
+                    MaxWidth="400" VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    BoxShadow="0 8 32 0 #40000000">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{Binding MakePaymentText}" FontSize="20" FontWeight="Bold" />
+                    <TextBox Text="{Binding PaymentAmount}" Watermark="{Binding PaymentAmountText}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Button Grid.Column="0" Content="{Binding CancelText}"
+                                Command="{Binding CancelDialogCommand}"
+                                HorizontalAlignment="Stretch"
+                                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                            <i:Interaction.Behaviors>
+                                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                            </i:Interaction.Behaviors>
+                        </Button>
+                        <Button Grid.Column="1" Content="{Binding BookPaymentText}"
+                                Command="{Binding ConfirmPaymentCommand}"
+                                Classes="Primary" HorizontalAlignment="Stretch"
+                                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                            <i:Interaction.Behaviors>
+                                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                            </i:Interaction.Behaviors>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

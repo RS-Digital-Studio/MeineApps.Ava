@@ -117,10 +117,10 @@
                     </i:Interaction.Behaviors>
                     <Border.ContextFlyout>
                       <MenuFlyout>
-                        <MenuItem Header="Edit"
+                        <MenuItem Header="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).EditText}"
                                   Command="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).EditBudgetCommand}"
                                   CommandParameter="{Binding}" />
-                        <MenuItem Header="Delete"
+                        <MenuItem Header="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).DeleteText}"
                                   Command="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).DeleteBudgetCommand}"
                                   CommandParameter="{Binding}" />
                       </MenuFlyout>

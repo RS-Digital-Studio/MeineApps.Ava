@@ -354,13 +354,14 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
                         expenseGroups[t.Category] = 0;
                     expenseGroups[t.Category] += t.Amount;
                 }
-                else // TransactionType.Income
+                else if (t.Type == TransactionType.Income)
                 {
                     totalIncome += t.Amount;
                     if (!incomeGroups.ContainsKey(t.Category))
                         incomeGroups[t.Category] = 0;
                     incomeGroups[t.Category] += t.Amount;
                 }
+                // TransactionType.Transfer wird bewusst ignoriert (neutrale Umbuchung)
             }
 
             TotalExpenses = totalExpenses;
@@ -446,8 +447,9 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
 
             if (t.Type == TransactionType.Expense)
                 monthlyExpenses[monthDiff] += t.Amount;
-            else
+            else if (t.Type == TransactionType.Income)
                 monthlyIncomes[monthDiff] += t.Amount;
+            // TransactionType.Transfer wird bewusst ignoriert (neutrale Umbuchung)
         }
 
         // 6-Monats-Durchschnitte berechnen

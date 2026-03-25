@@ -4,27 +4,65 @@
 
 ## App-Beschreibung
 
-Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 6 Finanz-Rechnern.
+Vollwertiger Finanz-Manager mit Multi-Konto, Ausgaben-Tracking, Budget-Verwaltung, Sparzielen, Schulden-Tracker, Finanz-Score, Prognosen, Daueraufträgen und 6 Finanz-Rechnern.
 
 **Version:** 2.0.6 | **Package-ID:** com.meineapps.finanzrechner | **Status:** Geschlossener Test
 
 ## Features
 
 - **4 Tabs**: Home (Dashboard + Quick-Add), Tracker, Statistics, Settings
-- **Expense Tracking**: CRUD mit Filter/Sort, Undo-Delete, Kategorie-Icons
+- **Multi-Konto**: Girokonto, Sparkonto, Bargeld, Kreditkarte, Depot + Überweisungen zwischen Konten
+- **Expense Tracking**: CRUD mit Filter/Sort, Undo-Delete, Kategorie-Icons, Konto-Zuordnung
 - **Budget Management**: Budget-Limits pro Kategorie, Fortschrittsanzeige, Alert-Levels
-- **Recurring Transactions**: Dauerauftraege mit Auto-Processing bei App-Start (verpasste Zeitraeume werden nachgeholt, max 365 Iterationen pro Dauerauftrag)
+- **Sparziele**: Zielbetrag, Fortschritt, Deadline, Einzahlungen/Entnahmen, Celebration bei Zielerreichung
+- **Schulden-Tracker**: Kredite/Darlehen verfolgen, Zinssatz, monatliche Rate, Restlaufzeit-Berechnung
+- **Eigene Kategorien**: Benutzerdefinierte Ausgaben-/Einnahmen-Kategorien mit Icon und Farbe
+- **Finanz-Score**: Gesundheitsbewertung 0-100 (Sparquote, Budget-Einhaltung, Schulden, Regelmäßigkeit)
+- **Prognose**: Hochrechnung Monatsende-Saldo, Tagesbudget, Durchschn. Tagesausgabe
+- **Nettovermögen**: Berechnung aus allen Konten minus Schulden
+- **Monatsvergleich**: Ausgaben/Einnahmen-Veränderung zum Vormonat, Kategorie-Breakdown
+- **Konfigurierbare Währung**: 16 Presets (EUR, USD, GBP, CHF, JPY, etc.) mit korrekter Formatierung
+- **Split-Transaktionen**: Eine Rechnung auf mehrere Kategorien aufteilen (Model vorbereitet)
+- **Recurring Transactions**: Daueraufträge mit Auto-Processing bei App-Start
 - **6 Finanz-Rechner**: CompoundInterest, SavingsPlan, Loan, Amortization, Yield, Inflation
 - **Charts**: Komplett SkiaSharp-basiert (DonutChart, TrendLine, StackedArea, AmortizationBar, Sparkline, MiniRing, LinearProgress, BudgetGauge) - KEIN LiveCharts
 - **Export**: CSV + PDF (PdfSharpCore), plattformspezifisches File-Sharing
 
 ## App-spezifische Services
 
-- **IExpenseService / ExpenseService**: SQLite CRUD (Expense, Budget, RecurringTransaction Models)
+### Bestehende Services
+- **IExpenseService / ExpenseService**: JSON-CRUD (Expense, Budget, RecurringTransaction Models)
 - **IExportService / ExportService**: CSV + PDF Export mit optionalem targetPath Parameter und Datum-Range-Filterung
 - **IFileDialogService / FileDialogService**: Avalonia StorageProvider.SaveFilePickerAsync
 - **IFileShareService**: Plattformspezifisch (Desktop: Process.Start, Android: FileProvider + Intent.ActionSend)
 - **CategoryLocalizationHelper**: Statische Kategorie-Namen/Icons/Farben pro Sprache
+
+### Neue Services (März 2026)
+- **IAccountService / AccountService**: Kontoverwaltung, Saldo-Berechnung, Überweisungen. JSON: `accounts.json`
+- **ISavingsGoalService / SavingsGoalService**: Sparziel-CRUD, Betrag anpassen, Abschluss. JSON: `savings_goals.json`
+- **IDebtService / DebtService**: Schulden-CRUD, Zahlungen buchen, Tilgungsberechnung. JSON: `debts.json`
+- **ICustomCategoryService / CustomCategoryService**: Benutzerdefinierte Kategorien. JSON: `custom_categories.json`
+- **IFinancialAnalysisService / FinancialAnalysisService**: Score-Berechnung, Monatsvergleich, Prognose, Nettovermögen. Keine eigene Persistenz
+
+### CurrencyHelper (konfigurierbar)
+- `CurrencyHelper.Configure(CurrencySettings)` beim App-Start
+- 16 Währungs-Presets in `CurrencySettings.Presets`
+- Formatierung passt sich automatisch an (Symbol vor/nach Betrag, Dezimalformat)
+
+### Expense Model Erweiterungen
+- `AccountId`: Konto-Zuordnung (nullable, rückwärtskompatibel)
+- `CustomCategoryId`: Benutzerdefinierte Kategorie (überschreibt Enum)
+- `TransferToAccountId` + `TransferId`: Für Überweisungen zwischen Konten
+- `SplitItems`: Split-Transaktionen (Liste von Kategorie+Betrag)
+- `TransactionType.Transfer`: Neuer Typ neben Expense/Income
+
+### SubPage-Navigation (erweitert)
+- **AccountsPage**: Konten verwalten + Überweisungen
+- **SavingsGoalsPage**: Sparziele verwalten + Einzahlungen
+- **DebtTrackerPage**: Schulden verwalten + Zahlungen buchen
+- **CustomCategoriesPage**: Eigene Kategorien erstellen/bearbeiten
+- Alle SubPages: GoBack via NavigationRequested → ".."
+- Alle SubPages: Dialoge (Add/Edit/Payment) als modale Overlays
 
 ## Premium & Ads
 
@@ -77,6 +115,17 @@ Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 6 Finan
 - RestoreReplaceCommand → ProcessRestoreFileAsync(path, merge:false)
 - CancelRestoreCommand → Dialog schliessen, IsBackupInProgress zuruecksetzen
 - RESX-Keys: RestoreQuestion, RestoreMerge, RestoreReplace, RestoreMergeDesc, RestoreReplaceDesc, TotalBudget
+
+### Backup-Format v2.0 (Maerz 2026)
+- Container-JSON mit Schlüsseln: `version`, `expenses`, `accounts`, `savings_goals`, `debts`, `custom_categories`
+- Jeder Schlüssel enthält den JSON-Export des jeweiligen Services
+- Rückwärtskompatibel: Restore erkennt altes Format (kein `version` Key) und importiert nur Expenses
+- SettingsViewModel injiziert alle 5 Services (IExpenseService, IAccountService, ISavingsGoalService, IDebtService, ICustomCategoryService)
+
+### Transfer-Buchung (Kontoüberweisungen)
+- EINE Transfer-Transaktion pro Überweisung: `AccountId` = Quelle, `TransferToAccountId` = Ziel
+- Saldo-Berechnung: `transfersOut` = AccountId passt + Type==Transfer, `transfersIn` = TransferToAccountId passt + Type==Transfer
+- KEIN Doppel-Record (zweite Buchung würde Saldo verfälschen)
 
 ### SkiaSharp-Visualisierungen (LiveCharts komplett ersetzt)
 

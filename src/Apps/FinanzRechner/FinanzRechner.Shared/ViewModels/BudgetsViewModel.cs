@@ -49,6 +49,8 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
     public string SaveText => _localizationService.GetString("Save") ?? "Save";
     public string UndoText => _localizationService.GetString("Undo") ?? "Undo";
     public string TotalBudgetText => _localizationService.GetString("TotalBudget") ?? "Total Budget";
+    public string EditText => _localizationService.GetString("Edit") ?? "Edit";
+    public string DeleteText => _localizationService.GetString("Delete") ?? "Delete";
     public string TotalBudgetSpentDisplay => CurrencyHelper.Format(TotalBudgetSpent);
     public string TotalBudgetLimitDisplay => CurrencyHelper.Format(TotalBudgetLimit);
 
@@ -67,6 +69,8 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(MonthlyLimitEuroText));
         OnPropertyChanged(nameof(WarningThresholdText));
         OnPropertyChanged(nameof(WarningThresholdHintText));
+        OnPropertyChanged(nameof(EditText));
+        OnPropertyChanged(nameof(DeleteText));
         OnPropertyChanged(nameof(CancelText));
         OnPropertyChanged(nameof(SaveText));
         OnPropertyChanged(nameof(UndoText));

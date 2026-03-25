@@ -17,6 +17,22 @@ public static class LightingRenderer
     private static SKColor _cachedAmbientColor;
     private static float _cachedAmbientIntensity;
 
+    // Shader-Cache fuer Punkt-Lichtquellen (vermeidet CreateRadialGradient pro Licht pro Frame)
+    // Key: quantisierte Position (2px) + Radius + Farbe+Alpha
+    private struct LightShaderKey : IEquatable<LightShaderKey>
+    {
+        public int Cx, Cy, Radius;
+        public uint ColorWithAlpha;
+
+        public bool Equals(LightShaderKey other)
+            => Cx == other.Cx && Cy == other.Cy && Radius == other.Radius && ColorWithAlpha == other.ColorWithAlpha;
+
+        public override int GetHashCode() => HashCode.Combine(Cx, Cy, Radius, ColorWithAlpha);
+    }
+
+    private static readonly Dictionary<LightShaderKey, SKShader> _lightShaderCache = new();
+    private static int _lightShaderSceneGeneration;
+
     // Flag ob BeginAmbient ein SaveLayer gemacht hat
     private static bool _ambientActive;
 
@@ -72,6 +88,7 @@ public static class LightingRenderer
 
     /// <summary>
     /// Zeichnet Punkt-Lichtquellen (additive radiale Gradienten).
+    /// Shader werden gecacht (quantisiert auf 2px) und bei Szenen-Wechsel invalidiert.
     /// </summary>
     public static void RenderPointLights(SKCanvas canvas, SKRect bounds, LightDef[] lights, float time)
     {
@@ -90,18 +107,44 @@ public static class LightingRenderer
             var alpha = (byte)(light.Intensity * 255f *
                 (light.Flickers ? 0.8f + MathF.Sin(time * 3f) * 0.2f : 1f));
 
-            using var shader = SKShader.CreateRadialGradient(
-                new SKPoint(cx, cy), radius,
-                new[] { light.Color.WithAlpha(alpha), SKColors.Transparent },
-                SKShaderTileMode.Clamp);
+            // Quantisierten Cache-Key berechnen (2px Toleranz)
+            var key = new LightShaderKey
+            {
+                Cx = (int)(cx / 2f) * 2,
+                Cy = (int)(cy / 2f) * 2,
+                Radius = (int)(radius / 2f) * 2,
+                ColorWithAlpha = (uint)((light.Color.Red << 24) | (light.Color.Green << 16) | (light.Color.Blue << 8) | alpha)
+            };
+
+            if (!_lightShaderCache.TryGetValue(key, out var shader))
+            {
+                shader = SKShader.CreateRadialGradient(
+                    new SKPoint(cx, cy), radius,
+                    new[] { light.Color.WithAlpha(alpha), SKColors.Transparent },
+                    SKShaderTileMode.Clamp);
+                _lightShaderCache[key] = shader;
+            }
+
             _lightPaint.Shader = shader;
             canvas.DrawRect(bounds, _lightPaint);
             _lightPaint.Shader = null;
         }
     }
 
+    /// <summary>
+    /// Invalidiert den Shader-Cache (bei Szenen-Wechsel aufrufen).
+    /// </summary>
+    public static void InvalidateShaderCache()
+    {
+        foreach (var shader in _lightShaderCache.Values)
+            shader.Dispose();
+        _lightShaderCache.Clear();
+        _lightShaderSceneGeneration++;
+    }
+
     public static void Cleanup()
     {
+        InvalidateShaderCache();
         _cachedAmbientFilter?.Dispose();
         _cachedAmbientFilter = null;
         _lightPaint.Dispose();

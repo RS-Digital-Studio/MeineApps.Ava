@@ -13,6 +13,15 @@ public static class ForegroundRenderer
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPath _path = new();
 
+    // Fog-Shader-Cache: Nur bei Positionsaenderung >2px neu erstellen
+    private static SKShader? _cachedFogShader1;
+    private static SKShader? _cachedFogShader2;
+    private static int _cachedFogY1;
+    private static int _cachedFogY2;
+    private static int _cachedFogH;
+    private static uint _cachedFogColor;
+    private static byte _cachedFogAlpha;
+
     public static void Render(SKCanvas canvas, SKRect bounds, ForegroundDef[] foreground, float time)
     {
         foreach (var fg in foreground)
@@ -57,32 +66,57 @@ public static class ForegroundRenderer
         }
     }
 
-    /// <summary>Halbtransparenter Gradient-Streifen, langsam wandernd.</summary>
+    /// <summary>Halbtransparenter Gradient-Streifen, langsam wandernd. Shader gecacht (2px Toleranz).</summary>
     private static void DrawFog(SKCanvas canvas, SKRect bounds, ForegroundDef fg, float time)
     {
         var fogH = bounds.Height * 0.12f;
         var fogY = bounds.Bottom - bounds.Height * 0.25f +
                    MathF.Sin(time * 0.3f) * bounds.Height * 0.03f;
 
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.MidX, fogY - fogH),
-            new SKPoint(bounds.MidX, fogY + fogH),
-            new[] { fg.Color.WithAlpha(0), fg.Color.WithAlpha(fg.Alpha), fg.Color.WithAlpha(0) },
-            new[] { 0f, 0.5f, 1f },
-            SKShaderTileMode.Clamp);
-        _fillPaint.Shader = shader;
+        // Zweiter Nebel-Streifen (versetzt, duenner)
+        var fogY2 = fogY - bounds.Height * 0.08f + MathF.Sin(time * 0.2f + 1.5f) * bounds.Height * 0.02f;
+
+        // Quantisierte Werte fuer Cache-Vergleich (2px Toleranz)
+        int qFogY1 = (int)(fogY / 2f) * 2;
+        int qFogY2 = (int)(fogY2 / 2f) * 2;
+        int qFogH = (int)(fogH / 2f) * 2;
+        uint colorKey = (uint)((fg.Color.Red << 16) | (fg.Color.Green << 8) | fg.Color.Blue);
+
+        bool needsRebuild = _cachedFogShader1 == null ||
+            qFogY1 != _cachedFogY1 || qFogY2 != _cachedFogY2 ||
+            qFogH != _cachedFogH || colorKey != _cachedFogColor || fg.Alpha != _cachedFogAlpha;
+
+        if (needsRebuild)
+        {
+            _cachedFogShader1?.Dispose();
+            _cachedFogShader2?.Dispose();
+
+            _cachedFogShader1 = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.MidX, fogY - fogH),
+                new SKPoint(bounds.MidX, fogY + fogH),
+                new[] { fg.Color.WithAlpha(0), fg.Color.WithAlpha(fg.Alpha), fg.Color.WithAlpha(0) },
+                new[] { 0f, 0.5f, 1f },
+                SKShaderTileMode.Clamp);
+
+            _cachedFogShader2 = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.MidX, fogY2 - fogH * 0.5f),
+                new SKPoint(bounds.MidX, fogY2 + fogH * 0.5f),
+                new[] { fg.Color.WithAlpha(0), fg.Color.WithAlpha((byte)(fg.Alpha * 0.5f)), fg.Color.WithAlpha(0) },
+                new[] { 0f, 0.5f, 1f },
+                SKShaderTileMode.Clamp);
+
+            _cachedFogY1 = qFogY1;
+            _cachedFogY2 = qFogY2;
+            _cachedFogH = qFogH;
+            _cachedFogColor = colorKey;
+            _cachedFogAlpha = fg.Alpha;
+        }
+
+        _fillPaint.Shader = _cachedFogShader1;
         canvas.DrawRect(bounds.Left, fogY - fogH, bounds.Width, fogH * 2, _fillPaint);
         _fillPaint.Shader = null;
 
-        // Zweiter Nebel-Streifen (versetzt, dünner)
-        var fogY2 = fogY - bounds.Height * 0.08f + MathF.Sin(time * 0.2f + 1.5f) * bounds.Height * 0.02f;
-        using var shader2 = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.MidX, fogY2 - fogH * 0.5f),
-            new SKPoint(bounds.MidX, fogY2 + fogH * 0.5f),
-            new[] { fg.Color.WithAlpha(0), fg.Color.WithAlpha((byte)(fg.Alpha * 0.5f)), fg.Color.WithAlpha(0) },
-            new[] { 0f, 0.5f, 1f },
-            SKShaderTileMode.Clamp);
-        _fillPaint.Shader = shader2;
+        _fillPaint.Shader = _cachedFogShader2;
         canvas.DrawRect(bounds.Left, fogY2 - fogH * 0.5f, bounds.Width, fogH, _fillPaint);
         _fillPaint.Shader = null;
     }
@@ -197,6 +231,10 @@ public static class ForegroundRenderer
 
     public static void Cleanup()
     {
+        _cachedFogShader1?.Dispose();
+        _cachedFogShader2?.Dispose();
+        _cachedFogShader1 = null;
+        _cachedFogShader2 = null;
         _fillPaint.Dispose();
         _strokePaint.Dispose();
         _path.Dispose();

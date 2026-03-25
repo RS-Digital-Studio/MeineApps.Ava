@@ -20,13 +20,14 @@ public class ChapterUnlockService
     /// <summary>
     /// Kosten pro Premium-Kapitel (K6-K10).
     /// </summary>
+    // Gesamt 7.000 Gold (vorher 9.800) - proportional reduziert
     private static readonly Dictionary<string, int> ChapterCosts = new()
     {
-        ["k6"] = 800,
-        ["k7"] = 1200,
-        ["k8"] = 1800,
-        ["k9"] = 2500,
-        ["k10"] = 3500
+        ["k6"] = 500,
+        ["k7"] = 800,
+        ["k8"] = 1200,
+        ["k9"] = 1800,
+        ["k10"] = 2700
     };
 
     /// <summary>

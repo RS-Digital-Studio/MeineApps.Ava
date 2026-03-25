@@ -30,8 +30,8 @@ public class Player
     // Freie Stat-Punkte (3 pro Level-Up zum Verteilen)
     public int FreeStatPoints { get; set; }
 
-    // Inventar (Item-IDs)
-    public List<string> Inventory { get; set; } = new();
+    // Inventar (Item-IDs, HashSet verhindert Duplikate)
+    public HashSet<string> Inventory { get; set; } = new();
 
     // Ausgerüstete Items (Slot → Item-ID)
     public Dictionary<string, string> Equipment { get; set; } = new();
@@ -45,9 +45,9 @@ public class Player
 
     /// <summary>
     /// Berechnet die EXP-Schwelle für das nächste Level.
-    /// Formel: 50 * Level^1.5
+    /// Formel: 40 * Level^1.35 (abgeflacht ab Level 15 für weniger Grind)
     /// </summary>
-    public int ExpToNextLevel => (int)(50 * MathF.Pow(Level, 1.5f));
+    public int ExpToNextLevel => (int)(40 * MathF.Pow(Level, 1.35f));
 
     /// <summary>
     /// Initialisiert einen neuen Spieler mit den Basis-Stats der gewählten Klasse.

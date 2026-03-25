@@ -39,7 +39,8 @@ public class BattleEngine
     /// </summary>
     public bool TryDodge(int defenderSpd, int attackerSpd)
     {
-        var dodgeChance = Math.Clamp((defenderSpd - attackerSpd) * 0.02f + 0.1f, 0f, 0.5f);
+        // Basis 25% Dodge-Chance (vorher 10%), max 60% (vorher 50%)
+        var dodgeChance = Math.Clamp((defenderSpd - attackerSpd) * 0.02f + 0.25f, 0.1f, 0.6f);
         return _rng.NextSingle() < dodgeChance;
     }
 

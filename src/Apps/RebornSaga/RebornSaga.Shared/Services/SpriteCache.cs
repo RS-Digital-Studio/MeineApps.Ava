@@ -15,10 +15,18 @@ public sealed class SpriteCache : IDisposable
 {
     /// <summary>
     /// Maximale Anzahl gleichzeitig gecachter Sprite-Bilder.
-    /// 60 statt 30: Dialogszenen brauchen ~15-20 Einträge (2 Charaktere × Poses/Emotions +
-    /// Overlays + Hintergrund). Bei 30 wurden aktive Sprites/Hintergründe verdrängt → weißes Flackern.
+    /// 30 reicht fuer Dialogszenen (~15-20 Eintraege) mit LRU-Eviction.
+    /// Hoehere Werte verbrauchen zu viel RAM auf Android (~9MB pro Sprite).
     /// </summary>
-    public const int MaxCachedImages = 60;
+    public const int MaxCachedImages = 30;
+
+    /// <summary>
+    /// Maximale Cache-Groesse in Bytes (~80MB). Verhindert OOM auf Geraeten mit wenig RAM.
+    /// Bei Ueberschreitung werden aelteste Eintraege verdraengt.
+    /// </summary>
+    public const long MaxCacheSizeBytes = 80 * 1024 * 1024;
+
+    private long _currentCacheSize;
 
     private readonly IAssetDeliveryService _assets;
     private readonly object _syncRoot = new();
@@ -191,14 +199,18 @@ public sealed class SpriteCache : IDisposable
                 return existing.Bitmap;
             }
 
-            // LRU-Eviction: Ältesten entfernen wenn Cache voll
-            while (_cache.Count >= MaxCachedImages && _lruOrder.Last != null)
+            // LRU-Eviction: Aelteste entfernen wenn Cache voll oder zu gross
+            long bitmapSize = (long)bitmap.Width * bitmap.Height * bitmap.BytesPerPixel;
+            while ((_cache.Count >= MaxCachedImages ||
+                    _currentCacheSize + bitmapSize > MaxCacheSizeBytes) &&
+                   _lruOrder.Last != null)
             {
                 var evictKey = _lruOrder.Last.Value;
                 _lruOrder.RemoveLast();
 
                 if (_cache.TryGetValue(evictKey, out var evicted))
                 {
+                    _currentCacheSize -= (long)evicted.Bitmap.Width * evicted.Bitmap.Height * evicted.Bitmap.BytesPerPixel;
                     evicted.Bitmap.Dispose();
                     _cache.Remove(evictKey);
                     _contentBounds.Remove(evictKey);
@@ -209,7 +221,8 @@ public sealed class SpriteCache : IDisposable
             if (!_contentBounds.ContainsKey(relativePath))
                 _contentBounds[relativePath] = ComputeContentBounds(bitmap);
 
-            // Neuen Eintrag hinzufügen
+            // Neuen Eintrag hinzufuegen + Cache-Groesse tracken
+            _currentCacheSize += bitmapSize;
             var node = _lruOrder.AddFirst(relativePath);
             _cache[relativePath] = (bitmap, node);
             return bitmap;

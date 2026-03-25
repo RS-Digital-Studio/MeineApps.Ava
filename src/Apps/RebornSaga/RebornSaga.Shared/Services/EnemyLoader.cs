@@ -1,6 +1,7 @@
 namespace RebornSaga.Services;
 
 using RebornSaga.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
@@ -9,10 +10,11 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Lädt Gegner-Definitionen aus der eingebetteten enemies.json.
 /// Statischer Zugriff per GetById() — Daten werden beim ersten Aufruf geladen.
+/// Thread-safe durch Lazy&lt;T&gt; (Initialisierung nur einmal, auch bei parallelem Zugriff).
 /// </summary>
 public static class EnemyLoader
 {
-    private static Dictionary<string, Enemy>? _enemies;
+    private static readonly Lazy<Dictionary<string, Enemy>> _enemies = new(LoadEnemies);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -23,8 +25,7 @@ public static class EnemyLoader
     /// <summary>Lädt einen Gegner per ID aus enemies.json. Gibt null zurück wenn nicht gefunden.</summary>
     public static Enemy? GetById(string enemyId)
     {
-        EnsureLoaded();
-        return _enemies!.TryGetValue(enemyId, out var enemy) ? CloneEnemy(enemy) : null;
+        return _enemies.Value.TryGetValue(enemyId, out var enemy) ? CloneEnemy(enemy) : null;
     }
 
     /// <summary>Erstellt eine Kopie (Kampf-HP darf pro Kampf variieren).</summary>
@@ -49,17 +50,16 @@ public static class EnemyLoader
         IsCutsceneOnly = template.IsCutsceneOnly
     };
 
-    private static void EnsureLoaded()
+    /// <summary>Lädt alle Gegner aus der EmbeddedResource (einmalig, thread-safe via Lazy).</summary>
+    private static Dictionary<string, Enemy> LoadEnemies()
     {
-        if (_enemies != null) return;
-
-        _enemies = new Dictionary<string, Enemy>();
+        var enemies = new Dictionary<string, Enemy>();
 
         try
         {
             var resourceName = "RebornSaga.Data.Enemies.enemies.json";
             using var stream = typeof(EnemyLoader).Assembly.GetManifestResourceStream(resourceName);
-            if (stream == null) return;
+            if (stream == null) return enemies;
 
             using var reader = new StreamReader(stream);
             var json = reader.ReadToEnd();
@@ -68,17 +68,19 @@ public static class EnemyLoader
             // Normale Gegner laden
             if (wrapper?.Enemies != null)
                 foreach (var enemy in wrapper.Enemies)
-                    _enemies[enemy.Id] = enemy;
+                    enemies[enemy.Id] = enemy;
 
             // Bosse laden (gleiche Struktur, selbes Dictionary)
             if (wrapper?.Bosses != null)
                 foreach (var boss in wrapper.Bosses)
-                    _enemies[boss.Id] = boss;
+                    enemies[boss.Id] = boss;
         }
         catch
         {
             // Fallback: leeres Dictionary
         }
+
+        return enemies;
     }
 
     private class EnemyWrapper

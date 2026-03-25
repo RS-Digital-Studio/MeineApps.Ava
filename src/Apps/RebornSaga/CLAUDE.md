@@ -283,13 +283,13 @@ Feuer > Eis > Blitz > Wind > Licht > Dunkel > Feuer (1.5x bei Schwäche, 0.5x be
 |---------|--------|--------|
 | P1-P3 | Gratis | Prolog |
 | K1-K5 | Gratis | Arc 1 (frei) |
-| K6 | 800 Gold | Arc 1 (Gold) |
-| K7 | 1.200 Gold | Arc 1 (Gold) |
-| K8 | 1.800 Gold | Arc 1 (Gold) |
-| K9 | 2.500 Gold | Arc 1 (Gold) |
-| K10 | 3.500 Gold | Arc 1 (Gold) |
+| K6 | 500 Gold | Arc 1 (Gold) |
+| K7 | 800 Gold | Arc 1 (Gold) |
+| K8 | 1.200 Gold | Arc 1 (Gold) |
+| K9 | 1.800 Gold | Arc 1 (Gold) |
+| K10 | 2.700 Gold | Arc 1 (Gold) |
 
-Gesamt K6-K10: 9.800 Gold (vorher 20.000). Story-Gold K1-K5 verdreifacht, K6-K7 verdoppelt, K8-K9 neue Gold-Drops.
+Gesamt K6-K10: 7.000 Gold (vorher 9.800, ursprünglich 20.000). Boss-Gold-Drops B005-B014 auf 100-500 erhöht (vorher 30-250).
 
 Gold-Quellen: Kampf-Drops, Story-Belohnungen, Rewarded Video (500G, 3x/Tag), Daily Login.
 

@@ -338,9 +338,10 @@ public class ClassSelectScene : Scene, IDisposable
             // Zur DialogueScene wechseln (wird den ersten Knoten automatisch präsentieren)
             SceneManager.ChangeScene<DialogueScene>(new FadeTransition());
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Kapitel-Daten nicht verfügbar - zurück zum Titel
+            System.Diagnostics.Debug.WriteLine($"StartNewGame Fehler: {ex.Message}");
             _confirmed = false;
         }
     }

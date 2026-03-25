@@ -58,6 +58,8 @@ public class BattleScene : Scene, IDisposable
     private readonly BattleEngine _battleEngine;
     private readonly SkillService _skillService;
     private readonly InventoryService _inventoryService;
+    private readonly ProgressionService _progressionService;
+    private readonly GoldService _goldService;
     private Player _player = null!;
     private Enemy _enemy = null!;
 
@@ -203,7 +205,8 @@ public class BattleScene : Scene, IDisposable
     private string _comboLabel = "COMBO";
 
     public BattleScene(BattleEngine battleEngine, SkillService skillService,
-        InventoryService inventoryService, StoryEngine storyEngine,
+        InventoryService inventoryService, ProgressionService progressionService,
+        GoldService goldService, StoryEngine storyEngine,
         ILocalizationService localization,
         TutorialService? tutorialService = null,
         IAudioService? audioService = null, SpriteCache? spriteCache = null)
@@ -211,6 +214,8 @@ public class BattleScene : Scene, IDisposable
         _battleEngine = battleEngine;
         _skillService = skillService;
         _inventoryService = inventoryService;
+        _progressionService = progressionService;
+        _goldService = goldService;
         _storyEngine = storyEngine;
         _localization = localization;
         _tutorialService = tutorialService;
@@ -1489,8 +1494,13 @@ public class BattleScene : Scene, IDisposable
             _ => null
         };
 
+        // Für Magic-Klassen (Arkanist): Höheren Wert aus ATK/INT verwenden
+        var normalAtkStat = _player.Class == ClassName.Arcanist
+            ? Math.Max(_player.Atk, _player.Int)
+            : _player.Atk;
+
         var (damage, isCrit) = _battleEngine.CalculateDamage(
-            _player.Atk, 1f, _enemy.Def, atkElem, _cachedEnemyElement, _player.Luk);
+            normalAtkStat, 1f, _enemy.Def, atkElem, _cachedEnemyElement, _player.Luk);
 
         _enemyHp = Math.Max(0, _enemyHp - damage);
         _enemyFlashTimer = 0.3f;
@@ -1604,6 +1614,14 @@ public class BattleScene : Scene, IDisposable
         _earnedDrops.Clear();
         _earnedDropNames.Clear();
         _earnedDrops.AddRange(_battleEngine.CalculateDrops(_enemy));
+
+        // EXP und Gold tatsächlich an den Spieler vergeben
+        _progressionService.AwardExp(_player, _earnedExp);
+        _goldService.AddGold(_player, _earnedGold);
+
+        // Drops dem Inventar hinzufügen
+        foreach (var dropId in _earnedDrops)
+            _inventoryService.AddItem(dropId);
 
         // Drop-IDs → lokalisierte Display-Namen auflösen
         foreach (var dropId in _earnedDrops)

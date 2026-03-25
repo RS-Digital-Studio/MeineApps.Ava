@@ -83,8 +83,9 @@ public class FateTrackingService
     {
         if (string.IsNullOrEmpty(fateKey)) return;
 
-        // Fate-Key als Flag speichern für spätere Bedingungsprüfungen
-        FateFlags.Add($"fate_{fateKey}");
+        // Fate-Key als Flag speichern OHNE Prefix (StoryEngine.EvaluateCondition prüft
+        // Flags.Contains() ohne "fate_"-Prefix, daher muss der Key konsistent sein)
+        FateFlags.Add(fateKey);
         FateChanged?.Invoke(fateKey);
     }
 

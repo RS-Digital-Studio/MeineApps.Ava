@@ -331,21 +331,21 @@ public class StoryEngine
             };
         }
 
-        // Item-Besitz prüfen: "has_item:M001"
+        // Item-Besitz prüfen: "has_item:M001" — über InventoryService (Single Source of Truth)
         if (parts.Length == 1 && parts[0].StartsWith("has_item:"))
-            return Items.Contains(parts[0][9..]);
+            return _inventoryService.HasItem(parts[0][9..]);
 
         // Negation: "!has_item:M001"
         if (parts.Length == 1 && parts[0].StartsWith("!has_item:"))
-            return !Items.Contains(parts[0][10..]);
+            return !_inventoryService.HasItem(parts[0][10..]);
 
-        // Flag-Besitz prüfen: "has_flag:betrayed_aldric"
+        // Flag-Besitz prüfen: "has_flag:betrayed_aldric" — über FateTrackingService (Single Source of Truth)
         if (parts.Length == 1 && parts[0].StartsWith("has_flag:"))
-            return Flags.Contains(parts[0][9..]);
+            return _fateTrackingService.HasFlag(parts[0][9..]) || Flags.Contains(parts[0][9..]);
 
         // Negation: "!has_flag:betrayed_aldric"
         if (parts.Length == 1 && parts[0].StartsWith("!has_flag:"))
-            return !Flags.Contains(parts[0][10..]);
+            return !_fateTrackingService.HasFlag(parts[0][10..]) && !Flags.Contains(parts[0][10..]);
 
         // Einwort-Condition ohne Operator → als Flag-Check behandeln
         // z.B. "alliance_aria", "is_hero", "betrayed_aldric"
@@ -354,8 +354,8 @@ public class StoryEngine
             var word = parts[0];
             // Negation: "!alliance_aria"
             if (word.StartsWith('!'))
-                return !Flags.Contains(word[1..]);
-            return Flags.Contains(word);
+                return !_fateTrackingService.HasFlag(word[1..]) && !Flags.Contains(word[1..]);
+            return _fateTrackingService.HasFlag(word) || Flags.Contains(word);
         }
 
         return true;

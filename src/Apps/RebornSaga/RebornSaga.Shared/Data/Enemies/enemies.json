@@ -87,7 +87,7 @@
       "nameKey": "boss_wolf_alpha",
       "level": 3, "hp": 80, "atk": 12, "def": 5,
       "element": null, "weakness": "fire",
-      "exp": 50, "gold": 30, "phases": 1,
+      "exp": 50, "gold": 100, "phases": 1,
       "drops": [{ "itemId": "C001", "chance": 1.0 }]
     },
     {
@@ -95,7 +95,7 @@
       "nameKey": "boss_garak",
       "level": 5, "hp": 150, "atk": 18, "def": 8,
       "element": null, "weakness": null,
-      "exp": 80, "gold": 50, "phases": 1,
+      "exp": 80, "gold": 150, "phases": 1,
       "drops": [{ "itemId": "C002", "chance": 1.0 }]
     },
     {
@@ -103,7 +103,7 @@
       "nameKey": "boss_erdross",
       "level": 8, "hp": 280, "atk": 25, "def": 18,
       "element": "earth", "weakness": "fire",
-      "exp": 120, "gold": 80, "phases": 1,
+      "exp": 120, "gold": 200, "phases": 1,
       "drops": []
     },
     {
@@ -111,7 +111,7 @@
       "nameKey": "boss_sentinel",
       "level": 12, "hp": 400, "atk": 32, "def": 25,
       "element": null, "weakness": "lightning",
-      "exp": 150, "gold": 100, "phases": 2,
+      "exp": 150, "gold": 250, "phases": 2,
       "drops": []
     },
     {
@@ -119,7 +119,7 @@
       "nameKey": "boss_sylas",
       "level": 15, "hp": 350, "atk": 38, "def": 15,
       "element": null, "weakness": null,
-      "exp": 200, "gold": 120, "phases": 1,
+      "exp": 200, "gold": 300, "phases": 1,
       "drops": []
     },
     {
@@ -127,7 +127,7 @@
       "nameKey": "boss_ravok",
       "level": 15, "hp": 320, "atk": 42, "def": 12,
       "element": null, "weakness": null,
-      "exp": 200, "gold": 120, "phases": 1,
+      "exp": 200, "gold": 300, "phases": 1,
       "drops": []
     },
     {
@@ -135,7 +135,7 @@
       "nameKey": "boss_thessara",
       "level": 18, "hp": 600, "atk": 45, "def": 30,
       "element": "water", "weakness": "lightning",
-      "exp": 250, "gold": 150, "phases": 2,
+      "exp": 250, "gold": 350, "phases": 2,
       "drops": []
     },
     {
@@ -143,7 +143,7 @@
       "nameKey": "boss_morthos",
       "level": 22, "hp": 800, "atk": 55, "def": 35,
       "element": "dark", "weakness": "light",
-      "exp": 300, "gold": 200, "phases": 3,
+      "exp": 300, "gold": 400, "phases": 3,
       "drops": []
     },
     {
@@ -159,7 +159,7 @@
       "nameKey": "boss_xaroth",
       "level": 30, "hp": 1200, "atk": 75, "def": 50,
       "element": "dark", "weakness": "light",
-      "exp": 400, "gold": 250, "phases": 3,
+      "exp": 400, "gold": 500, "phases": 3,
       "drops": []
     },
     {

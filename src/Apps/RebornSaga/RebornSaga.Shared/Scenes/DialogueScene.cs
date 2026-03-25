@@ -517,24 +517,24 @@ public class DialogueScene : Scene
     /// </summary>
     private async void AdvanceToNextChapter()
     {
-        var currentId = _storyEngine.CurrentChapter?.Id;
-        if (currentId == null)
-        {
-            SceneManager.ChangeScene<TitleScene>(new FadeTransition());
-            return;
-        }
-
-        var nextId = StoryEngine.GetNextChapterId(currentId);
-
-        if (nextId == null)
-        {
-            // Letztes Kapitel (k10) → Titel
-            SceneManager.ChangeScene<TitleScene>(new FadeTransition());
-            return;
-        }
-
         try
         {
+            var currentId = _storyEngine.CurrentChapter?.Id;
+            if (currentId == null)
+            {
+                SceneManager.ChangeScene<TitleScene>(new FadeTransition());
+                return;
+            }
+
+            var nextId = StoryEngine.GetNextChapterId(currentId);
+
+            if (nextId == null)
+            {
+                // Letztes Kapitel (k10) → Titel
+                SceneManager.ChangeScene<TitleScene>(new FadeTransition());
+                return;
+            }
+
             await _storyEngine.LoadChapterAsync(nextId);
 
             // Arc-Kapitel (k1+) → Overworld-Map anzeigen
@@ -548,9 +548,10 @@ public class DialogueScene : Scene
                 PresentCurrentNode();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Nächstes Kapitel nicht verfügbar → Titel
+            // Kapitel-Laden fehlgeschlagen → Titel als Fallback
+            System.Diagnostics.Debug.WriteLine($"AdvanceToNextChapter Fehler: {ex.Message}");
             SceneManager.ChangeScene<TitleScene>(new FadeTransition());
         }
     }

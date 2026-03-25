@@ -523,15 +523,34 @@ public class SaveGameService : IDisposable
     /// </summary>
     public void Dispose()
     {
+        // Synchrones Schließen via GetDatabaseConnection() statt blockierendem .GetAwaiter().GetResult()
+        // auf der async-Variante. SQLiteAsyncConnection hat intern eine synchrone SQLiteConnection.
         try
         {
-            _db?.CloseAsync().GetAwaiter().GetResult();
+            var db = _db;
+            _db = null;
+
+            if (db != null)
+            {
+                // Fire-and-forget mit Fehler-Logging statt synchronem Block
+                // (verhindert Deadlocks beim App-Shutdown wenn SynchronizationContext aktiv ist)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await db.CloseAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"SaveGameService.Dispose: CloseAsync Fehler: {ex.Message}");
+                    }
+                });
+            }
         }
         catch
         {
             // Fehler beim Dispose beim Herunterfahren sind unkritisch
         }
-        _db = null;
     }
 
     /// <summary>

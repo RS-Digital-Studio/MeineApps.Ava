@@ -73,10 +73,8 @@ public class DailyService
     {
         if (HasClaimedToday) return 0;
 
-        // Belohnung VOR Streak-Update berechnen (CycleDay basiert auf aktuellem Streak)
-        var reward = DailyRewards[CycleDay];
-
-        // Streak prüfen: Gestern eingecheckt → Streak +1, sonst Reset
+        // Streak ZUERST aktualisieren, DANN Belohnung berechnen
+        // (CycleDay basiert auf Streak, daher muss Streak aktuell sein)
         var lastClaim = _preferences.Get("daily_last_claim", "");
         if (!string.IsNullOrEmpty(lastClaim))
         {
@@ -89,7 +87,7 @@ public class DailyService
             }
             else if (daysSince > 1)
             {
-                // Streak gebrochen
+                // Streak gebrochen — neuer Tag 1
                 _preferences.Set("daily_streak", 1);
             }
         }
@@ -98,6 +96,9 @@ public class DailyService
             // Erster Login überhaupt
             _preferences.Set("daily_streak", 1);
         }
+
+        // Belohnung NACH Streak-Update berechnen (CycleDay jetzt korrekt)
+        var reward = DailyRewards[CycleDay];
 
         _goldService.AddGold(player, reward);
 

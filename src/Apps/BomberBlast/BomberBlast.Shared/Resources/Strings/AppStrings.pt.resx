@@ -1023,28 +1023,58 @@
     <value>Maldição aleatória por 10 segundos - cuidado!</value>
   </data>
   <data name="DiscoverIce" xml:space="preserve">
-    <value>Gelo</value>
+    <value>Chão gelado</value>
   </data>
   <data name="DiscoverIceDesc" xml:space="preserve">
-    <value>Chão escorregadio - você desliza no gelo!</value>
+    <value>Você desliza no gelo até bater em um obstáculo. Use as paredes a seu favor!</value>
   </data>
   <data name="DiscoverConveyor" xml:space="preserve">
-    <value>Esteira</value>
+    <value>Esteiras rolantes</value>
   </data>
   <data name="DiscoverConveyorDesc" xml:space="preserve">
-    <value>Empurra na direção da seta!</value>
+    <value>As esteiras movem você e as bombas em uma direção. Observe as setas!</value>
   </data>
   <data name="DiscoverTeleporter" xml:space="preserve">
-    <value>Teletransportador</value>
+    <value>Teletransportadores</value>
   </data>
   <data name="DiscoverTeleporterDesc" xml:space="preserve">
-    <value>Teletransporta para o portal pareado!</value>
+    <value>Entre em um teletransportador para chegar ao outro lado instantaneamente. Bombas também se teletransportam!</value>
   </data>
   <data name="DiscoverLavacrack" xml:space="preserve">
-    <value>Fissura de lava</value>
+    <value>Poças de lava</value>
   </data>
   <data name="DiscoverLavacrackDesc" xml:space="preserve">
-    <value>Dano periódico de lava - observe o brilho!</value>
+    <value>A lava queima tudo que toca. Mantenha distância e use bombas para criar caminhos seguros!</value>
+  </data>
+  <data name="DiscoverFallingceiling" xml:space="preserve">
+    <value>Teto desabando</value>
+  </data>
+  <data name="DiscoverFallingceilingDesc" xml:space="preserve">
+    <value>O teto desaba periodicamente e destrói blocos. Continue se movendo!</value>
+  </data>
+  <data name="DiscoverCurrent" xml:space="preserve">
+    <value>Correntezas</value>
+  </data>
+  <data name="DiscoverCurrentDesc" xml:space="preserve">
+    <value>As correntezas te desaceleram e te empurram para fora do curso. Lute contra elas ou aproveite-as!</value>
+  </data>
+  <data name="DiscoverEarthquake" xml:space="preserve">
+    <value>Terremoto</value>
+  </data>
+  <data name="DiscoverEarthquakeDesc" xml:space="preserve">
+    <value>Tremores periódicos destroem blocos aleatórios e podem abrir novos caminhos!</value>
+  </data>
+  <data name="DiscoverPlatformgap" xml:space="preserve">
+    <value>Buracos na plataforma</value>
+  </data>
+  <data name="DiscoverPlatformgapDesc" xml:space="preserve">
+    <value>Algumas placas do chão estão faltando. Não caia nos buracos! Bombas não os cobrem.</value>
+  </data>
+  <data name="DiscoverFog" xml:space="preserve">
+    <value>Névoa de guerra</value>
+  </data>
+  <data name="DiscoverFogDesc" xml:space="preserve">
+    <value>Uma névoa densa limita sua visão. Inimigos podem se esconder na névoa!</value>
   </data>
   <data name="SectionPowerUps" xml:space="preserve">
     <value>Habilidades</value>
@@ -2627,7 +2657,7 @@
     <value>Frequentador da masmorra</value>
   </data>
   <data name="AchDungeonRuns10Desc" xml:space="preserve">
-    <value>Complete 10 Dungeon Runs</value>
+    <value>Complete 10 corridas na masmorra</value>
   </data>
   <data name="AchDungeonBoss" xml:space="preserve">
     <value>Exterminador da masmorra</value>

@@ -1023,28 +1023,58 @@
     <value>Malédiction aléatoire pendant 10 secondes !</value>
   </data>
   <data name="DiscoverIce" xml:space="preserve">
-    <value>Glace</value>
+    <value>Sol glacé</value>
   </data>
   <data name="DiscoverIceDesc" xml:space="preserve">
-    <value>Sol glissant - vous glissez sur la glace !</value>
+    <value>Vous glissez sur la glace jusqu'à heurter un obstacle. Utilisez les murs à votre avantage !</value>
   </data>
   <data name="DiscoverConveyor" xml:space="preserve">
-    <value>Tapis roulant</value>
+    <value>Tapis roulants</value>
   </data>
   <data name="DiscoverConveyorDesc" xml:space="preserve">
-    <value>Vous pousse dans la direction de la flèche !</value>
+    <value>Les tapis roulants vous déplacent ainsi que les bombes dans une direction. Suivez les flèches !</value>
   </data>
   <data name="DiscoverTeleporter" xml:space="preserve">
-    <value>Téléporteur</value>
+    <value>Téléporteurs</value>
   </data>
   <data name="DiscoverTeleporterDesc" xml:space="preserve">
-    <value>Téléporte vers le portail jumelé !</value>
+    <value>Entrez dans un téléporteur pour atteindre l'autre bout instantanément. Les bombes se téléportent aussi !</value>
   </data>
   <data name="DiscoverLavacrack" xml:space="preserve">
-    <value>Fissure de lave</value>
+    <value>Bassins de lave</value>
   </data>
   <data name="DiscoverLavacrackDesc" xml:space="preserve">
-    <value>Dégâts de lave périodiques - surveillez la lueur !</value>
+    <value>La lave brûle tout ce qu'elle touche. Gardez vos distances et utilisez des bombes pour créer des chemins sûrs !</value>
+  </data>
+  <data name="DiscoverFallingceiling" xml:space="preserve">
+    <value>Plafond effondré</value>
+  </data>
+  <data name="DiscoverFallingceilingDesc" xml:space="preserve">
+    <value>Le plafond s'effondre périodiquement et détruit des blocs. Restez en mouvement !</value>
+  </data>
+  <data name="DiscoverCurrent" xml:space="preserve">
+    <value>Courants d'eau</value>
+  </data>
+  <data name="DiscoverCurrentDesc" xml:space="preserve">
+    <value>Les courants vous ralentissent et vous dévient. Luttez contre eux ou exploitez-les !</value>
+  </data>
+  <data name="DiscoverEarthquake" xml:space="preserve">
+    <value>Tremblement de terre</value>
+  </data>
+  <data name="DiscoverEarthquakeDesc" xml:space="preserve">
+    <value>Des secousses périodiques détruisent des blocs au hasard et peuvent ouvrir de nouveaux chemins !</value>
+  </data>
+  <data name="DiscoverPlatformgap" xml:space="preserve">
+    <value>Trous dans le sol</value>
+  </data>
+  <data name="DiscoverPlatformgapDesc" xml:space="preserve">
+    <value>Certaines dalles manquent. Ne tombez pas dans les trous ! Les bombes ne les comblent pas.</value>
+  </data>
+  <data name="DiscoverFog" xml:space="preserve">
+    <value>Brouillard de guerre</value>
+  </data>
+  <data name="DiscoverFogDesc" xml:space="preserve">
+    <value>Un brouillard épais limite votre vision. Les ennemis peuvent se cacher dans le brouillard !</value>
   </data>
   <data name="SectionPowerUps" xml:space="preserve">
     <value>Capacités</value>

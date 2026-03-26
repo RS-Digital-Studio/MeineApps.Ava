@@ -1023,28 +1023,58 @@
     <value>Random curse for 10 seconds - beware!</value>
   </data>
   <data name="DiscoverIce" xml:space="preserve">
-    <value>Ice</value>
+    <value>Icy Floor</value>
   </data>
   <data name="DiscoverIceDesc" xml:space="preserve">
-    <value>Slippery ground - you slide on ice!</value>
+    <value>You slide on ice until you hit an obstacle. Use walls to your advantage!</value>
   </data>
   <data name="DiscoverConveyor" xml:space="preserve">
-    <value>Conveyor Belt</value>
+    <value>Conveyor Belts</value>
   </data>
   <data name="DiscoverConveyorDesc" xml:space="preserve">
-    <value>Pushes you in arrow direction!</value>
+    <value>Conveyor belts move you and bombs in one direction. Watch the arrows!</value>
   </data>
   <data name="DiscoverTeleporter" xml:space="preserve">
-    <value>Teleporter</value>
+    <value>Teleporters</value>
   </data>
   <data name="DiscoverTeleporterDesc" xml:space="preserve">
-    <value>Teleports to the paired portal!</value>
+    <value>Enter a teleporter to instantly reach the other end. Bombs teleport too!</value>
   </data>
   <data name="DiscoverLavacrack" xml:space="preserve">
-    <value>Lava Crack</value>
+    <value>Lava Pools</value>
   </data>
   <data name="DiscoverLavacrackDesc" xml:space="preserve">
-    <value>Periodic lava damage - watch the glow!</value>
+    <value>Lava burns everything it touches. Keep your distance and use bombs to create safe paths!</value>
+  </data>
+  <data name="DiscoverFallingceiling" xml:space="preserve">
+    <value>Falling Ceiling</value>
+  </data>
+  <data name="DiscoverFallingceilingDesc" xml:space="preserve">
+    <value>The ceiling periodically collapses and destroys blocks. Keep moving!</value>
+  </data>
+  <data name="DiscoverCurrent" xml:space="preserve">
+    <value>Water Currents</value>
+  </data>
+  <data name="DiscoverCurrentDesc" xml:space="preserve">
+    <value>Water currents slow you down and push you off course. Fight against them or use them!</value>
+  </data>
+  <data name="DiscoverEarthquake" xml:space="preserve">
+    <value>Earthquake</value>
+  </data>
+  <data name="DiscoverEarthquakeDesc" xml:space="preserve">
+    <value>Periodic tremors destroy random blocks and can open new paths!</value>
+  </data>
+  <data name="DiscoverPlatformgap" xml:space="preserve">
+    <value>Platform Gaps</value>
+  </data>
+  <data name="DiscoverPlatformgapDesc" xml:space="preserve">
+    <value>Some floor tiles are missing. Don't fall into the gaps! Bombs don't bridge them.</value>
+  </data>
+  <data name="DiscoverFog" xml:space="preserve">
+    <value>Fog of War</value>
+  </data>
+  <data name="DiscoverFogDesc" xml:space="preserve">
+    <value>Dense fog limits your vision. Enemies can hide in the fog!</value>
   </data>
   <data name="SectionPowerUps" xml:space="preserve">
     <value>Abilities</value>

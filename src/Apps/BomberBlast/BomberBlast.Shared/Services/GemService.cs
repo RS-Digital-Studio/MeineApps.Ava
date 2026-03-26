@@ -14,28 +14,24 @@ public sealed class GemService : IGemService
     private static readonly JsonSerializerOptions JsonOptions = new();
 
     private readonly IPreferencesService _preferences;
+    private readonly Lazy<IWeeklyChallengeService> _weeklyService;
+    private readonly Lazy<IDailyMissionService> _dailyMissionService;
     private GemData _data;
-
-    // Lazy-Injection für Mission-Tracking (vermeidet zirkuläre DI)
-    private IWeeklyChallengeService? _weeklyService;
-    private IDailyMissionService? _dailyMissionService;
 
     public int Balance => _data.Balance;
     public int TotalEarned => _data.TotalEarned;
 
     public event EventHandler? BalanceChanged;
 
-    public GemService(IPreferencesService preferences)
+    public GemService(
+        IPreferencesService preferences,
+        Lazy<IWeeklyChallengeService> weeklyService,
+        Lazy<IDailyMissionService> dailyMissionService)
     {
         _preferences = preferences;
-        _data = Load();
-    }
-
-    /// <summary>Lazy-Injection für Mission-Tracking (Phase 9.4)</summary>
-    public void SetMissionServices(IWeeklyChallengeService weeklyService, IDailyMissionService dailyMissionService)
-    {
         _weeklyService = weeklyService;
         _dailyMissionService = dailyMissionService;
+        _data = Load();
     }
 
     public void AddGems(int amount)
@@ -48,8 +44,8 @@ public sealed class GemService : IGemService
         BalanceChanged?.Invoke(this, EventArgs.Empty);
 
         // Mission-Tracking: Gems verdient
-        _weeklyService?.TrackProgress(WeeklyMissionType.EarnGems, amount);
-        _dailyMissionService?.TrackProgress(WeeklyMissionType.EarnGems, amount);
+        _weeklyService.Value.TrackProgress(WeeklyMissionType.EarnGems, amount);
+        _dailyMissionService.Value.TrackProgress(WeeklyMissionType.EarnGems, amount);
     }
 
     public bool TrySpendGems(int amount)

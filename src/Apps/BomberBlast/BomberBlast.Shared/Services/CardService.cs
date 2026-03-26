@@ -17,9 +17,9 @@ public sealed class CardService : ICardService
     private static readonly Random _random = new();
 
     private readonly IPreferencesService _preferences;
-    private IAchievementService? _achievementService;
-    private IWeeklyChallengeService? _weeklyService;
-    private IDailyMissionService? _dailyMissionService;
+    private readonly Lazy<IAchievementService> _achievementService;
+    private readonly Lazy<IWeeklyChallengeService> _weeklyService;
+    private readonly Lazy<IDailyMissionService> _dailyMissionService;
     private CardCollectionData _data;
 
     public IReadOnlyList<OwnedCard> OwnedCards => _data.Cards;
@@ -29,19 +29,16 @@ public sealed class CardService : ICardService
 
     public event EventHandler? CollectionChanged;
 
-    /// <summary>Lazy-Injection um zirkuläre DI-Abhängigkeit zu vermeiden</summary>
-    public void SetAchievementService(IAchievementService achievementService) => _achievementService = achievementService;
-
-    /// <summary>Lazy-Injection für Mission-Tracking (Phase 9.4)</summary>
-    public void SetMissionServices(IWeeklyChallengeService weeklyService, IDailyMissionService dailyMissionService)
-    {
-        _weeklyService = weeklyService;
-        _dailyMissionService = dailyMissionService;
-    }
-
-    public CardService(IPreferencesService preferences)
+    public CardService(
+        IPreferencesService preferences,
+        Lazy<IAchievementService> achievementService,
+        Lazy<IWeeklyChallengeService> weeklyService,
+        Lazy<IDailyMissionService> dailyMissionService)
     {
         _preferences = preferences;
+        _achievementService = achievementService;
+        _weeklyService = weeklyService;
+        _dailyMissionService = dailyMissionService;
         _data = Load();
     }
 
@@ -83,11 +80,11 @@ public sealed class CardService : ICardService
         int maxLevel = 0;
         foreach (var c in _data.Cards)
             if (c.Level > maxLevel) maxLevel = c.Level;
-        _achievementService?.OnCardCollected(uniqueCount, maxLevel);
+        _achievementService.Value.OnCardCollected(uniqueCount, maxLevel);
 
         // Mission-Tracking: Karte gesammelt
-        _weeklyService?.TrackProgress(WeeklyMissionType.CollectCards);
-        _dailyMissionService?.TrackProgress(WeeklyMissionType.CollectCards);
+        _weeklyService.Value.TrackProgress(WeeklyMissionType.CollectCards);
+        _dailyMissionService.Value.TrackProgress(WeeklyMissionType.CollectCards);
     }
 
     public bool TryUpgradeCard(BombType type)
@@ -112,11 +109,11 @@ public sealed class CardService : ICardService
         int maxLevel = 0;
         foreach (var c in _data.Cards)
             if (c.Level > maxLevel) maxLevel = c.Level;
-        _achievementService?.OnCardCollected(_data.Cards.Count, maxLevel);
+        _achievementService.Value.OnCardCollected(_data.Cards.Count, maxLevel);
 
         // Mission-Tracking: Karte geupgraded
-        _weeklyService?.TrackProgress(WeeklyMissionType.UpgradeCards);
-        _dailyMissionService?.TrackProgress(WeeklyMissionType.UpgradeCards);
+        _weeklyService.Value.TrackProgress(WeeklyMissionType.UpgradeCards);
+        _dailyMissionService.Value.TrackProgress(WeeklyMissionType.UpgradeCards);
 
         return true;
     }

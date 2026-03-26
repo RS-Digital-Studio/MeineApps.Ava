@@ -129,16 +129,16 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ### Coin-Economy + Shop
 - **CoinService**: Level-Score / 3 → Coins bei Complete (Welt 1: Score/2 für bessere Früh-Progression), / 6 bei Game Over
-- **Gem-Trickle**: 1 Gem bei erstmaligem 3-Sterne-Abschluss (Story-Modus) via GameTrackingService.OnFirstThreeStars()
+- **Gem-Trickle**: 2 Gems bei erstmaligem 3-Sterne-Abschluss (Story-Modus) via GameTrackingService.OnFirstThreeStars() — 100 Level × 2G = 200G, reicht für 1 Legendary-Skin
 - **Premium-Multiplikator**: 2x Coins bei LevelComplete (IsPremium), 3x bei GameOver-Trostcoins
 - **Effizienz-Bonus**: Skaliert nach Welt (1-10), belohnt wenige Bomben
 - **ShopService**: 9 permanente Upgrades (StartBombs, StartFire, StartSpeed, ExtraLives, ScoreMultiplier, TimeBonus, ShieldStart, CoinBonus, PowerUpLuck)
-- **Preise**: 1.500 - 35.000 Coins, Max-Levels: 1-3, Gesamt: ~190.000 Coins
+- **Preise**: 1.000 - 35.000 Coins (StartBombs/StartFire: 1.000/3.500/10.000), Max-Levels: 1-3, Gesamt: ~189.000 Coins
 - **Dungeon-Trennung**: Shop-Upgrades gelten NUR in Story/Daily/QuickPlay/Survival. Im Dungeon: Base-Stats + Dungeon-Buffs
 
 ### Level-Gating (ProgressService)
 - 100 Story-Level in 10 Welten (World 1-10 a 10 Level)
-- Welt-Freischaltung: 0/0/10/25/45/70/100/135/175/220 Sterne
+- Welt-Freischaltung: 0/0/10/25/45/70/100/135/175/220/240 Sterne
 - Stern-System: 3 Sterne pro Level (Zeit-basiert), Fail-Counter für Level-Skip
 
 ### Progressive Feature-Freischaltung (MainMenuViewModel)
@@ -220,7 +220,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Touch-Koordinaten**: Proportionale Skalierung (Render-Bounds / Control-Bounds Ratio)
 - **Invalidierung**: IMMER `InvalidateSurface()` (nicht InvalidateVisual)
 - **Keyboard Input**: Window-Level KeyDown/KeyUp in MainWindow.axaml.cs → GameViewModel
-- **DI**: 23 ViewModels (Singleton), 29 Services. Lazy-Injection für zirkuläre Abhängigkeiten (4 Services erhalten IAchievementService via Concrete-Cast, GemService/CardService erhalten MissionServices, CustomizationService erhält GemService). SetXxx-Methoden sind NICHT in Interfaces (nur auf Concrete Classes)
+- **DI**: 23 ViewModels (Singleton), 29 Services. Zirkuläre Abhängigkeiten via `Lazy<T>`-Injection aufgelöst (LazyServiceExtensions.cs). Keine manuellen SetXxxService()-Aufrufe mehr
 - **IGameJuiceEmitter**: Einheitliches Interface für FloatingText+Celebration Events. Implementiert von: LevelSelectVM, MainMenuVM, ShopVM, GameOverVM, ProfileVM und weiteren
 - **GameEngine Partial Classes**: GameEngine.cs (Kern), .Collision.cs, .Explosion.cs, .Level.cs, .Render.cs
 - **GameEngine Events**: Kein "On"-Prefix: `GameOver`, `LevelComplete`, `Victory`, `ScoreChanged`, `CoinsEarned`, `PauseRequested`, `DirectionChanged`, `DungeonFloorComplete`, `DungeonBuffSelection`, `DungeonRunEnd`
@@ -336,12 +336,12 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 - **Boss-Kill Gem-Drop**: 50% Chance auf 2-3 Gems bei jedem Boss-Kill (GameTrackingService)
 - **Survival-Meilensteine**: Gems bei 120s/180s/300s (siehe Survival-Modus)
-- **Gesamt-Quellen**: 3-Sterne (1G), Boss-Level-Erst (5G), Boss-Kill-Drop (2-3G/50%), Survival, BP, Weekly, Daily, Comeback
+- **Gesamt-Quellen**: 3-Sterne (2G), Boss-Level-Erst (5G), Boss-Kill-Drop (2-3G/50%), Survival, BP, Weekly, Daily, Comeback
 
 ## Glücksrad / Lucky Spin
 
 - 1x gratis/Tag, Extra-Spins per Ad oder 3 Gems
-- 9 gewichtete Segmente: 50-1500 Coins + 5 Gems (Jackpot 1500, w5)
+- 9 gewichtete Segmente: 100-3000 Coins + 5/10 Gems (Jackpot 3000C+10G, w5)
 - SKCanvasView Rad-Rendering, Spin-Animation (min. 5 Drehungen, Ease-Out)
 
 ## Weekly Challenge + Daily Missions
@@ -372,7 +372,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 - Einzelnes zufälliges Level via 5-stelligem Seed, Schwierigkeit 1-10
 - Kein Progress, keine Achievements - reiner Spaß-Modus
-- Timer: 180s (Diff 1) bis 90s (Diff 10)
+- Timer: 180s (Diff 1) bis 120s (Diff 10, Floor)
 - Seed-Sharing möglich
 
 ## Daily Reward & Monetarisierung
@@ -386,7 +386,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 - 66 Achievements in 5 Kategorien: Progress (17), Mastery (6), Combat (11), Skill (11), Challenge (1) + 20 Cross-Feature
 - IAchievementService in GameEngine injiziert → automatische Prüfung bei Level-Complete/Kill/Stars/Combo/Kick/PowerBomb/Curse/Daily/Boss/Spezial-Bombe/Survival/Weekly/Dungeon/BattlePass/Karten/Liga
-- **Lazy-Injection**: 4 Services erhalten IAchievementService via `SetAchievementService()` nach ServiceProvider-Build
+- **Lazy-T-Injection**: 7 Services nutzen `Lazy<T>` für zirkuläre Dependencies (BattlePass, Card, League, DailyMission → Achievement; Gem, Card → Weekly/DailyMission; Customization → Gem; Dungeon → DungeonUpgrade)
 - AchievementData: ~20 Tracking-Felder (TotalEnemyKills, TotalStars, BossTypesDefeated, BestDungeonFloor, etc.)
 
 ## Audio-System

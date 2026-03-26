@@ -1023,28 +1023,58 @@
     <value>Zufälliger Fluch für 10 Sekunden - Vorsicht!</value>
   </data>
   <data name="DiscoverIce" xml:space="preserve">
-    <value>Eis</value>
+    <value>Eisiger Boden</value>
   </data>
   <data name="DiscoverIceDesc" xml:space="preserve">
-    <value>Glatter Boden - du rutschst auf Eis!</value>
+    <value>Du rutschst auf Eis weiter bis du gegen ein Hindernis stößt. Nutze Wände zu deinem Vorteil!</value>
   </data>
   <data name="DiscoverConveyor" xml:space="preserve">
-    <value>Förderband</value>
+    <value>Förderbänder</value>
   </data>
   <data name="DiscoverConveyorDesc" xml:space="preserve">
-    <value>Schiebt dich in Pfeilrichtung!</value>
+    <value>Förderbänder bewegen dich und Bomben in eine Richtung. Achte auf die Pfeile!</value>
   </data>
   <data name="DiscoverTeleporter" xml:space="preserve">
     <value>Teleporter</value>
   </data>
   <data name="DiscoverTeleporterDesc" xml:space="preserve">
-    <value>Teleportiert zum gepaarten Portal!</value>
+    <value>Betritt einen Teleporter um sofort zum anderen Ende zu gelangen. Auch Bomben teleportieren!</value>
   </data>
   <data name="DiscoverLavacrack" xml:space="preserve">
-    <value>Lava-Riss</value>
+    <value>Lavabecken</value>
   </data>
   <data name="DiscoverLavacrackDesc" xml:space="preserve">
-    <value>Periodischer Lava-Schaden - achte auf das Glühen!</value>
+    <value>Lava verbrennt alles was sie berührt. Halte Abstand und nutze Bomben um sichere Pfade zu schaffen!</value>
+  </data>
+  <data name="DiscoverFallingceiling" xml:space="preserve">
+    <value>Fallende Decke</value>
+  </data>
+  <data name="DiscoverFallingceilingDesc" xml:space="preserve">
+    <value>Die Decke stürzt periodisch ein und zerstört Blöcke. Bleib in Bewegung!</value>
+  </data>
+  <data name="DiscoverCurrent" xml:space="preserve">
+    <value>Strömung</value>
+  </data>
+  <data name="DiscoverCurrentDesc" xml:space="preserve">
+    <value>Wasserströmungen verlangsamen dich und treiben dich ab. Kämpfe dagegen an oder nutze sie!</value>
+  </data>
+  <data name="DiscoverEarthquake" xml:space="preserve">
+    <value>Erdbeben</value>
+  </data>
+  <data name="DiscoverEarthquakeDesc" xml:space="preserve">
+    <value>Periodische Erschütterungen zerstören zufällige Blöcke und können neue Wege öffnen!</value>
+  </data>
+  <data name="DiscoverPlatformgap" xml:space="preserve">
+    <value>Plattform-Lücken</value>
+  </data>
+  <data name="DiscoverPlatformgapDesc" xml:space="preserve">
+    <value>Einige Bodenplatten fehlen. Falle nicht in die Lücken! Bomben überbrücken sie nicht.</value>
+  </data>
+  <data name="DiscoverFog" xml:space="preserve">
+    <value>Nebel des Krieges</value>
+  </data>
+  <data name="DiscoverFogDesc" xml:space="preserve">
+    <value>Dichter Nebel beschränkt deine Sicht. Gegner können sich im Nebel verstecken!</value>
   </data>
   <data name="SectionPowerUps" xml:space="preserve">
     <value>Fähigkeiten</value>

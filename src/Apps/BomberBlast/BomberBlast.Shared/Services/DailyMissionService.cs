@@ -11,7 +11,7 @@ namespace BomberBlast.Services;
 /// </summary>
 public sealed class DailyMissionService : TimedMissionServiceBase, IDailyMissionService
 {
-    private IAchievementService? _achievementService;
+    private readonly Lazy<IAchievementService> _achievementService;
 
     // Missions-Pool: Typ → (NameKey, DescKey, MinTarget, MaxTarget, CoinReward)
     private static readonly (WeeklyMissionType Type, string Name, string Desc, int Min, int Max, int Reward)[] DailyMissionPool =
@@ -34,9 +34,14 @@ public sealed class DailyMissionService : TimedMissionServiceBase, IDailyMission
         (WeeklyMissionType.UpgradeCards, "DailyUpgradeCards", "DailyUpgradeCardsDesc", 1, 1, 250),
     ];
 
-    public DailyMissionService(IPreferencesService preferences, IBattlePassService battlePassService, ILeagueService leagueService)
+    public DailyMissionService(
+        IPreferencesService preferences,
+        IBattlePassService battlePassService,
+        ILeagueService leagueService,
+        Lazy<IAchievementService> achievementService)
         : base(preferences, battlePassService, leagueService)
     {
+        _achievementService = achievementService;
     }
 
     // --- Interface-Properties (delegieren an Basisklasse) ---
@@ -64,7 +69,7 @@ public sealed class DailyMissionService : TimedMissionServiceBase, IDailyMission
     protected override void OnMissionCompleted()
     {
         BattlePassService.AddXp(BattlePassXpSources.DailyMission, "daily_mission");
-        _achievementService?.OnDailyMissionCompleted();
+        _achievementService.Value.OnDailyMissionCompleted();
     }
 
     /// <summary>Alle 3 Daily Missions erledigt → Bonus-XP + Liga-Punkte</summary>
@@ -75,9 +80,6 @@ public sealed class DailyMissionService : TimedMissionServiceBase, IDailyMission
     }
 
     // --- Interface-Methoden ---
-
-    /// <summary>Lazy-Injection um zirkuläre DI-Abhängigkeit zu vermeiden</summary>
-    public void SetAchievementService(IAchievementService achievementService) => _achievementService = achievementService;
 
     public void TrackProgress(WeeklyMissionType type, int amount = 1)
     {

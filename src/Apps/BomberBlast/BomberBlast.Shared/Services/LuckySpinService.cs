@@ -16,7 +16,7 @@ public sealed class LuckySpinService : ILuckySpinService
 
     private static readonly SpinReward[] _rewards =
     [
-        new() { Index = 0, NameKey = "SpinReward50",    Coins = 50,   Weight = 25 },
+        new() { Index = 0, NameKey = "SpinReward150",   Coins = 150,  Weight = 22 },
         new() { Index = 1, NameKey = "SpinReward100",   Coins = 100,  Weight = 20 },
         new() { Index = 2, NameKey = "SpinReward250",   Coins = 250,  Weight = 18 },
         new() { Index = 3, NameKey = "SpinReward500",   Coins = 500,  Weight = 15 },

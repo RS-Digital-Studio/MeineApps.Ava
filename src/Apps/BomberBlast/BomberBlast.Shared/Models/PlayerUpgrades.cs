@@ -31,8 +31,8 @@ public class PlayerUpgrades
     // Preise pro Level (Index 0 = Level 1, etc.) - ~50% reduziert fuer bessere Progression
     private static readonly Dictionary<UpgradeType, int[]> Prices = new()
     {
-        { UpgradeType.StartBombs, [1500, 4000, 10000] },
-        { UpgradeType.StartFire, [1500, 4000, 10000] },
+        { UpgradeType.StartBombs, [1000, 3500, 10000] },
+        { UpgradeType.StartFire, [1000, 3500, 10000] },
         { UpgradeType.StartSpeed, [2500] },
         { UpgradeType.ExtraLives, [7500, 20000] },
         { UpgradeType.ScoreMultiplier, [4000, 10000, 20000] },

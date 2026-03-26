@@ -53,14 +53,14 @@
               AutomationProperties.AutomationId="MainView_PageSettings">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
-            <Grid ColumnDefinitions="*,*" MinHeight="36">
+            <Grid ColumnDefinitions="*,*" MinHeight="44">
               <Panel Grid.Column="0">
                 <Border IsVisible="{Binding !IsSettingsHelpTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
                   <TextBlock Text="{loc:Translate Settings}" FontSize="11" FontWeight="SemiBold"
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsSettingsHelpTab}" Command="{Binding SwitchToSettingsTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate Settings}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -71,7 +71,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsSettingsHelpTab}" Command="{Binding SwitchToHelpTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate Help}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -106,14 +106,14 @@
               AutomationProperties.AutomationId="MainView_PageShop">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
-            <Grid ColumnDefinitions="*,*" MinHeight="36">
+            <Grid ColumnDefinitions="*,*" MinHeight="44">
               <Panel Grid.Column="0">
                 <Border IsVisible="{Binding !IsShopSpinTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
                   <TextBlock Text="{loc:Translate ShopTitle}" FontSize="11" FontWeight="SemiBold"
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsShopSpinTab}" Command="{Binding SwitchToShopTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate ShopTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -124,7 +124,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsShopSpinTab}" Command="{Binding SwitchToSpinTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate LuckySpinTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -147,14 +147,14 @@
               AutomationProperties.AutomationId="MainView_PageProfile">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
-            <Grid ColumnDefinitions="*,*" MinHeight="36">
+            <Grid ColumnDefinitions="*,*" MinHeight="44">
               <Panel Grid.Column="0">
                 <Border IsVisible="{Binding !IsProfileAchievementsTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
                   <TextBlock Text="{loc:Translate ProfileTitle}" FontSize="11" FontWeight="SemiBold"
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsProfileAchievementsTab}" Command="{Binding SwitchToProfileTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate ProfileTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -165,7 +165,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsProfileAchievementsTab}" Command="{Binding SwitchToAchievementsTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate AchievementsTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -194,14 +194,14 @@
               AutomationProperties.AutomationId="MainView_PageChallenges">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
-            <Grid ColumnDefinitions="*,*" MinHeight="36">
+            <Grid ColumnDefinitions="*,*" MinHeight="44">
               <Panel Grid.Column="0">
                 <Border IsVisible="{Binding !IsChallengesMissionsTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
                   <TextBlock Text="{loc:Translate DailyChallengeTitle}" FontSize="11" FontWeight="SemiBold"
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsChallengesMissionsTab}" Command="{Binding SwitchToDailyChallengeTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate DailyChallengeTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -212,7 +212,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsChallengesMissionsTab}" Command="{Binding SwitchToMissionsTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate MissionsButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -247,14 +247,14 @@
               AutomationProperties.AutomationId="MainView_PageCards">
         <Grid RowDefinitions="Auto,*">
           <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
-            <Grid ColumnDefinitions="*,*" MinHeight="36">
+            <Grid ColumnDefinitions="*,*" MinHeight="44">
               <Panel Grid.Column="0">
                 <Border IsVisible="{Binding !IsCardsCollectionTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
                   <TextBlock Text="{loc:Translate DeckButton}" FontSize="11" FontWeight="SemiBold"
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsCardsCollectionTab}" Command="{Binding SwitchToDeckTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate DeckButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -265,7 +265,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsCardsCollectionTab}" Command="{Binding SwitchToCollectionTabCommand}"
-                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="36">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,4" MinHeight="44">
                   <TextBlock Text="{loc:Translate CollectionButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>

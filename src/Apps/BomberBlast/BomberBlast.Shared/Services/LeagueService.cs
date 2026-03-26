@@ -44,7 +44,7 @@ public sealed class LeagueService : ILeagueService
     private readonly IGemService _gemService;
     private readonly ILocalizationService _localization;
     private readonly IFirebaseService _firebase;
-    private IAchievementService? _achievementService;
+    private readonly Lazy<IAchievementService> _achievementService;
 
     private LeagueData _data;
     private LeagueStats _stats;
@@ -57,9 +57,6 @@ public sealed class LeagueService : ILeagueService
     public event EventHandler? PointsChanged;
     public event EventHandler? SeasonEnded;
     public event EventHandler? LeaderboardUpdated;
-
-    /// <summary>Lazy-Injection um zirkuläre DI-Abhängigkeit zu vermeiden.</summary>
-    public void SetAchievementService(IAchievementService achievementService) => _achievementService = achievementService;
 
     public LeagueTier CurrentTier => _data.CurrentTier;
     public int CurrentPoints => _data.Points;
@@ -89,13 +86,15 @@ public sealed class LeagueService : ILeagueService
         ICoinService coinService,
         IGemService gemService,
         ILocalizationService localization,
-        IFirebaseService firebase)
+        IFirebaseService firebase,
+        Lazy<IAchievementService> achievementService)
     {
         _preferences = preferences;
         _coinService = coinService;
         _gemService = gemService;
         _localization = localization;
         _firebase = firebase;
+        _achievementService = achievementService;
 
         _data = LoadData();
         _stats = LoadStats();
@@ -440,7 +439,7 @@ public sealed class LeagueService : ILeagueService
             _stats.HighestTier = (int)newTier;
 
         // Achievement: Liga-Tier prüfen
-        _achievementService?.OnLeagueTierReached((int)newTier);
+        _achievementService.Value.OnLeagueTierReached((int)newTier);
 
         _stats.TotalSeasons++;
         SaveStats();

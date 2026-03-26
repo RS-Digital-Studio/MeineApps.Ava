@@ -17,7 +17,7 @@ public sealed class BattlePassService : IBattlePassService
     private readonly ICoinService _coinService;
     private readonly IGemService _gemService;
     private readonly ICardService _cardService;
-    private IAchievementService? _achievementService;
+    private readonly Lazy<IAchievementService> _achievementService;
 
     private BattlePassData _data;
     private readonly BattlePassReward[] _freeRewards;
@@ -44,19 +44,18 @@ public sealed class BattlePassService : IBattlePassService
     public event Action? BattlePassChanged;
     public event Action<int>? TierUpReached;
 
-    /// <summary>Lazy-Injection um zirkuläre DI-Abhängigkeit zu vermeiden</summary>
-    public void SetAchievementService(IAchievementService achievementService) => _achievementService = achievementService;
-
     public BattlePassService(
         IPreferencesService preferences,
         ICoinService coinService,
         IGemService gemService,
-        ICardService cardService)
+        ICardService cardService,
+        Lazy<IAchievementService> achievementService)
     {
         _preferences = preferences;
         _coinService = coinService;
         _gemService = gemService;
         _cardService = cardService;
+        _achievementService = achievementService;
 
         _data = LoadData();
         _freeRewards = BattlePassTierDefinitions.GetFreeRewards();
@@ -115,7 +114,7 @@ public sealed class BattlePassService : IBattlePassService
                 TierUpReached?.Invoke(i);
 
             // Achievement: Höchstes Battle-Pass-Tier prüfen
-            _achievementService?.OnBattlePassTierReached(_data.CurrentTier);
+            _achievementService.Value.OnBattlePassTierReached(_data.CurrentTier);
         }
 
         SaveData();

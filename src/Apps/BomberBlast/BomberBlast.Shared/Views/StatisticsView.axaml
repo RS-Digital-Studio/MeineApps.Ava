@@ -11,7 +11,7 @@
   <Panel AutomationProperties.AutomationId="Stats_Root">
     <controls:MenuBackgroundCanvas />
 
-    <Grid ColumnDefinitions="*,1.5*" Margin="16,12,16,80">
+    <Grid ColumnDefinitions="*,1.5*" Margin="16,12,16,0">
 
       <!-- ═══════════════════════════════════════════════════════════
            LINKE SPALTE (280px) - Profil-Karte
@@ -253,7 +253,7 @@
 
           <!-- ═══ LINKE STATS-SPALTE ═══ -->
           <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="0,0,8,60">
+            <StackPanel Margin="0,0,8,16">
 
               <!-- Kategorie-Header: Fortschritt (Grün) -->
               <Border CornerRadius="8" Padding="10,6" Margin="0,0,0,6">
@@ -420,7 +420,7 @@
 
           <!-- ═══ RECHTE STATS-SPALTE ═══ -->
           <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="8,0,0,60">
+            <StackPanel Margin="8,0,0,16">
 
               <!-- Kategorie-Header: Herausforderungen (Orange) -->
               <Border CornerRadius="8" Padding="10,6" Margin="0,0,0,6">

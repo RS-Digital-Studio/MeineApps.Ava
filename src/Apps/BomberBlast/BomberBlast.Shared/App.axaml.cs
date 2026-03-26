@@ -12,6 +12,7 @@ using MeineApps.Core.Premium.Ava.Extensions;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.Controls;
 using BomberBlast.Core;
+using BomberBlast.Extensions;
 using BomberBlast.Graphics;
 using BomberBlast.Input;
 using BomberBlast.Loading;
@@ -77,33 +78,8 @@ public partial class App : Application
         // Statischer Accessor für AI-Asset-Renderer (statische Klassen ohne DI)
         GameAssetService.Current = Services.GetRequiredService<IGameAssetService>();
 
-        // Lazy-Injection: AchievementService in Concrete-Services verdrahten (vermeidet zirkuläre DI)
-        var achievementService = Services.GetRequiredService<IAchievementService>();
-        var cardSvc = Services.GetRequiredService<ICardService>() as CardService;
-        if (Services.GetRequiredService<IBattlePassService>() is BattlePassService battlePassSvc)
-            battlePassSvc.SetAchievementService(achievementService);
-        cardSvc?.SetAchievementService(achievementService);
-        if (Services.GetRequiredService<ILeagueService>() is LeagueService leagueSvc)
-            leagueSvc.SetAchievementService(achievementService);
-        if (Services.GetRequiredService<IDailyMissionService>() is DailyMissionService dailyMissionSvc)
-            dailyMissionSvc.SetAchievementService(achievementService);
-
-        // Lazy-Injection: Mission-Services in GemService + CardService verdrahten
-        var weeklyService = Services.GetRequiredService<IWeeklyChallengeService>();
-        var dailyMissionService = Services.GetRequiredService<IDailyMissionService>();
-        if (Services.GetRequiredService<IGemService>() is GemService gemSvcImpl)
-            gemSvcImpl.SetMissionServices(weeklyService, dailyMissionService);
-        cardSvc?.SetMissionServices(weeklyService, dailyMissionService);
-
-        // Lazy-Injection: CustomizationService braucht IGemService für Gem-Skins
-        var gemService = Services.GetRequiredService<IGemService>();
-        if (Services.GetRequiredService<ICustomizationService>() is CustomizationService customization)
-            customization.SetGemService(gemService);
-
-        // Lazy-Injection: DungeonService braucht IDungeonUpgradeService für permanente Upgrades
-        var dungeonUpgradeService = Services.GetRequiredService<IDungeonUpgradeService>();
-        if (Services.GetRequiredService<IDungeonService>() is DungeonService dungeonSvc)
-            dungeonSvc.SetUpgradeService(dungeonUpgradeService);
+        // Zirkuläre Dependencies werden per Lazy<T> aufgelöst (siehe LazyServiceExtensions)
+        // Keine manuelle SetXxxService()-Verdrahtung mehr nötig
 
         // Initialize localization
         var locService = Services.GetRequiredService<ILocalizationService>();
@@ -144,7 +120,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "BomberBlast",
-            AppVersion = "v2.0.27",
+            AppVersion = "v2.0.28",
             Renderer = new BomberBlastSplashRenderer()
         };
     }
@@ -217,6 +193,9 @@ public partial class App : Application
     {
         // Logging
         services.AddSingleton<IAppLogger, AppLogger>();
+
+        // Lazy<T>-Auflösung für zirkuläre Dependencies (statt manueller SetXxxService()-Verdrahtung)
+        services.AddLazyResolution();
 
         // Core Services
         services.AddSingleton<IPreferencesService>(sp => new PreferencesService("BomberBlast"));

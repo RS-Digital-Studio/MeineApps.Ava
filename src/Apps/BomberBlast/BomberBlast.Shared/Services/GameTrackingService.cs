@@ -257,10 +257,11 @@ public sealed class GameTrackingService : IGameTrackingService
 
     public void OnFirstThreeStars()
     {
-        // 1 Gem bei erstmaligem 3-Sterne-Abschluss (nachhaltige Gem-Quelle, ~1G pro perfektes Level)
-        _gems.AddGems(1);
-        _weekly.TrackProgress(WeeklyMissionType.EarnGems, 1);
-        _daily.TrackProgress(WeeklyMissionType.EarnGems, 1);
+        // 2 Gems bei erstmaligem 3-Sterne-Abschluss (nachhaltige Gem-Quelle, ~2G pro perfektes Level)
+        // 100 Level × 2G = 200G → reicht für 1 Legendary (200G) durch reinen Grind
+        _gems.AddGems(2);
+        _weekly.TrackProgress(WeeklyMissionType.EarnGems, 2);
+        _daily.TrackProgress(WeeklyMissionType.EarnGems, 2);
     }
 
     // --- Persistenz ---

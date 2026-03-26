@@ -171,7 +171,7 @@ public static class LevelGenerator
         {
             Number = difficulty * 10, // Nutze Welt-Endpunkt als Basis (für Welt-Palette)
             Name = "Quick Play",
-            TimeLimit = 180 - (difficulty - 1) * 10, // 180s (Diff 1) → 90s (Diff 10)
+            TimeLimit = Math.Max(120, 180 - (difficulty - 1) * 10), // 180s (Diff 1) → 120s (Diff 10)
             Seed = seed,
             BlockDensity = 0.30f + difficulty * 0.025f // 0.325 → 0.55
         };

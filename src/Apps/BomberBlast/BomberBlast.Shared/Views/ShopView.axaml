@@ -150,6 +150,105 @@
         </Grid>
       </Border>
     </DataTemplate>
+
+    <!-- Gemeinsames PowerUp/Mechanik-Template -->
+    <DataTemplate x:Key="PowerUpItemTemplate" x:DataType="models:PowerUpDisplayItem">
+      <Border CornerRadius="12"
+              Padding="12"
+              Margin="6"
+              MinWidth="200" MaxWidth="280"
+              BoxShadow="0 2 8 0 #30000000"
+              Opacity="{Binding CardOpacity}">
+        <Border.Background>
+          <SolidColorBrush Color="{DynamicResource CardColor}" />
+        </Border.Background>
+        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+
+          <!-- Icon-Badge -->
+          <Border Grid.Row="0" Grid.Column="0"
+                  Grid.RowSpan="2"
+                  Width="44" Height="44"
+                  CornerRadius="10"
+                  Margin="0,0,10,0"
+                  VerticalAlignment="Center">
+            <Border.Background>
+              <SolidColorBrush Color="{Binding IconColor}" Opacity="0.2" />
+            </Border.Background>
+            <Panel>
+              <icons:GameIcon Kind="{Binding IconKind}"
+                               Width="24" Height="24"
+                               IsVisible="{Binding IsUnlocked}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center">
+                <icons:GameIcon.Foreground>
+                  <SolidColorBrush Color="{Binding IconColor}" />
+                </icons:GameIcon.Foreground>
+              </icons:GameIcon>
+              <icons:GameIcon Kind="Lock"
+                               Width="24" Height="24"
+                               IsVisible="{Binding !IsUnlocked}"
+                               Foreground="#666666"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+            </Panel>
+          </Border>
+
+          <!-- Name -->
+          <TextBlock Grid.Row="0" Grid.Column="1"
+                     Text="{Binding DisplayName}"
+                     FontSize="15" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+
+          <!-- Beschreibung -->
+          <TextBlock Grid.Row="1" Grid.Column="1"
+                     Text="{Binding DisplayDescription}"
+                     FontSize="11"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" />
+
+          <!-- Unlock-Status: Freigeschaltet -->
+          <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                  Margin="0,8,0,0"
+                  CornerRadius="8"
+                  Padding="8,5"
+                  HorizontalAlignment="Stretch"
+                  IsVisible="{Binding IsUnlocked}">
+            <Border.Background>
+              <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
+            </Border.Background>
+            <StackPanel Orientation="Horizontal" Spacing="6"
+                        HorizontalAlignment="Center">
+              <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
+                               Foreground="#4CAF50" />
+              <TextBlock Text="{Binding UnlockText}"
+                         FontSize="12" FontWeight="SemiBold"
+                         Foreground="#4CAF50" />
+            </StackPanel>
+          </Border>
+
+          <!-- Unlock-Status: Gesperrt -->
+          <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                  Margin="0,8,0,0"
+                  CornerRadius="8"
+                  Padding="8,5"
+                  HorizontalAlignment="Stretch"
+                  IsVisible="{Binding !IsUnlocked}">
+            <Border.Background>
+              <SolidColorBrush Color="{DynamicResource CardColor}" Opacity="0.5" />
+            </Border.Background>
+            <StackPanel Orientation="Horizontal" Spacing="6"
+                        HorizontalAlignment="Center">
+              <icons:GameIcon Kind="Lock" Width="14" Height="14"
+                               Foreground="#888888" />
+              <TextBlock Text="{Binding UnlockText}"
+                         FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+          </Border>
+
+        </Grid>
+      </Border>
+    </DataTemplate>
   </UserControl.Resources>
 
   <!-- Animierter Shop-Hintergrund (Gold-Gradient, Münzen, Shimmer) -->
@@ -341,114 +440,14 @@
           </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_PowerUpList"
-                        ItemsSource="{Binding PowerUpItems}">
+                        ItemsSource="{Binding PowerUpItems}"
+                        ItemTemplate="{StaticResource PowerUpItemTemplate}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <WrapPanel Orientation="Horizontal"
                            HorizontalAlignment="Center" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="models:PowerUpDisplayItem">
-                <Border CornerRadius="12"
-                        Padding="12"
-                        Margin="6"
-                        MinWidth="200" MaxWidth="280"
-                        BoxShadow="0 2 8 0 #30000000"
-                        Opacity="{Binding CardOpacity}">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource CardColor}" />
-                  </Border.Background>
-                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
-
-                    <!-- Icon-Badge -->
-                    <Border Grid.Row="0" Grid.Column="0"
-                            Grid.RowSpan="2"
-                            Width="44" Height="44"
-                            CornerRadius="10"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center">
-                      <Border.Background>
-                        <SolidColorBrush Color="{Binding IconColor}" Opacity="0.2" />
-                      </Border.Background>
-                      <Panel>
-                        <!-- PowerUp-Icon (freigeschaltet) -->
-                        <icons:GameIcon Kind="{Binding IconKind}"
-                                         Width="24" Height="24"
-                                         IsVisible="{Binding IsUnlocked}"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center">
-                          <icons:GameIcon.Foreground>
-                            <SolidColorBrush Color="{Binding IconColor}" />
-                          </icons:GameIcon.Foreground>
-                        </icons:GameIcon>
-                        <!-- Schloss-Icon (gesperrt) -->
-                        <icons:GameIcon Kind="Lock"
-                                         Width="24" Height="24"
-                                         IsVisible="{Binding !IsUnlocked}"
-                                         Foreground="#666666"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center" />
-                      </Panel>
-                    </Border>
-
-                    <!-- Name -->
-                    <TextBlock Grid.Row="0" Grid.Column="1"
-                               Text="{Binding DisplayName}"
-                               FontSize="15" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                    <!-- Beschreibung -->
-                    <TextBlock Grid.Row="1" Grid.Column="1"
-                               Text="{Binding DisplayDescription}"
-                               FontSize="11"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextWrapping="Wrap" />
-
-                    <!-- Unlock-Status: Freigeschaltet -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,8,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsUnlocked}">
-                      <Border.Background>
-                        <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
-                                         Foreground="#4CAF50" />
-                        <TextBlock Text="{Binding UnlockText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#4CAF50" />
-                      </StackPanel>
-                    </Border>
-
-                    <!-- Unlock-Status: Gesperrt -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,8,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding !IsUnlocked}">
-                      <Border.Background>
-                        <SolidColorBrush Color="{DynamicResource CardColor}" Opacity="0.5" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <icons:GameIcon Kind="Lock" Width="14" Height="14"
-                                         Foreground="#888888" />
-                        <TextBlock Text="{Binding UnlockText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                      </StackPanel>
-                    </Border>
-
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
           </ItemsControl>
 
           <!-- ═══════════════════════════════════════════════
@@ -469,112 +468,14 @@
           </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_MechanicList"
-                        ItemsSource="{Binding MechanicItems}">
+                        ItemsSource="{Binding MechanicItems}"
+                        ItemTemplate="{StaticResource PowerUpItemTemplate}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <WrapPanel Orientation="Horizontal"
                            HorizontalAlignment="Center" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="models:PowerUpDisplayItem">
-                <Border CornerRadius="12"
-                        Padding="12"
-                        Margin="6"
-                        MinWidth="200" MaxWidth="280"
-                        BoxShadow="0 2 8 0 #30000000"
-                        Opacity="{Binding CardOpacity}">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource CardColor}" />
-                  </Border.Background>
-                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
-
-                    <!-- Icon-Badge -->
-                    <Border Grid.Row="0" Grid.Column="0"
-                            Grid.RowSpan="2"
-                            Width="44" Height="44"
-                            CornerRadius="10"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center">
-                      <Border.Background>
-                        <SolidColorBrush Color="{Binding IconColor}" Opacity="0.2" />
-                      </Border.Background>
-                      <Panel>
-                        <icons:GameIcon Kind="{Binding IconKind}"
-                                         Width="24" Height="24"
-                                         IsVisible="{Binding IsUnlocked}"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center">
-                          <icons:GameIcon.Foreground>
-                            <SolidColorBrush Color="{Binding IconColor}" />
-                          </icons:GameIcon.Foreground>
-                        </icons:GameIcon>
-                        <icons:GameIcon Kind="Lock"
-                                         Width="24" Height="24"
-                                         IsVisible="{Binding !IsUnlocked}"
-                                         Foreground="#666666"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center" />
-                      </Panel>
-                    </Border>
-
-                    <!-- Name -->
-                    <TextBlock Grid.Row="0" Grid.Column="1"
-                               Text="{Binding DisplayName}"
-                               FontSize="15" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                    <!-- Beschreibung -->
-                    <TextBlock Grid.Row="1" Grid.Column="1"
-                               Text="{Binding DisplayDescription}"
-                               FontSize="11"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextWrapping="Wrap" />
-
-                    <!-- Unlock-Status: Freigeschaltet -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,8,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsUnlocked}">
-                      <Border.Background>
-                        <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
-                                         Foreground="#4CAF50" />
-                        <TextBlock Text="{Binding UnlockText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#4CAF50" />
-                      </StackPanel>
-                    </Border>
-
-                    <!-- Unlock-Status: Gesperrt -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,8,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding !IsUnlocked}">
-                      <Border.Background>
-                        <SolidColorBrush Color="{DynamicResource CardColor}" Opacity="0.5" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <icons:GameIcon Kind="Lock" Width="14" Height="14"
-                                         Foreground="#888888" />
-                        <TextBlock Text="{Binding UnlockText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                      </StackPanel>
-                    </Border>
-
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
           </ItemsControl>
 
           <!-- ═══════════════════════════════════════════════

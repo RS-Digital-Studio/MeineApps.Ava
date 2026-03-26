@@ -29,7 +29,7 @@ public sealed class CustomizationService : ICustomizationService
     private readonly IPreferencesService _preferences;
     private readonly ICoinService _coinService;
     private readonly IPurchaseService _purchaseService;
-    private IGemService? _gemService;
+    private readonly Lazy<IGemService> _gemService;
     private SkinDefinition _playerSkin;
     private BombSkinDefinition _bombSkin;
     private ExplosionSkinDefinition _explosionSkin;
@@ -57,11 +57,12 @@ public sealed class CustomizationService : ICustomizationService
     public IReadOnlyList<VictoryDefinition> AvailableVictories => VictoryDefinitions.All;
     public IReadOnlyList<FrameDefinition> AvailableFrames => FrameDefinitions.All;
 
-    public CustomizationService(IPreferencesService preferences, ICoinService coinService, IPurchaseService purchaseService)
+    public CustomizationService(IPreferencesService preferences, ICoinService coinService, IPurchaseService purchaseService, Lazy<IGemService> gemService)
     {
         _preferences = preferences;
         _coinService = coinService;
         _purchaseService = purchaseService;
+        _gemService = gemService;
 
         // Gespeicherte Auswahl laden
         var savedSkinId = _preferences.Get(PLAYER_SKIN_KEY, "default");
@@ -108,9 +109,6 @@ public sealed class CustomizationService : ICustomizationService
         _ownedFrames = new HashSet<string>(ownedFrames.Split(',', StringSplitOptions.RemoveEmptyEntries));
     }
 
-    /// <summary>Lazy-Injection für IGemService (vermeidet zirkuläre DI)</summary>
-    public void SetGemService(IGemService gemService) => _gemService = gemService;
-
     // === Spieler-Skins ===
 
     public void SetPlayerSkin(string skinId)
@@ -146,12 +144,12 @@ public sealed class CustomizationService : ICustomizationService
     public bool TryPurchasePlayerSkinWithGems(string skinId)
     {
         if (_ownedPlayerSkins.Contains(skinId)) return false;
-        if (_gemService == null) return false;
+        if (_gemService.Value == null) return false;
 
         var skin = FindPlayerSkin(skinId);
         if (skin.GemPrice <= 0) return false;
 
-        if (!_gemService.TrySpendGems(skin.GemPrice)) return false;
+        if (!_gemService.Value.TrySpendGems(skin.GemPrice)) return false;
 
         _ownedPlayerSkins.Add(skinId);
         SaveOwnedPlayerSkins();

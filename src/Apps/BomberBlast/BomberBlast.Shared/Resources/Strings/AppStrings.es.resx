@@ -1023,28 +1023,58 @@
     <value>¡Maldición aleatoria por 10 segundos - cuidado!</value>
   </data>
   <data name="DiscoverIce" xml:space="preserve">
-    <value>Hielo</value>
+    <value>Suelo helado</value>
   </data>
   <data name="DiscoverIceDesc" xml:space="preserve">
-    <value>¡Suelo resbaladizo - deslizas sobre hielo!</value>
+    <value>Te deslizas sobre el hielo hasta chocar con un obstáculo. ¡Usa las paredes a tu favor!</value>
   </data>
   <data name="DiscoverConveyor" xml:space="preserve">
-    <value>Cinta transportadora</value>
+    <value>Cintas transportadoras</value>
   </data>
   <data name="DiscoverConveyorDesc" xml:space="preserve">
-    <value>¡Te empuja en la dirección de la flecha!</value>
+    <value>Las cintas transportadoras te mueven a ti y a las bombas en una dirección. ¡Fíjate en las flechas!</value>
   </data>
   <data name="DiscoverTeleporter" xml:space="preserve">
-    <value>Teletransportador</value>
+    <value>Teletransportadores</value>
   </data>
   <data name="DiscoverTeleporterDesc" xml:space="preserve">
-    <value>¡Teletransporta al portal emparejado!</value>
+    <value>Entra en un teletransportador para llegar al otro extremo al instante. ¡Las bombas también se teletransportan!</value>
   </data>
   <data name="DiscoverLavacrack" xml:space="preserve">
-    <value>Grieta de lava</value>
+    <value>Pozas de lava</value>
   </data>
   <data name="DiscoverLavacrackDesc" xml:space="preserve">
-    <value>¡Daño periódico de lava - observa el brillo!</value>
+    <value>La lava quema todo lo que toca. ¡Mantén la distancia y usa bombas para crear caminos seguros!</value>
+  </data>
+  <data name="DiscoverFallingceiling" xml:space="preserve">
+    <value>Techo derrumbándose</value>
+  </data>
+  <data name="DiscoverFallingceilingDesc" xml:space="preserve">
+    <value>El techo se derrumba periódicamente y destruye bloques. ¡Sigue moviéndote!</value>
+  </data>
+  <data name="DiscoverCurrent" xml:space="preserve">
+    <value>Corrientes de agua</value>
+  </data>
+  <data name="DiscoverCurrentDesc" xml:space="preserve">
+    <value>Las corrientes te ralentizan y te desvían. ¡Lucha contra ellas o aprovéchalas!</value>
+  </data>
+  <data name="DiscoverEarthquake" xml:space="preserve">
+    <value>Terremoto</value>
+  </data>
+  <data name="DiscoverEarthquakeDesc" xml:space="preserve">
+    <value>Los temblores periódicos destruyen bloques al azar y pueden abrir nuevos caminos.</value>
+  </data>
+  <data name="DiscoverPlatformgap" xml:space="preserve">
+    <value>Huecos en la plataforma</value>
+  </data>
+  <data name="DiscoverPlatformgapDesc" xml:space="preserve">
+    <value>Faltan algunas baldosas. ¡No caigas en los huecos! Las bombas no los cubren.</value>
+  </data>
+  <data name="DiscoverFog" xml:space="preserve">
+    <value>Niebla de guerra</value>
+  </data>
+  <data name="DiscoverFogDesc" xml:space="preserve">
+    <value>La niebla densa limita tu visión. ¡Los enemigos pueden esconderse en la niebla!</value>
   </data>
   <data name="SectionPowerUps" xml:space="preserve">
     <value>Habilidades</value>

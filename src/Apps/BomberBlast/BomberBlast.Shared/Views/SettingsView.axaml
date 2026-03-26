@@ -763,8 +763,8 @@
 
           </Grid>
 
-          <!-- Bottom Spacer (80dp fuer Ad-Banner + Navigation-Bar) -->
-          <Border Height="80" />
+          <!-- Bottom Spacer (System-Navigationsleiste) -->
+          <Border Height="16" />
 
         </StackPanel>
       </ScrollViewer>

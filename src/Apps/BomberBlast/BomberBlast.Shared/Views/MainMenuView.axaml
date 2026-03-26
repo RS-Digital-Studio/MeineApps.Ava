@@ -308,8 +308,7 @@
           </Grid>
 
           <!-- Herausforderungen (volle Breite) -->
-          <Panel IsVisible="{Binding IsDailyChallengeUnlocked}">
-            <Panel MinHeight="48">
+          <Panel IsVisible="{Binding IsDailyChallengeUnlocked}" MinHeight="48">
               <controls:GameButtonCanvas ButtonColor="#FF6B00" DamageLevel="0.5" ButtonSeed="23" />
               <Button Classes="Primary GameButton"
                       Background="Transparent"
@@ -326,7 +325,6 @@
                              FontSize="14" />
                 </StackPanel>
               </Button>
-            </Panel>
             <!-- "!" Badge wenn Herausforderungen/Missionen offen -->
             <Border IsVisible="{Binding IsDailyChallengeNew}"
                     Background="#FF2020"

@@ -23,11 +23,11 @@
       <Color x:Key="AccentColor">#22D3EE</Color>
       <Color x:Key="AccentHoverColor">#67E8F9</Color>
 
-      <!-- Feature Accent Colors -->
-      <Color x:Key="TimerAccentColor">#F59E0B</Color>
-      <Color x:Key="StopwatchAccentColor">#38E8FF</Color>
-      <Color x:Key="AlarmAccentColor">#A78BFA</Color>
-      <Color x:Key="PomodoroAccentColor">#EF4444</Color>
+      <!-- Feature Accent Colors (BomberBlast-spezifisch) -->
+      <Color x:Key="CombatAccentColor">#EF4444</Color>
+      <Color x:Key="PowerUpAccentColor">#38E8FF</Color>
+      <Color x:Key="CoinAccentColor">#F59E0B</Color>
+      <Color x:Key="GemAccentColor">#00BCD4</Color>
 
       <!-- Background Colors -->
       <Color x:Key="BackgroundColor">#141422</Color>
@@ -78,10 +78,13 @@
       <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />
       <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
 
-      <SolidColorBrush x:Key="TimerAccentBrush" Color="{DynamicResource TimerAccentColor}" />
-      <SolidColorBrush x:Key="StopwatchAccentBrush" Color="{DynamicResource StopwatchAccentColor}" />
-      <SolidColorBrush x:Key="AlarmAccentBrush" Color="{DynamicResource AlarmAccentColor}" />
-      <SolidColorBrush x:Key="PomodoroAccentBrush" Color="{DynamicResource PomodoroAccentColor}" />
+      <SolidColorBrush x:Key="CombatAccentBrush" Color="{DynamicResource CombatAccentColor}" />
+      <SolidColorBrush x:Key="PowerUpAccentBrush" Color="{DynamicResource PowerUpAccentColor}" />
+      <SolidColorBrush x:Key="CoinAccentBrush" Color="{DynamicResource CoinAccentColor}" />
+      <SolidColorBrush x:Key="GemAccentBrush" Color="{DynamicResource GemAccentColor}" />
+
+      <!-- Card Border -->
+      <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource BorderColor}" />
 
       <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}" />
       <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />

@@ -22,7 +22,7 @@ public sealed class DungeonService : IDungeonService
     private readonly ICoinService _coinService;
     private readonly IGemService _gemService;
     private readonly ICardService _cardService;
-    private IDungeonUpgradeService? _upgradeService;
+    private readonly Lazy<IDungeonUpgradeService> _upgradeService;
 
     private DungeonRunState? _runState;
     private DungeonStats _stats;
@@ -60,12 +60,14 @@ public sealed class DungeonService : IDungeonService
         IPreferencesService preferences,
         ICoinService coinService,
         IGemService gemService,
-        ICardService cardService)
+        ICardService cardService,
+        Lazy<IDungeonUpgradeService> upgradeService)
     {
         _preferences = preferences;
         _coinService = coinService;
         _gemService = gemService;
         _cardService = cardService;
+        _upgradeService = upgradeService;
 
         // Aktiven Run laden (falls App geschlossen wurde während Run)
         _runState = LoadRunState();
@@ -107,14 +109,6 @@ public sealed class DungeonService : IDungeonService
         catch { /* Migration-Fehler ignorieren */ }
     }
 
-    /// <summary>
-    /// Lazy-Injection: IDungeonUpgradeService wird nach ServiceProvider-Build gesetzt
-    /// (vermeidet zirkuläre DI: DungeonService ↔ DungeonUpgradeService)
-    /// </summary>
-    public void SetUpgradeService(IDungeonUpgradeService upgradeService)
-    {
-        _upgradeService = upgradeService;
-    }
 
     // === Eintritts-Prüfungen ===
 
@@ -234,9 +228,9 @@ public sealed class DungeonService : IDungeonService
         }
 
         // Permanentes Upgrade: BossGoldBonus (+25%/+50% Boss-Belohnungen)
-        if (isBoss && _upgradeService != null)
+        if (isBoss)
         {
-            int bossGoldLevel = _upgradeService.GetUpgradeLevel(DungeonUpgradeCatalog.BossGoldBonus);
+            int bossGoldLevel = _upgradeService.Value.GetUpgradeLevel(DungeonUpgradeCatalog.BossGoldBonus);
             if (bossGoldLevel > 0)
             {
                 float bossMultiplier = 1f + bossGoldLevel * 0.25f;
@@ -288,9 +282,9 @@ public sealed class DungeonService : IDungeonService
 
         // Permanentes Upgrade: CardDropBoost (+15%/+30% Karten-Drop-Chance)
         // (schon in CalculateFloorReward berücksichtigt wäre komplex, stattdessen Bonus-Drop-Chance)
-        if (reward.CardDrop < 0 && _upgradeService != null)
+        if (reward.CardDrop < 0)
         {
-            int cardDropLevel = _upgradeService.GetUpgradeLevel(DungeonUpgradeCatalog.CardDropBoost);
+            int cardDropLevel = _upgradeService.Value.GetUpgradeLevel(DungeonUpgradeCatalog.CardDropBoost);
             if (cardDropLevel > 0)
             {
                 double bonusChance = cardDropLevel * 0.15;
@@ -359,7 +353,7 @@ public sealed class DungeonService : IDungeonService
 
         // DungeonCoins auszahlen (permanente Upgrade-Währung)
         if (_runState.CollectedDungeonCoins > 0)
-            _upgradeService?.AddDungeonCoins(_runState.CollectedDungeonCoins);
+            _upgradeService.Value.AddDungeonCoins(_runState.CollectedDungeonCoins);
 
         // Karten hinzufügen
         foreach (var cardType in _runState.CollectedCardDrops)
@@ -424,8 +418,7 @@ public sealed class DungeonService : IDungeonService
 
         // Permanentes Upgrade: ExtraBuffChoice → 4 statt 3 Optionen
         int choiceCount = 3;
-        if (_upgradeService != null &&
-            _upgradeService.GetUpgradeLevel(DungeonUpgradeCatalog.ExtraBuffChoice) >= 1)
+        if (_upgradeService.Value.GetUpgradeLevel(DungeonUpgradeCatalog.ExtraBuffChoice) >= 1)
             choiceCount = 4;
 
         // Seed basierend auf Run-Seed + Floor für Determinismus

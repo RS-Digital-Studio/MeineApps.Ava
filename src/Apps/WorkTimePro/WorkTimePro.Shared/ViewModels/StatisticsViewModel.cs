@@ -364,6 +364,9 @@ public sealed partial class StatisticsViewModel : ViewModelBase
                 case "CSV":
                     filePath = await _exportService.ExportRangeToCsvAsync(StartDate, EndDate);
                     break;
+                case "ICS":
+                    filePath = await _exportService.ExportRangeToIcsAsync(StartDate, EndDate);
+                    break;
             }
 
             if (!string.IsNullOrEmpty(filePath))

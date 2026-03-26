@@ -101,6 +101,7 @@ public static class MonthlyBarChartVisualization
                 float cornerR = Math.Min(3f, barW / 2f);
                 canvas.DrawRoundRect(new SKRect(x - barW / 2f, barTop, x + barW / 2f, chartBottom),
                     cornerR, cornerR, _barPaint);
+                _barPaint.Shader?.Dispose();
                 _barPaint.Shader = null;
 
                 // Wert über Balken

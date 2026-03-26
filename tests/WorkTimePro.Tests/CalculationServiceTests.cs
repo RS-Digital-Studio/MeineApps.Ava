@@ -55,6 +55,8 @@ public class CalculationServiceTests
             .Returns(Task.CompletedTask);
         db.GetWorkDayAsync(Arg.Any<DateTime>())
             .Returns(Task.FromResult<WorkDay?>(null));
+        db.GetWorkDaysAsync(Arg.Any<DateTime>(), Arg.Any<DateTime>())
+            .Returns(Task.FromResult(new List<WorkDay>()));
         return db;
     }
 

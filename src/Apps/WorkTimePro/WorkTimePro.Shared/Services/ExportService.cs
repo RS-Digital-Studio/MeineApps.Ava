@@ -23,12 +23,15 @@ public sealed class ExportService : IExportService
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;
     private readonly IFileShareService _fileShareService;
+    private readonly ICalendarExportService _calendarExport;
 
-    public ExportService(IDatabaseService database, ICalculationService calculation, IFileShareService fileShareService)
+    public ExportService(IDatabaseService database, ICalculationService calculation,
+        IFileShareService fileShareService, ICalendarExportService calendarExport)
     {
         _database = database;
         _calculation = calculation;
         _fileShareService = fileShareService;
+        _calendarExport = calendarExport;
     }
 
     private string ExportDirectory => _fileShareService.GetExportDirectory("WorkTimePro");
@@ -48,7 +51,7 @@ public sealed class ExportService : IExportService
         var fileName = $"Arbeitszeit_{start:yyyy-MM-dd}_bis_{end:yyyy-MM-dd}.pdf";
         var filePath = Path.Combine(ExportDirectory, fileName);
 
-        var document = new PdfDocument();
+        using var document = new PdfDocument();
         document.Info.Title = $"{AppStrings.ExportWorkTimeReport} - {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}";
         document.Info.Author = "WorkTimePro";
 
@@ -184,7 +187,7 @@ public sealed class ExportService : IExportService
         var fileName = $"Jahresuebersicht_{year}.pdf";
         var filePath = Path.Combine(ExportDirectory, fileName);
 
-        var document = new PdfDocument();
+        using var document = new PdfDocument();
         document.Info.Title = $"{AppStrings.ExportYearOverviewTitle} {year}";
         document.Info.Author = "WorkTimePro";
 
@@ -414,6 +417,16 @@ public sealed class ExportService : IExportService
 
     #endregion
 
+    #region ICS (Kalender-Export)
+
+    public Task<string> ExportRangeToIcsAsync(DateTime start, DateTime end)
+        => _calendarExport.ExportRangeToIcsAsync(start, end);
+
+    public Task<string> ExportYearToIcsAsync(int year)
+        => _calendarExport.ExportYearToIcsAsync(year);
+
+    #endregion
+
     #region Share
 
     public async Task ShareFileAsync(string filePath)
@@ -427,6 +440,7 @@ public sealed class ExportService : IExportService
             ".pdf" => "application/pdf",
             ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             ".csv" => "text/csv",
+            ".ics" => "text/calendar",
             _ => "application/octet-stream"
         };
 

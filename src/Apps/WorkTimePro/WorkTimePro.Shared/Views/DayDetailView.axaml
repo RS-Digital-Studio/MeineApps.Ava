@@ -20,7 +20,8 @@
       <StackPanel Orientation="Horizontal" Spacing="8">
         <Button AutomationProperties.AutomationId="DayDetail_BtnBack"
                 Classes="Text"
-                Command="{Binding GoBackCommand}">
+                Command="{Binding GoBackCommand}"
+                MinHeight="44" MinWidth="44">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
                            Foreground="{DynamicResource PrimaryBrush}" />
         </Button>
@@ -219,12 +220,14 @@
                                        IsVisible="{Binding HasNote}" />
                           </StackPanel>
                           <Button Grid.Column="2" Classes="Text"
+                                  MinWidth="44" MinHeight="44"
                                   Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).EditEntryCommand}"
                                   CommandParameter="{Binding .}">
                             <mi:MaterialIcon Kind="Pencil" Width="16" Height="16"
                                              Foreground="{DynamicResource PrimaryBrush}" />
                           </Button>
                           <Button Grid.Column="3" Classes="Text"
+                                  MinWidth="44" MinHeight="44"
                                   Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).DeleteEntryCommand}"
                                   CommandParameter="{Binding .}">
                             <mi:MaterialIcon Kind="Delete" Width="16" Height="16"
@@ -321,6 +324,7 @@
                                            Margin="4,0" />
                           <!-- Edit-Button (nur manuelle Pausen) -->
                           <Button Grid.Column="3" Classes="Text"
+                                  MinWidth="44" MinHeight="44"
                                   Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).EditPauseCommand}"
                                   CommandParameter="{Binding .}"
                                   IsVisible="{Binding !IsAutoPause}">
@@ -328,6 +332,7 @@
                                              Foreground="{DynamicResource PrimaryBrush}" />
                           </Button>
                           <Button Grid.Column="4" Classes="Text"
+                                  MinWidth="44" MinHeight="44"
                                   Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).DeletePauseCommand}"
                                   CommandParameter="{Binding .}"
                                   IsVisible="{Binding !IsAutoPause}">
@@ -612,6 +617,7 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:StatusOption">
                 <Button Width="170" Margin="4"
+                        MinHeight="44"
                         Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).SelectStatusCommand}"
                         CommandParameter="{Binding Status}"
                         HorizontalContentAlignment="Left"

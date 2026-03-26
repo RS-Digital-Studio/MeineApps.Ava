@@ -130,11 +130,11 @@
   <data name="MaxDailyHoursExceeded" xml:space="preserve"><value>Giornata superiore a {0}h</value></data>
   <data name="MinBreakNotMet" xml:space="preserve"><value>Pausa minima di {0} min richiesta dopo {1}h di lavoro</value></data>
   <data name="MinRestNotMet" xml:space="preserve"><value>Riposo tra i turni inferiore a {0}h</value></data>
-  <data name="Monday" xml:space="preserve"><value>Lunedi</value></data>
-  <data name="Tuesday" xml:space="preserve"><value>Martedi</value></data>
-  <data name="Wednesday" xml:space="preserve"><value>Mercoledi</value></data>
-  <data name="Thursday" xml:space="preserve"><value>Giovedi</value></data>
-  <data name="Friday" xml:space="preserve"><value>Venerdi</value></data>
+  <data name="Monday" xml:space="preserve"><value>Lunedì</value></data>
+  <data name="Tuesday" xml:space="preserve"><value>Martedì</value></data>
+  <data name="Wednesday" xml:space="preserve"><value>Mercoledì</value></data>
+  <data name="Thursday" xml:space="preserve"><value>Giovedì</value></data>
+  <data name="Friday" xml:space="preserve"><value>Venerdì</value></data>
   <data name="Saturday" xml:space="preserve"><value>Sabato</value></data>
   <data name="Sunday" xml:space="preserve"><value>Domenica</value></data>
   <data name="Mon" xml:space="preserve"><value>Lu</value></data>
@@ -544,6 +544,7 @@
   <data name="ExportPdfDesc" xml:space="preserve"><value>Layout professionale con tabelle</value></data>
   <data name="ExportExcelDesc" xml:space="preserve"><value>Foglio di calcolo modificabile (XLSX)</value></data>
   <data name="ExportCsvDesc" xml:space="preserve"><value>Formato dati universale</value></data>
+  <data name="ExportIcsDesc" xml:space="preserve"><value>File calendario per Google, Apple, Outlook</value></data>
   <data name="DayNote" xml:space="preserve"><value>Nota del giorno</value></data>
   <data name="DayNotePlaceholder" xml:space="preserve"><value>Su cosa hai lavorato oggi?</value></data>
   <data name="WarningSixMonthAvgExceeds" xml:space="preserve">

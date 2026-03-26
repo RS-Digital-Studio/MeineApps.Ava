@@ -532,6 +532,7 @@
   <data name="ExportPdfDesc" xml:space="preserve"><value>Layout profissional com tabelas</value></data>
   <data name="ExportExcelDesc" xml:space="preserve"><value>Planilha editável (XLSX)</value></data>
   <data name="ExportCsvDesc" xml:space="preserve"><value>Formato de dados universal</value></data>
+  <data name="ExportIcsDesc" xml:space="preserve"><value>Arquivo de calendário para Google, Apple, Outlook</value></data>
   <data name="DayNote" xml:space="preserve"><value>Nota do dia</value></data>
   <data name="DayNotePlaceholder" xml:space="preserve"><value>No que você trabalhou hoje?</value></data>
   <data name="CloudBackupNotAvailable" xml:space="preserve">

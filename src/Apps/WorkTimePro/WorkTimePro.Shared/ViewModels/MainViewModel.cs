@@ -319,7 +319,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsSettingsActive));
 
         // Daten für den jeweiligen Tab neu laden
-        _ = LoadTabDataAsync(value);
+        _ = LoadTabDataAsync(value).ContinueWith(t =>
+        {
+            if (t.IsFaulted)
+                MessageRequested?.Invoke(AppStrings.Error, t.Exception?.InnerException?.Message ?? "Tab-Ladefehler");
+        }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     private async Task LoadTabDataAsync(int tab)
@@ -356,9 +360,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private string _statusText = "";
-
-    [ObservableProperty]
-    private string _statusIcon = Icons.Play;
 
     [ObservableProperty]
     private IBrush _statusColor = s_statusIdleBrush;
@@ -907,19 +908,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             case TrackingStatus.Idle:
                 StatusText = _localization.GetString("Status_Idle") ?? AppStrings.Status_Idle;
-                StatusIcon = Icons.Play;
                 StatusColor = s_statusIdleBrush;
                 break;
 
             case TrackingStatus.Working:
                 StatusText = _localization.GetString("Status_Working") ?? AppStrings.Status_Working;
-                StatusIcon = Icons.Stop;
                 StatusColor = s_statusActiveBrush;
                 break;
 
             case TrackingStatus.OnBreak:
                 StatusText = _localization.GetString("Status_OnBreak") ?? AppStrings.Status_OnBreak;
-                StatusIcon = Icons.Play;
                 StatusColor = s_statusPausedBrush;
                 break;
         }

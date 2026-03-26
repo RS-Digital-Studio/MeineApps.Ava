@@ -34,25 +34,7 @@ public sealed class CalculationService : ICalculationService
         }
 
         // Brutto-Arbeitszeit berechnen
-        var totalMinutes = 0;
-        TimeEntry? lastCheckIn = null;
-        DateTime? firstCheckIn = null;
-        DateTime? lastCheckOut = null;
-
-        foreach (var entry in entries.OrderBy(e => e.Timestamp))
-        {
-            if (entry.Type == EntryType.CheckIn)
-            {
-                lastCheckIn = entry;
-                firstCheckIn ??= entry.Timestamp;
-            }
-            else if (entry.Type == EntryType.CheckOut && lastCheckIn != null)
-            {
-                totalMinutes += (int)(entry.Timestamp - lastCheckIn.Timestamp).TotalMinutes;
-                lastCheckOut = entry.Timestamp;
-                lastCheckIn = null;
-            }
-        }
+        var (totalMinutes, firstCheckIn, lastCheckOut) = CalculateBruttoMinutes(entries);
 
         workDay.FirstCheckIn = firstCheckIn;
         workDay.LastCheckOut = lastCheckOut;
@@ -93,7 +75,7 @@ public sealed class CalculationService : ICalculationService
     {
         var manualMinutes = pauses
             .Where(p => !p.IsAutoPause && p.EndTime != null)
-            .Sum(p => (int)p.Duration.TotalMinutes);
+            .Sum(p => (int)Math.Round(p.Duration.TotalMinutes));
 
         workDay.ManualPauseMinutes = manualMinutes;
     }
@@ -119,24 +101,14 @@ public sealed class CalculationService : ICalculationService
         }
 
         // Brutto-Arbeitszeit berechnen (ohne Pausen)
-        var bruttoMinutes = 0;
-        TimeEntry? lastCheckIn = null;
-
-        foreach (var entry in entries.OrderBy(e => e.Timestamp))
-        {
-            if (entry.Type == EntryType.CheckIn)
-                lastCheckIn = entry;
-            else if (entry.Type == EntryType.CheckOut && lastCheckIn != null)
-            {
-                bruttoMinutes += (int)(entry.Timestamp - lastCheckIn.Timestamp).TotalMinutes;
-                lastCheckIn = null;
-            }
-        }
+        var (bruttoMinutes, _, _) = CalculateBruttoMinutes(entries);
 
         // Laufende Arbeitszeit berücksichtigen (noch eingecheckt, kein CheckOut)
-        if (lastCheckIn != null)
+        var lastCheckIn = entries.LastOrDefault(e => e.Type == EntryType.CheckIn);
+        var lastCheckOut = entries.LastOrDefault(e => e.Type == EntryType.CheckOut);
+        if (lastCheckIn != null && (lastCheckOut == null || lastCheckIn.Timestamp > lastCheckOut.Timestamp))
         {
-            bruttoMinutes += (int)(DateTime.Now - lastCheckIn.Timestamp).TotalMinutes;
+            bruttoMinutes += (int)Math.Round((DateTime.Now - lastCheckIn.Timestamp).TotalMinutes);
         }
 
         // Gesetzlich vorgeschriebene Pause
@@ -364,12 +336,27 @@ public sealed class CalculationService : ICalculationService
 
     public async Task<double> GetWeekProgressAsync()
     {
-        var week = await CalculateWeekAsync(DateTime.Today);
+        // Direkte Berechnung statt volle Woche laden
+        var today = DateTime.Today;
+        var dayOfWeek = ((int)today.DayOfWeek + 6) % 7;
+        var monday = today.AddDays(-dayOfWeek);
+        var sunday = monday.AddDays(6);
 
-        if (week.TargetWorkMinutes == 0)
+        var settings = await _database.GetSettingsAsync();
+        var workDays = await _database.GetWorkDaysAsync(monday, sunday);
+
+        var actualMinutes = workDays.Sum(d => d.ActualWorkMinutes);
+        var targetMinutes = 0;
+        for (var d = monday; d <= sunday; d = d.AddDays(1))
+        {
+            if (settings.IsWorkDay(d.DayOfWeek))
+                targetMinutes += settings.GetDailyMinutesForDay(d.DayOfWeek);
+        }
+
+        if (targetMinutes == 0)
             return 0;
 
-        return Math.Min(100, (week.ActualWorkMinutes * 100.0) / week.TargetWorkMinutes);
+        return Math.Min(100, (actualMinutes * 100.0) / targetMinutes);
     }
 
     public async Task<List<string>> CheckLegalComplianceAsync(WorkDay workDay)
@@ -457,5 +444,34 @@ public sealed class CalculationService : ICalculationService
         var firstWeekDay = firstMonday.AddDays((weekNumber - 1) * 7);
 
         return firstWeekDay;
+    }
+
+    /// <summary>
+    /// Berechnet Brutto-Arbeitsminuten aus CheckIn/CheckOut-Paaren.
+    /// Entries müssen nach Timestamp sortiert sein (DB liefert bereits sortiert).
+    /// </summary>
+    private static (int totalMinutes, DateTime? firstCheckIn, DateTime? lastCheckOut) CalculateBruttoMinutes(List<TimeEntry> entries)
+    {
+        var totalMinutes = 0;
+        TimeEntry? lastCheckIn = null;
+        DateTime? firstCheckIn = null;
+        DateTime? lastCheckOut = null;
+
+        foreach (var entry in entries)
+        {
+            if (entry.Type == EntryType.CheckIn)
+            {
+                lastCheckIn = entry;
+                firstCheckIn ??= entry.Timestamp;
+            }
+            else if (entry.Type == EntryType.CheckOut && lastCheckIn != null)
+            {
+                totalMinutes += (int)Math.Round((entry.Timestamp - lastCheckIn.Timestamp).TotalMinutes);
+                lastCheckOut = entry.Timestamp;
+                lastCheckIn = null;
+            }
+        }
+
+        return (totalMinutes, firstCheckIn, lastCheckOut);
     }
 }

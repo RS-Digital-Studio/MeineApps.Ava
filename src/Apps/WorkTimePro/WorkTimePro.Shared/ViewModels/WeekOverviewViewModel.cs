@@ -133,11 +133,12 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase
             var sunday = monday.AddDays(6);
             DateRangeDisplay = $"{monday.ToString("d")} - {sunday.ToString("d")}";
 
-            // Load current week
-            CurrentWeek = await _calculation.CalculateWeekAsync(SelectedDate);
-
-            // Load previous week
-            PreviousWeek = await _calculation.CalculateWeekAsync(SelectedDate.AddDays(-7));
+            // Beide Wochen parallel laden
+            var currentTask = _calculation.CalculateWeekAsync(SelectedDate);
+            var previousTask = _calculation.CalculateWeekAsync(SelectedDate.AddDays(-7));
+            await Task.WhenAll(currentTask, previousTask);
+            CurrentWeek = currentTask.Result;
+            PreviousWeek = previousTask.Result;
 
             // Update UI (überschreibt Fallback-Werte mit exakten Berechnungen)
             WeekDisplay = CurrentWeek.WeekDisplay;
@@ -212,8 +213,8 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase
                 return;
             }
 
-            var settings = await _database.GetSettingsAsync();
-            var weekTargetMinutes = (int)(settings.WeeklyHours * 60);
+            // Individuelle Tagesstunden aus CurrentWeek verwenden (statt pauschalem WeeklyHours)
+            var weekTargetMinutes = CurrentWeek.TargetWorkMinutes;
             var weekActualMinutes = CurrentWeek.Days.Sum(d => d.ActualWorkMinutes);
             var remainingMinutes = weekTargetMinutes - weekActualMinutes;
 

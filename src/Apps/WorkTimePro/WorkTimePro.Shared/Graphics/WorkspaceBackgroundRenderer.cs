@@ -58,6 +58,7 @@ public sealed class WorkspaceBackgroundRenderer : IDisposable
         PathEffect = SKPathEffect.CreateDash(new[] { 6f, 8f }, 0f)
     };
     private readonly SKPaint _vignettePaint = new() { IsAntialias = false, Style = SKPaintStyle.Fill };
+    private readonly SKPaint _dotTilePaint = new() { IsAntialias = false };
 
     // =====================================================================
     // Shader-Cache mit Bounds-Check
@@ -66,6 +67,10 @@ public sealed class WorkspaceBackgroundRenderer : IDisposable
     private SKShader? _bgShader;
     private SKShader? _vignetteShader;
     private float _cachedW, _cachedH;
+
+    // DotMatrix-Kachel-Cache (vorgerendert, statt ~900 DrawCircle/Frame)
+    private SKBitmap? _dotTileBitmap;
+    private float _dotTileW, _dotTileH;
 
     // =====================================================================
     // Spawn-Timer fuer Calendar-Blocks
@@ -158,17 +163,36 @@ public sealed class WorkspaceBackgroundRenderer : IDisposable
         const float spacing = 24f;
         const float dotRadius = 0.8f;
 
-        _dotPaint.Color = DotColor;
+        // Kachel bei Größenänderung neu erstellen (einmal, nicht pro Frame)
+        if (_dotTileBitmap == null ||
+            MathF.Abs(bounds.Width - _dotTileW) > 1f ||
+            MathF.Abs(bounds.Height - _dotTileH) > 1f)
+        {
+            _dotTileBitmap?.Dispose();
 
-        // Langsames vertikales Driften (1.5px/s) - wie ein sich scrollender Kalender
+            // Kachel mit einer Spalte Überschuss (für Drift-Scrolling)
+            int tileW = (int)MathF.Ceiling(bounds.Width) + 1;
+            int tileH = (int)MathF.Ceiling(spacing) + 1;
+            _dotTileBitmap = new SKBitmap(tileW, tileH, SKColorType.Rgba8888, SKAlphaType.Premul);
+
+            using var tileCanvas = new SKCanvas(_dotTileBitmap);
+            tileCanvas.Clear(SKColors.Transparent);
+            _dotPaint.Color = DotColor;
+
+            for (float x = 0; x < tileW; x += spacing)
+            {
+                tileCanvas.DrawCircle(x, spacing / 2f, dotRadius, _dotPaint);
+            }
+
+            _dotTileW = bounds.Width;
+            _dotTileH = bounds.Height;
+        }
+
+        // Langsames vertikales Driften (1.5px/s) - Kachel tilen statt einzelne Kreise
         float drift = (time * 1.5f) % spacing;
-
         for (float y = -spacing + drift; y < bounds.Height + spacing; y += spacing)
         {
-            for (float x = 0; x < bounds.Width; x += spacing)
-            {
-                canvas.DrawCircle(x, y, dotRadius, _dotPaint);
-            }
+            canvas.DrawBitmap(_dotTileBitmap, 0, y, _dotTilePaint);
         }
     }
 
@@ -325,6 +349,8 @@ public sealed class WorkspaceBackgroundRenderer : IDisposable
         _linePaint.Dispose();
 
         _vignettePaint.Dispose();
+        _dotTilePaint.Dispose();
+        _dotTileBitmap?.Dispose();
 
         _bgShader?.Dispose();
         _vignetteShader?.Dispose();

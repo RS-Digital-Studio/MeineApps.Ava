@@ -2633,6 +2633,12 @@ namespace WorkTimePro.Resources.Strings {
             }
         }
 
+        internal static string ExportIcsDesc {
+            get {
+                return ResourceManager.GetString("ExportIcsDesc", resourceCulture);
+            }
+        }
+
         internal static string DayNote {
             get {
                 return ResourceManager.GetString("DayNote", resourceCulture);

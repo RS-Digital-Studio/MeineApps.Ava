@@ -129,8 +129,8 @@ public sealed class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 50);
 
             CurrentProvider = CloudProvider.GoogleDrive;
-            IsAuthenticated = true;
-            UserEmail = "user@gmail.com"; // Placeholder
+            IsAuthenticated = false; // Cloud-API noch nicht integriert
+            UserEmail = "";
 
             ProgressChanged?.Invoke(this, 100);
 
@@ -158,8 +158,8 @@ public sealed class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 50);
 
             CurrentProvider = CloudProvider.OneDrive;
-            IsAuthenticated = true;
-            UserEmail = "user@outlook.com"; // Placeholder
+            IsAuthenticated = false; // Cloud-API noch nicht integriert
+            UserEmail = "";
 
             ProgressChanged?.Invoke(this, 100);
 
@@ -502,11 +502,35 @@ public sealed class BackupService : IBackupService
 
             ProgressChanged?.Invoke(this, 10);
 
+            // Größenlimit VOR dem Einlesen prüfen (verhindert OOM bei riesigen Dateien)
+            var fileSize = new FileInfo(filePath).Length;
+            if (fileSize > 50 * 1024 * 1024)
+                return false;
+
             var json = await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
+
             var backupData = JsonSerializer.Deserialize<BackupData>(json, s_jsonReadOptions);
 
             if (backupData == null)
                 return false;
+
+            // Schema-Validierung: Pflichtfelder und Anzahl-Limits
+            if (backupData.WorkDays?.Count > 50_000 ||
+                backupData.TimeEntries?.Count > 200_000 ||
+                backupData.PauseEntries?.Count > 200_000 ||
+                backupData.VacationEntries?.Count > 10_000)
+                return false;
+
+            // FK-Integrität prüfen: TimeEntry.WorkDayId muss in WorkDays existieren
+            if (backupData.WorkDays != null && backupData.TimeEntries != null)
+            {
+                var workDayIds = new HashSet<int>(backupData.WorkDays.Select(w => w.Id));
+                if (backupData.TimeEntries.Any(t => !workDayIds.Contains(t.WorkDayId)))
+                    return false;
+                if (backupData.PauseEntries != null &&
+                    backupData.PauseEntries.Any(p => !workDayIds.Contains(p.WorkDayId)))
+                    return false;
+            }
 
             ProgressChanged?.Invoke(this, 30);
 

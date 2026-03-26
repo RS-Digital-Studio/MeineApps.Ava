@@ -109,6 +109,7 @@ public static class WeeklyWorkChartVisualization
                 float cornerR = Math.Min(4f, barW / 2f);
                 canvas.DrawRoundRect(new SKRect(x - barW / 2f, barTop, x + barW / 2f, chartBottom),
                     cornerR, cornerR, _barPaint);
+                _barPaint.Shader?.Dispose();
                 _barPaint.Shader = null;
 
                 // Wert über dem Balken

@@ -127,6 +127,7 @@ public static class WeekdayRadialVisualization
             barPath.ArcTo(innerArcRect, angleDeg + halfSweep, -halfSweep * 2f, false);
             barPath.Close();
             canvas.DrawPath(barPath, _barPaint);
+            _barPaint.Shader?.Dispose();
             _barPaint.Shader = null;
 
             // Stundenwert am Ende des Balkens

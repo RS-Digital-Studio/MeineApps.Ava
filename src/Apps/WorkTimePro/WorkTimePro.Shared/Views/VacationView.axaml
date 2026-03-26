@@ -19,7 +19,8 @@
       <Grid ColumnDefinitions="Auto,Auto,*,Auto">
         <Button Grid.Column="0" Classes="Text"
                 AutomationProperties.AutomationId="Vacation_BtnBack"
-                Command="{Binding GoBackCommand}">
+                Command="{Binding GoBackCommand}"
+                MinHeight="44" MinWidth="44">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
                            Foreground="{DynamicResource PrimaryBrush}" />
         </Button>
@@ -216,6 +217,7 @@
                              Foreground="{DynamicResource PrimaryBrush}"
                              VerticalAlignment="Center" />
                   <Button Grid.Column="3" Classes="Text"
+                          MinWidth="44" MinHeight="44"
                           Command="{Binding $parent[UserControl].((vm:VacationViewModel)DataContext).DeleteVacationCommand}"
                           CommandParameter="{Binding .}">
                     <mi:MaterialIcon Kind="Delete" Width="16" Height="16"

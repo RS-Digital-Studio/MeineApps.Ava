@@ -23,6 +23,10 @@ public partial class TodayView : UserControl
     // ViewModel-Referenz fuer sauberes Event-Handling
     private MainViewModel? _viewModel;
 
+    // Gecachte TimeBlocks (vermeidet List + LINQ + ToArray bei jedem PaintSurface im 1s-Takt)
+    private DayTimelineVisualization.TimeBlock[]? _cachedTimeBlocks;
+    private bool _timeBlocksDirty = true;
+
     public TodayView()
     {
         InitializeComponent();
@@ -60,6 +64,7 @@ public partial class TodayView : UserControl
             or nameof(MainViewModel.CurrentStatus)
             or nameof(MainViewModel.CurrentWorkTime))
         {
+            _timeBlocksDirty = true;
             TimelineCanvas?.InvalidateSurface();
         }
 
@@ -206,8 +211,13 @@ public partial class TodayView : UserControl
 
         if (DataContext is not MainViewModel vm) return;
 
-        // TimeEntries in TimeBlocks konvertieren (CheckIn/CheckOut-Paare -> Arbeitsbloecke)
-        var blocks = BuildTimeBlocks(vm);
+        // TimeBlocks nur bei Datenänderung neu berechnen (nicht bei jedem 1s-Repaint)
+        if (_timeBlocksDirty || _cachedTimeBlocks == null)
+        {
+            _cachedTimeBlocks = BuildTimeBlocks(vm);
+            _timeBlocksDirty = false;
+        }
+        var blocks = _cachedTimeBlocks;
         float currentHour = DateTime.Now.Hour + DateTime.Now.Minute / 60f;
 
         DayTimelineVisualization.Render(canvas, bounds, blocks, currentHour);

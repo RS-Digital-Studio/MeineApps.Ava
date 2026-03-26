@@ -459,12 +459,13 @@ public sealed class TimeTrackingService : ITimeTrackingService
         var entries = await _database.GetTimeEntriesAsync(today.Id);
         var pauses = await _database.GetPauseEntriesAsync(today.Id);
 
-        // === Arbeitszeit berechnen (gleiche Logik wie GetCurrentWorkTimeAsync) ===
+        // === Arbeitszeit berechnen (DB liefert bereits nach Timestamp sortiert) ===
         var totalWork = TimeSpan.Zero;
         TimeEntry? lastCheckIn = null;
 
-        foreach (var entry in entries.OrderBy(e => e.Timestamp))
+        for (var i = 0; i < entries.Count; i++)
         {
+            var entry = entries[i];
             if (entry.Type == EntryType.CheckIn)
             {
                 lastCheckIn = entry;
@@ -485,31 +486,35 @@ public sealed class TimeTrackingService : ITimeTrackingService
         // ALLE Pausen abziehen (manuell + auto) für korrekte Netto-Arbeitszeit.
         // Die PauseTime-Anzeige weiter unten zeigt nur manuelle Pausen (ohne Auto-Pause),
         // weil Auto-Pause separat in der TodayView als Warnung angezeigt wird.
-        var totalPauseMinutes = pauses
-            .Where(p => p.EndTime != null)
-            .Sum(p => p.Duration.TotalMinutes);
+        var totalPauseMinutes = 0.0;
+        var manualPauseMinutes = 0.0;
+        PauseEntry? activePause = null;
+
+        for (var i = 0; i < pauses.Count; i++)
+        {
+            var p = pauses[i];
+            if (p.EndTime == null)
+            {
+                activePause = p;
+                continue;
+            }
+            totalPauseMinutes += p.Duration.TotalMinutes;
+            if (!p.IsAutoPause)
+                manualPauseMinutes += p.Duration.TotalMinutes;
+        }
 
         // Aktive Pause
-        var activePause = pauses.FirstOrDefault(p => p.EndTime == null);
         if (activePause != null)
         {
-            totalPauseMinutes += (DateTime.Now - activePause.StartTime).TotalMinutes;
+            var activeDuration = (DateTime.Now - activePause.StartTime).TotalMinutes;
+            totalPauseMinutes += activeDuration;
+            manualPauseMinutes += activeDuration;
         }
 
         var workTime = totalWork - TimeSpan.FromMinutes(totalPauseMinutes);
         if (workTime < TimeSpan.Zero)
             workTime = TimeSpan.Zero;
         _cachedWorkTime = workTime;
-
-        // === Pausenzeit berechnen (gleiche Logik wie GetCurrentPauseTimeAsync) ===
-        var manualPauseMinutes = pauses
-            .Where(p => !p.IsAutoPause && p.EndTime != null)
-            .Sum(p => p.Duration.TotalMinutes);
-
-        if (activePause != null)
-        {
-            manualPauseMinutes += (DateTime.Now - activePause.StartTime).TotalMinutes;
-        }
 
         var pauseTime = TimeSpan.FromMinutes(manualPauseMinutes);
 

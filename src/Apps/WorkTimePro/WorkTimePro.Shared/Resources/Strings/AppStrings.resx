@@ -1214,6 +1214,9 @@
   <data name="ExportCsvDesc" xml:space="preserve">
     <value>Universal data format</value>
   </data>
+  <data name="ExportIcsDesc" xml:space="preserve">
+    <value>Calendar file for Google, Apple, Outlook</value>
+  </data>
   <data name="DayNote" xml:space="preserve">
     <value>Day Note</value>
   </data>

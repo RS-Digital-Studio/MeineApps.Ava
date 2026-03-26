@@ -386,7 +386,8 @@
                 Height="80"
                 CornerRadius="12"
                 Background="{DynamicResource SecondaryBrush}"
-                RenderTransform="scale(1)">
+                RenderTransform="scale(1)"
+                RenderTransformOrigin="50%,50%">
           <Button.Transitions>
             <Transitions>
               <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
@@ -415,7 +416,8 @@
                 Height="80"
                 CornerRadius="12"
                 Background="{DynamicResource SecondaryBrush}"
-                RenderTransform="scale(1)">
+                RenderTransform="scale(1)"
+                RenderTransformOrigin="50%,50%">
           <Button.Transitions>
             <Transitions>
               <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
@@ -444,7 +446,8 @@
                 Height="80"
                 CornerRadius="12"
                 Background="{DynamicResource InfoBrush}"
-                RenderTransform="scale(1)">
+                RenderTransform="scale(1)"
+                RenderTransformOrigin="50%,50%">
           <Button.Transitions>
             <Transitions>
               <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
@@ -473,7 +476,8 @@
                 Height="80"
                 CornerRadius="12"
                 Background="{DynamicResource WarningBrush}"
-                RenderTransform="scale(1)">
+                RenderTransform="scale(1)"
+                RenderTransformOrigin="50%,50%">
           <Button.Transitions>
             <Transitions>
               <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />

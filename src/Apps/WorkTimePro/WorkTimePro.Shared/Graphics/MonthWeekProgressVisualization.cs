@@ -105,6 +105,7 @@ public static class MonthWeekProgressVisualization
                 canvas.ClipPath(clipPath);
 
                 canvas.DrawRect(fillRect, _barPaint);
+                _barPaint.Shader?.Dispose();
                 _barPaint.Shader = null;
 
                 // Glow am rechten Rand

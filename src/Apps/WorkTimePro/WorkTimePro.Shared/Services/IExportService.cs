@@ -41,6 +41,16 @@ public interface IExportService
     Task<string> ExportYearToPdfAsync(int year);
 
     /// <summary>
+    /// Export date range as ICS calendar file
+    /// </summary>
+    Task<string> ExportRangeToIcsAsync(DateTime start, DateTime end);
+
+    /// <summary>
+    /// Export yearly overview as ICS calendar file
+    /// </summary>
+    Task<string> ExportYearToIcsAsync(int year);
+
+    /// <summary>
     /// Share an exported file
     /// </summary>
     Task ShareFileAsync(string filePath);

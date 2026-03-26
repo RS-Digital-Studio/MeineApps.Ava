@@ -178,24 +178,6 @@ public class WorkDay
     public bool HasAutoPause => AutoPauseMinutes > 0;
 
     /// <summary>
-    /// Status-Icon als MDI-Glyph-String (veraltet, nur für Abwärtskompatibilität)
-    /// </summary>
-    [Ignore]
-    public string StatusIcon => Status switch
-    {
-        DayStatus.WorkDay => Icons.Briefcase,
-        DayStatus.Weekend => Icons.Sleep,
-        DayStatus.Vacation => Icons.Beach,
-        DayStatus.Holiday => Icons.PartyPopper,
-        DayStatus.Sick => Icons.Thermometer,
-        DayStatus.HomeOffice => Icons.HomeAccount,
-        DayStatus.BusinessTrip => Icons.Airplane,
-        DayStatus.OvertimeCompensation => Icons.ClockAlert,
-        DayStatus.SpecialLeave => Icons.Gift,
-        _ => Icons.CalendarMonth
-    };
-
-    /// <summary>
     /// Status-Icon als MaterialIconKind für mi:MaterialIcon (kein MDI-Font nötig)
     /// </summary>
     [Ignore]

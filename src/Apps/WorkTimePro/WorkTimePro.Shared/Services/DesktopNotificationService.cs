@@ -81,7 +81,10 @@ public sealed class DesktopNotificationService : INotificationService
             var safeTitle = EscapeXml(title);
             var safeBody = EscapeXml(body);
 
-            // Single-quoted Here-String (@'...'@) verhindert PowerShell-Injection ($() / ` / $env)
+            // XML als Variable, Here-String-Breakout durch Escaping von '@ verhindert
+            var safeTitlePs = safeTitle.Replace("'@", "'`@");
+            var safeBodyPs = safeBody.Replace("'@", "'`@");
+
             var script = $@"
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
@@ -89,8 +92,8 @@ $template = @'
 <toast>
     <visual>
         <binding template=""ToastGeneric"">
-            <text>{safeTitle}</text>
-            <text>{safeBody}</text>
+            <text>{safeTitlePs}</text>
+            <text>{safeBodyPs}</text>
         </binding>
     </visual>
     <audio src=""ms-winsoundevent:Notification.Default""/>
@@ -121,13 +124,16 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
     {
         try
         {
-            using var process = Process.Start(new ProcessStartInfo
+            // ArgumentList statt Arguments vermeidet Shell-Interpretation komplett
+            var psi = new ProcessStartInfo
             {
                 FileName = "notify-send",
-                Arguments = $"\"{EscapeShell(title)}\" \"{EscapeShell(body)}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true
-            });
+            };
+            psi.ArgumentList.Add(title);
+            psi.ArgumentList.Add(body);
+            using var process = Process.Start(psi);
         }
         catch
         {

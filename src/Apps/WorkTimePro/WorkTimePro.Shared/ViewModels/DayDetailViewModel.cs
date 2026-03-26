@@ -28,6 +28,9 @@ public sealed partial class DayDetailViewModel : ViewModelBase
     private TimeEntry? _editingTimeEntry;
     private PauseEntry? _editingPauseEntry;
 
+    // CancellationToken für LoadDataAsync bei schnellem Tageswechsel (Race-Condition verhindern)
+    private CancellationTokenSource? _loadCts;
+
     public DayDetailViewModel(
         IDatabaseService database,
         ICalculationService calculation,
@@ -78,8 +81,6 @@ public sealed partial class DayDetailViewModel : ViewModelBase
     [ObservableProperty]
     private string _statusDisplay = "";
 
-    [ObservableProperty]
-    private string _statusIcon = "";
 
     [ObservableProperty]
     private bool _isLocked;
@@ -197,6 +198,12 @@ public sealed partial class DayDetailViewModel : ViewModelBase
         {
             SelectedDate = date;
         }
+
+        // Vorherigen Ladevorgang abbrechen (verhindert Race-Condition bei schnellem Tageswechsel)
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+
         _ = LoadDataAsync().ContinueWith(t =>
         {
             if (t.Exception != null)
@@ -217,7 +224,6 @@ public sealed partial class DayDetailViewModel : ViewModelBase
 
             DateDisplay = SelectedDate.ToString("D");
             StatusDisplay = TimeFormatter.GetStatusName(WorkDay.Status);
-            StatusIcon = WorkDay.StatusIcon;
             IsLocked = WorkDay.IsLocked;
 
             // Einträge laden

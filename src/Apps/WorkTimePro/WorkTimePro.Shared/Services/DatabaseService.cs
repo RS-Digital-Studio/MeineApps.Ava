@@ -193,11 +193,18 @@ public sealed class DatabaseService : IDatabaseService
             return new Dictionary<int, List<TimeEntry>>();
 
         var db = await GetDatabaseAsync();
-        // Alle TimeEntries für die gegebenen WorkDayIds in einer Query laden
-        var allEntries = await db.Table<TimeEntry>()
-            .Where(t => workDayIds.Contains(t.WorkDayId))
-            .OrderBy(t => t.Timestamp)
-            .ToListAsync();
+
+        // SQLite hat ein Limit von 999 Parametern → bei großen Listen in Batches aufteilen
+        var allEntries = new List<TimeEntry>();
+        foreach (var batch in workDayIds.Chunk(500))
+        {
+            var batchList = batch.ToList();
+            var batchEntries = await db.Table<TimeEntry>()
+                .Where(t => batchList.Contains(t.WorkDayId))
+                .OrderBy(t => t.Timestamp)
+                .ToListAsync();
+            allEntries.AddRange(batchEntries);
+        }
 
         return allEntries
             .GroupBy(e => e.WorkDayId)
@@ -410,7 +417,7 @@ public sealed class DatabaseService : IDatabaseService
     public async Task SaveVacationQuotaAsync(VacationQuota quota)
     {
         var db = await GetDatabaseAsync();
-        var existing = await GetVacationQuotaAsync(quota.Year);
+        var existing = await GetVacationQuotaAsync(quota.Year, quota.EmployerId);
         if (existing != null)
         {
             quota.Id = existing.Id;

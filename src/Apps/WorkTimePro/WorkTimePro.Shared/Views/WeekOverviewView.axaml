@@ -197,7 +197,8 @@
                         CommandParameter="{Binding .}"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Stretch"
-                        Margin="0,2" Padding="0">
+                        Margin="0,2" Padding="0"
+                        MinHeight="64">
                   <Border Padding="0" Margin="0" MinHeight="64" CornerRadius="12"
                           Background="{DynamicResource CardBrush}"
                           BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">

@@ -19,7 +19,8 @@
       <Grid ColumnDefinitions="Auto,Auto,*,Auto">
         <Button Grid.Column="0" Classes="Text"
                 AutomationProperties.AutomationId="Year_BtnBack"
-                Command="{Binding GoBackCommand}">
+                Command="{Binding GoBackCommand}"
+                MinHeight="44" MinWidth="44">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
                            Foreground="{DynamicResource PrimaryBrush}" />
         </Button>

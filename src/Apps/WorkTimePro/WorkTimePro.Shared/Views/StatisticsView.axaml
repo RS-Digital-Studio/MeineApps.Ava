@@ -33,11 +33,13 @@
         <StackPanel Orientation="Horizontal" Spacing="2">
           <Panel>
             <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="10" Padding="8,4"
+                    MinHeight="36" MinWidth="36"
                     IsVisible="{Binding !ShowTable}"
                     Command="{Binding ToggleViewCommand}">
               <mi:MaterialIcon Kind="ChartBar" Width="16" Height="16" Foreground="White" />
             </Button>
             <Button Background="Transparent" CornerRadius="10" Padding="8,4"
+                    MinHeight="36" MinWidth="36"
                     IsVisible="{Binding ShowTable}"
                     Command="{Binding ToggleViewCommand}">
               <mi:MaterialIcon Kind="ChartBar" Width="16" Height="16"
@@ -46,11 +48,13 @@
           </Panel>
           <Panel>
             <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="10" Padding="8,4"
+                    MinHeight="36" MinWidth="36"
                     IsVisible="{Binding ShowTable}"
                     Command="{Binding ToggleViewCommand}">
               <mi:MaterialIcon Kind="Table" Width="16" Height="16" Foreground="White" />
             </Button>
             <Button Background="Transparent" CornerRadius="10" Padding="8,4"
+                    MinHeight="36" MinWidth="36"
                     IsVisible="{Binding !ShowTable}"
                     Command="{Binding ToggleViewCommand}">
               <mi:MaterialIcon Kind="Table" Width="16" Height="16"
@@ -64,7 +68,7 @@
       <Button Grid.Column="3" Classes="Text"
               AutomationProperties.AutomationId="Stats_BtnExport"
               Command="{Binding ExportCommand}"
-              Width="36" Height="36" Padding="0"
+              Width="44" Height="44" Padding="0"
               VerticalAlignment="Center">
         <mi:MaterialIcon Kind="Export" Width="20" Height="20"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -556,6 +560,21 @@
                 <TextBlock Text="CSV" FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="{loc:Translate ExportCsvDesc}" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </Button>
+
+          <!-- ICS (Kalender) -->
+          <Button Classes="Outlined" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Padding="16,14" CornerRadius="12"
+                  Command="{Binding ExportWithFormatCommand}" CommandParameter="ICS">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <mi:MaterialIcon Kind="CalendarExport" Width="24" Height="24" Foreground="#FF6F00" />
+              <StackPanel>
+                <TextBlock Text="ICS" FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ExportIcsDesc}" FontSize="11"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </StackPanel>

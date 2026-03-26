@@ -25,6 +25,15 @@ public partial class App : Application
     public static IServiceProvider Services { get; private set; } = null!;
 
     /// <summary>
+    /// Versionsnummer aus Assembly lesen (statt hardcoded)
+    /// </summary>
+    private static string GetAppVersion()
+    {
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "2.0.7";
+    }
+
+    /// <summary>
     /// Factory fuer plattformspezifischen IFileShareService.
     /// Wird von Android-MainActivity gesetzt bevor DI gestartet wird.
     /// </summary>
@@ -79,7 +88,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
-            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = "v2.0.6", Renderer = new WorkTimeProSplashRenderer() };
+            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = $"v{GetAppVersion()}", Renderer = new WorkTimeProSplashRenderer() };
             var panel = new Panel();
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);
@@ -88,7 +97,7 @@ public partial class App : Application
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = "v2.0.6", Renderer = new WorkTimeProSplashRenderer() };
+            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = $"v{GetAppVersion()}", Renderer = new WorkTimeProSplashRenderer() };
             var panel = new Panel();
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);
@@ -178,17 +187,21 @@ public partial class App : Application
         services.AddSingleton<IDatabaseService, DatabaseService>();
         services.AddSingleton<ICalculationService, CalculationService>();
         services.AddSingleton<ITimeTrackingService, TimeTrackingService>();
+        services.AddSingleton<ICalendarExportService>(sp =>
+            new CalendarExportService(
+                sp.GetRequiredService<IDatabaseService>(),
+                sp.GetRequiredService<IFileShareService>()));
         services.AddSingleton<IExportService>(sp =>
             new ExportService(
                 sp.GetRequiredService<IDatabaseService>(),
                 sp.GetRequiredService<ICalculationService>(),
-                sp.GetRequiredService<IFileShareService>()));
+                sp.GetRequiredService<IFileShareService>(),
+                sp.GetRequiredService<ICalendarExportService>()));
         services.AddSingleton<IVacationService, VacationService>();
         services.AddSingleton<IHolidayService, HolidayService>();
         services.AddSingleton<IProjectService, ProjectService>();
         services.AddSingleton<IShiftService, ShiftService>();
         services.AddSingleton<IEmployerService, EmployerService>();
-        services.AddSingleton<ICalendarSyncService, CalendarSyncService>();
         services.AddSingleton<IBackupService, BackupService>();
 
         // Notification + Reminder Services

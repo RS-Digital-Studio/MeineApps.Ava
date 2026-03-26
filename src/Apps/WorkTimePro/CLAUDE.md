@@ -39,7 +39,7 @@ Zeiterfassung & Arbeitszeitmanagement mit Pausen, Kalender-Heatmap, Statistiken,
 - **Earnings-Ticker**: CountUp-Animation auf TodayView (800ms EaseOut) bei Earnings-Änderung
 - **Balance-Glow**: Pulsierende Opacity-Animation auf Balance-TextBlock bei negativer Balance (2s Zyklus)
 - **Tagesnotiz**: TextBox auf TodayView mit Auto-Save (1.5s Debounce), gespeichert in WorkDay.Note, lokalisiert in 6 Sprachen
-- **Export-Format-Auswahl**: Overlay in StatisticsView mit PDF/Excel/CSV-Buttons statt direktem PDF-Export
+- **Export-Format-Auswahl**: Overlay in StatisticsView mit PDF/Excel/CSV/ICS-Buttons statt direktem PDF-Export
 
 ### ViewModels & Views (10 VMs, 12 Views)
 MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOverview, YearOverview, Vacation, ShiftPlan
@@ -57,8 +57,8 @@ MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOve
 | IProjectService | Projekt-Verwaltung |
 | IShiftService | Schichtplanung |
 | IEmployerService | Arbeitgeber-Verwaltung |
-| ICalendarSyncService | Kalender-Export (ICS) |
-| IBackupService | Backup/Restore |
+| ICalendarExportService | ICS-Kalender-Export (RFC 5545) für Google, Apple, Outlook |
+| IBackupService | Backup/Restore (Cloud-Auth noch nicht integriert) |
 | INotificationService | Plattform-Notifications (Desktop: Toast/notify-send, Android: NotificationChannel + AlarmManager) |
 | IReminderService | 5 Reminder-Typen: Morgen, Abend, Pause, Überstunden, Wochenzusammenfassung |
 | IHapticService | Haptisches Feedback (Desktop: NoOp, Android: Vibrator API Click/HeavyClick) |
@@ -81,7 +81,9 @@ MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOve
 - Nach Trial: Soft Paywall mit Rewarded Ads oder Premium-Kauf
 
 ### Export-Logik
-- PdfSharpCore + ClosedXML
+- **4 Formate**: PDF (PdfSharpCore), Excel (ClosedXML), CSV, ICS (RFC 5545 Kalender)
+- **ICS-Export**: Arbeitstage als zeitgebundene Events (Check-in/out), Urlaub/Krank/etc. als ganztägige Events, importierbar in Google Calendar, Apple Calendar, Outlook
+- **CalendarExportService**: Generiert standardkonforme .ics Dateien mit VCALENDAR/VEVENT, korrekte RFC 5545 Escaping, UID pro Event
 - Android: IFileShareService (FileProvider `com.meineapps.worktimepro.fileprovider`)
 - Desktop: Process.Start
 
@@ -130,7 +132,7 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 ## UI-Conventions
 
 - **Compiled Bindings**: Alle Views haben `x:CompileBindings="True"` + `x:DataType="vm:XxxViewModel"` → Compile-Time-Checks, kein Reflection
-- **StatusIconKind vs. StatusIcon**: `WorkDay.StatusIconKind` (MaterialIconKind) für `mi:MaterialIcon` verwenden. `WorkDay.StatusIcon` (MDI-Glyph-String) ist veraltet - keine MDI-Schriftart registriert → würde Tofu zeigen. WeekOverviewView + StatisticsView nutzen `StatusIconKind`.
+- **StatusIconKind**: Alle Views nutzen `StatusIconKind` (MaterialIconKind). Die veraltete `StatusIcon` (MDI-Glyph-String) Property wurde aus MainViewModel und DayDetailViewModel entfernt.
 - **IsHitTestVisible für Overlays**: Bei ZIndex-Overlays über ScrollViewern → `IsHitTestVisible="{Binding !IsAnyOverlayVisible}"` auf dem ScrollViewer setzen. ViewModels mit Overlays müssen `IsAnyOverlayVisible` berechnete Property + partial OnXxxChanged Callbacks haben. Betroffen: DayDetailView, StatisticsView, VacationView, YearOverviewView.
 - **IsAnyOverlayVisible Pattern**: `public bool IsAnyOverlayVisible => Overlay1Visible || Overlay2Visible;` + `partial void OnOverlay1VisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));`
 

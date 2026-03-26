@@ -89,7 +89,7 @@
   <data name="Holidays" xml:space="preserve"><value>Feiertage</value></data>
   <data name="Region" xml:space="preserve"><value>Bundesland</value></data>
   <data name="LegalSources" xml:space="preserve"><value>Rechtsquellen</value></data>
-  <data name="LegalSourcesDescription" xml:space="preserve"><value>Pausenregelungen und Arbeitszeitgrenzen basieren auf dem deutschen Arbeitszeitgesetz (ArbZG). Diese App ist kein offizielles Angebot einer Behoerde.</value></data>
+  <data name="LegalSourcesDescription" xml:space="preserve"><value>Pausenregelungen und Arbeitszeitgrenzen basieren auf dem deutschen Arbeitszeitgesetz (ArbZG). Diese App ist kein offizielles Angebot einer Behörde.</value></data>
   <data name="LegalSourceArbZG" xml:space="preserve"><value>Arbeitszeitgesetz (ArbZG)</value></data>
   <data name="LegalSourceHolidays" xml:space="preserve"><value>Gesetzliche Feiertage (BMI)</value></data>
   <data name="LegalCompliance" xml:space="preserve"><value>Arbeitszeitgesetz-Prüfung</value></data>
@@ -544,6 +544,7 @@
   <data name="ExportPdfDesc" xml:space="preserve"><value>Professionelles Layout mit Tabellen</value></data>
   <data name="ExportExcelDesc" xml:space="preserve"><value>Bearbeitbare Tabelle (XLSX)</value></data>
   <data name="ExportCsvDesc" xml:space="preserve"><value>Universelles Datenformat</value></data>
+  <data name="ExportIcsDesc" xml:space="preserve"><value>Kalenderdatei für Google, Apple, Outlook</value></data>
   <data name="DayNote" xml:space="preserve"><value>Tagesnotiz</value></data>
   <data name="DayNotePlaceholder" xml:space="preserve"><value>Woran hast du heute gearbeitet?</value></data>
   <data name="WarningSixMonthAvgExceeds" xml:space="preserve">

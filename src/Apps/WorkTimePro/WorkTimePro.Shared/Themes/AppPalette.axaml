@@ -109,6 +109,11 @@
       <SolidColorBrush x:Key="OverlayBrush" Color="{DynamicResource OverlayColor}" />
       <SolidColorBrush x:Key="RippleBrush" Color="{DynamicResource RippleColor}" />
 
+      <!-- Zusätzliche semantische Brushes (für Cards, Warnungen, Fehler-Hinweise) -->
+      <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource BorderSubtleColor}" />
+      <SolidColorBrush x:Key="ErrorLightBrush" Color="{DynamicResource ErrorBackgroundColor}" />
+      <SolidColorBrush x:Key="WarningLightBrush" Color="{DynamicResource WarningBackgroundColor}" />
+
       <!-- Box Shadows (sichtbar auf helleren Surfaces) -->
       <BoxShadows x:Key="CardShadow">0 2 8 0 #40000000, 0 1 4 0 #30000000</BoxShadows>
       <BoxShadows x:Key="CardShadowHover">0 4 12 -1 #50000000, 0 2 6 -1 #40000000</BoxShadows>

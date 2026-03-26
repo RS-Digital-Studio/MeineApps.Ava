@@ -91,6 +91,7 @@ public static class WeekBarVisualization
 
                 float cornerR = Math.Min(5f, barMaxW / 2f);
                 canvas.DrawRoundRect(barRect, cornerR, cornerR, _barPaint);
+                _barPaint.Shader?.Dispose();
                 _barPaint.Shader = null;
 
                 // Heutiger Tag: Leuchtender Rahmen

@@ -172,7 +172,8 @@
                   AutomationProperties.AutomationId="Main_TabToday"
                   Command="{Binding SelectTodayTabCommand}"
                   HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center">
+                  HorizontalContentAlignment="Center"
+                  MinHeight="44">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="ClockOutline" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -189,7 +190,8 @@
                   AutomationProperties.AutomationId="Main_TabWeek"
                   Command="{Binding SelectWeekTabCommand}"
                   HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center">
+                  HorizontalContentAlignment="Center"
+                  MinHeight="44">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="CalendarWeek" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -206,7 +208,8 @@
                   AutomationProperties.AutomationId="Main_TabCalendar"
                   Command="{Binding SelectCalendarTabCommand}"
                   HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center">
+                  HorizontalContentAlignment="Center"
+                  MinHeight="44">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="CalendarMonth" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -223,7 +226,8 @@
                   AutomationProperties.AutomationId="Main_TabStatistics"
                   Command="{Binding SelectStatisticsTabCommand}"
                   HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center">
+                  HorizontalContentAlignment="Center"
+                  MinHeight="44">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="ChartBar" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -240,7 +244,8 @@
                   AutomationProperties.AutomationId="Main_TabSettings"
                   Command="{Binding SelectSettingsTabCommand}"
                   HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center">
+                  HorizontalContentAlignment="Center"
+                  MinHeight="44">
             <StackPanel Spacing="2" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
                                Foreground="{DynamicResource TextSecondaryBrush}"

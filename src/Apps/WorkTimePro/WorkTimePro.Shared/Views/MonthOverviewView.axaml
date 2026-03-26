@@ -19,7 +19,8 @@
       <StackPanel Orientation="Horizontal" Spacing="8">
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Month_BtnBack"
-                Command="{Binding GoBackCommand}">
+                Command="{Binding GoBackCommand}"
+                MinHeight="44" MinWidth="44">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
                            Foreground="{DynamicResource PrimaryBrush}" />
         </Button>
@@ -258,7 +259,8 @@
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 CornerRadius="12"
-                Padding="16,12">
+                Padding="16,12"
+                MinHeight="44">
           <Button.Tag>
             <mi:MaterialIcon Kind="Lock" Width="16" Height="16" Foreground="White" />
           </Button.Tag>
@@ -272,7 +274,8 @@
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 CornerRadius="12"
-                Padding="16,12">
+                Padding="16,12"
+                MinHeight="44">
           <Button.Tag>
             <mi:MaterialIcon Kind="LockOpen" Width="16" Height="16" />
           </Button.Tag>

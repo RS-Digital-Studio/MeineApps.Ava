@@ -20,10 +20,7 @@
             Padding="16,12"
             CornerRadius="0,0,12,12">
       <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="#92400E" Offset="0" />
-          <GradientStop Color="#451A03" Offset="1" />
-        </LinearGradientBrush>
+        <StaticResource ResourceKey="CraftHeaderGradientBrush" />
       </Border.Background>
       <Grid ColumnDefinitions="Auto,*,Auto">
 
@@ -93,7 +90,7 @@
     </Border>
 
     <!-- Achievement List (virtualisiert) - ListBox hat eigenen internen ScrollViewer -->
-    <ListBox Grid.Row="2" ItemsSource="{Binding Achievements}" Margin="16,8,16,60"
+    <ListBox Grid.Row="2" ItemsSource="{Binding Achievements}" Margin="16,8,16,80"
              AutomationProperties.AutomationId="Achievements_Items_List"
              Background="Transparent" BorderThickness="0">
           <ListBox.ItemsPanel>

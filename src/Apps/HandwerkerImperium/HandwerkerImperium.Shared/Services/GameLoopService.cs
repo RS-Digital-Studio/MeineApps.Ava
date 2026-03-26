@@ -242,13 +242,16 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         if (_cachedMasterToolBonus < 0)
             _cachedMasterToolBonus = MasterTool.GetTotalIncomeBonus(state.CollectedMasterTools);
 
-        decimal grossIncome = _incomeCalculator?.CalculateGrossIncome(state, _cachedPrestigeIncomeBonus, _cachedMasterToolBonus)
+        // Event-Effects einmal holen und durchreichen (vermeidet redundante Aufrufe in IncomeCalculator)
+        var eventEffects = _eventService?.GetCurrentEffects();
+
+        decimal grossIncome = _incomeCalculator?.CalculateGrossIncome(state, _cachedPrestigeIncomeBonus, _cachedMasterToolBonus,
+                                  researchEffects, eventEffects)
                               ?? state.TotalIncomePerSecond;
         grossIncome = _incomeCalculator?.ApplySoftCap(state, grossIncome) ?? grossIncome;
-        decimal costs = _incomeCalculator?.CalculateCosts(state) ?? state.TotalCostsPerSecond;
+        decimal costs = _incomeCalculator?.CalculateCosts(state, researchEffects, eventEffects) ?? state.TotalCostsPerSecond;
 
         // 3b. Event-Einmaleffekte + SpecialEffects verarbeiten
-        var eventEffects = _eventService?.GetCurrentEffects();
         var currentEventId = state.ActiveEvent?.Id;
         if (currentEventId != null && currentEventId != _lastAppliedSpecialEffectId)
         {

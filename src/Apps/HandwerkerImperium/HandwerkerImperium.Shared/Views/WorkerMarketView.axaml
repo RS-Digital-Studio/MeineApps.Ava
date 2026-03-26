@@ -19,10 +19,7 @@
             CornerRadius="0,0,12,12"
             AutomationProperties.AutomationId="WorkerMarket_Border_Header">
       <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="#92400E" Offset="0" />
-          <GradientStop Color="#451A03" Offset="1" />
-        </LinearGradientBrush>
+        <StaticResource ResourceKey="CraftHeaderGradientBrush" />
       </Border.Background>
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Back Button -->

@@ -73,6 +73,16 @@
     <SolidColorBrush x:Key="MasterSmithBrush" Color="{StaticResource MasterSmithColor}" />
     <SolidColorBrush x:Key="InnovationLabBrush" Color="{StaticResource InnovationLabColor}" />
 
+    <!-- Semantische Vordergrund-Farben -->
+    <SolidColorBrush x:Key="CraftDarkTextBrush" Color="#1A1A1A" />
+    <SolidColorBrush x:Key="CraftStreakBrush" Color="#FF6B35" />
+
+    <!-- Header-Gradient (identisch in 16 Views verwendet) -->
+    <LinearGradientBrush x:Key="CraftHeaderGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+      <GradientStop Color="#92400E" Offset="0" />
+      <GradientStop Color="#451A03" Offset="1" />
+    </LinearGradientBrush>
+
     <!-- Overlay/Dialog-Farben -->
     <SolidColorBrush x:Key="DialogOverlayBrush" Color="#AA000000" />
     <SolidColorBrush x:Key="RewardOverlayBrush" Color="#CC000000" />

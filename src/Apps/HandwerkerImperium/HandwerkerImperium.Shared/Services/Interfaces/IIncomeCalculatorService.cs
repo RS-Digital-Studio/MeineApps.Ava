@@ -16,13 +16,14 @@ public interface IIncomeCalculatorService
     /// <param name="prestigeIncomeBonus">Prestige-Shop Income-Bonus (gecacht oder frisch berechnet).</param>
     /// <param name="masterToolBonus">MasterTool-Einkommensbonus (gecacht oder frisch berechnet). -1 = frisch berechnen.</param>
     /// <returns>Berechnetes Brutto-Einkommen pro Sekunde nach allen Modifikatoren.</returns>
-    decimal CalculateGrossIncome(GameState state, decimal prestigeIncomeBonus, decimal masterToolBonus = -1m);
+    decimal CalculateGrossIncome(GameState state, decimal prestigeIncomeBonus, decimal masterToolBonus = -1m,
+        ResearchEffect? researchEffects = null, GameEventEffect? eventEffects = null);
 
     /// <summary>
     /// Berechnet die laufenden Kosten pro Sekunde inkl. aller Reduktionen
     /// (Prestige-Shop, Research, Storage-Gebäude, Gilden, Events).
     /// </summary>
-    decimal CalculateCosts(GameState state);
+    decimal CalculateCosts(GameState state, ResearchEffect? researchEffects = null, GameEventEffect? eventEffects = null);
 
     /// <summary>
     /// Wendet den Soft-Cap auf den Brutto-Einkommensmultiplikator an.

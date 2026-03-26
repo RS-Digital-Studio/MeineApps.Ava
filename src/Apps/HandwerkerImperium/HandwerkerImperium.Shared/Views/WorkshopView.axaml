@@ -23,6 +23,7 @@
 
         <!-- Back Button -->
         <Button Classes="Text"
+                MinWidth="44" MinHeight="44"
                 Command="{Binding GoBackCommand}"
                 AutomationProperties.AutomationId="Workshop_Btn_Back">
           <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28"

@@ -30,7 +30,8 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         _vipService = vipService;
     }
 
-    public decimal CalculateGrossIncome(GameState state, decimal prestigeIncomeBonus, decimal masterToolBonus = -1m)
+    public decimal CalculateGrossIncome(GameState state, decimal prestigeIncomeBonus, decimal masterToolBonus = -1m,
+        ResearchEffect? researchEffects = null, GameEventEffect? eventEffects = null)
     {
         decimal grossIncome = state.TotalIncomePerSecond;
 
@@ -39,12 +40,12 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
             grossIncome *= (1m + prestigeIncomeBonus);
 
         // Research-Effizienz-Bonus (gekappt bei +50%)
-        var researchEffects = _researchService?.GetTotalEffects();
+        researchEffects ??= _researchService?.GetTotalEffects();
         if (researchEffects != null && researchEffects.EfficiencyBonus > 0)
             grossIncome *= (1m + Math.Min(researchEffects.EfficiencyBonus, 0.50m));
 
         // Event-Multiplikatoren
-        var eventEffects = _eventService?.GetCurrentEffects();
+        eventEffects ??= _eventService?.GetCurrentEffects();
         if (eventEffects != null)
             grossIncome *= eventEffects.IncomeMultiplier;
 
@@ -86,7 +87,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         return grossIncome;
     }
 
-    public decimal CalculateCosts(GameState state)
+    public decimal CalculateCosts(GameState state, ResearchEffect? researchEffects = null, GameEventEffect? eventEffects = null)
     {
         decimal costs = state.TotalCostsPerSecond;
 
@@ -95,7 +96,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         if (_prestigeService != null)
             totalCostReduction += _prestigeService.GetCostReduction();
 
-        var researchEffects = _researchService?.GetTotalEffects();
+        researchEffects ??= _researchService?.GetTotalEffects();
         if (researchEffects != null)
             totalCostReduction += researchEffects.CostReduction + researchEffects.WageReduction;
 
@@ -108,7 +109,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
             costs *= (1m - Math.Min(totalCostReduction, 0.50m)); // Cap bei 50%
 
         // Event-Kosteneffekte
-        var eventEffects = _eventService?.GetCurrentEffects();
+        eventEffects ??= _eventService?.GetCurrentEffects();
         if (eventEffects != null)
             costs *= eventEffects.CostMultiplier;
 

@@ -8,6 +8,11 @@ public sealed class EventService : IEventService
 {
     private readonly IGameStateService _gameState;
 
+    // Dirty-Flag-Cache: Events ändern sich alle paar Minuten, nicht jede Sekunde
+    private GameEventEffect? _cachedEffect;
+    private bool _effectDirty = true;
+    private int _cachedMonth; // Saisonwechsel-Erkennung
+
     public event EventHandler<GameEvent>? EventStarted;
     public event EventHandler<GameEvent>? EventEnded;
 
@@ -20,6 +25,11 @@ public sealed class EventService : IEventService
         _gameState = gameState;
     }
 
+    /// <summary>
+    /// Markiert den Effect-Cache als ungültig (aufrufen bei Event-Änderung).
+    /// </summary>
+    public void InvalidateEffectCache() => _effectDirty = true;
+
     public void CheckForNewEvent()
     {
         var state = _gameState.State;
@@ -29,6 +39,7 @@ public sealed class EventService : IEventService
         {
             var expired = state.ActiveEvent;
             state.ActiveEvent = null;
+            _effectDirty = true;
             EventEnded?.Invoke(this, expired);
         }
 
@@ -73,11 +84,20 @@ public sealed class EventService : IEventService
         if (state.EventHistory.Count > 20)
             state.EventHistory.RemoveAt(0);
 
+        _effectDirty = true;
         EventStarted?.Invoke(this, evt);
     }
 
     public GameEventEffect GetCurrentEffects()
     {
+        // Bei Monatswechsel Cache invalidieren (saisonaler Multiplikator ändert sich)
+        var currentMonth = DateTime.UtcNow.Month;
+        if (currentMonth != _cachedMonth)
+            _effectDirty = true;
+
+        if (!_effectDirty && _cachedEffect != null)
+            return _cachedEffect;
+
         var effect = new GameEventEffect();
 
         // Active random event
@@ -90,7 +110,7 @@ public sealed class EventService : IEventService
         var seasonalMultiplier = GetSeasonalMultiplier(DateTime.UtcNow.Month);
 
         // Kombiniert: Saison beeinflusst Einkommen
-        return new GameEventEffect
+        _cachedEffect = new GameEventEffect
         {
             IncomeMultiplier = effect.IncomeMultiplier * seasonalMultiplier,
             CostMultiplier = effect.CostMultiplier,
@@ -100,6 +120,9 @@ public sealed class EventService : IEventService
             AffectedWorkshop = effect.AffectedWorkshop,
             SpecialEffect = effect.SpecialEffect
         };
+        _effectDirty = false;
+        _cachedMonth = currentMonth;
+        return _cachedEffect;
     }
 
     /// <summary>

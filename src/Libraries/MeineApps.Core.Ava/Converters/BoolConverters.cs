@@ -72,6 +72,29 @@ public sealed class BoolToBrushConverter : IValueConverter
 }
 
 /// <summary>
+/// Konvertiert bool zu Opacity-Wert.
+/// Standard: true = 1.0 (sichtbar), false = 0.4 (abgedunkelt).
+/// TrueOpacity/FalseOpacity konfigurierbar.
+/// </summary>
+public sealed class BoolToOpacityConverter : IValueConverter
+{
+    public static readonly BoolToOpacityConverter Instance = new();
+
+    public double TrueOpacity { get; set; } = 1.0;
+    public double FalseOpacity { get; set; } = 0.4;
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return value is true ? TrueOpacity : FalseOpacity;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
 /// Inverts a boolean value
 /// </summary>
 public sealed class InverseBoolConverter : IValueConverter

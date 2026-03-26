@@ -106,6 +106,7 @@ return _backPressHelper.HandleDoubleBack(exitMessage);
 
 - `BoolToVisibilityConverter` - Bool → IsVisible
 - `InverseBoolConverter` - !Bool
+- `BoolToOpacityConverter` - Bool → Opacity (Standard: true=1.0, false=0.4, konfigurierbar)
 - `BoolToBrushConverter` - Bool → Brush
 - `NumberFormatConverter` - Double → "1,234.56"
 - `CurrencyConverter` - Decimal → "€ 1,234.56"

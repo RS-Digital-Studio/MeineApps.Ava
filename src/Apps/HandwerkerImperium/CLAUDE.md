@@ -16,7 +16,6 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **GameIconKind.cs**: Enum mit 224 Werten in Kategorien (Navigation, Status, Stars, Combat, Economy, Workers, Tools, Buildings, etc.)
 - **GameIcon** (`Icons/GameIcon.cs`): Custom Control (erbt von `TemplatedControl`, hat `Foreground`). Render: Bitmap-Alpha als OpacityMask, Foreground als Füllfarbe
 - **GameIconRenderer** (`Icons/GameIconRenderer.cs`): SkiaSharp-Renderer für SKCanvas. Bitmap + SKColorFilter.CreateBlendMode(color, SrcIn) für Tinting
-- **GameIconPaths.cs**: Leerer Stub (gibt null zurück). Keine SVG-Pfade mehr
 - **Preloading**: `GameIcon.PreloadAllAsync()` in Loading-Pipeline (Step 1 parallel mit Shader+ViewModel+Purchases)
 - **Pfad-Konvertierung**: PascalCase → snake_case → `icons/{name}.webp` (z.B. ArrowDown → icons/arrow_down.webp)
 - **Tinting**: AXAML nutzt `Foreground="{StaticResource CraftGoldBrush}"`, SkiaSharp nutzt `paint.Color`

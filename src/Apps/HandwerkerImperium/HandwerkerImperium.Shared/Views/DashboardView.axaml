@@ -132,7 +132,7 @@
                            AutomationProperties.AutomationId="Dashboard_Txt_Money" />
                 <TextBlock Text="{Binding IncomeDisplay}"
                            FontSize="13" Classes="IncomePulse"
-                           Foreground="#FFFFFFCC"
+                           Foreground="{DynamicResource PrimaryContrastBrush}" Opacity="0.8"
                            AutomationProperties.AutomationId="Dashboard_Txt_Income" />
                 <TextBlock Text="{Binding NetIncomeHeaderDisplay}"
                            FontSize="11" Opacity="0.8"
@@ -194,7 +194,7 @@
                         Command="{Binding SelectSettingsTabCommand}"
                         AutomationProperties.AutomationId="Dashboard_Btn_Settings">
                   <icons:GameIcon Kind="Cog" Width="24" Height="24"
-                                   Foreground="#FFFFFFCC"
+                                   Foreground="{DynamicResource PrimaryContrastBrush}" Opacity="0.8"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Settings" />
                 </Button>
               </StackPanel>
@@ -217,7 +217,7 @@
                         AutomationProperties.AutomationId="Dashboard_Border_PrestigeBadge">
                   <TextBlock Text="{Binding PrestigeTierBadgeText}"
                              FontSize="11" FontWeight="Bold"
-                             Foreground="#1A1A1A"
+                             Foreground="{StaticResource CraftDarkTextBrush}"
                              AutomationProperties.AutomationId="Dashboard_Txt_PrestigeTier" />
                 </Border>
               </StackPanel>
@@ -233,7 +233,7 @@
                 <Border IsVisible="{Binding ShowBoostIndicator}"
                         Classes="BoostPulse"
                         CornerRadius="10" Padding="6,2"
-                        Background="#D97706"
+                        Background="{StaticResource CraftPrimaryBrush}"
                         VerticalAlignment="Center"
                         AutomationProperties.AutomationId="Dashboard_Border_BoostIndicator">
                   <StackPanel Orientation="Horizontal" Spacing="3">
@@ -268,10 +268,10 @@
                 <StackPanel Orientation="Horizontal" Spacing="2"
                             IsVisible="{Binding ShowStreakBadge}"
                             AutomationProperties.AutomationId="Dashboard_Panel_LoginStreak">
-                  <icons:GameIcon Kind="Fire" Width="18" Height="18" Foreground="#FF6B35"
+                  <icons:GameIcon Kind="Fire" Width="18" Height="18" Foreground="{StaticResource CraftStreakBrush}"
                                    AutomationProperties.AutomationId="Dashboard_Icon_LoginStreak" />
                   <TextBlock Text="{Binding LoginStreak}" FontSize="11" FontWeight="Bold"
-                             Foreground="#FF6B35" VerticalAlignment="Center"
+                             Foreground="{StaticResource CraftStreakBrush}" VerticalAlignment="Center"
                              AutomationProperties.AutomationId="Dashboard_Txt_LoginStreak" />
                 </StackPanel>
               </StackPanel>

@@ -30,14 +30,12 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
             {
                 var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
                 var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
-                // Käufe mit Google Play abgleichen (Geräte-/Datenwechsel → Premium-Status wiederherstellen)
-                var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
                 // Alle 224 Bitmap-Icons vorladen (WebP → SKBitmap → Avalonia IImage)
                 var iconsTask = Icons.GameIcon.PreloadAllAsync();
                 // 20 Worker-Portraits vorladen (10 Tiers x 2 Geschlechter → AI statt Pixel-Art)
                 var assetService = services.GetRequiredService<IGameAssetService>();
                 var portraitsTask = assetService.PreloadAsync(WorkerAvatarRenderer.GetAllPortraitPaths());
-                await Task.WhenAll(shaderTask, vmTask, purchaseTask, iconsTask, portraitsTask);
+                await Task.WhenAll(shaderTask, vmTask, iconsTask, portraitsTask);
             }
         });
 
@@ -51,6 +49,9 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
             {
                 var mainVm = services.GetRequiredService<MainViewModel>();
                 await mainVm.InitializeAsync();
+                // Käufe NACH InitializeAsync abgleichen (SanitizeState setzt Premium=false,
+                // danach stellt RestorePurchases den echten Status via Google Play wieder her)
+                await services.GetRequiredService<IPurchaseService>().InitializeAsync();
             }
         });
     }

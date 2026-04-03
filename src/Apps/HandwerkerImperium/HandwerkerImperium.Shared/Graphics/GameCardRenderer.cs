@@ -95,6 +95,14 @@ public static class GameCardRenderer
     // Gecachte Level-Strings fuer DrawLevelBadge (vermeidet ToString()-Allokation pro Karte pro Frame)
     private static readonly Dictionary<int, string> _levelLabelCache = new();
 
+    // Gecachte SKPath-Objekte (vermeiden native Allokation pro Karte pro Frame)
+    private static readonly SKPath _ribbonPath = new();
+    private static readonly SKPath _foldLeftPath = new();
+    private static readonly SKPath _foldRightPath = new();
+    private static readonly SKPath _badgePath = new();
+    private static readonly SKPath _crownPath = new();
+    private static readonly SKPath _shacklePath = new();
+
     // ═══════════════════════════════════════════════════════════════════════
     // Rahmen-Stufe bestimmen
     // ═══════════════════════════════════════════════════════════════════════
@@ -376,15 +384,15 @@ public static class GameCardRenderer
         float halfH = height / 2f;
         float foldW = height * 0.6f; // Breite der gefalteten Enden
 
-        // Haupt-Banner (SKPath mit 7 Punkten)
-        using var path = new SKPath();
-        path.MoveTo(centerX - halfW - foldW, centerY);            // Links-Spitze
-        path.LineTo(centerX - halfW, centerY - halfH);            // Links-oben
-        path.LineTo(centerX + halfW, centerY - halfH);            // Rechts-oben
-        path.LineTo(centerX + halfW + foldW, centerY);            // Rechts-Spitze
-        path.LineTo(centerX + halfW, centerY + halfH);            // Rechts-unten
-        path.LineTo(centerX - halfW, centerY + halfH);            // Links-unten
-        path.Close();
+        // Haupt-Banner (gecachter SKPath mit Rewind statt Allokation pro Frame)
+        _ribbonPath.Rewind();
+        _ribbonPath.MoveTo(centerX - halfW - foldW, centerY);            // Links-Spitze
+        _ribbonPath.LineTo(centerX - halfW, centerY - halfH);            // Links-oben
+        _ribbonPath.LineTo(centerX + halfW, centerY - halfH);            // Rechts-oben
+        _ribbonPath.LineTo(centerX + halfW + foldW, centerY);            // Rechts-Spitze
+        _ribbonPath.LineTo(centerX + halfW, centerY + halfH);            // Rechts-unten
+        _ribbonPath.LineTo(centerX - halfW, centerY + halfH);            // Links-unten
+        _ribbonPath.Close();
 
         // Banner-Gradient (leichter 3D-Effekt)
         using var shader = SKShader.CreateLinearGradient(
@@ -395,26 +403,26 @@ public static class GameCardRenderer
             SKShaderTileMode.Clamp);
 
         _fillPaint.Shader = shader;
-        canvas.DrawPath(path, _fillPaint);
+        canvas.DrawPath(_ribbonPath, _fillPaint);
         _fillPaint.Shader = null;
 
-        // Falten-Schatten an den Enden
+        // Falten-Schatten an den Enden (gecachte Paths mit Rewind)
         _fillPaint.Color = new SKColor(0, 0, 0, 40);
-        using var foldLeftPath = new SKPath();
-        foldLeftPath.MoveTo(centerX - halfW, centerY - halfH);
-        foldLeftPath.LineTo(centerX - halfW - foldW * 0.3f, centerY - halfH * 0.7f);
-        foldLeftPath.LineTo(centerX - halfW - foldW, centerY);
-        foldLeftPath.LineTo(centerX - halfW, centerY - halfH * 0.3f);
-        foldLeftPath.Close();
-        canvas.DrawPath(foldLeftPath, _fillPaint);
+        _foldLeftPath.Rewind();
+        _foldLeftPath.MoveTo(centerX - halfW, centerY - halfH);
+        _foldLeftPath.LineTo(centerX - halfW - foldW * 0.3f, centerY - halfH * 0.7f);
+        _foldLeftPath.LineTo(centerX - halfW - foldW, centerY);
+        _foldLeftPath.LineTo(centerX - halfW, centerY - halfH * 0.3f);
+        _foldLeftPath.Close();
+        canvas.DrawPath(_foldLeftPath, _fillPaint);
 
-        using var foldRightPath = new SKPath();
-        foldRightPath.MoveTo(centerX + halfW, centerY - halfH);
-        foldRightPath.LineTo(centerX + halfW + foldW * 0.3f, centerY - halfH * 0.7f);
-        foldRightPath.LineTo(centerX + halfW + foldW, centerY);
-        foldRightPath.LineTo(centerX + halfW, centerY - halfH * 0.3f);
-        foldRightPath.Close();
-        canvas.DrawPath(foldRightPath, _fillPaint);
+        _foldRightPath.Rewind();
+        _foldRightPath.MoveTo(centerX + halfW, centerY - halfH);
+        _foldRightPath.LineTo(centerX + halfW + foldW * 0.3f, centerY - halfH * 0.7f);
+        _foldRightPath.LineTo(centerX + halfW + foldW, centerY);
+        _foldRightPath.LineTo(centerX + halfW, centerY - halfH * 0.3f);
+        _foldRightPath.Close();
+        canvas.DrawPath(_foldRightPath, _fillPaint);
 
         // Text
         _textPaint.Color = SKColors.White;
@@ -438,14 +446,14 @@ public static class GameCardRenderer
         var tier = GetFrameTier(level);
         var badgeColor = tier == CardFrameTier.None ? new SKColor(0x78, 0x71, 0x6C) : GetFrameColor(tier);
 
-        // Schild-Form
-        using var path = new SKPath();
-        path.MoveTo(x - halfW, y - topH);
-        path.LineTo(x + halfW, y - topH);
-        path.LineTo(x + halfW, y + botH * 0.4f);
-        path.LineTo(x, y + botH);
-        path.LineTo(x - halfW, y + botH * 0.4f);
-        path.Close();
+        // Schild-Form (gecachter Path mit Rewind)
+        _badgePath.Rewind();
+        _badgePath.MoveTo(x - halfW, y - topH);
+        _badgePath.LineTo(x + halfW, y - topH);
+        _badgePath.LineTo(x + halfW, y + botH * 0.4f);
+        _badgePath.LineTo(x, y + botH);
+        _badgePath.LineTo(x - halfW, y + botH * 0.4f);
+        _badgePath.Close();
 
         // Gradient
         using var shader = SKShader.CreateLinearGradient(
@@ -456,13 +464,13 @@ public static class GameCardRenderer
             SKShaderTileMode.Clamp);
 
         _fillPaint.Shader = shader;
-        canvas.DrawPath(path, _fillPaint);
+        canvas.DrawPath(_badgePath, _fillPaint);
         _fillPaint.Shader = null;
 
         // Rand
         _strokePaint.Color = Darken(badgeColor, 0.2f);
         _strokePaint.StrokeWidth = 1f;
-        canvas.DrawPath(path, _strokePaint);
+        canvas.DrawPath(_badgePath, _strokePaint);
 
         // Level-Zahl (gecachter String statt ToString() pro Frame)
         _textPaint.Color = SKColors.White;
@@ -486,19 +494,19 @@ public static class GameCardRenderer
     {
         float halfW = width / 2f;
 
-        using var path = new SKPath();
+        _crownPath.Rewind();
         // Basis
-        path.MoveTo(x - halfW, y + height * 0.6f);
+        _crownPath.MoveTo(x - halfW, y + height * 0.6f);
         // Linke Zacke
-        path.LineTo(x - halfW, y + height * 0.1f);
-        path.LineTo(x - halfW * 0.5f, y + height * 0.35f);
+        _crownPath.LineTo(x - halfW, y + height * 0.1f);
+        _crownPath.LineTo(x - halfW * 0.5f, y + height * 0.35f);
         // Mittlere Zacke (hoechste)
-        path.LineTo(x, y);
-        path.LineTo(x + halfW * 0.5f, y + height * 0.35f);
+        _crownPath.LineTo(x, y);
+        _crownPath.LineTo(x + halfW * 0.5f, y + height * 0.35f);
         // Rechte Zacke
-        path.LineTo(x + halfW, y + height * 0.1f);
-        path.LineTo(x + halfW, y + height * 0.6f);
-        path.Close();
+        _crownPath.LineTo(x + halfW, y + height * 0.1f);
+        _crownPath.LineTo(x + halfW, y + height * 0.6f);
+        _crownPath.Close();
 
         // Gold-Gradient
         using var shader = SKShader.CreateLinearGradient(
@@ -509,7 +517,7 @@ public static class GameCardRenderer
             SKShaderTileMode.Clamp);
 
         _fillPaint.Shader = shader;
-        canvas.DrawPath(path, _fillPaint);
+        canvas.DrawPath(_crownPath, _fillPaint);
         _fillPaint.Shader = null;
 
         // Edelsteine auf den Zacken (3 kleine Kreise)
@@ -544,25 +552,24 @@ public static class GameCardRenderer
         _strokePaint.StrokeCap = SKStrokeCap.Round;
 
         float shackleW = halfW * 0.7f;
+        _shacklePath.Rewind();
         if (isOpen)
         {
             // Offener Buegel (linke Seite angehoben)
-            using var shacklePath = new SKPath();
-            shacklePath.MoveTo(x - shackleW, y);
-            shacklePath.LineTo(x - shackleW, y - shackleH * 1.2f);
-            shacklePath.ArcTo(new SKRect(x - shackleW, y - shackleH * 1.2f - shackleW, x + shackleW, y - shackleH * 1.2f + shackleW), 180, -90, false);
-            canvas.DrawPath(shacklePath, _strokePaint);
+            _shacklePath.MoveTo(x - shackleW, y);
+            _shacklePath.LineTo(x - shackleW, y - shackleH * 1.2f);
+            _shacklePath.ArcTo(new SKRect(x - shackleW, y - shackleH * 1.2f - shackleW, x + shackleW, y - shackleH * 1.2f + shackleW), 180, -90, false);
+            canvas.DrawPath(_shacklePath, _strokePaint);
             canvas.DrawLine(x + shackleW, y - shackleH * 0.5f, x + shackleW, y, _strokePaint);
         }
         else
         {
             // Geschlossener Buegel
-            using var shacklePath = new SKPath();
-            shacklePath.MoveTo(x - shackleW, y);
-            shacklePath.LineTo(x - shackleW, y - shackleH);
-            shacklePath.ArcTo(new SKRect(x - shackleW, y - shackleH - shackleW * 2, x + shackleW, y - shackleH), 180, -180, false);
-            shacklePath.LineTo(x + shackleW, y);
-            canvas.DrawPath(shacklePath, _strokePaint);
+            _shacklePath.MoveTo(x - shackleW, y);
+            _shacklePath.LineTo(x - shackleW, y - shackleH);
+            _shacklePath.ArcTo(new SKRect(x - shackleW, y - shackleH - shackleW * 2, x + shackleW, y - shackleH), 180, -180, false);
+            _shacklePath.LineTo(x + shackleW, y);
+            canvas.DrawPath(_shacklePath, _strokePaint);
         }
 
         _strokePaint.StrokeCap = SKStrokeCap.Butt;
@@ -598,7 +605,7 @@ public static class GameCardRenderer
             c.Alpha);
     }
 
-    /// <summary>Statische SKMaskFilter/Paint-Ressourcen freigeben (bei App-Shutdown aufrufen).</summary>
+    /// <summary>Statische SKMaskFilter/Paint/Path-Ressourcen freigeben (bei App-Shutdown aufrufen).</summary>
     public static void DisposeStaticResources()
     {
         _progressGlowFilter?.Dispose();
@@ -609,5 +616,11 @@ public static class GameCardRenderer
         _textPaint?.Dispose();
         _textFont?.Dispose();
         _textFontBold?.Dispose();
+        _ribbonPath?.Dispose();
+        _foldLeftPath?.Dispose();
+        _foldRightPath?.Dispose();
+        _badgePath?.Dispose();
+        _crownPath?.Dispose();
+        _shacklePath?.Dispose();
     }
 }

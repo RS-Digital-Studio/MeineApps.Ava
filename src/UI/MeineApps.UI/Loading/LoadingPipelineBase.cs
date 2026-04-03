@@ -10,7 +10,7 @@ namespace MeineApps.UI.Loading;
 /// </summary>
 public abstract class LoadingPipelineBase : ILoadingPipeline
 {
-    private readonly List<LoadingStep> _steps = new();
+    private readonly List<LoadingStep> _steps = [];
 
     public event Action<float, string>? ProgressChanged;
 

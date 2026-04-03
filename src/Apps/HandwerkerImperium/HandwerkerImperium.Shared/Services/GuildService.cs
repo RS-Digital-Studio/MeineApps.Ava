@@ -176,8 +176,14 @@ public sealed class GuildService : IGuildService, IDisposable
         {
             await _firebaseService.EnsureAuthenticatedAsync();
 
-            // Alle Gilden laden (Firebase REST gibt Dictionary zurück)
-            var guildsRaw = await _firebaseService.GetAsync<Dictionary<string, FirebaseGuildData>>("guilds");
+            // Maximal 50 Gilden laden (nach Level absteigend, verhindert Überlastung bei vielen Gilden)
+            var json = await _firebaseService.QueryAsync("guilds",
+                "orderBy=\"level\"&limitToLast=50");
+
+            if (string.IsNullOrEmpty(json) || json == "null")
+                return result;
+
+            var guildsRaw = JsonSerializer.Deserialize<Dictionary<string, FirebaseGuildData>>(json);
             if (guildsRaw == null) return result;
 
             foreach (var (id, data) in guildsRaw)
@@ -222,17 +228,21 @@ public sealed class GuildService : IGuildService, IDisposable
 
     public async Task<bool> CreateGuildAsync(string name, string icon, string color)
     {
+        var uid = _firebaseService.PlayerId;
+        if (string.IsNullOrEmpty(uid) || string.IsNullOrWhiteSpace(name)) return false;
+
+        // Sicherheit: Name trimmen und auf max. 30 Zeichen begrenzen
+        name = name.Trim();
+        if (name.Length > 30) name = name[..30];
+        if (string.IsNullOrWhiteSpace(name)) return false;
+
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return false;
+
+        string? createdGuildId = null; // Tracking für Rollback im catch
         try
         {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || string.IsNullOrWhiteSpace(name)) return false;
-
-            // Sicherheit: Name trimmen und auf max. 30 Zeichen begrenzen
-            name = name.Trim();
-            if (name.Length > 30) name = name[..30];
-            if (string.IsNullOrWhiteSpace(name)) return false;
-
-            // Schon in einer Gilde?
+            // Schon in einer Gilde? (Double-Check nach Lock)
             var state = _gameStateService.State;
             if (state.GuildMembership != null) return false;
 
@@ -260,6 +270,7 @@ public sealed class GuildService : IGuildService, IDisposable
 
             // Gilde erstellen
             await _firebaseService.SetAsync($"guilds/{guildId}", guildData);
+            createdGuildId = guildId;
 
             // Spieler als Leader eintragen
             var member = new FirebaseGuildMember
@@ -288,8 +299,19 @@ public sealed class GuildService : IGuildService, IDisposable
         }
         catch (Exception ex)
         {
+            // Best-Effort Rollback: Verwaiste Firebase-Daten bereinigen
+            if (createdGuildId != null)
+            {
+                try { await _firebaseService.DeleteAsync($"guild_members/{createdGuildId}/{uid}"); } catch { /* Best-Effort */ }
+                try { await _firebaseService.DeleteAsync($"player_guilds/{uid}"); } catch { /* Best-Effort */ }
+                try { await _firebaseService.DeleteAsync($"guilds/{createdGuildId}"); } catch { /* Best-Effort */ }
+            }
             _log.Error("Gilde erstellen fehlgeschlagen", ex);
             return false;
+        }
+        finally
+        {
+            _lock.Release();
         }
     }
 
@@ -299,11 +321,16 @@ public sealed class GuildService : IGuildService, IDisposable
 
     public async Task<bool> JoinGuildAsync(string guildId)
     {
+        var uid = _firebaseService.PlayerId;
+        if (string.IsNullOrEmpty(uid)) return false;
+
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return false;
+
+        var memberWritten = false; // Tracking für Rollback im catch
         try
         {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid)) return false;
-
+            // Double-Check nach Lock: Schon in einer Gilde?
             var state = _gameStateService.State;
             if (state.GuildMembership != null) return false;
 
@@ -330,10 +357,20 @@ public sealed class GuildService : IGuildService, IDisposable
                 LastActiveAt = now.ToString("O")
             };
             await _firebaseService.SetAsync($"guild_members/{guildId}/{uid}", member);
+            memberWritten = true;
 
-            // MemberCount aus tatsächlicher Mitgliederzahl synchronisieren
+            // Post-Join-Verification: Tatsächliche Mitgliederzahl prüfen
+            // Verhindert Race Condition wenn mehrere Spieler gleichzeitig beitreten
             var newCount = await CountAndSyncMemberCountAsync(guildId);
             if (newCount < 0) newCount = guildData.MemberCount + 1; // Fallback bei Netzwerkfehler
+
+            // Über MaxMembers? → Rollback (eigenen Eintrag wieder löschen)
+            if (newCount > guildData.MaxMembers)
+            {
+                try { await _firebaseService.DeleteAsync($"guild_members/{guildId}/{uid}"); } catch { /* Best-Effort Rollback */ }
+                await CountAndSyncMemberCountAsync(guildId); // Count neu synchronisieren
+                return false;
+            }
 
             // Schnell-Lookup
             await _firebaseService.SetAsync($"player_guilds/{uid}", guildId);
@@ -351,42 +388,56 @@ public sealed class GuildService : IGuildService, IDisposable
         }
         catch (Exception ex)
         {
+            // Best-Effort Rollback: Eigenen Eintrag wieder entfernen wenn bereits geschrieben
+            if (memberWritten)
+            {
+                try { await _firebaseService.DeleteAsync($"guild_members/{guildId}/{uid}"); } catch { /* Best-Effort */ }
+                try { await _firebaseService.DeleteAsync($"player_guilds/{uid}"); } catch { /* Best-Effort */ }
+            }
             _log.Error("Gilde beitreten fehlgeschlagen", ex);
             return false;
+        }
+        finally
+        {
+            _lock.Release();
         }
     }
 
     public async Task<bool> LeaveGuildAsync()
     {
+        var uid = _firebaseService.PlayerId;
+        if (string.IsNullOrEmpty(uid)) return false;
+
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return false;
         try
         {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid)) return false;
-
             var state = _gameStateService.State;
             var membership = state.GuildMembership;
             if (membership == null) return false;
 
             var guildId = membership.GuildId;
 
+            // Leader-Transfer: Wenn wir Leader sind, Führung übertragen bevor wir gehen
+            var myRole = await GetMemberRoleAsync(uid);
+            if (myRole == GuildRole.Leader)
+            {
+                await TransferLeadershipOnLeaveAsync(guildId, uid);
+            }
+
             // Mitglied entfernen
             await _firebaseService.DeleteAsync($"guild_members/{guildId}/{uid}");
+
+            // Boss-Damage aufräumen (eigenen Eintrag löschen)
+            try { await _firebaseService.DeleteAsync($"guild_boss_damage/{guildId}/{uid}"); } catch { /* Nicht-kritisch */ }
 
             // MemberCount aus tatsächlicher Mitgliederzahl synchronisieren
             var newCount = await CountAndSyncMemberCountAsync(guildId);
             // Bei Netzwerkfehler (-1): Gilde NICHT löschen (Safety)
             if (newCount == 0)
             {
-                // Leere Gilde löschen
-                await _firebaseService.DeleteAsync($"guilds/{guildId}");
-
-                // Invite-Code aufräumen (falls vorhanden)
-                var code = await _firebaseService.GetAsync<string>($"guild_invite_codes/{guildId}");
-                if (!string.IsNullOrEmpty(code))
-                {
-                    await _firebaseService.DeleteAsync($"invite_code_to_guild/{code}");
-                    await _firebaseService.DeleteAsync($"guild_invite_codes/{guildId}");
-                }
+                // Leere Gilde komplett aufräumen
+                await CleanupDeletedGuildAsync(guildId);
             }
 
             // Schnell-Lookup entfernen
@@ -403,6 +454,88 @@ public sealed class GuildService : IGuildService, IDisposable
             _log.Error("Gilde verlassen fehlgeschlagen", ex);
             return false;
         }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Überträgt die Führung an den ältesten Officer, sonst an das älteste Mitglied.
+    /// Wird automatisch aufgerufen wenn der Leader die Gilde verlässt.
+    /// </summary>
+    private async Task TransferLeadershipOnLeaveAsync(string guildId, string leavingLeaderUid)
+    {
+        try
+        {
+            var membersRaw = await _firebaseService.GetAsync<Dictionary<string, FirebaseGuildMember>>(
+                $"guild_members/{guildId}");
+            if (membersRaw == null || membersRaw.Count <= 1) return; // Keine anderen Mitglieder
+
+            // Kandidaten sortieren: Officers zuerst, dann nach JoinedAt (älteste zuerst)
+            string? newLeaderUid = null;
+            DateTime oldestJoin = DateTime.MaxValue;
+            string? oldestMemberUid = null;
+            DateTime oldestOfficerJoin = DateTime.MaxValue;
+            string? oldestOfficerUid = null;
+
+            foreach (var (memberUid, memberData) in membersRaw)
+            {
+                if (memberUid == leavingLeaderUid) continue;
+
+                var joinDate = ParseLastActive(memberData.JoinedAt);
+
+                if (memberData.Role == "officer" && joinDate < oldestOfficerJoin)
+                {
+                    oldestOfficerJoin = joinDate;
+                    oldestOfficerUid = memberUid;
+                }
+
+                if (joinDate < oldestJoin)
+                {
+                    oldestJoin = joinDate;
+                    oldestMemberUid = memberUid;
+                }
+            }
+
+            // Officer hat Vorrang, sonst ältestes Mitglied
+            newLeaderUid = oldestOfficerUid ?? oldestMemberUid;
+            if (string.IsNullOrEmpty(newLeaderUid)) return;
+
+            await _firebaseService.UpdateAsync($"guild_members/{guildId}/{newLeaderUid}",
+                new Dictionary<string, object> { ["role"] = "leader" });
+        }
+        catch (Exception ex)
+        {
+            _log.Error("Automatischer Leader-Transfer fehlgeschlagen", ex);
+        }
+    }
+
+    /// <summary>
+    /// Räumt alle Firebase-Daten einer leeren Gilde auf (verwaiste Knoten verhindern).
+    /// Wird aufgerufen wenn das letzte Mitglied die Gilde verlässt.
+    /// </summary>
+    private async Task CleanupDeletedGuildAsync(string guildId)
+    {
+        // Haupt-Eintrag löschen
+        await _firebaseService.DeleteAsync($"guilds/{guildId}");
+
+        // Invite-Code aufräumen (bidirektionales Mapping)
+        var code = await _firebaseService.GetAsync<string>($"guild_invite_codes/{guildId}");
+        if (!string.IsNullOrEmpty(code))
+        {
+            try { await _firebaseService.DeleteAsync($"invite_code_to_guild/{code}"); } catch { /* Nicht-kritisch */ }
+            try { await _firebaseService.DeleteAsync($"guild_invite_codes/{guildId}"); } catch { /* Nicht-kritisch */ }
+        }
+
+        // Verwaiste Daten-Knoten löschen (jeweils try/catch, damit ein Fehler nicht den Rest blockiert)
+        try { await _firebaseService.DeleteAsync($"guild_research/{guildId}"); } catch { /* Nicht-kritisch */ }
+        try { await _firebaseService.DeleteAsync($"guild_hall/{guildId}"); } catch { /* Nicht-kritisch */ }
+        try { await _firebaseService.DeleteAsync($"guild_bosses/{guildId}"); } catch { /* Nicht-kritisch */ }
+        try { await _firebaseService.DeleteAsync($"guild_boss_damage/{guildId}"); } catch { /* Nicht-kritisch */ }
+        try { await _firebaseService.DeleteAsync($"guild_chat/{guildId}"); } catch { /* Nicht-kritisch */ }
+        try { await _firebaseService.DeleteAsync($"guild_achievements/{guildId}"); } catch { /* Nicht-kritisch */ }
+        try { await _firebaseService.DeleteAsync($"guild_members/{guildId}"); } catch { /* Nicht-kritisch */ }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -422,6 +555,23 @@ public sealed class GuildService : IGuildService, IDisposable
             return false; // Timeout: Lock nicht erhalten
         try
         {
+            // Wöchentliches Spenden-Cap prüfen (max 30% des Wochenziels pro Spieler)
+            var weekKey = GetCurrentMondayUtc().ToString("yyyy-MM-dd");
+            var donationPrefKey = $"guild_weekly_donation_{weekKey}_{uid}";
+            var alreadyDonated = _preferences.Get(donationPrefKey, 0L);
+
+            // Wochenziel aus Firebase laden (Fallback auf Default)
+            var guildDataForCap = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{membership.GuildId}");
+            var weeklyGoal = guildDataForCap?.WeeklyGoal ?? DefaultWeeklyGoal;
+            var maxDonation = (long)(weeklyGoal * 0.30);
+            var remaining = maxDonation - alreadyDonated;
+            if (remaining <= 0) return false;
+
+            // Betrag auf verbleibendes Cap begrenzen
+            var cappedAmount = Math.Min((long)amount, remaining);
+            if (cappedAmount <= 0) return false;
+            amount = cappedAmount;
+
             // Spieler muss genug Geld haben
             if (!_gameStateService.TrySpendMoney(amount)) return false;
 
@@ -446,6 +596,9 @@ public sealed class GuildService : IGuildService, IDisposable
                 _gameStateService.AddMoney(amount);
                 return false;
             }
+
+            // Spenden-Tracking aktualisieren (Wöchentliches Cap)
+            _preferences.Set(donationPrefKey, alreadyDonated + contributionLong);
 
             // Spieler-Beitrag aktualisieren (bei Fehler akzeptabel, nur Anzeige-Wert)
             var memberData = await _firebaseService.GetAsync<FirebaseGuildMember>($"guild_members/{guildId}/{uid}");
@@ -639,13 +792,14 @@ public sealed class GuildService : IGuildService, IDisposable
     }
 
     /// <summary>
-    /// Berechnet max. Gilden-Mitglieder (20 + Forschungs-Boni aus GuildMembership-Cache).
-    /// Forschungs-Effekte werden von GuildResearchService gecacht.
+    /// Berechnet max. Gilden-Mitglieder (20 + Forschungs-Boni + Hallen-Boni aus GuildMembership-Cache).
+    /// Forschungs-Effekte werden von GuildResearchService, Hall-Effekte von GuildHallService gecacht.
     /// </summary>
     public int GetMaxMembers()
     {
         var membership = _gameStateService.State.GuildMembership;
-        return BaseMaxGuildMembers + (membership?.ResearchMaxMembersBonus ?? 0);
+        if (membership == null) return BaseMaxGuildMembers;
+        return BaseMaxGuildMembers + membership.ResearchMaxMembersBonus + membership.HallMaxMembersBonus;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -659,14 +813,16 @@ public sealed class GuildService : IGuildService, IDisposable
     /// </summary>
     public async Task<string?> GetOrCreateInviteCodeAsync()
     {
+        var uid = _firebaseService.PlayerId;
+        if (string.IsNullOrEmpty(uid)) return null;
+
+        var membership = _gameStateService.State.GuildMembership;
+        if (membership == null) return null;
+
+        if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
+            return null;
         try
         {
-            var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid)) return null;
-
-            var membership = _gameStateService.State.GuildMembership;
-            if (membership == null) return null;
-
             var guildId = membership.GuildId;
 
             // Bestehenden Code laden
@@ -695,6 +851,10 @@ public sealed class GuildService : IGuildService, IDisposable
         {
             _log.Error("Einladungscode erstellen fehlgeschlagen", ex);
             return null;
+        }
+        finally
+        {
+            _lock.Release();
         }
     }
 
@@ -1037,6 +1197,9 @@ public sealed class GuildService : IGuildService, IDisposable
             // Schnell-Lookup des Ziels entfernen
             await _firebaseService.DeleteAsync($"player_guilds/{targetUid}");
 
+            // Boss-Damage aufräumen (gekicktes Mitglied)
+            try { await _firebaseService.DeleteAsync($"guild_boss_damage/{guildId}/{targetUid}"); } catch { /* Nicht-kritisch */ }
+
             // MemberCount aus tatsächlicher Mitgliederzahl synchronisieren
             await CountAndSyncMemberCountAsync(guildId);
 
@@ -1169,6 +1332,18 @@ public sealed class GuildService : IGuildService, IDisposable
     }
 
     /// <summary>
+    /// Gibt den Montag der aktuellen UTC-Woche zurück.
+    /// Sonntag wird als letzter Tag der Vorwoche behandelt.
+    /// </summary>
+    private static DateTime GetCurrentMondayUtc()
+    {
+        var today = DateTime.UtcNow.Date;
+        var dayOfWeek = today.DayOfWeek;
+        var daysToMonday = dayOfWeek == DayOfWeek.Sunday ? 6 : (int)dayOfWeek - 1;
+        return today.AddDays(-daysToMonday);
+    }
+
+    /// <summary>
     /// Parst LastActiveAt mit RoundtripKind. Gibt DateTime.MinValue bei Fehler zurück.
     /// </summary>
     private static DateTime ParseLastActive(string? lastActiveAt)
@@ -1227,11 +1402,17 @@ public sealed class GuildService : IGuildService, IDisposable
             updates["level"] = newLevel;
             updates["totalWeeksCompleted"] = guildData.TotalWeeksCompleted + 1;
             // Neues Wochenziel skaliert mit Level
-            updates["weeklyGoal"] = (long)(DefaultWeeklyGoal * (1.0 + newLevel * 0.15));
+            // Diminishing Returns: sqrt(level) statt linear → hohe Level skalieren sanfter
+            updates["weeklyGoal"] = (long)(DefaultWeeklyGoal * (1.0 + Math.Sqrt(newLevel) * 0.2));
 
-            // Belohnung: Goldschrauben basierend auf Gilden-Level
-            int screwReward = Math.Min(50, 5 + guildData.Level * 2);
-            _gameStateService.AddGoldenScrews(screwReward);
+            // Belohnung: Duplikat-Schutz via Preferences (verhindert doppelte GS bei parallelem Reset)
+            var rewardKey = $"guild_weekly_reward_{currentMonday:yyyy-MM-dd}";
+            if (!_preferences.Get(rewardKey, false))
+            {
+                int screwReward = Math.Min(50, 5 + guildData.Level * 2);
+                _gameStateService.AddGoldenScrews(screwReward);
+                _preferences.Set(rewardKey, true);
+            }
 
             guildData.Level = newLevel;
         }

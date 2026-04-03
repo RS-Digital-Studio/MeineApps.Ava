@@ -93,16 +93,16 @@ public static class WorkerPersonalityExtensions
     public static string GetLocalizationKey(this WorkerPersonality personality) => $"Person{personality}";
 
     /// <summary>
-    /// Icon/emoji for this personality.
+    /// GameIconKind-Name für die Persönlichkeit (kompatibel mit StringToGameIconKindConverter).
     /// </summary>
     public static string GetIcon(this WorkerPersonality personality) => personality switch
     {
-        WorkerPersonality.Steady => "\u2696\ufe0f",      // Balance scale
-        WorkerPersonality.Perfectionist => "\ud83c\udfaf", // Target
-        WorkerPersonality.Cheerful => "\ud83d\ude04",      // Grinning face
-        WorkerPersonality.Ambitious => "\ud83d\ude80",     // Rocket
-        WorkerPersonality.Relaxed => "\ud83c\udf3f",       // Herb/leaf
-        WorkerPersonality.Specialist => "\ud83d\udd27",    // Wrench
-        _ => "\u2696\ufe0f"
+        WorkerPersonality.Steady => "ShieldHalfFull",
+        WorkerPersonality.Perfectionist => "StarFourPoints",
+        WorkerPersonality.Cheerful => "EmoticonHappy",
+        WorkerPersonality.Ambitious => "RocketLaunch",
+        WorkerPersonality.Relaxed => "WeatherSunset",
+        WorkerPersonality.Specialist => "Wrench",
+        _ => "ShieldHalfFull"
     };
 }

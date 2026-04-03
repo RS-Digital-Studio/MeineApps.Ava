@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Labs.Controls;
@@ -25,16 +26,12 @@ public partial class InspectionGameView : UserControl
     // Cache fuer SKColor.Parse() - vermeidet String-Parsing pro Frame pro Zelle
     private readonly Dictionary<string, SKColor> _colorCache = new();
     private InspectionCellData[] _cachedCells = [];
+    private bool _disposed;
 
     public InspectionGameView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        DetachedFromVisualTree += (_, _) =>
-        {
-            StopRenderLoop();
-            _renderer.Dispose();
-        };
 
         // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
         PropertyChanged += (_, args) =>
@@ -57,8 +54,32 @@ public partial class InspectionGameView : UserControl
             _renderer.Initialize(assetService);
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        if (_disposed) return;
+        _disposed = true;
+
+        if (_vm != null)
+        {
+            _vm.GameCompleted -= OnGameCompleted;
+            _vm = null;
+        }
+
+        if (_gameCanvas != null)
+        {
+            _gameCanvas.PaintSurface -= OnPaintSurface;
+            _gameCanvas.PointerPressed -= OnCanvasPointerPressed;
+        }
+
+        StopRenderLoop();
+        _renderer.Dispose();
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_disposed) return;
+
         // Altes ViewModel abmelden
         if (_vm != null)
             _vm.GameCompleted -= OnGameCompleted;

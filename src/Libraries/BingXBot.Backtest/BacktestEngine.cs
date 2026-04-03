@@ -262,7 +262,7 @@ public class BacktestEngine
 
         // Priorität 3: Leere Liste zurückgeben (Caller generiert Demo-Daten wenn nötig)
         _logger.LogWarning("Keine Datenquelle verfügbar für {Symbol}", symbol);
-        return new List<Candle>();
+        return [];
     }
 
     /// <summary>

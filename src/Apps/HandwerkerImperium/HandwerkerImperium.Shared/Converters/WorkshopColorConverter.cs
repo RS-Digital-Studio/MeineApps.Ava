@@ -16,19 +16,16 @@ public class WorkshopColorConverter : IValueConverter
 {
     public static WorkshopColorConverter Instance { get; } = new();
 
-    private static readonly Dictionary<WorkshopType, Color> Colors = new()
+    // Farben aus WorkshopTypeExtensions.GetColorHex() (zentrale Quelle)
+    private static readonly Dictionary<WorkshopType, Color> Colors = BuildColorCache();
+
+    private static Dictionary<WorkshopType, Color> BuildColorCache()
     {
-        [WorkshopType.Carpenter] = Color.Parse("#A0522D"),
-        [WorkshopType.Plumber] = Color.Parse("#0E7490"),
-        [WorkshopType.Electrician] = Color.Parse("#F97316"),
-        [WorkshopType.Painter] = Color.Parse("#EC4899"),
-        [WorkshopType.Roofer] = Color.Parse("#DC2626"),
-        [WorkshopType.Contractor] = Color.Parse("#EA580C"),
-        [WorkshopType.Architect] = Color.Parse("#78716C"),
-        [WorkshopType.GeneralContractor] = Color.Parse("#FFD700"),
-        [WorkshopType.MasterSmith] = Color.Parse("#D4A373"),         // Kupfer-Orange (Schmiede)
-        [WorkshopType.InnovationLab] = Color.Parse("#6A5ACD")        // Violett (Innovation)
-    };
+        var cache = new Dictionary<WorkshopType, Color>();
+        foreach (WorkshopType type in Enum.GetValues<WorkshopType>())
+            cache[type] = Color.Parse(type.GetColorHex());
+        return cache;
+    }
 
     private static readonly SolidColorBrush FallbackBrush = new(Color.Parse("#D97706"));
     private static readonly Dictionary<(WorkshopType, byte), SolidColorBrush> _cache = new();

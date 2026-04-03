@@ -538,7 +538,9 @@ public sealed partial class PipePuzzleViewModel : BaseMiniGameViewModel
         if (solved)
         {
             double timeRatio = (double)TimeRemaining / MaxTime;
-            int optimalMoves = GridCols * GridRows;
+            // Optimale Züge = Anzahl drehbarer Pfad-Tiles (nicht das gesamte Grid)
+            int optimalMoves = Tiles.Count(t => t.IsPartOfSolution && !t.IsLocked);
+            if (optimalMoves < 1) optimalMoves = 1;
             double moveEfficiency = optimalMoves / (double)Math.Max(MovesCount, 1);
 
             if (timeRatio > 0.5 && moveEfficiency > 0.4)

@@ -2,6 +2,7 @@ using BingXBot.Core.Models;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace BingXBot.ViewModels;
@@ -10,7 +11,7 @@ namespace BingXBot.ViewModels;
 /// ViewModel für Trade-History (abgeschlossene Trades, PnL-Übersicht).
 /// Empfängt echte Trades über den BotEventBus (von Bot und Backtest).
 /// </summary>
-public partial class TradeHistoryViewModel : ObservableObject
+public partial class TradeHistoryViewModel : ViewModelBase
 {
     private readonly BotEventBus _eventBus;
     private readonly BotDatabaseService? _dbService;

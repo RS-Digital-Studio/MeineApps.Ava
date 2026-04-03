@@ -264,7 +264,8 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
                 break;
 
             case WeeklyMissionType.CompleteDailyChallenges:
-                mission.TargetValue = tier switch { 0 => 5, 1 => 7, 2 => 10, 3 => 12, 4 => 15, 5 => 18, 6 => 20, 7 => 21, _ => 21 };
+                // EVENT-4: Tier 7 von 21 auf 18, Tier 8 von 21 auf 20 gesenkt (1-2 Tage Toleranz)
+                mission.TargetValue = tier switch { 0 => 5, 1 => 7, 2 => 10, 3 => 12, 4 => 15, 5 => 18, 6 => 20, 7 => 18, _ => 20 };
                 mission.MoneyReward = Math.Round(incomeBase * 0.9m, 0);
                 mission.XpReward = 110 + level * 5;
                 break;

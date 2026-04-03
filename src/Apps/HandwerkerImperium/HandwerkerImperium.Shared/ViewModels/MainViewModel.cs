@@ -533,6 +533,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isOfflineNewRecord;
 
+    /// <summary>Nächstes Ziel als Wiedereinsteiger-Tipp (nur bei >48h Offline-Pause).</summary>
+    [ObservableProperty]
+    private string _offlineGoalText = "";
+
     [ObservableProperty]
     private bool _isDailyRewardDialogVisible;
 
@@ -692,6 +696,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (oldProp != null) OnPropertyChanged(oldProp);
         if (newProp != null) OnPropertyChanged(newProp);
         OnPropertyChanged(nameof(IsTabBarVisible));
+
+        // MiniGame-ContentControl aktualisieren (ein einziges statt 10 separate)
+        OnPropertyChanged(nameof(ActiveMiniGameViewModel));
+        OnPropertyChanged(nameof(IsAnyMiniGameActive));
     }
 
     // Berechnete Navigation-Properties (XAML-Bindings bleiben unverändert)
@@ -732,6 +740,27 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public bool IsForgeGameActive => ActivePage == ActivePage.ForgeGame;
     public bool IsInventGameActive => ActivePage == ActivePage.InventGame;
     public bool IsAscensionActive => ActivePage == ActivePage.Ascension;
+
+    /// <summary>
+    /// Gibt das aktuell aktive MiniGame-ViewModel zurück, oder null wenn kein MiniGame aktiv.
+    /// Ermöglicht ein einziges ContentControl statt 10 separate (spart ~9 View-Instanzen + Renderer).
+    /// </summary>
+    public BaseMiniGameViewModel? ActiveMiniGameViewModel => ActivePage switch
+    {
+        ActivePage.SawingGame => SawingGameViewModel,
+        ActivePage.PipePuzzle => PipePuzzleViewModel,
+        ActivePage.WiringGame => WiringGameViewModel,
+        ActivePage.PaintingGame => PaintingGameViewModel,
+        ActivePage.RoofTilingGame => RoofTilingGameViewModel,
+        ActivePage.BlueprintGame => BlueprintGameViewModel,
+        ActivePage.DesignPuzzleGame => DesignPuzzleGameViewModel,
+        ActivePage.InspectionGame => InspectionGameViewModel,
+        ActivePage.ForgeGame => ForgeGameViewModel,
+        ActivePage.InventGame => InventGameViewModel,
+        _ => null
+    };
+
+    public bool IsAnyMiniGameActive => ActiveMiniGameViewModel != null;
 
     // Overlay-States (überlagern die aktuelle Seite, ActivePage bleibt unverändert)
     [ObservableProperty]
@@ -1168,6 +1197,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     private void OnBackPressExitHint(string msg) => ExitHintRequested?.Invoke(msg);
 
+    // Debounce für teure Max-Modus-Berechnung (GetMaxAffordableUpgrades iteriert durch hunderte Levels)
+    private DateTime _lastMaxModeCalc = DateTime.MinValue;
+
     private void OnMoneyChanged(object? sender, MoneyChangedEventArgs e)
     {
         Money = e.NewAmount;
@@ -1181,6 +1213,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         if (isMaxMode)
         {
+            // Max-Modus: Nur alle 2s neu berechnen wenn Dashboard nicht sichtbar,
+            // oder sofort wenn Dashboard sichtbar (dort sieht der User die Werte)
+            var now = DateTime.UtcNow;
+            bool shouldRecalc = IsDashboardActive || (now - _lastMaxModeCalc).TotalSeconds >= 2.0;
+            if (!shouldRecalc)
+            {
+                // Nur CanAfford-Flags billig aktualisieren (Vergleiche statt Math.Pow-Schleifen)
+                foreach (var workshop in Workshops)
+                {
+                    workshop.CanAffordUpgrade = e.NewAmount >= workshop.BulkUpgradeCost;
+                    workshop.CanAffordWorker = e.NewAmount >= workshop.HireWorkerCost;
+                }
+                return;
+            }
+            _lastMaxModeCalc = now;
+
             // Max-Modus: Anzahl leistbarer Upgrades hängt vom Geld ab → muss neu berechnet werden
             var stateWorkshops = _gameStateService.State.Workshops;
             _workshopLookupCache.Clear();
@@ -1210,6 +1258,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private void OnGoldenScrewsChanged(object? sender, GoldenScrewsChangedEventArgs e)
     {
         GoldenScrewsDisplay = e.NewAmount.ToString("N0");
+
+        // Goldschrauben-Erklärung beim allerersten Erhalt
+        if (e.OldAmount == 0 && e.NewAmount > 0)
+            _contextualHintService.TryShowHint(ContextualHints.GoldenScrews);
     }
 
     // Milestone-Level mit Goldschrauben-Belohnung
@@ -1322,6 +1374,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         _reviewService?.OnMilestone("prestige", prestigeCount);
         CheckReviewPrompt();
+
+        // Story-Kapitel prüfen (Prestige-bezogene Kapitel sofort triggern)
+        CheckForNewStoryChapter();
     }
 
     private void OnPrestigeMilestoneReached(object? sender, PrestigeMilestoneEventArgs e)
@@ -1673,6 +1728,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _cachedNetIncomeLabel = _localizationService.GetString("NetIncome") ?? "Netto";
         _cachedActiveEventKey = null; // Event-Name bei Sprachwechsel neu laden
         _lastPrestigeBannerLevel = -1; // Prestige-Banner mit neuen Texten neu berechnen
+
+        // Statische Renderer-Strings aktualisieren
+        WorkshopGameCardRenderer.UpdateLocalizedStrings(
+            _localizationService.GetString("TapToUnlock") ?? "Tap to unlock",
+            _localizationService.GetString("AtLevelShort") ?? "From Level {0}");
 
         // Alle lokalisierten Display-Texte aktualisieren
         MissionsVM.RefreshQuickJobs();

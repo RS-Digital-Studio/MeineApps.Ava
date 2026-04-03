@@ -14,7 +14,7 @@ namespace BingXBot.Engine.ATI;
 /// </summary>
 public class AdaptiveEnsemble
 {
-    private readonly List<IStrategy> _strategies = new();
+    private readonly List<IStrategy> _strategies = [];
     private readonly object _strategiesLock = new();
 
     // Gewichte pro Strategie pro Regime: _weights[regime][strategyName] = weight
@@ -213,7 +213,7 @@ public class AdaptiveEnsemble
     }
 
     private static EnsembleVote CreateEmptyVote() =>
-        new(Signal.None, 0m, 0, 0, "", Array.Empty<StrategyVote>(), null, null, null);
+        new(Signal.None, 0m, 0, 0, "", [], null, null, null);
 
     /// <summary>Serialisiert alle Strategie-Gewichte pro Regime als JSON.</summary>
     public string SerializeState()

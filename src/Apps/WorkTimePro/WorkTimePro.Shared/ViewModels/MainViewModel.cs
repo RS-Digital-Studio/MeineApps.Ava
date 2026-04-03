@@ -51,7 +51,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private TrackingStatus _statusBeforeUndo;
 
     // Event-Handler-Referenzen für sauberes Dispose
-    private readonly List<(ObservableObject Vm, string EventName, Delegate Handler)> _wiredEvents = new();
+    private readonly List<(ObservableObject Vm, string EventName, Delegate Handler)> _wiredEvents = [];
 
     // === Sub-Page Navigation ===
 

@@ -85,16 +85,16 @@ public sealed partial class YearOverviewViewModel : ViewModelBase
 
     // SkiaSharp Chart-Daten (ersetzen LiveCharts)
     [ObservableProperty]
-    private string[] _monthLabels = Array.Empty<string>();
+    private string[] _monthLabels = [];
 
     [ObservableProperty]
-    private float[] _monthlyWorkHoursData = Array.Empty<float>();
+    private float[] _monthlyWorkHoursData = [];
 
     [ObservableProperty]
-    private float[] _monthlyTargetHoursData = Array.Empty<float>();
+    private float[] _monthlyTargetHoursData = [];
 
     [ObservableProperty]
-    private float[] _cumulativeBalanceData = Array.Empty<float>();
+    private float[] _cumulativeBalanceData = [];
 
     public YearOverviewViewModel(
         IDatabaseService database,

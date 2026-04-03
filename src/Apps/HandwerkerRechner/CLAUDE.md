@@ -94,6 +94,11 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 
 **Pattern**: Alle `public static void Render(SKCanvas, SKRect, ...)` mit gecachten `SKPaint` (static readonly), inkl. `_layerPaint` für Alpha-Fade-In (SaveLayer). Views haben `OnPaintVisualization` Code-Behind Handler mit Named-Handler-Pattern (explizites Unsubscribe bei DataContext-Wechsel). Visualisierung in `<Border Classes="Card" Height="220" ClipToBounds="True">` mit `IsVisible="{Binding HasResult}"`.
 
+**CalculatorViewBase** (`Views/CalculatorViewBase.cs`): Abstrakte Basisklasse fuer alle 19 Calculator-Views. Kapselt das gemeinsame PropertyChanged-Subscription-Pattern (`_currentVm`/`_resultHandler`, An-/Abmeldung bei DataContext-Wechsel). Abgeleitete Klassen ueberschreiben:
+- `ShouldInvalidateOnPropertyChanged(propertyName)`: Filter-Logik (Standard: `Contains("Result")`)
+- `OnResultPropertyChanged()`: Reaktion (Animation starten oder Canvas invalidieren)
+- `RequestAnimationFrame(sender)`: Statische Hilfsmethode fuer Animation-Loop (NeedsRedraw → InvalidateSurface)
+
 **Background Render-Loop**: MainView: DispatcherTimer 200ms (~5fps), `_backgroundRenderer.Update(0.2f)` + `BackgroundCanvas.InvalidateSurface()`. SKCanvasView mit `Grid.RowSpan="3"` + `IsHitTestVisible="False"` hinter Content. UserControl Background=Transparent (Gradient kommt vom Renderer). Start in `OnDataContextChanged`, Stop+Dispose in `OnDetachedFromVisualTree`.
 
 **Einschwing-Animation**: 17 Renderer erben von `AnimatedVisualizationBase` (StartAnimation/NeedsRedraw). Die 3 neuen Visualisierungsklassen (HourlyRate, MaterialCompare, AreaMeasure) sind einfache statische Klassen OHNE Animation-Basisklasse → Code-Behind ruft direkt `InvalidateSurface()` bei PropertyChanged auf (kein StartAnimation/NeedsRedraw).

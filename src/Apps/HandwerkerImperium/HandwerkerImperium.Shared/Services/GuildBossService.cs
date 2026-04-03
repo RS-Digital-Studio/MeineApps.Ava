@@ -319,9 +319,9 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
             if (guildData != null)
                 memberCount = Math.Max(1, guildData.MemberCount);
 
-            // Bei 1-4 Mitgliedern: Faktor 1 (Minimum), bei 5: 1, bei 10: 2, bei 20: 4
-            var memberScaling = Math.Max(1, memberCount / 5);
-            var bossHp = baseBossHp * memberScaling;
+            // Stufenlose Skalierung: 1 Mitglied=0.5x, 3=0.8x, 5=1.0x, 10=1.5x, 20=2.5x
+            // Formel: max(0.5, memberCount / 5.0) — kein Integer-Division-Bug mehr
+            var bossHp = (long)(baseBossHp * Math.Max(0.5, memberCount / 5.0));
 
             var now = DateTime.UtcNow;
             var newBoss = new FirebaseGuildBoss
@@ -335,10 +335,20 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
                 Status = "active"
             };
 
-            await _firebase.SetAsync($"guild_bosses/{guildId}", newBoss);
+            // Boss in Firebase schreiben
+            if (!await _firebase.SetAsync($"guild_bosses/{guildId}", newBoss))
+                return false;
 
-            // Alte Damage-Einträge löschen
-            await _firebase.DeleteAsync($"guild_boss_damage/{guildId}");
+            // Read-after-Write: Prüfen ob ein anderer Client uns überschrieben hat
+            var verify = await _firebase.GetAsync<FirebaseGuildBoss>($"guild_bosses/{guildId}");
+            if (verify == null || verify.StartedAt != newBoss.StartedAt || verify.BossId != newBoss.BossId)
+            {
+                // Anderer Client war schneller → unseren Spawn verwerfen, Damage NICHT löschen
+                return false;
+            }
+
+            // Boss bestätigt → erst jetzt alte Damage-Einträge löschen
+            try { await _firebase.DeleteAsync($"guild_boss_damage/{guildId}"); } catch { /* Best-Effort */ }
 
             _cachedBoss = newBoss;
             _cachedDefinition = definition;
@@ -455,19 +465,17 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
 
     /// <summary>
     /// Verteilt Boss-Belohnungen: MVP 30 GS + Cosmetic, Top 3 20 GS, Teilnahme 10 GS.
-    /// Duplikat-Schutz über Preferences (Wochen-Key).
+    /// Duplikat-Schutz über Boss-Start-Timestamp (nicht Woche, wegen Wochengrenz-Überschreitung).
     /// </summary>
     private async Task DistributeBossRewardsAsync(string guildId)
     {
         var uid = _firebase.PlayerId;
         if (string.IsNullOrEmpty(uid)) return;
 
-        // Duplikat-Schutz: Nur einmal pro Woche belohnen
-        var cal = CultureInfo.InvariantCulture.Calendar;
-        var weekNum = cal.GetWeekOfYear(DateTime.UtcNow,
-            CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-        var weekKey = $"{DateTime.UtcNow.Year}-{weekNum:D2}";
-        var rewardKey = $"{PrefKeyLastBossRewardWeek}_{weekKey}";
+        // Duplikat-Schutz: Boss-spezifisch über StartedAt-Timestamp
+        // Verhindert doppelte Belohnung auch bei Wochengrenz-Überschreitung
+        var bossKey = _cachedBoss?.StartedAt ?? DateTime.UtcNow.ToString("O");
+        var rewardKey = $"{PrefKeyLastBossRewardWeek}_{bossKey}";
         if (_preferences.Get(rewardKey, false)) return;
 
         try

@@ -136,10 +136,17 @@ public sealed class GuildAchievementService : IGuildAchievementService, IDisposa
     {
         var path = $"guild_achievements/{guildId}/{achievementId}";
 
-        // Aktuellen Zustand laden
+        // Aktuellen Zustand laden (aus Cache oder Firebase, NICHT Default annehmen)
         _cachedStates ??= new Dictionary<string, GuildAchievementState>();
-        _cachedStates.TryGetValue(achievementId, out var state);
-        state ??= new GuildAchievementState();
+        if (!_cachedStates.TryGetValue(achievementId, out var state))
+        {
+            // Nicht im Cache → von Firebase laden (verhindert Duplikat-Belohnungen nach App-Neustart)
+            state = await _firebase.GetAsync<GuildAchievementState>(path);
+            if (state != null)
+                _cachedStates[achievementId] = state;
+            else
+                state = new GuildAchievementState();
+        }
 
         // Bereits abgeschlossen? Überspringen
         if (state.Completed) return;

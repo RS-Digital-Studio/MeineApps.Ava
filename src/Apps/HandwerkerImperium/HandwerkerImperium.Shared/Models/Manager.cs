@@ -56,9 +56,9 @@ public class Manager
     public int UpgradeCost => Level * 10;
 
     /// <summary>
-    /// Alle 14 Manager-Definitionen.
+    /// Alle 14 Manager-Definitionen (gecacht, keine Allokation pro Aufruf).
     /// </summary>
-    public static List<ManagerDefinition> GetAllDefinitions() =>
+    private static readonly List<ManagerDefinition> _allDefinitions =
     [
         new("mgr_hans", "ManagerHans", WorkshopType.Carpenter, ManagerAbility.EfficiencyBoost, 10, 0, 0),
         new("mgr_fritz", "ManagerFritz", WorkshopType.Plumber, ManagerAbility.FatigueReduction, 20, 0, 0),
@@ -77,12 +77,26 @@ public class Manager
     ];
 
     /// <summary>
+    /// Dictionary-Lookup für O(1) Zugriff per ID (vermeidet FirstOrDefault pro GetBonus-Aufruf).
+    /// </summary>
+    private static readonly Dictionary<string, ManagerDefinition> _definitionsById =
+        _allDefinitions.ToDictionary(d => d.Id, d => d);
+
+    public static List<ManagerDefinition> GetAllDefinitions() => _allDefinitions;
+
+    /// <summary>
+    /// Findet eine Manager-Definition per ID (O(1) Dictionary-Lookup).
+    /// </summary>
+    public static ManagerDefinition? GetDefinitionById(string id) =>
+        _definitionsById.GetValueOrDefault(id);
+
+    /// <summary>
     /// Berechnet den Bonus basierend auf Manager-Level und Fähigkeit.
     /// </summary>
     public decimal GetBonus(ManagerAbility ability)
     {
         if (!IsUnlocked) return 0m;
-        var def = GetAllDefinitions().FirstOrDefault(d => d.Id == Id);
+        var def = GetDefinitionById(Id);
         if (def == null || def.Ability != ability) return 0m;
 
         return ability switch

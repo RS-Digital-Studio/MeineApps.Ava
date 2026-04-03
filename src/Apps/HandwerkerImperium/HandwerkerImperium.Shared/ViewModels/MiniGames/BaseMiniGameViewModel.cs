@@ -115,6 +115,14 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _autoCompleteHint = "";
 
+    /// <summary>Bisheriger Durchschnitt bei Multi-Task-Orders (z.B. "Bisheriger Durchschnitt: ★★☆").</summary>
+    [ObservableProperty]
+    private string _intermediateAverage = "";
+
+    /// <summary>Ob der Info-Button sichtbar ist (Tutorial kann nochmal gelesen werden).</summary>
+    [ObservableProperty]
+    private bool _canShowTutorialInfo;
+
     // ═══════════════════════════════════════════════════════════════════════
     // COMPUTED PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -212,6 +220,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
         OrderId = orderId;
         IsPlaying = false;
         IsResultShown = false;
+        IntermediateAverage = "";
 
         var activeOrder = _gameStateService.GetActiveOrder();
         if (activeOrder != null)
@@ -230,7 +239,11 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
         }
         else
         {
-            // QuickJob: Immer letzte (einzige) Aufgabe
+            // QuickJob: Difficulty vom QuickJob-Model übernehmen, immer letzte (einzige) Aufgabe
+            var quickJob = _gameStateService.State.ActiveQuickJob;
+            if (quickJob != null)
+                Difficulty = quickJob.Difficulty;
+
             TaskProgressDisplay = "";
             IsLastTask = true;
             ContinueButtonText = _localizationService.GetString("Continue");
@@ -261,12 +274,13 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
         if (PlaySoundBeforeCountdown)
             await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
-        // Countdown 3-2-1-Los!
+        // Countdown 3-2-1-Los! (verkürzt nach 50+ gespielten MiniGames)
         IsCountdownActive = true;
+        int delay = _gameStateService.State.TotalMiniGamesPlayed >= 50 ? 350 : 700;
         foreach (var text in new[] { "3", "2", "1", _localizationService.GetString("CountdownGo") })
         {
             CountdownText = text;
-            await Task.Delay(700);
+            await Task.Delay(delay);
         }
         IsCountdownActive = false;
 
@@ -387,6 +401,23 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
             Star1Opacity = starCount >= 1 ? 1.0 : 0.3;
             Star2Opacity = starCount >= 2 ? 1.0 : 0.3;
             Star3Opacity = starCount >= 3 ? 1.0 : 0.3;
+
+            // Bisheriger Durchschnitt über alle abgeschlossenen Runden anzeigen
+            var order = _gameStateService.GetActiveOrder();
+            if (order != null && order.TaskResults.Count > 0)
+            {
+                double avgStars = order.TaskResults.Average(r => r switch
+                {
+                    MiniGameRating.Perfect => 3.0,
+                    MiniGameRating.Good => 2.0,
+                    MiniGameRating.Ok => 1.0,
+                    _ => 0.0
+                });
+                int roundedAvg = (int)Math.Round(avgStars);
+                string stars = roundedAvg >= 3 ? "★★★" : roundedAvg == 2 ? "★★☆" : roundedAvg == 1 ? "★☆☆" : "☆☆☆";
+                var avgLabel = _localizationService.GetString("AverageRating") ?? "";
+                IntermediateAverage = $"{avgLabel} {stars}";
+            }
         }
 
         AdWatched = false;
@@ -409,7 +440,14 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
             RewardAmount *= 2;
             XpAmount *= 2;
             var order = _gameStateService.GetActiveOrder();
-            if (order != null) order.IsScoreDoubled = true;
+            if (order != null)
+                order.IsScoreDoubled = true;
+            else
+            {
+                // QuickJob: Verdopplung auf dem QuickJob-Model markieren
+                var quickJob = _gameStateService.State.ActiveQuickJob;
+                if (quickJob != null) quickJob.IsScoreDoubled = true;
+            }
             AdWatched = true;
             CanWatchAd = false;
 
@@ -446,6 +484,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
     protected void DismissTutorial()
     {
         ShowTutorial = false;
+        CanShowTutorialInfo = true;
         var state = _gameStateService.State;
         var gameType = GetCurrentMiniGameType();
         if (!state.SeenMiniGameTutorials.Contains(gameType))
@@ -453,7 +492,9 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
             state.SeenMiniGameTutorials.Add(gameType);
             _gameStateService.MarkDirty();
         }
-        StartGameAsync().SafeFireAndForget();
+        // Nur Spiel starten wenn nicht bereits läuft (Info-Button während Spiel)
+        if (!IsPlaying && !IsResultShown)
+            StartGameAsync().SafeFireAndForget();
     }
 
     [RelayCommand]
@@ -482,26 +523,27 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        // Alle verbleibenden Tasks mit Good abschließen
+        // Mastery-Belohnung: Alle verbleibenden Tasks mit Perfect abschließen
+        // Der Spieler hat sich Auto-Complete durch 30/15 Perfect-Ratings verdient
         while (!order.IsCompleted)
-            _gameStateService.RecordMiniGameResult(MiniGameRating.Good);
+            _gameStateService.RecordMiniGameResult(MiniGameRating.Perfect);
 
-        await _audioService.PlaySoundAsync(GameSound.Good);
+        await _audioService.PlaySoundAsync(GameSound.Perfect);
 
         RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
         XpAmount = order.FinalXp;
-        Result = MiniGameRating.Good;
+        Result = MiniGameRating.Perfect;
         ResultText = _localizationService.GetString(Result.GetLocalizationKey());
-        ResultEmoji = "★★";
+        ResultEmoji = "★★★";
         IsLastTask = true;
         IsResultShown = true;
 
-        // Good = 2 Sterne
+        // Perfect = 3 Sterne (verdiente Mastery-Belohnung)
         Star1Opacity = 1.0;
         Star2Opacity = 1.0;
-        Star3Opacity = 0.3;
+        Star3Opacity = 1.0;
 
-        GameCompleted?.Invoke(this, 2);
+        GameCompleted?.Invoke(this, 3);
 
         AdWatched = false;
         CanWatchAd = _rewardedAdService.IsAvailable;
@@ -514,19 +556,37 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
 
     protected void CheckAndShowTutorial(MiniGameType gameType)
     {
+        // Tutorial-Texte immer laden (für Info-Button)
+        TutorialTitle = _localizationService.GetString($"Tutorial{gameType}Title") ?? "";
+        TutorialText = _localizationService.GetString($"Tutorial{gameType}Text") ?? "";
+
         var state = _gameStateService.State;
         if (!state.SeenMiniGameTutorials.Contains(gameType))
         {
-            TutorialTitle = _localizationService.GetString($"Tutorial{gameType}Title") ?? "";
-            TutorialText = _localizationService.GetString($"Tutorial{gameType}Text") ?? "";
             ShowTutorial = true;
+            CanShowTutorialInfo = false;
         }
+        else
+        {
+            // Tutorial bereits gesehen → Info-Button zeigen
+            CanShowTutorialInfo = true;
+        }
+    }
+
+    /// <summary>Tutorial nochmal anzeigen (Info-Button, kein Tracking-Reset).</summary>
+    [RelayCommand]
+    protected void ShowTutorialInfo()
+    {
+        ShowTutorial = true;
+        CanShowTutorialInfo = false;
     }
 
     protected void UpdateAutoCompleteStatus(MiniGameType gameType)
     {
         var state = _gameStateService.State;
-        bool canAuto = _gameStateService.CanAutoComplete(gameType, state.IsPremium);
+        // Auto-Complete nur bei echten Aufträgen, nicht bei QuickJobs (die haben kein ActiveOrder)
+        bool hasActiveOrder = _gameStateService.GetActiveOrder() != null;
+        bool canAuto = hasActiveOrder && _gameStateService.CanAutoComplete(gameType, state.IsPremium);
         CanAutoComplete = canAuto;
         if (canAuto)
         {

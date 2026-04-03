@@ -1,39 +1,19 @@
-using System.ComponentModel;
-using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using HandwerkerRechner.Graphics;
 using HandwerkerRechner.ViewModels.Premium;
 
 namespace HandwerkerRechner.Views.Premium;
 
-public partial class ElectricalView : UserControl
+public partial class ElectricalView : CalculatorViewBase
 {
-    private INotifyPropertyChanged? _currentVm;
-    private PropertyChangedEventHandler? _resultHandler;
-
     public ElectricalView()
     {
         InitializeComponent();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
+    protected override void OnResultPropertyChanged()
     {
-        base.OnDataContextChanged(e);
-
-        // Alten Handler abmelden
-        if (_currentVm != null && _resultHandler != null)
-            _currentVm.PropertyChanged -= _resultHandler;
-
-        _currentVm = DataContext as INotifyPropertyChanged;
-        if (_currentVm != null)
-        {
-            _resultHandler = (_, args) =>
-            {
-                if (args.PropertyName?.Contains("Result") == true)
-                    ElectricalVisualization.StartAnimation();
-            };
-            _currentVm.PropertyChanged += _resultHandler;
-        }
+        ElectricalVisualization.StartAnimation();
     }
 
     private void OnPaintVisualization(object? sender, SKPaintSurfaceEventArgs e)
@@ -68,13 +48,8 @@ public partial class ElectricalView : UserControl
                 ohmsV, ohmsI, ohmsR, ohmsP,
                 vm.HasResult);
 
-            // Animation-Loop: weitere Frames anfordern
             if (ElectricalVisualization.NeedsRedraw)
-            {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                    (sender as Avalonia.Labs.Controls.SKCanvasView)?.InvalidateSurface(),
-                    Avalonia.Threading.DispatcherPriority.Render);
-            }
+                RequestAnimationFrame(sender);
         }
     }
 }

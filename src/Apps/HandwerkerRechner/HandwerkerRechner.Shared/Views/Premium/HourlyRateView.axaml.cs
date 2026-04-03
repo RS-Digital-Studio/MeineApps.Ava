@@ -1,41 +1,25 @@
-using System.ComponentModel;
-using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using HandwerkerRechner.Graphics;
 using HandwerkerRechner.ViewModels.Premium;
 
 namespace HandwerkerRechner.Views.Premium;
 
-public partial class HourlyRateView : UserControl
+public partial class HourlyRateView : CalculatorViewBase
 {
-    private INotifyPropertyChanged? _currentVm;
-    private PropertyChangedEventHandler? _resultHandler;
-
     public HourlyRateView()
     {
         InitializeComponent();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
+    protected override bool ShouldInvalidateOnPropertyChanged(string? propertyName)
     {
-        base.OnDataContextChanged(e);
+        return propertyName == nameof(HourlyRateViewModel.HasResult) ||
+               propertyName == nameof(HourlyRateViewModel.TotalGross);
+    }
 
-        // Alten Handler abmelden, um Memory-Leaks zu vermeiden
-        if (_currentVm != null && _resultHandler != null)
-            _currentVm.PropertyChanged -= _resultHandler;
-
-        _currentVm = DataContext as INotifyPropertyChanged;
-        if (_currentVm != null)
-        {
-            _resultHandler = (_, args) =>
-            {
-                // Canvas neu zeichnen sobald Ergebnis vorliegt
-                if (args.PropertyName == nameof(HourlyRateViewModel.HasResult) ||
-                    args.PropertyName == nameof(HourlyRateViewModel.TotalGross))
-                    HourlyRateCanvas.InvalidateSurface();
-            };
-            _currentVm.PropertyChanged += _resultHandler;
-        }
+    protected override void OnResultPropertyChanged()
+    {
+        HourlyRateCanvas.InvalidateSurface();
     }
 
     private void OnPaintVisualization(object? sender, SKPaintSurfaceEventArgs e)

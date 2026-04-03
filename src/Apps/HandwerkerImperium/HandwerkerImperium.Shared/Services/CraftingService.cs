@@ -15,11 +15,16 @@ public sealed class CraftingService : ICraftingService
     private readonly IIncomeCalculatorService _incomeCalculator;
     // Lock verhindert Race Condition bei schnellem Doppelklick (Materialien doppelt verbraucht)
     private readonly object _craftingLock = new();
-    // Gecachter Crafting-Speed-Bonus (wird bei Prestige-Shop-Kauf invalidiert)
-    private decimal _cachedCraftingSpeedBonus = -1m;
-    private int _lastPurchasedCount = -1;
+    // Gecachter Crafting-Speed-Bonus (Dirty-Flag statt Count-Vergleich)
+    private decimal _cachedCraftingSpeedBonus;
+    private bool _craftingSpeedCacheDirty = true;
 
     public event Action? CraftingUpdated;
+
+    /// <summary>
+    /// Crafting-Speed-Cache invalidieren (nach Prestige-Shop-Kauf oder State-Load).
+    /// </summary>
+    public void InvalidateCraftingSpeedCache() => _craftingSpeedCacheDirty = true;
 
     public CraftingService(
         IGameStateService gameState,
@@ -27,12 +32,9 @@ public sealed class CraftingService : ICraftingService
     {
         _gameState = gameState;
         _incomeCalculator = incomeCalculator;
-        // Bei State-Wechsel (Prestige/Import/Reset) Caches invalidieren
-        _gameState.StateLoaded += (_, _) =>
-        {
-            _cachedCraftingSpeedBonus = -1m;
-            _lastPurchasedCount = -1;
-        };
+        // Bei State-Wechsel (Prestige/Import/Reset) und Prestige-Shop-Kauf Cache invalidieren
+        _gameState.StateLoaded += (_, _) => _craftingSpeedCacheDirty = true;
+        _gameState.PrestigeShopPurchased += (_, _) => _craftingSpeedCacheDirty = true;
     }
 
     public List<CraftingRecipe> GetAvailableRecipes(WorkshopType workshopType, int workshopLevel)
@@ -52,7 +54,7 @@ public sealed class CraftingService : ICraftingService
             var state = _gameState.State;
 
             // Rezept finden
-            var recipe = CraftingRecipe.GetAllRecipes().FirstOrDefault(r => r.Id == recipeId);
+            var recipe = CraftingRecipe.GetById(recipeId);
             if (recipe == null) return false;
 
             // Input-Produkte prüfen und abziehen (atomar innerhalb des Locks)
@@ -117,7 +119,7 @@ public sealed class CraftingService : ICraftingService
         if (job == null) return false;
 
         // Rezept nachschlagen für Output
-        var recipe = CraftingRecipe.GetAllRecipes().FirstOrDefault(r => r.Id == job.RecipeId);
+        var recipe = CraftingRecipe.GetById(job.RecipeId);
         if (recipe == null) return false;
 
         // Produkt zum Inventar hinzufügen
@@ -238,16 +240,8 @@ public sealed class CraftingService : ICraftingService
     /// <summary>
     /// Findet das Rezept das ein bestimmtes Produkt herstellt.
     /// </summary>
-    private static CraftingRecipe? FindRecipeByProductId(string productId)
-    {
-        var recipes = CraftingRecipe.GetAllRecipes();
-        for (int i = 0; i < recipes.Count; i++)
-        {
-            if (recipes[i].OutputProductId == productId)
-                return recipes[i];
-        }
-        return null;
-    }
+    private static CraftingRecipe? FindRecipeByProductId(string productId) =>
+        CraftingRecipe.GetByOutputProduct(productId);
 
     /// <summary>
     /// Berechnet den Crafting-Geschwindigkeitsbonus aus gekauften Prestige-Shop-Items.
@@ -255,12 +249,15 @@ public sealed class CraftingService : ICraftingService
     /// </summary>
     private decimal GetPrestigeCraftingSpeedBonus(GameState state)
     {
-        var purchased = state.Prestige.PurchasedShopItems;
-        if (purchased.Count == 0) return 0m;
+        if (!_craftingSpeedCacheDirty) return _cachedCraftingSpeedBonus;
+        _craftingSpeedCacheDirty = false;
 
-        // Cache invalidieren wenn sich Kauf-Anzahl aendert
-        if (purchased.Count == _lastPurchasedCount && _cachedCraftingSpeedBonus >= 0m)
-            return _cachedCraftingSpeedBonus;
+        var purchased = state.Prestige.PurchasedShopItems;
+        if (purchased.Count == 0)
+        {
+            _cachedCraftingSpeedBonus = 0m;
+            return 0m;
+        }
 
         decimal bonus = 0m;
         var allItems = PrestigeShop.GetAllItems();
@@ -271,7 +268,6 @@ public sealed class CraftingService : ICraftingService
                 bonus += item.Effect.CraftingSpeedBonus;
         }
         _cachedCraftingSpeedBonus = bonus;
-        _lastPurchasedCount = purchased.Count;
         return bonus;
     }
 

@@ -2,6 +2,7 @@ namespace RebornSaga.ViewModels;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Ava.Services;
 using RebornSaga.Engine;
 using RebornSaga.Scenes;
@@ -12,7 +13,7 @@ using System.Threading.Tasks;
 /// <summary>
 /// Haupt-ViewModel - delegiert alles an SceneManager und InputManager.
 /// </summary>
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ViewModelBase
 {
     private readonly SceneManager _sceneManager;
     private readonly InputManager _inputManager;

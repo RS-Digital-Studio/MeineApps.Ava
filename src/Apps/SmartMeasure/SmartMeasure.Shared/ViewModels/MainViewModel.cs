@@ -2,13 +2,14 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using SmartMeasure.Shared.Models;
 using SmartMeasure.Shared.Services;
 
 namespace SmartMeasure.Shared.ViewModels;
 
 /// <summary>Haupt-ViewModel: Navigation (6 Tabs + Verbindung), Status-Bar, Back-Button</summary>
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ViewModelBase
 {
     private readonly IBleService _bleService;
     private readonly BackPressHelper _backPressHelper = new();

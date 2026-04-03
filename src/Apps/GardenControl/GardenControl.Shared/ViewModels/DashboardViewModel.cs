@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using GardenControl.Core.DTOs;
 using GardenControl.Core.Enums;
 using GardenControl.Shared.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace GardenControl.Shared.ViewModels;
 
@@ -12,7 +13,7 @@ namespace GardenControl.Shared.ViewModels;
 /// Dashboard - Übersicht aller Zonen mit Live-Sensorwerten.
 /// Zeigt Feuchtigkeitsbalken, Systemstatus und Schnellaktionen.
 /// </summary>
-public partial class DashboardViewModel : ObservableObject
+public partial class DashboardViewModel : ViewModelBase
 {
     private readonly IConnectionService _connection;
 

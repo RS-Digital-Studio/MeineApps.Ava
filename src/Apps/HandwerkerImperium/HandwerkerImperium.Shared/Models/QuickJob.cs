@@ -36,6 +36,9 @@ public class QuickJob
     [JsonPropertyName("isCompleted")]
     public bool IsCompleted { get; set; }
 
+    /// <summary>Ob die Belohnung per Rewarded-Ad verdoppelt wurde.</summary>
+    [JsonIgnore] public bool IsScoreDoubled { get; set; }
+
     // Display-Properties (nicht serialisiert)
     [JsonIgnore] public string DisplayTitle { get; set; } = string.Empty;
     [JsonIgnore] public string DisplayWorkshopName { get; set; } = string.Empty;

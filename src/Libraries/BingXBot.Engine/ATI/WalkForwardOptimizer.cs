@@ -114,7 +114,7 @@ public class WalkForwardOptimizer
         {
             // Keine Parameter → nur Fitness berechnen
             var fitness = fitnessFunc(strategy, trainCandles);
-            return (Array.Empty<object>(), fitness);
+            return ([], fitness);
         }
 
         // Chromosome definieren: FloatingPointChromosome mit Min/Max pro Parameter

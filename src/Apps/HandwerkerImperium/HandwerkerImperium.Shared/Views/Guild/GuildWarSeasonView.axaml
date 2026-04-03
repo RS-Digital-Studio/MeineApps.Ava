@@ -80,7 +80,7 @@
           </StackPanel>
         </Border>
 
-        <!-- Bye-Week Anzeige -->
+        <!-- Bye-Week Anzeige mit Trainingsrunden-Hinweis -->
         <Border Classes="CardElevated" Padding="20"
                 IsVisible="{Binding IsByeWeek}">
           <StackPanel Spacing="8" HorizontalAlignment="Center">
@@ -90,6 +90,12 @@
             <TextBlock Text="{loc:Translate GuildWarByeWeek}"
                        FontSize="16" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding ByeWeekMessage}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap" TextAlignment="Center"
+                       Opacity="0.8"
                        HorizontalAlignment="Center" />
           </StackPanel>
         </Border>

@@ -3012,6 +3012,21 @@
   <data name="Story_Ch12_Text" xml:space="preserve">
     <value>La toiture, pas pour ceux qui ont le vertige ! Mais les marges sont fantastiques. Et entre nous : bientôt tu atteindras un niveau où quelque chose de spécial t'attend. On appelle ça le 'Prestige'. Mais on en reparlera...</value>
   </data>
+  <data name="Story_Ch12a_Title" xml:space="preserve">
+    <value>L'arene appelle !</value>
+  </data>
+  <data name="Story_Ch12a_Text" xml:space="preserve">
+    <value>Niveau 70, compagnon ! Tu peux maintenant participer aux tournois. Montre aux autres artisans qui est le meilleur ! Et bientot il y aura encore plus : des evenements saisonniers, un passe de combat... Mais chaque chose en son temps !</value>
+  </data>
+  <data name="Story_Ch12b_Title" xml:space="preserve">
+    <value>Les saisons de l'artisanat !</value>
+  </data>
+  <data name="Story_Ch12b_Text" xml:space="preserve">
+    <value>Des evenements saisonniers, compagnon ! Printemps, ete, automne, hiver : chaque saison apporte des commandes speciales et des recompenses uniques. Et avec le Passe de Combat, tu peux gagner des bonus exclusifs. L'artisanat ne dort jamais !</value>
+  </data>
+  <data name="WorkerQuitsInFormat" xml:space="preserve">
+    <value>Demissionne dans {0}</value>
+  </data>
   <data name="Story_Ch13_Title" xml:space="preserve">
     <value>L'entrepreneur !</value>
   </data>
@@ -3089,6 +3104,66 @@
   </data>
   <data name="Story_Ch25_Text" xml:space="preserve">
     <value>Niveau 1000. Grand Maître de la Guilde des Artisans. Il n'y a pas de titre plus élevé. D'un apprenti nerveux avec une petite menuiserie au plus puissant artisan de l'histoire : TON histoire ! J'ai vieilli avec toi, Grand Maître. Mais ça valait chaque minute. Merci.</value>
+  </data>
+  <data name="Story_Ch26_Title" xml:space="preserve">
+    <value>L'Artisan de Platine</value>
+  </data>
+  <data name="Story_Ch26_Text" xml:space="preserve">
+    <value>Platine ! Je ne connais qu'une poignée de personnes dans toute ma vie qui y sont parvenues. Tes outils brillent comme jamais, et ils resteront avec toi maintenant – pour toujours. L'artisanat t'a changé, Maître. Tu n'es plus la même personne qu'au début.</value>
+  </data>
+  <data name="Story_Ch27_Title" xml:space="preserve">
+    <value>Sur le Chemin du Diamant</value>
+  </data>
+  <data name="Story_Ch27_Text" xml:space="preserve">
+    <value>Entre Platine et Diamant se trouve un abîme, Maître. Beaucoup ont essayé, peu ont réussi. Tu as besoin de trois parcours Platine parfaits. Trois fois tout abandonner, trois fois revenir plus fort. Es-tu prêt pour la partie la plus difficile du voyage ?</value>
+  </data>
+  <data name="Story_Ch28_Title" xml:space="preserve">
+    <value>Dynastie de Diamant</value>
+  </data>
+  <data name="Story_Ch28_Text" xml:space="preserve">
+    <value>Diamant ! Indestructible, impérissable – comme ton empire. Tes bâtiments et ton équipement survivent désormais à chaque nouveau départ. Ce n'est plus de l'artisanat, c'est de l'art. Les gens parlent de toi avec révérence, Maître.</value>
+  </data>
+  <data name="Story_Ch29_Title" xml:space="preserve">
+    <value>Le Chemin du Maître</value>
+  </data>
+  <data name="Story_Ch29_Text" xml:space="preserve">
+    <value>Seuls les meilleurs des meilleurs atteignent le titre de Maître. Tes gestionnaires te restent fidèles, ton savoir perdure au-delà de chaque réinitialisation. En 40 ans, je n'ai jamais vu quelqu'un aller aussi loin. Tu écris l'histoire !</value>
+  </data>
+  <data name="Story_Ch30_Title" xml:space="preserve">
+    <value>Maître des Maîtres</value>
+  </data>
+  <data name="Story_Ch30_Text" xml:space="preserve">
+    <value>Tu as réussi. Maître. Le feu dans tes yeux brûle plus fort que n'importe quelle forge. Tes contremaîtres te suivent contre vents et marées. Chaque nouveau départ ne fait que te rendre plus fort. Il ne reste qu'un seul titre au-dessus de toi...</value>
+  </data>
+  <data name="Story_Ch31_Title" xml:space="preserve">
+    <value>Sur le Chemin de la Légende</value>
+  </data>
+  <data name="Story_Ch31_Text" xml:space="preserve">
+    <value>La Légende. Le titre le plus élevé qu'un artisan puisse jamais atteindre. Trois parcours Maître parfaits te séparent de l'immortalité. Tes meilleurs ouvriers resteront avec toi – un dernier signe de ta grandeur.</value>
+  </data>
+  <data name="Story_Ch32_Title" xml:space="preserve">
+    <value>Légende Vivante</value>
+  </data>
+  <data name="Story_Ch32_Text" xml:space="preserve">
+    <value>LÉGENDE ! *essuie une larme* En toutes ces années... Tu es le premier. Le seul. Ton nom sera inscrit dans les livres d'histoire. Des générations d'artisans parleront de toi. Je suis... sans voix. Et ça n'arrive pas souvent !</value>
+  </data>
+  <data name="Story_Ch33_Title" xml:space="preserve">
+    <value>Au-delà de la Légende</value>
+  </data>
+  <data name="Story_Ch33_Text" xml:space="preserve">
+    <value>Trois parcours de Légende. Tu as prouvé que tu es au-dessus de tout. Mais qu'est-ce qui vient après ? J'ai entendu parler d'un rituel ancestral... l'Ascension. Un recommencement complet sur un plan supérieur. Uniquement pour les vraies Légendes. Es-tu prêt à tout lâcher ?</value>
+  </data>
+  <data name="Story_Ch34_Title" xml:space="preserve">
+    <value>L'Ascension</value>
+  </data>
+  <data name="Story_Ch34_Text" xml:space="preserve">
+    <value>Tu as accompli l'Ascension ! Tu as tout laissé derrière toi pour recommencer sur un plan supérieur. Tes avantages d'Ascension sont puissants – capital de départ, outils éternels, recherche plus rapide. Chaque parcours sera désormais plus facile et plus gratifiant.</value>
+  </data>
+  <data name="Story_Ch35_Title" xml:space="preserve">
+    <value>Transcendance</value>
+  </data>
+  <data name="Story_Ch35_Text" xml:space="preserve">
+    <value>Trois Ascensions. Tu as brisé les limites du possible. Tu n'es plus seulement un artisan – tu es une force de la nature. Ton empire est immortel. Maître Hans s'incline une dernière fois. Cette histoire ne connaît pas de fin, seulement de nouveaux commencements. Adieu... et bienvenue à nouveau, quand tu le souhaites.</value>
   </data>
   <data name="TaskProgress" xml:space="preserve">
     <value>Tâche {0}/{1}</value>
@@ -4881,6 +4956,12 @@
   <data name="GuildWarByeWeek" xml:space="preserve">
     <value>Semaine de repos - pas d'adversaire ce tour</value>
   </data>
+  <data name="GuildWarByeWeekTraining" xml:space="preserve">
+    <value>Tour d'entraînement ! Complétez des commandes et mini-jeux pour gagner des points de guerre pour le prochain tour.</value>
+  </data>
+  <data name="GuildBonusActiveOffline" xml:space="preserve">
+    <value>Bonus de guilde actifs (hors ligne)</value>
+  </data>
   <data name="OurGuild" xml:space="preserve">
     <value>Notre Guilde</value>
   </data>
@@ -5556,6 +5637,9 @@
   <data name="AutoCompleteHint" xml:space="preserve">
     <value>Vous avez maîtrisé ce jeu {0}x parfaitement !</value>
   </data>
+  <data name="AverageRating" xml:space="preserve">
+    <value>Moyenne :</value>
+  </data>
   <data name="AchAscFirst" xml:space="preserve">
     <value>Premi&#232;re Ascension</value>
   </data>
@@ -5633,6 +5717,18 @@
   </data>
   <data name="HintFirstStarText" xml:space="preserve">
     <value>F&#233;licitations pour votre premi&#232;re &#233;toile de renaissance ! Les &#233;toiles sont permanentes et survivent au prestige et &#224; l'ascension. Chaque &#233;toile donne : +15-150% revenus, -5-25% co&#251;ts de mise &#224; niveau et jusqu'&#224; +2 places d'ouvriers.</value>
+  </data>
+  <data name="HintGoldenScrewsTitle" xml:space="preserve">
+    <value>Vis Dor&#233;es</value>
+  </data>
+  <data name="HintGoldenScrewsText" xml:space="preserve">
+    <value>Les Vis Dor&#233;es sont ta monnaie premium ! Gagne-les avec les commandes, d&#233;fis et succ&#232;s. Garde-les pour d&#233;bloquer des ateliers, le rush du soir ou la boutique prestige.</value>
+  </data>
+  <data name="HintAcceptOrderTitle" xml:space="preserve">
+    <value>Commandes</value>
+  </data>
+  <data name="HintAcceptOrderText" xml:space="preserve">
+    <value>Appuie sur une commande pour l'accepter. Tu joueras un court mini-jeu et gagneras de l'argent et de l'exp&#233;rience !</value>
   </data>
   <data name="AscensionAvailable" xml:space="preserve">
     <value>Ascension disponible !</value>
@@ -5986,5 +6082,8 @@
   </data>
   <data name="AbandonChallengeButton" xml:space="preserve">
     <value>Abandonner</value>
+  </data>
+  <data name="InventDecoyPart" xml:space="preserve">
+    <value>Leurre</value>
   </data>
 </root>

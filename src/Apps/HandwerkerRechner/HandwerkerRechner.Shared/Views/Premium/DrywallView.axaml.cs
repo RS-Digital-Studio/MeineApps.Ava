@@ -1,39 +1,19 @@
-using System.ComponentModel;
-using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using HandwerkerRechner.Graphics;
 using HandwerkerRechner.ViewModels.Premium;
 
 namespace HandwerkerRechner.Views.Premium;
 
-public partial class DrywallView : UserControl
+public partial class DrywallView : CalculatorViewBase
 {
-    private INotifyPropertyChanged? _currentVm;
-    private PropertyChangedEventHandler? _resultHandler;
-
     public DrywallView()
     {
         InitializeComponent();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
+    protected override void OnResultPropertyChanged()
     {
-        base.OnDataContextChanged(e);
-
-        // Alten Handler abmelden
-        if (_currentVm != null && _resultHandler != null)
-            _currentVm.PropertyChanged -= _resultHandler;
-
-        _currentVm = DataContext as INotifyPropertyChanged;
-        if (_currentVm != null)
-        {
-            _resultHandler = (_, args) =>
-            {
-                if (args.PropertyName?.Contains("Result") == true)
-                    DrywallVisualization.StartAnimation();
-            };
-            _currentVm.PropertyChanged += _resultHandler;
-        }
+        DrywallVisualization.StartAnimation();
     }
 
     private void OnPaintVisualization(object? sender, SKPaintSurfaceEventArgs e)
@@ -48,13 +28,8 @@ public partial class DrywallView : UserControl
                 vm.Result.CwProfiles, vm.Result.Plates,
                 vm.HasResult);
 
-            // Animation-Loop: weitere Frames anfordern
             if (DrywallVisualization.NeedsRedraw)
-            {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                    (sender as Avalonia.Labs.Controls.SKCanvasView)?.InvalidateSurface(),
-                    Avalonia.Threading.DispatcherPriority.Render);
-            }
+                RequestAnimationFrame(sender);
         }
     }
 }

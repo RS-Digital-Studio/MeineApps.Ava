@@ -5,6 +5,7 @@ using BingXBot.Engine.Strategies;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace BingXBot.ViewModels;
@@ -14,7 +15,7 @@ namespace BingXBot.ViewModels;
 /// Verbunden mit StrategyManager für echte Strategie-Aktivierung.
 /// Publiziert Aktivierung/Deaktivierung über den BotEventBus.
 /// </summary>
-public partial class StrategyViewModel : ObservableObject
+public partial class StrategyViewModel : ViewModelBase
 {
     private readonly StrategyManager _strategyManager;
     private readonly BotEventBus _eventBus;

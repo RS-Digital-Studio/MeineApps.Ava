@@ -3017,6 +3017,21 @@
   <data name="Story_Ch12_Text" xml:space="preserve">
     <value>I tetti, non per chi soffre di vertigini! Ma i margini sono fantastici. E tra noi: presto raggiungerai un livello dove qualcosa di speciale ti aspetta. Lo chiamiamo 'Prestigio'. Ma ne riparleremo...</value>
   </data>
+  <data name="Story_Ch12a_Title" xml:space="preserve">
+    <value>L'arena chiama!</value>
+  </data>
+  <data name="Story_Ch12a_Text" xml:space="preserve">
+    <value>Livello 70, operaio! D'ora in poi puoi partecipare ai tornei. Mostra agli altri artigiani chi e il migliore! E presto ci sara ancora di piu: eventi stagionali, un pass battaglia... Ma una cosa alla volta!</value>
+  </data>
+  <data name="Story_Ch12b_Title" xml:space="preserve">
+    <value>Le stagioni dell'artigianato!</value>
+  </data>
+  <data name="Story_Ch12b_Text" xml:space="preserve">
+    <value>Eventi stagionali, operaio! Primavera, estate, autunno, inverno: ogni stagione porta ordini speciali e ricompense uniche. E con il Pass Battaglia puoi guadagnare bonus esclusivi. L'artigianato non dorme mai!</value>
+  </data>
+  <data name="WorkerQuitsInFormat" xml:space="preserve">
+    <value>Si dimette tra {0}</value>
+  </data>
   <data name="Story_Ch13_Title" xml:space="preserve">
     <value>L'imprenditore edile!</value>
   </data>
@@ -3094,6 +3109,66 @@
   </data>
   <data name="Story_Ch25_Text" xml:space="preserve">
     <value>Livello 1000. Gran Maestro della Gilda degli Artigiani. Non esiste titolo più alto. Da un apprendista nervoso con una piccola falegnameria al più potente artigiano della storia: la TUA storia! Sono invecchiato con te, Gran Maestro. Ma ne è valsa ogni minuto. Grazie.</value>
+  </data>
+  <data name="Story_Ch26_Title" xml:space="preserve">
+    <value>L'Artigiano di Platino</value>
+  </data>
+  <data name="Story_Ch26_Text" xml:space="preserve">
+    <value>Platino! Conosco solo una manciata di persone in tutta la mia vita che ci sono riuscite. I tuoi strumenti brillano come non mai, e ora resteranno con te – per sempre. L'artigianato ti ha cambiato, Maestro. Non sei più la stessa persona di quando hai iniziato.</value>
+  </data>
+  <data name="Story_Ch27_Title" xml:space="preserve">
+    <value>Sulla Via del Diamante</value>
+  </data>
+  <data name="Story_Ch27_Text" xml:space="preserve">
+    <value>Tra Platino e Diamante c'è un abisso, Maestro. Molti ci hanno provato, pochi ci sono riusciti. Ti servono tre percorsi Platino perfetti. Tre volte abbandonare tutto, tre volte tornare più forte. Sei pronto per la parte più difficile del viaggio?</value>
+  </data>
+  <data name="Story_Ch28_Title" xml:space="preserve">
+    <value>Dinastia di Diamante</value>
+  </data>
+  <data name="Story_Ch28_Text" xml:space="preserve">
+    <value>Diamante! Indistruttibile, imperituro – come il tuo impero. I tuoi edifici e il tuo equipaggiamento sopravvivono ora a ogni nuovo inizio. Questa non è più artigianato, questa è arte. La gente parla di te con reverenza, Maestro.</value>
+  </data>
+  <data name="Story_Ch29_Title" xml:space="preserve">
+    <value>Il Cammino del Maestro</value>
+  </data>
+  <data name="Story_Ch29_Text" xml:space="preserve">
+    <value>Solo i migliori dei migliori raggiungono il titolo di Maestro. I tuoi manager ti restano fedeli, la tua conoscenza sopravvive a ogni reset. In 40 anni non ho mai visto nessuno arrivare così lontano. Stai facendo la storia!</value>
+  </data>
+  <data name="Story_Ch30_Title" xml:space="preserve">
+    <value>Maestro dei Maestri</value>
+  </data>
+  <data name="Story_Ch30_Text" xml:space="preserve">
+    <value>Ce l'hai fatta. Maestro. Il fuoco nei tuoi occhi brucia più luminoso di qualsiasi forgia. I tuoi capisquadra ti seguono nella buona e nella cattiva sorte. Ogni nuovo inizio ti rende solo più forte. Resta solo un titolo sopra di te...</value>
+  </data>
+  <data name="Story_Ch31_Title" xml:space="preserve">
+    <value>Sulla Via della Leggenda</value>
+  </data>
+  <data name="Story_Ch31_Text" xml:space="preserve">
+    <value>La Leggenda. Il titolo più alto che un artigiano possa mai raggiungere. Tre percorsi Maestro perfetti ti separano dall'immortalità. I tuoi migliori lavoratori resteranno con te – un ultimo segno della tua grandezza.</value>
+  </data>
+  <data name="Story_Ch32_Title" xml:space="preserve">
+    <value>Leggenda Vivente</value>
+  </data>
+  <data name="Story_Ch32_Text" xml:space="preserve">
+    <value>LEGGENDA! *si asciuga una lacrima* In tutti i miei anni... Sei il primo. L'unico. Il tuo nome verrà scritto nei libri di storia. Generazioni di artigiani parleranno di te. Sono... senza parole. E questo non succede spesso!</value>
+  </data>
+  <data name="Story_Ch33_Title" xml:space="preserve">
+    <value>Oltre la Leggenda</value>
+  </data>
+  <data name="Story_Ch33_Text" xml:space="preserve">
+    <value>Tre percorsi da Leggenda. Hai dimostrato di essere al di sopra di tutto. Ma cosa viene dopo? Ho sentito parlare di un antico rituale... l'Ascensione. Un ricominciamento completo su un piano superiore. Solo per vere Leggende. Sei pronto a lasciare andare tutto?</value>
+  </data>
+  <data name="Story_Ch34_Title" xml:space="preserve">
+    <value>L'Ascensione</value>
+  </data>
+  <data name="Story_Ch34_Text" xml:space="preserve">
+    <value>Hai completato l'Ascensione! Hai lasciato tutto per ricominciare su un piano superiore. I tuoi vantaggi di Ascensione sono potenti – capitale iniziale, strumenti eterni, ricerca più veloce. Ogni percorso sarà ora più facile e gratificante.</value>
+  </data>
+  <data name="Story_Ch35_Title" xml:space="preserve">
+    <value>Trascendenza</value>
+  </data>
+  <data name="Story_Ch35_Text" xml:space="preserve">
+    <value>Tre Ascensioni. Hai infranto i confini del possibile. Non sei più solo un artigiano – sei una forza della natura. Il tuo impero è immortale. Maestro Hans si inchina per l'ultima volta. Questa storia non ha fine, solo nuovi inizi. Addio... e bentornato, quando vorrai.</value>
   </data>
   <data name="TaskProgress" xml:space="preserve">
     <value>Compito {0}/{1}</value>
@@ -4882,6 +4957,12 @@
   <data name="GuildWarByeWeek" xml:space="preserve">
     <value>Settimana libera - nessun avversario questo turno</value>
   </data>
+  <data name="GuildWarByeWeekTraining" xml:space="preserve">
+    <value>Turno di allenamento! Completa ordini e minigiochi per guadagnare punti guerra per il prossimo turno.</value>
+  </data>
+  <data name="GuildBonusActiveOffline" xml:space="preserve">
+    <value>Bonus gilda attivi (offline)</value>
+  </data>
   <data name="OurGuild" xml:space="preserve">
     <value>La Nostra Gilda</value>
   </data>
@@ -5563,6 +5644,9 @@
   <data name="AutoCompleteHint" xml:space="preserve">
     <value>Hai dominato questo gioco {0}x perfettamente!</value>
   </data>
+  <data name="AverageRating" xml:space="preserve">
+    <value>Media:</value>
+  </data>
   <data name="AchAscFirst" xml:space="preserve">
     <value>Prima Ascensione</value>
   </data>
@@ -5640,6 +5724,18 @@
   </data>
   <data name="HintFirstStarText" xml:space="preserve">
     <value>Congratulazioni per la tua prima stella di rinascita! Le stelle sono permanenti e sopravvivono al prestigio e all'ascensione. Ogni stella d&#224;: +15-150% reddito, -5-25% costi di aggiornamento e fino a +2 posti per lavoratori.</value>
+  </data>
+  <data name="HintGoldenScrewsTitle" xml:space="preserve">
+    <value>Viti Dorate</value>
+  </data>
+  <data name="HintGoldenScrewsText" xml:space="preserve">
+    <value>Le Viti Dorate sono la tua valuta premium! Guadagnale con ordini, sfide e traguardi. Conservale per sbloccare officine, lo sprint serale o il negozio prestigio.</value>
+  </data>
+  <data name="HintAcceptOrderTitle" xml:space="preserve">
+    <value>Ordini</value>
+  </data>
+  <data name="HintAcceptOrderText" xml:space="preserve">
+    <value>Tocca un ordine per accettarlo. Giocherai un breve mini-gioco e guadagnerai soldi e esperienza!</value>
   </data>
   <data name="AscensionAvailable" xml:space="preserve">
     <value>Ascensione disponibile!</value>
@@ -5993,5 +6089,8 @@
   </data>
   <data name="AbandonChallengeButton" xml:space="preserve">
     <value>Abbandona</value>
+  </data>
+  <data name="InventDecoyPart" xml:space="preserve">
+    <value>Esca</value>
   </data>
 </root>

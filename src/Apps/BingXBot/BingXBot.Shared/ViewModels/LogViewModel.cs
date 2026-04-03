@@ -2,6 +2,7 @@ using BingXBot.Core.Models;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace BingXBot.ViewModels;
@@ -10,7 +11,7 @@ namespace BingXBot.ViewModels;
 /// ViewModel für die Log-Ansicht (Bot-Aktivitäten, Fehler, Trade-Signale).
 /// Empfängt echte Log-Einträge über den BotEventBus.
 /// </summary>
-public partial class LogViewModel : ObservableObject
+public partial class LogViewModel : ViewModelBase
 {
     private readonly BotEventBus _eventBus;
     private readonly List<LogDisplayItem> _allLogs = new();

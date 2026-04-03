@@ -1,6 +1,7 @@
 using BingXBot.Core.Models;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace BingXBot.ViewModels;
@@ -9,7 +10,7 @@ namespace BingXBot.ViewModels;
 /// ViewModel für den Activity-Feed im Dashboard.
 /// Empfängt Log-Einträge vom BotEventBus und zeigt die letzten 20 relevanten Einträge an.
 /// </summary>
-public partial class ActivityFeedViewModel : ObservableObject, IDisposable
+public partial class ActivityFeedViewModel : ViewModelBase, IDisposable
 {
     private readonly BotEventBus _eventBus;
 

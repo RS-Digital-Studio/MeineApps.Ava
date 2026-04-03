@@ -336,8 +336,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService, IDisposable
     {
         await Task.CompletedTask; // Bonus-Missionen sind lokal
 
-        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
-        var prefix = $"{PrefKeyBonusMissionPrefix}{today}";
+        // Wöchentlicher Reset (Montag der aktuellen Woche)
+        var weekKey = GetCurrentMondayUtc().ToString("yyyy-MM-dd");
+        var prefix = $"{PrefKeyBonusMissionPrefix}{weekKey}";
 
         // 3 tägliche Missionen mit lokalem Fortschritts-Tracking
         var missions = new List<WarBonusMission>
@@ -380,8 +381,9 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService, IDisposable
     /// </summary>
     public async Task UpdateBonusMissionProgressAsync(string missionType, int amount = 1)
     {
-        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
-        var key = $"{PrefKeyBonusMissionPrefix}{today}_{missionType}";
+        // Wöchentlicher Reset (Montag der aktuellen Woche)
+        var weekKey = GetCurrentMondayUtc().ToString("yyyy-MM-dd");
+        var key = $"{PrefKeyBonusMissionPrefix}{weekKey}_{missionType}";
         var claimedKey = $"{key}_claimed";
 
         // Bereits abgeschlossen und Bonus kassiert?
@@ -484,19 +486,31 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService, IDisposable
 
     public async Task CheckSeasonEndAsync()
     {
-        var weekNr = GetCurrentWeekInSeason();
-        var dow = DateTime.UtcNow.DayOfWeek;
-
-        // Saison-Ende: Sonntag der 4. Woche
-        if (weekNr != 4 || dow != DayOfWeek.Sunday)
-            return;
-
         var seasonId = GetCurrentSeasonId();
         var season = await _firebase.GetAsync<GuildWarSeasonData>(
             $"guild_war_seasons/{seasonId}");
 
         if (season == null || season.Status == "completed")
             return;
+
+        // Robusteres Saison-Ende: Prüfe ob EndDate überschritten ist
+        // (fängt auch Fälle ab wo kein Spieler am exakten Sonntag Woche 4 online war)
+        var now = DateTime.UtcNow;
+        if (!string.IsNullOrEmpty(season.EndDate) &&
+            DateTime.TryParse(season.EndDate, CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind, out var endDate) &&
+            now >= endDate)
+        {
+            // Saison ist abgelaufen → Ende auslösen
+        }
+        else
+        {
+            // Fallback: Mindestens Woche 4 + Auswertungsphase (Samstag/Sonntag)
+            var weekNr = GetCurrentWeekInSeason();
+            var phase = GetCurrentPhase();
+            if (weekNr < 4 || phase != WarPhase.Evaluation)
+                return;
+        }
 
         var membership = _gameStateService.State.GuildMembership;
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
@@ -619,45 +633,33 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService, IDisposable
                 var wars = JsonSerializer.Deserialize<Dictionary<string, GuildWar>>(json);
                 if (wars != null)
                 {
-                    // Erste Runde: Enge Toleranz (+-3 Level)
-                    foreach (var (warId, war) in wars)
+                    // Matching mit Verify-after-Write (verhindert Race Condition bei gleichzeitigem Join)
+                    var matchedWarId = TryMatchWar(wars, warPrefix, ownGuildId, ownLevel, LevelMatchTolerance)
+                                    ?? TryMatchWar(wars, warPrefix, ownGuildId, ownLevel, LevelMatchToleranceExtended);
+
+                    if (matchedWarId != null)
                     {
-                        if (!warId.StartsWith(warPrefix)) continue;
-                        if (war.GuildBId != "waiting") continue;
-                        if (war.GuildAId == ownGuildId) continue;
+                        // Optimistisches Locking: Schreiben, dann verifizieren
+                        // Firebase REST hat keine Transaktionen → Last-Write-Wins
+                        // Verify-after-Write minimiert die Race-Window auf Millisekunden
+                        await _firebase.UpdateAsync($"guild_wars/{matchedWarId}",
+                            new Dictionary<string, object>
+                            {
+                                ["guildBId"] = ownGuildId,
+                                ["guildBName"] = ownGuildName,
+                                ["guildBLevel"] = ownLevel
+                            });
 
-                        if (Math.Abs(war.GuildALevel - ownLevel) <= LevelMatchTolerance)
-                        {
-                            // Beitreten
-                            await _firebase.UpdateAsync($"guild_wars/{warId}",
-                                new Dictionary<string, object>
-                                {
-                                    ["guildBId"] = ownGuildId,
-                                    ["guildBName"] = ownGuildName,
-                                    ["guildBLevel"] = ownLevel
-                                });
-                            return warId;
-                        }
-                    }
+                        // Kurze Verzögerung damit Firebase den Write propagieren kann
+                        await Task.Delay(200);
 
-                    // Zweite Runde: Erweiterte Toleranz (+-5 Level)
-                    foreach (var (warId, war) in wars)
-                    {
-                        if (!warId.StartsWith(warPrefix)) continue;
-                        if (war.GuildBId != "waiting") continue;
-                        if (war.GuildAId == ownGuildId) continue;
+                        // Verify-after-Write: Prüfen ob wir den Platz tatsächlich bekommen haben
+                        var verifyWar = await _firebase.GetAsync<GuildWar>($"guild_wars/{matchedWarId}");
+                        if (verifyWar != null && verifyWar.GuildBId == ownGuildId)
+                            return matchedWarId;
 
-                        if (Math.Abs(war.GuildALevel - ownLevel) <= LevelMatchToleranceExtended)
-                        {
-                            await _firebase.UpdateAsync($"guild_wars/{warId}",
-                                new Dictionary<string, object>
-                                {
-                                    ["guildBId"] = ownGuildId,
-                                    ["guildBName"] = ownGuildName,
-                                    ["guildBLevel"] = ownLevel
-                                });
-                            return warId;
-                        }
+                        // Anderer Spieler war schneller → neuen War erstellen (kein erneuter Match-Versuch)
+                        _log.Info($"War-Match verloren für {matchedWarId}, erstelle eigenen War");
                     }
                 }
             }
@@ -747,22 +749,15 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService, IDisposable
             if (mvpEntry.Value.TotalScore <= 0)
                 return ("", 0);
 
-            // Spielername aus guild_members laden (dort liegt der Name)
+            // Spielername aus guild_members laden (GetAsync statt QueryAsync für einzelnen Pfad)
             var membership = _gameStateService.State.GuildMembership;
             var mvpName = mvpEntry.Key;
             if (membership != null && !string.IsNullOrEmpty(membership.GuildId))
             {
-                var memberJson = await _firebase.QueryAsync(
-                    $"guild_members/{membership.GuildId}/{mvpEntry.Key}", "");
-                if (!string.IsNullOrEmpty(memberJson) && memberJson != "null")
-                {
-                    using var doc = JsonDocument.Parse(memberJson);
-                    if (doc.RootElement.TryGetProperty("name", out var nameEl)
-                        && nameEl.ValueKind == JsonValueKind.String)
-                    {
-                        mvpName = nameEl.GetString() ?? mvpEntry.Key;
-                    }
-                }
+                var memberData = await _firebase.GetAsync<FirebaseGuildMember>(
+                    $"guild_members/{membership.GuildId}/{mvpEntry.Key}");
+                if (memberData != null && !string.IsNullOrEmpty(memberData.Name))
+                    mvpName = memberData.Name;
             }
 
             // Fallback: Spielername aus Preferences wenn eigener Spieler
@@ -940,8 +935,12 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService, IDisposable
             if (entries == null || entries.Count <= 1)
                 return;
 
-            // Nach Punkten absteigend sortieren
-            var sorted = entries.OrderByDescending(e => e.Value.Points).ToList();
+            // Nach Punkten absteigend sortieren (bei Tie: Wins DESC, dann GuildId ASC für Determinismus)
+            var sorted = entries
+                .OrderByDescending(e => e.Value.Points)
+                .ThenByDescending(e => e.Value.Wins)
+                .ThenBy(e => e.Key)
+                .ToList();
             var totalGuilds = sorted.Count;
             var ownIndex = sorted.FindIndex(e => e.Key == guildId);
             if (ownIndex < 0) return;
@@ -1140,6 +1139,42 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService, IDisposable
             "completed" => WarPhase.Completed,
             _ => WarPhase.Attack
         };
+    }
+
+    /// <summary>
+    /// Sucht in der War-Liste nach einem passenden "waiting"-War innerhalb der Level-Toleranz.
+    /// Gibt die WarId zurück oder null wenn kein Match gefunden.
+    /// </summary>
+    private static string? TryMatchWar(
+        Dictionary<string, GuildWar> wars,
+        string warPrefix,
+        string ownGuildId,
+        int ownLevel,
+        int tolerance)
+    {
+        foreach (var (warId, war) in wars)
+        {
+            if (!warId.StartsWith(warPrefix)) continue;
+            if (war.GuildBId != "waiting") continue;
+            if (war.GuildAId == ownGuildId) continue;
+
+            if (Math.Abs(war.GuildALevel - ownLevel) <= tolerance)
+                return warId;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Gibt den Montag der aktuellen UTC-Woche zurück.
+    /// Sonntag wird als letzter Tag der Vorwoche behandelt.
+    /// </summary>
+    private static DateTime GetCurrentMondayUtc()
+    {
+        var today = DateTime.UtcNow.Date;
+        var dayOfWeek = today.DayOfWeek;
+        // Sonntag (0) → Montag -6 Tage; sonst (1-6) → Montag -(dayOfWeek-1) Tage
+        var daysToMonday = dayOfWeek == DayOfWeek.Sunday ? 6 : (int)dayOfWeek - 1;
+        return today.AddDays(-daysToMonday);
     }
 
     public void Dispose()

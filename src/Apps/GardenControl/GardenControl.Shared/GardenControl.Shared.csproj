@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GardenControl.Core\GardenControl.Core.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\MeineApps.Core.Ava\MeineApps.Core.Ava.csproj" />
   </ItemGroup>
 
   <ItemGroup>

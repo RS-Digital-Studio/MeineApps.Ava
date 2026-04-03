@@ -3017,6 +3017,21 @@
   <data name="Story_Ch12_Text" xml:space="preserve">
     <value>Os telhados, não para quem tem vertigens! Mas as margens são fantásticas. E entre nós: em breve atingirás um nível onde algo especial te espera. Chamamos-lhe 'Prestígio'. Mas falamos disso depois...</value>
   </data>
+  <data name="Story_Ch12a_Title" xml:space="preserve">
+    <value>A arena chama!</value>
+  </data>
+  <data name="Story_Ch12a_Text" xml:space="preserve">
+    <value>Nivel 70, oficial! A partir de agora podes participar em torneios. Mostra aos outros artesaos quem e o melhor! E em breve havera mais: eventos sazonais, um passe de batalha... Mas uma coisa de cada vez!</value>
+  </data>
+  <data name="Story_Ch12b_Title" xml:space="preserve">
+    <value>As estacoes do artesanato!</value>
+  </data>
+  <data name="Story_Ch12b_Text" xml:space="preserve">
+    <value>Eventos sazonais, oficial! Primavera, verao, outono, inverno: cada estacao traz encomendas especiais e recompensas unicas. E com o Passe de Batalha podes ganhar bonus exclusivos. O artesanato nunca dorme!</value>
+  </data>
+  <data name="WorkerQuitsInFormat" xml:space="preserve">
+    <value>Demite-se em {0}</value>
+  </data>
   <data name="Story_Ch13_Title" xml:space="preserve">
     <value>O empreiteiro!</value>
   </data>
@@ -3094,6 +3109,66 @@
   </data>
   <data name="Story_Ch25_Text" xml:space="preserve">
     <value>Nível 1000. Grão-Mestre da Guilda dos Artesãos. Não existe título mais alto. De um aprendiz nervoso com uma pequena carpintaria ao artesão mais poderoso da história: a TUA história! Envelheci contigo, Grão-Mestre. Mas valeu cada minuto. Obrigado.</value>
+  </data>
+  <data name="Story_Ch26_Title" xml:space="preserve">
+    <value>O Artesão de Platina</value>
+  </data>
+  <data name="Story_Ch26_Text" xml:space="preserve">
+    <value>Platina! Só conheço um punhado de pessoas em toda a minha vida que conseguiram isso. As tuas ferramentas brilham como nunca, e agora vão ficar contigo – para sempre. O ofício mudou-te, Mestre. Já não és a mesma pessoa de quando começaste.</value>
+  </data>
+  <data name="Story_Ch27_Title" xml:space="preserve">
+    <value>No Caminho para o Diamante</value>
+  </data>
+  <data name="Story_Ch27_Text" xml:space="preserve">
+    <value>Entre Platina e Diamante existe um abismo, Mestre. Muitos tentaram, poucos conseguiram. Precisas de três percursos Platina perfeitos. Três vezes abandonar tudo, três vezes voltar mais forte. Estás pronto para a parte mais difícil da viagem?</value>
+  </data>
+  <data name="Story_Ch28_Title" xml:space="preserve">
+    <value>Dinastia de Diamante</value>
+  </data>
+  <data name="Story_Ch28_Text" xml:space="preserve">
+    <value>Diamante! Indestrutível, imperecível – como o teu império. Os teus edifícios e equipamento sobrevivem agora a cada recomeço. Isto já não é artesanato, isto é arte. As pessoas falam de ti com reverência, Mestre.</value>
+  </data>
+  <data name="Story_Ch29_Title" xml:space="preserve">
+    <value>O Caminho do Mestre</value>
+  </data>
+  <data name="Story_Ch29_Text" xml:space="preserve">
+    <value>Só os melhores dos melhores alcançam o título de Mestre. Os teus gestores permanecem fiéis, o teu conhecimento perdura além de cada reset. Em 40 anos nunca vi ninguém chegar tão longe. Estás a fazer história!</value>
+  </data>
+  <data name="Story_Ch30_Title" xml:space="preserve">
+    <value>Mestre dos Mestres</value>
+  </data>
+  <data name="Story_Ch30_Text" xml:space="preserve">
+    <value>Conseguiste. Mestre. O fogo nos teus olhos arde mais brilhante que qualquer forja. Os teus capatazes seguem-te nas boas e nas más. Cada recomeço só te torna mais forte. Resta apenas um título acima de ti...</value>
+  </data>
+  <data name="Story_Ch31_Title" xml:space="preserve">
+    <value>No Caminho para a Lenda</value>
+  </data>
+  <data name="Story_Ch31_Text" xml:space="preserve">
+    <value>A Lenda. O título mais alto que um artesão pode alcançar. Três percursos Mestre perfeitos separam-te da imortalidade. Os teus melhores trabalhadores ficarão contigo – um último sinal da tua grandeza.</value>
+  </data>
+  <data name="Story_Ch32_Title" xml:space="preserve">
+    <value>Lenda Viva</value>
+  </data>
+  <data name="Story_Ch32_Text" xml:space="preserve">
+    <value>LENDA! *limpa uma lágrima* Em todos os meus anos... Tu és o primeiro. O único. O teu nome ficará escrito nos livros de história. Gerações de artesãos falarão de ti. Estou... sem palavras. E isso não acontece frequentemente!</value>
+  </data>
+  <data name="Story_Ch33_Title" xml:space="preserve">
+    <value>Além da Lenda</value>
+  </data>
+  <data name="Story_Ch33_Text" xml:space="preserve">
+    <value>Três percursos de Lenda. Provaste que estás acima de tudo. Mas o que vem a seguir? Ouvi falar de um ritual ancestral... a Ascensão. Um recomeço completo num plano superior. Apenas para verdadeiras Lendas. Estás pronto para largar tudo?</value>
+  </data>
+  <data name="Story_Ch34_Title" xml:space="preserve">
+    <value>A Ascensão</value>
+  </data>
+  <data name="Story_Ch34_Text" xml:space="preserve">
+    <value>Completaste a Ascensão! Deixaste tudo para trás para recomeçar num plano superior. Os teus benefícios de Ascensão são poderosos – capital inicial, ferramentas eternas, investigação mais rápida. Cada percurso será agora mais fácil e gratificante.</value>
+  </data>
+  <data name="Story_Ch35_Title" xml:space="preserve">
+    <value>Transcendência</value>
+  </data>
+  <data name="Story_Ch35_Text" xml:space="preserve">
+    <value>Três Ascensões. Quebraste os limites do possível. Já não és apenas um artesão – és uma força da natureza. O teu império é imortal. Mestre Hans faz a sua última reverência. Esta história não tem fim, apenas novos começos. Adeus... e bem-vindo de volta, sempre que quiseres.</value>
   </data>
   <data name="TaskProgress" xml:space="preserve">
     <value>Tarefa {0}/{1}</value>
@@ -4882,6 +4957,12 @@
   <data name="GuildWarByeWeek" xml:space="preserve">
     <value>Semana livre - sem oponente nesta rodada</value>
   </data>
+  <data name="GuildWarByeWeekTraining" xml:space="preserve">
+    <value>Rodada de treino! Complete pedidos e minijogos para ganhar pontos de guerra para a próxima rodada.</value>
+  </data>
+  <data name="GuildBonusActiveOffline" xml:space="preserve">
+    <value>Bônus de guilda ativos (offline)</value>
+  </data>
   <data name="OurGuild" xml:space="preserve">
     <value>Nossa Guilda</value>
   </data>
@@ -5556,6 +5637,9 @@
   <data name="AutoCompleteHint" xml:space="preserve">
     <value>Você dominou este jogo {0}x perfeitamente!</value>
   </data>
+  <data name="AverageRating" xml:space="preserve">
+    <value>Média:</value>
+  </data>
   <data name="AchAscFirst" xml:space="preserve">
     <value>Primeira Ascens&#227;o</value>
   </data>
@@ -5633,6 +5717,18 @@
   </data>
   <data name="HintFirstStarText" xml:space="preserve">
     <value>Parab&#233;ns pela sua primeira estrela de renascimento! Estrelas s&#227;o permanentes e sobrevivem ao prest&#237;gio e &#224; ascens&#227;o. Cada estrela d&#225;: +15-150% renda, -5-25% custos de melhoria e at&#233; +2 vagas de trabalhadores.</value>
+  </data>
+  <data name="HintGoldenScrewsTitle" xml:space="preserve">
+    <value>Parafusos Dourados</value>
+  </data>
+  <data name="HintGoldenScrewsText" xml:space="preserve">
+    <value>Os Parafusos Dourados s&#227;o sua moeda premium! Ganhe-os com pedidos, desafios e conquistas. Guarde-os para desbloquear oficinas, o rush noturno ou a loja de prest&#237;gio.</value>
+  </data>
+  <data name="HintAcceptOrderTitle" xml:space="preserve">
+    <value>Pedidos</value>
+  </data>
+  <data name="HintAcceptOrderText" xml:space="preserve">
+    <value>Toque em um pedido para aceit&#225;-lo. Voc&#234; jogar&#225; um mini-jogo curto e ganhar&#225; dinheiro e experi&#234;ncia!</value>
   </data>
   <data name="AscensionAvailable" xml:space="preserve">
     <value>Ascens&#227;o dispon&#237;vel!</value>
@@ -5986,5 +6082,8 @@
   </data>
   <data name="AbandonChallengeButton" xml:space="preserve">
     <value>Abandonar</value>
+  </data>
+  <data name="InventDecoyPart" xml:space="preserve">
+    <value>Isca</value>
   </data>
 </root>

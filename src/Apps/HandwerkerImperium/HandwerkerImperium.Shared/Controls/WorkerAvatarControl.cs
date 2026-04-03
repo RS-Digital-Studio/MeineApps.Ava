@@ -101,7 +101,7 @@ public class WorkerAvatarControl : Control
 
     // Gemeinsamer Timer für ALLE Instanzen (statt pro-Instanz 20fps Timer)
     private static DispatcherTimer? s_sharedTimer;
-    private static readonly List<WeakReference<WorkerAvatarControl>> s_instances = new();
+    private static readonly List<WeakReference<WorkerAvatarControl>> s_instances = [];
     private static readonly object s_lock = new();
 
     // Gecachte SKPaint-Instanzen (statt "using var paint = new SKPaint" pro Frame)

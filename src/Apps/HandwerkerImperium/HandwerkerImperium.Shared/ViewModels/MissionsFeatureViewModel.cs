@@ -85,6 +85,13 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     [ObservableProperty]
     private string _quickJobTimerDisplay = string.Empty;
 
+    /// <summary>
+    /// Anzeige des täglichen QuickJob-Limits (z.B. "15/20").
+    /// EVENT-3: Tageslimit im UI sichtbar machen.
+    /// </summary>
+    [ObservableProperty]
+    private string _quickJobLimitText = string.Empty;
+
     // QuickJob-Timer: Letzte Minuten/Sekunden fuer int-Vergleich statt String-Allokation
     private int _lastQjMins = -1, _lastQjSecs = -1;
 
@@ -318,12 +325,18 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         CanClaimWeeklyBonus = AllWeeklyMissionsCompleted && !state.AllCompletedBonusClaimed;
         UpdateClaimableMissionsCount();
 
-        // Reset-Timer berechnen (naechster Montag)
+        // Reset-Timer berechnen (naechster Montag 00:00 UTC)
         var now = DateTime.UtcNow;
         var daysUntilMonday = ((int)DayOfWeek.Monday - (int)now.DayOfWeek + 7) % 7;
         if (daysUntilMonday == 0) daysUntilMonday = 7;
+
+        // EVENT-7: Konkretes Reset-Datum + Uhrzeit in lokaler Zeitzone anzeigen
+        var nextMondayUtc = now.Date.AddDays(daysUntilMonday);
+        var nextMondayLocal = nextMondayUtc.ToLocalTime();
         var resetLabel = _localizationService.GetString("WeeklyMissionReset") ?? "Resets in {0} days";
-        WeeklyMissionResetDisplay = string.Format(resetLabel, daysUntilMonday);
+        var dayText = string.Format(resetLabel, daysUntilMonday);
+        var dateStr = nextMondayLocal.ToString("ddd dd.MM., HH:mm");
+        WeeklyMissionResetDisplay = $"{dayText} ({dateStr})";
     }
 
     private void OnWeeklyMissionProgressChanged()
@@ -598,6 +611,8 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         QuickJobs = _quickJobService.GetAvailableJobs();
         // Empty State fuer Quick Jobs
         AllQuickJobsDone = QuickJobs.Count == 0 || QuickJobs.All(j => j.IsCompleted);
+        // EVENT-3: Tageslimit-Anzeige aktualisieren
+        UpdateQuickJobLimitText();
     }
 
     public void RefreshChallenges()
@@ -672,6 +687,16 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
             _lastQjSecs = qjSecs;
             QuickJobTimerDisplay = qjMins >= 1 ? $"{qjMins}:{qjSecs:D2}" : $"0:{qjSecs:D2}";
         }
+    }
+
+    /// <summary>
+    /// EVENT-3: Aktualisiert die Tageslimit-Anzeige (z.B. "15/20").
+    /// </summary>
+    private void UpdateQuickJobLimitText()
+    {
+        int remaining = _quickJobService.RemainingJobsToday;
+        int max = _quickJobService.MaxDailyJobs;
+        QuickJobLimitText = $"{remaining}/{max}";
     }
 
     /// <summary>

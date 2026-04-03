@@ -590,4 +590,100 @@
   <data name="StarterOfferButton" xml:space="preserve">
     <value>Get Premium Now</value>
   </data>
+
+  <!-- Story Chapters 12a/12b -->
+  <data name="Story_Ch12a_Title" xml:space="preserve">
+    <value>The Arena Calls!</value>
+  </data>
+  <data name="Story_Ch12a_Text" xml:space="preserve">
+    <value>Level 70, journeyman! From now on you can compete in tournaments. Show the other craftsmen who's the best! And soon there's even more – seasonal events, a battle pass... But one thing at a time!</value>
+  </data>
+  <data name="Story_Ch12b_Title" xml:space="preserve">
+    <value>The Seasons of Craftsmanship!</value>
+  </data>
+  <data name="Story_Ch12b_Text" xml:space="preserve">
+    <value>Seasonal events, journeyman! Spring, summer, autumn, winter – every season brings special orders and unique rewards. And with the Battle Pass you can earn exclusive bonuses. The craft never sleeps!</value>
+  </data>
+
+  <!-- Story Chapters 26-35 -->
+  <data name="Story_Ch26_Title" xml:space="preserve">
+    <value>The Platinum Craftsman</value>
+  </data>
+  <data name="Story_Ch26_Text" xml:space="preserve">
+    <value>Platinum! I only know a handful of people in my entire life who have achieved that. Your tools shine like never before, and they'll stay with you now – forever. The craft has changed you, Master. You're not the same person as when you started.</value>
+  </data>
+  <data name="Story_Ch27_Title" xml:space="preserve">
+    <value>On the Path to Diamond</value>
+  </data>
+  <data name="Story_Ch27_Text" xml:space="preserve">
+    <value>Between Platinum and Diamond lies an abyss, Master. Many have tried, few have succeeded. You need three perfect Platinum runs. Three times giving everything up, three times coming back stronger. Are you ready for the hardest part of the journey?</value>
+  </data>
+  <data name="Story_Ch28_Title" xml:space="preserve">
+    <value>Diamond Dynasty</value>
+  </data>
+  <data name="Story_Ch28_Text" xml:space="preserve">
+    <value>Diamond! Indestructible, everlasting – just like your empire. Your buildings and equipment now survive every fresh start. This isn't craftsmanship anymore, this is art. People speak of you with reverence, Master.</value>
+  </data>
+  <data name="Story_Ch29_Title" xml:space="preserve">
+    <value>The Path of the Master</value>
+  </data>
+  <data name="Story_Ch29_Text" xml:space="preserve">
+    <value>Only the best of the best reach the Master title. Your managers stay loyal, your knowledge outlasts every reset. In 40 years I've never seen anyone come this far. You're making history!</value>
+  </data>
+  <data name="Story_Ch30_Title" xml:space="preserve">
+    <value>Master of Masters</value>
+  </data>
+  <data name="Story_Ch30_Text" xml:space="preserve">
+    <value>You've done it. Master. The fire in your eyes burns brighter than any forge. Your foremen follow you through thick and thin. Every fresh start only makes you stronger. There's only one title left above you...</value>
+  </data>
+  <data name="Story_Ch31_Title" xml:space="preserve">
+    <value>On the Path to Legend</value>
+  </data>
+  <data name="Story_Ch31_Text" xml:space="preserve">
+    <value>The Legend. The highest title a craftsman can ever achieve. Three perfect Master runs stand between you and immortality. Your best workers will stay with you – one final sign of your greatness.</value>
+  </data>
+  <data name="Story_Ch32_Title" xml:space="preserve">
+    <value>Living Legend</value>
+  </data>
+  <data name="Story_Ch32_Text" xml:space="preserve">
+    <value>LEGEND! *wipes away a tear* In all my years... You are the first. The only one. Your name will be written in the history books. Generations of craftsmen will speak of you. I am... speechless. And that doesn't happen often!</value>
+  </data>
+  <data name="Story_Ch33_Title" xml:space="preserve">
+    <value>Beyond the Legend</value>
+  </data>
+  <data name="Story_Ch33_Text" xml:space="preserve">
+    <value>Three Legend runs. You've proven that you stand above everything. But what comes next? I've heard of an ancient ritual... the Ascension. A complete fresh start on a higher plane. Only for true Legends. Are you ready to let go of everything?</value>
+  </data>
+  <data name="Story_Ch34_Title" xml:space="preserve">
+    <value>The Ascension</value>
+  </data>
+  <data name="Story_Ch34_Text" xml:space="preserve">
+    <value>You've completed the Ascension! Left everything behind to begin anew on a higher plane. Your Ascension perks are powerful – starting capital, eternal tools, faster research. Every run will now be easier and more rewarding.</value>
+  </data>
+  <data name="Story_Ch35_Title" xml:space="preserve">
+    <value>Transcendence</value>
+  </data>
+  <data name="Story_Ch35_Text" xml:space="preserve">
+    <value>Three Ascensions. You've shattered the boundaries of what's possible. You're no longer just a craftsman – you're a force of nature. Your empire is immortal. Master Hans bows one last time. This story knows no end, only new beginnings. Farewell... and welcome back, whenever you wish.</value>
+  </data>
+
+  <!-- Misc fehlende Keys -->
+  <data name="WorkerQuitsInFormat" xml:space="preserve">
+    <value>Quits in {0}</value>
+  </data>
+  <data name="GuildWarByeWeekTraining" xml:space="preserve">
+    <value>Training round! Complete orders and mini-games to earn war points for the next round.</value>
+  </data>
+  <data name="GuildBonusActiveOffline" xml:space="preserve">
+    <value>Guild bonuses active (offline)</value>
+  </data>
+  <data name="AverageRating" xml:space="preserve">
+    <value>Average Rating:</value>
+  </data>
+  <data name="NoSpecialization" xml:space="preserve">
+    <value>No Specialization</value>
+  </data>
+  <data name="InventDecoyPart" xml:space="preserve">
+    <value>Decoy</value>
+  </data>
 </root>

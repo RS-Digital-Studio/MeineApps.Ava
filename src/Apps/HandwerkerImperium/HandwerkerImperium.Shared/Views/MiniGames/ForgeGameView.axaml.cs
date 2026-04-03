@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Labs.Controls;
@@ -20,12 +21,12 @@ public partial class ForgeGameView : UserControl
     private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
+    private bool _disposed;
 
     public ForgeGameView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        DetachedFromVisualTree += (_, _) => StopRenderLoop();
 
         // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
         PropertyChanged += (_, args) =>
@@ -48,8 +49,34 @@ public partial class ForgeGameView : UserControl
             _renderer.Initialize(assetService);
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        if (_disposed) return;
+        _disposed = true;
+
+        if (_vm != null)
+        {
+            _vm.GameStarted -= OnGameStarted;
+            _vm.GameCompleted -= OnGameCompleted;
+            _vm.ZoneHit -= OnZoneHit;
+            _vm = null;
+        }
+
+        if (_gameCanvas != null)
+        {
+            _gameCanvas.PaintSurface -= OnPaintSurface;
+            _gameCanvas.PointerPressed -= OnCanvasPointerPressed;
+        }
+
+        StopRenderLoop();
+        _renderer.Dispose();
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_disposed) return;
+
         // Alte Events abhaengen
         if (_vm != null)
         {

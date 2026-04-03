@@ -5,15 +5,15 @@
 
   <ItemGroup>
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- AVALONIA CORE (Basis: 11.3.12)                                  -->
+    <!-- AVALONIA CORE (Basis: 11.3.13)                                  -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Avalonia" Version="11.3.12" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.3.12" />
-    <PackageVersion Include="Avalonia.Android" Version="11.3.12" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.12" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.12" />
-    <PackageVersion Include="Avalonia.Skia" Version="11.3.12" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.12" />
+    <PackageVersion Include="Avalonia" Version="11.3.13" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.13" />
+    <PackageVersion Include="Avalonia.Android" Version="11.3.13" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.13" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.13" />
+    <PackageVersion Include="Avalonia.Skia" Version="11.3.13" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.13" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- ICONS                                                            -->
@@ -23,7 +23,7 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- MVVM & BEHAVIORS                                                 -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="11.3.9.5" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -46,35 +46,35 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- ADS (Google AdMob)                                               -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.GooglePlayServices.Ads.Lite" Version="124.0.0.4" />
-    <PackageVersion Include="Xamarin.Google.UserMessagingPlatform" Version="4.0.0.1" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Ads.Lite" Version="124.0.0.5" />
+    <PackageVersion Include="Xamarin.Google.UserMessagingPlatform" Version="4.0.0.2" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- IN-APP PURCHASES (Google Play Billing)                            -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.Android.Google.BillingClient" Version="8.3.0.1" />
+    <PackageVersion Include="Xamarin.Android.Google.BillingClient" Version="8.3.0.2" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- IN-APP REVIEW (Google Play Review API)                            -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.Google.Android.Play.Review" Version="2.0.2.6" />
+    <PackageVersion Include="Xamarin.Google.Android.Play.Review" Version="2.0.2.7" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- GOOGLE PLAY GAMES SERVICES v2                                     -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.GooglePlayServices.Games.V2" Version="121.0.0.2" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Games.V2" Version="121.0.0.3" />
 
     <!-- Transitive dependency von Ads.Lite: JVM-Variante muss excluded werden,
          da .android-Variante dieselben Klassen enthaelt (D8 duplicate type error) -->
-    <PackageVersion Include="Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm" Version="1.10.0.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm" Version="1.10.4.1" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- CAMERA & BARCODE (CameraX + ML Kit)                              -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.AndroidX.Camera.Camera2" Version="1.5.3" />
-    <PackageVersion Include="Xamarin.AndroidX.Camera.Lifecycle" Version="1.5.3" />
-    <PackageVersion Include="Xamarin.AndroidX.Camera.View" Version="1.5.3" />
-    <PackageVersion Include="Xamarin.Google.MLKit.BarcodeScanning" Version="117.3.0.6" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.Camera2" Version="1.5.3.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.Lifecycle" Version="1.5.3.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.View" Version="1.5.3.1" />
+    <PackageVersion Include="Xamarin.Google.MLKit.BarcodeScanning" Version="117.3.0.7" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- EXPORT (PDF/Excel)                                               -->
@@ -85,14 +85,14 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DI & LOGGING                                                     -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- CRYPTOGRAPHY                                                    -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.4" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.5" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TRADING INDICATORS                                              -->
@@ -115,19 +115,19 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- IOT / RASPBERRY PI (GardenControl)                               -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="System.Device.Gpio" Version="3.2.0" />
-    <PackageVersion Include="Iot.Device.Bindings" Version="3.2.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.0" />
+    <PackageVersion Include="System.Device.Gpio" Version="4.2.0" />
+    <PackageVersion Include="Iot.Device.Bindings" Version="4.2.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.5" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TESTING                                                          -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
-    <PackageVersion Include="FluentAssertions" Version="8.3.0" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
-    <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.12" />
+    <PackageVersion Include="FluentAssertions" Version="8.9.0" />
+    <PackageVersion Include="coverlet.collector" Version="8.0.1" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.13" />
   </ItemGroup>
 </Project>

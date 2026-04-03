@@ -94,7 +94,7 @@ public sealed class OfflineProgressService : IOfflineProgressService
         SimulateWorkerStatesOffline(state, effectiveDuration);
 
         // Auto-Produktion: Items berechnen und ins Inventar legen
-        LastOfflineItemsProduced = new Dictionary<string, int>();
+        LastOfflineItemsProduced.Clear();
         if (_autoProductionService != null)
         {
             var produced = _autoProductionService.CalculateOfflineProduction(state, effectiveDuration.TotalSeconds);
@@ -109,7 +109,8 @@ public sealed class OfflineProgressService : IOfflineProgressService
                         state.CraftingInventory[productId] = count;
                     state.TotalItemsAutoProduced += count;
                 }
-                LastOfflineItemsProduced = produced;
+                foreach (var (pid, cnt) in produced)
+                    LastOfflineItemsProduced[pid] = cnt;
             }
         }
 
@@ -298,6 +299,9 @@ public sealed class OfflineProgressService : IOfflineProgressService
                 _gameStateService.TrySpendMoney(actualCosts);
         }
 
+        // Gekündigte Worker sammeln (nicht während foreach entfernen)
+        List<(Workshop ws, Worker worker)>? offlineQuits = null;
+
         foreach (var ws in state.Workshops)
         {
             foreach (var worker in ws.Workers)
@@ -325,12 +329,36 @@ public sealed class OfflineProgressService : IOfflineProgressService
                 if (worker.IsResting && restHours > 0)
                     SimulateRestRecovery(worker, restHours, canteen);
 
-                // QuitDeadline-Handling (identisch mit WorkerService.UpdateWorking)
-                if (worker.WillQuit && worker.QuitDeadline == null)
-                    worker.QuitDeadline = DateTime.UtcNow.AddHours(24);
-                else if (!worker.WillQuit)
+                // QuitDeadline-Handling: Offline-Kündigung durchsetzen
+                if (worker.WillQuit)
+                {
+                    if (worker.QuitDeadline == null)
+                    {
+                        worker.QuitDeadline = DateTime.UtcNow.AddHours(24);
+                    }
+                    else if (DateTime.UtcNow >= worker.QuitDeadline)
+                    {
+                        // Worker hat während der Offline-Zeit gekündigt → zum Entfernen vormerken
+                        offlineQuits ??= [];
+                        offlineQuits.Add((ws, worker));
+                    }
+                }
+                else
+                {
                     worker.QuitDeadline = null;
+                }
             }
+        }
+
+        // Gekündigte Worker nach der Schleife entfernen
+        if (offlineQuits != null)
+        {
+            foreach (var (ws, worker) in offlineQuits)
+            {
+                ws.Workers.Remove(worker);
+                state.TotalWorkersFired++;
+            }
+            state.InvalidateIncomeCache();
         }
     }
 
@@ -441,6 +469,10 @@ public sealed class OfflineProgressService : IOfflineProgressService
 
         if (shouldStopTraining)
         {
+            // Training-Typ merken für Auto-Resume nach Ruhe (konsistent mit Online-Verhalten)
+            if (reachedMaxFatigue && !IsTrainingComplete(worker))
+                worker.ResumeTrainingType = worker.ActiveTrainingType;
+
             worker.IsTraining = false;
             worker.TrainingStartedAt = null;
             decimal remainingHours = offlineHours - trainingHours;
@@ -570,6 +602,28 @@ public sealed class OfflineProgressService : IOfflineProgressService
         {
             worker.IsResting = false;
             worker.RestStartedAt = null;
+
+            // Training automatisch fortsetzen (konsistent mit WorkerService.UpdateResting)
+            if (worker.ResumeTrainingType != null)
+            {
+                var trainingType = worker.ResumeTrainingType.Value;
+                worker.ResumeTrainingType = null;
+
+                bool canResume = trainingType switch
+                {
+                    TrainingType.Efficiency => worker.ExperienceLevel < 10,
+                    TrainingType.Endurance => worker.EnduranceBonus < 0.5m,
+                    TrainingType.Morale => worker.MoraleBonus < 0.5m,
+                    _ => false
+                };
+
+                if (canResume)
+                {
+                    worker.IsTraining = true;
+                    worker.ActiveTrainingType = trainingType;
+                    worker.TrainingStartedAt = DateTime.UtcNow;
+                }
+            }
         }
     }
 

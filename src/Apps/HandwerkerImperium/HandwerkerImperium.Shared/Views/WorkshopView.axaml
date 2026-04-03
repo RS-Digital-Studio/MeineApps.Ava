@@ -161,7 +161,7 @@
                 <icons:GameIcon Kind="StarOutline" Width="24" Height="24"
                                  Foreground="{StaticResource CraftGoldBrush}"
                                  AutomationProperties.AutomationId="Workshop_Icon_Rebirth" />
-                <TextBlock Text="Wiedergeburt"
+                <TextBlock Text="{loc:Translate RebirthTitle}"
                            FontSize="14" FontWeight="SemiBold"
                            AutomationProperties.AutomationId="Workshop_Txt_RebirthLabel" />
                 <TextBlock Text="{Binding RebirthCostDisplay}"
@@ -329,6 +329,126 @@
                            AutomationProperties.AutomationId="Workshop_Txt_OrdersCompletedValue" />
               </StackPanel>
             </Grid>
+
+          </StackPanel>
+        </Border>
+
+        <!-- Spezialisierung Card (ab Level 100) -->
+        <Border Classes="Card StatsCard"
+                IsVisible="{Binding IsSpecializationUnlocked}"
+                AutomationProperties.AutomationId="Workshop_Border_Specialization">
+          <StackPanel Spacing="12">
+
+            <!-- Header -->
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <icons:GameIcon Kind="Cog" Width="22" Height="22"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}"
+                               AutomationProperties.AutomationId="Workshop_Icon_Specialization" />
+              <TextBlock Text="{loc:Translate Specialization}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="Workshop_Txt_SpecTitle" />
+            </StackPanel>
+
+            <!-- Aktuelle Spezialisierung (wenn gesetzt) -->
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="10" Padding="12,10"
+                    IsVisible="{Binding HasSpecialization}"
+                    AutomationProperties.AutomationId="Workshop_Border_ActiveSpec">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <Border Width="6" CornerRadius="3"
+                        Background="{Binding CurrentSpecializationColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{Binding CurrentSpecializationName}"
+                             FontSize="15" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="Workshop_Txt_SpecName" />
+                  <TextBlock Text="{Binding CurrentSpecializationDesc}"
+                             FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Workshop_Txt_SpecDesc" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="Text"
+                        MinWidth="40" MinHeight="36"
+                        Command="{Binding RemoveSpecializationCommand}"
+                        AutomationProperties.AutomationId="Workshop_Btn_RemoveSpec">
+                  <icons:GameIcon Kind="Close" Width="20" Height="20"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                </Button>
+              </Grid>
+            </Border>
+
+            <!-- Auswahl-Buttons (3 Spezialisierungen) -->
+            <StackPanel Spacing="8"
+                        IsVisible="{Binding !HasSpecialization}"
+                        AutomationProperties.AutomationId="Workshop_Panel_SpecChoices">
+
+              <!-- Effizienz -->
+              <Button Classes="Secondary" HorizontalAlignment="Stretch" Padding="12,10"
+                      HorizontalContentAlignment="Stretch"
+                      Command="{Binding SetSpecializationCommand}"
+                      CommandParameter="Efficiency"
+                      AutomationProperties.AutomationId="Workshop_Btn_SpecEfficiency">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="6" CornerRadius="3" Background="#FF9800" />
+                  <StackPanel Grid.Column="1" Spacing="1">
+                    <TextBlock Text="{loc:Translate Specialization_Efficiency}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{loc:Translate Specialization_Efficiency_Desc}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Button>
+
+              <!-- Qualität -->
+              <Button Classes="Secondary" HorizontalAlignment="Stretch" Padding="12,10"
+                      HorizontalContentAlignment="Stretch"
+                      Command="{Binding SetSpecializationCommand}"
+                      CommandParameter="Quality"
+                      AutomationProperties.AutomationId="Workshop_Btn_SpecQuality">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="6" CornerRadius="3" Background="#2196F3" />
+                  <StackPanel Grid.Column="1" Spacing="1">
+                    <TextBlock Text="{loc:Translate Specialization_Quality}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{loc:Translate Specialization_Quality_Desc}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Button>
+
+              <!-- Sparsamkeit -->
+              <Button Classes="Secondary" HorizontalAlignment="Stretch" Padding="12,10"
+                      HorizontalContentAlignment="Stretch"
+                      Command="{Binding SetSpecializationCommand}"
+                      CommandParameter="Economy"
+                      AutomationProperties.AutomationId="Workshop_Btn_SpecEconomy">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="6" CornerRadius="3" Background="#4CAF50" />
+                  <StackPanel Grid.Column="1" Spacing="1">
+                    <TextBlock Text="{loc:Translate Specialization_Economy}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{loc:Translate Specialization_Economy_Desc}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Button>
+            </StackPanel>
 
           </StackPanel>
         </Border>

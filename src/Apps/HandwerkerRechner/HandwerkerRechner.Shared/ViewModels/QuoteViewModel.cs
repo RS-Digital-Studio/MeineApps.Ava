@@ -4,6 +4,7 @@ using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace HandwerkerRechner.ViewModels;
@@ -13,7 +14,7 @@ namespace HandwerkerRechner.ViewModels;
 /// Verwaltet Angebote mit Positionen, MwSt und Marge.
 /// Export als PDF mit Briefkopf und Positions-Tabelle.
 /// </summary>
-public sealed partial class QuoteViewModel : ObservableObject
+public sealed partial class QuoteViewModel : ViewModelBase
 {
     private readonly IQuoteService _quoteService;
     private readonly ILocalizationService _localization;

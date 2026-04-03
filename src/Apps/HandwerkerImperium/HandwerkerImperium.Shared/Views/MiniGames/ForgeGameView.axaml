@@ -55,13 +55,22 @@
                      IsVisible="{Binding IsPlaying}" />
         </StackPanel>
 
-        <!-- Difficulty -->
-        <TextBlock Grid.Column="2"
-                   AutomationProperties.AutomationId="Forge_Txt_Difficulty"
-                   Text="{Binding Difficulty}"
-                   FontSize="12"
-                   Foreground="{DynamicResource TextSecondaryBrush}"
-                   VerticalAlignment="Center" />
+        <!-- Info + Difficulty -->
+        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4" HorizontalAlignment="Right">
+          <Button Classes="Text" Padding="4"
+                  Command="{Binding ShowTutorialInfoCommand}"
+                  IsVisible="{Binding CanShowTutorialInfo}"
+                  AutomationProperties.AutomationId="Forge_Btn_TutorialInfo">
+            <icons:GameIcon Kind="InformationOutline" Width="22" Height="22"
+                            Foreground="{DynamicResource TextSecondaryBrush}"
+                            AutomationProperties.AutomationId="Forge_Icon_TutorialInfo" />
+          </Button>
+          <TextBlock AutomationProperties.AutomationId="Forge_Txt_Difficulty"
+                     Text="{Binding Difficulty}"
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
       </Grid>
     </Border>
 
@@ -268,6 +277,14 @@
                      TextTrimming="CharacterEllipsis" />
         </Button>
       </Grid>
+
+      <!-- Bisheriger Durchschnitt (Zwischen-Runden) -->
+      <TextBlock Text="{Binding IntermediateAverage}"
+                 FontSize="13" FontWeight="SemiBold"
+                 Foreground="{StaticResource CraftGoldBrush}"
+                 HorizontalAlignment="Center"
+                 IsVisible="{Binding IntermediateAverage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 AutomationProperties.AutomationId="Forge_Txt_IntermediateAvg" />
 
       <!-- Zwischen-Aufgabe: Nur Weiter-Button -->
       <Button AutomationProperties.AutomationId="Forge_Btn_NextTask"

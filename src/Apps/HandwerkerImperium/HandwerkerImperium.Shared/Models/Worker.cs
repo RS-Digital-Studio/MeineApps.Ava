@@ -98,6 +98,13 @@ public class Worker
     public TrainingType ActiveTrainingType { get; set; } = TrainingType.Efficiency;
 
     /// <summary>
+    /// Training-Typ der nach automatischer Ruhe fortgesetzt werden soll.
+    /// Null = kein automatisches Fortsetzen (Worker war nicht im Training vor der Ruhe).
+    /// </summary>
+    [JsonPropertyName("resumeTrainingType")]
+    public TrainingType? ResumeTrainingType { get; set; }
+
+    /// <summary>
     /// Ausdauer-Bonus (0-0.5): Reduziert FatiguePerHour permanent um bis zu 50%.
     /// </summary>
     [JsonPropertyName("enduranceBonus")]
@@ -158,7 +165,8 @@ public class Worker
 
     /// <summary>
     /// Effective efficiency considering all factors.
-    /// Formula: BaseEfficiency * MoodFactor * FatigueFactor * Specialization * Personality
+    /// Formula: BaseEfficiency * XpBonus * MoodFactor * FatigueFactor * Specialization * Personality
+    /// XpBonus: +3% pro ExperienceLevel → Training lohnt sich IMMER, auch wenn Basis-Effizienz am Tier-Maximum ist.
     /// </summary>
     [JsonIgnore]
     public decimal EffectiveEfficiency
@@ -168,13 +176,14 @@ public class Worker
             if (IsResting || IsTraining) return 0m;
 
             decimal baseEff = Efficiency;
+            decimal xpBonus = 1m + ExperienceLevel * 0.03m;
             decimal moodFactor = GetMoodFactor();
             decimal fatigueFactor = GetFatigueFactor();
             decimal specBonus = GetSpecializationBonus();
             decimal personalityMult = Personality.GetEfficiencyMultiplier();
             decimal equipBonus = EquippedItem?.EfficiencyBonus ?? 0m;
 
-            return Math.Max(0m, baseEff * moodFactor * fatigueFactor * (1m + specBonus + equipBonus) * personalityMult);
+            return Math.Max(0m, baseEff * xpBonus * moodFactor * fatigueFactor * (1m + specBonus + equipBonus) * personalityMult);
         }
     }
 
@@ -400,9 +409,16 @@ public class Worker
             _ => 3
         };
 
-        // Random specialization (50% chance of having one)
+        // Spezialisierungs-Chance an Tier gekoppelt (höhere Tiers haben höhere Chance)
+        double specChance = tier switch
+        {
+            WorkerTier.F or WorkerTier.E => 0.40,
+            WorkerTier.D or WorkerTier.C => 0.50,
+            WorkerTier.B or WorkerTier.A => 0.65,
+            _ => 0.85 // S, SS, SSS, Legendary
+        };
         WorkshopType? spec = null;
-        if (random.NextDouble() > 0.5)
+        if (random.NextDouble() < specChance)
         {
             var types = Enum.GetValues<WorkshopType>();
             spec = types[random.Next(types.Length)];
@@ -461,27 +477,34 @@ public class Worker
         return tiers;
     }
 
+    // Statische Arrays (vermeidet Allokation pro Aufruf)
+    private static readonly string[] FirstNames =
+    [
+        // Deutsch
+        "Hans", "Klaus", "Peter", "Michael", "Thomas", "Stefan", "Andreas", "Markus", "Frank", "Erik",
+        "Finn", "Emil", "Anton", "Felix", "Jonas", "Tobias", "Niklas", "Moritz", "Florian", "Kai",
+        // International
+        "Carlos", "Marco", "Pierre", "James", "Oliver", "Lucas", "Matteo", "Hugo", "Leo", "Noah",
+        "Liam", "Oscar", "Rafael", "Diego", "Ivan", "Sven", "Lars", "Axel", "Bjorn", "Rolf",
+        // Weiblich
+        "Sofia", "Anna", "Maria", "Elena", "Laura", "Lena", "Clara", "Mia", "Emma", "Hannah",
+        "Ingrid", "Katja", "Petra", "Monika", "Sabine", "Heidi", "Greta", "Rosa", "Frieda", "Ida"
+    ];
+
+    private static readonly string[] Surnames =
+    [
+        // Deutsch
+        "Müller", "Schmidt", "Schneider", "Fischer", "Weber", "Meyer", "Wagner", "Becker", "Schulz", "Hoffmann",
+        "Koch", "Richter", "Wolf", "Neumann", "Schwarz", "Braun", "Krüger", "Lange", "Werner", "Lehmann",
+        "Hartmann", "Zimmermann", "Krause", "Berger", "Fuchs", "Engel", "Vogt", "Roth", "Keller", "Huber",
+        // International
+        "Martin", "Garcia", "Santos", "Silva", "Rossi", "Dupont", "Brown", "Wilson", "Anderson", "Taylor",
+        "Larsson", "Berg", "Hansen", "Moreau", "Ferrari", "Russo", "Lopez", "Torres", "Ferreira", "Costa"
+    ];
+
     private static string GenerateRandomName()
     {
-        var firstNames = new[]
-        {
-            "Hans", "Klaus", "Peter", "Michael", "Thomas",
-            "Stefan", "Andreas", "Markus", "Frank", "Erik",
-            "Carlos", "Marco", "Pierre", "James", "Oliver",
-            "Lucas", "Matteo", "Hugo", "Leo", "Noah",
-            "Finn", "Liam", "Emil", "Anton", "Felix",
-            "Sofia", "Anna", "Maria", "Elena", "Laura"
-        };
-
-        var surnames = new[]
-        {
-            "M\u00fcller", "Schmidt", "Schneider", "Fischer", "Weber",
-            "Meyer", "Wagner", "Becker", "Schulz", "Hoffmann",
-            "Martin", "Garcia", "Santos", "Silva", "Rossi",
-            "Dupont", "Brown", "Wilson", "Anderson", "Taylor"
-        };
-
         var random = Random.Shared;
-        return $"{firstNames[random.Next(firstNames.Length)]} {surnames[random.Next(surnames.Length)]}";
+        return $"{FirstNames[random.Next(FirstNames.Length)]} {Surnames[random.Next(Surnames.Length)]}";
     }
 }

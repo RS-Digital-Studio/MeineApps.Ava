@@ -56,29 +56,36 @@ public static class MasterTool
     public static List<MasterToolDefinition> GetAllDefinitions() => _allDefinitions;
 
     /// <summary>
+    /// Gecachtes HashSet aller gültigen Tool-IDs (für SanitizeState Exploit-Schutz).
+    /// </summary>
+    private static readonly HashSet<string> _validIds = new(_allDefinitions.Select(d => d.Id));
+    /// <summary>IReadOnlySet verhindert versehentliches Mutieren der statischen Instanz.</summary>
+    public static IReadOnlySet<string> GetValidIds() => _validIds;
+
+    /// <summary>
     /// Prüft ob ein Meisterwerkzeug basierend auf dem aktuellen Spielstand freigeschaltet werden kann.
     /// </summary>
     public static bool CheckEligibility(string toolId, GameState state)
     {
         return toolId switch
         {
-            // Common: Workshop-Meilensteine + Spielaktivität (3x höher als ursprünglich)
-            "mt_golden_hammer" => state.Workshops.Any(w => w.Level >= 75),
-            "mt_diamond_saw" => state.Workshops.Any(w => w.Level >= 150),
+            // Common: Workshop-Meilensteine + Spielaktivität
+            "mt_golden_hammer" => HasWorkshopAtLevel(state, 75),
+            "mt_diamond_saw" => HasWorkshopAtLevel(state, 150),
             "mt_titanium_pliers" => state.TotalOrdersCompleted >= 150,
             "mt_brass_level" => state.TotalMiniGamesPlayed >= 300,
 
             // Uncommon: Höhere Meilensteine + Prestige
-            "mt_silver_wrench" => state.Workshops.Any(w => w.Level >= 300),
+            "mt_silver_wrench" => HasWorkshopAtLevel(state, 300),
             "mt_jade_brush" => state.PerfectRatings >= 75,
             "mt_crystal_chisel" => state.Prestige.BronzeCount >= 1,
 
             // Rare: Fortgeschrittene Meilensteine
-            "mt_obsidian_drill" => state.Workshops.Any(w => w.Level >= 750),
+            "mt_obsidian_drill" => HasWorkshopAtLevel(state, 750),
             "mt_ruby_blade" => state.Prestige.SilverCount >= 1,
 
             // Epic: Endgame-Meilensteine (BAL-38: von 1500 auf 500 gesenkt, MaxLevel ist 1000)
-            "mt_emerald_toolbox" => state.Workshops.Any(w => w.Level >= 500),
+            "mt_emerald_toolbox" => HasWorkshopAtLevel(state, 500),
             "mt_dragon_anvil" => state.Prestige.GoldCount >= 1,
 
             // Legendary: Alle anderen Tools gesammelt
@@ -86,6 +93,19 @@ public static class MasterTool
 
             _ => false
         };
+    }
+
+    /// <summary>
+    /// Prüft ob mindestens ein Workshop das gegebene Level erreicht hat (For-Schleife statt LINQ .Any()).
+    /// Vermeidet Closure-Allokation bei jedem Check (alle 120 Ticks im GameLoop).
+    /// </summary>
+    private static bool HasWorkshopAtLevel(GameState state, int level)
+    {
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            if (state.Workshops[i].Level >= level) return true;
+        }
+        return false;
     }
 
     /// <summary>

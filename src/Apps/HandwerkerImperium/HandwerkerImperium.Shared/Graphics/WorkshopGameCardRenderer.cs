@@ -119,6 +119,20 @@ public static class WorkshopGameCardRenderer
     private static readonly Dictionary<int, string> _unlockLevelLabelCache = new();
     private static readonly Dictionary<(int, int), string> _workerCountLabelCache = new();
 
+    // Lokalisierte Strings (statisch gecacht, aktualisiert bei Sprachwechsel)
+    private static string _tapToUnlockText = "Tap to unlock";
+    private static string _atLevelFormat = "From Level {0}";
+
+    /// <summary>
+    /// Aktualisiert die lokalisierten Strings. Aufruf bei Sprachwechsel und Initialisierung.
+    /// </summary>
+    public static void UpdateLocalizedStrings(string tapToUnlock, string atLevelFormat)
+    {
+        _tapToUnlockText = tapToUnlock;
+        _atLevelFormat = atLevelFormat;
+        _unlockLevelLabelCache.Clear(); // Cache mit alten Texten invalidieren
+    }
+
     /// <summary>
     /// Rendert eine einzelne Workshop-Karte in den angegebenen Bereich.
     /// </summary>
@@ -355,9 +369,9 @@ public static class WorkshopGameCardRenderer
         // Offenes Schloss
         GameCardRenderer.DrawLockIcon(canvas, inner.MidX, inner.Top + inner.Height * 0.35f, 28f, isOpen: true);
 
-        // "Tippe zum Freischalten"
+        // Freischalten-Hinweis (lokalisiert)
         _textPaint.Color = new SKColor(0x22, 0xC5, 0x5E, 200);
-        canvas.DrawText("Tippe zum Freischalten", inner.MidX, inner.Top + inner.Height * 0.68f, SKTextAlign.Center, _font9, _textPaint);
+        canvas.DrawText(_tapToUnlockText, inner.MidX, inner.Top + inner.Height * 0.68f, SKTextAlign.Center, _font9, _textPaint);
 
         // Kosten-Anzeige
         float costY = inner.Top + inner.Height * 0.75f;
@@ -406,7 +420,7 @@ public static class WorkshopGameCardRenderer
         _textPaint.Color = new SKColor(0x94, 0xA3, 0xB8, 160);
         if (!_unlockLevelLabelCache.TryGetValue(data.UnlockLevel, out var unlockLabel))
         {
-            unlockLabel = $"Ab Level {data.UnlockLevel}";
+            unlockLabel = string.Format(_atLevelFormat, data.UnlockLevel);
             _unlockLevelLabelCache[data.UnlockLevel] = unlockLabel;
         }
         canvas.DrawText(unlockLabel, inner.MidX, inner.Top + inner.Height * 0.75f, SKTextAlign.Center, _font10, _textPaint);

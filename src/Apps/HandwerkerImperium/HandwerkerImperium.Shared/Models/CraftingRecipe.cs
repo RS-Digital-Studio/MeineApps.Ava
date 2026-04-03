@@ -19,9 +19,9 @@ public class CraftingRecipe
     public int DurationSeconds { get; set; } = 60;
 
     /// <summary>
-    /// Alle verfügbaren Rezepte.
+    /// Alle verfügbaren Rezepte (gecacht, keine Allokation pro Aufruf).
     /// </summary>
-    public static List<CraftingRecipe> GetAllRecipes() =>
+    private static readonly List<CraftingRecipe> AllRecipes =
     [
         // Schreiner Tier 1 (ab Level 50)
         new() { Id = "r_planks", NameKey = "CraftPlanks", WorkshopType = WorkshopType.Carpenter,
@@ -108,6 +108,26 @@ public class CraftingRecipe
         new() { Id = "r_prototype", NameKey = "CraftPrototype", WorkshopType = WorkshopType.InnovationLab,
             RequiredWorkshopLevel = 50, Tier = 1, OutputProductId = "prototype", DurationSeconds = 30 },
     ];
+
+    public static List<CraftingRecipe> GetAllRecipes() => AllRecipes;
+
+    // Gecachte Lookups (einmalig erstellt, O(1) statt O(n) pro Suche)
+    private static readonly Dictionary<string, CraftingRecipe> RecipeById =
+        AllRecipes.ToDictionary(r => r.Id, r => r);
+    private static readonly Dictionary<string, CraftingRecipe> RecipeByOutputProduct =
+        AllRecipes.ToDictionary(r => r.OutputProductId, r => r);
+
+    /// <summary>
+    /// Findet ein Rezept anhand der ID (O(1) Dictionary-Lookup).
+    /// </summary>
+    public static CraftingRecipe? GetById(string recipeId) =>
+        RecipeById.GetValueOrDefault(recipeId);
+
+    /// <summary>
+    /// Findet das Rezept das ein bestimmtes Produkt herstellt (O(1) Dictionary-Lookup).
+    /// </summary>
+    public static CraftingRecipe? GetByOutputProduct(string productId) =>
+        RecipeByOutputProduct.GetValueOrDefault(productId);
 }
 
 /// <summary>
@@ -120,35 +140,33 @@ public class CraftingProduct
     public int Tier { get; set; }
     public decimal BaseValue { get; set; }
 
-    public static Dictionary<string, CraftingProduct> GetAllProducts()
+    private static readonly Dictionary<string, CraftingProduct> AllProducts = new()
     {
-        var products = new Dictionary<string, CraftingProduct>
-        {
             ["planks"] = new() { Id = "planks", NameKey = "ProductPlanks", Tier = 1, BaseValue = 500m },
             ["furniture"] = new() { Id = "furniture", NameKey = "ProductFurniture", Tier = 2, BaseValue = 2500m },
-            ["luxury_furniture"] = new() { Id = "luxury_furniture", NameKey = "ProductLuxuryFurniture", Tier = 3, BaseValue = 10000m },
+            ["luxury_furniture"] = new() { Id = "luxury_furniture", NameKey = "ProductLuxuryFurniture", Tier = 3, BaseValue = 50000m },
             ["pipes"] = new() { Id = "pipes", NameKey = "ProductPipes", Tier = 1, BaseValue = 500m },
             ["plumbing_system"] = new() { Id = "plumbing_system", NameKey = "ProductPlumbing", Tier = 2, BaseValue = 2500m },
-            ["bathroom_installation"] = new() { Id = "bathroom_installation", NameKey = "ProductBathroom", Tier = 3, BaseValue = 10000m },
+            ["bathroom_installation"] = new() { Id = "bathroom_installation", NameKey = "ProductBathroom", Tier = 3, BaseValue = 50000m },
             ["cables"] = new() { Id = "cables", NameKey = "ProductCables", Tier = 1, BaseValue = 500m },
             ["circuit"] = new() { Id = "circuit", NameKey = "ProductCircuit", Tier = 2, BaseValue = 2500m },
-            ["smart_home"] = new() { Id = "smart_home", NameKey = "ProductSmartHome", Tier = 3, BaseValue = 10000m },
+            ["smart_home"] = new() { Id = "smart_home", NameKey = "ProductSmartHome", Tier = 3, BaseValue = 50000m },
             ["paint_mix"] = new() { Id = "paint_mix", NameKey = "ProductPaintMix", Tier = 1, BaseValue = 400m },
             ["wall_design"] = new() { Id = "wall_design", NameKey = "ProductWallDesign", Tier = 2, BaseValue = 2000m },
             ["roof_tiles"] = new() { Id = "roof_tiles", NameKey = "ProductRoofTiles", Tier = 1, BaseValue = 600m },
             ["roofing_system"] = new() { Id = "roofing_system", NameKey = "ProductRoofing", Tier = 2, BaseValue = 3000m },
             // Neue Tier-3 Produkte (Maler + Dachdecker)
-            ["artwork"] = new() { Id = "artwork", NameKey = "ProductArtwork", Tier = 3, BaseValue = 8000m },
-            ["roof_structure"] = new() { Id = "roof_structure", NameKey = "ProductRoofStructure", Tier = 3, BaseValue = 12000m },
+            ["artwork"] = new() { Id = "artwork", NameKey = "ProductArtwork", Tier = 3, BaseValue = 40000m },
+            ["roof_structure"] = new() { Id = "roof_structure", NameKey = "ProductRoofStructure", Tier = 3, BaseValue = 60000m },
             // Neue Tier-1 Produkte (5 fehlende Workshops)
             ["concrete"] = new() { Id = "concrete", NameKey = "ProductConcrete", Tier = 1, BaseValue = 800m },
             ["blueprint"] = new() { Id = "blueprint", NameKey = "ProductBlueprint", Tier = 1, BaseValue = 1000m },
             ["contract"] = new() { Id = "contract", NameKey = "ProductContract", Tier = 1, BaseValue = 1500m },
             ["fittings"] = new() { Id = "fittings", NameKey = "ProductFittings", Tier = 1, BaseValue = 1200m },
             ["prototype"] = new() { Id = "prototype", NameKey = "ProductPrototype", Tier = 1, BaseValue = 2000m },
-        };
-        return products;
-    }
+    };
+
+    public static Dictionary<string, CraftingProduct> GetAllProducts() => AllProducts;
 }
 
 /// <summary>

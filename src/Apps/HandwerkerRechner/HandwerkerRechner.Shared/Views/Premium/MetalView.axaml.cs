@@ -1,39 +1,19 @@
-using System.ComponentModel;
-using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using HandwerkerRechner.Graphics;
 using HandwerkerRechner.ViewModels.Premium;
 
 namespace HandwerkerRechner.Views.Premium;
 
-public partial class MetalView : UserControl
+public partial class MetalView : CalculatorViewBase
 {
-    private INotifyPropertyChanged? _currentVm;
-    private PropertyChangedEventHandler? _resultHandler;
-
     public MetalView()
     {
         InitializeComponent();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
+    protected override void OnResultPropertyChanged()
     {
-        base.OnDataContextChanged(e);
-
-        // Alten Handler abmelden
-        if (_currentVm != null && _resultHandler != null)
-            _currentVm.PropertyChanged -= _resultHandler;
-
-        _currentVm = DataContext as INotifyPropertyChanged;
-        if (_currentVm != null)
-        {
-            _resultHandler = (_, args) =>
-            {
-                if (args.PropertyName?.Contains("Result") == true)
-                    MetalVisualization.StartAnimation();
-            };
-            _currentVm.PropertyChanged += _resultHandler;
-        }
+        MetalVisualization.StartAnimation();
     }
 
     private void OnPaintVisualization(object? sender, SKPaintSurfaceEventArgs e)
@@ -59,13 +39,8 @@ public partial class MetalView : UserControl
                 vm.WeightResult != null ? (float)vm.WeightResult.Weight : 0f,
                 vm.HasResult);
 
-            // Animation-Loop: weitere Frames anfordern
             if (MetalVisualization.NeedsRedraw)
-            {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                    (sender as Avalonia.Labs.Controls.SKCanvasView)?.InvalidateSurface(),
-                    Avalonia.Threading.DispatcherPriority.Render);
-            }
+                RequestAnimationFrame(sender);
         }
     }
 }

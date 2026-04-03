@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GardenControl.Core.DTOs;
 using GardenControl.Shared.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace GardenControl.Shared.ViewModels;
 
@@ -9,7 +10,7 @@ namespace GardenControl.Shared.ViewModels;
 /// Haupt-ViewModel mit Tab-Navigation, Verbindungsmanagement und Fehlerbehandlung.
 /// Implementiert IAsyncDisposable für sauberes Cleanup.
 /// </summary>
-public partial class MainViewModel : ObservableObject, IAsyncDisposable
+public partial class MainViewModel : ViewModelBase, IAsyncDisposable
 {
     private readonly IConnectionService _connection;
     private readonly IApiService _api;

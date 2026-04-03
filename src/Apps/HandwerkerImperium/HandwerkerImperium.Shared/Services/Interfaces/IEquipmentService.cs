@@ -23,9 +23,10 @@ public interface IEquipmentService
     void UnequipItem(string workerId);
 
     /// <summary>
-    /// Versucht basierend auf Schwierigkeit einen zufälligen Drop zu generieren (10% Chance).
+    /// Versucht basierend auf Schwierigkeit einen zufälligen Drop zu generieren.
+    /// Drop-Chance skaliert: Easy=5%, Medium=10%, Hard=15%, Expert=20%. Perfect-Rating: +5%.
     /// </summary>
-    Equipment? TryGenerateDrop(int difficulty);
+    Equipment? TryGenerateDrop(int difficulty, bool isPerfect = false);
 
     /// <summary>
     /// Gibt die aktuellen Shop-Angebote zurück (3-4 zufällige Ausrüstungsgegenstände).

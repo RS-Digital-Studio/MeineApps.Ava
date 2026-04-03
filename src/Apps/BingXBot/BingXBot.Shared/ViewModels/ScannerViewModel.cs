@@ -5,6 +5,7 @@ using BingXBot.Core.Models;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace BingXBot.ViewModels;
@@ -14,7 +15,7 @@ namespace BingXBot.ViewModels;
 /// Nutzt BingXPublicClient für echte Ticker-Daten, IMarketScanner für Signal-Analyse.
 /// Publiziert Scan-Ergebnisse über den BotEventBus an die Log-Ansicht.
 /// </summary>
-public partial class ScannerViewModel : ObservableObject
+public partial class ScannerViewModel : ViewModelBase
 {
     private readonly ScannerSettings _scannerSettings;
     private readonly IMarketScanner? _marketScanner;

@@ -299,8 +299,10 @@ public sealed partial class MainViewModel
                 if (_quickJobMiniGamePlayed)
                 {
                     _activeQuickJob.IsCompleted = true;
-                    _gameStateService.AddMoney(_activeQuickJob.Reward);
-                    _gameStateService.AddXp(_activeQuickJob.XpReward);
+                    decimal reward = _activeQuickJob.IsScoreDoubled ? _activeQuickJob.Reward * 2 : _activeQuickJob.Reward;
+                    int xp = _activeQuickJob.IsScoreDoubled ? _activeQuickJob.XpReward * 2 : _activeQuickJob.XpReward;
+                    _gameStateService.AddMoney(reward);
+                    _gameStateService.AddXp(xp);
                     _gameStateService.State.TotalQuickJobsCompleted++;
                     _quickJobService?.NotifyJobCompleted(_activeQuickJob);
                     _dailyChallengeService.OnQuickJobCompleted();

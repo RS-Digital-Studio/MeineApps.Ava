@@ -165,9 +165,10 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         int maxTemplateIndex = Math.Min(templates.Count - 1, (workshopLevel - 1) / 2);
         var template = templates[Random.Shared.Next(0, maxTemplateIndex + 1)];
 
-        // Schwierigkeit basiert auf Workshop-Level + Prestige-Stufe
+        // Schwierigkeit basiert auf Workshop-Level + Prestige-Stufe + Reputation
         int prestigeCount = state.Prestige?.TotalPrestigeCount ?? 0;
-        var difficulty = GetDifficulty(workshopLevel, prestigeCount);
+        int reputation = state.Reputation.ReputationScore;
+        var difficulty = GetDifficulty(workshopLevel, prestigeCount, reputation);
 
         int playerLevel = state.PlayerLevel;
 
@@ -178,6 +179,7 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         var (minTasks, maxTasks) = orderType.GetTaskCount();
         int targetTaskCount = Random.Shared.Next(minTasks, maxTasks + 1);
         var tasks = new List<OrderTask>();
+        var cooperationSecondType = workshopType; // Für Cooperation: zweiter Workshop-Typ
 
         if (orderType == OrderType.Cooperation)
         {
@@ -205,6 +207,7 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
                     }
                 }
             }
+            cooperationSecondType = secondType;
             var secondTemplates = _templates.GetValueOrDefault(secondType, templates);
             var secondTemplate = secondTemplates[Random.Shared.Next(Math.Min(secondTemplates.Count, maxTemplateIndex + 1))];
 
@@ -282,15 +285,10 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         if (orderType.HasDeadline())
             order.Deadline = DateTime.UtcNow + orderType.GetDeadline();
 
-        // Cooperation: Benötigte Workshop-Typen setzen
-        if (orderType == OrderType.Cooperation)
+        // Cooperation: Benötigte Workshop-Typen setzen (beide Workshops)
+        if (orderType == OrderType.Cooperation && cooperationSecondType != workshopType)
         {
-            var requiredTypes = tasks.Select(t => t.GameType)
-                .Distinct()
-                .Select(gt => workshopType) // Vereinfacht: Haupt-Workshop
-                .Distinct()
-                .ToList();
-            order.RequiredWorkshops = requiredTypes;
+            order.RequiredWorkshops = [workshopType, cooperationSecondType];
         }
 
         // Stammkunden-Zuordnung (20% Chance wenn Stammkunden vorhanden, ohne LINQ/ToList)
@@ -477,13 +475,16 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         int nameSeed = (int)(DateTime.UtcNow.Ticks % int.MaxValue) ^ Random.Shared.Next();
         string customerName = GenerateCustomerName(nameSeed);
 
+        // Schwierigkeit skaliert mit Workshop-Level (beeinflusst Reward-Multiplikator)
+        var difficulty = GetMaterialOrderDifficulty(mainWorkshop.Level);
+
         var order = new Order
         {
             TitleKey = "OrderTypeMaterialOrder",
             TitleFallback = "Delivery Order",
             WorkshopType = mainWorkshop.Type,
             OrderType = OrderType.MaterialOrder,
-            Difficulty = OrderDifficulty.Medium,
+            Difficulty = difficulty,
             BaseReward = Math.Round(baseReward),
             BaseXp = baseXp,
             RequiredLevel = 1,
@@ -498,15 +499,31 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     }
 
     /// <summary>
-    /// Bestimmt Auftrags-Schwierigkeit basierend auf Workshop-Level und Prestige-Stufe.
-    /// Höheres Workshop-Level → mehr Hard/Expert. Prestige schaltet Expert frei.
+    /// Bestimmt MaterialOrder-Schwierigkeit basierend auf Workshop-Level.
+    /// Höheres Level = mehr benötigte Items + höherer Reward-Multiplikator.
+    /// Kein Expert (MaterialOrders haben kein MiniGame, Expert wäre irreführend).
     /// </summary>
-    private static OrderDifficulty GetDifficulty(int workshopLevel, int prestigeCount)
+    private static OrderDifficulty GetMaterialOrderDifficulty(int workshopLevel)
+    {
+        return workshopLevel switch
+        {
+            <= 75  => OrderDifficulty.Easy,
+            <= 200 => OrderDifficulty.Medium,
+            _      => OrderDifficulty.Hard
+        };
+    }
+
+    /// <summary>
+    /// Bestimmt Auftrags-Schwierigkeit basierend auf Workshop-Level, Prestige-Stufe und Reputation.
+    /// Höheres Workshop-Level → mehr Hard/Expert. Prestige schaltet Expert frei.
+    /// Expert erfordert Reputation 80+ (fällt auf Hard zurück wenn nicht erreicht).
+    /// </summary>
+    private static OrderDifficulty GetDifficulty(int workshopLevel, int prestigeCount, int reputation)
     {
         int roll = Random.Shared.Next(100);
 
         // Prestige-Stufen: 0=Kein, 1+=Bronze, 2+=Silver, 3+=Gold
-        return (workshopLevel, prestigeCount) switch
+        var result = (workshopLevel, prestigeCount) switch
         {
             // WS-Level 1-25
             (<= 25, 0)    => roll < 80 ? OrderDifficulty.Easy : OrderDifficulty.Medium,
@@ -540,6 +557,12 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
 
             _ => OrderDifficulty.Easy
         };
+
+        // Expert-Aufträge erfordern Reputation 80+ — sonst auf Hard zurückfallen
+        if (result == OrderDifficulty.Expert && reputation < OrderDifficulty.Expert.GetRequiredReputation())
+            return OrderDifficulty.Hard;
+
+        return result;
     }
 
     /// <summary>

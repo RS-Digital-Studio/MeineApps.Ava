@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <!-- Projekt-Referenzen -->
+    <ProjectReference Include="..\..\..\Libraries\MeineApps.Core.Ava\MeineApps.Core.Ava.csproj" />
     <ProjectReference Include="..\..\..\Libraries\BingXBot.Core\BingXBot.Core.csproj" />
     <ProjectReference Include="..\..\..\Libraries\BingXBot.Exchange\BingXBot.Exchange.csproj" />
     <ProjectReference Include="..\..\..\Libraries\BingXBot.Engine\BingXBot.Engine.csproj" />

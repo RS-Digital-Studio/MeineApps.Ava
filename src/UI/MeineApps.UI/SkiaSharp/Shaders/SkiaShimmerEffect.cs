@@ -42,6 +42,16 @@ public static class SkiaShimmerEffect
     private static SKRuntimeEffect? _effect;
     private static SKRuntimeEffect? _overlayEffect;
 
+    // Gecachte Paint-Objekte (vermeiden native SKPaint-Allokation pro Frame)
+    private static readonly SKPaint _cachedOverlayPaint = new() { IsAntialias = true, BlendMode = SKBlendMode.SrcOver };
+
+    // Gecachte Uniform-Arrays (vermeiden Array-Allokation pro Frame)
+    private static readonly float[] _shimmerResolution = new float[2];
+    private static readonly float[] _shimmerBaseColor = new float[4];
+    private static readonly float[] _shimmerColor = new float[4];
+    private static readonly float[] _overlayResolution = new float[2];
+    private static readonly float[] _overlayColor = new float[4];
+
     // Overlay-Shader: Nur der Shimmer-Glanz (transparent wo kein Shimmer)
     private const string ShimmerOverlaySksl = @"
         uniform float2 iResolution;
@@ -83,12 +93,23 @@ public static class SkiaShimmerEffect
         _effect ??= SKRuntimeEffect.CreateShader(ShimmerSksl, out _);
         if (_effect == null) return null;
 
+        _shimmerResolution[0] = bounds.Width;
+        _shimmerResolution[1] = bounds.Height;
+        _shimmerBaseColor[0] = baseColor.Red / 255f;
+        _shimmerBaseColor[1] = baseColor.Green / 255f;
+        _shimmerBaseColor[2] = baseColor.Blue / 255f;
+        _shimmerBaseColor[3] = baseColor.Alpha / 255f;
+        _shimmerColor[0] = shimmerColor.Red / 255f;
+        _shimmerColor[1] = shimmerColor.Green / 255f;
+        _shimmerColor[2] = shimmerColor.Blue / 255f;
+        _shimmerColor[3] = shimmerColor.Alpha / 255f;
+
         var uniforms = new SKRuntimeEffectUniforms(_effect)
         {
-            ["iResolution"] = new[] { bounds.Width, bounds.Height },
+            ["iResolution"] = _shimmerResolution,
             ["iTime"] = time,
-            ["baseColor"] = new[] { baseColor.Red / 255f, baseColor.Green / 255f, baseColor.Blue / 255f, baseColor.Alpha / 255f },
-            ["shimmerColor"] = new[] { shimmerColor.Red / 255f, shimmerColor.Green / 255f, shimmerColor.Blue / 255f, shimmerColor.Alpha / 255f },
+            ["baseColor"] = _shimmerBaseColor,
+            ["shimmerColor"] = _shimmerColor,
             ["stripWidth"] = stripWidth,
             ["speed"] = speed,
             ["angle"] = angleDegrees * MathF.PI / 180f
@@ -97,6 +118,7 @@ public static class SkiaShimmerEffect
         var shader = _effect.ToShader(uniforms);
         if (shader == null) return null;
 
+        // ACHTUNG: Caller muss Paint disposen (using var paint = ...)
         return new SKPaint
         {
             Shader = shader,
@@ -119,11 +141,18 @@ public static class SkiaShimmerEffect
         _overlayEffect ??= SKRuntimeEffect.CreateShader(ShimmerOverlaySksl, out _);
         if (_overlayEffect == null) return null;
 
+        _overlayResolution[0] = bounds.Width;
+        _overlayResolution[1] = bounds.Height;
+        _overlayColor[0] = shimmerColor.Red / 255f;
+        _overlayColor[1] = shimmerColor.Green / 255f;
+        _overlayColor[2] = shimmerColor.Blue / 255f;
+        _overlayColor[3] = shimmerColor.Alpha / 255f;
+
         var uniforms = new SKRuntimeEffectUniforms(_overlayEffect)
         {
-            ["iResolution"] = new[] { bounds.Width, bounds.Height },
+            ["iResolution"] = _overlayResolution,
             ["iTime"] = time,
-            ["shimmerColor"] = new[] { shimmerColor.Red / 255f, shimmerColor.Green / 255f, shimmerColor.Blue / 255f, shimmerColor.Alpha / 255f },
+            ["shimmerColor"] = _overlayColor,
             ["stripWidth"] = stripWidth,
             ["speed"] = speed,
             ["angle"] = angleDegrees * MathF.PI / 180f
@@ -132,6 +161,7 @@ public static class SkiaShimmerEffect
         var shader = _overlayEffect.ToShader(uniforms);
         if (shader == null) return null;
 
+        // ACHTUNG: Caller muss Paint disposen (using var paint = ...)
         return new SKPaint
         {
             Shader = shader,

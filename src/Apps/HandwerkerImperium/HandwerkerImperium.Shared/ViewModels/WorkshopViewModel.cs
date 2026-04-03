@@ -191,6 +191,30 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _rebirthCostDisplay = "";
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // SPEZIALISIERUNG (ab Level 100)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Ob die Spezialisierung freigeschaltet ist (Level >= 100).</summary>
+    [ObservableProperty]
+    private bool _isSpecializationUnlocked;
+
+    /// <summary>Aktuell gewählte Spezialisierung (null = keine).</summary>
+    [ObservableProperty]
+    private string _currentSpecializationName = "";
+
+    /// <summary>Farbe der aktuellen Spezialisierung.</summary>
+    [ObservableProperty]
+    private string _currentSpecializationColor = "#808080";
+
+    /// <summary>Beschreibung der aktuellen Spezialisierung.</summary>
+    [ObservableProperty]
+    private string _currentSpecializationDesc = "";
+
+    /// <summary>Ob aktuell eine Spezialisierung gewählt ist.</summary>
+    [ObservableProperty]
+    private bool _hasSpecialization;
+
     /// <summary>
     /// Ob ein Extra-Worker-Slot per Ad verfügbar ist (Workshop voll + Werbung aktiv).
     /// </summary>
@@ -342,8 +366,9 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
         CanHireWorker = workshop.CanHireWorker;
         CanAffordUpgrade = _gameStateService.CanAfford(UpgradeCost);
         CanAffordHire = _gameStateService.CanAfford(HireWorkerCost);
-        // Extra-Slot per Ad: nur wenn Workshop voll und Werbung aktiv
-        CanWatchSlotAd = !CanHireWorker && ShowAds && workshop.Workers.Count > 0;
+        // Extra-Slot per Ad: nur wenn Workshop voll, Werbung aktiv UND Cap nicht erreicht
+        CanWatchSlotAd = !CanHireWorker && ShowAds && workshop.Workers.Count > 0
+            && workshop.AdBonusWorkerSlots < Workshop.MaxAdBonusWorkerSlots;
 
         // Rebirth-Sterne
         RebirthStars = _rebirthService.GetStars(WorkshopType);
@@ -357,6 +382,45 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
         {
             RebirthCostDisplay = "";
         }
+
+        // Spezialisierung
+        IsSpecializationUnlocked = workshop.Level >= GameBalanceConstants.SpecializationUnlockLevel;
+        HasSpecialization = workshop.WorkshopSpecialization != null;
+        if (HasSpecialization)
+        {
+            var spec = workshop.WorkshopSpecialization!;
+            CurrentSpecializationName = _localizationService.GetString(spec.NameKey)
+                ?? spec.Type.ToString();
+            CurrentSpecializationColor = spec.Color;
+            CurrentSpecializationDesc = FormatSpecializationEffects(spec);
+        }
+        else
+        {
+            CurrentSpecializationName = _localizationService.GetString("NoSpecialization") ?? "-";
+            CurrentSpecializationColor = "#808080";
+            CurrentSpecializationDesc = "";
+        }
+    }
+
+    /// <summary>
+    /// Formatiert die Spezialisierungs-Effekte als kompakten Übersichtstext.
+    /// </summary>
+    private string FormatSpecializationEffects(WorkshopSpecialization spec)
+    {
+        var parts = new List<string>();
+        string incomeLabel = _localizationService.GetString("Income") ?? "Income";
+        string efficiencyLabel = _localizationService.GetString("Efficiency") ?? "Efficiency";
+        string costsLabel = _localizationService.GetString("Costs") ?? "Costs";
+
+        if (spec.IncomeModifier > 0) parts.Add($"+{spec.IncomeModifier:P0} {incomeLabel}");
+        else if (spec.IncomeModifier < 0) parts.Add($"{spec.IncomeModifier:P0} {incomeLabel}");
+        if (spec.EfficiencyModifier > 0) parts.Add($"+{spec.EfficiencyModifier:P0} {efficiencyLabel}");
+        else if (spec.EfficiencyModifier < 0) parts.Add($"{spec.EfficiencyModifier:P0} {efficiencyLabel}");
+        if (spec.CostModifier > 0) parts.Add($"+{spec.CostModifier:P0} {costsLabel}");
+        else if (spec.CostModifier < 0) parts.Add($"{spec.CostModifier:P0} {costsLabel}");
+        string workerLabel = _localizationService.GetString("Workers") ?? "Worker";
+        if (spec.WorkerCapacityModifier != 0) parts.Add($"{spec.WorkerCapacityModifier} {workerLabel}");
+        return string.Join(" | ", parts);
     }
 
     [RelayCommand]
@@ -398,6 +462,9 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
         if (success)
         {
             var workshop = _gameStateService.State.GetOrCreateWorkshop(WorkshopType);
+            // Cap prüfen: Maximal MaxAdBonusWorkerSlots (3) Extra-Slots per Werbung
+            if (workshop.AdBonusWorkerSlots >= Workshop.MaxAdBonusWorkerSlots)
+                return;
             workshop.AdBonusWorkerSlots += 1;
             _gameStateService.MarkDirty();
             LoadWorkshop();
@@ -416,6 +483,31 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
     {
         // Bug 2 Fix: Zum Arbeitermarkt navigieren statt zufaelligen Worker erstellen
         NavigationRequested?.Invoke("workers");
+    }
+
+    [RelayCommand]
+    private void SetSpecialization(string? typeString)
+    {
+        if (string.IsNullOrEmpty(typeString)) return;
+        if (!Enum.TryParse<SpecializationType>(typeString, out var specType)) return;
+
+        var workshop = _gameStateService.State.GetOrCreateWorkshop(WorkshopType);
+        if (workshop.Level < GameBalanceConstants.SpecializationUnlockLevel) return;
+
+        workshop.WorkshopSpecialization = new WorkshopSpecialization { Type = specType };
+        _gameStateService.State.InvalidateIncomeCache();
+        _gameStateService.MarkDirty();
+        LoadWorkshop();
+    }
+
+    [RelayCommand]
+    private void RemoveSpecialization()
+    {
+        var workshop = _gameStateService.State.GetOrCreateWorkshop(WorkshopType);
+        workshop.WorkshopSpecialization = null;
+        _gameStateService.State.InvalidateIncomeCache();
+        _gameStateService.MarkDirty();
+        LoadWorkshop();
     }
 
     [RelayCommand]

@@ -41,7 +41,7 @@
         </Border>
 
         <!-- Meister Hans SkiaSharp-Portrait mit Sprechblasen-Zeiger -->
-        <Grid ColumnDefinitions="Auto,*" HorizontalAlignment="Center"
+        <Grid ColumnDefinitions="Auto,Auto,*" HorizontalAlignment="Center"
               AutomationProperties.AutomationId="Main_Grid_StoryPortrait">
           <!-- Portrait -->
           <Border Grid.Column="0"
@@ -49,7 +49,7 @@
                   CornerRadius="60"
                   Background="#15D97706"
                   BoxShadow="0 0 24 0 #30D97706"
-                  Margin="0,0,12,0"
+                  Margin="0,0,4,0"
                   AutomationProperties.AutomationId="Main_Border_MeisterHansPortrait">
             <skia:SKCanvasView x:Name="MeisterHansCanvas"
                                Width="120" Height="120"
@@ -57,8 +57,18 @@
                                AutomationProperties.AutomationId="Main_Img_MeisterHansCanvas" />
           </Border>
 
-          <!-- Sprechblase -->
+          <!-- Sprechblasen-Zeiger (Dreieck das auf Hans zeigt) -->
           <Border Grid.Column="1"
+                  Width="12" Height="12"
+                  Background="#10D97706"
+                  RenderTransform="rotate(45deg)"
+                  RenderTransformOrigin="50%,50%"
+                  VerticalAlignment="Center"
+                  Margin="-6,0,-6,0"
+                  AutomationProperties.AutomationId="Main_Border_SpeechPointer" />
+
+          <!-- Sprechblase -->
+          <Border Grid.Column="2"
                   Background="#10D97706"
                   CornerRadius="16"
                   Padding="14,10"

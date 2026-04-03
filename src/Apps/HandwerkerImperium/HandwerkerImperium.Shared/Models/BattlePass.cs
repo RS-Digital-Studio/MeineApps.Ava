@@ -72,14 +72,14 @@ public class BattlePass
     /// XP benötigt für das nächste Tier.
     /// </summary>
     [JsonIgnore]
-    // BAL-41: Von 1000 auf 500 gesenkt - Tier 50 war in 30 Tagen unerreichbar
-    // Tiers 31-50: Doppelte XP-Anforderung (Hardcore-Spieler, endgame-würdig)
+    // BAL-41: Von 1000 auf 500 gesenkt, EVENT-1: Von 500 auf 250 gesenkt - Tier 50 für aktive Spieler erreichbar
+    // Tiers 41-50: Doppelte XP-Anforderung (Endgame, verschoben von Tier 30 auf 40)
     public int XpForNextTier
     {
         get
         {
-            int baseXp = 500 * (CurrentTier + 1);
-            return CurrentTier >= 30 ? baseXp * 2 : baseXp;
+            int baseXp = 250 * (CurrentTier + 1);
+            return CurrentTier >= 40 ? baseXp * 2 : baseXp;
         }
     }
 

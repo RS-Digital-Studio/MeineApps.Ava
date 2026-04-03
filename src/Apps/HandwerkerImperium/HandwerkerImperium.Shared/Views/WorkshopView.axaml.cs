@@ -182,8 +182,7 @@ public partial class WorkshopView : UserControl
                     (x, y, color) => _animationManager.AddWorkParticle(x, y, color),
                     (x, y) => _animationManager.AddCoinParticle(x, y));
 
-                // Ambient-Partikel emittieren (nur wenn Worker aktiv)
-                EmitAmbientParticles(workshop.Type, activeWorkers, bounds.Width, bounds.Height);
+                // Ambient-Partikel werden nach dem Render-Block mit echtem Delta emittiert
             }
             else
             {
@@ -203,6 +202,17 @@ public partial class WorkshopView : UserControl
         // Ambient-Partikel updaten
         _ambientParticles.Update((float)delta);
 
+        // Ambient-Partikel emittieren mit echtem Delta (nicht hardcodiertem 0.033f)
+        if (workshop != null)
+        {
+            int ambientWorkers = 0;
+            for (int i = 0; i < workshop.Workers.Count; i++)
+                if (!workshop.Workers[i].IsResting && !workshop.Workers[i].IsTraining)
+                    ambientWorkers++;
+            if (ambientWorkers > 0)
+                EmitAmbientParticles(workshop.Type, ambientWorkers, bounds.Width, bounds.Height, (float)delta);
+        }
+
         _animationManager.Update(delta);
         _animationManager.Render(canvas);
     }
@@ -211,7 +221,7 @@ public partial class WorkshopView : UserControl
     // Ambient-Partikel (Phase 7) - Workshop-spezifischer Schwebestaub
     // =================================================================
 
-    private void EmitAmbientParticles(WorkshopType type, int activeWorkers, float canvasW, float canvasH)
+    private void EmitAmbientParticles(WorkshopType type, int activeWorkers, float canvasW, float canvasH, float deltaTime)
     {
         // Emissions-Rate: ~0.5s Basis, schneller bei mehr Workern
         float emitInterval = activeWorkers switch
@@ -221,7 +231,7 @@ public partial class WorkshopView : UserControl
             _ => 0.25f
         };
 
-        _ambientEmitTimer += 0.033f; // ~33ms pro Frame (30fps)
+        _ambientEmitTimer += deltaTime;
         if (_ambientEmitTimer < emitInterval) return;
         _ambientEmitTimer = 0;
 
@@ -268,6 +278,14 @@ public partial class WorkshopView : UserControl
             // Gold-Glitzer (gold, funkelnd)
             WorkshopType.GeneralContractor => SkiaParticlePresets.CreateSparkle(
                 _ambientRng, x, y, new SKColor(0xFF, 0xD7, 0x00, 50)),
+
+            // Glut und Metallspäne (orange-rot, kurz leuchtend)
+            WorkshopType.MasterSmith => SkiaParticlePresets.CreateSparkle(
+                _ambientRng, x, y, new SKColor(0xFF, 0x6B, 0x35, 65)),
+
+            // Energiefunken (violett-blau, schimmernd)
+            WorkshopType.InnovationLab => SkiaParticlePresets.CreateGlow(
+                _ambientRng, x, y, new SKColor(0x6A, 0x5A, 0xCD, 55)),
 
             _ => SkiaParticlePresets.CreateSparkle(
                 _ambientRng, x, y, new SKColor(0xCC, 0xCC, 0xCC, 40))

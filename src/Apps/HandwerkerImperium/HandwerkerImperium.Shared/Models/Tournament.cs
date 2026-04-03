@@ -95,6 +95,7 @@ public class Tournament
 
     /// <summary>
     /// Bestimmt die Belohnungsstufe basierend auf dem Rang.
+    /// EVENT-2: Erweitert damit fast alle Teilnehmer belohnt werden (nur Rang 10 = None).
     /// </summary>
     public TournamentRewardTier GetRewardTier()
     {
@@ -104,9 +105,9 @@ public class Tournament
 
         return playerEntry.Rank switch
         {
-            1 => TournamentRewardTier.Gold,
-            2 or 3 => TournamentRewardTier.Silver,
-            >= 4 and <= 5 => TournamentRewardTier.Bronze,
+            >= 1 and <= 3 => TournamentRewardTier.Gold,
+            >= 4 and <= 6 => TournamentRewardTier.Silver,
+            >= 7 and <= 9 => TournamentRewardTier.Bronze,
             _ => TournamentRewardTier.None
         };
     }

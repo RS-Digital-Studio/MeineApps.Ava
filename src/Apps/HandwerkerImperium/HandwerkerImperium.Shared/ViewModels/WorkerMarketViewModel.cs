@@ -85,9 +85,20 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
     /// <summary>
     /// Ob es volle Workshops gibt, denen ein Extra-Slot per Ad hinzugefuegt werden kann.
     /// </summary>
-    public bool HasFullWorkshops => _gameStateService.State.Workshops
-        .Any(w => _gameStateService.State.IsWorkshopUnlocked(w.Type) &&
-                  w.Workers.Count >= w.MaxWorkers);
+    public bool HasFullWorkshops
+    {
+        get
+        {
+            var workshops = _gameStateService.State.Workshops;
+            for (int i = 0; i < workshops.Count; i++)
+            {
+                var ws = workshops[i];
+                if (_gameStateService.State.IsWorkshopUnlocked(ws.Type) && ws.Workers.Count >= ws.MaxWorkers)
+                    return true;
+            }
+            return false;
+        }
+    }
 
     /// <summary>
     /// Ob der Extra-Slot-Button sichtbar sein soll.
@@ -145,21 +156,24 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
         CurrentBalance = MoneyFormatter.Format(_gameStateService.State.Money, 2);
         GoldenScrewsDisplay = _gameStateService.State.GoldenScrews.ToString("N0");
 
-        // Pruefen ob Workshops mit freien Plaetzen existieren
-        var workshopsWithSlots = _gameStateService.State.Workshops
-            .Where(w => _gameStateService.State.IsWorkshopUnlocked(w.Type) &&
-                        w.Workers.Count < w.MaxWorkers)
-            .ToList();
+        // Prüfen ob Workshops mit freien Plätzen existieren + Durchschnitts-Einkommen berechnen
+        var allWorkshops = _gameStateService.State.Workshops;
+        bool hasSlots = false;
+        decimal totalBaseIncome = 0m;
+        int unlockedCount = 0;
 
-        HasAvailableSlots = workshopsWithSlots.Count > 0;
+        for (int i = 0; i < allWorkshops.Count; i++)
+        {
+            var ws = allWorkshops[i];
+            if (!_gameStateService.State.IsWorkshopUnlocked(ws.Type)) continue;
+            unlockedCount++;
+            totalBaseIncome += ws.BaseIncomePerWorker;
+            if (ws.Workers.Count < ws.MaxWorkers)
+                hasSlots = true;
+        }
 
-        // Durchschnittliche BaseIncomePerWorker berechnen fuer Mehrwert-Anzeige
-        var unlockedWorkshops = _gameStateService.State.Workshops
-            .Where(w => _gameStateService.State.IsWorkshopUnlocked(w.Type))
-            .ToList();
-        var avgBaseIncome = unlockedWorkshops.Count > 0
-            ? unlockedWorkshops.Average(w => w.BaseIncomePerWorker)
-            : 1m;
+        HasAvailableSlots = hasSlots;
+        var avgBaseIncome = unlockedCount > 0 ? totalBaseIncome / unlockedCount : 1m;
 
         // MarketRestriction: Während WorkerStrike höhere Tiers nicht verfügbar
         var activeEvent = _gameStateService.State.ActiveEvent;
@@ -168,13 +182,20 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
         // Markt IMMER anzeigen, unabhaengig von freien Plaetzen
         var playerLevel = _gameStateService.State.PlayerLevel;
         var netIncomePerSecond = Math.Max(0m, _gameStateService.State.NetIncomePerSecond);
-        var workers = market.AvailableWorkers.ToList();
 
-        // Bei MarketRestriction: Nur Worker bis zur erlaubten Tier-Stufe anzeigen
-        if (marketRestriction != null)
-            workers = workers.Where(w => w.Tier <= marketRestriction.Value).ToList();
-        foreach (var worker in workers)
+        // Bei MarketRestriction: Nur Worker bis zur erlaubten Tier-Stufe (For-Schleife statt LINQ)
+        var marketWorkers = market.AvailableWorkers;
+        var workers = new List<Worker>(marketWorkers.Count);
+        for (int i = 0; i < marketWorkers.Count; i++)
         {
+            if (marketRestriction == null || marketWorkers[i].Tier <= marketRestriction.Value)
+                workers.Add(marketWorkers[i]);
+        }
+
+        for (int i = 0; i < workers.Count; i++)
+        {
+            var worker = workers[i];
+
             // Individuelle Anstellungskosten (Tier + Level + Talent + Persönlichkeit + Spezialisierung + Effizienz)
             var qualityPrice = worker.CalculateMarketPrice(playerLevel);
 
@@ -183,7 +204,11 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
             var tierMultiplier = 1.0m + (int)worker.Tier * 0.5m;
             var incomeFloor = netIncomePerSecond * 180m * tierMultiplier;
 
-            worker.HiringCost = Math.Max(qualityPrice, Math.Round(incomeFloor));
+            // Level-basierter Mindestpreis als Sicherheitsnetz: Verhindert Exploit
+            // wenn Spieler absichtlich Einkommen auf 0 senkt (alle Worker rasten lassen)
+            var levelFloor = worker.Tier.GetBaseHiringCost() * (1m + playerLevel * 0.01m);
+
+            worker.HiringCost = Math.Max(qualityPrice, Math.Max(Math.Round(incomeFloor), levelFloor));
 
             // Geschaetzter Ertrag basierend auf Durchschnitt aller Workshops
             worker.IncomeContribution = avgBaseIncome * worker.Efficiency;
@@ -305,10 +330,18 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
         _isBusy = true;
         try
         {
-            // Erste volle Workshop finden
-            var fullWorkshop = _gameStateService.State.Workshops
-                .FirstOrDefault(w => _gameStateService.State.IsWorkshopUnlocked(w.Type) &&
-                                     w.Workers.Count >= w.MaxWorkers);
+            // Erste volle Workshop finden (For-Schleife statt LINQ)
+            Workshop? fullWorkshop = null;
+            var workshops = _gameStateService.State.Workshops;
+            for (int i = 0; i < workshops.Count; i++)
+            {
+                var ws = workshops[i];
+                if (_gameStateService.State.IsWorkshopUnlocked(ws.Type) && ws.Workers.Count >= ws.MaxWorkers)
+                {
+                    fullWorkshop = ws;
+                    break;
+                }
+            }
 
             if (fullWorkshop == null) return;
 
@@ -369,10 +402,14 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
             return;
         }
 
-        // Workshops mit freien Plaetzen ermitteln
-        var workshopsWithSlots = _gameStateService.State.Workshops
-            .Where(w => w.IsUnlocked && w.Workers.Count < w.MaxWorkers)
-            .ToList();
+        // Workshops mit freien Plätzen ermitteln (For-Schleife statt LINQ)
+        var allWs = _gameStateService.State.Workshops;
+        var workshopsWithSlots = new List<Workshop>();
+        for (int i = 0; i < allWs.Count; i++)
+        {
+            if (allWs[i].IsUnlocked && allWs[i].Workers.Count < allWs[i].MaxWorkers)
+                workshopsWithSlots.Add(allWs[i]);
+        }
 
         if (workshopsWithSlots.Count == 0)
         {
@@ -385,13 +422,19 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
 
         // Bug 3 Fix: Workshop-Auswahl-Overlay anzeigen statt automatisch zuzuweisen
         PendingWorker = worker;
-        WorkshopSelections = workshopsWithSlots.Select(ws => new WorkshopSelectionItem
+        var selections = new List<WorkshopSelectionItem>(workshopsWithSlots.Count);
+        for (int i = 0; i < workshopsWithSlots.Count; i++)
         {
-            Type = ws.Type,
-            Name = _localizationService.GetString(ws.Type.GetLocalizationKey()),
-            WorkerInfo = $"{ws.Workers.Count}/{ws.MaxWorkers} {_localizationService.GetString("Workers")}",
-            HasFreeSlots = true
-        }).ToList();
+            var ws = workshopsWithSlots[i];
+            selections.Add(new WorkshopSelectionItem
+            {
+                Type = ws.Type,
+                Name = _localizationService.GetString(ws.Type.GetLocalizationKey()),
+                WorkerInfo = $"{ws.Workers.Count}/{ws.MaxWorkers} {_localizationService.GetString("Workers")}",
+                HasFreeSlots = true
+            });
+        }
+        WorkshopSelections = selections;
 
         ShowWorkshopSelection = true;
     }
@@ -405,8 +448,14 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
 
         if (_workerService.HireWorker(worker, item.Type))
         {
-            // Worker aus Markt-Liste entfernen
-            var updated = AvailableWorkers.Where(w => w.Id != worker.Id).ToList();
+            // Worker aus Markt-Liste entfernen (For-Schleife statt LINQ)
+            var current = AvailableWorkers;
+            var updated = new List<Worker>(current.Count);
+            for (int i = 0; i < current.Count; i++)
+            {
+                if (current[i].Id != worker.Id)
+                    updated.Add(current[i]);
+            }
             AvailableWorkers = updated;
             OnPropertyChanged(nameof(HasNoAvailableWorkers));
             SelectedWorker = null;
@@ -423,10 +472,18 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
                 string.Format(_localizationService.GetString("WorkerHiredFormat"), worker.Name),
                 _localizationService.GetString("Great"));
 
-            // HasAvailableSlots neu berechnen
-            HasAvailableSlots = _gameStateService.State.Workshops
-                .Any(w => _gameStateService.State.IsWorkshopUnlocked(w.Type) &&
-                          w.Workers.Count < w.MaxWorkers);
+            // HasAvailableSlots neu berechnen (For-Schleife statt LINQ)
+            bool slotsAvailable = false;
+            var wsList = _gameStateService.State.Workshops;
+            for (int i = 0; i < wsList.Count; i++)
+            {
+                if (_gameStateService.State.IsWorkshopUnlocked(wsList[i].Type) && wsList[i].Workers.Count < wsList[i].MaxWorkers)
+                {
+                    slotsAvailable = true;
+                    break;
+                }
+            }
+            HasAvailableSlots = slotsAvailable;
             if (!HasAvailableSlots)
             {
                 NoSlotsMessage = _localizationService.GetString("NoFreeSlotDesc");

@@ -2,6 +2,7 @@ using BingXBot.Core.Enums;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace BingXBot.ViewModels;
 
@@ -9,7 +10,7 @@ namespace BingXBot.ViewModels;
 /// Haupt-ViewModel mit Sidebar-Navigation und Status-Anzeige.
 /// Empfängt Bot-Status-Updates über den BotEventBus.
 /// </summary>
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ViewModelBase
 {
     private readonly BotEventBus _eventBus;
 

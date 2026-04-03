@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using SmartMeasure.Shared.Graphics;
 using SmartMeasure.Shared.Models;
 using SmartMeasure.Shared.Services;
@@ -8,7 +9,7 @@ using SmartMeasure.Shared.Services;
 namespace SmartMeasure.Shared.ViewModels;
 
 /// <summary>2D-Gartenplanung: Draufsicht + Zeichenwerkzeuge + Materialliste</summary>
-public partial class GardenPlanViewModel : ObservableObject
+public partial class GardenPlanViewModel : ViewModelBase
 {
     private readonly IMeasurementService _measurementService;
     private readonly ICoordinateService _coordinateService;

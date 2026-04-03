@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace HandwerkerRechner.ViewModels;
@@ -11,7 +12,7 @@ namespace HandwerkerRechner.ViewModels;
 /// ViewModel für Projekt-Vorlagen (eingebaute + benutzerdefinierte).
 /// Zeigt Vorlagen gruppiert nach Kategorie an und erlaubt das Anwenden.
 /// </summary>
-public sealed partial class ProjectTemplatesViewModel : ObservableObject
+public sealed partial class ProjectTemplatesViewModel : ViewModelBase
 {
     private readonly IProjectTemplateService _templateService;
     private readonly IProjectService _projectService;

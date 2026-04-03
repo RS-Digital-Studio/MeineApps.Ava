@@ -36,7 +36,7 @@ public partial class MainView : UserControl
     private GameScreenType _currentScreenType = GameScreenType.Dashboard;
     private string[] _tabLabels = ["Workshop", "Empire", "Missions", "Guild", "Shop"];
 
-    // Performance: Hintergrund und Tab-Bar gedrosselt
+    // Performance: Hintergrund und Tab-Bar gedrosselt, während Scroll pausiert
     private int _bgTickCounter;
 
     // Gecachte Badge-Counts (vermeidet Array-Allokation pro Frame)
@@ -117,9 +117,12 @@ public partial class MainView : UserControl
         // Money-Animation aktualisieren (hat internen Early-Return wenn nicht aktiv)
         _vm?.UpdateMoneyAnimation();
 
-        // Hintergrund alle 15 Ticks (~1fps) - Partikel liegen unter Content und sind kaum sichtbar
+        // Scroll-Status vom DashboardView abfragen (pausiert Canvas-Rendering)
+        bool isScrolling = DashboardViewInstance?.IsScrolling == true;
+
+        // Hintergrund alle 15 Ticks (~1fps) - während Scroll komplett pausieren
         _bgTickCounter++;
-        if (_bgTickCounter >= 15)
+        if (_bgTickCounter >= 15 && !isScrolling)
         {
             _bgTickCounter = 0;
             _backgroundRenderer.UpdateParticles(1.0f, _currentScreenType, _lastBackgroundBounds);
@@ -127,7 +130,8 @@ public partial class MainView : UserControl
         }
 
         // Tab-Bar: 15fps kurz nach Tab-Wechsel (Animation), sonst ~5fps
-        if (_vm?.IsTabBarVisible == true)
+        // Während Scroll pausieren (TabBar ändert sich nicht beim Scrollen)
+        if (_vm?.IsTabBarVisible == true && !isScrolling)
         {
             bool tabAnimActive = (_renderTime - _lastTabSwitchTime) < 0.5f; // 500ms nach Wechsel
             if (tabAnimActive || _bgTickCounter % 3 == 0)
@@ -375,6 +379,27 @@ public partial class MainView : UserControl
         return "";
     }
 
+    // Gecachte FadeIn-Animation (vermeidet Allokation bei jedem Tab-Wechsel)
+    private static readonly Animation s_fadeInAnimation = new()
+    {
+        Duration = TimeSpan.FromMilliseconds(150),
+        Easing = new CubicEaseOut(),
+        FillMode = FillMode.Forward,
+        Children =
+        {
+            new KeyFrame
+            {
+                Cue = new Cue(0),
+                Setters = { new Setter(OpacityProperty, 0.0) }
+            },
+            new KeyFrame
+            {
+                Cue = new Cue(1.0),
+                Setters = { new Setter(OpacityProperty, 1.0) }
+            }
+        }
+    };
+
     /// <summary>
     /// Fade-In Animation für das ContentPanel bei Tab-Wechsel.
     /// Startet bei Opacity 0 und animiert auf 1 (150ms, CubicEaseOut).
@@ -387,28 +412,7 @@ public partial class MainView : UserControl
             if (panel == null) return;
 
             panel.Opacity = 0;
-
-            var fadeIn = new Animation
-            {
-                Duration = TimeSpan.FromMilliseconds(150),
-                Easing = new CubicEaseOut(),
-                FillMode = FillMode.Forward,
-                Children =
-                {
-                    new KeyFrame
-                    {
-                        Cue = new Cue(0),
-                        Setters = { new Setter(OpacityProperty, 0.0) }
-                    },
-                    new KeyFrame
-                    {
-                        Cue = new Cue(1.0),
-                        Setters = { new Setter(OpacityProperty, 1.0) }
-                    }
-                }
-            };
-
-            await fadeIn.RunAsync(panel);
+            await s_fadeInAnimation.RunAsync(panel);
         }
         catch (Exception)
         {

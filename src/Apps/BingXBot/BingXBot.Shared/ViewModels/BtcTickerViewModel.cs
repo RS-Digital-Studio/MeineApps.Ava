@@ -3,6 +3,7 @@ using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace BingXBot.ViewModels;
@@ -12,7 +13,7 @@ namespace BingXBot.ViewModels;
 /// Vollständig unabhängig - benötigt nur den öffentlichen Marktdaten-Client.
 /// Aktualisiert BTC-Preis alle 10s, volle Candle-Daten alle 60s.
 /// </summary>
-public partial class BtcTickerViewModel : ObservableObject, IDisposable
+public partial class BtcTickerViewModel : ViewModelBase, IDisposable
 {
     private readonly IPublicMarketDataClient? _publicClient;
     private readonly BotEventBus _eventBus;

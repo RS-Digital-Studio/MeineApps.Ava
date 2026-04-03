@@ -76,6 +76,16 @@ public static class SkiaGlowEffect
     private static SKRuntimeEffect? _edgeEffect;
     private static SKRuntimeEffect? _radialEffect;
 
+    // Gecachte Paint-Objekte (vermeiden native SKPaint-Allokation pro Frame)
+    private static readonly SKPaint _edgePaint = new() { IsAntialias = true, BlendMode = SKBlendMode.SrcOver };
+    private static readonly SKPaint _radialPaint = new() { IsAntialias = true, BlendMode = SKBlendMode.SrcOver };
+
+    // Gecachte Uniform-Arrays (vermeiden Array-Allokation pro Frame)
+    private static readonly float[] _edgeResolution = new float[2];
+    private static readonly float[] _edgeColor = new float[4];
+    private static readonly float[] _radialResolution = new float[2];
+    private static readonly float[] _radialColor = new float[4];
+
     /// <summary>
     /// Zeichnet einen pulsierenden Glow-Rand um einen Bereich.
     /// </summary>
@@ -92,30 +102,31 @@ public static class SkiaGlowEffect
         _edgeEffect ??= SKRuntimeEffect.CreateShader(GlowSksl, out _);
         if (_edgeEffect == null) return;
 
+        _edgeResolution[0] = bounds.Width;
+        _edgeResolution[1] = bounds.Height;
+        _edgeColor[0] = glowColor.Red / 255f;
+        _edgeColor[1] = glowColor.Green / 255f;
+        _edgeColor[2] = glowColor.Blue / 255f;
+        _edgeColor[3] = glowColor.Alpha / 255f;
+
         var uniforms = new SKRuntimeEffectUniforms(_edgeEffect)
         {
-            ["iResolution"] = new[] { bounds.Width, bounds.Height },
+            ["iResolution"] = _edgeResolution,
             ["iTime"] = time,
-            ["glowColor"] = new[] { glowColor.Red / 255f, glowColor.Green / 255f, glowColor.Blue / 255f, glowColor.Alpha / 255f },
+            ["glowColor"] = _edgeColor,
             ["glowRadius"] = glowRadius,
             ["pulseSpeed"] = pulseSpeed,
             ["pulseMin"] = pulseMin,
             ["pulseMax"] = pulseMax
         };
 
-        using var shader = _edgeEffect.ToShader(uniforms);
-        if (shader == null) return;
-
-        using var paint = new SKPaint
-        {
-            Shader = shader,
-            IsAntialias = true,
-            BlendMode = SKBlendMode.SrcOver
-        };
+        _edgePaint.Shader?.Dispose();
+        _edgePaint.Shader = _edgeEffect.ToShader(uniforms);
+        if (_edgePaint.Shader == null) return;
 
         canvas.Save();
         canvas.Translate(bounds.Left, bounds.Top);
-        canvas.DrawRect(0, 0, bounds.Width, bounds.Height, paint);
+        canvas.DrawRect(0, 0, bounds.Width, bounds.Height, _edgePaint);
         canvas.Restore();
     }
 
@@ -134,29 +145,30 @@ public static class SkiaGlowEffect
         _radialEffect ??= SKRuntimeEffect.CreateShader(RadialGlowSksl, out _);
         if (_radialEffect == null) return;
 
+        _radialResolution[0] = bounds.Width;
+        _radialResolution[1] = bounds.Height;
+        _radialColor[0] = glowColor.Red / 255f;
+        _radialColor[1] = glowColor.Green / 255f;
+        _radialColor[2] = glowColor.Blue / 255f;
+        _radialColor[3] = glowColor.Alpha / 255f;
+
         var uniforms = new SKRuntimeEffectUniforms(_radialEffect)
         {
-            ["iResolution"] = new[] { bounds.Width, bounds.Height },
+            ["iResolution"] = _radialResolution,
             ["iTime"] = time,
-            ["glowColor"] = new[] { glowColor.Red / 255f, glowColor.Green / 255f, glowColor.Blue / 255f, glowColor.Alpha / 255f },
+            ["glowColor"] = _radialColor,
             ["innerRadius"] = innerRadius,
             ["outerRadius"] = outerRadius,
             ["pulseSpeed"] = pulseSpeed
         };
 
-        using var shader = _radialEffect.ToShader(uniforms);
-        if (shader == null) return;
-
-        using var paint = new SKPaint
-        {
-            Shader = shader,
-            IsAntialias = true,
-            BlendMode = SKBlendMode.SrcOver
-        };
+        _radialPaint.Shader?.Dispose();
+        _radialPaint.Shader = _radialEffect.ToShader(uniforms);
+        if (_radialPaint.Shader == null) return;
 
         canvas.Save();
         canvas.Translate(bounds.Left, bounds.Top);
-        canvas.DrawRect(0, 0, bounds.Width, bounds.Height, paint);
+        canvas.DrawRect(0, 0, bounds.Width, bounds.Height, _radialPaint);
         canvas.Restore();
     }
 

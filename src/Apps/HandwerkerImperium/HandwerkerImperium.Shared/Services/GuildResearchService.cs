@@ -1,5 +1,6 @@
 using System.Globalization;
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
@@ -170,14 +171,37 @@ public sealed class GuildResearchService : IGuildResearchService, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
+    /// Berechnet den Kosten-Rabatt basierend auf Mitgliederzahl.
+    /// Weniger als 3 Mitglieder: -50%, weniger als 5: -25%, sonst volle Kosten.
+    /// </summary>
+    private async Task<decimal> GetMemberCountCostMultiplierAsync(string guildId)
+    {
+        try
+        {
+            var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
+            var memberCount = guildData?.MemberCount ?? 1;
+            if (memberCount < 3) return 0.50m; // -50% Kosten
+            if (memberCount < 5) return 0.75m; // -25% Kosten
+            return 1.0m; // Volle Kosten
+        }
+        catch
+        {
+            return 1.0m; // Bei Fehler volle Kosten annehmen
+        }
+    }
+
+    /// <summary>
     /// Leistet einen Geldbeitrag zu einer bestimmten Forschung.
     /// Zieht Geld ab, erhöht Fortschritt, startet Timer bei 100%.
     /// Firebase wird ZUERST aktualisiert - Geld erst bei Erfolg abgezogen.
+    /// Kosten skalieren mit Mitgliederzahl: weniger als 3 → -50%, weniger als 5 → -25%.
     /// </summary>
     public async Task<bool> ContributeToResearchAsync(string researchId, long amount)
     {
         if (!await _semaphore.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
             return false; // Timeout: Lock nicht erhalten
+
+        long moneySpent = 0;
         try
         {
             var membership = _gameStateService.State.GuildMembership;
@@ -200,20 +224,25 @@ public sealed class GuildResearchService : IGuildResearchService, IDisposable
             // Kosten der Forschung ermitteln (statisches Lookup statt FirstOrDefault)
             if (!s_definitionLookup.TryGetValue(researchId, out var definition)) return false;
 
+            // Kosten-Skalierung nach Mitgliederzahl
+            var costMultiplier = await GetMemberCountCostMultiplierAsync(guildId);
+            var scaledCost = (long)(definition.Cost * costMultiplier);
+
             // Beitrag berechnen (nicht mehr als nötig)
-            var remaining = definition.Cost - researchState.Progress;
+            var remaining = scaledCost - researchState.Progress;
             var actualAmount = Math.Min(amount, remaining);
             if (actualAmount <= 0) return false;
 
-            // Geld abziehen VOR Firebase-Update
+            // Geld abziehen VOR Firebase-Update (mit Tracking für Rollback)
             if (!_gameStateService.TrySpendMoney(actualAmount))
                 return false;
+            moneySpent = actualAmount;
 
             // Fortschritt erhöhen (in-memory)
             researchState.Progress += actualAmount;
 
-            // Abschluss prüfen → Timer starten statt sofort abschließen
-            if (researchState.Progress >= definition.Cost && string.IsNullOrEmpty(researchState.ResearchStartedAt))
+            // Abschluss prüfen → Timer starten statt sofort abschließen (skalierte Kosten verwenden)
+            if (researchState.Progress >= scaledCost && string.IsNullOrEmpty(researchState.ResearchStartedAt))
             {
                 researchState.ResearchStartedAt = DateTime.UtcNow.ToString("O");
                 // completed wird NICHT gesetzt - erst wenn Timer abläuft
@@ -222,9 +251,13 @@ public sealed class GuildResearchService : IGuildResearchService, IDisposable
             // Firebase aktualisieren - bei Fehler Rollback
             if (!await _firebaseService.SetAsync(path, researchState))
             {
-                _gameStateService.AddMoney(actualAmount);
+                _gameStateService.AddMoney(moneySpent);
+                moneySpent = 0;
                 return false;
             }
+
+            // Erfolgreich → kein Rollback nötig
+            moneySpent = 0;
 
             // Effekte neu berechnen
             await RefreshEffectsCoreAsync(guildId);
@@ -232,6 +265,8 @@ public sealed class GuildResearchService : IGuildResearchService, IDisposable
         }
         catch
         {
+            // Rollback bei unerwarteter Exception
+            if (moneySpent > 0) _gameStateService.AddMoney(moneySpent);
             return false;
         }
         finally

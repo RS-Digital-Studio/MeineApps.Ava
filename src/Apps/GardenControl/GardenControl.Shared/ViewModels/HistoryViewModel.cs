@@ -4,13 +4,14 @@ using CommunityToolkit.Mvvm.Input;
 using GardenControl.Core.Models;
 using GardenControl.Shared.Controls;
 using GardenControl.Shared.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace GardenControl.Shared.ViewModels;
 
 /// <summary>
 /// Verlaufsdaten - Feuchtigkeitsverlauf-Chart, Bewässerungsereignisse und Statistiken.
 /// </summary>
-public partial class HistoryViewModel : ObservableObject
+public partial class HistoryViewModel : ViewModelBase
 {
     private readonly IApiService _api;
     private readonly SemaphoreSlim _loadSemaphore = new(1, 1);

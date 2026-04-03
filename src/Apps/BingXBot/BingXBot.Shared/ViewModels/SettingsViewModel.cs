@@ -5,6 +5,7 @@ using BingXBot.Exchange;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BingXBot.ViewModels;
@@ -15,7 +16,7 @@ namespace BingXBot.ViewModels;
 /// und IExchangeClient für Verbindungstests.
 /// Publiziert Aktionen über den BotEventBus an die Log-Ansicht.
 /// </summary>
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ViewModelBase
 {
     private readonly BotSettings _botSettings;
     private readonly ISecureStorageService? _secureStorage;

@@ -19,6 +19,14 @@ public sealed partial class SawingGameViewModel : BaseMiniGameViewModel
     private const double MARKER_SPEED = 0.017;  // Units pro Tick (0.0-1.0)
     private const double BAR_WIDTH = 300.0;     // Timing-Bar Breite in Pixel
 
+    // Sub-Typ-spezifische Gameplay-Modifikationen
+    private double _planingZoneShrink = 1.0;     // Planing: Zonen-Verkleinerung (0.7 = 30% kleiner)
+    private double _planingSpeedFactor = 0.75;   // Planing: Langsamerer Marker
+    private double _tileLayingAcceleration;       // TileLaying: Beschleunigung pro Tick
+    private int _tileLayingTickCount;             // TileLaying: Tick-Zähler für Beschleunigung
+    private double _measuringZoneDrift;           // Measuring: Zonen-Drift-Geschwindigkeit
+    private int _measuringDriftDirection = 1;     // Measuring: Drift-Richtung
+
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS (spiel-spezifisch)
     // ═══════════════════════════════════════════════════════════════════════
@@ -162,15 +170,47 @@ public sealed partial class SawingGameViewModel : BaseMiniGameViewModel
 
     protected override void InitializeGame()
     {
+        // Sub-Typ-Parameter zurücksetzen
+        _planingZoneShrink = 1.0;
+        _planingSpeedFactor = 1.0;
+        _tileLayingAcceleration = 0;
+        _tileLayingTickCount = 0;
+        _measuringZoneDrift = 0;
+        _measuringDriftDirection = 1;
+
         // Zonen-Größen basierend auf Schwierigkeit
         double perfectSize = Difficulty.GetPerfectZoneSize();
         // Tool-Bonus: Säge vergrößert die Zielzone
         var sawTool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Saw);
         if (sawTool != null) perfectSize += perfectSize * sawTool.ZoneBonus;
+
+        // Sub-Typ-Modifikationen auf Gameplay-Parameter
+        double speedMultiplier = Difficulty.GetSpeedMultiplier();
+        switch (GameType)
+        {
+            case MiniGameType.Planing:
+                // Planing: Langsamerer Marker, aber 30% kleinere Zonen (Präzisions-Arbeit)
+                _planingZoneShrink = 0.70;
+                _planingSpeedFactor = 0.75;
+                perfectSize *= _planingZoneShrink;
+                speedMultiplier *= _planingSpeedFactor;
+                break;
+
+            case MiniGameType.TileLaying:
+                // TileLaying: Marker wird mit der Zeit schneller (Zeitdruck steigt)
+                _tileLayingAcceleration = 0.00008 * speedMultiplier;
+                break;
+
+            case MiniGameType.Measuring:
+                // Measuring: Zielzone driftet langsam hin und her (bewegliches Ziel)
+                _measuringZoneDrift = 0.0008 * speedMultiplier;
+                break;
+        }
+
         double goodSize = perfectSize * 2;
         double okSize = perfectSize * 3;
 
-        // Zufällige Zielposition (zwischen 0.2 und 0.8)
+        // Zufällige Zielposition (zwischen 0.3 und 0.7)
         var random = Random.Shared;
         double targetCenter = 0.3 + (random.NextDouble() * 0.4);
 
@@ -183,7 +223,7 @@ public sealed partial class SawingGameViewModel : BaseMiniGameViewModel
         OkZoneStart = targetCenter - (okSize / 2);
 
         // Geschwindigkeit je nach Schwierigkeit
-        SpeedMultiplier = Difficulty.GetSpeedMultiplier();
+        SpeedMultiplier = speedMultiplier;
 
         // Marker zurücksetzen
         MarkerPosition = 0;
@@ -202,8 +242,17 @@ public sealed partial class SawingGameViewModel : BaseMiniGameViewModel
     {
         if (!IsPlaying) return;
 
+        // TileLaying: Marker beschleunigt mit der Zeit (Zeitdruck steigt)
+        double currentSpeed = SpeedMultiplier;
+        if (GameType == MiniGameType.TileLaying && _tileLayingAcceleration > 0)
+        {
+            _tileLayingTickCount++;
+            // Beschleunigung bis max 1.6x der Startgeschwindigkeit
+            currentSpeed += Math.Min(_tileLayingAcceleration * _tileLayingTickCount, SpeedMultiplier * 0.6);
+        }
+
         // Marker bewegen
-        MarkerPosition += MARKER_SPEED * SpeedMultiplier * _direction;
+        MarkerPosition += MARKER_SPEED * currentSpeed * _direction;
 
         // An Kanten abprallen
         if (MarkerPosition >= 1.0)
@@ -215,6 +264,28 @@ public sealed partial class SawingGameViewModel : BaseMiniGameViewModel
         {
             MarkerPosition = 0.0;
             _direction = 1;
+        }
+
+        // Measuring: Zielzone driftet langsam hin und her
+        if (GameType == MiniGameType.Measuring && _measuringZoneDrift > 0)
+        {
+            double drift = _measuringZoneDrift * _measuringDriftDirection;
+
+            // Neue Positionen berechnen
+            double newPerfectStart = PerfectZoneStart + drift;
+            double newOkStart = OkZoneStart + drift;
+
+            // An Grenzen umkehren (Zonen bleiben innerhalb 0.05 - 0.95)
+            if (newOkStart + OkZoneWidth > 0.95 || newOkStart < 0.05)
+            {
+                _measuringDriftDirection *= -1;
+            }
+            else
+            {
+                PerfectZoneStart = newPerfectStart;
+                GoodZoneStart += drift;
+                OkZoneStart = newOkStart;
+            }
         }
     }
 

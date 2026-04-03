@@ -897,7 +897,7 @@ public sealed class DatabaseService : IDatabaseService
         var db = await GetDatabaseAsync();
         var workDay = await GetWorkDayAsync(date);
         if (workDay == null)
-            return new List<TimeEntry>();
+            return [];
 
         return await db.Table<TimeEntry>()
             .Where(e => e.WorkDayId == workDay.Id)

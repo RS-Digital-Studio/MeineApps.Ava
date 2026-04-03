@@ -57,7 +57,12 @@ public sealed class AscensionService : IAscensionService
         int apFromLegende = legendeCount / 2;
 
         // Bonus: +2 wenn alle 8 Basis-Workshops auf MaxLevel (1000)
-        int maxLevelCount = state.Workshops.Count(w => w.Level >= Workshop.MaxLevel);
+        int maxLevelCount = 0;
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            if (state.Workshops[i].Level >= Workshop.MaxLevel)
+                maxLevelCount++;
+        }
         int apFromMaxLevel = maxLevelCount >= 8 ? 2 : 0;
 
         // Bonus: +1 wenn alle 12 Meisterwerkzeuge gesammelt
@@ -115,8 +120,8 @@ public sealed class AscensionService : IAscensionService
         state.CurrentXp = 0;
         state.TotalXp = 0;
 
-        // Geld
-        state.Money = 1000m; // Basis-Startgeld (Ascension gibt keine Tier-Boni)
+        // Geld (mit Start-Kapital-Perk-Multiplikator)
+        state.Money = 1000m * GetStartCapitalMultiplier();
         state.CurrentRunMoney = 0;
         state.TotalMoneySpent = 0m;
 

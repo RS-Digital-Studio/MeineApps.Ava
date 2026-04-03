@@ -43,7 +43,7 @@ public static class OrderDifficultyExtensions
         OrderDifficulty.Easy => 1.0m,
         OrderDifficulty.Medium => 1.5m,
         OrderDifficulty.Hard => 3.5m,
-        OrderDifficulty.Expert => 3.5m, // war 8.0m - gesenkt für besseres Balancing
+        OrderDifficulty.Expert => 5.0m, // Deutlich höher als Hard (3.5x) - Expert muss sich wirtschaftlich lohnen
         _ => 1.0m
     };
 

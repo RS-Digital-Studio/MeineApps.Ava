@@ -938,7 +938,8 @@ public sealed class InventGameRenderer : IDisposable
 
         for (int i = 0; i < parts.Length && count < completed.Length; i++)
         {
-            if (parts[i].IsCompleted)
+            // Nur echte Teile (StepNumber > 0), keine Köder (StepNumber = -1)
+            if (parts[i].IsCompleted && parts[i].StepNumber > 0)
                 completed[count++] = (i, parts[i].StepNumber);
         }
 

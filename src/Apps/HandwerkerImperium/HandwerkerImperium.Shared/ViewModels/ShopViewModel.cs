@@ -730,12 +730,12 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 break;
 
             case "golden_screws_ad":
-                _gameStateService.AddGoldenScrews(10);  // BAL-3: Von 5 auf 10 erhöht (besseres Ad-ROI)
+                _gameStateService.AddGoldenScrews(5);  // GAME-7: Von 10 auf 5 reduziert (GS-Inflation vermeiden)
                 GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
                 await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
                 ShowAlert(
                     _localizationService.GetString("GoldenScrews"),
-                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 10),
+                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 5),
                     _localizationService.GetString("Great"));
                 break;
         }

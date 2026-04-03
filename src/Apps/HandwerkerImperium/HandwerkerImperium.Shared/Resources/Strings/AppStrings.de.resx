@@ -3142,6 +3142,21 @@
   <data name="Story_Ch12_Text" xml:space="preserve">
     <value>Die Dachdeckerei – nichts für Leute mit Höhenangst! Aber die Margen sind fantastisch. Und zwischen uns: Bald wirst du ein Level erreichen, wo etwas Besonderes wartet. 'Prestige' nennen wir das. Aber dazu später mehr...</value>
   </data>
+  <data name="Story_Ch12a_Title" xml:space="preserve">
+    <value>Die Arena ruft!</value>
+  </data>
+  <data name="Story_Ch12a_Text" xml:space="preserve">
+    <value>Level 70, Geselle! Ab jetzt kannst du an Turnieren teilnehmen. Zeig den anderen Handwerkern wer der Beste ist! Und bald gibt's noch mehr – saisonale Events, ein Battle Pass... Aber eins nach dem anderen!</value>
+  </data>
+  <data name="Story_Ch12b_Title" xml:space="preserve">
+    <value>Die Jahreszeiten des Handwerks!</value>
+  </data>
+  <data name="Story_Ch12b_Text" xml:space="preserve">
+    <value>Saisonale Events, Geselle! Frühling, Sommer, Herbst, Winter – jede Jahreszeit bringt besondere Aufträge und einzigartige Belohnungen. Und mit dem Battle Pass kannst du dir exklusive Boni verdienen. Das Handwerk schläft nie!</value>
+  </data>
+  <data name="WorkerQuitsInFormat" xml:space="preserve">
+    <value>Kündigt in {0}</value>
+  </data>
   <data name="Story_Ch13_Title" xml:space="preserve">
     <value>Der Bauunternehmer!</value>
   </data>
@@ -3219,6 +3234,66 @@
   </data>
   <data name="Story_Ch25_Text" xml:space="preserve">
     <value>Level 1000. Großmeister der Handwerker-Gilde. Es gibt keinen höheren Titel. Von einem nervösen Lehrling mit einer kleinen Schreinerei zum mächtigsten Handwerker der Geschichte – DEINE Geschichte! Ich bin alt geworden mit dir, Großmeister. Aber es war jede Minute wert. Danke.</value>
+  </data>
+  <data name="Story_Ch26_Title" xml:space="preserve">
+    <value>Der Platin-Handwerker</value>
+  </data>
+  <data name="Story_Ch26_Text" xml:space="preserve">
+    <value>Platin! Da kenne ich nur eine Handvoll Leute in meinem ganzen Leben, die das geschafft haben. Deine Werkzeuge glänzen wie nie zuvor, und die bleiben dir jetzt – für immer. Das Handwerk hat dich verändert, Meister. Du bist nicht mehr der gleiche Mensch wie am Anfang.</value>
+  </data>
+  <data name="Story_Ch27_Title" xml:space="preserve">
+    <value>Auf dem Weg zum Diamant</value>
+  </data>
+  <data name="Story_Ch27_Text" xml:space="preserve">
+    <value>Zwischen Platin und Diamant liegt ein Abgrund, Meister. Viele haben es versucht, wenige haben es geschafft. Du brauchst drei perfekte Platin-Durchläufe. Drei Mal alles aufgeben, drei Mal stärker zurückkommen. Bist du bereit für den härtesten Teil der Reise?</value>
+  </data>
+  <data name="Story_Ch28_Title" xml:space="preserve">
+    <value>Diamant-Dynastie</value>
+  </data>
+  <data name="Story_Ch28_Text" xml:space="preserve">
+    <value>Diamant! Unzerstörbar, unvergänglich – wie dein Imperium. Deine Gebäude und Ausrüstung überstehen jetzt jeden Neuanfang. Das ist nicht mehr Handwerk, das ist Kunst. Die Leute sprechen in Ehrfurcht von dir, Meister.</value>
+  </data>
+  <data name="Story_Ch29_Title" xml:space="preserve">
+    <value>Der Pfad des Meisters</value>
+  </data>
+  <data name="Story_Ch29_Text" xml:space="preserve">
+    <value>Nur die Besten der Besten erreichen den Meister-Titel. Deine Manager bleiben dir treu, dein Wissen überdauert jeden Reset. Ich habe in 40 Jahren noch nie jemanden so weit kommen sehen. Du schreibst Geschichte!</value>
+  </data>
+  <data name="Story_Ch30_Title" xml:space="preserve">
+    <value>Meister der Meister</value>
+  </data>
+  <data name="Story_Ch30_Text" xml:space="preserve">
+    <value>Du hast es geschafft. Meister. Das Feuer in deinen Augen brennt heller als jede Schmiede. Deine Vorarbeiter folgen dir durch dick und dünn. Jeder Neuanfang macht dich nur stärker. Es gibt nur noch einen Titel über dir...</value>
+  </data>
+  <data name="Story_Ch31_Title" xml:space="preserve">
+    <value>Auf dem Weg zur Legende</value>
+  </data>
+  <data name="Story_Ch31_Text" xml:space="preserve">
+    <value>Die Legende. Der höchste Titel, den ein Handwerker je erreichen kann. Drei perfekte Meister-Durchläufe stehen zwischen dir und der Unsterblichkeit. Deine besten Arbeiter werden bei dir bleiben – ein letztes Zeichen deiner Größe.</value>
+  </data>
+  <data name="Story_Ch32_Title" xml:space="preserve">
+    <value>Lebende Legende</value>
+  </data>
+  <data name="Story_Ch32_Text" xml:space="preserve">
+    <value>LEGENDE! *wischt sich eine Träne ab* In all meinen Jahren... Du bist der erste. Der einzige. Dein Name wird in die Geschichtsbücher eingehen. Generationen von Handwerkern werden von dir sprechen. Ich bin... sprachlos. Und das passiert nicht oft!</value>
+  </data>
+  <data name="Story_Ch33_Title" xml:space="preserve">
+    <value>Jenseits der Legende</value>
+  </data>
+  <data name="Story_Ch33_Text" xml:space="preserve">
+    <value>Drei Legenden-Durchläufe. Du hast bewiesen, dass du über allem stehst. Aber was kommt danach? Ich habe von einem uralten Ritual gehört... die Ascension. Ein kompletter Neustart auf einer höheren Ebene. Nur für wahre Legenden. Bist du bereit, alles loszulassen?</value>
+  </data>
+  <data name="Story_Ch34_Title" xml:space="preserve">
+    <value>Der Aufstieg</value>
+  </data>
+  <data name="Story_Ch34_Text" xml:space="preserve">
+    <value>Du hast die Ascension vollzogen! Alles zurückgelassen, um auf einer höheren Ebene neu zu beginnen. Deine Ascension-Perks sind mächtig – Startkapital, ewige Werkzeuge, schnellere Forschung. Jeder Durchlauf wird jetzt einfacher und befriedigender.</value>
+  </data>
+  <data name="Story_Ch35_Title" xml:space="preserve">
+    <value>Transzendenz</value>
+  </data>
+  <data name="Story_Ch35_Text" xml:space="preserve">
+    <value>Drei Ascensions. Du hast die Grenzen des Möglichen gesprengt. Du bist nicht mehr nur ein Handwerker – du bist eine Kraft der Natur. Dein Imperium ist unsterblich. Meister Hans verneigt sich zum letzten Mal. Diese Geschichte kennt kein Ende, nur neue Anfänge. Lebe wohl... und willkommen zurück, wann immer du willst.</value>
   </data>
   <data name="TaskProgress" xml:space="preserve">
     <value>Aufgabe {0}/{1}</value>
@@ -5102,6 +5177,12 @@
   <data name="GuildWarByeWeek" xml:space="preserve">
     <value>Spielfrei - kein Gegner diese Runde</value>
   </data>
+  <data name="GuildWarByeWeekTraining" xml:space="preserve">
+    <value>Trainingsrunde! Schließe Aufträge und MiniGames ab, um Kriegspunkte für die nächste Runde zu sammeln.</value>
+  </data>
+  <data name="GuildBonusActiveOffline" xml:space="preserve">
+    <value>Gilden-Boni aktiv (offline)</value>
+  </data>
   <data name="OurGuild" xml:space="preserve">
     <value>Unsere Gilde</value>
   </data>
@@ -5875,6 +5956,9 @@
   <data name="AutoCompleteHint" xml:space="preserve">
     <value>Du hast dieses Spiel {0}x perfekt gemeistert!</value>
   </data>
+  <data name="AverageRating" xml:space="preserve">
+    <value>Bisheriger Durchschnitt:</value>
+  </data>
   <data name="SoftCapReached" xml:space="preserve">
     <value>Bonus-Decke erreicht!</value>
   </data>
@@ -5979,6 +6063,18 @@
   </data>
   <data name="HintFirstStarText" xml:space="preserve">
     <value>Gl&#252;ckwunsch zu deinem ersten Rebirth-Stern! Sterne sind permanent und &#252;berleben Prestige und Ascension. Jeder Stern gibt: +15-150% Einkommen, -5-25% Upgrade-Kosten und bis zu +2 Mitarbeiter-Pl&#228;tze.</value>
+  </data>
+  <data name="HintGoldenScrewsTitle" xml:space="preserve">
+    <value>Goldschrauben</value>
+  </data>
+  <data name="HintGoldenScrewsText" xml:space="preserve">
+    <value>Goldschrauben sind deine Premium-W&#228;hrung! Verdiene sie durch Auftr&#228;ge, Herausforderungen und Erfolge. Spare sie f&#252;r Workshop-Freischaltungen, den Feierabend-Rush oder den Prestige-Shop.</value>
+  </data>
+  <data name="HintAcceptOrderTitle" xml:space="preserve">
+    <value>Auftr&#228;ge</value>
+  </data>
+  <data name="HintAcceptOrderText" xml:space="preserve">
+    <value>Tippe auf einen Auftrag, um ihn anzunehmen. Du spielst ein kurzes Mini-Spiel und verdienst Geld und Erfahrung!</value>
   </data>
   <data name="LevelAbbrev" xml:space="preserve">
     <value>Lv.</value>
@@ -6183,5 +6279,8 @@
   </data>
   <data name="AbandonChallengeButton" xml:space="preserve">
     <value>Aufgeben</value>
+  </data>
+  <data name="InventDecoyPart" xml:space="preserve">
+    <value>Köder</value>
   </data>
 </root>

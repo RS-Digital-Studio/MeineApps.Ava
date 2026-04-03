@@ -282,4 +282,12 @@ public static class PrestigeShop
     /// Keine Heap-Allokation bei jedem Aufruf.
     /// </summary>
     public static IReadOnlyList<PrestigeShopItem> GetAllItems() => _allItems;
+
+    /// <summary>
+    /// Gecachtes HashSet aller gültigen Shop-Item-IDs (für SanitizeState Exploit-Schutz).
+    /// Vermeidet .Select().ToHashSet() bei jedem Load.
+    /// </summary>
+    private static readonly HashSet<string> _validIds = new(_allItems.Select(i => i.Id));
+    /// <summary>IReadOnlySet verhindert versehentliches Mutieren der statischen Instanz.</summary>
+    public static IReadOnlySet<string> GetValidIds() => _validIds;
 }

@@ -396,6 +396,11 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel | `PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium` Key fehlt | `IPurchaseService.InitializeAsync()` in Loading-Pipeline aufrufen (parallel zum ersten Schritt). Stellt Käufe + Abos via Google Play Billing wieder her |
 | SKCanvasView Game-Loop startet nicht (Countdown stuck) | ContentControl+ViewLocator setzt DataContext verzögert → `InvalidateCanvasRequested` hat beim `StartGameLoop()` keinen Subscriber → Render-Timer startet nie | 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded als Backup, (3) OnPaintSurface Safety-Net startet Timer nach. `TrySubscribeToViewModel()` als zentrale idempotente Methode |
 | Gilden-Mitglieder doppelt angezeigt | App-Datenverlust → neue PlayerId → Spieler tritt erneut bei → alter Eintrag bleibt in Firebase | 3-Maßnahmen-Fix: (1) `RemoveDuplicateMemberAsync` beim Join prüft auf gleichen Namen, (2) `CleanupStaleMembersAsync` entfernt >30d inaktive beim Laden, (3) UID→PlayerId Migration mit Retry auf DeleteAsync |
+| CanGiveBonus Button grau obwohl genug Geld | `CanGiveBonus` prüfte 24h Lohn, `GiveBonus` kostete nur 8h → Button zu restriktiv | Alle 3 Stellen auf 8h harmonisiert (WorkerProfileViewModel + WorkerService) |
+| RecordMiniGameResult ignoriert QuickJobs | Early-Return bei `ActiveOrder == null` → Stats, Events, PerfectStreak nie aktualisiert bei QuickJobs → Belohnungen gehen verloren | `order.RecordTaskResult()` nur bei ActiveOrder, Stats+Events IMMER feuern |
+| Auto-Complete bei QuickJobs Navigation-Loop | `CanAutoComplete` wird true, aber `AutoCompleteGameAsync()` findet kein ActiveOrder → NavigateBack | `UpdateAutoCompleteStatus()` prüft `GetActiveOrder() != null` vor Auto-Complete |
+| PipePuzzle Rating zu großzügig | `optimalMoves = GridCols * GridRows` statt Pfad-Länge → moveEfficiency immer > 1.0 | `optimalMoves = Tiles.Count(t => t.IsPartOfSolution && !t.IsLocked)` |
+| QuickJob Ad-Verdopplung nur in UI | `WatchAdAsync` setzt nur `order.IsScoreDoubled`, QuickJobs haben kein solches Flag | `QuickJob.IsScoreDoubled` Property + Verdopplung in MainViewModel.Navigation.cs |
 
 ---
 

@@ -53,11 +53,12 @@ public class Workshop
     public int BaseMaxWorkers => Math.Min(20, 1 + (Level - 1) / 50);
 
     /// <summary>
-    /// Total max workers including building bonus + Ad-Bonus + Rebirth-Sterne.
+    /// Total max workers including building bonus + Ad-Bonus + Rebirth-Sterne + Spezialisierung.
     /// Set by external systems that know about buildings.
     /// </summary>
     [JsonIgnore]
-    public int MaxWorkers => BaseMaxWorkers + ExtraWorkerSlots + AdBonusWorkerSlots + RebirthExtraWorkers;
+    public int MaxWorkers => Math.Max(1, BaseMaxWorkers + ExtraWorkerSlots + AdBonusWorkerSlots
+        + RebirthExtraWorkers + (WorkshopSpecialization?.WorkerCapacityModifier ?? 0));
 
     /// <summary>
     /// Extra worker slots from buildings/research (set externally).
@@ -135,10 +136,25 @@ public class Workshop
     [JsonIgnore]
     public decimal BaseIncomePerWorker => WorkshopFormulas.CalculateBaseIncomePerWorker(Level, Type);
 
-    /// <summary>Brutto-Einkommen pro Sekunde (alle Worker, Aura, Rebirth).</summary>
+    /// <summary>Brutto-Einkommen pro Sekunde (alle Worker, Aura, Rebirth, Spezialisierung).</summary>
     [JsonIgnore]
-    public decimal GrossIncomePerSecond =>
-        WorkshopFormulas.CalculateGrossIncome(Level, Type, Workers, LevelResistanceBonus, RebirthIncomeBonus);
+    public decimal GrossIncomePerSecond
+    {
+        get
+        {
+            var gross = WorkshopFormulas.CalculateGrossIncome(Level, Type, Workers, LevelResistanceBonus, RebirthIncomeBonus);
+            if (WorkshopSpecialization != null)
+            {
+                // Quality: +20% Worker-Effizienz als Einkommensboost
+                if (WorkshopSpecialization.EfficiencyModifier != 0m)
+                    gross *= (1m + WorkshopSpecialization.EfficiencyModifier);
+                // Efficiency: +30% / Economy: -5%
+                if (WorkshopSpecialization.IncomeModifier != 0m)
+                    gross *= (1m + WorkshopSpecialization.IncomeModifier);
+            }
+            return gross;
+        }
+    }
 
     /// <summary>Level-Anforderungsfaktor für einen Worker (Tier-Resistenz + Forschung).</summary>
     public decimal GetWorkerLevelFitFactor(Worker worker) =>
@@ -162,16 +178,38 @@ public class Workshop
     public decimal MaterialCostPerHour => WorkshopFormulas.CalculateMaterialCostPerHour(Level, Type);
 
     /// <summary>
-    /// Total worker wages per hour.
+    /// Total worker wages per hour (For-Schleife, kein LINQ).
     /// </summary>
     [JsonIgnore]
-    public decimal TotalWagesPerHour => Workers.Where(w => !w.IsResting).Sum(w => w.WagePerHour);
+    public decimal TotalWagesPerHour
+    {
+        get
+        {
+            decimal total = 0m;
+            for (int i = 0; i < Workers.Count; i++)
+            {
+                if (!Workers[i].IsResting)
+                    total += Workers[i].WagePerHour;
+            }
+            return total;
+        }
+    }
 
     /// <summary>
-    /// Total running costs per hour (rent + material + wages).
+    /// Total running costs per hour (rent + material + wages + Spezialisierung).
     /// </summary>
     [JsonIgnore]
-    public decimal TotalCostsPerHour => RentPerHour + MaterialCostPerHour + TotalWagesPerHour;
+    public decimal TotalCostsPerHour
+    {
+        get
+        {
+            var costs = RentPerHour + MaterialCostPerHour + TotalWagesPerHour;
+            // Quality: +15% Kosten / Economy: -25% Kosten
+            if (WorkshopSpecialization?.CostModifier is > 0m or < 0m)
+                costs *= (1m + WorkshopSpecialization!.CostModifier);
+            return Math.Max(0m, costs);
+        }
+    }
 
     /// <summary>
     /// Roher Netto-Einkommenswert OHNE Prestige-Multiplikator und Research-Boni.

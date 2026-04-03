@@ -221,6 +221,19 @@ public interface IGameStateService
     void MarkDirty();
 
     /// <summary>
+    /// Prestige-Shop-Bonus-Cache invalidieren (nach Kauf, Prestige-Reset oder State-Load).
+    /// Betrifft gecachte GS-Bonus, XP-Bonus und OrderReward-Bonus.
+    /// Feuert auch PrestigeShopPurchased Event für andere Services (z.B. CraftingService).
+    /// </summary>
+    void InvalidatePrestigeBonusCache();
+
+    /// <summary>
+    /// Feuert wenn Prestige-Shop-Boni sich geändert haben (Kauf, Prestige-Reset, State-Load).
+    /// Ermöglicht Services mit eigenen Prestige-Shop-Caches die Invalidierung.
+    /// </summary>
+    event EventHandler? PrestigeShopPurchased;
+
+    /// <summary>
     /// Schließt einen Lieferauftrag ab: Items abziehen, Belohnung gutschreiben.
     /// Gibt den Geld-Ertrag zurück (0 wenn nicht möglich).
     /// </summary>

@@ -17,20 +17,8 @@ namespace HandwerkerImperium.Graphics;
 /// </summary>
 public static class WorkshopCardRenderer
 {
-    // Workshop-Farben (identisch zu WorkshopColorConverter.cs)
-    private static readonly Dictionary<WorkshopType, SKColor> WorkshopColors = new()
-    {
-        [WorkshopType.Carpenter] = new SKColor(0xA0, 0x52, 0x2D),          // Sienna
-        [WorkshopType.Plumber] = new SKColor(0x0E, 0x74, 0x90),            // Teal
-        [WorkshopType.Electrician] = new SKColor(0xF9, 0x73, 0x16),        // Orange
-        [WorkshopType.Painter] = new SKColor(0xEC, 0x48, 0x99),            // Pink
-        [WorkshopType.Roofer] = new SKColor(0xDC, 0x26, 0x26),             // Rot
-        [WorkshopType.Contractor] = new SKColor(0xEA, 0x58, 0x0C),         // Craft-Orange
-        [WorkshopType.Architect] = new SKColor(0x78, 0x71, 0x6C),          // Stone-Grau
-        [WorkshopType.GeneralContractor] = new SKColor(0xFF, 0xD7, 0x00),  // Gold
-        [WorkshopType.MasterSmith] = new SKColor(0xD4, 0xA3, 0x73),       // Kupfer-Orange
-        [WorkshopType.InnovationLab] = new SKColor(0x6A, 0x5A, 0xCD)      // Violett
-    };
+    // Workshop-Farben: Gecacht aus WorkshopTypeExtensions.GetColorHex() (zentrale Quelle)
+    private static readonly Dictionary<WorkshopType, SKColor> WorkshopColors = BuildColorCache();
 
     // Gemeinsame Farben
     private static readonly SKColor WoodLight = new(0xD7, 0xB2, 0x8A);
@@ -40,6 +28,9 @@ public static class WorkshopCardRenderer
     private static readonly SKColor BgDark = new(0x1A, 0x14, 0x10);
     private static readonly SKColor GoldColor = new(0xFF, 0xD7, 0x00);
     private static readonly SKColor GoldDark = new(0xD4, 0xA0, 0x00);
+
+    // Gecachter Font fuer gesperrte Workshop-Karten (vermeidet native SKFont-Allokation pro Frame)
+    private static readonly SKFont _lockedFont = new() { Embolden = true };
 
     // Statische wiederverwendbare Paints (nur auf UI-Thread verwendet, daher thread-sicher).
     // Farbe/Style wird vor jeder Verwendung gesetzt.
@@ -51,7 +42,15 @@ public static class WorkshopCardRenderer
     /// </summary>
     public static SKColor GetWorkshopColor(WorkshopType type)
     {
-        return WorkshopColors.GetValueOrDefault(type, new SKColor(0x80, 0x80, 0x80));
+        return WorkshopColors.GetValueOrDefault(type, SKColor.Parse("#D97706"));
+    }
+
+    private static Dictionary<WorkshopType, SKColor> BuildColorCache()
+    {
+        var cache = new Dictionary<WorkshopType, SKColor>();
+        foreach (WorkshopType type in Enum.GetValues<WorkshopType>())
+            cache[type] = SKColor.Parse(type.GetColorHex());
+        return cache;
     }
 
     /// <summary>
@@ -157,10 +156,10 @@ public static class WorkshopCardRenderer
         // Kreis-Hintergrund
         canvas.DrawCircle(cx, cy, s, fill);
 
-        // Fragezeichen
+        // Fragezeichen (gecachter Font, Größe wird pro Aufruf gesetzt)
         fill.Color = color.WithAlpha(40);
-        using var font = new SKFont { Size = s * 1.2f, Embolden = true };
-        canvas.DrawText("?", cx, cy + s * 0.35f, SKTextAlign.Center, font, fill);
+        _lockedFont.Size = s * 1.2f;
+        canvas.DrawText("?", cx, cy + s * 0.35f, SKTextAlign.Center, _lockedFont, fill);
     }
 
     // =====================================================================

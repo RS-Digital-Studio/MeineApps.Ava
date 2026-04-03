@@ -43,8 +43,8 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Meisterwerkzeuge** (12 Artefakte, 5 Seltenheiten, passive Einkommens-Boni)
 - **Lieferant-System** (Variable Rewards alle 2-5 Min: Geld, Schrauben, XP, Mood, Speed)
 - **Prestige-Shop** (23 Items in 4 Kategorien, 1 wiederholbar) + **Prestige-Pass** (2,99 EUR IAP, +50% Prestige-Punkte, permanent nach Kauf). Shop-Effekte: OfflineHoursBonus (GameState.MaxOfflineHours), CraftingSpeedBonus (CraftingService.StartCrafting), ExtraQuickJobLimit (QuickJobService.GetMaxQuickJobsPerDay), UpgradeDiscount (GameLoopService-Cache), Income/Rush/Delivery (GameLoopService-Cache), CostReduction/MoodDecay/XP (PrestigeService-Getter), GoldenScrews (GameStateService.AddGoldenScrews), StartMoney/StartWorkerTier (PrestigeService.ResetProgress)
-- **Story-System** (25 Kapitel von NPC "Meister Hans" mit SkiaSharp-Portrait)
-- **Kontextuelles Tutorial** (20 Tooltip-Bubbles + Welcome-Dialog, ContextualHintService, SeenHints-Tracking, inkl. Ascension/Rebirth/FirstStar-Hints)
+- **Story-System** (35 Kapitel von NPC "Meister Hans" mit SkiaSharp-Portrait, dynamischer Kapitelzähler)
+- **Kontextuelles Tutorial** (22 Tooltip-Bubbles + Welcome-Dialog, ContextualHintService, SeenHints-Tracking, inkl. Ascension/Rebirth/FirstStar/GoldenScrews/AcceptOrder-Hints, Hint-Verkettung: Welcome→FirstWorkshop→AcceptOrder)
 - **In-App Review** (Level 20/50/100, erstes Prestige, 50 Auftraege)
 - **Benachrichtigungen** (4 Typen, AlarmManager + BroadcastReceiver, BootReceiver, 6 Sprachen)
 - **Google Play Games** (Leaderboards, kein Cloud-Save im NuGet v121.0.0.2)
@@ -62,7 +62,7 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Ausruestungs-System** (4 Typen x 4 Seltenheiten fuer Arbeiter, Equip/Unequip im Worker-Profil, Inventar-Browser)
 - **Grafik-Einstellungen** (Low/Medium/High, GraphicsQuality in GameState, steuert Wetter-Effekte etc.)
 - **MiniGame-Direktstart** (Auto-Start nach Tutorial-Check + 3-2-1-Countdown, kein Start-Button)
-- **MiniGame Auto-Complete** (ab 30 Perfect-Ratings "Auto-Ergebnis" mit Good-Rating, Premium ab 15, PerfectRatingCounts in GameState)
+- **MiniGame Auto-Complete** (ab 30 Perfect-Ratings "Auto-Ergebnis" mit Perfect-Rating als Mastery-Belohnung, Premium ab 15, PerfectRatingCounts in GameState)
 - **Gilden-Browser** (offene Gilden suchen+beitreten ohne Einladung, Firebase REST-Abfrage, Browse-UI in GuildView)
 - **Soft-Cap-Transparenz** (IsSoftCapActive + SoftCapReductionPercent im GameState, UI-Indikator im Dashboard, Schwelle 8x)
 - **Workshop Rebirth** (0-5 Sterne pro Workshop, permanent über Prestige+Ascension, Einkommens-Bonus +15-150%, Upgrade-Rabatt 5-25%, Extra-Worker +1-3)
@@ -198,6 +198,17 @@ Daten in `GameState.WorkshopStars` (Dictionary<string, int>), Runtime-Properties
 | 1 | Legacy (Altes Worker-System) |
 | 2 | Neues Worker-System, Buildings, Research, Events, Prestige, Reputation |
 | 3 | Workshop Rebirth Stars (WorkshopStars Dictionary) |
+| 3+ | Worker: ResumeTrainingType (Auto-Resume nach Ruhe), KeptWorkers indiziert (Top 3 bei Legende) |
+
+### Worker-System Details
+
+- **EffectiveEfficiency-Formel**: `BaseEff * XpBonus(+3%/Lv) * MoodFactor * FatigueFactor * (1+SpecBonus+EquipBonus) * PersonalityMult`
+- **XP-Bonus**: +3% pro ExperienceLevel auf EffectiveEfficiency (Training lohnt sich immer, auch am Tier-Maximum)
+- **Auto-Resume Training**: Worker setzt Training automatisch fort nach Fatigue-bedingter Ruhe (ResumeTrainingType Property)
+- **Offline-Kündigung**: Worker kündigen auch offline nach 24h bei Mood<20 (konsistent mit Online-Verhalten)
+- **Legende-Prestige**: Top 3 Worker pro Workshop gesichert (statt nur 1). Keys: "Type", "Type_1", "Type_2" (backward-compatible)
+- **Markt-Preisberechnung**: Dreifacher Floor: qualityPrice, incomeFloor (3min Netto-Einkommen), levelFloor (Basis-Anstellungskosten * Level)
+- **Personality-Icons**: GetIcon() gibt GameIconKind-Namen zurück (ShieldHalfFull, StarFourPoints, EmoticonHappy, RocketLaunch, WeatherSunset, Wrench)
 
 ### Neuer-Spieler-Einstieg
 
@@ -214,7 +225,7 @@ Daten in `GameState.WorkshopStars` (Dictionary<string, int>), Runtime-Properties
 - **Starter-Offer**: Einmaliges Angebot ab Level 10, 24h-Countdown, Properties `StarterOfferShown`/`StarterOfferTimestamp` in GameState
 
 ### Rewarded (9 Placements)
-1. `golden_screws` - 10 Goldschrauben (Dashboard, BAL-3: von 5 erhöht)
+1. `golden_screws` - 5 Goldschrauben (Dashboard, BAL: von 10 auf 5 reduziert für F2P-Balance)
 2. `score_double` - Mini-Game Score verdoppeln
 3. `market_refresh` - Arbeitermarkt-Pool neu wuerfeln
 4. `workshop_speedup` - 30min Produktionsertrag sofort (BAL-5: von 2h reduziert)
@@ -226,27 +237,48 @@ Daten in `GameState.WorkshopStars` (Dictionary<string, int>), Runtime-Properties
 
 ## Architektur-Besonderheiten
 
-### BaseMiniGameViewModel (Refactoring 20.03.2026)
+### BaseMiniGameViewModel (Refactoring 20.03.2026, Bugfixes 29.03.2026)
 
 Alle 10 MiniGame-ViewModels erben von `BaseMiniGameViewModel` (ViewModels/MiniGames/BaseMiniGameViewModel.cs).
 Eliminiert ~2.500 Zeilen Duplikation. Basis-Klasse enthält:
-- 25 gemeinsame ObservableProperties (OrderId, Difficulty, IsPlaying, Stars, Tutorial, AutoComplete etc.)
-- 7 gemeinsame Commands (StartGame, Continue, Cancel, WatchAd, DismissTutorial, AutoComplete)
-- Countdown-Logik (3-2-1-Los), Timer-Management, Ergebnis-Anzeige mit Sterne-Animation
+- 27 gemeinsame ObservableProperties (OrderId, Difficulty, IsPlaying, Stars, Tutorial, AutoComplete, IntermediateAverage, CanShowTutorialInfo etc.)
+- 9 gemeinsame Commands (StartGame, Continue, Cancel, WatchAd, DismissTutorial, AutoComplete, ShowTutorialInfo)
+- Countdown-Logik (3-2-1-Los, **verkürzt auf 350ms nach 50+ Spielen**), Timer-Management, Ergebnis-Anzeige mit Sterne-Animation
 - SetOrderId(), ShowResultAsync(), StopGame(), CheckAndShowTutorial(), UpdateAutoCompleteStatus()
+- **QuickJob-Support**: Difficulty wird vom QuickJob-Model übernommen, Auto-Complete nur bei echten Aufträgen
+- **Zwischen-Ergebnis**: IntermediateAverage zeigt bisherigen Durchschnitt bei Multi-Task-Orders
+- **Tutorial-Wiederholung**: ShowTutorialInfo-Command + Info-Button in allen Views
 - Virtual Hooks: InitializeGame(), OnGameTimerTick(), OnPreGameStartAsync(), CalculateAndSetRewards(), GetCurrentMiniGameType()
 - SawingGame/ForgeGame überschreiben GetCurrentMiniGameType() für dynamische Sub-Typen
-- PaintingGame überschreibt CalculateAndSetRewards() für Combo-Multiplikator
+- SawingGame: 4 Sub-Typen mit differenziertem Gameplay und **einzigartigen Tutorial-Texten** (Sawing=Standard, Planing=langsamer+kleinere Zonen, TileLaying=beschleunigend, Measuring=driftende Zielzone)
+- PaintingGame überschreibt CalculateAndSetRewards() für Combo-Multiplikator (Staffel: +0.25x pro 5 fehlerfreie Treffer)
 - Blueprint/InventGame nutzen OnPreGameStartAsync() für Memorisierungsphase
+- **PipePuzzle optimalMoves** basiert auf drehbarer Pfad-Länge (nicht Grid-Größe)
+- **Auto-Complete Schwellen**: Differenziert - Timing-Spiele 30/15, Puzzle/Memory-Spiele 20/10 Perfects
 
 ### GameBalanceConstants (20.03.2026)
 
 `Models/GameBalanceConstants.cs` — Zentrale Balancing-Konstanten statt Magic Numbers. Enthält:
-- Workshop-Einkommen (IncomeBaseMultiplier=1.02, MilestoneMultipliers-Array, Upgrade-Kosten)
+- Workshop-Einkommen (IncomeBaseMultiplier=1.02, MilestoneMultipliers-Array mit Lv650, Upgrade-Kosten mit abgeflachtem Exponent ab Lv500)
 - Workshop-Rebirth (Einkommensboni, Rabatte, Extra-Worker als Arrays)
+- Upgrade-Kosten: UpgradeCostExponent=1.07 bis Lv500, UpgradeCostReducedExponent=1.06 ab Lv500
 - Worker-Stimmung/Müdigkeit (Mood-Thresholds, Fatigue-Raten, XP-Werte, Level-Fit-Parameter)
 - Building-Boni (Kosten-Exponenten, Kantine/Lager/Fuhrpark-Boni als Arrays)
 - WorkshopFormulas.cs und Workshop.cs referenzieren diese Konstanten
+
+### Workshop-Farben (zentrale Quelle)
+
+`WorkshopTypeExtensions.GetColorHex()` in `Models/Enums/WorkshopType.cs` ist die einzige Quelle der Wahrheit für Workshop-Farben. Alle Consumer leiten davon ab:
+- `WorkshopCardRenderer.GetWorkshopColor()` — SKColor (SkiaSharp), gecacht per `BuildColorCache()`
+- `WorkshopSceneRenderer` — delegiert an `WorkshopCardRenderer.GetWorkshopColor()`
+- `WorkshopColorConverter` — Avalonia Color, gecacht per `BuildColorCache()`
+- `WorkshopGameCardRenderer` — nutzt `WorkshopCardRenderer.GetWorkshopColor()`
+
+### WorkshopGameCardRenderer (lokalisierte Strings)
+
+Statische SkiaSharp-Renderer ohne DI-Zugang nutzen `UpdateLocalizedStrings()` für UI-Texte.
+Aufruf bei Init (`MainViewModel.Economy.cs`) und Sprachwechsel (`MainViewModel.OnLanguageChanged()`).
+RESX-Keys: `TapToUnlock`, `AtLevelShort`.
 
 ### Dispose / Memory Leak Prevention
 
@@ -399,6 +431,15 @@ Navigation via `NavigationRequested` Events. Sub-VM-Events werden an GuildViewMo
 Enum: `Carpenter`, `Plumber`, `Electrician`, `Painter`, `Roofer`, `Contractor`, `Architect`, `GeneralContractor`, `MasterSmith`, `InnovationLab`
 Jeder Typ hat: `BaseIncomeMultiplier`, `UnlockLevel`, `UnlockCost`, `RequiredPrestige`
 **Spezial-Effekte**: MasterSmith produziert passiv Crafting-Materialien, InnovationLab verdoppelt Research-Geschwindigkeit
+**Spezialisierung** (ab Level 100, frei wechselbar):
+
+| Typ | Einkommen | Kosten | Effizienz | Worker |
+|-----|-----------|--------|-----------|--------|
+| Efficiency | +30% | - | - | -1 Slot |
+| Quality | - | +15% | +20% | - |
+| Economy | -5% | -25% | - | - |
+
+Modifikatoren wirken direkt auf `Workshop.GrossIncomePerSecond` und `Workshop.TotalCostsPerHour`. Daten in `Workshop.WorkshopSpecialization` (JSON-persistiert). UI in WorkshopView ab Level 100. `WorkshopSpecialization.cs` (Model), `SpecializationType` Enum, Farben: Efficiency=#FF9800, Quality=#2196F3, Economy=#4CAF50.
 
 ### Worker-System
 
@@ -411,6 +452,11 @@ Tier-Farben: F=#9E9E9E(Grau), E=#4CAF50(Grün), D=#2196F3(Blau), C=#9C27B0(Lila)
 **3 Training-Typen**: Efficiency (XP→Level→+Effizienz), Endurance (senkt Fatigue, max -50%), Morale (senkt MoodDecay, max -50%)
 **Training Auto-Rest**: Bei 100% Fatigue wird Training automatisch beendet und Ruhe gestartet (identisch mit Arbeits-Modus).
 **Worker-Avatare**: WorkerAvatarRenderer (Pixel-Art), Worker.IsFemale deterministisch, RarityFrameRenderer (Tier→Rarity), Idle-Animationen (Atem+Blinzeln ab 56dp)
+**Worker-Spezialisierung Tier-abhängig**: Chance F/E=40%, D/C=50%, B/A=65%, S+=85% (statt fix 50%)
+**Worker-Markt-Gewichtung**: F=20, E=22, D=22, C=14, B=10, A=6, S=3, SS=1.5, SSS=0.5, Legendary=0.1 (D-Tier sichtbarer)
+**Worker-Aura Cap**: S-Tier+ Worker geben Aura-Bonus (5-20%), gedeckelt bei 50% gesamt (GameBalanceConstants.MaxAuraBonus)
+**Worker-Namen**: 60 Vornamen × 50 Nachnamen = 3000 Kombinationen (statische Arrays, keine Allokation pro Aufruf)
+**GiveBonus**: Kostet 8h Lohn (1 Tageslohn), +30 Mood, bricht QuitDeadline ab
 
 ### Goldschrauben-Quellen
 
@@ -428,7 +474,7 @@ Kosten: 500 bis 1B. Dauer: 10min bis 72h (Echtzeit).
 ### Mini-Games (alle SkiaSharp-basiert)
 
 Alle 10 Mini-Games nutzen dedizierte SkiaSharp-Renderer. Header, Result-Display, Countdown und Buttons bleiben XAML. Jeder Renderer hat `Render()` + `HitTest()`, View hat 30fps Render-Loop, Touch via `PointerPressed` + DPI-Skalierung.
-**Tutorial-System**: Erstes Spielen zeigt Overlay (Tracking via `GameState.SeenMiniGameTutorials`).
+**Tutorial-System**: Erstes Spielen zeigt Overlay (Tracking via `GameState.SeenMiniGameTutorials`). Info-Button (InformationOutline-Icon) in Column=2 aller 10 MiniGame-Views: Binding `ShowTutorialInfoCommand` + `CanShowTutorialInfo`. Sichtbar nur wenn `CanShowTutorialInfo=true` (nach Tutorial bereits gesehen). Bei Views mit Difficulty-TextBlock (Sawing, Forge): StackPanel ersetzt den TextBlock. Bei Views mit Timer-Border (Pipe, Wiring, Painting, Blueprint, RoofTiling, DesignPuzzle, Inspection, Invent): StackPanel wrapping Timer-Border + Info-Button darüber.
 **Direktstart**: Alle MiniGames starten automatisch nach Tutorial-Check (kein Start-Button). Start-Buttons sind per `<Panel IsVisible="False">` versteckt. Bei Tutorial-Dismiss wird `StartGameAsync()` aufgerufen.
 **Belohnungsanzeige**: NUR bei letzter Aufgabe als Gesamt-Belohnung. Berechnung: `order.FinalReward * GetOrderRewardMultiplier(order)` (inkl. Research, Gebäude, Reputation, Events, Stammkunden). PaintingGame zusätzlich `* comboMult`. Rewarded-Ad setzt `order.IsScoreDoubled = true`, PaintingGame setzt `order.ComboMultiplier`. `CompleteActiveOrder()` wendet beides bei Auszahlung an.
 **Ergebnis-Animation**: Zwischen-Runden sofort, letzte Runde staggered (100ms Delay, 250ms Duration).
@@ -466,7 +512,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `DailyChallengeService` | 3 Challenges/Tag (00:00 Reset) |
 | `DailyRewardService` | 30-Tage Login-Zyklus |
 | `QuickJobService` | Schnelle MiniGame-Jobs (Rotation 8-15min, Limit 20-40/Tag) |
-| `StoryService` | 25 Kapitel von Meister Hans, fortschrittsbasiert |
+| `StoryService` | 37 Kapitel von Meister Hans (inkl. 2 Zwischen-Kapitel Lv70/80), nichtlineare Freischaltung |
 | `AchievementService` | 110 Erfolge + Goldschrauben-Rewards, PrestigeCompleted/AscensionCompleted/RebirthCompleted-Events |
 | `RebirthService` | Workshop-Rebirth (0-5 Sterne), permanent über Prestige+Ascension, Einkommens-Bonus/Upgrade-Rabatt/Extra-Worker |
 | `VipService` | VIP-System basierend auf IAP-Gesamtausgaben (None/Bronze/Silver/Gold/Platin), primär QoL-Vorteile (AutoClaim, DeliveryTimer, ExclusiveFrame), minimale Gameplay-Boni (max +5% Income, +5% XP, keine Kosten-Reduktion), Extra-Challenges |
@@ -495,7 +541,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `WeeklyMissionService` | 5 Wochenmissionen, Montag-Reset, 50 Goldschrauben Bonus |
 | `WelcomeBackService` | Angebote nach 24h+ Abwesenheit, Starter-Paket (einmalig) |
 | `LuckySpinService` | Taeglicher Gratis-Spin, 8 Preiskategorien (gewichtet) |
-| `EquipmentService` | 4 Typen x 4 Seltenheiten, Drop nach MiniGames, Shop-Rotation |
+| `EquipmentService` | 4 Typen x 4 Seltenheiten, Drop nach MiniGames (5-20% skaliert nach Schwierigkeit, +5% bei Perfect), Shop-Rotation |
 
 ## Game Juice (kompakte Uebersicht)
 
@@ -814,8 +860,12 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 
 | Optimierung | Effekt |
 |-------------|--------|
-| MainView BackgroundCanvas ~5fps statt 25fps | -80% Background-Draw-Calls (Partikel unter Content unsichtbar bei 25fps) |
-| Dashboard City-Canvas ~6fps während Scroll | -70% Draw-Calls während Scroll. WorkshopCards pausieren komplett |
+| **Scroll-Pause ALLE Canvases** (30.03.2026) | Während Scroll: City-Canvas + Workshop-Cards + Background + TabBar komplett pausiert. 0 InvalidateSurface/s statt ~16/s. 250ms Ruhezeit nach letztem ScrollChanged. DashboardView.IsScrolling Property, MainView fragt ab |
+| **MiniGame-ContentControl Konsolidierung** (30.03.2026) | 10 separate ContentControls → 1 einziges mit ActiveMiniGameViewModel. Spart 9 View-Instanzen + SkiaSharp-Renderer im Ruhezustand (~5-10 MB). ViewLocator erstellt/zerstört Views bei MiniGame-Wechsel statt alle 10 permanent im Visual Tree |
+| **Max-Modus Debounce** (30.03.2026) | GetMaxAffordableUpgrades (Math.Pow-Schleife × 10 Workshops) nur auf Dashboard sofort, sonst alle 2s. Spart ~2000 Math.Pow/s im Late-Game auf nicht-sichtbaren Tabs |
+| **FadeIn-Animation gecacht** (30.03.2026) | s_fadeInAnimation statisch statt neue Animation pro Tab-Wechsel |
+| MainView BackgroundCanvas ~1fps statt 25fps | Background alle 15 Ticks (~1fps), während Scroll komplett pausiert |
+| Dashboard City-Canvas 10fps, 0fps bei Scroll | Adaptiv: 10fps Basis, 30fps bei Effekten, 0fps während Scroll. Header-Parallax via RenderTransform (GPU) |
 | WorkerAvatarControl Shared Timer | 1 Timer statt N (bei 8 Avataren: 20 statt 160 Ticks/s) |
 | GameTick Tab-Awareness | PropertyChanged nur für sichtbare Tabs (spart ~20 Notifications/s) |
 | BoxShadow→Opacity Animationen | GPU-beschleunigt statt CPU-Blur auf Android |

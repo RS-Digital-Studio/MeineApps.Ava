@@ -178,6 +178,7 @@ public sealed class WorkerService : IWorkerService
 
             worker.IsTraining = false;
             worker.TrainingStartedAt = null;
+            worker.ResumeTrainingType = null; // Manuell gestoppt → kein Auto-Resume
         }
     }
 
@@ -310,6 +311,29 @@ public sealed class WorkerService : IWorkerService
         {
             worker.IsResting = false;
             worker.RestStartedAt = null;
+
+            // Training automatisch fortsetzen wenn der Worker vor der Ruhe trainiert hat
+            if (worker.ResumeTrainingType != null)
+            {
+                var trainingType = worker.ResumeTrainingType.Value;
+                worker.ResumeTrainingType = null;
+
+                // Nur fortsetzen wenn Training noch nicht abgeschlossen ist
+                bool canResume = trainingType switch
+                {
+                    TrainingType.Efficiency => worker.ExperienceLevel < 10,
+                    TrainingType.Endurance => worker.EnduranceBonus < 0.5m,
+                    TrainingType.Morale => worker.MoraleBonus < 0.5m,
+                    _ => false
+                };
+
+                if (canResume)
+                {
+                    worker.IsTraining = true;
+                    worker.ActiveTrainingType = trainingType;
+                    worker.TrainingStartedAt = DateTime.UtcNow;
+                }
+            }
         }
     }
 
@@ -351,9 +375,10 @@ public sealed class WorkerService : IWorkerService
             trainingFatigueRate *= (1m - equipFatReduction);
         worker.Fatigue = Math.Min(100m, worker.Fatigue + trainingFatigueRate * deltaHours);
 
-        // Auto-Rest bei 100% Erschöpfung (identisch mit UpdateWorking)
+        // Auto-Rest bei 100% Erschöpfung: Training-Typ merken für automatische Fortsetzung
         if (worker.Fatigue >= 100m)
         {
+            worker.ResumeTrainingType = worker.ActiveTrainingType;
             worker.IsTraining = false;
             worker.TrainingStartedAt = null;
             worker.IsResting = true;

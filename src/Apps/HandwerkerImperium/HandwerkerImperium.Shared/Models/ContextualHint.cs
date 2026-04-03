@@ -122,7 +122,7 @@ public static class ContextualHints
         Position = HintPosition.Below
     };
 
-    // Prestige verfügbar (Level 30)
+    // Prestige verfügbar (Level 50)
     public static readonly ContextualHint PrestigeHint = new()
     {
         Id = "prestige_hint", TitleKey = "HintPrestigeTitle", TextKey = "HintPrestigeText",
@@ -197,5 +197,19 @@ public static class ContextualHints
     {
         Id = "first_star", TitleKey = "HintFirstStarTitle", TextKey = "HintFirstStarText",
         Position = HintPosition.Below, IsDialog = true
+    };
+
+    // Goldschrauben erklärt (beim ersten Erhalt der Premium-Währung)
+    public static readonly ContextualHint GoldenScrews = new()
+    {
+        Id = "golden_screws", TitleKey = "HintGoldenScrewsTitle", TextKey = "HintGoldenScrewsText",
+        Position = HintPosition.Below, IsDialog = true
+    };
+
+    // Aufträge erklärt (nach FirstWorkshop-Hint, leitet zum Auftrag-Annehmen)
+    public static readonly ContextualHint AcceptOrder = new()
+    {
+        Id = "accept_order", TitleKey = "HintAcceptOrderTitle", TextKey = "HintAcceptOrderText",
+        Position = HintPosition.Below
     };
 }

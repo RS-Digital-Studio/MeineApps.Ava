@@ -214,12 +214,12 @@ public sealed class AchievementService : IAchievementService
         try
         {
             var data = JsonSerializer.Deserialize<Dictionary<string, int>>(json);
-            return data ?? new Dictionary<string, int>();
+            return data ?? [];
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Fehler beim Laden der Achievement-Fortschrittsdaten: {ex.Message}");
-            return new Dictionary<string, int>();
+            return [];
         }
     }
 

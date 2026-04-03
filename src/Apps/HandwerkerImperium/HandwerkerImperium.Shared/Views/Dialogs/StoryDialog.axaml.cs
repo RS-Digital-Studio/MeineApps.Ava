@@ -24,12 +24,12 @@ public partial class StoryDialog : UserControl
     }
 
     /// <summary>
-    /// Wird vom MainView Render-Timer aufgerufen (25fps).
+    /// Wird vom MainView Render-Timer aufgerufen (~15fps = 66ms/Tick).
     /// Aktualisiert Blinzel-Animation und invalidiert Canvas.
     /// </summary>
     public void UpdateHansAnimation()
     {
-        _hansElapsed += 0.05f; // 50ms pro Tick
+        _hansElapsed += 0.066f; // 66ms pro Tick bei ~15fps
 
         // Blinzel-Logik: Alle 3-4.5s für ~150ms blinzeln
         if (_hansBlinking)

@@ -192,30 +192,15 @@ public sealed class SaveGameService : ISaveGameService
         }
     }
 
-    public async Task<string> ExportSaveAsync()
+    public Task<string> ExportSaveAsync()
     {
         var state = _gameStateService.State;
-        if (state == null) return string.Empty;
+        if (state == null) return Task.FromResult(string.Empty);
 
-        // Serialisierung außerhalb des Locks (UI-Thread, kein Race)
+        // Kein IO-Lock nötig: kein File-IO, und Aufrufer ist UI-Thread (identisch mit GameLoop).
+        // Cloud-Save (Zeile 83) liest nur den bereits geschriebenen File, kein Race.
         string json = JsonSerializer.Serialize(state, _jsonOptions);
-
-        // Lock nur fuer potentielle zukuenftige IO-Erweiterungen (Export-Datei etc.)
-        // Aktuell gibt ExportSaveAsync() nur den JSON-String zurueck,
-        // der Lock verhindert aber Race mit AutoSave falls spaeter File-Write hinzukommt
-        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false))
-        {
-            System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] ExportSaveAsync: IO-Lock Timeout - Export übersprungen");
-            return string.Empty;
-        }
-        try
-        {
-            return json;
-        }
-        finally
-        {
-            _ioLock.Release();
-        }
+        return Task.FromResult(json);
     }
 
     public async Task<bool> ImportSaveAsync(string json)
@@ -288,8 +273,8 @@ public sealed class SaveGameService : ISaveGameService
         if (state.Prestige.PermanentMultiplier < 1.0m) state.Prestige.PermanentMultiplier = 1.0m;
         if (state.Prestige.PermanentMultiplier > 20.0m) state.Prestige.PermanentMultiplier = 20.0m;
         state.Prestige.PurchasedShopItems ??= [];
-        // Prestige-Shop-Items: Nur gültige IDs behalten (Exploit-Schutz)
-        var validShopIds = PrestigeShop.GetAllItems().Select(i => i.Id).ToHashSet();
+        // Prestige-Shop-Items: Nur gültige IDs behalten (Exploit-Schutz, statisches HashSet)
+        var validShopIds = PrestigeShop.GetValidIds();
         state.Prestige.PurchasedShopItems.RemoveAll(id => !validShopIds.Contains(id));
 
         // Daily Reward Streak
@@ -346,8 +331,8 @@ public sealed class SaveGameService : ISaveGameService
         state.EventHistory ??= [];
         state.DailyChallengeState ??= new DailyChallengeState();
         state.CollectedMasterTools ??= [];
-        // MasterTools: Nur gültige IDs behalten (Exploit-Schutz)
-        var validToolIds = MasterTool.GetAllDefinitions().Select(t => t.Id).ToHashSet();
+        // MasterTools: Nur gültige IDs behalten (Exploit-Schutz, statisches HashSet)
+        var validToolIds = MasterTool.GetValidIds();
         state.CollectedMasterTools.RemoveAll(id => !validToolIds.Contains(id));
         state.Tools ??= [];
         // Tool-Migration: Fehlende ToolTypes ergänzen (z.B. nach Update von 4 auf 8 Tools)
@@ -359,6 +344,7 @@ public sealed class SaveGameService : ISaveGameService
         }
         state.ViewedStoryIds ??= [];
         state.SeenMiniGameTutorials ??= [];
+        state.SeenHints ??= [];
 
         // Welle 1-8 Migrationen: Neue Properties null-safe initialisieren
         state.LuckySpin ??= new LuckySpinState();

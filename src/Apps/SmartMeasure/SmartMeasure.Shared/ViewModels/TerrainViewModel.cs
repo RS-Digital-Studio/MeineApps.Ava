@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using SmartMeasure.Shared.Graphics;
 using SmartMeasure.Shared.Models;
 using SmartMeasure.Shared.Services;
@@ -7,7 +8,7 @@ using SmartMeasure.Shared.Services;
 namespace SmartMeasure.Shared.ViewModels;
 
 /// <summary>3D-Gelaendemodell: Delaunay, Hoehenfarbkodierung, Konturlinien, Rotation/Zoom</summary>
-public partial class TerrainViewModel : ObservableObject
+public partial class TerrainViewModel : ViewModelBase
 {
     private readonly IMeasurementService _measurementService;
     private readonly ITerrainService _terrainService;

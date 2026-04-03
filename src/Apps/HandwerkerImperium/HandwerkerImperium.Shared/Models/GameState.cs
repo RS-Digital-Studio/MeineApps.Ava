@@ -211,6 +211,13 @@ public class GameState
     [JsonPropertyName("eventHistory")]
     public List<string> EventHistory { get; set; } = [];
 
+    /// <summary>
+    /// EVENT-5: Pity-Counter für negative Events. Zählt aufeinanderfolgende negative Events.
+    /// Nach 2 negativen in Folge werden negative Events für das nächste Event ausgeschlossen.
+    /// </summary>
+    [JsonPropertyName("consecutiveNegativeEvents")]
+    public int ConsecutiveNegativeEvents { get; set; }
+
     // ═══════════════════════════════════════════════════════════════════════
     // STATISTICS
     // ═══════════════════════════════════════════════════════════════════════
@@ -725,7 +732,8 @@ public class GameState
     public decimal MaxOfflineEarnings { get; set; }
 
     /// <summary>
-    /// Ob der Tutorial-Hint (pulsierende Umrandung bei erstem Upgrade) bereits gesehen wurde.
+    /// Legacy: Altes lineares Tutorial-System. Wird nur noch in ResetAllHints zurückgesetzt.
+    /// Neues System nutzt SeenHints (HashSet). Beibehalten für JSON-Kompatibilität.
     /// </summary>
     [JsonPropertyName("hasSeenTutorialHint")]
     public bool HasSeenTutorialHint { get; set; }
@@ -888,12 +896,23 @@ public class GameState
         {
             workshop = Workshop.Create(type);
 
-            // Legende-Prestige: Gesicherten besten Worker wiederverwenden
+            // Legende-Prestige: Gesicherte Worker wiederverwenden (bis zu 3 pro Workshop, MaxWorkers beachten)
             var typeKey = type.ToString();
             if (Prestige.KeptWorkers.TryGetValue(typeKey, out var keptWorker))
             {
                 workshop.Workers.Add(keptWorker);
                 Prestige.KeptWorkers.Remove(typeKey);
+            }
+            // Indizierte Keys (neue Saves: _1, _2)
+            for (int idx = 1; idx <= 2; idx++)
+            {
+                var indexedKey = $"{typeKey}_{idx}";
+                if (Prestige.KeptWorkers.TryGetValue(indexedKey, out var extraWorker)
+                    && workshop.Workers.Count < workshop.MaxWorkers)
+                {
+                    workshop.Workers.Add(extraWorker);
+                    Prestige.KeptWorkers.Remove(indexedKey);
+                }
             }
 
             Workshops.Add(workshop);

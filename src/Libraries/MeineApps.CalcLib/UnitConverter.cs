@@ -104,7 +104,7 @@ public static class UnitConverter
 
     public static List<UnitInfo> GetUnitsForCategory(UnitCategory category)
     {
-        return Units.TryGetValue(category, out var units) ? units : new List<UnitInfo>();
+        return Units.TryGetValue(category, out var units) ? units : [];
     }
 
     public static double Convert(double value, UnitInfo fromUnit, UnitInfo toUnit)

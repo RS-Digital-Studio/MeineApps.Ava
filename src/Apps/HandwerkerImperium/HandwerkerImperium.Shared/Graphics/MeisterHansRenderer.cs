@@ -14,6 +14,21 @@ public static class MeisterHansRenderer
     // AI-Portrait-Service (wird über Initialize gesetzt)
     private static IGameAssetService? s_assetService;
 
+    // Lade-Flag: Verhindert mehrfaches LoadBitmapAsync pro Frame
+    private static string? s_pendingLoadPath;
+
+    // Gecachte Asset-Pfade pro Mood (vermeidet String-Interpolation pro Frame)
+    private static readonly Dictionary<string, string> MoodAssetPaths = new()
+    {
+        ["happy"] = "meister_hans/happy.webp",
+        ["proud"] = "meister_hans/proud.webp",
+        ["concerned"] = "meister_hans/concerned.webp",
+        ["excited"] = "meister_hans/excited.webp"
+    };
+
+    private static string GetMoodAssetPath(string mood) =>
+        MoodAssetPaths.GetValueOrDefault(mood, MoodAssetPaths["happy"]);
+
     /// <summary>
     /// Initialisiert den Renderer mit dem Asset-Service für AI-Portraits.
     /// Muss nach DI-Container-Erstellung aufgerufen werden.
@@ -231,12 +246,16 @@ public static class MeisterHansRenderer
     public static void Render(SKCanvas canvas, SKRect bounds, string mood, float elapsed, bool isBlinking)
     {
         // AI-Portrait versuchen (wenn verfügbar, ersetzt prozedurale Zeichnung)
+        // ACHTUNG: Statische Paints werden mutiert — NUR vom UI-Thread aufrufen
         if (s_assetService != null)
         {
-            var assetPath = $"meister_hans/{mood}.webp";
+            var assetPath = GetMoodAssetPath(mood);
             var bitmap = s_assetService.GetBitmap(assetPath);
-            if (bitmap == null)
+            if (bitmap == null && s_pendingLoadPath != assetPath)
+            {
+                s_pendingLoadPath = assetPath;
                 _ = s_assetService.LoadBitmapAsync(assetPath);
+            }
 
             if (bitmap != null)
             {

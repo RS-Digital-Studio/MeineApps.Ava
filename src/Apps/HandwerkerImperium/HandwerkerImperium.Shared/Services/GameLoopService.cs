@@ -67,6 +67,9 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     // Tier-1-Crafting-Materialien für MasterSmith (static readonly, keine Allokation pro Aufruf)
     private static readonly string[] Tier1CraftingProducts = ["planks", "pipes", "cables", "paint_mix", "roof_tiles"];
 
+    // Gecachte Anzahl aller MasterTool-Definitionen (statisch, ändert sich nie zur Laufzeit)
+    private static readonly int MasterToolDefinitionCount = MasterTool.GetAllDefinitions().Count;
+
     public bool IsRunning => _timer?.IsEnabled ?? false;
     public TimeSpan SessionDuration => DateTime.UtcNow - _sessionStart;
 
@@ -408,7 +411,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     private void CheckMasterTools(GameState state)
     {
         // Early-Exit: Alle Meisterwerkzeuge bereits gesammelt → nichts zu prüfen
-        if (state.CollectedMasterTools.Count >= MasterTool.GetAllDefinitions().Count) return;
+        if (state.CollectedMasterTools.Count >= MasterToolDefinitionCount) return;
 
         foreach (var def in MasterTool.GetAllDefinitions())
         {

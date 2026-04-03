@@ -4,8 +4,8 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Verwaltet die Story-Kapitel von Meister Hans (35 Kapitel).
-/// Tutorial (1-5), Early Game (6-12), Mid Game (13-17), Prestige (18-21), Endgame (22-25), Endgame-Expansion (26-35).
+/// Verwaltet die Story-Kapitel von Meister Hans (37 Kapitel).
+/// Tutorial (1-5), Early Game (6-12), Zwischenkapitel (13-14), Mid Game (15-19), Prestige (20-23), Endgame (24-27), Endgame-Expansion (28-37).
 /// </summary>
 public sealed class StoryService : IStoryService
 {
@@ -40,9 +40,10 @@ public sealed class StoryService : IStoryService
                 return chapter;
             }
 
-            // Kapitel sind geordnet - wenn dieses nicht freigeschaltet ist,
-            // sind spätere auch nicht freigeschaltet
-            break;
+            // Kapitel unabhängig prüfen — Spieler können durch nichtlineare
+            // Progression (z.B. direkter Gold-Prestige) Kapitel überspringen.
+            // Wir suchen das erste ungesehene, freigeschaltete Kapitel.
+            continue;
         }
 
         return null;
@@ -318,13 +319,48 @@ public sealed class StoryService : IStoryService
         },
 
         // ═══════════════════════════════════════════════════════════════
-        // MID GAME (Kapitel 13-17, Level 75-250)
+        // ZWISCHENKAPITEL (Kapitel 13-14, Level 70-80)
+        // ═══════════════════════════════════════════════════════════════
+
+        new()
+        {
+            Id = "mid_arena",
+            ChapterNumber = 13,
+            TitleKey = "Story_Ch12a_Title",
+            TextKey = "Story_Ch12a_Text",
+            TitleFallback = "Die Arena ruft!",
+            TextFallback = "Level 70, Geselle! Ab jetzt kannst du an Turnieren teilnehmen. Zeig den anderen Handwerkern wer der Beste ist! Und bald gibt's noch mehr – saisonale Events, ein Battle Pass... Aber eins nach dem anderen!",
+            RequiredPlayerLevel = 70,
+            RequiredTotalOrders = 30,
+            MoneyReward = 1_500_000,
+            GoldenScrewReward = 10,
+            XpReward = 400,
+            Mood = "excited"
+        },
+        new()
+        {
+            Id = "mid_seasons",
+            ChapterNumber = 14,
+            TitleKey = "Story_Ch12b_Title",
+            TextKey = "Story_Ch12b_Text",
+            TitleFallback = "Die Jahreszeiten des Handwerks!",
+            TextFallback = "Saisonale Events, Geselle! Frühling, Sommer, Herbst, Winter – jede Jahreszeit bringt besondere Aufträge und einzigartige Belohnungen. Und mit dem Battle Pass kannst du dir exklusive Boni verdienen. Das Handwerk schläft nie!",
+            RequiredPlayerLevel = 80,
+            RequiredTotalOrders = 40,
+            MoneyReward = 2_000_000,
+            GoldenScrewReward = 15,
+            XpReward = 500,
+            Mood = "happy"
+        },
+
+        // ═══════════════════════════════════════════════════════════════
+        // MID GAME (Kapitel 15-19, Level 75-250)
         // ═══════════════════════════════════════════════════════════════
 
         new()
         {
             Id = "mid_contractor",
-            ChapterNumber = 13,
+            ChapterNumber = 15,
             TitleKey = "Story_Ch13_Title",
             TextKey = "Story_Ch13_Text",
             TitleFallback = "Der Bauunternehmer!",
@@ -340,7 +376,7 @@ public sealed class StoryService : IStoryService
         new()
         {
             Id = "mid_empire",
-            ChapterNumber = 14,
+            ChapterNumber = 16,
             TitleKey = "Story_Ch14_Title",
             TextKey = "Story_Ch14_Text",
             TitleFallback = "Das Handwerker-Viertel!",
@@ -355,7 +391,7 @@ public sealed class StoryService : IStoryService
         new()
         {
             Id = "mid_reputation",
-            ChapterNumber = 15,
+            ChapterNumber = 17,
             TitleKey = "Story_Ch15_Title",
             TextKey = "Story_Ch15_Text",
             TitleFallback = "Der Ruf der Stadt!",
@@ -370,7 +406,7 @@ public sealed class StoryService : IStoryService
         new()
         {
             Id = "mid_prestige_hint",
-            ChapterNumber = 16,
+            ChapterNumber = 18,
             TitleKey = "Story_Ch16_Title",
             TextKey = "Story_Ch16_Text",
             TitleFallback = "Ein Neuanfang?",
@@ -385,7 +421,7 @@ public sealed class StoryService : IStoryService
         new()
         {
             Id = "mid_mastery",
-            ChapterNumber = 17,
+            ChapterNumber = 19,
             TitleKey = "Story_Ch17_Title",
             TextKey = "Story_Ch17_Text",
             TitleFallback = "Bereit für den Neuanfang!",
@@ -399,13 +435,13 @@ public sealed class StoryService : IStoryService
         },
 
         // ═══════════════════════════════════════════════════════════════
-        // PRESTIGE-REISE (Kapitel 18-21)
+        // PRESTIGE-REISE (Kapitel 20-23)
         // ═══════════════════════════════════════════════════════════════
 
         new()
         {
             Id = "prestige_first",
-            ChapterNumber = 18,
+            ChapterNumber = 20,
             TitleKey = "Story_Ch18_Title",
             TextKey = "Story_Ch18_Text",
             TitleFallback = "Wie Phönix aus der Asche!",
@@ -414,12 +450,12 @@ public sealed class StoryService : IStoryService
             MoneyReward = 1_000_000,
             GoldenScrewReward = 100,
             XpReward = 7_500,
-            Mood = "concerned"
+            Mood = "proud"
         },
         new()
         {
             Id = "prestige_architect",
-            ChapterNumber = 19,
+            ChapterNumber = 21,
             TitleKey = "Story_Ch19_Title",
             TextKey = "Story_Ch19_Text",
             TitleFallback = "Das Architekturbüro!",
@@ -434,12 +470,12 @@ public sealed class StoryService : IStoryService
         new()
         {
             Id = "prestige_silver",
-            ChapterNumber = 20,
+            ChapterNumber = 22,
             TitleKey = "Story_Ch20_Title",
             TextKey = "Story_Ch20_Text",
             TitleFallback = "Silber-Prestige!",
-            TextFallback = "Viermal neu angefangen – und jedes Mal besser! Du hast Silber-Prestige erreicht, Meister. Das schaffen die wenigsten. Dein Imperium wächst jetzt mit einer Geschwindigkeit, die selbst mich beeindruckt. Und ich bin nicht leicht zu beeindrucken!",
-            RequiredPrestige = 4,
+            TextFallback = "Silber-Prestige erreicht – und jedes Mal wächst du schneller! Das schaffen die wenigsten, Meister. Dein Imperium wächst jetzt mit einer Geschwindigkeit, die selbst mich beeindruckt. Und ich bin nicht leicht zu beeindrucken!",
+            RequiredPrestigeTier = 2, // Silber-Tier direkt prüfen statt Prestige-Count
             MoneyReward = 50_000_000,
             GoldenScrewReward = 200,
             XpReward = 15_000,
@@ -448,7 +484,7 @@ public sealed class StoryService : IStoryService
         new()
         {
             Id = "prestige_general",
-            ChapterNumber = 21,
+            ChapterNumber = 23,
             TitleKey = "Story_Ch21_Title",
             TextKey = "Story_Ch21_Text",
             TitleFallback = "Der Generalunternehmer!",
@@ -462,18 +498,18 @@ public sealed class StoryService : IStoryService
         },
 
         // ═══════════════════════════════════════════════════════════════
-        // ENDGAME (Kapitel 22-25, Level 500+, Gold Prestige)
+        // ENDGAME (Kapitel 24-27, Level 500+, Gold Prestige)
         // ═══════════════════════════════════════════════════════════════
 
         new()
         {
             Id = "endgame_gold",
-            ChapterNumber = 22,
+            ChapterNumber = 24,
             TitleKey = "Story_Ch22_Title",
             TextKey = "Story_Ch22_Text",
             TitleFallback = "Gold-Prestige!",
-            TextFallback = "Ich... ich bin sprachlos, Großmeister. 13 Prestige-Durchläufe. GOLD. In 40 Jahren Handwerk habe ich so etwas noch nie gesehen. Dein Name wird in die Gilden-Chronik eingehen. Neben meinem natürlich – ich hab dich schließlich ausgebildet!",
-            RequiredPrestige = 13,
+            TextFallback = "Ich... ich bin sprachlos, Großmeister. GOLD! In 40 Jahren Handwerk habe ich so etwas noch nie gesehen. Dein Name wird in die Gilden-Chronik eingehen. Neben meinem natürlich – ich hab dich schließlich ausgebildet!",
+            RequiredPrestigeTier = 3, // Gold-Tier direkt prüfen statt Prestige-Count
             MoneyReward = 500_000_000,
             GoldenScrewReward = 500,
             XpReward = 25_000,
@@ -482,7 +518,7 @@ public sealed class StoryService : IStoryService
         new()
         {
             Id = "endgame_legend",
-            ChapterNumber = 23,
+            ChapterNumber = 25,
             TitleKey = "Story_Ch23_Title",
             TextKey = "Story_Ch23_Text",
             TitleFallback = "Die lebende Legende!",
@@ -497,7 +533,7 @@ public sealed class StoryService : IStoryService
         new()
         {
             Id = "endgame_allmax",
-            ChapterNumber = 24,
+            ChapterNumber = 26,
             TitleKey = "Story_Ch24_Title",
             TextKey = "Story_Ch24_Text",
             TitleFallback = "Alle Werkstätten, alle Meister!",
@@ -513,7 +549,7 @@ public sealed class StoryService : IStoryService
         new()
         {
             Id = "endgame_grandmaster",
-            ChapterNumber = 25,
+            ChapterNumber = 27,
             TitleKey = "Story_Ch25_Title",
             TextKey = "Story_Ch25_Text",
             TitleFallback = "Großmeister der Handwerker-Gilde!",
@@ -526,27 +562,27 @@ public sealed class StoryService : IStoryService
         },
 
         // ═══════════════════════════════════════════════════════════════
-        // ENDGAME-EXPANSION (Kapitel 26-35, Platin+ Prestige)
+        // ENDGAME-EXPANSION (Kapitel 28-37, Platin+ Prestige)
         // ═══════════════════════════════════════════════════════════════
 
         new()
         {
             Id = "endgame_platin",
-            ChapterNumber = 26,
+            ChapterNumber = 28,
             TitleKey = "Story_Ch26_Title",
             TextKey = "Story_Ch26_Text",
             TitleFallback = "Der Platin-Handwerker",
             TextFallback = "Platin! Da kenne ich nur eine Handvoll Leute in meinem ganzen Leben, die das geschafft haben. Deine Werkzeuge glänzen wie nie zuvor, und die bleiben dir jetzt – für immer. Das Handwerk hat dich verändert, Meister. Du bist nicht mehr der gleiche Mensch wie am Anfang.",
             RequiredPrestigeTier = 4, // Platin
             MoneyReward = 50_000_000,
-            GoldenScrewReward = 200,
-            XpReward = 50_000,
+            GoldenScrewReward = 50,
+            XpReward = 25_000,
             Mood = "proud"
         },
         new()
         {
             Id = "endgame_diamant_path",
-            ChapterNumber = 27,
+            ChapterNumber = 29,
             TitleKey = "Story_Ch27_Title",
             TextKey = "Story_Ch27_Text",
             TitleFallback = "Auf dem Weg zum Diamant",
@@ -554,28 +590,28 @@ public sealed class StoryService : IStoryService
             RequiredPrestigeTier = 4,
             RequiredPrestige = 7, // Mindestens 7 Gesamtprestiges
             MoneyReward = 100_000_000,
-            GoldenScrewReward = 300,
-            XpReward = 75_000,
+            GoldenScrewReward = 75,
+            XpReward = 30_000,
             Mood = "concerned"
         },
         new()
         {
             Id = "endgame_diamant",
-            ChapterNumber = 28,
+            ChapterNumber = 30,
             TitleKey = "Story_Ch28_Title",
             TextKey = "Story_Ch28_Text",
             TitleFallback = "Diamant-Dynastie",
             TextFallback = "Diamant! Unzerstörbar, unvergänglich – wie dein Imperium. Deine Gebäude und Ausrüstung überstehen jetzt jeden Neuanfang. Das ist nicht mehr Handwerk, das ist Kunst. Die Leute sprechen in Ehrfurcht von dir, Meister.",
             RequiredPrestigeTier = 5, // Diamant
             MoneyReward = 500_000_000,
-            GoldenScrewReward = 500,
-            XpReward = 100_000,
+            GoldenScrewReward = 100,
+            XpReward = 40_000,
             Mood = "excited"
         },
         new()
         {
             Id = "endgame_meister_weg",
-            ChapterNumber = 29,
+            ChapterNumber = 31,
             TitleKey = "Story_Ch29_Title",
             TextKey = "Story_Ch29_Text",
             TitleFallback = "Der Pfad des Meisters",
@@ -583,28 +619,28 @@ public sealed class StoryService : IStoryService
             RequiredPrestigeTier = 5,
             RequiredPrestige = 12,
             MoneyReward = 1_000_000_000,
-            GoldenScrewReward = 750,
-            XpReward = 150_000,
+            GoldenScrewReward = 125,
+            XpReward = 50_000,
             Mood = "proud"
         },
         new()
         {
             Id = "endgame_meister",
-            ChapterNumber = 30,
+            ChapterNumber = 32,
             TitleKey = "Story_Ch30_Title",
             TextKey = "Story_Ch30_Text",
             TitleFallback = "Meister der Meister",
             TextFallback = "Du hast es geschafft. Meister. Das Feuer in deinen Augen brennt heller als jede Schmiede. Deine Vorarbeiter folgen dir durch dick und dünn. Jeder Neuanfang macht dich nur stärker. Es gibt nur noch einen Titel über dir...",
             RequiredPrestigeTier = 6, // Meister
             MoneyReward = 5_000_000_000,
-            GoldenScrewReward = 1_000,
-            XpReward = 200_000,
+            GoldenScrewReward = 150,
+            XpReward = 60_000,
             Mood = "excited"
         },
         new()
         {
             Id = "endgame_legende_weg",
-            ChapterNumber = 31,
+            ChapterNumber = 33,
             TitleKey = "Story_Ch31_Title",
             TextKey = "Story_Ch31_Text",
             TitleFallback = "Auf dem Weg zur Legende",
@@ -612,28 +648,28 @@ public sealed class StoryService : IStoryService
             RequiredPrestigeTier = 6,
             RequiredPrestige = 18,
             MoneyReward = 10_000_000_000,
-            GoldenScrewReward = 1_500,
-            XpReward = 300_000,
+            GoldenScrewReward = 200,
+            XpReward = 75_000,
             Mood = "concerned"
         },
         new()
         {
             Id = "endgame_legende",
-            ChapterNumber = 32,
+            ChapterNumber = 34,
             TitleKey = "Story_Ch32_Title",
             TextKey = "Story_Ch32_Text",
             TitleFallback = "Lebende Legende",
             TextFallback = "LEGENDE! *wischt sich eine Träne ab* In all meinen Jahren... Du bist der erste. Der einzige. Dein Name wird in die Geschichtsbücher eingehen. Generationen von Handwerkern werden von dir sprechen. Ich bin... sprachlos. Und das passiert nicht oft!",
             RequiredPrestigeTier = 7, // Legende
             MoneyReward = 50_000_000_000,
-            GoldenScrewReward = 2_000,
-            XpReward = 500_000,
+            GoldenScrewReward = 300,
+            XpReward = 80_000,
             Mood = "excited"
         },
         new()
         {
             Id = "endgame_ascension_ready",
-            ChapterNumber = 33,
+            ChapterNumber = 35,
             TitleKey = "Story_Ch33_Title",
             TextKey = "Story_Ch33_Text",
             TitleFallback = "Jenseits der Legende",
@@ -641,36 +677,36 @@ public sealed class StoryService : IStoryService
             RequiredPrestigeTier = 7,
             RequiredPrestige = 21,
             MoneyReward = 100_000_000_000,
-            GoldenScrewReward = 3_000,
-            XpReward = 750_000,
+            GoldenScrewReward = 400,
+            XpReward = 90_000,
             Mood = "concerned"
         },
         new()
         {
             Id = "endgame_first_ascension",
-            ChapterNumber = 34,
+            ChapterNumber = 36,
             TitleKey = "Story_Ch34_Title",
             TextKey = "Story_Ch34_Text",
             TitleFallback = "Der Aufstieg",
             TextFallback = "Du hast die Ascension vollzogen! Alles zurückgelassen, um auf einer höheren Ebene neu zu beginnen. Deine Ascension-Perks sind mächtig – Startkapital, ewige Werkzeuge, schnellere Forschung. Jeder Durchlauf wird jetzt einfacher und befriedigender.",
             RequiredAscensionLevel = 1,
             MoneyReward = 500_000_000_000,
-            GoldenScrewReward = 5_000,
-            XpReward = 1_000_000,
+            GoldenScrewReward = 500,
+            XpReward = 100_000,
             Mood = "proud"
         },
         new()
         {
             Id = "endgame_transcendence",
-            ChapterNumber = 35,
+            ChapterNumber = 37,
             TitleKey = "Story_Ch35_Title",
             TextKey = "Story_Ch35_Text",
             TitleFallback = "Transzendenz",
             TextFallback = "Drei Ascensions. Du hast die Grenzen des Möglichen gesprengt. Du bist nicht mehr nur ein Handwerker – du bist eine Kraft der Natur. Dein Imperium ist unsterblich. Meister Hans verneigt sich zum letzten Mal. Diese Geschichte kennt kein Ende, nur neue Anfänge. Lebe wohl... und willkommen zurück, wann immer du willst.",
             RequiredAscensionLevel = 3,
             MoneyReward = 1_000_000_000_000,
-            GoldenScrewReward = 10_000,
-            XpReward = 2_000_000,
+            GoldenScrewReward = 750,
+            XpReward = 100_000,
             Mood = "excited"
         }
     ];

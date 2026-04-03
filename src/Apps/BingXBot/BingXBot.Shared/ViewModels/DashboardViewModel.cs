@@ -9,6 +9,7 @@ using BingXBot.Exchange;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.ObjectModel;
@@ -37,7 +38,7 @@ public record ActivityItem(DateTime Time, string Category, string Message, Core.
 /// Publiziert Bot-Status und Log-Einträge über den BotEventBus.
 /// Enthält Strategie-Auswahl, PaperTradingService-Verdrahtung und Live-Trading.
 /// </summary>
-public partial class DashboardViewModel : ObservableObject, IDisposable
+public partial class DashboardViewModel : ViewModelBase, IDisposable
 {
     private readonly IPublicMarketDataClient? _publicClient;
     private readonly BotEventBus _eventBus;

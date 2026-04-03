@@ -80,15 +80,15 @@ public static class WorkshopTypeExtensions
     public static decimal GetUnlockCost(this WorkshopType type) => type switch
     {
         WorkshopType.Carpenter => 0m,
-        WorkshopType.Plumber => 25_000m,
+        WorkshopType.Plumber => 12_000m,        // Von 25K auf 12K: Erreichbar in ~2-3h statt 5h
         WorkshopType.Electrician => 250_000m,
         WorkshopType.Painter => 2_500_000m,
         WorkshopType.Roofer => 10_000_000m,           // Von 25M auf 10M: Passt zu Lv40 (statt Lv60)
         WorkshopType.Contractor => 100_000_000m,       // Von 250M auf 100M: Passt zu Lv80 (statt Lv100)
         WorkshopType.Architect => 2_500_000_000m,
         WorkshopType.GeneralContractor => 25_000_000_000m,
-        WorkshopType.MasterSmith => 5_000_000m,            // 5M - Platin-Prestige Endgame
-        WorkshopType.InnovationLab => 50_000_000m,         // 50M - Diamant-Prestige Endgame
+        WorkshopType.MasterSmith => 500_000_000m,              // 500M - Platin-Prestige (spürbar, aber Level 500 ist die echte Gate)
+        WorkshopType.InnovationLab => 5_000_000_000m,      // 5B - Diamant-Prestige (spürbar, aber Level 750 ist die echte Gate)
         _ => 0m
     };
 
@@ -106,8 +106,8 @@ public static class WorkshopTypeExtensions
         WorkshopType.Contractor => "\ud83c\udfd7\ufe0f",
         WorkshopType.Architect => "\ud83d\udcd0",       // Triangular ruler
         WorkshopType.GeneralContractor => "\ud83c\udff0", // Castle
-        WorkshopType.MasterSmith => "Anvil",               // GameIcon
-        WorkshopType.InnovationLab => "LightbulbOnOutline", // GameIcon
+        WorkshopType.MasterSmith => "\u2692\ufe0f",          // ⚒️ Hammer und Spitzhacke
+        WorkshopType.InnovationLab => "\ud83d\udd2c",      // 🔬 Mikroskop
         _ => "\ud83d\udd27"
     };
 
@@ -171,4 +171,23 @@ public static class WorkshopTypeExtensions
     /// </summary>
     public static bool IsPrestigeExclusive(this WorkshopType type) =>
         type.GetRequiredPrestige() > 0;
+
+    /// <summary>
+    /// Zentrale Farbzuordnung pro Workshop-Typ (Hex-String).
+    /// Einzige Quelle der Wahrheit — alle Renderer und Converter leiten hiervon ab.
+    /// </summary>
+    public static string GetColorHex(this WorkshopType type) => type switch
+    {
+        WorkshopType.Carpenter => "#A0522D",          // Sienna
+        WorkshopType.Plumber => "#0E7490",            // Teal
+        WorkshopType.Electrician => "#F97316",        // Orange
+        WorkshopType.Painter => "#EC4899",            // Pink
+        WorkshopType.Roofer => "#DC2626",             // Rot
+        WorkshopType.Contractor => "#EA580C",         // Craft-Orange
+        WorkshopType.Architect => "#78716C",          // Stone-Grau
+        WorkshopType.GeneralContractor => "#FFD700",  // Gold
+        WorkshopType.MasterSmith => "#D4A373",        // Kupfer-Orange
+        WorkshopType.InnovationLab => "#6A5ACD",      // Violett
+        _ => "#D97706"
+    };
 }

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Labs.Controls;
@@ -20,12 +21,12 @@ public partial class PipePuzzleView : UserControl
     private SKRect _lastBounds;
     private SKCanvasView? _puzzleCanvas;
     private PipeTileData[] _cachedTiles = [];
+    private bool _disposed;
 
     public PipePuzzleView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        DetachedFromVisualTree += (_, _) => StopRenderLoop();
 
         // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
         PropertyChanged += (_, args) =>
@@ -48,8 +49,32 @@ public partial class PipePuzzleView : UserControl
             _renderer.Initialize(assetService);
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        if (_disposed) return;
+        _disposed = true;
+
+        if (_vm != null)
+        {
+            _vm.GameCompleted -= OnGameCompleted;
+            _vm = null;
+        }
+
+        if (_puzzleCanvas != null)
+        {
+            _puzzleCanvas.PaintSurface -= OnPaintSurface;
+            _puzzleCanvas.PointerPressed -= OnCanvasPointerPressed;
+        }
+
+        StopRenderLoop();
+        _renderer.Dispose();
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_disposed) return;
+
         // Altes ViewModel abmelden
         if (_vm != null)
             _vm.GameCompleted -= OnGameCompleted;
@@ -81,7 +106,8 @@ public partial class PipePuzzleView : UserControl
     /// </summary>
     private void StartRenderLoop()
     {
-        StopRenderLoop();
+        // NUR Timer stoppen, NICHT StopRenderLoop() aufrufen (das nullt _puzzleCanvas)
+        _renderTimer?.Stop();
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) =>
         {

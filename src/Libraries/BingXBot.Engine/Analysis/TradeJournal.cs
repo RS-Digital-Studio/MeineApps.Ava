@@ -15,7 +15,7 @@ public record TradeStatistics(
 
 public class TradeJournal
 {
-    private readonly List<CompletedTrade> _trades = new();
+    private readonly List<CompletedTrade> _trades = [];
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     /// <summary>Gründe die einen Trade als abgebrochen markieren (Margin-Fehler, Ablehnung etc.).</summary>

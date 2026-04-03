@@ -2,13 +2,14 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using SmartMeasure.Shared.Models;
 using SmartMeasure.Shared.Services;
 
 namespace SmartMeasure.Shared.ViewModels;
 
 /// <summary>Live-Vermessung: Position, Punkt setzen, Labels</summary>
-public partial class SurveyViewModel : ObservableObject
+public partial class SurveyViewModel : ViewModelBase
 {
     private readonly IBleService _bleService;
     private readonly IMeasurementService _measurementService;

@@ -134,6 +134,12 @@ public partial class WorkshopDisplayModel : ObservableObject
     /// <summary>Anzahl der Rebirth-Sterne dieses Workshops (0-5).</summary>
     public int RebirthStars { get; set; }
 
+    /// <summary>Kürzel der aktiven Spezialisierung (z.B. "Eff." oder "").</summary>
+    public string SpecializationBadge { get; set; } = "";
+
+    /// <summary>Farbe der aktiven Spezialisierung.</summary>
+    public string SpecializationColor { get; set; } = "";
+
     /// <summary>Benachrichtigt die UI über alle Property-Änderungen nach einem In-Place-Update.</summary>
     public void NotifyAllChanged()
     {
@@ -174,5 +180,7 @@ public partial class WorkshopDisplayModel : ObservableObject
         OnPropertyChanged(nameof(IsNetNegative));
         OnPropertyChanged(nameof(HasCosts));
         OnPropertyChanged(nameof(RebirthStars));
+        OnPropertyChanged(nameof(SpecializationBadge));
+        OnPropertyChanged(nameof(SpecializationColor));
     }
 }

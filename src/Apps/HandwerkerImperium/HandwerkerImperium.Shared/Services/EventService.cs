@@ -63,8 +63,8 @@ public sealed class EventService : IEventService
 
         if (Random.Shared.NextDouble() > chance) return;
 
-        // Pick a random event type
-        var randomTypes = new[]
+        // EVENT-5: Pity-Timer - nach 2 negativen Events in Folge nur positive Events zulassen
+        var allRandomTypes = new[]
         {
             GameEventType.MaterialSale,
             GameEventType.MaterialShortage,
@@ -76,8 +76,25 @@ public sealed class EventService : IEventService
             GameEventType.CelebrityEndorsement
         };
 
+        GameEventType[] randomTypes;
+        if (state.ConsecutiveNegativeEvents >= 2)
+        {
+            // Pity aktiv: Nur positive Events auswählen
+            randomTypes = allRandomTypes.Where(t => t.IsPositive()).ToArray();
+        }
+        else
+        {
+            randomTypes = allRandomTypes;
+        }
+
         var type = randomTypes[Random.Shared.Next(randomTypes.Length)];
         var evt = GameEvent.Create(type);
+
+        // Pity-Counter aktualisieren
+        if (!type.IsPositive())
+            state.ConsecutiveNegativeEvents++;
+        else
+            state.ConsecutiveNegativeEvents = 0;
 
         state.ActiveEvent = evt;
         state.EventHistory.Add(type.ToString());

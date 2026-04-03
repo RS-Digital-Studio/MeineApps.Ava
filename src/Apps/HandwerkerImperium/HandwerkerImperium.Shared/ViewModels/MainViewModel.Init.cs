@@ -218,6 +218,17 @@ public sealed partial class MainViewModel
         if (IsOfflineNewRecord)
             _gameStateService.State.MaxOfflineEarnings = earnings;
 
+        // Wiedereinsteiger-Tipp: Nächstes Ziel anzeigen wenn >48h offline
+        if (offlineDuration.TotalHours > 48)
+        {
+            var goal = _goalService.GetCurrentGoal();
+            OfflineGoalText = goal?.Description ?? "";
+        }
+        else
+        {
+            OfflineGoalText = "";
+        }
+
         // Dialog wird NICHT sofort angezeigt - CheckCombinedWelcomeDialog() entscheidet
         // ob ein einzelner Offline-Dialog oder ein kombinierter Dialog gezeigt wird
 

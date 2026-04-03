@@ -7,7 +7,7 @@ namespace MeineApps.CalcLib;
 /// </summary>
 public sealed class PersistentHistoryService : IHistoryService
 {
-    private readonly List<CalculationHistoryEntry> _history = new();
+    private readonly List<CalculationHistoryEntry> _history = [];
     private readonly object _lockObj = new();
     private const int MAX_ENTRIES = 100;
     private const string HISTORY_FILE = "calculator_history.json";

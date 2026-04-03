@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
@@ -516,6 +517,11 @@ public sealed partial class MainViewModel
         // Prestige-Shop ab bestimmtem Level (oder wenn bereits prestigiert → Shop bleibt zugänglich nach Reset)
         IsPrestigeShopUnlocked = state.PlayerLevel >= LevelThresholds.PrestigeShopUnlock || state.Prestige.TotalPrestigeCount > 0;
 
+        // Statische Renderer-Strings initialisieren (Karten-Texte)
+        WorkshopGameCardRenderer.UpdateLocalizedStrings(
+            _localizationService.GetString("TapToUnlock") ?? "Tap to unlock",
+            _localizationService.GetString("AtLevelShort") ?? "From Level {0}");
+
         // Refresh workshops
         RefreshWorkshops();
 
@@ -614,7 +620,9 @@ public sealed partial class MainViewModel
             CanHireWorker = workshop?.CanHireWorker ?? false,
             CanAffordUpgrade = state.Money >= (workshop?.UpgradeCost ?? 100),
             CanAffordWorker = state.Money >= (workshop?.HireWorkerCost ?? 50),
-            RebirthStars = workshop?.RebirthStars ?? 0
+            RebirthStars = workshop?.RebirthStars ?? 0,
+            SpecializationBadge = GetSpecBadge(workshop?.WorkshopSpecialization),
+            SpecializationColor = workshop?.WorkshopSpecialization?.Color ?? ""
         };
         // BulkBuy-Kosten berechnen
         SetBulkUpgradeCost(model, workshop, state.Money);
@@ -623,6 +631,16 @@ public sealed partial class MainViewModel
         SetWorkshopFinancials(model, workshop);
 
         return model;
+    }
+
+    /// <summary>Kürzel für Spezialisierungs-Badge auf Dashboard-Karte (lokalisiert).</summary>
+    private string GetSpecBadge(WorkshopSpecialization? spec)
+    {
+        if (spec == null) return "";
+        // Erste 3-4 Buchstaben des lokalisierten Spezialisierungsnamens + Punkt
+        string fullName = _localizationService.GetString(spec.NameKey) ?? spec.Type.ToString();
+        int len = Math.Min(fullName.Length, 4);
+        return fullName[..len].TrimEnd() + ".";
     }
 
     /// <summary>
@@ -1127,6 +1145,8 @@ public sealed partial class MainViewModel
         model.CanAffordUpgrade = state.Money >= (workshop?.UpgradeCost ?? 100);
         model.CanAffordWorker = state.Money >= (workshop?.HireWorkerCost ?? 50);
         model.RebirthStars = workshop?.RebirthStars ?? 0;
+        model.SpecializationBadge = GetSpecBadge(workshop?.WorkshopSpecialization);
+        model.SpecializationColor = workshop?.WorkshopSpecialization?.Color ?? "";
 
         // BulkBuy-Kosten aktualisieren
         SetBulkUpgradeCost(model, workshop, state.Money);

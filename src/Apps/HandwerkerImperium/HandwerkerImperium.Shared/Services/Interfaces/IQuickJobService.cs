@@ -16,6 +16,8 @@ public interface IQuickJobService
     int MaxDailyJobs { get; }
     /// <summary>Prüft ob das tägliche Quick-Job-Limit erreicht ist.</summary>
     bool IsDailyLimitReached { get; }
+    /// <summary>Verbleibende Quick Jobs heute.</summary>
+    int RemainingJobsToday { get; }
     /// <summary>Wird aufgerufen wenn ein QuickJob abgeschlossen wird. Erhöht Tages-Counter und feuert Event.</summary>
     void NotifyJobCompleted(QuickJob job);
     event EventHandler<QuickJob>? QuickJobCompleted;

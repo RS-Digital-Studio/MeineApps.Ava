@@ -9,6 +9,7 @@ using BingXBot.Engine.Strategies;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.ObjectModel;
@@ -20,7 +21,7 @@ namespace BingXBot.ViewModels;
 /// Nutzt echte BacktestEngine mit BingXPublicClient für echte Marktdaten (kein API-Key nötig).
 /// Publiziert Ergebnisse über den BotEventBus an TradeHistory und Log.
 /// </summary>
-public partial class BacktestViewModel : ObservableObject
+public partial class BacktestViewModel : ViewModelBase
 {
     private readonly RiskSettings _riskSettings;
     private readonly IPublicMarketDataClient? _publicClient;

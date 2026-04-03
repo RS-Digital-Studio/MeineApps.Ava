@@ -76,31 +76,38 @@ public class WorkerMarketPool
     }
 
     /// <summary>
-    /// Removes a worker from the pool (after hiring).
+    /// Removes a worker from the pool (after hiring). For-Schleife mit RemoveAt (keine doppelte Iteration).
     /// </summary>
     public bool RemoveWorker(string workerId)
     {
-        var worker = AvailableWorkers.FirstOrDefault(w => w.Id == workerId);
-        if (worker == null) return false;
-        AvailableWorkers.Remove(worker);
-        return true;
+        for (int i = 0; i < AvailableWorkers.Count; i++)
+        {
+            if (AvailableWorkers[i].Id == workerId)
+            {
+                AvailableWorkers.RemoveAt(i);
+                return true;
+            }
+        }
+        return false;
     }
 
     private static WorkerTier GetWeightedTier(List<WorkerTier> available, Random random)
     {
         // Higher tiers are exponentially rarer
+        // F/E von 55% auf 42% gesenkt, D von 18% auf 22% erhöht
+        // Spieler sieht öfter D-Tier Worker als erstes spürbares Upgrade
         var weights = new Dictionary<WorkerTier, double>
         {
-            [WorkerTier.F] = 30.0,
-            [WorkerTier.E] = 25.0,
-            [WorkerTier.D] = 18.0,
-            [WorkerTier.C] = 12.0,
-            [WorkerTier.B] = 8.0,
-            [WorkerTier.A] = 5.0,
-            [WorkerTier.S] = 2.0,
-            [WorkerTier.SS] = 1.0,
-            [WorkerTier.SSS] = 0.3,
-            [WorkerTier.Legendary] = 0.05
+            [WorkerTier.F] = 20.0,
+            [WorkerTier.E] = 22.0,
+            [WorkerTier.D] = 22.0,
+            [WorkerTier.C] = 14.0,
+            [WorkerTier.B] = 10.0,
+            [WorkerTier.A] = 6.0,
+            [WorkerTier.S] = 3.0,
+            [WorkerTier.SS] = 1.5,
+            [WorkerTier.SSS] = 0.5,
+            [WorkerTier.Legendary] = 0.1
         };
 
         double totalWeight = 0;

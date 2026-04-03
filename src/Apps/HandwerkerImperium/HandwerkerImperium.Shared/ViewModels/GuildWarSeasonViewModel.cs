@@ -52,6 +52,10 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isByeWeek;
 
+    /// <summary>Informativer Text für die Bye-Woche (Trainingsrunden-Hinweis).</summary>
+    [ObservableProperty]
+    private string _byeWeekMessage = "";
+
     [ObservableProperty]
     private string _opponentName = "";
 
@@ -149,6 +153,13 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
             // Krieg
             IsByeWeek = data.IsByeWeek;
             HasActiveWar = !data.IsByeWeek;
+
+            // Bye-Woche: Informativer Trainingsrunden-Text
+            if (IsByeWeek)
+            {
+                ByeWeekMessage = _localizationService.GetString("GuildWarByeWeekTraining")
+                    ?? "Trainingsrunde! Schließe Aufträge und MiniGames ab, um Kriegspunkte für die nächste Runde zu sammeln.";
+            }
 
             if (HasActiveWar)
             {

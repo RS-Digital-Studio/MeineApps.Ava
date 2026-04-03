@@ -102,14 +102,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_money_silver", NameKey = "GuildAch_Money_Silver",
             DescKey = "GuildAchDesc_Money_Silver", Icon = "CurrencyEur",
             Category = GuildAchievementCategory.StrongerTogether, Tier = AchievementTier.Silver,
-            Target = 1_000_000, GoldenScrewReward = 15, CosmeticReward = "banner_wealthy"
+            Target = 1_000_000, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_money_gold", NameKey = "GuildAch_Money_Gold",
             DescKey = "GuildAchDesc_Money_Gold", Icon = "CurrencyEur",
             Category = GuildAchievementCategory.StrongerTogether, Tier = AchievementTier.Gold,
-            Target = 10_000_000, GoldenScrewReward = 30, CosmeticReward = "emblem_golden_vault"
+            Target = 10_000_000, GoldenScrewReward = 50
         },
 
         // ── Gemeinsam stark: Forschungen ──
@@ -125,14 +125,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_research_silver", NameKey = "GuildAch_Research_Silver",
             DescKey = "GuildAchDesc_Research_Silver", Icon = "FlaskOutline",
             Category = GuildAchievementCategory.StrongerTogether, Tier = AchievementTier.Silver,
-            Target = 9, GoldenScrewReward = 15, CosmeticReward = "banner_scholars"
+            Target = 9, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_research_gold", NameKey = "GuildAch_Research_Gold",
             DescKey = "GuildAchDesc_Research_Gold", Icon = "FlaskOutline",
             Category = GuildAchievementCategory.StrongerTogether, Tier = AchievementTier.Gold,
-            Target = 18, GoldenScrewReward = 30, CosmeticReward = "emblem_master_researcher"
+            Target = 18, GoldenScrewReward = 50
         },
 
         // ── Gemeinsam stark: Mitglieder ──
@@ -148,14 +148,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_members_silver", NameKey = "GuildAch_Members_Silver",
             DescKey = "GuildAchDesc_Members_Silver", Icon = "AccountGroup",
             Category = GuildAchievementCategory.StrongerTogether, Tier = AchievementTier.Silver,
-            Target = 10, GoldenScrewReward = 15, CosmeticReward = "banner_united"
+            Target = 10, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_members_gold", NameKey = "GuildAch_Members_Gold",
             DescKey = "GuildAchDesc_Members_Gold", Icon = "AccountGroup",
             Category = GuildAchievementCategory.StrongerTogether, Tier = AchievementTier.Gold,
-            Target = 20, GoldenScrewReward = 30, CosmeticReward = "emblem_fellowship"
+            Target = 20, GoldenScrewReward = 50
         },
 
         // ── Kriegshelden: Kriege gewinnen ──
@@ -171,14 +171,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_wars_silver", NameKey = "GuildAch_Wars_Silver",
             DescKey = "GuildAchDesc_Wars_Silver", Icon = "SwordCross",
             Category = GuildAchievementCategory.WarHeroes, Tier = AchievementTier.Silver,
-            Target = 10, GoldenScrewReward = 15, CosmeticReward = "banner_warriors"
+            Target = 10, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_wars_gold", NameKey = "GuildAch_Wars_Gold",
             DescKey = "GuildAchDesc_Wars_Gold", Icon = "SwordCross",
             Category = GuildAchievementCategory.WarHeroes, Tier = AchievementTier.Gold,
-            Target = 50, GoldenScrewReward = 30, CosmeticReward = "emblem_war_legend"
+            Target = 50, GoldenScrewReward = 50
         },
 
         // ── Kriegshelden: Saisons abschließen ──
@@ -194,14 +194,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_seasons_silver", NameKey = "GuildAch_Seasons_Silver",
             DescKey = "GuildAchDesc_Seasons_Silver", Icon = "CalendarStar",
             Category = GuildAchievementCategory.WarHeroes, Tier = AchievementTier.Silver,
-            Target = 4, GoldenScrewReward = 15, CosmeticReward = "banner_veteran"
+            Target = 4, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_seasons_gold", NameKey = "GuildAch_Seasons_Gold",
             DescKey = "GuildAchDesc_Seasons_Gold", Icon = "CalendarStar",
             Category = GuildAchievementCategory.WarHeroes, Tier = AchievementTier.Gold,
-            Target = 12, GoldenScrewReward = 30, CosmeticReward = "emblem_eternal_champion"
+            Target = 12, GoldenScrewReward = 50
         },
 
         // ── Kriegshelden: Liga erreichen ──
@@ -217,14 +217,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_league_silver", NameKey = "GuildAch_League_Silver",
             DescKey = "GuildAchDesc_League_Silver", Icon = "MedalOutline",
             Category = GuildAchievementCategory.WarHeroes, Tier = AchievementTier.Silver,
-            Target = 2, GoldenScrewReward = 15, CosmeticReward = "banner_gold_league" // Gold Liga = 2
+            Target = 2, GoldenScrewReward = 25 // Gold Liga = 2
         },
         new()
         {
             Id = "guild_ach_league_gold", NameKey = "GuildAch_League_Gold",
             DescKey = "GuildAchDesc_League_Gold", Icon = "MedalOutline",
             Category = GuildAchievementCategory.WarHeroes, Tier = AchievementTier.Gold,
-            Target = 3, GoldenScrewReward = 30, CosmeticReward = "emblem_diamond_elite" // Diamond Liga = 3
+            Target = 3, GoldenScrewReward = 50 // Diamond Liga = 3
         },
 
         // ── Drachentöter: Bosse besiegen ──
@@ -240,14 +240,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_boss_silver", NameKey = "GuildAch_Boss_Silver",
             DescKey = "GuildAchDesc_Boss_Silver", Icon = "Skull",
             Category = GuildAchievementCategory.DragonSlayers, Tier = AchievementTier.Silver,
-            Target = 10, GoldenScrewReward = 15, CosmeticReward = "banner_slayers"
+            Target = 10, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_boss_gold", NameKey = "GuildAch_Boss_Gold",
             DescKey = "GuildAchDesc_Boss_Gold", Icon = "Skull",
             Category = GuildAchievementCategory.DragonSlayers, Tier = AchievementTier.Gold,
-            Target = 50, GoldenScrewReward = 30, CosmeticReward = "emblem_dragon_slayer"
+            Target = 50, GoldenScrewReward = 50
         },
 
         // ── Drachentöter: Boss-MVP ──
@@ -263,14 +263,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_mvp_silver", NameKey = "GuildAch_Mvp_Silver",
             DescKey = "GuildAchDesc_Mvp_Silver", Icon = "StarShooting",
             Category = GuildAchievementCategory.DragonSlayers, Tier = AchievementTier.Silver,
-            Target = 5, GoldenScrewReward = 15, CosmeticReward = "banner_champion"
+            Target = 5, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_mvp_gold", NameKey = "GuildAch_Mvp_Gold",
             DescKey = "GuildAchDesc_Mvp_Gold", Icon = "StarShooting",
             Category = GuildAchievementCategory.DragonSlayers, Tier = AchievementTier.Gold,
-            Target = 20, GoldenScrewReward = 30, CosmeticReward = "emblem_legendary_champion"
+            Target = 20, GoldenScrewReward = 50
         },
 
         // ── Drachentöter: Boss unter 24h besiegen ──
@@ -286,14 +286,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_speedkill_silver", NameKey = "GuildAch_Speedkill_Silver",
             DescKey = "GuildAchDesc_Speedkill_Silver", Icon = "TimerOutline",
             Category = GuildAchievementCategory.DragonSlayers, Tier = AchievementTier.Silver,
-            Target = 3, GoldenScrewReward = 15, CosmeticReward = "banner_blitz"
+            Target = 3, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_speedkill_gold", NameKey = "GuildAch_Speedkill_Gold",
             DescKey = "GuildAchDesc_Speedkill_Gold", Icon = "TimerOutline",
             Category = GuildAchievementCategory.DragonSlayers, Tier = AchievementTier.Gold,
-            Target = 10, GoldenScrewReward = 30, CosmeticReward = "emblem_lightning_strike"
+            Target = 10, GoldenScrewReward = 50
         },
 
         // ── Baumeister: Gebäude auf Max-Level ──
@@ -309,14 +309,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_maxbuilding_silver", NameKey = "GuildAch_MaxBuilding_Silver",
             DescKey = "GuildAchDesc_MaxBuilding_Silver", Icon = "OfficeBuilding",
             Category = GuildAchievementCategory.Builders, Tier = AchievementTier.Silver,
-            Target = 5, GoldenScrewReward = 15, CosmeticReward = "banner_architect"
+            Target = 5, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_maxbuilding_gold", NameKey = "GuildAch_MaxBuilding_Gold",
             DescKey = "GuildAchDesc_MaxBuilding_Gold", Icon = "OfficeBuilding",
             Category = GuildAchievementCategory.Builders, Tier = AchievementTier.Gold,
-            Target = 10, GoldenScrewReward = 30, CosmeticReward = "emblem_master_builder"
+            Target = 10, GoldenScrewReward = 50
         },
 
         // ── Baumeister: Hallen-Level (3 Tiers, max Hall Level = 10) ──
@@ -333,14 +333,14 @@ public class GuildAchievementDefinition
             Id = "guild_ach_hall_silver", NameKey = "GuildAch_Hall_Silver",
             DescKey = "GuildAchDesc_Hall_Silver", Icon = "HomeCity",
             Category = GuildAchievementCategory.Builders, Tier = AchievementTier.Silver,
-            Target = 6, GoldenScrewReward = 15, CosmeticReward = "banner_grand_hall"
+            Target = 6, GoldenScrewReward = 25
         },
         new()
         {
             Id = "guild_ach_hall_gold", NameKey = "GuildAch_Hall_Gold",
             DescKey = "GuildAchDesc_Hall_Gold", Icon = "HomeCity",
             Category = GuildAchievementCategory.Builders, Tier = AchievementTier.Gold,
-            Target = 10, GoldenScrewReward = 30, CosmeticReward = "emblem_grand_architect"
+            Target = 10, GoldenScrewReward = 50
         }
     ];
 

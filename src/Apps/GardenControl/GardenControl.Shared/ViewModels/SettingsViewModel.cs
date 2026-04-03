@@ -1,13 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GardenControl.Shared.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace GardenControl.Shared.ViewModels;
 
 /// <summary>
 /// Einstellungen - Server-IP, Verbindungstest, Daten-Export.
 /// </summary>
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ViewModelBase
 {
     private readonly IApiService _api;
     private readonly IConnectionService _connection;

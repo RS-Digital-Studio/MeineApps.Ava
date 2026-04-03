@@ -53,21 +53,30 @@
                      IsVisible="{Binding TaskProgressDisplay, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
-        <!-- Timer -->
-        <Border Grid.Column="2"
-                AutomationProperties.AutomationId="Pipe_Border_Timer"
-                Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="8"
-                Padding="12,6">
-          <StackPanel Orientation="Horizontal" Spacing="4">
-            <icons:GameIcon AutomationProperties.AutomationId="Pipe_Icon_Clock"
-                             Kind="Clock" Width="20" Height="20" />
-            <TextBlock AutomationProperties.AutomationId="Pipe_Txt_Timer"
-                       Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
-                       FontSize="14" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
-          </StackPanel>
-        </Border>
+        <!-- Info + Timer -->
+        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4" HorizontalAlignment="Right">
+          <Button Classes="Text" Padding="4"
+                  Command="{Binding ShowTutorialInfoCommand}"
+                  IsVisible="{Binding CanShowTutorialInfo}"
+                  AutomationProperties.AutomationId="Pipe_Btn_TutorialInfo">
+            <icons:GameIcon Kind="InformationOutline" Width="22" Height="22"
+                            Foreground="{DynamicResource TextSecondaryBrush}"
+                            AutomationProperties.AutomationId="Pipe_Icon_TutorialInfo" />
+          </Button>
+          <Border AutomationProperties.AutomationId="Pipe_Border_Timer"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8"
+                  Padding="12,6">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <icons:GameIcon AutomationProperties.AutomationId="Pipe_Icon_Clock"
+                               Kind="Clock" Width="20" Height="20" />
+              <TextBlock AutomationProperties.AutomationId="Pipe_Txt_Timer"
+                         Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
+                         FontSize="14" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
       </Grid>
     </Border>
 
@@ -317,6 +326,14 @@
                      TextTrimming="CharacterEllipsis" />
         </Button>
       </Grid>
+
+      <!-- Bisheriger Durchschnitt (Zwischen-Runden) -->
+      <TextBlock Text="{Binding IntermediateAverage}"
+                 FontSize="13" FontWeight="SemiBold"
+                 Foreground="{StaticResource CraftGoldBrush}"
+                 HorizontalAlignment="Center"
+                 IsVisible="{Binding IntermediateAverage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 AutomationProperties.AutomationId="Pipe_Txt_IntermediateAvg" />
 
       <!-- Zwischen-Aufgabe: Nur Weiter-Button -->
       <Button AutomationProperties.AutomationId="Pipe_Btn_NextTask"

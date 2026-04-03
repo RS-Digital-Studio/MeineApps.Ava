@@ -1,42 +1,26 @@
-using System.ComponentModel;
-using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using HandwerkerRechner.Graphics;
 using HandwerkerRechner.ViewModels.Premium;
 
 namespace HandwerkerRechner.Views.Premium;
 
-public partial class MaterialCompareView : UserControl
+public partial class MaterialCompareView : CalculatorViewBase
 {
-    private INotifyPropertyChanged? _currentVm;
-    private PropertyChangedEventHandler? _resultHandler;
-
     public MaterialCompareView()
     {
         InitializeComponent();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
+    protected override bool ShouldInvalidateOnPropertyChanged(string? propertyName)
     {
-        base.OnDataContextChanged(e);
+        return propertyName == nameof(MaterialCompareViewModel.HasResult) ||
+               propertyName == nameof(MaterialCompareViewModel.TotalCostA) ||
+               propertyName == nameof(MaterialCompareViewModel.TotalCostB);
+    }
 
-        // Alten Handler abmelden, um Memory-Leaks zu vermeiden
-        if (_currentVm != null && _resultHandler != null)
-            _currentVm.PropertyChanged -= _resultHandler;
-
-        _currentVm = DataContext as INotifyPropertyChanged;
-        if (_currentVm != null)
-        {
-            _resultHandler = (_, args) =>
-            {
-                // Canvas neu zeichnen wenn Ergebnisse aktualisiert wurden
-                if (args.PropertyName == nameof(MaterialCompareViewModel.HasResult) ||
-                    args.PropertyName == nameof(MaterialCompareViewModel.TotalCostA) ||
-                    args.PropertyName == nameof(MaterialCompareViewModel.TotalCostB))
-                    MaterialCompareCanvas.InvalidateSurface();
-            };
-            _currentVm.PropertyChanged += _resultHandler;
-        }
+    protected override void OnResultPropertyChanged()
+    {
+        MaterialCompareCanvas.InvalidateSurface();
     }
 
     private void OnPaintVisualization(object? sender, SKPaintSurfaceEventArgs e)

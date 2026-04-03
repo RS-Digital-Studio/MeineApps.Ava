@@ -6,7 +6,7 @@ namespace MeineApps.CalcLib;
 /// </summary>
 public sealed class HistoryService : IHistoryService
 {
-    private readonly List<CalculationHistoryEntry> _history = new();
+    private readonly List<CalculationHistoryEntry> _history = [];
     private const int MAX_ENTRIES = 100;
 
     public IReadOnlyList<CalculationHistoryEntry> History => _history.AsReadOnly();

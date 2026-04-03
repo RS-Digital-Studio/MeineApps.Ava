@@ -6,6 +6,7 @@ using Mapsui.Nts;
 using Mapsui.Projections;
 using Mapsui.Styles;
 using Mapsui.Tiling;
+using MeineApps.Core.Ava.ViewModels;
 using NetTopologySuite.Geometries;
 using SmartMeasure.Shared.Services;
 using Color = Mapsui.Styles.Color;
@@ -13,7 +14,7 @@ using Color = Mapsui.Styles.Color;
 namespace SmartMeasure.Shared.ViewModels;
 
 /// <summary>Kartenansicht mit OpenStreetMap: Messpunkte, Polygon, Flaeche</summary>
-public partial class MapViewModel : ObservableObject
+public partial class MapViewModel : ViewModelBase
 {
     private readonly IMeasurementService _measurementService;
 

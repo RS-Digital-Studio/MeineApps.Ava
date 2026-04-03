@@ -155,6 +155,10 @@ public sealed class GuildHallService : IGuildHallService, IDisposable
 
         if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
             return false; // Timeout: Lock nicht erhalten
+
+        // Kosten-Tracking für sicheren Rollback bei jedem Fehler
+        var gsSpent = 0;
+        var moneySpent = 0L;
         try
         {
             await _firebase.EnsureAuthenticatedAsync();
@@ -186,10 +190,6 @@ public sealed class GuildHallService : IGuildHallService, IDisposable
             // Goldschrauben prüfen und abziehen
             if (!_gameStateService.CanAffordGoldenScrews(cost.GoldenScrews))
                 return false;
-
-            // Gildengeld prüfen (aus Gilden-Kasse)
-            // Für MVP: Gildengeld wird aus dem Wochenziel-Beitrag genommen
-            // Vereinfacht: Gildengeld wird als lokales Geld abgezogen
             if (!_gameStateService.CanAfford(cost.GuildMoney))
                 return false;
 
@@ -198,32 +198,29 @@ public sealed class GuildHallService : IGuildHallService, IDisposable
             var durationHours = UpgradeDurations.GetValueOrDefault(tier, 1.0);
             var upgradeEnd = DateTime.UtcNow.AddHours(durationHours);
 
-            // Kosten VOR Firebase-Write abziehen (bei Firebase-Fehler zurückgeben)
+            // Kosten abziehen (mit Tracking für sicheren Rollback)
             if (!_gameStateService.TrySpendGoldenScrews(cost.GoldenScrews))
                 return false;
+            gsSpent = cost.GoldenScrews;
+
             if (!_gameStateService.TrySpendMoney(cost.GuildMoney))
             {
-                // Rollback: Goldschrauben zurückgeben
-                _gameStateService.AddGoldenScrews(cost.GoldenScrews);
+                _gameStateService.AddGoldenScrews(gsSpent);
+                gsSpent = 0;
                 return false;
             }
+            moneySpent = cost.GuildMoney;
 
             // Firebase aktualisieren
             state.UpgradingUntil = upgradeEnd.ToString("O");
             if (string.IsNullOrEmpty(state.UnlockedAt))
                 state.UnlockedAt = DateTime.UtcNow.ToString("O");
 
-            try
-            {
-                await _firebase.SetAsync($"guild_hall/{guildId}/buildings/{stateKey}", state);
-            }
-            catch
-            {
-                // Firebase-Fehler: Kosten zurückgeben
-                _gameStateService.AddGoldenScrews(cost.GoldenScrews);
-                _gameStateService.AddMoney(cost.GuildMoney);
-                return false;
-            }
+            await _firebase.SetAsync($"guild_hall/{guildId}/buildings/{stateKey}", state);
+
+            // Erfolgreich → kein Rollback nötig
+            gsSpent = 0;
+            moneySpent = 0;
 
             // Cache aktualisieren
             _cachedStates[stateKey] = state;
@@ -232,7 +229,9 @@ public sealed class GuildHallService : IGuildHallService, IDisposable
         }
         catch
         {
-            // Netzwerkfehler still behandelt
+            // Rollback bei JEDEM Fehler (Netzwerk, Firebase, unerwartete Exception)
+            if (gsSpent > 0) _gameStateService.AddGoldenScrews(gsSpent);
+            if (moneySpent > 0) _gameStateService.AddMoney(moneySpent);
             return false;
         }
         finally

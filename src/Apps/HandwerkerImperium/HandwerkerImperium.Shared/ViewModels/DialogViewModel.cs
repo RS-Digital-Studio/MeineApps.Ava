@@ -6,6 +6,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
@@ -15,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Alert, Confirm, Story, Achievement, LevelUp, Hint, Prestige-Summary, Prestige-Tier-Auswahl.
 /// Extrahiert aus MainViewModel zur Reduktion der Klassengröße.
 /// </summary>
-public sealed partial class DialogViewModel : ObservableObject, IDialogService
+public sealed partial class DialogViewModel : ViewModelBase, IDialogService
 {
     private readonly ILocalizationService _localizationService;
     private readonly IStoryService? _storyService;
@@ -729,11 +730,12 @@ public sealed partial class DialogViewModel : ObservableObject, IDialogService
         StoryMood = chapter.Mood;
         StoryChapterId = chapter.Id;
         StoryChapterNumber = chapter.ChapterNumber;
-        StoryTotalChapters = 25;
+        var (_, totalChapters) = _storyService?.GetProgress() ?? (0, 35);
+        StoryTotalChapters = totalChapters;
         IsStoryTutorial = chapter.IsTutorial;
         StoryChapterBadge = chapter.IsTutorial
             ? _localizationService.GetString("StoryTipFromHans") ?? "Tipp von Meister Hans"
-            : $"Kap. {chapter.ChapterNumber}/25";
+            : $"Kap. {chapter.ChapterNumber}/{totalChapters}";
 
         // Belohnungs-Text zusammenstellen (skalierte Geldbelohnung anzeigen)
         var rewards = new List<string>();
@@ -765,10 +767,14 @@ public sealed partial class DialogViewModel : ObservableObject, IDialogService
         var currentHintId = _contextualHintService.ActiveHint?.Id;
         _contextualHintService.DismissHint();
 
-        // Nach Welcome-Dialog -> FirstWorkshop-Hint zeigen (Kette)
+        // Hint-Verkettung: Welcome → FirstWorkshop → AcceptOrder
         if (currentHintId == ContextualHints.Welcome.Id)
         {
             _contextualHintService.TryShowHint(ContextualHints.FirstWorkshop);
+        }
+        else if (currentHintId == ContextualHints.FirstWorkshop.Id)
+        {
+            _contextualHintService.TryShowHint(ContextualHints.AcceptOrder);
         }
 
         DeferredDialogCheckRequested?.Invoke();

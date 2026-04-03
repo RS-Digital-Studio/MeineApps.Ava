@@ -1,39 +1,19 @@
-using System.ComponentModel;
-using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using HandwerkerRechner.Graphics;
 using HandwerkerRechner.ViewModels.Floor;
 
 namespace HandwerkerRechner.Views.Floor;
 
-public partial class ConcreteCalculatorView : UserControl
+public partial class ConcreteCalculatorView : CalculatorViewBase
 {
-    private INotifyPropertyChanged? _currentVm;
-    private PropertyChangedEventHandler? _resultHandler;
-
     public ConcreteCalculatorView()
     {
         InitializeComponent();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
+    protected override void OnResultPropertyChanged()
     {
-        base.OnDataContextChanged(e);
-
-        // Alten Handler abmelden
-        if (_currentVm != null && _resultHandler != null)
-            _currentVm.PropertyChanged -= _resultHandler;
-
-        _currentVm = DataContext as INotifyPropertyChanged;
-        if (_currentVm != null)
-        {
-            _resultHandler = (_, args) =>
-            {
-                if (args.PropertyName?.Contains("Result") == true)
-                    ConcreteVisualization.StartAnimation();
-            };
-            _currentVm.PropertyChanged += _resultHandler;
-        }
+        ConcreteVisualization.StartAnimation();
     }
 
     private void OnPaintVisualization(object? sender, SKPaintSurfaceEventArgs e)
@@ -51,13 +31,8 @@ public partial class ConcreteCalculatorView : UserControl
                 vm.SelectedCalculator, dim1, dim2, dim3,
                 (float)vm.Result.VolumeM3, vm.HasResult);
 
-            // Animation-Loop: weitere Frames anfordern
             if (ConcreteVisualization.NeedsRedraw)
-            {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                    (sender as Avalonia.Labs.Controls.SKCanvasView)?.InvalidateSurface(),
-                    Avalonia.Threading.DispatcherPriority.Render);
-            }
+                RequestAnimationFrame(sender);
         }
     }
 }

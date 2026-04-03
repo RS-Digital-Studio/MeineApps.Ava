@@ -95,6 +95,13 @@
                      HorizontalAlignment="Center"
                      TextWrapping="Wrap" TextAlignment="Center"
                      AutomationProperties.AutomationId="Guild_Txt_OfflineTitle" />
+          <!-- GUILD-10: Gecachte Gilden-Boni im Offline-State -->
+          <TextBlock Text="{Binding CachedBonusInfo}"
+                     TextWrapping="Wrap" TextAlignment="Center"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     IsVisible="{Binding CachedBonusInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                     AutomationProperties.AutomationId="Guild_Txt_CachedBonus" />
           <TextBlock Text="{loc:Translate GuildOfflineHint}"
                      TextWrapping="Wrap" TextAlignment="Center"
                      Opacity="0.7" FontSize="13"

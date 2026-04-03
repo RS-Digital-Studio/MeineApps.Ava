@@ -123,7 +123,7 @@ public class BingXPublicClient : IPublicMarketDataClient
             var result = JsonSerializer.Deserialize<BingXResponse<List<BingXTickerDetail>>>(response);
 
             if (result?.Code != 0 || result.Data == null)
-                return new List<Ticker>();
+                return [];
 
             return result.Data.Select(t => new Ticker(
                 t.Symbol,

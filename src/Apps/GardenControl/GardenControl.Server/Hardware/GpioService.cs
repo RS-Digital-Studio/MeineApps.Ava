@@ -26,7 +26,7 @@ public class GpioService : IGpioService
     {
         _logger = logger;
         _activeLow = activeLow;
-        _gpio = new GpioController(PinNumberingScheme.Logical);
+        _gpio = new GpioController();
     }
 
     public bool IsPumpActive

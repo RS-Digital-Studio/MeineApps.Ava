@@ -10,11 +10,13 @@ namespace HandwerkerImperium.Services;
 public sealed class EquipmentService : IEquipmentService
 {
     private readonly IGameStateService _gameStateService;
+    private readonly object _lock = new();
 
     /// <summary>
-    /// Drop-Chance nach einem MiniGame (10%).
+    /// Basis-Drop-Chance nach einem MiniGame (skaliert nach Schwierigkeit).
+    /// Easy=5%, Medium=10%, Hard=15%, Expert=20%. Perfect-Rating: +5%.
     /// </summary>
-    private const double DropChance = 0.10;
+    private const double BaseDropChance = 0.05;
 
     /// <summary>
     /// Shop-Rotation: 3-4 zufällige Gegenstände.
@@ -31,55 +33,76 @@ public sealed class EquipmentService : IEquipmentService
 
     public void EquipItem(string workerId, Equipment equipment)
     {
-        var state = _gameStateService.State;
-
-        // Arbeiter in allen Workshops suchen
-        Worker? worker = FindWorker(workerId);
-        if (worker == null) return;
-
-        // Equipment aus Inventar entfernen
-        var inventoryItem = state.EquipmentInventory.FirstOrDefault(e => e.Id == equipment.Id);
-        if (inventoryItem == null) return;
-
-        // Wenn der Arbeiter bereits etwas trägt, zurück ins Inventar
-        if (worker.EquippedItem != null)
+        lock (_lock)
         {
-            state.EquipmentInventory.Add(worker.EquippedItem);
+            var state = _gameStateService.State;
+
+            // Arbeiter in allen Workshops suchen
+            Worker? worker = FindWorker(workerId);
+            if (worker == null) return;
+
+            // Equipment aus Inventar entfernen (For-Schleife statt LINQ)
+            Equipment? inventoryItem = null;
+            var inventory = state.EquipmentInventory;
+            for (int i = 0; i < inventory.Count; i++)
+            {
+                if (inventory[i].Id == equipment.Id)
+                {
+                    inventoryItem = inventory[i];
+                    break;
+                }
+            }
+            if (inventoryItem == null) return;
+
+            // Wenn der Arbeiter bereits etwas trägt, zurück ins Inventar
+            if (worker.EquippedItem != null)
+            {
+                inventory.Add(worker.EquippedItem);
+            }
+
+            // Neues Equipment ausrüsten
+            worker.EquippedItem = inventoryItem;
+            inventory.Remove(inventoryItem);
+
+            _gameStateService.MarkDirty();
         }
-
-        // Neues Equipment ausrüsten
-        worker.EquippedItem = inventoryItem;
-        state.EquipmentInventory.Remove(inventoryItem);
-
-        _gameStateService.MarkDirty();
     }
 
     public void UnequipItem(string workerId)
     {
-        var state = _gameStateService.State;
+        lock (_lock)
+        {
+            var state = _gameStateService.State;
 
-        Worker? worker = FindWorker(workerId);
-        if (worker?.EquippedItem == null) return;
+            Worker? worker = FindWorker(workerId);
+            if (worker?.EquippedItem == null) return;
 
-        // Zurück ins Inventar
-        state.EquipmentInventory.Add(worker.EquippedItem);
-        worker.EquippedItem = null;
+            // Zurück ins Inventar
+            state.EquipmentInventory.Add(worker.EquippedItem);
+            worker.EquippedItem = null;
 
-        _gameStateService.MarkDirty();
+            _gameStateService.MarkDirty();
+        }
     }
 
-    public Equipment? TryGenerateDrop(int difficulty)
+    public Equipment? TryGenerateDrop(int difficulty, bool isPerfect = false)
     {
-        // 10% Drop-Chance
-        if (Random.Shared.NextDouble() >= DropChance)
-            return null;
+        Equipment? result;
+        lock (_lock)
+        {
+            // Drop-Chance skaliert nach Schwierigkeit: +5% pro Stufe, Perfect +5%
+            double dropChance = BaseDropChance + difficulty * 0.05 + (isPerfect ? 0.05 : 0.0);
+            if (Random.Shared.NextDouble() >= dropChance)
+                return null;
 
-        var equipment = Equipment.GenerateRandom(difficulty);
-        _gameStateService.State.EquipmentInventory.Add(equipment);
-        _gameStateService.MarkDirty();
+            result = Equipment.GenerateRandom(difficulty);
+            _gameStateService.State.EquipmentInventory.Add(result);
+            _gameStateService.MarkDirty();
+        }
 
+        // Event AUSSERHALB des Locks aufrufen (Deadlock-Prävention)
         EquipmentDropped?.Invoke();
-        return equipment;
+        return result;
     }
 
     public List<Equipment> GetShopItems()
@@ -99,13 +122,16 @@ public sealed class EquipmentService : IEquipmentService
 
     public void BuyEquipment(Equipment equipment)
     {
-        int cost = equipment.ShopPrice;
+        lock (_lock)
+        {
+            int cost = equipment.ShopPrice;
 
-        if (!_gameStateService.TrySpendGoldenScrews(cost))
-            return;
+            if (!_gameStateService.TrySpendGoldenScrews(cost))
+                return;
 
-        _gameStateService.State.EquipmentInventory.Add(equipment);
-        _gameStateService.MarkDirty();
+            _gameStateService.State.EquipmentInventory.Add(equipment);
+            _gameStateService.MarkDirty();
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -113,15 +139,19 @@ public sealed class EquipmentService : IEquipmentService
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Sucht einen Arbeiter über alle Workshops hinweg.
+    /// Sucht einen Arbeiter über alle Workshops hinweg (For-Schleife, kein LINQ).
     /// </summary>
     private Worker? FindWorker(string workerId)
     {
-        foreach (var workshop in _gameStateService.State.Workshops)
+        var workshops = _gameStateService.State.Workshops;
+        for (int i = 0; i < workshops.Count; i++)
         {
-            var worker = workshop.Workers.FirstOrDefault(w => w.Id == workerId);
-            if (worker != null)
-                return worker;
+            var workers = workshops[i].Workers;
+            for (int j = 0; j < workers.Count; j++)
+            {
+                if (workers[j].Id == workerId)
+                    return workers[j];
+            }
         }
         return null;
     }

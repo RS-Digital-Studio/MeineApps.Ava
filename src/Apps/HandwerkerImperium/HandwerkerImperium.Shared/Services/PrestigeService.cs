@@ -244,7 +244,8 @@ public sealed partial class PrestigeService : IPrestigeService
             {
                 prestige.RepeatableItemCounts.TryGetValue(copy.Id, out var count);
                 copy.PurchaseCount = count;
-                copy.IsPurchased = false;
+                // GAME-10: Als "gekauft" markieren wenn Maximum erreicht
+                copy.IsPurchased = count >= GameBalanceConstants.MaxRepeatableShopPurchases;
             }
             else
             {
@@ -276,8 +277,12 @@ public sealed partial class PrestigeService : IPrestigeService
 
         if (item.IsRepeatable)
         {
-            // Wiederholbar: Steigende Kosten
+            // Wiederholbar: Steigende Kosten, GAME-10: Max 10 Käufe pro Item
             prestige.RepeatableItemCounts.TryGetValue(itemId, out var count);
+
+            if (count >= GameBalanceConstants.MaxRepeatableShopPurchases)
+                return false; // Maximum erreicht
+
             int cost = GetRepeatableItemCost(item, count);
 
             if (prestige.PrestigePoints < cost) return false;
@@ -296,9 +301,10 @@ public sealed partial class PrestigeService : IPrestigeService
             prestige.PurchasedShopItems.Add(itemId);
         }
 
-        // Caches invalidieren (Shop-Effekte und MaxOfflineHours)
+        // Caches invalidieren (Shop-Effekte, MaxOfflineHours, GameStateService-Boni)
         _effectCacheDirty = true;
         _gameStateService.State.InvalidateMaxOfflineHoursCache();
+        _gameStateService.InvalidatePrestigeBonusCache();
         return true;
     }
 
@@ -433,23 +439,30 @@ public sealed partial class PrestigeService : IPrestigeService
             }
         }
 
-        // === LEGENDE: Beste Worker VOR dem Reset sichern ===
+        // === LEGENDE: Beste 3 Worker pro Workshop VOR dem Reset sichern ===
         if (tier.KeepsBestWorkers())
         {
             state.Prestige.KeptWorkers.Clear();
             foreach (var ws in state.Workshops)
             {
-                if (ws.Workers.Count > 0)
+                if (ws.Workers.Count == 0) continue;
+
+                // Top 3 Worker sortiert nach Effizienz sichern
+                var topWorkers = ws.Workers.OrderByDescending(w => w.Efficiency).Take(3).ToList();
+                for (int idx = 0; idx < topWorkers.Count; idx++)
                 {
-                    var bestWorker = ws.Workers.OrderByDescending(w => w.Efficiency).First();
+                    var w = topWorkers[idx];
                     // Worker zurücksetzen für neuen Durchlauf (Mood/Fatigue/Training)
-                    bestWorker.Mood = 80m;
-                    bestWorker.Fatigue = 0m;
-                    bestWorker.IsResting = false;
-                    bestWorker.IsTraining = false;
-                    bestWorker.RestStartedAt = null;
-                    bestWorker.TrainingStartedAt = null;
-                    state.Prestige.KeptWorkers[ws.Type.ToString()] = bestWorker;
+                    w.Mood = 80m;
+                    w.Fatigue = 0m;
+                    w.IsResting = false;
+                    w.IsTraining = false;
+                    w.RestStartedAt = null;
+                    w.TrainingStartedAt = null;
+                    w.ResumeTrainingType = null;
+                    // Erster Worker: Basis-Key (backward-compatible), weitere: indiziert
+                    var key = idx == 0 ? ws.Type.ToString() : $"{ws.Type}_{idx}";
+                    state.Prestige.KeptWorkers[key] = w;
                 }
             }
         }
@@ -472,17 +485,8 @@ public sealed partial class PrestigeService : IPrestigeService
         var carpenter = Workshop.Create(WorkshopType.Carpenter);
         carpenter.IsUnlocked = true;
 
-        // Legende: Gesicherten Carpenter-Worker wiederverwenden (wenn besser als Start-Tier)
-        if (state.Prestige.KeptWorkers.TryGetValue(WorkshopType.Carpenter.ToString(), out var keptCarpenterWorker)
-            && keptCarpenterWorker.Tier >= startWorkerTier)
-        {
-            carpenter.Workers.Add(keptCarpenterWorker);
-            state.Prestige.KeptWorkers.Remove(WorkshopType.Carpenter.ToString());
-        }
-        else
-        {
-            carpenter.Workers.Add(Worker.CreateForTier(startWorkerTier));
-        }
+        // Legende: Gesicherte Worker wiederverwenden (bis zu 3 pro Workshop)
+        RestoreKeptWorkers(state, carpenter, WorkshopType.Carpenter, startWorkerTier);
 
         state.Workshops.Add(carpenter);
 
@@ -508,17 +512,8 @@ public sealed partial class PrestigeService : IPrestigeService
                 var ws = Workshop.Create(wsType);
                 ws.IsUnlocked = true;
 
-                // Legende-Worker wiederverwenden (wenn besser als Start-Tier)
-                if (state.Prestige.KeptWorkers.TryGetValue(wsType.ToString(), out var keptWorker)
-                    && keptWorker.Tier >= startWorkerTier)
-                {
-                    ws.Workers.Add(keptWorker);
-                    state.Prestige.KeptWorkers.Remove(wsType.ToString());
-                }
-                else
-                {
-                    ws.Workers.Add(Worker.CreateForTier(startWorkerTier));
-                }
+                // Legende: Gesicherte Worker wiederverwenden (bis zu 3 pro Workshop)
+                RestoreKeptWorkers(state, ws, wsType, startWorkerTier);
 
                 state.Workshops.Add(ws);
             }
@@ -712,5 +707,45 @@ public sealed partial class PrestigeService : IPrestigeService
 
         // === Challenges: Aktive Challenges bleiben für den neuen Run erhalten ===
         // (Spieler hat sie VOR dem Prestige gewählt, Constraints werden ab jetzt enforced)
+    }
+
+    /// <summary>
+    /// Stellt gesicherte Worker in einem Workshop wieder her (Legende-Prestige).
+    /// Backward-compatible: Unterstützt altes Format (1 Worker pro Key) und neues Format (bis zu 3).
+    /// Mindestens 1 Worker wird garantiert (CreateForTier als Fallback).
+    /// </summary>
+    private static void RestoreKeptWorkers(GameState state, Workshop ws, WorkshopType wsType, WorkerTier startWorkerTier)
+    {
+        bool addedAny = false;
+        var typeStr = wsType.ToString();
+
+        // Basis-Key prüfen (backward-compatible mit alten Saves)
+        if (state.Prestige.KeptWorkers.TryGetValue(typeStr, out var baseWorker)
+            && baseWorker.Tier >= startWorkerTier)
+        {
+            ws.Workers.Add(baseWorker);
+            state.Prestige.KeptWorkers.Remove(typeStr);
+            addedAny = true;
+        }
+
+        // Indizierte Keys prüfen (neue Saves: _1, _2)
+        for (int idx = 1; idx <= 2; idx++)
+        {
+            var key = $"{typeStr}_{idx}";
+            if (state.Prestige.KeptWorkers.TryGetValue(key, out var worker)
+                && worker.Tier >= startWorkerTier
+                && ws.Workers.Count < ws.MaxWorkers)
+            {
+                ws.Workers.Add(worker);
+                state.Prestige.KeptWorkers.Remove(key);
+                addedAny = true;
+            }
+        }
+
+        // Mindestens 1 Worker garantieren
+        if (!addedAny)
+        {
+            ws.Workers.Add(Worker.CreateForTier(startWorkerTier));
+        }
     }
 }

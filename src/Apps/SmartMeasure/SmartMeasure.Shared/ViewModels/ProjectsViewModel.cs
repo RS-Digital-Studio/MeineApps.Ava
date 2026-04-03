@@ -2,13 +2,14 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using SmartMeasure.Shared.Models;
 using SmartMeasure.Shared.Services;
 
 namespace SmartMeasure.Shared.ViewModels;
 
 /// <summary>Projektverwaltung: Liste, Erstellen, Duplizieren, Loeschen, Export</summary>
-public partial class ProjectsViewModel : ObservableObject
+public partial class ProjectsViewModel : ViewModelBase
 {
     private readonly IProjectService _projectService;
     private readonly IExportService _exportService;

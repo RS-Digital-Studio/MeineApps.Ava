@@ -125,6 +125,13 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
     [ObservableProperty]
     private string _restTimeDisplay = string.Empty;
 
+    /// <summary>
+    /// Countdown-Text für Worker-Kündigung (z.B. "Kündigt in 23:45:12").
+    /// Leer wenn keine Kündigung ansteht.
+    /// </summary>
+    [ObservableProperty]
+    private string _quitCountdownText = string.Empty;
+
     [ObservableProperty]
     private bool _showTrainingInfo;
 
@@ -308,7 +315,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
             IncomeContributionDisplay = "-";
         }
         XpProgress = $"{Worker.ExperienceXp}/{Worker.XpForNextLevel} XP (Lv.{Worker.ExperienceLevel})";
-        PersonalityDisplay = $"{Worker.Personality.GetIcon()} {_localizationService.GetString(Worker.Personality.GetLocalizationKey())}";
+        PersonalityDisplay = _localizationService.GetString(Worker.Personality.GetLocalizationKey());
         WageDisplay = $"{MoneyFormatter.Format(Worker.WagePerHour, 0)}/h";
 
         if (Worker.Specialization != null)
@@ -354,10 +361,23 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
         else
             StatusDisplay = _localizationService.GetString("StatusIdle");
 
+        // Kündigungs-Countdown aktualisieren
+        if (Worker.QuitDeadline != null && Worker.QuitDeadline > DateTime.UtcNow)
+        {
+            var remaining = Worker.QuitDeadline.Value - DateTime.UtcNow;
+            QuitCountdownText = string.Format(
+                _localizationService.GetString("WorkerQuitsInFormat") ?? "Kündigt in {0}",
+                $"{(int)remaining.TotalHours:D1}:{remaining.Minutes:D2}:{remaining.Seconds:D2}");
+        }
+        else
+        {
+            QuitCountdownText = string.Empty;
+        }
+
         // Button-Zustaende
         CanStartTraining = !Worker.IsTraining && !Worker.IsResting;
         CanStartResting = !Worker.IsResting && !Worker.IsTraining;
-        CanGiveBonus = _gameStateService.CanAfford(Worker.WagePerHour * 24m);
+        CanGiveBonus = _gameStateService.CanAfford(Worker.WagePerHour * 8m);
 
         // Training-Typ Verfügbarkeit
         CanTrainEfficiency = Worker.ExperienceLevel < 10;
@@ -557,7 +577,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
     {
         if (_workerId == null || Worker == null) return;
 
-        var cost = Worker.WagePerHour * 24m;
+        var cost = Worker.WagePerHour * 8m;
         var costText = MoneyFormatter.Format(cost, 0);
 
         var confirm = await _dialogService.ShowConfirmDialog(

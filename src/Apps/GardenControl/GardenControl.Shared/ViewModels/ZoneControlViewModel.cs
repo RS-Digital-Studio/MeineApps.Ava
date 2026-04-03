@@ -5,13 +5,14 @@ using CommunityToolkit.Mvvm.Input;
 using GardenControl.Core.DTOs;
 using GardenControl.Core.Enums;
 using GardenControl.Shared.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace GardenControl.Shared.ViewModels;
 
 /// <summary>
 /// Manuelle Steuerung - Ventile und Pumpe einzeln schalten mit konfigurierbarer Dauer.
 /// </summary>
-public partial class ZoneControlViewModel : ObservableObject
+public partial class ZoneControlViewModel : ViewModelBase
 {
     private readonly IConnectionService _connection;
 

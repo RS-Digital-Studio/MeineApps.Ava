@@ -1,42 +1,26 @@
-using System.ComponentModel;
-using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using HandwerkerRechner.Graphics;
 using HandwerkerRechner.ViewModels.Premium;
 
 namespace HandwerkerRechner.Views.Premium;
 
-public partial class AreaMeasureView : UserControl
+public partial class AreaMeasureView : CalculatorViewBase
 {
-    private INotifyPropertyChanged? _currentVm;
-    private PropertyChangedEventHandler? _resultHandler;
-
     public AreaMeasureView()
     {
         InitializeComponent();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
+    protected override bool ShouldInvalidateOnPropertyChanged(string? propertyName)
     {
-        base.OnDataContextChanged(e);
+        return propertyName == nameof(AreaMeasureViewModel.HasResult) ||
+               propertyName == nameof(AreaMeasureViewModel.CurrentShapeArea) ||
+               propertyName == nameof(AreaMeasureViewModel.SelectedShapeIndex);
+    }
 
-        // Alten Handler abmelden, um Memory-Leaks zu vermeiden
-        if (_currentVm != null && _resultHandler != null)
-            _currentVm.PropertyChanged -= _resultHandler;
-
-        _currentVm = DataContext as INotifyPropertyChanged;
-        if (_currentVm != null)
-        {
-            _resultHandler = (_, args) =>
-            {
-                // Canvas neu zeichnen wenn Form oder Fläche sich ändern
-                if (args.PropertyName == nameof(AreaMeasureViewModel.HasResult) ||
-                    args.PropertyName == nameof(AreaMeasureViewModel.CurrentShapeArea) ||
-                    args.PropertyName == nameof(AreaMeasureViewModel.SelectedShapeIndex))
-                    AreaMeasureCanvas.InvalidateSurface();
-            };
-            _currentVm.PropertyChanged += _resultHandler;
-        }
+    protected override void OnResultPropertyChanged()
+    {
+        AreaMeasureCanvas.InvalidateSurface();
     }
 
     private void OnPaintVisualization(object? sender, SKPaintSurfaceEventArgs e)

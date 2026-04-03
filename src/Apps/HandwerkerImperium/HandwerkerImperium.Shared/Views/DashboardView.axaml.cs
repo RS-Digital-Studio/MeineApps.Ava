@@ -79,10 +79,16 @@ public partial class DashboardView : UserControl
     private const double TapMaxDurationMs = 400.0; // Tap muss innerhalb 400ms abgeschlossen sein
     private const double ScrollOffsetThreshold = 2.0; // ScrollViewer hat sich bewegt → kein Tap
 
-    // Performance: Workshop-Karten während Scroll pausieren
+    // Performance: Alle Canvases während Scroll pausieren
     private bool _isScrolling;
     private DateTime _lastScrollTime;
     private bool _hasActiveEffects; // Temporärer 30fps-Boost für Game-Juice-Effekte
+
+    /// <summary>
+    /// Gibt an ob gerade gescrollt wird. Wird von MainView abgefragt um
+    /// Background- und TabBar-Rendering während Scroll zu pausieren.
+    /// </summary>
+    public bool IsScrolling => _isScrolling;
 
     public DashboardView()
     {
@@ -646,12 +652,17 @@ public partial class DashboardView : UserControl
     /// <summary>
     /// Render-Tick: City + Workshop-Karten invalidieren.
     /// Adaptives FPS: 10fps Basis, automatisch 30fps bei aktiven Effekten.
+    /// Während Scroll werden ALLE Canvases pausiert (spart ~10 Repaints/s).
     /// </summary>
     private void OnCityRenderTick(object? sender, EventArgs e)
     {
-        // Scroll-Ende erkennen (100ms ohne ScrollChanged)
-        if (_isScrolling && (DateTime.UtcNow - _lastScrollTime).TotalMilliseconds > 100)
+        // Scroll-Ende erkennen (250ms ohne ScrollChanged - längere Ruhezeit für flüssiges Scroll)
+        if (_isScrolling && (DateTime.UtcNow - _lastScrollTime).TotalMilliseconds > 250)
             _isScrolling = false;
+
+        // Während Scroll: Alle Canvases pausieren (City + Workshop-Karten)
+        // Der Header bewegt sich per RenderTransform (GPU), braucht kein Canvas-Repaint
+        if (_isScrolling) return;
 
         // Adaptives FPS: 30fps wenn Effekte aktiv, sonst 10fps
         bool effectsActive = _coinFlyAnimation.IsActive || _animationManager.HasActiveParticles ||
@@ -663,10 +674,7 @@ public partial class DashboardView : UserControl
         }
 
         _cityCanvas?.InvalidateSurface();
-
-        // Workshop-Karten während Scroll pausieren
-        if (!_isScrolling)
-            WorkshopCardsCanvas?.InvalidateSurface();
+        WorkshopCardsCanvas?.InvalidateSurface();
     }
 
     private void StopCityRenderLoop()

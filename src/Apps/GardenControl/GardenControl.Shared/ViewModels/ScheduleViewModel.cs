@@ -4,13 +4,14 @@ using CommunityToolkit.Mvvm.Input;
 using GardenControl.Core.DTOs;
 using GardenControl.Core.Models;
 using GardenControl.Shared.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace GardenControl.Shared.ViewModels;
 
 /// <summary>
 /// Automatik-Konfiguration - Schwellenwerte, Zeitpläne und System-Einstellungen.
 /// </summary>
-public partial class ScheduleViewModel : ObservableObject
+public partial class ScheduleViewModel : ViewModelBase
 {
     private readonly IApiService _api;
     private readonly IConnectionService _connection;

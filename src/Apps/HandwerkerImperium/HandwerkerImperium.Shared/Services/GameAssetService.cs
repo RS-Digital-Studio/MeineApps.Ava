@@ -98,9 +98,11 @@ public sealed class GameAssetService : IGameAssetService
 
     public void ClearCache()
     {
-        foreach (var key in _cache.Keys.ToList())
+        // ConcurrentDictionary.Keys erstellt intern bereits einen Snapshot -
+        // kein ToList() nötig (vermeidet extra List-Allokation)
+        foreach (var kvp in _cache)
         {
-            if (_cache.TryRemove(key, out var entry))
+            if (_cache.TryRemove(kvp.Key, out var entry))
             {
                 Interlocked.Add(ref _currentCacheBytes, -entry.SizeBytes);
                 entry.Bitmap.Dispose();

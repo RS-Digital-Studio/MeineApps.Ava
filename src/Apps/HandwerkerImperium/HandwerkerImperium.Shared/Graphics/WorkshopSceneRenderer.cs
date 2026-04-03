@@ -112,22 +112,10 @@ public sealed class WorkshopSceneRenderer : IDisposable
     }
 
     /// <summary>
-    /// Workshop-Farbe für Partikel-Effekte.
+    /// Workshop-Farbe für Partikel-Effekte (delegiert an zentrale Quelle).
     /// </summary>
-    private static SKColor GetWorkshopColor(WorkshopType type) => type switch
-    {
-        WorkshopType.Carpenter => new SKColor(0xA0, 0x52, 0x2D),
-        WorkshopType.Plumber => new SKColor(0x0E, 0x74, 0x90),
-        WorkshopType.Electrician => new SKColor(0xF9, 0x73, 0x16),
-        WorkshopType.Painter => new SKColor(0xEC, 0x48, 0x99),
-        WorkshopType.Roofer => new SKColor(0xDC, 0x26, 0x26),
-        WorkshopType.Contractor => new SKColor(0xEA, 0x58, 0x0C),
-        WorkshopType.Architect => new SKColor(0x78, 0x71, 0x6C),
-        WorkshopType.GeneralContractor => new SKColor(0xFF, 0xD7, 0x00),
-        WorkshopType.MasterSmith => new SKColor(0xD4, 0xA3, 0x73),
-        WorkshopType.InnovationLab => new SKColor(0x6A, 0x5A, 0xCD),
-        _ => new SKColor(0xEA, 0x58, 0x0C)
-    };
+    private static SKColor GetWorkshopColor(WorkshopType type) =>
+        WorkshopCardRenderer.GetWorkshopColor(type);
 
     // ═══════════════════════════════════════════════════════════════════════
     // LEVEL-EFFEKTE (Overlay auf AI-Hintergrund)

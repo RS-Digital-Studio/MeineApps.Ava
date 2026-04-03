@@ -66,6 +66,21 @@
                    HorizontalAlignment="Center"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    AutomationProperties.AutomationId="Main_Txt_OfflineDuration" />
+        <!-- Wiedereinsteiger-Tipp: Nächstes Ziel (nur bei >48h Pause) -->
+        <Border Background="#15D97706" CornerRadius="8" Padding="12,8"
+                IsVisible="{Binding OfflineGoalText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                AutomationProperties.AutomationId="Main_Border_OfflineGoal">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Translate NextGoal}" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{StaticResource CraftGoldBrush}"
+                       HorizontalAlignment="Center"
+                       AutomationProperties.AutomationId="Main_Txt_OfflineGoalLabel" />
+            <TextBlock Text="{Binding OfflineGoalText}" FontSize="13"
+                       TextWrapping="Wrap" TextAlignment="Center"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       AutomationProperties.AutomationId="Main_Txt_OfflineGoalText" />
+          </StackPanel>
+        </Border>
         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
           <Button Classes="Outlined" Content="{loc:Translate Collect}"
                   Command="{Binding CollectOfflineEarningsNormalCommand}" MinWidth="100"

@@ -65,7 +65,7 @@ public sealed partial class PaintingGameViewModel : BaseMiniGameViewModel
 
     private int _bestCombo;
 
-    /// <summary>Combo-Multiplikator: 1.0 + (bestCombo / 5) * 0.25</summary>
+    /// <summary>Combo-Multiplikator: Staffel +0.25x pro 5 fehlerfreie Treffer (0-4=1.0x, 5-9=1.25x, 10-14=1.5x)</summary>
     public decimal ComboMultiplier => 1.0m + (_bestCombo / 5) * 0.25m;
 
     /// <summary>Breite des Paint-Grids in Pixeln für WrapPanel.</summary>

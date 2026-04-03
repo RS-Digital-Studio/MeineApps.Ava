@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Labs.Controls;
@@ -19,6 +20,7 @@ public partial class WiringGameView : UserControl
     private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
+    private bool _disposed;
 
     // Gecachte Arrays fuer Render-Daten (vermeidet LINQ-Allokation pro Frame)
     private WireRenderData[] _cachedLeftData = [];
@@ -28,7 +30,6 @@ public partial class WiringGameView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        DetachedFromVisualTree += (_, _) => StopRenderLoop();
 
         // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
         PropertyChanged += (_, args) =>
@@ -51,8 +52,32 @@ public partial class WiringGameView : UserControl
             _renderer.Initialize(assetService);
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        if (_disposed) return;
+        _disposed = true;
+
+        if (_vm != null)
+        {
+            _vm.GameCompleted -= OnGameCompleted;
+            _vm = null;
+        }
+
+        if (_gameCanvas != null)
+        {
+            _gameCanvas.PaintSurface -= OnPaintSurface;
+            _gameCanvas.PointerPressed -= OnCanvasPointerPressed;
+        }
+
+        StopRenderLoop();
+        _renderer.Dispose();
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_disposed) return;
+
         // Altes ViewModel abmelden
         if (_vm != null)
             _vm.GameCompleted -= OnGameCompleted;

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using Avalonia.Threading;
@@ -18,12 +19,12 @@ public partial class SawingGameView : UserControl
     private DispatcherTimer? _renderTimer;
     private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
+    private bool _disposed;
 
     public SawingGameView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        DetachedFromVisualTree += (_, _) => StopRenderLoop();
 
         // Render-Loop nur wenn sichtbar (View bleibt permanent im Visual Tree)
         PropertyChanged += (_, args) =>
@@ -46,8 +47,31 @@ public partial class SawingGameView : UserControl
             _renderer.Initialize(assetService);
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        if (_disposed) return;
+        _disposed = true;
+
+        if (_vm != null)
+        {
+            _vm.GameStarted -= OnGameStarted;
+            _vm.GameCompleted -= OnGameCompleted;
+            _vm.ZoneHit -= OnZoneHit;
+            _vm = null;
+        }
+
+        if (_gameCanvas != null)
+            _gameCanvas.PaintSurface -= OnPaintSurface;
+
+        StopRenderLoop();
+        _renderer.Dispose();
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_disposed) return;
+
         // Alte Events abhaengen
         if (_vm != null)
         {

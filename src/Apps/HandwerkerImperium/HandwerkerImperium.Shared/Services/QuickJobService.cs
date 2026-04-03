@@ -129,11 +129,11 @@ public sealed class QuickJobService : IQuickJobService
     }
 
     /// <summary>
-    /// Berechnet Belohnungen eines QuickJobs neu basierend auf aktuellem Einkommen und Auftragstyp.
+    /// Berechnet Belohnungen eines QuickJobs neu basierend auf aktuellem Einkommen, Auftragstyp und Schwierigkeit.
     /// </summary>
     private void RecalculateRewards(QuickJob job, int level)
     {
-        var (reward, xpReward) = CalculateQuickJobRewards(level, job.TitleKey);
+        var (reward, xpReward) = CalculateQuickJobRewards(level, job.TitleKey, job.Difficulty);
         job.Reward = reward;
         job.XpReward = xpReward;
     }
@@ -155,16 +155,17 @@ public sealed class QuickJobService : IQuickJobService
             var miniGameType = GetMiniGameForWorkshop(workshopType);
             var titleKey = TitleKeys[Random.Shared.Next(TitleKeys.Length)];
 
-            // Belohnung skaliert mit Level, Einkommen und Auftragstyp
-            var (reward, xpReward) = CalculateQuickJobRewards(level, titleKey);
-
-            // Schwierigkeit basiert auf Workshop-Level (kein Expert bei QuickJobs)
+            // Schwierigkeit zuerst berechnen (wird für Belohnung benötigt)
             int wsLevel = state.Workshops.FirstOrDefault(w => w.Type == workshopType)?.Level ?? 1;
+            var difficulty = GetQuickJobDifficulty(wsLevel);
+
+            // Belohnung skaliert mit Level, Einkommen, Auftragstyp UND Schwierigkeit
+            var (reward, xpReward) = CalculateQuickJobRewards(level, titleKey, difficulty);
 
             state.QuickJobs.Add(new QuickJob
             {
                 WorkshopType = workshopType,
-                Difficulty = GetQuickJobDifficulty(wsLevel),
+                Difficulty = difficulty,
                 MiniGameType = miniGameType,
                 Reward = reward,
                 XpReward = xpReward,
@@ -206,15 +207,18 @@ public sealed class QuickJobService : IQuickJobService
                 var workshopType = unlockedTypes[Random.Shared.Next(unlockedTypes.Count)];
                 var miniGameType = GetMiniGameForWorkshop(workshopType);
                 var titleKey = TitleKeys[Random.Shared.Next(TitleKeys.Length)];
-                var (reward, xpReward) = CalculateQuickJobRewards(level, titleKey);
 
-                // Schwierigkeit basiert auf Workshop-Level (kein Expert bei QuickJobs)
+                // Schwierigkeit zuerst berechnen (wird für Belohnung benötigt)
                 int wsLevel = state.Workshops.FirstOrDefault(w => w.Type == workshopType)?.Level ?? 1;
+                var difficulty = GetQuickJobDifficulty(wsLevel);
+
+                // Belohnung skaliert mit Level, Einkommen, Auftragstyp UND Schwierigkeit
+                var (reward, xpReward) = CalculateQuickJobRewards(level, titleKey, difficulty);
 
                 state.QuickJobs.Add(new QuickJob
                 {
                     WorkshopType = workshopType,
-                    Difficulty = GetQuickJobDifficulty(wsLevel),
+                    Difficulty = difficulty,
                     MiniGameType = miniGameType,
                     Reward = reward,
                     XpReward = xpReward,
@@ -228,25 +232,34 @@ public sealed class QuickJobService : IQuickJobService
     }
 
     /// <summary>
-    /// Berechnet QuickJob-Belohnungen basierend auf Level, aktuellem Netto-Einkommen und Auftragstyp.
-    /// Express-Aufträge haben höhere Belohnungen (Aufschlag), kleine Aufträge weniger.
+    /// Berechnet QuickJob-Belohnungen basierend auf Level, aktuellem Netto-Einkommen, Auftragstyp und Schwierigkeit.
+    /// Difficulty-Multiplikator wird mit einbezogen, damit QuickJobs bei höherer Schwierigkeit auch mehr lohnen.
+    /// Prestige-Skalierung sorgt dafür, dass QuickJobs im Late-Game relevant bleiben.
     /// </summary>
-    private (decimal reward, int xpReward) CalculateQuickJobRewards(int level, string titleKey = "")
+    private (decimal reward, int xpReward) CalculateQuickJobRewards(int level, string titleKey = "", OrderDifficulty difficulty = OrderDifficulty.Easy)
     {
         // Basis: ~5 Min Netto-Einkommen (Mindestens Level * 50)
         var fiveMinIncome = Math.Max(0m, _gameStateService.State.NetIncomePerSecond) * 300m;
         var baseReward = Math.Max(20m + level * 50m, fiveMinIncome);
 
         // Typ-Multiplikator anwenden (Express = teurer, kleine Aufträge = günstiger)
-        var multiplier = 1.0m;
+        var typeMult = 1.0m;
         if (!string.IsNullOrEmpty(titleKey) && TitleRewardMultipliers.TryGetValue(titleKey, out var m))
-            multiplier = m;
-        var reward = baseReward * multiplier;
+            typeMult = m;
 
-        // XP skaliert mit Level + Bonus für Express-Aufträge
-        var xpReward = 5 + level * 3;
-        if (multiplier > 1.0m)
-            xpReward = (int)(xpReward * multiplier);
+        // Difficulty-Multiplikator: QuickJobs profitieren von höherer Schwierigkeit
+        var diffMult = difficulty.GetRewardMultiplier();
+
+        // Prestige-Bonus: +10% pro Prestige-Stufe (Late-Game Relevanz)
+        int prestigeCount = _gameStateService.State.Prestige?.TotalPrestigeCount ?? 0;
+        var prestigeMult = 1.0m + prestigeCount * 0.10m;
+
+        var reward = baseReward * typeMult * diffMult * prestigeMult;
+
+        // XP skaliert mit Level + Difficulty + Bonus für Express-Aufträge
+        var xpReward = (int)((5 + level * 3) * difficulty.GetXpMultiplier());
+        if (typeMult > 1.0m)
+            xpReward = (int)(xpReward * typeMult);
 
         return (Math.Round(reward, 0), xpReward);
     }

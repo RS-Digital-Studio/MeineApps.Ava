@@ -3,6 +3,7 @@ using BingXBot.Core.Models;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace BingXBot.ViewModels;
 
@@ -11,7 +12,7 @@ namespace BingXBot.ViewModels;
 /// Direkt verbunden mit dem echten RiskSettings-Objekt aus dem DI-Container.
 /// Publiziert Änderungen über den BotEventBus an die Log-Ansicht.
 /// </summary>
-public partial class RiskSettingsViewModel : ObservableObject
+public partial class RiskSettingsViewModel : ViewModelBase
 {
     private readonly RiskSettings _riskSettings;
     private readonly BotEventBus _eventBus;

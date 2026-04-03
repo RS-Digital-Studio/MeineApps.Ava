@@ -195,6 +195,13 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _incomeBonusDetailDisplay = "";
 
+    /// <summary>
+    /// GUILD-10: Zeigt gecachte Gilden-Boni im Offline-State an.
+    /// Format: "Gilden-Boni aktiv (offline)" + Details der gecachten Effekte.
+    /// </summary>
+    [ObservableProperty]
+    private string _cachedBonusInfo = "";
+
     [ObservableProperty]
     private string _membersHeaderDisplay = "";
 
@@ -477,6 +484,8 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
 
             if (!_guildService.IsOnline)
             {
+                // GUILD-10: Gecachte Gilden-Boni im Offline-State anzeigen
+                UpdateCachedBonusInfo();
                 ViewState = GuildViewState.Offline;
                 return;
             }
@@ -510,6 +519,8 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
         }
         catch
         {
+            // GUILD-10: Gecachte Gilden-Boni auch bei Fehlern anzeigen
+            UpdateCachedBonusInfo();
             ViewState = GuildViewState.Offline;
         }
     }
@@ -1309,6 +1320,42 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
             GoalProgress = 0;
             GoalProgressDisplay = "";
             MembersHeaderDisplay = "";
+        }
+    }
+
+    /// <summary>
+    /// GUILD-10: Aktualisiert die gecachte Gilden-Bonus-Info für den Offline-State.
+    /// Liest die lokal gespeicherten Research- und Hall-Boni aus der GuildMembership.
+    /// </summary>
+    private void UpdateCachedBonusInfo()
+    {
+        var membership = _gameStateService.State.GuildMembership;
+        if (membership == null)
+        {
+            CachedBonusInfo = "";
+            return;
+        }
+
+        var parts = new List<string>();
+        if (membership.IncomeBonus > 0)
+            parts.Add($"+{membership.IncomeBonus * 100:F0}% {(_localizationService.GetString("Income") ?? "Einkommen")}");
+        if (membership.ResearchCostReduction > 0)
+            parts.Add($"-{membership.ResearchCostReduction * 100:F0}% {(_localizationService.GetString("Costs") ?? "Kosten")}");
+        if (membership.ResearchXpBonus > 0)
+            parts.Add($"+{membership.ResearchXpBonus * 100:F0}% XP");
+        if (membership.ResearchEfficiencyBonus > 0)
+            parts.Add($"+{membership.ResearchEfficiencyBonus * 100:F0}% {(_localizationService.GetString("Efficiency") ?? "Effizienz")}");
+
+        if (parts.Count > 0)
+        {
+            var bonusLabel = _localizationService.GetString("GuildBonusActiveOffline")
+                ?? "Gilden-Boni aktiv (offline)";
+            CachedBonusInfo = $"{bonusLabel}: {string.Join(", ", parts)}";
+        }
+        else
+        {
+            CachedBonusInfo = _localizationService.GetString("GuildBonusActiveOffline")
+                ?? "Gilden-Boni aktiv (offline)";
         }
     }
 

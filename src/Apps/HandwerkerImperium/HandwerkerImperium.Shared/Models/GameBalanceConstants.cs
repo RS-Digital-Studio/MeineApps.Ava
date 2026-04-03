@@ -14,8 +14,11 @@ public static class GameBalanceConstants
     /// <summary>Exponentieller Einkommens-Multiplikator pro Level (1.02^Level).</summary>
     public const double IncomeBaseMultiplier = 1.02;
 
-    /// <summary>Exponentieller Upgrade-Kosten-Multiplikator pro Level.</summary>
+    /// <summary>Exponentieller Upgrade-Kosten-Multiplikator pro Level (bis Lv500).</summary>
     public const double UpgradeCostExponent = 1.07;
+
+    /// <summary>Reduzierter Upgrade-Kosten-Exponent ab Level 500 (entschärft tote Zone Lv600-750).</summary>
+    public const double UpgradeCostReducedExponent = 1.06;
 
     /// <summary>Basis-Upgrade-Kosten ab Level 2.</summary>
     public const decimal UpgradeCostBase = 200m;
@@ -73,6 +76,7 @@ public static class GameBalanceConstants
         (400, 1.40m),   // NEU: Bricht die 150-Level-Lücke Lv350→Lv500
         (500, 2.00m),
         (600, 1.50m),   // NEU: Bricht die 500-Level-Lücke Lv500→Lv1000
+        (650, 1.50m),   // NEU: Entschärft tote Zone Lv600-750
         (750, 1.60m),   // NEU: Mid-Late-Game Kick
         (900, 1.40m),   // NEU: Letzter Boost vor Lv1000
         (1000, 3.00m)
@@ -94,6 +98,9 @@ public static class GameBalanceConstants
     /// <summary>Maximum Ad-Bonus Worker-Slots pro Workshop.</summary>
     public const int MaxAdBonusWorkerSlots = 3;
 
+    /// <summary>Workshop-Level ab dem die Spezialisierung verfügbar ist.</summary>
+    public const int SpecializationUnlockLevel = 100;
+
     // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOP - REBIRTH
     // ═══════════════════════════════════════════════════════════════════════
@@ -109,6 +116,12 @@ public static class GameBalanceConstants
     /// Stern 1 gibt sofort +1 Worker — sichtbarste Belohnung nach dem Erreichen von Lv1000.
     /// </summary>
     public static readonly int[] RebirthExtraWorkers = [0, 1, 1, 2, 2, 3];
+
+    /// <summary>
+    /// Maximaler Aura-Bonus durch S-Tier+ Worker pro Workshop (50%).
+    /// Verhindert Exploit bei vielen Legendary-Workern.
+    /// </summary>
+    public const decimal MaxAuraBonus = 0.50m;
 
     // ═══════════════════════════════════════════════════════════════════════
     // WORKER - STIMMUNG & MÜDIGKEIT
@@ -231,6 +244,12 @@ public static class GameBalanceConstants
         (100, "pm_100",    100),
     ];
 
+    /// <summary>
+    /// GAME-10: Maximale Kaufanzahl pro wiederholbarem Prestige-Shop-Item.
+    /// Verhindert unendliche Skalierung der wiederholbaren Boni.
+    /// </summary>
+    public const int MaxRepeatableShopPurchases = 10;
+
     // ═══════════════════════════════════════════════════════════════════════
     // AUTO-PRODUKTION
     // ═══════════════════════════════════════════════════════════════════════
@@ -247,8 +266,8 @@ public static class GameBalanceConstants
     /// <summary>Workshop-Level ab dem Auto-Produktion freigeschaltet wird.</summary>
     public const int AutoProductionUnlockLevel = 50;
 
-    /// <summary>Logarithmischer Skalierungsfaktor für Crafting-Verkaufspreise: log₂(1 + Level/Wert).</summary>
-    public const double CraftingSellPriceLogDivisor = 25.0;
+    /// <summary>Logarithmischer Skalierungsfaktor für Crafting-Verkaufspreise: log₂(1 + Level/Wert). Von 25 auf 15 gesenkt für stärkere Skalierung.</summary>
+    public const double CraftingSellPriceLogDivisor = 15.0;
 
     // ═══════════════════════════════════════════════════════════════════════
     // LIEFERAUFTRÄGE (MaterialOrder)
@@ -268,4 +287,16 @@ public static class GameBalanceConstants
 
     /// <summary>Spieler-Level ab dem Cross-Workshop-Materialien gefordert werden.</summary>
     public const int MaterialOrderCrossWorkshopLevel = 100;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AUFTRAGS-BELOHNUNGEN - SOFT-CAP
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Soft-Cap für den externen Order-Reward-Multiplikator (Research + Gebäude + Reputation + Events + Stammkunden + PrestigeShop).
+    /// Ab diesem Wert greifen Diminishing Returns (Sqrt auf den Überschuss).
+    /// Verhindert Multiplikator-Explosion bei voll ausgebauten Late-Game-Spielern.
+    /// Beispiel: Raw 15x → 10 + sqrt(5) ≈ 12.24x
+    /// </summary>
+    public const decimal OrderRewardMultiplierSoftCap = 10.0m;
 }

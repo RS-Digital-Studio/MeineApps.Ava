@@ -36,12 +36,12 @@ public static class WorkshopFormulas
                 * CalculateLevelFitFactor(level, w.Tier.GetLevelResistance(), levelResistanceBonus);
         }
 
-        // Worker-Aura: S-Tier+ Worker geben passiven Einkommens-Bonus
+        // Worker-Aura: S-Tier+ Worker geben passiven Einkommens-Bonus (Cap bei MaxAuraBonus)
         decimal auraBonus = 0m;
         for (int i = 0; i < workers.Count; i++)
             auraBonus += workers[i].Tier.GetAuraBonus();
         if (auraBonus > 0)
-            totalIncome *= (1m + auraBonus);
+            totalIncome *= (1m + Math.Min(auraBonus, GameBalanceConstants.MaxAuraBonus));
 
         // Rebirth-Sterne Einkommens-Bonus
         if (rebirthIncomeBonus > 0)
@@ -100,10 +100,26 @@ public static class WorkshopFormulas
         return false;
     }
 
-    /// <summary>Roh-Kosten für ein einzelnes Level (ohne Rabatte).</summary>
-    private static decimal CalculateRawLevelCost(int level) => level == 1
-        ? GameBalanceConstants.UpgradeCostLevel1
-        : GameBalanceConstants.UpgradeCostBase * (decimal)Math.Pow(GameBalanceConstants.UpgradeCostExponent, level - 1);
+    /// <summary>
+    /// Roh-Kosten für ein einzelnes Level (ohne Rabatte).
+    /// Ab Level 500 flacht der Exponent auf 1.06 ab, um die tote Zone Lv600-750 zu entschärfen.
+    /// </summary>
+    private static decimal CalculateRawLevelCost(int level)
+    {
+        if (level == 1) return GameBalanceConstants.UpgradeCostLevel1;
+
+        // Ab Lv500: Abgeflachter Exponent (1.06 statt 1.07)
+        if (level > 500)
+        {
+            // Kosten bis Lv500 mit normalem Exponent, danach mit reduziertem
+            decimal costAt500 = GameBalanceConstants.UpgradeCostBase *
+                (decimal)Math.Pow(GameBalanceConstants.UpgradeCostExponent, 499);
+            return costAt500 * (decimal)Math.Pow(GameBalanceConstants.UpgradeCostReducedExponent, level - 500);
+        }
+
+        return GameBalanceConstants.UpgradeCostBase *
+            (decimal)Math.Pow(GameBalanceConstants.UpgradeCostExponent, level - 1);
+    }
 
     /// <summary>
     /// Upgrade-Kosten mit allen Rabatten (Rebirth, Prestige-Shop, VIP).

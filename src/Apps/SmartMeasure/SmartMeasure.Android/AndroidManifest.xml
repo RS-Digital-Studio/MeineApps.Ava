@@ -29,6 +29,8 @@
     <application
         android:allowBackup="false"
         android:largeHeap="true"
+        android:icon="@mipmap/appicon"
+        android:roundIcon="@mipmap/appicon_round"
         android:label="SmartMeasure"
         android:theme="@style/MyTheme.NoActionBar">
     </application>

@@ -27,7 +27,24 @@ public sealed class GameStateService : IGameStateService
     public bool IsAutoAcceptUnlocked => HasEverPrestiged || _state.PlayerLevel >= LevelThresholds.AutoAccept;
     public bool IsAutoAssignUnlocked => HasEverPrestiged || _state.PlayerLevel >= LevelThresholds.AutoAssign;
 
+    // Gecachte Prestige-Shop-Boni (GS, XP, OrderReward) - werden bei Kauf/Prestige/StateLoad invalidiert
+    private bool _prestigeBonusCacheDirty = true;
+    private decimal _cachedGoldenScrewBonus;
+    private decimal _cachedXpBonus;
+    private decimal _cachedOrderRewardBonus;
+
+    /// <summary>
+    /// Prestige-Shop-Bonus-Cache invalidieren (nach Prestige-Shop-Kauf, Prestige-Reset oder State-Load).
+    /// Feuert PrestigeShopPurchased Event für abhängige Services (z.B. CraftingService).
+    /// </summary>
+    public void InvalidatePrestigeBonusCache()
+    {
+        _prestigeBonusCacheDirty = true;
+        PrestigeShopPurchased?.Invoke(this, EventArgs.Empty);
+    }
+
     // Events
+    public event EventHandler? PrestigeShopPurchased;
     public event EventHandler<MoneyChangedEventArgs>? MoneyChanged;
     public event EventHandler<LevelUpEventArgs>? LevelUp;
     public event EventHandler<XpGainedEventArgs>? XpGained;
@@ -50,6 +67,7 @@ public sealed class GameStateService : IGameStateService
         }
 
         IsInitialized = true;
+        _prestigeBonusCacheDirty = true;
         StateLoaded?.Invoke(this, EventArgs.Empty);
     }
 
@@ -59,6 +77,7 @@ public sealed class GameStateService : IGameStateService
         {
             _state = GameState.CreateNew();
         }
+        _prestigeBonusCacheDirty = true;
         StateLoaded?.Invoke(this, EventArgs.Empty);
     }
 
@@ -165,20 +184,12 @@ public sealed class GameStateService : IGameStateService
     }
 
     /// <summary>
-    /// Berechnet den Goldschrauben-Bonus aus gekauften Prestige-Shop-Items.
+    /// Gibt den gecachten Goldschrauben-Bonus zurück (refresht bei Bedarf).
     /// </summary>
     private decimal GetGoldenScrewBonus()
     {
-        var purchased = _state.Prestige.PurchasedShopItems;
-        if (purchased.Count == 0) return 0m;
-
-        decimal bonus = 0m;
-        foreach (var item in PrestigeShop.GetAllItems())
-        {
-            if (purchased.Contains(item.Id) && item.Effect.GoldenScrewBonus > 0)
-                bonus += item.Effect.GoldenScrewBonus;
-        }
-        return bonus;
+        RefreshPrestigeBonusCacheIfNeeded();
+        return _cachedGoldenScrewBonus;
     }
 
     public bool TrySpendGoldenScrews(int amount)
@@ -273,21 +284,56 @@ public sealed class GameStateService : IGameStateService
     }
 
     /// <summary>
-    /// Berechnet den XP-Multiplikator-Bonus aus gekauften Prestige-Shop-Items.
+    /// Gibt den gecachten XP-Bonus zurück (refresht bei Bedarf).
     /// </summary>
     private decimal GetPrestigeXpBonus()
     {
+        RefreshPrestigeBonusCacheIfNeeded();
+        return _cachedXpBonus;
+    }
+
+    /// <summary>
+    /// Berechnet alle Prestige-Shop-Boni (GS, XP, OrderReward) in einem einzigen Durchlauf und cacht sie.
+    /// Wird nur bei Dirty-Flag neu berechnet (nach Kauf, Prestige, StateLoad).
+    /// </summary>
+    private void RefreshPrestigeBonusCacheIfNeeded()
+    {
+        if (!_prestigeBonusCacheDirty) return;
+        _prestigeBonusCacheDirty = false;
+
+        _cachedGoldenScrewBonus = 0m;
+        _cachedXpBonus = 0m;
+        _cachedOrderRewardBonus = 0m;
+
         var purchased = _state.Prestige.PurchasedShopItems;
-        if (purchased.Count == 0) return 0m;
+        var repeatableCounts = _state.Prestige.RepeatableItemCounts;
+        if (purchased.Count == 0 && repeatableCounts.Count == 0) return;
 
         var allItems = PrestigeShop.GetAllItems();
-        decimal bonus = 0m;
-        foreach (var item in allItems)
+        for (int i = 0; i < allItems.Count; i++)
         {
-            if (purchased.Contains(item.Id) && item.Effect.XpMultiplier > 0)
-                bonus += item.Effect.XpMultiplier;
+            var item = allItems[i];
+
+            // Wiederholbare Items: Effekt * Kaufanzahl
+            if (item.IsRepeatable)
+            {
+                if (repeatableCounts.TryGetValue(item.Id, out var count) && count > 0)
+                {
+                    if (item.Effect.OrderRewardBonus > 0)
+                        _cachedOrderRewardBonus += item.Effect.OrderRewardBonus * count;
+                }
+                continue;
+            }
+
+            if (!purchased.Contains(item.Id)) continue;
+
+            if (item.Effect.GoldenScrewBonus > 0)
+                _cachedGoldenScrewBonus += item.Effect.GoldenScrewBonus;
+            if (item.Effect.XpMultiplier > 0)
+                _cachedXpBonus += item.Effect.XpMultiplier;
+            if (item.Effect.OrderRewardBonus > 0)
+                _cachedOrderRewardBonus += item.Effect.OrderRewardBonus;
         }
-        return bonus;
     }
 
     // ===================================================================
@@ -526,10 +572,12 @@ public sealed class GameStateService : IGameStateService
     {
         lock (_stateLock)
         {
+            // Auftrags-spezifisch: Task-Ergebnis nur bei aktivem Auftrag (nicht bei QuickJobs)
             var order = _state.ActiveOrder;
-            if (order == null) return;
+            if (order != null)
+                order.RecordTaskResult(rating);
 
-            order.RecordTaskResult(rating);
+            // Statistiken IMMER aktualisieren (auch bei QuickJobs)
             _state.TotalMiniGamesPlayed++;
 
             if (rating == MiniGameRating.Perfect)
@@ -547,7 +595,7 @@ public sealed class GameStateService : IGameStateService
             }
         }
 
-        // Event feuern damit DailyChallengeService MiniGame-Challenges tracken kann
+        // Event IMMER feuern (DailyChallengeService, WeeklyMissions, QuickJob-Validierung)
         MiniGameResultRecorded?.Invoke(this, new MiniGameResultRecordedEventArgs(rating));
     }
 
@@ -618,36 +666,23 @@ public sealed class GameStateService : IGameStateService
         if (shopOrderBonus > 0)
             multiplier *= (1m + shopOrderBonus);
 
+        // Soft-Cap: Diminishing Returns auf den Gesamt-Multiplikator
+        // Verhindert Multiplikator-Explosion bei voll ausgebauten Spielern
+        decimal cap = GameBalanceConstants.OrderRewardMultiplierSoftCap;
+        if (multiplier > cap)
+            multiplier = cap + (decimal)Math.Sqrt((double)(multiplier - cap));
+
         return multiplier;
     }
 
     /// <summary>
-    /// Berechnet den Auftragsbelohnungs-Bonus aus Prestige-Shop-Items.
-    /// Liest direkt aus PrestigeData (kein IPrestigeService nötig, vermeidet zirkuläre Dependency).
+    /// Gibt den gecachten Auftragsbelohnungs-Bonus zurück (refresht bei Bedarf).
+    /// Cap bei +100%.
     /// </summary>
     private decimal GetPrestigeShopOrderRewardBonus()
     {
-        decimal bonus = 0m;
-        var prestige = _state.Prestige;
-        var allItems = PrestigeShop.GetAllItems();
-
-        for (int i = 0; i < allItems.Count; i++)
-        {
-            var item = allItems[i];
-            if (item.Effect.OrderRewardBonus <= 0) continue;
-
-            if (item.IsRepeatable)
-            {
-                if (prestige.RepeatableItemCounts.TryGetValue(item.Id, out var count) && count > 0)
-                    bonus += item.Effect.OrderRewardBonus * count;
-            }
-            else if (prestige.PurchasedShopItems.Contains(item.Id))
-            {
-                bonus += item.Effect.OrderRewardBonus;
-            }
-        }
-
-        return Math.Min(bonus, 1.0m); // Cap bei +100%
+        RefreshPrestigeBonusCacheIfNeeded();
+        return Math.Min(_cachedOrderRewardBonus, 1.0m);
     }
 
     public void CompleteActiveOrder()
@@ -781,7 +816,15 @@ public sealed class GameStateService : IGameStateService
 
     public bool CanAutoComplete(MiniGameType type, bool isPremium)
     {
-        int threshold = isPremium ? 15 : 30;
+        // Differenzierte Schwellen: Puzzle/Memory-Spiele sind schwerer → weniger Perfects nötig
+        int baseThreshold = type switch
+        {
+            MiniGameType.PipePuzzle or MiniGameType.Blueprint or MiniGameType.InventGame
+                or MiniGameType.DesignPuzzle or MiniGameType.Inspection => 20,
+            _ => 30
+        };
+        int threshold = isPremium ? baseThreshold / 2 : baseThreshold;
+
         lock (_stateLock)
         {
             return _state.PerfectRatingCounts.TryGetValue((int)type, out int count) && count >= threshold;
@@ -830,7 +873,8 @@ public sealed class GameStateService : IGameStateService
 
             // Belohnung berechnen (innerhalb Lock, da CalculateOrderRewardMultiplierUnlocked State liest)
             reward = order.EstimatedReward * CalculateOrderRewardMultiplierUnlocked(order);
-            xpReward = (int)(order.BaseXp * OrderType.MaterialOrder.GetXpMultiplier());
+            // MaterialOrders haben keine TaskResults → XP direkt aus BaseXp + Difficulty + OrderType
+            xpReward = (int)(order.BaseXp * order.Difficulty.GetXpMultiplier() * OrderType.MaterialOrder.GetXpMultiplier());
 
             // Statistiken
             _state.TotalOrdersCompleted++;

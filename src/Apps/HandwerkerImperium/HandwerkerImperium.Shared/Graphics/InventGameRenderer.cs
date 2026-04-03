@@ -105,7 +105,11 @@ public sealed class InventGameRenderer : IDisposable
         StrokeWidth = 2f,
         Style = SKPaintStyle.Stroke
     };
-    // Gecachter MaskFilter fuer Glow-Effekte (Blur 3)
+
+    // Gecachtes Dash-Intervall-Array (kein new float[] pro Frame)
+    private static readonly float[] DashIntervals = [6f, 4f];
+
+    // Gecachte MaskFilter fuer Glow-Effekte (Blur 3)
     private static readonly SKMaskFilter _blur3Filter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
     private static readonly SKMaskFilter _blur4Filter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
 
@@ -601,6 +605,15 @@ public sealed class InventGameRenderer : IDisposable
     private SKRect[] _tileRects = Array.Empty<SKRect>();
     private SKPoint[] _tileCenters = Array.Empty<SKPoint>();
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // HINTERGRUND-SHADER CACHE (Perf: einmal pro Bounds-Aenderung statt pro Frame)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private SKShader? _bgShaderCache;
+    private float _lastBgMidX;
+    private float _lastBgMidY;
+    private float _lastBgRadius;
+
     /// <summary>
     /// Initialisiert den AI-Asset-Service für den Hintergrund.
     /// </summary>
@@ -876,12 +889,24 @@ public sealed class InventGameRenderer : IDisposable
     private void DrawLabBackground(SKCanvas canvas, SKRect bounds)
     {
         // Tiefdunkler Hintergrund mit Vignette
-        using var bgShader = SKShader.CreateRadialGradient(
-            new SKPoint(bounds.MidX, bounds.MidY),
-            Math.Max(bounds.Width, bounds.Height) * 0.7f,
-            new[] { new SKColor(0x15, 0x0B, 0x35), LabBg },
-            null, SKShaderTileMode.Clamp);
-        _bgShaderPaint.Shader = bgShader;
+        // Perf: Shader nur bei Bounds-Aenderung neu erstellen statt jeden Frame
+        float midX = bounds.MidX;
+        float midY = bounds.MidY;
+        float radius = Math.Max(bounds.Width, bounds.Height) * 0.7f;
+
+        if (_bgShaderCache == null || midX != _lastBgMidX || midY != _lastBgMidY || radius != _lastBgRadius)
+        {
+            _bgShaderCache?.Dispose();
+            _bgShaderCache = SKShader.CreateRadialGradient(
+                new SKPoint(midX, midY), radius,
+                new[] { new SKColor(0x15, 0x0B, 0x35), LabBg },
+                null, SKShaderTileMode.Clamp);
+            _lastBgMidX = midX;
+            _lastBgMidY = midY;
+            _lastBgRadius = radius;
+        }
+
+        _bgShaderPaint.Shader = _bgShaderCache;
         canvas.DrawRect(bounds, _bgShaderPaint);
         _bgShaderPaint.Shader = null;
 
@@ -958,9 +983,9 @@ public sealed class InventGameRenderer : IDisposable
             completed[j + 1] = key;
         }
 
-        // PathEffect pro Frame aktualisieren (animierter Dash-Offset)
-        // PathEffect muss jedes Mal neu erstellt werden da Offset sich aendert
-        using var dashEffect = SKPathEffect.CreateDash(new[] { 6f, 4f }, _animTime * 30);
+        // PathEffect: Offset aendert sich pro Frame → using var bleibt.
+        // DashIntervals als static array gecacht (kein new float[] pro Frame).
+        using var dashEffect = SKPathEffect.CreateDash(DashIntervals, _animTime * 30);
         _circuitLinePaint.PathEffect = dashEffect;
 
         for (int i = 0; i < count - 1; i++)
@@ -1004,6 +1029,7 @@ public sealed class InventGameRenderer : IDisposable
         canvas.DrawRoundRect(shadowRect, cr, cr, _tileShadowPaint);
 
         // Kachel-Hintergrund mit Gradient
+        // Perf: Shader aendert sich pro Kachel (Farbe variiert), nicht cachebar
         using var bgShader = SKShader.CreateLinearGradient(
             new SKPoint(rect.Left, rect.Top),
             new SKPoint(rect.Right, rect.Bottom),
@@ -1014,6 +1040,7 @@ public sealed class InventGameRenderer : IDisposable
         _tileGradientPaint.Shader = null;
 
         // Oberer Highlight-Streifen (Glaseffekt)
+        // Perf: Shader aendert sich pro Kachel (Bounds variieren), nicht cachebar
         using var highlightShader = SKShader.CreateLinearGradient(
             new SKPoint(rect.Left, rect.Top),
             new SKPoint(rect.Left, rect.Top + rect.Height * 0.4f),
@@ -1163,6 +1190,7 @@ public sealed class InventGameRenderer : IDisposable
         float progress = (_animTime % period) / period;
         float scanY = gridTop + progress * gridHeight;
 
+        // Perf: Shader aendert sich pro Frame (Position-abhaengig), nicht cachebar
         using var scanShader = SKShader.CreateLinearGradient(
             new SKPoint(bounds.Left, scanY - 8),
             new SKPoint(bounds.Left, scanY + 8),
@@ -1194,6 +1222,7 @@ public sealed class InventGameRenderer : IDisposable
         else
             alpha = (byte)(180 * t / 0.7f * 0.5f); // Langsames Ausblenden
 
+        // Perf: Shader aendert sich pro Frame (Alpha-abhaengig), nicht cachebar
         using var flashShader = SKShader.CreateRadialGradient(
             new SKPoint(bounds.MidX, bounds.MidY),
             Math.Max(bounds.Width, bounds.Height) * 0.5f,
@@ -1433,6 +1462,7 @@ public sealed class InventGameRenderer : IDisposable
         float toothW = half * 0.22f;
         int teeth = 8;
 
+        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
         using var fillShader = SKShader.CreateRadialGradient(
             new SKPoint(cx - half * 0.2f, cy - half * 0.2f), outerR * 1.2f,
             new[] { new SKColor(0xCF, 0xD8, 0xDC), new SKColor(0x90, 0xA4, 0xAE) },
@@ -1467,6 +1497,7 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
+        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
         using var headShader = SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - half * 0.7f), new SKPoint(cx, cy),
             new[] { new SKColor(0xB0, 0xBE, 0xC5), new SKColor(0x78, 0x90, 0x9C) },
@@ -1491,6 +1522,7 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
+        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
         using var path = new SKPath();
         path.MoveTo(cx - half, cy);
         float segW = half * 2f / 3f;
@@ -1530,6 +1562,7 @@ public sealed class InventGameRenderer : IDisposable
         float half = size / 2;
         float radius = half * 0.7f;
 
+        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
         using var screwShader = SKShader.CreateRadialGradient(
             new SKPoint(cx - radius * 0.2f, cy - radius * 0.2f), radius * 1.3f,
             new[] { new SKColor(0xCF, 0xD8, 0xDC), new SKColor(0x90, 0xA4, 0xAE) },
@@ -1550,6 +1583,7 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
+        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
         using var housingShader = SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - half * 0.7f), new SKPoint(cx, cy + half * 0.7f),
             new[] { new SKColor(0x78, 0x90, 0x9C), new SKColor(0x54, 0x6E, 0x7A) },
@@ -1586,6 +1620,7 @@ public sealed class InventGameRenderer : IDisposable
 
         canvas.DrawLine(cx - half * 0.15f, cy - half * 0.8f, cx + half * 0.15f, cy - half * 0.8f, _springPaint);
 
+        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
         using var path = new SKPath();
         path.MoveTo(cx, cy - half * 0.8f);
         for (int i = 0; i < segments; i++)
@@ -1607,6 +1642,7 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
+        // Perf: Icon-Pfade nicht cachebar (cx/cy variieren pro Kachel)
         using var path = new SKPath();
         float lensHeight = half * 1.4f;
         float bulgeFactor = half * 0.6f;
@@ -1630,6 +1666,7 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
+        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
         using var bodyShader = SKShader.CreateLinearGradient(
             new SKPoint(cx - half * 0.6f, cy), new SKPoint(cx + half * 0.6f, cy),
             new[] { new SKColor(0x60, 0x7D, 0x8B), new SKColor(0x90, 0xA4, 0xAE) },
@@ -1697,6 +1734,7 @@ public sealed class InventGameRenderer : IDisposable
 
         canvas.DrawLine(cx, cy + half * 0.5f, cx, cy - half * 0.5f, _antennaStickPaint);
 
+        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
         using var basePath = new SKPath();
         basePath.MoveTo(cx, cy + half * 0.5f);
         basePath.LineTo(cx - half * 0.3f, cy + half * 0.85f);
@@ -1800,6 +1838,10 @@ public sealed class InventGameRenderer : IDisposable
 
         // Gecachter Path
         _cachedPath?.Dispose();
+
+        // Hintergrund-Shader-Cache
+        _bgShaderCache?.Dispose();
+        _bgShaderCache = null;
 
         // Instanz-Paints (dynamische Farben/Shader)
         _bgShaderPaint?.Dispose();

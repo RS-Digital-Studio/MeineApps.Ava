@@ -98,6 +98,12 @@ public sealed class PipePuzzleRenderer : IDisposable
     // Shader-Paint fuer radiale Gradienten (Shader wird pro Aufruf gesetzt/disposed)
     private readonly SKPaint _shaderPaint = new() { IsAntialias = true };
 
+    // Gecachte Indikator-Shader (abhaengig von cx/cy/iconRadius = tileSize, aendert sich selten)
+    private SKShader? _sourceShaderCache;
+    private SKShader? _drainShaderCache;
+    private float _lastSourceCx, _lastSourceCy, _lastSourceRadius;
+    private float _lastDrainCx, _lastDrainCy, _lastDrainRadius;
+
     // ═══════════════════════════════════════════════════════════════════════
     // HAUPT-RENDER
     // ═══════════════════════════════════════════════════════════════════════
@@ -413,11 +419,17 @@ public sealed class PipePuzzleRenderer : IDisposable
         canvas.DrawRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2, _strokePaintAA);
 
         float iconRadius = tileSize * 0.25f;
-        using var shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy), iconRadius,
-            [SourceColor.WithAlpha(220), SourceDark.WithAlpha(200)],
-            SKShaderTileMode.Clamp);
-        _shaderPaint.Shader = shader;
+        // Shader gecacht: cx/cy/iconRadius leiten sich aus tileSize ab (aendert sich nur bei Layout-Aenderung)
+        if (_sourceShaderCache == null || _lastSourceCx != cx || _lastSourceCy != cy || _lastSourceRadius != iconRadius)
+        {
+            _sourceShaderCache?.Dispose();
+            _sourceShaderCache = SKShader.CreateRadialGradient(
+                new SKPoint(cx, cy), iconRadius,
+                [SourceColor.WithAlpha(220), SourceDark.WithAlpha(200)],
+                SKShaderTileMode.Clamp);
+            _lastSourceCx = cx; _lastSourceCy = cy; _lastSourceRadius = iconRadius;
+        }
+        _shaderPaint.Shader = _sourceShaderCache;
         canvas.DrawCircle(cx, cy, iconRadius, _shaderPaint);
         _shaderPaint.Shader = null;
 
@@ -451,11 +463,17 @@ public sealed class PipePuzzleRenderer : IDisposable
         canvas.DrawRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2, _strokePaintAA);
 
         float iconRadius = tileSize * 0.25f;
-        using var shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy), iconRadius,
-            [DrainColor.WithAlpha(220), DrainDark.WithAlpha(200)],
-            SKShaderTileMode.Clamp);
-        _shaderPaint.Shader = shader;
+        // Drain-Shader gecacht: eigener Cache getrennt von Source (verschiedene Positionen)
+        if (_drainShaderCache == null || _lastDrainCx != cx || _lastDrainCy != cy || _lastDrainRadius != iconRadius)
+        {
+            _drainShaderCache?.Dispose();
+            _drainShaderCache = SKShader.CreateRadialGradient(
+                new SKPoint(cx, cy), iconRadius,
+                [DrainColor.WithAlpha(220), DrainDark.WithAlpha(200)],
+                SKShaderTileMode.Clamp);
+            _lastDrainCx = cx; _lastDrainCy = cy; _lastDrainRadius = iconRadius;
+        }
+        _shaderPaint.Shader = _drainShaderCache;
         canvas.DrawCircle(cx, cy, iconRadius, _shaderPaint);
         _shaderPaint.Shader = null;
 
@@ -818,6 +836,8 @@ public sealed class PipePuzzleRenderer : IDisposable
         _strokePaintAA?.Dispose();
         _glowPaint?.Dispose();
         _shaderPaint?.Dispose();
+        _sourceShaderCache?.Dispose();
+        _drainShaderCache?.Dispose();
     }
 }
 

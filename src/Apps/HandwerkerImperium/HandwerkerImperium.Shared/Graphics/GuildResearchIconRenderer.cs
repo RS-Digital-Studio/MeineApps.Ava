@@ -11,6 +11,10 @@ namespace HandwerkerImperium.Graphics;
 /// </summary>
 public static class GuildResearchIconRenderer
 {
+    // Gecachter Path: alle Icon-Methoden werden sequenziell aufgerufen,
+    // ein einziger gecachter Path reicht für alle 12 Verwendungen (kein GC-Druck)
+    private static readonly SKPath _cachedPath = new();
+
     /// <summary>
     /// Zeichnet das Kategorie-Icon zentriert bei (cx, cy) innerhalb der angegebenen Größe.
     /// </summary>
@@ -96,13 +100,13 @@ public static class GuildResearchIconRenderer
         canvas.DrawRect(bodyLeft, bodyTop, bodyRight - bodyLeft, bodyBottom - bodyTop, strokePaint);
 
         // Dach (Dreieck)
-        using var roofPath = new SKPath();
-        roofPath.MoveTo(bodyLeft - s * 0.1f, bodyTop);
-        roofPath.LineTo((bodyLeft + bodyRight) / 2f, cy - s * 0.55f);
-        roofPath.LineTo(bodyRight + s * 0.1f, bodyTop);
-        roofPath.Close();
-        canvas.DrawPath(roofPath, fillPaint);
-        canvas.DrawPath(roofPath, strokePaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(bodyLeft - s * 0.1f, bodyTop);
+        _cachedPath.LineTo((bodyLeft + bodyRight) / 2f, cy - s * 0.55f);
+        _cachedPath.LineTo(bodyRight + s * 0.1f, bodyTop);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
+        canvas.DrawPath(_cachedPath, strokePaint);
 
         // Tür (kleines Rechteck unten Mitte)
         float doorW = s * 0.22f;
@@ -127,12 +131,12 @@ public static class GuildResearchIconRenderer
         canvas.DrawLine(arrowCx, arrowBottom, arrowCx, arrowTop + s * 0.15f, strokePaint);
 
         // Pfeil-Spitze
-        using var arrowHead = new SKPath();
-        arrowHead.MoveTo(arrowCx, arrowTop);
-        arrowHead.LineTo(arrowCx - arrowW, arrowTop + s * 0.2f);
-        arrowHead.LineTo(arrowCx + arrowW, arrowTop + s * 0.2f);
-        arrowHead.Close();
-        canvas.DrawPath(arrowHead, fillPaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(arrowCx, arrowTop);
+        _cachedPath.LineTo(arrowCx - arrowW, arrowTop + s * 0.2f);
+        _cachedPath.LineTo(arrowCx + arrowW, arrowTop + s * 0.2f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
     }
 
     /// <summary>
@@ -178,12 +182,12 @@ public static class GuildResearchIconRenderer
         canvas.DrawLine(arrowCx, arrowBottom, arrowCx, arrowTop + s * 0.18f, strokePaint);
 
         // Pfeil-Spitze
-        using var arrowHead = new SKPath();
-        arrowHead.MoveTo(arrowCx, arrowTop);
-        arrowHead.LineTo(arrowCx - arrowW, arrowTop + s * 0.2f);
-        arrowHead.LineTo(arrowCx + arrowW, arrowTop + s * 0.2f);
-        arrowHead.Close();
-        canvas.DrawPath(arrowHead, fillPaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(arrowCx, arrowTop);
+        _cachedPath.LineTo(arrowCx - arrowW, arrowTop + s * 0.2f);
+        _cachedPath.LineTo(arrowCx + arrowW, arrowTop + s * 0.2f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
     }
 
     /// <summary>
@@ -198,24 +202,24 @@ public static class GuildResearchIconRenderer
         float bookCy = cy + s * 0.15f;
 
         // Linke Seite (leicht nach links geneigt)
-        using var leftPage = new SKPath();
-        leftPage.MoveTo(cx, bookCy - s * 0.4f);
-        leftPage.LineTo(cx - s * 0.65f, bookCy - s * 0.3f);
-        leftPage.LineTo(cx - s * 0.65f, bookCy + s * 0.4f);
-        leftPage.LineTo(cx, bookCy + s * 0.5f);
-        leftPage.Close();
-        canvas.DrawPath(leftPage, fillPaint);
-        canvas.DrawPath(leftPage, strokePaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, bookCy - s * 0.4f);
+        _cachedPath.LineTo(cx - s * 0.65f, bookCy - s * 0.3f);
+        _cachedPath.LineTo(cx - s * 0.65f, bookCy + s * 0.4f);
+        _cachedPath.LineTo(cx, bookCy + s * 0.5f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
+        canvas.DrawPath(_cachedPath, strokePaint);
 
         // Rechte Seite
-        using var rightPage = new SKPath();
-        rightPage.MoveTo(cx, bookCy - s * 0.4f);
-        rightPage.LineTo(cx + s * 0.65f, bookCy - s * 0.3f);
-        rightPage.LineTo(cx + s * 0.65f, bookCy + s * 0.4f);
-        rightPage.LineTo(cx, bookCy + s * 0.5f);
-        rightPage.Close();
-        canvas.DrawPath(rightPage, fillPaint);
-        canvas.DrawPath(rightPage, strokePaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, bookCy - s * 0.4f);
+        _cachedPath.LineTo(cx + s * 0.65f, bookCy - s * 0.3f);
+        _cachedPath.LineTo(cx + s * 0.65f, bookCy + s * 0.4f);
+        _cachedPath.LineTo(cx, bookCy + s * 0.5f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
+        canvas.DrawPath(_cachedPath, strokePaint);
 
         // Buchrücken (Mittellinie)
         canvas.DrawLine(cx, bookCy - s * 0.4f, cx, bookCy + s * 0.5f, strokePaint);
@@ -287,14 +291,14 @@ public static class GuildResearchIconRenderer
         canvas.DrawLine(windshieldX, cabTop + s * 0.04f, windshieldX, cabBottom - s * 0.1f, strokePaint);
 
         // Motorhaube (schräge Linie vorne)
-        using var hoodPath = new SKPath();
-        hoodPath.MoveTo(cabRight, cabTop);
-        hoodPath.LineTo(cx + s * 0.85f, cy + s * 0.05f);
-        hoodPath.LineTo(cx + s * 0.85f, cabBottom);
-        hoodPath.LineTo(cabRight, cabBottom);
-        hoodPath.Close();
-        canvas.DrawPath(hoodPath, fillPaint);
-        canvas.DrawPath(hoodPath, strokePaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cabRight, cabTop);
+        _cachedPath.LineTo(cx + s * 0.85f, cy + s * 0.05f);
+        _cachedPath.LineTo(cx + s * 0.85f, cabBottom);
+        _cachedPath.LineTo(cabRight, cabBottom);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
+        canvas.DrawPath(_cachedPath, strokePaint);
 
         // Unterseite (Verbindungslinie)
         canvas.DrawLine(cargoLeft, cargoBottom, cx + s * 0.85f, cargoBottom, strokePaint);
@@ -334,24 +338,24 @@ public static class GuildResearchIconRenderer
         canvas.DrawCircle(workerCx, headY, headR, strokePaint);
 
         // Schutzhelm (Halbkreis über dem Kopf)
-        using var helmetPath = new SKPath();
-        helmetPath.MoveTo(workerCx - headR * 1.15f, headY - headR * 0.1f);
-        helmetPath.QuadTo(workerCx, headY - headR * 1.6f, workerCx + headR * 1.15f, headY - headR * 0.1f);
-        helmetPath.Close();
-        canvas.DrawPath(helmetPath, fillPaint);
-        canvas.DrawPath(helmetPath, strokePaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(workerCx - headR * 1.15f, headY - headR * 0.1f);
+        _cachedPath.QuadTo(workerCx, headY - headR * 1.6f, workerCx + headR * 1.15f, headY - headR * 0.1f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
+        canvas.DrawPath(_cachedPath, strokePaint);
 
         // Körper (Trapez)
-        using var bodyPath = new SKPath();
         float bodyTop = headY + headR + s * 0.02f;
         float bodyBottom = cy + s * 0.6f;
-        bodyPath.MoveTo(workerCx - s * 0.18f, bodyTop);
-        bodyPath.LineTo(workerCx + s * 0.18f, bodyTop);
-        bodyPath.LineTo(workerCx + s * 0.3f, bodyBottom);
-        bodyPath.LineTo(workerCx - s * 0.3f, bodyBottom);
-        bodyPath.Close();
-        canvas.DrawPath(bodyPath, fillPaint);
-        canvas.DrawPath(bodyPath, strokePaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(workerCx - s * 0.18f, bodyTop);
+        _cachedPath.LineTo(workerCx + s * 0.18f, bodyTop);
+        _cachedPath.LineTo(workerCx + s * 0.3f, bodyBottom);
+        _cachedPath.LineTo(workerCx - s * 0.3f, bodyBottom);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
+        canvas.DrawPath(_cachedPath, strokePaint);
 
         // Schraubenschlüssel rechts neben dem Arbeiter
         float wrenchCx = cx + s * 0.55f;
@@ -362,20 +366,20 @@ public static class GuildResearchIconRenderer
         canvas.DrawLine(wrenchCx, wrenchTop + s * 0.15f, wrenchCx, wrenchBottom - s * 0.15f, strokePaint);
 
         // Oberer Kopf (offenes U)
-        using var topJaw = new SKPath();
-        topJaw.MoveTo(wrenchCx - s * 0.1f, wrenchTop + s * 0.15f);
-        topJaw.LineTo(wrenchCx - s * 0.1f, wrenchTop);
-        topJaw.LineTo(wrenchCx + s * 0.1f, wrenchTop);
-        topJaw.LineTo(wrenchCx + s * 0.1f, wrenchTop + s * 0.15f);
-        canvas.DrawPath(topJaw, strokePaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(wrenchCx - s * 0.1f, wrenchTop + s * 0.15f);
+        _cachedPath.LineTo(wrenchCx - s * 0.1f, wrenchTop);
+        _cachedPath.LineTo(wrenchCx + s * 0.1f, wrenchTop);
+        _cachedPath.LineTo(wrenchCx + s * 0.1f, wrenchTop + s * 0.15f);
+        canvas.DrawPath(_cachedPath, strokePaint);
 
         // Unterer Kopf (offenes U umgedreht)
-        using var bottomJaw = new SKPath();
-        bottomJaw.MoveTo(wrenchCx - s * 0.1f, wrenchBottom - s * 0.15f);
-        bottomJaw.LineTo(wrenchCx - s * 0.1f, wrenchBottom);
-        bottomJaw.LineTo(wrenchCx + s * 0.1f, wrenchBottom);
-        bottomJaw.LineTo(wrenchCx + s * 0.1f, wrenchBottom - s * 0.15f);
-        canvas.DrawPath(bottomJaw, strokePaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(wrenchCx - s * 0.1f, wrenchBottom - s * 0.15f);
+        _cachedPath.LineTo(wrenchCx - s * 0.1f, wrenchBottom);
+        _cachedPath.LineTo(wrenchCx + s * 0.1f, wrenchBottom);
+        _cachedPath.LineTo(wrenchCx + s * 0.1f, wrenchBottom - s * 0.15f);
+        canvas.DrawPath(_cachedPath, strokePaint);
     }
 
     /// <summary>
@@ -387,25 +391,24 @@ public static class GuildResearchIconRenderer
         float s = size * 0.4f;
 
         // Kronen-Körper (5 Punkte: 3 Zacken oben, 2 Täler)
-        using var crownPath = new SKPath();
         float crownBottom = cy + s * 0.3f;
         float crownBaseTop = cy - s * 0.1f;
         float peakH = s * 0.55f;
 
         // Von links nach rechts: Basis links → Spitze links → Tal → Spitze Mitte → Tal → Spitze rechts → Basis rechts
-        crownPath.MoveTo(cx - s * 0.65f, crownBottom);
-        crownPath.LineTo(cx - s * 0.65f, crownBaseTop);
-        crownPath.LineTo(cx - s * 0.45f, cy - peakH);           // Linke Zacke
-        crownPath.LineTo(cx - s * 0.22f, crownBaseTop + s * 0.05f); // Tal
-        crownPath.LineTo(cx, cy - peakH - s * 0.08f);            // Mittlere Zacke (höchste)
-        crownPath.LineTo(cx + s * 0.22f, crownBaseTop + s * 0.05f); // Tal
-        crownPath.LineTo(cx + s * 0.45f, cy - peakH);           // Rechte Zacke
-        crownPath.LineTo(cx + s * 0.65f, crownBaseTop);
-        crownPath.LineTo(cx + s * 0.65f, crownBottom);
-        crownPath.Close();
-
-        canvas.DrawPath(crownPath, fillPaint);
-        canvas.DrawPath(crownPath, strokePaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - s * 0.65f, crownBottom);
+        _cachedPath.LineTo(cx - s * 0.65f, crownBaseTop);
+        _cachedPath.LineTo(cx - s * 0.45f, cy - peakH);           // Linke Zacke
+        _cachedPath.LineTo(cx - s * 0.22f, crownBaseTop + s * 0.05f); // Tal
+        _cachedPath.LineTo(cx, cy - peakH - s * 0.08f);            // Mittlere Zacke (höchste)
+        _cachedPath.LineTo(cx + s * 0.22f, crownBaseTop + s * 0.05f); // Tal
+        _cachedPath.LineTo(cx + s * 0.45f, cy - peakH);           // Rechte Zacke
+        _cachedPath.LineTo(cx + s * 0.65f, crownBaseTop);
+        _cachedPath.LineTo(cx + s * 0.65f, crownBottom);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
+        canvas.DrawPath(_cachedPath, strokePaint);
 
         // Basis-Band (Querstreifen am unteren Rand der Krone)
         canvas.DrawLine(cx - s * 0.65f, crownBottom - s * 0.12f,
@@ -423,7 +426,7 @@ public static class GuildResearchIconRenderer
         float outerR = s * 0.14f;
         float innerR = s * 0.06f;
 
-        using var starPath = new SKPath();
+        _cachedPath.Rewind();
         for (int i = 0; i < 5; i++)
         {
             // Äußerer Punkt
@@ -439,15 +442,14 @@ public static class GuildResearchIconRenderer
             float iy = starCy + innerR * (float)System.Math.Sin(innerRad);
 
             if (i == 0)
-                starPath.MoveTo(ox, oy);
+                _cachedPath.MoveTo(ox, oy);
             else
-                starPath.LineTo(ox, oy);
+                _cachedPath.LineTo(ox, oy);
 
-            starPath.LineTo(ix, iy);
+            _cachedPath.LineTo(ix, iy);
         }
-        starPath.Close();
-
-        canvas.DrawPath(starPath, fillPaint);
-        canvas.DrawPath(starPath, strokePaint);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fillPaint);
+        canvas.DrawPath(_cachedPath, strokePaint);
     }
 }

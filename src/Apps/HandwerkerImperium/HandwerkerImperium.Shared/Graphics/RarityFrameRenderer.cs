@@ -53,6 +53,9 @@ public static class RarityFrameRenderer
         Style = SKPaintStyle.Fill
     };
 
+    // Gecachter SKPath fuer DrawSparkle (statische Klasse, 4-Punkt-Stern wird immer mit 8 Punkten aufgebaut)
+    private static readonly SKPath _sparklePath = new();
+
     // MaskFilter für Glow-Unschärfe – einmalig erstellt, unveränderlich
     private static readonly SKMaskFilter _blurFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
     // MaskFilter für Shimmer-Glow (Legendary-Rahmen) – einmalig erstellt
@@ -246,6 +249,7 @@ public static class RarityFrameRenderer
         var colorStart = SKColor.FromHsv(hueStart % 360f, 80f, 100f);
         var colorEnd   = SKColor.FromHsv(hueEnd   % 360f, 80f, 100f);
 
+        // Perf: hueStart/hueEnd aendern sich kontinuierlich mit baseHue (time-abhaengig), nicht cachebar
         using var shader = SKShader.CreateLinearGradient(
             new SKPoint(x0, y0),
             new SKPoint(x1, y1),
@@ -330,7 +334,8 @@ public static class RarityFrameRenderer
         float outerR = size;
         float innerR = size * 0.35f; // Einbuchtungs-Radius
 
-        using var path = new SKPath();
+        // Gecachten Path wiederverwenden (8 Punkte, statisch aufgebaut)
+        _sparklePath.Rewind();
 
         for (int i = 0; i < 8; i++)
         {
@@ -341,18 +346,18 @@ public static class RarityFrameRenderer
             float py     = MathF.Sin(angle) * radius;
 
             if (i == 0)
-                path.MoveTo(px, py);
+                _sparklePath.MoveTo(px, py);
             else
-                path.LineTo(px, py);
+                _sparklePath.LineTo(px, py);
         }
 
-        path.Close();
+        _sparklePath.Close();
 
         // Rotation + Translation via Canvas-State
         canvas.Save();
         canvas.Translate(cx, cy);
         canvas.RotateDegrees(rotation);
-        canvas.DrawPath(path, _sparklePaint);
+        canvas.DrawPath(_sparklePath, _sparklePaint);
         canvas.Restore();
     }
 

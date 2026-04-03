@@ -132,6 +132,9 @@ public sealed class BlueprintGameRenderer : IDisposable
         Style = SKPaintStyle.Stroke
     };
 
+    // Gecachtes Dash-Intervall-Array (kein new float[] pro Frame)
+    private static readonly float[] DashIntervals = [6f, 4f];
+
     // --- Kachel-Schatten ---
     private static readonly SKPaint _tileShadowPaint = new()
     {
@@ -492,6 +495,15 @@ public sealed class BlueprintGameRenderer : IDisposable
     private SKRect[] _tileRects = Array.Empty<SKRect>();
     private SKPoint[] _tileCenters = Array.Empty<SKPoint>();
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // HINTERGRUND-SHADER CACHE (Perf: einmal pro Bounds-Aenderung statt pro Frame)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private SKShader? _bgShaderCache;
+    private float _lastBgMidX;
+    private float _lastBgMidY;
+    private float _lastBgRadius;
+
     /// <summary>
     /// Initialisiert den AI-Asset-Service für den Hintergrund.
     /// </summary>
@@ -788,12 +800,24 @@ public sealed class BlueprintGameRenderer : IDisposable
     private void DrawBlueprintBackground(SKCanvas canvas, SKRect bounds)
     {
         // Dunkelblauer Hintergrund mit radialer Vignette
-        using var bgShader = SKShader.CreateRadialGradient(
-            new SKPoint(bounds.MidX, bounds.MidY),
-            Math.Max(bounds.Width, bounds.Height) * 0.7f,
-            new[] { new SKColor(0x12, 0x1C, 0x50), BlueprintBg },
-            null, SKShaderTileMode.Clamp);
-        _bgPaint.Shader = bgShader;
+        // Perf: Shader nur bei Bounds-Aenderung neu erstellen statt jeden Frame
+        float midX = bounds.MidX;
+        float midY = bounds.MidY;
+        float radius = Math.Max(bounds.Width, bounds.Height) * 0.7f;
+
+        if (_bgShaderCache == null || midX != _lastBgMidX || midY != _lastBgMidY || radius != _lastBgRadius)
+        {
+            _bgShaderCache?.Dispose();
+            _bgShaderCache = SKShader.CreateRadialGradient(
+                new SKPoint(midX, midY), radius,
+                new[] { new SKColor(0x12, 0x1C, 0x50), BlueprintBg },
+                null, SKShaderTileMode.Clamp);
+            _lastBgMidX = midX;
+            _lastBgMidY = midY;
+            _lastBgRadius = radius;
+        }
+
+        _bgPaint.Shader = _bgShaderCache;
         canvas.DrawRect(bounds, _bgPaint);
         _bgPaint.Shader = null;
 
@@ -871,8 +895,9 @@ public sealed class BlueprintGameRenderer : IDisposable
             completed[j + 1] = key;
         }
 
-        // PathEffect pro Frame neu erstellen (animierter Dash-Offset aendert sich)
-        using var dashEffect = SKPathEffect.CreateDash(new[] { 6f, 4f }, _animTime * 30);
+        // PathEffect: Offset aendert sich pro Frame → using var bleibt.
+        // DashIntervals als static array gecacht (kein new float[] pro Frame).
+        using var dashEffect = SKPathEffect.CreateDash(DashIntervals, _animTime * 30);
         _circuitLinePaint.PathEffect = dashEffect;
 
         for (int i = 0; i < count - 1; i++)
@@ -918,7 +943,8 @@ public sealed class BlueprintGameRenderer : IDisposable
         var shadowRect = SKRect.Create(rect.Left + 2, rect.Top + 3, rect.Width, rect.Height);
         canvas.DrawRoundRect(shadowRect, cr, cr, _tileShadowPaint);
 
-        // Kachel-Hintergrund mit Gradient (Shader aendert sich pro Kachel)
+        // Kachel-Hintergrund mit Gradient
+        // Perf: Shader aendert sich pro Kachel (Farbe variiert), nicht cachebar
         using var bgShader = SKShader.CreateLinearGradient(
             new SKPoint(rect.Left, rect.Top),
             new SKPoint(rect.Right, rect.Bottom),
@@ -928,7 +954,8 @@ public sealed class BlueprintGameRenderer : IDisposable
         canvas.DrawRoundRect(rect, cr, cr, _tileBgPaint);
         _tileBgPaint.Shader = null;
 
-        // Oberer Highlight-Streifen (Glaseffekt, Shader aendert sich pro Kachel)
+        // Oberer Highlight-Streifen (Glaseffekt)
+        // Perf: Shader aendert sich pro Kachel (Bounds variieren), nicht cachebar
         using var highlightShader = SKShader.CreateLinearGradient(
             new SKPoint(rect.Left, rect.Top),
             new SKPoint(rect.Left, rect.Top + rect.Height * 0.4f),
@@ -1083,7 +1110,7 @@ public sealed class BlueprintGameRenderer : IDisposable
         float progress = (_animTime % period) / period;
         float scanY = gridTop + progress * gridHeight;
 
-        // Shader aendert sich pro Frame (Position-abhaengig)
+        // Perf: Shader aendert sich pro Frame (Position-abhaengig), nicht cachebar
         using var scanShader = SKShader.CreateLinearGradient(
             new SKPoint(bounds.Left, scanY - 8),
             new SKPoint(bounds.Left, scanY + 8),
@@ -1118,7 +1145,7 @@ public sealed class BlueprintGameRenderer : IDisposable
         else
             alpha = (byte)(180 * t / 0.7f * 0.5f); // Langsames Ausblenden
 
-        // Shader aendert sich pro Frame (Alpha-abhaengig)
+        // Perf: Shader aendert sich pro Frame (Alpha-abhaengig), nicht cachebar
         using var flashShader = SKShader.CreateRadialGradient(
             new SKPoint(bounds.MidX, bounds.MidY),
             Math.Max(bounds.Width, bounds.Height) * 0.5f,
@@ -1381,7 +1408,7 @@ public sealed class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Trapez-Fundament (unten breiter als oben) - SKPath bleibt using (per-Frame verschieden)
+        // Perf: Icon-Pfade in static Methoden sind nicht cachebar (cx/cy/size variieren pro Kachel)
         using var path = new SKPath();
         path.MoveTo(cx - half * 0.6f, cy - half);
         path.LineTo(cx + half * 0.6f, cy - half);
@@ -1443,6 +1470,7 @@ public sealed class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
+        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
         using var path = new SKPath();
         path.MoveTo(cx + half * 0.1f, cy - half);
         path.LineTo(cx - half * 0.4f, cy - half * 0.05f);
@@ -1465,6 +1493,7 @@ public sealed class BlueprintGameRenderer : IDisposable
         canvas.DrawLine(cx, cy - half * 0.1f, cx, cy + half, _plumbingHandlePaint);
 
         // Maulschluessel-Kopf (U-Form)
+        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
         using var headPath = new SKPath();
         headPath.MoveTo(cx - half * 0.5f, cy - half * 0.1f);
         headPath.LineTo(cx - half * 0.5f, cy - half * 0.7f);
@@ -1533,7 +1562,7 @@ public sealed class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Dach-Dreieck
+        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
         using var path = new SKPath();
         path.MoveTo(cx, cy - half);
         path.LineTo(cx + half, cy + half * 0.5f);
@@ -1702,6 +1731,10 @@ public sealed class BlueprintGameRenderer : IDisposable
 
         // Gecachter Pfad
         _cachedPath?.Dispose();
+
+        // Hintergrund-Shader-Cache
+        _bgShaderCache?.Dispose();
+        _bgShaderCache = null;
 
         // Instanz-Paints (mit dynamischen Properties pro Frame)
         _bgPaint?.Dispose();

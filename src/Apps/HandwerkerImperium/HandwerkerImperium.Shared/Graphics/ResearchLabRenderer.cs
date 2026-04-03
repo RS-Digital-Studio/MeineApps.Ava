@@ -92,6 +92,9 @@ public sealed class ResearchLabRenderer : IDisposable
     private static readonly SKPaint PaintGearTooth = new() { Color = GearColor, IsAntialias = false };
     private static readonly SKPaint PaintGearSpoke = new() { Color = new SKColor(0x60, 0x70, 0x78), IsAntialias = false, StrokeWidth = 2 };
 
+    // Gecachter Zahn-Pfad fuer DrawSingleGear (vermeidet SKPath-Allokation pro Zahn pro Frame)
+    private static readonly SKPath s_gearToothPath = new();
+
     // Glühbirne (statische Teile)
     private static readonly SKPaint PaintWire = new() { Color = new SKColor(0x40, 0x40, 0x40), IsAntialias = false, StrokeWidth = 2 };
     private static readonly SKPaint PaintSocket = new() { Color = new SKColor(0x60, 0x60, 0x60), IsAntialias = false };
@@ -396,16 +399,16 @@ public sealed class ResearchLabRenderer : IDisposable
             float dx = MathF.Cos(a) * toothLen;
             float dy = MathF.Sin(a) * toothLen;
 
-            // Zahn als Linie mit Breite
-            using var path = new SKPath();
+            // Zahn als Linie mit Breite (gecachter Path statt new SKPath pro Zahn)
             float perpX = -MathF.Sin(a) * toothW / 2;
             float perpY = MathF.Cos(a) * toothW / 2;
-            path.MoveTo(tx + perpX, ty + perpY);
-            path.LineTo(tx + dx + perpX, ty + dy + perpY);
-            path.LineTo(tx + dx - perpX, ty + dy - perpY);
-            path.LineTo(tx - perpX, ty - perpY);
-            path.Close();
-            canvas.DrawPath(path, PaintGearTooth);
+            s_gearToothPath.Rewind();
+            s_gearToothPath.MoveTo(tx + perpX, ty + perpY);
+            s_gearToothPath.LineTo(tx + dx + perpX, ty + dy + perpY);
+            s_gearToothPath.LineTo(tx + dx - perpX, ty + dy - perpY);
+            s_gearToothPath.LineTo(tx - perpX, ty - perpY);
+            s_gearToothPath.Close();
+            canvas.DrawPath(s_gearToothPath, PaintGearTooth);
         }
 
         // Speichen (Kreuz im Inneren)

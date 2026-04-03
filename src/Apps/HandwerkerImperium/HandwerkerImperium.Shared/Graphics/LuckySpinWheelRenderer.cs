@@ -98,6 +98,25 @@ public sealed class LuckySpinWheelRenderer : IDisposable
     private readonly SKPath _starPathCache = new();
     private readonly SKPath _hexPathCache = new();
 
+    // --- Shader/Path-Cache (gecacht nach Radius, invalidiert bei Radius-Aenderung) ---
+
+    // Gecachte Paths (Wiederverwendung via Rewind)
+    private readonly SKPath _segPath = new();
+    private readonly SKPath _iconPathA = new();
+    private readonly SKPath _iconPathB = new(); // Zweiter gleichzeitig aktiver Path (DrawToolIcon: hammerHead + hammerStiel)
+
+    // Shader-Cache (invalidiert bei Radius-Aenderung)
+    private float _lastCachedRadius;
+    private readonly SKShader?[] _segmentShaders = new SKShader?[8];
+    private SKShader? _coinShader1, _coinShader2, _coinShader3;
+    private SKShader? _starShader, _hexShader, _boltShader;
+    private SKShader? _headShader, _shaftShader, _crownShader;
+    private SKShader? _hubShader, _pointerShader;
+    // MaskFilter mit dynamischem Radius (haengen vom jeweiligen iconSize/s ab)
+    private SKMaskFilter? _moneyGlowFilter, _speedGlowFilter;
+    // Letzter bekannter iconSize-Wert fuer MaskFilter-Cache-Invalidierung
+    private float _lastIconSize;
+
     /// <summary>
     /// Rendert das Glücksrad auf den Canvas.
     /// </summary>
@@ -109,6 +128,13 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         float padding = 16;
         float available = Math.Min(bounds.Width - padding * 2, bounds.Height - padding * 2);
         float radius = available / 2f;
+
+        // Shader-Cache invalidieren wenn sich der Radius geaendert hat
+        if (_lastCachedRadius != radius)
+        {
+            InvalidateShaderCache();
+            _lastCachedRadius = radius;
+        }
 
         float cx = bounds.MidX;
         float cy = bounds.MidY;
@@ -175,20 +201,21 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         {
             float startAngle = i * SweepAngle - 90;
 
-            using var segShader = SKShader.CreateRadialGradient(
+            // Shader gecacht pro Segment-Index, neu erstellt nur wenn Cache leer (Radius-Aenderung)
+            _segmentShaders[i] ??= SKShader.CreateRadialGradient(
                 new SKPoint(cx, cy),
                 innerRadius,
                 [SegmentColors[i], SegmentDarkColors[i]],
                 [0.3f, 1.0f],
                 SKShaderTileMode.Clamp);
-            _segFillPaint.Shader?.Dispose();
-            _segFillPaint.Shader = segShader;
+            _segFillPaint.Shader = _segmentShaders[i];
 
-            using var path = new SKPath();
-            path.MoveTo(cx, cy);
-            path.ArcTo(segmentRect, startAngle, SweepAngle, false);
-            path.Close();
-            canvas.DrawPath(path, _segFillPaint);
+            // Gecachter Path per Rewind statt new SKPath()
+            _segPath.Rewind();
+            _segPath.MoveTo(cx, cy);
+            _segPath.ArcTo(segmentRect, startAngle, SweepAngle, false);
+            _segPath.Close();
+            canvas.DrawPath(_segPath, _segFillPaint);
             _segFillPaint.Shader = null;
 
             float lineAngle = startAngle * MathF.PI / 180f;
@@ -199,11 +226,12 @@ public sealed class LuckySpinWheelRenderer : IDisposable
 
             if (i == 7)
             {
-                using var jackpotPath = new SKPath();
-                jackpotPath.MoveTo(cx, cy);
-                jackpotPath.ArcTo(segmentRect, startAngle, SweepAngle, false);
-                jackpotPath.Close();
-                canvas.DrawPath(jackpotPath, _jackpotBorderPaint);
+                // Jackpot-Rahmen: gleichen _segPath nochmal verwenden (noch aktiv)
+                _segPath.Rewind();
+                _segPath.MoveTo(cx, cy);
+                _segPath.ArcTo(segmentRect, startAngle, SweepAngle, false);
+                _segPath.Close();
+                canvas.DrawPath(_segPath, _jackpotBorderPaint);
             }
 
             if (highlightedSegment == i)
@@ -223,13 +251,14 @@ public sealed class LuckySpinWheelRenderer : IDisposable
             cx + innerRadius, cy + innerRadius);
 
         _segGlowPaint.Color = SegmentColors[segmentIndex].WithAlpha(100);
-        using var glowPath = new SKPath();
-        glowPath.MoveTo(cx, cy);
-        glowPath.ArcTo(segmentRect, startAngle, SweepAngle, false);
-        glowPath.Close();
-        canvas.DrawPath(glowPath, _segGlowPaint);
-        canvas.DrawPath(glowPath, _segInnerGlowPaint);
-        canvas.DrawPath(glowPath, _segBorderGlowPaint);
+        // Gecachter Path per Rewind statt new SKPath()
+        _segPath.Rewind();
+        _segPath.MoveTo(cx, cy);
+        _segPath.ArcTo(segmentRect, startAngle, SweepAngle, false);
+        _segPath.Close();
+        canvas.DrawPath(_segPath, _segGlowPaint);
+        canvas.DrawPath(_segPath, _segInnerGlowPaint);
+        canvas.DrawPath(_segPath, _segBorderGlowPaint);
     }
 
     /// <summary>
@@ -238,6 +267,14 @@ public sealed class LuckySpinWheelRenderer : IDisposable
     private void DrawSegmentIcons(SKCanvas canvas, float cx, float cy, float innerRadius)
     {
         float iconSize = innerRadius * 0.17f;
+
+        // MaskFilter mit dynamischem Radius invalidieren wenn iconSize sich aendert
+        if (_lastIconSize != iconSize)
+        {
+            _moneyGlowFilter?.Dispose(); _moneyGlowFilter = null;
+            _speedGlowFilter?.Dispose(); _speedGlowFilter = null;
+            _lastIconSize = iconSize;
+        }
 
         for (int i = 0; i < SegmentCount; i++)
         {
@@ -272,12 +309,12 @@ public sealed class LuckySpinWheelRenderer : IDisposable
     /// </summary>
     private void DrawMoneyIcon(SKCanvas canvas, float cx, float cy, float size, int amount)
     {
-        // Glow-Halo bei amount=3 (MoneyLarge) - dynamischer Blur-Radius, daher using fuer MaskFilter
+        // Glow-Halo bei amount=3 (MoneyLarge) - gecachter MaskFilter (Radius abhaengig von size)
         if (amount == 3)
         {
-            using var glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.25f);
+            _moneyGlowFilter ??= SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.25f);
             _iconFillPaint.Color = new SKColor(0xFF, 0xD7, 0x00, 80);
-            _iconFillPaint.MaskFilter = glowFilter;
+            _iconFillPaint.MaskFilter = _moneyGlowFilter;
             canvas.DrawCircle(cx, cy, size * 0.9f, _iconFillPaint);
             _iconFillPaint.MaskFilter = null;
         }
@@ -288,13 +325,28 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
         canvas.DrawCircle(cx + 1, cy + 1, coinRadius, _shadowPaint);
 
-        // Muenzkoerper (goldener Gradient)
-        using var coinShader = SKShader.CreateRadialGradient(
-            new SKPoint(cx - coinRadius * 0.3f, cy - coinRadius * 0.3f),
-            coinRadius * 1.5f,
-            [new SKColor(0xFF, 0xF1, 0x76), new SKColor(0xCC, 0x99, 0x00)],
-            null,
-            SKShaderTileMode.Clamp);
+        // Muenzkoerper (goldener Gradient, gecacht pro amount)
+        var coinShader = amount switch
+        {
+            1 => _coinShader1 ??= SKShader.CreateRadialGradient(
+                new SKPoint(cx - coinRadius * 0.3f, cy - coinRadius * 0.3f),
+                coinRadius * 1.5f,
+                [new SKColor(0xFF, 0xF1, 0x76), new SKColor(0xCC, 0x99, 0x00)],
+                null,
+                SKShaderTileMode.Clamp),
+            2 => _coinShader2 ??= SKShader.CreateRadialGradient(
+                new SKPoint(cx - coinRadius * 0.3f, cy - coinRadius * 0.3f),
+                coinRadius * 1.5f,
+                [new SKColor(0xFF, 0xF1, 0x76), new SKColor(0xCC, 0x99, 0x00)],
+                null,
+                SKShaderTileMode.Clamp),
+            _ => _coinShader3 ??= SKShader.CreateRadialGradient(
+                new SKPoint(cx - coinRadius * 0.3f, cy - coinRadius * 0.3f),
+                coinRadius * 1.5f,
+                [new SKColor(0xFF, 0xF1, 0x76), new SKColor(0xCC, 0x99, 0x00)],
+                null,
+                SKShaderTileMode.Clamp),
+        };
         _iconShaderPaint.Shader = coinShader;
         canvas.DrawCircle(cx, cy, coinRadius, _iconShaderPaint);
         _iconShaderPaint.Shader = null;
@@ -341,14 +393,14 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         FillStarPath(_starPathCache, cx + 1, cy + 1, outerR, innerR, 5);
         canvas.DrawPath(_starPathCache, _shadowPaint);
 
-        // Stern-Koerper (weiss mit leichtem Blau-Gradient)
-        using var starShader = SKShader.CreateRadialGradient(
+        // Stern-Koerper (weiss mit leichtem Blau-Gradient, gecacht)
+        _starShader ??= SKShader.CreateRadialGradient(
             new SKPoint(cx, cy - outerR * 0.2f),
             outerR * 1.2f,
             [SKColors.White, new SKColor(0xBB, 0xDE, 0xFB)],
             null,
             SKShaderTileMode.Clamp);
-        _iconShaderPaint.Shader = starShader;
+        _iconShaderPaint.Shader = _starShader;
         FillStarPath(_starPathCache, cx, cy, outerR, innerR, 5);
         canvas.DrawPath(_starPathCache, _iconShaderPaint);
         _iconShaderPaint.Shader = null;
@@ -378,14 +430,14 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         FillHexPath(_hexPathCache, cx + 1, cy + 1, hexR);
         canvas.DrawPath(_hexPathCache, _shadowPaint);
 
-        // Sechskant-Koerper (goldener Gradient)
-        using var hexShader = SKShader.CreateLinearGradient(
+        // Sechskant-Koerper (goldener Gradient, gecacht)
+        _hexShader ??= SKShader.CreateLinearGradient(
             new SKPoint(cx - hexR, cy - hexR),
             new SKPoint(cx + hexR, cy + hexR),
             [new SKColor(0xFF, 0xE0, 0x82), new SKColor(0xCC, 0x99, 0x00)],
             null,
             SKShaderTileMode.Clamp);
-        _iconShaderPaint.Shader = hexShader;
+        _iconShaderPaint.Shader = _hexShader;
         FillHexPath(_hexPathCache, cx, cy, hexR);
         canvas.DrawPath(_hexPathCache, _iconShaderPaint);
         _iconShaderPaint.Shader = null;
@@ -412,42 +464,43 @@ public sealed class LuckySpinWheelRenderer : IDisposable
     {
         float s = size * 0.8f;
 
-        using var boltPath = new SKPath();
-        boltPath.MoveTo(cx + s * 0.10f, cy - s * 0.65f);
-        boltPath.LineTo(cx - s * 0.35f, cy + s * 0.05f);
-        boltPath.LineTo(cx - s * 0.02f, cy + s * 0.05f);
-        boltPath.LineTo(cx - s * 0.15f, cy + s * 0.65f);
-        boltPath.LineTo(cx + s * 0.35f, cy - s * 0.05f);
-        boltPath.LineTo(cx + s * 0.05f, cy - s * 0.05f);
-        boltPath.Close();
+        // Gecachter Path per Rewind statt new SKPath()
+        _iconPathA.Rewind();
+        _iconPathA.MoveTo(cx + s * 0.10f, cy - s * 0.65f);
+        _iconPathA.LineTo(cx - s * 0.35f, cy + s * 0.05f);
+        _iconPathA.LineTo(cx - s * 0.02f, cy + s * 0.05f);
+        _iconPathA.LineTo(cx - s * 0.15f, cy + s * 0.65f);
+        _iconPathA.LineTo(cx + s * 0.35f, cy - s * 0.05f);
+        _iconPathA.LineTo(cx + s * 0.05f, cy - s * 0.05f);
+        _iconPathA.Close();
 
         _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
         canvas.Save();
         canvas.Translate(1, 1);
-        canvas.DrawPath(boltPath, _shadowPaint);
+        canvas.DrawPath(_iconPathA, _shadowPaint);
         canvas.Restore();
 
-        // Blitz-Fuellung (weiss-gelber Gradient)
-        using var boltShader = SKShader.CreateLinearGradient(
+        // Blitz-Fuellung (weiss-gelber Gradient, gecacht)
+        _boltShader ??= SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - s * 0.65f),
             new SKPoint(cx, cy + s * 0.65f),
             [SKColors.White, new SKColor(0xFF, 0xF1, 0x76)],
             null,
             SKShaderTileMode.Clamp);
-        _iconShaderPaint.Shader = boltShader;
-        canvas.DrawPath(boltPath, _iconShaderPaint);
+        _iconShaderPaint.Shader = _boltShader;
+        canvas.DrawPath(_iconPathA, _iconShaderPaint);
         _iconShaderPaint.Shader = null;
 
         // Blitz-Rand
         _iconBorderPaint.StrokeWidth = size * 0.04f;
         _iconBorderPaint.StrokeJoin = SKStrokeJoin.Round;
         _iconBorderPaint.Color = new SKColor(0x00, 0x6B, 0x76);
-        canvas.DrawPath(boltPath, _iconBorderPaint);
+        canvas.DrawPath(_iconPathA, _iconBorderPaint);
 
-        // Kleiner Glow in der Mitte (dynamischer Blur-Radius, daher using fuer MaskFilter)
-        using var glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.12f);
+        // Kleiner Glow in der Mitte (gecachter MaskFilter, Radius abhaengig von size)
+        _speedGlowFilter ??= SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.12f);
         _iconFillPaint.Color = SKColors.White.WithAlpha(100);
-        _iconFillPaint.MaskFilter = glowFilter;
+        _iconFillPaint.MaskFilter = _speedGlowFilter;
         canvas.DrawCircle(cx, cy, s * 0.15f, _iconFillPaint);
         _iconFillPaint.MaskFilter = null;
     }
@@ -475,31 +528,31 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         canvas.Save();
         canvas.RotateDegrees(-35, cx, cy);
 
-        // Hammer-Stiel
-        using var hammerStiel = new SKPath();
-        hammerStiel.AddRect(new SKRect(cx - thick * 0.4f, cy - s * 0.15f,
+        // Hammer-Stiel (gecachter Path _iconPathA)
+        _iconPathA.Rewind();
+        _iconPathA.AddRect(new SKRect(cx - thick * 0.4f, cy - s * 0.15f,
             cx + thick * 0.4f, cy + s * 0.7f));
-        canvas.DrawPath(hammerStiel, _shadowPaint);
-        canvas.DrawPath(hammerStiel, _iconFillPaint);
+        canvas.DrawPath(_iconPathA, _shadowPaint);
+        canvas.DrawPath(_iconPathA, _iconFillPaint);
 
-        // Hammer-Kopf (breites Rechteck oben)
-        using var hammerHead = new SKPath();
-        hammerHead.AddRect(new SKRect(cx - s * 0.32f, cy - s * 0.45f,
+        // Hammer-Kopf (gecachter Path _iconPathB, gleichzeitig aktiv neben _iconPathA)
+        _iconPathB.Rewind();
+        _iconPathB.AddRect(new SKRect(cx - s * 0.32f, cy - s * 0.45f,
             cx + s * 0.32f, cy - s * 0.15f));
-        canvas.DrawPath(hammerHead, _shadowPaint);
+        canvas.DrawPath(_iconPathB, _shadowPaint);
 
-        // Hammerkopf-Gradient
-        using var headShader = SKShader.CreateLinearGradient(
+        // Hammerkopf-Gradient (gecacht)
+        _headShader ??= SKShader.CreateLinearGradient(
             new SKPoint(cx - s * 0.32f, cy - s * 0.45f),
             new SKPoint(cx + s * 0.32f, cy - s * 0.15f),
             [new SKColor(0xE0, 0xE0, 0xE0), new SKColor(0x90, 0x90, 0x90)],
             null,
             SKShaderTileMode.Clamp);
-        _iconShaderPaint.Shader = headShader;
-        canvas.DrawPath(hammerHead, _iconShaderPaint);
+        _iconShaderPaint.Shader = _headShader;
+        canvas.DrawPath(_iconPathB, _iconShaderPaint);
         _iconShaderPaint.Shader = null;
-        canvas.DrawPath(hammerHead, _iconBorderPaint);
-        canvas.DrawPath(hammerStiel, _iconBorderPaint);
+        canvas.DrawPath(_iconPathB, _iconBorderPaint);
+        canvas.DrawPath(_iconPathA, _iconBorderPaint);
 
         canvas.Restore();
 
@@ -507,42 +560,43 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         canvas.Save();
         canvas.RotateDegrees(35, cx, cy);
 
-        // Schluessel-Schaft
-        using var shaftPath = new SKPath();
-        shaftPath.AddRect(new SKRect(cx - thick * 0.35f, cy - s * 0.1f,
+        // Schluessel-Schaft (gecachter Path _iconPathA, hammerStiel nicht mehr benoetigt)
+        _iconPathA.Rewind();
+        _iconPathA.AddRect(new SKRect(cx - thick * 0.35f, cy - s * 0.1f,
             cx + thick * 0.35f, cy + s * 0.7f));
-        canvas.DrawPath(shaftPath, _shadowPaint);
+        canvas.DrawPath(_iconPathA, _shadowPaint);
 
-        // Schaft-Gradient
-        using var shaftShader = SKShader.CreateLinearGradient(
+        // Schaft-Gradient (gecacht)
+        _shaftShader ??= SKShader.CreateLinearGradient(
             new SKPoint(cx - thick, cy),
             new SKPoint(cx + thick, cy),
             [new SKColor(0xD0, 0xD0, 0xD0), new SKColor(0x80, 0x80, 0x80)],
             null,
             SKShaderTileMode.Clamp);
-        _iconShaderPaint.Shader = shaftShader;
-        canvas.DrawPath(shaftPath, _iconShaderPaint);
-        canvas.DrawPath(shaftPath, _iconBorderPaint);
+        _iconShaderPaint.Shader = _shaftShader;
+        canvas.DrawPath(_iconPathA, _iconShaderPaint);
+        canvas.DrawPath(_iconPathA, _iconBorderPaint);
 
         // Schluessel-Maul oben (U-Form)
         float maulW = s * 0.32f;
         float maulH = s * 0.28f;
         float maulGap = s * 0.12f;
 
-        using var maulPath = new SKPath();
-        maulPath.MoveTo(cx - maulW, cy - s * 0.1f);
-        maulPath.LineTo(cx - maulW, cy - s * 0.1f - maulH);
-        maulPath.LineTo(cx - maulGap, cy - s * 0.1f - maulH);
-        maulPath.LineTo(cx - maulGap, cy - s * 0.1f - maulH * 0.45f);
-        maulPath.LineTo(cx + maulGap, cy - s * 0.1f - maulH * 0.45f);
-        maulPath.LineTo(cx + maulGap, cy - s * 0.1f - maulH);
-        maulPath.LineTo(cx + maulW, cy - s * 0.1f - maulH);
-        maulPath.LineTo(cx + maulW, cy - s * 0.1f);
-        maulPath.Close();
-        canvas.DrawPath(maulPath, _shadowPaint);
-        canvas.DrawPath(maulPath, _iconShaderPaint);
+        // Schluessel-Maul (gecachter Path _iconPathA, shaftPath bereits gezeichnet)
+        _iconPathA.Rewind();
+        _iconPathA.MoveTo(cx - maulW, cy - s * 0.1f);
+        _iconPathA.LineTo(cx - maulW, cy - s * 0.1f - maulH);
+        _iconPathA.LineTo(cx - maulGap, cy - s * 0.1f - maulH);
+        _iconPathA.LineTo(cx - maulGap, cy - s * 0.1f - maulH * 0.45f);
+        _iconPathA.LineTo(cx + maulGap, cy - s * 0.1f - maulH * 0.45f);
+        _iconPathA.LineTo(cx + maulGap, cy - s * 0.1f - maulH);
+        _iconPathA.LineTo(cx + maulW, cy - s * 0.1f - maulH);
+        _iconPathA.LineTo(cx + maulW, cy - s * 0.1f);
+        _iconPathA.Close();
+        canvas.DrawPath(_iconPathA, _shadowPaint);
+        canvas.DrawPath(_iconPathA, _iconShaderPaint);
         _iconShaderPaint.Shader = null;
-        canvas.DrawPath(maulPath, _iconBorderPaint);
+        canvas.DrawPath(_iconPathA, _iconBorderPaint);
 
         canvas.Restore();
     }
@@ -571,46 +625,46 @@ public sealed class LuckySpinWheelRenderer : IDisposable
             canvas.DrawLine(x1, y1, x2, y2, _iconStrokePaint);
         }
 
-        // Kronen-Pfad
-        using var crownPath = new SKPath();
+        // Kronen-Pfad (gecacht per Rewind statt new SKPath())
+        _iconPathA.Rewind();
         float baseY = cy + s * 0.35f;
         float topY = cy - s * 0.5f;
         float w = s * 0.7f;
 
-        crownPath.MoveTo(cx - w, baseY);
-        crownPath.LineTo(cx - w * 0.8f, topY + s * 0.2f);
-        crownPath.LineTo(cx - w * 0.5f, topY);
-        crownPath.LineTo(cx - w * 0.15f, topY + s * 0.25f);
-        crownPath.LineTo(cx, topY - s * 0.1f);
-        crownPath.LineTo(cx + w * 0.15f, topY + s * 0.25f);
-        crownPath.LineTo(cx + w * 0.5f, topY);
-        crownPath.LineTo(cx + w * 0.8f, topY + s * 0.2f);
-        crownPath.LineTo(cx + w, baseY);
-        crownPath.Close();
+        _iconPathA.MoveTo(cx - w, baseY);
+        _iconPathA.LineTo(cx - w * 0.8f, topY + s * 0.2f);
+        _iconPathA.LineTo(cx - w * 0.5f, topY);
+        _iconPathA.LineTo(cx - w * 0.15f, topY + s * 0.25f);
+        _iconPathA.LineTo(cx, topY - s * 0.1f);
+        _iconPathA.LineTo(cx + w * 0.15f, topY + s * 0.25f);
+        _iconPathA.LineTo(cx + w * 0.5f, topY);
+        _iconPathA.LineTo(cx + w * 0.8f, topY + s * 0.2f);
+        _iconPathA.LineTo(cx + w, baseY);
+        _iconPathA.Close();
 
         // Schatten
         _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
         canvas.Save();
         canvas.Translate(1, 1);
-        canvas.DrawPath(crownPath, _shadowPaint);
+        canvas.DrawPath(_iconPathA, _shadowPaint);
         canvas.Restore();
 
-        // Kronen-Fuellung (Gold-Gradient)
-        using var crownShader = SKShader.CreateLinearGradient(
+        // Kronen-Fuellung (Gold-Gradient, gecacht)
+        _crownShader ??= SKShader.CreateLinearGradient(
             new SKPoint(cx, topY),
             new SKPoint(cx, baseY),
             [new SKColor(0xFF, 0xF1, 0x76), new SKColor(0xFF, 0xB3, 0x00)],
             null,
             SKShaderTileMode.Clamp);
-        _iconShaderPaint.Shader = crownShader;
-        canvas.DrawPath(crownPath, _iconShaderPaint);
+        _iconShaderPaint.Shader = _crownShader;
+        canvas.DrawPath(_iconPathA, _iconShaderPaint);
         _iconShaderPaint.Shader = null;
 
         // Kronen-Rand
         _iconBorderPaint.StrokeWidth = size * 0.04f;
         _iconBorderPaint.StrokeJoin = SKStrokeJoin.Round;
         _iconBorderPaint.Color = new SKColor(0xB7, 0x6E, 0x00);
-        canvas.DrawPath(crownPath, _iconBorderPaint);
+        canvas.DrawPath(_iconPathA, _iconBorderPaint);
 
         // Band an der Basis
         _iconFillPaint.Color = new SKColor(0xCC, 0x00, 0x00);
@@ -639,14 +693,14 @@ public sealed class LuckySpinWheelRenderer : IDisposable
 
         canvas.DrawCircle(cx + 2, cy + 2, hubRadius, _hubShadowPaint);
 
-        using var hubShader = SKShader.CreateLinearGradient(
+        // Hub-Shader gecacht, kein Dispose des alten Shaders noetig (InvalidateShaderCache erledigt das)
+        _hubShader ??= SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - hubRadius),
             new SKPoint(cx, cy + hubRadius),
             [HubHighlight, HubColor],
             null,
             SKShaderTileMode.Clamp);
-        _hubFillPaint.Shader?.Dispose();
-        _hubFillPaint.Shader = hubShader;
+        _hubFillPaint.Shader = _hubShader;
         canvas.DrawCircle(cx, cy, hubRadius, _hubFillPaint);
         _hubFillPaint.Shader = null;
 
@@ -666,30 +720,33 @@ public sealed class LuckySpinWheelRenderer : IDisposable
     {
         float halfWidth = height * 0.55f;
 
-        using var shadowPath = new SKPath();
-        shadowPath.MoveTo(cx + 2, topY + height + 4);
-        shadowPath.LineTo(cx - halfWidth + 2, topY + 4);
-        shadowPath.LineTo(cx + halfWidth + 2, topY + 4);
-        shadowPath.Close();
-        canvas.DrawPath(shadowPath, _pointerShadowPaint);
+        // Shadow-Path (gecacht per Rewind statt new SKPath())
+        _iconPathA.Rewind();
+        _iconPathA.MoveTo(cx + 2, topY + height + 4);
+        _iconPathA.LineTo(cx - halfWidth + 2, topY + 4);
+        _iconPathA.LineTo(cx + halfWidth + 2, topY + 4);
+        _iconPathA.Close();
+        canvas.DrawPath(_iconPathA, _pointerShadowPaint);
 
-        using var pointerShader = SKShader.CreateLinearGradient(
+        // Pointer-Shader gecacht, kein Dispose des alten Shaders noetig (InvalidateShaderCache erledigt das)
+        _pointerShader ??= SKShader.CreateLinearGradient(
             new SKPoint(cx - halfWidth, topY),
             new SKPoint(cx + halfWidth, topY),
             [PointerColor, PointerShadow, PointerColor],
             [0f, 0.5f, 1f],
             SKShaderTileMode.Clamp);
-        _pointerFillPaint.Shader?.Dispose();
-        _pointerFillPaint.Shader = pointerShader;
-        using var pointerPath = new SKPath();
-        pointerPath.MoveTo(cx, topY + height);
-        pointerPath.LineTo(cx - halfWidth, topY);
-        pointerPath.LineTo(cx + halfWidth, topY);
-        pointerPath.Close();
-        canvas.DrawPath(pointerPath, _pointerFillPaint);
+        _pointerFillPaint.Shader = _pointerShader;
+
+        // Pointer-Path (gecacht per Rewind, shadowPath bereits gezeichnet)
+        _iconPathA.Rewind();
+        _iconPathA.MoveTo(cx, topY + height);
+        _iconPathA.LineTo(cx - halfWidth, topY);
+        _iconPathA.LineTo(cx + halfWidth, topY);
+        _iconPathA.Close();
+        canvas.DrawPath(_iconPathA, _pointerFillPaint);
         _pointerFillPaint.Shader = null;
 
-        canvas.DrawPath(pointerPath, _pointerBorderPaint);
+        canvas.DrawPath(_iconPathA, _pointerBorderPaint);
         canvas.DrawLine(cx - halfWidth + 3, topY + 2, cx - 1, topY + height - 3, _pointerGlintPaint);
     }
 
@@ -737,6 +794,32 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         path.Close();
     }
 
+    /// <summary>
+    /// Gibt alle gecachten Shader und dynamischen MaskFilter frei.
+    /// Wird aufgerufen wenn sich der Render-Radius geaendert hat.
+    /// </summary>
+    private void InvalidateShaderCache()
+    {
+        for (int i = 0; i < _segmentShaders.Length; i++)
+        {
+            _segmentShaders[i]?.Dispose();
+            _segmentShaders[i] = null;
+        }
+        _coinShader1?.Dispose(); _coinShader1 = null;
+        _coinShader2?.Dispose(); _coinShader2 = null;
+        _coinShader3?.Dispose(); _coinShader3 = null;
+        _starShader?.Dispose(); _starShader = null;
+        _hexShader?.Dispose(); _hexShader = null;
+        _boltShader?.Dispose(); _boltShader = null;
+        _headShader?.Dispose(); _headShader = null;
+        _shaftShader?.Dispose(); _shaftShader = null;
+        _crownShader?.Dispose(); _crownShader = null;
+        _hubShader?.Dispose(); _hubShader = null;
+        _pointerShader?.Dispose(); _pointerShader = null;
+        _moneyGlowFilter?.Dispose(); _moneyGlowFilter = null;
+        _speedGlowFilter?.Dispose(); _speedGlowFilter = null;
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -756,5 +839,13 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         _iconTextFont.Dispose();
         _starPathCache.Dispose();
         _hexPathCache.Dispose();
+
+        // Gecachte Paths freigeben
+        _segPath.Dispose();
+        _iconPathA.Dispose();
+        _iconPathB.Dispose();
+
+        // Gecachte Shader + dynamische MaskFilter freigeben
+        InvalidateShaderCache();
     }
 }

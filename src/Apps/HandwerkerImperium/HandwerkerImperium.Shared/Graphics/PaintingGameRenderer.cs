@@ -68,6 +68,23 @@ public sealed class PaintingGameRenderer : IDisposable
     private readonly SKPaint _completionRingPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 4 };
     private readonly SKPaint _targetBgPaint = new() { Color = CellNormal, IsAntialias = true };
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // Bounds-abhaengige Shader-Caches (Bounds aendern sich selten, meist nie)
+    // Spart 2 Shader-Allokationen pro Frame bei 30fps → ~60 GC-Objekte/s weniger
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Vignette-Shader-Cache (abhaengig von MidX/MidY/Radius)
+    private SKShader? _vigShaderCache;
+    private float _lastVigMidX;
+    private float _lastVigMidY;
+    private float _lastVigRadius;
+
+    // Regenbogen-Reflex-Shader-Cache (abhaengig von reflexX/reflexY/reflexRadius)
+    private SKShader? _reflexShaderCache;
+    private float _lastReflexX;
+    private float _lastReflexY;
+    private float _lastReflexRadius;
+
     // Struct-basiertes Partikel-Array (GC-frei auf Android)
     private const int MAX_SPLATTERS = 30;
     private readonly PaintSplatter[] _splatters = new PaintSplatter[MAX_SPLATTERS];
@@ -87,7 +104,7 @@ public sealed class PaintingGameRenderer : IDisposable
     }
 
     /// <summary>
-    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// Initialisiert den AI-Asset-Service fuer den Hintergrund.
     /// </summary>
     public void Initialize(IGameAssetService assetService)
     {
@@ -101,7 +118,7 @@ public sealed class PaintingGameRenderer : IDisposable
     public void Render(SKCanvas canvas, SKRect bounds, PaintCellData[] cells, int gridSize,
         SKColor paintColor, bool isPlaying, bool isAllPainted, float deltaTime)
     {
-        // AI-Hintergrund als Atmosphäre-Layer
+        // AI-Hintergrund als Atmosphaere-Layer
         if (_assetService != null)
         {
             _background ??= _assetService.GetBitmap("minigames/painting_bg.webp");
@@ -260,6 +277,7 @@ public sealed class PaintingGameRenderer : IDisposable
 
     /// <summary>
     /// Zeichnet den Putzwand-Hintergrund mit Kreuzschraffur-Textur und subtiler Vignette.
+    /// Vignette-Shader gecacht: wird nur neu erstellt wenn sich die Bounds aendern (spart ~1 Allokation/Frame).
     /// </summary>
     private void DrawWallBackground(SKCanvas canvas, SKRect bounds)
     {
@@ -276,16 +294,24 @@ public sealed class PaintingGameRenderer : IDisposable
             canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, _lineVPaint);
         }
 
-        // Subtile radiale Vignette (Mitte heller) - Shader pro Frame noetig (bounds-abhaengig)
+        // Subtile radiale Vignette (Mitte heller) — gecacht, da bounds sich selten aendern
         float vigCx = bounds.MidX;
         float vigCy = bounds.MidY;
         float vigR = Math.Max(bounds.Width, bounds.Height) * 0.7f;
-        using var vigShader = SKShader.CreateRadialGradient(
-            new SKPoint(vigCx, vigCy), vigR,
-            [new SKColor(0xFF, 0xFF, 0xFF, 15), new SKColor(0x00, 0x00, 0x00, 12)],
-            SKShaderTileMode.Clamp);
-        _vigPaint.Shader?.Dispose();
-        _vigPaint.Shader = vigShader;
+
+        if (_vigShaderCache == null || _lastVigMidX != vigCx || _lastVigMidY != vigCy || _lastVigRadius != vigR)
+        {
+            _vigShaderCache?.Dispose();
+            _vigShaderCache = SKShader.CreateRadialGradient(
+                new SKPoint(vigCx, vigCy), vigR,
+                [new SKColor(0xFF, 0xFF, 0xFF, 15), new SKColor(0x00, 0x00, 0x00, 12)],
+                SKShaderTileMode.Clamp);
+            _lastVigMidX = vigCx;
+            _lastVigMidY = vigCy;
+            _lastVigRadius = vigR;
+        }
+
+        _vigPaint.Shader = _vigShaderCache;
         canvas.DrawRect(bounds, _vigPaint);
         _vigPaint.Shader = null;
     }
@@ -322,14 +348,14 @@ public sealed class PaintingGameRenderer : IDisposable
             }
             canvas.Restore();
 
-            // Nass-Effekt: Weißer Highlight-Streifen diagonal
+            // Nass-Effekt: Weisser Highlight-Streifen diagonal
             canvas.Save();
             canvas.ClipRect(new SKRect(innerX, innerY, innerX + innerSize, innerY + innerSize));
             canvas.DrawLine(innerX + innerSize * 0.2f, innerY + innerSize * 0.1f,
                 innerX + innerSize * 0.8f, innerY + innerSize * 0.6f, _wetHighlightPaint);
             canvas.Restore();
 
-            // Frisch-gestrichen-Flash (kurzer weißer Glow)
+            // Frisch-gestrichen-Flash (kurzer weisser Glow)
             if (cell.PaintedAge < 0.4f)
             {
                 float flashAlpha = (1f - cell.PaintedAge / 0.4f) * 0.3f;
@@ -337,7 +363,7 @@ public sealed class PaintingGameRenderer : IDisposable
                 canvas.DrawRect(innerX, innerY, innerSize, innerSize, _flashPaint);
             }
 
-            // Korrekt-Markierung (Haekchen auf weißem Kreis)
+            // Korrekt-Markierung (Haekchen auf weissem Kreis)
             if (cell.IsCorrect)
             {
                 float ccx = innerX + innerSize / 2;
@@ -369,6 +395,7 @@ public sealed class PaintingGameRenderer : IDisposable
             canvas.DrawCircle(innerX + innerSize / 2, innerY + innerSize / 2, pointSize, _markPaint);
 
             // Gestrichelter animierter Rand
+            // Perf: dashPhase aendert sich pro Frame — SKPathEffect nicht cachebar
             using var dashEffect = SKPathEffect.CreateDash([4, 4], _animTime * 10);
             _dashPaint.PathEffect?.Dispose();
             _dashPaint.PathEffect = dashEffect;
@@ -425,6 +452,7 @@ public sealed class PaintingGameRenderer : IDisposable
     /// <summary>
     /// Zeichnet einen subtilen Regenbogen-Lichtreflex oben rechts auf der Wand.
     /// Simuliert Licht das durch ein Fenster auf die Putzwand faellt.
+    /// Shader gecacht: wird nur neu erstellt wenn sich Bounds aendern (spart ~1 Allokation/Frame).
     /// </summary>
     private void DrawRainbowReflex(SKCanvas canvas, SKRect bounds)
     {
@@ -432,22 +460,29 @@ public sealed class PaintingGameRenderer : IDisposable
         float reflexX = bounds.Right - reflexRadius * 0.6f;
         float reflexY = bounds.Top + reflexRadius * 0.4f;
 
-        // Regenbogen-Gradient als Halbkreis mit sehr niedrigem Alpha - Shader pro Frame (bounds-abhaengig)
-        using var reflexShader = SKShader.CreateRadialGradient(
-            new SKPoint(reflexX, reflexY), reflexRadius,
-            [
-                new SKColor(0xFF, 0x60, 0x60, 12),
-                new SKColor(0xFF, 0xA0, 0x40, 10),
-                new SKColor(0xFF, 0xFF, 0x60, 10),
-                new SKColor(0x60, 0xFF, 0x60, 8),
-                new SKColor(0x60, 0x80, 0xFF, 8),
-                new SKColor(0xA0, 0x60, 0xFF, 6),
-                new SKColor(0x00, 0x00, 0x00, 0)
-            ],
-            [0.3f, 0.45f, 0.55f, 0.65f, 0.75f, 0.85f, 1.0f],
-            SKShaderTileMode.Clamp);
-        _reflexPaint.Shader?.Dispose();
-        _reflexPaint.Shader = reflexShader;
+        // Regenbogen-Gradient gecacht — bounds-abhaengig, aendert sich selten
+        if (_reflexShaderCache == null || _lastReflexX != reflexX || _lastReflexY != reflexY || _lastReflexRadius != reflexRadius)
+        {
+            _reflexShaderCache?.Dispose();
+            _reflexShaderCache = SKShader.CreateRadialGradient(
+                new SKPoint(reflexX, reflexY), reflexRadius,
+                [
+                    new SKColor(0xFF, 0x60, 0x60, 12),
+                    new SKColor(0xFF, 0xA0, 0x40, 10),
+                    new SKColor(0xFF, 0xFF, 0x60, 10),
+                    new SKColor(0x60, 0xFF, 0x60, 8),
+                    new SKColor(0x60, 0x80, 0xFF, 8),
+                    new SKColor(0xA0, 0x60, 0xFF, 6),
+                    new SKColor(0x00, 0x00, 0x00, 0)
+                ],
+                [0.3f, 0.45f, 0.55f, 0.65f, 0.75f, 0.85f, 1.0f],
+                SKShaderTileMode.Clamp);
+            _lastReflexX = reflexX;
+            _lastReflexY = reflexY;
+            _lastReflexRadius = reflexRadius;
+        }
+
+        _reflexPaint.Shader = _reflexShaderCache;
 
         // Nur obere rechte Ecke clippen fuer Halbkreis-Effekt
         canvas.Save();
@@ -462,6 +497,7 @@ public sealed class PaintingGameRenderer : IDisposable
     /// <summary>
     /// Zeichnet den goldenen Completion-Flash (radialer Gradient der ausblendend ueber das Canvas liegt).
     /// Wird getriggert wenn alle Zielzellen gestrichen sind.
+    /// Perf: alpha und currentRadius aendern sich pro Frame — nicht cachebar.
     /// </summary>
     private void DrawCompletionFlash(SKCanvas canvas, SKRect bounds)
     {
@@ -516,6 +552,10 @@ public sealed class PaintingGameRenderer : IDisposable
         _completionFlashPaint.Dispose();
         _completionRingPaint.Dispose();
         _targetBgPaint.Dispose();
+
+        // Bounds-abhaengige Shader-Caches freigeben
+        _vigShaderCache?.Dispose();
+        _reflexShaderCache?.Dispose();
     }
 }
 

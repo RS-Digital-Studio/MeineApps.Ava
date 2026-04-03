@@ -21,6 +21,8 @@ public enum CardFrameTier
 /// Level-Rahmen (Bronze/Silber/Gold/Diamant), Progress-Bar mit Glow-Kopf,
 /// 3D-Buttons, illustrierte Waehrungs-Icons, Ribbon-Banner.
 /// Alle Methoden statisch, gecachte SKPaint-Objekte.
+/// Single-Slot-Shader-Caches pro Methode: Entlastet GC bei vielen Karten pro Frame
+/// (spart 4 Shader-Allokationen pro Karte x N Karten auf dem Bildschirm).
 /// </summary>
 public static class GameCardRenderer
 {
@@ -85,7 +87,7 @@ public static class GameCardRenderer
         Color = SKColors.White
     };
 
-    // Mutierbarer Font fuer Text-Rendering (Größe variiert je nach Aufruf)
+    // Mutierbarer Font fuer Text-Rendering (Groesse variiert je nach Aufruf)
     private static readonly SKFont _textFont = new();
     private static readonly SKFont _textFontBold = new() { Embolden = true };
 
@@ -102,6 +104,28 @@ public static class GameCardRenderer
     private static readonly SKPath _badgePath = new();
     private static readonly SKPath _crownPath = new();
     private static readonly SKPath _shacklePath = new();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Single-Slot-Shader-Caches (last-used, pro Methode)
+    // Spart native Allokationen wenn mehrere Karten gleiche Parameter haben.
+    // SKColor ist uint (4 Bytes) — direkt als Hash-Komponente nutzbar via (int)(uint)color.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // DrawProgressBar: Gradient-Shader Cache
+    private static SKShader? _progressShaderCache;
+    private static long _progressShaderKey;
+
+    // DrawRibbonBanner: Gradient-Shader Cache
+    private static SKShader? _ribbonShaderCache;
+    private static long _ribbonShaderKey;
+
+    // DrawLevelBadge: Gradient-Shader Cache
+    private static SKShader? _badgeShaderCache;
+    private static long _badgeShaderKey;
+
+    // DrawCrown: Gradient-Shader Cache
+    private static SKShader? _crownShaderCache;
+    private static long _crownShaderKey;
 
     // ═══════════════════════════════════════════════════════════════════════
     // Rahmen-Stufe bestimmen
@@ -211,6 +235,7 @@ public static class GameCardRenderer
 
     /// <summary>
     /// Zeichnet eine Progress-Bar mit Gradient-Fuellung und leuchtendem Kopf.
+    /// Shader gecacht (Single-Slot): Neue Allokation nur wenn sich Farben oder Geometrie aendern.
     /// </summary>
     public static void DrawProgressBar(SKCanvas canvas, SKRect bounds, float progress,
         SKColor barColorStart, SKColor barColorEnd, float height = 6f)
@@ -227,16 +252,28 @@ public static class GameCardRenderer
 
         if (progress < 0.01f) return;
 
-        // Gradient-Fuellung
+        // Gradient-Fuellung — Single-Slot-Cache: Neubau nur bei anderen Parametern
         float fillW = barW * progress;
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.Left, barY),
-            new SKPoint(bounds.Left + fillW, barY),
-            new[] { barColorStart, barColorEnd },
-            null,
-            SKShaderTileMode.Clamp);
+        long key = HashCode.Combine(
+            BitConverter.SingleToInt32Bits(bounds.Left),
+            BitConverter.SingleToInt32Bits(barY),
+            BitConverter.SingleToInt32Bits(fillW),
+            (int)(uint)barColorStart,
+            (int)(uint)barColorEnd);
 
-        _progressPaint.Shader = shader;
+        if (_progressShaderKey != key)
+        {
+            _progressShaderCache?.Dispose();
+            _progressShaderCache = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.Left, barY),
+                new SKPoint(bounds.Left + fillW, barY),
+                new[] { barColorStart, barColorEnd },
+                null,
+                SKShaderTileMode.Clamp);
+            _progressShaderKey = key;
+        }
+
+        _progressPaint.Shader = _progressShaderCache;
         canvas.DrawRoundRect(bounds.Left, barY, fillW, height, cornerR, cornerR, _progressPaint);
         _progressPaint.Shader = null;
 
@@ -350,7 +387,7 @@ public static class GameCardRenderer
         canvas.DrawLine(x, y - slotLen, x, y + slotLen, _strokePaint);
         _strokePaint.StrokeWidth = 1f;
 
-        // Rand (Gewinde-Andeuting: 8 kleine Kerben am Rand)
+        // Rand (Gewinde-Andeutung: 8 kleine Kerben am Rand)
         _strokePaint.Color = CoinDark.WithAlpha(80);
         _strokePaint.StrokeWidth = 0.5f;
         for (int i = 0; i < 8; i++)
@@ -376,6 +413,7 @@ public static class GameCardRenderer
     /// <summary>
     /// Zeichnet ein dekoratives Ribbon-Banner mit gefalteten Enden.
     /// Text wird zentriert darauf gezeichnet.
+    /// Shader gecacht (Single-Slot): Neue Allokation nur wenn sich Farbe oder Geometrie aendern.
     /// </summary>
     public static void DrawRibbonBanner(SKCanvas canvas, float centerX, float centerY,
         float width, float height, SKColor ribbonColor, string text, float fontSize = 11f)
@@ -394,15 +432,30 @@ public static class GameCardRenderer
         _ribbonPath.LineTo(centerX - halfW, centerY + halfH);            // Links-unten
         _ribbonPath.Close();
 
-        // Banner-Gradient (leichter 3D-Effekt)
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(centerX, centerY - halfH),
-            new SKPoint(centerX, centerY + halfH),
-            new[] { Lighten(ribbonColor, 0.15f), ribbonColor, Darken(ribbonColor, 0.1f) },
-            new[] { 0f, 0.5f, 1f },
-            SKShaderTileMode.Clamp);
+        // Banner-Gradient — Single-Slot-Cache: Neubau nur bei anderen Parametern
+        var lightColor = Lighten(ribbonColor, 0.15f);
+        var darkColor = Darken(ribbonColor, 0.1f);
+        long key = HashCode.Combine(
+            BitConverter.SingleToInt32Bits(centerX),
+            BitConverter.SingleToInt32Bits(centerY),
+            BitConverter.SingleToInt32Bits(halfH),
+            (int)(uint)lightColor,
+            (int)(uint)ribbonColor,
+            (int)(uint)darkColor);
 
-        _fillPaint.Shader = shader;
+        if (_ribbonShaderKey != key)
+        {
+            _ribbonShaderCache?.Dispose();
+            _ribbonShaderCache = SKShader.CreateLinearGradient(
+                new SKPoint(centerX, centerY - halfH),
+                new SKPoint(centerX, centerY + halfH),
+                new[] { lightColor, ribbonColor, darkColor },
+                new[] { 0f, 0.5f, 1f },
+                SKShaderTileMode.Clamp);
+            _ribbonShaderKey = key;
+        }
+
+        _fillPaint.Shader = _ribbonShaderCache;
         canvas.DrawPath(_ribbonPath, _fillPaint);
         _fillPaint.Shader = null;
 
@@ -436,6 +489,7 @@ public static class GameCardRenderer
 
     /// <summary>
     /// Zeichnet ein goldenes Level-Badge (Schild-Form mit Level-Zahl).
+    /// Shader gecacht (Single-Slot): Neue Allokation nur wenn sich Farbe oder Position aendern.
     /// </summary>
     public static void DrawLevelBadge(SKCanvas canvas, float x, float y, int level, float size = 24f)
     {
@@ -455,15 +509,29 @@ public static class GameCardRenderer
         _badgePath.LineTo(x - halfW, y + botH * 0.4f);
         _badgePath.Close();
 
-        // Gradient
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(x, y - topH),
-            new SKPoint(x, y + botH),
-            new[] { Lighten(badgeColor, 0.3f), badgeColor },
-            null,
-            SKShaderTileMode.Clamp);
+        // Badge-Gradient — Single-Slot-Cache: Neubau nur bei anderen Parametern
+        var lightBadge = Lighten(badgeColor, 0.3f);
+        long key = HashCode.Combine(
+            BitConverter.SingleToInt32Bits(x),
+            BitConverter.SingleToInt32Bits(y),
+            BitConverter.SingleToInt32Bits(topH),
+            BitConverter.SingleToInt32Bits(botH),
+            (int)(uint)lightBadge,
+            (int)(uint)badgeColor);
 
-        _fillPaint.Shader = shader;
+        if (_badgeShaderKey != key)
+        {
+            _badgeShaderCache?.Dispose();
+            _badgeShaderCache = SKShader.CreateLinearGradient(
+                new SKPoint(x, y - topH),
+                new SKPoint(x, y + botH),
+                new[] { lightBadge, badgeColor },
+                null,
+                SKShaderTileMode.Clamp);
+            _badgeShaderKey = key;
+        }
+
+        _fillPaint.Shader = _badgeShaderCache;
         canvas.DrawPath(_badgePath, _fillPaint);
         _fillPaint.Shader = null;
 
@@ -489,6 +557,7 @@ public static class GameCardRenderer
 
     /// <summary>
     /// Zeichnet eine goldene Krone ueber einem Element.
+    /// Shader gecacht (Single-Slot): Neue Allokation nur wenn sich Position oder Groesse aendern.
     /// </summary>
     public static void DrawCrown(SKCanvas canvas, float x, float y, float width = 20f, float height = 14f)
     {
@@ -508,15 +577,25 @@ public static class GameCardRenderer
         _crownPath.LineTo(x + halfW, y + height * 0.6f);
         _crownPath.Close();
 
-        // Gold-Gradient
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(x, y),
-            new SKPoint(x, y + height),
-            new[] { new SKColor(0xFF, 0xE0, 0x40), GoldColor, new SKColor(0xCC, 0xA3, 0x00) },
-            new[] { 0f, 0.5f, 1f },
-            SKShaderTileMode.Clamp);
+        // Gold-Gradient — Single-Slot-Cache: Neubau nur bei anderen Parametern
+        long key = HashCode.Combine(
+            BitConverter.SingleToInt32Bits(x),
+            BitConverter.SingleToInt32Bits(y),
+            BitConverter.SingleToInt32Bits(height));
 
-        _fillPaint.Shader = shader;
+        if (_crownShaderKey != key)
+        {
+            _crownShaderCache?.Dispose();
+            _crownShaderCache = SKShader.CreateLinearGradient(
+                new SKPoint(x, y),
+                new SKPoint(x, y + height),
+                new[] { new SKColor(0xFF, 0xE0, 0x40), GoldColor, new SKColor(0xCC, 0xA3, 0x00) },
+                new[] { 0f, 0.5f, 1f },
+                SKShaderTileMode.Clamp);
+            _crownShaderKey = key;
+        }
+
+        _fillPaint.Shader = _crownShaderCache;
         canvas.DrawPath(_crownPath, _fillPaint);
         _fillPaint.Shader = null;
 
@@ -605,7 +684,7 @@ public static class GameCardRenderer
             c.Alpha);
     }
 
-    /// <summary>Statische SKMaskFilter/Paint/Path-Ressourcen freigeben (bei App-Shutdown aufrufen).</summary>
+    /// <summary>Statische SKMaskFilter/Paint/Path/Shader-Ressourcen freigeben (bei App-Shutdown aufrufen).</summary>
     public static void DisposeStaticResources()
     {
         _progressGlowFilter?.Dispose();
@@ -622,5 +701,11 @@ public static class GameCardRenderer
         _badgePath?.Dispose();
         _crownPath?.Dispose();
         _shacklePath?.Dispose();
+
+        // Single-Slot-Shader-Caches freigeben
+        _progressShaderCache?.Dispose();
+        _ribbonShaderCache?.Dispose();
+        _badgeShaderCache?.Dispose();
+        _crownShaderCache?.Dispose();
     }
 }

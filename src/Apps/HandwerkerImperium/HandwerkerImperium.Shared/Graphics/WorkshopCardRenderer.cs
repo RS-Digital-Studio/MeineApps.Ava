@@ -37,6 +37,11 @@ public static class WorkshopCardRenderer
     private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
 
+    // Gecachter Path: alle Scene-Methoden laufen sequenziell auf dem UI-Thread,
+    // daher kann ein einziger Path mit Rewind() wiederverwendet werden.
+    // Ersetzt 13 einzelne SKPath-Allokationen pro Render-Aufruf.
+    private static readonly SKPath _cachedPath = new();
+
     /// <summary>
     /// Gibt die Workshop-Farbe für einen Typ zurück.
     /// </summary>
@@ -194,13 +199,13 @@ public static class WorkshopCardRenderer
 
         // Hobel-Körper
         fill.Color = WoodDark;
-        using var hobelPath = new SKPath();
-        hobelPath.MoveTo(hobelX, hobelY);
-        hobelPath.LineTo(hobelX + s * 0.6f, hobelY);
-        hobelPath.LineTo(hobelX + s * 0.55f, hobelY + s * 0.2f);
-        hobelPath.LineTo(hobelX + s * 0.05f, hobelY + s * 0.2f);
-        hobelPath.Close();
-        canvas.DrawPath(hobelPath, fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(hobelX, hobelY);
+        _cachedPath.LineTo(hobelX + s * 0.6f, hobelY);
+        _cachedPath.LineTo(hobelX + s * 0.55f, hobelY + s * 0.2f);
+        _cachedPath.LineTo(hobelX + s * 0.05f, hobelY + s * 0.2f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
 
         // Hobel-Griff
         fill.Color = color;
@@ -266,27 +271,27 @@ public static class WorkshopCardRenderer
         canvas.DrawRoundRect(new SKRoundRect(new SKRect(-2, 0, 2, s * 0.55f), 1), fill);
 
         // Schlüssel-Maul
-        using var maulPath = new SKPath();
-        maulPath.MoveTo(-s * 0.1f, 0);
-        maulPath.LineTo(s * 0.1f, 0);
-        maulPath.LineTo(s * 0.08f, -s * 0.15f);
-        maulPath.LineTo(s * 0.03f, -s * 0.08f);
-        maulPath.LineTo(-s * 0.03f, -s * 0.08f);
-        maulPath.LineTo(-s * 0.08f, -s * 0.15f);
-        maulPath.Close();
-        canvas.DrawPath(maulPath, fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(-s * 0.1f, 0);
+        _cachedPath.LineTo(s * 0.1f, 0);
+        _cachedPath.LineTo(s * 0.08f, -s * 0.15f);
+        _cachedPath.LineTo(s * 0.03f, -s * 0.08f);
+        _cachedPath.LineTo(-s * 0.03f, -s * 0.08f);
+        _cachedPath.LineTo(-s * 0.08f, -s * 0.15f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
 
         canvas.Restore();
     }
 
     private static void DrawWaterDrop(SKCanvas canvas, float cx, float cy, float size, SKPaint fill)
     {
-        using var dropPath = new SKPath();
-        dropPath.MoveTo(cx, cy - size * 2);
-        dropPath.QuadTo(cx + size * 1.2f, cy, cx, cy + size);
-        dropPath.QuadTo(cx - size * 1.2f, cy, cx, cy - size * 2);
-        dropPath.Close();
-        canvas.DrawPath(dropPath, fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, cy - size * 2);
+        _cachedPath.QuadTo(cx + size * 1.2f, cy, cx, cy + size);
+        _cachedPath.QuadTo(cx - size * 1.2f, cy, cx, cy - size * 2);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
     }
 
     // =====================================================================
@@ -344,30 +349,30 @@ public static class WorkshopCardRenderer
 
         // Warnung-Dreieck (unten am Kasten)
         fill.Color = color.WithAlpha(80);
-        using var warnPath = new SKPath();
+        _cachedPath.Rewind();
         float wx = cx;
         float wy = cy + boxH / 2 - s * 0.05f;
-        warnPath.MoveTo(wx, wy - s * 0.1f);
-        warnPath.LineTo(wx - s * 0.07f, wy + s * 0.02f);
-        warnPath.LineTo(wx + s * 0.07f, wy + s * 0.02f);
-        warnPath.Close();
-        canvas.DrawPath(warnPath, fill);
+        _cachedPath.MoveTo(wx, wy - s * 0.1f);
+        _cachedPath.LineTo(wx - s * 0.07f, wy + s * 0.02f);
+        _cachedPath.LineTo(wx + s * 0.07f, wy + s * 0.02f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
     }
 
     private static void DrawLightningBolt(SKCanvas canvas, float cx, float cy, float size,
         SKColor color, SKPaint fill)
     {
         fill.Color = color;
-        using var boltPath = new SKPath();
-        boltPath.MoveTo(cx - size * 0.15f, cy - size * 0.5f);
-        boltPath.LineTo(cx + size * 0.2f, cy - size * 0.5f);
-        boltPath.LineTo(cx, cy);
-        boltPath.LineTo(cx + size * 0.25f, cy);
-        boltPath.LineTo(cx - size * 0.1f, cy + size * 0.5f);
-        boltPath.LineTo(cx + size * 0.05f, cy + size * 0.05f);
-        boltPath.LineTo(cx - size * 0.2f, cy + size * 0.05f);
-        boltPath.Close();
-        canvas.DrawPath(boltPath, fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - size * 0.15f, cy - size * 0.5f);
+        _cachedPath.LineTo(cx + size * 0.2f, cy - size * 0.5f);
+        _cachedPath.LineTo(cx, cy);
+        _cachedPath.LineTo(cx + size * 0.25f, cy);
+        _cachedPath.LineTo(cx - size * 0.1f, cy + size * 0.5f);
+        _cachedPath.LineTo(cx + size * 0.05f, cy + size * 0.05f);
+        _cachedPath.LineTo(cx - size * 0.2f, cy + size * 0.05f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
     }
 
     // =====================================================================
@@ -458,6 +463,7 @@ public static class WorkshopCardRenderer
         canvas.DrawLine(cx - s * 0.5f, cy, cx + s * 0.5f, cy, stroke);
 
         // Dachziegel (3 Reihen, versetzt)
+        // Jede Iteration zeichnet sofort, danach wird der Path per Rewind() wiederverwendet.
         for (int row = 0; row < 3; row++)
         {
             float tileY = cy - s * 0.35f + row * s * 0.2f;
@@ -474,13 +480,13 @@ public static class WorkshopCardRenderer
                 // Ziegel (abgerundetes Trapez)
                 byte shade = (byte)(0xC0 - row * 0x15 + i * 0x08);
                 fill.Color = new SKColor(shade, (byte)(shade * 0.4f), (byte)(shade * 0.25f));
-                using var tilePath = new SKPath();
-                tilePath.MoveTo(tx, ty);
-                tilePath.LineTo(tx + tileW - 1, ty);
-                tilePath.LineTo(tx + tileW - 2, ty + s * 0.15f);
-                tilePath.LineTo(tx + 1, ty + s * 0.15f);
-                tilePath.Close();
-                canvas.DrawPath(tilePath, fill);
+                _cachedPath.Rewind();
+                _cachedPath.MoveTo(tx, ty);
+                _cachedPath.LineTo(tx + tileW - 1, ty);
+                _cachedPath.LineTo(tx + tileW - 2, ty + s * 0.15f);
+                _cachedPath.LineTo(tx + 1, ty + s * 0.15f);
+                _cachedPath.Close();
+                canvas.DrawPath(_cachedPath, fill);
             }
         }
 
@@ -545,11 +551,11 @@ public static class WorkshopCardRenderer
         fill.Color = color;
         float helmX = cx + s * 0.35f;
         float helmY = cy - s * 0.1f;
-        using var helmPath = new SKPath();
-        helmPath.MoveTo(helmX - s * 0.15f, helmY + s * 0.03f);
-        helmPath.QuadTo(helmX, helmY - s * 0.12f, helmX + s * 0.15f, helmY + s * 0.03f);
-        helmPath.Close();
-        canvas.DrawPath(helmPath, fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(helmX - s * 0.15f, helmY + s * 0.03f);
+        _cachedPath.QuadTo(helmX, helmY - s * 0.12f, helmX + s * 0.15f, helmY + s * 0.03f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
 
         // Helm-Krempe
         fill.Color = color.WithAlpha(200);
@@ -591,20 +597,20 @@ public static class WorkshopCardRenderer
 
         canvas.Restore();
 
-        // Geodreieck (rechts unten)
+        // Geodreieck (rechts unten) -- Path wird für Fill UND Stroke genutzt, kein Rewind dazwischen
         fill.Color = new SKColor(0xFF, 0xFF, 0xFF, 0x20);
-        using var trianglePath = new SKPath();
+        _cachedPath.Rewind();
         float tx = cx + s * 0.3f;
         float ty = cy + s * 0.15f;
-        trianglePath.MoveTo(tx, ty - s * 0.2f);
-        trianglePath.LineTo(tx + s * 0.25f, ty + s * 0.15f);
-        trianglePath.LineTo(tx - s * 0.25f, ty + s * 0.15f);
-        trianglePath.Close();
-        canvas.DrawPath(trianglePath, fill);
+        _cachedPath.MoveTo(tx, ty - s * 0.2f);
+        _cachedPath.LineTo(tx + s * 0.25f, ty + s * 0.15f);
+        _cachedPath.LineTo(tx - s * 0.25f, ty + s * 0.15f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
 
         stroke.Color = color.WithAlpha(100);
         stroke.StrokeWidth = 1;
-        canvas.DrawPath(trianglePath, stroke);
+        canvas.DrawPath(_cachedPath, stroke);
 
         // Zirkel (links oben)
         float zx = cx - s * 0.4f;
@@ -678,16 +684,16 @@ public static class WorkshopCardRenderer
         float crownCy = cy - s * 0.35f;
         float cs = s * 0.2f;
 
-        using var crownPath = new SKPath();
-        crownPath.MoveTo(crownCx - cs, crownCy + cs * 0.4f);
-        crownPath.LineTo(crownCx - cs, crownCy - cs * 0.2f);
-        crownPath.LineTo(crownCx - cs * 0.5f, crownCy + cs * 0.1f);
-        crownPath.LineTo(crownCx, crownCy - cs * 0.5f);
-        crownPath.LineTo(crownCx + cs * 0.5f, crownCy + cs * 0.1f);
-        crownPath.LineTo(crownCx + cs, crownCy - cs * 0.2f);
-        crownPath.LineTo(crownCx + cs, crownCy + cs * 0.4f);
-        crownPath.Close();
-        canvas.DrawPath(crownPath, fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(crownCx - cs, crownCy + cs * 0.4f);
+        _cachedPath.LineTo(crownCx - cs, crownCy - cs * 0.2f);
+        _cachedPath.LineTo(crownCx - cs * 0.5f, crownCy + cs * 0.1f);
+        _cachedPath.LineTo(crownCx, crownCy - cs * 0.5f);
+        _cachedPath.LineTo(crownCx + cs * 0.5f, crownCy + cs * 0.1f);
+        _cachedPath.LineTo(crownCx + cs, crownCy - cs * 0.2f);
+        _cachedPath.LineTo(crownCx + cs, crownCy + cs * 0.4f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
 
         // Basisband der Krone
         fill.Color = GoldDark;
@@ -713,14 +719,14 @@ public static class WorkshopCardRenderer
             new SKRect(cx - s * 0.7f, cy - s * 0.15f, cx - s * 0.35f, cy + s * 0.3f), 3), fill);
         // Feuer in der Esse
         fill.Color = new SKColor(0xFF, 0x6B, 0x00, 0xD0);
-        using var firePath = new SKPath();
+        _cachedPath.Rewind();
         float fx = cx - s * 0.525f;
         float fy = cy + s * 0.05f;
-        firePath.MoveTo(fx - s * 0.1f, fy + s * 0.15f);
-        firePath.QuadTo(fx - s * 0.06f, fy - s * 0.08f, fx, fy - s * 0.15f);
-        firePath.QuadTo(fx + s * 0.06f, fy - s * 0.08f, fx + s * 0.1f, fy + s * 0.15f);
-        firePath.Close();
-        canvas.DrawPath(firePath, fill);
+        _cachedPath.MoveTo(fx - s * 0.1f, fy + s * 0.15f);
+        _cachedPath.QuadTo(fx - s * 0.06f, fy - s * 0.08f, fx, fy - s * 0.15f);
+        _cachedPath.QuadTo(fx + s * 0.06f, fy - s * 0.08f, fx + s * 0.1f, fy + s * 0.15f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
         // Innerer Kern (heller)
         fill.Color = new SKColor(0xFF, 0xD5, 0x4F, 0xC0);
         canvas.DrawOval(fx, fy, s * 0.05f, s * 0.08f, fill);
@@ -735,12 +741,12 @@ public static class WorkshopCardRenderer
         canvas.DrawRoundRect(new SKRoundRect(
             new SKRect(cx - s * 0.12f, cy - s * 0.05f, cx + s * 0.17f, cy + s * 0.14f), 2), fill);
         // Amboss-Horn (rechts, spitz zulaufend)
-        using var hornPath = new SKPath();
-        hornPath.MoveTo(cx + s * 0.17f, cy - s * 0.02f);
-        hornPath.LineTo(cx + s * 0.35f, cy + s * 0.03f);
-        hornPath.LineTo(cx + s * 0.17f, cy + s * 0.08f);
-        hornPath.Close();
-        canvas.DrawPath(hornPath, fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx + s * 0.17f, cy - s * 0.02f);
+        _cachedPath.LineTo(cx + s * 0.35f, cy + s * 0.03f);
+        _cachedPath.LineTo(cx + s * 0.17f, cy + s * 0.08f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
         // Metallglanz auf Amboss
         fill.Color = new SKColor(0xFF, 0xFF, 0xFF, 0x30);
         canvas.DrawRect(cx - s * 0.1f, cy - s * 0.04f, s * 0.2f, s * 0.03f, fill);
@@ -806,22 +812,22 @@ public static class WorkshopCardRenderer
         // Kolbenhals
         canvas.DrawLine(flaskX - s * 0.03f, flaskY - s * 0.25f, flaskX - s * 0.03f, flaskY, stroke);
         canvas.DrawLine(flaskX + s * 0.03f, flaskY - s * 0.25f, flaskX + s * 0.03f, flaskY, stroke);
-        // Kolbenkörper (breit)
-        using var flaskPath = new SKPath();
-        flaskPath.MoveTo(flaskX - s * 0.03f, flaskY);
-        flaskPath.LineTo(flaskX - s * 0.13f, flaskY + s * 0.2f);
-        flaskPath.LineTo(flaskX + s * 0.13f, flaskY + s * 0.2f);
-        flaskPath.LineTo(flaskX + s * 0.03f, flaskY);
-        canvas.DrawPath(flaskPath, stroke);
+        // Kolbenkörper (breit) -- als Kontur gezeichnet (stroke)
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(flaskX - s * 0.03f, flaskY);
+        _cachedPath.LineTo(flaskX - s * 0.13f, flaskY + s * 0.2f);
+        _cachedPath.LineTo(flaskX + s * 0.13f, flaskY + s * 0.2f);
+        _cachedPath.LineTo(flaskX + s * 0.03f, flaskY);
+        canvas.DrawPath(_cachedPath, stroke);
         // Flüssigkeit im Kolben
         fill.Color = color.WithAlpha(80);
-        using var liquidPath = new SKPath();
-        liquidPath.MoveTo(flaskX - s * 0.06f, flaskY + s * 0.08f);
-        liquidPath.LineTo(flaskX - s * 0.12f, flaskY + s * 0.19f);
-        liquidPath.LineTo(flaskX + s * 0.12f, flaskY + s * 0.19f);
-        liquidPath.LineTo(flaskX + s * 0.06f, flaskY + s * 0.08f);
-        liquidPath.Close();
-        canvas.DrawPath(liquidPath, fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(flaskX - s * 0.06f, flaskY + s * 0.08f);
+        _cachedPath.LineTo(flaskX - s * 0.12f, flaskY + s * 0.19f);
+        _cachedPath.LineTo(flaskX + s * 0.12f, flaskY + s * 0.19f);
+        _cachedPath.LineTo(flaskX + s * 0.06f, flaskY + s * 0.08f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, fill);
         // Blasen
         fill.Color = color.WithAlpha(60);
         canvas.DrawCircle(flaskX - s * 0.02f, flaskY + s * 0.12f, 1.5f, fill);

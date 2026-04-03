@@ -13,18 +13,12 @@ public sealed class AnimationManager
     private readonly Particle[] _particles = new Particle[MaxParticles];
     private int _particleCount;
     private readonly Random _random = new();
-    private readonly object _lock = new();
+    // Alle Methoden laufen auf dem UI-Thread (DispatcherTimer) - kein Lock noetig
 
     /// <summary>
     /// Whether there are active particles to render.
     /// </summary>
-    public bool HasActiveParticles
-    {
-        get
-        {
-            lock (_lock) return _particleCount > 0;
-        }
-    }
+    public bool HasActiveParticles => _particleCount > 0;
 
     /// <summary>
     /// Adds a coin particle that flies upward and fades out.
@@ -33,28 +27,25 @@ public sealed class AnimationManager
     /// <param name="y">Start Y position.</param>
     public void AddCoinParticle(float x, float y)
     {
-        lock (_lock)
+        if (_particleCount >= MaxParticles) return;
+
+        // Leichte horizontale Streuung
+        float vx = (_random.NextSingle() - 0.5f) * 30f;
+        float vy = -60f - _random.NextSingle() * 40f; // Nach oben
+
+        _particles[_particleCount++] = new Particle
         {
-            if (_particleCount >= MaxParticles) return;
-
-            // Leichte horizontale Streuung
-            float vx = (_random.NextSingle() - 0.5f) * 30f;
-            float vy = -60f - _random.NextSingle() * 40f; // Nach oben
-
-            _particles[_particleCount++] = new Particle
-            {
-                X = x,
-                Y = y,
-                VelocityX = vx,
-                VelocityY = vy,
-                Color = new SKColor(0xFF, 0xD7, 0x00), // Gold
-                Alpha = 1.0f,
-                Lifetime = 1.2f,
-                RemainingLife = 1.2f,
-                Size = 4f + _random.NextSingle() * 2f,
-                Type = ParticleType.Coin
-            };
-        }
+            X = x,
+            Y = y,
+            VelocityX = vx,
+            VelocityY = vy,
+            Color = new SKColor(0xFF, 0xD7, 0x00), // Gold
+            Alpha = 1.0f,
+            Lifetime = 1.2f,
+            RemainingLife = 1.2f,
+            Size = 4f + _random.NextSingle() * 2f,
+            Type = ParticleType.Coin
+        };
     }
 
     /// <summary>
@@ -62,27 +53,24 @@ public sealed class AnimationManager
     /// </summary>
     public void AddWorkParticle(float x, float y, SKColor color)
     {
-        lock (_lock)
+        if (_particleCount >= MaxParticles) return;
+
+        float vx = (_random.NextSingle() - 0.5f) * 40f;
+        float vy = -30f - _random.NextSingle() * 30f;
+
+        _particles[_particleCount++] = new Particle
         {
-            if (_particleCount >= MaxParticles) return;
-
-            float vx = (_random.NextSingle() - 0.5f) * 40f;
-            float vy = -30f - _random.NextSingle() * 30f;
-
-            _particles[_particleCount++] = new Particle
-            {
-                X = x,
-                Y = y,
-                VelocityX = vx,
-                VelocityY = vy,
-                Color = color,
-                Alpha = 1.0f,
-                Lifetime = 0.8f,
-                RemainingLife = 0.8f,
-                Size = 2f + _random.NextSingle() * 2f,
-                Type = ParticleType.Coin // Verhaelt sich wie Coin (leichte Gravity)
-            };
-        }
+            X = x,
+            Y = y,
+            VelocityX = vx,
+            VelocityY = vy,
+            Color = color,
+            Alpha = 1.0f,
+            Lifetime = 0.8f,
+            RemainingLife = 0.8f,
+            Size = 2f + _random.NextSingle() * 2f,
+            Type = ParticleType.Coin // Verhaelt sich wie Coin (leichte Gravity)
+        };
     }
 
     /// <summary>
@@ -92,35 +80,32 @@ public sealed class AnimationManager
     /// <param name="cy">Center Y position of the burst.</param>
     public void AddLevelUpConfetti(float cx, float cy)
     {
-        lock (_lock)
+        int count = Math.Min(20, MaxParticles - _particleCount);
+
+        for (int i = 0; i < count; i++)
         {
-            int count = Math.Min(20, MaxParticles - _particleCount);
+            // Zufaellige Richtung (radial vom Zentrum)
+            float angle = _random.NextSingle() * MathF.Tau;
+            float speed = 80f + _random.NextSingle() * 120f;
+            float vx = MathF.Cos(angle) * speed;
+            float vy = MathF.Sin(angle) * speed;
 
-            for (int i = 0; i < count; i++)
+            // Zufaellige Festfarbe
+            var color = ConfettiColors[_random.Next(ConfettiColors.Length)];
+
+            _particles[_particleCount++] = new Particle
             {
-                // Zufaellige Richtung (radial vom Zentrum)
-                float angle = _random.NextSingle() * MathF.Tau;
-                float speed = 80f + _random.NextSingle() * 120f;
-                float vx = MathF.Cos(angle) * speed;
-                float vy = MathF.Sin(angle) * speed;
-
-                // Zufaellige Festfarbe
-                var color = ConfettiColors[_random.Next(ConfettiColors.Length)];
-
-                _particles[_particleCount++] = new Particle
-                {
-                    X = cx + (_random.NextSingle() - 0.5f) * 10f,
-                    Y = cy + (_random.NextSingle() - 0.5f) * 10f,
-                    VelocityX = vx,
-                    VelocityY = vy,
-                    Color = color,
-                    Alpha = 1.0f,
-                    Lifetime = 1.5f,
-                    RemainingLife = 1.5f,
-                    Size = 3f + _random.NextSingle() * 3f,
-                    Type = ParticleType.Confetti
-                };
-            }
+                X = cx + (_random.NextSingle() - 0.5f) * 10f,
+                Y = cy + (_random.NextSingle() - 0.5f) * 10f,
+                VelocityX = vx,
+                VelocityY = vy,
+                Color = color,
+                Alpha = 1.0f,
+                Lifetime = 1.5f,
+                RemainingLife = 1.5f,
+                Size = 3f + _random.NextSingle() * 3f,
+                Type = ParticleType.Confetti
+            };
         }
     }
 
@@ -132,47 +117,44 @@ public sealed class AnimationManager
     {
         float dt = (float)deltaSeconds;
 
-        lock (_lock)
+        int aliveCount = 0;
+        for (int i = 0; i < _particleCount; i++)
         {
-            int aliveCount = 0;
-            for (int i = 0; i < _particleCount; i++)
+            var p = _particles[i];
+
+            // Position aktualisieren
+            p.X += p.VelocityX * dt;
+            p.Y += p.VelocityY * dt;
+
+            // Schwerkraft fuer Konfetti
+            if (p.Type == ParticleType.Confetti)
             {
-                var p = _particles[i];
-
-                // Position aktualisieren
-                p.X += p.VelocityX * dt;
-                p.Y += p.VelocityY * dt;
-
-                // Schwerkraft fuer Konfetti
-                if (p.Type == ParticleType.Confetti)
-                {
-                    p.VelocityY += 120f * dt; // Gravity
-                    p.VelocityX *= 0.98f;     // Air resistance
-                }
-
-                // Coin: leichte Verlangsamung
-                if (p.Type == ParticleType.Coin)
-                {
-                    p.VelocityY += 40f * dt;  // Leichte Gravity
-                }
-
-                // Lebenszeit reduzieren
-                p.RemainingLife -= dt;
-
-                // Alpha basierend auf verbleibender Lebenszeit
-                if (p.Lifetime > 0)
-                {
-                    p.Alpha = Math.Clamp(p.RemainingLife / p.Lifetime, 0f, 1f);
-                }
-
-                // Nur lebende Partikel behalten
-                if (p.RemainingLife > 0 && p.Alpha > 0)
-                {
-                    _particles[aliveCount++] = p;
-                }
+                p.VelocityY += 120f * dt; // Gravity
+                p.VelocityX *= 0.98f;     // Air resistance
             }
-            _particleCount = aliveCount;
+
+            // Coin: leichte Verlangsamung
+            if (p.Type == ParticleType.Coin)
+            {
+                p.VelocityY += 40f * dt;  // Leichte Gravity
+            }
+
+            // Lebenszeit reduzieren
+            p.RemainingLife -= dt;
+
+            // Alpha basierend auf verbleibender Lebenszeit
+            if (p.Lifetime > 0)
+            {
+                p.Alpha = Math.Clamp(p.RemainingLife / p.Lifetime, 0f, 1f);
+            }
+
+            // Nur lebende Partikel behalten
+            if (p.RemainingLife > 0 && p.Alpha > 0)
+            {
+                _particles[aliveCount++] = p;
+            }
         }
+        _particleCount = aliveCount;
     }
 
     /// <summary>
@@ -184,37 +166,34 @@ public sealed class AnimationManager
 
     public void Render(SKCanvas canvas)
     {
-        lock (_lock)
+        if (_particleCount == 0) return;
+
+        var paint = RenderPaint;
+
+        for (int i = 0; i < _particleCount; i++)
         {
-            if (_particleCount == 0) return;
+            var p = _particles[i];
+            byte alpha = (byte)(p.Alpha * 255);
+            paint.Color = p.Color.WithAlpha(alpha);
 
-            var paint = RenderPaint;
-
-            for (int i = 0; i < _particleCount; i++)
+            switch (p.Type)
             {
-                var p = _particles[i];
-                byte alpha = (byte)(p.Alpha * 255);
-                paint.Color = p.Color.WithAlpha(alpha);
+                case ParticleType.Coin:
+                    // Muenze: Kreis mit hellerem Innenpunkt
+                    canvas.DrawCircle(p.X, p.Y, p.Size, paint);
+                    paint.Color = new SKColor(0xFF, 0xF0, 0x70, alpha);
+                    canvas.DrawCircle(p.X, p.Y, p.Size * 0.5f, paint);
+                    break;
 
-                switch (p.Type)
-                {
-                    case ParticleType.Coin:
-                        // Muenze: Kreis mit hellerem Innenpunkt
-                        canvas.DrawCircle(p.X, p.Y, p.Size, paint);
-                        paint.Color = new SKColor(0xFF, 0xF0, 0x70, alpha);
-                        canvas.DrawCircle(p.X, p.Y, p.Size * 0.5f, paint);
-                        break;
-
-                    case ParticleType.Confetti:
-                        // Konfetti: Kleines Rechteck
-                        canvas.DrawRect(
-                            p.X - p.Size / 2,
-                            p.Y - p.Size / 2,
-                            p.Size,
-                            p.Size * 0.6f,
-                            paint);
-                        break;
-                }
+                case ParticleType.Confetti:
+                    // Konfetti: Kleines Rechteck
+                    canvas.DrawRect(
+                        p.X - p.Size / 2,
+                        p.Y - p.Size / 2,
+                        p.Size,
+                        p.Size * 0.6f,
+                        paint);
+                    break;
             }
         }
     }
@@ -224,10 +203,7 @@ public sealed class AnimationManager
     /// </summary>
     public void Clear()
     {
-        lock (_lock)
-        {
-            _particleCount = 0;
-        }
+        _particleCount = 0;
     }
 
     // Konfetti-Farbpalette

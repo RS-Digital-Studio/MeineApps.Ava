@@ -77,6 +77,9 @@ public sealed class GuildResearchTreeRenderer : IDisposable
     private static readonly float[] DashIntervals = [6, 4];
     private static readonly float[] DotIntervals = [3, 3];
 
+    // Gecachter PathEffect fuer statische Trennlinien (Phase=0, unveraenderlich)
+    private static readonly SKPathEffect _staticDashEffect = SKPathEffect.CreateDash(DashIntervals, 0);
+
     private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
     private readonly SKPaint _glowPaint = new() { IsAntialias = true, MaskFilter = _glowFilter };
 
@@ -244,11 +247,10 @@ public sealed class GuildResearchTreeRenderer : IDisposable
         // Trennlinie nach Sektion 2 (zwischen Zeile 7 und 9)
         float divY2 = startY + 8 * RowHeight + SectionGap * 1.5f;
 
-        // Dezente gestrichelte Linien (kein Array-Allokation pro Frame)
+        // Dezente gestrichelte Linien (gecachter PathEffect, Phase=0 = statisch)
         _stroke.Color = LineLocked.WithAlpha(40);
         _stroke.StrokeWidth = 1f;
-        using var dash = SKPathEffect.CreateDash(DashIntervals, 0);
-        _stroke.PathEffect = dash;
+        _stroke.PathEffect = _staticDashEffect;
         canvas.DrawLine(left, divY1, right, divY1, _stroke);
         canvas.DrawLine(left, divY2, right, divY2, _stroke);
         _stroke.PathEffect = null;
@@ -395,6 +397,7 @@ public sealed class GuildResearchTreeRenderer : IDisposable
                 // Nächstes verfügbar: Gestrichelt, pulsierend
                 _stroke.Color = lineColor.WithAlpha(90);
                 _stroke.StrokeWidth = 2.5f;
+                // Perf: Phase aendert sich pro Frame (_time * 12), nicht cachebar
                 using var dash = SKPathEffect.CreateDash(DashIntervals, _time * 12 % 10);
                 _stroke.PathEffect = dash;
                 canvas.DrawLine(lineX, startY, lineX, endY, _stroke);
@@ -455,6 +458,7 @@ public sealed class GuildResearchTreeRenderer : IDisposable
             // Gepunkteter Rahmen
             _stroke.Color = LineLocked.WithAlpha(80);
             _stroke.StrokeWidth = 1.5f;
+            // Perf: Phase aendert sich pro Frame (_time * 4), nicht cachebar
             using var dotEffect = SKPathEffect.CreateDash(DotIntervals, _time * 4 % 6);
             _stroke.PathEffect = dotEffect;
             canvas.DrawCircle(cx, cy, NodeSize / 2 + 2, _stroke);

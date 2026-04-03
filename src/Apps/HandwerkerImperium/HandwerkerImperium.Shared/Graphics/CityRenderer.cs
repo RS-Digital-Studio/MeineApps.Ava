@@ -33,7 +33,7 @@ public sealed class CityRenderer : IDisposable
     public void Render(SKCanvas canvas, SKRect bounds, GameState state, List<Building> buildings, float deltaTime = 0.016f)
     {
         // Wetter-System (nur bei Medium/High Grafik)
-        var gfxQuality = state.GraphicsQuality;
+        var gfxQuality = state.Settings.GraphicsQuality;
         if (gfxQuality >= GraphicsQuality.Medium)
         {
             if (!_weatherInitialized)

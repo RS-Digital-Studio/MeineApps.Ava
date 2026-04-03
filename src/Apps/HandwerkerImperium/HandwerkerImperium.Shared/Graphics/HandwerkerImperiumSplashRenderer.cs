@@ -57,6 +57,12 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
     // --- Gecachte MaskFilter ---
     private SKMaskFilter? _titleGlowFilter;
 
+    // --- Gecachte Shader (Splash-Bounds aendern sich nicht) ---
+    private SKShader? _bgShader;
+    private SKShader? _vignetteShader;
+    private float _lastSplashW;
+    private float _lastSplashH;
+
     // --- Farb-Konstanten ---
     private static readonly SKColor BgTop = new(0x1A, 0x1A, 0x2E);
     private static readonly SKColor BgBottom = new(0x0D, 0x0D, 0x1A);
@@ -248,24 +254,38 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
 
     private void RenderBackground(SKCanvas canvas, SKRect bounds, float w, float h)
     {
+        // Statisch gecachte Shader: Splash-Bounds aendern sich nicht
+        if (_bgShader == null ||
+            MathF.Abs(w - _lastSplashW) > 1f ||
+            MathF.Abs(h - _lastSplashH) > 1f)
+        {
+            _bgShader?.Dispose();
+            _vignetteShader?.Dispose();
+
+            _bgShader = SKShader.CreateLinearGradient(
+                new SKPoint(w / 2f, 0f),
+                new SKPoint(w / 2f, h),
+                new[] { BgTop, BgBottom },
+                null, SKShaderTileMode.Clamp);
+
+            var maxDim = Math.Max(w, h);
+            _vignetteShader = SKShader.CreateRadialGradient(
+                new SKPoint(w / 2f, h / 2f),
+                maxDim * 0.7f,
+                new[] { SKColors.Transparent, new SKColor(0x00, 0x00, 0x00, 0x80) },
+                null, SKShaderTileMode.Clamp);
+
+            _lastSplashW = w;
+            _lastSplashH = h;
+        }
+
         // Vertikaler Gradient
-        using var bgShader = SKShader.CreateLinearGradient(
-            new SKPoint(w / 2f, 0f),
-            new SKPoint(w / 2f, h),
-            new[] { BgTop, BgBottom },
-            null, SKShaderTileMode.Clamp);
-        _bgPaint.Shader = bgShader;
+        _bgPaint.Shader = _bgShader;
         canvas.DrawRect(bounds, _bgPaint);
         _bgPaint.Shader = null;
 
-        // Subtile Vignette (radial, schwarz Alpha 128 am Rand)
-        var maxDim = Math.Max(w, h);
-        using var vignetteShader = SKShader.CreateRadialGradient(
-            new SKPoint(w / 2f, h / 2f),
-            maxDim * 0.7f,
-            new[] { SKColors.Transparent, new SKColor(0x00, 0x00, 0x00, 0x80) },
-            null, SKShaderTileMode.Clamp);
-        _bgPaint.Shader = vignetteShader;
+        // Subtile Vignette
+        _bgPaint.Shader = _vignetteShader;
         canvas.DrawRect(bounds, _bgPaint);
         _bgPaint.Shader = null;
     }
@@ -592,5 +612,7 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
         _gearPath.Dispose();
         _hammerPath.Dispose();
         _titleGlowFilter?.Dispose();
+        _bgShader?.Dispose();
+        _vignetteShader?.Dispose();
     }
 }

@@ -39,6 +39,10 @@ public static class ResearchIconRenderer
     private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
 
+    // Gecachter Path: alle Icon-Methoden werden sequenziell aufgerufen,
+    // ein einziger gecachter Path reicht für alle 17 Verwendungen (kein GC-Druck)
+    private static readonly SKPath _cachedPath = new();
+
     /// <summary>
     /// Rendert das große Forschungs-Icon in einen quadratischen Bereich.
     /// </summary>
@@ -154,32 +158,32 @@ public static class ResearchIconRenderer
 
         // Amboss-Körper (Trapez-Form)
         _fill.Color = MetalDark;
-        using var anvilPath = new SKPath();
-        anvilPath.MoveTo(cx - scale * 0.7f, cy + scale * 0.1f);
-        anvilPath.LineTo(cx + scale * 0.5f, cy + scale * 0.1f);
-        anvilPath.LineTo(cx + scale * 0.4f, cy + scale * 0.4f);
-        anvilPath.LineTo(cx - scale * 0.5f, cy + scale * 0.4f);
-        anvilPath.Close();
-        canvas.DrawPath(anvilPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.7f, cy + scale * 0.1f);
+        _cachedPath.LineTo(cx + scale * 0.5f, cy + scale * 0.1f);
+        _cachedPath.LineTo(cx + scale * 0.4f, cy + scale * 0.4f);
+        _cachedPath.LineTo(cx - scale * 0.5f, cy + scale * 0.4f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Amboss-Oberfläche (heller)
         _fill.Color = MetalLight;
-        using var topPath = new SKPath();
-        topPath.MoveTo(cx - scale * 0.8f, cy);
-        topPath.LineTo(cx + scale * 0.6f, cy);
-        topPath.LineTo(cx + scale * 0.5f, cy + scale * 0.12f);
-        topPath.LineTo(cx - scale * 0.7f, cy + scale * 0.12f);
-        topPath.Close();
-        canvas.DrawPath(topPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.8f, cy);
+        _cachedPath.LineTo(cx + scale * 0.6f, cy);
+        _cachedPath.LineTo(cx + scale * 0.5f, cy + scale * 0.12f);
+        _cachedPath.LineTo(cx - scale * 0.7f, cy + scale * 0.12f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Horn (links, spitz)
         _fill.Color = MetalDark;
-        using var hornPath = new SKPath();
-        hornPath.MoveTo(cx - scale * 0.8f, cy);
-        hornPath.LineTo(cx - scale, cy + scale * 0.05f);
-        hornPath.LineTo(cx - scale * 0.8f, cy + scale * 0.12f);
-        hornPath.Close();
-        canvas.DrawPath(hornPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.8f, cy);
+        _cachedPath.LineTo(cx - scale, cy + scale * 0.05f);
+        _cachedPath.LineTo(cx - scale * 0.8f, cy + scale * 0.12f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Glanzlicht
         _fill.Color = MetalShine.WithAlpha(80);
@@ -238,12 +242,12 @@ public static class ResearchIconRenderer
         _fill.Color = GreenStar;
         float arrowCx = cx + scale * 0.7f;
         float arrowCy = cy;
-        using var arrowPath = new SKPath();
-        arrowPath.MoveTo(arrowCx, arrowCy + scale * 0.4f);
-        arrowPath.LineTo(arrowCx - scale * 0.2f, arrowCy + scale * 0.15f);
-        arrowPath.LineTo(arrowCx + scale * 0.2f, arrowCy + scale * 0.15f);
-        arrowPath.Close();
-        canvas.DrawPath(arrowPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(arrowCx, arrowCy + scale * 0.4f);
+        _cachedPath.LineTo(arrowCx - scale * 0.2f, arrowCy + scale * 0.15f);
+        _cachedPath.LineTo(arrowCx + scale * 0.2f, arrowCy + scale * 0.15f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Pfeil-Stiel
         canvas.DrawRect(arrowCx - scale * 0.06f, arrowCy - scale * 0.2f, scale * 0.12f, scale * 0.38f, _fill);
@@ -280,12 +284,12 @@ public static class ResearchIconRenderer
 
         // Gerollte Ecke (oben rechts)
         _fill.Color = new SKColor(0x28, 0x33, 0x93);
-        using var rollPath = new SKPath();
-        rollPath.MoveTo(cx + scale * 0.7f, cy - scale * 0.5f);
-        rollPath.LineTo(cx + scale * 0.5f, cy - scale * 0.5f);
-        rollPath.LineTo(cx + scale * 0.7f, cy - scale * 0.3f);
-        rollPath.Close();
-        canvas.DrawPath(rollPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx + scale * 0.7f, cy - scale * 0.5f);
+        _cachedPath.LineTo(cx + scale * 0.5f, cy - scale * 0.5f);
+        _cachedPath.LineTo(cx + scale * 0.7f, cy - scale * 0.3f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
     }
 
     /// <summary>Geldbörse (WageReduction)</summary>
@@ -295,12 +299,12 @@ public static class ResearchIconRenderer
 
         // Beutel-Körper
         _fill.Color = LeatherBrown;
-        using var pursePath = new SKPath();
-        pursePath.MoveTo(cx - scale * 0.5f, cy - scale * 0.1f);
-        pursePath.QuadTo(cx - scale * 0.6f, cy + scale * 0.5f, cx, cy + scale * 0.55f);
-        pursePath.QuadTo(cx + scale * 0.6f, cy + scale * 0.5f, cx + scale * 0.5f, cy - scale * 0.1f);
-        pursePath.Close();
-        canvas.DrawPath(pursePath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.5f, cy - scale * 0.1f);
+        _cachedPath.QuadTo(cx - scale * 0.6f, cy + scale * 0.5f, cx, cy + scale * 0.55f);
+        _cachedPath.QuadTo(cx + scale * 0.6f, cy + scale * 0.5f, cx + scale * 0.5f, cy - scale * 0.1f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Beutel-Öffnung (oben, zusammengebunden)
         _fill.Color = new SKColor(0x4E, 0x34, 0x2E);
@@ -331,12 +335,12 @@ public static class ResearchIconRenderer
 
         // Helm-Körper (Halbkugel)
         _fill.Color = CoinGold;
-        using var helmPath = new SKPath();
-        helmPath.MoveTo(cx - scale * 0.7f, cy + scale * 0.1f);
-        helmPath.QuadTo(cx - scale * 0.7f, cy - scale * 0.6f, cx, cy - scale * 0.5f);
-        helmPath.QuadTo(cx + scale * 0.7f, cy - scale * 0.6f, cx + scale * 0.7f, cy + scale * 0.1f);
-        helmPath.Close();
-        canvas.DrawPath(helmPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.7f, cy + scale * 0.1f);
+        _cachedPath.QuadTo(cx - scale * 0.7f, cy - scale * 0.6f, cx, cy - scale * 0.5f);
+        _cachedPath.QuadTo(cx + scale * 0.7f, cy - scale * 0.6f, cx + scale * 0.7f, cy + scale * 0.1f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Helm-Krempe
         _fill.Color = GoldDark;
@@ -367,42 +371,44 @@ public static class ResearchIconRenderer
     {
         float scale = s * 0.6f;
 
-        // Buchdeckel (links + rechts, aufgeklappt)
+        // Buchdeckel links
         _fill.Color = new SKColor(0x8B, 0x00, 0x00);
-        using var leftPage = new SKPath();
-        leftPage.MoveTo(cx, cy - scale * 0.4f);
-        leftPage.LineTo(cx - scale * 0.7f, cy - scale * 0.3f);
-        leftPage.LineTo(cx - scale * 0.7f, cy + scale * 0.4f);
-        leftPage.LineTo(cx, cy + scale * 0.5f);
-        leftPage.Close();
-        canvas.DrawPath(leftPage, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, cy - scale * 0.4f);
+        _cachedPath.LineTo(cx - scale * 0.7f, cy - scale * 0.3f);
+        _cachedPath.LineTo(cx - scale * 0.7f, cy + scale * 0.4f);
+        _cachedPath.LineTo(cx, cy + scale * 0.5f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
+        // Buchdeckel rechts
         _fill.Color = new SKColor(0x7B, 0x00, 0x00);
-        using var rightPage = new SKPath();
-        rightPage.MoveTo(cx, cy - scale * 0.4f);
-        rightPage.LineTo(cx + scale * 0.7f, cy - scale * 0.3f);
-        rightPage.LineTo(cx + scale * 0.7f, cy + scale * 0.4f);
-        rightPage.LineTo(cx, cy + scale * 0.5f);
-        rightPage.Close();
-        canvas.DrawPath(rightPage, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, cy - scale * 0.4f);
+        _cachedPath.LineTo(cx + scale * 0.7f, cy - scale * 0.3f);
+        _cachedPath.LineTo(cx + scale * 0.7f, cy + scale * 0.4f);
+        _cachedPath.LineTo(cx, cy + scale * 0.5f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
-        // Seiten (innere, heller)
+        // Seite links (innere, heller)
         _fill.Color = PaperColor;
-        using var leftInner = new SKPath();
-        leftInner.MoveTo(cx, cy - scale * 0.35f);
-        leftInner.LineTo(cx - scale * 0.6f, cy - scale * 0.25f);
-        leftInner.LineTo(cx - scale * 0.6f, cy + scale * 0.35f);
-        leftInner.LineTo(cx, cy + scale * 0.45f);
-        leftInner.Close();
-        canvas.DrawPath(leftInner, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, cy - scale * 0.35f);
+        _cachedPath.LineTo(cx - scale * 0.6f, cy - scale * 0.25f);
+        _cachedPath.LineTo(cx - scale * 0.6f, cy + scale * 0.35f);
+        _cachedPath.LineTo(cx, cy + scale * 0.45f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
-        using var rightInner = new SKPath();
-        rightInner.MoveTo(cx, cy - scale * 0.35f);
-        rightInner.LineTo(cx + scale * 0.6f, cy - scale * 0.25f);
-        rightInner.LineTo(cx + scale * 0.6f, cy + scale * 0.35f);
-        rightInner.LineTo(cx, cy + scale * 0.45f);
-        rightInner.Close();
-        canvas.DrawPath(rightInner, _fill);
+        // Seite rechts (innere, heller)
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, cy - scale * 0.35f);
+        _cachedPath.LineTo(cx + scale * 0.6f, cy - scale * 0.25f);
+        _cachedPath.LineTo(cx + scale * 0.6f, cy + scale * 0.35f);
+        _cachedPath.LineTo(cx, cy + scale * 0.45f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Text-Zeilen auf den Seiten
         _stroke.Color = new SKColor(0x90, 0x90, 0x90, 0x80);
@@ -422,16 +428,16 @@ public static class ResearchIconRenderer
         _fill.Color = CoinGold;
         float bx = cx + scale * 0.55f;
         float by = cy - scale * 0.35f;
-        using var boltPath = new SKPath();
-        boltPath.MoveTo(bx - 3, by);
-        boltPath.LineTo(bx + 4, by);
-        boltPath.LineTo(bx, by + 5);
-        boltPath.LineTo(bx + 5, by + 5);
-        boltPath.LineTo(bx - 2, by + 12);
-        boltPath.LineTo(bx + 1, by + 6);
-        boltPath.LineTo(bx - 4, by + 6);
-        boltPath.Close();
-        canvas.DrawPath(boltPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(bx - 3, by);
+        _cachedPath.LineTo(bx + 4, by);
+        _cachedPath.LineTo(bx, by + 5);
+        _cachedPath.LineTo(bx + 5, by + 5);
+        _cachedPath.LineTo(bx - 2, by + 12);
+        _cachedPath.LineTo(bx + 1, by + 6);
+        _cachedPath.LineTo(bx - 4, by + 6);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
     }
 
     /// <summary>Schatzkiste (RewardMultiplier)</summary>
@@ -450,11 +456,11 @@ public static class ResearchIconRenderer
 
         // Kisten-Deckel (gewölbt)
         _fill.Color = WoodLight;
-        using var lidPath = new SKPath();
-        lidPath.MoveTo(cx - scale * 0.65f, cy - scale * 0.05f);
-        lidPath.QuadTo(cx, cy - scale * 0.45f, cx + scale * 0.65f, cy - scale * 0.05f);
-        lidPath.Close();
-        canvas.DrawPath(lidPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.65f, cy - scale * 0.05f);
+        _cachedPath.QuadTo(cx, cy - scale * 0.45f, cx + scale * 0.65f, cy - scale * 0.05f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Deckel-Kante
         _stroke.Color = WoodDark;
@@ -604,11 +610,11 @@ public static class ResearchIconRenderer
         // Kopf
         canvas.DrawCircle(cx - scale * 0.1f, cy - scale * 0.22f, scale * 0.1f, _fill);
         // Schultern
-        using var bodyPath = new SKPath();
-        bodyPath.MoveTo(cx - scale * 0.25f, cy + scale * 0.1f);
-        bodyPath.QuadTo(cx - scale * 0.1f, cy - scale * 0.08f, cx + scale * 0.05f, cy + scale * 0.1f);
-        bodyPath.Close();
-        canvas.DrawPath(bodyPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.25f, cy + scale * 0.1f);
+        _cachedPath.QuadTo(cx - scale * 0.1f, cy - scale * 0.08f, cx + scale * 0.05f, cy + scale * 0.1f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Glanz auf dem Glas
         _fill.Color = SKColors.White.WithAlpha(50);
@@ -630,18 +636,18 @@ public static class ResearchIconRenderer
 
         // Kronen-Körper
         _fill.Color = GoldColor;
-        using var crownPath = new SKPath();
-        crownPath.MoveTo(cx - scale * 0.55f, cy + scale * 0.15f);
-        crownPath.LineTo(cx - scale * 0.55f, cy - scale * 0.1f);
-        crownPath.LineTo(cx - scale * 0.35f, cy + scale * 0.02f);
-        crownPath.LineTo(cx - scale * 0.15f, cy - scale * 0.35f);
-        crownPath.LineTo(cx, cy - scale * 0.1f);
-        crownPath.LineTo(cx + scale * 0.15f, cy - scale * 0.35f);
-        crownPath.LineTo(cx + scale * 0.35f, cy + scale * 0.02f);
-        crownPath.LineTo(cx + scale * 0.55f, cy - scale * 0.1f);
-        crownPath.LineTo(cx + scale * 0.55f, cy + scale * 0.15f);
-        crownPath.Close();
-        canvas.DrawPath(crownPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.55f, cy + scale * 0.15f);
+        _cachedPath.LineTo(cx - scale * 0.55f, cy - scale * 0.1f);
+        _cachedPath.LineTo(cx - scale * 0.35f, cy + scale * 0.02f);
+        _cachedPath.LineTo(cx - scale * 0.15f, cy - scale * 0.35f);
+        _cachedPath.LineTo(cx, cy - scale * 0.1f);
+        _cachedPath.LineTo(cx + scale * 0.15f, cy - scale * 0.35f);
+        _cachedPath.LineTo(cx + scale * 0.35f, cy + scale * 0.02f);
+        _cachedPath.LineTo(cx + scale * 0.55f, cy - scale * 0.1f);
+        _cachedPath.LineTo(cx + scale * 0.55f, cy + scale * 0.15f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Rand (Basisband)
         _fill.Color = GoldDark;
@@ -721,23 +727,23 @@ public static class ResearchIconRenderer
         canvas.DrawRect(cx - scale * 0.1f, cy - scale * 0.5f, scale * 0.2f, scale * 0.3f, _stroke);
 
         // Kolben-Körper (Dreieck)
-        using var flaskPath = new SKPath();
-        flaskPath.MoveTo(cx - scale * 0.1f, cy - scale * 0.2f);
-        flaskPath.LineTo(cx - scale * 0.5f, cy + scale * 0.4f);
-        flaskPath.LineTo(cx + scale * 0.5f, cy + scale * 0.4f);
-        flaskPath.LineTo(cx + scale * 0.1f, cy - scale * 0.2f);
-        flaskPath.Close();
-        canvas.DrawPath(flaskPath, _stroke);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.1f, cy - scale * 0.2f);
+        _cachedPath.LineTo(cx - scale * 0.5f, cy + scale * 0.4f);
+        _cachedPath.LineTo(cx + scale * 0.5f, cy + scale * 0.4f);
+        _cachedPath.LineTo(cx + scale * 0.1f, cy - scale * 0.2f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _stroke);
 
         // Flüssigkeit
         _fill.Color = GreenStar.WithAlpha(120);
-        using var liquidPath = new SKPath();
-        liquidPath.MoveTo(cx - scale * 0.25f, cy + scale * 0.1f);
-        liquidPath.LineTo(cx - scale * 0.45f, cy + scale * 0.35f);
-        liquidPath.LineTo(cx + scale * 0.45f, cy + scale * 0.35f);
-        liquidPath.LineTo(cx + scale * 0.25f, cy + scale * 0.1f);
-        liquidPath.Close();
-        canvas.DrawPath(liquidPath, _fill);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - scale * 0.25f, cy + scale * 0.1f);
+        _cachedPath.LineTo(cx - scale * 0.45f, cy + scale * 0.35f);
+        _cachedPath.LineTo(cx + scale * 0.45f, cy + scale * 0.35f);
+        _cachedPath.LineTo(cx + scale * 0.25f, cy + scale * 0.1f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fill);
 
         // Blasen
         _fill.Color = SKColors.White.WithAlpha(80);

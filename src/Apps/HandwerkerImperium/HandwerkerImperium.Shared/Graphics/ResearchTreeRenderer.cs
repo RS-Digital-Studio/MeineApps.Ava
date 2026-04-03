@@ -87,6 +87,11 @@ public sealed class ResearchTreeRenderer : IDisposable
         MaskFilter = _glowMaskFilter
     };
 
+    // Gecachter Fortschrittsbalken-Shader (barColor+x+fillW aendern sich diskret, nicht pro Frame)
+    private SKShader? _progressBarShaderCache;
+    private SKColor _lastProgressBarColor;
+    private float _lastProgressBarX, _lastProgressBarFillW;
+
     /// <summary>
     /// Berechnet die Gesamthöhe des Baums.
     /// </summary>
@@ -284,7 +289,7 @@ public sealed class ResearchTreeRenderer : IDisposable
             // Nächste gesperrt: Gestrichelt, pulsierend
             _stroke.Color = branchColor.WithAlpha(100);
             _stroke.StrokeWidth = 4f;
-            // PathEffect mit dynamischem Phase-Offset (wird sofort nach Verwendung disposed)
+            // Perf: Phase aendert sich pro Frame (_time * 15), nicht cachebar
             using var dashEffect = SKPathEffect.CreateDash([8, 5], _time * 15 % 13);
             _stroke.PathEffect = dashEffect;
             canvas.DrawPath(_connectionPath, _stroke);
@@ -339,6 +344,7 @@ public sealed class ResearchTreeRenderer : IDisposable
         {
             _stroke.Color = LineLocked.WithAlpha(128);
             _stroke.StrokeWidth = 2f;
+            // Perf: Phase aendert sich pro Frame (_time * 5), nicht cachebar
             using var dotEffect = SKPathEffect.CreateDash([4, 4], _time * 5 % 8);
             _stroke.PathEffect = dotEffect;
             canvas.DrawCircle(cx, cy, NodeSize / 2 + 3, _stroke);
@@ -420,11 +426,24 @@ public sealed class ResearchTreeRenderer : IDisposable
         if (fillW > 1)
         {
             var fillRect = new SKRect(x, y, x + fillW, y + h);
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(x, y), new SKPoint(x + fillW, y),
-                [barColor.WithAlpha(180), barColor],
-                SKShaderTileMode.Clamp);
-            _fill.Shader = shader;
+            // Shader cachen: barColor aendert sich nur bei Branch-Wechsel,
+            // fillW und x aendern sich diskret (nur bei Fortschrittsaenderung).
+            // Pro Frame identische Werte fuer denselben Node → 0 Neuerstellungen ohne Fortschritt.
+            if (_progressBarShaderCache == null ||
+                _lastProgressBarColor != barColor ||
+                MathF.Abs(_lastProgressBarFillW - fillW) > 0.5f ||
+                MathF.Abs(_lastProgressBarX - x) > 0.5f)
+            {
+                _progressBarShaderCache?.Dispose();
+                _progressBarShaderCache = SKShader.CreateLinearGradient(
+                    new SKPoint(x, y), new SKPoint(x + fillW, y),
+                    [barColor.WithAlpha(180), barColor],
+                    SKShaderTileMode.Clamp);
+                _lastProgressBarColor = barColor;
+                _lastProgressBarFillW = fillW;
+                _lastProgressBarX = x;
+            }
+            _fill.Shader = _progressBarShaderCache;
             canvas.DrawRoundRect(new SKRoundRect(fillRect, 4), _fill);
             _fill.Shader = null;
 
@@ -615,6 +634,7 @@ public sealed class ResearchTreeRenderer : IDisposable
         _fontBold?.Dispose();
         _connectionPath?.Dispose();
         _arrowPath?.Dispose();
+        _progressBarShaderCache?.Dispose();
     }
 
     private struct FlowParticle

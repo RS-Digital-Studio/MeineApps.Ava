@@ -41,6 +41,16 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
     private readonly SKFont _progressFont = new() { Edging = SKFontEdging.Antialias };
     private readonly SKPath _megaPath = new();
 
+    // Gecachter Hintergrund-Shader (abhaengig von Branch-Farbe und Bounds)
+    private SKShader? _bgShaderCache;
+    private SKColor _lastBgBranchColor;
+    private float _lastBgW, _lastBgH, _lastBgX, _lastBgY;
+
+    // Gecachter Fortschrittsbalken-Shader (abhaengig von Branch-Farbe und Füllbreite)
+    private SKShader? _progressShaderCache;
+    private SKColor _lastProgressBranchColor;
+    private float _lastProgressBarX, _lastProgressFillW;
+
     /// <summary>
     /// Rendert das Branch-Banner.
     /// </summary>
@@ -88,7 +98,7 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
     // HINTERGRUND
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static void DrawBackground(SKCanvas canvas, float x, float y, float w, float h, SKColor branchColor)
+    private void DrawBackground(SKCanvas canvas, float x, float y, float w, float h, SKColor branchColor)
     {
         // Dunkler Hintergrund
         _fill.Color = BgDark;
@@ -99,12 +109,20 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
         _fill.Color = branchColor.WithAlpha(35);
         canvas.DrawRoundRect(rect, _fill);
 
-        // Subtiler horizontaler Gradient-Effekt
-        using var gradientShader = SKShader.CreateLinearGradient(
-            new SKPoint(x, y), new SKPoint(x + w, y + h),
-            [branchColor.WithAlpha(25), SKColors.Transparent],
-            SKShaderTileMode.Clamp);
-        _fill.Shader = gradientShader;
+        // Subtiler horizontaler Gradient-Effekt (gecacht: Farbe + Bounds aendern sich selten)
+        if (_bgShaderCache == null || _lastBgBranchColor != branchColor ||
+            MathF.Abs(_lastBgW - w) > 1f || MathF.Abs(_lastBgH - h) > 1f ||
+            MathF.Abs(_lastBgX - x) > 1f || MathF.Abs(_lastBgY - y) > 1f)
+        {
+            _bgShaderCache?.Dispose();
+            _bgShaderCache = SKShader.CreateLinearGradient(
+                new SKPoint(x, y), new SKPoint(x + w, y + h),
+                [branchColor.WithAlpha(25), SKColors.Transparent],
+                SKShaderTileMode.Clamp);
+            _lastBgBranchColor = branchColor;
+            _lastBgW = w; _lastBgH = h; _lastBgX = x; _lastBgY = y;
+        }
+        _fill.Shader = _bgShaderCache;
         canvas.DrawRoundRect(rect, _fill);
         _fill.Shader = null;
 
@@ -361,11 +379,22 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
             if (fillW > 0)
             {
                 var fillRect = new SKRect(barX, barY, barX + fillW, barY + barH);
-                using var shader = SKShader.CreateLinearGradient(
-                    new SKPoint(barX, barY), new SKPoint(barX + fillW, barY),
-                    [branchColor.WithAlpha(180), branchColor],
-                    SKShaderTileMode.Clamp);
-                _fill.Shader = shader;
+                // Shader cachen: branchColor und fillW ändern sich diskret (nur bei neuem researchedCount)
+                if (_progressShaderCache == null ||
+                    _lastProgressBranchColor != branchColor ||
+                    MathF.Abs(_lastProgressFillW - fillW) > 0.5f ||
+                    MathF.Abs(_lastProgressBarX - barX) > 0.5f)
+                {
+                    _progressShaderCache?.Dispose();
+                    _progressShaderCache = SKShader.CreateLinearGradient(
+                        new SKPoint(barX, barY), new SKPoint(barX + fillW, barY),
+                        [branchColor.WithAlpha(180), branchColor],
+                        SKShaderTileMode.Clamp);
+                    _lastProgressBranchColor = branchColor;
+                    _lastProgressFillW = fillW;
+                    _lastProgressBarX = barX;
+                }
+                _fill.Shader = _progressShaderCache;
                 canvas.DrawRoundRect(new SKRoundRect(fillRect, 3), _fill);
                 _fill.Shader = null;
             }
@@ -435,5 +464,7 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
         _nameFont?.Dispose();
         _progressFont?.Dispose();
         _megaPath?.Dispose();
+        _bgShaderCache?.Dispose();
+        _progressShaderCache?.Dispose();
     }
 }

@@ -16,7 +16,7 @@ public sealed class GameJuiceEngine : IDisposable
     private const int MaxEffects = 200;
     private readonly JuiceEffect[] _effects = new JuiceEffect[MaxEffects];
     private int _effectCount;
-    private readonly object _lock = new();
+    // Alle Methoden laufen auf dem UI-Thread (DispatcherTimer) - kein Lock noetig
 
     // ScreenShake-State
     private float _shakeIntensity;
@@ -72,12 +72,9 @@ public sealed class GameJuiceEngine : IDisposable
     /// <param name="duration">Dauer in Sekunden (0.2-0.5 empfohlen).</param>
     public void ScreenShake(float intensity = 4f, float duration = 0.3f)
     {
-        lock (_lock)
-        {
-            _shakeIntensity = intensity;
-            _shakeDuration = duration;
-            _shakeTimer = duration;
-        }
+        _shakeIntensity = intensity;
+        _shakeDuration = duration;
+        _shakeTimer = duration;
     }
 
     /// <summary>
@@ -85,18 +82,15 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void RadialBurst(float x, float y, SKColor color, float maxRadius = 60f, float duration = 0.4f)
     {
-        lock (_lock)
+        AddEffect(new JuiceEffect
         {
-            AddEffect(new JuiceEffect
-            {
-                Type = EffectType.RadialBurst,
-                X = x, Y = y,
-                Color = color,
-                MaxRadius = maxRadius,
-                Duration = duration,
-                Timer = duration
-            });
-        }
+            Type = EffectType.RadialBurst,
+            X = x, Y = y,
+            Color = color,
+            MaxRadius = maxRadius,
+            Duration = duration,
+            Timer = duration
+        });
     }
 
     /// <summary>
@@ -104,27 +98,24 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void CoinsFlyToWallet(float fromX, float fromY, float toX, float toY, int count = 10)
     {
-        lock (_lock)
+        count = Math.Clamp(count, 4, 16);
+        for (int i = 0; i < count; i++)
         {
-            count = Math.Clamp(count, 4, 16);
-            for (int i = 0; i < count; i++)
-            {
-                float delay = i * 0.04f; // 40ms Stagger
-                float ctrlX = EasingFunctions.Lerp(fromX, toX, 0.5f) + NextRandom(-40f, 40f);
-                float ctrlY = Math.Min(fromY, toY) - 30f - NextRandom(0f, 50f);
+            float delay = i * 0.04f; // 40ms Stagger
+            float ctrlX = EasingFunctions.Lerp(fromX, toX, 0.5f) + NextRandom(-40f, 40f);
+            float ctrlY = Math.Min(fromY, toY) - 30f - NextRandom(0f, 50f);
 
-                AddEffect(new JuiceEffect
-                {
-                    Type = EffectType.CoinFly,
-                    X = fromX, Y = fromY,
-                    TargetX = toX, TargetY = toY,
-                    ControlX = ctrlX, ControlY = ctrlY,
-                    Duration = 0.5f + delay,
-                    Timer = 0.5f + delay,
-                    Delay = delay,
-                    Size = 8f
-                });
-            }
+            AddEffect(new JuiceEffect
+            {
+                Type = EffectType.CoinFly,
+                X = fromX, Y = fromY,
+                TargetX = toX, TargetY = toY,
+                ControlX = ctrlX, ControlY = ctrlY,
+                Duration = 0.5f + delay,
+                Timer = 0.5f + delay,
+                Delay = delay,
+                Size = 8f
+            });
         }
     }
 
@@ -133,22 +124,19 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void SparkleEffect(SKRect rect, SKColor color, int count = 8, float duration = 0.6f)
     {
-        lock (_lock)
+        for (int i = 0; i < Math.Min(count, 20); i++)
         {
-            for (int i = 0; i < Math.Min(count, 20); i++)
+            AddEffect(new JuiceEffect
             {
-                AddEffect(new JuiceEffect
-                {
-                    Type = EffectType.Sparkle,
-                    X = rect.Left + NextRandom(0f, rect.Width),
-                    Y = rect.Top + NextRandom(0f, rect.Height),
-                    Color = color,
-                    Duration = duration,
-                    Timer = duration,
-                    Size = NextRandom(2f, 5f),
-                    Phase = NextRandom(0f, MathF.PI * 2f)
-                });
-            }
+                Type = EffectType.Sparkle,
+                X = rect.Left + NextRandom(0f, rect.Width),
+                Y = rect.Top + NextRandom(0f, rect.Height),
+                Color = color,
+                Duration = duration,
+                Timer = duration,
+                Size = NextRandom(2f, 5f),
+                Phase = NextRandom(0f, MathF.PI * 2f)
+            });
         }
     }
 
@@ -157,20 +145,17 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void NumberPop(float x, float y, string text, SKColor color, float fontSize = 18f)
     {
-        lock (_lock)
+        AddEffect(new JuiceEffect
         {
-            AddEffect(new JuiceEffect
-            {
-                Type = EffectType.NumberPop,
-                X = x, Y = y,
-                Color = color,
-                Duration = 1.0f,
-                Timer = 1.0f,
-                Size = fontSize,
-                VelocityY = -120f, // Nach oben
-                Text = text
-            });
-        }
+            Type = EffectType.NumberPop,
+            X = x, Y = y,
+            Color = color,
+            Duration = 1.0f,
+            Timer = 1.0f,
+            Size = fontSize,
+            VelocityY = -120f, // Nach oben
+            Text = text
+        });
     }
 
     /// <summary>
@@ -178,12 +163,9 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void FlashOverlay(SKColor color, float duration = 0.15f)
     {
-        lock (_lock)
-        {
-            _flashColor = color;
-            _flashDuration = duration;
-            _flashTimer = duration;
-        }
+        _flashColor = color;
+        _flashDuration = duration;
+        _flashTimer = duration;
     }
 
     /// <summary>
@@ -192,10 +174,7 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void SetVignette(float intensity)
     {
-        lock (_lock)
-        {
-            _vignetteTarget = Math.Clamp(intensity, 0f, 1f);
-        }
+        _vignetteTarget = Math.Clamp(intensity, 0f, 1f);
     }
 
     /// <summary>
@@ -203,18 +182,15 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void ShockwaveRing(float x, float y, SKColor color, float maxRadius = 100f, float duration = 0.5f)
     {
-        lock (_lock)
+        AddEffect(new JuiceEffect
         {
-            AddEffect(new JuiceEffect
-            {
-                Type = EffectType.Shockwave,
-                X = x, Y = y,
-                Color = color,
-                MaxRadius = maxRadius,
-                Duration = duration,
-                Timer = duration
-            });
-        }
+            Type = EffectType.Shockwave,
+            X = x, Y = y,
+            Color = color,
+            MaxRadius = maxRadius,
+            Duration = duration,
+            Timer = duration
+        });
     }
 
     /// <summary>
@@ -222,27 +198,24 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void ConfettiBurst(float x, float y, int count = 30, float spread = 100f)
     {
-        lock (_lock)
+        for (int i = 0; i < Math.Min(count, 50); i++)
         {
-            for (int i = 0; i < Math.Min(count, 50); i++)
-            {
-                float angle = NextRandom(0f, MathF.PI * 2f);
-                float speed = NextRandom(80f, 200f);
-                var color = ConfettiColors[((int)NextRandom(0, ConfettiColors.Length - 0.01f))];
+            float angle = NextRandom(0f, MathF.PI * 2f);
+            float speed = NextRandom(80f, 200f);
+            var color = ConfettiColors[((int)NextRandom(0, ConfettiColors.Length - 0.01f))];
 
-                AddEffect(new JuiceEffect
-                {
-                    Type = EffectType.Confetti,
-                    X = x, Y = y,
-                    VelocityX = MathF.Cos(angle) * speed,
-                    VelocityY = MathF.Sin(angle) * speed - 100f, // Bias nach oben
-                    Color = color,
-                    Duration = 1.5f,
-                    Timer = 1.5f,
-                    Size = NextRandom(4f, 8f),
-                    Phase = NextRandom(0f, MathF.PI) // Rotations-Phase
-                });
-            }
+            AddEffect(new JuiceEffect
+            {
+                Type = EffectType.Confetti,
+                X = x, Y = y,
+                VelocityX = MathF.Cos(angle) * speed,
+                VelocityY = MathF.Sin(angle) * speed - 100f, // Bias nach oben
+                Color = color,
+                Duration = 1.5f,
+                Timer = 1.5f,
+                Size = NextRandom(4f, 8f),
+                Phase = NextRandom(0f, MathF.PI) // Rotations-Phase
+            });
         }
     }
 
@@ -251,59 +224,56 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void Update(float deltaTime)
     {
-        lock (_lock)
+        // ScreenShake
+        if (_shakeTimer > 0)
         {
-            // ScreenShake
-            if (_shakeTimer > 0)
+            _shakeTimer -= deltaTime;
+            float decay = _shakeTimer / _shakeDuration;
+            _shakeOffsetX = MathF.Sin(_shakeTimer * 50f) * _shakeIntensity * decay;
+            _shakeOffsetY = MathF.Cos(_shakeTimer * 37f) * _shakeIntensity * decay * 0.7f;
+        }
+        else
+        {
+            _shakeOffsetX = 0f;
+            _shakeOffsetY = 0f;
+        }
+
+        // Flash
+        if (_flashTimer > 0)
+            _flashTimer -= deltaTime;
+
+        // Vignette (sanft interpolieren)
+        _vignetteIntensity += (_vignetteTarget - _vignetteIntensity) * Math.Min(1f, VignetteLerpSpeed * deltaTime);
+
+        // Effekte updaten (rückwärts iterieren für Swap-Remove)
+        for (int i = _effectCount - 1; i >= 0; i--)
+        {
+            ref var e = ref _effects[i];
+            e.Timer -= deltaTime;
+
+            if (e.Timer <= 0)
             {
-                _shakeTimer -= deltaTime;
-                float decay = _shakeTimer / _shakeDuration;
-                _shakeOffsetX = MathF.Sin(_shakeTimer * 50f) * _shakeIntensity * decay;
-                _shakeOffsetY = MathF.Cos(_shakeTimer * 37f) * _shakeIntensity * decay * 0.7f;
+                // Effekt entfernen (Swap mit letztem)
+                _effects[i] = _effects[_effectCount - 1];
+                _effectCount--;
+                continue;
             }
-            else
+
+            // Physik für Confetti
+            if (e.Type == EffectType.Confetti)
             {
-                _shakeOffsetX = 0f;
-                _shakeOffsetY = 0f;
+                e.X += e.VelocityX * deltaTime;
+                e.Y += e.VelocityY * deltaTime;
+                e.VelocityY += 300f * deltaTime; // Schwerkraft
+                e.VelocityX *= 0.98f; // Luftwiderstand
+                e.Phase += deltaTime * 8f; // Rotation
             }
 
-            // Flash
-            if (_flashTimer > 0)
-                _flashTimer -= deltaTime;
-
-            // Vignette (sanft interpolieren)
-            _vignetteIntensity += (_vignetteTarget - _vignetteIntensity) * Math.Min(1f, VignetteLerpSpeed * deltaTime);
-
-            // Effekte updaten (rückwärts iterieren für Swap-Remove)
-            for (int i = _effectCount - 1; i >= 0; i--)
+            // Physik für NumberPop
+            if (e.Type == EffectType.NumberPop)
             {
-                ref var e = ref _effects[i];
-                e.Timer -= deltaTime;
-
-                if (e.Timer <= 0)
-                {
-                    // Effekt entfernen (Swap mit letztem)
-                    _effects[i] = _effects[_effectCount - 1];
-                    _effectCount--;
-                    continue;
-                }
-
-                // Physik für Confetti
-                if (e.Type == EffectType.Confetti)
-                {
-                    e.X += e.VelocityX * deltaTime;
-                    e.Y += e.VelocityY * deltaTime;
-                    e.VelocityY += 300f * deltaTime; // Schwerkraft
-                    e.VelocityX *= 0.98f; // Luftwiderstand
-                    e.Phase += deltaTime * 8f; // Rotation
-                }
-
-                // Physik für NumberPop
-                if (e.Type == EffectType.NumberPop)
-                {
-                    e.Y += e.VelocityY * deltaTime;
-                    e.VelocityY += 80f * deltaTime; // Leichte Schwerkraft
-                }
+                e.Y += e.VelocityY * deltaTime;
+                e.VelocityY += 80f * deltaTime; // Leichte Schwerkraft
             }
         }
     }
@@ -313,83 +283,68 @@ public sealed class GameJuiceEngine : IDisposable
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds)
     {
-        lock (_lock)
+        for (int i = 0; i < _effectCount; i++)
         {
-            for (int i = 0; i < _effectCount; i++)
+            ref var e = ref _effects[i];
+            float progress = 1f - (e.Timer / e.Duration);
+
+            // Delay-Phase: Noch nicht rendern
+            if (e.Delay > 0 && e.Timer > e.Duration - e.Delay)
+                continue;
+
+            switch (e.Type)
             {
-                ref var e = ref _effects[i];
-                float progress = 1f - (e.Timer / e.Duration);
-
-                // Delay-Phase: Noch nicht rendern
-                if (e.Delay > 0 && e.Timer > e.Duration - e.Delay)
-                    continue;
-
-                switch (e.Type)
-                {
-                    case EffectType.RadialBurst:
-                        RenderRadialBurst(canvas, ref e, progress);
-                        break;
-                    case EffectType.CoinFly:
-                        RenderCoinFly(canvas, ref e, progress);
-                        break;
-                    case EffectType.Sparkle:
-                        RenderSparkle(canvas, ref e, progress);
-                        break;
-                    case EffectType.NumberPop:
-                        RenderNumberPop(canvas, ref e, progress);
-                        break;
-                    case EffectType.Shockwave:
-                        RenderShockwave(canvas, ref e, progress);
-                        break;
-                    case EffectType.Confetti:
-                        RenderConfetti(canvas, ref e, progress);
-                        break;
-                }
+                case EffectType.RadialBurst:
+                    RenderRadialBurst(canvas, ref e, progress);
+                    break;
+                case EffectType.CoinFly:
+                    RenderCoinFly(canvas, ref e, progress);
+                    break;
+                case EffectType.Sparkle:
+                    RenderSparkle(canvas, ref e, progress);
+                    break;
+                case EffectType.NumberPop:
+                    RenderNumberPop(canvas, ref e, progress);
+                    break;
+                case EffectType.Shockwave:
+                    RenderShockwave(canvas, ref e, progress);
+                    break;
+                case EffectType.Confetti:
+                    RenderConfetti(canvas, ref e, progress);
+                    break;
             }
+        }
 
-            // Flash-Overlay (über allem)
-            if (_flashTimer > 0)
-            {
-                float alpha = (_flashTimer / _flashDuration) * 0.6f;
-                _overlayPaint.Color = _flashColor.WithAlpha((byte)(alpha * 255));
-                canvas.DrawRect(bounds, _overlayPaint);
-            }
+        // Flash-Overlay (über allem)
+        if (_flashTimer > 0)
+        {
+            float alpha = (_flashTimer / _flashDuration) * 0.6f;
+            _overlayPaint.Color = _flashColor.WithAlpha((byte)(alpha * 255));
+            canvas.DrawRect(bounds, _overlayPaint);
+        }
 
-            // Vignette-Overlay (über allem)
-            if (_vignetteIntensity > 0.01f)
-            {
-                RenderVignette(canvas, bounds);
-            }
+        // Vignette-Overlay (über allem)
+        if (_vignetteIntensity > 0.01f)
+        {
+            RenderVignette(canvas, bounds);
         }
     }
 
     /// <summary>
     /// Gibt true zurück wenn gerade Effekte aktiv sind.
     /// </summary>
-    public bool HasActiveEffects
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return _effectCount > 0 || _shakeTimer > 0 || _flashTimer > 0;
-            }
-        }
-    }
+    public bool HasActiveEffects => _effectCount > 0 || _shakeTimer > 0 || _flashTimer > 0;
 
     /// <summary>
     /// Alle Effekte sofort beenden.
     /// </summary>
     public void ClearAll()
     {
-        lock (_lock)
-        {
-            _effectCount = 0;
-            _shakeTimer = 0;
-            _flashTimer = 0;
-            _shakeOffsetX = 0;
-            _shakeOffsetY = 0;
-        }
+        _effectCount = 0;
+        _shakeTimer = 0;
+        _flashTimer = 0;
+        _shakeOffsetX = 0;
+        _shakeOffsetY = 0;
     }
 
     // --- Private Render-Methoden ---

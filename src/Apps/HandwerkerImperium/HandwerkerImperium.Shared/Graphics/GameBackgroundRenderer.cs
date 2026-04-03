@@ -65,6 +65,14 @@ public sealed class GameBackgroundRenderer : IDisposable
     private SKShader? _vignetteShader;
     private float _lastVignetteW, _lastVignetteH;
 
+    // Gecachter Fackel-Glow-Shader (Radius aendert sich durch intensity-Puls, Toleranz 2dp)
+    private SKShader? _torchShader1;
+    private float _lastTorchX1, _lastTorchRadius1;
+    private byte _lastTorchAlpha1;
+    private SKShader? _torchShader2;
+    private float _lastTorchX2, _lastTorchRadius2;
+    private byte _lastTorchAlpha2;
+
     // Gecachte Gradient-Shader fuer DrawVerticalGradient (vermeidet Shader-Allokation pro Frame)
     private SKShader? _gradientShader2;
     private SKColor _lastGrad2Top, _lastGrad2Bot;
@@ -840,14 +848,33 @@ public sealed class GameBackgroundRenderer : IDisposable
         float radius = bounds.Height * 0.35f * intensity;
         byte alpha = (byte)(40 * intensity);
 
-        using var shader = SKShader.CreateRadialGradient(
-            new SKPoint(x, y),
-            radius,
-            new[] { new SKColor(0xFF, 0x8C, 0x00, alpha), SKColors.Transparent },
-            null,
-            SKShaderTileMode.Clamp);
+        // Shader cachen: radius pulsiert langsam (sin * 0.2 * bounds.Height * 0.35),
+        // Toleranz 2dp verhindert Neuerstellung bei minimalen intensity-Aenderungen.
+        // Zwei Slots fuer linke (x < MidX) und rechte Fackel.
+        bool isLeft = x < bounds.MidX;
+        ref SKShader? cachedShader = ref (isLeft ? ref _torchShader1 : ref _torchShader2);
+        ref float lastRadius = ref (isLeft ? ref _lastTorchRadius1 : ref _lastTorchRadius2);
+        ref float lastX = ref (isLeft ? ref _lastTorchX1 : ref _lastTorchX2);
+        ref byte lastAlpha = ref (isLeft ? ref _lastTorchAlpha1 : ref _lastTorchAlpha2);
 
-        _fillPaint.Shader = shader;
+        if (cachedShader == null ||
+            MathF.Abs(radius - lastRadius) > 2f ||
+            MathF.Abs(x - lastX) > 1f ||
+            lastAlpha != alpha)
+        {
+            cachedShader?.Dispose();
+            cachedShader = SKShader.CreateRadialGradient(
+                new SKPoint(x, y),
+                radius,
+                new[] { new SKColor(0xFF, 0x8C, 0x00, alpha), SKColors.Transparent },
+                null,
+                SKShaderTileMode.Clamp);
+            lastRadius = radius;
+            lastX = x;
+            lastAlpha = alpha;
+        }
+
+        _fillPaint.Shader = cachedShader;
         canvas.DrawRect(
             x - radius, y - radius,
             radius * 2, radius * 2,
@@ -871,5 +898,7 @@ public sealed class GameBackgroundRenderer : IDisposable
         _vignetteShader?.Dispose();
         _gradientShader2?.Dispose();
         _gradientShader3?.Dispose();
+        _torchShader1?.Dispose();
+        _torchShader2?.Dispose();
     }
 }

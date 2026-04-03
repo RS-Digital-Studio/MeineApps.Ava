@@ -68,6 +68,19 @@ public static class CraftTextures
     private static SKColor _woodGrainLastColor;
     private static SKShader? _woodGrainCachedShader;
 
+    // Gecachter Radial-Shader fuer DrawMetalBrushed (abhaengig von rect + metalColor)
+    private static SKRect _metalRadialLastRect;
+    private static SKColor _metalRadialLastColor;
+    private static SKShader? _metalRadialCachedShader;
+
+    // Gecachter Highlight-Shader fuer DrawMetalBrushed (abhaengig von rect)
+    private static SKRect _metalHighlightLastRect;
+    private static SKShader? _metalHighlightCachedShader;
+
+    // Gecachter Vignette-Shader fuer DrawLeatherTexture (abhaengig von rect)
+    private static SKRect _leatherVignetteLastRect;
+    private static SKShader? _leatherVignetteCachedShader;
+
     // --- Deterministische Pseudo-Zufallszahl basierend auf Seed ---
 
     /// <summary>
@@ -260,14 +273,22 @@ public static class CraftTextures
 
         int seed = RectSeed(rect);
 
-        var centerColor = Lighten(metalColor, 0.1f);
-        using var radialShader = SKShader.CreateRadialGradient(
-            new SKPoint(rect.MidX, rect.MidY),
-            Math.Max(rect.Width, rect.Height) * 0.6f,
-            [centerColor, metalColor],
-            SKShaderTileMode.Clamp);
+        // Radial-Gradient (gecacht, abhaengig von rect + metalColor)
+        if (_metalRadialLastRect != rect || _metalRadialLastColor != metalColor)
+        {
+            _metalRadialLastRect = rect;
+            _metalRadialLastColor = metalColor;
+            var centerColor = Lighten(metalColor, 0.1f);
 
-        _fillPaint.Shader = radialShader;
+            _metalRadialCachedShader?.Dispose();
+            _metalRadialCachedShader = SKShader.CreateRadialGradient(
+                new SKPoint(rect.MidX, rect.MidY),
+                Math.Max(rect.Width, rect.Height) * 0.6f,
+                [centerColor, metalColor],
+                SKShaderTileMode.Clamp);
+        }
+
+        _fillPaint.Shader = _metalRadialCachedShader;
         canvas.DrawRect(rect, _fillPaint);
         _fillPaint.Shader = null;
 
@@ -283,15 +304,21 @@ public static class CraftTextures
             canvas.DrawLine(rect.Left, y, rect.Right, y, _thinStrokePaint);
         }
 
-        // Highlight-Streifen obere 30%
+        // Highlight-Streifen obere 30% (gecacht, abhaengig von rect)
         float highlightBottom = rect.Top + rect.Height * 0.3f;
-        using var highlightShader = SKShader.CreateLinearGradient(
-            new SKPoint(rect.Left, rect.Top),
-            new SKPoint(rect.Left, highlightBottom),
-            [new SKColor(255, 255, 255, 35), new SKColor(255, 255, 255, 0)],
-            SKShaderTileMode.Clamp);
+        if (_metalHighlightLastRect != rect)
+        {
+            _metalHighlightLastRect = rect;
 
-        _fillPaint.Shader = highlightShader;
+            _metalHighlightCachedShader?.Dispose();
+            _metalHighlightCachedShader = SKShader.CreateLinearGradient(
+                new SKPoint(rect.Left, rect.Top),
+                new SKPoint(rect.Left, highlightBottom),
+                [new SKColor(255, 255, 255, 35), new SKColor(255, 255, 255, 0)],
+                SKShaderTileMode.Clamp);
+        }
+
+        _fillPaint.Shader = _metalHighlightCachedShader;
         canvas.DrawRect(rect.Left, rect.Top, rect.Width, highlightBottom - rect.Top, _fillPaint);
         _fillPaint.Shader = null;
 
@@ -315,14 +342,20 @@ public static class CraftTextures
         _fillPaint.Color = leatherColor;
         canvas.DrawRect(rect, _fillPaint);
 
-        // Vignette
-        using var vignetteShader = SKShader.CreateRadialGradient(
-            new SKPoint(rect.MidX, rect.MidY),
-            Math.Max(rect.Width, rect.Height) * 0.55f,
-            [SKColors.Transparent, new SKColor(0, 0, 0, 40)],
-            SKShaderTileMode.Clamp);
+        // Vignette-Shader (gecacht, abhaengig von rect)
+        if (_leatherVignetteLastRect != rect)
+        {
+            _leatherVignetteLastRect = rect;
 
-        _fillPaint.Shader = vignetteShader;
+            _leatherVignetteCachedShader?.Dispose();
+            _leatherVignetteCachedShader = SKShader.CreateRadialGradient(
+                new SKPoint(rect.MidX, rect.MidY),
+                Math.Max(rect.Width, rect.Height) * 0.55f,
+                [SKColors.Transparent, new SKColor(0, 0, 0, 40)],
+                SKShaderTileMode.Clamp);
+        }
+
+        _fillPaint.Shader = _leatherVignetteCachedShader;
         canvas.DrawRect(rect, _fillPaint);
         _fillPaint.Shader = null;
 
@@ -516,5 +549,15 @@ public static class CraftTextures
         }
 
         canvas.Restore();
+    }
+
+    /// <summary>Statische Shader-Caches freigeben (bei App-Shutdown aufrufen).</summary>
+    public static void DisposeStaticResources()
+    {
+        _woodGrainCachedShader?.Dispose(); _woodGrainCachedShader = null;
+        _metalRadialCachedShader?.Dispose(); _metalRadialCachedShader = null;
+        _metalHighlightCachedShader?.Dispose(); _metalHighlightCachedShader = null;
+        _leatherVignetteCachedShader?.Dispose(); _leatherVignetteCachedShader = null;
+        _stoneShadowFilter?.Dispose(); _stoneShadowFilter = null;
     }
 }

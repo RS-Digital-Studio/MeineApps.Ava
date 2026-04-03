@@ -10,19 +10,28 @@ namespace HandwerkerImperium.Graphics;
 public sealed class LoadingScreenRenderer
 {
     // Gecachte Paints
-    private static readonly SKPaint _bgPaint = new() { IsAntialias = true };
-    private static readonly SKPaint _gearPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    private static readonly SKPaint _gearStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
-    private static readonly SKPaint _barBgPaint = new() { Color = new SKColor(0x33, 0x33, 0x33), IsAntialias = true };
-    private static readonly SKPaint _barFillPaint = new() { IsAntialias = true };
-    private static readonly SKPaint _textPaint = new() { IsAntialias = true, Color = SKColors.White };
-    private static readonly SKPaint _subtitlePaint = new() { IsAntialias = true, Color = new SKColor(0xFF, 0xA7, 0x26) };
-    private static readonly SKPaint _tipPaint = new() { IsAntialias = true, Color = new SKColor(0xBB, 0xBB, 0xBB) };
-    private static readonly SKPaint _sparkPaint = new() { IsAntialias = true };
+    private static readonly SKPaint s_bgPaint = new() { IsAntialias = true };
+    private static readonly SKPaint s_gearPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private static readonly SKPaint s_gearStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
+    private static readonly SKPaint s_barBgPaint = new() { Color = new SKColor(0x33, 0x33, 0x33), IsAntialias = true };
+    private static readonly SKPaint s_barFillPaint = new() { IsAntialias = true };
+    private static readonly SKPaint s_textPaint = new() { IsAntialias = true, Color = SKColors.White };
+    private static readonly SKPaint s_subtitlePaint = new() { IsAntialias = true, Color = new SKColor(0xFF, 0xA7, 0x26) };
+    private static readonly SKPaint s_tipPaint = new() { IsAntialias = true, Color = new SKColor(0xBB, 0xBB, 0xBB) };
+    private static readonly SKPaint s_sparkPaint = new() { IsAntialias = true };
 
-    private static readonly SKFont _titleFont = new(SKTypeface.Default, 28) { Edging = SKFontEdging.SubpixelAntialias };
-    private static readonly SKFont _subtitleFont = new(SKTypeface.Default, 14) { Edging = SKFontEdging.SubpixelAntialias };
-    private static readonly SKFont _tipFont = new(SKTypeface.Default, 11) { Edging = SKFontEdging.SubpixelAntialias };
+    // Gecachter SKPath fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
+    private static readonly SKPath s_cachedPath = new();
+
+    private static readonly SKFont s_titleFont = new(SKTypeface.Default, 28) { Edging = SKFontEdging.SubpixelAntialias };
+    private static readonly SKFont s_subtitleFont = new(SKTypeface.Default, 14) { Edging = SKFontEdging.SubpixelAntialias };
+    private static readonly SKFont s_tipFont = new(SKTypeface.Default, 11) { Edging = SKFontEdging.SubpixelAntialias };
+
+    // Statisch gecachte Shader (Loading-Screen Bounds aendern sich nicht)
+    private static SKShader? s_bgShader;
+    private static SKShader? s_vignetteShader;
+    private static float s_lastBoundsW;
+    private static float s_lastBoundsH;
 
     // Tipps (werden rotiert angezeigt)
     private string[] _tips = [];
@@ -73,24 +82,38 @@ public sealed class LoadingScreenRenderer
 
     private static void DrawBackground(SKCanvas canvas, SKRect bounds)
     {
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.Left, bounds.Top),
-            new SKPoint(bounds.Left, bounds.Bottom),
-            new SKColor[] { new(0x1A, 0x1A, 0x2E), new(0x0D, 0x0D, 0x1A) },
-            null, SKShaderTileMode.Clamp);
-        _bgPaint.Shader = shader;
-        canvas.DrawRect(bounds, _bgPaint);
-        _bgPaint.Shader = null;
+        // Statisch gecachte Shader: Bounds aendern sich beim Loading nicht
+        if (s_bgShader == null ||
+            MathF.Abs(bounds.Width - s_lastBoundsW) > 1f ||
+            MathF.Abs(bounds.Height - s_lastBoundsH) > 1f)
+        {
+            s_bgShader?.Dispose();
+            s_vignetteShader?.Dispose();
+
+            s_bgShader = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.Left, bounds.Top),
+                new SKPoint(bounds.Left, bounds.Bottom),
+                new SKColor[] { new(0x1A, 0x1A, 0x2E), new(0x0D, 0x0D, 0x1A) },
+                null, SKShaderTileMode.Clamp);
+
+            s_vignetteShader = SKShader.CreateRadialGradient(
+                new SKPoint(bounds.MidX, bounds.MidY),
+                Math.Max(bounds.Width, bounds.Height) * 0.7f,
+                new SKColor[] { SKColors.Transparent, new SKColor(0x00, 0x00, 0x00, 0x80) },
+                null, SKShaderTileMode.Clamp);
+
+            s_lastBoundsW = bounds.Width;
+            s_lastBoundsH = bounds.Height;
+        }
+
+        s_bgPaint.Shader = s_bgShader;
+        canvas.DrawRect(bounds, s_bgPaint);
+        s_bgPaint.Shader = null;
 
         // Subtile Vignette
-        using var vignetteShader = SKShader.CreateRadialGradient(
-            new SKPoint(bounds.MidX, bounds.MidY),
-            Math.Max(bounds.Width, bounds.Height) * 0.7f,
-            new SKColor[] { SKColors.Transparent, new SKColor(0x00, 0x00, 0x00, 0x80) },
-            null, SKShaderTileMode.Clamp);
-        _bgPaint.Shader = vignetteShader;
-        canvas.DrawRect(bounds, _bgPaint);
-        _bgPaint.Shader = null;
+        s_bgPaint.Shader = s_vignetteShader;
+        canvas.DrawRect(bounds, s_bgPaint);
+        s_bgPaint.Shader = null;
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -102,14 +125,14 @@ public sealed class LoadingScreenRenderer
         // App-Name mit leichtem Glow-Puls
         float pulse = 0.9f + MathF.Sin(time * 2f) * 0.1f;
         byte alpha = (byte)(pulse * 255);
-        _textPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, alpha);
+        s_textPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, alpha);
 
         string title = "HandwerkerImperium";
-        canvas.DrawText(title, cx, y, SKTextAlign.Center, _titleFont, _textPaint);
+        canvas.DrawText(title, cx, y, SKTextAlign.Center, s_titleFont, s_textPaint);
 
         // Untertitel
-        _subtitlePaint.Color = new SKColor(0xFF, 0xA7, 0x26, (byte)(alpha * 0.8f));
-        canvas.DrawText("Baue dein Imperium", cx, y + 22, SKTextAlign.Center, _subtitleFont, _subtitlePaint);
+        s_subtitlePaint.Color = new SKColor(0xFF, 0xA7, 0x26, (byte)(alpha * 0.8f));
+        canvas.DrawText("Baue dein Imperium", cx, y + 22, SKTextAlign.Center, s_subtitleFont, s_subtitlePaint);
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -138,7 +161,7 @@ public sealed class LoadingScreenRenderer
         canvas.Save();
         canvas.RotateDegrees(angleDeg, cx, cy);
 
-        using var path = new SKPath();
+        s_cachedPath.Rewind();
 
         float toothDepth = radius * 0.2f;
         float innerRadius = radius - toothDepth;
@@ -156,40 +179,39 @@ public sealed class LoadingScreenRenderer
 
             if (i == 0)
             {
-                path.MoveTo(cx + innerRadius * MathF.Cos(rad1), cy + innerRadius * MathF.Sin(rad1));
+                s_cachedPath.MoveTo(cx + innerRadius * MathF.Cos(rad1), cy + innerRadius * MathF.Sin(rad1));
             }
             else
             {
-                float prevAngle = (baseAngle - toothAngle + halfTooth) * MathF.PI / 180f;
                 // Innerer Bogen zum nächsten Zahn
-                path.LineTo(cx + innerRadius * MathF.Cos(rad1), cy + innerRadius * MathF.Sin(rad1));
+                s_cachedPath.LineTo(cx + innerRadius * MathF.Cos(rad1), cy + innerRadius * MathF.Sin(rad1));
             }
 
             // Zahnflanke hoch
-            path.LineTo(cx + radius * MathF.Cos(radMid1), cy + radius * MathF.Sin(radMid1));
+            s_cachedPath.LineTo(cx + radius * MathF.Cos(radMid1), cy + radius * MathF.Sin(radMid1));
             // Zahnspitze
-            path.LineTo(cx + radius * MathF.Cos(radMid2), cy + radius * MathF.Sin(radMid2));
+            s_cachedPath.LineTo(cx + radius * MathF.Cos(radMid2), cy + radius * MathF.Sin(radMid2));
             // Zahnflanke runter
-            path.LineTo(cx + innerRadius * MathF.Cos(rad2), cy + innerRadius * MathF.Sin(rad2));
+            s_cachedPath.LineTo(cx + innerRadius * MathF.Cos(rad2), cy + innerRadius * MathF.Sin(rad2));
         }
-        path.Close();
+        s_cachedPath.Close();
 
         // Zahnrad füllen
-        _gearPaint.Color = color;
-        canvas.DrawPath(path, _gearPaint);
+        s_gearPaint.Color = color;
+        canvas.DrawPath(s_cachedPath, s_gearPaint);
 
         // Dunkler Rand
-        _gearStrokePaint.Color = new SKColor((byte)(color.Red * 0.7f), (byte)(color.Green * 0.7f), (byte)(color.Blue * 0.7f));
-        canvas.DrawPath(path, _gearStrokePaint);
+        s_gearStrokePaint.Color = new SKColor((byte)(color.Red * 0.7f), (byte)(color.Green * 0.7f), (byte)(color.Blue * 0.7f));
+        canvas.DrawPath(s_cachedPath, s_gearStrokePaint);
 
         // Nabe (Mitte)
         float hubRadius = radius * 0.35f;
-        _gearPaint.Color = new SKColor((byte)(color.Red * 0.85f), (byte)(color.Green * 0.85f), (byte)(color.Blue * 0.85f));
-        canvas.DrawCircle(cx, cy, hubRadius, _gearPaint);
+        s_gearPaint.Color = new SKColor((byte)(color.Red * 0.85f), (byte)(color.Green * 0.85f), (byte)(color.Blue * 0.85f));
+        canvas.DrawCircle(cx, cy, hubRadius, s_gearPaint);
 
         // Naben-Loch
-        _gearPaint.Color = new SKColor(0x1A, 0x1A, 0x2E);
-        canvas.DrawCircle(cx, cy, hubRadius * 0.4f, _gearPaint);
+        s_gearPaint.Color = new SKColor(0x1A, 0x1A, 0x2E);
+        canvas.DrawCircle(cx, cy, hubRadius * 0.4f, s_gearPaint);
 
         canvas.Restore();
     }
@@ -213,8 +235,8 @@ public sealed class LoadingScreenRenderer
             byte alpha = (byte)((1f - phase) * 200);
             float size = (1f - phase) * 2.5f;
 
-            _sparkPaint.Color = new SKColor(0xFF, 0xD5, 0x4F, alpha);
-            canvas.DrawCircle(sx, sy, size, _sparkPaint);
+            s_sparkPaint.Color = new SKColor(0xFF, 0xD5, 0x4F, alpha);
+            canvas.DrawCircle(sx, sy, size, s_sparkPaint);
         }
     }
 
@@ -230,7 +252,7 @@ public sealed class LoadingScreenRenderer
 
         // Hintergrund
         var barRect = new SKRect(barLeft, y, barLeft + barWidth, y + barHeight);
-        canvas.DrawRoundRect(barRect, 3, 3, _barBgPaint);
+        canvas.DrawRoundRect(barRect, 3, 3, s_barBgPaint);
 
         // Animierter Fortschritt (indeterminiert: wandernder Block)
         float progress = (time * 0.4f) % 1f;
@@ -239,19 +261,20 @@ public sealed class LoadingScreenRenderer
 
         var fillRect = new SKRect(blockStart, y, blockStart + blockWidth, y + barHeight);
 
+        // Perf: Fill-Shader ist animationsabhaengig (wandernder Block), nicht cachebar
         using var fillShader = SKShader.CreateLinearGradient(
             new SKPoint(fillRect.Left, y),
             new SKPoint(fillRect.Right, y),
             new SKColor[] { new(0xEA, 0x58, 0x0C, 0x60), new(0xEA, 0x58, 0x0C), new(0xFF, 0xA7, 0x26), new(0xEA, 0x58, 0x0C, 0x60) },
             new float[] { 0, 0.2f, 0.8f, 1f },
             SKShaderTileMode.Clamp);
-        _barFillPaint.Shader = fillShader;
+        s_barFillPaint.Shader = fillShader;
 
         canvas.Save();
         canvas.ClipRoundRect(new SKRoundRect(barRect, 3, 3));
-        canvas.DrawRect(fillRect, _barFillPaint);
+        canvas.DrawRect(fillRect, s_barFillPaint);
         canvas.Restore();
-        _barFillPaint.Shader = null;
+        s_barFillPaint.Shader = null;
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -280,10 +303,17 @@ public sealed class LoadingScreenRenderer
         else
             alpha = 1f;
 
-        _tipPaint.Color = new SKColor(0xBB, 0xBB, 0xBB, (byte)(alpha * 200));
+        s_tipPaint.Color = new SKColor(0xBB, 0xBB, 0xBB, (byte)(alpha * 200));
 
         string tip = _tips[_currentTipIndex % _tips.Length];
-        float tipWidth = _tipFont.MeasureText(tip);
-        canvas.DrawText(tip, cx - tipWidth / 2f, y, SKTextAlign.Left, _tipFont, _tipPaint);
+        float tipWidth = s_tipFont.MeasureText(tip);
+        canvas.DrawText(tip, cx - tipWidth / 2f, y, SKTextAlign.Left, s_tipFont, s_tipPaint);
+    }
+
+    /// <summary>Statische Shader-Caches freigeben (bei App-Shutdown aufrufen).</summary>
+    public static void DisposeStaticResources()
+    {
+        s_bgShader?.Dispose(); s_bgShader = null;
+        s_vignetteShader?.Dispose(); s_vignetteShader = null;
     }
 }

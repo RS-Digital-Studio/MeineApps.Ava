@@ -27,7 +27,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event EventHandler<string>? NavigationRequested;
+    public event Action<string>? NavigationRequested;
 
     /// <summary>
     /// Event für die Celebration-Animation bei abgeschlossener Forschung.
@@ -465,7 +465,7 @@ public sealed partial class ResearchViewModel : ViewModelBase
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke(this, "..");
+        NavigationRequested?.Invoke("..");
     }
 
     // ═══════════════════════════════════════════════════════════════════════

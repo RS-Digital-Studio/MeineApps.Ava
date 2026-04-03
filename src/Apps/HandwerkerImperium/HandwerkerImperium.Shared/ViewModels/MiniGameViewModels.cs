@@ -19,6 +19,9 @@ public sealed class MiniGameViewModels
     public ForgeGameViewModel Forge { get; }
     public InventGameViewModel Invent { get; }
 
+    /// <summary>Alle 10 MiniGame-VMs als Array (fuer Schleifen: Subscribe, Dispose).</summary>
+    public BaseMiniGameViewModel[] All => [Sawing, PipePuzzle, Wiring, Painting, RoofTiling, Blueprint, DesignPuzzle, Inspection, Forge, Invent];
+
     public MiniGameViewModels(
         SawingGameViewModel sawing,
         PipePuzzleViewModel pipePuzzle,

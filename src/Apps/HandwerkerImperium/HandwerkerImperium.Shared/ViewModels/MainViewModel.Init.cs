@@ -44,7 +44,7 @@ public sealed partial class MainViewModel
         await CheckCloudSaveAsync();
 
         // Sprache synchronisieren: gespeicherte Sprache laden oder Gerätesprache übernehmen
-        var savedLang = _gameStateService.State.Language;
+        var savedLang = _gameStateService.State.Settings.Language;
         if (!string.IsNullOrEmpty(savedLang))
         {
             _localizationService.SetLanguage(savedLang);
@@ -52,7 +52,7 @@ public sealed partial class MainViewModel
         else
         {
             // Neues Spiel: Gerätesprache in GameState übernehmen
-            _gameStateService.State.Language = _localizationService.CurrentLanguage;
+            _gameStateService.State.Settings.Language = _localizationService.CurrentLanguage;
         }
 
         // Reload settings in SettingsVM now that game state is loaded
@@ -112,8 +112,16 @@ public sealed partial class MainViewModel
         if (IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible || MissionsVM.IsWelcomeOfferVisible)
             dialogsShown++;
 
-        // Daily Reward nur wenn noch Platz für Dialog
-        if (dialogsShown < 2)
+        // Daily Reward: Bei brandneuem Spiel still einsammeln (kein Dialog am allerersten Start,
+        // der Spieler kennt das Spiel noch nicht und wird sonst von Dialogen erschlagen)
+        var isFirstEverStart = _gameStateService.State.LastDailyRewardClaim == DateTime.MinValue
+                            && _gameStateService.State.Statistics.TotalOrdersCompleted == 0;
+        if (isFirstEverStart && _dailyRewardService.IsRewardAvailable)
+        {
+            _dailyRewardService.ClaimReward();
+            HasDailyReward = false;
+        }
+        else if (dialogsShown < 2)
         {
             CheckDailyReward();
             if (IsDailyRewardDialogVisible)
@@ -136,9 +144,23 @@ public sealed partial class MainViewModel
         // Start the game loop for idle earnings
         _gameLoopService.Start();
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] InitializeAsync fehlgeschlagen: {ex}");
             IsLoading = false;
+
+            // Fehlerdialog anzeigen (DialogVM ist per DI injiziert, immer verfügbar)
+            try
+            {
+                DialogVM.ShowAlertDialog(
+                    _localizationService?.GetString("Error") ?? "Fehler",
+                    _localizationService?.GetString("InitError") ?? "Beim Laden ist ein Fehler aufgetreten. Bitte starte die App neu.",
+                    "OK");
+            }
+            catch
+            {
+                // Wenn selbst der Dialog fehlschlägt, still ignorieren
+            }
         }
     }
 
@@ -147,7 +169,7 @@ public sealed partial class MainViewModel
     /// </summary>
     private async Task CheckCloudSaveAsync()
     {
-        if (_playGamesService?.IsSignedIn != true || !_gameStateService.State.CloudSaveEnabled)
+        if (_playGamesService?.IsSignedIn != true || !_gameStateService.State.Settings.CloudSaveEnabled)
             return;
 
         try
@@ -458,7 +480,19 @@ public sealed partial class MainViewModel
         if (_hasDeferredWelcomeHint)
         {
             _hasDeferredWelcomeHint = false;
-            _contextualHintService.TryShowHint(ContextualHints.Welcome);
+
+            // Story Kapitel 1 ("Willkommen, Lehrling!") deckt die Begrüßung bereits ab
+            // → Welcome-Hint überspringen, direkt FirstWorkshop-Hint zeigen
+            if (_gameStateService.State.ViewedStoryIds.Contains("tutorial_welcome"))
+            {
+                _gameStateService.State.Tutorial.SeenHints.Add(ContextualHints.Welcome.Id);
+                _gameStateService.MarkDirty();
+                _contextualHintService.TryShowHint(ContextualHints.FirstWorkshop);
+            }
+            else
+            {
+                _contextualHintService.TryShowHint(ContextualHints.Welcome);
+            }
         }
     }
 

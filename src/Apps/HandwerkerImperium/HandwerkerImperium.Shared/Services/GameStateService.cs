@@ -578,20 +578,20 @@ public sealed class GameStateService : IGameStateService
                 order.RecordTaskResult(rating);
 
             // Statistiken IMMER aktualisieren (auch bei QuickJobs)
-            _state.TotalMiniGamesPlayed++;
+            _state.Statistics.TotalMiniGamesPlayed++;
 
             if (rating == MiniGameRating.Perfect)
             {
-                _state.PerfectRatings++;
-                _state.PerfectStreak++;
-                if (_state.PerfectStreak > _state.BestPerfectStreak)
+                _state.Statistics.PerfectRatings++;
+                _state.Statistics.PerfectStreak++;
+                if (_state.Statistics.PerfectStreak > _state.Statistics.BestPerfectStreak)
                 {
-                    _state.BestPerfectStreak = _state.PerfectStreak;
+                    _state.Statistics.BestPerfectStreak = _state.Statistics.PerfectStreak;
                 }
             }
             else
             {
-                _state.PerfectStreak = 0;
+                _state.Statistics.PerfectStreak = 0;
             }
         }
 
@@ -723,7 +723,7 @@ public sealed class GameStateService : IGameStateService
                 workshop.OrdersCompleted++;
             }
 
-            _state.TotalOrdersCompleted++;
+            _state.Statistics.TotalOrdersCompleted++;
 
             if (order.TaskResults.Count > 0)
             {
@@ -745,7 +745,14 @@ public sealed class GameStateService : IGameStateService
                 MiniGameRating.Ok => 3,
                 _ => 2
             };
-            _state.Reputation.AddRating(stars);
+            // Research ReputationBonus direkt aus State berechnen (GameStateService hat keinen IResearchService)
+            decimal reputationBonus = 0m;
+            for (int ri = 0; ri < _state.Researches.Count; ri++)
+            {
+                if (_state.Researches[ri].IsResearched && _state.Researches[ri].Effect?.ReputationBonus > 0)
+                    reputationBonus += _state.Researches[ri].Effect!.ReputationBonus;
+            }
+            _state.Reputation.AddRating(stars, reputationBonus);
 
             // Stammkunden-Tracking bei Perfect Rating
             if (avgRating == MiniGameRating.Perfect && !string.IsNullOrEmpty(order.CustomerName))
@@ -877,9 +884,9 @@ public sealed class GameStateService : IGameStateService
             xpReward = (int)(order.BaseXp * order.Difficulty.GetXpMultiplier() * OrderType.MaterialOrder.GetXpMultiplier());
 
             // Statistiken
-            _state.TotalOrdersCompleted++;
-            _state.MaterialOrdersCompletedToday++;
-            _state.TotalMaterialOrdersCompleted++;
+            _state.Statistics.TotalOrdersCompleted++;
+            _state.Statistics.MaterialOrdersCompletedToday++;
+            _state.Statistics.TotalMaterialOrdersCompleted++;
             var workshop = GetWorkshop(order.WorkshopType);
             if (workshop != null)
             {
@@ -899,5 +906,77 @@ public sealed class GameStateService : IGameStateService
         OrderCompleted?.Invoke(this, new OrderCompletedEventArgs(order, reward, xpReward, MiniGameRating.Good));
 
         return reward;
+    }
+
+    // ===================================================================
+    // LOCK-ZUGRIFF (fuer OperationServices)
+    // ===================================================================
+
+    /// <summary>
+    /// Fuehrt eine Aktion unter dem State-Lock aus.
+    /// </summary>
+    public void ExecuteWithLock(Action action)
+    {
+        lock (_stateLock)
+        {
+            action();
+        }
+    }
+
+    /// <summary>
+    /// Fuehrt eine Funktion unter dem State-Lock aus und gibt das Ergebnis zurueck.
+    /// </summary>
+    public T ExecuteWithLock<T>(Func<T> func)
+    {
+        lock (_stateLock)
+        {
+            return func();
+        }
+    }
+
+    // ===================================================================
+    // EVENT-RAISER (fuer OperationServices)
+    // ===================================================================
+
+    /// <summary>
+    /// Feuert das WorkshopUpgraded-Event mit MoneyChanged.
+    /// </summary>
+    public void RaiseWorkshopUpgraded(WorkshopType type, int oldLevel, int newLevel, decimal cost, decimal moneyBefore, decimal moneyAfter)
+    {
+        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, moneyAfter));
+        WorkshopUpgraded?.Invoke(this, new WorkshopUpgradedEventArgs(type, oldLevel, newLevel, cost));
+    }
+
+    /// <summary>
+    /// Feuert das WorkerHired-Event mit MoneyChanged.
+    /// </summary>
+    public void RaiseWorkerHired(WorkshopType type, Worker worker, decimal cost, int workerCount, decimal moneyBefore, decimal moneyAfter)
+    {
+        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, moneyAfter));
+        WorkerHired?.Invoke(this, new WorkerHiredEventArgs(type, worker, cost, workerCount));
+    }
+
+    /// <summary>
+    /// Feuert das OrderCompleted-Event.
+    /// </summary>
+    public void RaiseOrderCompleted(Order order, decimal moneyReward, int xpReward, MiniGameRating avgRating)
+    {
+        OrderCompleted?.Invoke(this, new OrderCompletedEventArgs(order, moneyReward, xpReward, avgRating));
+    }
+
+    /// <summary>
+    /// Feuert das MiniGameResultRecorded-Event.
+    /// </summary>
+    public void RaiseMiniGameResultRecorded(MiniGameRating rating)
+    {
+        MiniGameResultRecorded?.Invoke(this, new MiniGameResultRecordedEventArgs(rating));
+    }
+
+    /// <summary>
+    /// Feuert das MoneyChanged-Event.
+    /// </summary>
+    public void RaiseMoneyChanged(decimal oldAmount, decimal newAmount)
+    {
+        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(oldAmount, newAmount));
     }
 }

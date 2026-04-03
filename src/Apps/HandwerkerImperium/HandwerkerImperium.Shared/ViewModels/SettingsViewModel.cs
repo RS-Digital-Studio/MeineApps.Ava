@@ -160,13 +160,13 @@ public sealed partial class SettingsViewModel : ViewModelBase
         {
             var state = _gameStateService.State;
 
-            SoundEnabled = state.SoundEnabled;
-            VibrationEnabled = state.HapticsEnabled;
-            NotificationsEnabled = state.NotificationsEnabled;
-            CloudSaveEnabled = state.CloudSaveEnabled;
+            SoundEnabled = state.Settings.SoundEnabled;
+            VibrationEnabled = state.Settings.HapticsEnabled;
+            NotificationsEnabled = state.Settings.NotificationsEnabled;
+            CloudSaveEnabled = state.Settings.CloudSaveEnabled;
 
-            // Grafik-Qualität laden
-            SelectedGraphicsQuality = GraphicsQualities.FirstOrDefault(q => q.Quality == state.GraphicsQuality)
+            // Grafik-Qualitaet laden
+            SelectedGraphicsQuality = GraphicsQualities.FirstOrDefault(q => q.Quality == state.Settings.GraphicsQuality)
                                       ?? GraphicsQualities[2]; // High als Fallback
 
             // Automatisierungs-Einstellungen laden
@@ -182,7 +182,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsAutoClaimUnlocked));
 
             // Fallback auf aktuelle Sprache (Gerätesprache) statt Languages[0] (English)
-            var langCode = !string.IsNullOrEmpty(state.Language) ? state.Language : _localizationService.CurrentLanguage;
+            var langCode = !string.IsNullOrEmpty(state.Settings.Language) ? state.Settings.Language : _localizationService.CurrentLanguage;
             SelectedLanguage = Languages.FirstOrDefault(l => l.Code == langCode) ?? Languages[0];
             IsPremium = state.IsPremium;
 
@@ -221,10 +221,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
         // Letzter Cloud-Save Zeitstempel
         var state = _gameStateService.State;
-        if (state.LastCloudSaveTime != default)
+        if (state.Settings.LastCloudSaveTime != default)
         {
             HasLastCloudSave = true;
-            LastCloudSaveText = $"{_localizationService.GetString("LastCloudSave")}: {state.LastCloudSaveTime.ToLocalTime():dd.MM.yyyy HH:mm}";
+            LastCloudSaveText = $"{_localizationService.GetString("LastCloudSave")}: {state.Settings.LastCloudSaveTime.ToLocalTime():dd.MM.yyyy HH:mm}";
         }
         else
         {
@@ -241,7 +241,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing) return;
 
-        _gameStateService.State.SoundEnabled = value;
+        _gameStateService.State.Settings.SoundEnabled = value;
         _gameStateService.MarkDirty();
         _saveGameService.SaveAsync().FireAndForget();
 
@@ -255,7 +255,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing) return;
 
-        _gameStateService.State.HapticsEnabled = value;
+        _gameStateService.State.Settings.HapticsEnabled = value;
         _gameStateService.MarkDirty();
         _saveGameService.SaveAsync().FireAndForget();
     }
@@ -264,7 +264,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing) return;
 
-        _gameStateService.State.NotificationsEnabled = value;
+        _gameStateService.State.Settings.NotificationsEnabled = value;
         _gameStateService.MarkDirty();
         _saveGameService.SaveAsync().FireAndForget();
     }
@@ -273,7 +273,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing) return;
 
-        _gameStateService.State.CloudSaveEnabled = value;
+        _gameStateService.State.Settings.CloudSaveEnabled = value;
         _gameStateService.MarkDirty();
         _saveGameService.SaveAsync().FireAndForget();
     }
@@ -282,7 +282,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing || value == null) return;
 
-        _gameStateService.State.GraphicsQuality = value.Quality;
+        _gameStateService.State.Settings.GraphicsQuality = value.Quality;
         _gameStateService.MarkDirty();
         _saveGameService.SaveAsync().FireAndForget();
     }
@@ -323,7 +323,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing || value == null) return;
 
-        _gameStateService.State.Language = value.Code;
+        _gameStateService.State.Settings.Language = value.Code;
         _localizationService.SetLanguage(value.Code);
         _gameStateService.MarkDirty();
         _saveGameService.SaveAsync().FireAndForget();
@@ -457,7 +457,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
             if (success)
             {
-                _gameStateService.State.LastCloudSaveTime = DateTime.UtcNow;
+                _gameStateService.State.Settings.LastCloudSaveTime = DateTime.UtcNow;
                 _gameStateService.MarkDirty();
                 await _saveGameService.SaveAsync();
                 RefreshPlayGamesStatus();

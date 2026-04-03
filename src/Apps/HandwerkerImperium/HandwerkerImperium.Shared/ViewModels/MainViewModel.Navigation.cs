@@ -67,7 +67,7 @@ public sealed partial class MainViewModel
     }
 
     [RelayCommand]
-    private void SelectWorkerMarketTab()
+    internal void SelectWorkerMarketTab()
     {
         ActivePage = ActivePage.WorkerMarket;
         WorkerMarketViewModel.LoadMarket();
@@ -491,6 +491,28 @@ public sealed partial class MainViewModel
         }
     }
 
+    // NAV-2: MiniGame-Abbruch-Warnung Hilfsmethoden
+    private bool IsAnyMiniGamePlaying()
+    {
+        var vm = ActiveMiniGameViewModel;
+        return vm != null && (vm.IsPlaying || vm.IsCountdownActive);
+    }
+
+    private async Task ConfirmMiniGameAbortAsync()
+    {
+        var title = _localizationService.GetString("MiniGameAbortTitle") ?? "MiniGame abbrechen?";
+        var msg = _localizationService.GetString("MiniGameAbortMessage") ?? "Dein Fortschritt geht verloren.";
+        var confirm = _localizationService.GetString("MiniGameAbortConfirm") ?? "Abbrechen";
+        var cancel = _localizationService.GetString("Cancel") ?? "Zurück";
+        bool confirmed = await DialogVM.ShowConfirmDialog(title, msg, confirm, cancel);
+        if (confirmed) { StopCurrentMiniGame(); SelectDashboardTab(); }
+    }
+
+    private void StopCurrentMiniGame()
+    {
+        ActiveMiniGameViewModel?.StopGame();
+    }
+
     /// <summary>
     /// Handler fuer MissionsFeatureVM: QuickJob-State setzen und zum MiniGame navigieren.
     /// </summary>
@@ -511,20 +533,29 @@ public sealed partial class MainViewModel
     /// <summary>
     /// Navigiert zum MiniGame basierend auf der Route.
     /// </summary>
+    /// <summary>
+    /// Route-Mapping: MiniGame-Route → (VM-Accessor, ActivePage). Statisch, keine Allokation.
+    /// </summary>
+    private static readonly Dictionary<string, ActivePage> s_miniGameRoutes = new()
+    {
+        ["minigame/sawing"] = ActivePage.SawingGame,
+        ["minigame/pipes"] = ActivePage.PipePuzzle,
+        ["minigame/wiring"] = ActivePage.WiringGame,
+        ["minigame/painting"] = ActivePage.PaintingGame,
+        ["minigame/rooftiling"] = ActivePage.RoofTilingGame,
+        ["minigame/blueprint"] = ActivePage.BlueprintGame,
+        ["minigame/designpuzzle"] = ActivePage.DesignPuzzleGame,
+        ["minigame/inspection"] = ActivePage.InspectionGame,
+        ["minigame/forge"] = ActivePage.ForgeGame,
+        ["minigame/invent"] = ActivePage.InventGame,
+    };
+
     private void NavigateToMiniGame(string routePart, string orderId)
     {
-        switch (routePart)
-        {
-            case "minigame/sawing": SawingGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.SawingGame; break;
-            case "minigame/pipes": PipePuzzleViewModel.SetOrderId(orderId); ActivePage = ActivePage.PipePuzzle; break;
-            case "minigame/wiring": WiringGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.WiringGame; break;
-            case "minigame/painting": PaintingGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.PaintingGame; break;
-            case "minigame/rooftiling": RoofTilingGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.RoofTilingGame; break;
-            case "minigame/blueprint": BlueprintGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.BlueprintGame; break;
-            case "minigame/designpuzzle": DesignPuzzleGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.DesignPuzzleGame; break;
-            case "minigame/inspection": InspectionGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.InspectionGame; break;
-            case "minigame/forge": ForgeGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.ForgeGame; break;
-            case "minigame/invent": InventGameViewModel.SetOrderId(orderId); ActivePage = ActivePage.InventGame; break;
-        }
+        if (!s_miniGameRoutes.TryGetValue(routePart, out var page)) return;
+
+        // Seite setzen damit ActiveMiniGameViewModel das richtige VM liefert
+        ActivePage = page;
+        ActiveMiniGameViewModel?.SetOrderId(orderId);
     }
 }

@@ -61,12 +61,11 @@ public sealed class SaveGameService : ISaveGameService
             var state = _gameStateService.State;
             state.LastSavedAt = DateTime.UtcNow;
 
-            // Direkt in FileStream serialisieren (spart ~40% Zeit + String-Allokation vs JsonSerializer.Serialize(string))
-            // Serialisierung auf dem UI-Thread (Thread-Safety: GameLoop modifiziert State jede Sekunde)
-            await using (var fs = new FileStream(TempFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
-            {
-                await JsonSerializer.SerializeAsync(fs, state, _jsonOptions);
-            }
+            // Synchrone Serialisierung auf dem UI-Thread (Thread-Safety: kein Interleaving mit GameLoop-DispatcherTimer).
+            // SerializeAsync mit useAsync:true traversiert den State-Objektgraphen asynchron → Race Condition
+            // mit GameLoop der gleichzeitig Listen modifiziert (InvalidOperationException). ~5-20ms akzeptabel.
+            string json = JsonSerializer.Serialize(state, _jsonOptions);
+            await File.WriteAllTextAsync(TempFilePath, json);
 
             if (File.Exists(SaveFilePath))
             {
@@ -76,11 +75,15 @@ public sealed class SaveGameService : ISaveGameService
             File.Move(TempFilePath, SaveFilePath, overwrite: true);
 
             // Cloud-Save parallel (fire-and-forget, blockiert lokales Save nie)
-            if (_playGamesService?.IsSignedIn == true && state.CloudSaveEnabled)
+            if (_playGamesService?.IsSignedIn == true && state.Settings.CloudSaveEnabled)
             {
                 // Für Cloud-Save müssen wir den JSON-String lesen (seltener Pfad, nur bei aktivem Cloud-Save)
                 var cloudJson = await File.ReadAllTextAsync(SaveFilePath);
-                _ = Task.Run(() => _playGamesService.SaveToCloudAsync(cloudJson, $"Level {state.PlayerLevel}"));
+                _ = Task.Run(async () =>
+                {
+                    try { await _playGamesService.SaveToCloudAsync(cloudJson, $"Level {state.PlayerLevel}"); }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] Cloud-Save Fehler: {ex.Message}"); }
+                });
             }
         }
         catch (Exception ex)
@@ -141,19 +144,7 @@ public sealed class SaveGameService : ISaveGameService
 
             if (state != null)
             {
-                // v1 -> v2 Migration
-                if (state.Version < 2)
-                {
-                    state = MigrateFromV1(state);
-                }
-
-                // v2 -> v3 Migration: Workshop Rebirth Stars
-                if (state.Version < 3)
-                {
-                    state.WorkshopStars ??= new Dictionary<string, int>();
-                    state.Version = 3;
-                }
-
+                state = MigrateState(state);
                 SanitizeState(state);
                 _gameStateService.Initialize(state);
             }
@@ -210,6 +201,7 @@ public sealed class SaveGameService : ISaveGameService
             var state = JsonSerializer.Deserialize<GameState>(json, _jsonOptions);
             if (state == null) return false;
 
+            state = MigrateState(state);
             SanitizeState(state);
             _gameStateService.Initialize(state);
             await SaveAsync();
@@ -343,8 +335,8 @@ public sealed class SaveGameService : ISaveGameService
                 state.Tools.Add(defaultTool);
         }
         state.ViewedStoryIds ??= [];
-        state.SeenMiniGameTutorials ??= [];
-        state.SeenHints ??= [];
+        state.Tutorial.SeenMiniGameTutorials ??= [];
+        state.Tutorial.SeenHints ??= [];
 
         // Welle 1-8 Migrationen: Neue Properties null-safe initialisieren
         state.LuckySpin ??= new LuckySpinState();
@@ -373,9 +365,9 @@ public sealed class SaveGameService : ISaveGameService
         if (state.Ascension.AscensionLevel < 0) state.Ascension.AscensionLevel = 0;
         if (state.Ascension.AscensionPoints < 0) state.Ascension.AscensionPoints = 0;
 
-        if (state.TotalWorkersTrained < 0) state.TotalWorkersTrained = 0;
-        if (state.TotalItemsCrafted < 0) state.TotalItemsCrafted = 0;
-        if (state.TotalTournamentsWon < 0) state.TotalTournamentsWon = 0;
+        if (state.Statistics.TotalWorkersTrained < 0) state.Statistics.TotalWorkersTrained = 0;
+        if (state.Statistics.TotalItemsCrafted < 0) state.Statistics.TotalItemsCrafted = 0;
+        if (state.Statistics.TotalTournamentsWon < 0) state.Statistics.TotalTournamentsWon = 0;
 
         // Premium-Status zurücksetzen (Exploit-Schutz gegen Save-Editing)
         // RestorePurchasesAsync() beim App-Start stellt den echten Status via Google Play wieder her
@@ -387,7 +379,7 @@ public sealed class SaveGameService : ISaveGameService
         // Lieferant: Abgelaufene Lieferung entfernen
         if (state.PendingDelivery?.IsExpired == true)
             state.PendingDelivery = null;
-        if (state.TotalDeliveriesClaimed < 0) state.TotalDeliveriesClaimed = 0;
+        if (state.Statistics.TotalDeliveriesClaimed < 0) state.Statistics.TotalDeliveriesClaimed = 0;
     }
 
     /// <summary>
@@ -449,6 +441,24 @@ public sealed class SaveGameService : ISaveGameService
                 research.StartedAt = null;
             }
         }
+    }
+
+    /// <summary>
+    /// Führt alle notwendigen Versionsmigrationen durch (v1→v2→v3).
+    /// Zentrale Methode für LoadFromFileAsync und ImportSaveAsync.
+    /// </summary>
+    private static GameState MigrateState(GameState state)
+    {
+        if (state.Version < 2)
+            state = MigrateFromV1(state);
+
+        if (state.Version < 3)
+        {
+            state.WorkshopStars ??= new Dictionary<string, int>();
+            state.Version = 3;
+        }
+
+        return state;
     }
 
     /// <summary>

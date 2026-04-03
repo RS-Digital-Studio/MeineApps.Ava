@@ -21,6 +21,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
     private readonly ICraftingService _craftingService;
     private readonly ILocalizationService _localizationService;
     private readonly IDailyChallengeService? _dailyChallengeService;
+    private readonly IWeeklyMissionService? _weeklyMissionService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -83,12 +84,14 @@ public sealed partial class CraftingViewModel : ViewModelBase
         IGameStateService gameStateService,
         ICraftingService craftingService,
         ILocalizationService localizationService,
-        IDailyChallengeService? dailyChallengeService = null)
+        IDailyChallengeService? dailyChallengeService = null,
+        IWeeklyMissionService? weeklyMissionService = null)
     {
         _gameStateService = gameStateService;
         _craftingService = craftingService;
         _localizationService = localizationService;
         _dailyChallengeService = dailyChallengeService;
+        _weeklyMissionService = weeklyMissionService;
 
         // Auto-Refresh wenn Timer abläuft
         _craftingService.CraftingUpdated += OnCraftingUpdated;
@@ -122,6 +125,8 @@ public sealed partial class CraftingViewModel : ViewModelBase
         if (string.IsNullOrEmpty(jobId)) return;
 
         _craftingService.CollectProduct(jobId);
+        _dailyChallengeService?.OnCraftingCompleted();
+        _weeklyMissionService?.OnCraftingCompleted();
         RefreshCrafting();
     }
 
@@ -131,7 +136,10 @@ public sealed partial class CraftingViewModel : ViewModelBase
         if (item == null || string.IsNullOrEmpty(item.ProductId)) return;
 
         if (_craftingService.SellProduct(item.ProductId))
+        {
             _dailyChallengeService?.OnItemsSold(1);
+            _weeklyMissionService?.OnItemsSold(1);
+        }
         RefreshCrafting();
     }
 
@@ -146,7 +154,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
         int before = _gameStateService.State.CraftingInventory.GetValueOrDefault(item.ProductId, 0);
         _craftingService.SellProducts(item.ProductId, 10);
         int sold = before - _gameStateService.State.CraftingInventory.GetValueOrDefault(item.ProductId, 0);
-        if (sold > 0) _dailyChallengeService?.OnItemsSold(sold);
+        if (sold > 0) { _dailyChallengeService?.OnItemsSold(sold); _weeklyMissionService?.OnItemsSold(sold); }
         RefreshCrafting();
     }
 
@@ -160,7 +168,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
 
         int sold = item.Quantity;
         _craftingService.SellProducts(item.ProductId, item.Quantity);
-        if (sold > 0) _dailyChallengeService?.OnItemsSold(sold);
+        if (sold > 0) { _dailyChallengeService?.OnItemsSold(sold); _weeklyMissionService?.OnItemsSold(sold); }
         RefreshCrafting();
     }
 
@@ -182,7 +190,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
                 totalSold += count;
             }
         }
-        if (totalSold > 0) _dailyChallengeService?.OnItemsSold(totalSold);
+        if (totalSold > 0) { _dailyChallengeService?.OnItemsSold(totalSold); _weeklyMissionService?.OnItemsSold(totalSold); }
         RefreshCrafting();
     }
 

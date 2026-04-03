@@ -767,7 +767,8 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         var currentHintId = _contextualHintService.ActiveHint?.Id;
         _contextualHintService.DismissHint();
 
-        // Hint-Verkettung: Welcome → FirstWorkshop → AcceptOrder
+        // ONB-3: Erweiterte Hint-Verkettung für geführten Einstieg
+        // Welcome → FirstWorkshop → AcceptOrder → WorkerUnlock (Lv3) → QuickJobs (Lv5) → CraftingHint (Lv8)
         if (currentHintId == ContextualHints.Welcome.Id)
         {
             _contextualHintService.TryShowHint(ContextualHints.FirstWorkshop);
@@ -775,6 +776,18 @@ public sealed partial class DialogViewModel : ViewModelBase, IDialogService
         else if (currentHintId == ContextualHints.FirstWorkshop.Id)
         {
             _contextualHintService.TryShowHint(ContextualHints.AcceptOrder);
+        }
+        else if (currentHintId == ContextualHints.AcceptOrder.Id)
+        {
+            _contextualHintService.TryShowHint(ContextualHints.WorkerUnlock);
+        }
+        else if (currentHintId == ContextualHints.WorkerUnlock.Id)
+        {
+            _contextualHintService.TryShowHint(ContextualHints.QuickJobs);
+        }
+        else if (currentHintId == ContextualHints.QuickJobs.Id)
+        {
+            _contextualHintService.TryShowHint(ContextualHints.CraftingHint);
         }
 
         DeferredDialogCheckRequested?.Invoke();

@@ -74,7 +74,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly Dictionary<WorkshopType, Workshop> _workshopLookupCache = new(10);
 
     // Statisches Array vermeidet Allokation bei jedem RefreshWorkshops()-Aufruf
-    private static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
+    internal static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
 
     // Workshop-Level-Meilensteine (statisch, vermeidet Array-Allokation pro Workshop-Upgrade)
     private static readonly (int level, int screws)[] s_workshopMilestones =
@@ -94,8 +94,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private string _cachedNetIncomeLabel = "Netto";
 
     // Phase 9: Smooth Money-Counter Animation (vom MainView Render-Timer getrieben)
-    private decimal _displayedMoney;
-    private decimal _targetMoney;
+    internal decimal _displayedMoney;
+    internal decimal _targetMoney;
     private bool _moneyAnimActive;
     private const decimal MoneyAnimSpeed = 0.15m; // Interpolations-Faktor pro Frame
 
@@ -109,11 +109,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private string? _cachedActiveEventKey;
     private string? _cachedActiveEventName;
 
-    // EventHandler wrappers for new VMs (EventHandler<string> vs Action<string>)
-    private readonly EventHandler<string> _workerMarketNavHandler;
-    private readonly EventHandler<string> _workerProfileNavHandler;
-    private readonly EventHandler<string> _buildingsNavHandler;
-    private readonly EventHandler<string> _researchNavHandler;
+    // Gespeicherte Delegate-Referenzen fuer EconomyVM Events (Dispose-sicher)
+    private Action<string, string>? _economyFloatingTextHandler;
+    private Action? _economyCelebrationHandler;
 
     // Gespeicherte Delegate-Referenzen fuer Alert/Confirmation Events (fuer Dispose-Unsubscribe)
     private Action? _guildCelebrationHandler;
@@ -329,6 +327,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Text-Anzeige aktiver Challenges (z.B. "Spartaner +40%, Sprint +35%").</summary>
     [ObservableProperty]
     private string _activeChallengesText = "";
+
+    // PP-2: Challenge-Chip aktiv/inaktiv State
+    [ObservableProperty] private bool _isChallengeSpartanerActive;
+    [ObservableProperty] private bool _isChallengeOhneForschungActive;
+    [ObservableProperty] private bool _isChallengeInflationszeitActive;
+    [ObservableProperty] private bool _isChallengeSoloMeisterActive;
+    [ObservableProperty] private bool _isChallengeSprintActive;
+    [ObservableProperty] private bool _isChallengeKeinNetzActive;
 
     /// <summary>Aktuelle Run-Dauer als Text (für Prestige-Banner).</summary>
     [ObservableProperty]
@@ -696,6 +702,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (oldProp != null) OnPropertyChanged(oldProp);
         if (newProp != null) OnPropertyChanged(newProp);
         OnPropertyChanged(nameof(IsTabBarVisible));
+        OnPropertyChanged(nameof(BreadcrumbText));
 
         // MiniGame-ContentControl aktualisieren (ein einziges statt 10 separate)
         OnPropertyChanged(nameof(ActiveMiniGameViewModel));
@@ -747,16 +754,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     public BaseMiniGameViewModel? ActiveMiniGameViewModel => ActivePage switch
     {
-        ActivePage.SawingGame => SawingGameViewModel,
-        ActivePage.PipePuzzle => PipePuzzleViewModel,
-        ActivePage.WiringGame => WiringGameViewModel,
-        ActivePage.PaintingGame => PaintingGameViewModel,
-        ActivePage.RoofTilingGame => RoofTilingGameViewModel,
-        ActivePage.BlueprintGame => BlueprintGameViewModel,
-        ActivePage.DesignPuzzleGame => DesignPuzzleGameViewModel,
-        ActivePage.InspectionGame => InspectionGameViewModel,
-        ActivePage.ForgeGame => ForgeGameViewModel,
-        ActivePage.InventGame => InventGameViewModel,
+        ActivePage.SawingGame => MiniGames.Sawing,
+        ActivePage.PipePuzzle => MiniGames.PipePuzzle,
+        ActivePage.WiringGame => MiniGames.Wiring,
+        ActivePage.PaintingGame => MiniGames.Painting,
+        ActivePage.RoofTilingGame => MiniGames.RoofTiling,
+        ActivePage.BlueprintGame => MiniGames.Blueprint,
+        ActivePage.DesignPuzzleGame => MiniGames.DesignPuzzle,
+        ActivePage.InspectionGame => MiniGames.Inspection,
+        ActivePage.ForgeGame => MiniGames.Forge,
+        ActivePage.InventGame => MiniGames.Invent,
         _ => null
     };
 
@@ -841,6 +848,23 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public bool IsTabBarVisible => s_mainTabs.Contains(ActivePage) && !IsWorkerProfileActive;
 
     /// <summary>
+    /// NAV-3: Breadcrumb-Text für Sub-Views (zeigt den Parent-Tab wenn Tab-Bar versteckt ist).
+    /// </summary>
+    public string BreadcrumbText => ActivePage switch
+    {
+        ActivePage.WorkshopDetail or ActivePage.OrderDetail => _localizationService.GetString("TabWorkshop") ?? "Werkstatt",
+        ActivePage.WorkerMarket or ActivePage.Research or ActivePage.Manager or
+        ActivePage.Crafting or ActivePage.Ascension => _localizationService.GetString("TabImperium") ?? "Imperium",
+        ActivePage.Tournament or ActivePage.SeasonalEvent or ActivePage.BattlePass or
+        ActivePage.Statistics or ActivePage.Achievements => _localizationService.GetString("TabMissions") ?? "Missionen",
+        ActivePage.GuildResearch or ActivePage.GuildMembers or ActivePage.GuildInvite or
+        ActivePage.GuildWarSeason or ActivePage.GuildBoss or ActivePage.GuildHall or
+        ActivePage.GuildAchievements or ActivePage.GuildChat or ActivePage.GuildWar => _localizationService.GetString("TabGuild") ?? "Gilde",
+        ActivePage.Settings => _localizationService.GetString("Settings") ?? "Einstellungen",
+        _ => ""
+    };
+
+    /// <summary>
     /// Mapping ActivePage → Property-Name für gezielte PropertyChanged-Benachrichtigungen.
     /// Nur 2 Notifications pro Seitenwechsel statt 36 (alter Ansatz mit DeactivateAllTabs).
     /// </summary>
@@ -896,14 +920,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public SettingsViewModel SettingsViewModel { get; }
     public WorkshopViewModel WorkshopViewModel { get; }
     public OrderViewModel OrderViewModel { get; }
-    public SawingGameViewModel SawingGameViewModel { get; }
-    public PipePuzzleViewModel PipePuzzleViewModel { get; }
-    public WiringGameViewModel WiringGameViewModel { get; }
-    public PaintingGameViewModel PaintingGameViewModel { get; }
-    public RoofTilingGameViewModel RoofTilingGameViewModel { get; }
-    public BlueprintGameViewModel BlueprintGameViewModel { get; }
-    public DesignPuzzleGameViewModel DesignPuzzleGameViewModel { get; }
-    public InspectionGameViewModel InspectionGameViewModel { get; }
+    /// <summary>Alle 10 MiniGame-VMs als Container (Zugriff via MiniGames.Sawing etc.).</summary>
+    internal MiniGameViewModels MiniGames { get; }
     public WorkerMarketViewModel WorkerMarketViewModel { get; }
     public WorkerProfileViewModel WorkerProfileViewModel { get; }
     public BuildingsViewModel BuildingsViewModel { get; }
@@ -915,8 +933,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public GuildViewModel GuildViewModel { get; }
     public CraftingViewModel CraftingViewModel { get; }
     public LuckySpinViewModel LuckySpinViewModel { get; }
-    public ForgeGameViewModel ForgeGameViewModel { get; }
-    public InventGameViewModel InventGameViewModel { get; }
+    // ForgeGameVM + InventGameVM → in MiniGames Container
     public AscensionViewModel AscensionViewModel { get; }
 
     /// <summary>Eigenstaendiges ViewModel fuer Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin etc.</summary>
@@ -1032,14 +1049,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         SettingsViewModel = settingsViewModel;
         WorkshopViewModel = workshopViewModel;
         OrderViewModel = orderViewModel;
-        SawingGameViewModel = miniGames.Sawing;
-        PipePuzzleViewModel = miniGames.PipePuzzle;
-        WiringGameViewModel = miniGames.Wiring;
-        PaintingGameViewModel = miniGames.Painting;
-        RoofTilingGameViewModel = miniGames.RoofTiling;
-        BlueprintGameViewModel = miniGames.Blueprint;
-        DesignPuzzleGameViewModel = miniGames.DesignPuzzle;
-        InspectionGameViewModel = miniGames.Inspection;
+        MiniGames = miniGames;
         WorkerMarketViewModel = workerMarketViewModel;
         WorkerProfileViewModel = workerProfileViewModel;
         BuildingsViewModel = buildingsViewModel;
@@ -1052,8 +1062,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         CraftingViewModel = craftingViewModel;
         AscensionViewModel = ascensionViewModel;
         LuckySpinViewModel = luckySpinViewModel;
-        ForgeGameViewModel = miniGames.Forge;
-        InventGameViewModel = miniGames.Invent;
+        // Forge + Invent sind bereits in MiniGames Container
         // Delegate-Feld zuweisen (statt anonymem Lambda). MissionsVM wird weiter unten gesetzt,
         // aber das Lambda captured `this` und liest MissionsVM erst bei Aufruf (nach dem Konstruktor).
         _luckySpinNavHandler = _ => { MissionsVM?.HideLuckySpinCommand.Execute(null); IsLuckySpinVisible = false; };
@@ -1066,16 +1075,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         SettingsViewModel.NavigationRequested += OnChildNavigation;
         WorkshopViewModel.NavigationRequested += OnChildNavigation;
         OrderViewModel.NavigationRequested += OnChildNavigation;
-        SawingGameViewModel.NavigationRequested += OnChildNavigation;
-        PipePuzzleViewModel.NavigationRequested += OnChildNavigation;
-        WiringGameViewModel.NavigationRequested += OnChildNavigation;
-        PaintingGameViewModel.NavigationRequested += OnChildNavigation;
-        RoofTilingGameViewModel.NavigationRequested += OnChildNavigation;
-        BlueprintGameViewModel.NavigationRequested += OnChildNavigation;
-        DesignPuzzleGameViewModel.NavigationRequested += OnChildNavigation;
-        InspectionGameViewModel.NavigationRequested += OnChildNavigation;
-        ForgeGameViewModel.NavigationRequested += OnChildNavigation;
-        InventGameViewModel.NavigationRequested += OnChildNavigation;
+        foreach (var mg in MiniGames.All)
+            mg.NavigationRequested += OnChildNavigation;
         ManagerViewModel.NavigationRequested += OnChildNavigation;
         TournamentViewModel.NavigationRequested += OnChildNavigation;
         SeasonalEventViewModel.NavigationRequested += OnChildNavigation;
@@ -1084,14 +1085,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         CraftingViewModel.NavigationRequested += OnChildNavigation;
         AscensionViewModel.NavigationRequested += OnChildNavigation;
 
-        _workerMarketNavHandler = (_, route) => OnChildNavigation(route);
-        _workerProfileNavHandler = (_, route) => OnChildNavigation(route);
-        _buildingsNavHandler = (_, route) => OnChildNavigation(route);
-        _researchNavHandler = (_, route) => OnChildNavigation(route);
-        WorkerMarketViewModel.NavigationRequested += _workerMarketNavHandler;
-        WorkerProfileViewModel.NavigationRequested += _workerProfileNavHandler;
-        BuildingsViewModel.NavigationRequested += _buildingsNavHandler;
-        ResearchViewModel.NavigationRequested += _researchNavHandler;
+        WorkerMarketViewModel.NavigationRequested += OnChildNavigation;
+        WorkerProfileViewModel.NavigationRequested += OnChildNavigation;
+        BuildingsViewModel.NavigationRequested += OnChildNavigation;
+        ResearchViewModel.NavigationRequested += OnChildNavigation;
 
         // Child-VM Events verdrahten (benannte Delegates fuer Dispose-Unsubscribe)
         _guildCelebrationHandler = () => CelebrationRequested?.Invoke();
@@ -1164,6 +1161,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         // DialogViewModel per DI injiziert und Events verdrahten (benannte Delegates fuer Dispose)
         DialogVM = dialogViewModel;
+
+        // EconomyFeatureViewModel initialisieren (nach DialogVM, da es DialogVM als IDialogService nutzt)
+        InitializeEconomyVM();
         DialogVM.DeferredDialogCheckRequested += CheckDeferredDialogs;
         _dialogPrestigeSummaryGoToShopHandler = () => SelectBuildingsTab();
         _dialogFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
@@ -1262,6 +1262,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Goldschrauben-Erklärung beim allerersten Erhalt
         if (e.OldAmount == 0 && e.NewAmount > 0)
             _contextualHintService.TryShowHint(ContextualHints.GoldenScrews);
+
+        // PP-3: FloatingText bei Goldschrauben-Ausgaben
+        int diff = e.NewAmount - e.OldAmount;
+        if (diff < 0)
+            FloatingTextRequested?.Invoke($"{diff} GS", "warning");
+        else if (diff > 0)
+            FloatingTextRequested?.Invoke($"+{diff} GS", "goldscrews");
     }
 
     // Milestone-Level mit Goldschrauben-Belohnung
@@ -1513,14 +1520,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         RefreshOrders();
 
         // Hint beim ersten Auftragsabschluss
-        if (_gameStateService.State.TotalOrdersCompleted == 1)
+        if (_gameStateService.State.Statistics.TotalOrdersCompleted == 1)
             _contextualHintService.TryShowHint(ContextualHints.OrderCompleted);
 
         // Story-Kapitel prüfen
         CheckForNewStoryChapter();
 
         // Review-Milestone prüfen
-        _reviewService?.OnMilestone("orders", _gameStateService.State.TotalOrdersCompleted);
+        _reviewService?.OnMilestone("orders", _gameStateService.State.Statistics.TotalOrdersCompleted);
         CheckReviewPrompt();
 
         // Ziel-Cache invalidieren (Auftragsabschluss könnte Ziel erfüllen)
@@ -1582,6 +1589,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             HasActiveOrder = false;
             ActiveOrder = null;
+            var msg = _localizationService.GetString("OrderExpiredNotification") ?? "Auftrag abgelaufen!";
+            FloatingTextRequested?.Invoke(msg, "warning");
+            _audioService.PlaySoundAsync(GameSound.Miss).FireAndForget();
             RefreshOrders();
         });
     }
@@ -1727,7 +1737,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Lokalisierungs-Caches aktualisieren
         _cachedNetIncomeLabel = _localizationService.GetString("NetIncome") ?? "Netto";
         _cachedActiveEventKey = null; // Event-Name bei Sprachwechsel neu laden
-        _lastPrestigeBannerLevel = -1; // Prestige-Banner mit neuen Texten neu berechnen
+        EconomyVM.InvalidatePrestigeBannerCache(); // Prestige-Banner mit neuen Texten neu berechnen
 
         // Statische Renderer-Strings aktualisieren
         WorkshopGameCardRenderer.UpdateLocalizedStrings(
@@ -1939,13 +1949,17 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static string FormatMoney(decimal amount) => MoneyFormatter.FormatCompact(amount);
+    internal static string FormatMoney(decimal amount) => MoneyFormatter.FormatCompact(amount);
+
+    /// <summary>Interner Wrapper fuer PropertyChanged-Benachrichtigung (EconomyFeatureVM Zugriff).</summary>
+    internal new void OnPropertyChanged(string? propertyName = null)
+        => base.OnPropertyChanged(propertyName);
 
     /// <summary>
     /// Aktualisiert die Netto-Einkommen-Anzeige im Dashboard-Header.
     /// Zeigt Brutto minus Kosten mit Farbindikator (rot wenn negativ).
     /// </summary>
-    private void UpdateNetIncomeHeader(GameState state)
+    internal void UpdateNetIncomeHeader(GameState state)
     {
         var netIncome = state.TotalIncomePerSecond - state.TotalCostsPerSecond;
         IsNetIncomeNegative = netIncome < 0;
@@ -1959,7 +1973,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// Prüft alle Worker auf Erschöpfung (Fatigue>80), Unzufriedenheit (Mood kleiner 30) und Kündigungsrisiko (Mood kleiner 15).
     /// Zeigt die dringendste Warnung im Dashboard-Banner.
     /// </summary>
-    private void UpdateWorkerWarning(GameState state)
+    internal void UpdateWorkerWarning(GameState state)
     {
         int tiredCount = 0, unhappyCount = 0, quitRisk = 0;
         string? worstWorkshopName = null;
@@ -2052,7 +2066,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         MoneyDisplay = FormatMoney(_displayedMoney);
     }
 
-    private static GameIconKind GetWorkshopIconKind(WorkshopType type, int level = 1) => type switch
+    internal static GameIconKind GetWorkshopIconKind(WorkshopType type, int level = 1) => type switch
     {
         WorkshopType.Carpenter when level >= 26 => GameIconKind.Factory,
         WorkshopType.Carpenter when level >= 11 => GameIconKind.TableFurniture,
@@ -2090,7 +2104,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             _gameLoopService.Pause();
 
         // Benachrichtigungen planen wenn aktiviert
-        if (_gameStateService.State.NotificationsEnabled)
+        if (_gameStateService.State.Settings.NotificationsEnabled)
             _notificationService?.ScheduleGameNotifications(_gameStateService.State);
     }
 
@@ -2124,16 +2138,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         SettingsViewModel.NavigationRequested -= OnChildNavigation;
         WorkshopViewModel.NavigationRequested -= OnChildNavigation;
         OrderViewModel.NavigationRequested -= OnChildNavigation;
-        SawingGameViewModel.NavigationRequested -= OnChildNavigation;
-        PipePuzzleViewModel.NavigationRequested -= OnChildNavigation;
-        WiringGameViewModel.NavigationRequested -= OnChildNavigation;
-        PaintingGameViewModel.NavigationRequested -= OnChildNavigation;
-        RoofTilingGameViewModel.NavigationRequested -= OnChildNavigation;
-        BlueprintGameViewModel.NavigationRequested -= OnChildNavigation;
-        DesignPuzzleGameViewModel.NavigationRequested -= OnChildNavigation;
-        InspectionGameViewModel.NavigationRequested -= OnChildNavigation;
-        ForgeGameViewModel.NavigationRequested -= OnChildNavigation;
-        InventGameViewModel.NavigationRequested -= OnChildNavigation;
+        foreach (var mg in MiniGames.All)
+            mg.NavigationRequested -= OnChildNavigation;
         ManagerViewModel.NavigationRequested -= OnChildNavigation;
         TournamentViewModel.NavigationRequested -= OnChildNavigation;
         SeasonalEventViewModel.NavigationRequested -= OnChildNavigation;
@@ -2142,10 +2148,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         CraftingViewModel.NavigationRequested -= OnChildNavigation;
         AscensionViewModel.NavigationRequested -= OnChildNavigation;
         LuckySpinViewModel.NavigationRequested -= _luckySpinNavHandler;
-        WorkerMarketViewModel.NavigationRequested -= _workerMarketNavHandler;
-        WorkerProfileViewModel.NavigationRequested -= _workerProfileNavHandler;
-        BuildingsViewModel.NavigationRequested -= _buildingsNavHandler;
-        ResearchViewModel.NavigationRequested -= _researchNavHandler;
+        WorkerMarketViewModel.NavigationRequested -= OnChildNavigation;
+        WorkerProfileViewModel.NavigationRequested -= OnChildNavigation;
+        BuildingsViewModel.NavigationRequested -= OnChildNavigation;
+        ResearchViewModel.NavigationRequested -= OnChildNavigation;
 
         // Unsubscribe child VM events
         StatisticsViewModel.ShowPrestigeDialog -= OnShowPrestigeDialog;
@@ -2193,6 +2199,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             _rebirthService.RebirthCompleted -= OnRebirthCompleted;
         _workerService.WorkerLevelUp -= OnWorkerLevelUp;
         _backPressHelper.ExitHintRequested -= OnBackPressExitHint;
+
+        // EconomyFeatureVM Events abmelden
+        EconomyVM.FloatingTextRequested -= _economyFloatingTextHandler;
+        EconomyVM.CelebrationRequested -= _economyCelebrationHandler;
 
         // MissionsFeatureVM Events abmelden + disposen
         MissionsVM.FloatingTextRequested -= _missionsFloatingTextHandler;

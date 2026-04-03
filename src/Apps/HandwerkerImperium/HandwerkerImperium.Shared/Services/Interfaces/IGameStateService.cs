@@ -238,4 +238,33 @@ public interface IGameStateService
     /// Gibt den Geld-Ertrag zurück (0 wenn nicht möglich).
     /// </summary>
     decimal CompleteMaterialOrder(Order order);
+
+    // ===================================================================
+    // LOCK-DELEGATION (fuer zukuenftige Service-Extraktion)
+    // ===================================================================
+
+    /// <summary>Fuehrt eine Aktion unter dem State-Lock aus.</summary>
+    void ExecuteWithLock(Action action);
+
+    /// <summary>Fuehrt eine Funktion unter dem State-Lock aus und gibt das Ergebnis zurueck.</summary>
+    T ExecuteWithLock<T>(Func<T> func);
+
+    // ===================================================================
+    // EVENT-RAISING (fuer extrahierte Services)
+    // ===================================================================
+
+    /// <summary>Feuert WorkshopUpgraded + MoneyChanged Events.</summary>
+    void RaiseWorkshopUpgraded(WorkshopType type, int oldLevel, int newLevel, decimal cost, decimal moneyBefore, decimal moneyAfter);
+
+    /// <summary>Feuert WorkerHired + MoneyChanged Events.</summary>
+    void RaiseWorkerHired(WorkshopType type, Worker worker, decimal cost, int workerCount, decimal moneyBefore, decimal moneyAfter);
+
+    /// <summary>Feuert OrderCompleted Event.</summary>
+    void RaiseOrderCompleted(Order order, decimal moneyReward, int xpReward, MiniGameRating avgRating);
+
+    /// <summary>Feuert MiniGameResultRecorded Event.</summary>
+    void RaiseMiniGameResultRecorded(MiniGameRating rating);
+
+    /// <summary>Feuert MoneyChanged Event.</summary>
+    void RaiseMoneyChanged(decimal oldAmount, decimal newAmount);
 }

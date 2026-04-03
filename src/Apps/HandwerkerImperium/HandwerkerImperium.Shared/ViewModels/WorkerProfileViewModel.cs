@@ -30,7 +30,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event EventHandler<string>? NavigationRequested;
+    public event Action<string>? NavigationRequested;
 
     /// <summary>
     /// Event für kurze FloatingText-Benachrichtigungen. Parameters: text, category.
@@ -643,12 +643,12 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
             _undoTimer.Start();
 
             // Zurück navigieren (Undo-Leiste wird im Parent-View angezeigt)
-            NavigationRequested?.Invoke(this, "..");
+            NavigationRequested?.Invoke("..");
         }
         else if (success)
         {
             // Kein Workshop bekannt → kein Undo möglich
-            NavigationRequested?.Invoke(this, "..");
+            NavigationRequested?.Invoke("..");
         }
     }
 
@@ -737,7 +737,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke(this, "..");
+        NavigationRequested?.Invoke("..");
     }
 
     // ═══════════════════════════════════════════════════════════════════════

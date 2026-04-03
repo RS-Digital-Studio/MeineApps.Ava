@@ -276,7 +276,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
 
         // Countdown 3-2-1-Los! (verkürzt nach 50+ gespielten MiniGames)
         IsCountdownActive = true;
-        int delay = _gameStateService.State.TotalMiniGamesPlayed >= 50 ? 350 : 700;
+        int delay = _gameStateService.State.Statistics.TotalMiniGamesPlayed >= 50 ? 350 : 700;
         foreach (var text in new[] { "3", "2", "1", _localizationService.GetString("CountdownGo") })
         {
             CountdownText = text;
@@ -308,7 +308,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
     /// <summary>
     /// Stoppt Spiel und Timer. Gibt false zurück wenn bereits beendet (Doppel-Aufruf-Schutz).
     /// </summary>
-    protected bool StopGame()
+    public bool StopGame()
     {
         if (_isEnding) return false;
         _isEnding = true;
@@ -487,9 +487,9 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
         CanShowTutorialInfo = true;
         var state = _gameStateService.State;
         var gameType = GetCurrentMiniGameType();
-        if (!state.SeenMiniGameTutorials.Contains(gameType))
+        if (!state.Tutorial.SeenMiniGameTutorials.Contains(gameType))
         {
-            state.SeenMiniGameTutorials.Add(gameType);
+            state.Tutorial.SeenMiniGameTutorials.Add(gameType);
             _gameStateService.MarkDirty();
         }
         // Nur Spiel starten wenn nicht bereits läuft (Info-Button während Spiel)
@@ -561,7 +561,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
         TutorialText = _localizationService.GetString($"Tutorial{gameType}Text") ?? "";
 
         var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(gameType))
+        if (!state.Tutorial.SeenMiniGameTutorials.Contains(gameType))
         {
             ShowTutorial = true;
             CanShowTutorialInfo = false;

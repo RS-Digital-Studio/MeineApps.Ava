@@ -296,19 +296,19 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         // Player stats
         PlayerLevel = state.PlayerLevel;
         TotalXp = state.TotalXp;
-        TotalPlayTime = FormatPlayTime(state.TotalPlayTimeSeconds);
+        TotalPlayTime = FormatPlayTime(state.Statistics.TotalPlayTimeSeconds);
         TotalMoneyEarned = FormatMoney(state.TotalMoneyEarned);
         TotalMoneySpent = FormatMoney(state.TotalMoneySpent);
         CurrentBalance = FormatMoney(state.Money);
 
         // Orders & Mini-games
-        TotalOrdersCompleted = state.TotalOrdersCompleted;
-        TotalMiniGamesPlayed = state.TotalMiniGamesPlayed;
-        PerfectRatings = state.PerfectRatings;
-        CurrentPerfectStreak = state.PerfectStreak;
-        BestPerfectStreak = state.BestPerfectStreak;
-        PerfectRate = state.TotalMiniGamesPlayed > 0
-            ? (double)state.PerfectRatings / state.TotalMiniGamesPlayed * 100
+        TotalOrdersCompleted = state.Statistics.TotalOrdersCompleted;
+        TotalMiniGamesPlayed = state.Statistics.TotalMiniGamesPlayed;
+        PerfectRatings = state.Statistics.PerfectRatings;
+        CurrentPerfectStreak = state.Statistics.PerfectStreak;
+        BestPerfectStreak = state.Statistics.BestPerfectStreak;
+        PerfectRate = state.Statistics.TotalMiniGamesPlayed > 0
+            ? (double)state.Statistics.PerfectRatings / state.Statistics.TotalMiniGamesPlayed * 100
             : 0;
 
         // Prestige (7-Tier System: Bronze bis Legende)

@@ -29,7 +29,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event EventHandler<string>? NavigationRequested;
+    public event Action<string>? NavigationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -517,7 +517,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke(this, "..");
+        NavigationRequested?.Invoke("..");
     }
 
     // ═══════════════════════════════════════════════════════════════════════

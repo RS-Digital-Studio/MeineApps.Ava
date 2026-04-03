@@ -5,12 +5,12 @@ namespace HandwerkerImperium.Models;
 
 /// <summary>
 /// The complete game state, persisted between sessions.
-/// Version 3: Workshop Rebirth Stars (Late-Game Prestige pro Workshop).
+/// Version 4: Settings, Statistics und Tutorial in Sub-Objekte extrahiert.
 /// </summary>
 public class GameState
 {
     [JsonPropertyName("version")]
-    public int Version { get; set; } = 3;
+    public int Version { get; set; } = 4;
 
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -65,10 +65,10 @@ public class GameState
     public int GoldenScrews { get; set; }
 
     [JsonPropertyName("totalGoldenScrewsEarned")]
-    public int TotalGoldenScrewsEarned { get; set; }
+    public long TotalGoldenScrewsEarned { get; set; }
 
     [JsonPropertyName("totalGoldenScrewsSpent")]
-    public int TotalGoldenScrewsSpent { get; set; }
+    public long TotalGoldenScrewsSpent { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // PREMIUM AD-REWARDS & COOLDOWNS
@@ -112,12 +112,6 @@ public class GameState
     [JsonPropertyName("workerMarket")]
     public WorkerMarketPool? WorkerMarket { get; set; }
 
-    [JsonPropertyName("totalWorkersHired")]
-    public int TotalWorkersHired { get; set; }
-
-    [JsonPropertyName("totalWorkersFired")]
-    public int TotalWorkersFired { get; set; }
-
     // ═══════════════════════════════════════════════════════════════════════
     // ORDERS
     // ═══════════════════════════════════════════════════════════════════════
@@ -134,21 +128,6 @@ public class GameState
     /// </summary>
     [JsonIgnore]
     public QuickJob? ActiveQuickJob { get; set; }
-
-    [JsonPropertyName("totalOrdersCompleted")]
-    public int TotalOrdersCompleted { get; set; }
-
-    /// <summary>
-    /// Orders completed today (resets daily).
-    /// </summary>
-    [JsonPropertyName("ordersCompletedToday")]
-    public int OrdersCompletedToday { get; set; }
-
-    /// <summary>
-    /// Orders completed this week (resets weekly).
-    /// </summary>
-    [JsonPropertyName("ordersCompletedThisWeek")]
-    public int OrdersCompletedThisWeek { get; set; }
 
     [JsonPropertyName("lastOrderCooldownStart")]
     public DateTime LastOrderCooldownStart { get; set; } = DateTime.MinValue;
@@ -219,23 +198,11 @@ public class GameState
     public int ConsecutiveNegativeEvents { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // STATISTICS
+    // STATISTICS (Sub-Objekt seit V4)
     // ═══════════════════════════════════════════════════════════════════════
 
-    [JsonPropertyName("totalMiniGamesPlayed")]
-    public int TotalMiniGamesPlayed { get; set; }
-
-    [JsonPropertyName("perfectRatings")]
-    public int PerfectRatings { get; set; }
-
-    [JsonPropertyName("perfectStreak")]
-    public int PerfectStreak { get; set; }
-
-    [JsonPropertyName("bestPerfectStreak")]
-    public int BestPerfectStreak { get; set; }
-
-    [JsonPropertyName("totalPlayTimeSeconds")]
-    public long TotalPlayTimeSeconds { get; set; }
+    [JsonPropertyName("statistics")]
+    public StatisticsData Statistics { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // PRESTIGE (3-Tier System)
@@ -273,32 +240,11 @@ public class GameState
     public Dictionary<string, int> WorkshopStars { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
-    // SETTINGS
+    // SETTINGS (Sub-Objekt seit V4)
     // ═══════════════════════════════════════════════════════════════════════
 
-    [JsonPropertyName("soundEnabled")]
-    public bool SoundEnabled { get; set; } = true;
-
-    [JsonPropertyName("musicEnabled")]
-    public bool MusicEnabled { get; set; } = true;
-
-    [JsonPropertyName("hapticsEnabled")]
-    public bool HapticsEnabled { get; set; } = true;
-
-    [JsonPropertyName("notificationsEnabled")]
-    public bool NotificationsEnabled { get; set; } = true;
-
-    [JsonPropertyName("graphicsQuality")]
-    public Enums.GraphicsQuality GraphicsQuality { get; set; } = Enums.GraphicsQuality.High;
-
-    [JsonPropertyName("cloudSaveEnabled")]
-    public bool CloudSaveEnabled { get; set; } = true;
-
-    [JsonPropertyName("lastCloudSaveTime")]
-    public DateTime LastCloudSaveTime { get; set; }
-
-    [JsonPropertyName("language")]
-    public string Language { get; set; } = "";
+    [JsonPropertyName("settings")]
+    public SettingsData Settings { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // PREMIUM STATUS
@@ -435,31 +381,12 @@ public class GameState
     [JsonPropertyName("pendingDelivery")]
     public SupplierDelivery? PendingDelivery { get; set; }
 
-    /// <summary>
-    /// Gesamtanzahl abgeholter Lieferungen.
-    /// </summary>
-    [JsonPropertyName("totalDeliveriesClaimed")]
-    public int TotalDeliveriesClaimed { get; set; }
-
     // ═══════════════════════════════════════════════════════════════════════
-    // TUTORIAL (kontextuelles Hint-System)
+    // TUTORIAL (Sub-Objekt seit V4)
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Abwärtskompatibilität: Altes Tutorial abgeschlossen (wird bei Migration auf true gesetzt).
-    /// </summary>
-    [JsonPropertyName("tutorialCompleted")]
-    public bool TutorialCompleted { get; set; }
-
-    [JsonPropertyName("tutorialStep")]
-    public int TutorialStep { get; set; }
-
-    /// <summary>
-    /// IDs der bereits gesehenen kontextuellen Hints.
-    /// Ersetzt das alte lineare Tutorial-System.
-    /// </summary>
-    [JsonPropertyName("seenHints")]
-    public HashSet<string> SeenHints { get; set; } = [];
+    [JsonPropertyName("tutorial")]
+    public TutorialState Tutorial { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // STORY-SYSTEM
@@ -537,33 +464,6 @@ public class GameState
 
     [JsonPropertyName("currentTournament")]
     public Tournament? CurrentTournament { get; set; }
-
-    [JsonPropertyName("totalTournamentsPlayed")]
-    public int TotalTournamentsPlayed { get; set; }
-
-    /// <summary>Anzahl gewonnener Turniere (Gold-Platzierung).</summary>
-    [JsonPropertyName("totalTournamentsWon")]
-    public int TotalTournamentsWon { get; set; }
-
-    /// <summary>Anzahl trainierter Worker (Lifetime).</summary>
-    [JsonPropertyName("totalWorkersTrained")]
-    public int TotalWorkersTrained { get; set; }
-
-    /// <summary>Anzahl hergestellter Crafting-Items (Lifetime, manuell + auto).</summary>
-    [JsonPropertyName("totalItemsCrafted")]
-    public int TotalItemsCrafted { get; set; }
-
-    /// <summary>Anzahl automatisch produzierter Items (Lifetime). Für Achievements.</summary>
-    [JsonPropertyName("totalItemsAutoProduced")]
-    public long TotalItemsAutoProduced { get; set; }
-
-    /// <summary>Anzahl abgeschlossener Lieferaufträge (Lifetime). Für Achievements.</summary>
-    [JsonPropertyName("totalMaterialOrdersCompleted")]
-    public int TotalMaterialOrdersCompleted { get; set; }
-
-    /// <summary>Anzahl heute abgeschlossener Lieferaufträge.</summary>
-    [JsonPropertyName("materialOrdersCompletedToday")]
-    public int MaterialOrdersCompletedToday { get; set; }
 
     /// <summary>Datum des letzten Lieferauftrags-Resets.</summary>
     [JsonPropertyName("lastMaterialOrderReset")]
@@ -730,19 +630,6 @@ public class GameState
     /// </summary>
     [JsonPropertyName("maxOfflineEarnings")]
     public decimal MaxOfflineEarnings { get; set; }
-
-    /// <summary>
-    /// Legacy: Altes lineares Tutorial-System. Wird nur noch in ResetAllHints zurückgesetzt.
-    /// Neues System nutzt SeenHints (HashSet). Beibehalten für JSON-Kompatibilität.
-    /// </summary>
-    [JsonPropertyName("hasSeenTutorialHint")]
-    public bool HasSeenTutorialHint { get; set; }
-
-    /// <summary>
-    /// MiniGame-Typen, für die das Tutorial bereits angezeigt wurde.
-    /// </summary>
-    [JsonPropertyName("seenMiniGameTutorials")]
-    public List<MiniGameType> SeenMiniGameTutorials { get; set; } = [];
 
     // ═══════════════════════════════════════════════════════════════════════
     // OFFLINE
@@ -974,8 +861,12 @@ public class GameState
         // Startwerkstatt (Schreiner) mit 2 Arbeitern für schnelleren Einstieg
         var carpenter = Workshop.Create(WorkshopType.Carpenter);
         carpenter.IsUnlocked = true;
-        carpenter.Workers.Add(Worker.CreateRandom());
-        carpenter.Workers.Add(Worker.CreateRandom());
+        var worker1 = Worker.CreateRandom();
+        worker1.AssignedWorkshop = WorkshopType.Carpenter;
+        var worker2 = Worker.CreateRandom();
+        worker2.AssignedWorkshop = WorkshopType.Carpenter;
+        carpenter.Workers.Add(worker1);
+        carpenter.Workers.Add(worker2);
         state.Workshops.Add(carpenter);
 
         // Initialize research tree

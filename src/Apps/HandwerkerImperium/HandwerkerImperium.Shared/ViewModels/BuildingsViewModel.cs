@@ -25,7 +25,7 @@ public sealed partial class BuildingsViewModel : ViewModelBase
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event EventHandler<string>? NavigationRequested;
+    public event Action<string>? NavigationRequested;
 
     /// <summary>
     /// Event für FloatingText (leichtgewichtiges Feedback). Parameter: text, style.
@@ -235,7 +235,7 @@ public sealed partial class BuildingsViewModel : ViewModelBase
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke(this, "..");
+        NavigationRequested?.Invoke("..");
     }
 
     // ═══════════════════════════════════════════════════════════════════════

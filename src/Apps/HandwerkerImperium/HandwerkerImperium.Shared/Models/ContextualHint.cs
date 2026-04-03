@@ -6,7 +6,7 @@ namespace HandwerkerImperium.Models;
 public class ContextualHint
 {
     /// <summary>
-    /// Eindeutige ID des Hints (wird in GameState.SeenHints gespeichert).
+    /// Eindeutige ID des Hints (wird in GameState.Tutorial.SeenHints gespeichert).
     /// </summary>
     public string Id { get; init; } = "";
 
@@ -211,5 +211,19 @@ public static class ContextualHints
     {
         Id = "accept_order", TitleKey = "HintAcceptOrderTitle", TextKey = "HintAcceptOrderText",
         Position = HintPosition.Below
+    };
+
+    // ONB-1: Auftragstypen
+    public static readonly ContextualHint OrderTypes = new()
+    {
+        Id = "order_types", TitleKey = "HintOrderTypesTitle", TextKey = "HintOrderTypesText",
+        Position = HintPosition.Below, IsDialog = true
+    };
+
+    // ONB-2: Reputation
+    public static readonly ContextualHint ReputationHint = new()
+    {
+        Id = "reputation_hint", TitleKey = "HintReputationTitle", TextKey = "HintReputationText",
+        Position = HintPosition.Below, IsDialog = true
     };
 }

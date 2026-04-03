@@ -72,6 +72,10 @@ public class LuckySpinState
     [JsonPropertyName("lastPaidSpinDate")]
     public DateTime LastPaidSpinDate { get; set; } = DateTime.MinValue;
 
+    /// <summary>
+    /// Gratis-Spin verfügbar wenn letzer Spin vor heute war.
+    /// Bei Zeitmanipulation (LastFreeSpinDate in Zukunft) → false bis Datum aufholt (selbstbestrafend).
+    /// </summary>
     [JsonIgnore]
     public bool HasFreeSpin => LastFreeSpinDate.Date < DateTime.UtcNow.Date;
 

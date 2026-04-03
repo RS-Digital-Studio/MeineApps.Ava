@@ -335,6 +335,7 @@ public sealed class ResearchService : IResearchService
         if (shopResearchBonus > 0)
             duration = TimeSpan.FromSeconds(duration.TotalSeconds * (double)(1m - shopResearchBonus));
 
-        return duration;
+        // Minimaldauer 60 Sekunden (verhindert Sofort-Abschluss durch gestackte Boni)
+        return TimeSpan.FromSeconds(Math.Max(duration.TotalSeconds, 60));
     }
 }

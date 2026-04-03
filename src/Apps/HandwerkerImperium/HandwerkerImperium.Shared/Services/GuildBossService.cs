@@ -472,11 +472,11 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
         var uid = _firebase.PlayerId;
         if (string.IsNullOrEmpty(uid)) return;
 
-        // Duplikat-Schutz: Boss-spezifisch über StartedAt-Timestamp
-        // Verhindert doppelte Belohnung auch bei Wochengrenz-Überschreitung
-        var bossKey = _cachedBoss?.StartedAt ?? DateTime.UtcNow.ToString("O");
-        var rewardKey = $"{PrefKeyLastBossRewardWeek}_{bossKey}";
-        if (_preferences.Get(rewardKey, false)) return;
+        // Duplikat-Schutz: Fester Key mit Boss-Identifier als Wert
+        // Verhindert doppelte Belohnung und wachsende Preferences (ein Key statt unbegrenzt viele)
+        var bossIdentifier = _cachedBoss?.StartedAt ?? DateTime.UtcNow.ToString("O");
+        var lastClaimedBoss = _preferences.Get(PrefKeyLastBossRewardWeek, "");
+        if (lastClaimedBoss == bossIdentifier) return;
 
         try
         {
@@ -498,7 +498,7 @@ public sealed class GuildBossService : IGuildBossService, IDisposable
             };
 
             _gameStateService.AddGoldenScrews(gsReward);
-            _preferences.Set(rewardKey, true);
+            _preferences.Set(PrefKeyLastBossRewardWeek, bossIdentifier);
         }
         catch (Exception ex)
         {

@@ -15,6 +15,7 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
     private readonly IResearchService? _researchService;
     private readonly IPrestigeService? _prestigeService;
     private readonly IVipService? _vipService;
+    private readonly IManagerService? _managerService;
 
     private const decimal SoftCapThreshold = 8.0m;
 
@@ -22,12 +23,14 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         IEventService? eventService = null,
         IResearchService? researchService = null,
         IPrestigeService? prestigeService = null,
-        IVipService? vipService = null)
+        IVipService? vipService = null,
+        IManagerService? managerService = null)
     {
         _eventService = eventService;
         _researchService = researchService;
         _prestigeService = prestigeService;
         _vipService = vipService;
+        _managerService = managerService;
     }
 
     public decimal CalculateGrossIncome(GameState state, decimal prestigeIncomeBonus, decimal masterToolBonus = -1m,
@@ -82,6 +85,28 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
             decimal vipIncomeBonus = _vipService.IncomeBonus;
             if (vipIncomeBonus > 0)
                 grossIncome *= (1m + vipIncomeBonus);
+        }
+
+        // Manager-Boni: IncomeBoost + EfficiencyBoost aller freigeschalteten Manager
+        if (_managerService != null)
+        {
+            decimal totalManagerIncome = 0m;
+            decimal totalManagerEfficiency = 0m;
+            // Workshop-spezifische Manager
+            for (int i = 0; i < state.Workshops.Count; i++)
+            {
+                var wsType = state.Workshops[i].Type;
+                totalManagerIncome += _managerService.GetManagerBonusForWorkshop(wsType, ManagerAbility.IncomeBoost);
+                totalManagerEfficiency += _managerService.GetManagerBonusForWorkshop(wsType, ManagerAbility.EfficiencyBoost);
+            }
+            // Globale Manager
+            totalManagerIncome += _managerService.GetGlobalManagerBonus(ManagerAbility.IncomeBoost);
+            totalManagerEfficiency += _managerService.GetGlobalManagerBonus(ManagerAbility.EfficiencyBoost);
+
+            if (totalManagerIncome > 0)
+                grossIncome *= (1m + totalManagerIncome);
+            if (totalManagerEfficiency > 0)
+                grossIncome *= (1m + totalManagerEfficiency);
         }
 
         return grossIncome;

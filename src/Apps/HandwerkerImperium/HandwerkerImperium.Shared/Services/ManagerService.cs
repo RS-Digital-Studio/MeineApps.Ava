@@ -134,7 +134,7 @@ public sealed class ManagerService : IManagerService
             return false;
 
         // Perfect-Ratings-Anforderung
-        if (def.RequiredPerfectRatings > 0 && state.PerfectRatings < def.RequiredPerfectRatings)
+        if (def.RequiredPerfectRatings > 0 && state.Statistics.PerfectRatings < def.RequiredPerfectRatings)
             return false;
 
         return true;

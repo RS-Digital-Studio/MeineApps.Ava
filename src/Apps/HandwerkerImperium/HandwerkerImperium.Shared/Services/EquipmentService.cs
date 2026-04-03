@@ -65,6 +65,7 @@ public sealed class EquipmentService : IEquipmentService
             inventory.Remove(inventoryItem);
 
             _gameStateService.MarkDirty();
+            state.InvalidateIncomeCache();
         }
     }
 
@@ -82,6 +83,7 @@ public sealed class EquipmentService : IEquipmentService
             worker.EquippedItem = null;
 
             _gameStateService.MarkDirty();
+            state.InvalidateIncomeCache();
         }
     }
 

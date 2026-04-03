@@ -131,10 +131,11 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
             if (state.IsWorkshopUnlocked(state.Workshops[i].Type)) unlockedWorkshops++;
         int roll = Random.Shared.Next(100);
 
-        // Reputation-Bonus + Gilden-Forschung: Senkt Standard-Wahrscheinlichkeit
+        // Reputation-Bonus + Gilden-Forschung + Research PremiumOrderChance: Senkt Standard-Wahrscheinlichkeit
         decimal reputationBonus = state.Reputation.OrderQualityBonus;
         decimal guildOrderQuality = state.GuildMembership?.ResearchOrderQualityBonus ?? 0m;
-        int adjustedRoll = Math.Clamp((int)(roll - (reputationBonus + guildOrderQuality) * 100), 0, 100);
+        decimal researchPremiumChance = _researchService?.GetTotalEffects()?.PremiumOrderChance ?? 0m;
+        int adjustedRoll = Math.Clamp((int)(roll - (reputationBonus + guildOrderQuality + researchPremiumChance) * 100), 0, 100);
 
         return playerLevel switch
         {
@@ -410,12 +411,12 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
         if (state.LastMaterialOrderReset != today)
         {
-            state.MaterialOrdersCompletedToday = 0;
+            state.Statistics.MaterialOrdersCompletedToday = 0;
             state.LastMaterialOrderReset = today;
         }
 
         // Tageslimit prüfen
-        if (state.MaterialOrdersCompletedToday >= GameBalanceConstants.MaterialOrdersPerDay)
+        if (state.Statistics.MaterialOrdersCompletedToday >= GameBalanceConstants.MaterialOrdersPerDay)
             return null;
 
         // Qualifizierte Workshops finden (Auto-Produktion freigeschaltet)

@@ -21,6 +21,9 @@ public sealed class CraftingService : ICraftingService
 
     public event Action? CraftingUpdated;
 
+    /// <summary>Feuert wenn ein fertiges Crafting-Produkt eingesammelt wird.</summary>
+    public event Action? CraftingProductCollected;
+
     /// <summary>
     /// Crafting-Speed-Cache invalidieren (nach Prestige-Shop-Kauf oder State-Load).
     /// </summary>
@@ -56,6 +59,19 @@ public sealed class CraftingService : ICraftingService
             // Rezept finden
             var recipe = CraftingRecipe.GetById(recipeId);
             if (recipe == null) return false;
+
+            // Tier-1 Rezepte: Materialkosten in Gold (20% des Basis-Verkaufspreises)
+            // Verhindert kostenlose Geld-Generierung ohne Senke
+            if (recipe.Tier == 1 && recipe.InputProducts.Count == 0)
+            {
+                var product = CraftingProduct.GetAllProducts().GetValueOrDefault(recipe.OutputProductId);
+                if (product != null)
+                {
+                    decimal materialCost = product.BaseValue * 0.20m;
+                    if (!_gameState.CanAfford(materialCost)) return false;
+                    _gameState.TrySpendMoney(materialCost);
+                }
+            }
 
             // Input-Produkte prüfen und abziehen (atomar innerhalb des Locks)
             foreach (var (productId, required) in recipe.InputProducts)
@@ -136,6 +152,7 @@ public sealed class CraftingService : ICraftingService
 
         _gameState.MarkDirty();
         CraftingUpdated?.Invoke();
+        CraftingProductCollected?.Invoke();
         return true;
     }
 

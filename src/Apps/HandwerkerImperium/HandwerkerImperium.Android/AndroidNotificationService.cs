@@ -49,7 +49,7 @@ public sealed class AndroidNotificationService : INotificationService
 
     public void ScheduleGameNotifications(Models.GameState state)
     {
-        if (!state.NotificationsEnabled) return;
+        if (!state.Settings.NotificationsEnabled) return;
 
         CancelAllNotifications();
 

@@ -34,7 +34,10 @@ public enum DailyChallengeType
     SellItems = 12,
 
     /// <summary>Lieferauftrag abschließen.</summary>
-    CompleteMaterialOrder = 13
+    CompleteMaterialOrder = 13,
+
+    /// <summary>Ausrüstungsgegenstände durch MiniGame-Drops sammeln.</summary>
+    CollectEquipment = 14
 }
 
 /// <summary>

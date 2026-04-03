@@ -521,17 +521,19 @@ public sealed partial class PrestigeService : IPrestigeService
 
         // === RESET: Workers ===
         state.WorkerMarket = null;
-        state.TotalWorkersHired = 0;
-        state.TotalWorkersFired = 0;
+        state.Statistics.TotalWorkersHired = 0;
+        state.Statistics.TotalWorkersFired = 0;
 
         // === RESET: Orders ===
         state.AvailableOrders.Clear();
         state.ActiveOrder = null;
-        state.TotalOrdersCompleted = 0;
-        state.OrdersCompletedToday = 0;
-        state.OrdersCompletedThisWeek = 0;
+        state.Statistics.TotalOrdersCompleted = 0;
+        state.Statistics.OrdersCompletedToday = 0;
+        state.Statistics.OrdersCompletedThisWeek = 0;
         state.LastOrderCooldownStart = DateTime.MinValue;
         state.WeeklyOrderReset = DateTime.UtcNow;
+        state.Statistics.TotalMaterialOrdersCompleted = 0;
+        state.Statistics.MaterialOrdersCompletedToday = 0;
 
         // === RESET: Reputation (Ascension-Perk: höhere Start-Reputation) ===
         int startReputation = _ascensionService.GetStartReputation();
@@ -555,10 +557,12 @@ public sealed partial class PrestigeService : IPrestigeService
         state.EventHistory.Clear();
 
         // === RESET: Statistics (TotalPlayTimeSeconds bleibt!) ===
-        state.TotalMiniGamesPlayed = 0;
-        state.PerfectRatings = 0;
-        state.PerfectStreak = 0;
-        state.BestPerfectStreak = 0;
+        state.Statistics.TotalMiniGamesPlayed = 0;
+        state.Statistics.PerfectRatings = 0;
+        state.Statistics.PerfectStreak = 0;
+        // BestPerfectStreak bewahren (All-Time-Rekord, motivational wie TotalPlayTimeSeconds)
+        // PerfectRatingCounts resetten (Auto-Complete-Mastery muss neu erarbeitet werden)
+        state.PerfectRatingCounts?.Clear();
 
         // === RESET: Boosts ===
         state.SpeedBoostEndTime = DateTime.MinValue;
@@ -573,7 +577,7 @@ public sealed partial class PrestigeService : IPrestigeService
         // === RESET: Lieferant ===
         state.PendingDelivery = null;
         state.NextDeliveryTime = DateTime.MinValue;
-        state.TotalDeliveriesClaimed = 0;
+        state.Statistics.TotalDeliveriesClaimed = 0;
 
         // === RESET: Quick Jobs ===
         state.QuickJobs.Clear();
@@ -682,10 +686,10 @@ public sealed partial class PrestigeService : IPrestigeService
         // - state.Prestige (PrestigeData mit Punkten, Shop-Items, Tier-Counts)
         // - state.UnlockedAchievements
         // - state.IsPremium
-        // - state.SeenHints (kontextuelles Tutorial)
+        // - state.Tutorial.SeenHints (kontextuelles Tutorial)
         // - state.TotalMoneyEarned
-        // - state.TotalPlayTimeSeconds
-        // - state.SoundEnabled, state.MusicEnabled, state.HapticsEnabled, state.Language
+        // - state.Statistics.TotalPlayTimeSeconds
+        // - state.Settings.SoundEnabled, state.Settings.MusicEnabled, state.Settings.HapticsEnabled, state.Language
         // - state.CreatedAt
         // - state.BattlePass (zeitbasiert + bezahlt)
         // - state.CurrentSeasonalEvent (zeitbasiert)
@@ -693,7 +697,7 @@ public sealed partial class PrestigeService : IPrestigeService
         // - state.HasPurchasedStarterPack
         // - state.VipLevel, state.TotalPurchaseAmount
         // - state.Friends
-        // - state.TotalTournamentsPlayed
+        // - state.Statistics.TotalTournamentsPlayed
         // - state.StreakRescueUsed
 
         // === Prestige-Pass bleibt permanent aktiv (einmaliger IAP-Kauf, nicht pro Prestige) ===

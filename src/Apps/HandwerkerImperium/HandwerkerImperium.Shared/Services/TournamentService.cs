@@ -119,6 +119,9 @@ public sealed class TournamentService : ITournamentService
         var tournament = state.CurrentTournament;
         if (tournament == null || tournament.IsExpired) return;
 
+        // Score 0 = kein gültiges Ergebnis → nicht abrechnen
+        if (score <= 0) return;
+
         // Kosten abziehen wenn nötig
         int cost = EntryCost;
         if (cost > 0)
@@ -133,7 +136,7 @@ public sealed class TournamentService : ITournamentService
         // Spieler-Eintrag in der Bestenliste aktualisieren
         UpdatePlayerInLeaderboard(tournament);
 
-        state.TotalTournamentsPlayed++;
+        state.Statistics.TotalTournamentsPlayed++;
         _gameState.MarkDirty();
         TournamentUpdated?.Invoke();
 
@@ -142,7 +145,8 @@ public sealed class TournamentService : ITournamentService
         {
             _ = _playGamesService.SubmitScoreAsync(LeaderboardWeeklyScore, tournament.TotalScore);
             _ = _playGamesService.SubmitScoreAsync(LeaderboardHighScore, tournament.BestScores.Count > 0 ? tournament.BestScores[0] : 0);
-            _ = _playGamesService.SubmitScoreAsync(LeaderboardTournamentWins, state.TotalTournamentsPlayed);
+            // TotalTournamentsWon statt TotalTournamentsPlayed an Leaderboard senden
+            _ = _playGamesService.SubmitScoreAsync(LeaderboardTournamentWins, state.Statistics.TotalTournamentsWon);
         }
     }
 
@@ -182,6 +186,10 @@ public sealed class TournamentService : ITournamentService
             _gameState.AddGoldenScrews(screws);
         if (money > 0)
             _gameState.AddMoney(money);
+
+        // Gold-Rang = Turnier gewonnen
+        if (rewardTier == TournamentRewardTier.Gold)
+            _gameState.State.Statistics.TotalTournamentsWon++;
 
         tournament.RewardsClaimed = true;
         _gameState.MarkDirty();

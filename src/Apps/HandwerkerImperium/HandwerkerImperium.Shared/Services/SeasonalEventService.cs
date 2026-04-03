@@ -14,18 +14,32 @@ namespace HandwerkerImperium.Services;
 public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
 {
     private readonly IGameStateService _gameState;
+    private readonly IWorkerService _workerService;
+    private readonly ICraftingService _craftingService;
+    private bool _disposed;
 
     // SP-Belohnungen pro Auftragsabschluss
     private const int BaseSpPerOrder = 5;
     private const int GoodBonusSp = 3;
     private const int PerfectBonusSp = 5;
 
+    // SP-Belohnungen aus anderen Quellen
+    private const int SpPerMiniGame = 2;
+    private const int SpPerPerfectMiniGame = 4;
+    private const int SpPerWorkerLevelUp = 1;
+    private const int SpPerCraftingCollected = 3;
+
     public event Action? SeasonalEventChanged;
 
-    public SeasonalEventService(IGameStateService gameState)
+    public SeasonalEventService(IGameStateService gameState, IWorkerService workerService, ICraftingService craftingService)
     {
         _gameState = gameState;
+        _workerService = workerService;
+        _craftingService = craftingService;
         _gameState.OrderCompleted += OnOrderCompleted;
+        _gameState.MiniGameResultRecorded += OnMiniGameResultRecorded;
+        _workerService.WorkerLevelUp += OnWorkerLevelUp;
+        _craftingService.CraftingProductCollected += OnCraftingProductCollected;
     }
 
     /// <summary>
@@ -46,9 +60,43 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
         AddSeasonalCurrency(sp);
     }
 
+    /// <summary>
+    /// Vergibt SP bei MiniGame-Abschluss (nur wenn Event aktiv).
+    /// </summary>
+    private void OnMiniGameResultRecorded(object? sender, MiniGameResultRecordedEventArgs e)
+    {
+        if (!IsEventActive) return;
+        int sp = e.Rating == MiniGameRating.Perfect ? SpPerPerfectMiniGame : SpPerMiniGame;
+        AddSeasonalCurrency(sp);
+    }
+
+    /// <summary>
+    /// Vergibt SP bei Worker-Level-Up (nur wenn Event aktiv).
+    /// </summary>
+    private void OnWorkerLevelUp(object? sender, Worker worker)
+    {
+        if (!IsEventActive) return;
+        AddSeasonalCurrency(SpPerWorkerLevelUp);
+    }
+
+    /// <summary>
+    /// Vergibt SP bei Crafting-Produkt-Einsammlung (nur wenn Event aktiv).
+    /// </summary>
+    private void OnCraftingProductCollected()
+    {
+        if (!IsEventActive) return;
+        AddSeasonalCurrency(SpPerCraftingCollected);
+    }
+
     public void Dispose()
     {
+        if (_disposed) return;
         _gameState.OrderCompleted -= OnOrderCompleted;
+        _gameState.MiniGameResultRecorded -= OnMiniGameResultRecorded;
+        _workerService.WorkerLevelUp -= OnWorkerLevelUp;
+        _craftingService.CraftingProductCollected -= OnCraftingProductCollected;
+        _disposed = true;
+        GC.SuppressFinalize(this);
     }
 
     public bool IsEventActive =>
@@ -63,6 +111,13 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
 
         if (isInWindow)
         {
+            // Zeitmanipulations-Schutz: Event-StartDate in Zukunft → blockieren
+            if (state.CurrentSeasonalEvent != null && state.CurrentSeasonalEvent.StartDate > now)
+            {
+                state.CurrentSeasonalEvent = null;
+                return;
+            }
+
             // Im Saison-Zeitfenster und kein aktives Event → Event starten
             if (state.CurrentSeasonalEvent == null || !state.CurrentSeasonalEvent.IsActive)
             {

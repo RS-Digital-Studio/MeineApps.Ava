@@ -474,7 +474,7 @@ public sealed class GoalService : IGoalService
         }
 
         // Ziel: Ersten Auftrag annehmen
-        if (state.TotalOrdersCompleted == 0)
+        if (state.Statistics.TotalOrdersCompleted == 0)
         {
             return new GameGoal
             {

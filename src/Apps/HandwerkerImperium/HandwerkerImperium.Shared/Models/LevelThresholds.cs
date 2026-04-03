@@ -75,13 +75,13 @@ public static class LevelThresholds
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>Turnier-Section im Missionen-Tab anzeigen. Schließt die Dead Zone Lv40-80.</summary>
-    public const int TournamentSection = 50;
+    public const int TournamentSection = 35;
 
     /// <summary>Saisonale Events im Missionen-Tab anzeigen.</summary>
-    public const int SeasonalEventSection = 60;
+    public const int SeasonalEventSection = 45;
 
     /// <summary>Battle Pass im Missionen-Tab anzeigen.</summary>
-    public const int BattlePassSection = 70;
+    public const int BattlePassSection = 55;
 
     /// <summary>Prestige-Shop freischalten (oder wenn bereits prestigiert).</summary>
     public const int PrestigeShopUnlock = 50;

@@ -25,7 +25,7 @@ public sealed partial class PrestigeService
         int bonusPp = 0;
 
         // Perfect Ratings: +1 PP pro 10 Perfects (max +5)
-        int perfectBlocks = state.PerfectRatings / 10;
+        int perfectBlocks = state.Statistics.PerfectRatings / 10;
         bonusPp += Math.Min(perfectBlocks * GameBalanceConstants.BonusPpPerPerfectBlock,
                             GameBalanceConstants.BonusPpPerfectRatingsCap);
 

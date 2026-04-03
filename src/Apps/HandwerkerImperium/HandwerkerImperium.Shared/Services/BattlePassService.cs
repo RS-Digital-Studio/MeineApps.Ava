@@ -14,19 +14,26 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
 {
     private readonly IGameStateService _gameState;
     private readonly IPurchaseService _purchaseService;
+    private readonly IWorkerService _workerService;
+    private readonly ICraftingService _craftingService;
     private bool _disposed;
 
     public event Action? BattlePassUpdated;
 
-    public BattlePassService(IGameStateService gameState, IPurchaseService purchaseService)
+    public BattlePassService(IGameStateService gameState, IPurchaseService purchaseService, IWorkerService workerService, ICraftingService craftingService)
     {
         _gameState = gameState;
         _purchaseService = purchaseService;
+        _workerService = workerService;
+        _craftingService = craftingService;
 
         // Automatische XP-Vergabe bei verschiedenen Spielaktionen
         _gameState.OrderCompleted += OnOrderCompleted;
         _gameState.MiniGameResultRecorded += OnMiniGameResultRecorded;
         _gameState.WorkshopUpgraded += OnWorkshopUpgraded;
+        _gameState.WorkerHired += OnWorkerHired;
+        _workerService.WorkerLevelUp += OnWorkerLevelUp;
+        _craftingService.CraftingProductCollected += OnCraftingProductCollected;
     }
 
     public void AddXp(int amount, string source)
@@ -57,7 +64,11 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
             if (!bp.IsPremium) return;
             if (bp.ClaimedPremiumTiers.Contains(tier)) return;
 
-            var rewards = BattlePass.GeneratePremiumRewards(_gameState.State.TotalIncomePerSecond, bp.SeasonNumber);
+            // BaseIncomeAtSeasonStart verwenden, damit Rewards über die Saison fixiert bleiben
+            var baseIncome = bp.BaseIncomeAtSeasonStart > 0
+                ? bp.BaseIncomeAtSeasonStart
+                : _gameState.State.TotalIncomePerSecond;
+            var rewards = BattlePass.GeneratePremiumRewards(baseIncome, bp.SeasonNumber);
             var reward = rewards.FirstOrDefault(r => r.Tier == tier);
             if (reward == null) return;
 
@@ -69,7 +80,10 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
             // Free-Track
             if (bp.ClaimedFreeTiers.Contains(tier)) return;
 
-            var rewards = BattlePass.GenerateFreeRewards(_gameState.State.TotalIncomePerSecond);
+            var baseIncome = bp.BaseIncomeAtSeasonStart > 0
+                ? bp.BaseIncomeAtSeasonStart
+                : _gameState.State.TotalIncomePerSecond;
+            var rewards = BattlePass.GenerateFreeRewards(baseIncome);
             var reward = rewards.FirstOrDefault(r => r.Tier == tier);
             if (reward == null) return;
 
@@ -95,6 +109,7 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
         bp.ClaimedPremiumTiers.Clear();
         bp.IsPremium = false; // Premium muss pro Saison erneut gekauft werden
         bp.SeasonStartDate = DateTime.UtcNow;
+        bp.BaseIncomeAtSeasonStart = _gameState.State.TotalIncomePerSecond;
 
         // SeasonTheme wird automatisch aus SeasonNumber berechnet (SeasonNumber % 4)
         // → Farbe, Icon und Capstone-Reward passen sich der neuen Saison an
@@ -164,12 +179,33 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
         AddXp(25, "workshop_upgraded");
     }
 
+    private void OnWorkerHired(object? sender, EventArgs e)
+    {
+        // +30 BP-XP pro eingestelltem Arbeiter
+        AddXp(30, "worker_hired");
+    }
+
+    private void OnWorkerLevelUp(object? sender, Worker worker)
+    {
+        // +20 BP-XP pro Worker-Level-Up (Training)
+        AddXp(20, "worker_level_up");
+    }
+
+    private void OnCraftingProductCollected()
+    {
+        // +40 BP-XP pro eingesammeltem Crafting-Produkt
+        AddXp(40, "crafting_collected");
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
         _gameState.OrderCompleted -= OnOrderCompleted;
         _gameState.MiniGameResultRecorded -= OnMiniGameResultRecorded;
         _gameState.WorkshopUpgraded -= OnWorkshopUpgraded;
+        _gameState.WorkerHired -= OnWorkerHired;
+        _workerService.WorkerLevelUp -= OnWorkerLevelUp;
+        _craftingService.CraftingProductCollected -= OnCraftingProductCollected;
         _disposed = true;
         GC.SuppressFinalize(this);
     }

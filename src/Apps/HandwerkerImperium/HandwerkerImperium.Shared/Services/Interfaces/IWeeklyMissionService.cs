@@ -64,4 +64,14 @@ public interface IWeeklyMissionService
     /// Wird aufgerufen wenn Items durch Auto-Produktion hergestellt werden.
     /// </summary>
     void OnItemsAutoProduced(int count);
+
+    /// <summary>
+    /// Wird aufgerufen wenn Items manuell verkauft werden.
+    /// </summary>
+    void OnItemsSold(int count);
+
+    /// <summary>
+    /// Wird aufgerufen wenn ein Lieferauftrag abgeschlossen wird.
+    /// </summary>
+    void OnMaterialOrderCompleted();
 }

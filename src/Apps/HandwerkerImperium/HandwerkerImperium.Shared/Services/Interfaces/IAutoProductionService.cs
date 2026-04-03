@@ -37,4 +37,10 @@ public interface IAutoProductionService
     /// Gibt ein Dictionary (productId → count) zurück.
     /// </summary>
     Dictionary<string, int> CalculateOfflineProduction(GameState state, double offlineSeconds);
+
+    /// <summary>
+    /// Automatisches Crafting: Konvertiert Tier-1→Tier-2 (ab WS-Level 200) und Tier-2→Tier-3 (ab WS-Level 400).
+    /// Gibt die Anzahl der hergestellten höherwertigen Items zurück.
+    /// </summary>
+    int AutoCraftHigherTiers(GameState state);
 }

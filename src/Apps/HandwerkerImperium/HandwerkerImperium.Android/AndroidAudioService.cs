@@ -49,20 +49,20 @@ public sealed class AndroidAudioService : IAudioService
 
     public bool SoundEnabled
     {
-        get => _gameStateService.State.SoundEnabled;
+        get => _gameStateService.State.Settings.SoundEnabled;
         set
         {
-            _gameStateService.State.SoundEnabled = value;
+            _gameStateService.State.Settings.SoundEnabled = value;
             _gameStateService.MarkDirty();
         }
     }
 
     public bool MusicEnabled
     {
-        get => _gameStateService.State.MusicEnabled;
+        get => _gameStateService.State.Settings.MusicEnabled;
         set
         {
-            _gameStateService.State.MusicEnabled = value;
+            _gameStateService.State.Settings.MusicEnabled = value;
             _gameStateService.MarkDirty();
             if (!value) StopMusic();
         }

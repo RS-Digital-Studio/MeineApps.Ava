@@ -116,7 +116,7 @@ public sealed class StoryService : IStoryService
             return false;
         if (chapter.RequiredWorkshopCount > 0 && state.UnlockedWorkshopTypes.Count < chapter.RequiredWorkshopCount)
             return false;
-        if (chapter.RequiredTotalOrders > 0 && state.TotalOrdersCompleted < chapter.RequiredTotalOrders)
+        if (chapter.RequiredTotalOrders > 0 && state.Statistics.TotalOrdersCompleted < chapter.RequiredTotalOrders)
             return false;
         if (chapter.RequiredPrestige > 0 && state.Prestige.TotalPrestigeCount < chapter.RequiredPrestige)
             return false;

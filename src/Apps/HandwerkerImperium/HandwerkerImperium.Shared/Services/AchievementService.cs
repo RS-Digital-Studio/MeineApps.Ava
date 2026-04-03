@@ -196,15 +196,15 @@ public sealed class AchievementService : IAchievementService, IDisposable
             {
                 // Orders
                 "first_order" or "orders_10" or "orders_50" or "orders_100" or "orders_500"
-                    => state.TotalOrdersCompleted,
+                    => state.Statistics.TotalOrdersCompleted,
 
                 // Mini-Games
                 "perfect_first" or "perfect_10" or "perfect_50"
-                    => state.PerfectRatings,
+                    => state.Statistics.PerfectRatings,
                 "streak_5" or "streak_10"
-                    => state.BestPerfectStreak,
+                    => state.Statistics.BestPerfectStreak,
                 "games_100"
-                    => state.TotalMiniGamesPlayed,
+                    => state.Statistics.TotalMiniGamesPlayed,
 
                 // Workshops (vorab berechnet)
                 "workshop_level10" or "workshop_level25" or "workshop_level50"
@@ -236,7 +236,7 @@ public sealed class AchievementService : IAchievementService, IDisposable
 
                 // Time
                 "play_1h" or "play_10h"
-                    => (long)state.TotalPlayTimeSeconds,
+                    => (long)state.Statistics.TotalPlayTimeSeconds,
                 "daily_7"
                     => state.DailyRewardStreak,
 
@@ -273,8 +273,8 @@ public sealed class AchievementService : IAchievementService, IDisposable
                     => state.Prestige.TotalPrestigePoints - state.Prestige.PrestigePoints,
 
                 // MiniGame-Mastery
-                "perfect_100" => state.PerfectRatings,
-                "games_500" => state.TotalMiniGamesPlayed,
+                "perfect_100" => state.Statistics.PerfectRatings,
+                "games_500" => state.Statistics.TotalMiniGamesPlayed,
                 "all_minigames_perfect" => state.PerfectMiniGameTypes?.Count ?? 0,
 
                 // Workshop-Endgame (vorab berechnet)
@@ -287,15 +287,15 @@ public sealed class AchievementService : IAchievementService, IDisposable
                 "guild_level_10" => state.GuildMembership?.GuildLevel ?? 0,
 
                 // Worker-Training
-                "workers_trained_50" => state.TotalWorkersTrained,
+                "workers_trained_50" => state.Statistics.TotalWorkersTrained,
 
                 // Crafting
-                "crafting_100" => state.TotalItemsCrafted,
+                "crafting_100" => state.Statistics.TotalItemsCrafted,
                 "all_recipes" => state.CompletedRecipeIds?.Count ?? 0,
 
                 // Turniere
-                "tournament_gold" => state.TotalTournamentsWon > 0 ? 1 : 0,
-                "tournaments_10" => state.TotalTournamentsWon,
+                "tournament_gold" => state.Statistics.TotalTournamentsWon > 0 ? 1 : 0,
+                "tournaments_10" => state.Statistics.TotalTournamentsWon,
 
                 // Sammler/Collection
                 "all_mastertools" => state.CollectedMasterTools?.Count ?? 0,
@@ -318,8 +318,8 @@ public sealed class AchievementService : IAchievementService, IDisposable
 
                 // === AUTO-PRODUKTION & CRAFTING ===
                 "auto_craft_first" or "auto_craft_100" or "auto_craft_1000"
-                    => state.TotalItemsAutoProduced,
-                "material_order_10" => state.TotalMaterialOrdersCompleted,
+                    => state.Statistics.TotalItemsAutoProduced,
+                "material_order_10" => state.Statistics.TotalMaterialOrdersCompleted,
                 "craft_tier3_first" => CountTier3Items(state),
 
                 _ => achievement.CurrentValue

@@ -103,6 +103,7 @@ public static class WorkshopFormulas
     /// <summary>
     /// Roh-Kosten für ein einzelnes Level (ohne Rabatte).
     /// Ab Level 500 flacht der Exponent auf 1.06 ab, um die tote Zone Lv600-750 zu entschärfen.
+    /// Overflow-Schutz: Bei Werten jenseits decimal.MaxValue wird decimal.MaxValue zurückgegeben.
     /// </summary>
     private static decimal CalculateRawLevelCost(int level)
     {
@@ -112,13 +113,20 @@ public static class WorkshopFormulas
         if (level > 500)
         {
             // Kosten bis Lv500 mit normalem Exponent, danach mit reduziertem
-            decimal costAt500 = GameBalanceConstants.UpgradeCostBase *
-                (decimal)Math.Pow(GameBalanceConstants.UpgradeCostExponent, 499);
-            return costAt500 * (decimal)Math.Pow(GameBalanceConstants.UpgradeCostReducedExponent, level - 500);
+            double rawAt500 = (double)GameBalanceConstants.UpgradeCostBase *
+                Math.Pow(GameBalanceConstants.UpgradeCostExponent, 499);
+            double rawCost = rawAt500 * Math.Pow(GameBalanceConstants.UpgradeCostReducedExponent, level - 500);
+            // Overflow-Schutz: decimal.MaxValue ~ 7.92e+28
+            if (double.IsInfinity(rawCost) || rawCost > (double)decimal.MaxValue)
+                return decimal.MaxValue;
+            return (decimal)rawCost;
         }
 
-        return GameBalanceConstants.UpgradeCostBase *
-            (decimal)Math.Pow(GameBalanceConstants.UpgradeCostExponent, level - 1);
+        double raw = (double)GameBalanceConstants.UpgradeCostBase *
+            Math.Pow(GameBalanceConstants.UpgradeCostExponent, level - 1);
+        if (double.IsInfinity(raw) || raw > (double)decimal.MaxValue)
+            return decimal.MaxValue;
+        return (decimal)raw;
     }
 
     /// <summary>

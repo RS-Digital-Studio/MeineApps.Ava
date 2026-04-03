@@ -16,6 +16,7 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
     private readonly ILocalizationService _localizationService;
     private readonly IVipService _vipService;
     private readonly IWorkerService _workerService;
+    private readonly IEquipmentService? _equipmentService;
     private bool _disposed;
 
     private static readonly WeeklyMissionType[] AllMissionTypes = Enum.GetValues<WeeklyMissionType>();
@@ -41,12 +42,13 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         }
     }
 
-    public WeeklyMissionService(IGameStateService gameStateService, ILocalizationService localizationService, IVipService vipService, IWorkerService workerService)
+    public WeeklyMissionService(IGameStateService gameStateService, ILocalizationService localizationService, IVipService vipService, IWorkerService workerService, IEquipmentService? equipmentService = null)
     {
         _gameStateService = gameStateService;
         _localizationService = localizationService;
         _vipService = vipService;
         _workerService = workerService;
+        _equipmentService = equipmentService;
 
         // Event-Subscriptions fuer automatisches Tracking
         _gameStateService.OrderCompleted += OnOrderCompleted;
@@ -55,6 +57,8 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         _gameStateService.WorkerHired += OnWorkerHired;
         _gameStateService.MiniGameResultRecorded += OnMiniGameResultRecorded;
         _workerService.WorkerLevelUp += OnWorkerLevelUp;
+        if (_equipmentService != null)
+            _equipmentService.EquipmentDropped += OnEquipmentDropped;
     }
 
     public void Initialize()
@@ -196,6 +200,20 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         if (tier >= 7)
             types.Add(WeeklyMissionType.ReachWorkshopLevels);
 
+        // Tier 5+: Items produzieren und verkaufen (benötigt Workshop Lv50)
+        if (tier >= 5)
+        {
+            types.Add(WeeklyMissionType.ProduceItems);
+            types.Add(WeeklyMissionType.SellItems);
+        }
+
+        // Tier 6+: Lieferaufträge + Equipment sammeln
+        if (tier >= 6)
+        {
+            types.Add(WeeklyMissionType.CompleteMaterialOrders);
+            types.Add(WeeklyMissionType.CollectEquipment);
+        }
+
         return types;
     }
 
@@ -310,6 +328,27 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
                 mission.TargetValue = tier switch { 5 => 100, 6 => 250, 7 => 500, _ => 1000 };
                 mission.MoneyReward = Math.Round(incomeBase * 0.8m, 0);
                 mission.XpReward = 125 + level * 5;
+                break;
+
+            // Tier 5+: Items verkaufen (3-5x Daily)
+            case WeeklyMissionType.SellItems:
+                mission.TargetValue = tier switch { 5 => 50, 6 => 125, 7 => 250, _ => 500 };
+                mission.MoneyReward = Math.Round(incomeBase * 0.9m, 0);
+                mission.XpReward = 125 + level * 5;
+                break;
+
+            // Tier 6+: Lieferaufträge abschließen (3-5x Daily)
+            case WeeklyMissionType.CompleteMaterialOrders:
+                mission.TargetValue = tier switch { 6 => 5, 7 => 10, _ => 15 };
+                mission.MoneyReward = Math.Round(incomeBase * 1.3m, 0);
+                mission.XpReward = 175 + level * 5;
+                break;
+
+            // Tier 6+: Ausrüstung sammeln (3-5x Daily)
+            case WeeklyMissionType.CollectEquipment:
+                mission.TargetValue = tier switch { 6 => 5, 7 => 10, _ => 15 };
+                mission.MoneyReward = Math.Round(incomeBase * 1.0m, 0);
+                mission.XpReward = 150 + level * 5;
                 break;
         }
 
@@ -439,7 +478,7 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         IncrementMission(WeeklyMissionType.PlayMiniGames);
 
         // PerfectStreak aus GameState lesen (wird von GameStateService.RecordMiniGameResult aktualisiert)
-        OnPerfectStreakUpdated(_gameStateService.State.PerfectStreak);
+        OnPerfectStreakUpdated(_gameStateService.State.Statistics.PerfectStreak);
     }
 
     private void OnWorkerLevelUp(object? sender, Worker worker)
@@ -498,6 +537,27 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         IncrementMission(WeeklyMissionType.ProduceItems, count);
     }
 
+    /// <summary>
+    /// Wird vom CraftingViewModel aufgerufen wenn Items verkauft wurden.
+    /// </summary>
+    public void OnItemsSold(int count)
+    {
+        IncrementMission(WeeklyMissionType.SellItems, count);
+    }
+
+    /// <summary>
+    /// Wird vom MainViewModel aufgerufen wenn ein Lieferauftrag abgeschlossen wird.
+    /// </summary>
+    public void OnMaterialOrderCompleted()
+    {
+        IncrementMission(WeeklyMissionType.CompleteMaterialOrders);
+    }
+
+    private void OnEquipmentDropped()
+    {
+        IncrementMission(WeeklyMissionType.CollectEquipment);
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // HILFSMETHODEN
     // ═══════════════════════════════════════════════════════════════════════
@@ -524,6 +584,8 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         _gameStateService.WorkerHired -= OnWorkerHired;
         _gameStateService.MiniGameResultRecorded -= OnMiniGameResultRecorded;
         _workerService.WorkerLevelUp -= OnWorkerLevelUp;
+        if (_equipmentService != null)
+            _equipmentService.EquipmentDropped -= OnEquipmentDropped;
 
         _disposed = true;
         GC.SuppressFinalize(this);

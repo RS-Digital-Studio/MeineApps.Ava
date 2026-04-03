@@ -12,6 +12,7 @@ public sealed class WorkerService : IWorkerService
     private readonly IGameStateService _gameState;
     private readonly IPrestigeService? _prestigeService;
     private readonly IResearchService? _researchService;
+    private readonly IManagerService? _managerService;
     private readonly object _lock = new();
 
     // Wiederverwendbare Liste für Kündigungen (vermeidet Allokation pro Tick)
@@ -21,11 +22,13 @@ public sealed class WorkerService : IWorkerService
     public event EventHandler<Worker>? WorkerQuit;
     public event EventHandler<Worker>? WorkerLevelUp;
 
-    public WorkerService(IGameStateService gameState, IPrestigeService? prestigeService = null, IResearchService? researchService = null)
+    public WorkerService(IGameStateService gameState, IPrestigeService? prestigeService = null,
+        IResearchService? researchService = null, IManagerService? managerService = null)
     {
         _gameState = gameState;
         _prestigeService = prestigeService;
         _researchService = researchService;
+        _managerService = managerService;
     }
 
     public bool HireWorker(Worker worker, WorkshopType workshop)
@@ -55,7 +58,7 @@ public sealed class WorkerService : IWorkerService
             // Remove from market
             state.WorkerMarket?.RemoveWorker(worker.Id);
 
-            state.TotalWorkersHired++;
+            state.Statistics.TotalWorkersHired++;
             state.InvalidateIncomeCache();
             return true;
         }
@@ -75,7 +78,7 @@ public sealed class WorkerService : IWorkerService
                     if (workers[j].Id == workerId)
                     {
                         workers.RemoveAt(j);
-                        state.TotalWorkersFired++;
+                        state.Statistics.TotalWorkersFired++;
                         state.InvalidateIncomeCache();
                         return true;
                     }
@@ -99,7 +102,7 @@ public sealed class WorkerService : IWorkerService
             ws.Workers.Add(worker);
 
             // Zähler rückgängig machen
-            if (state.TotalWorkersFired > 0) state.TotalWorkersFired--;
+            if (state.Statistics.TotalWorkersFired > 0) state.Statistics.TotalWorkersFired--;
             state.InvalidateIncomeCache();
             return true;
         }
@@ -239,9 +242,18 @@ public sealed class WorkerService : IWorkerService
             decimal moodDecayReduction = _prestigeService?.GetMoodDecayReduction() ?? 0m;
             decimal guildFatigueReduction = state.GuildMembership?.ResearchFatigueReduction ?? 0m;
             decimal guildTrainingSpeedBonus = state.GuildMembership?.ResearchTrainingSpeedBonus ?? 0m;
+            // Globale Manager-Boni (einmal pro Tick statt pro Worker)
+            decimal globalMgrFatigue = _managerService?.GetGlobalManagerBonus(ManagerAbility.FatigueReduction) ?? 0m;
+            decimal globalMgrMood = _managerService?.GetGlobalManagerBonus(ManagerAbility.MoodBoost) ?? 0m;
+            decimal globalMgrTraining = _managerService?.GetGlobalManagerBonus(ManagerAbility.TrainingSpeedUp) ?? 0m;
 
             foreach (var ws in state.Workshops)
             {
+                // Workshop-spezifische Manager-Boni (einmal pro Workshop statt pro Worker)
+                decimal wsMgrFatigue = (_managerService?.GetManagerBonusForWorkshop(ws.Type, ManagerAbility.FatigueReduction) ?? 0m) + globalMgrFatigue;
+                decimal wsMgrMood = (_managerService?.GetManagerBonusForWorkshop(ws.Type, ManagerAbility.MoodBoost) ?? 0m) + globalMgrMood;
+                decimal wsMgrTraining = (_managerService?.GetManagerBonusForWorkshop(ws.Type, ManagerAbility.TrainingSpeedUp) ?? 0m) + globalMgrTraining;
+
                 foreach (var worker in ws.Workers)
                 {
                     if (worker.IsResting)
@@ -250,11 +262,11 @@ public sealed class WorkerService : IWorkerService
                     }
                     else if (worker.IsTraining)
                     {
-                        UpdateTraining(worker, deltaHours, trainingCenter, guildTrainingSpeedBonus);
+                        UpdateTraining(worker, deltaHours, trainingCenter, guildTrainingSpeedBonus + wsMgrTraining);
                     }
                     else
                     {
-                        UpdateWorking(worker, deltaHours, moodDecayReduction, guildFatigueReduction, canteen);
+                        UpdateWorking(worker, deltaHours, moodDecayReduction, guildFatigueReduction + wsMgrFatigue, canteen, wsMgrMood);
                     }
 
                     // Kündigungsbedingungen prüfen
@@ -281,7 +293,7 @@ public sealed class WorkerService : IWorkerService
             foreach (var (ws, worker) in _workersToRemove)
             {
                 ws.Workers.Remove(worker);
-                state.TotalWorkersFired++;
+                state.Statistics.TotalWorkersFired++;
                 WorkerQuit?.Invoke(this, worker);
             }
         }
@@ -443,12 +455,16 @@ public sealed class WorkerService : IWorkerService
         }
     }
 
-    private void UpdateWorking(Worker worker, decimal deltaHours, decimal moodDecayReduction, decimal guildFatigueReduction, Building? canteen)
+    private void UpdateWorking(Worker worker, decimal deltaHours, decimal moodDecayReduction, decimal guildFatigueReduction, Building? canteen, decimal managerMoodBonus = 0m)
     {
         // Stimmungsabfall beim Arbeiten (gecachte Prestige-Shop MoodDecayReduction)
         var moodDecay = worker.MoodDecayPerHour;
         if (moodDecayReduction > 0)
             moodDecay *= (1m - moodDecayReduction);
+
+        // Manager-MoodBoost: Reduziert Stimmungsabfall
+        if (managerMoodBonus > 0)
+            moodDecay *= (1m - Math.Min(managerMoodBonus, 0.50m));
 
         // Gilden-Forschung: Ermüdungs-/Stimmungs-Reduktion (gecacht übergeben)
         if (guildFatigueReduction > 0)

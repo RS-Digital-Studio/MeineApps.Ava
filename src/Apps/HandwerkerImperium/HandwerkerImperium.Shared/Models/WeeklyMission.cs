@@ -28,7 +28,16 @@ public enum WeeklyMissionType
     ReachWorkshopLevels = 10,
 
     /// <summary>Viele Items durch Auto-Produktion herstellen.</summary>
-    ProduceItems = 11
+    ProduceItems = 11,
+
+    /// <summary>Items manuell verkaufen innerhalb einer Woche.</summary>
+    SellItems = 12,
+
+    /// <summary>Lieferaufträge innerhalb einer Woche abschließen.</summary>
+    CompleteMaterialOrders = 13,
+
+    /// <summary>Ausrüstungsgegenstände durch MiniGame-Drops sammeln.</summary>
+    CollectEquipment = 14
 }
 
 /// <summary>

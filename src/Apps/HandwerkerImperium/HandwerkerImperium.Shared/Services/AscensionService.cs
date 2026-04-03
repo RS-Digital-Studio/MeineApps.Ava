@@ -136,17 +136,19 @@ public sealed class AscensionService : IAscensionService
 
         // Workers
         state.WorkerMarket = null;
-        state.TotalWorkersHired = 0;
-        state.TotalWorkersFired = 0;
+        state.Statistics.TotalWorkersHired = 0;
+        state.Statistics.TotalWorkersFired = 0;
 
         // Orders
         state.AvailableOrders.Clear();
         state.ActiveOrder = null;
-        state.TotalOrdersCompleted = 0;
-        state.OrdersCompletedToday = 0;
-        state.OrdersCompletedThisWeek = 0;
+        state.Statistics.TotalOrdersCompleted = 0;
+        state.Statistics.OrdersCompletedToday = 0;
+        state.Statistics.OrdersCompletedThisWeek = 0;
         state.LastOrderCooldownStart = DateTime.MinValue;
         state.WeeklyOrderReset = DateTime.UtcNow;
+        state.Statistics.TotalMaterialOrdersCompleted = 0;
+        state.Statistics.MaterialOrdersCompletedToday = 0;
 
         // Reputation
         state.Reputation = new CustomerReputation();
@@ -161,11 +163,13 @@ public sealed class AscensionService : IAscensionService
         state.LastEventCheck = DateTime.UtcNow;
         state.EventHistory.Clear();
 
-        // Statistics (TotalPlayTimeSeconds bleibt!)
-        state.TotalMiniGamesPlayed = 0;
-        state.PerfectRatings = 0;
-        state.PerfectStreak = 0;
-        state.BestPerfectStreak = 0;
+        // Statistics (TotalPlayTimeSeconds + BestPerfectStreak bleiben!)
+        state.Statistics.TotalMiniGamesPlayed = 0;
+        state.Statistics.PerfectRatings = 0;
+        state.Statistics.PerfectStreak = 0;
+        // BestPerfectStreak bewahren (All-Time-Rekord)
+        // PerfectRatingCounts resetten (Auto-Complete-Mastery muss neu erarbeitet werden)
+        state.PerfectRatingCounts?.Clear();
 
         // Boosts
         state.SpeedBoostEndTime = DateTime.MinValue;
@@ -180,7 +184,7 @@ public sealed class AscensionService : IAscensionService
         // Lieferant
         state.PendingDelivery = null;
         state.NextDeliveryTime = DateTime.MinValue;
-        state.TotalDeliveriesClaimed = 0;
+        state.Statistics.TotalDeliveriesClaimed = 0;
 
         // Quick Jobs
         state.QuickJobs.Clear();
@@ -223,12 +227,17 @@ public sealed class AscensionService : IAscensionService
         // Prestige-Daten zuruecksetzen, aber permanente Felder bewahren:
         // - ClaimedMilestones (GS-Belohnungen, permanent)
         // - BestRunTimes (Speedrun-Bestzeiten, motivational)
+        // - PurchasedShopItems + RepeatableItemCounts (PP-Investitionen, permanent)
         var preservedMilestones = state.Prestige.ClaimedMilestones;
         var preservedBestRunTimes = state.Prestige.BestRunTimes;
+        var preservedShopItems = state.Prestige.PurchasedShopItems;
+        var preservedRepeatableCounts = state.Prestige.RepeatableItemCounts;
         state.Prestige = new PrestigeData
         {
             ClaimedMilestones = preservedMilestones,
             BestRunTimes = preservedBestRunTimes,
+            PurchasedShopItems = preservedShopItems,
+            RepeatableItemCounts = preservedRepeatableCounts,
         };
 
         // Legacy-Felder synchron halten
@@ -254,10 +263,10 @@ public sealed class AscensionService : IAscensionService
         // - state.WorkshopStars (Rebirth-Sterne, permanent)
         // - state.UnlockedAchievements
         // - state.IsPremium
-        // - state.SeenHints (Tutorial)
+        // - state.Tutorial.SeenHints (Tutorial)
         // - state.TotalMoneyEarned
-        // - state.TotalPlayTimeSeconds
-        // - state.SoundEnabled, state.MusicEnabled, state.HapticsEnabled, state.Language
+        // - state.Statistics.TotalPlayTimeSeconds
+        // - state.Settings.SoundEnabled, state.Settings.MusicEnabled, state.Settings.HapticsEnabled, state.Language
         // - state.CreatedAt
         // - state.BattlePass
         // - state.CurrentSeasonalEvent

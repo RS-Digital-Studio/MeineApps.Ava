@@ -5,7 +5,7 @@ namespace HandwerkerImperium.Services;
 
 /// <summary>
 /// Kontextuelles Tutorial: Hints erscheinen beim ersten Benutzen eines Features.
-/// Tracking via GameState.SeenHints (HashSet, JSON-persistiert).
+/// Tracking via GameState.Tutorial.SeenHints (HashSet, JSON-persistiert).
 /// </summary>
 public sealed class ContextualHintService : IContextualHintService
 {
@@ -38,7 +38,7 @@ public sealed class ContextualHintService : IContextualHintService
         if (ActiveHint == null) return;
 
         // Als gesehen markieren
-        _gameStateService.State.SeenHints.Add(ActiveHint.Id);
+        _gameStateService.State.Tutorial.SeenHints.Add(ActiveHint.Id);
         _gameStateService.MarkDirty();
 
         ActiveHint = null;
@@ -47,14 +47,14 @@ public sealed class ContextualHintService : IContextualHintService
 
     public bool HasSeenHint(string hintId)
     {
-        return _gameStateService.State.SeenHints.Contains(hintId);
+        return _gameStateService.State.Tutorial.SeenHints.Contains(hintId);
     }
 
     public void ResetAllHints()
     {
-        _gameStateService.State.SeenHints.Clear();
-        _gameStateService.State.SeenMiniGameTutorials.Clear();
-        _gameStateService.State.HasSeenTutorialHint = false;
+        _gameStateService.State.Tutorial.SeenHints.Clear();
+        _gameStateService.State.Tutorial.SeenMiniGameTutorials.Clear();
+        _gameStateService.State.Tutorial.HasSeenTutorialHint = false;
         _gameStateService.MarkDirty();
     }
 }

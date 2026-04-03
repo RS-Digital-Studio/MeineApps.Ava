@@ -53,7 +53,7 @@ public class CustomerReputation
     /// <summary>
     /// Adds a rating (1-5 stars) from a completed order.
     /// </summary>
-    public void AddRating(int stars)
+    public void AddRating(int stars, decimal researchReputationBonus = 0m)
     {
         stars = Math.Clamp(stars, 1, 5);
         RecentRatings.Add(stars);
@@ -69,6 +69,10 @@ public class CustomerReputation
             2 => -2,
             _ => -5
         };
+
+        // Research ReputationBonus: Positive Änderungen verstärken (z.B. +45% bei voller Forschung)
+        if (delta > 0 && researchReputationBonus > 0)
+            delta = (int)Math.Ceiling(delta * (1m + researchReputationBonus));
 
         ReputationScore = Math.Clamp(ReputationScore + delta, 0, 100);
     }

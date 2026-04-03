@@ -17,6 +17,7 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
     private readonly ILocalizationService _localizationService;
     private readonly IVipService _vipService;
     private readonly IWorkerService _workerService;
+    private readonly IEquipmentService? _equipmentService;
     private bool _disposed;
 
     private static readonly DailyChallengeType[] AllChallengeTypes = Enum.GetValues<DailyChallengeType>();
@@ -48,12 +49,14 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         IGameStateService gameStateService,
         ILocalizationService localizationService,
         IVipService vipService,
-        IWorkerService workerService)
+        IWorkerService workerService,
+        IEquipmentService? equipmentService = null)
     {
         _gameStateService = gameStateService;
         _localizationService = localizationService;
         _vipService = vipService;
         _workerService = workerService;
+        _equipmentService = equipmentService;
 
         // Event-Subscriptions fuer automatisches Tracking
         _gameStateService.OrderCompleted += OnOrderCompleted;
@@ -61,9 +64,9 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         _gameStateService.WorkshopUpgraded += OnWorkshopUpgraded;
         _gameStateService.WorkerHired += OnWorkerHired;
         _gameStateService.MiniGameResultRecorded += OnMiniGameResultRecorded;
-
-        // Neues Event fuer Worker-Training-Challenge
         _workerService.WorkerLevelUp += OnWorkerLevelUp;
+        if (_equipmentService != null)
+            _equipmentService.EquipmentDropped += OnEquipmentDropped;
     }
 
     public bool AreAllCompleted
@@ -245,9 +248,12 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
             types.Add(DailyChallengeType.SellItems);
         }
 
-        // Tier 6+: Lieferaufträge
+        // Tier 6+: Lieferaufträge + Equipment sammeln
         if (tier >= 6)
+        {
             types.Add(DailyChallengeType.CompleteMaterialOrder);
+            types.Add(DailyChallengeType.CollectEquipment);
+        }
 
         return types;
     }
@@ -373,6 +379,13 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
                 challenge.MoneyReward = Math.Round(incomeBase * 1.3m, 0);
                 challenge.XpReward = 35 + level * 2;
                 break;
+
+            // Tier 6+: Ausrüstung sammeln
+            case DailyChallengeType.CollectEquipment:
+                challenge.TargetValue = tier switch { 6 => 1, 7 => 2, _ => 3 };
+                challenge.MoneyReward = Math.Round(incomeBase * 1.0m, 0);
+                challenge.XpReward = 30 + level * 2;
+                break;
         }
 
         // Goldschrauben-Belohnung nach Tier (BAL-9: Tiers 0-4 bleiben 1-2)
@@ -452,6 +465,10 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
             DailyChallengeType.CompleteMaterialOrder =>
                 string.Format(
                     _localizationService.GetString("ChallengeCompleteMaterialOrder") ?? "Schließe {0} Lieferaufträge ab",
+                    challenge.TargetValue),
+            DailyChallengeType.CollectEquipment =>
+                string.Format(
+                    _localizationService.GetString("ChallengeCollectEquipment") ?? "Sammle {0} Ausrüstungsgegenstände",
                     challenge.TargetValue),
 
             _ => ""
@@ -576,7 +593,7 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         }
 
         // PerfectStreak aus GameState lesen (wird von GameStateService.RecordMiniGameResult aktualisiert)
-        SetChallengeMax(DailyChallengeType.AchievePerfectStreak, _gameStateService.State.PerfectStreak);
+        SetChallengeMax(DailyChallengeType.AchievePerfectStreak, _gameStateService.State.Statistics.PerfectStreak);
     }
 
     /// <summary>
@@ -629,6 +646,11 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         IncrementChallenge(DailyChallengeType.CompleteMaterialOrder);
     }
 
+    private void OnEquipmentDropped()
+    {
+        IncrementChallenge(DailyChallengeType.CollectEquipment);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -639,6 +661,8 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         _gameStateService.WorkerHired -= OnWorkerHired;
         _gameStateService.MiniGameResultRecorded -= OnMiniGameResultRecorded;
         _workerService.WorkerLevelUp -= OnWorkerLevelUp;
+        if (_equipmentService != null)
+            _equipmentService.EquipmentDropped -= OnEquipmentDropped;
 
         _disposed = true;
         GC.SuppressFinalize(this);

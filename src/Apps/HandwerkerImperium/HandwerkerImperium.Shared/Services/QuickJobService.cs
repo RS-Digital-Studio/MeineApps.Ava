@@ -250,9 +250,9 @@ public sealed class QuickJobService : IQuickJobService
         // Difficulty-Multiplikator: QuickJobs profitieren von höherer Schwierigkeit
         var diffMult = difficulty.GetRewardMultiplier();
 
-        // Prestige-Bonus: +10% pro Prestige-Stufe (Late-Game Relevanz)
+        // Prestige-Bonus: +10% pro Prestige-Stufe (Late-Game Relevanz), Cap bei 3.0x
         int prestigeCount = _gameStateService.State.Prestige?.TotalPrestigeCount ?? 0;
-        var prestigeMult = 1.0m + prestigeCount * 0.10m;
+        var prestigeMult = Math.Min(1.0m + prestigeCount * 0.10m, 3.0m);
 
         var reward = baseReward * typeMult * diffMult * prestigeMult;
 

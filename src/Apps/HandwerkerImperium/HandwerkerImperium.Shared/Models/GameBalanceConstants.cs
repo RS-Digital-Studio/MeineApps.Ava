@@ -266,6 +266,12 @@ public static class GameBalanceConstants
     /// <summary>Workshop-Level ab dem Auto-Produktion freigeschaltet wird.</summary>
     public const int AutoProductionUnlockLevel = 50;
 
+    /// <summary>Workshop-Level ab dem Auto-Craft Tier-2 freigeschaltet wird.</summary>
+    public const int AutoCraftTier2UnlockLevel = 200;
+
+    /// <summary>Workshop-Level ab dem Auto-Craft Tier-3 freigeschaltet wird.</summary>
+    public const int AutoCraftTier3UnlockLevel = 400;
+
     /// <summary>Logarithmischer Skalierungsfaktor für Crafting-Verkaufspreise: log₂(1 + Level/Wert). Von 25 auf 15 gesenkt für stärkere Skalierung.</summary>
     public const double CraftingSellPriceLogDivisor = 15.0;
 

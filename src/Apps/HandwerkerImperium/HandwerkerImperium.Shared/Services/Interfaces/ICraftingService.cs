@@ -11,6 +11,9 @@ public interface ICraftingService
     /// <summary>Feuert wenn sich der Crafting-Zustand ändert.</summary>
     event Action? CraftingUpdated;
 
+    /// <summary>Feuert wenn ein fertiges Crafting-Produkt eingesammelt wird.</summary>
+    event Action? CraftingProductCollected;
+
     /// <summary>Gibt verfügbare Rezepte für einen Workshop-Typ und Level zurück.</summary>
     List<CraftingRecipe> GetAvailableRecipes(WorkshopType workshopType, int workshopLevel);
 

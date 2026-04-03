@@ -107,7 +107,7 @@ public sealed class OfflineProgressService : IOfflineProgressService
                         state.CraftingInventory[productId] += count;
                     else
                         state.CraftingInventory[productId] = count;
-                    state.TotalItemsAutoProduced += count;
+                    state.Statistics.TotalItemsAutoProduced += count;
                 }
                 foreach (var (pid, cnt) in produced)
                     LastOfflineItemsProduced[pid] = cnt;
@@ -356,7 +356,7 @@ public sealed class OfflineProgressService : IOfflineProgressService
             foreach (var (ws, worker) in offlineQuits)
             {
                 ws.Workers.Remove(worker);
-                state.TotalWorkersFired++;
+                state.Statistics.TotalWorkersFired++;
             }
             state.InvalidateIncomeCache();
         }

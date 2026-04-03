@@ -63,6 +63,13 @@ public class BattlePass
     public List<int> ClaimedPremiumTiers { get; set; } = [];
 
     /// <summary>
+    /// Fixiertes Basis-Einkommen beim Saisonstart. Verhindert dass spätere Tiers
+    /// durch gestiegenes Einkommen unverhältnismäßig hohe Belohnungen geben.
+    /// </summary>
+    [JsonPropertyName("baseIncomeAtSeasonStart")]
+    public decimal BaseIncomeAtSeasonStart { get; set; }
+
+    /// <summary>
     /// Maximale Tier-Anzahl.
     /// </summary>
     [JsonIgnore]

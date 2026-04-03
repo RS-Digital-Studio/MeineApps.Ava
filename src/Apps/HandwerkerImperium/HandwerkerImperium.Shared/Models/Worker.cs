@@ -182,8 +182,9 @@ public class Worker
             decimal specBonus = GetSpecializationBonus();
             decimal personalityMult = Personality.GetEfficiencyMultiplier();
             decimal equipBonus = EquippedItem?.EfficiencyBonus ?? 0m;
+            decimal talentBonus = 1m + (Talent - 1) * 0.05m; // 1★=1.0x, 3★=1.10x, 5★=1.20x
 
-            return Math.Max(0m, baseEff * xpBonus * moodFactor * fatigueFactor * (1m + specBonus + equipBonus) * personalityMult);
+            return Math.Max(0m, baseEff * xpBonus * moodFactor * fatigueFactor * (1m + specBonus + equipBonus) * personalityMult * talentBonus);
         }
     }
 
@@ -431,10 +432,12 @@ public class Worker
 
         var id = Guid.NewGuid().ToString();
 
+        bool isFemale = (id.GetHashCode() % 2 == 0);
+
         var worker = new Worker
         {
             Id = id,
-            Name = GenerateRandomName(),
+            Name = GenerateRandomName(isFemale),
             Tier = tier,
             Talent = talent,
             Personality = personality,
@@ -447,7 +450,7 @@ public class Worker
             Efficiency = Math.Round(efficiency, 3),
             SkillLevel = 1,
             HiredAt = DateTime.UtcNow,
-            IsFemale = (id.GetHashCode() % 2 == 0)
+            IsFemale = isFemale
         };
 
         return worker;
@@ -478,17 +481,21 @@ public class Worker
     }
 
     // Statische Arrays (vermeidet Allokation pro Aufruf)
+    // 40 männliche + 40 weibliche Vornamen (symmetrisch, deutsch + international gemischt)
     private static readonly string[] FirstNames =
     [
-        // Deutsch
+        // Männlich - Deutsch (20)
         "Hans", "Klaus", "Peter", "Michael", "Thomas", "Stefan", "Andreas", "Markus", "Frank", "Erik",
         "Finn", "Emil", "Anton", "Felix", "Jonas", "Tobias", "Niklas", "Moritz", "Florian", "Kai",
-        // International
+        // Männlich - International (20)
         "Carlos", "Marco", "Pierre", "James", "Oliver", "Lucas", "Matteo", "Hugo", "Leo", "Noah",
         "Liam", "Oscar", "Rafael", "Diego", "Ivan", "Sven", "Lars", "Axel", "Bjorn", "Rolf",
-        // Weiblich
+        // Weiblich - Deutsch (20)
         "Sofia", "Anna", "Maria", "Elena", "Laura", "Lena", "Clara", "Mia", "Emma", "Hannah",
-        "Ingrid", "Katja", "Petra", "Monika", "Sabine", "Heidi", "Greta", "Rosa", "Frieda", "Ida"
+        "Ingrid", "Katja", "Petra", "Monika", "Sabine", "Heidi", "Greta", "Rosa", "Frieda", "Ida",
+        // Weiblich - International (20)
+        "Lucia", "Camille", "Yuki", "Amara", "Zara", "Ines", "Nadia", "Leila", "Astrid", "Freya",
+        "Isabella", "Valentina", "Emilia", "Chiara", "Nora", "Elise", "Carmen", "Alma", "Hana", "Saga"
     ];
 
     private static readonly string[] Surnames =
@@ -502,9 +509,12 @@ public class Worker
         "Larsson", "Berg", "Hansen", "Moreau", "Ferrari", "Russo", "Lopez", "Torres", "Ferreira", "Costa"
     ];
 
-    private static string GenerateRandomName()
+    private static string GenerateRandomName(bool isFemale)
     {
         var random = Random.Shared;
-        return $"{FirstNames[random.Next(FirstNames.Length)]} {Surnames[random.Next(Surnames.Length)]}";
+        // Männlich: Index 0-39 (40 Namen), Weiblich: Index 40-79 (40 Namen)
+        int firstNameStart = isFemale ? 40 : 0;
+        int firstNameCount = 40;
+        return $"{FirstNames[firstNameStart + random.Next(firstNameCount)]} {Surnames[random.Next(Surnames.Length)]}";
     }
 }

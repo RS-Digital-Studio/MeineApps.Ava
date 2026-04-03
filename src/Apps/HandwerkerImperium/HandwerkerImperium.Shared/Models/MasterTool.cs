@@ -72,12 +72,12 @@ public static class MasterTool
             // Common: Workshop-Meilensteine + Spielaktivität
             "mt_golden_hammer" => HasWorkshopAtLevel(state, 75),
             "mt_diamond_saw" => HasWorkshopAtLevel(state, 150),
-            "mt_titanium_pliers" => state.TotalOrdersCompleted >= 150,
-            "mt_brass_level" => state.TotalMiniGamesPlayed >= 300,
+            "mt_titanium_pliers" => state.Statistics.TotalOrdersCompleted >= 150,
+            "mt_brass_level" => state.Statistics.TotalMiniGamesPlayed >= 300,
 
             // Uncommon: Höhere Meilensteine + Prestige
             "mt_silver_wrench" => HasWorkshopAtLevel(state, 300),
-            "mt_jade_brush" => state.PerfectRatings >= 75,
+            "mt_jade_brush" => state.Statistics.PerfectRatings >= 75,
             "mt_crystal_chisel" => state.Prestige.BronzeCount >= 1,
 
             // Rare: Fortgeschrittene Meilensteine

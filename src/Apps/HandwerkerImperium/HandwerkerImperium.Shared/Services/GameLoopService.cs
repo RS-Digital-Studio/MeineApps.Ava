@@ -196,7 +196,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         _timer = null;
 
         // Nur die aktive Zeit seit letztem Start/Resume akkumulieren
-        _gameStateService.State.TotalPlayTimeSeconds += (long)(DateTime.UtcNow - _sessionStart).TotalSeconds;
+        _gameStateService.State.Statistics.TotalPlayTimeSeconds += (long)(DateTime.UtcNow - _sessionStart).TotalSeconds;
         _gameStateService.State.LastPlayedAt = DateTime.UtcNow;
 
         _saveGameService.SaveAsync().FireAndForget();
@@ -208,7 +208,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         _timer?.Stop();
 
         // Bisherige aktive Session-Zeit akkumulieren
-        _gameStateService.State.TotalPlayTimeSeconds += (long)(DateTime.UtcNow - _sessionStart).TotalSeconds;
+        _gameStateService.State.Statistics.TotalPlayTimeSeconds += (long)(DateTime.UtcNow - _sessionStart).TotalSeconds;
         _gameStateService.State.LastPlayedAt = DateTime.UtcNow;
 
         // Session-Start auf jetzt setzen, damit Stop() danach nicht die gleiche Zeitspanne nochmal zählt
@@ -325,6 +325,9 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                 var grossInc = ws.GrossIncomePerSecond;
                 if (grossInc > 0)
                 {
+                    // TotalEarned trackt absichtlich das Roh-Einkommen (GrossIncomePerSecond)
+                    // pro Workshop, OHNE globale Multiplikatoren (Events, Prestige, Rush etc.).
+                    // So bleibt die Workshop-Statistik vergleichbar und inflationsfrei.
                     ws.TotalEarned += grossInc;
                     for (int wi = 0; wi < ws.Workers.Count; wi++)
                     {
@@ -487,6 +490,9 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                 _cachedPrestigeUpgradeDiscount += item.Effect.UpgradeDiscount;
         }
 
+        // Prestige-Income-Bonus auf 300% deckeln (verhindert Exploit durch wiederholbare Items)
+        _cachedPrestigeIncomeBonus = Math.Min(_cachedPrestigeIncomeBonus, 3.0m);
+
         // Upgrade-Discount + VIP-Kosten-Reduktion auf alle Workshops setzen (nur bei Invalidierung statt pro Tick)
         // Immer setzen, auch bei 0 → nach Prestige-Reset muessen alte Discounts geloescht werden
         decimal vipCostReduction = _vipService?.CostReduction ?? 0m;
@@ -519,7 +525,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         {
             var delivery = state.PendingDelivery;
             state.PendingDelivery = null;
-            state.TotalDeliveriesClaimed++;
+            state.Statistics.TotalDeliveriesClaimed++;
 
             // Lieferungs-Effekt anwenden
             switch (delivery.Type)
@@ -637,13 +643,25 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         // Auto-Produktion: Alle 180 Ticks (3 Min) für Standard-Workshops, Offset 90
         if (_tickCount % GameBalanceConstants.AutoProductionIntervalSeconds == 90 && _autoProductionService != null)
         {
-            long before = state.TotalItemsAutoProduced;
+            long before = state.Statistics.TotalItemsAutoProduced;
             _autoProductionService.ProduceForAllWorkshops(state);
-            int produced = (int)(state.TotalItemsAutoProduced - before);
+            int produced = (int)(state.Statistics.TotalItemsAutoProduced - before);
             if (produced > 0)
             {
                 _dailyChallengeService?.OnItemsAutoProduced(produced);
                 _weeklyMissionService?.OnItemsAutoProduced(produced);
+            }
+        }
+
+        // Auto-Craft höherer Tiers: Alle 360 Ticks (6 Min), Offset 270
+        // Kein BP-XP/SP für Auto-Craft (passives Einkommen soll nicht BP/Seasonal aufpumpen)
+        if (_tickCount % 360 == 270 && _autoProductionService != null)
+        {
+            int crafted = _autoProductionService.AutoCraftHigherTiers(state);
+            if (crafted > 0)
+            {
+                _dailyChallengeService?.OnItemsAutoProduced(crafted);
+                _weeklyMissionService?.OnItemsAutoProduced(crafted);
             }
         }
 
@@ -733,7 +751,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                 state.CraftingInventory[product] = 1;
         }
 
-        state.TotalItemsCrafted += workingWorkers;
+        state.Statistics.TotalItemsCrafted += workingWorkers;
     }
 
     /// <summary>

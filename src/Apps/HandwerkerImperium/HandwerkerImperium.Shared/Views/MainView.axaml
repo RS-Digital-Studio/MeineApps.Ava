@@ -200,11 +200,20 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
                       AutomationProperties.AutomationId="Main_View_MiniGame" />
     </Panel>
 
-    <!-- Ersatz-Spacer wenn Tab-Bar versteckt (Overlay/MiniGame offen) -->
-    <!-- Gleiche Hoehe wie Tab-Bar, damit Inhalt ueber der nativen Ad bleibt -->
+    <!-- NAV-3: Breadcrumb-Leiste wenn Tab-Bar versteckt (Sub-Views/MiniGames) -->
     <Border Grid.Row="1" Height="68"
             IsVisible="{Binding !IsTabBarVisible}"
-            AutomationProperties.AutomationId="Main_Border_TabBarSpacer" />
+            Background="{DynamicResource CardBrush}"
+            Padding="16,0"
+            AutomationProperties.AutomationId="Main_Border_Breadcrumb">
+      <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                  Opacity="0.6" IsVisible="{Binding BreadcrumbText.Length}">
+        <icons:GameIcon Kind="ArrowLeft" Width="14" Height="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+        <TextBlock Text="{Binding BreadcrumbText}" FontSize="12"
+                   Foreground="{DynamicResource TextSecondaryBrush}" />
+      </StackPanel>
+    </Border>
 
     <!-- Row 1: Game-Style Tab Bar (SkiaSharp, Holz-Textur mit illustrierten Icons) -->
     <skia:SKCanvasView x:Name="TabBarCanvas"
@@ -342,7 +351,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
     <Border Grid.RowSpan="2"
             IsVisible="{Binding WorkerProfileViewModel.ShowUndoFireWorker}"
             VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
-            Margin="16,0,16,80"
+            Margin="16,0,16,16"
             Background="#E6333333" CornerRadius="12" Padding="12,10"
             ZIndex="90"
             AutomationProperties.AutomationId="Main_Border_UndoFireWorker">

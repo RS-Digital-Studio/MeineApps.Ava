@@ -54,7 +54,7 @@
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12" Margin="16,16,16,80">
+      <StackPanel Spacing="12" Margin="16,16,16,16">
 
         <!-- Vorarbeiter-Liste -->
         <ItemsControl ItemsSource="{Binding Managers}"
@@ -146,9 +146,6 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-
-        <!-- Bottom Spacer -->
-        <Border Height="80" AutomationProperties.AutomationId="Manager_Border_BottomSpacer" />
 
       </StackPanel>
     </ScrollViewer>

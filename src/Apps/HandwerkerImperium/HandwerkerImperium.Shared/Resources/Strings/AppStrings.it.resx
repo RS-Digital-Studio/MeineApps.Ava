@@ -5899,6 +5899,15 @@
   <data name="WeeklyMission_TrainWorkers" xml:space="preserve">
     <value>Allena {0} lavoratori</value>
   </data>
+  <data name="WeeklyMission_ProduceItems" xml:space="preserve">
+    <value>Produci {0} oggetti automaticamente</value>
+  </data>
+  <data name="WeeklyMission_SellItems" xml:space="preserve">
+    <value>Vendi {0} oggetti</value>
+  </data>
+  <data name="WeeklyMission_CompleteMaterialOrders" xml:space="preserve">
+    <value>Completa {0} ordini di materiale</value>
+  </data>
 
   <!-- Challenge-Modus -->
   <data name="Challenge_Spartaner" xml:space="preserve">
@@ -6051,6 +6060,12 @@
   <data name="ChallengeCompleteMaterialOrder" xml:space="preserve">
     <value>Completa {0} ordini di consegna</value>
   </data>
+  <data name="ChallengeCollectEquipment" xml:space="preserve">
+    <value>Raccogli {0} equipaggiamenti</value>
+  </data>
+  <data name="WeeklyMission_CollectEquipment" xml:space="preserve">
+    <value>Raccogli {0} equipaggiamenti</value>
+  </data>
   <data name="AchAutoCraftFirst" xml:space="preserve">
     <value>Primo Prototipo</value>
   </data>
@@ -6093,4 +6108,19 @@
   <data name="InventDecoyPart" xml:space="preserve">
     <value>Esca</value>
   </data>
+  <data name="LevelPrefix" xml:space="preserve">
+    <value>Lv.</value>
+  </data>
+  <data name="MiniGamesLabel" xml:space="preserve">
+    <value>Minigiochi</value>
+  </data>
+  <data name="MiniGameAbortTitle" xml:space="preserve"><value>Annullare minigioco?</value></data>
+  <data name="MiniGameAbortMessage" xml:space="preserve"><value>I tuoi progressi andranno persi. Vuoi annullare?</value></data>
+  <data name="MiniGameAbortConfirm" xml:space="preserve"><value>Annulla</value></data>
+  <data name="OrderExpiredNotification" xml:space="preserve"><value>Ordine scaduto!</value></data>
+  <data name="HintOrderTypesTitle" xml:space="preserve"><value>Tipi di ordine</value></data>
+  <data name="HintOrderTypesText" xml:space="preserve"><value>Diversi ordini, diverse ricompense! Grandi 1,8x, cooperazioni 2,5x e settimanali 3x.</value></data>
+  <data name="HintReputationTitle" xml:space="preserve"><value>Reputazione</value></data>
+  <data name="HintReputationText" xml:space="preserve"><value>La reputazione influenza le ricompense! Alta (80+) dà +20% e più ordini.</value></data>
+  <data name="StatisticsTitle" xml:space="preserve"><value>Statistiche</value></data>
 </root>

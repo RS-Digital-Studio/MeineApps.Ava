@@ -686,4 +686,10 @@
   <data name="InventDecoyPart" xml:space="preserve">
     <value>Decoy</value>
   </data>
+  <data name="LevelPrefix" xml:space="preserve">
+    <value>Lv.</value>
+  </data>
+  <data name="MiniGamesLabel" xml:space="preserve">
+    <value>Mini-Games</value>
+  </data>
 </root>

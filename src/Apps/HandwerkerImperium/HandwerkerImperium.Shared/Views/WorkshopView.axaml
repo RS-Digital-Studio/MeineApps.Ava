@@ -369,7 +369,7 @@
                              AutomationProperties.AutomationId="Workshop_Txt_SpecDesc" />
                 </StackPanel>
                 <Button Grid.Column="2" Classes="Text"
-                        MinWidth="40" MinHeight="36"
+                        MinWidth="44" MinHeight="44"
                         Command="{Binding RemoveSpecializationCommand}"
                         AutomationProperties.AutomationId="Workshop_Btn_RemoveSpec">
                   <icons:GameIcon Kind="Close" Width="20" Height="20"
@@ -607,8 +607,6 @@
           </Button>
         </Border>
 
-        <!-- Bottom Spacer -->
-        <Border Height="80" />
 
       </StackPanel>
     </ScrollViewer>

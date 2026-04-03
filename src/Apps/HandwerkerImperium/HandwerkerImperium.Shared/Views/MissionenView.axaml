@@ -78,58 +78,7 @@
           <dashboard:DailyChallengeSection DataContext="{Binding MissionsVM}"
               AutomationProperties.AutomationId="Missionen_Section_DailyChallenges" />
 
-          <!-- Quick Jobs (Karte mit Timer) -->
-          <Border Classes="CardElevated" Padding="12" CornerRadius="10"
-                  AutomationProperties.AutomationId="Missionen_Border_QuickJobs">
-            <StackPanel Spacing="8">
-              <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Text="{loc:Translate QuickJobs}"
-                           FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                  <icons:GameIcon Kind="TimerRefresh" Width="16" Height="16"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Text="{Binding MissionsVM.QuickJobTimerDisplay}" FontSize="12"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             VerticalAlignment="Center" />
-                </StackPanel>
-              </Grid>
-              <!-- QuickJobs-Liste -->
-              <ItemsControl ItemsSource="{Binding MissionsVM.QuickJobs}"
-                            AutomationProperties.AutomationId="Missionen_Items_QuickJobs">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="models:QuickJob">
-                    <Border Margin="0,4" Padding="8" CornerRadius="8"
-                            Background="{DynamicResource SurfaceBrush}"
-                            AutomationProperties.AutomationId="Missionen_Border_QuickJobItem">
-                      <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Spacing="2">
-                          <TextBlock Text="{Binding DisplayTitle}" FontSize="12" FontWeight="SemiBold"
-                                     Foreground="{DynamicResource TextPrimaryBrush}" />
-                          <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="{Binding DisplayWorkshopName}" FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="{Binding RewardDisplay}" FontSize="11"
-                                       Foreground="{DynamicResource SuccessBrush}" />
-                          </StackPanel>
-                        </StackPanel>
-                        <Button Grid.Column="1" Classes="Primary" Padding="10,4"
-                                Background="{StaticResource CraftPrimaryBrush}"
-                                Content="{loc:Translate Start}"
-                                IsVisible="{Binding !IsCompleted}"
-                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).MissionsVM.StartQuickJobCommand}"
-                                CommandParameter="{Binding .}" />
-                        <icons:GameIcon Grid.Column="1" Kind="Check" Width="24" Height="24"
-                                         Foreground="{DynamicResource SuccessBrush}"
-                                         IsVisible="{Binding IsCompleted}"
-                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
-                      </Grid>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
-          </Border>
+          <!-- IA-2: QuickJobs nur im Dashboard -->
 
           <!-- Gluecksrad-Banner (Gratis oder Goldschrauben) -->
           <Button Command="{Binding ShowLuckySpinCommand}"
@@ -333,13 +282,29 @@
                 </Border>
               </Button>
 
+              <!-- IA-3: Statistiken -->
+              <Button Classes="Text" Margin="4" Padding="0" HorizontalAlignment="Stretch" VerticalAlignment="Top" HorizontalContentAlignment="Stretch" Command="{Binding NavigateToStatisticsCommand}">
+                <Border Classes="CardElevated" Padding="10" MinHeight="80">
+                  <StackPanel Spacing="4" HorizontalAlignment="Center">
+                    <Border CornerRadius="14" Width="40" Height="40" HorizontalAlignment="Center">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#350E7490" Offset="0" />
+                          <GradientStop Color="#1514B8A6" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <icons:GameIcon Kind="ChartBar" Width="28" Height="28" Foreground="#0E7490" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{loc:Translate StatisticsTitle}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
+                  </StackPanel>
+                </Border>
+              </Button>
+
             </UniformGrid>
           </StackPanel>
 
         </StackPanel>
 
-        <!-- Bottom Spacer (80dp fuer Tab-Bar 68dp + Margin) -->
-        <Border Height="80" />
 
       </StackPanel>
     </ScrollViewer>

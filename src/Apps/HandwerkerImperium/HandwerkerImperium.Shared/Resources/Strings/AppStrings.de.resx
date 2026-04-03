@@ -3669,6 +3669,15 @@
   <data name="WeeklyMission_ReachWorkshopLevels" xml:space="preserve">
     <value>Werkstatt-Level {0} erreichen</value>
   </data>
+  <data name="WeeklyMission_ProduceItems" xml:space="preserve">
+    <value>{0} Items automatisch produzieren</value>
+  </data>
+  <data name="WeeklyMission_SellItems" xml:space="preserve">
+    <value>{0} Items verkaufen</value>
+  </data>
+  <data name="WeeklyMission_CompleteMaterialOrders" xml:space="preserve">
+    <value>{0} Lieferaufträge abschließen</value>
+  </data>
 
   <!-- Automatisierung -->
   <data name="AutomationTitle" xml:space="preserve">
@@ -6239,6 +6248,12 @@
   <data name="ChallengeCompleteMaterialOrder" xml:space="preserve">
     <value>Schließe {0} Lieferaufträge ab</value>
   </data>
+  <data name="ChallengeCollectEquipment" xml:space="preserve">
+    <value>Sammle {0} Ausrüstungsgegenstände</value>
+  </data>
+  <data name="WeeklyMission_CollectEquipment" xml:space="preserve">
+    <value>{0} Ausrüstungsgegenstände sammeln</value>
+  </data>
 
   <!-- Auto-Produktion: Achievement Titel + Beschreibungen -->
   <data name="AchAutoCraftFirst" xml:space="preserve">
@@ -6282,5 +6297,39 @@
   </data>
   <data name="InventDecoyPart" xml:space="preserve">
     <value>Köder</value>
+  </data>
+  <data name="LevelPrefix" xml:space="preserve">
+    <value>Lv.</value>
+  </data>
+  <data name="MiniGamesLabel" xml:space="preserve">
+    <value>Minispiele</value>
+  </data>
+  <!-- UX-Fixes (03.04.2026) -->
+  <data name="MiniGameAbortTitle" xml:space="preserve">
+    <value>MiniGame abbrechen?</value>
+  </data>
+  <data name="MiniGameAbortMessage" xml:space="preserve">
+    <value>Dein Fortschritt geht verloren. Möchtest du wirklich abbrechen?</value>
+  </data>
+  <data name="MiniGameAbortConfirm" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="OrderExpiredNotification" xml:space="preserve">
+    <value>Auftrag abgelaufen!</value>
+  </data>
+  <data name="HintOrderTypesTitle" xml:space="preserve">
+    <value>Auftragstypen</value>
+  </data>
+  <data name="HintOrderTypesText" xml:space="preserve">
+    <value>Verschiedene Aufträge bringen unterschiedliche Belohnungen! Große 1,8x, Kooperationen 2,5x und Wochenaufträge 3x.</value>
+  </data>
+  <data name="HintReputationTitle" xml:space="preserve">
+    <value>Ruf</value>
+  </data>
+  <data name="HintReputationText" xml:space="preserve">
+    <value>Dein Ruf beeinflusst deine Belohnungen! Hoher Ruf (80+) gibt +20% und mehr Aufträge.</value>
+  </data>
+  <data name="StatisticsTitle" xml:space="preserve">
+    <value>Statistiken</value>
   </data>
 </root>

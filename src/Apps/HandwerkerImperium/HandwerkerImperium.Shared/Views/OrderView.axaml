@@ -276,9 +276,6 @@
           </StackPanel>
         </Border>
 
-        <!-- Bottom Spacer -->
-        <Border Height="80" AutomationProperties.AutomationId="Order_Border_BottomSpacer" />
-
       </StackPanel>
     </ScrollViewer>
 

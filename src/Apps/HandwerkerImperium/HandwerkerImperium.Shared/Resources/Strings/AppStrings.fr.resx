@@ -5892,6 +5892,15 @@
   <data name="WeeklyMission_TrainWorkers" xml:space="preserve">
     <value>Former {0} ouvriers</value>
   </data>
+  <data name="WeeklyMission_ProduceItems" xml:space="preserve">
+    <value>Produire {0} objets automatiquement</value>
+  </data>
+  <data name="WeeklyMission_SellItems" xml:space="preserve">
+    <value>Vendre {0} objets</value>
+  </data>
+  <data name="WeeklyMission_CompleteMaterialOrders" xml:space="preserve">
+    <value>Terminer {0} commandes de mat&#233;riaux</value>
+  </data>
 
   <!-- Challenge-Modus -->
   <data name="Challenge_Spartaner" xml:space="preserve">
@@ -6044,6 +6053,12 @@
   <data name="ChallengeCompleteMaterialOrder" xml:space="preserve">
     <value>Compl&#233;tez {0} commandes de livraison</value>
   </data>
+  <data name="ChallengeCollectEquipment" xml:space="preserve">
+    <value>Collectez {0} &#233;quipements</value>
+  </data>
+  <data name="WeeklyMission_CollectEquipment" xml:space="preserve">
+    <value>Collectez {0} &#233;quipements</value>
+  </data>
   <data name="AchAutoCraftFirst" xml:space="preserve">
     <value>Premier Prototype</value>
   </data>
@@ -6086,4 +6101,19 @@
   <data name="InventDecoyPart" xml:space="preserve">
     <value>Leurre</value>
   </data>
+  <data name="LevelPrefix" xml:space="preserve">
+    <value>Nv.</value>
+  </data>
+  <data name="MiniGamesLabel" xml:space="preserve">
+    <value>Mini-jeux</value>
+  </data>
+  <data name="MiniGameAbortTitle" xml:space="preserve"><value>Abandonner le mini-jeu ?</value></data>
+  <data name="MiniGameAbortMessage" xml:space="preserve"><value>Votre progression sera perdue. Voulez-vous abandonner ?</value></data>
+  <data name="MiniGameAbortConfirm" xml:space="preserve"><value>Abandonner</value></data>
+  <data name="OrderExpiredNotification" xml:space="preserve"><value>Commande expirée !</value></data>
+  <data name="HintOrderTypesTitle" xml:space="preserve"><value>Types de commandes</value></data>
+  <data name="HintOrderTypesText" xml:space="preserve"><value>Différentes commandes, différentes récompenses ! Grandes 1,8x, coopérations 2,5x et hebdomadaires 3x.</value></data>
+  <data name="HintReputationTitle" xml:space="preserve"><value>Réputation</value></data>
+  <data name="HintReputationText" xml:space="preserve"><value>Votre réputation affecte les récompenses ! Haute réputation (80+) donne +20% et plus de commandes.</value></data>
+  <data name="StatisticsTitle" xml:space="preserve"><value>Statistiques</value></data>
 </root>

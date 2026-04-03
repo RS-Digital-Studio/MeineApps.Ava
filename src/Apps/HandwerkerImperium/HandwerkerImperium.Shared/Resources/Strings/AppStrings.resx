@@ -3691,6 +3691,15 @@
   <data name="WeeklyMission_ReachWorkshopLevels" xml:space="preserve">
     <value>Reach workshop level {0}</value>
   </data>
+  <data name="WeeklyMission_ProduceItems" xml:space="preserve">
+    <value>Auto-produce {0} items</value>
+  </data>
+  <data name="WeeklyMission_SellItems" xml:space="preserve">
+    <value>Sell {0} items</value>
+  </data>
+  <data name="WeeklyMission_CompleteMaterialOrders" xml:space="preserve">
+    <value>Complete {0} material orders</value>
+  </data>
 
   <!-- Automation Settings -->
   <data name="AutomationTitle" xml:space="preserve">
@@ -6260,6 +6269,12 @@
   <data name="ChallengeCompleteMaterialOrder" xml:space="preserve">
     <value>Complete {0} delivery orders</value>
   </data>
+  <data name="ChallengeCollectEquipment" xml:space="preserve">
+    <value>Collect {0} equipment items</value>
+  </data>
+  <data name="WeeklyMission_CollectEquipment" xml:space="preserve">
+    <value>Collect {0} equipment items</value>
+  </data>
 
   <!-- Auto-Produktion: Achievement Titel + Beschreibungen -->
   <data name="AchAutoCraftFirst" xml:space="preserve">
@@ -6303,5 +6318,39 @@
   </data>
   <data name="InventDecoyPart" xml:space="preserve">
     <value>Decoy</value>
+  </data>
+  <data name="LevelPrefix" xml:space="preserve">
+    <value>Lv.</value>
+  </data>
+  <data name="MiniGamesLabel" xml:space="preserve">
+    <value>Mini-Games</value>
+  </data>
+  <!-- UX-Fixes (03.04.2026) -->
+  <data name="MiniGameAbortTitle" xml:space="preserve">
+    <value>Abort mini-game?</value>
+  </data>
+  <data name="MiniGameAbortMessage" xml:space="preserve">
+    <value>Your progress will be lost. Do you really want to abort?</value>
+  </data>
+  <data name="MiniGameAbortConfirm" xml:space="preserve">
+    <value>Abort</value>
+  </data>
+  <data name="OrderExpiredNotification" xml:space="preserve">
+    <value>Order expired!</value>
+  </data>
+  <data name="HintOrderTypesTitle" xml:space="preserve">
+    <value>Order Types</value>
+  </data>
+  <data name="HintOrderTypesText" xml:space="preserve">
+    <value>Different orders bring different rewards! Large orders pay 1.8x, cooperations 2.5x and weekly orders 3x.</value>
+  </data>
+  <data name="HintReputationTitle" xml:space="preserve">
+    <value>Reputation</value>
+  </data>
+  <data name="HintReputationText" xml:space="preserve">
+    <value>Your reputation affects order rewards! High reputation (80+) gives +20% and more orders.</value>
+  </data>
+  <data name="StatisticsTitle" xml:space="preserve">
+    <value>Statistics</value>
   </data>
 </root>

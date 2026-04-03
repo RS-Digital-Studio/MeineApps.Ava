@@ -773,8 +773,6 @@
           </StackPanel>
         </Border>
 
-        <!-- Bottom Spacer -->
-        <Border Height="80" />
 
       </StackPanel>
     </ScrollViewer>

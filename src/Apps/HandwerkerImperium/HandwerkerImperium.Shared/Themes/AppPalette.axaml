@@ -23,12 +23,6 @@
       <Color x:Key="AccentColor">#FFD700</Color>
       <Color x:Key="AccentHoverColor">#FFE44D</Color>
 
-      <!-- Feature Accent Colors -->
-      <Color x:Key="TimerAccentColor">#F59E0B</Color>
-      <Color x:Key="StopwatchAccentColor">#38E8FF</Color>
-      <Color x:Key="AlarmAccentColor">#A78BFA</Color>
-      <Color x:Key="PomodoroAccentColor">#EF4444</Color>
-
       <!-- Background Colors -->
       <Color x:Key="BackgroundColor">#1C1710</Color>
       <Color x:Key="SurfaceColor">#261F16</Color>
@@ -78,11 +72,6 @@
       <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />
       <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
 
-      <SolidColorBrush x:Key="TimerAccentBrush" Color="{DynamicResource TimerAccentColor}" />
-      <SolidColorBrush x:Key="StopwatchAccentBrush" Color="{DynamicResource StopwatchAccentColor}" />
-      <SolidColorBrush x:Key="AlarmAccentBrush" Color="{DynamicResource AlarmAccentColor}" />
-      <SolidColorBrush x:Key="PomodoroAccentBrush" Color="{DynamicResource PomodoroAccentColor}" />
-
       <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}" />
       <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
       <SolidColorBrush x:Key="CardBrush" Color="{DynamicResource CardColor}" />
@@ -114,19 +103,6 @@
       <BoxShadows x:Key="CardShadowHover">0 4 6 -1 #1A000000, 0 2 4 -1 #26000000</BoxShadows>
       <BoxShadows x:Key="ElevatedShadow">0 10 15 -3 #1A000000, 0 4 6 -2 #26000000</BoxShadows>
       <BoxShadows x:Key="ModalShadow">0 20 25 -5 #1A000000, 0 10 10 -5 #26000000</BoxShadows>
-
-      <!-- Calculator-spezifische Ressourcen -->
-      <LinearGradientBrush x:Key="EqualsGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#D97706" Offset="0" />
-        <GradientStop Color="#F59E0B" Offset="1" />
-      </LinearGradientBrush>
-      <LinearGradientBrush x:Key="DisplayGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#261F16" Offset="0" />
-        <GradientStop Color="#1C1710" Offset="1" />
-      </LinearGradientBrush>
-      <BoxShadows x:Key="OperatorGlowShadow">0 0 12 2 #40D97706</BoxShadows>
-      <SolidColorBrush x:Key="DigitButtonBrush" Color="#15FFFFFF" />
-      <SolidColorBrush x:Key="DigitButtonHoverBrush" Color="#25FFFFFF" />
 
       <!-- Theme Identifier -->
       <x:String x:Key="ThemeName">HandwerkerImperium</x:String>

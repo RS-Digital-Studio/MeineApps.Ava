@@ -51,7 +51,7 @@
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12" Margin="16,16,16,80">
+      <StackPanel Spacing="12" Margin="16,16,16,16">
 
         <!-- Loading -->
         <StackPanel Spacing="8" HorizontalAlignment="Center"

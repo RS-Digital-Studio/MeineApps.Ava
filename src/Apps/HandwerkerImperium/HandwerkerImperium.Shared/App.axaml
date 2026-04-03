@@ -174,6 +174,7 @@
 
     <!-- TapScale-Effekt auf ALLEN Buttons (Game Juice Micro-Animation) -->
     <Style Selector="Button">
+      <Setter Property="RenderTransform" Value="scale(1)" />
       <Setter Property="RenderTransformOrigin" Value="50%,50%" />
       <Setter Property="Transitions">
         <Transitions>

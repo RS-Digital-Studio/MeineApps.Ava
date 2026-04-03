@@ -60,7 +60,7 @@
     <!-- CONTENT - 6 flache, mutual-exclusive Panels via ViewState         -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="16" Margin="16,16,16,80">
+      <StackPanel Spacing="16" Margin="16,16,16,16">
 
         <!-- ============================================================= -->
         <!-- STATE: Loading                                                -->
@@ -937,8 +937,6 @@
 
         </StackPanel>
 
-        <!-- Bottom Spacer -->
-        <Border Height="80" AutomationProperties.AutomationId="Guild_Border_BottomSpacer" />
 
       </StackPanel>
     </ScrollViewer>

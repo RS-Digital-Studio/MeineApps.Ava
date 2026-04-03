@@ -3,12 +3,17 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:conv="using:HandwerkerImperium.Converters"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerImperium.Views.ImperiumView"
              x:DataType="vm:MainViewModel"
              x:CompileBindings="True"
              AutomationProperties.AutomationId="Imperium_Root">
+
+  <UserControl.Resources>
+    <conv:BoolToChallengeBackgroundConverter x:Key="ChallengeActiveBg" />
+  </UserControl.Resources>
 
   <!-- FadeIn-Animation -->
   <UserControl.Styles>
@@ -145,7 +150,7 @@
                                 HorizontalAlignment="Center">
                       <icons:GameIcon Kind="CheckCircle" Width="18" Height="18"
                                        Foreground="{DynamicResource SuccessBrush}" />
-                      <TextBlock Text="Max" FontSize="11" FontWeight="SemiBold"
+                      <TextBlock Text="{loc:Translate PerkMaxLevel}" FontSize="11" FontWeight="SemiBold"
                                  Foreground="{DynamicResource SuccessBrush}" />
                     </StackPanel>
                   </Border>
@@ -189,7 +194,7 @@
                   <TextBlock Grid.Column="2" FontSize="10"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              VerticalAlignment="Center">
-                    <Run Text="Lv." /><Run Text="{Binding UnlockLevel}" />
+                    <Run Text="{loc:Translate LevelPrefix}" /><Run Text="{Binding UnlockLevel}" />
                   </TextBlock>
                 </Grid>
               </Border>
@@ -406,6 +411,29 @@
             </StackPanel>
           </Border>
         </Button>
+        <!-- IA-1: Prestige Quick-Access -->
+        <Button Classes="Text" Margin="3" Padding="0"
+                HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                HorizontalContentAlignment="Stretch"
+                IsVisible="{Binding IsPrestigeAvailable}"
+                Command="{Binding NavigateToPrestigeCommand}"
+                AutomationProperties.AutomationId="Imperium_Btn_PrestigeQuickAccess">
+          <Border Padding="8,10" CornerRadius="10">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#25D97706" Offset="0"/>
+                <GradientStop Color="#15FFD700" Offset="1"/>
+              </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel Spacing="4" HorizontalAlignment="Center">
+              <Border CornerRadius="10" Width="32" Height="32" HorizontalAlignment="Center" Background="#30FFD700">
+                <icons:GameIcon Kind="Creation" Width="24" Height="24" Foreground="{StaticResource CraftGoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="{loc:Translate PrestigeShop}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource CraftGoldBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding PrestigePointsPreview}" FontSize="9" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Border>
+        </Button>
       </ItemsControl>
 
       <!-- ================================================================= -->
@@ -468,39 +496,45 @@
           <!-- Challenge-Chips: Je ein ToggleButton pro Challenge -->
           <WrapPanel Orientation="Horizontal">
             <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Background="{Binding IsChallengeSpartanerActive, Converter={StaticResource ChallengeActiveBg}}"
                     Command="{Binding ToggleChallengeCommand}" CommandParameter="Spartaner">
               <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
-                <Run Text="Spartaner +40%" />
+                <Run Text="{loc:Translate Challenge_Spartaner}" /><Run Text=" +40%" />
               </TextBlock>
             </Button>
             <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Background="{Binding IsChallengeOhneForschungActive, Converter={StaticResource ChallengeActiveBg}}"
                     Command="{Binding ToggleChallengeCommand}" CommandParameter="OhneForschung">
               <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
-                <Run Text="Forschung +30%" />
+                <Run Text="{loc:Translate Challenge_OhneForschung}" /><Run Text=" +30%" />
               </TextBlock>
             </Button>
             <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Background="{Binding IsChallengeInflationszeitActive, Converter={StaticResource ChallengeActiveBg}}"
                     Command="{Binding ToggleChallengeCommand}" CommandParameter="Inflationszeit">
               <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
-                <Run Text="Inflation +25%" />
+                <Run Text="{loc:Translate Challenge_Inflationszeit}" /><Run Text=" +25%" />
               </TextBlock>
             </Button>
             <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Background="{Binding IsChallengeSoloMeisterActive, Converter={StaticResource ChallengeActiveBg}}"
                     Command="{Binding ToggleChallengeCommand}" CommandParameter="SoloMeister">
               <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
-                <Run Text="Solo +60%" />
+                <Run Text="{loc:Translate Challenge_SoloMeister}" /><Run Text=" +60%" />
               </TextBlock>
             </Button>
             <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Background="{Binding IsChallengeSprintActive, Converter={StaticResource ChallengeActiveBg}}"
                     Command="{Binding ToggleChallengeCommand}" CommandParameter="Sprint">
               <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
-                <Run Text="Sprint +35%" />
+                <Run Text="{loc:Translate Challenge_Sprint}" /><Run Text=" +35%" />
               </TextBlock>
             </Button>
             <Button Classes="Text" Padding="8,4" Margin="0,0,6,4" CornerRadius="12"
+                    Background="{Binding IsChallengeKeinNetzActive, Converter={StaticResource ChallengeActiveBg}}"
                     Command="{Binding ToggleChallengeCommand}" CommandParameter="KeinNetz">
               <TextBlock FontSize="11" Foreground="{StaticResource CraftGoldBrush}">
-                <Run Text="Kein Netz +20%" />
+                <Run Text="{loc:Translate Challenge_KeinNetz}" /><Run Text=" +20%" />
               </TextBlock>
             </Button>
           </WrapPanel>
@@ -521,38 +555,23 @@
         </StackPanel>
       </Border>
 
-      <!-- Speedrun-Timer (aktuelle Run-Dauer) -->
-      <Border IsVisible="{Binding IsPrestigeAvailable}"
-              CornerRadius="6" Padding="8,4" Margin="0,4,0,0"
-              Background="#10FFFFFF">
-        <StackPanel Orientation="Horizontal" Spacing="6">
-          <icons:GameIcon Kind="TimerOutline" Width="14" Height="14" Foreground="#FFFFFFAA" VerticalAlignment="Center" />
-          <TextBlock FontSize="11" Foreground="#FFFFFFAA" VerticalAlignment="Center">
-            <Run Text="{loc:Translate CurrentRunTime}" /><Run Text=": " /><Run Text="{Binding CurrentRunDuration}" />
-          </TextBlock>
-        </StackPanel>
-      </Border>
-
-      <!-- Fortschritt zum nächsten Prestige-Tier -->
-      <Border IsVisible="{Binding HasNextPrestigeTier}"
-              CornerRadius="8" Padding="10,6" Margin="0,4,0,0"
-              Background="#15FFD700"
-              AutomationProperties.AutomationId="Imperium_Border_NextTierProgress">
-        <StackPanel Spacing="4">
-          <TextBlock Text="{Binding NextPrestigeTierHint}"
-                     FontSize="11" FontWeight="SemiBold"
-                     Foreground="{StaticResource CraftGoldBrush}"
-                     AutomationProperties.AutomationId="Imperium_Txt_NextTierHint" />
-          <ProgressBar Minimum="0" Maximum="1" Value="{Binding NextPrestigeTierProgress}"
-                       Height="5" CornerRadius="3"
-                       Foreground="{StaticResource CraftGoldBrush}"
-                       AutomationProperties.AutomationId="Imperium_ProgressBar_NextTier">
-            <ProgressBar.Background>
-              <SolidColorBrush Color="#FFFFFF" Opacity="0.10" />
-            </ProgressBar.Background>
-          </ProgressBar>
-        </StackPanel>
-      </Border>
+      <!-- CL-2: Kompakt -->
+      <Grid IsVisible="{Binding IsPrestigeAvailable}" ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,4,0,0">
+        <Border CornerRadius="6" Padding="8,4" Background="#10FFFFFF" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <icons:GameIcon Kind="TimerOutline" Width="14" Height="14" Foreground="#FFFFFFAA" />
+            <TextBlock FontSize="11" Foreground="#FFFFFFAA"><Run Text="{Binding CurrentRunDuration}" /></TextBlock>
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" IsVisible="{Binding HasNextPrestigeTier}" CornerRadius="6" Padding="8,4" Background="#15FFD700" VerticalAlignment="Center">
+          <StackPanel Spacing="2">
+            <TextBlock Text="{Binding NextPrestigeTierHint}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource CraftGoldBrush}" TextTrimming="CharacterEllipsis" />
+            <ProgressBar Minimum="0" Maximum="1" Value="{Binding NextPrestigeTierProgress}" Height="4" CornerRadius="2" Foreground="{StaticResource CraftGoldBrush}">
+              <ProgressBar.Background><SolidColorBrush Color="#FFFFFF" Opacity="0.10" /></ProgressBar.Background>
+            </ProgressBar>
+          </StackPanel>
+        </Border>
+      </Grid>
 
       <!-- Prestige-Shop (nur wenn freigeschaltet) -->
       <Button Classes="Text" Padding="0" CornerRadius="10"
@@ -585,8 +604,6 @@
         </Border>
       </Button>
 
-      <!-- Bottom Spacer (80dp fuer Tab-Bar 68dp + Margin) -->
-      <Border Height="80" />
 
     </StackPanel>
   </ScrollViewer>

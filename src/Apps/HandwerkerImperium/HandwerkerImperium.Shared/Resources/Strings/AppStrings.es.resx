@@ -5891,6 +5891,15 @@
   <data name="WeeklyMission_TrainWorkers" xml:space="preserve">
     <value>Entrena a {0} trabajadores</value>
   </data>
+  <data name="WeeklyMission_ProduceItems" xml:space="preserve">
+    <value>Produce {0} objetos autom&#225;ticamente</value>
+  </data>
+  <data name="WeeklyMission_SellItems" xml:space="preserve">
+    <value>Vende {0} objetos</value>
+  </data>
+  <data name="WeeklyMission_CompleteMaterialOrders" xml:space="preserve">
+    <value>Completa {0} pedidos de material</value>
+  </data>
 
   <!-- Challenge-Modus -->
   <data name="Challenge_Spartaner" xml:space="preserve">
@@ -6043,6 +6052,12 @@
   <data name="ChallengeCompleteMaterialOrder" xml:space="preserve">
     <value>Completa {0} pedidos de entrega</value>
   </data>
+  <data name="ChallengeCollectEquipment" xml:space="preserve">
+    <value>Recoge {0} objetos de equipamiento</value>
+  </data>
+  <data name="WeeklyMission_CollectEquipment" xml:space="preserve">
+    <value>Recoge {0} objetos de equipamiento</value>
+  </data>
   <data name="AchAutoCraftFirst" xml:space="preserve">
     <value>Primer Prototipo</value>
   </data>
@@ -6085,4 +6100,19 @@
   <data name="InventDecoyPart" xml:space="preserve">
     <value>Señuelo</value>
   </data>
+  <data name="LevelPrefix" xml:space="preserve">
+    <value>Nv.</value>
+  </data>
+  <data name="MiniGamesLabel" xml:space="preserve">
+    <value>Minijuegos</value>
+  </data>
+  <data name="MiniGameAbortTitle" xml:space="preserve"><value>¿Cancelar minijuego?</value></data>
+  <data name="MiniGameAbortMessage" xml:space="preserve"><value>Tu progreso se perderá. ¿Realmente quieres cancelar?</value></data>
+  <data name="MiniGameAbortConfirm" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="OrderExpiredNotification" xml:space="preserve"><value>¡Pedido expirado!</value></data>
+  <data name="HintOrderTypesTitle" xml:space="preserve"><value>Tipos de pedido</value></data>
+  <data name="HintOrderTypesText" xml:space="preserve"><value>¡Diferentes pedidos traen diferentes recompensas! Grandes 1,8x, cooperaciones 2,5x y semanales 3x.</value></data>
+  <data name="HintReputationTitle" xml:space="preserve"><value>Reputación</value></data>
+  <data name="HintReputationText" xml:space="preserve"><value>¡Tu reputación afecta las recompensas! Alta reputación (80+) da +20% y más pedidos.</value></data>
+  <data name="StatisticsTitle" xml:space="preserve"><value>Estadísticas</value></data>
 </root>

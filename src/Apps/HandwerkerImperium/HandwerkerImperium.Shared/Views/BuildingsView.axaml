@@ -206,7 +206,6 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <Border Height="80" />
       </StackPanel>
     </ScrollViewer>
 

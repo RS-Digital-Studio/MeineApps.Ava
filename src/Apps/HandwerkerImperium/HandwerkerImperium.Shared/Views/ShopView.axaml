@@ -441,9 +441,6 @@
           </StackPanel>
         </Border>
 
-        <!-- Bottom Spacer -->
-        <Border Height="80" AutomationProperties.AutomationId="Shop_Border_BottomSpacer" />
-
       </StackPanel>
     </ScrollViewer>
 

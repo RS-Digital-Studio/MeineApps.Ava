@@ -4,7 +4,7 @@ using Avalonia.Data.Converters;
 namespace HandwerkerImperium.Converters;
 
 /// <summary>
-/// Converts workshop level to progress value (0.0 - 1.0) based on max level.
+/// Konvertiert Workshop-Level in einen Fortschrittswert (0.0 - 1.0) basierend auf dem Max-Level.
 /// </summary>
 public class LevelToProgressConverter : IValueConverter
 {
@@ -12,7 +12,7 @@ public class LevelToProgressConverter : IValueConverter
     {
         double progress = 0.0;
 
-        // Support both int (level) and double (position) values
+        // Unterstützt sowohl int (Level) als auch double (Position)
         if (value is int intValue)
         {
             progress = intValue;
@@ -26,23 +26,23 @@ public class LevelToProgressConverter : IValueConverter
             return 0.0;
         }
 
-        // Parse multiplier from parameter (e.g., "300" for pixel width)
-        double multiplier = 10.0; // Default max level
+        // Multiplikator aus Parameter parsen (z.B. "300" für Pixel-Breite)
+        double multiplier = 10.0; // Standard Max-Level
         if (parameter is string paramStr && double.TryParse(paramStr, out double parsedMultiplier))
         {
             multiplier = parsedMultiplier;
         }
 
-        // For pixel-based positioning (large multiplier like 300), multiply directly
-        // For progress bars (small multiplier like 10), calculate ratio
+        // Pixel-Positionierung (großer Multiplikator wie 300): direkt multiplizieren
+        // Fortschrittsbalken (kleiner Multiplikator wie 10): Verhältnis berechnen
         if (multiplier > 100)
         {
-            // Pixel positioning: progress (0-1) * width
+            // Pixel-Positionierung: Fortschritt (0-1) * Breite
             return progress * multiplier;
         }
         else
         {
-            // Progress ratio: level / maxLevel
+            // Fortschrittsverhältnis: Level / MaxLevel
             return Math.Min(1.0, progress / multiplier);
         }
     }

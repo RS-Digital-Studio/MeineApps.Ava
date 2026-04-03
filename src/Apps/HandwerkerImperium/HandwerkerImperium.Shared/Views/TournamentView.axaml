@@ -83,7 +83,7 @@
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="16" Margin="16,16,16,80">
+      <StackPanel Spacing="16" Margin="16,16,16,16">
 
         <!-- Spieltyp-Anzeige -->
         <Border Classes="Card StatsCard"
@@ -197,8 +197,6 @@
           </StackPanel>
         </Border>
 
-        <!-- Bottom Spacer -->
-        <Border Height="80" AutomationProperties.AutomationId="Tournament_Border_BottomSpacer" />
 
       </StackPanel>
     </ScrollViewer>

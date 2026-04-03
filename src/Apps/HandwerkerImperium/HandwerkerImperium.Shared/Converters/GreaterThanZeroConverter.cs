@@ -4,8 +4,8 @@ using Avalonia.Data.Converters;
 namespace HandwerkerImperium.Converters;
 
 /// <summary>
-/// Converts a numeric value to a boolean indicating whether it's greater than zero.
-/// Useful for visibility bindings based on counts.
+/// Konvertiert einen numerischen Wert in einen Boolean (true wenn größer als Null).
+/// Nützlich für Sichtbarkeits-Bindings basierend auf Zählern.
 /// </summary>
 public class GreaterThanZeroConverter : IValueConverter
 {

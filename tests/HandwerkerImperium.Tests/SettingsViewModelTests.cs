@@ -44,7 +44,7 @@ public class SettingsViewModelTests
         stateSvc.State.Returns(spielState);
         stateSvc.IsAutoCollectUnlocked.Returns(spielState.PlayerLevel >= 15);
         stateSvc.IsAutoAcceptUnlocked.Returns(spielState.PlayerLevel >= 25);
-        stateSvc.IsAutoAssignUnlocked.Returns(spielState.PlayerLevel >= 50);
+        stateSvc.IsAutoAssignUnlocked.Returns(spielState.PlayerLevel >= 20);
 
         // Premium konfigurieren
         purchaseSvc.IsPremium.Returns(isPremium);
@@ -171,7 +171,7 @@ public class SettingsViewModelTests
     {
         // Vorbereitung
         var state = GameState.CreateNew();
-        state.SoundEnabled = true;
+        state.Settings.SoundEnabled = true;
         var (vm, _, _) = ErstelleSetup(state: state);
 
         // Ausführung
@@ -186,7 +186,7 @@ public class SettingsViewModelTests
     {
         // Vorbereitung
         var state = GameState.CreateNew();
-        state.SoundEnabled = false;
+        state.Settings.SoundEnabled = false;
         var (vm, _, _) = ErstelleSetup(state: state);
 
         // Ausführung
@@ -201,7 +201,7 @@ public class SettingsViewModelTests
     {
         // Vorbereitung
         var state = GameState.CreateNew();
-        state.GraphicsQuality = GraphicsQuality.High;
+        state.Settings.GraphicsQuality = GraphicsQuality.High;
         var (vm, _, _) = ErstelleSetup(state: state);
 
         // Ausführung
@@ -217,7 +217,7 @@ public class SettingsViewModelTests
     {
         // Vorbereitung
         var state = GameState.CreateNew();
-        state.GraphicsQuality = GraphicsQuality.Low;
+        state.Settings.GraphicsQuality = GraphicsQuality.Low;
         var (vm, _, _) = ErstelleSetup(state: state);
 
         // Ausführung
@@ -262,7 +262,7 @@ public class SettingsViewModelTests
     {
         // Vorbereitung
         var state = GameState.CreateNew();
-        state.Language = "de";
+        state.Settings.Language = "de";
         var (vm, _, _) = ErstelleSetup(state: state);
 
         // Ausführung

@@ -79,44 +79,44 @@ public class WorkshopTests
     }
 
     [Fact]
-    public void GetMilestoneMultiplier_Level25_IstAnderthalbFach()
+    public void GetMilestoneMultiplier_Level25_Ist1_15()
     {
-        // Vorbereitung: Level 25 = 1.5x
+        // Vorbereitung: Level 25 = 1.15x (laut GameBalanceConstants)
         var workshop = Workshop.Create(WorkshopType.Carpenter);
         workshop.Level = 25;
 
         // Prüfung
-        workshop.GetMilestoneMultiplier().Should().Be(1.5m);
+        workshop.GetMilestoneMultiplier().Should().Be(1.15m);
     }
 
     [Fact]
-    public void GetMilestoneMultiplier_Level50_IstDreifach()
+    public void GetMilestoneMultiplier_Level50_Ist1_495()
     {
-        // Vorbereitung: Level 50 = 1.5 * 2 = 3x
+        // Vorbereitung: Level 50 = 1.15 * 1.30 = 1.495x (kumulativ)
         var workshop = Workshop.Create(WorkshopType.Carpenter);
         workshop.Level = 50;
 
         // Prüfung
-        workshop.GetMilestoneMultiplier().Should().Be(3.0m);
+        workshop.GetMilestoneMultiplier().Should().Be(1.495m);
     }
 
     [Fact]
-    public void GetMilestoneMultiplier_Level100_IstSechsfach()
+    public void GetMilestoneMultiplier_Level100_Ist2_818()
     {
-        // Vorbereitung: Level 100 = 1.5 * 2 * 2 = 6x
+        // Vorbereitung: Level 100 = 1.15 * 1.30 * 1.30 * 1.45 = 2.818075x (kumulativ)
         var workshop = Workshop.Create(WorkshopType.Carpenter);
         workshop.Level = 100;
 
         // Prüfung
-        workshop.GetMilestoneMultiplier().Should().Be(6.0m);
+        workshop.GetMilestoneMultiplier().Should().Be(2.818075m);
     }
 
     [Fact]
-    public void GetMilestoneMultiplierForLevel_Level1000_IstNeunhundert()
+    public void GetMilestoneMultiplierForLevel_Level1000_IstDreifach()
     {
-        // Vorbereitung: Level 1000 = 1.5 * 2 * 2 * 3 * 5 * 10 = 900x (laut CLAUDE.md)
+        // Vorbereitung: Level 1000 Einzel-Multiplikator = 3.0x (laut GameBalanceConstants)
         // Prüfung
-        Workshop.GetMilestoneMultiplierForLevel(1000).Should().Be(10.0m);
+        Workshop.GetMilestoneMultiplierForLevel(1000).Should().Be(3.00m);
     }
 
     [Fact]

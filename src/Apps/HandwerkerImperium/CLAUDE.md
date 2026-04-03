@@ -202,7 +202,7 @@ Daten in `GameState.WorkshopStars` (Dictionary<string, int>), Runtime-Properties
 
 ### Worker-System Details
 
-- **EffectiveEfficiency-Formel**: `BaseEff * XpBonus(+3%/Lv) * MoodFactor * FatigueFactor * (1+SpecBonus+EquipBonus) * PersonalityMult`
+- **EffectiveEfficiency-Formel**: `BaseEff * XpBonus(+3%/Lv) * MoodFactor * FatigueFactor * (1+SpecBonus+EquipBonus) * PersonalityMult * TalentBonus(1★=1.0x bis 5★=1.20x)`
 - **XP-Bonus**: +3% pro ExperienceLevel auf EffectiveEfficiency (Training lohnt sich immer, auch am Tier-Maximum)
 - **Auto-Resume Training**: Worker setzt Training automatisch fort nach Fatigue-bedingter Ruhe (ResumeTrainingType Property)
 - **Offline-Kündigung**: Worker kündigen auch offline nach 24h bei Mood<20 (konsistent mit Online-Verhalten)
@@ -213,8 +213,11 @@ Daten in `GameState.WorkshopStars` (Dictionary<string, int>), Runtime-Properties
 ### Neuer-Spieler-Einstieg
 
 - **Startgeld**: 1.000 EUR (statt 250)
-- **Start-Werkstatt**: Schreinerei mit 2 Arbeitern (statt 1)
+- **Start-Werkstatt**: Schreinerei mit 2 Arbeitern (statt 1), `AssignedWorkshop` explizit auf `Carpenter` gesetzt
 - Workshop-Karten zeigen werkstatt-spezifische Icons (GameIconRenderer) auf Upgrade-Button und dimmed auf Locked-Karten
+- **Daily Reward am Tag 1**: Wird still eingesammelt (kein Dialog), ab Tag 2 normaler Dialog
+- **Dialog-Reihenfolge**: Story Kapitel 1 (Meister Hans) → FirstWorkshop-Hint → AcceptOrder-Hint (Welcome-Hint entfällt, da Story Ch.1 die Begrüßung abdeckt)
+- **Error-Handling**: InitializeAsync loggt Exceptions und zeigt Fehlerdialog statt still zu schlucken
 
 ## Premium & Ads
 
@@ -236,6 +239,24 @@ Daten in `GameState.WorkshopStars` (Dictionary<string, int>), Runtime-Properties
 9. `achievement_boost` - Achievement Progress +20%
 
 ## Architektur-Besonderheiten
+
+### Architektur-Refactoring (03.04.2026)
+
+**Event-Harmonisierung**: 4 ViewModels (`WorkerMarketVM`, `WorkerProfileVM`, `BuildingsVM`, `ResearchVM`) von `EventHandler<string>` auf `Action<string>` NavigationRequested umgestellt. Wrapper-Delegates in MainViewModel eliminiert. Alle VMs nutzen jetzt einheitlich `Action<string>` für Navigation-Events.
+
+**IGameStateService Lock-Delegation**: `ExecuteWithLock(Action)` und `ExecuteWithLock<T>(Func<T>)` auf IGameStateService für zukünftige Service-Extraktion. 5 Event-Raising-Methoden (`RaiseWorkshopUpgraded`, `RaiseWorkerHired`, `RaiseOrderCompleted`, `RaiseMiniGameResultRecorded`, `RaiseMoneyChanged`) ermöglichen externen Services Events zu feuern.
+
+**BaseMiniGameViewModel.StopGame()**: Von `protected` auf `public` geändert (MainViewModel.Navigation.cs muss es aufrufen).
+
+**EconomyFeatureViewModel** (Extraktion): Economy-Geschäftslogik (~1.100 Zeilen) aus MainViewModel.Economy.cs in eigenständige Klasse `EconomyFeatureViewModel.cs` extrahiert. Properties bleiben auf MainViewModel (AXAML-Bindings unverändert). Economy.cs enthält nur noch ~114 Zeilen Forwarding-Stubs mit `[RelayCommand]`. EconomyFeatureVM greift über `_host`-Referenz auf MainViewModel-Properties zu. Events `FloatingTextRequested` und `CelebrationRequested` werden an MainViewModel weitergeleitet.
+
+**MiniGameViewModels-Aggregat**: 10 einzelne MiniGame-VM-Properties (`SawingGameViewModel` etc.) durch `MiniGames`-Container ersetzt. `ActiveMiniGameViewModel` als zentraler Zugriffspunkt. `IsAnyMiniGamePlaying()` und `StopCurrentMiniGame()` nutzen ActiveMiniGameViewModel statt 10er-Switch. Subscribe/Unsubscribe per Schleife über `MiniGames.All`.
+
+**GameState-Partitionierung**: 3 neue Sub-Objekte extrahiert (V3→V4 Migration in SaveGameService):
+- `SettingsData` (8 Props: Sound, Music, Haptics, Notifications, Graphics, CloudSave, Language)
+- `StatisticsData` (~18 Props: alle Tracking-Zähler)
+- `TutorialState` (5 Props: Tutorial-Tracking, SeenHints)
+Zugriff: `state.Settings.SoundEnabled`, `state.Statistics.TotalOrdersCompleted`, `state.Tutorial.SeenHints`
 
 ### BaseMiniGameViewModel (Refactoring 20.03.2026, Bugfixes 29.03.2026)
 
@@ -371,11 +392,11 @@ Die Dialog-Controls `AchievementDialog`, `ContextualHintDialog`, `StoryDialog`, 
 
 **Tab-Bar Badges**: Tab 0 (HasPendingDelivery+CanActivateRush), Tab 1 (HasWorkerWarning), Tab 2 (ClaimableMissionsCount+HasFreeSpin). SkiaSharp-Tab-Bar (GameTabBarRenderer, 64dp).
 
-### Dashboard-Header (UI-Entschlackung Phase 1)
+### Dashboard-Header (UI-Entschlackung Phase 1+2)
 
-- **Zeile 1**: Level-Badge + Gold/Schrauben + Settings-Gear (kreisförmiger Button mit `#30000000` Background)
-- **Zeile 2**: Nur Level+XP (immer), Reputation (bedingt: `ShowReputationBadge` bei <50 oder >=80), Streak (bedingt: `ShowStreakBadge` bei >=5 Tagen)
-- **Statistics-Zugang**: Über SettingsView (Link-Button mit ChevronRight, Route `../statistics`)
+- **Zeile 1**: Geld + Einkommen/s + Goldschrauben + DailyReward + Settings-Gear. MasterTools-Badge entfernt (CL-1, existiert im Imperium Quick-Access). Netto-Einkommen nur bei negativem Wert sichtbar (`IsVisible="{Binding IsNetIncomeNegative}"`)
+- **Zeile 2**: Level+XP (immer), Prestige-Badge, Boost-Indikator, Reputation (bedingt), Streak (bedingt)
+- **Statistics-Zugang**: Über Missionen-Tab Wettbewerbe-Grid (IA-3) UND SettingsView
 - **Workshop-Canvas**: Dynamische Höhe via `WorkshopCanvasHeight` (2 Spalten, ~160dp/Reihe) statt fixe 800dp
 
 ### Progressive Disclosure (Phase 2)
@@ -391,9 +412,9 @@ Level-basierte Section-Visibility innerhalb der Views:
 | `ShowManagerSection` | 10 | Imperium Vorarbeiter Quick-Access |
 | `ShowMasterToolsSection` | 20 | Imperium Meisterwerkzeuge Quick-Access |
 | `QuickAccessColumns` | dynamisch | Imperium Quick-Access UniformGrid (1-3 Spalten) |
-| `ShowTournamentSection` | 50 | Missionen Turnier-Button (Dead Zone Lv40-80) |
-| `ShowSeasonalEventSection` | 60 | Missionen Saison-Event-Button |
-| `ShowBattlePassSection` | 70 | Missionen Battle-Pass-Button |
+| `ShowTournamentSection` | 35 | Missionen Turnier-Button (PD-1: von Lv50 gesenkt) |
+| `ShowSeasonalEventSection` | 45 | Missionen Saison-Event-Button (PD-1: von Lv60 gesenkt) |
+| `ShowBattlePassSection` | 55 | Missionen Battle-Pass-Button (PD-1: von Lv70 gesenkt) |
 
 Zusätzlich existieren Tab-Level-Gates (`TabUnlockLevels`): Werkstatt=1, Shop=3, Imperium=5, Missionen=8, Gilde=15.
 
@@ -401,7 +422,7 @@ Zusätzlich existieren Tab-Level-Gates (`TabUnlockLevels`): Werkstatt=1, Shop=3,
 
 ### Dashboard-UserControls (Views/Dashboard/)
 
-`DailyChallengeSection`, `WeeklyMissionSection`, `BannerStrip`, `AutomationPanel` (Lv15+ sichtbar, 3 Toggles: AutoCollect/AutoAccept/AutoClaimDaily) - erben DataContext vom Parent (MainViewModel). PaintSurface-Handler nutzen `IProgressProvider`-Interface.
+`DailyChallengeSection`, `WeeklyMissionSection`, `BannerStrip` (mit Fade-Edge Scroll-Indikator rechts, TOUCH-3), `AutomationPanel` (Lv15+ sichtbar, 2x2 Grid statt 4 Spalten, PD-3) - erben DataContext vom Parent (MainViewModel). PaintSurface-Handler nutzen `IProgressProvider`-Interface.
 
 ### Gilden-Sub-Seiten (Views/Guild/)
 
@@ -583,6 +604,30 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | Research-Baum | 2D Top-Heroes-Style, Branch-Farben, Flow-Partikel, Branch-Banner, Celebration-Confetti |
 | Forschungs-Hintergrund | ResearchBackgroundRenderer: Nussholz, Holzmaserung, Zahnrad-Wasserzeichen, Vignette |
 
+## UX-Verbesserungen (03.04.2026, 16 Fixes)
+
+Basierend auf umfassender UX-Analyse (17 Findings in 10 Kategorien).
+
+### Geänderte Dateien
+
+| Datei | Änderung |
+|-------|----------|
+| `Views/ImperiumView.axaml` | Challenge-Labels lokalisiert (CON-2), aktiv/inaktiv-Styling (PP-2), Prestige Quick-Access (IA-1), Speedrun+NextTier komprimiert (CL-2) |
+| `Views/DashboardView.axaml` | MasterTools-Badge entfernt (CL-1), Netto nur bei Verlust sichtbar (CL-1) |
+| `Views/MissionenView.axaml` | QuickJobs-Dopplung entfernt (IA-2), Statistiken-Button im Wettbewerbe-Tab (IA-3/PD-2) |
+| `Views/Dashboard/AutomationPanel.axaml` | 2x2 Grid statt 4 Spalten (PD-3/TOUCH-2) |
+| `Views/Dashboard/BannerStrip.axaml` | Fade-Edge Scroll-Indikator rechts (TOUCH-3) |
+| `ViewModels/MainViewModel.cs` | 6 Challenge-Active Properties, OrderExpired-Feedback (FB-1) |
+| `ViewModels/MainViewModel.Economy.cs` | RefreshChallengeDisplay mit Active-States, Reputation-Hint (ONB-2), Auftragstypen-Hint (ONB-1) |
+| `ViewModels/MainViewModel.Navigation.cs` | MiniGame-Abbruch-Warnung mit ConfirmDialog (NAV-2) |
+| `Models/LevelThresholds.cs` | Turnier Lv35, Events Lv45, BattlePass Lv55 (PD-1) |
+| `Models/ContextualHint.cs` | Neue Hints: OrderTypes, ReputationHint |
+| `Converters/BoolToChallengeBackgroundConverter.cs` | Neuer Converter für Challenge-Chip-Hintergrund |
+
+### Neue RESX-Keys
+
+`HintOrderTypesTitle`, `HintOrderTypesText`, `HintReputationTitle`, `HintReputationText`, `MiniGameAbortTitle`, `MiniGameAbortMessage`, `MiniGameAbortConfirm`, `OrderExpiredNotification`, `StatisticsTitle`, `ChallengeChip_*` (6 Keys)
+
 ## Farbkonsistenz (Craft-Palette)
 
 - **Buttons**: Immer Craft-Orange/Braun via App.axaml Style-Overrides (keine `{DynamicResource PrimaryBrush}`)
@@ -594,6 +639,12 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 - **Semantische Farben**: `SuccessBrush` (#22C55E), `ErrorBrush` (#EF4444), `WarningBrush` (#F59E0B) - alle in AppPalette.axaml definiert
 - **Kontrast-Farbe**: `PrimaryContrastBrush` (#FFFFFF) statt `Foreground="White"` in allen Views
 - **Hardcodierte Farben**: Alle in ~35 Views durch DynamicResource/StaticResource ersetzt. Ausnahme: Alpha-Kanal-Hintergruende (#20D97706 etc.), GradientStops, Opacity-Varianten (#FFFFFFCC) und SkiaSharp-Code bleiben hardcodiert
+- **AppPalette bereinigt** (03.04.2026): ZeitManager/Rechner-Reste entfernt (TimerAccentColor, StopwatchAccentColor, AlarmAccentColor, PomodoroAccentColor + Brushes, EqualsGradientBrush, DisplayGradientBrush, OperatorGlowShadow, DigitButtonBrush, DigitButtonHoverBrush)
+- **Lokalisierung bereinigt** (03.04.2026): Hardcodierte Strings "Max", "Lv.", "Mini-Games", 6 Prestige-Challenge-Texte durch `{loc:Translate}` mit bestehenden/neuen RESX-Keys ersetzt (LevelPrefix, MiniGamesLabel, PerkMaxLevel, Challenge_*)
+- **Button RenderTransform** (03.04.2026): Initialer `RenderTransform="scale(1)"` im globalen Button-Style (App.axaml) gesetzt — verhindert Crash auf Android bei null→scale()-Transition
+- **Touch-Target** (03.04.2026): WorkshopView Spezialisierung-entfernen-Button von MinHeight=36 auf 44dp erhöht
+- **BattlePassView** (03.04.2026): ListBox von StackPanel- in Grid-Container verschoben für korrekte Virtualisierung
+- **80dp Bottom-Spacer entfernt** (03.04.2026): Alle unnötigen Ad-Banner-Spacer aus 18 Views entfernt (kein Banner-Ad in HandwerkerImperium). Margin 80→16dp, Border-Height-80-Spacer komplett gelöscht
 
 ## Visual Upgrade (Phase 0-3, deployt)
 
@@ -837,7 +888,7 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 
 ## SKPath/SKFont-Caching
 
-6 Renderer nutzen gecachte Instanz-Felder statt `using var` pro Frame (GC-Reduktion bei 60fps):
+Renderer nutzen gecachte Instanz-/Klassenfelder statt `using var` pro Frame (GC-Reduktion bei 60fps):
 
 | Renderer | Gecachte Felder |
 |----------|----------------|
@@ -849,8 +900,11 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 | DesignPuzzleRenderer | 7 SKPaint + `_cachedFont` |
 | PipePuzzleRenderer | `_cachedPath` |
 | RewardCeremonyRenderer | `_iconPath` |
+| WorkshopCardRenderer | `_cachedPath` (static, ersetzt 13 `using var SKPath` pro Render-Aufruf) |
+| ResearchIconRenderer | `_cachedPath` (static, ersetzt 17 `using var SKPath` — alle Icon-Methoden sequenziell) |
+| GuildResearchIconRenderer | `_cachedPath` (static, ersetzt 12 `using var SKPath` — alle Icon-Methoden sequenziell) |
 
-**WorkerAvatarRenderer**: Statische wiederverwendbare Paints (s_fillNoAA, s_fillAA, s_strokeNoAA) + s_cachedPath. Kein IDisposable (static readonly Felder leben bis Prozessende). **GameCardRenderer** und **ResearchIconRenderer** sind statische Klassen.
+**WorkerAvatarRenderer**: Statische wiederverwendbare Paints (s_fillNoAA, s_fillAA, s_strokeNoAA) + s_cachedPath. Kein IDisposable (static readonly Felder leben bis Prozessende). **GameCardRenderer**, **ResearchIconRenderer** und **GuildResearchIconRenderer** sind statische Klassen.
 
 **SKFont-Migration (neue SkiaSharp-API)**: Alle Renderer verwenden `canvas.DrawText(text, x, y, align, font, paint)` statt deprecated `paint.TextSize`/`paint.TextAlign`/`paint.FakeBoldText`/`canvas.DrawText(text, x, y, paint)`. Font-Felder: static readonly bei fester Größe (WorkshopGameCardRenderer: 8 Fonts, RewardCeremonyRenderer: 2 Fonts, GameCardRenderer: 2 Fonts), Instanz-Felder bei dynamischer Größe (PrestigeRoadmapRenderer: 1 Font, LuckySpinWheelRenderer: 1 Font, ForgeGameRenderer: 1 Font). `SKFont.MeasureText()` nutzt `out SKRect` statt `ref SKRect`.
 
@@ -907,15 +961,15 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 | ForgeGameRenderer | 10 SKPaint + 1 SKFont + 6 SKShader (gecacht) |
 | PipePuzzleRenderer | 6 SKPaint + 3 SKMaskFilter + 1 SKPath |
 | SawingGameRenderer | 10 SKPaint + 1 SKPath + 1 SKMaskFilter + 1 SKShader (gecacht) |
-| BlueprintGameRenderer | 1 SKPath + 21 SKPaint (Instanz) + 3 SKFont + ~40 static readonly + 2 static MaskFilter |
-| InventGameRenderer | 23 SKPaint + 1 SKPath |
+| BlueprintGameRenderer | 1 SKPath + 21 SKPaint (Instanz) + 3 SKFont + ~40 static readonly + 2 static MaskFilter + 1 SKShader (BG-Cache, per Bounds-Aenderung neu) + static float[] DashIntervals |
+| InventGameRenderer | 23 SKPaint + 1 SKPath + 1 SKShader (BG-Cache, per Bounds-Aenderung neu) + static float[] DashIntervals |
 | WiringGameRenderer | 8 SKPaint + 3 SKMaskFilter + 1 SKPath + 1 SKFont + 3 SKShader (gecacht) |
 | DesignPuzzleRenderer | 7 SKPaint + 1 SKFont |
 | WorkshopSceneRenderer | 2 SKPaint (nur Level-Overlays + Idle-Warnung) |
-| PaintingGameRenderer | 13 SKPaint |
+| PaintingGameRenderer | 13 SKPaint + 2 SKShader (gecacht: _vigShaderCache, _reflexShaderCache) |
 | InspectionGameRenderer | 8 SKPaint + 1 SKPath (_fillNoAA, _fillAA, _fillAA2, _fillAA3, _strokeNoAA, _strokeAA, _strokeAA2, _strokeAA3, _cachedPath) |
 | RoofTilingRenderer | 5 SKPaint (_fillPaint, _strokePaint, _iconPaint, _fillPaintAA, _borderPaint) |
-| LuckySpinWheelRenderer | 11 SKPaint + 1 SKFont (_shadowPaint, _glintPaint, _segFillPaint, _segGlowPaint, _hubFillPaint, _pointerFillPaint, _iconShaderPaint, _iconBorderPaint, _iconFillPaint, _iconStrokePaint, _iconTextPaint, _iconTextFont) |
+| LuckySpinWheelRenderer | 11 SKPaint + 1 SKFont + 2 SKPath (_starPathCache, _hexPathCache) + 3 gecachte Paths (_segPath, _iconPathA, _iconPathB) + 13 gecachte SKShader (8 Segment + 3 Coin + Star + Hex + Bolt + Head + Shaft + Crown + Hub + Pointer) + 2 gecachte SKMaskFilter (Money/Speed Glow, dynamisch) |
 | PrestigeRoadmapRenderer | 5 SKPaint + 1 SKFont + 1 SKMaskFilter |
 | RewardCeremonyRenderer | 1 SKPath (_iconPath) |
 | ResearchTreeRenderer | 3 SKFont + 2 SKPath |

@@ -67,18 +67,19 @@ public class LevelThresholdsTests
     }
 
     [Fact]
-    public void AutoAssign_IstLevel50()
+    public void AutoAssign_IstLevel20()
     {
-        // Prüfung: Auto-Assign ab Level 50 (laut CLAUDE.md)
-        LevelThresholds.AutoAssign.Should().Be(50);
+        // Prüfung: Auto-Assign ab Level 20
+        LevelThresholds.AutoAssign.Should().Be(20);
     }
 
     [Fact]
-    public void AutomatisierungReihenfolge_AutoCollectVorAutoAccept()
+    public void AutomatisierungReihenfolge_AutoCollectVorAutoAssignVorAutoAccept()
     {
         // Prüfung: Sinnvolle Reihenfolge der Freischaltungen
-        LevelThresholds.AutoCollect.Should().BeLessThan(LevelThresholds.AutoAccept);
-        LevelThresholds.AutoAccept.Should().BeLessThan(LevelThresholds.AutoAssign);
+        // AutoCollect(15) < AutoAssign(20) < AutoAccept(25)
+        LevelThresholds.AutoCollect.Should().BeLessThan(LevelThresholds.AutoAssign);
+        LevelThresholds.AutoAssign.Should().BeLessThan(LevelThresholds.AutoAccept);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -174,10 +175,10 @@ public class LevelThresholdsTests
     // ═══════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void PrestigeShopUnlock_IstLevel500()
+    public void PrestigeShopUnlock_IstLevel50()
     {
-        // Prüfung: Prestige-Shop ab Level 500
-        LevelThresholds.PrestigeShopUnlock.Should().Be(500);
+        // Prüfung: Prestige-Shop ab Level 50
+        LevelThresholds.PrestigeShopUnlock.Should().Be(50);
     }
 
     [Fact]

@@ -1,7 +1,7 @@
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Models;
-using BingXBot.Core.Simulation;
+using BingXBot.Backtest.Simulation;
 using FluentAssertions;
 using Xunit;
 

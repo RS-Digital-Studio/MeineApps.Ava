@@ -45,7 +45,7 @@ public class EmaCrossStrategy : IStrategy
         var slowEma = IndicatorHelper.CalculateEma(candles, _slowPeriod);
         var trendEma = IndicatorHelper.CalculateEma(candles, _trendPeriod);
         var atr = IndicatorHelper.CalculateAtr(candles, _atrPeriod);
-        var volumeSma = IndicatorHelper.CalculateSma(candles, _volumePeriod);
+        var volumeSma = IndicatorHelper.CalculateVolumeSma(candles, _volumePeriod);
 
         var lastFast = fastEma[^1];
         var lastSlow = slowEma[^1];
@@ -61,6 +61,11 @@ public class EmaCrossStrategy : IStrategy
 
         var currentPrice = context.CurrentTicker.LastPrice;
         var atrValue = lastAtr.Value;
+
+        // ATR=0 Guard: Bei identischen OHLC-Werten wäre SL=TP=Entry
+        if (atrValue <= 0)
+            return new SignalResult(Signal.None, 0m, null, null, null, "ATR ist 0 - kein valider SL/TP möglich");
+
         var currentVolume = candles[^1].Volume;
 
         // ATR-Filter: Kein Trade wenn Volatilität zu niedrig (Seitwärtsmarkt)
@@ -129,7 +134,7 @@ public class EmaCrossStrategy : IStrategy
         IndicatorHelper.CalculateEma(history, _slowPeriod);
         IndicatorHelper.CalculateEma(history, _trendPeriod);
         IndicatorHelper.CalculateAtr(history, _atrPeriod);
-        IndicatorHelper.CalculateSma(history, _volumePeriod);
+        IndicatorHelper.CalculateVolumeSma(history, _volumePeriod);
     }
     public void Reset() { }
 

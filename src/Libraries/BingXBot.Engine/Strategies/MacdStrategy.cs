@@ -55,6 +55,10 @@ public class MacdStrategy : IStrategy
         var currentPrice = context.CurrentTicker.LastPrice;
         var atrValue = lastAtr.Value;
 
+        // ATR=0 Guard: Bei identischen OHLC-Werten wäre SL=TP=Entry
+        if (atrValue <= 0)
+            return new SignalResult(Signal.None, 0m, null, null, null, "ATR ist 0 - kein valider SL/TP möglich");
+
         // 1. Zero-Line-Cross (stärkstes Signal): MACD kreuzt die Null-Linie
         if (prevMacd <= 0 && lastMacd > 0)
         {

@@ -3,7 +3,8 @@
              xmlns:vm="using:BingXBot.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="BingXBot.Views.LogView"
-             x:DataType="vm:LogViewModel">
+             x:DataType="vm:LogViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*">
 
@@ -42,7 +43,8 @@
               Background="{DynamicResource ErrorBackgroundBrush}"
               Foreground="{DynamicResource ErrorBrush}"
               CornerRadius="6" Padding="12,6"
-              VerticalAlignment="Center">
+              VerticalAlignment="Center"
+              ToolTip.Tip="Alle Log-Einträge löschen">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <mi:MaterialIcon Kind="DeleteOutline" Width="16" Height="16" />
           <TextBlock Text="Leeren" FontSize="12" VerticalAlignment="Center" />
@@ -69,7 +71,7 @@
           <StackPanel Spacing="8">
             <CheckBox IsChecked="{Binding ShowDebug}">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <Ellipse Width="8" Height="8" Fill="#6B7280" VerticalAlignment="Center" />
+                <Ellipse Width="8" Height="8" Fill="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                 <TextBlock Text="Debug" FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
@@ -146,56 +148,68 @@
                        HorizontalAlignment="Center" />
           </StackPanel>
 
-          <!-- Log-Einträge -->
-          <ScrollViewer VerticalScrollBarVisibility="Auto"
-                        x:Name="LogScrollViewer"
-                        IsVisible="{Binding EntryCount}">
-            <ItemsControl ItemsSource="{Binding LogEntries}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:LogDisplayItem">
-                  <Border Padding="12,8"
-                          BorderBrush="{DynamicResource BorderSubtleBrush}"
-                          BorderThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="70,70,80,*">
-                      <!-- Timestamp (Monospace) -->
-                      <TextBlock Grid.Column="0"
-                                 Text="{Binding TimeText}"
-                                 FontSize="12"
-                                 FontFamily="Consolas, Courier New, monospace"
-                                 Foreground="{DynamicResource TextMutedBrush}"
-                                 VerticalAlignment="Center" />
+          <!-- Log-Einträge (virtualisiert) -->
+          <ListBox x:Name="LogScrollViewer"
+                   ItemsSource="{Binding LogEntries}"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   IsVisible="{Binding EntryCount}">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:LogDisplayItem">
+                <Border Padding="12,8"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}"
+                        BorderThickness="0,0,0,1">
+                  <Grid ColumnDefinitions="70,70,80,*">
+                    <!-- Timestamp (Monospace) -->
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding TimeText}"
+                               FontSize="12"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Level (farbcodiert) -->
-                      <Border Grid.Column="1"
-                              CornerRadius="4" Padding="6,2"
-                              HorizontalAlignment="Left"
-                              VerticalAlignment="Center"
-                              Background="{DynamicResource SurfaceBrush}">
-                        <TextBlock Text="{Binding Level}"
-                                   FontSize="11" FontWeight="SemiBold"
-                                   Foreground="{Binding LevelColor}" />
-                      </Border>
+                    <!-- Level (farbcodiert) -->
+                    <Border Grid.Column="1"
+                            CornerRadius="4" Padding="6,2"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource SurfaceBrush}">
+                      <TextBlock Text="{Binding Level}"
+                                 FontSize="11" FontWeight="SemiBold"
+                                 Foreground="{Binding LevelColor}" />
+                    </Border>
 
-                      <!-- Kategorie -->
-                      <TextBlock Grid.Column="2"
-                                 Text="{Binding Category}"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
+                    <!-- Kategorie -->
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Category}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Nachricht -->
-                      <TextBlock Grid.Column="3"
-                                 Text="{Binding Message}"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 TextWrapping="Wrap"
-                                 VerticalAlignment="Center" />
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
+                    <!-- Nachricht -->
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding Message}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
         </Panel>
       </Border>
 

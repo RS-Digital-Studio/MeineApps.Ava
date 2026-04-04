@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Net.WebSockets;
@@ -10,12 +11,14 @@ namespace BingXBot.Exchange;
 /// <summary>
 /// BingX WebSocket Client mit Auto-Reconnect und Ping/Pong Handling.
 /// Unterstützt Kline- und Ticker-Streams für Perpetual Futures.
+/// Performance: ArrayPool für Receive-Buffer, wiederverwendbare MemoryStreams.
 /// </summary>
 public class BingXWebSocketClient : IAsyncDisposable
 {
     private const string WsBaseUrl = "wss://open-api-swap.bingx.com/swap-market";
     private const int MaxReconnectAttempts = 5;
     private const int ReceiveBufferSize = 8192;
+    private static readonly ArrayPool<byte> BufferPool = ArrayPool<byte>.Shared;
 
     private ClientWebSocket? _ws;
     private readonly string _apiKey;
@@ -135,19 +138,25 @@ public class BingXWebSocketClient : IAsyncDisposable
     /// </summary>
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
-        var buffer = new byte[ReceiveBufferSize];
+        // Buffer aus dem Pool leihen (wird am Ende zurückgegeben)
+        var buffer = BufferPool.Rent(ReceiveBufferSize);
+        // Wiederverwendbare MemoryStreams für Receive und Decompression
+        var receiveMs = new MemoryStream(ReceiveBufferSize);
+        var decompressMs = new MemoryStream(ReceiveBufferSize * 2);
+        // Pong-Bytes gecacht (statisch, nicht pro Nachricht allokieren)
+        var pongBytes = "Pong"u8.ToArray();
 
         try
         {
             while (!ct.IsCancellationRequested && _ws?.State == WebSocketState.Open)
             {
-                using var ms = new MemoryStream();
+                receiveMs.SetLength(0);
                 WebSocketReceiveResult result;
 
                 do
                 {
-                    result = await _ws.ReceiveAsync(buffer, ct);
-                    ms.Write(buffer, 0, result.Count);
+                    result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                    receiveMs.Write(buffer, 0, result.Count);
                 } while (!result.EndOfMessage);
 
                 if (result.MessageType == WebSocketMessageType.Close)
@@ -159,33 +168,29 @@ public class BingXWebSocketClient : IAsyncDisposable
                 // Nur Text und Binary (gzip-komprimiert) verarbeiten, Rest überspringen
                 if (result.MessageType != WebSocketMessageType.Text &&
                     result.MessageType != WebSocketMessageType.Binary)
-                {
-                    _logger.LogDebug("Unbekannter WebSocket-Nachrichtentyp ignoriert: {Type}", result.MessageType);
                     continue;
-                }
 
                 // BingX sendet gzip-komprimierte Nachrichten (Binary) oder Text
                 string message;
                 try
                 {
-                    ms.Position = 0;
-                    using var decompressed = new MemoryStream();
-                    using (var gzip = new GZipStream(ms, CompressionMode.Decompress))
+                    receiveMs.Position = 0;
+                    decompressMs.SetLength(0);
+                    using (var gzip = new GZipStream(receiveMs, CompressionMode.Decompress, leaveOpen: true))
                     {
-                        await gzip.CopyToAsync(decompressed, ct);
+                        await gzip.CopyToAsync(decompressMs, ct);
                     }
-                    message = Encoding.UTF8.GetString(decompressed.ToArray());
+                    message = Encoding.UTF8.GetString(decompressMs.GetBuffer(), 0, (int)decompressMs.Length);
                 }
                 catch (InvalidDataException)
                 {
                     // Nicht gzip-komprimiert - direkt als Text lesen
-                    message = Encoding.UTF8.GetString(ms.ToArray());
+                    message = Encoding.UTF8.GetString(receiveMs.GetBuffer(), 0, (int)receiveMs.Length);
                 }
 
                 // Ping/Pong Handling - BingX sendet "Ping", erwartet "Pong"
                 if (message == "Ping" || message.Contains("\"ping\""))
                 {
-                    var pongBytes = Encoding.UTF8.GetBytes("Pong");
                     await _ws.SendAsync(pongBytes, WebSocketMessageType.Text, true, ct);
                     continue;
                 }
@@ -221,6 +226,12 @@ public class BingXWebSocketClient : IAsyncDisposable
         catch (WebSocketException ex)
         {
             _logger.LogError(ex, "WebSocket-Fehler in Receive-Loop");
+        }
+        finally
+        {
+            BufferPool.Return(buffer);
+            receiveMs.Dispose();
+            decompressMs.Dispose();
         }
 
         ConnectionStateChanged?.Invoke(this, false);
@@ -314,22 +325,25 @@ public class BingXWebSocketClient : IAsyncDisposable
         }
     }
 
-    /// <summary>Receive-Loop für User-Data-Stream Events.</summary>
+    /// <summary>Receive-Loop für User-Data-Stream Events. Nutzt ArrayPool für Buffer.</summary>
     private async Task UserDataReceiveLoopAsync(CancellationToken ct)
     {
-        var buffer = new byte[ReceiveBufferSize];
+        var buffer = BufferPool.Rent(ReceiveBufferSize);
+        var receiveMs = new MemoryStream(ReceiveBufferSize);
+        var decompressMs = new MemoryStream(ReceiveBufferSize * 2);
+        var pongBytes = "Pong"u8.ToArray();
 
         try
         {
             while (!ct.IsCancellationRequested && _userWs?.State == WebSocketState.Open)
             {
-                using var ms = new MemoryStream();
+                receiveMs.SetLength(0);
                 WebSocketReceiveResult result;
 
                 do
                 {
-                    result = await _userWs.ReceiveAsync(buffer, ct);
-                    ms.Write(buffer, 0, result.Count);
+                    result = await _userWs.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                    receiveMs.Write(buffer, 0, result.Count);
                 } while (!result.EndOfMessage);
 
                 if (result.MessageType == WebSocketMessageType.Close)
@@ -338,37 +352,32 @@ public class BingXWebSocketClient : IAsyncDisposable
                     break;
                 }
 
-                // Nur Text und Binary (gzip-komprimiert) verarbeiten
                 if (result.MessageType != WebSocketMessageType.Text &&
                     result.MessageType != WebSocketMessageType.Binary)
                     continue;
 
-                // BingX User-Data kann gzip-komprimiert sein
                 string message;
                 try
                 {
-                    ms.Position = 0;
-                    using var decompressed = new MemoryStream();
-                    using (var gzip = new GZipStream(ms, CompressionMode.Decompress))
+                    receiveMs.Position = 0;
+                    decompressMs.SetLength(0);
+                    using (var gzip = new GZipStream(receiveMs, CompressionMode.Decompress, leaveOpen: true))
                     {
-                        await gzip.CopyToAsync(decompressed, ct);
+                        await gzip.CopyToAsync(decompressMs, ct);
                     }
-                    message = Encoding.UTF8.GetString(decompressed.ToArray());
+                    message = Encoding.UTF8.GetString(decompressMs.GetBuffer(), 0, (int)decompressMs.Length);
                 }
                 catch (InvalidDataException)
                 {
-                    message = Encoding.UTF8.GetString(ms.ToArray());
+                    message = Encoding.UTF8.GetString(receiveMs.GetBuffer(), 0, (int)receiveMs.Length);
                 }
 
-                // Ping/Pong
                 if (message == "Ping" || message.Contains("\"ping\""))
                 {
-                    var pongBytes = Encoding.UTF8.GetBytes("Pong");
                     await _userWs.SendAsync(pongBytes, WebSocketMessageType.Text, true, ct);
                     continue;
                 }
 
-                // Event an Subscriber weiterleiten
                 UserDataReceived?.Invoke(this, message);
             }
         }
@@ -376,6 +385,12 @@ public class BingXWebSocketClient : IAsyncDisposable
         catch (WebSocketException ex)
         {
             _logger.LogError(ex, "User-Data-Stream: WebSocket-Fehler");
+        }
+        finally
+        {
+            BufferPool.Return(buffer);
+            receiveMs.Dispose();
+            decompressMs.Dispose();
         }
 
         _logger.LogWarning("User-Data-Stream: Verbindung beendet");

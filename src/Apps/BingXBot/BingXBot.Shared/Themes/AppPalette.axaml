@@ -65,6 +65,19 @@
       <Color x:Key="GradientMidColor">#1E1E2E</Color>
       <Color x:Key="GradientEndColor">#1A1A2E</Color>
 
+      <!-- Hover-Farben -->
+      <Color x:Key="SuccessHoverColor">#34D399</Color>
+      <Color x:Key="WarningHoverColor">#FBBF24</Color>
+      <Color x:Key="ErrorHoverColor">#DC2626</Color>
+      <Color x:Key="ErrorLightColor">#F87171</Color>
+
+      <!-- Oberflächen-Akzentfarben -->
+      <Color x:Key="InfoSurfaceColor">#2A3A5C</Color>
+      <Color x:Key="ErrorSurfaceColor">#3F1818</Color>
+      <Color x:Key="ErrorOverlayColor">#3CEF4444</Color>
+      <Color x:Key="StopSurfaceColor">#64748B</Color>
+      <Color x:Key="StopHoverColor">#94A3B8</Color>
+
       <!-- App-spezifische Trading-Farben -->
       <Color x:Key="AppPrimaryColor">#3B82F6</Color>
       <Color x:Key="AppPrimaryLightColor">#60A5FA</Color>
@@ -117,6 +130,17 @@
 
       <SolidColorBrush x:Key="OverlayBrush" Color="{DynamicResource OverlayColor}" />
       <SolidColorBrush x:Key="RippleBrush" Color="{DynamicResource RippleColor}" />
+
+      <!-- Hover-Brushes -->
+      <SolidColorBrush x:Key="SuccessHoverBrush" Color="{DynamicResource SuccessHoverColor}" />
+      <SolidColorBrush x:Key="WarningHoverBrush" Color="{DynamicResource WarningHoverColor}" />
+      <SolidColorBrush x:Key="ErrorHoverBrush" Color="{DynamicResource ErrorHoverColor}" />
+      <SolidColorBrush x:Key="ErrorLightBrush" Color="{DynamicResource ErrorLightColor}" />
+      <SolidColorBrush x:Key="InfoSurfaceBrush" Color="{DynamicResource InfoSurfaceColor}" />
+      <SolidColorBrush x:Key="ErrorSurfaceBrush" Color="{DynamicResource ErrorSurfaceColor}" />
+      <SolidColorBrush x:Key="ErrorOverlayBrush" Color="{DynamicResource ErrorOverlayColor}" />
+      <SolidColorBrush x:Key="StopSurfaceBrush" Color="{DynamicResource StopSurfaceColor}" />
+      <SolidColorBrush x:Key="StopHoverBrush" Color="{DynamicResource StopHoverColor}" />
 
       <!-- Trading-spezifische Brushes -->
       <SolidColorBrush x:Key="AppPrimaryBrush" Color="{DynamicResource AppPrimaryColor}" />

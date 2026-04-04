@@ -40,6 +40,12 @@ public class AdaptiveEnsemble
         lock (_strategiesLock) { _strategies.Clear(); }
     }
 
+    /// <summary>Setzt nur die gelernten Gewichte zurück (behält registrierte Strategien).</summary>
+    public void ClearWeights()
+    {
+        _weights.Clear();
+    }
+
     /// <summary>
     /// Evaluiert alle Strategien und bildet ein gewichtetes Konsens-Signal.
     /// </summary>
@@ -126,10 +132,6 @@ public class AdaptiveEnsemble
             : 0m;
 
         var agreeingNames = string.Join(", ", winningVotes.Select(v => v.StrategyName));
-
-        // Bestes Entry/SL/TP aus den zustimmenden Strategien
-        var bestEntry = winningVotes.Where(v => v.Signal != Signal.None)
-            .Select(v => v.StopLoss).FirstOrDefault(); // Placeholder
 
         // SL: engster (konservativster) Stop-Loss
         decimal? bestSl = null;

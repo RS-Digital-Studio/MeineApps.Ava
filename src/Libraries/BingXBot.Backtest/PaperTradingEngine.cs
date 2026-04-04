@@ -1,5 +1,5 @@
+using BingXBot.Backtest.Simulation;
 using BingXBot.Core.Configuration;
-using BingXBot.Core.Simulation;
 
 namespace BingXBot.Backtest;
 

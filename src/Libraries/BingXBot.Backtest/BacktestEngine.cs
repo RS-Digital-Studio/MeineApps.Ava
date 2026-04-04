@@ -3,7 +3,7 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
-using BingXBot.Core.Simulation;
+using BingXBot.Backtest.Simulation;
 using BingXBot.Backtest.Reports;
 using Microsoft.Extensions.Logging;
 
@@ -80,6 +80,11 @@ public class BacktestEngine
         // 4. SL/TP-Tracking: speichert das zugehörige Signal pro offener Position
         var positionSignals = new Dictionary<string, SignalResult>();
 
+        // 4b. Funding-Rate-Tracking: Alle 8h auf offene Positionen anwenden
+        var fundingRate = settings.SimulatedFundingRatePercent / 100m; // z.B. 0.01% → 0.0001
+        simExchange.SetFundingRate(fundingRate);
+        var lastFundingTime = allCandles.Count > warmupSize ? allCandles[warmupSize].OpenTime : DateTime.UtcNow;
+
         // 5. Candle-Iteration
         var iterationCount = allCandles.Count - warmupSize;
         for (int i = warmupSize; i < allCandles.Count; i++)
@@ -93,6 +98,13 @@ public class BacktestEngine
             // Aktuellen Preis setzen
             var currentCandle = allCandles[i];
             simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+
+            // Funding-Rate alle 8h anwenden (Perpetual Futures Standard)
+            if (settings.SimulateFundingRate && (currentCandle.CloseTime - lastFundingTime).TotalHours >= 8)
+            {
+                simExchange.ApplyFundingRate(fundingRate);
+                lastFundingTime = currentCandle.CloseTime;
+            }
 
             // Kontext erstellen: Index-basierter Slice statt Take/TakeLast (O(1) statt O(n))
             var contextStart = Math.Max(0, i + 1 - 200);

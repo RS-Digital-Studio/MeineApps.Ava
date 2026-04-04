@@ -122,9 +122,24 @@ public class ExitOptimizer
             if (stats.TradeCount < 10)
                 return defaults;
 
-            // Gewinnende Multiplikatoren bevorzugen (wenn verfügbar)
+            // H-8 Fix: Sowohl gewinnende als auch verlierende Multiplikatoren einbeziehen.
+            // Verlierer-SL war zu eng → SL etwas weiter setzen. Verlierer-TP war zu weit → TP enger.
             var sl = stats.AvgWinningSl > 0 ? stats.AvgWinningSl : defaults.SlMultiplier;
             var tp = stats.AvgWinningTp > 0 ? stats.AvgWinningTp : defaults.TpMultiplier;
+
+            // Verlierer-Daten: SL war zu eng (wird häufig getriggert) → SL etwas weiter
+            if (stats.AvgLosingSl > 0 && stats.Losses >= 5)
+            {
+                // Wenn durchschnittlicher Verlierer-SL enger war als Gewinner-SL → SL anpassen
+                if (stats.AvgLosingSl < sl)
+                    sl = sl * 0.8f + (sl + (sl - stats.AvgLosingSl) * 0.3f) * 0.2f;
+            }
+            // Verlierer-TP war zu weit (wird nie erreicht) → TP enger
+            if (stats.AvgLosingTp > 0 && stats.Losses >= 5)
+            {
+                if (stats.AvgLosingTp > tp)
+                    tp = tp * 0.8f + (tp - (stats.AvgLosingTp - tp) * 0.2f) * 0.2f;
+            }
 
             // Sanft zwischen Default und gelerntem Wert mischen (70% gelernt, 30% default)
             sl = sl * 0.7f + defaults.SlMultiplier * 0.3f;

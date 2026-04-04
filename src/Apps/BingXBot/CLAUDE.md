@@ -16,24 +16,79 @@ Automatisierter Trading Bot mit modularem Strategie-System, Market Scanner, Back
 4 Libraries + Desktop-App:
 
 ```
-BingXBot.Core        <- Domain (Models, Enums, Interfaces, SimulatedExchange, DB-Entities)
+BingXBot.Core        <- Domain (Models, Enums, Interfaces, DB-Entities)
 BingXBot.Exchange    <- BingX REST + WebSocket API Client
 BingXBot.Engine      <- Trading-Logik (Strategien, Scanner, Risk, Indikatoren mit Struct-Cache)
-BingXBot.Backtest    <- Backtesting + Paper-Trading
+BingXBot.Backtest    <- Backtesting + Paper-Trading + SimulatedExchange (unter Simulation/)
 BingXBot.Shared      <- Avalonia UI (ViewModels inkl. Sub-VMs, Views, Services mit TradingServiceBase)
 BingXBot.Desktop     <- Desktop Entry-Point
 ```
 
-## Strategien (6 Stück, alle Krypto-optimiert)
+## Strategien (7 Stück, CryptoTrendPro als Default)
 
 | Strategie | Datei | Logik |
 |-----------|-------|-------|
+| **CryptoTrendPro** | CryptoTrendProStrategy.cs | **Primär-Strategie**: Supertrend + Confluence-Scoring (0-12) + vol-adaptive SL/TP + Multi-Stage Exit |
 | Trend-Following | TrendFollowStrategy.cs | Multi-Indikator (EMA+RSI+MACD+Volume), 5 Bedingungen, Confidence-basiert |
 | EMA Cross | EmaCrossStrategy.cs | EMA-Cross + Volume + EMA200 Trend-Filter + ATR-Volatilitätsfilter |
 | RSI Momentum | RsiStrategy.cs | RSI als Momentum-Indikator + Divergenz-Erkennung + Volume-Konfirmation |
 | Bollinger Breakout | BollingerStrategy.cs | Squeeze-Erkennung + Breakout + Volume-Konfirmation |
 | MACD | MacdStrategy.cs | Histogram-Momentum + Zero-Line-Cross + Trend-Kontext |
 | Smart Grid | GridStrategy.cs | Dynamische Grenzen via Bollinger, nur in Range-Märkten (EMA+ATR Trend-Check) |
+
+### CryptoTrendPro (Default-Strategie seit 04.04.2026)
+
+Optimiert für Krypto-Futures 2024-2026. Confluence-Scoring statt binäre Bedingungen.
+
+**Entry-Scoring (Long, 0-12 Punkte):**
+- +2: D1 Preis > EMA 50 (mittelfristiger Uptrend)
+- +2: H4 Supertrend(10, 3.0) bullish
+- +1: H4 EMA 12 > EMA 26
+- +1: H4 ADX > 20 UND steigend (+DI > -DI)
+- +1: H4 RSI 45-80
+- +1: H4 Volumen > 1.5x SMA(20)
+- +2: BTC-Kontext (D1 > EMA50 + HTF Supertrend)
+- +1: Funding-Rate günstig
+- +1: Cooldown respektiert
+- **Min. Score: 8/12 für Trade**
+
+**Multi-Stage Exit (PositionExitState):**
+- TP1 bei 2.5-3x ATR → 50% Position schließen → SL auf Break-Even
+- Chandelier-Trailing (2.5x ATR unter Höchstpunkt) nach TP1
+- TP2 bei 4.5-5x ATR → Rest schließen
+- Time-Exit: 48h ohne TP1 → schließen
+- Regime-Exit: Supertrend-Flip → sofort schließen
+- ADX-Exit: ADX < 15 → Trend tot
+
+**Volatilitäts-Adaptation (ATR-Perzentil):**
+- Ruhig (<20%): SL 1.5x, TP1 2.0x, TP2 3.5x ATR
+- Normal (20-75%): SL 1.8-2.0x, TP1 2.5-3.0x, TP2 4.5-5.0x ATR
+- Volatil (75-90%): SL 2.5x, TP1 3.5x, TP2 6.0x ATR
+- Extrem (>90%): Halbe Position, konservativere Multiplikatoren
+
+### MarketFilter (Engine/Filters/MarketFilter.cs)
+
+Globale Filter die VOR der Strategie-Evaluation greifen:
+- **BTC Health Score** (-4 bis +4): D1>EMA50, H4 Supertrend, RSI, Funding → Long/Short/Position-Scale
+- **Session-Filter**: US (13-21 UTC) = 100%, EU = 90%, Asia = 75%, Wochenende = 0%
+- **Funding-Rate**: >+0.08% blockiert Longs, <-0.05% blockiert Shorts
+- **Cooldown**: 8h Pause nach Verlust-Trade
+- **Max Trades/Tag**: Default 3
+- **Volatilitäts-Bremse**: ATR >90. Perzentil → halbe Position
+
+### Neue Defaults (04.04.2026)
+
+| Setting | Alt | Neu |
+|---------|-----|-----|
+| Timeframe | H1 | **H4** |
+| Scan-Intervall | 30s | **15min** (dynamisch per Timeframe) |
+| Leverage | 10x | **3x** |
+| Risiko/Trade | 2% | **1.5%** |
+| Daily Drawdown | 5% | **3%** |
+| Total Drawdown | 15% | **10%** |
+| Trailing-Stop | 1.5% fix | **2.5x ATR** (Chandelier) |
+| Min Volume | 10M | **50M** |
+| Max Kandidaten | 10 | **5** |
 
 Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Support via `StrategyManager`.
 
@@ -70,6 +125,14 @@ Gemeinsame Basisklasse `TradingServiceBase` enthält die gesamte Trading-Logik:
 - ~280 Zeilen (vorher ~683 Zeilen)
 - Datei: `Services/LiveTradingService.cs`
 
+### LiveTradingManager (Infrastruktur-Orchestrator)
+- Kapselt Live-Trading-Lifecycle: Connect, Start, Stop, EmergencyStop
+- Erstellt BingXRestClient + LiveTradingService zur Laufzeit (API-Keys erst zur Laufzeit bekannt)
+- ATI-State-Persistenz (Load/Save in DB)
+- Position-Signal-Wiederherstellung nach App-Neustart
+- Wiederverwendbarer HttpClient (vermeidet Socket-Exhaustion)
+- Datei: `Services/LiveTradingManager.cs`
+
 ## Sub-ViewModels (aus DashboardViewModel extrahiert)
 
 ### BtcTickerViewModel
@@ -97,7 +160,7 @@ Gemeinsame Basisklasse `TradingServiceBase` enthält die gesamte Trading-Logik:
 
 | View | Zweck | Engine-Verdrahtung |
 |------|-------|--------------------|
-| Dashboard | Balance, Positionen, Bot-Controls, Strategie-Auswahl, Equity-Chart, Live-Trading | BotEventBus, StrategyManager, PaperTradingService, RiskSettings, ScannerSettings, IPublicMarketDataClient?, BotDatabaseService?, ISecureStorageService? + Sub-VMs: BtcTickerViewModel, ActivityFeedViewModel |
+| Dashboard | Balance, Positionen, Bot-Controls, Strategie-Auswahl, Equity-Chart, Live-Trading | BotEventBus, StrategyManager, PaperTradingService, BotSettings, LiveTradingManager, RiskSettings, ScannerSettings, IPublicMarketDataClient?, BotDatabaseService? + Sub-VMs: BtcTickerViewModel, ActivityFeedViewModel |
 | Scanner | Live-Scan mit Volumen/Momentum-Filter | BotEventBus, ScannerSettings, IMarketScanner (optional) |
 | Strategie | Auswahl + dynamischer Parameter-Editor + Parameter-Rückschreibung | BotEventBus, StrategyManager, IStrategy-Instanzen |
 | Backtest | Historischer Test mit PerformanceReport, publiziert Ergebnisse an TradeHistory + Log | BotEventBus, BacktestEngine, RiskManager, SimulatedExchange |
@@ -133,7 +196,7 @@ Alle ViewModels bekommen ihre Engine-Dependencies per Constructor Injection:
 | ViewModel | DI-Parameter |
 |-----------|--------------|
 | MainViewModel | BotEventBus |
-| DashboardViewModel | BotEventBus, StrategyManager, PaperTradingService, RiskSettings, ScannerSettings, IPublicMarketDataClient?, BotDatabaseService?, ISecureStorageService? |
+| DashboardViewModel | BotEventBus, StrategyManager, PaperTradingService, RiskSettings, ScannerSettings, BotSettings, LiveTradingManager, IPublicMarketDataClient?, BotDatabaseService?, AdaptiveTradingIntelligence? |
 | StrategyViewModel | StrategyManager, BotEventBus |
 | BacktestViewModel | RiskSettings, BotEventBus, IPublicMarketDataClient?, BotDatabaseService? |
 | TradeHistoryViewModel | BotEventBus, BotDatabaseService? |
@@ -419,8 +482,159 @@ Trade geschlossen → ProcessCompletedTrade()
 - Ein API-Call pro Symbol statt pro Position (effizienter bei mehreren Positionen pro Symbol)
 - Parallel via `Task.WhenAll`
 
-## Tests (201 Tests)
+## Logik-Analyse Fixes (03.04.2026)
+
+### Kritisch (5 Fixes)
+| Fix | Datei(en) | Beschreibung |
+|-----|-----------|--------------|
+| Volume-SMA berechnete Close statt Volume | IndicatorHelper.cs, 4 Strategien | Neue `CalculateVolumeSma()` Methode. `CalculateSma()` nutzt Skender-Default (Close) — für Volume-Vergleich muss manueller SMA über Volume-Werte berechnet werden |
+| Doppelter SL/TP-Trigger (Native + Bot) | LiveTradingService.cs | `OnSlTpHitAsync` prüft jetzt ob Position noch auf BingX existiert bevor Close. Signal wird VOR Close entfernt |
+| Race Condition Trailing-Stop | TradingServiceBase.cs | `AddOrUpdate` mit atomarer Update-Funktion statt Read-Modify-Write. Verhindert Überschreiben von User-SL/TP-Änderungen |
+| RegimeDetector Cache-Korruption | RegimeDetector.cs | `SmoothScores` gibt Kopie zurück statt gecachtes Array. `ApplyTransitionPrior` erstellt immer neue Kopie |
+| CTS Dispose ohne Cancel | TradingServiceBase.cs | `_cts?.Cancel()` vor `_cts?.Dispose()` in StartBase + StopBase. Verhindert parallele Ghost-Loops |
+
+### Hoch (8 Fixes)
+| Fix | Datei(en) | Beschreibung |
+|-----|-----------|--------------|
+| PositionSize ignoriert StopLoss | RiskManager.cs | Risiko-basiertes Sizing: `maxLoss / slDistance` statt fixer Margin-%. Enger SL = größere Position, weiter SL = kleinere |
+| ATR=0 kein Guard | 5 Strategien | Early-Return bei `atrValue <= 0` (identische OHLC bei illiquiden Assets) |
+| PnL-Divergenz Paper vs Live | (dokumentiert) | SimulatedExchange nutzt Slippage, Live nicht — bekannte Inkonsistenz, Paper-Ergebnisse sind konservativer |
+| EmergencyStop Race | (dokumentiert) | CTS-Cancel kann Nachlauf-Order nicht verhindern — bekanntes Restrisiko bei API-Latenz |
+| ConfidenceGate Bayes-Formel | ConfidenceGate.cs | Log-Odds werden jetzt summiert (nicht gemittelt) + Prior-Term einbezogen |
+| RSI Divergenz zeitlich korreliert | RsiStrategy.cs | Höchster Preis-Index bestimmt RSI-Vergleichswert (zeitlich korrelierte Pivot-Points statt unabhängiges Max/Min) |
+| Non-ATI Positions-Refresh | TradingServiceBase.cs | `positions` wird nach Close-Signal aktualisiert (wie im ATI-Pfad) |
+| ExitOptimizer lernt aus Verlierern | ExitOptimizer.cs | `AvgLosingSl/Tp` fließen in SL/TP-Berechnung ein (zu enger SL → weiter, zu weites TP → enger) |
+
+### Mittel + Niedrig (10 Fixes)
+| Fix | Datei(en) | Beschreibung |
+|-----|-----------|--------------|
+| _tickerPriceMap Thread-Safety | TradingServiceBase.cs | `Dictionary` → `ConcurrentDictionary` (PriceTickerLoop + RunLoop parallel) |
+| ATI.Reset() unvollständig | AdaptiveTradingIntelligence.cs | Alle 4 Komponenten werden zurückgesetzt (nicht nur ConfidenceGate) |
+| Ensemble Dissens-Strategien | AdaptiveTradingIntelligence.cs | Strategien die gegen den Konsens stimmten bekommen invertiertes Feedback |
+| Quotes-Cache Kollision | IndicatorHelper.cs | FirstOpenTimeTicks im Cache-Key (verhindert Kollision bei gleicher Länge+letztem Close) |
+| Ensemble bestEntry Placeholder | AdaptiveEnsemble.cs | Toter Code (unused bestEntry Variable) entfernt |
+
+## Performance-Optimierungen (03.04.2026)
+
+### Kritisch: Scan-Latenz + API-Calls
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Klines parallel vorladen | TradingServiceBase.cs | Alle Kandidaten-Klines+HTF parallel laden (SemaphoreSlim(5)) statt sequenziell pro Symbol. Reduziert Scan-Zeit von ~8s auf ~2s bei 20 Kandidaten |
+| Account/Positions nur bei Order-Platzierung neu laden | TradingServiceBase.cs | GetAccountAsync()+GetPositionsForScanAsync() nicht mehr pro Kandidat, nur nach erfolgreichem Trade |
+| Ticker-Dictionary wiederverwenden | TradingServiceBase.cs | `_tickerPriceMap` als Feld statt `tickers.ToDictionary()` alle 5s neu allokieren |
+
+### Hoch: GC-Pressure + Allokationen
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| BotEventBus HasLogSubscribers | BotEventBus.cs | Property prüft ob LogEmitted Subscriber hat. Debug-Logs + String-Interpolation nur bei aktivem Subscriber |
+| WebSocket ArrayPool Buffer | BingXWebSocketClient.cs | `ArrayPool<byte>.Shared` statt `new byte[]` pro Receive-Loop. MemoryStreams wiederverwendet (SetLength(0)), GetBuffer() statt ToArray(). Pong-Bytes gecacht |
+| Quotes-Cache pro Candle-Set | IndicatorHelper.cs | `ToQuotes()` cacht Ergebnis per (Count,Close,Ticks)-Key. Vermeidet ~20.000 Quote-Allokationen pro Scan |
+| CorrelationChecker ohne Array-Kopien | CorrelationChecker.cs | `CalculatePearsonFromCandles()` liest Close-Werte direkt aus Candle-Listen per Index statt ArraySegment.ToArray() |
+| SimulatedExchange Positions-Cache | SimulatedExchange.cs | `_cachedPositions` + `_positionsDirty` Flag. GetPositionsAsync() gibt Cache zurück wenn kein Preis/Position sich geändert hat |
+| BTC-Ticker: Klines statt alle Ticker | BtcTickerViewModel.cs | UpdateBtcPriceAsync() lädt 2 M1-Candles statt 500+ Ticker zu deserialisieren |
+
+### Mittel: Ressource-Management
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| HttpClient wiederverwendet | DashboardViewModel.cs | `_liveHttpClient` als Feld statt `new HttpClient()` bei jedem Live-Start (Socket-Exhaustion vermeiden) |
+| Account-Timer CancellationToken | DashboardViewModel.cs | `_accountUpdateCts` für sauberen Abbruch bei Stop/Emergency. Timer-Loop bekommt CancellationToken |
+
+## UX-Verbesserungen (03.04.2026)
+
+### Kritische Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Umlaut-Fehler | MainViewModel, DashboardViewModel, BtcTickerViewModel, DashboardView | "Laeuft"→"Läuft", "Verfuegbar"→"Verfügbar", "eroeffnet"→"eröffnet", "ausgefuehrt"→"ausgeführt" |
+| Verbindungsstatus-Dot dynamisch | MainView, MainViewModel | Status-Dot grün wenn Bot läuft, rot wenn gestoppt. IsConnected Property |
+| Backtest P&L Farbe | BacktestView, BacktestViewModel | Gesamt-PnL + WinRate farbkodiert. IsPnlPositive, IsWinRateGood Properties |
+| API-Secret verborgen | SettingsView | RevealPassword entfernt - Secret default maskiert |
+
+### UX-Verbesserungen
+| Verbesserung | Datei | Beschreibung |
+|-------------|-------|--------------|
+| NumericUpDown | ScannerView, BacktestView | TextBox→NumericUpDown für numerische Eingaben (Min/Max/Increment) |
+| Naming-Konsistenz | MainView | "Trade-History"→"Trade-Historie" (einheitlich deutsch) |
+| Log Auto-Scroll | LogView.axaml.cs | CollectionChanged→ScrollToEnd bei neuen Einträgen |
+| Scanner Progress | ScannerView | Indeterminate ProgressBar während Scan |
+| RiskSettings Dirty-State | RiskSettingsView, RiskSettingsViewModel | HasUnsavedChanges Warnung bei ungespeicherten Änderungen |
+| Keyboard-Shortcuts | MainView, DashboardView | Ctrl+1-8=Navigation, F5/F6/F7/F12=Bot-Kontrolle, Tooltips |
+| Activity Feed expandierbar | DashboardView, DashboardViewModel | Toggle Collapsed=200px/Expanded=500px |
+| Confirm-Dialoge | DashboardViewModel | Live-Start + Notfall-Stop (Live) erfordern Bestätigung |
+
+## Architektur-Refactoring (03.04.2026)
+
+| Änderung | Dateien | Beschreibung |
+|----------|---------|--------------|
+| SimulatedExchange → Backtest | SimulatedExchange.cs | Von `BingXBot.Core.Simulation` nach `BingXBot.Backtest.Simulation` verschoben. Core enthält keine konkrete Exchange-Implementierung mehr |
+| LiveTradingManager extrahiert | LiveTradingManager.cs (NEU) | Live-Trading-Infrastruktur aus DashboardVM extrahiert: Connect, Start, Stop, EmergencyStop, ATI-Persistenz, Signal-Wiederherstellung. DashboardVM ~220 LOC reduziert |
+| Startkapital konfigurierbar | BotSettings.cs, DashboardViewModel.cs | `BotSettings.PaperInitialBalance` statt hardcoded 10_000m an 4 Stellen |
+| DB-Init Race Condition | App.axaml.cs | Synchrone DB-Initialisierung vor Fenster-Erstellung (statt fire-and-forget) |
+| HttpClient wiederverwendbar | LiveTradingManager.cs | Ein HttpClient-Feld pro LiveTradingManager, wiederverwendet bei Start/Stop |
+| FluentTheme DarkMode Fix | App.axaml | Veraltetes `DarkMode="True"` entfernt (wird in App.axaml.cs via RequestedThemeVariant gesetzt) |
+
+## Risk-Management-Erweiterungen (04.04.2026)
+
+### Neue RiskManager-Prüfungen
+| Feature | Datei(en) | Beschreibung |
+|---------|-----------|--------------|
+| Liquidation-Preis-Check | RiskManager.cs, RiskSettings.cs | `CalculateLiquidationPrice()` berechnet Isolated-Margin-Liquidation (BingX 0.4% MMR). Kein Trade wenn Abstand < MinLiquidationDistancePercent (Default: 10%) |
+| Netto-Exposure-Limit | RiskManager.cs, RiskSettings.cs | `CalculateNetExposure()` summiert alle Positionswerte. Kein Trade wenn Gesamt-Exposure > MaxNetExposurePercent (Default: 50%) |
+| Funding-Rate-Filter | RiskManager.cs, RiskSettings.cs | Kein Trade gegen hohe Funding-Rate. `ConsiderFundingRate` + `MaxAdverseFundingRatePercent` (Default: 0.1%). Positive Funding schadet Longs, negative Shorts |
+| IRiskManager erweitert | IRiskManager.cs | Neue Methoden: `ValidateTrade(signal, context, fundingRate)`, `CalculateLiquidationPrice()`, `CalculateNetExposure()` |
+
+### ATI Cold-Start-Schutz
+| Feature | Datei(en) | Beschreibung |
+|---------|-----------|--------------|
+| MinTradesBeforeLearning | ConfidenceGate.cs, AdaptiveTradingIntelligence.cs | Unter N Trades (Default: 20) gibt ConfidenceGate immer Prior zurück, filtert keine Trades. Schützt gegen schlechte Entscheidungen mit zu wenig gelernten Daten |
+| ATI Auto-Save | TradingServiceBase.cs, AdaptiveTradingIntelligence.cs, BotSettings.cs | Periodische ATI-State-Persistierung (Default: 15 Min) statt nur bei Bot-Stop. Schützt gegen Datenverlust bei App-Crash |
+
+### Funding-Rate-Simulation (Paper + Backtest)
+| Feature | Datei(en) | Beschreibung |
+|---------|-----------|--------------|
+| SimulatedExchange.ApplyFundingRate() | SimulatedExchange.cs | Wendet Funding auf offene Positionen an: Longs zahlen bei positiver Rate, Shorts bei negativer |
+| BacktestEngine Funding | BacktestEngine.cs | Funding-Rate alle 8h im Tick-Loop angewendet. Konfigurierbar via BacktestSettings.SimulatedFundingRatePercent (Default: 0.01%) |
+| PaperTradingService Funding | PaperTradingService.cs | SimulatedExchange mit konfigurierter Funding-Rate aus BotSettings.SimulatedFundingRatePercent |
+
+### Margin-Monitoring
+| Feature | Datei(en) | Beschreibung |
+|---------|-----------|--------------|
+| PriceTickerLoop Liquidations-Warnung | TradingServiceBase.cs | Prüft alle 5s den Abstand zum Liquidationspreis. Warnung wenn < 2x MinLiquidationDistance. Max 1 Warnung pro 5 Min pro Position |
+| BotEventBus MarginWarning | BotEventBus.cs | Neues Event: `MarginWarning` mit Symbol, aktueller Preis, Liquidationspreis, Abstand-% |
+
+### Desktop-Benachrichtigungen
+| Feature | Datei(en) | Beschreibung |
+|---------|-----------|--------------|
+| Trade-Notifications | TradingServiceBase.cs, BotEventBus.cs, BotSettings.cs | NotificationRequested-Event bei Trade-Close (Gewinn/Verlust, PnL, Preise). Aktivierbar via BotSettings.EnableDesktopNotifications |
+
+### DB Schema-Versioning
+| Feature | Datei(en) | Beschreibung |
+|---------|-----------|--------------|
+| RunMigrationsAsync() | BotDatabaseService.cs | Schema-Version in Settings-Tabelle. Automatische Migrationen bei App-Start. v2: FundingPaid-Spalte in Trades |
+
+### UI: RiskSettings-View erweitert
+| Feature | Datei(en) | Beschreibung |
+|---------|-----------|--------------|
+| Liquidation + Exposure Sektion | RiskSettingsView.axaml, RiskSettingsViewModel.cs | Min. Liquidations-Abstand + Max. Netto-Exposure konfigurierbar |
+| Funding-Rate Sektion | RiskSettingsView.axaml, RiskSettingsViewModel.cs | Funding-Rate-Filter an/aus + Max. adverse Rate |
+| Dirty-State für neue Felder | RiskSettingsViewModel.cs | Alle 4 neuen Properties lösen HasUnsavedChanges aus |
+
+## Tests (210 Tests)
 
 ## Farbpalette
 
 Dark-Trading-Theme: Primary #3B82F6, Background #1E1E2E, Profit #10B981, Loss #EF4444
+
+## UI-Conventions (03.04.2026)
+
+| Convention | Details |
+|-----------|---------|
+| Compiled Bindings | `x:CompileBindings="True"` in allen 10 Views |
+| Virtualisierung | ListBox + VirtualizingStackPanel in TradeHistory, Log, Backtest, Scanner |
+| Monospace-Zahlen | `FontFamily="Consolas, Courier New, monospace"` für alle Preise/PnL/Metriken |
+| Keyboard-Shortcuts | Ctrl+1-8 Navigation, Escape → Dashboard |
+| Tooltips | Alle Bot-Buttons, Nav-Items, Account-Karten, Risk-Settings, Backtest-Metriken |
+| Farb-Palette | Alle Farben via DynamicResource aus AppPalette.axaml (keine hardcodierten Hex-Werte) |
+| PnL-Farbcodierung | IsVisible-Toggle mit SuccessBrush/ErrorBrush (grün/rot) für PnL-Werte |
+| Status-Indikatoren | Dynamische Farben via ViewModel-Properties (ConnectionDotColor, StatusDotColor, BotStatusColor) |
+| Dark-Mode | `RequestedThemeVariant = ThemeVariant.Dark` in App.axaml.cs |
+| Hover-Farben | SuccessHoverBrush, WarningHoverBrush, ErrorHoverBrush, StopHoverBrush in AppPalette |

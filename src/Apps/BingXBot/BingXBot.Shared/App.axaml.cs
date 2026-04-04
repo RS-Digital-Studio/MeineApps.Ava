@@ -31,7 +31,19 @@ public partial class App : Application
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
-        // Fenster SOFORT erstellen (vor jeglichem async)
+        // DB synchron initialisieren BEVOR Views/VMs darauf zugreifen
+        // (Desktop-App, schnelle lokale SQLite-Init, kein UI-Blocking-Problem)
+        try
+        {
+            var db = Services.GetRequiredService<BotDatabaseService>();
+            db.InitializeAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DB-Init fehlgeschlagen: {ex.Message}");
+        }
+
+        // Fenster erstellen (VMs können jetzt sicher auf DB zugreifen)
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
@@ -40,22 +52,6 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
-
-        // DB-Init NACH dem Fenster, fire-and-forget
-        _ = InitializeDatabaseAsync();
-    }
-
-    private static async Task InitializeDatabaseAsync()
-    {
-        try
-        {
-            var db = Services.GetRequiredService<BotDatabaseService>();
-            await db.InitializeAsync();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"DB-Init fehlgeschlagen: {ex.Message}");
-        }
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -87,8 +83,9 @@ public partial class App : Application
         // ATI - Adaptive Trading Intelligence
         services.AddSingleton<AdaptiveTradingIntelligence>();
 
-        // Paper-Trading Service
+        // Trading Services
         services.AddSingleton<PaperTradingService>();
+        services.AddSingleton<LiveTradingManager>();
 
         // ViewModels (Singleton)
         services.AddSingleton<MainViewModel>();

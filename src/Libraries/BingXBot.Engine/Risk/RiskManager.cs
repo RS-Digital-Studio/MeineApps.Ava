@@ -22,7 +22,11 @@ public class RiskManager : IRiskManager
         _logger = logger;
     }
 
+    /// <summary>Überladung ohne Funding-Rate (Abwärtskompatibilität).</summary>
     public RiskCheckResult ValidateTrade(SignalResult signal, MarketContext context)
+        => ValidateTrade(signal, context, null);
+
+    public RiskCheckResult ValidateTrade(SignalResult signal, MarketContext context, decimal? currentFundingRate)
     {
         // 1. Signal prüfen
         if (signal.Signal == Signal.None)
@@ -44,7 +48,41 @@ public class RiskManager : IRiskManager
         if (posSize <= 0)
             return new RiskCheckResult(false, "Position-Größe ist 0", 0m);
 
-        // 5. Taeglichen Drawdown pruefen (inkl. unrealisierter Verluste + Risiko der neuen Position)
+        // 5. Netto-Exposure prüfen: Summe aller Positionswerte darf MaxNetExposurePercent nicht überschreiten
+        if (context.Account.Balance > 0)
+        {
+            var currentExposure = CalculateNetExposure(context.OpenPositions, context.Account.Balance);
+            var newPositionExposure = posSize * entryPrice / context.Account.Balance * 100m;
+            if (currentExposure + newPositionExposure > _settings.MaxNetExposurePercent)
+                return new RiskCheckResult(false,
+                    $"Netto-Exposure {currentExposure + newPositionExposure:F1}% > {_settings.MaxNetExposurePercent}%", 0m);
+        }
+
+        // 6. Liquidation-Preis prüfen: Position darf nicht zu nah am Liquidationspreis eröffnet werden
+        var leverage = _settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m;
+        var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
+        var liqPrice = CalculateLiquidationPrice(entryPrice, leverage, side);
+        if (liqPrice > 0 && entryPrice > 0)
+        {
+            var liqDistancePercent = Math.Abs(entryPrice - liqPrice) / entryPrice * 100m;
+            if (liqDistancePercent < _settings.MinLiquidationDistancePercent)
+                return new RiskCheckResult(false,
+                    $"Liquidationspreis zu nah: {liqDistancePercent:F1}% Abstand < {_settings.MinLiquidationDistancePercent}% Minimum (Liq={liqPrice:G6})", 0m);
+        }
+
+        // 7. Funding-Rate prüfen: Keine Trades gegen hohe Funding-Rate eröffnen
+        if (_settings.ConsiderFundingRate && currentFundingRate.HasValue && currentFundingRate.Value != 0)
+        {
+            // Positive Funding = Longs zahlen, negative Funding = Shorts zahlen
+            var isAdverse = (signal.Signal == Signal.Long && currentFundingRate.Value > 0) ||
+                            (signal.Signal == Signal.Short && currentFundingRate.Value < 0);
+            var absRate = Math.Abs(currentFundingRate.Value) * 100m; // In Prozent
+            if (isAdverse && absRate > _settings.MaxAdverseFundingRatePercent)
+                return new RiskCheckResult(false,
+                    $"Funding-Rate {absRate:F3}% gegen Position > {_settings.MaxAdverseFundingRatePercent}% Maximum", 0m);
+        }
+
+        // 8. Taeglichen Drawdown pruefen (inkl. unrealisierter Verluste + Risiko der neuen Position)
         decimal dailyDrawdownPercent;
         decimal totalDrawdownPercent;
         lock (_lock)
@@ -68,7 +106,6 @@ public class RiskManager : IRiskManager
             else
             {
                 // Ohne SL: Worst-Case = gesamte Margin (Positionsgröße in %)
-                var leverage = _settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m;
                 newPositionRisk = context.Account.AvailableBalance * _settings.MaxPositionSizePercent / 100m * leverage;
             }
 
@@ -88,7 +125,7 @@ public class RiskManager : IRiskManager
         if (dailyDrawdownPercent >= _settings.MaxDailyDrawdownPercent)
             return new RiskCheckResult(false, $"Tages-Drawdown {dailyDrawdownPercent:F1}% >= {_settings.MaxDailyDrawdownPercent}% (inkl. Risiko neuer Position)", 0m);
 
-        // 6. Gesamt-Drawdown pruefen
+        // 9. Gesamt-Drawdown pruefen
         if (totalDrawdownPercent >= _settings.MaxTotalDrawdownPercent)
             return new RiskCheckResult(false, $"Gesamt-Drawdown {totalDrawdownPercent:F1}% >= {_settings.MaxTotalDrawdownPercent}% (inkl. Risiko neuer Position)", 0m);
 
@@ -102,12 +139,60 @@ public class RiskManager : IRiskManager
         // MaxLeverage muss > 0 sein, sonst Fallback auf 1
         var leverage = _settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m;
 
-        // MaxPositionSizePercent = Anteil der Balance der als Margin gesetzt wird.
-        // 2% bei 10.000 USDT = 200 USDT Margin → mit 10x Leverage = 2.000 USDT Positionswert.
+        // H-1 Fix: Risiko-basiertes Position-Sizing wenn SL vorhanden.
+        // MaxPositionSizePercent = max. Verlust in % der Balance bei SL-Hit.
+        // Beispiel: 2% Risk bei 10.000 USDT Balance = max 200 USDT Verlust.
+        if (stopLoss.HasValue && stopLoss.Value > 0)
+        {
+            var slDistance = Math.Abs(entryPrice - stopLoss.Value);
+            if (slDistance > 0)
+            {
+                var maxLoss = account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
+                var riskBasedQty = maxLoss / slDistance;
+
+                // Cap: Positionswert darf nicht größer sein als Balance * Leverage
+                var maxPositionValue = account.AvailableBalance * leverage;
+                var maxQty = maxPositionValue / entryPrice;
+
+                return Math.Min(riskBasedQty, maxQty);
+            }
+        }
+
+        // Fallback ohne SL: %-basierte Margin-Sizing (konservativer)
         var marginAmount = account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
         var positionValue = marginAmount * leverage;
 
         return positionValue / entryPrice;
+    }
+
+    /// <summary>
+    /// Berechnet den Liquidationspreis für Isolated Margin.
+    /// Formel: Long: EntryPrice * (1 - 1/Leverage + MaintenanceMarginRate)
+    ///         Short: EntryPrice * (1 + 1/Leverage - MaintenanceMarginRate)
+    /// BingX Maintenance Margin Rate ~0.4% für die meisten Perpetuals.
+    /// </summary>
+    public decimal CalculateLiquidationPrice(decimal entryPrice, decimal leverage, Side side)
+    {
+        if (entryPrice <= 0 || leverage <= 0) return 0m;
+
+        const decimal maintenanceMarginRate = 0.004m; // 0.4% BingX Standard
+
+        if (side == Side.Buy)
+            return entryPrice * (1m - 1m / leverage + maintenanceMarginRate);
+        else
+            return entryPrice * (1m + 1m / leverage - maintenanceMarginRate);
+    }
+
+    /// <summary>
+    /// Berechnet das aktuelle Netto-Exposure aller offenen Positionen in % der Balance.
+    /// Netto = Summe(Qty * MarkPrice) für jede Position, geteilt durch Balance.
+    /// </summary>
+    public decimal CalculateNetExposure(IReadOnlyList<Position> positions, decimal balance)
+    {
+        if (balance <= 0 || positions.Count == 0) return 0m;
+
+        var totalExposure = positions.Sum(p => p.Quantity * p.MarkPrice);
+        return totalExposure / balance * 100m;
     }
 
     public void UpdateDailyStats(CompletedTrade completedTrade)

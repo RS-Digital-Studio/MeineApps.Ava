@@ -8,13 +8,14 @@ namespace BingXBot.Engine.Strategies;
 /// </summary>
 public static class StrategyFactory
 {
-    /// <summary>Alle verfügbaren Strategie-Namen.</summary>
+    /// <summary>Alle verfügbaren Strategie-Namen. CryptoTrendPro als erster (Default).</summary>
     public static readonly string[] AvailableStrategies =
-        ["Trend-Following", "EMA Cross", "RSI Momentum", "Bollinger Breakout", "MACD", "Smart Grid"];
+        ["CryptoTrendPro", "Trend-Following", "EMA Cross", "RSI Momentum", "Bollinger Breakout", "MACD", "Smart Grid"];
 
     /// <summary>Erstellt eine neue IStrategy-Instanz basierend auf dem Namen.</summary>
     public static IStrategy Create(string name) => name switch
     {
+        "CryptoTrendPro" => new CryptoTrendProStrategy(),
         "Trend-Following" => new TrendFollowStrategy(),
         "EMA Cross" => new EmaCrossStrategy(),
         "RSI Momentum" => new RsiStrategy(),

@@ -8,4 +8,6 @@ public record SignalResult(
     decimal? EntryPrice,
     decimal? StopLoss,
     decimal? TakeProfit,
-    string Reason);
+    string Reason,
+    decimal? TakeProfit2 = null,
+    int ConflueceScore = 0);

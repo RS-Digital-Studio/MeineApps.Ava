@@ -9,7 +9,7 @@ namespace BingXBot.Engine.Indicators;
 /// </summary>
 public enum IndicatorType : byte
 {
-    EMA, SMA, RSI, MACD, BollingerBands, ATR, ADX, Stochastic
+    EMA, SMA, RSI, MACD, BollingerBands, ATR, ADX, Stochastic, Supertrend, AtrPercentile
 }
 
 /// <summary>
@@ -76,25 +76,48 @@ public static class IndicatorHelper
     private static readonly ConcurrentDictionary<IndicatorCacheKey, object> _cache = new();
     private static long _scanGeneration;
 
+    // Quotes-Cache: Vermeidet wiederholte Konvertierung derselben Candle-Liste.
+    // Key = (CandleCount, LastClose, LastOpenTimeTicks, FirstOpenTimeTicks), Value = List<Quote>
+    // M-9 Fix: FirstOpenTimeTicks einbeziehen um Kollisionen bei gleicher Länge+letztem Close zu vermeiden
+    private static readonly ConcurrentDictionary<(int Count, decimal Close, long LastTicks, long FirstTicks), List<Quote>> _quotesCache = new();
+
     /// <summary>Cache leeren (am Ende eines Scan-Durchlaufs aufrufen). Thread-safe per Generation.</summary>
     public static void ClearCache()
     {
         Interlocked.Increment(ref _scanGeneration);
         _cache.Clear();
+        _quotesCache.Clear();
     }
 
-    /// <summary>Candles zu Quotes konvertieren</summary>
-    public static IEnumerable<Quote> ToQuotes(IReadOnlyList<Candle> candles)
+    /// <summary>Candles zu Quotes konvertieren (gecacht pro Candle-Set).</summary>
+    public static List<Quote> ToQuotes(IReadOnlyList<Candle> candles)
     {
-        return candles.Select(c => new Quote
+        if (candles.Count == 0) return [];
+
+        var last = candles[^1];
+        var first = candles[0];
+        var key = (candles.Count, last.Close, last.OpenTime.Ticks, first.OpenTime.Ticks);
+
+        if (_quotesCache.TryGetValue(key, out var cached))
+            return cached;
+
+        var quotes = new List<Quote>(candles.Count);
+        for (int i = 0; i < candles.Count; i++)
         {
-            Date = c.OpenTime,
-            Open = c.Open,
-            High = c.High,
-            Low = c.Low,
-            Close = c.Close,
-            Volume = c.Volume
-        });
+            var c = candles[i];
+            quotes.Add(new Quote
+            {
+                Date = c.OpenTime,
+                Open = c.Open,
+                High = c.High,
+                Low = c.Low,
+                Close = c.Close,
+                Volume = c.Volume
+            });
+        }
+
+        _quotesCache.TryAdd(key, quotes);
+        return quotes;
     }
 
     /// <summary>EMA: gibt Liste von decimal? zurück (null für Warmup-Phase)</summary>
@@ -226,6 +249,39 @@ public static class IndicatorHelper
         return 0; // Neutral
     }
 
+    /// <summary>
+    /// Volume-SMA: Berechnet den SMA auf dem VOLUMEN (nicht auf dem Close-Preis).
+    /// CalculateSma() nutzt Skender's GetSma() das immer auf Close rechnet - für
+    /// Volume-Vergleiche MUSS diese Methode verwendet werden.
+    /// </summary>
+    public static IReadOnlyList<decimal?> CalculateVolumeSma(IReadOnlyList<Candle> candles, int period)
+    {
+        if (candles.Count == 0 || period <= 0)
+            return [];
+
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.SMA, period, 1); // Param2=1 unterscheidet von Close-SMA
+        if (_cache.TryGetValue(key, out var cached))
+            return (IReadOnlyList<decimal?>)cached;
+
+        // Manueller SMA auf Volume-Werte (Skender bietet keine Feld-Auswahl)
+        var result = new List<decimal?>(candles.Count);
+        for (int i = 0; i < candles.Count; i++)
+        {
+            if (i < period - 1)
+            {
+                result.Add(null);
+                continue;
+            }
+            var sum = 0m;
+            for (int j = i - period + 1; j <= i; j++)
+                sum += candles[j].Volume;
+            result.Add(sum / period);
+        }
+
+        _cache.TryAdd(key, result);
+        return result;
+    }
+
     /// <summary>Stochastik (%K und %D) - Momentum-Oszillator mit Glättung.</summary>
     public static (IReadOnlyList<decimal?> K, IReadOnlyList<decimal?> D) CalculateStochastic(
         IReadOnlyList<Candle> candles, int lookbackPeriods = 14, int signalPeriods = 3, int smoothPeriods = 3)
@@ -238,6 +294,79 @@ public static class IndicatorHelper
         var result = (
             (IReadOnlyList<decimal?>)results.Select(r => r.K.HasValue ? (decimal?)Convert.ToDecimal(r.K.Value) : null).ToList(),
             (IReadOnlyList<decimal?>)results.Select(r => r.D.HasValue ? (decimal?)Convert.ToDecimal(r.D.Value) : null).ToList()
+        );
+        _cache.TryAdd(key, result);
+        return result;
+    }
+
+    /// <summary>
+    /// Supertrend-Indikator: Gibt Trend-Richtung und Supertrend-Linie zurück.
+    /// Bullish = Preis über Supertrend-Linie, Bearish = darunter.
+    /// Supertrend-Flip = stärkstes Trend-Signal (weniger Whipsaws als EMA-Cross).
+    /// </summary>
+    public static (IReadOnlyList<decimal?> SupertrendValue, IReadOnlyList<bool?> IsBullish)
+        CalculateSupertrend(IReadOnlyList<Candle> candles, int lookbackPeriods = 10, decimal multiplier = 3.0m)
+    {
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles,
+            IndicatorType.Supertrend, lookbackPeriods, (int)(multiplier * 100));
+        if (_cache.TryGetValue(key, out var cached))
+            return ((IReadOnlyList<decimal?>, IReadOnlyList<bool?>))cached;
+
+        var results = ToQuotes(candles).GetSuperTrend(lookbackPeriods, (double)multiplier).ToList();
+        var result = (
+            (IReadOnlyList<decimal?>)results.Select(r =>
+                r.SuperTrend.HasValue ? (decimal?)Convert.ToDecimal(r.SuperTrend.Value) : null).ToList(),
+            (IReadOnlyList<bool?>)results.Select(r =>
+                r.SuperTrend.HasValue ? (bool?)(r.UpperBand == null) : null).ToList()
+            // Wenn UpperBand null ist → Preis über Supertrend → bullish
+        );
+        _cache.TryAdd(key, result);
+        return result;
+    }
+
+    /// <summary>
+    /// ATR-Perzentil: Wo liegt der aktuelle ATR im Vergleich zu den letzten N Perioden (0-100).
+    /// Für volatilitäts-adaptive SL/TP-Multiplikatoren.
+    /// </summary>
+    public static int CalculateAtrPercentile(IReadOnlyList<Candle> candles, int atrPeriod = 14, int lookback = 100)
+    {
+        var atr = CalculateAtr(candles, atrPeriod);
+        if (atr.Count == 0 || atr[^1] == null) return 50; // Default: Mitte
+
+        var currentAtr = atr[^1]!.Value;
+        var startIdx = Math.Max(0, atr.Count - lookback);
+        var values = new List<decimal>();
+        for (int i = startIdx; i < atr.Count; i++)
+        {
+            if (atr[i].HasValue) values.Add(atr[i]!.Value);
+        }
+        if (values.Count < 10) return 50;
+
+        var belowCount = values.Count(v => v <= currentAtr);
+        return (int)((double)belowCount / values.Count * 100);
+    }
+
+    /// <summary>
+    /// ADX mit DI-Richtungen (+DI und -DI) für Trend-Richtung UND -Stärke.
+    /// ADX = Stärke, +DI > -DI = bullish, -DI > +DI = bearish.
+    /// ADX steigend = Trend wird stärker (wichtiger als absoluter Wert).
+    /// </summary>
+    public static (IReadOnlyList<decimal?> Adx, IReadOnlyList<decimal?> Pdi, IReadOnlyList<decimal?> Mdi)
+        CalculateAdxWithDi(IReadOnlyList<Candle> candles, int period = 14)
+    {
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles,
+            IndicatorType.ADX, period, 1); // Param2=1 unterscheidet von Standard-ADX
+        if (_cache.TryGetValue(key, out var cached))
+            return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
+
+        var results = ToQuotes(candles).GetAdx(period).ToList();
+        var result = (
+            (IReadOnlyList<decimal?>)results.Select(r =>
+                r.Adx.HasValue ? (decimal?)Convert.ToDecimal(r.Adx.Value) : null).ToList(),
+            (IReadOnlyList<decimal?>)results.Select(r =>
+                r.Pdi.HasValue ? (decimal?)Convert.ToDecimal(r.Pdi.Value) : null).ToList(),
+            (IReadOnlyList<decimal?>)results.Select(r =>
+                r.Mdi.HasValue ? (decimal?)Convert.ToDecimal(r.Mdi.Value) : null).ToList()
         );
         _cache.TryAdd(key, result);
         return result;

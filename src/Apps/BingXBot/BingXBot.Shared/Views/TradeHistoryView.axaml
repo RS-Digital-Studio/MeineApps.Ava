@@ -3,7 +3,8 @@
              xmlns:vm="using:BingXBot.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="BingXBot.Views.TradeHistoryView"
-             x:DataType="vm:TradeHistoryViewModel">
+             x:DataType="vm:TradeHistoryViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Styles>
     <!-- Alternierende Zeilenhintergründe -->
@@ -57,6 +58,7 @@
                        Foreground="{DynamicResource TextSecondaryBrush}" />
           </StackPanel>
           <TextBlock Text="{Binding TradeCount}" FontSize="28" FontWeight="Bold"
+                     FontFamily="Consolas, Courier New, monospace"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
       </Border>
@@ -72,6 +74,7 @@
           </StackPanel>
           <TextBlock Text="{Binding TotalPnl, StringFormat={}{0:+0.00;-0.00;0.00} USDT}"
                      FontSize="28" FontWeight="Bold"
+                     FontFamily="Consolas, Courier New, monospace"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
       </Border>
@@ -87,6 +90,7 @@
           </StackPanel>
           <TextBlock Text="{Binding WinRate, StringFormat={}{0:F1}%}"
                      FontSize="28" FontWeight="Bold"
+                     FontFamily="Consolas, Courier New, monospace"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
       </Border>
@@ -160,7 +164,7 @@
                   Padding="12,10"
                   BorderBrush="{DynamicResource BorderSubtleBrush}"
                   BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="90,60,90,90,70,80,50,80,60,90">
+            <Grid ColumnDefinitions="*,60,90,90,70,80,50,80,60,90">
               <TextBlock Grid.Column="0" Text="Symbol" FontSize="11" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Grid.Column="1" Text="Side" FontSize="11" FontWeight="SemiBold"
@@ -202,87 +206,104 @@
           </StackPanel>
 
           <!-- Tabellen-Body -->
-          <ScrollViewer VerticalScrollBarVisibility="Auto"
-                        IsVisible="{Binding TradeCount}">
-            <ItemsControl ItemsSource="{Binding Trades}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:TradeHistoryItem">
-                  <Border Classes="TradeRow"
-                          Padding="12,10"
-                          BorderBrush="{DynamicResource BorderSubtleBrush}"
-                          BorderThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="90,60,90,90,70,80,50,80,60,90">
-                      <!-- Symbol -->
-                      <TextBlock Grid.Column="0" Text="{Binding Symbol}"
-                                 FontSize="12" FontWeight="SemiBold"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 VerticalAlignment="Center" />
+          <ListBox ItemsSource="{Binding Trades}"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   IsVisible="{Binding TradeCount}">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:TradeHistoryItem">
+                <Border Classes="TradeRow"
+                        Padding="12,10"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}"
+                        BorderThickness="0,0,0,1">
+                  <Grid ColumnDefinitions="*,60,90,90,70,80,50,80,60,90">
+                    <!-- Symbol -->
+                    <TextBlock Grid.Column="0" Text="{Binding Symbol}"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Side (farbcodiert: Long=Grün, Short=Rot) -->
-                      <TextBlock Grid.Column="1" Text="{Binding Side}"
-                                 FontSize="12" FontWeight="SemiBold"
-                                 Foreground="{Binding SideColor}"
-                                 VerticalAlignment="Center" />
+                    <!-- Side (farbcodiert: Long=Grün, Short=Rot) -->
+                    <TextBlock Grid.Column="1" Text="{Binding Side}"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="{Binding SideColor}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Entry -->
-                      <TextBlock Grid.Column="2"
-                                 Text="{Binding EntryPrice, StringFormat={}{0:N2}}"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 VerticalAlignment="Center" />
+                    <!-- Entry -->
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding EntryPrice, StringFormat={}{0:N2}}"
+                               FontSize="12"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Exit -->
-                      <TextBlock Grid.Column="3"
-                                 Text="{Binding ExitPrice, StringFormat={}{0:N2}}"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 VerticalAlignment="Center" />
+                    <!-- Exit -->
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding ExitPrice, StringFormat={}{0:N2}}"
+                               FontSize="12"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Qty -->
-                      <TextBlock Grid.Column="4"
-                                 Text="{Binding Quantity, StringFormat={}{0:G}}"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
+                    <!-- Qty -->
+                    <TextBlock Grid.Column="4"
+                               Text="{Binding Quantity, StringFormat={}{0:G}}"
+                               FontSize="12"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
 
-                      <!-- P&L (farbcodiert: Grün=Profit, Rot=Verlust) -->
-                      <TextBlock Grid.Column="5"
-                                 Text="{Binding Pnl, StringFormat={}{0:+0.00;-0.00;0.00}}"
-                                 FontSize="12" FontWeight="SemiBold"
-                                 Foreground="{Binding PnlColor}"
-                                 VerticalAlignment="Center" />
+                    <!-- P&L (farbcodiert: Grün=Profit, Rot=Verlust) -->
+                    <TextBlock Grid.Column="5"
+                               Text="{Binding Pnl, StringFormat={}{0:+0.00;-0.00;0.00}}"
+                               FontSize="12" FontWeight="SemiBold"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{Binding PnlColor}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Fee -->
-                      <TextBlock Grid.Column="6"
-                                 Text="{Binding Fee, StringFormat={}{0:N1}}"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextMutedBrush}"
-                                 VerticalAlignment="Center" />
+                    <!-- Fee -->
+                    <TextBlock Grid.Column="6"
+                               Text="{Binding Fee, StringFormat={}{0:N1}}"
+                               FontSize="12"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Strategie -->
-                      <TextBlock Grid.Column="7" Text="{Binding Strategy}"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
+                    <!-- Strategie -->
+                    <TextBlock Grid.Column="7" Text="{Binding Strategy}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Modus -->
-                      <TextBlock Grid.Column="8" Text="{Binding Mode}"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextMutedBrush}"
-                                 VerticalAlignment="Center" />
+                    <!-- Modus -->
+                    <TextBlock Grid.Column="8" Text="{Binding Mode}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
 
-                      <!-- Zeit -->
-                      <TextBlock Grid.Column="9"
-                                 Text="{Binding Time, StringFormat={}{0:dd.MM HH:mm}}"
-                                 FontSize="11"
-                                 Foreground="{DynamicResource TextMutedBrush}"
-                                 VerticalAlignment="Center" />
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
+                    <!-- Zeit -->
+                    <TextBlock Grid.Column="9"
+                               Text="{Binding Time, StringFormat={}{0:dd.MM HH:mm}}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
 
         </DockPanel>
       </Border>

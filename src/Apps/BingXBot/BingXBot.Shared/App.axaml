@@ -4,7 +4,7 @@
              x:Class="BingXBot.App">
 
   <Application.Styles>
-    <!-- Avalonia Fluent Theme (Dark Mode) -->
+    <!-- Avalonia Fluent Theme (Dark-Mode wird in App.axaml.cs via RequestedThemeVariant gesetzt) -->
     <FluentTheme />
 
     <!-- Material Icons -->

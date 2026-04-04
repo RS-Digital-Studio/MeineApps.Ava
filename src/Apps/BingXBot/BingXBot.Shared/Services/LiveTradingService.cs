@@ -20,6 +20,7 @@ public class LiveTradingService : TradingServiceBase
 {
     private readonly BingXRestClient _restClient;
     private readonly BingXWebSocketClient? _wsClient;
+    private readonly BotDatabaseService? _dbService;
 
     /// <summary>BingX Perpetual Futures Taker Fee: 0.05% (Standard-Level).</summary>
     private const decimal TakerFeeRate = 0.0005m;
@@ -30,6 +31,7 @@ public class LiveTradingService : TradingServiceBase
     private readonly ConcurrentDictionary<string, DateTime> _positionOpenTimes = new();
     private string? _listenKey;
     private PeriodicTimer? _listenKeyRenewTimer;
+    private DateTime _lastFundingRateUpdate = DateTime.MinValue;
 
     protected override string LogPrefix => "LIVE: ";
     protected override string ModeName => "Live-Trading";
@@ -41,11 +43,14 @@ public class LiveTradingService : TradingServiceBase
         RiskSettings riskSettings,
         ScannerSettings scannerSettings,
         BotEventBus eventBus,
-        BingXWebSocketClient? wsClient = null)
-        : base(publicClient, strategyManager, riskSettings, scannerSettings, eventBus)
+        BotSettings botSettings,
+        BingXWebSocketClient? wsClient = null,
+        BotDatabaseService? dbService = null)
+        : base(publicClient, strategyManager, riskSettings, scannerSettings, eventBus, botSettings)
     {
         _restClient = restClient;
         _wsClient = wsClient;
+        _dbService = dbService;
     }
 
     /// <summary>Startet das Live-Trading.</summary>
@@ -233,8 +238,21 @@ public class LiveTradingService : TradingServiceBase
     {
         try
         {
-            await _restClient.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
+            // K-2 Fix: Signal ZUERST entfernen, dann schließen.
+            // Verhindert doppelten Trigger wenn BingX die Position bereits nativ geschlossen hat.
             RemoveSignalByKey(key);
+
+            // Prüfen ob die Position noch existiert (BingX könnte sie nativ per SL/TP geschlossen haben)
+            var currentPositions = await _restClient.GetPositionsAsync().ConfigureAwait(false);
+            var stillExists = currentPositions.Any(p => p.Symbol == pos.Symbol && p.Side == pos.Side);
+            if (!stillExists)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                    $"LIVE: {pos.Symbol} {pos.Side} bereits durch native SL/TP geschlossen", pos.Symbol));
+                return;
+            }
+
+            await _restClient.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
                 $"LIVE: {pos.Symbol}: {reason} ({pos.Side})", pos.Symbol));
@@ -259,6 +277,41 @@ public class LiveTradingService : TradingServiceBase
         {
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
                 $"LIVE: {pos.Symbol}: {reason} FEHLGESCHLAGEN - {ex.Message}", pos.Symbol));
+        }
+    }
+
+    protected override async Task OnPartialCloseAsync(Position pos, decimal price, decimal quantityToClose)
+    {
+        try
+        {
+            // Gegenorder mit reduzierter Menge = Partial Close
+            var closeSide = pos.Side == Side.Buy ? Side.Sell : Side.Buy;
+            await _restClient.PlaceOrderAsync(new OrderRequest(
+                pos.Symbol, closeSide, OrderType.Market, quantityToClose))
+                .ConfigureAwait(false);
+
+            // CompletedTrade für den geschlossenen Teil
+            var entryFee = quantityToClose * pos.EntryPrice * TakerFeeRate;
+            var exitFee = quantityToClose * price * TakerFeeRate;
+            var totalFee = entryFee + exitFee;
+            var rawPnl = pos.Side == Side.Buy
+                ? (price - pos.EntryPrice) * quantityToClose
+                : (pos.EntryPrice - price) * quantityToClose;
+            var key = $"{pos.Symbol}_{pos.Side}";
+            var entryTime = _positionOpenTimes.GetValueOrDefault(key, pos.OpenTime);
+            var trade = new CompletedTrade(pos.Symbol, pos.Side, pos.EntryPrice, price,
+                quantityToClose, rawPnl - totalFee, totalFee, entryTime, DateTime.UtcNow,
+                "Partial Close (TP1)", TradingMode.Live);
+            _eventBus.PublishTrade(trade);
+            ProcessCompletedTrade(trade);
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
+                $"LIVE: {pos.Symbol} Partial Close {quantityToClose:G6} @ {price:G8}", pos.Symbol));
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
+                $"LIVE: {pos.Symbol} Partial Close FEHLGESCHLAGEN: {ex.Message}", pos.Symbol));
         }
     }
 
@@ -288,8 +341,8 @@ public class LiveTradingService : TradingServiceBase
     protected override Task OnScanErrorAsync(CancellationToken ct) =>
         Task.Delay(60_000, ct);
 
-    /// <summary>Verwaiste Signale bereinigen (Grace Period 30s). Positions werden von der Basisklasse übergeben.</summary>
-    protected override Task OnBeforePriceTickerIteration(IReadOnlyList<Position> positions)
+    /// <summary>Verwaiste Signale bereinigen (Grace Period 30s) + Funding-Rate aktualisieren.</summary>
+    protected override async Task OnBeforePriceTickerIteration(IReadOnlyList<Position> positions)
     {
         if (_positionSignals.Count > 0)
         {
@@ -305,7 +358,19 @@ public class LiveTradingService : TradingServiceBase
                 }
             }
         }
-        return Task.CompletedTask;
+
+        // Funding-Rate periodisch aktualisieren (alle 5 Min, über PriceTicker-Zähler)
+        if ((DateTime.UtcNow - _lastFundingRateUpdate).TotalMinutes >= 5 && positions.Count > 0)
+        {
+            try
+            {
+                // Funding-Rate für das erste offene Symbol abfragen (alle BingX-Symbole haben ähnliche Rates)
+                var rate = await _restClient.GetFundingRateAsync(positions[0].Symbol).ConfigureAwait(false);
+                _currentFundingRate = rate;
+                _lastFundingRateUpdate = DateTime.UtcNow;
+            }
+            catch { /* Funding-Rate-Abfrage ist optional */ }
+        }
     }
 
     protected override Task OnOrderPlacedAsync(Ticker ticker, Side side, decimal quantity)
@@ -323,6 +388,25 @@ public class LiveTradingService : TradingServiceBase
     {
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
             $"LIVE: {symbol} Trailing-SL nachgezogen: {oldSl:N2} → {newSl:N2}", symbol));
+    }
+
+    /// <summary>ATI-Lernzustand periodisch in DB persistieren (Schutz gegen App-Crash).</summary>
+    protected override async Task OnAtiAutoSaveAsync()
+    {
+        if (_dbService == null || _ati == null) return;
+        try
+        {
+            var stateJson = _ati.SerializeState();
+            await _dbService.SaveAtiStateAsync(stateJson).ConfigureAwait(false);
+            if (_eventBus.HasLogSubscribers)
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "ATI",
+                    "ATI-Lernzustand automatisch gespeichert"));
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "ATI",
+                $"ATI Auto-Save fehlgeschlagen: {ex.Message}"));
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════

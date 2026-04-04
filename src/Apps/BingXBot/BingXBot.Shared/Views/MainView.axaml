@@ -5,7 +5,21 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="BingXBot.Views.MainView"
              x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
              Background="Transparent">
+
+  <!-- Keyboard-Shortcuts -->
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+D1" Command="{Binding NavigateToCommand}" CommandParameter="Dashboard" />
+    <KeyBinding Gesture="Ctrl+D2" Command="{Binding NavigateToCommand}" CommandParameter="Scanner" />
+    <KeyBinding Gesture="Ctrl+D3" Command="{Binding NavigateToCommand}" CommandParameter="Strategie" />
+    <KeyBinding Gesture="Ctrl+D4" Command="{Binding NavigateToCommand}" CommandParameter="Backtest" />
+    <KeyBinding Gesture="Ctrl+D5" Command="{Binding NavigateToCommand}" CommandParameter="TradeHistory" />
+    <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateToCommand}" CommandParameter="RiskSettings" />
+    <KeyBinding Gesture="Ctrl+D7" Command="{Binding NavigateToCommand}" CommandParameter="Log" />
+    <KeyBinding Gesture="Ctrl+D8" Command="{Binding NavigateToCommand}" CommandParameter="Settings" />
+    <KeyBinding Gesture="Escape" Command="{Binding NavigateToCommand}" CommandParameter="Dashboard" />
+  </UserControl.KeyBindings>
 
   <UserControl.Styles>
     <!-- Fade-Transition für Tab-Inhalt -->
@@ -60,6 +74,18 @@
     </Style>
   </UserControl.Styles>
 
+  <UserControl.KeyBindings>
+    <!-- Navigation: Ctrl+1-8 -->
+    <KeyBinding Gesture="Ctrl+D1" Command="{Binding NavigateToCommand}" CommandParameter="Dashboard" />
+    <KeyBinding Gesture="Ctrl+D2" Command="{Binding NavigateToCommand}" CommandParameter="Scanner" />
+    <KeyBinding Gesture="Ctrl+D3" Command="{Binding NavigateToCommand}" CommandParameter="Strategie" />
+    <KeyBinding Gesture="Ctrl+D4" Command="{Binding NavigateToCommand}" CommandParameter="Backtest" />
+    <KeyBinding Gesture="Ctrl+D5" Command="{Binding NavigateToCommand}" CommandParameter="TradeHistory" />
+    <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateToCommand}" CommandParameter="RiskSettings" />
+    <KeyBinding Gesture="Ctrl+D7" Command="{Binding NavigateToCommand}" CommandParameter="Log" />
+    <KeyBinding Gesture="Ctrl+D8" Command="{Binding NavigateToCommand}" CommandParameter="Settings" />
+  </UserControl.KeyBindings>
+
   <Grid ColumnDefinitions="220,*" RowDefinitions="*,Auto">
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -96,7 +122,8 @@
             <Button Grid.Column="1" Classes="NavButton"
                     Classes.Active="{Binding IsSettingsActive}"
                     Command="{Binding NavigateToCommand}"
-                    CommandParameter="Settings">
+                    CommandParameter="Settings"
+                    ToolTip.Tip="Einstellungen (Ctrl+8)">
               <StackPanel Orientation="Horizontal" Spacing="12">
                 <mi:MaterialIcon Kind="Cog" Width="20" Height="20" />
                 <TextBlock Text="Einstellungen" VerticalAlignment="Center" FontSize="13" />
@@ -116,7 +143,8 @@
               <Button Grid.Column="1" Classes="NavButton"
                       Classes.Active="{Binding IsDashboardActive}"
                       Command="{Binding NavigateToCommand}"
-                      CommandParameter="Dashboard">
+                      CommandParameter="Dashboard"
+                      ToolTip.Tip="Dashboard (Ctrl+1)">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                   <mi:MaterialIcon Kind="ViewDashboard" Width="20" Height="20" />
                   <TextBlock Text="Dashboard" VerticalAlignment="Center" FontSize="13" />
@@ -131,7 +159,8 @@
               <Button Grid.Column="1" Classes="NavButton"
                       Classes.Active="{Binding IsScannerActive}"
                       Command="{Binding NavigateToCommand}"
-                      CommandParameter="Scanner">
+                      CommandParameter="Scanner"
+                      ToolTip.Tip="Scanner (Ctrl+2)">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                   <mi:MaterialIcon Kind="Radar" Width="20" Height="20" />
                   <TextBlock Text="Scanner" VerticalAlignment="Center" FontSize="13" />
@@ -146,7 +175,8 @@
               <Button Grid.Column="1" Classes="NavButton"
                       Classes.Active="{Binding IsStrategyActive}"
                       Command="{Binding NavigateToCommand}"
-                      CommandParameter="Strategie">
+                      CommandParameter="Strategie"
+                      ToolTip.Tip="Strategie (Ctrl+3)">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                   <mi:MaterialIcon Kind="ChartLine" Width="20" Height="20" />
                   <TextBlock Text="Strategie" VerticalAlignment="Center" FontSize="13" />
@@ -161,7 +191,8 @@
               <Button Grid.Column="1" Classes="NavButton"
                       Classes.Active="{Binding IsBacktestActive}"
                       Command="{Binding NavigateToCommand}"
-                      CommandParameter="Backtest">
+                      CommandParameter="Backtest"
+                      ToolTip.Tip="Backtest (Ctrl+4)">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                   <mi:MaterialIcon Kind="History" Width="20" Height="20" />
                   <TextBlock Text="Backtest" VerticalAlignment="Center" FontSize="13" />
@@ -176,10 +207,11 @@
               <Button Grid.Column="1" Classes="NavButton"
                       Classes.Active="{Binding IsTradeHistoryActive}"
                       Command="{Binding NavigateToCommand}"
-                      CommandParameter="TradeHistory">
+                      CommandParameter="TradeHistory"
+                      ToolTip.Tip="Trade-Historie (Ctrl+5)">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                   <mi:MaterialIcon Kind="FormatListBulleted" Width="20" Height="20" />
-                  <TextBlock Text="Trade-History" VerticalAlignment="Center" FontSize="13" />
+                  <TextBlock Text="Trade-Historie" VerticalAlignment="Center" FontSize="13" />
                 </StackPanel>
               </Button>
             </Grid>
@@ -191,7 +223,8 @@
               <Button Grid.Column="1" Classes="NavButton"
                       Classes.Active="{Binding IsRiskSettingsActive}"
                       Command="{Binding NavigateToCommand}"
-                      CommandParameter="RiskSettings">
+                      CommandParameter="RiskSettings"
+                      ToolTip.Tip="Risk-Management (Ctrl+6)">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                   <mi:MaterialIcon Kind="ShieldCheck" Width="20" Height="20" />
                   <TextBlock Text="Risk-Management" VerticalAlignment="Center" FontSize="13" />
@@ -206,7 +239,8 @@
               <Button Grid.Column="1" Classes="NavButton"
                       Classes.Active="{Binding IsLogActive}"
                       Command="{Binding NavigateToCommand}"
-                      CommandParameter="Log">
+                      CommandParameter="Log"
+                      ToolTip.Tip="Log (Ctrl+7)">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                   <mi:MaterialIcon Kind="Console" Width="20" Height="20" />
                   <TextBlock Text="Log" VerticalAlignment="Center" FontSize="13" />
@@ -277,9 +311,11 @@
             BorderThickness="0,1,0,0"
             Padding="16,8">
       <Grid ColumnDefinitions="Auto,*,Auto">
-        <!-- Verbindungsstatus -->
-        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-          <Ellipse Width="8" Height="8" Fill="{DynamicResource AppLossBrush}"
+        <!-- Verbindungsstatus (dynamische Farbe) -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8"
+                    ToolTip.Tip="Verbindungsstatus zur Exchange">
+          <Ellipse Width="8" Height="8"
+                   Fill="{Binding ConnectionDotColor}"
                    VerticalAlignment="Center" />
           <TextBlock Text="{Binding ConnectionStatus}"
                      Foreground="{DynamicResource AppTextSecondaryBrush}"
@@ -302,7 +338,7 @@
                        Foreground="{DynamicResource TextMutedBrush}"
                        VerticalAlignment="Center" />
             <TextBlock Text="{Binding BotStatus}" FontSize="12" FontWeight="SemiBold"
-                       Foreground="{DynamicResource AppTextSecondaryBrush}"
+                       Foreground="{Binding BotStatusColor}"
                        VerticalAlignment="Center" />
           </StackPanel>
         </StackPanel>

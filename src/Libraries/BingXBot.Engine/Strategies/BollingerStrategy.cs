@@ -42,7 +42,7 @@ public class BollingerStrategy : IStrategy
 
         var (upper, middle, lower) = IndicatorHelper.CalculateBollinger(candles, _period, _stdDev);
         var atr = IndicatorHelper.CalculateAtr(candles, _atrPeriod);
-        var volumeSma = IndicatorHelper.CalculateSma(candles, _volumePeriod);
+        var volumeSma = IndicatorHelper.CalculateVolumeSma(candles, _volumePeriod);
 
         var lastUpper = upper[^1];
         var lastMiddle = middle[^1];
@@ -55,6 +55,11 @@ public class BollingerStrategy : IStrategy
 
         var currentPrice = context.CurrentTicker.LastPrice;
         var atrValue = lastAtr.Value;
+
+        // ATR=0 Guard: Bei identischen OHLC-Werten wäre TP=Entry
+        if (atrValue <= 0)
+            return new SignalResult(Signal.None, 0m, null, null, null, "ATR ist 0 - kein valider TP möglich");
+
         var currentClose = candles[^1].Close;
         var currentVolume = candles[^1].Volume;
 
@@ -160,7 +165,7 @@ public class BollingerStrategy : IStrategy
         if (history.Count < _squeezePeriod + 5) return;
         IndicatorHelper.CalculateBollinger(history, _period, _stdDev);
         IndicatorHelper.CalculateAtr(history, _atrPeriod);
-        IndicatorHelper.CalculateSma(history, _volumePeriod);
+        IndicatorHelper.CalculateVolumeSma(history, _volumePeriod);
     }
     public void Reset() { }
 

@@ -3,7 +3,8 @@
              xmlns:vm="using:BingXBot.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="BingXBot.Views.StrategyView"
-             x:DataType="vm:StrategyViewModel">
+             x:DataType="vm:StrategyViewModel"
+             x:CompileBindings="True">
 
   <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="20" Margin="0,0,0,24">
@@ -127,7 +128,8 @@
                   Padding="20,10"
                   CornerRadius="6"
                   VerticalAlignment="Center"
-                  Cursor="Hand">
+                  Cursor="Hand"
+                  ToolTip.Tip="Strategie aktivieren/deaktivieren">
             <Button.Background>
               <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
             </Button.Background>

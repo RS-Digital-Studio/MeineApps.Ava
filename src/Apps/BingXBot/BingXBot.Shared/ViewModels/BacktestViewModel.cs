@@ -3,7 +3,7 @@ using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
-using BingXBot.Core.Simulation;
+using BingXBot.Backtest.Simulation;
 using BingXBot.Engine.Risk;
 using BingXBot.Engine.Strategies;
 using BingXBot.Services;
@@ -51,6 +51,15 @@ public partial class BacktestViewModel : ViewModelBase
     [ObservableProperty] private int _totalTrades;
     [ObservableProperty] private decimal _averageWin;
     [ObservableProperty] private decimal _averageLoss;
+
+    /// <summary>Ob das Gesamt-PnL positiv ist (für Farbsteuerung in der View).</summary>
+    public bool IsPnlPositive => TotalPnl >= 0;
+
+    /// <summary>Ob die Win-Rate über 50% ist (für Farbsteuerung in der View).</summary>
+    public bool IsWinRateGood => WinRate >= 50m;
+
+    partial void OnTotalPnlChanged(decimal value) => OnPropertyChanged(nameof(IsPnlPositive));
+    partial void OnWinRateChanged(decimal value) => OnPropertyChanged(nameof(IsWinRateGood));
 
     public string[] Strategies => StrategyFactory.AvailableStrategies;
     public string[] TimeFrames => new[] { "M5", "M15", "M30", "H1", "H4", "D1" };

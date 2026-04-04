@@ -26,11 +26,28 @@ public class ConfidenceGate
     public int MinBucketSamples { get; set; } = 5;
 
     /// <summary>
+    /// Mindestanzahl Gesamt-Trades bevor Confidence Gate als Filter aktiv wird.
+    /// Unter dieser Schwelle gibt Evaluate() immer (Prior, true) zurück → kein Filtern,
+    /// nur Datensammlung. Schützt gegen schlechte Entscheidungen mit zu wenig Daten.
+    /// </summary>
+    public int MinTradesBeforeLearning { get; set; } = 20;
+
+    /// <summary>
     /// Bewertet die Erfolgswahrscheinlichkeit basierend auf gelernten Mustern.
     /// </summary>
     public (decimal Confidence, bool ShouldTrade) Evaluate(
         FeatureSnapshot features, MarketRegime regime, EnsembleVote ensemble)
     {
+        // Cold-Start-Schutz: Unter MinTrades wird nicht gefiltert.
+        // Das System sammelt nur Daten, lehnt aber keine Trades ab.
+        int totalTrades;
+        lock (_statsLock) { totalTrades = _totalWins + _totalLosses; }
+        if (totalTrades < MinTradesBeforeLearning)
+        {
+            var prior = (decimal)GetPriorWinRate();
+            return (prior, true); // Immer durchlassen, nur Daten sammeln
+        }
+
         // Feature-Buckets diskretisieren
         var buckets = DiscretizeFeatures(features, regime, ensemble);
 
@@ -66,9 +83,13 @@ public class ConfidenceGate
         }
         else
         {
-            // Log-Odds → Wahrscheinlichkeit konvertieren
-            var avgLogOdds = logOddsSum / bucketCount;
-            var probability = 1.0 / (1.0 + Math.Exp(-avgLogOdds));
+            // H-5 Fix: Prior-Term einbeziehen + Log-Odds SUMMIEREN (nicht mitteln).
+            // Naive Bayes: log P(Win|B1..Bn) = log P(Win) + Σ log(P(Bi|Win)/P(Bi|Loss))
+            // Mitteln schwächt den Effekt ab und ist mathematisch falsch.
+            var priorWinRate = GetPriorWinRate();
+            var priorLogOdds = Math.Log(priorWinRate / (1.0 - priorWinRate + 1e-10));
+            var totalLogOdds = priorLogOdds + logOddsSum;
+            var probability = 1.0 / (1.0 + Math.Exp(-totalLogOdds));
             confidence = (decimal)Math.Clamp(probability, 0.01, 0.99);
         }
 

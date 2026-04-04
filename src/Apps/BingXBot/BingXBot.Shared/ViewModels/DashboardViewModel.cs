@@ -5,13 +5,10 @@ using BingXBot.Core.Models;
 using BingXBot.Engine;
 using BingXBot.Engine.ATI;
 using BingXBot.Engine.Strategies;
-using BingXBot.Exchange;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.ObjectModel;
 
 namespace BingXBot.ViewModels;
@@ -49,12 +46,14 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     private readonly RiskSettings _riskSettings;
     private readonly ScannerSettings _scannerSettings;
     private readonly AdaptiveTradingIntelligence? _ati;
+    private readonly BotSettings _botSettings;
     private PeriodicTimer? _equityTimer;
     private PeriodicTimer? _accountUpdateTimer;
 
-    // === Live-Trading Client + Service (erstellt zur Laufzeit mit API-Keys) ===
-    private BingXRestClient? _liveClient;
-    private LiveTradingService? _liveService;
+    // === Live-Trading (delegiert an LiveTradingManager) ===
+    private readonly LiveTradingManager _liveManager;
+    // CancellationToken für Account-Update-Timer (wird bei Stop gecancelled)
+    private CancellationTokenSource? _accountUpdateCts;
 
     // === Sub-ViewModels (delegierte Verantwortlichkeiten) ===
 
@@ -92,10 +91,28 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private decimal _unrealizedPnl;
     [ObservableProperty] private decimal _totalPnl;
 
+    public bool IsUnrealizedPnlPositive => UnrealizedPnl >= 0;
+    public bool IsTotalPnlPositive => TotalPnl >= 0;
+    public string StatusDotColor => BotStatusState switch
+    {
+        BotState.Running => "#10B981",
+        BotState.Paused => "#F59E0B",
+        BotState.Starting => "#3B82F6",
+        BotState.Error or BotState.EmergencyStop => "#EF4444",
+        _ => "#64748B"
+    };
+
+    partial void OnUnrealizedPnlChanged(decimal value) => OnPropertyChanged(nameof(IsUnrealizedPnlPositive));
+    partial void OnTotalPnlChanged(decimal value) => OnPropertyChanged(nameof(IsTotalPnlPositive));
+    partial void OnBotStatusStateChanged(BotState value) => OnPropertyChanged(nameof(StatusDotColor));
+
     // === Offene Positionen ===
     public ObservableCollection<PositionDisplayItem> OpenPositions { get; } = new();
     [ObservableProperty] private bool _hasOpenPositions;
     [ObservableProperty] private string _positionsStatusText = "Keine offenen Positionen";
+
+    // === Activity-Feed Expand/Collapse ===
+    [ObservableProperty] private bool _isActivityExpanded = true;
 
     // === Equity-Kurve ===
     public ObservableCollection<EquityPoint> EquityData { get; } = new();
@@ -116,6 +133,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         PaperTradingService paperService,
         RiskSettings riskSettings,
         ScannerSettings scannerSettings,
+        BotSettings botSettings,
+        LiveTradingManager liveManager,
         IPublicMarketDataClient? publicClient = null,
         BotDatabaseService? dbService = null,
         ISecureStorageService? secureStorage = null,
@@ -126,6 +145,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _paperService = paperService;
         _riskSettings = riskSettings;
         _scannerSettings = scannerSettings;
+        _botSettings = botSettings;
+        _liveManager = liveManager;
         _publicClient = publicClient;
         _dbService = dbService;
         _secureStorage = secureStorage;
@@ -170,7 +191,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         }
         else
         {
-            await StartLiveTradingAsync();
+            // Live-Trading erfordert explizite Bestätigung
+            ConfirmDialogTitle = "Live-Trading starten?";
+            ConfirmDialogMessage = "Du bist dabei, den Bot mit ECHTEM GELD zu starten.\n\nDer Bot wird automatisch Trades auf BingX eröffnen und schließen. Stelle sicher, dass dein Risikomanagement korrekt konfiguriert ist.";
+            _confirmDialogAction = StartLiveTradingAsync;
+            ShowConfirmDialog = true;
         }
     }
 
@@ -190,7 +215,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             _paperService.ATI = _ati;
 
             // ATI-Lernzustand aus DB laden (Training bleibt über Neustarts erhalten)
-            await LoadAtiStateAsync();
+            await _liveManager.LoadAtiStateAsync();
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
                 $"Adaptive Trading Intelligence aktiviert ({StrategyFactory.AvailableStrategies.Length} Strategien im Ensemble)"));
@@ -200,18 +225,18 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             $"Strategie: {SelectedStrategy}"));
 
         // Paper-Trading-Service starten
-        _paperService.Start(10_000m);
+        _paperService.Start(_botSettings.PaperInitialBalance);
 
         IsRunning = true;
         CanStart = false;
-        BotStatusText = "Laeuft (Paper)";
+        BotStatusText = "Läuft (Paper)";
         BotStatusState = BotState.Running;
         ShowWelcomeHint = false;
 
         // Account-Daten anzeigen
         HasAccountData = true;
-        Balance = 10_000m;
-        AvailableBalance = 10_000m;
+        Balance = _botSettings.PaperInitialBalance;
+        AvailableBalance = _botSettings.PaperInitialBalance;
         UnrealizedPnl = 0m;
         TotalPnl = 0m;
 
@@ -223,174 +248,74 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Startet den Live-Trading-Modus: Verbindet sich mit BingX, erstellt LiveTradingService
-    /// und handelt automatisch mit echtem Geld.
+    /// Startet den Live-Trading-Modus via LiveTradingManager.
     /// </summary>
     private async Task StartLiveTradingAsync()
     {
-        // API-Keys prüfen
-        if (_secureStorage == null || !_secureStorage.HasCredentials)
-        {
-            BotStatusText = "API-Keys fehlen";
-            BotStatusState = BotState.Error;
-            WelcomeHintText = "Gehe zu Einstellungen und hinterlege deine BingX API-Keys für Live-Trading.";
-            ShowWelcomeHint = true;
-
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
-                "Live-Trading erfordert API-Keys. Bitte in den Einstellungen konfigurieren."));
-            return;
-        }
-
-        // Credentials laden
-        var creds = await _secureStorage.LoadCredentialsAsync();
-        if (creds == null)
-        {
-            BotStatusText = "API-Keys konnten nicht geladen werden";
-            BotStatusState = BotState.Error;
-
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
-                "API-Keys konnten nicht entschlüsselt werden. Bitte erneut eingeben."));
-            return;
-        }
-
-        // BingXRestClient erstellen + Verbindungstest
         BotStatusText = "Verbinde mit BingX...";
         BotStatusState = BotState.Starting;
         CanStart = false;
 
         try
         {
-            // Eigener HttpClient für Live-Client (teilt nicht den globalen mit PublicClient,
-            // da Timeout-Änderungen sonst alle Requests betreffen)
-            var httpClient = new HttpClient();
-            var liveRateLimiter = new RateLimiter();
-            var logger = NullLogger<BingXRestClient>.Instance;
-            _liveClient = new BingXRestClient(creds.Value.ApiKey, creds.Value.ApiSecret, httpClient, liveRateLimiter, logger);
-
-            // Verbindung testen: Account-Info abrufen
-            var account = await _liveClient.GetAccountInfoAsync();
+            var result = await _liveManager.ConnectAsync();
 
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                Balance = account.Balance;
-                AvailableBalance = account.AvailableBalance;
-                UnrealizedPnl = account.UnrealizedPnl;
-                TotalPnl = account.RealizedPnl + account.UnrealizedPnl;
+                Balance = result.Account.Balance;
+                AvailableBalance = result.Account.AvailableBalance;
+                UnrealizedPnl = result.Account.UnrealizedPnl;
+                TotalPnl = result.Account.RealizedPnl + result.Account.UnrealizedPnl;
                 HasAccountData = true;
-            });
 
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-                $"Live-Verbindung hergestellt. Balance: {account.Balance:N2} USDT"));
-
-            // Offene Positionen laden
-            var positions = await _liveClient.GetPositionsAsync();
-
-            // Positionen als Items erstellen (auf Background-Thread, damit API-Calls nicht UI blockieren)
-            var posItems = positions.Select(p => CreatePositionItem(p)).ToList();
-
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
                 OpenPositions.Clear();
-                foreach (var item in posItems)
-                    OpenPositions.Add(item);
+                foreach (var p in result.Positions)
+                    OpenPositions.Add(CreatePositionItem(p));
                 UpdatePositionsStatus();
             });
 
-            if (positions.Count > 0)
-            {
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-                    $"{positions.Count} offene Position(en) gefunden"));
-            }
+            await _liveManager.StartAsync(SelectedStrategy);
 
-            // PublicClient wird benoetigt fuer Marktdaten-Scans im Live-Trading
-            if (_publicClient == null)
-            {
-                BotStatusText = "Marktdaten-Client nicht verfuegbar";
-                BotStatusState = BotState.Error;
-                CanStart = true;
-                _liveClient = null;
-                return;
-            }
-
-            // LiveTradingService erstellen
-            _liveService = new LiveTradingService(
-                _liveClient,
-                _publicClient,
-                _strategyManager,
-                _riskSettings,
-                _scannerSettings,
-                _eventBus);
-
-            // Strategie aktivieren
-            var strategy = StrategyFactory.Create(SelectedStrategy);
-            _strategyManager.SetStrategy(strategy);
-
-            // ATI: Alle Strategien im Ensemble registrieren und an Service übergeben
-            if (_ati != null)
-            {
-                _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
-                _liveService.ATI = _ati;
-
-                // ATI-Lernzustand aus DB laden (Training bleibt über Neustarts erhalten)
-                await LoadAtiStateAsync();
-
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
-                    $"Adaptive Trading Intelligence aktiviert ({StrategyFactory.AvailableStrategies.Length} Strategien im Ensemble)"));
-            }
-
-            // WARNUNG im Activity-Feed
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
-                $"LIVE-TRADING AKTIV mit Strategie '{SelectedStrategy}'. Echtes Geld!"));
-
-            // Live-Trading starten
-            _liveService.Start();
-
-            // Bestehende Positionen mit SL/TP-Orders abgleichen und im Service registrieren
-            if (positions.Count > 0)
-            {
-                await RestorePositionSignalsAsync(positions);
-            }
+            if (result.Positions.Count > 0)
+                await _liveManager.RestorePositionSignalsAsync(result.Positions);
 
             IsRunning = true;
             CanStart = false;
             BotStatusText = "LIVE - Handelt aktiv!";
-            BotStatusState = BotState.Running; // Live-Trading aktiv
+            BotStatusState = BotState.Running;
             ShowWelcomeHint = false;
             LiveStatusText = "Handelt aktiv";
             IsLiveActive = true;
 
-            // Account-Update Timer starten (alle 5 Sekunden echte Daten)
             _ = StartAccountUpdateAsync();
         }
         catch (Exception ex)
         {
-            BotStatusText = "Verbindung fehlgeschlagen";
+            BotStatusText = ex.Message.Contains("API-Keys") ? ex.Message : "Verbindung fehlgeschlagen";
             BotStatusState = BotState.Error;
             CanStart = true;
-            _liveClient = null;
-            _liveService = null;
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
-                $"Live-Verbindung fehlgeschlagen: {ex.Message}"));
+                $"Live-Trading fehlgeschlagen: {ex.Message}"));
         }
     }
 
     [RelayCommand]
     private void PauseBot()
     {
-        if (!IsPaperMode && _liveService != null)
+        if (!IsPaperMode && _liveManager.Service != null)
         {
             // Live-Modus: Pause/Resume über LiveTradingService
-            if (_liveService.IsPaused)
+            if (_liveManager.Service!.IsPaused)
             {
-                _liveService.Resume();
+                _liveManager.Service!.Resume();
                 BotStatusText = "LIVE - Handelt aktiv!";
                 BotStatusState = BotState.Running;
                 _ = StartAccountUpdateAsync();
             }
             else
             {
-                _liveService.Pause();
+                _liveManager.Service!.Pause();
                 _accountUpdateTimer?.Dispose();
                 _accountUpdateTimer = null;
                 BotStatusText = "LIVE - Pausiert";
@@ -403,7 +328,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             // Resume
             _paperService.Resume();
-            BotStatusText = "Laeuft (Paper)";
+            BotStatusText = "Läuft (Paper)";
             BotStatusState = BotState.Running;
         }
         else
@@ -418,32 +343,24 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task StopBot()
     {
-        // ATI-Lernzustand in DB speichern bevor der Service gestoppt wird
-        await SaveAtiStateAsync();
-
+        _accountUpdateCts?.Cancel();
         _accountUpdateTimer?.Dispose();
         _accountUpdateTimer = null;
         StopEquitySnapshotTimer();
 
         if (IsPaperMode)
         {
+            // ATI-Lernzustand speichern (Paper lernt auch, aber StopAsync() hat keinen eigenen Save)
+            await _liveManager.SaveAtiStateAsync();
             await _paperService.StopAsync();
         }
         else
         {
-            // Live-Modus: LiveTradingService stoppen + Client freigeben
-            if (_liveService != null)
-            {
-                await _liveService.StopAsync();
-                _liveService.Dispose();
-                _liveService = null;
-            }
-            _liveClient = null;
+            // Live-Modus: StopAsync() speichert ATI-State intern vor dem Stop
+            if (_liveManager.IsRunning)
+                await _liveManager.StopAsync();
             LiveStatusText = "Getrennt";
             IsLiveActive = false;
-
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-                "Live-Trading gestoppt. Offene Positionen bleiben auf BingX bestehen."));
         }
 
         IsRunning = false;
@@ -456,6 +373,22 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task EmergencyStop()
     {
+        // Live-Modus: Bestätigung erforderlich (schließt ALLE echten Positionen!)
+        if (!IsPaperMode && IsLiveActive)
+        {
+            ConfirmDialogTitle = "NOTFALL-STOP ausführen?";
+            ConfirmDialogMessage = "ALLE echten Positionen auf BingX werden SOFORT geschlossen!\n\nDies kann nicht rückgängig gemacht werden.";
+            _confirmDialogAction = ExecuteEmergencyStopAsync;
+            ShowConfirmDialog = true;
+            return;
+        }
+
+        await ExecuteEmergencyStopAsync();
+    }
+
+    private async Task ExecuteEmergencyStopAsync()
+    {
+        _accountUpdateCts?.Cancel();
         _accountUpdateTimer?.Dispose();
         _accountUpdateTimer = null;
         StopEquitySnapshotTimer();
@@ -466,21 +399,15 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         }
         else
         {
-            // Live-Modus: LiveTradingService Notfall-Stop (schließt ALLE echten Positionen!)
-            if (_liveService != null)
-            {
-                await _liveService.EmergencyStopAsync();
-                _liveService.Dispose();
-                _liveService = null;
-            }
-            _liveClient = null;
+            if (_liveManager.IsRunning)
+                await _liveManager.EmergencyStopAsync();
             LiveStatusText = "Notfall-Stop";
             IsLiveActive = false;
         }
 
         IsRunning = false;
         CanStart = true;
-        BotStatusText = "Notfall-Stop ausgefuehrt";
+        BotStatusText = "Notfall-Stop ausgeführt";
         BotStatusState = BotState.Error;
 
         // Positionen aus UI entfernen
@@ -520,11 +447,16 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         AvailableBalance = 0;
         UnrealizedPnl = 0;
         TotalPnl = 0;
-        _liveClient = null;
         IsLiveActive = false;
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
             $"Modus gewechselt zu: {ModeText}"));
+    }
+
+    [RelayCommand]
+    private void ToggleActivityExpanded()
+    {
+        IsActivityExpanded = !IsActivityExpanded;
     }
 
     [RelayCommand]
@@ -566,15 +498,15 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 await _paperService.Exchange.ClosePositionAsync(position.Symbol, side);
                 _paperService.RemovePositionSignal(position.Symbol, side);
             }
-            else if (!IsPaperMode && _liveClient != null)
+            else if (!IsPaperMode && _liveManager.RestClient != null)
             {
                 // Position-Daten für CompletedTrade merken
                 var entryPrice = position.EntryPrice;
                 var exitPrice = position.MarkPrice;
                 var qty = position.Quantity;
 
-                await _liveClient.ClosePositionAsync(position.Symbol, side);
-                _liveService?.RemovePositionSignal(position.Symbol, side);
+                await _liveManager.RestClient!.ClosePositionAsync(position.Symbol, side);
+                _liveManager.Service?.RemovePositionSignal(position.Symbol, side);
 
                 // CompletedTrade erstellen damit ATI + RiskManager Feedback bekommen
                 var fee = qty * entryPrice * 0.0005m + qty * exitPrice * 0.0005m;
@@ -674,9 +606,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 item.TakeProfit = signal.TakeProfit;
             }
         }
-        else if (_liveService != null)
+        else if (_liveManager.Service != null)
         {
-            var signal = _liveService.GetPositionSignal(p.Symbol, p.Side);
+            var signal = _liveManager.Service.GetPositionSignal(p.Symbol, p.Side);
             if (signal != null)
             {
                 item.StopLoss = signal.StopLoss;
@@ -701,7 +633,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             }
             else
             {
-                _liveService?.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
+                _liveManager.Service?.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
             }
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Trade",
@@ -711,66 +643,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         return item;
     }
 
-    /// <summary>
-    /// Stellt SL/TP-Signale für bestehende Positionen wieder her (nach App-Neustart).
-    /// Liest offene Conditional Orders (STOP_MARKET / TAKE_PROFIT_MARKET) von BingX
-    /// und registriert sie im LiveTradingService für clientseitiges Monitoring + Trailing-Stop.
-    /// </summary>
-    private async Task RestorePositionSignalsAsync(IReadOnlyList<Position> positions)
-    {
-        if (_liveClient == null || _liveService == null) return;
-
-        try
-        {
-            // Alle offenen Orders holen (inkl. SL/TP Conditional Orders)
-            var openOrders = await _liveClient.GetOpenOrdersAsync();
-
-            var restored = 0;
-            foreach (var pos in positions)
-            {
-                // SL/TP für diese Position finden
-                decimal? sl = null;
-                decimal? tp = null;
-
-                foreach (var order in openOrders)
-                {
-                    if (order.Symbol != pos.Symbol) continue;
-
-                    if (order.Type == Core.Enums.OrderType.StopMarket && order.StopPrice.HasValue)
-                        sl = order.StopPrice.Value;
-                    else if (order.Type == Core.Enums.OrderType.TakeProfitMarket && order.StopPrice.HasValue)
-                        tp = order.StopPrice.Value;
-                }
-
-                if (sl.HasValue || tp.HasValue)
-                {
-                    // Signal im Service registrieren (für PriceTicker-Loop + Trailing-Stop)
-                    var signal = new SignalResult(
-                        pos.Side == Side.Buy ? Core.Enums.Signal.Long : Core.Enums.Signal.Short,
-                        0.5m, pos.EntryPrice, sl, tp,
-                        "Wiederhergestellt nach Neustart");
-
-                    _liveService.RegisterPositionSignal(pos.Symbol, pos.Side, signal, pos.MarkPrice);
-
-                    restored++;
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Trade",
-                        $"{pos.Symbol}: SL/TP wiederhergestellt (SL={sl?.ToString("G8") ?? "---"} TP={tp?.ToString("G8") ?? "---"})",
-                        pos.Symbol));
-                }
-            }
-
-            if (restored > 0)
-            {
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-                    $"{restored} Position(en) mit SL/TP wiederhergestellt"));
-            }
-        }
-        catch (Exception ex)
-        {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
-                $"SL/TP-Wiederherstellung fehlgeschlagen: {ex.Message}"));
-        }
-    }
 
     /// <summary>
     /// Aktualisiert Positionen direkt aus Position-Daten:
@@ -817,14 +689,14 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _accountUpdateCts?.Cancel();
+        _accountUpdateCts?.Dispose();
         _equityTimer?.Dispose();
         _accountUpdateTimer?.Dispose();
         BtcTicker.Dispose();
         Activity.Dispose();
         _paperService.Dispose();
-        _liveService?.Dispose();
-        _liveService = null;
-        _liveClient = null;
+        _liveManager.Dispose();
     }
 
     /// <summary>
@@ -833,12 +705,17 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     /// </summary>
     private async Task StartAccountUpdateAsync()
     {
+        _accountUpdateCts?.Cancel();
+        _accountUpdateCts?.Dispose();
+        _accountUpdateCts = new CancellationTokenSource();
+        var ct = _accountUpdateCts.Token;
+
         _accountUpdateTimer?.Dispose();
         _accountUpdateTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
 
         try
         {
-            while (await _accountUpdateTimer.WaitForNextTickAsync())
+            while (await _accountUpdateTimer.WaitForNextTickAsync(ct))
             {
                 if (!IsRunning) continue;
 
@@ -847,11 +724,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                     AccountInfo? account = null;
                     IReadOnlyList<Position>? positions = null;
 
-                    if (!IsPaperMode && _liveClient != null)
+                    if (!IsPaperMode && _liveManager.RestClient != null)
                     {
                         // Live-Modus: Echte Daten von BingX
-                        account = await _liveClient.GetAccountInfoAsync();
-                        positions = await _liveClient.GetPositionsAsync();
+                        account = await _liveManager.RestClient!.GetAccountInfoAsync();
+                        positions = await _liveManager.RestClient!.GetPositionsAsync();
                     }
                     else if (IsPaperMode && _paperService.Exchange != null)
                     {
@@ -876,7 +753,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                         UnrealizedPnl = acct.UnrealizedPnl;
                         // TotalPnl: Paper = Equity - Startkapital, Live = Realisiert + Unrealisiert
                         TotalPnl = isPaper
-                            ? acct.Balance - 10_000m
+                            ? acct.Balance - _botSettings.PaperInitialBalance
                             : acct.RealizedPnl + acct.UnrealizedPnl;
 
                         // Inkrementell: bestehende Items updaten, nur für neue CreatePositionItem aufrufen
@@ -903,44 +780,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         catch (OperationCanceledException) { }
     }
 
-    // === ATI-Persistenz ===
 
-    private async Task LoadAtiStateAsync()
-    {
-        if (_ati == null || _dbService == null) return;
-        try
-        {
-            var json = await _dbService.LoadAtiStateAsync();
-            if (!string.IsNullOrEmpty(json))
-            {
-                _ati.DeserializeState(json);
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
-                    "Lernzustand wiederhergestellt"));
-            }
-        }
-        catch (Exception ex)
-        {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "ATI",
-                $"Lernzustand konnte nicht geladen werden: {ex.Message}"));
-        }
-    }
-
-    private async Task SaveAtiStateAsync()
-    {
-        if (_ati == null || _dbService == null) return;
-        try
-        {
-            var json = _ati.SerializeState();
-            await _dbService.SaveAtiStateAsync(json);
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
-                "Lernzustand gespeichert"));
-        }
-        catch (Exception ex)
-        {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "ATI",
-                $"Lernzustand konnte nicht gespeichert werden: {ex.Message}"));
-        }
-    }
 
     /// <summary>
     /// Startet periodische Equity-Snapshots (alle 5 Minuten) in die DB.

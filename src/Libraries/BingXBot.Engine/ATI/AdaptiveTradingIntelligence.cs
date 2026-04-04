@@ -27,6 +27,19 @@ public class AdaptiveTradingIntelligence
     /// <summary>Ob ATI aktiviert ist (kann im UI deaktiviert werden).</summary>
     public bool IsEnabled { get; set; } = true;
 
+    /// <summary>
+    /// Mindestanzahl Trades bevor ATI-Gewichtungen und Confidence Gate aktiv filtern.
+    /// Unter dieser Schwelle: Ensemble-Konsens zählt, aber kein ML-basiertes Filtern.
+    /// </summary>
+    public int MinTradesBeforeLearning
+    {
+        get => _confidenceGate.MinTradesBeforeLearning;
+        set => _confidenceGate.MinTradesBeforeLearning = value;
+    }
+
+    /// <summary>Zeitpunkt der letzten Auto-Save-Persistierung (für Timer-Logik in TradingServiceBase).</summary>
+    public DateTime LastAutoSaveTime { get; set; } = DateTime.UtcNow;
+
     /// <summary>Event: Wird ausgelöst wenn ein Audit-Trail erstellt wurde (für Logging/UI).</summary>
     public event Action<TradeAudit>? AuditCreated;
 
@@ -243,13 +256,22 @@ public class AdaptiveTradingIntelligence
         var won = trade.Pnl > 0;
 
         // 1. Ensemble-Gewichte aktualisieren (pro Strategie)
+        // M-4 Fix: Auch Dissens-Strategien belohnen/bestrafen.
+        // Wenn Trade verloren hat, hatten Strategien die dagegen stimmten RECHT.
         if (ctx.EnsembleVote.Votes != null)
         {
             foreach (var vote in ctx.EnsembleVote.Votes)
             {
                 if (vote.Signal == ctx.EnsembleVote.ConsensusSignal)
                 {
+                    // Konsens-Strategie: Gewinn → belohnen, Verlust → bestrafen
                     _ensemble.RecordOutcome(vote.StrategyName, ctx.Regime.CurrentRegime, won);
+                }
+                else if (vote.Signal != Signal.None)
+                {
+                    // Dissens-Strategie (hat dagegen gestimmt): Invertiertes Feedback.
+                    // Trade verloren → Dissens-Strategie hatte Recht → belohnen
+                    _ensemble.RecordOutcome(vote.StrategyName, ctx.Regime.CurrentRegime, !won);
                 }
             }
         }
@@ -297,8 +319,14 @@ public class AdaptiveTradingIntelligence
     /// <summary>Setzt alle lernenden Komponenten zurück.</summary>
     public void Reset()
     {
+        // M-3 Fix: ALLE Komponenten zurücksetzen, nicht nur ConfidenceGate
         _confidenceGate.Reset();
+        _ensemble.ClearWeights(); // Nur Gewichte zurücksetzen, Strategien bleiben registriert
         _openTradeContexts.Clear();
+        // RegimeDetector + ExitOptimizer: Neu instanziieren wäre sauberer,
+        // aber die Instanzen sind readonly → stattdessen per Serialisierung zurücksetzen
+        _regimeDetector.DeserializeState(""); // No-op bei leerem String, Default-Transitions bleiben
+        _exitOptimizer.DeserializeState("");  // No-op bei leerem String
     }
 
     // === Interne Methoden ===

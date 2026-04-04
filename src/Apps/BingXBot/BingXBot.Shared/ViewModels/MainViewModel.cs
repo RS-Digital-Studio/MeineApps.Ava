@@ -26,6 +26,23 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] private string _botStatus = "Gestoppt";
     [ObservableProperty] private string _tradingMode = "Paper";
     [ObservableProperty] private string _connectionStatus = "Marktdaten verfügbar";
+    [ObservableProperty] private bool _isConnected = true;
+
+    /// <summary>Farbe des Verbindungs-Indikators (grün=verbunden, rot=getrennt).</summary>
+    public string ConnectionDotColor => IsConnected ? "#10B981" : "#EF4444";
+
+    /// <summary>Farbe des Bot-Status-Texts (grün=läuft, gelb=pausiert, rot=fehler, grau=gestoppt).</summary>
+    public string BotStatusColor => BotStatus switch
+    {
+        "Läuft" => "#10B981",
+        "Startet..." => "#3B82F6",
+        "Pausiert" => "#F59E0B",
+        "Notfall-Stop" or "Fehler" => "#EF4444",
+        _ => "#94A3B8"
+    };
+
+    partial void OnIsConnectedChanged(bool value) => OnPropertyChanged(nameof(ConnectionDotColor));
+    partial void OnBotStatusChanged(string value) => OnPropertyChanged(nameof(BotStatusColor));
 
     public MainViewModel(BotEventBus eventBus)
     {
@@ -39,7 +56,7 @@ public partial class MainViewModel : ViewModelBase
         {
             BotStatus = state switch
             {
-                BotState.Running => "Laeuft",
+                BotState.Running => "Läuft",
                 BotState.Paused => "Pausiert",
                 BotState.Stopped => "Gestoppt",
                 BotState.Starting => "Startet...",
@@ -47,6 +64,8 @@ public partial class MainViewModel : ViewModelBase
                 BotState.Error => "Fehler",
                 _ => state.ToString()
             };
+
+            IsConnected = state is BotState.Running or BotState.Paused or BotState.Starting;
         });
     }
 

@@ -5,7 +5,8 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:conv="using:BingXBot.Converters"
              x:Class="BingXBot.Views.DashboardView"
-             x:DataType="vm:DashboardViewModel">
+             x:DataType="vm:DashboardViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <conv:NullableDecimalConverter x:Key="NullableDecimalConverter" />
@@ -33,34 +34,34 @@
     </Style>
     <Style Selector="Button.BotStart">
       <Setter Property="Background" Value="{DynamicResource SuccessBrush}" />
-      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
     </Style>
     <Style Selector="Button.BotStart:pointerover">
-      <Setter Property="Background" Value="#34D399" />
+      <Setter Property="Background" Value="{DynamicResource SuccessHoverBrush}" />
     </Style>
     <Style Selector="Button.BotPause">
       <Setter Property="Background" Value="{DynamicResource WarningBrush}" />
-      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
     </Style>
     <Style Selector="Button.BotPause:pointerover">
-      <Setter Property="Background" Value="#FBBF24" />
+      <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}" />
     </Style>
     <Style Selector="Button.BotStop">
-      <Setter Property="Background" Value="#64748B" />
-      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource StopSurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
     </Style>
     <Style Selector="Button.BotStop:pointerover">
-      <Setter Property="Background" Value="#94A3B8" />
+      <Setter Property="Background" Value="{DynamicResource StopHoverBrush}" />
     </Style>
     <Style Selector="Button.BotEmergency">
       <Setter Property="Background" Value="{DynamicResource ErrorBrush}" />
-      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
       <Setter Property="FontWeight" Value="Bold" />
       <Setter Property="BorderThickness" Value="2" />
-      <Setter Property="BorderBrush" Value="#FFFFFF" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryContrastBrush}" />
     </Style>
     <Style Selector="Button.BotEmergency:pointerover">
-      <Setter Property="Background" Value="#DC2626" />
+      <Setter Property="Background" Value="{DynamicResource ErrorHoverBrush}" />
     </Style>
 
     <!-- Modus-Button Styles -->
@@ -91,10 +92,23 @@
 
     <!-- Roter Rand wenn Live-Trading aktiv -->
     <Style Selector="Border.LiveActive">
-      <Setter Property="BorderBrush" Value="#EF4444" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ErrorBrush}" />
       <Setter Property="BorderThickness" Value="2" />
     </Style>
+
+    <!-- Activity-Feed expandiert: MaxHeight aufheben -->
+    <Style Selector="ScrollViewer.Expanded">
+      <Setter Property="MaxHeight" Value="500" />
+    </Style>
   </UserControl.Styles>
+
+  <UserControl.KeyBindings>
+    <!-- Bot-Kontrolle: F5=Start, F6=Pause, F7=Stop, F12=Notfall-Stop -->
+    <KeyBinding Gesture="F5" Command="{Binding StartBotCommand}" />
+    <KeyBinding Gesture="F6" Command="{Binding PauseBotCommand}" />
+    <KeyBinding Gesture="F7" Command="{Binding StopBotCommand}" />
+    <KeyBinding Gesture="F12" Command="{Binding EmergencyStopCommand}" />
+  </UserControl.KeyBindings>
 
   <Grid>
   <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -104,16 +118,16 @@
       <!-- LIVE-TRADING WARNUNG (nur wenn IsLiveActive=true)                 -->
       <!-- ================================================================= -->
       <Border IsVisible="{Binding IsLiveActive}"
-              Background="#3CEF4444" BorderBrush="#EF4444" BorderThickness="2"
+              Background="{DynamicResource ErrorOverlayBrush}" BorderBrush="{DynamicResource ErrorBrush}" BorderThickness="2"
               CornerRadius="8" Padding="16">
         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
           <mi:MaterialIcon Kind="AlertCircle" Width="22" Height="22"
-                           Foreground="#EF4444" VerticalAlignment="Center" />
+                           Foreground="{DynamicResource ErrorBrush}" VerticalAlignment="Center" />
           <TextBlock Text="LIVE-TRADING AKTIV - Echtes Geld wird gehandelt!"
-                     FontSize="15" FontWeight="Bold" Foreground="#EF4444"
+                     FontSize="15" FontWeight="Bold" Foreground="{DynamicResource ErrorBrush}"
                      VerticalAlignment="Center" />
           <mi:MaterialIcon Kind="AlertCircle" Width="22" Height="22"
-                           Foreground="#EF4444" VerticalAlignment="Center" />
+                           Foreground="{DynamicResource ErrorBrush}" VerticalAlignment="Center" />
         </StackPanel>
       </Border>
 
@@ -121,7 +135,7 @@
       <!-- Willkommens-Hinweis (nur wenn ShowWelcomeHint=true)               -->
       <!-- ================================================================= -->
       <Border IsVisible="{Binding ShowWelcomeHint}"
-              Background="#2A3A5C" CornerRadius="8" Padding="16">
+              Background="{DynamicResource InfoSurfaceBrush}" CornerRadius="8" Padding="16">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="20" Height="20"
                            Foreground="{DynamicResource AppPrimaryBrush}"
@@ -158,7 +172,7 @@
               <Border CornerRadius="10" Padding="10,4" Margin="8,0,0,0"
                       Background="{DynamicResource CardBrush}">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Ellipse x:Name="StatusDot" Width="8" Height="8" VerticalAlignment="Center" />
+                  <Ellipse x:Name="StatusDot" Width="8" Height="8" VerticalAlignment="Center" Fill="{Binding StatusDotColor}" />
                   <TextBlock Text="{Binding BotStatusText}" FontSize="11" FontWeight="SemiBold"
                              Foreground="{DynamicResource AppTextSecondaryBrush}" />
                 </StackPanel>
@@ -180,17 +194,21 @@
               <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
                 <Button Classes="BotButton BotStart" Content="Start"
                         Command="{Binding StartBotCommand}"
-                        IsEnabled="{Binding CanStart}" />
+                        IsEnabled="{Binding CanStart}"
+                        ToolTip.Tip="Bot starten" />
                 <Button Classes="BotButton BotPause" Content="Pause"
                         Command="{Binding PauseBotCommand}"
-                        IsEnabled="{Binding IsRunning}" />
+                        IsEnabled="{Binding IsRunning}"
+                        ToolTip.Tip="Bot pausieren" />
                 <Button Classes="BotButton BotStop" Content="Stop"
                         Command="{Binding StopBotCommand}"
-                        IsEnabled="{Binding IsRunning}" />
+                        IsEnabled="{Binding IsRunning}"
+                        ToolTip.Tip="Bot stoppen" />
                 <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="8,4" />
                 <Button Classes="BotButton BotEmergency" Content="NOTFALL-STOP"
                         Command="{Binding EmergencyStopCommand}"
-                        IsEnabled="{Binding IsRunning}" />
+                        IsEnabled="{Binding IsRunning}"
+                        ToolTip.Tip="Notfall-Stop: Alle Positionen sofort schließen (Escape)" />
               </StackPanel>
             </StackPanel>
 
@@ -217,7 +235,8 @@
               <!-- Paper-Button: aktiv wenn IsPaperMode=true -->
               <Button x:Name="PaperButton" Classes="ModeButton"
                       Command="{Binding ToggleModeCommand}"
-                      IsEnabled="{Binding !IsRunning}">
+                      IsEnabled="{Binding !IsRunning}"
+                      ToolTip.Tip="Simuliertes Trading ohne echtes Geld">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="TestTube" Width="14" Height="14" />
                   <TextBlock Text="Paper" />
@@ -226,7 +245,8 @@
               <!-- Live-Button: aktiv wenn IsPaperMode=false -->
               <Button x:Name="LiveButton" Classes="ModeButton"
                       Command="{Binding ToggleModeCommand}"
-                      IsEnabled="{Binding !IsRunning}">
+                      IsEnabled="{Binding !IsRunning}"
+                      ToolTip.Tip="Echtes Trading mit BingX-Konto (API-Keys erforderlich)">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="CurrencyUsd" Width="14" Height="14" />
                   <TextBlock Text="Live" />
@@ -250,7 +270,8 @@
 
         <!-- Balance -->
         <Border CornerRadius="10" Padding="20,16" Margin="0,0,8,0"
-                BoxShadow="{DynamicResource CardShadow}">
+                BoxShadow="{DynamicResource CardShadow}"
+                ToolTip.Tip="Gesamter Kontostand inkl. unrealisierter Positionen">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
               <GradientStop Color="#2A2A44" Offset="0" />
@@ -269,15 +290,17 @@
             </StackPanel>
             <TextBlock Text="{Binding Balance, StringFormat='{}{0:N2}'}"
                        FontSize="24" FontWeight="Bold"
+                       FontFamily="Consolas, Courier New, monospace"
                        Foreground="{DynamicResource AppTextBrush}" />
             <TextBlock Text="USDT" FontSize="11"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" Margin="0,-4,0,0" />
           </StackPanel>
         </Border>
 
-        <!-- Verfuegbar -->
+        <!-- Verfügbar -->
         <Border CornerRadius="10" Padding="20,16" Margin="4,0"
-                BoxShadow="{DynamicResource CardShadow}">
+                BoxShadow="{DynamicResource CardShadow}"
+                ToolTip.Tip="Verfügbare Margin für neue Positionen">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
               <GradientStop Color="#2A2A44" Offset="0" />
@@ -290,12 +313,13 @@
                 <mi:MaterialIcon Kind="CashMultiple" Width="18" Height="18"
                                  Foreground="{DynamicResource AccentBrush}" />
               </Border>
-              <TextBlock Text="Verfuegbar" FontSize="12"
+              <TextBlock Text="Verfügbar" FontSize="12"
                          Foreground="{DynamicResource AppTextSecondaryBrush}"
                          VerticalAlignment="Center" />
             </StackPanel>
             <TextBlock Text="{Binding AvailableBalance, StringFormat='{}{0:N2}'}"
                        FontSize="24" FontWeight="Bold"
+                       FontFamily="Consolas, Courier New, monospace"
                        Foreground="{DynamicResource AppTextBrush}" />
             <TextBlock Text="USDT" FontSize="11"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" Margin="0,-4,0,0" />
@@ -304,7 +328,8 @@
 
         <!-- Unrealisiert P&L -->
         <Border CornerRadius="10" Padding="20,16" Margin="4,0"
-                BoxShadow="{DynamicResource CardShadow}">
+                BoxShadow="{DynamicResource CardShadow}"
+                ToolTip.Tip="Unrealisierter Gewinn/Verlust offener Positionen">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
               <GradientStop Color="#2A2A44" Offset="0" />
@@ -322,13 +347,27 @@
                          VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
+              <!-- Positiv (grün) -->
               <TextBlock x:Name="UnrealizedPnlText"
                          Text="{Binding UnrealizedPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00}'}"
                          FontSize="24" FontWeight="Bold"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <mi:MaterialIcon x:Name="UnrealizedPnlIcon" Kind="ArrowUp" Width="16" Height="16"
+                         FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource AppProfitBrush}"
+                         IsVisible="{Binding IsUnrealizedPnlPositive}" />
+              <!-- Negativ (rot) -->
+              <TextBlock Text="{Binding UnrealizedPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00}'}"
+                         FontSize="24" FontWeight="Bold"
+                         FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource AppLossBrush}"
+                         IsVisible="{Binding !IsUnrealizedPnlPositive}" />
+              <mi:MaterialIcon Kind="ArrowUp" Width="16" Height="16"
                                Foreground="{DynamicResource AppProfitBrush}"
-                               VerticalAlignment="Center" />
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsUnrealizedPnlPositive}" />
+              <mi:MaterialIcon Kind="ArrowDown" Width="16" Height="16"
+                               Foreground="{DynamicResource AppLossBrush}"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding !IsUnrealizedPnlPositive}" />
             </StackPanel>
             <TextBlock Text="USDT" FontSize="11"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" Margin="0,-4,0,0" />
@@ -337,7 +376,8 @@
 
         <!-- Gesamt-PnL -->
         <Border CornerRadius="10" Padding="20,16" Margin="8,0,0,0"
-                BoxShadow="{DynamicResource CardShadow}">
+                BoxShadow="{DynamicResource CardShadow}"
+                ToolTip.Tip="Realisierter Gewinn/Verlust aller geschlossenen Trades">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
               <GradientStop Color="#2A2A44" Offset="0" />
@@ -355,13 +395,27 @@
                          VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
+              <!-- Positiv (grün) -->
               <TextBlock x:Name="TotalPnlText"
                          Text="{Binding TotalPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00}'}"
                          FontSize="24" FontWeight="Bold"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <mi:MaterialIcon x:Name="TotalPnlIcon" Kind="ArrowUp" Width="16" Height="16"
+                         FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource AppProfitBrush}"
+                         IsVisible="{Binding IsTotalPnlPositive}" />
+              <!-- Negativ (rot) -->
+              <TextBlock Text="{Binding TotalPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00}'}"
+                         FontSize="24" FontWeight="Bold"
+                         FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource AppLossBrush}"
+                         IsVisible="{Binding !IsTotalPnlPositive}" />
+              <mi:MaterialIcon Kind="ArrowUp" Width="16" Height="16"
                                Foreground="{DynamicResource AppProfitBrush}"
-                               VerticalAlignment="Center" />
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsTotalPnlPositive}" />
+              <mi:MaterialIcon Kind="ArrowDown" Width="16" Height="16"
+                               Foreground="{DynamicResource AppLossBrush}"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding !IsTotalPnlPositive}" />
             </StackPanel>
             <TextBlock Text="USDT" FontSize="11"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" Margin="0,-4,0,0" />
@@ -401,14 +455,14 @@
               <Border Background="{DynamicResource AppPrimaryBrush}" CornerRadius="10" Padding="8,2"
                       IsVisible="{Binding HasOpenPositions}" VerticalAlignment="Center" Margin="8,0,0,0">
                 <TextBlock Text="{Binding OpenPositions.Count}" FontSize="11"
-                           Foreground="White" FontWeight="Bold" />
+                           Foreground="{DynamicResource PrimaryContrastBrush}" FontWeight="Bold" />
               </Border>
             </StackPanel>
 
             <Button Grid.Column="2" Content="Alle schliessen"
                     Command="{Binding CloseAllPositionsCommand}"
                     IsVisible="{Binding HasOpenPositions}"
-                    Background="#3F1818" Foreground="{DynamicResource AppLossBrush}"
+                    Background="{DynamicResource ErrorSurfaceBrush}" Foreground="{DynamicResource AppLossBrush}"
                     CornerRadius="6" Padding="12,6" FontSize="12" Cursor="Hand"
                     BorderThickness="1" BorderBrush="{DynamicResource AppLossBrush}" />
           </Grid>
@@ -430,9 +484,10 @@
                       <Border Background="{Binding SideColor}" CornerRadius="4" Padding="8,2"
                               VerticalAlignment="Center">
                         <TextBlock Text="{Binding SideText}" FontSize="11" FontWeight="Bold"
-                                   Foreground="White" />
+                                   Foreground="{DynamicResource PrimaryContrastBrush}" />
                       </Border>
                       <TextBlock Text="{Binding Leverage, StringFormat='{}{0:F0}x'}" FontSize="12"
+                                 FontFamily="Consolas, Courier New, monospace"
                                  Foreground="{DynamicResource AppTextSecondaryBrush}" VerticalAlignment="Center" />
                     </StackPanel>
 
@@ -440,8 +495,10 @@
                       <!-- P&L mit Prozent -->
                       <StackPanel HorizontalAlignment="Right">
                         <TextBlock Text="{Binding PnlText}" FontSize="16" FontWeight="Bold"
+                                   FontFamily="Consolas, Courier New, monospace"
                                    Foreground="{Binding PnlColor}" HorizontalAlignment="Right" />
                         <TextBlock Text="{Binding PnlPercentText}" FontSize="11"
+                                   FontFamily="Consolas, Courier New, monospace"
                                    Foreground="{Binding PnlColor}" HorizontalAlignment="Right" />
                       </StackPanel>
 
@@ -461,16 +518,19 @@
                       <StackPanel>
                         <TextBlock Text="Einstieg" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
                         <TextBlock Text="{Binding EntryPrice, StringFormat='{}{0:G8}'}" FontSize="13"
+                                   FontFamily="Consolas, Courier New, monospace"
                                    Foreground="{DynamicResource AppTextBrush}" />
                       </StackPanel>
                       <StackPanel>
                         <TextBlock Text="Aktuell" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
                         <TextBlock Text="{Binding MarkPrice, StringFormat='{}{0:G8}'}" FontSize="13"
+                                   FontFamily="Consolas, Courier New, monospace"
                                    Foreground="{DynamicResource AppTextBrush}" />
                       </StackPanel>
                       <StackPanel>
                         <TextBlock Text="Menge" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
                         <TextBlock Text="{Binding Quantity, StringFormat='{}{0:N2}'}" FontSize="13"
+                                   FontFamily="Consolas, Courier New, monospace"
                                    Foreground="{DynamicResource AppTextBrush}" />
                       </StackPanel>
                     </StackPanel>
@@ -521,7 +581,7 @@
             <TextBlock Text="Keine offenen Positionen" FontSize="13"
                        Foreground="{DynamicResource AppTextSecondaryBrush}"
                        HorizontalAlignment="Center" Margin="0,8,0,0" />
-            <TextBlock Text="Der Bot eroeffnet Trades automatisch wenn Signale erkannt werden"
+            <TextBlock Text="Der Bot eröffnet Trades automatisch wenn Signale erkannt werden"
                        FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
                        HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="300"
                        TextAlignment="Center" />
@@ -537,16 +597,31 @@
               Padding="20,16"
               BoxShadow="{DynamicResource CardShadow}">
         <Grid RowDefinitions="Auto,*">
-          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
-            <mi:MaterialIcon Kind="Pulse" Width="18" Height="18"
-                             Foreground="{DynamicResource AppPrimaryBrush}" />
-            <TextBlock Text="Bot-Aktivität" Classes="SectionTitle" />
-            <Border CornerRadius="10" Padding="8,3" Margin="8,0,0,0"
-                    Background="{DynamicResource CardBrush}">
-              <TextBlock Text="{Binding Activity.RecentActivity.Count, StringFormat='{}{0}'}"
-                         FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-            </Border>
-          </StackPanel>
+          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Pulse" Width="18" Height="18"
+                               Foreground="{DynamicResource AppPrimaryBrush}" />
+              <TextBlock Text="Bot-Aktivität" Classes="SectionTitle" />
+              <Border CornerRadius="10" Padding="8,3" Margin="8,0,0,0"
+                      Background="{DynamicResource CardBrush}">
+                <TextBlock Text="{Binding Activity.RecentActivity.Count, StringFormat='{}{0}'}"
+                           FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
+              </Border>
+            </StackPanel>
+            <!-- Expand/Collapse Toggle -->
+            <Button Grid.Column="2" Command="{Binding ToggleActivityExpandedCommand}"
+                    Background="Transparent" BorderThickness="0" Padding="4" Cursor="Hand"
+                    ToolTip.Tip="Aktivität ein-/ausklappen">
+              <Panel>
+                <mi:MaterialIcon Kind="ChevronDown" Width="16" Height="16"
+                                 Foreground="{DynamicResource AppTextSecondaryBrush}"
+                                 IsVisible="{Binding !IsActivityExpanded}" />
+                <mi:MaterialIcon Kind="ChevronUp" Width="16" Height="16"
+                                 Foreground="{DynamicResource AppTextSecondaryBrush}"
+                                 IsVisible="{Binding IsActivityExpanded}" />
+              </Panel>
+            </Button>
+          </Grid>
 
           <!-- Leerer Zustand: Bot gestoppt -->
           <TextBlock Grid.Row="1" Text="Bot ist gestoppt - keine Aktivität"
@@ -554,8 +629,10 @@
                      Foreground="{DynamicResource TextMutedBrush}" FontSize="12"
                      HorizontalAlignment="Center" Margin="0,8" />
 
-          <!-- Activity-Liste (scrollbar, max 200px hoch) -->
-          <ScrollViewer Grid.Row="1" MaxHeight="200"
+          <!-- Activity-Liste (scrollbar, expandierbar) -->
+          <ScrollViewer Grid.Row="1"
+                        Classes.Expanded="{Binding IsActivityExpanded}"
+                        MaxHeight="200"
                         VerticalScrollBarVisibility="Auto"
                         IsVisible="{Binding IsRunning}">
             <ItemsControl ItemsSource="{Binding Activity.RecentActivity}">
@@ -570,7 +647,7 @@
                       <Border Grid.Column="1" Background="{Binding LevelColor}" CornerRadius="3"
                               Padding="6,1" Margin="4,0" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Category}" FontSize="10" FontWeight="SemiBold"
-                                   Foreground="White" />
+                                   Foreground="{DynamicResource PrimaryContrastBrush}" />
                       </Border>
                       <TextBlock Grid.Column="2" Text="{Binding Message}" FontSize="12"
                                  Foreground="{DynamicResource AppTextBrush}"
@@ -592,7 +669,7 @@
               Padding="20,16"
               BoxShadow="{DynamicResource CardShadow}">
         <Grid RowDefinitions="Auto,*">
-          <!-- Header: BTC-USDT + Preis + Aenderung -->
+          <!-- Header: BTC-USDT + Preis + Änderung -->
           <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="16" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="CurrencyBtc" Width="20" Height="20"
@@ -604,13 +681,15 @@
             <!-- Preis (nur sichtbar wenn geladen) -->
             <TextBlock Text="{Binding BtcTicker.BtcPrice, StringFormat='{}{0:N2} USDT'}"
                        FontWeight="Bold" FontSize="16"
+                       FontFamily="Consolas, Courier New, monospace"
                        Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center"
                        IsVisible="{Binding !BtcTicker.IsBtcLoading}" />
 
-            <!-- Aenderung (nur sichtbar wenn geladen) -->
+            <!-- Änderung (nur sichtbar wenn geladen) -->
             <TextBlock x:Name="BtcChangeText"
                        Text="{Binding BtcTicker.BtcPriceChange, StringFormat='{}{0:+0.00;-0.00}%'}"
-                       FontSize="14" VerticalAlignment="Center"
+                       FontSize="14" FontFamily="Consolas, Courier New, monospace"
+                       VerticalAlignment="Center"
                        IsVisible="{Binding !BtcTicker.IsBtcLoading}" />
 
             <!-- Status-Text -->
@@ -656,9 +735,9 @@
 
   <!-- Bestätigungs-Dialog Overlay -->
   <Border IsVisible="{Binding ShowConfirmDialog}"
-          Background="#80000000"
+          Background="{DynamicResource OverlayBrush}"
           HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-    <Border Background="{DynamicResource AppCardBrush}"
+    <Border Background="{DynamicResource CardBrush}"
             CornerRadius="12" Padding="24" MaxWidth="400"
             HorizontalAlignment="Center" VerticalAlignment="Center"
             BoxShadow="0 8 32 0 #60000000">
@@ -674,7 +753,7 @@
                   Background="Transparent" Foreground="{DynamicResource AppTextSecondaryBrush}"
                   Padding="16,8" CornerRadius="6" />
           <Button Content="Ja, schließen" Command="{Binding ConfirmDialogYesCommand}"
-                  Background="#EF4444" Foreground="#FFFFFF"
+                  Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource PrimaryContrastBrush}"
                   Padding="16,8" CornerRadius="6" FontWeight="SemiBold" />
         </StackPanel>
       </StackPanel>

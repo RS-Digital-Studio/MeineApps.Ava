@@ -11,12 +11,17 @@ public class ConfigTests
     public void RiskSettings_ShouldHaveSafeDefaults()
     {
         var s = new RiskSettings();
-        s.MaxPositionSizePercent.Should().Be(2m);
-        s.MaxDailyDrawdownPercent.Should().Be(5m);
-        s.MaxTotalDrawdownPercent.Should().Be(15m);
+        s.MaxPositionSizePercent.Should().Be(1.5m);
+        s.MaxDailyDrawdownPercent.Should().Be(3m);
+        s.MaxTotalDrawdownPercent.Should().Be(10m);
         s.MaxOpenPositions.Should().Be(3);
-        s.MaxLeverage.Should().Be(10m);
+        s.MaxLeverage.Should().Be(3m);
         s.EnableTrailingStop.Should().BeTrue();
+        s.EnableMultiStageExit.Should().BeTrue();
+        s.Tp1CloseRatio.Should().Be(0.5m);
+        s.MaxHoldHours.Should().Be(48);
+        s.CooldownHours.Should().Be(8);
+        s.MaxTradesPerDay.Should().Be(3);
     }
 
     [Fact]
@@ -41,8 +46,9 @@ public class ConfigTests
     public void ScannerSettings_ShouldHaveDefaults()
     {
         var s = new ScannerSettings();
-        s.MinVolume24h.Should().Be(10_000_000m);
-        s.ScanTimeFrame.Should().Be(TimeFrame.H1);
-        s.MaxResults.Should().Be(10);
+        s.MinVolume24h.Should().Be(50_000_000m);
+        s.ScanTimeFrame.Should().Be(TimeFrame.H4);
+        s.MaxResults.Should().Be(5);
+        s.ScanIntervalSeconds.Should().Be(900); // H4 = 15min
     }
 }

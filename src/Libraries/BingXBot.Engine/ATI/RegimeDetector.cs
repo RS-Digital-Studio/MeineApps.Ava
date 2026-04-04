@@ -157,17 +157,25 @@ public class RegimeDetector
 
         // Lock auf das Array: Bei Multi-Symbol-Nutzung kann dasselbe Symbol
         // parallel aus verschiedenen Threads evaluiert werden
+        float[] copy;
         lock (smoothed)
         {
             for (int i = 0; i < 4; i++)
                 smoothed[i] = smoothed[i] * (1f - SmoothingAlpha) + rawScores[i] * SmoothingAlpha;
+
+            // M-2 Fix: Kopie zurückgeben statt gecachtes Array.
+            // Verhindert dass NormalizeInPlace den Cache korrumpiert.
+            copy = new float[4];
+            Array.Copy(smoothed, copy, 4);
         }
 
-        return smoothed;
+        return copy;
     }
 
     private float[] ApplyTransitionPrior(string symbol, float[] smoothedScores)
     {
+        // K-4 Fix: Immer neue Kopie erstellen (auch wenn kein lastRegime vorhanden).
+        // Ohne Kopie würde NormalizeInPlace bei neuem Symbol den gecachten Wert korrumpieren.
         var posterior = new float[4];
         Array.Copy(smoothedScores, posterior, 4);
 

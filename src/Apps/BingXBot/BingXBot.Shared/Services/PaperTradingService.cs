@@ -2,7 +2,7 @@ using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
-using BingXBot.Core.Simulation;
+using BingXBot.Backtest.Simulation;
 using BingXBot.Engine;
 using BingXBot.Engine.Risk;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,8 +29,9 @@ public class PaperTradingService : TradingServiceBase
         StrategyManager strategyManager,
         RiskSettings riskSettings,
         ScannerSettings scannerSettings,
-        BotEventBus eventBus)
-        : base(publicClient, strategyManager, riskSettings, scannerSettings, eventBus)
+        BotEventBus eventBus,
+        BotSettings botSettings)
+        : base(publicClient, strategyManager, riskSettings, scannerSettings, eventBus, botSettings)
     {
     }
 
@@ -39,7 +40,12 @@ public class PaperTradingService : TradingServiceBase
     {
         if (_isRunning) return;
 
-        _exchange = new SimulatedExchange(new BacktestSettings { InitialBalance = initialBalance });
+        _exchange = new SimulatedExchange(new BacktestSettings
+        {
+            InitialBalance = initialBalance,
+            SimulatedFundingRatePercent = _botSettings.SimulatedFundingRatePercent
+        });
+        _exchange.SetFundingRate(_botSettings.SimulatedFundingRatePercent / 100m);
 
         _eventBus.PublishBotState(BotState.Running);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
@@ -139,6 +145,16 @@ public class PaperTradingService : TradingServiceBase
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
             $"{pos.Symbol}: {reason} ({pos.Side})", pos.Symbol));
+    }
+
+    protected override async Task OnPartialCloseAsync(Position pos, decimal price, decimal quantityToClose)
+    {
+        if (_exchange == null) return;
+        _exchange.SetCurrentPrice(pos.Symbol, price);
+        var prevCount = _exchange.GetCompletedTrades().Count;
+        await _exchange.ReducePositionAsync(pos.Symbol, pos.Side, quantityToClose);
+        PublishNewTrades(prevCount);
+        _exchange.SetCurrentPrice(pos.Symbol, price); // Preis bleibt aktuell
     }
 
     // ═══════════════════════════════════════════════════════════════

@@ -82,7 +82,7 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Dashboard",
                 $"BTC-Daten Ladefehler: {ex.Message}"));
             IsBtcLoading = false;
-            BtcStatusText = "Daten nicht verfuegbar (offline?)";
+            BtcStatusText = "Daten nicht verfügbar (offline?)";
         }
     }
 
@@ -114,20 +114,25 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
         catch (OperationCanceledException) { }
     }
 
-    /// <summary>Aktualisiert nur den BTC-Preis (schnell, ein API-Call).</summary>
+    /// <summary>
+    /// Aktualisiert nur den BTC-Preis (schnell, ein API-Call).
+    /// Nutzt GetKlinesAsync mit wenigen Candles statt GetAllTickersAsync (500+ Ticker deserialisieren).
+    /// </summary>
     private async Task UpdateBtcPriceAsync()
     {
         if (_publicClient == null) return;
         try
         {
-            var tickers = await _publicClient.GetAllTickersAsync();
-            var btc = tickers.FirstOrDefault(t => t.Symbol == "BTC-USDT");
-            if (btc != null)
+            // Nur 2 Candles laden statt 500+ Ticker - deutlich weniger Netzwerk + Deserialisierung
+            var candles = await _publicClient.GetKlinesAsync(
+                "BTC-USDT", TimeFrame.M1,
+                DateTime.UtcNow.AddMinutes(-5), DateTime.UtcNow);
+            if (candles.Count > 0)
             {
+                var lastPrice = candles[^1].Close;
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
-                    BtcPrice = btc.LastPrice;
-                    BtcPriceChange = btc.PriceChangePercent24h;
+                    BtcPrice = lastPrice;
                 });
             }
         }

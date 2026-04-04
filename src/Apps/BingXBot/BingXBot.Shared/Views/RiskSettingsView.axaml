@@ -3,7 +3,8 @@
              xmlns:vm="using:BingXBot.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="BingXBot.Views.RiskSettingsView"
-             x:DataType="vm:RiskSettingsViewModel">
+             x:DataType="vm:RiskSettingsViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Styles>
     <!-- Einheitliches TextBox-Styling für numerische Eingaben -->
@@ -93,7 +94,8 @@
                          Foreground="{DynamicResource TextMutedBrush}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <TextBox Classes="NumericInput" Text="{Binding MaxPositionSizePercent}" />
+              <TextBox Classes="NumericInput" Text="{Binding MaxPositionSizePercent}"
+                       ToolTip.Tip="Empfohlen: 1-5% pro Trade" />
               <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
                          Foreground="{DynamicResource AppTextSecondaryBrush}" />
             </StackPanel>
@@ -110,7 +112,8 @@
                          Foreground="{DynamicResource TextMutedBrush}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <TextBox Classes="NumericInput" Text="{Binding MaxLeverage}" />
+              <TextBox Classes="NumericInput" Text="{Binding MaxLeverage}"
+                       ToolTip.Tip="Höherer Hebel = höheres Risiko. Empfohlen: 3-10x" />
               <TextBlock Text="x" FontSize="13" VerticalAlignment="Center"
                          Foreground="{DynamicResource AppTextSecondaryBrush}" />
             </StackPanel>
@@ -142,7 +145,8 @@
                          Foreground="{DynamicResource TextMutedBrush}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <TextBox Classes="NumericInput" Text="{Binding MaxDailyDrawdownPercent}" />
+              <TextBox Classes="NumericInput" Text="{Binding MaxDailyDrawdownPercent}"
+                       ToolTip.Tip="Bot pausiert automatisch bei Überschreitung" />
               <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
                          Foreground="{DynamicResource AppTextSecondaryBrush}" />
             </StackPanel>
@@ -159,7 +163,8 @@
                          Foreground="{DynamicResource TextMutedBrush}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <TextBox Classes="NumericInput" Text="{Binding MaxTotalDrawdownPercent}" />
+              <TextBox Classes="NumericInput" Text="{Binding MaxTotalDrawdownPercent}"
+                       ToolTip.Tip="Bot stoppt vollständig bei Überschreitung" />
               <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
                          Foreground="{DynamicResource AppTextSecondaryBrush}" />
             </StackPanel>
@@ -304,11 +309,111 @@
       </Border>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Liquidation + Exposure                                   -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="AlertDecagram" Width="18" Height="18"
+                             Foreground="{DynamicResource AppLossBrush}" />
+            <TextBlock Text="Liquidation + Exposure" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Min Liquidation Distance -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Min. Liquidations-Abstand" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Kein Trade wenn Liquidationspreis zu nah am Entry" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Classes="NumericInput" Text="{Binding MinLiquidationDistancePercent}"
+                       ToolTip.Tip="Empfohlen: 5-15%. Höherer Wert = sicherer" />
+              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <!-- Max Net Exposure -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. Netto-Exposure" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Summe aller Positionswerte in % der Balance" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Classes="NumericInput" Text="{Binding MaxNetExposurePercent}"
+                       ToolTip.Tip="Empfohlen: 30-60%. Begrenzt Gesamtrisiko" />
+              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Funding-Rate                                            -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="CashClock" Width="18" Height="18"
+                             Foreground="{DynamicResource AppWarningBrush}" />
+            <TextBlock Text="Funding-Rate" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Consider Funding Rate -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Funding-Rate beachten" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Kein Trade gegen hohe Funding-Rate" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" Classes="RiskToggle"
+                          IsChecked="{Binding ConsiderFundingRate}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}"
+                  IsVisible="{Binding ConsiderFundingRate}" />
+
+          <!-- Max Adverse Funding Rate -->
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto"
+                IsVisible="{Binding ConsiderFundingRate}">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. adverse Funding-Rate" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Max. Funding gegen Positionsrichtung (alle 8h)" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Classes="NumericInput" Text="{Binding MaxAdverseFundingRatePercent}"
+                       ToolTip.Tip="Empfohlen: 0.05-0.15%. Normal: ~0.01%" />
+              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
       <!-- Buttons: Speichern + Reset                                      -->
       <!-- ═══════════════════════════════════════════════════════════════ -->
       <StackPanel Orientation="Horizontal" Spacing="12">
         <Button Classes="RiskButton" Command="{Binding SaveCommand}"
-                Background="{DynamicResource AppPrimaryBrush}" Foreground="#FFFFFF">
+                Background="{DynamicResource AppPrimaryBrush}"
+                Foreground="{DynamicResource PrimaryContrastBrush}"
+                ToolTip.Tip="Risk-Einstellungen speichern">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
             <TextBlock Text="Speichern" VerticalAlignment="Center" />
@@ -317,12 +422,25 @@
         <Button Classes="RiskButton" Command="{Binding ResetToDefaultsCommand}"
                 Background="{DynamicResource CardBrush}"
                 Foreground="{DynamicResource AppTextBrush}"
-                BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}">
+                BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}"
+                ToolTip.Tip="Alle Werte auf Standardeinstellungen zurücksetzen">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Undo" Width="16" Height="16" />
             <TextBlock Text="Zurücksetzen" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
+
+        <!-- Ungespeicherte Änderungen Hinweis -->
+        <Border IsVisible="{Binding HasUnsavedChanges}"
+                Background="{DynamicResource WarningBackgroundBrush}"
+                CornerRadius="6" Padding="10,6" VerticalAlignment="Center" Margin="8,0,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="AlertOutline" Width="14" Height="14"
+                             Foreground="{DynamicResource WarningBrush}" />
+            <TextBlock Text="Ungespeicherte Änderungen" FontSize="12"
+                       Foreground="{DynamicResource WarningBrush}" />
+          </StackPanel>
+        </Border>
 
         <!-- Status-Anzeige -->
         <TextBlock Text="{Binding SaveStatus}" FontSize="13" FontWeight="SemiBold"

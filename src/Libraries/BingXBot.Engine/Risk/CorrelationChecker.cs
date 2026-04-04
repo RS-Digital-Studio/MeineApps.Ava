@@ -30,15 +30,15 @@ public class CorrelationChecker
             ?? (IReadOnlyList<Candle>)await client.GetKlinesAsync(newSymbol, TimeFrame.H1, from, to, ct).ConfigureAwait(false);
         if (newKlines.Count < 20) return false;
 
-        var newPrices = newKlines.Select(k => k.Close).ToArray();
-
         // Klines für alle offenen Positionen PARALLEL laden (statt sequentiell)
-        var positionsToCheck = openPositions.Where(p => p.Symbol != newSymbol).ToList();
-        if (positionsToCheck.Count == 0) return false;
-
-        var klineTasks = positionsToCheck
-            .Select(pos => client.GetKlinesAsync(pos.Symbol, TimeFrame.H1, from, to, ct))
-            .ToList();
+        // Positionen direkt filtern ohne Zwischen-Liste
+        var klineTasks = new List<Task<List<Candle>>>();
+        foreach (var pos in openPositions)
+        {
+            if (pos.Symbol != newSymbol)
+                klineTasks.Add(client.GetKlinesAsync(pos.Symbol, TimeFrame.H1, from, to, ct));
+        }
+        if (klineTasks.Count == 0) return false;
 
         List<Candle>[] allKlines;
         try
@@ -47,22 +47,18 @@ public class CorrelationChecker
         }
         catch
         {
-            // Bei API-Fehler: Korrelation nicht prüfbar → nicht blockieren
             return false;
         }
 
         // Pearson-Korrelation gegen jede offene Position berechnen
+        // Index-basiert statt Array-Kopien (vermeidet ToArray() + ArraySegment.ToArray())
         for (int i = 0; i < allKlines.Length; i++)
         {
             var existingKlines = allKlines[i];
             if (existingKlines.Count < 20) continue;
 
-            var existingPrices = existingKlines.Select(k => k.Close).ToArray();
-            var minLength = Math.Min(newPrices.Length, existingPrices.Length);
-
-            var newSlice = new ArraySegment<decimal>(newPrices, newPrices.Length - minLength, minLength).ToArray();
-            var existingSlice = new ArraySegment<decimal>(existingPrices, existingPrices.Length - minLength, minLength).ToArray();
-            var correlation = CalculatePearson(newSlice, existingSlice);
+            var minLength = Math.Min(newKlines.Count, existingKlines.Count);
+            var correlation = CalculatePearsonFromCandles(newKlines, existingKlines, minLength);
 
             if (Math.Abs(correlation) > maxCorrelation)
                 return true;
@@ -72,7 +68,40 @@ public class CorrelationChecker
     }
 
     /// <summary>
-    /// Pearson-Korrelationskoeffizient zwischen zwei Dezimal-Reihen.
+    /// Pearson-Korrelationskoeffizient direkt auf Candle-Listen (vermeidet Array-Kopien).
+    /// Liest die letzten minLength Close-Werte aus beiden Listen.
+    /// </summary>
+    public static decimal CalculatePearsonFromCandles(
+        IReadOnlyList<Candle> x, IReadOnlyList<Candle> y, int minLength)
+    {
+        if (minLength < 2) return 0m;
+
+        var xOffset = x.Count - minLength;
+        var yOffset = y.Count - minLength;
+
+        double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+        for (int i = 0; i < minLength; i++)
+        {
+            var xi = (double)x[xOffset + i].Close;
+            var yi = (double)y[yOffset + i].Close;
+            sumX += xi;
+            sumY += yi;
+            sumXY += xi * yi;
+            sumX2 += xi * xi;
+            sumY2 += yi * yi;
+        }
+
+        var numerator = minLength * sumXY - sumX * sumY;
+        var denominatorX = minLength * sumX2 - sumX * sumX;
+        var denominatorY = minLength * sumY2 - sumY * sumY;
+        var denominator = Math.Sqrt(denominatorX * denominatorY);
+
+        if (denominator == 0) return 0m;
+        return (decimal)(numerator / denominator);
+    }
+
+    /// <summary>
+    /// Pearson-Korrelationskoeffizient zwischen zwei Dezimal-Arrays.
     /// Berechnung in double um Overflow bei extremen Preisen (z.B. BTC) zu vermeiden.
     /// </summary>
     public static decimal CalculatePearson(decimal[] x, decimal[] y)

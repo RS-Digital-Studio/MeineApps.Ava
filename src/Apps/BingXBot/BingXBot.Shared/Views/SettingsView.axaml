@@ -3,7 +3,8 @@
              xmlns:vm="using:BingXBot.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="BingXBot.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
+             x:DataType="vm:SettingsViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Styles>
     <!-- Einheitliches TextBox-Styling -->
@@ -31,17 +32,17 @@
     </Style>
     <Style Selector="Button.Primary">
       <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}" />
-      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
     </Style>
     <Style Selector="Button.Primary:pointerover">
       <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
     </Style>
     <Style Selector="Button.Danger">
       <Setter Property="Background" Value="{DynamicResource ErrorBrush}" />
-      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
     </Style>
     <Style Selector="Button.Danger:pointerover">
-      <Setter Property="Background" Value="#F87171" />
+      <Setter Property="Background" Value="{DynamicResource ErrorLightBrush}" />
     </Style>
     <Style Selector="Button.Secondary">
       <Setter Property="Background" Value="{DynamicResource CardBrush}" />
@@ -84,7 +85,8 @@
             <TextBlock Text="API-Key" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="SettingsInput" Text="{Binding ApiKey}"
-                     Watermark="BingX API-Key eingeben..." />
+                     Watermark="BingX API-Key eingeben..."
+                     ToolTip.Tip="BingX API-Key (nicht der Secret)" />
           </StackPanel>
 
           <!-- API-Secret -->
@@ -92,21 +94,24 @@
             <TextBlock Text="API-Secret" FontSize="12"
                        Foreground="{DynamicResource AppTextSecondaryBrush}" />
             <TextBox Classes="SettingsInput" Text="{Binding ApiSecret}"
-                     PasswordChar="*" RevealPassword="True"
-                     Watermark="BingX API-Secret eingeben..." />
+                     PasswordChar="*"
+                     Watermark="BingX API-Secret eingeben..."
+                     ToolTip.Tip="BingX API-Secret (wird verschlüsselt gespeichert)" />
           </StackPanel>
 
           <!-- Buttons -->
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
             <Button Classes="SettingsButton Primary"
-                    Command="{Binding SaveCredentialsCommand}">
+                    Command="{Binding SaveCredentialsCommand}"
+                    ToolTip.Tip="API-Keys verschlüsselt auf diesem Gerät speichern">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
                 <TextBlock Text="Speichern" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
             <Button Classes="SettingsButton Danger"
-                    Command="{Binding DeleteCredentialsCommand}">
+                    Command="{Binding DeleteCredentialsCommand}"
+                    ToolTip.Tip="Gespeicherte API-Keys unwiderruflich löschen">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="Delete" Width="16" Height="16" />
                 <TextBlock Text="Löschen" VerticalAlignment="Center" />
@@ -147,7 +152,8 @@
           <!-- Test-Button -->
           <Button Classes="SettingsButton Secondary"
                   Command="{Binding TestConnectionCommand}"
-                  IsEnabled="{Binding !IsConnecting}">
+                  IsEnabled="{Binding !IsConnecting}"
+                  ToolTip.Tip="Verbindung zu BingX mit den gespeicherten API-Keys testen">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <!-- Spinner wenn verbindend -->
               <mi:MaterialIcon Kind="Loading" Width="16" Height="16"

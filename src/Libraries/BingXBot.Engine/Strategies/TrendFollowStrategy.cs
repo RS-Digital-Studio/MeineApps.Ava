@@ -66,7 +66,7 @@ public class TrendFollowStrategy : IStrategy
         var rsi = IndicatorHelper.CalculateRsi(candles, _rsiPeriod);
         var atr = IndicatorHelper.CalculateAtr(candles, _atrPeriod);
         var (_, _, histogram) = IndicatorHelper.CalculateMacd(candles, 12, 26, 9);
-        var volumeSma = IndicatorHelper.CalculateSma(candles, _volumePeriod);
+        var volumeSma = IndicatorHelper.CalculateVolumeSma(candles, _volumePeriod);
         var adx = IndicatorHelper.CalculateAdx(candles, _adxPeriod);
 
         var lastEmaFast = emaFast[^1];
@@ -89,6 +89,11 @@ public class TrendFollowStrategy : IStrategy
 
         var currentPrice = context.CurrentTicker.LastPrice;
         var atrValue = lastAtr.Value;
+
+        // ATR=0 Guard: Bei identischen OHLC-Werten (illiquide Assets) wäre SL=TP=Entry
+        if (atrValue <= 0)
+            return new SignalResult(Signal.None, 0m, null, null, null, "ATR ist 0 - kein valider SL/TP möglich");
+
         var currentVolume = candles[^1].Volume;
 
         // === LONG-Bedingungen prüfen ===
@@ -232,7 +237,7 @@ public class TrendFollowStrategy : IStrategy
         IndicatorHelper.CalculateRsi(history, _rsiPeriod);
         IndicatorHelper.CalculateAtr(history, _atrPeriod);
         IndicatorHelper.CalculateMacd(history, 12, 26, 9);
-        IndicatorHelper.CalculateSma(history, _volumePeriod);
+        IndicatorHelper.CalculateVolumeSma(history, _volumePeriod);
         IndicatorHelper.CalculateAdx(history, _adxPeriod);
     }
     public void Reset() { }

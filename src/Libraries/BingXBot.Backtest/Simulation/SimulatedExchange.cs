@@ -3,7 +3,7 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 
-namespace BingXBot.Core.Simulation;
+namespace BingXBot.Backtest.Simulation;
 
 /// <summary>
 /// Simulierte Exchange für Paper-Trading und Backtesting (Thread-safe).
@@ -23,6 +23,9 @@ public class SimulatedExchange : IExchangeClient
     /// <summary>Speichert die Opening-Fee pro Position fuer korrekte Fee-Auswertung im CompletedTrade.</summary>
     private readonly Dictionary<string, decimal> _positionOpenFees = new();
     private int _orderCounter;
+    // Gecachter Positions-Snapshot: Wird nur bei Preis-/Positionsänderung invalidiert
+    private IReadOnlyList<Position>? _cachedPositions;
+    private bool _positionsDirty = true;
 
     public SimulatedExchange(BacktestSettings settings)
     {
@@ -36,7 +39,13 @@ public class SimulatedExchange : IExchangeClient
     public void SetCurrentPrice(string symbol, decimal price)
     {
         _rwLock.EnterWriteLock();
-        try { _currentPrices[symbol] = price; }
+        try
+        {
+            _currentPrices[symbol] = price;
+            // Positions-Cache invalidieren wenn sich der Preis eines gehaltenen Symbols ändert
+            if (_positions.Any(p => p.Symbol == symbol))
+                _positionsDirty = true;
+        }
         finally { _rwLock.ExitWriteLock(); }
     }
 
@@ -119,6 +128,7 @@ public class SimulatedExchange : IExchangeClient
                         DateTime.UtcNow));
                 }
 
+                _positionsDirty = true;
                 var filledOrder = new Order(orderId, request.Symbol, request.Side, request.Type,
                     fillPrice, request.Quantity, request.StopPrice, DateTime.UtcNow, OrderStatus.Filled);
 
@@ -170,14 +180,30 @@ public class SimulatedExchange : IExchangeClient
         _rwLock.EnterReadLock();
         try
         {
+            // Gecachten Snapshot zurückgeben wenn keine Preis-/Positionsänderung
+            if (!_positionsDirty && _cachedPositions != null)
+                return Task.FromResult(_cachedPositions);
+        }
+        finally { _rwLock.ExitReadLock(); }
+
+        // Cache aktualisieren unter Write-Lock (da _positionsDirty geschrieben wird)
+        _rwLock.EnterWriteLock();
+        try
+        {
+            // Double-Check nach Lock-Upgrade
+            if (!_positionsDirty && _cachedPositions != null)
+                return Task.FromResult(_cachedPositions);
+
             IReadOnlyList<Position> result = _positions
                 .Select(p => UpdatePositionPnlLocked(p))
                 .ToList()
                 .AsReadOnly();
 
+            _cachedPositions = result;
+            _positionsDirty = false;
             return Task.FromResult(result);
         }
-        finally { _rwLock.ExitReadLock(); }
+        finally { _rwLock.ExitWriteLock(); }
     }
 
     public Task ClosePositionAsync(string symbol, Side side)
@@ -222,6 +248,7 @@ public class SimulatedExchange : IExchangeClient
                 TradingMode.Paper));
 
             _positions.RemoveAt(index);
+            _positionsDirty = true;
             return Task.CompletedTask;
         }
         finally { _rwLock.ExitWriteLock(); }
@@ -238,6 +265,63 @@ public class SimulatedExchange : IExchangeClient
         foreach (var pos in positionsCopy)
         {
             await ClosePositionAsync(pos.Symbol, pos.Side);
+        }
+    }
+
+    /// <summary>
+    /// Reduziert eine offene Position um die angegebene Menge (Partial Close für Multi-Stage TP1).
+    /// Erstellt einen CompletedTrade für den geschlossenen Teil, behält den Rest als Position.
+    /// </summary>
+    public Task ReducePositionAsync(string symbol, Side side, decimal quantityToClose)
+    {
+        _rwLock.EnterWriteLock();
+        try
+        {
+            var index = _positions.FindIndex(p => p.Symbol == symbol && p.Side == side);
+            if (index < 0)
+                return Task.CompletedTask;
+
+            var pos = _positions[index];
+            if (quantityToClose >= pos.Quantity)
+            {
+                // Wenn mehr oder gleich der Gesamtmenge → normaler Close
+                _rwLock.ExitWriteLock();
+                return ClosePositionAsync(symbol, side);
+            }
+
+            var exitPrice = GetPriceLocked(symbol);
+            var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy);
+
+            // PnL nur für den geschlossenen Teil
+            var pnl = CalculatePnl(pos.Side, pos.EntryPrice, exitPriceWithSlippage, quantityToClose);
+            var closingFee = _settings.TakerFee * quantityToClose * exitPriceWithSlippage;
+
+            // Anteilige Opening-Fee (proportional zur geschlossenen Menge)
+            var feeKey = $"{pos.Symbol}_{pos.Side}";
+            var totalOpenFee = _positionOpenFees.GetValueOrDefault(feeKey, 0m);
+            var openFeeRatio = pos.Quantity > 0 ? quantityToClose / pos.Quantity : 0m;
+            var partialOpenFee = totalOpenFee * openFeeRatio;
+            _positionOpenFees[feeKey] = totalOpenFee - partialOpenFee;
+
+            _balance += pnl - closingFee;
+
+            var totalFee = partialOpenFee + closingFee;
+            var netPnl = pnl - totalFee;
+            _completedTrades.Add(new CompletedTrade(
+                pos.Symbol, pos.Side, pos.EntryPrice, exitPriceWithSlippage,
+                quantityToClose, netPnl, totalFee,
+                pos.OpenTime, DateTime.UtcNow,
+                "Partial Close (TP1)", TradingMode.Paper));
+
+            // Position verkleinern (Rest bleibt offen)
+            _positions[index] = pos with { Quantity = pos.Quantity - quantityToClose };
+            _positionsDirty = true;
+            return Task.CompletedTask;
+        }
+        finally
+        {
+            if (_rwLock.IsWriteLockHeld)
+                _rwLock.ExitWriteLock();
         }
     }
 
@@ -296,7 +380,46 @@ public class SimulatedExchange : IExchangeClient
 
     public Task<decimal> GetFundingRateAsync(string symbol)
     {
-        return Task.FromResult(0m);
+        return Task.FromResult(_simulatedFundingRate);
+    }
+
+    /// <summary>Simulierte Funding-Rate (Standard: 0.01% = 0.0001 als Dezimal).</summary>
+    private decimal _simulatedFundingRate = 0.0001m;
+
+    /// <summary>Setzt die simulierte Funding-Rate für alle Symbole.</summary>
+    public void SetFundingRate(decimal rate) => _simulatedFundingRate = rate;
+
+    /// <summary>
+    /// Wendet Funding-Rate auf alle offenen Positionen an.
+    /// Positive Rate: Longs zahlen an Shorts. Negative Rate: Shorts zahlen an Longs.
+    /// Wird im Backtest alle 8h aufgerufen, im Paper-Trading periodisch.
+    /// </summary>
+    public void ApplyFundingRate(decimal fundingRate)
+    {
+        _rwLock.EnterWriteLock();
+        try
+        {
+            foreach (var pos in _positions)
+            {
+                var positionValue = pos.Quantity * pos.MarkPrice;
+                decimal fundingPayment;
+
+                if (pos.Side == Side.Buy)
+                {
+                    // Long zahlt bei positiver Funding, erhält bei negativer
+                    fundingPayment = positionValue * fundingRate;
+                }
+                else
+                {
+                    // Short erhält bei positiver Funding, zahlt bei negativer
+                    fundingPayment = -(positionValue * fundingRate);
+                }
+
+                _balance -= fundingPayment;
+            }
+            _positionsDirty = true;
+        }
+        finally { _rwLock.ExitWriteLock(); }
     }
 
     public Task<IReadOnlyList<string>> GetAllSymbolsAsync()

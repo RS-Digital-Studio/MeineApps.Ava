@@ -15,6 +15,9 @@ public class BotDatabaseService
     private const int MaxLogEntries = 100_000;
     private const int LogCleanupBatch = 10_000;
 
+    /// <summary>Aktuelle Schema-Version. Bei Änderungen erhöhen und Migration in RunMigrationsAsync() hinzufügen.</summary>
+    private const int CurrentSchemaVersion = 2;
+
     public async Task InitializeAsync()
     {
         var dbPath = Path.Combine(
@@ -39,6 +42,40 @@ public class BotDatabaseService
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_LogEntries_Level ON LogEntries (Level)");
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_FeatureSnapshots_Timestamp ON FeatureSnapshots (Timestamp DESC)");
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_FeatureSnapshots_Outcome ON FeatureSnapshots (Outcome)");
+
+        // Schema-Versioning und Migrationen
+        await RunMigrationsAsync();
+    }
+
+    /// <summary>
+    /// Schema-Migrations-System: Prüft gespeicherte Version und führt ausstehende Migrationen aus.
+    /// Neue Migrationen am Ende hinzufügen, Version in CurrentSchemaVersion erhöhen.
+    /// </summary>
+    private async Task RunMigrationsAsync()
+    {
+        var versionEntity = await _db!.FindAsync<SettingEntity>("SchemaVersion");
+        var currentVersion = 1; // Default: Version 1 (initialer Stand)
+        if (versionEntity != null && int.TryParse(versionEntity.Value, out var v))
+            currentVersion = v;
+
+        if (currentVersion >= CurrentSchemaVersion) return;
+
+        // Migration v1 → v2: Funding-Rate-Spalte in Trades (für spätere Auswertung)
+        if (currentVersion < 2)
+        {
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE Trades ADD COLUMN FundingPaid REAL DEFAULT 0");
+            }
+            catch { /* Spalte existiert bereits */ }
+        }
+
+        // Schema-Version aktualisieren
+        await _db.InsertOrReplaceAsync(new SettingEntity
+        {
+            Key = "SchemaVersion",
+            Value = CurrentSchemaVersion.ToString()
+        });
     }
 
     // === Trades ===

@@ -11,6 +11,7 @@ namespace BingXBot.Tests.Engine;
 public class StrategyFactoryTests
 {
     [Theory]
+    [InlineData("CryptoTrendPro")]
     [InlineData("Trend-Following")]
     [InlineData("EMA Cross")]
     [InlineData("RSI Momentum")]
@@ -33,12 +34,13 @@ public class StrategyFactoryTests
     }
 
     [Fact]
-    public void AvailableStrategies_ShouldHave6Entries()
+    public void AvailableStrategies_ShouldHave7Entries()
     {
-        StrategyFactory.AvailableStrategies.Should().HaveCount(6);
+        StrategyFactory.AvailableStrategies.Should().HaveCount(7);
     }
 
     [Theory]
+    [InlineData("CryptoTrendPro")]
     [InlineData("Trend-Following")]
     [InlineData("EMA Cross")]
     [InlineData("RSI Momentum")]
@@ -57,8 +59,8 @@ public class StrategyFactoryTests
     [Fact]
     public void Create_TrendFollowing_ShouldBeDefault()
     {
-        // Trend-Following ist die erste Strategie (Default für Krypto)
-        StrategyFactory.AvailableStrategies[0].Should().Be("Trend-Following");
+        // CryptoTrendPro ist die erste Strategie (Default für Krypto-Futures)
+        StrategyFactory.AvailableStrategies[0].Should().Be("CryptoTrendPro");
     }
 
     [Fact]

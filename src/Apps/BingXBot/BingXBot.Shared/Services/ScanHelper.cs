@@ -124,9 +124,10 @@ public static class ScanHelper
         MarketContext context,
         IRiskManager riskManager,
         BotEventBus eventBus,
-        string logPrefix)
+        string logPrefix,
+        decimal? currentFundingRate = null)
     {
-        var riskCheck = riskManager.ValidateTrade(signal, context);
+        var riskCheck = riskManager.ValidateTrade(signal, context, currentFundingRate);
         if (!riskCheck.IsAllowed)
         {
             eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",

@@ -10,6 +10,23 @@ namespace BingXBot.Tests.Engine;
 
 public class RiskManagerTests
 {
+    /// <summary>
+    /// Standard-RiskSettings für Tests: Neue Checks (Liquidation/Exposure/Funding) relaxiert,
+    /// damit bestehende Tests die auf Drawdown/Position-Limits fokussieren weiterhin korrekt testen.
+    /// </summary>
+    private static RiskSettings CreateTestSettings(Action<RiskSettings>? configure = null)
+    {
+        var settings = new RiskSettings
+        {
+            // Neue Checks relaxieren (Tests die diese Features testen, setzen eigene Werte)
+            MinLiquidationDistancePercent = 0m, // Deaktiviert
+            MaxNetExposurePercent = 99999m,     // Praktisch unbegrenzt
+            ConsiderFundingRate = false          // Deaktiviert
+        };
+        configure?.Invoke(settings);
+        return settings;
+    }
+
     private static MarketContext CreateContext(int openPositions = 0, decimal balance = 10000m, string symbol = "BTC-USDT", decimal unrealizedPnl = 0m, List<Position>? customPositions = null)
     {
         var positions = customPositions ?? Enumerable.Range(0, openPositions)
@@ -27,7 +44,7 @@ public class RiskManagerTests
     [Fact]
     public void ValidateTrade_NoSignal_ShouldReject()
     {
-        var risk = new RiskManager(new RiskSettings(), NullLogger<RiskManager>.Instance);
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
         var signal = new SignalResult(Signal.None, 0m, null, null, null, "Kein Signal");
         var result = risk.ValidateTrade(signal, CreateContext());
         result.IsAllowed.Should().BeFalse();
@@ -36,7 +53,7 @@ public class RiskManagerTests
     [Fact]
     public void ValidateTrade_MaxPositionsReached_ShouldReject()
     {
-        var settings = new RiskSettings { MaxOpenPositions = 2 };
+        var settings = CreateTestSettings(s => s.MaxOpenPositions = 2);
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
         var result = risk.ValidateTrade(signal, CreateContext(openPositions: 2));
@@ -47,7 +64,7 @@ public class RiskManagerTests
     [Fact]
     public void ValidateTrade_UnderLimits_ShouldAllow()
     {
-        var risk = new RiskManager(new RiskSettings(), NullLogger<RiskManager>.Instance);
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
         var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
         var result = risk.ValidateTrade(signal, CreateContext());
         result.IsAllowed.Should().BeTrue();
@@ -57,7 +74,7 @@ public class RiskManagerTests
     [Fact]
     public void CalculatePositionSize_WithStopLoss_ShouldCalculate()
     {
-        var settings = new RiskSettings { MaxPositionSizePercent = 2m, MaxLeverage = 10m };
+        var settings = CreateTestSettings(s => { s.MaxPositionSizePercent = 2m; s.MaxLeverage = 10m; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
         var size = risk.CalculatePositionSize("BTC-USDT", 50000m, 49000m, account);
@@ -69,7 +86,7 @@ public class RiskManagerTests
     {
         // 2% von 10.000 = 200 USDT Margin, * 10x Leverage = 2.000 USDT Position
         // 2.000 / 50.000 = 0,04 BTC
-        var settings = new RiskSettings { MaxPositionSizePercent = 2m, MaxLeverage = 10m };
+        var settings = CreateTestSettings(s => { s.MaxPositionSizePercent = 2m; s.MaxLeverage = 10m; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
         var size = risk.CalculatePositionSize("BTC-USDT", 50000m, null, account);
@@ -77,22 +94,26 @@ public class RiskManagerTests
     }
 
     [Fact]
-    public void CalculatePositionSize_MitUndOhneSL_GleicheGroesse()
+    public void CalculatePositionSize_MitUndOhneSL_UnterschiedlicheGroesse()
     {
-        // Positionsgröße hängt NUR von Margin ab, nicht vom SL.
-        // SL bestimmt wo ausgestiegen wird, nicht wie groß die Position ist.
-        var settings = new RiskSettings { MaxPositionSizePercent = 2m, MaxLeverage = 10m };
+        // H-1 Fix: Risiko-basiertes Sizing: SL-Distanz bestimmt Positionsgröße.
+        // Enger SL → größere Position, weiter SL → kleinere Position.
+        // Ohne SL → Fallback auf Margin-basiertes Sizing.
+        var settings = CreateTestSettings(s => { s.MaxPositionSizePercent = 2m; s.MaxLeverage = 10m; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
         var withSl = risk.CalculatePositionSize("BTC-USDT", 50000m, 49000m, account);
         var withoutSl = risk.CalculatePositionSize("BTC-USDT", 50000m, null, account);
-        withoutSl.Should().Be(withSl, "Positionsgröße ist Margin-basiert, unabhängig vom SL");
+        // Mit SL: Risiko-basiertes Sizing (maxLoss / slDistance). Ohne SL: Margin-basiert.
+        // Bei SL 49000 (2% Distanz): 200 USDT maxLoss / 1000 slDistance = 0.2 BTC
+        // Ohne SL: 200 USDT * 10x / 50000 = 0.04 BTC
+        withSl.Should().NotBe(withoutSl, "Risiko-basiertes Sizing mit SL unterscheidet sich von Margin-basiertem ohne SL");
     }
 
     [Fact]
     public void DailyDrawdown_ShouldBlockAfterThreshold()
     {
-        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10 };
+        var settings = CreateTestSettings(s => { s.MaxDailyDrawdownPercent = 5m; s.MaxOpenPositions = 10; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
         // Verluste die 5% DD verursachen (550 von 10000 = 5.5%)
@@ -108,7 +129,7 @@ public class RiskManagerTests
     [Fact]
     public void ResetDailyStats_ShouldClearDailyPnl()
     {
-        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10 };
+        var settings = CreateTestSettings(s => { s.MaxDailyDrawdownPercent = 5m; s.MaxOpenPositions = 10; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         risk.UpdateDailyStats(new CompletedTrade("BTC-USDT", Side.Buy, 50000m, 47500m, 0.1m, -600m, 5m, DateTime.UtcNow, DateTime.UtcNow, "SL", TradingMode.Live));
 
@@ -125,7 +146,7 @@ public class RiskManagerTests
         // Realisierte Verluste allein reichen nicht (1% < 5%), aber mit unrealisierten
         // Verlusten (-300 = 3%) + neuem Position-Risiko kommen wir über 5% -> blockiert
         // Neues Risiko bei SL: slDistance * posSize = 1000 * 0.04 = 40 USDT (0.4%)
-        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10 };
+        var settings = CreateTestSettings(s => { s.MaxDailyDrawdownPercent = 5m; s.MaxOpenPositions = 10; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
         // 100 realisierter Verlust = 1%
@@ -150,7 +171,7 @@ public class RiskManagerTests
     {
         // Netto-UnrealizedPnl = +200 -300 = -100 (nur 1%), aber der einzelne Verlust
         // von -300 (3%) muss in den Drawdown einfliessen. Bei 3% realisiert + 3% unrealisiert = 6% -> blockiert
-        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10 };
+        var settings = CreateTestSettings(s => { s.MaxDailyDrawdownPercent = 5m; s.MaxOpenPositions = 10; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
         // 300 realisierter Verlust = 3%
@@ -174,7 +195,7 @@ public class RiskManagerTests
     public void DailyDrawdown_WithUnrealizedProfit_ShouldNotAffectDrawdown()
     {
         // Positive unrealisierte PnL soll den Drawdown nicht reduzieren
-        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10 };
+        var settings = CreateTestSettings(s => { s.MaxDailyDrawdownPercent = 5m; s.MaxOpenPositions = 10; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
         // 550 realisierter Verlust = 5.5% -> blockiert
@@ -200,7 +221,7 @@ public class RiskManagerTests
         // Wir testen nur: Bei 4.8% realisiertem Verlust + SL-Risiko kein zusätzlicher Verlust ohne SL-Hit.
         // Konkret: 480 USDT realisiert = 4.8%. newPositionRisk mit SL = slDistance * posSize.
         // Test-Prüfpunkt: Mit SL wird ein anderer (höherer) WorstCase berechnet als ohne SL.
-        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10, MaxPositionSizePercent = 1m, MaxLeverage = 2m };
+        var settings = CreateTestSettings(s => { s.MaxDailyDrawdownPercent = 5m; s.MaxOpenPositions = 10; s.MaxPositionSizePercent = 1m; s.MaxLeverage = 2m; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
         // 100 USDT realisierter Verlust = 1% von 10000
@@ -222,7 +243,7 @@ public class RiskManagerTests
         // Settings: MaxDrawdown=5%, MaxPositionSize=4.5%, Balance=10000.
         // Kein bisheriger Verlust. Fallback-Risiko = 10000 * 4.5% = 450 USDT = 4.5% -> noch erlaubt.
         // Mit 1% realisiertem Verlust: 100 + 450 = 550 USDT = 5.5% >= 5% -> blockiert.
-        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10, MaxPositionSizePercent = 4.5m, MaxLeverage = 10m };
+        var settings = CreateTestSettings(s => { s.MaxDailyDrawdownPercent = 5m; s.MaxOpenPositions = 10; s.MaxPositionSizePercent = 4.5m; s.MaxLeverage = 10m; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
         // 1% realisierter Verlust
@@ -242,7 +263,7 @@ public class RiskManagerTests
     {
         // Testet das kombinierte Szenario: bestehender Drawdown (realisiert + unrealisiert)
         // plus das Worst-Case-Risiko der neuen Position überschreitet das Limit.
-        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10, MaxPositionSizePercent = 2m, MaxLeverage = 10m };
+        var settings = CreateTestSettings(s => { s.MaxDailyDrawdownPercent = 5m; s.MaxOpenPositions = 10; s.MaxPositionSizePercent = 2m; s.MaxLeverage = 10m; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
         // 2% realisierter Verlust
@@ -265,7 +286,7 @@ public class RiskManagerTests
     {
         // Stellt sicher dass ein Signal mit sehr engem SL (kleines WorstCase-Risiko)
         // nicht fälschlicherweise blockiert wird, obwohl noch Drawdown-Budget vorhanden ist.
-        var settings = new RiskSettings { MaxDailyDrawdownPercent = 5m, MaxOpenPositions = 10, MaxPositionSizePercent = 2m, MaxLeverage = 10m };
+        var settings = CreateTestSettings(s => { s.MaxDailyDrawdownPercent = 5m; s.MaxOpenPositions = 10; s.MaxPositionSizePercent = 2m; s.MaxLeverage = 10m; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
 
         // Kein bisheriger Verlust
@@ -276,5 +297,98 @@ public class RiskManagerTests
 
         result.IsAllowed.Should().BeTrue("Kleines SL-Risiko passt problemlos in das Drawdown-Budget");
         result.AdjustedPositionSize.Should().BeGreaterThan(0m);
+    }
+
+    // === Neue Tests: Liquidation, Exposure, Funding-Rate ===
+
+    [Fact]
+    public void CalculateLiquidationPrice_Long_ShouldBeBelow()
+    {
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        var liqPrice = risk.CalculateLiquidationPrice(50000m, 10m, Side.Buy);
+        liqPrice.Should().BeLessThan(50000m);
+        // Bei 10x: 50000 * (1 - 1/10 + 0.004) = 50000 * 0.904 = 45200
+        liqPrice.Should().BeApproximately(45200m, 1m);
+    }
+
+    [Fact]
+    public void CalculateLiquidationPrice_Short_ShouldBeAbove()
+    {
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        var liqPrice = risk.CalculateLiquidationPrice(50000m, 10m, Side.Sell);
+        liqPrice.Should().BeGreaterThan(50000m);
+    }
+
+    [Fact]
+    public void CalculateNetExposure_ShouldSumPositionValues()
+    {
+        var risk = new RiskManager(CreateTestSettings(), NullLogger<RiskManager>.Instance);
+        var positions = new List<Position>
+        {
+            new("BTC-USDT", Side.Buy, 50000m, 50000m, 0.1m, 0m, 10m, MarginType.Cross, DateTime.UtcNow), // 5000 USDT
+            new("ETH-USDT", Side.Buy, 3000m, 3000m, 1m, 0m, 10m, MarginType.Cross, DateTime.UtcNow)      // 3000 USDT
+        };
+        var exposure = risk.CalculateNetExposure(positions, 10000m);
+        // (0.1*50000 + 1*3000) / 10000 * 100 = 80%
+        exposure.Should().Be(80m);
+    }
+
+    [Fact]
+    public void ValidateTrade_ExposureExceeded_ShouldReject()
+    {
+        var settings = CreateTestSettings(s => s.MaxNetExposurePercent = 20m);
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        // Bestehende Position: 0.1 BTC * 50000 = 5000 USDT = 50% Exposure
+        var positions = new List<Position>
+        {
+            new("BTC-USDT", Side.Buy, 50000m, 50000m, 0.1m, 0m, 10m, MarginType.Cross, DateTime.UtcNow)
+        };
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m, customPositions: positions, symbol: "ETH-USDT"));
+        result.IsAllowed.Should().BeFalse();
+        result.RejectionReason.Should().Contain("Exposure");
+    }
+
+    [Fact]
+    public void ValidateTrade_LiquidationTooClose_ShouldReject()
+    {
+        // 10x Leverage → Liquidation ~9.6% entfernt. MinLiquidationDistance=15% → blockiert
+        var settings = CreateTestSettings(s => { s.MinLiquidationDistancePercent = 15m; s.MaxLeverage = 10m; });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m));
+        result.IsAllowed.Should().BeFalse();
+        result.RejectionReason.Should().Contain("Liquidation");
+    }
+
+    [Fact]
+    public void ValidateTrade_AdverseFunding_ShouldReject()
+    {
+        var settings = CreateTestSettings(s =>
+        {
+            s.ConsiderFundingRate = true;
+            s.MaxAdverseFundingRatePercent = 0.05m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        // Long bei positiver Funding (0.1% > 0.05% Max) → blockiert
+        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m), currentFundingRate: 0.001m);
+        result.IsAllowed.Should().BeFalse();
+        result.RejectionReason.Should().Contain("Funding");
+    }
+
+    [Fact]
+    public void ValidateTrade_FavorableFunding_ShouldAllow()
+    {
+        var settings = CreateTestSettings(s =>
+        {
+            s.ConsiderFundingRate = true;
+            s.MaxAdverseFundingRatePercent = 0.05m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        // Long bei negativer Funding → günstig, nicht blockiert
+        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m), currentFundingRate: -0.001m);
+        result.IsAllowed.Should().BeTrue();
     }
 }

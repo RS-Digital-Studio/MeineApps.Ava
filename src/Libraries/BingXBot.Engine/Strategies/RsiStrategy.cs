@@ -49,7 +49,7 @@ public class RsiStrategy : IStrategy
 
         var rsi = IndicatorHelper.CalculateRsi(candles, _period);
         var atr = IndicatorHelper.CalculateAtr(candles, _atrPeriod);
-        var volumeSma = IndicatorHelper.CalculateSma(candles, _volumePeriod);
+        var volumeSma = IndicatorHelper.CalculateVolumeSma(candles, _volumePeriod);
 
         var lastRsi = rsi[^1];
         var prevRsi = rsi[^2];
@@ -61,6 +61,11 @@ public class RsiStrategy : IStrategy
 
         var currentPrice = context.CurrentTicker.LastPrice;
         var atrValue = lastAtr.Value;
+
+        // ATR=0 Guard: Bei identischen OHLC-Werten wäre SL=TP=Entry
+        if (atrValue <= 0)
+            return new SignalResult(Signal.None, 0m, null, null, null, "ATR ist 0 - kein valider SL/TP möglich");
+
         var currentVolume = candles[^1].Volume;
         var volumeAboveAvg = currentVolume > lastVolSma.Value;
 
@@ -129,45 +134,50 @@ public class RsiStrategy : IStrategy
         if (candles.Count < _divergenceLookback + 2 || rsi.Count < _divergenceLookback + 2)
             return new SignalResult(Signal.None, 0m, null, null, null, "");
 
-        // Lookback-Bereich
+        // H-6 Fix: Zeitlich korrelierte Pivot-Points statt unabhängiges Max/Min.
+        // Echte Divergenz: Preis-Hoch an Stelle X, RSI an Stelle X niedriger als bei vorherigem Preis-Hoch.
         var startIdx = candles.Count - _divergenceLookback - 1;
-        var endIdx = candles.Count - 2; // Vorletzte Candle als Vergleich
+        var endIdx = candles.Count - 2;
+        var lastRsi = rsi[^1]!.Value;
 
-        // Höchster Preis und höchster RSI im Lookback-Bereich
-        var highestPrice = candles[startIdx].High;
-        var highestRsi = rsi[startIdx] ?? 0m;
+        // Finde den Index des höchsten Preises im Lookback-Bereich
+        var highestPriceIdx = startIdx;
         for (int i = startIdx + 1; i <= endIdx; i++)
         {
-            if (candles[i].High > highestPrice) highestPrice = candles[i].High;
-            if (rsi[i] != null && rsi[i]!.Value > highestRsi) highestRsi = rsi[i]!.Value;
+            if (candles[i].High > candles[highestPriceIdx].High)
+                highestPriceIdx = i;
         }
+        var highestPrice = candles[highestPriceIdx].High;
+        // RSI am selben Index wie das Preis-Hoch (zeitlich korreliert)
+        var rsiAtPriceHigh = rsi[highestPriceIdx] ?? 0m;
 
-        // Bearish Divergenz: Preis macht neues Hoch, RSI nicht
-        var lastRsi = rsi[^1]!.Value;
-        if (candles[^1].High >= highestPrice && lastRsi < highestRsi - 5m && lastRsi > 50m)
+        // Bearish Divergenz: Aktuelles Preis-Hoch >= vorheriges, aber RSI am Hoch-Punkt war höher
+        if (candles[^1].High >= highestPrice && lastRsi < rsiAtPriceHigh - 5m && lastRsi > 50m)
         {
             var sl = currentPrice + atrValue * 2m;
             var tp = currentPrice - atrValue * 3m;
             return new SignalResult(Signal.Short, 0.85m, currentPrice, sl, tp,
-                $"Bearish Divergenz: Preis neues Hoch, RSI fällt ({lastRsi:F1} vs {highestRsi:F1})");
+                $"Bearish Divergenz: Preis neues Hoch, RSI am Pivot niedriger ({lastRsi:F1} vs {rsiAtPriceHigh:F1})");
         }
 
-        // Niedrigster Preis und niedrigster RSI im Lookback-Bereich
-        var lowestPrice = candles[startIdx].Low;
-        var lowestRsi = rsi[startIdx] ?? 100m;
+        // Finde den Index des niedrigsten Preises im Lookback-Bereich
+        var lowestPriceIdx = startIdx;
         for (int i = startIdx + 1; i <= endIdx; i++)
         {
-            if (candles[i].Low < lowestPrice) lowestPrice = candles[i].Low;
-            if (rsi[i] != null && rsi[i]!.Value < lowestRsi) lowestRsi = rsi[i]!.Value;
+            if (candles[i].Low < candles[lowestPriceIdx].Low)
+                lowestPriceIdx = i;
         }
+        var lowestPrice = candles[lowestPriceIdx].Low;
+        // RSI am selben Index wie das Preis-Tief (zeitlich korreliert)
+        var rsiAtPriceLow = rsi[lowestPriceIdx] ?? 100m;
 
-        // Bullish Divergenz: Preis macht neues Tief, RSI nicht
-        if (candles[^1].Low <= lowestPrice && lastRsi > lowestRsi + 5m && lastRsi < 50m)
+        // Bullish Divergenz: Aktuelles Preis-Tief <= vorheriges, aber RSI am Tief-Punkt war niedriger
+        if (candles[^1].Low <= lowestPrice && lastRsi > rsiAtPriceLow + 5m && lastRsi < 50m)
         {
             var sl = currentPrice - atrValue * 2m;
             var tp = currentPrice + atrValue * 3m;
             return new SignalResult(Signal.Long, 0.85m, currentPrice, sl, tp,
-                $"Bullish Divergenz: Preis neues Tief, RSI steigt ({lastRsi:F1} vs {lowestRsi:F1})");
+                $"Bullish Divergenz: Preis neues Tief, RSI am Pivot höher ({lastRsi:F1} vs {rsiAtPriceLow:F1})");
         }
 
         return new SignalResult(Signal.None, 0m, null, null, null, "");
@@ -178,7 +188,7 @@ public class RsiStrategy : IStrategy
         if (history.Count < _period + _divergenceLookback + 5) return;
         IndicatorHelper.CalculateRsi(history, _period);
         IndicatorHelper.CalculateAtr(history, _atrPeriod);
-        IndicatorHelper.CalculateSma(history, _volumePeriod);
+        IndicatorHelper.CalculateVolumeSma(history, _volumePeriod);
     }
     public void Reset() { }
 

@@ -403,6 +403,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Auto-Complete bei QuickJobs Navigation-Loop | `CanAutoComplete` wird true, aber `AutoCompleteGameAsync()` findet kein ActiveOrder → NavigateBack | `UpdateAutoCompleteStatus()` prüft `GetActiveOrder() != null` vor Auto-Complete |
 | PipePuzzle Rating zu großzügig | `optimalMoves = GridCols * GridRows` statt Pfad-Länge → moveEfficiency immer > 1.0 | `optimalMoves = Tiles.Count(t => t.IsPartOfSolution && !t.IsLocked)` |
 | QuickJob Ad-Verdopplung nur in UI | `WatchAdAsync` setzt nur `order.IsScoreDoubled`, QuickJobs haben kein solches Flag | `QuickJob.IsScoreDoubled` Property + Verdopplung in MainViewModel.Navigation.cs |
+| SimulatedExchange nicht unter BingXBot.Core | Namespace in CLAUDE.md war `BingXBot.Core.Simulation` | SimulatedExchange liegt in `BingXBot.Backtest/Simulation/` (Namespace `BingXBot.Backtest.Simulation`). Immer `Glob` vor Edit |
 
 ---
 

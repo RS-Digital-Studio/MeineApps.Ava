@@ -35,12 +35,9 @@ public sealed class LuckySpinService : ILuckySpinService
     }
 
     public bool HasFreeSpin => _gameStateService.State.LuckySpin.HasFreeSpin;
+    public bool HasAdSpin => _gameStateService.State.LuckySpin.HasAdSpin;
 
-    /// <summary>
-    /// Festpreis 5 Goldschrauben pro Spin (eskalierende Kosten entfernt - negativer Erwartungswert war frustrierend).
-    /// </summary>
     private const int FlatSpinCost = 5;
-
     public int SpinCost => FlatSpinCost;
 
     public LuckySpinPrizeType Spin()
@@ -50,25 +47,32 @@ public sealed class LuckySpinService : ILuckySpinService
 
         if (HasFreeSpin)
         {
-            // Gratis-Spin verwenden
             spinState.LastFreeSpinDate = DateTime.UtcNow;
         }
         else
         {
-            // Goldschrauben abziehen (aktuelle Kosten)
             if (!_gameStateService.TrySpendGoldenScrews(SpinCost))
-                return LuckySpinPrizeType.MoneySmall; // Fallback wenn nicht genug
+                return LuckySpinPrizeType.MoneySmall;
 
-            // Kostenpflichtige Spins heute zählen
             spinState.PaidSpinsToday++;
             spinState.LastPaidSpinDate = DateTime.UtcNow;
         }
 
         spinState.TotalSpins++;
-        _gameStateService.MarkDirty();
-
-        // Gewichteten Zufallsgewinn bestimmen
         return GetRandomPrize();
+    }
+
+    /// <summary>BAL-AD-6: Gewinn für Ad-Spin bestimmen (ohne Kosten). MarkAdSpinUsed() danach.</summary>
+    public LuckySpinPrizeType SpinForAd()
+    {
+        _gameStateService.State.LuckySpin.TotalSpins++;
+        return GetRandomPrize();
+    }
+
+    /// <summary>Markiert den Ad-Spin als heute verbraucht.</summary>
+    public void MarkAdSpinUsed()
+    {
+        _gameStateService.State.LuckySpin.LastAdSpinDate = DateTime.UtcNow;
     }
 
     public void ApplyPrize(LuckySpinPrizeType prizeType)
@@ -94,7 +98,6 @@ public sealed class LuckySpinService : ILuckySpinService
             state.SpeedBoostEndTime = currentEnd.AddMinutes(30);
         }
 
-        _gameStateService.MarkDirty();
     }
 
     /// <summary>

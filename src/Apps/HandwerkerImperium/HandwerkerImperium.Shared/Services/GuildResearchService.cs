@@ -111,7 +111,6 @@ public sealed class GuildResearchService : IGuildResearchService, IDisposable
             if (anyNewlyCompleted)
                 _cachedEffects = GuildResearchEffects.Calculate(completedIds);
             membership.ApplyResearchEffects(_cachedEffects);
-            _gameStateService.MarkDirty();
 
             // Definitionen mit Zuständen mergen, pro Kategorie aktive bestimmen
             var categoryFirstIncomplete = new Dictionary<GuildResearchCategory, bool>();
@@ -425,7 +424,6 @@ public sealed class GuildResearchService : IGuildResearchService, IDisposable
             if (membership != null)
             {
                 membership.ApplyResearchEffects(_cachedEffects);
-                _gameStateService.MarkDirty();
             }
         }
         catch

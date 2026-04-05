@@ -16,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Shows available workers with tier badges, personality, talent stars, specialization, and wage.
 /// Pool rotates every 4 hours with countdown timer.
 /// </summary>
-public sealed partial class WorkerMarketViewModel : ViewModelBase
+public sealed partial class WorkerMarketViewModel : ViewModelBase, INavigable
 {
     private readonly IWorkerService _workerService;
     private readonly IGameStateService _gameStateService;
@@ -180,7 +180,7 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
         var marketRestriction = activeEvent?.IsActive == true ? activeEvent.Effect.MarketRestriction : null;
 
         // Markt IMMER anzeigen, unabhaengig von freien Plaetzen
-        var playerLevel = _gameStateService.State.PlayerLevel;
+        var playerLevel = _gameStateService.PlayerLevel;
         var netIncomePerSecond = Math.Max(0m, _gameStateService.State.NetIncomePerSecond);
 
         // Bei MarketRestriction: Nur Worker bis zur erlaubten Tier-Stufe (For-Schleife statt LINQ)
@@ -287,7 +287,6 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
             if (!market.FreeRefreshUsedThisRotation)
             {
                 market.FreeRefreshUsedThisRotation = true;
-                _gameStateService.MarkDirty();
                 DoRefreshMarket();
                 return;
             }
@@ -359,7 +358,6 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase
                 }
 
                 fullWorkshop.AdBonusWorkerSlots += 1;
-                _gameStateService.MarkDirty();
                 LoadMarket();
 
                 _dialogService.ShowAlertDialog(

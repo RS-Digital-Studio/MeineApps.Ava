@@ -64,7 +64,6 @@ public sealed class EquipmentService : IEquipmentService
             worker.EquippedItem = inventoryItem;
             inventory.Remove(inventoryItem);
 
-            _gameStateService.MarkDirty();
             state.InvalidateIncomeCache();
         }
     }
@@ -82,7 +81,6 @@ public sealed class EquipmentService : IEquipmentService
             state.EquipmentInventory.Add(worker.EquippedItem);
             worker.EquippedItem = null;
 
-            _gameStateService.MarkDirty();
             state.InvalidateIncomeCache();
         }
     }
@@ -99,7 +97,6 @@ public sealed class EquipmentService : IEquipmentService
 
             result = Equipment.GenerateRandom(difficulty);
             _gameStateService.State.EquipmentInventory.Add(result);
-            _gameStateService.MarkDirty();
         }
 
         // Event AUSSERHALB des Locks aufrufen (Deadlock-Prävention)
@@ -132,7 +129,6 @@ public sealed class EquipmentService : IEquipmentService
                 return;
 
             _gameStateService.State.EquipmentInventory.Add(equipment);
-            _gameStateService.MarkDirty();
         }
     }
 

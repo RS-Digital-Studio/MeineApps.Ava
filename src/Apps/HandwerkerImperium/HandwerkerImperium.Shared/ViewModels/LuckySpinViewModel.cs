@@ -6,6 +6,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
+using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -14,12 +15,13 @@ namespace HandwerkerImperium.ViewModels;
 /// Täglicher Gratis-Spin + kostenpflichtige Spins (5 Goldschrauben).
 /// Spin-Animation per DispatcherTimer mit Easing (schnell → langsam, ~3 Sekunden).
 /// </summary>
-public sealed partial class LuckySpinViewModel : ViewModelBase
+public sealed partial class LuckySpinViewModel : ViewModelBase, IDisposable
 {
     private readonly ILuckySpinService _luckySpinService;
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
     private readonly IAudioService _audioService;
+    private readonly IRewardedAdService? _rewardedAdService;
 
     // Animations-State
     private DispatcherTimer? _spinTimer;
@@ -102,12 +104,14 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
         ILuckySpinService luckySpinService,
         IGameStateService gameStateService,
         ILocalizationService localizationService,
-        IAudioService audioService)
+        IAudioService audioService,
+        IRewardedAdService? rewardedAdService = null)
     {
         _luckySpinService = luckySpinService;
         _gameStateService = gameStateService;
         _localizationService = localizationService;
         _audioService = audioService;
+        _rewardedAdService = rewardedAdService;
 
         UpdateLocalizedTexts();
         Refresh();
@@ -123,13 +127,25 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
     {
         if (IsSpinning || !CanSpin) return;
 
-        // Prüfen ob Spin möglich (Gratis oder genug Goldschrauben)
+        // Reihenfolge: 1. Gratis-Spin, 2. Ad-Spin, 3. GS-Spin
         bool isFree = _luckySpinService.HasFreeSpin;
-        if (!isFree && !_gameStateService.CanAffordGoldenScrews(_luckySpinService.SpinCost))
+        bool isAd = !isFree && _luckySpinService.HasAdSpin && _rewardedAdService?.IsAvailable == true;
+
+        if (!isFree && !isAd && !_gameStateService.CanAffordGoldenScrews(_luckySpinService.SpinCost))
             return;
 
-        // Ergebnis vorher ermitteln (Service zieht Kosten ab / verbraucht Gratis-Spin)
-        _pendingPrize = _luckySpinService.Spin();
+        if (isAd)
+        {
+            // BAL-AD-6: Ad-Spin - erst Video, dann drehen
+            var success = await _rewardedAdService!.ShowAdAsync("lucky_spin");
+            if (!success) return;
+            _pendingPrize = _luckySpinService.SpinForAd();
+            _luckySpinService.MarkAdSpinUsed();
+        }
+        else
+        {
+            _pendingPrize = _luckySpinService.Spin();
+        }
 
         // UI-State vorbereiten
         IsSpinning = true;
@@ -247,20 +263,25 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
     public void Refresh()
     {
         HasFreeSpin = _luckySpinService.HasFreeSpin;
+        bool hasAdSpin = _luckySpinService.HasAdSpin && _rewardedAdService?.IsAvailable == true;
 
         bool hasEnoughScrews = _gameStateService.CanAffordGoldenScrews(_luckySpinService.SpinCost);
-        CanSpin = !IsSpinning && (HasFreeSpin || hasEnoughScrews);
+        CanSpin = !IsSpinning && (HasFreeSpin || hasAdSpin || hasEnoughScrews);
 
         if (HasFreeSpin)
         {
             SpinButtonText = _localizationService.GetString("LuckySpinFree") ?? "Gratis drehen!";
             SpinCostDisplay = "";
         }
+        else if (hasAdSpin)
+        {
+            // BAL-AD-6: Ad-Spin verfügbar
+            SpinButtonText = _localizationService.GetString("LuckySpinAd") ?? "Video drehen";
+            SpinCostDisplay = "";
+        }
         else
         {
-            // "Drehen" statt "Drehen ({0})" - Goldschrauben-Kosten als separates XAML-Element mit Icon
             var costFormat = _localizationService.GetString("LuckySpinCost") ?? "Drehen ({0})";
-            // Format-String bereinigen: alles ab " (" oder "({" entfernen
             var idx = costFormat.IndexOf(" (", StringComparison.Ordinal);
             SpinButtonText = idx > 0 ? costFormat[..idx] : string.Format(costFormat, _luckySpinService.SpinCost);
             SpinCostDisplay = _luckySpinService.SpinCost.ToString("N0");
@@ -387,5 +408,21 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
     private static string FormatMoney(decimal amount)
     {
         return $"+{MoneyFormatter.FormatCompact(amount)}";
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DISPOSE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Gibt alle DispatcherTimer frei (kein Memory Leak bei ViewModel-Austausch).
+    /// </summary>
+    public void Dispose()
+    {
+        _spinTimer?.Stop();
+        _spinTimer = null;
+
+        _countdownTimer?.Stop();
+        _countdownTimer = null;
     }
 }

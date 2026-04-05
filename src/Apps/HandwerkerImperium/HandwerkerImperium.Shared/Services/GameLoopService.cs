@@ -8,11 +8,17 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Manages the game loop timer for idle earnings, running costs,
-/// worker state updates, research timers, and event checks.
-/// Auto-saves every 30 seconds.
+/// Zentraler Game-Loop-Timer fuer Idle-Einkommen, laufende Kosten,
+/// Worker-State-Updates, Research-Timer und Event-Checks.
+/// Auto-Save alle 30 Sekunden.
+///
+/// Partial-Aufteilung:
+/// - GameLoopService.cs (diese Datei): Felder, Konstruktor, Timer, OnTimerTick, Dispose
+/// - GameLoopService.Automation.cs: AutoCollect, AutoAccept, AutoAssign
+/// - GameLoopService.PeriodicChecks.cs: Periodische Pruefungen, Lieferant, Meisterwerkzeuge, Workshop-Spezialeffekte
+/// - GameLoopService.PrestigeCache.cs: Prestige-Shop-Effekte-Cache
 /// </summary>
-public sealed class GameLoopService : IGameLoopService, IDisposable
+public sealed partial class GameLoopService : IGameLoopService, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
@@ -52,23 +58,21 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     // Gecachter MasterTool-Einkommens-Bonus (aendert sich nur bei Freischaltung, nicht pro Tick)
     private decimal _cachedMasterToolBonus = -1m;
 
+    // Benannte Event-Handler fuer sauberes Unsubscribe in Dispose()
+    private readonly EventHandler _stateLoadedHandler;
+    private readonly Action? _vipLevelChangedHandler;
+
     private const int AutoSaveIntervalTicks = 30;
     private const int EventCheckIntervalTicks = 300; // Check events every 5 minutes
-    private const int DeliveryCheckIntervalTicks = 10; // Lieferung alle 10 Ticks prüfen
-    private const int MasterToolCheckIntervalTicks = 120; // Meisterwerkzeuge alle 2 Minuten prüfen
+    private const int DeliveryCheckIntervalTicks = 10; // Lieferung alle 10 Ticks pruefen
+    private const int MasterToolCheckIntervalTicks = 120; // Meisterwerkzeuge alle 2 Minuten pruefen
     private const int WeeklyMissionCheckIntervalTicks = 60; // Weekly Mission Reset alle 60 Ticks
     private const int ManagerCheckIntervalTicks = 120; // Manager Unlock Check alle 2 Minuten
-    private const int SeasonalEventCheckIntervalTicks = 300; // Saisonales Event alle 5 Minuten prüfen
-    private const int BattlePassSeasonCheckIntervalTicks = 300; // Battle Pass Saison alle 5 Minuten prüfen
+    private const int SeasonalEventCheckIntervalTicks = 300; // Saisonales Event alle 5 Minuten pruefen
+    private const int BattlePassSeasonCheckIntervalTicks = 300; // Battle Pass Saison alle 5 Minuten pruefen
     private const int AutomationCheckIntervalTicks = 5; // Automation alle 5 Ticks
     private const int AutoAssignIntervalTicks = 60; // AutoAssign alle 60 Ticks
     private const int QuickJobCheckIntervalTicks = 60; // QuickJob Rotation + Deadline-Check alle 60 Ticks
-
-    // Tier-1-Crafting-Materialien für MasterSmith (static readonly, keine Allokation pro Aufruf)
-    private static readonly string[] Tier1CraftingProducts = ["planks", "pipes", "cables", "paint_mix", "roof_tiles"];
-
-    // Gecachte Anzahl aller MasterTool-Definitionen (statisch, ändert sich nie zur Laufzeit)
-    private static readonly int MasterToolDefinitionCount = MasterTool.GetAllDefinitions().Count;
 
     public bool IsRunning => _timer?.IsEnabled ?? false;
     public TimeSpan SessionDuration => DateTime.UtcNow - _sessionStart;
@@ -147,11 +151,15 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         _challengeConstraints = challengeConstraints;
 
         // Bei State-Wechsel (Load/Import/Reset/Prestige) alle Caches invalidieren
-        _gameStateService.StateLoaded += (_, _) => ResetAllCaches();
+        _stateLoadedHandler = (_, _) => ResetAllCaches();
+        _gameStateService.StateLoaded += _stateLoadedHandler;
 
         // Bei VIP-Level-Wechsel Prestige-Effekte invalidieren (aktualisiert VipCostReduction auf Workshops)
         if (_vipService != null)
-            _vipService.VipLevelChanged += () => _prestigeEffectsDirty = true;
+        {
+            _vipLevelChangedHandler = () => _prestigeEffectsDirty = true;
+            _vipService.VipLevelChanged += _vipLevelChangedHandler;
+        }
     }
 
     /// <summary>
@@ -196,7 +204,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         _timer = null;
 
         // Nur die aktive Zeit seit letztem Start/Resume akkumulieren
-        _gameStateService.State.Statistics.TotalPlayTimeSeconds += (long)(DateTime.UtcNow - _sessionStart).TotalSeconds;
+        _gameStateService.Statistics.TotalPlayTimeSeconds += (long)(DateTime.UtcNow - _sessionStart).TotalSeconds;
         _gameStateService.State.LastPlayedAt = DateTime.UtcNow;
 
         _saveGameService.SaveAsync().FireAndForget();
@@ -208,10 +216,10 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         _timer?.Stop();
 
         // Bisherige aktive Session-Zeit akkumulieren
-        _gameStateService.State.Statistics.TotalPlayTimeSeconds += (long)(DateTime.UtcNow - _sessionStart).TotalSeconds;
+        _gameStateService.Statistics.TotalPlayTimeSeconds += (long)(DateTime.UtcNow - _sessionStart).TotalSeconds;
         _gameStateService.State.LastPlayedAt = DateTime.UtcNow;
 
-        // Session-Start auf jetzt setzen, damit Stop() danach nicht die gleiche Zeitspanne nochmal zählt
+        // Session-Start auf jetzt setzen, damit Stop() danach nicht die gleiche Zeitspanne nochmal zaehlt
         _sessionStart = DateTime.UtcNow;
 
         _saveGameService.SaveAsync().FireAndForget();
@@ -220,7 +228,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
     public void Resume()
     {
         _isPaused = false;
-        // Session-Start neu setzen damit Pause-Zeit nicht mitgezählt wird
+        // Session-Start neu setzen damit Pause-Zeit nicht mitgezaehlt wird
         _sessionStart = DateTime.UtcNow;
         _timer?.Start();
     }
@@ -237,7 +245,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         RefreshWorkshopCacheIfNeeded(state);
         RefreshPrestigeEffectsIfNeeded(state);
 
-        // 0. Research- und Gebäude-Effekte sammeln
+        // 0. Research- und Gebaeude-Effekte sammeln
         var researchEffects = _researchService?.GetTotalEffects();
         UpdateExtraWorkerSlots(state, researchEffects);
 
@@ -289,11 +297,11 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
             netEarnings *= 2m;
         }
 
-        // Feierabend-Rush: 2x Boost (stacked mit SpeedBoost, PrestigeShop-Bonus erhöht auf 3x)
+        // Feierabend-Rush: 2x Boost (stacked mit SpeedBoost, PrestigeShop-Bonus erhoeht auf 3x)
         if (state.IsRushBoostActive && netEarnings > 0)
         {
             decimal rushMultiplier = 2m;
-            // Prestige-Shop Rush-Verstärker (gecacht)
+            // Prestige-Shop Rush-Verstaerker (gecacht)
             if (_cachedPrestigeRushBonus > 0) rushMultiplier += _cachedPrestigeRushBonus;
             netEarnings *= rushMultiplier;
         }
@@ -333,7 +341,7 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                     {
                         var worker = ws.Workers[wi];
                         if (!worker.IsWorking) continue;
-                        // LevelFitFactor berücksichtigen (Workshop-Level-Malus für niedrige Tiers)
+                        // LevelFitFactor beruecksichtigen (Workshop-Level-Malus fuer niedrige Tiers)
                         worker.TotalEarned += ws.BaseIncomePerWorker * worker.EffectiveEfficiency * ws.GetWorkerLevelFitFactor(worker);
                     }
                 }
@@ -358,433 +366,14 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         OnTick?.Invoke(this, new GameTickEventArgs(netEarnings, state.Money, SessionDuration));
     }
 
-    /// <summary>
-    /// Event wenn ein Auftrag wegen abgelaufener Deadline verfällt.
-    /// </summary>
-    public event EventHandler? OrderExpired;
-
-    /// <summary>
-    /// Event für neue Meisterwerkzeug-Freischaltungen (UI-Benachrichtigung).
-    /// </summary>
-    public event EventHandler<MasterToolDefinition>? MasterToolUnlocked;
-
-    /// <summary>
-    /// Event für neue Lieferungen (UI-Benachrichtigung).
-    /// </summary>
-    public event EventHandler<SupplierDelivery>? DeliveryArrived;
-
-    /// <summary>
-    /// Prüft ob neue Lieferung generiert werden soll.
-    /// Intervall: 2-5 Minuten (reduziert durch Prestige-Shop-Bonus).
-    /// </summary>
-    private void CheckAndGenerateDelivery(GameState state, DateTime now)
-    {
-        // Challenge: KeinNetz blockiert Lieferanten komplett
-        if (_challengeConstraints?.IsDeliveryBlocked() == true) return;
-
-        // Lieferung nur wenn keine wartet und Intervall abgelaufen
-        if (state.PendingDelivery != null)
-        {
-            // Abgelaufene Lieferung entfernen
-            if (state.PendingDelivery.IsExpired)
-                state.PendingDelivery = null;
-            return;
-        }
-
-        if (now < state.NextDeliveryTime)
-            return;
-
-        // Neue Lieferung generieren
-        var delivery = SupplierDelivery.GenerateRandom(state);
-        state.PendingDelivery = delivery;
-
-        // Nächstes Intervall: 2-5 Minuten (Prestige-Bonus reduziert, gecacht)
-        int baseIntervalSec = Random.Shared.Next(120, 300);
-        decimal deliveryBonus = _cachedPrestigeDeliveryBonus;
-        if (deliveryBonus > 0)
-            baseIntervalSec = (int)(baseIntervalSec * (1m - Math.Min(deliveryBonus, 0.50m)));
-        state.NextDeliveryTime = now.AddSeconds(baseIntervalSec);
-
-        DeliveryArrived?.Invoke(this, delivery);
-    }
-
-    /// <summary>
-    /// Prüft ob neue Meisterwerkzeuge freigeschaltet werden können.
-    /// </summary>
-    private void CheckMasterTools(GameState state)
-    {
-        // Early-Exit: Alle Meisterwerkzeuge bereits gesammelt → nichts zu prüfen
-        if (state.CollectedMasterTools.Count >= MasterToolDefinitionCount) return;
-
-        foreach (var def in MasterTool.GetAllDefinitions())
-        {
-            if (state.CollectedMasterTools.Contains(def.Id))
-                continue;
-
-            if (MasterTool.CheckEligibility(def.Id, state))
-            {
-                state.CollectedMasterTools.Add(def.Id);
-                _cachedMasterToolBonus = -1m; // Cache invalidieren nach Freischaltung
-                MasterToolUnlocked?.Invoke(this, def);
-            }
-        }
-    }
-
-    // Gecachte Prestige-Shop-Effekte (werden nur bei Kauf invalidiert)
-    private bool _prestigeEffectsDirty = true;
-    private decimal _cachedPrestigeIncomeBonus;
-    private decimal _cachedPrestigeRushBonus;
-    private decimal _cachedPrestigeDeliveryBonus;
-    private decimal _cachedPrestigeUpgradeDiscount;
-
-    /// <summary>
-    /// Prestige-Effekt-Cache invalidieren (nach Prestige-Shop-Kauf oder Prestige-Reset).
-    /// </summary>
-    public void InvalidatePrestigeEffects() => _prestigeEffectsDirty = true;
-
-    /// <summary>
-    /// Berechnet alle 3 Prestige-Shop-Boni in einem einzigen Durchlauf und cacht sie.
-    /// </summary>
-    private void RefreshPrestigeEffectsIfNeeded(GameState state)
-    {
-        if (!_prestigeEffectsDirty) return;
-        _prestigeEffectsDirty = false;
-
-        _cachedPrestigeIncomeBonus = 0m;
-        _cachedPrestigeRushBonus = 0m;
-        _cachedPrestigeDeliveryBonus = 0m;
-        _cachedPrestigeUpgradeDiscount = 0m;
-
-        var purchased = state.Prestige.PurchasedShopItems;
-        var repeatableCounts = state.Prestige.RepeatableItemCounts;
-
-        if (purchased.Count == 0 && repeatableCounts.Count == 0) return;
-
-        var allItems = PrestigeShop.GetAllItems();
-        for (int i = 0; i < allItems.Count; i++)
-        {
-            var item = allItems[i];
-
-            // Wiederholbare Items: Effekt * Kaufanzahl
-            if (item.IsRepeatable)
-            {
-                if (repeatableCounts.TryGetValue(item.Id, out var count) && count > 0)
-                {
-                    if (item.Effect.IncomeMultiplier > 0)
-                        _cachedPrestigeIncomeBonus += item.Effect.IncomeMultiplier * count;
-                    if (item.Effect.DeliverySpeedBonus > 0)
-                        _cachedPrestigeDeliveryBonus += item.Effect.DeliverySpeedBonus * count;
-                }
-                continue;
-            }
-
-            if (!purchased.Contains(item.Id)) continue;
-
-            if (item.Effect.IncomeMultiplier > 0)
-                _cachedPrestigeIncomeBonus += item.Effect.IncomeMultiplier;
-            if (item.Effect.RushMultiplierBonus > 0)
-                _cachedPrestigeRushBonus += item.Effect.RushMultiplierBonus;
-            if (item.Effect.DeliverySpeedBonus > 0)
-                _cachedPrestigeDeliveryBonus += item.Effect.DeliverySpeedBonus;
-            if (item.Effect.UpgradeDiscount > 0)
-                _cachedPrestigeUpgradeDiscount += item.Effect.UpgradeDiscount;
-        }
-
-        // Prestige-Income-Bonus auf 300% deckeln (verhindert Exploit durch wiederholbare Items)
-        _cachedPrestigeIncomeBonus = Math.Min(_cachedPrestigeIncomeBonus, 3.0m);
-
-        // Upgrade-Discount + VIP-Kosten-Reduktion auf alle Workshops setzen (nur bei Invalidierung statt pro Tick)
-        // Immer setzen, auch bei 0 → nach Prestige-Reset muessen alte Discounts geloescht werden
-        decimal vipCostReduction = _vipService?.CostReduction ?? 0m;
-        for (int i = 0; i < state.Workshops.Count; i++)
-        {
-            state.Workshops[i].UpgradeDiscount = _cachedPrestigeUpgradeDiscount;
-            state.Workshops[i].VipCostReduction = vipCostReduction;
-        }
-    }
-
-    /// <summary>
-    /// Event wenn Automation eine Lieferung eingesammelt hat.
-    /// </summary>
-    public event EventHandler<SupplierDelivery>? AutoCollectedDelivery;
-
-    /// <summary>
-    /// Event wenn Automation einen Auftrag angenommen hat.
-    /// </summary>
-    public event EventHandler<Order>? AutoAcceptedOrder;
-
-    /// <summary>
-    /// Verarbeitet AutoCollect und AutoAccept Automation.
-    /// </summary>
-    private void ProcessAutomation(GameState state)
-    {
-        var auto = state.Automation;
-
-        // AutoCollect: Lieferung einsammeln wenn vorhanden
-        if (auto.AutoCollectDelivery && _gameStateService.IsAutoCollectUnlocked && state.PendingDelivery != null && !state.PendingDelivery.IsExpired)
-        {
-            var delivery = state.PendingDelivery;
-            state.PendingDelivery = null;
-            state.Statistics.TotalDeliveriesClaimed++;
-
-            // Lieferungs-Effekt anwenden
-            switch (delivery.Type)
-            {
-                case DeliveryType.Money:
-                    _gameStateService.AddMoney(delivery.Amount);
-                    break;
-                case DeliveryType.GoldenScrews:
-                    _gameStateService.AddGoldenScrews((int)Math.Round(delivery.Amount));
-                    break;
-                case DeliveryType.Experience:
-                    _gameStateService.AddXp((int)delivery.Amount);
-                    break;
-                case DeliveryType.MoodBoost:
-                    foreach (var ws in state.Workshops)
-                    foreach (var w in ws.Workers)
-                        w.Mood = Math.Min(100m, w.Mood + delivery.Amount);
-                    break;
-                case DeliveryType.SpeedBoost:
-                    state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes((double)delivery.Amount);
-                    break;
-            }
-
-            AutoCollectedDelivery?.Invoke(this, delivery);
-        }
-
-        // AutoAccept: Besten Auftrag annehmen wenn kein aktiver vorhanden
-        if (auto.AutoAcceptOrder && _gameStateService.IsAutoAcceptUnlocked && state.ActiveOrder == null && state.AvailableOrders.Count > 0)
-        {
-            // Besten Auftrag wählen (höchste Belohnung) - ohne LINQ um Allokationen zu vermeiden
-            Order? bestOrder = null;
-            for (int i = 0; i < state.AvailableOrders.Count; i++)
-            {
-                var order = state.AvailableOrders[i];
-                if (bestOrder == null || order.BaseReward > bestOrder.BaseReward)
-                    bestOrder = order;
-            }
-
-            if (bestOrder != null)
-            {
-                state.ActiveOrder = bestOrder;
-                state.AvailableOrders.Remove(bestOrder);
-                AutoAcceptedOrder?.Invoke(this, bestOrder);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Verarbeitet AutoAssign: Weist idle Worker dem Workshop mit den meisten freien Plätzen zu.
-    /// </summary>
-    private void ProcessAutoAssign(GameState state)
-    {
-        if (!state.Automation.AutoAssignWorkers || !_gameStateService.IsAutoAssignUnlocked)
-            return;
-
-        // Idle Worker finden (nicht zugewiesen zu einem Workshop)
-        foreach (var ws in state.Workshops)
-        {
-            if (ws.Workers.Count >= ws.MaxWorkers) continue;
-
-            // AutoAssign: Ruhende Worker mit niedriger Erschöpfung wieder arbeiten lassen
-            foreach (var worker in ws.Workers)
-            {
-                if (worker.IsResting && worker.Fatigue <= 20m)
-                {
-                    worker.IsResting = false;
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// War-Saison: Phasenwechsel prüfen, DANN Saisonende (sequentiell, nicht parallel).
-    /// CheckPhaseTransition kann _cachedWar nullen, was CheckSeasonEnd braucht.
-    /// </summary>
-    /// <summary>
-    /// Alle periodischen Checks mit gestaffelten Intervallen und Offsets.
-    /// Klar gruppiert statt inline in OnTimerTick.
-    /// </summary>
-    private void ProcessPeriodicChecks(GameState state, DateTime now)
-    {
-        // Jedes Tick: Crafting-Timer + Workshop-Spezialeffekte
-        _craftingService?.UpdateTimers();
-        ApplyInnovationLabBonus(state);
-
-        // Alle 5 Ticks: Automation (AutoCollect, AutoAccept)
-        if (_tickCount % AutomationCheckIntervalTicks == 3)
-            ProcessAutomation(state);
-
-        // Alle 10 Ticks: Lieferant-System
-        if (_tickCount % DeliveryCheckIntervalTicks == 0)
-            CheckAndGenerateDelivery(state, now);
-
-        // Alle 60 Ticks (1 Min): Jobs, Orders, Weekly, AutoAssign, MasterSmith
-        if (_tickCount % QuickJobCheckIntervalTicks == 0)
-        {
-            _quickJobService?.RotateIfNeeded();
-            _dailyChallengeService?.CheckAndResetIfNewDay();
-            state.AvailableOrders.RemoveAll(o => o.IsExpired);
-            if (state.ActiveOrder?.IsExpired == true)
-            {
-                state.ActiveOrder.CurrentTaskIndex = 0;
-                state.ActiveOrder.TaskResults.Clear();
-                state.ActiveOrder = null;
-                OrderExpired?.Invoke(this, EventArgs.Empty);
-            }
-        }
-        if (_tickCount % WeeklyMissionCheckIntervalTicks == 15)
-            _weeklyMissionService?.CheckAndResetIfNewWeek();
-        if (_tickCount % AutoAssignIntervalTicks == 30)
-            ProcessAutoAssign(state);
-        if (_tickCount % 60 == 45)
-            ProduceMasterSmithMaterials(state);
-
-        // Auto-Produktion: Alle 180 Ticks (3 Min) für Standard-Workshops, Offset 90
-        if (_tickCount % GameBalanceConstants.AutoProductionIntervalSeconds == 90 && _autoProductionService != null)
-        {
-            long before = state.Statistics.TotalItemsAutoProduced;
-            _autoProductionService.ProduceForAllWorkshops(state);
-            int produced = (int)(state.Statistics.TotalItemsAutoProduced - before);
-            if (produced > 0)
-            {
-                _dailyChallengeService?.OnItemsAutoProduced(produced);
-                _weeklyMissionService?.OnItemsAutoProduced(produced);
-            }
-        }
-
-        // Auto-Craft höherer Tiers: Alle 360 Ticks (6 Min), Offset 270
-        // Kein BP-XP/SP für Auto-Craft (passives Einkommen soll nicht BP/Seasonal aufpumpen)
-        if (_tickCount % 360 == 270 && _autoProductionService != null)
-        {
-            int crafted = _autoProductionService.AutoCraftHigherTiers(state);
-            if (crafted > 0)
-            {
-                _dailyChallengeService?.OnItemsAutoProduced(crafted);
-                _weeklyMissionService?.OnItemsAutoProduced(crafted);
-            }
-        }
-
-        // Alle 120 Ticks (2 Min): Manager, Meisterwerkzeuge
-        if (_tickCount % ManagerCheckIntervalTicks == 60)
-            _managerService?.CheckAndUnlockManagers();
-        if (_tickCount % MasterToolCheckIntervalTicks == 0)
-            CheckMasterTools(state);
-
-        // Alle 300 Ticks (5 Min): Events, Saison, BattlePass
-        if (_tickCount % EventCheckIntervalTicks == 0)
-            _eventService?.CheckForNewEvent();
-        if (_tickCount % SeasonalEventCheckIntervalTicks == 150)
-            _seasonalEventService?.CheckSeasonalEvent();
-        if (_tickCount % BattlePassSeasonCheckIntervalTicks == 200)
-            _battlePassService?.CheckNewSeason();
-
-        // Gilden-Checks via GuildTickService (Boss, Hall, Achievements, War-Season)
-        _guildTickService?.ProcessTick(state, _tickCount);
-
-        // Täglich: Reputation (Showroom + Decay)
-        if ((now - state.LastReputationDecay).TotalHours >= 24)
-        {
-            state.LastReputationDecay = now;
-            var showroom = state.GetBuilding(BuildingType.Showroom);
-            if (showroom != null && showroom.DailyReputationGain > 0)
-            {
-                state.Reputation.ReputationScore = Math.Min(100,
-                    state.Reputation.ReputationScore + (int)Math.Ceiling(showroom.DailyReputationGain));
-            }
-            state.Reputation.DecayReputation();
-        }
-    }
-
-    /// <summary>
-    /// Setzt ExtraWorkerSlots auf jedem Workshop basierend auf Research + Gebäude-Boni.
-    /// </summary>
-    private void UpdateExtraWorkerSlots(GameState state, ResearchEffect? researchEffects)
-    {
-        int researchSlots = researchEffects?.ExtraWorkerSlots ?? 0;
-
-        // WorkshopExtension-Gebäude: Extra Slots pro Workshop
-        var extension = state.GetBuilding(BuildingType.WorkshopExtension);
-        int buildingSlots = extension?.ExtraWorkerSlots ?? 0;
-
-        // Gilden-Forschung: +1 Worker-Slot pro Workshop
-        int guildSlots = state.GuildMembership?.ResearchWorkerSlotBonus ?? 0;
-
-        int totalExtra = researchSlots + buildingSlots + guildSlots;
-        decimal levelResistance = Math.Min(researchEffects?.LevelResistanceBonus ?? 0m, 0.50m);
-
-        // Nur zuweisen wenn sich der Wert geändert hat (vermeidet N Zuweisungen pro Tick)
-        if (totalExtra == _lastExtraWorkerSlots && levelResistance == _lastLevelResistance)
-            return;
-        _lastExtraWorkerSlots = totalExtra;
-        _lastLevelResistance = levelResistance;
-
-        foreach (var ws in state.Workshops)
-        {
-            ws.ExtraWorkerSlots = totalExtra;
-            ws.LevelResistanceBonus = levelResistance;
-        }
-    }
-
-    /// <summary>
-    /// MasterSmith-Spezialeffekt: Produziert passiv Crafting-Materialien wenn Workshop besetzt ist.
-    /// Generiert 1 zufälliges Tier-1-Produkt pro Minute pro arbeitendem Worker.
-    /// </summary>
-    private void ProduceMasterSmithMaterials(GameState state)
-    {
-        var masterSmith = _cachedMasterSmith;
-        if (masterSmith == null) return;
-
-        int workingWorkers = 0;
-        for (int w = 0; w < masterSmith.Workers.Count; w++)
-            if (masterSmith.Workers[w].IsWorking) workingWorkers++;
-        if (workingWorkers <= 0) return;
-
-        state.CraftingInventory ??= new Dictionary<string, int>();
-
-        for (int i = 0; i < workingWorkers; i++)
-        {
-            var product = Tier1CraftingProducts[Random.Shared.Next(Tier1CraftingProducts.Length)];
-            if (state.CraftingInventory.ContainsKey(product))
-                state.CraftingInventory[product]++;
-            else
-                state.CraftingInventory[product] = 1;
-        }
-
-        state.Statistics.TotalItemsCrafted += workingWorkers;
-    }
-
-    /// <summary>
-    /// InnovationLab-Spezialeffekt: Beschleunigt Forschung proportional zur Worker-Anzahl.
-    /// Pro arbeitendem Worker +0.5s Extra-Fortschritt pro Tick (2 Worker = 1s, 4 = 2s).
-    /// Mindestens 1 Worker muss arbeiten, damit der Bonus greift.
-    /// </summary>
-    private void ApplyInnovationLabBonus(GameState state)
-    {
-        if (_researchService == null) return;
-        if (string.IsNullOrEmpty(state.ActiveResearchId)) return;
-
-        var innovationLab = _cachedInnovationLab;
-        if (innovationLab == null) return;
-
-        int workingWorkers = 0;
-        for (int w = 0; w < innovationLab.Workers.Count; w++)
-            if (innovationLab.Workers[w].IsWorking) workingWorkers++;
-        if (workingWorkers <= 0) return;
-
-        // Aktive Forschung über ResearchService holen (cached intern)
-        var activeResearch = _researchService.GetActiveResearch();
-        if (activeResearch?.StartedAt != null)
-        {
-            // Proportionaler Bonus: 0.5s pro Worker (skaliert mit Belegschaft)
-            // BonusSeconds-Feld statt StartedAt-Manipulation (sauber, persistierbar)
-            activeResearch.BonusSeconds += workingWorkers * 0.5;
-        }
-    }
-
     public void Dispose()
     {
         if (_disposed) return;
+
+        // Event-Subscriptions abmelden (verhindert Memory-Leaks)
+        _gameStateService.StateLoaded -= _stateLoadedHandler;
+        if (_vipService != null && _vipLevelChangedHandler != null)
+            _vipService.VipLevelChanged -= _vipLevelChangedHandler;
 
         Stop();
         _disposed = true;

@@ -109,7 +109,6 @@ public sealed class RebirthService : IRebirthService
         // Einkommens-Cache invalidieren (neuer Stern ändert Boni)
         state.InvalidateIncomeCache();
 
-        _gameStateService.MarkDirty();
 
         // Audio-Feedback (LevelUp-Sound passt für Rebirth-Feier)
         _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();

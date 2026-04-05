@@ -30,7 +30,7 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
     {
         get
         {
-            int tier = GetTier(_gameStateService.State.PlayerLevel);
+            int tier = GetTier(_gameStateService.PlayerLevel);
             return tier switch
             {
                 <= 4 => 50,
@@ -101,7 +101,6 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         if (mission.GoldenScrewReward > 0)
             _gameStateService.AddGoldenScrews(mission.GoldenScrewReward);
 
-        _gameStateService.MarkDirty();
         MissionProgressChanged?.Invoke();
     }
 
@@ -130,7 +129,6 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         state.AllCompletedBonusClaimed = true;
         _gameStateService.AddGoldenScrews(AllCompletedBonusScrews);
 
-        _gameStateService.MarkDirty();
         MissionProgressChanged?.Invoke();
     }
 
@@ -141,7 +139,7 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
     private void GenerateMissions()
     {
         var state = _gameStateService.State.WeeklyMissionState;
-        var level = _gameStateService.State.PlayerLevel;
+        var level = _gameStateService.PlayerLevel;
 
         state.Missions.Clear();
         state.AllCompletedBonusClaimed = false;
@@ -163,7 +161,6 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
             state.Missions.Add(CreateMission(type, level));
         }
 
-        _gameStateService.MarkDirty();
         MissionProgressChanged?.Invoke();
     }
 
@@ -407,7 +404,6 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
 
         if (changed)
         {
-            _gameStateService.MarkDirty();
             MissionProgressChanged?.Invoke();
         }
     }
@@ -433,7 +429,6 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
 
         if (changed)
         {
-            _gameStateService.MarkDirty();
             MissionProgressChanged?.Invoke();
         }
     }
@@ -478,7 +473,7 @@ public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
         IncrementMission(WeeklyMissionType.PlayMiniGames);
 
         // PerfectStreak aus GameState lesen (wird von GameStateService.RecordMiniGameResult aktualisiert)
-        OnPerfectStreakUpdated(_gameStateService.State.Statistics.PerfectStreak);
+        OnPerfectStreakUpdated(_gameStateService.Statistics.PerfectStreak);
     }
 
     private void OnWorkerLevelUp(object? sender, Worker worker)

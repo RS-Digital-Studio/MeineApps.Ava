@@ -36,7 +36,6 @@ public sealed class StoryService : IStoryService
             if (IsChapterUnlocked(chapter, state))
             {
                 state.PendingStoryId = chapter.Id;
-                _gameStateService.MarkDirty();
                 return chapter;
             }
 
@@ -82,7 +81,6 @@ public sealed class StoryService : IStoryService
             state.PendingStoryId = null;
         }
 
-        _gameStateService.MarkDirty();
     }
 
     /// <summary>

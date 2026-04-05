@@ -11,7 +11,10 @@ namespace HandwerkerImperium.Services;
 /// </summary>
 public sealed class SaveGameService : ISaveGameService
 {
+    private const int IoLockTimeoutSeconds = 30;
+
     private readonly IGameStateService _gameStateService;
+    private readonly IGameIntegrityService _integrityService;
     private readonly IPlayGamesService? _playGamesService;
     private readonly SemaphoreSlim _ioLock = new(1, 1);
 
@@ -37,9 +40,10 @@ public sealed class SaveGameService : ISaveGameService
     private string TempFilePath => SaveFilePath + ".tmp";
     public bool SaveExists => File.Exists(SaveFilePath);
 
-    public SaveGameService(IGameStateService gameStateService, IPlayGamesService? playGamesService = null)
+    public SaveGameService(IGameStateService gameStateService, IGameIntegrityService integrityService, IPlayGamesService? playGamesService = null)
     {
         _gameStateService = gameStateService;
+        _integrityService = integrityService;
         _playGamesService = playGamesService;
 
         _jsonOptions = new JsonSerializerOptions
@@ -51,7 +55,7 @@ public sealed class SaveGameService : ISaveGameService
 
     public async Task SaveAsync()
     {
-        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(30)))
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(IoLockTimeoutSeconds)))
         {
             System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] SaveAsync: IO-Lock Timeout - Save übersprungen");
             return;
@@ -60,6 +64,9 @@ public sealed class SaveGameService : ISaveGameService
         {
             var state = _gameStateService.State;
             state.LastSavedAt = DateTime.UtcNow;
+
+            // HMAC-Signatur ueber Gilden-relevante Werte berechnen (vor Serialisierung)
+            _integrityService.ComputeSignature(state);
 
             // Synchrone Serialisierung auf dem UI-Thread (Thread-Safety: kein Interleaving mit GameLoop-DispatcherTimer).
             // SerializeAsync mit useAsync:true traversiert den State-Objektgraphen asynchron → Race Condition
@@ -101,7 +108,7 @@ public sealed class SaveGameService : ISaveGameService
 
     public async Task<GameState?> LoadAsync()
     {
-        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(30)))
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(IoLockTimeoutSeconds)))
         {
             System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] LoadAsync: IO-Lock Timeout - Load übersprungen");
             return null;
@@ -161,7 +168,7 @@ public sealed class SaveGameService : ISaveGameService
 
     public async Task DeleteSaveAsync()
     {
-        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(30)))
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(IoLockTimeoutSeconds)))
         {
             System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] DeleteSaveAsync: IO-Lock Timeout - Delete übersprungen");
             return;
@@ -221,6 +228,11 @@ public sealed class SaveGameService : ISaveGameService
     /// </summary>
     private static void SanitizeState(GameState state)
     {
+        // Sub-Objekte (V5): null-Safety vor allen anderen Zugriffen
+        state.Boosts ??= new BoostData();
+        state.DailyProgress ??= new DailyProgressData();
+        state.Cosmetics ??= new CosmeticData();
+
         // Basis-Werte mit Ober-Caps (Exploit-Schutz gegen Save-Editing)
         if (state.PlayerLevel < LevelThresholds.MinPlayerLevel) state.PlayerLevel = LevelThresholds.MinPlayerLevel;
         if (state.PlayerLevel > LevelThresholds.MaxPlayerLevel) state.PlayerLevel = LevelThresholds.MaxPlayerLevel;
@@ -444,7 +456,7 @@ public sealed class SaveGameService : ISaveGameService
     }
 
     /// <summary>
-    /// Führt alle notwendigen Versionsmigrationen durch (v1→v2→v3).
+    /// Führt alle notwendigen Versionsmigrationen durch (v1→v2→v3→v5).
     /// Zentrale Methode für LoadFromFileAsync und ImportSaveAsync.
     /// </summary>
     private static GameState MigrateState(GameState state)
@@ -456,6 +468,20 @@ public sealed class SaveGameService : ISaveGameService
         {
             state.WorkshopStars ??= new Dictionary<string, int>();
             state.Version = 3;
+        }
+
+        // V3/V4 → V5: Sub-Objekte für Boosts, DailyProgress, Cosmetics.
+        // Die Legacy-Weiterleitungs-Properties in GameState leiten get/set an die
+        // Sub-Objekte weiter. System.Text.Json deserialisiert die alten flachen Properties
+        // direkt in die Sub-Objekte über diese Weiterleitungen. Daher ist keine
+        // explizite Datenübernahme nötig - nur die Version hochsetzen.
+        if (state.Version < 5)
+        {
+            // Null-Safety für die neuen Sub-Objekte (falls JSON sie nicht enthält)
+            state.Boosts ??= new BoostData();
+            state.DailyProgress ??= new DailyProgressData();
+            state.Cosmetics ??= new CosmeticData();
+            state.Version = 5;
         }
 
         return state;

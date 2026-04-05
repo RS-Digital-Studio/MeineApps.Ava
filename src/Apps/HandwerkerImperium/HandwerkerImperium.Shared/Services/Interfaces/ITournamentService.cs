@@ -8,9 +8,6 @@ namespace HandwerkerImperium.Services.Interfaces;
 /// </summary>
 public interface ITournamentService
 {
-    /// <summary>Feuert wenn sich der Turnier-Zustand ändert.</summary>
-    event Action? TournamentUpdated;
-
     /// <summary>Prüft ob ein neues Turnier gestartet werden muss (jede Woche Montag).</summary>
     void CheckAndStartNewTournament();
 

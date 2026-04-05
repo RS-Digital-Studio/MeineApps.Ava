@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
+using HandwerkerImperium.ViewModels;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
@@ -16,7 +17,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// Enthält: Auftrags-Init, Countdown, Timer, Ergebnis-Anzeige,
 /// Tutorial, Auto-Complete, Werbe-Verdopplung, Navigation, Disposal.
 /// </summary>
-public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
+public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable, IDisposable
 {
     // ═══════════════════════════════════════════════════════════════════════
     // SERVICES & FELDER
@@ -276,7 +277,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
 
         // Countdown 3-2-1-Los! (verkürzt nach 50+ gespielten MiniGames)
         IsCountdownActive = true;
-        int delay = _gameStateService.State.Statistics.TotalMiniGamesPlayed >= 50 ? 350 : 700;
+        int delay = _gameStateService.Statistics.TotalMiniGamesPlayed >= 50 ? 350 : 700;
         foreach (var text in new[] { "3", "2", "1", _localizationService.GetString("CountdownGo") })
         {
             CountdownText = text;
@@ -490,7 +491,6 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, IDisposable
         if (!state.Tutorial.SeenMiniGameTutorials.Contains(gameType))
         {
             state.Tutorial.SeenMiniGameTutorials.Add(gameType);
-            _gameStateService.MarkDirty();
         }
         // Nur Spiel starten wenn nicht bereits läuft (Info-Button während Spiel)
         if (!IsPlaying && !IsResultShown)

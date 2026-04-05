@@ -16,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Shows worker stats (tier, mood, fatigue, efficiency, XP) and allows
 /// training, resting, giving bonuses, firing, and transferring workers.
 /// </summary>
-public sealed partial class WorkerProfileViewModel : ViewModelBase
+public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, IDisposable
 {
     private readonly IWorkerService _workerService;
     private readonly IGameStateService _gameStateService;
@@ -858,6 +858,19 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
         HasAvailableWorkshops = workshops.Count > 0;
         // Ersten Eintrag vorselektieren, damit der Transfer-Button sofort funktioniert
         SelectedTransferWorkshop = workshops.FirstOrDefault();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DISPOSE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Stoppt den Undo-Timer falls er noch läuft (verhindert Memory Leak).
+    /// </summary>
+    public void Dispose()
+    {
+        _undoTimer?.Stop();
+        _undoTimer = null;
     }
 }
 

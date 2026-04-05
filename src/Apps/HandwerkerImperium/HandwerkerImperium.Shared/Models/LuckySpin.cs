@@ -79,6 +79,14 @@ public class LuckySpinState
     [JsonIgnore]
     public bool HasFreeSpin => LastFreeSpinDate.Date < DateTime.UtcNow.Date;
 
+    /// <summary>BAL-AD-6: Täglicher Ad-Spin (1x/Tag per Video, nach Gratis-Spin).</summary>
+    [JsonPropertyName("lastAdSpinDate")]
+    public DateTime LastAdSpinDate { get; set; } = DateTime.MinValue;
+
+    /// <summary>Ad-Spin verfügbar wenn Gratis-Spin verbraucht und Ad-Spin heute noch nicht genutzt.</summary>
+    [JsonIgnore]
+    public bool HasAdSpin => !HasFreeSpin && LastAdSpinDate.Date < DateTime.UtcNow.Date;
+
     /// <summary>
     /// Prüft ob PaidSpinsToday zurückgesetzt werden muss (neuer Tag).
     /// </summary>

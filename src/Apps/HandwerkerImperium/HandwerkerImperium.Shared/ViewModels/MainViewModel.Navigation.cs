@@ -293,6 +293,15 @@ public sealed partial class MainViewModel
                 return;
             }
 
+            // Turnier-Rückkehr: Flag zurücksetzen, Turnier-View aktualisieren
+            if (_isTournamentRound)
+            {
+                _isTournamentRound = false;
+                TournamentViewModel.RefreshTournament();
+                ActivePage = ActivePage.Tournament;
+                return;
+            }
+
             // QuickJob-Rückkehr: Belohnung nur vergeben wenn MiniGame tatsächlich gespielt wurde
             if (_activeQuickJob != null)
             {
@@ -387,6 +396,19 @@ public sealed partial class MainViewModel
                 orderId = _gameStateService.GetActiveOrder()?.Id ?? "";
 
             NavigateToMiniGame(routePart, orderId);
+            return;
+        }
+
+        // Turnier-Teilnahme: MiniGame im Turnier-Kontext starten
+        if (route == "tournament_enter")
+        {
+            var tournament = _gameStateService.State.CurrentTournament;
+            if (tournament != null && !tournament.IsExpired)
+            {
+                _isTournamentRound = true;
+                var miniGameRoute = tournament.GameType.GetRoute();
+                NavigateToMiniGame(miniGameRoute, "");
+            }
             return;
         }
 

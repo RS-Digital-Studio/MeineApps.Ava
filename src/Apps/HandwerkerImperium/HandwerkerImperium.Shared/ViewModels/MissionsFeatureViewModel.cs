@@ -458,7 +458,6 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         _gameStateService.TrySpendGoldenScrews(3);
         state.DailyRewardStreak = Math.Max(1, state.StreakBeforeBreak);
         state.StreakRescueUsed = true;
-        _gameStateService.MarkDirty();
 
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         CanRescueStreak = false;

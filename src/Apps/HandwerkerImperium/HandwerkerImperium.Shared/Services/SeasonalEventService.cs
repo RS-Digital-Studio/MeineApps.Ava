@@ -134,7 +134,6 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
                     CompletedOrders = 0
                 };
 
-                _gameState.MarkDirty();
                 SeasonalEventChanged?.Invoke();
             }
         }
@@ -144,7 +143,6 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
             if (state.CurrentSeasonalEvent != null)
             {
                 state.CurrentSeasonalEvent = null;
-                _gameState.MarkDirty();
                 SeasonalEventChanged?.Invoke();
             }
         }
@@ -158,7 +156,6 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
 
         seasonalEvent.Currency += amount;
         seasonalEvent.TotalPoints += amount;
-        _gameState.MarkDirty();
         SeasonalEventChanged?.Invoke();
     }
 
@@ -185,7 +182,6 @@ public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
         // Effekt anwenden
         ApplySeasonalItemEffect(item.Effect);
 
-        _gameState.MarkDirty();
         SeasonalEventChanged?.Invoke();
         return true;
     }

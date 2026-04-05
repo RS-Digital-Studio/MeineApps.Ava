@@ -48,7 +48,6 @@ public sealed class ManagerService : IManagerService
             };
 
             state.Managers.Add(manager);
-            _gameStateService.MarkDirty();
 
             ManagerUnlocked?.Invoke(def.Id);
         }
@@ -71,7 +70,6 @@ public sealed class ManagerService : IManagerService
             return;
 
         manager.Level++;
-        _gameStateService.MarkDirty();
     }
 
     public decimal GetManagerBonusForWorkshop(WorkshopType type, ManagerAbility ability)

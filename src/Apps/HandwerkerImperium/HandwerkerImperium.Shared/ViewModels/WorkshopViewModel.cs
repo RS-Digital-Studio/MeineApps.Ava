@@ -16,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the workshop detail page.
 /// Shows upgrade options, workers, and statistics.
 /// </summary>
-public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
+public sealed partial class WorkshopViewModel : ViewModelBase, INavigable, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
@@ -224,12 +224,11 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
     /// <summary>Idle Worker automatisch zuweisen (ab Level 50).</summary>
     public bool AutoAssignWorkers
     {
-        get => _gameStateService.State.Automation.AutoAssignWorkers;
+        get => _gameStateService.Automation.AutoAssignWorkers;
         set
         {
-            if (_gameStateService.State.Automation.AutoAssignWorkers == value) return;
-            _gameStateService.State.Automation.AutoAssignWorkers = value;
-            _gameStateService.MarkDirty();
+            if (_gameStateService.Automation.AutoAssignWorkers == value) return;
+            _gameStateService.Automation.AutoAssignWorkers = value;
             OnPropertyChanged();
         }
     }
@@ -443,7 +442,7 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
         if (!CanWatchSpeedupAd) return;
 
         var workshop = _gameStateService.State.GetOrCreateWorkshop(WorkshopType);
-        var earnings = workshop.GrossIncomePerSecond * 1800; // BAL-5: 30min Ertrag (von 2h reduziert)
+        var earnings = workshop.GrossIncomePerSecond * 7200; // BAL-AD-3: 2h Ertrag (von 30min erhöht, bei mehreren WS sonst zu schwach)
 
         var success = await _rewardedAdService.ShowAdAsync("workshop_speedup");
         if (success)
@@ -466,7 +465,6 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
             if (workshop.AdBonusWorkerSlots >= Workshop.MaxAdBonusWorkerSlots)
                 return;
             workshop.AdBonusWorkerSlots += 1;
-            _gameStateService.MarkDirty();
             LoadWorkshop();
         }
     }
@@ -496,7 +494,6 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
 
         workshop.WorkshopSpecialization = new WorkshopSpecialization { Type = specType };
         _gameStateService.State.InvalidateIncomeCache();
-        _gameStateService.MarkDirty();
         LoadWorkshop();
     }
 
@@ -506,7 +503,6 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
         var workshop = _gameStateService.State.GetOrCreateWorkshop(WorkshopType);
         workshop.WorkshopSpecialization = null;
         _gameStateService.State.InvalidateIncomeCache();
-        _gameStateService.MarkDirty();
         LoadWorkshop();
     }
 

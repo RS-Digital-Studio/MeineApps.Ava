@@ -399,7 +399,6 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
                 state.AvailableOrders.Add(materialOrder);
         }
 
-        _gameStateService.MarkDirty();
     }
 
     public Order? GenerateMaterialOrder()

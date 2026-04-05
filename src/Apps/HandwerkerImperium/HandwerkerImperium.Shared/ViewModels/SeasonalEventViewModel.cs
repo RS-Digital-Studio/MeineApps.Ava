@@ -13,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für saisonale Events (4x pro Jahr, jeweils 2 Wochen).
 /// Zeigt Event-Info, Saison-Währung und den saisonalen Shop.
 /// </summary>
-public sealed partial class SeasonalEventViewModel : ViewModelBase
+public sealed partial class SeasonalEventViewModel : ViewModelBase, INavigable
 {
     private readonly IGameStateService _gameStateService;
     private readonly ISeasonalEventService _seasonalEventService;

@@ -76,6 +76,30 @@
     <!-- Semantische Vordergrund-Farben -->
     <SolidColorBrush x:Key="CraftDarkTextBrush" Color="#1A1A1A" />
     <SolidColorBrush x:Key="CraftStreakBrush" Color="#FF6B35" />
+    <SolidColorBrush x:Key="CraftDarkBrownBrush" Color="#3D1C00" />
+
+    <!-- Feature-Akzent-Farben (Gilden, Krieg, Spezialisierung) -->
+    <SolidColorBrush x:Key="CraftBossAccentBrush" Color="#7C3AED" />
+    <SolidColorBrush x:Key="CraftResearchAccentBrush" Color="#EA580C" />
+    <SolidColorBrush x:Key="CraftChatAccentBrush" Color="#92400E" />
+    <SolidColorBrush x:Key="WarTitleBrush" Color="#FCA5A5" />
+    <SolidColorBrush x:Key="SpecEfficiencyBrush" Color="#FF9800" />
+    <SolidColorBrush x:Key="SpecQualityBrush" Color="#2196F3" />
+    <SolidColorBrush x:Key="SpecEconomyBrush" Color="#4CAF50" />
+    <SolidColorBrush x:Key="EquipmentAccentBrush" Color="#9C27B0" />
+    <SolidColorBrush x:Key="StreakRescueBrush" Color="#FF5722" />
+
+    <!-- Prestige-Vorschau Farben -->
+    <SolidColorBrush x:Key="PrestigeGainsBrush" Color="#A5D6A7" />
+    <SolidColorBrush x:Key="PrestigeLossesBrush" Color="#EF9A9A" />
+
+    <!-- Text-Varianten (warmes Weiß für Gold-Hintergründe) -->
+    <SolidColorBrush x:Key="TextWhiteHighBrush" Color="#FFFFFFCC" />
+    <SolidColorBrush x:Key="TextWhiteMediumBrush" Color="#FFFFFFAA" />
+
+    <!-- UI-Hilfsfarben -->
+    <SolidColorBrush x:Key="PremiumBenefitsTextBrush" Color="#FFE0B2" />
+    <SolidColorBrush x:Key="SnackbarBackgroundBrush" Color="#E6333333" />
 
     <!-- Header-Gradient (identisch in 16 Views verwendet) -->
     <LinearGradientBrush x:Key="CraftHeaderGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
@@ -96,10 +120,10 @@
         FalseBrush="{StaticResource CraftSecondaryBrush}" />
     <converters:BoolToBrushConverter x:Key="TrainingTypeIconConverter"
         TrueBrush="{StaticResource CraftPrimaryLightBrush}"
-        FalseBrush="#94A3B8" />
+        FalseBrush="{StaticResource TierFBrush}" />
     <converters:BoolToBrushConverter x:Key="TrainingTypeTextConverter"
         TrueBrush="{StaticResource CraftPrimaryLightBrush}"
-        FalseBrush="#94A3B8" />
+        FalseBrush="{StaticResource TierFBrush}" />
 
     <!-- Converter: String → GameIconKind (fuer Icon-Bindings in Shop, BattlePass, etc.) -->
     <localConverters:StringToGameIconKindConverter x:Key="IconKindConverter" />

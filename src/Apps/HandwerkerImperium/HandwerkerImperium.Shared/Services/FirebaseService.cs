@@ -27,6 +27,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
 
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan TokenLifetime = TimeSpan.FromMinutes(55); // 5min vor Ablauf refreshen
+    private const int RetryDelayMs = 500;
 
     private readonly IPreferencesService _preferences;
     private readonly ILogService _log;
@@ -110,7 +111,7 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                     return;
                 }
 
-                await Task.Delay(500).ConfigureAwait(false);
+                await Task.Delay(RetryDelayMs).ConfigureAwait(false);
                 if (await TryRefreshTokenAsync().ConfigureAwait(false))
                 {
                     SyncAuthToPlayerMappingAsync().SafeFireAndForget();

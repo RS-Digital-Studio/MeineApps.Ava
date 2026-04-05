@@ -1,17 +1,10 @@
-using HandwerkerImperium.Models.Events;
-
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// Calculates earnings while the player was offline.
+/// Berechnet Einnahmen waehrend der Spieler offline war.
 /// </summary>
 public interface IOfflineProgressService
 {
-    /// <summary>
-    /// Fired when offline earnings are calculated.
-    /// </summary>
-    event EventHandler<OfflineEarningsEventArgs>? OfflineEarningsCalculated;
-
     /// <summary>
     /// Calculates and applies offline progress.
     /// Returns the earnings amount.

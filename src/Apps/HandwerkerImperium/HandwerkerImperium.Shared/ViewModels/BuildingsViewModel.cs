@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Zeigt alle 7 Gebäude-Typen mit Level, Kosten und Effekten.
 /// Erlaubt direktes Bauen (Lv.0→1) und Upgraden (Lv.1→5).
 /// </summary>
-public sealed partial class BuildingsViewModel : ViewModelBase
+public sealed partial class BuildingsViewModel : ViewModelBase, INavigable
 {
     private readonly IBuildingService _buildingService;
     private readonly IGameStateService _gameStateService;

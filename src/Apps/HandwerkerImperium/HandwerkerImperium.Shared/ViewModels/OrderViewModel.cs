@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the order detail page.
 /// Shows order details and allows starting mini-games.
 /// </summary>
-public sealed partial class OrderViewModel : ViewModelBase
+public sealed partial class OrderViewModel : ViewModelBase, INavigable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

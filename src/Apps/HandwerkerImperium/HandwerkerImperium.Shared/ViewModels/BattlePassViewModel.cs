@@ -12,7 +12,7 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// ViewModel für den Battle Pass (50 Tiers, Free + Premium Track, 42-Tage-Saison).
 /// </summary>
-public sealed partial class BattlePassViewModel : ViewModelBase
+public sealed partial class BattlePassViewModel : ViewModelBase, INavigable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IBattlePassService _battlePassService;

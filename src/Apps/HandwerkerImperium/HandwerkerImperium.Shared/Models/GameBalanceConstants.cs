@@ -305,4 +305,14 @@ public static class GameBalanceConstants
     /// Beispiel: Raw 15x → 10 + sqrt(5) ≈ 12.24x
     /// </summary>
     public const decimal OrderRewardMultiplierSoftCap = 10.0m;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // UI-ANIMATION & TIMING
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Mindestdauer der Splash-Anzeige in Millisekunden (damit Animation sichtbar ist).</summary>
+    public const int SplashMinimumDisplayMs = 800;
+
+    /// <summary>Interpolations-Faktor für den animierten Geld-Counter pro Frame (0.0-1.0).</summary>
+    public const decimal MoneyAnimationInterpolationFactor = 0.15m;
 }

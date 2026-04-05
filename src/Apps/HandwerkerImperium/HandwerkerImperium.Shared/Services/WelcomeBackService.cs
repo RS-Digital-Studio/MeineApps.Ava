@@ -30,7 +30,6 @@ public sealed class WelcomeBackService : IWelcomeBackService
         if (state.ActiveWelcomeBackOffer != null && state.ActiveWelcomeBackOffer.IsExpired)
         {
             state.ActiveWelcomeBackOffer = null;
-            _gameStateService.MarkDirty();
         }
 
         var now = DateTime.UtcNow;
@@ -90,7 +89,6 @@ public sealed class WelcomeBackService : IWelcomeBackService
         if (offer != null)
         {
             state.ActiveWelcomeBackOffer = offer;
-            _gameStateService.MarkDirty();
             OfferGenerated?.Invoke();
         }
     }
@@ -118,7 +116,6 @@ public sealed class WelcomeBackService : IWelcomeBackService
             state.ClaimedStarterPack = true;
 
         state.ActiveWelcomeBackOffer = null;
-        _gameStateService.MarkDirty();
     }
 
     public void DismissOffer()
@@ -129,6 +126,5 @@ public sealed class WelcomeBackService : IWelcomeBackService
             return;
 
         state.ActiveWelcomeBackOffer = null;
-        _gameStateService.MarkDirty();
     }
 }

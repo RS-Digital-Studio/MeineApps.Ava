@@ -45,7 +45,6 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
 
         int tierUps = bp.AddXp(amount);
 
-        _gameState.MarkDirty();
 
         if (tierUps > 0 || amount > 0)
             BattlePassUpdated?.Invoke();
@@ -91,7 +90,6 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
             bp.ClaimedFreeTiers.Add(tier);
         }
 
-        _gameState.MarkDirty();
         BattlePassUpdated?.Invoke();
     }
 
@@ -113,7 +111,6 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
 
         // SeasonTheme wird automatisch aus SeasonNumber berechnet (SeasonNumber % 4)
         // → Farbe, Icon und Capstone-Reward passen sich der neuen Saison an
-        _gameState.MarkDirty();
         BattlePassUpdated?.Invoke();
     }
 
@@ -128,7 +125,6 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
 
         bp.IsPremium = true;
 
-        _gameState.MarkDirty();
         BattlePassUpdated?.Invoke();
     }
 

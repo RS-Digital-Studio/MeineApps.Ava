@@ -1,6 +1,5 @@
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
-using HandwerkerImperium.Models.Events;
 using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
@@ -19,8 +18,6 @@ public sealed class OfflineProgressService : IOfflineProgressService
     private readonly IIncomeCalculatorService? _incomeCalculator;
     private readonly IChallengeConstraintService? _challengeConstraints;
     private readonly IAutoProductionService? _autoProductionService;
-
-    public event EventHandler<OfflineEarningsEventArgs>? OfflineEarningsCalculated;
 
     /// <summary>Items die während Offline-Zeit auto-produziert wurden (für UI-Anzeige).</summary>
     public Dictionary<string, int> LastOfflineItemsProduced { get; private set; } = new();
@@ -114,13 +111,6 @@ public sealed class OfflineProgressService : IOfflineProgressService
             }
         }
 
-        _gameStateService.MarkDirty();
-
-        // Event feuern
-        OfflineEarningsCalculated?.Invoke(this, new OfflineEarningsEventArgs(
-            earnings,
-            effectiveDuration,
-            wasCapped));
 
         return earnings;
     }

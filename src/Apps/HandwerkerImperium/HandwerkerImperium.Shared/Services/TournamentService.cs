@@ -36,8 +36,6 @@ public sealed class TournamentService : ITournamentService
         MiniGameType.InventGame
     ];
 
-    public event Action? TournamentUpdated;
-
     public bool IsPlayGamesSignedIn => _playGamesService?.IsSignedIn == true;
 
     public TournamentService(IGameStateService gameState, IPlayGamesService playGamesService, IAscensionService ascensionService)
@@ -94,8 +92,6 @@ public sealed class TournamentService : ITournamentService
             };
 
             state.CurrentTournament = tournament;
-            _gameState.MarkDirty();
-            TournamentUpdated?.Invoke();
         }
     }
 
@@ -109,7 +105,6 @@ public sealed class TournamentService : ITournamentService
         if (tournament.LastEntryDate.Date < DateTime.UtcNow.Date)
         {
             tournament.EntriesUsedToday = 0;
-            _gameState.MarkDirty();
         }
     }
 
@@ -137,8 +132,6 @@ public sealed class TournamentService : ITournamentService
         UpdatePlayerInLeaderboard(tournament);
 
         state.Statistics.TotalTournamentsPlayed++;
-        _gameState.MarkDirty();
-        TournamentUpdated?.Invoke();
 
         // Scores an Play Games senden (fire-and-forget)
         if (_playGamesService?.IsSignedIn == true && tournament.TotalScore > 0)
@@ -189,11 +182,9 @@ public sealed class TournamentService : ITournamentService
 
         // Gold-Rang = Turnier gewonnen
         if (rewardTier == TournamentRewardTier.Gold)
-            _gameState.State.Statistics.TotalTournamentsWon++;
+            _gameState.Statistics.TotalTournamentsWon++;
 
         tournament.RewardsClaimed = true;
-        _gameState.MarkDirty();
-        TournamentUpdated?.Invoke();
 
         return (rewardTier, screws, money);
     }
@@ -241,9 +232,7 @@ public sealed class TournamentService : ITournamentService
 
                     tournament.Leaderboard = sorted;
                     tournament.IsRealLeaderboard = true;
-                    _gameState.MarkDirty();
-                    TournamentUpdated?.Invoke();
-                    return;
+                                return;
                 }
             }
             catch
@@ -255,12 +244,10 @@ public sealed class TournamentService : ITournamentService
         // Fallback: Wenn kein echtes Leaderboard geladen werden konnte und noch kein simuliertes existiert
         if (tournament.Leaderboard.Count == 0)
         {
-            tournament.Leaderboard = Tournament.GenerateSimulatedOpponents(_gameState.State.PlayerLevel);
+            tournament.Leaderboard = Tournament.GenerateSimulatedOpponents(_gameState.PlayerLevel);
             tournament.IsRealLeaderboard = false;
             UpdatePlayerInLeaderboard(tournament);
-            _gameState.MarkDirty();
-            TournamentUpdated?.Invoke();
-        }
+            }
     }
 
     /// <summary>

@@ -382,7 +382,6 @@ public sealed class GuildHallService : IGuildHallService, IDisposable
         {
             membership.ApplyHallEffects(_cachedEffects);
             membership.GuildHallLevel = _hallLevel;
-            _gameStateService.MarkDirty();
         }
     }
 

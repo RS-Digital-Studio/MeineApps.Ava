@@ -320,7 +320,7 @@ public sealed partial class PrestigeService : IPrestigeService
     {
         // Nur Tier-Multiplikator zurückgeben (bereits gekappt beim Schreiben in DoPrestige).
         // Shop-Income-Boni (pp_income_10/25/50) werden separat in GameLoop + OfflineProgress angewendet.
-        return _gameStateService.State.Prestige.PermanentMultiplier;
+        return _gameStateService.Prestige.PermanentMultiplier;
     }
 
     public decimal GetCostReduction()

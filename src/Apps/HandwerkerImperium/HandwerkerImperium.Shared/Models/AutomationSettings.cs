@@ -20,7 +20,7 @@ public class AutomationSettings
     public bool AutoAcceptOrder { get; set; }
 
     /// <summary>
-    /// Arbeiter automatisch zuweisen (ab Level 50, alle 60s).
+    /// Arbeiter automatisch zuweisen (ab Level 20, alle 60s).
     /// </summary>
     [JsonPropertyName("autoAssignWorkers")]
     public bool AutoAssignWorkers { get; set; }

@@ -38,8 +38,7 @@ public sealed class ContextualHintService : IContextualHintService
         if (ActiveHint == null) return;
 
         // Als gesehen markieren
-        _gameStateService.State.Tutorial.SeenHints.Add(ActiveHint.Id);
-        _gameStateService.MarkDirty();
+        _gameStateService.Tutorial.SeenHints.Add(ActiveHint.Id);
 
         ActiveHint = null;
         HintChanged?.Invoke(this, null);
@@ -47,14 +46,13 @@ public sealed class ContextualHintService : IContextualHintService
 
     public bool HasSeenHint(string hintId)
     {
-        return _gameStateService.State.Tutorial.SeenHints.Contains(hintId);
+        return _gameStateService.Tutorial.SeenHints.Contains(hintId);
     }
 
     public void ResetAllHints()
     {
-        _gameStateService.State.Tutorial.SeenHints.Clear();
-        _gameStateService.State.Tutorial.SeenMiniGameTutorials.Clear();
-        _gameStateService.State.Tutorial.HasSeenTutorialHint = false;
-        _gameStateService.MarkDirty();
+        _gameStateService.Tutorial.SeenHints.Clear();
+        _gameStateService.Tutorial.SeenMiniGameTutorials.Clear();
+        _gameStateService.Tutorial.HasSeenTutorialHint = false;
     }
 }

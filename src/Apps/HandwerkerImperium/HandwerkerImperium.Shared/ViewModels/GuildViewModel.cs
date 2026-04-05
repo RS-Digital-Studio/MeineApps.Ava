@@ -33,7 +33,7 @@ public enum GuildViewState
 /// ViewModel für das Multiplayer-Gildensystem via Firebase.
 /// Sechs UI-Zustände via GuildViewState Enum (flache Panels, keine verschachtelte IsVisible-Logik).
 /// </summary>
-public sealed partial class GuildViewModel : ViewModelBase, IDisposable
+public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposable
 {
     private bool _disposed;
     private readonly IGameStateService _gameStateService;
@@ -1175,7 +1175,7 @@ public sealed partial class GuildViewModel : ViewModelBase, IDisposable
         try
         {
             // Beitrag: 10% des aktuellen Spieler-Levels als Score-Punkte
-            var level = _gameStateService.State.PlayerLevel;
+            var level = _gameStateService.PlayerLevel;
             var points = Math.Max(1, level * 10);
             await _warSeasonService.ContributeScoreAsync(points, "manual");
             await LoadWarStatusAsync();

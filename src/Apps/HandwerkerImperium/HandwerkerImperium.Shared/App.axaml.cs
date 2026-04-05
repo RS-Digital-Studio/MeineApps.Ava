@@ -72,6 +72,9 @@ public partial class App : Application
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
+        // Logger für statische AsyncExtensions setzen (Release-sicheres Logging)
+        Helpers.AsyncExtensions.Logger = Services.GetService<ILogService>();
+
         // Ascension GS-Bonus + Challenge-Constraints an GameStateService anbinden (vermeidet zirkuläre DI-Abhängigkeit)
         var ascensionService = Services.GetService<IAscensionService>();
         if (ascensionService != null && Services.GetService<IGameStateService>() is GameStateService gss)
@@ -157,7 +160,7 @@ public partial class App : Application
             await pipeline.ExecuteAsync();
 
             // Mindestens 800ms anzeigen damit die Splash-Animation sichtbar ist
-            var remaining = 800 - (int)sw.ElapsedMilliseconds;
+            var remaining = Models.GameBalanceConstants.SplashMinimumDisplayMs - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();
@@ -211,6 +214,20 @@ public partial class App : Application
 
             // FirebaseService hält HttpClient
             (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
+
+            // Achievement/Challenge/Mission Services halten Event-Subscriptions
+            (Services.GetService<IAchievementService>() as IDisposable)?.Dispose();
+            (Services.GetService<IDailyChallengeService>() as IDisposable)?.Dispose();
+            (Services.GetService<IWeeklyMissionService>() as IDisposable)?.Dispose();
+
+            // Guild-Sub-Services halten SemaphoreSlim
+            (Services.GetService<IGuildService>() as IDisposable)?.Dispose();
+            (Services.GetService<IGuildResearchService>() as IDisposable)?.Dispose();
+            (Services.GetService<IGuildWarSeasonService>() as IDisposable)?.Dispose();
+            (Services.GetService<IGuildBossService>() as IDisposable)?.Dispose();
+            (Services.GetService<IGuildHallService>() as IDisposable)?.Dispose();
+            (Services.GetService<IGuildChatService>() as IDisposable)?.Dispose();
+            (Services.GetService<IGuildAchievementService>() as IDisposable)?.Dispose();
 
             // Icon-System: Avalonia-Bitmap-Cache + SkiaSharp-Paints/Filter freigeben
             Icons.GameIcon.ClearCache();

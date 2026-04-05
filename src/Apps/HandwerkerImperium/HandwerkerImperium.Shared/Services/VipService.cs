@@ -60,6 +60,5 @@ public sealed class VipService : IVipService
         var state = _gameStateService.State;
         state.TotalPurchaseAmount += amountEur;
         RefreshVipLevel();
-        _gameStateService.MarkDirty();
     }
 }

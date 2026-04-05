@@ -15,7 +15,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Shows 3 branches (Tools, Management, Marketing) with 15 levels each.
 /// Handles starting/cancelling research and progress updates.
 /// </summary>
-public sealed partial class ResearchViewModel : ViewModelBase
+public sealed partial class ResearchViewModel : ViewModelBase, INavigable, IDisposable
 {
     private readonly IResearchService _researchService;
     private readonly IGameStateService _gameStateService;
@@ -138,9 +138,11 @@ public sealed partial class ResearchViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Ob der Ad-Speedup-Button sichtbar sein soll (aktive Forschung vorhanden + Werbung aktiv).
+    /// BAL-AD-4: Nur wenn Restzeit > 30min (30s Video für 2min Ersparnis lohnt sich nicht).
     /// </summary>
-    public bool CanWatchAdToFinish => HasActiveResearch && _rewardedAdService != null;
+    public bool CanWatchAdToFinish => HasActiveResearch
+        && _rewardedAdService != null
+        && ActiveResearch?.RemainingTime?.TotalMinutes > 30;
 
     partial void OnHasActiveResearchChanged(bool value) => OnPropertyChanged(nameof(CanWatchAdToFinish));
 
@@ -564,6 +566,11 @@ public sealed partial class ResearchViewModel : ViewModelBase
                 _localizationService.GetString("ResearchCompleteFormat"),
                 _localizationService.GetString(research.NameKey)),
             _localizationService.GetString("Great"));
+    }
+
+    public void Dispose()
+    {
+        _researchService.ResearchCompleted -= OnResearchCompleted;
     }
 }
 

@@ -16,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the statistics page.
 /// Displays comprehensive game statistics and player progress.
 /// </summary>
-public sealed partial class StatisticsViewModel : ViewModelBase
+public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IPrestigeService _prestigeService;
@@ -470,7 +470,6 @@ public sealed partial class StatisticsViewModel : ViewModelBase
         if (!success) return;
 
         _prestigeService.ActivatePrestigePass();
-        _gameStateService.MarkDirty();
         await _audioService.PlaySoundAsync(GameSound.LevelUp);
 
         IsPrestigePassActive = true;

@@ -13,21 +13,19 @@ public sealed class AudioService : IAudioService
 
     public bool SoundEnabled
     {
-        get => _gameStateService.State.Settings.SoundEnabled;
+        get => _gameStateService.Settings.SoundEnabled;
         set
         {
-            _gameStateService.State.Settings.SoundEnabled = value;
-            _gameStateService.MarkDirty();
+            _gameStateService.Settings.SoundEnabled = value;
         }
     }
 
     public bool MusicEnabled
     {
-        get => _gameStateService.State.Settings.MusicEnabled;
+        get => _gameStateService.Settings.MusicEnabled;
         set
         {
-            _gameStateService.State.Settings.MusicEnabled = value;
-            _gameStateService.MarkDirty();
+            _gameStateService.Settings.MusicEnabled = value;
             if (!value) StopMusic();
         }
     }

@@ -546,6 +546,15 @@
   <data name="TimeSkipped" xml:space="preserve">
     <value>Tempo saltato!</value>
   </data>
+  <data name="ShopTimeSkipName" xml:space="preserve">
+    <value>Salto temporale (2h)</value>
+  </data>
+  <data name="ShopTimeSkipDesc" xml:space="preserve">
+    <value>2h di reddito + riposo + ricerca accelerata</value>
+  </data>
+  <data name="TimeSkipFullDesc" xml:space="preserve">
+    <value>+{0} + Riposo e ricerca accelerati</value>
+  </data>
   <data name="ComingSoon" xml:space="preserve">
     <value>Prossimamente</value>
   </data>
@@ -2669,6 +2678,18 @@
   <data name="RushCostScrews" xml:space="preserve">
     <value>Rush costa {0} Viti Dorate</value>
   </data>
+  <data name="ActivateRush" xml:space="preserve">
+    <value>Activar Rush</value>
+  </data>
+  <data name="RushChoiceDesc" xml:space="preserve">
+    <value>Video = {0}h Rush&#10;{1} Tornillos = {2}h Rush</value>
+  </data>
+  <data name="WatchVideoRush" xml:space="preserve">
+    <value>Video ({0}h)</value>
+  </data>
+  <data name="PayScrewsRush" xml:space="preserve">
+    <value>{0} GS ({1}h)</value>
+  </data>
   <data name="DeliveryArrived" xml:space="preserve">
     <value>Consegna arrivata</value>
   </data>
@@ -3572,6 +3593,9 @@
   </data>
   <data name="LuckySpinFree" xml:space="preserve">
     <value>Giro gratis!</value>
+  </data>
+  <data name="LuckySpinAd" xml:space="preserve">
+    <value>Girar con video</value>
   </data>
   <data name="LuckySpinFreeAvailable" xml:space="preserve">
     <value>Giro gratis disponibile!</value>
@@ -6123,4 +6147,18 @@
   <data name="HintReputationTitle" xml:space="preserve"><value>Reputazione</value></data>
   <data name="HintReputationText" xml:space="preserve"><value>La reputazione influenza le ricompense! Alta (80+) dà +20% e più ordini.</value></data>
   <data name="StatisticsTitle" xml:space="preserve"><value>Statistiche</value></data>
+  <data name="TournamentBestScore" xml:space="preserve">
+    <value>Migliore</value>
+  </data>
+  <data name="ActiveOrderHint" xml:space="preserve">
+    <value>Ordine attivo</value>
+  </data>
+  <data name="OfflineEfficiencyHint" xml:space="preserve">
+    <value>~{0}% dei tuoi guadagni online</value>
+  </data>
+  <data name="Ascend" xml:space="preserve"><value>Ascensione</value></data>
+  <data name="AscensionLevelFormat" xml:space="preserve"><value>Livello {0}</value></data>
+  <data name="AvailablePointsFormat" xml:space="preserve"><value>{0} PA disponibili</value></data>
+  <data name="TotalPointsFormat" xml:space="preserve"><value>Totale: {0}</value></data>
+  <data name="NextAscensionFormat" xml:space="preserve"><value>Prossima ascensione: +{0} PA</value></data>
 </root>

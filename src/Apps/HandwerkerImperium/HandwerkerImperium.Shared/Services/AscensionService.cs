@@ -38,7 +38,7 @@ public sealed class AscensionService : IAscensionService
     // ===================================================================
 
     public bool CanAscend =>
-        _gameStateService.State.Prestige.LegendeCount >= 3;
+        _gameStateService.Prestige.LegendeCount >= 3;
 
     // ===================================================================
     // AP-BERECHNUNG
@@ -283,7 +283,6 @@ public sealed class AscensionService : IAscensionService
         state.InvalidateBuildingCache();
         state.InvalidateMaxOfflineHoursCache();
 
-        _gameStateService.MarkDirty();
 
         // Speichern (kein ConfigureAwait - Event muss auf UI-Thread bleiben)
         await _saveGameService.SaveAsync();
@@ -319,7 +318,6 @@ public sealed class AscensionService : IAscensionService
         ascension.AscensionPoints -= cost;
         ascension.Perks[perkId] = currentLevel + 1;
 
-        _gameStateService.MarkDirty();
         return true;
     }
 

@@ -33,7 +33,7 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
     {
         get
         {
-            int tier = GetTier(_gameStateService.State.PlayerLevel);
+            int tier = GetTier(_gameStateService.PlayerLevel);
             return tier switch
             {
                 <= 4 => 6,
@@ -134,7 +134,6 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         _gameStateService.AddXp(challenge.XpReward);
         if (challenge.GoldenScrewReward > 0)
             _gameStateService.AddGoldenScrews(challenge.GoldenScrewReward);
-        _gameStateService.MarkDirty();
         return true;
     }
 
@@ -149,7 +148,6 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         challenge.CurrentValue = 0;
         challenge.IsCompleted = false;
         challenge.HasRetriedWithAd = true;
-        _gameStateService.MarkDirty();
         return true;
     }
 
@@ -175,14 +173,13 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         state.AllCompletedBonusClaimed = true;
         _gameStateService.AddMoney(AllCompletedBonusAmount);
         _gameStateService.AddGoldenScrews(AllCompletedBonusScrews);
-        _gameStateService.MarkDirty();
         return true;
     }
 
     private void GenerateDailyChallenges()
     {
         var state = _gameStateService.State.DailyChallengeState;
-        var level = _gameStateService.State.PlayerLevel;
+        var level = _gameStateService.PlayerLevel;
 
         state.Challenges.Clear();
         state.AllCompletedBonusClaimed = false;
@@ -205,7 +202,6 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
             state.Challenges.Add(CreateChallenge(type, level));
         }
 
-        _gameStateService.MarkDirty();
     }
 
     /// <summary>
@@ -496,7 +492,6 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
                 challenge.IsCompleted = true;
             }
         }
-        _gameStateService.MarkDirty();
         // UI sofort ueber Fortschrittsaenderung benachrichtigen
         ChallengeProgressChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -517,7 +512,6 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
             if (challenge.CurrentValue >= challenge.TargetValue)
                 challenge.IsCompleted = true;
         }
-        _gameStateService.MarkDirty();
         // UI sofort ueber Fortschrittsaenderung benachrichtigen
         ChallengeProgressChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -593,7 +587,7 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
         }
 
         // PerfectStreak aus GameState lesen (wird von GameStateService.RecordMiniGameResult aktualisiert)
-        SetChallengeMax(DailyChallengeType.AchievePerfectStreak, _gameStateService.State.Statistics.PerfectStreak);
+        SetChallengeMax(DailyChallengeType.AchievePerfectStreak, _gameStateService.Statistics.PerfectStreak);
     }
 
     /// <summary>

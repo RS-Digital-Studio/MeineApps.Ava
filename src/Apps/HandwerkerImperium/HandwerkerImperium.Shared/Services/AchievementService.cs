@@ -99,7 +99,6 @@ public sealed class AchievementService : IAchievementService, IDisposable
             UnlockAchievement(achievement);
         }
 
-        _gameStateService.MarkDirty();
         return true;
     }
 

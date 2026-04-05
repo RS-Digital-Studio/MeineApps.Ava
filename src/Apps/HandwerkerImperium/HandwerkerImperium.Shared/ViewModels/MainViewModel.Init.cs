@@ -44,7 +44,7 @@ public sealed partial class MainViewModel
         await CheckCloudSaveAsync();
 
         // Sprache synchronisieren: gespeicherte Sprache laden oder Gerätesprache übernehmen
-        var savedLang = _gameStateService.State.Settings.Language;
+        var savedLang = _gameStateService.Settings.Language;
         if (!string.IsNullOrEmpty(savedLang))
         {
             _localizationService.SetLanguage(savedLang);
@@ -52,7 +52,7 @@ public sealed partial class MainViewModel
         else
         {
             // Neues Spiel: Gerätesprache in GameState übernehmen
-            _gameStateService.State.Settings.Language = _localizationService.CurrentLanguage;
+            _gameStateService.Settings.Language = _localizationService.CurrentLanguage;
         }
 
         // Reload settings in SettingsVM now that game state is loaded
@@ -115,7 +115,7 @@ public sealed partial class MainViewModel
         // Daily Reward: Bei brandneuem Spiel still einsammeln (kein Dialog am allerersten Start,
         // der Spieler kennt das Spiel noch nicht und wird sonst von Dialogen erschlagen)
         var isFirstEverStart = _gameStateService.State.LastDailyRewardClaim == DateTime.MinValue
-                            && _gameStateService.State.Statistics.TotalOrdersCompleted == 0;
+                            && _gameStateService.Statistics.TotalOrdersCompleted == 0;
         if (isFirstEverStart && _dailyRewardService.IsRewardAvailable)
         {
             _dailyRewardService.ClaimReward();
@@ -169,7 +169,7 @@ public sealed partial class MainViewModel
     /// </summary>
     private async Task CheckCloudSaveAsync()
     {
-        if (_playGamesService?.IsSignedIn != true || !_gameStateService.State.Settings.CloudSaveEnabled)
+        if (_playGamesService?.IsSignedIn != true || !_gameStateService.Settings.CloudSaveEnabled)
             return;
 
         try
@@ -235,6 +235,18 @@ public sealed partial class MainViewModel
             durationText += $" (Max. {(int)maxDuration.TotalHours}h)";
         OfflineEarningsDurationText = durationText;
 
+        // Effizienz-Hinweis: Durchschnittliche Offline-Rate basiert auf gestaffeltem System
+        var avgOfflinePercent = effectiveDuration.TotalHours switch
+        {
+            <= 2 => 80,
+            <= 4 => 55,
+            <= 8 => 35,
+            _ => 20
+        };
+        OfflineEfficiencyHint = string.Format(
+            _localizationService.GetString("OfflineEfficiencyHint") ?? "~{0}% deiner Online-Einnahmen",
+            avgOfflinePercent);
+
         // Neuer Rekord pruefen
         IsOfflineNewRecord = earnings > _gameStateService.State.MaxOfflineEarnings;
         if (IsOfflineNewRecord)
@@ -253,9 +265,6 @@ public sealed partial class MainViewModel
 
         // Dialog wird NICHT sofort angezeigt - CheckCombinedWelcomeDialog() entscheidet
         // ob ein einzelner Offline-Dialog oder ein kombinierter Dialog gezeigt wird
-
-        ShowOfflineEarnings?.Invoke(this, new OfflineEarningsEventArgs(
-            earnings, effectiveDuration, wasCapped));
     }
 
     /// <summary>
@@ -406,8 +415,6 @@ public sealed partial class MainViewModel
                 ? MoneyFormatter.FormatCompact(todaysReward.Money)
                 : "";
             IsDailyRewardDialogVisible = true;
-
-            ShowDailyReward?.Invoke(this, new DailyRewardEventArgs(rewards, currentDay, currentStreak));
         }
     }
 
@@ -485,8 +492,7 @@ public sealed partial class MainViewModel
             // → Welcome-Hint überspringen, direkt FirstWorkshop-Hint zeigen
             if (_gameStateService.State.ViewedStoryIds.Contains("tutorial_welcome"))
             {
-                _gameStateService.State.Tutorial.SeenHints.Add(ContextualHints.Welcome.Id);
-                _gameStateService.MarkDirty();
+                _gameStateService.Tutorial.SeenHints.Add(ContextualHints.Welcome.Id);
                 _contextualHintService.TryShowHint(ContextualHints.FirstWorkshop);
             }
             else
@@ -519,7 +525,6 @@ public sealed partial class MainViewModel
         if (state.StarterOfferTimestamp == null)
         {
             state.StarterOfferTimestamp = DateTime.UtcNow;
-            _gameStateService.MarkDirty();
         }
 
         // 24h abgelaufen -> Angebot verpasst, als "gezeigt" markieren
@@ -527,7 +532,6 @@ public sealed partial class MainViewModel
         if (elapsed.TotalHours >= 24)
         {
             state.StarterOfferShown = true;
-            _gameStateService.MarkDirty();
             return;
         }
 
@@ -548,7 +552,6 @@ public sealed partial class MainViewModel
     {
         var state = _gameStateService.State;
         state.StarterOfferShown = true;
-        _gameStateService.MarkDirty();
         IsStarterOfferVisible = false;
 
         // Zum Shop navigieren damit der Spieler den Premium-Kauf durchführen kann

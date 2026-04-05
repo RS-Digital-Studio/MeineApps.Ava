@@ -13,11 +13,12 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für die Vorarbeiter/Manager-Verwaltung.
 /// Zeigt alle Manager (freigeschaltete und gesperrte) mit Upgrade-Möglichkeiten.
 /// </summary>
-public sealed partial class ManagerViewModel : ViewModelBase
+public sealed partial class ManagerViewModel : ViewModelBase, INavigable, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IManagerService _managerService;
     private readonly ILocalizationService _localizationService;
+    private readonly IDialogService _dialogService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -42,14 +43,42 @@ public sealed partial class ManagerViewModel : ViewModelBase
     public ManagerViewModel(
         IGameStateService gameStateService,
         IManagerService managerService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IDialogService dialogService)
     {
         _gameStateService = gameStateService;
         _managerService = managerService;
         _localizationService = localizationService;
+        _dialogService = dialogService;
+
+        _managerService.ManagerUnlocked += OnManagerUnlocked;
 
         UpdateLocalizedTexts();
         RefreshManagers();
+    }
+
+    private void OnManagerUnlocked(string managerId)
+    {
+        ManagerDefinition? def = null;
+        var defs = Manager.GetAllDefinitions();
+        for (int i = 0; i < defs.Count; i++)
+        {
+            if (defs[i].Id == managerId) { def = defs[i]; break; }
+        }
+        if (def == null) return;
+
+        string name = _localizationService.GetString($"Manager_{managerId}") ?? def.Id;
+        _dialogService.ShowAlertDialog(
+            _localizationService.GetString("ManagerUnlocked") ?? "Neuer Vorarbeiter!",
+            string.Format(_localizationService.GetString("ManagerUnlockedFormat") ?? "{0} ist jetzt verfügbar!", name),
+            _localizationService.GetString("Great") ?? "Super!");
+
+        RefreshManagers();
+    }
+
+    public void Dispose()
+    {
+        _managerService.ManagerUnlocked -= OnManagerUnlocked;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

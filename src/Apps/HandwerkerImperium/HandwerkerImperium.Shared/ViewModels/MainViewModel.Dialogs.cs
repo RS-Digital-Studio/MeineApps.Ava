@@ -72,7 +72,7 @@ public sealed partial class MainViewModel
             FloatingTextRequested?.Invoke($"{selectedTier.GetIcon()} {tierName}!", "level");
 
             // Tier-Aufstieg-Celebration: Wenn ein neuer höchster Tier erreicht wurde
-            var newHighestTier = _gameStateService.State.Prestige.CurrentTier;
+            var newHighestTier = _gameStateService.Prestige.CurrentTier;
             if (newHighestTier > oldHighestTier)
             {
                 var newTierName = _localizationService.GetString(newHighestTier.GetLocalizationKey())

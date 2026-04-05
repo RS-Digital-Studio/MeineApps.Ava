@@ -1110,7 +1110,7 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService, IDisposable
     /// </summary>
     private string GetPlayerName()
     {
-        return _preferences.Get<string?>("guild_player_name", null) ?? "Unbekannt";
+        return _preferences.Get<string?>("guild_player_name", null) ?? "Player";
     }
 
     /// <summary>

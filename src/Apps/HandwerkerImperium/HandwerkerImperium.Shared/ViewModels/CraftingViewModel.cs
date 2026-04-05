@@ -15,7 +15,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für das Crafting-System (Produktionsketten mit Rezepten).
 /// Zeigt verfügbare Rezepte, aktive Aufträge und Inventar.
 /// </summary>
-public sealed partial class CraftingViewModel : ViewModelBase
+public sealed partial class CraftingViewModel : ViewModelBase, INavigable, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly ICraftingService _craftingService;
@@ -447,6 +447,11 @@ public sealed partial class CraftingViewModel : ViewModelBase
     };
 
     // GetWorkshopIconKind entfernt - nutze WorkshopType.GetIconKind() Extension direkt
+
+    public void Dispose()
+    {
+        _craftingService.CraftingUpdated -= OnCraftingUpdated;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

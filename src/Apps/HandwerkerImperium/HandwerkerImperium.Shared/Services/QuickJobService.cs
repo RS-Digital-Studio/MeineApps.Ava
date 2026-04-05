@@ -95,8 +95,6 @@ public sealed class QuickJobService : IQuickJobService
 
     public int MaxDailyJobs => GetMaxQuickJobsPerDay();
 
-    public event EventHandler<QuickJob>? QuickJobCompleted;
-
     public QuickJobService(IGameStateService gameStateService, ILocalizationService localizationService)
     {
         _gameStateService = gameStateService;
@@ -117,7 +115,7 @@ public sealed class QuickJobService : IQuickJobService
     public List<QuickJob> GetAvailableJobs()
     {
         var jobs = _gameStateService.State.QuickJobs;
-        var level = _gameStateService.State.PlayerLevel;
+        var level = _gameStateService.PlayerLevel;
         foreach (var job in jobs)
         {
             // Belohnungen bei jedem Abruf neu berechnen (skaliert mit aktuellem Einkommen)
@@ -174,7 +172,6 @@ public sealed class QuickJobService : IQuickJobService
         }
 
         state.LastQuickJobRotation = DateTime.UtcNow;
-        _gameStateService.MarkDirty();
     }
 
     public bool NeedsRotation()
@@ -228,7 +225,6 @@ public sealed class QuickJobService : IQuickJobService
         }
 
         state.LastQuickJobRotation = DateTime.UtcNow;
-        _gameStateService.MarkDirty();
     }
 
     /// <summary>
@@ -301,13 +297,12 @@ public sealed class QuickJobService : IQuickJobService
 
     /// <summary>
     /// Wird vom MainViewModel aufgerufen wenn ein QuickJob abgeschlossen wird.
-    /// Erhöht Tages-Counter und feuert Event.
+    /// Erhöht den Tages-Counter.
     /// </summary>
     public void NotifyJobCompleted(QuickJob job)
     {
         ResetDailyCounterIfNewDay();
         _gameStateService.State.QuickJobsCompletedToday++;
-        QuickJobCompleted?.Invoke(this, job);
     }
 
     /// <summary>

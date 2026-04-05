@@ -102,7 +102,6 @@ public sealed class CraftingService : ICraftingService
 
             state.ActiveCraftingJobs.Add(job);
 
-            _gameState.MarkDirty();
         }
 
         CraftingUpdated?.Invoke();
@@ -150,7 +149,6 @@ public sealed class CraftingService : ICraftingService
         // Job entfernen
         state.ActiveCraftingJobs.Remove(job);
 
-        _gameState.MarkDirty();
         CraftingUpdated?.Invoke();
         CraftingProductCollected?.Invoke();
         return true;
@@ -187,7 +185,6 @@ public sealed class CraftingService : ICraftingService
         // Geld gutschreiben
         _gameState.AddMoney(totalRevenue);
 
-        _gameState.MarkDirty();
         CraftingUpdated?.Invoke();
         return totalRevenue;
     }

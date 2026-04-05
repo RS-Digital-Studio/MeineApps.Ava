@@ -119,21 +119,21 @@ public sealed partial class PrestigeService
 
     public TimeSpan? GetCurrentRunDuration()
     {
-        var runStart = _gameStateService.State.Prestige.RunStartTime;
+        var runStart = _gameStateService.Prestige.RunStartTime;
         return runStart > DateTime.MinValue
             ? DateTime.UtcNow - runStart
             : null;
     }
 
     public IReadOnlyDictionary<string, long> GetBestRunTimes()
-        => _gameStateService.State.Prestige.BestRunTimes;
+        => _gameStateService.Prestige.BestRunTimes;
 
     // ═══════════════════════════════════════════════════════════════════════
     // CHALLENGE-ABBRUCH
     // ═══════════════════════════════════════════════════════════════════════
 
     public bool HasActiveChallenges =>
-        _gameStateService.State.Prestige.ActiveChallenges.Count > 0;
+        _gameStateService.Prestige.ActiveChallenges.Count > 0;
 
     public int AbandonChallengeRun()
     {
@@ -153,7 +153,6 @@ public sealed partial class PrestigeService
         // Challenges deaktivieren — Spieler spielt ohne Modifikatoren weiter
         prestige.ActiveChallenges.Clear();
 
-        _gameStateService.MarkDirty();
         _effectCacheDirty = true;
 
         return awardedPp;

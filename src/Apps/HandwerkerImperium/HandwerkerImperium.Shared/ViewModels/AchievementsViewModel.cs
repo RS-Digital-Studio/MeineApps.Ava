@@ -13,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// ViewModel for the achievements page.
 /// </summary>
-public sealed partial class AchievementsViewModel : ViewModelBase
+public sealed partial class AchievementsViewModel : ViewModelBase, INavigable
 {
     private readonly IAchievementService _achievementService;
     private readonly ILocalizationService _localizationService;
@@ -97,7 +97,8 @@ public sealed partial class AchievementsViewModel : ViewModelBase
                 XpReward = achievement.XpReward,
                 IsUnlocked = achievement.IsUnlocked,
                 IsCloseToUnlock = achievement.IsCloseToUnlock,
-                HasUsedAdBoost = achievement.HasUsedAdBoost
+                HasUsedAdBoost = achievement.HasUsedAdBoost,
+                TargetValue = achievement.TargetValue
             });
         }
     }
@@ -153,10 +154,9 @@ public class AchievementDisplayModel
     public bool IsCloseToUnlock { get; set; }
     public bool HasUsedAdBoost { get; set; }
 
-    /// <summary>
-    /// Ob ein Ad-Boost moeglich ist: Nicht freigeschaltet, noch kein Boost genutzt, Fortschritt > 0.
-    /// </summary>
-    public bool CanBoost => !IsUnlocked && !HasUsedAdBoost && Progress > 0;
+    /// <summary>BAL-AD-7: Boost nur bei progress-basierten Achievements (TargetValue>5, sonst Sofort-Unlock).</summary>
+    public long TargetValue { get; set; }
+    public bool CanBoost => !IsUnlocked && !HasUsedAdBoost && Progress > 0 && TargetValue > 5;
 
     public string RewardText => MoneyReward > 0 && XpReward > 0
         ? $"+{MoneyReward:N0}€ +{XpReward} XP"

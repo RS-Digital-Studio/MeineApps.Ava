@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the settings page.
 /// Manages game settings like sound, language, and premium status.
 /// </summary>
-public sealed partial class SettingsViewModel : ViewModelBase
+public sealed partial class SettingsViewModel : ViewModelBase, INavigable
 {
     private readonly IAudioService _audioService;
     private readonly ILocalizationService _localizationService;
@@ -241,8 +241,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing) return;
 
-        _gameStateService.State.Settings.SoundEnabled = value;
-        _gameStateService.MarkDirty();
+        _gameStateService.Settings.SoundEnabled = value;
         _saveGameService.SaveAsync().FireAndForget();
 
         if (value)
@@ -255,8 +254,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing) return;
 
-        _gameStateService.State.Settings.HapticsEnabled = value;
-        _gameStateService.MarkDirty();
+        _gameStateService.Settings.HapticsEnabled = value;
         _saveGameService.SaveAsync().FireAndForget();
     }
 
@@ -264,8 +262,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing) return;
 
-        _gameStateService.State.Settings.NotificationsEnabled = value;
-        _gameStateService.MarkDirty();
+        _gameStateService.Settings.NotificationsEnabled = value;
         _saveGameService.SaveAsync().FireAndForget();
     }
 
@@ -273,8 +270,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing) return;
 
-        _gameStateService.State.Settings.CloudSaveEnabled = value;
-        _gameStateService.MarkDirty();
+        _gameStateService.Settings.CloudSaveEnabled = value;
         _saveGameService.SaveAsync().FireAndForget();
     }
 
@@ -282,40 +278,35 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing || value == null) return;
 
-        _gameStateService.State.Settings.GraphicsQuality = value.Quality;
-        _gameStateService.MarkDirty();
+        _gameStateService.Settings.GraphicsQuality = value.Quality;
         _saveGameService.SaveAsync().FireAndForget();
     }
 
     partial void OnAutoCollectDeliveryChanged(bool value)
     {
         if (_isInitializing) return;
-        _gameStateService.State.Automation.AutoCollectDelivery = value;
-        _gameStateService.MarkDirty();
+        _gameStateService.Automation.AutoCollectDelivery = value;
         _saveGameService.SaveAsync().FireAndForget();
     }
 
     partial void OnAutoAcceptOrderChanged(bool value)
     {
         if (_isInitializing) return;
-        _gameStateService.State.Automation.AutoAcceptOrder = value;
-        _gameStateService.MarkDirty();
+        _gameStateService.Automation.AutoAcceptOrder = value;
         _saveGameService.SaveAsync().FireAndForget();
     }
 
     partial void OnAutoAssignWorkersChanged(bool value)
     {
         if (_isInitializing) return;
-        _gameStateService.State.Automation.AutoAssignWorkers = value;
-        _gameStateService.MarkDirty();
+        _gameStateService.Automation.AutoAssignWorkers = value;
         _saveGameService.SaveAsync().FireAndForget();
     }
 
     partial void OnAutoClaimDailyChanged(bool value)
     {
         if (_isInitializing) return;
-        _gameStateService.State.Automation.AutoClaimDaily = value;
-        _gameStateService.MarkDirty();
+        _gameStateService.Automation.AutoClaimDaily = value;
         _saveGameService.SaveAsync().FireAndForget();
     }
 
@@ -323,9 +314,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         if (_isInitializing || value == null) return;
 
-        _gameStateService.State.Settings.Language = value.Code;
+        _gameStateService.Settings.Language = value.Code;
         _localizationService.SetLanguage(value.Code);
-        _gameStateService.MarkDirty();
         _saveGameService.SaveAsync().FireAndForget();
     }
 
@@ -361,7 +351,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
             {
                 _gameStateService.State.IsPremium = true;
                 _gameStateService.State.InvalidateMaxOfflineHoursCache();
-                _gameStateService.MarkDirty();
                 await _saveGameService.SaveAsync();
             }
         }
@@ -387,7 +376,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
             {
                 _gameStateService.State.IsPremium = true;
                 _gameStateService.State.InvalidateMaxOfflineHoursCache();
-                _gameStateService.MarkDirty();
                 await _saveGameService.SaveAsync();
             }
         }
@@ -452,13 +440,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 return;
             }
 
-            var description = $"Lv.{_gameStateService.State.PlayerLevel} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+            var description = $"Lv.{_gameStateService.PlayerLevel} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
             var success = await _playGamesService.SaveToCloudAsync(json, description);
 
             if (success)
             {
-                _gameStateService.State.Settings.LastCloudSaveTime = DateTime.UtcNow;
-                _gameStateService.MarkDirty();
+                _gameStateService.Settings.LastCloudSaveTime = DateTime.UtcNow;
                 await _saveGameService.SaveAsync();
                 RefreshPlayGamesStatus();
 

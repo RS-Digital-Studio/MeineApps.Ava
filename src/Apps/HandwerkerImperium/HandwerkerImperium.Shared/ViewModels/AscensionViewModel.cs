@@ -13,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel fuer die Ascension-Ansicht (Meta-Prestige).
 /// Zeigt verfuegbare AP, Perks mit Level/Kosten, und Aufstiegs-Button.
 /// </summary>
-public sealed partial class AscensionViewModel : ViewModelBase
+public sealed partial class AscensionViewModel : ViewModelBase, INavigable, IDisposable
 {
     private readonly IAscensionService _ascensionService;
     private readonly IGameStateService _gameStateService;
@@ -57,6 +57,19 @@ public sealed partial class AscensionViewModel : ViewModelBase
     [ObservableProperty]
     private int _pendingPoints;
 
+    /// <summary>Lokalisierte Anzeige-Strings.</summary>
+    [ObservableProperty]
+    private string _ascensionLevelDisplay = "";
+
+    [ObservableProperty]
+    private string _availablePointsDisplay = "";
+
+    [ObservableProperty]
+    private string _totalPointsDisplay = "";
+
+    [ObservableProperty]
+    private string _pendingPointsDisplay = "";
+
     [ObservableProperty]
     private ObservableCollection<AscensionPerkDisplay> _perks = [];
 
@@ -83,14 +96,22 @@ public sealed partial class AscensionViewModel : ViewModelBase
         _audioService = audioService;
         _dialogService = dialogService;
 
-        // Nach Ascension die Anzeige aktualisieren
-        _ascensionService.AscensionCompleted += (_, _) => LoadData();
+        // Nach Ascension die Anzeige aktualisieren (benannte Methode für sauberes Unsubscribe)
+        _ascensionService.AscensionCompleted += OnAscensionCompleted;
 
         // Bei State-Wechsel (Import/Reset) ebenfalls aktualisieren
-        _gameStateService.StateLoaded += (_, _) => LoadData();
+        _gameStateService.StateLoaded += OnStateLoaded;
 
         LoadData();
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EVENT-HANDLER (benannte Methoden für korrektes Unsubscribe in Dispose)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void OnAscensionCompleted(object? sender, EventArgs e) => LoadData();
+
+    private void OnStateLoaded(object? sender, EventArgs e) => LoadData();
 
     // ═══════════════════════════════════════════════════════════════════════
     // DATEN LADEN
@@ -109,6 +130,20 @@ public sealed partial class AscensionViewModel : ViewModelBase
         TotalPoints = ascData.TotalAscensionPoints;
         CanAscend = _ascensionService.CanAscend;
         PendingPoints = CanAscend ? _ascensionService.CalculateAscensionPoints() : 0;
+
+        // Lokalisierte Display-Strings
+        AscensionLevelDisplay = string.Format(
+            _localizationService.GetString("AscensionLevelFormat") ?? "Stufe {0}",
+            AscensionLevel);
+        AvailablePointsDisplay = string.Format(
+            _localizationService.GetString("AvailablePointsFormat") ?? "{0} AP verfügbar",
+            AvailablePoints);
+        TotalPointsDisplay = string.Format(
+            _localizationService.GetString("TotalPointsFormat") ?? "Gesamt: {0}",
+            TotalPoints);
+        PendingPointsDisplay = string.Format(
+            _localizationService.GetString("NextAscensionFormat") ?? "Nächster Aufstieg: +{0} AP",
+            PendingPoints);
 
         // Perk-Liste aufbauen
         var allPerks = _ascensionService.GetAllPerks();
@@ -271,6 +306,19 @@ public sealed partial class AscensionViewModel : ViewModelBase
             _ => $"{value}"
         };
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DISPOSE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Meldet alle Event-Subscriptions ab (verhindert Memory Leak durch Service-Referenzen auf ViewModel).
+    /// </summary>
+    public void Dispose()
+    {
+        _ascensionService.AscensionCompleted -= OnAscensionCompleted;
+        _gameStateService.StateLoaded -= OnStateLoaded;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -333,4 +381,10 @@ public class AscensionPerkDisplay
 
     /// <summary>Border-Akzent-Farbe: Gold wenn max, sonst transparent.</summary>
     public string BorderColor => IsMaxLevel ? "#40FFD700" : "#20808080";
+
+    public void Dispose()
+    {
+        // Event-Subscriptions abmelden falls vorhanden
+        GC.SuppressFinalize(this);
+    }
 }

@@ -15,7 +15,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the shop page.
 /// Manages in-app purchases and premium features.
 /// </summary>
-public sealed partial class ShopViewModel : ViewModelBase, IDisposable
+public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposable
 {
     private bool _disposed;
     private bool _isBusy;
@@ -212,8 +212,8 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
             new ShopItem
             {
                 Id = "skip_time_1h",
-                Name = _localizationService.GetString("ShopSkipTimeName"),
-                Description = _localizationService.GetString("ShopSkipTimeDesc"),
+                Name = _localizationService.GetString("ShopTimeSkipName") ?? _localizationService.GetString("ShopSkipTimeName"),
+                Description = _localizationService.GetString("ShopTimeSkipDesc") ?? _localizationService.GetString("ShopSkipTimeDesc"),
                 Icon = "TimerOutline",
                 Price = _localizationService.GetString("WatchVideo"),
                 IsAdReward = true
@@ -418,7 +418,6 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
         }
 
         tool.Level++;
-        _gameStateService.MarkDirty();
         LoadTools();
 
         var name = _localizationService.GetString(tool.NameKey) ?? tool.NameKey;
@@ -480,14 +479,17 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 }
 
                 state.PremiumAdRewardsUsedToday++;
-                _gameStateService.MarkDirty();
                 await ApplyReward(item);
                 return;
             }
 
-            // Free-User: Cooldown prüfen (1x, dann 3h Cooldown)
+            // Free-User: Cooldown prüfen - GS-Ad hat eigenen 4h-Cooldown, Rest teilt 3h
             var gameState = _gameStateService.State;
-            var cooldownEnd = gameState.LastShopAdRewardTime.AddHours(3);
+            bool isGoldenScrewsAd = item.Id == "golden_screws_ad";
+            var cooldownEnd = isGoldenScrewsAd
+                ? gameState.LastGoldenScrewsAdTime.AddHours(4)
+                : gameState.LastShopAdRewardTime.AddHours(3);
+
             if (DateTime.UtcNow < cooldownEnd)
             {
                 var remaining = cooldownEnd - DateTime.UtcNow;
@@ -517,11 +519,14 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
 
             if (watchAd)
             {
-                bool success = await _rewardedAdService.ShowAdAsync("golden_screws");
+                string placement = isGoldenScrewsAd ? "golden_screws" : "shop_reward";
+                bool success = await _rewardedAdService.ShowAdAsync(placement);
                 if (success)
                 {
-                    gameState.LastShopAdRewardTime = DateTime.UtcNow;
-                    _gameStateService.MarkDirty();
+                    if (isGoldenScrewsAd)
+                        gameState.LastGoldenScrewsAdTime = DateTime.UtcNow;
+                    else
+                        gameState.LastShopAdRewardTime = DateTime.UtcNow;
                     await ApplyReward(item);
                 }
             }
@@ -718,24 +723,45 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 break;
 
             case "skip_time_1h":
-                // Netto-Einkommen statt Brutto (Kosten abziehen)
-                var hourlyEarnings = Math.Max(0m, _gameStateService.State.NetIncomePerSecond * 3600);
-                _gameStateService.AddMoney(hourlyEarnings);
-                CurrentBalance = FormatMoney(_gameStateService.State.Money);
+                // BAL-AD-2: Echter Zeitsprung - 2h Netto-Einkommen + Worker-Erholung + Forschung
+                var skipHours = 2m;
+                var timeSkipEarnings = Math.Max(0m, _gameStateService.State.NetIncomePerSecond * 3600m * skipHours);
+                _gameStateService.AddMoney(timeSkipEarnings);
+                var skipState = _gameStateService.State;
+                foreach (var ws in skipState.Workshops)
+                    foreach (var worker in ws.Workers)
+                    {
+                        if (worker.IsResting)
+                        {
+                            worker.Fatigue = Math.Max(0m, worker.Fatigue - 25m * skipHours);
+                            worker.Mood = Math.Min(100m, worker.Mood + 5m * skipHours);
+                        }
+                        else
+                            worker.Mood = Math.Min(100m, worker.Mood + 3m * skipHours);
+                    }
+                if (skipState.ActiveResearchId != null)
+                {
+                    var research = skipState.Researches.FirstOrDefault(r => r.Id == skipState.ActiveResearchId);
+                    if (research?.StartedAt != null)
+                        research.BonusSeconds += (double)(skipHours * 3600m);
+                }
+                CurrentBalance = FormatMoney(skipState.Money);
                 await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
                 ShowAlert(
                     _localizationService.GetString("TimeSkipped"),
-                    string.Format(_localizationService.GetString("MoneyReceivedFormat"), FormatMoney(hourlyEarnings)),
+                    string.Format(
+                        _localizationService.GetString("TimeSkipFullDesc") ?? "+{0} + Erholung & Forschung beschleunigt",
+                        FormatMoney(timeSkipEarnings)),
                     _localizationService.GetString("Great"));
                 break;
 
             case "golden_screws_ad":
-                _gameStateService.AddGoldenScrews(5);  // GAME-7: Von 10 auf 5 reduziert (GS-Inflation vermeiden)
+                _gameStateService.AddGoldenScrews(8);  // BAL-AD-1: Von 5 auf 8 GS (eigener 4h-Cooldown)
                 GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
                 await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
                 ShowAlert(
                     _localizationService.GetString("GoldenScrews"),
-                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 5),
+                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 8),
                     _localizationService.GetString("Great"));
                 break;
         }

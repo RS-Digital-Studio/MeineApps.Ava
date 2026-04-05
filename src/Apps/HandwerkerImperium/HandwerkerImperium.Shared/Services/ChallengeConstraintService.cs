@@ -22,10 +22,10 @@ public sealed class ChallengeConstraintService : IChallengeConstraintService
     }
 
     public IReadOnlyList<PrestigeChallengeType> GetActiveChallenges()
-        => _gameStateService.State.Prestige.ActiveChallenges;
+        => _gameStateService.Prestige.ActiveChallenges;
 
     public bool IsChallengeActive(PrestigeChallengeType challenge)
-        => _gameStateService.State.Prestige.ActiveChallenges.Contains(challenge);
+        => _gameStateService.Prestige.ActiveChallenges.Contains(challenge);
 
     public int GetMaxWorkers(int defaultMax)
         => IsChallengeActive(PrestigeChallengeType.Spartaner) ? 3 : defaultMax;
@@ -47,7 +47,7 @@ public sealed class ChallengeConstraintService : IChallengeConstraintService
 
     public bool ToggleChallenge(PrestigeChallengeType challenge)
     {
-        var challenges = _gameStateService.State.Prestige.ActiveChallenges;
+        var challenges = _gameStateService.Prestige.ActiveChallenges;
 
         // Bereits aktiv → deaktivieren
         if (challenges.Contains(challenge))
@@ -71,7 +71,7 @@ public sealed class ChallengeConstraintService : IChallengeConstraintService
 
     public decimal GetChallengePpMultiplier()
     {
-        var challenges = _gameStateService.State.Prestige.ActiveChallenges;
+        var challenges = _gameStateService.Prestige.ActiveChallenges;
         return challenges.Count > 0
             ? ((IReadOnlyList<PrestigeChallengeType>)challenges).GetTotalPpMultiplier()
             : 1.0m;

@@ -557,6 +557,15 @@
   <data name="TimeSkipped" xml:space="preserve">
     <value>Time Skipped!</value>
   </data>
+  <data name="ShopTimeSkipName" xml:space="preserve">
+    <value>Time Skip (2h)</value>
+  </data>
+  <data name="ShopTimeSkipDesc" xml:space="preserve">
+    <value>2h income + worker recovery + research boost</value>
+  </data>
+  <data name="TimeSkipFullDesc" xml:space="preserve">
+    <value>+{0} + Recovery &amp; research accelerated</value>
+  </data>
   <data name="ComingSoon" xml:space="preserve">
     <value>Coming Soon</value>
   </data>
@@ -2737,6 +2746,18 @@
   <data name="RushCostScrews" xml:space="preserve">
     <value>Rush costs {0} Golden Screws</value>
   </data>
+  <data name="ActivateRush" xml:space="preserve">
+    <value>Activar Rush</value>
+  </data>
+  <data name="RushChoiceDesc" xml:space="preserve">
+    <value>Video = {0}h Rush&#10;{1} Tornillos = {2}h Rush</value>
+  </data>
+  <data name="WatchVideoRush" xml:space="preserve">
+    <value>Video ({0}h)</value>
+  </data>
+  <data name="PayScrewsRush" xml:space="preserve">
+    <value>{0} GS ({1}h)</value>
+  </data>
   <!-- Lieferant -->
   <data name="DeliveryArrived" xml:space="preserve">
     <value>Delivery arrived</value>
@@ -3903,6 +3924,9 @@
   </data>
   <data name="LuckySpinFree" xml:space="preserve">
     <value>Free spin!</value>
+  </data>
+  <data name="LuckySpinAd" xml:space="preserve">
+    <value>Girar con video</value>
   </data>
   <data name="LuckySpinFreeAvailable" xml:space="preserve">
     <value>Free Spin available!</value>
@@ -6352,5 +6376,29 @@
   </data>
   <data name="StatisticsTitle" xml:space="preserve">
     <value>Statistics</value>
+  </data>
+  <data name="TournamentBestScore" xml:space="preserve">
+    <value>Best</value>
+  </data>
+  <data name="ActiveOrderHint" xml:space="preserve">
+    <value>Active order</value>
+  </data>
+  <data name="OfflineEfficiencyHint" xml:space="preserve">
+    <value>~{0}% of your online earnings</value>
+  </data>
+  <data name="Ascend" xml:space="preserve">
+    <value>Ascend</value>
+  </data>
+  <data name="AscensionLevelFormat" xml:space="preserve">
+    <value>Level {0}</value>
+  </data>
+  <data name="AvailablePointsFormat" xml:space="preserve">
+    <value>{0} AP available</value>
+  </data>
+  <data name="TotalPointsFormat" xml:space="preserve">
+    <value>Total: {0}</value>
+  </data>
+  <data name="NextAscensionFormat" xml:space="preserve">
+    <value>Next ascension: +{0} AP</value>
   </data>
 </root>

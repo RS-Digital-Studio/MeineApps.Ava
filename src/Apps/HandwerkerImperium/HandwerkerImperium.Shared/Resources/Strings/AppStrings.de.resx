@@ -557,6 +557,15 @@
   <data name="TimeSkipped" xml:space="preserve">
     <value>Zeit übersprungen!</value>
   </data>
+  <data name="ShopTimeSkipName" xml:space="preserve">
+    <value>Zeitsprung (2h)</value>
+  </data>
+  <data name="ShopTimeSkipDesc" xml:space="preserve">
+    <value>2h Einkommen + Erholung + Forschung beschleunigt</value>
+  </data>
+  <data name="TimeSkipFullDesc" xml:space="preserve">
+    <value>+{0} + Erholung &amp; Forschung beschleunigt</value>
+  </data>
   <data name="ComingSoon" xml:space="preserve">
     <value>Demnächst verfügbar</value>
   </data>
@@ -2719,6 +2728,18 @@
   <data name="RushCostScrews" xml:space="preserve">
     <value>Rush kostet {0} Goldschrauben</value>
   </data>
+  <data name="ActivateRush" xml:space="preserve">
+    <value>Rush aktivieren</value>
+  </data>
+  <data name="RushChoiceDesc" xml:space="preserve">
+    <value>Video = {0}h Rush&#10;{1} Schrauben = {2}h Rush</value>
+  </data>
+  <data name="WatchVideoRush" xml:space="preserve">
+    <value>Video ({0}h)</value>
+  </data>
+  <data name="PayScrewsRush" xml:space="preserve">
+    <value>{0} GS ({1}h)</value>
+  </data>
   <data name="DeliveryArrived" xml:space="preserve">
     <value>Lieferung eingetroffen</value>
   </data>
@@ -3899,6 +3920,9 @@
   </data>
   <data name="LuckySpinFree" xml:space="preserve">
     <value>Gratis drehen!</value>
+  </data>
+  <data name="LuckySpinAd" xml:space="preserve">
+    <value>Video drehen</value>
   </data>
   <data name="LuckySpinFreeAvailable" xml:space="preserve">
     <value>Gratis-Dreh verfügbar!</value>
@@ -6331,5 +6355,30 @@
   </data>
   <data name="StatisticsTitle" xml:space="preserve">
     <value>Statistiken</value>
+  </data>
+  <data name="TournamentBestScore" xml:space="preserve">
+    <value>Bestleistung</value>
+  </data>
+  <data name="ActiveOrderHint" xml:space="preserve">
+    <value>Aktiver Auftrag</value>
+  </data>
+  <data name="OfflineEfficiencyHint" xml:space="preserve">
+    <value>~{0}% deiner Online-Einnahmen</value>
+  </data>
+  <!-- Ascension UI-Texte -->
+  <data name="Ascend" xml:space="preserve">
+    <value>Aufsteigen</value>
+  </data>
+  <data name="AscensionLevelFormat" xml:space="preserve">
+    <value>Stufe {0}</value>
+  </data>
+  <data name="AvailablePointsFormat" xml:space="preserve">
+    <value>{0} AP verf&#252;gbar</value>
+  </data>
+  <data name="TotalPointsFormat" xml:space="preserve">
+    <value>Gesamt: {0}</value>
+  </data>
+  <data name="NextAscensionFormat" xml:space="preserve">
+    <value>N&#228;chster Aufstieg: +{0} AP</value>
   </data>
 </root>

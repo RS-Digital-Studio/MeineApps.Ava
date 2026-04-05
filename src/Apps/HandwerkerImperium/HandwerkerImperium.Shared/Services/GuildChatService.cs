@@ -52,7 +52,7 @@ public sealed class GuildChatService : IGuildChatService, IDisposable
             if (text.Length > MaxMessageLength)
                 text = text[..MaxMessageLength];
 
-            var playerName = _gameStateService.State.PlayerName ?? "Handwerker";
+            var playerName = _gameStateService.State.PlayerName ?? "Player";
 
             var message = new ChatMessage
             {

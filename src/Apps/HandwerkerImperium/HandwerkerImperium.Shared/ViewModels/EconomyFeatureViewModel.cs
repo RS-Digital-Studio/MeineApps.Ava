@@ -384,27 +384,61 @@ internal sealed class EconomyFeatureViewModel
 
     private const int RushCostScrews = 10;
     private const int RushDurationHours = 2;
+    private const int RushAdDurationHours = 1;
 
-    internal void ActivateRush()
+    internal async void ActivateRush()
     {
         var state = _gameStateService.State;
         if (state.IsRushBoostActive) return;
 
         if (state.IsFreeRushAvailable)
         {
-            // Täglicher Gratis-Rush
+            // Täglicher Gratis-Rush (2h)
             state.RushBoostEndTime = DateTime.UtcNow.AddHours(RushDurationHours);
             state.LastFreeRushUsed = DateTime.UtcNow;
-            _gameStateService.MarkDirty();
             _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
             FloatingTextRequested?.Invoke($"Rush 2x ({RushDurationHours}h)!", "Rush");
             CelebrationRequested?.Invoke();
         }
+        else if (_rewardedAdService.IsAvailable && !_purchaseService.IsPremium)
+        {
+            // BAL-AD-5: Video-Rush (1h) als Alternative zu 10 GS (2h)
+            var watchVideo = await _dialogService.ShowConfirmDialog(
+                _localizationService.GetString("ActivateRush") ?? "Rush aktivieren",
+                string.Format(
+                    _localizationService.GetString("RushChoiceDesc") ?? "Video = {0}h Rush\n{1} Schrauben = {2}h Rush",
+                    RushAdDurationHours, RushCostScrews, RushDurationHours),
+                string.Format(_localizationService.GetString("WatchVideoRush") ?? "Video ({0}h)", RushAdDurationHours),
+                string.Format(_localizationService.GetString("PayScrewsRush") ?? "{0} GS ({1}h)", RushCostScrews, RushDurationHours));
+
+            if (watchVideo)
+            {
+                var success = await _rewardedAdService.ShowAdAsync("rush_boost");
+                if (success)
+                {
+                    state.RushBoostEndTime = DateTime.UtcNow.AddHours(RushAdDurationHours);
+                    _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+                    FloatingTextRequested?.Invoke($"Rush 2x ({RushAdDurationHours}h)!", "Rush");
+                }
+            }
+            else if (_gameStateService.TrySpendGoldenScrews(RushCostScrews))
+            {
+                state.RushBoostEndTime = DateTime.UtcNow.AddHours(RushDurationHours);
+                _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+                FloatingTextRequested?.Invoke($"Rush 2x ({RushDurationHours}h)!", "Rush");
+            }
+            else
+            {
+                ShowAlertDialog(
+                    _localizationService.GetString("NotEnoughScrews"),
+                    string.Format(_localizationService.GetString("RushCostScrews"), RushCostScrews),
+                    _localizationService.GetString("OK"));
+            }
+        }
         else if (_gameStateService.TrySpendGoldenScrews(RushCostScrews))
         {
-            // Bezahlter Rush (Goldschrauben)
+            // Bezahlter Rush — Premium oder keine Ad verfügbar
             state.RushBoostEndTime = DateTime.UtcNow.AddHours(RushDurationHours);
-            _gameStateService.MarkDirty();
             _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
             FloatingTextRequested?.Invoke($"Rush 2x ({RushDurationHours}h)!", "Rush");
         }
@@ -497,7 +531,6 @@ internal sealed class EconomyFeatureViewModel
         state.Statistics.TotalDeliveriesClaimed++;
         state.PendingDelivery = null;
         _host.HasPendingDelivery = false;
-        _gameStateService.MarkDirty();
     }
 
     internal void UpdateDeliveryDisplay()

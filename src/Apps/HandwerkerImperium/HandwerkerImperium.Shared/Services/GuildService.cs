@@ -21,6 +21,7 @@ public sealed class GuildService : IGuildService, IDisposable
 
     private readonly IGameStateService _gameStateService;
     private readonly IFirebaseService _firebaseService;
+    private readonly IGameIntegrityService _integrityService;
     private readonly IPreferencesService _preferences;
     private readonly ILogService _log;
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -32,11 +33,13 @@ public sealed class GuildService : IGuildService, IDisposable
     public GuildService(
         IGameStateService gameStateService,
         IFirebaseService firebaseService,
+        IGameIntegrityService integrityService,
         IPreferencesService preferences,
         ILogService log)
     {
         _gameStateService = gameStateService;
         _firebaseService = firebaseService;
+        _integrityService = integrityService;
         _preferences = preferences;
         _log = log;
 
@@ -67,7 +70,6 @@ public sealed class GuildService : IGuildService, IDisposable
             if (_gameStateService.State.PlayerGuid != playerId)
             {
                 _gameStateService.State.PlayerGuid = playerId;
-                _gameStateService.MarkDirty();
             }
 
             // Migration: Daten von alter Firebase-UID zu PlayerId migrieren
@@ -246,6 +248,9 @@ public sealed class GuildService : IGuildService, IDisposable
             var state = _gameStateService.State;
             if (state.GuildMembership != null) return false;
 
+            // Integritaetspruefung: Manipulierte Werte nicht an Firebase senden
+            if (!VerifyIntegrityForFirebase(state)) return false;
+
             var now = DateTime.UtcNow;
             var guildId = $"g_{now:yyyyMMddHHmmss}_{uid[..Math.Min(6, uid.Length)]}";
 
@@ -275,7 +280,7 @@ public sealed class GuildService : IGuildService, IDisposable
             // Spieler als Leader eintragen
             var member = new FirebaseGuildMember
             {
-                Name = PlayerName ?? "Spieler",
+                Name = PlayerName ?? "Player",
                 Role = "leader",
                 Contribution = 0,
                 PlayerLevel = state.PlayerLevel,
@@ -322,7 +327,7 @@ public sealed class GuildService : IGuildService, IDisposable
     public async Task<bool> JoinGuildAsync(string guildId)
     {
         var uid = _firebaseService.PlayerId;
-        if (string.IsNullOrEmpty(uid)) return false;
+        if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(guildId)) return false;
 
         if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
             return false;
@@ -334,6 +339,9 @@ public sealed class GuildService : IGuildService, IDisposable
             var state = _gameStateService.State;
             if (state.GuildMembership != null) return false;
 
+            // Integritaetspruefung: Manipulierte Werte nicht an Firebase senden
+            if (!VerifyIntegrityForFirebase(state)) return false;
+
             // Gilden-Daten prüfen
             var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
             if (guildData == null) return false;
@@ -344,7 +352,7 @@ public sealed class GuildService : IGuildService, IDisposable
             if (actualCount >= guildData.MaxMembers) return false;
 
             var now = DateTime.UtcNow;
-            var playerName = PlayerName ?? "Spieler";
+            var playerName = PlayerName ?? "Player";
 
             // Mitglied eintragen (ZUERST — damit wir danach als Mitglied Duplikate löschen dürfen)
             var member = new FirebaseGuildMember
@@ -551,6 +559,9 @@ public sealed class GuildService : IGuildService, IDisposable
         var membership = state.GuildMembership;
         if (membership == null || amount <= 0) return false;
 
+        // Integritaetspruefung: Manipulierte Werte nicht an Firebase senden
+        if (!VerifyIntegrityForFirebase(state)) return false;
+
         if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
             return false; // Timeout: Lock nicht erhalten
         try
@@ -611,7 +622,6 @@ public sealed class GuildService : IGuildService, IDisposable
                 });
             }
 
-            _gameStateService.MarkDirty();
             GuildUpdated?.Invoke();
 
             return true;
@@ -765,7 +775,6 @@ public sealed class GuildService : IGuildService, IDisposable
 
         // GameState synchron halten (für Chat, Friends, Gifts)
         _gameStateService.State.PlayerName = PlayerName;
-        _gameStateService.MarkDirty();
 
         // Firebase-Member-Eintrag asynchron aktualisieren
         UpdatePlayerNameInFirebaseAsync().SafeFireAndForget();
@@ -783,7 +792,7 @@ public sealed class GuildService : IGuildService, IDisposable
 
             await _firebaseService.UpdateAsync(
                 $"guild_members/{membership.GuildId}/{playerId}",
-                new Dictionary<string, object> { ["name"] = PlayerName ?? "Spieler" });
+                new Dictionary<string, object> { ["name"] = PlayerName ?? "Player" });
         }
         catch (Exception ex)
         {
@@ -949,7 +958,7 @@ public sealed class GuildService : IGuildService, IDisposable
 
             await _firebaseService.SetAsync($"available_players/{uid}", new AvailablePlayerInfo
             {
-                Name = PlayerName ?? "Spieler",
+                Name = PlayerName ?? "Player",
                 Level = state.PlayerLevel,
                 LastActive = DateTime.UtcNow.ToString("O")
             });
@@ -996,7 +1005,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
+            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
 
             var membership = _gameStateService.State.GuildMembership;
             if (membership == null) return false;
@@ -1014,7 +1023,7 @@ public sealed class GuildService : IGuildService, IDisposable
                 GuildColor = guildData.Color,
                 GuildLevel = guildData.Level,
                 MemberCount = guildData.MemberCount,
-                InvitedBy = PlayerName ?? "Spieler",
+                InvitedBy = PlayerName ?? "Player",
                 InvitedAt = DateTime.UtcNow.ToString("O")
             };
 
@@ -1073,7 +1082,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid)) return false;
+            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(guildId)) return false;
 
             // Gilde beitreten
             var success = await JoinGuildAsync(guildId);
@@ -1095,7 +1104,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid)) return false;
+            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(guildId)) return false;
 
             await _firebaseService.DeleteAsync($"player_invites/{uid}/{guildId}");
             return true;
@@ -1116,7 +1125,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
+            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
 
             var membership = _gameStateService.State.GuildMembership;
             if (membership == null) return false;
@@ -1146,7 +1155,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
+            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
 
             var membership = _gameStateService.State.GuildMembership;
             if (membership == null) return false;
@@ -1176,7 +1185,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
+            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
             if (uid == targetUid) return false; // Sich selbst kann man nicht kicken
 
             var membership = _gameStateService.State.GuildMembership;
@@ -1218,7 +1227,7 @@ public sealed class GuildService : IGuildService, IDisposable
         try
         {
             var uid = _firebaseService.PlayerId;
-            if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
+            if (string.IsNullOrEmpty(uid) || !IsValidFirebaseKey(targetUid)) return false;
             if (uid == targetUid) return false; // Keine Übertragung an sich selbst
 
             var membership = _gameStateService.State.GuildMembership;
@@ -1462,13 +1471,29 @@ public sealed class GuildService : IGuildService, IDisposable
             // Research- und Hall-Effekte werden von den jeweiligen Services gecacht
         }
 
-        _gameStateService.MarkDirty();
     }
 
     private void ClearLocalCache()
     {
         _gameStateService.State.GuildMembership = null;
-        _gameStateService.MarkDirty();
+    }
+
+    /// <summary>
+    /// Prueft ob ein Key fuer Firebase-Pfade gueltig ist.
+    /// Firebase verbietet: '.', '$', '#', '[', ']', '/' und leere Keys.
+    /// </summary>
+    private static bool IsValidFirebaseKey(string? key)
+    {
+        if (string.IsNullOrEmpty(key)) return false;
+
+        for (int i = 0; i < key.Length; i++)
+        {
+            var c = key[i];
+            if (c == '.' || c == '$' || c == '#' || c == '[' || c == ']' || c == '/')
+                return false;
+        }
+
+        return true;
     }
 
     private static DateTime GetCurrentMonday()
@@ -1476,6 +1501,15 @@ public sealed class GuildService : IGuildService, IDisposable
         var today = DateTime.UtcNow.Date;
         int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
         return today.AddDays(-diff);
+    }
+
+    /// <summary>
+    /// Prüft ob der GameState eine gültige Integritäts-Signatur hat.
+    /// Verhindert das Senden manipulierter Werte an Firebase.
+    /// </summary>
+    private bool VerifyIntegrityForFirebase(GameState state)
+    {
+        return _integrityService.VerifySignature(state);
     }
 
     public void Dispose()

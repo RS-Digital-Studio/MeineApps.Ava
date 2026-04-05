@@ -23,6 +23,9 @@ public sealed class EventService : IEventService
     public EventService(IGameStateService gameState)
     {
         _gameState = gameState;
+
+        // Bei State-Wechsel (Prestige/Import/Reset) Effect-Cache invalidieren
+        _gameState.StateLoaded += (_, _) => InvalidateEffectCache();
     }
 
     /// <summary>

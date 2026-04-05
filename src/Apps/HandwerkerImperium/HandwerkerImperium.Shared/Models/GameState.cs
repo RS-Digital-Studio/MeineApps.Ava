@@ -5,12 +5,12 @@ namespace HandwerkerImperium.Models;
 
 /// <summary>
 /// The complete game state, persisted between sessions.
-/// Version 4: Settings, Statistics und Tutorial in Sub-Objekte extrahiert.
+/// Version 5: Boosts, DailyProgress und Cosmetics in Sub-Objekte extrahiert.
 /// </summary>
 public class GameState
 {
     [JsonPropertyName("version")]
-    public int Version { get; set; } = 4;
+    public int Version { get; set; } = 5;
 
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -91,6 +91,13 @@ public class GameState
     /// </summary>
     [JsonPropertyName("lastShopAdRewardTime")]
     public DateTime LastShopAdRewardTime { get; set; } = DateTime.MinValue;
+
+    /// <summary>
+    /// Letzte Einlösung der Goldschrauben-Ad im Shop (eigener 4h-Cooldown).
+    /// Getrennt von LastShopAdRewardTime, damit GS-Ad nicht mit Cash-Ads konkurriert.
+    /// </summary>
+    [JsonPropertyName("lastGoldenScrewsAdTime")]
+    public DateTime LastGoldenScrewsAdTime { get; set; } = DateTime.MinValue;
 
     // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOPS
@@ -254,66 +261,60 @@ public class GameState
     public bool IsPremium { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // DAILY REWARDS
+    // DAILY PROGRESS (Sub-Objekt seit V5)
     // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("dailyProgress")]
+    public DailyProgressData DailyProgress { get; set; } = new();
+
+    // --- Legacy-Weiterleitungen (Backward-Kompatibilität für V4-Saves) ---
 
     [JsonPropertyName("lastDailyRewardClaim")]
-    public DateTime LastDailyRewardClaim { get; set; } = DateTime.MinValue;
+    public DateTime LastDailyRewardClaim { get => DailyProgress.LastDailyRewardClaim; set => DailyProgress.LastDailyRewardClaim = value; }
 
     [JsonPropertyName("dailyRewardStreak")]
-    public int DailyRewardStreak { get; set; }
+    public int DailyRewardStreak { get => DailyProgress.DailyRewardStreak; set => DailyProgress.DailyRewardStreak = value; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // BOOSTS
+    // BOOSTS (Sub-Objekt seit V5)
     // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("boosts")]
+    public BoostData Boosts { get; set; } = new();
+
+    // --- Legacy-Weiterleitungen (Backward-Kompatibilität für V4-Saves) ---
+    // V4-Saves haben diese Properties flach. System.Text.Json deserialisiert sie hierher,
+    // MigrateFromV4() kopiert sie in das Boosts-Sub-Objekt.
 
     [JsonPropertyName("speedBoostEndTime")]
-    public DateTime SpeedBoostEndTime { get; set; } = DateTime.MinValue;
+    public DateTime SpeedBoostEndTime { get => Boosts.SpeedBoostEndTime; set => Boosts.SpeedBoostEndTime = value; }
 
     [JsonPropertyName("xpBoostEndTime")]
-    public DateTime XpBoostEndTime { get; set; } = DateTime.MinValue;
+    public DateTime XpBoostEndTime { get => Boosts.XpBoostEndTime; set => Boosts.XpBoostEndTime = value; }
 
-    /// <summary>
-    /// Feierabend-Rush: 2h 2x-Boost, einmal täglich gratis.
-    /// </summary>
     [JsonPropertyName("rushBoostEndTime")]
-    public DateTime RushBoostEndTime { get; set; } = DateTime.MinValue;
+    public DateTime RushBoostEndTime { get => Boosts.RushBoostEndTime; set => Boosts.RushBoostEndTime = value; }
 
-    /// <summary>
-    /// Letztes Datum an dem der gratis Rush verwendet wurde.
-    /// </summary>
     [JsonPropertyName("lastFreeRushUsed")]
-    public DateTime LastFreeRushUsed { get; set; } = DateTime.MinValue;
+    public DateTime LastFreeRushUsed { get => Boosts.LastFreeRushUsed; set => Boosts.LastFreeRushUsed = value; }
 
     [JsonIgnore]
-    public bool IsSpeedBoostActive => SpeedBoostEndTime > DateTime.UtcNow;
+    public bool IsSpeedBoostActive => Boosts.IsSpeedBoostActive;
 
     [JsonIgnore]
-    public bool IsXpBoostActive => XpBoostEndTime > DateTime.UtcNow;
+    public bool IsXpBoostActive => Boosts.IsXpBoostActive;
 
     [JsonIgnore]
-    public bool IsRushBoostActive => RushBoostEndTime > DateTime.UtcNow;
+    public bool IsRushBoostActive => Boosts.IsRushBoostActive;
 
-    /// <summary>
-    /// Ob der Soft-Cap auf den Einkommens-Multiplikator aktiv ist (> 10x).
-    /// Wird vom GameLoopService pro Tick gesetzt.
-    /// </summary>
     [JsonIgnore]
-    public bool IsSoftCapActive { get; set; }
+    public bool IsSoftCapActive { get => Boosts.IsSoftCapActive; set => Boosts.IsSoftCapActive = value; }
 
-    /// <summary>
-    /// Wie viel Prozent des Einkommens durch den Soft-Cap verloren gehen (0-100).
-    /// Für UI-Transparenz: Zeigt dem Spieler warum Boni gedeckelt werden.
-    /// </summary>
     [JsonIgnore]
-    public int SoftCapReductionPercent { get; set; }
+    public int SoftCapReductionPercent { get => Boosts.SoftCapReductionPercent; set => Boosts.SoftCapReductionPercent = value; }
 
-    /// <summary>
-    /// Ob der tägliche Gratis-Rush verfügbar ist (noch nicht heute verwendet).
-    /// Zeitmanipulations-sicher: Wenn LastFreeRushUsed in der Zukunft liegt, ist future &lt; today false → blockiert.
-    /// </summary>
     [JsonIgnore]
-    public bool IsFreeRushAvailable => LastFreeRushUsed.Date < DateTime.UtcNow.Date;
+    public bool IsFreeRushAvailable => Boosts.IsFreeRushAvailable;
 
     // ═══════════════════════════════════════════════════════════════════════
     // ACHIEVEMENTS
@@ -322,24 +323,22 @@ public class GameState
     [JsonPropertyName("unlockedAchievements")]
     public List<string> UnlockedAchievements { get; set; } = [];
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // QUICK JOBS
-    // ═══════════════════════════════════════════════════════════════════════
+    // --- Quick Jobs Legacy-Weiterleitungen (Backward-Kompatibilität für V4-Saves) ---
 
     [JsonPropertyName("quickJobs")]
-    public List<QuickJob> QuickJobs { get; set; } = [];
+    public List<QuickJob> QuickJobs { get => DailyProgress.QuickJobs; set => DailyProgress.QuickJobs = value; }
 
     [JsonPropertyName("lastQuickJobRotation")]
-    public DateTime LastQuickJobRotation { get; set; } = DateTime.MinValue;
+    public DateTime LastQuickJobRotation { get => DailyProgress.LastQuickJobRotation; set => DailyProgress.LastQuickJobRotation = value; }
 
     [JsonPropertyName("totalQuickJobsCompleted")]
-    public int TotalQuickJobsCompleted { get; set; }
+    public int TotalQuickJobsCompleted { get => DailyProgress.TotalQuickJobsCompleted; set => DailyProgress.TotalQuickJobsCompleted = value; }
 
     [JsonPropertyName("quickJobsCompletedToday")]
-    public int QuickJobsCompletedToday { get; set; }
+    public int QuickJobsCompletedToday { get => DailyProgress.QuickJobsCompletedToday; set => DailyProgress.QuickJobsCompletedToday = value; }
 
     [JsonPropertyName("lastQuickJobDailyReset")]
-    public DateTime LastQuickJobDailyReset { get; set; } = DateTime.MinValue;
+    public DateTime LastQuickJobDailyReset { get => DailyProgress.LastQuickJobDailyReset; set => DailyProgress.LastQuickJobDailyReset = value; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // DAILY CHALLENGES
@@ -411,38 +410,22 @@ public class GameState
     [JsonPropertyName("automation")]
     public AutomationSettings Automation { get; set; } = new();
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // WEEKLY MISSIONS (Welle 1)
-    // ═══════════════════════════════════════════════════════════════════════
+    // --- Weekly Missions / Welcome Back / Streak Legacy-Weiterleitungen ---
 
     [JsonPropertyName("weeklyMissionState")]
-    public WeeklyMissionState WeeklyMissionState { get; set; } = new();
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // WELCOME BACK (Welle 1)
-    // ═══════════════════════════════════════════════════════════════════════
+    public WeeklyMissionState WeeklyMissionState { get => DailyProgress.WeeklyMissionState; set => DailyProgress.WeeklyMissionState = value; }
 
     [JsonPropertyName("activeWelcomeBackOffer")]
-    public WelcomeBackOffer? ActiveWelcomeBackOffer { get; set; }
+    public WelcomeBackOffer? ActiveWelcomeBackOffer { get => DailyProgress.ActiveWelcomeBackOffer; set => DailyProgress.ActiveWelcomeBackOffer = value; }
 
     [JsonPropertyName("claimedStarterPack")]
-    public bool ClaimedStarterPack { get; set; }
+    public bool ClaimedStarterPack { get => DailyProgress.ClaimedStarterPack; set => DailyProgress.ClaimedStarterPack = value; }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // STREAK-ERWEITERUNG (Welle 1)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Streak-Wert vor dem letzten Unterbruch (für Streak-Rettung).
-    /// </summary>
     [JsonPropertyName("streakBeforeBreak")]
-    public int StreakBeforeBreak { get; set; }
+    public int StreakBeforeBreak { get => DailyProgress.StreakBeforeBreak; set => DailyProgress.StreakBeforeBreak = value; }
 
-    /// <summary>
-    /// Ob die Streak-Rettung bereits verwendet wurde (nur 1x pro Unterbrechung).
-    /// </summary>
     [JsonPropertyName("streakRescueUsed")]
-    public bool StreakRescueUsed { get; set; }
+    public bool StreakRescueUsed { get => DailyProgress.StreakRescueUsed; set => DailyProgress.StreakRescueUsed = value; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // LUCKY SPIN (Welle 2)
@@ -546,6 +529,17 @@ public class GameState
     public GuildMembership? GuildMembership { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // INTEGRITY (Manipulationsschutz fuer Gilden-relevante Werte)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// HMAC-SHA256-Signatur ueber Gilden-relevante Werte (Level, Prestige, Geld, Goldschrauben, Auftraege).
+    /// Wird bei jedem Save berechnet und vor Firebase-Updates geprueft.
+    /// </summary>
+    [JsonPropertyName("integritySignature")]
+    public string? IntegritySignature { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // CRAFTING (Welle 7)
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -609,17 +603,22 @@ public class GameState
     public ShopOffer? DailyShopOffer { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // COSMETICS (rein visuell, keine Gameplay-Auswirkungen)
+    // COSMETICS (Sub-Objekt seit V5)
     // ═══════════════════════════════════════════════════════════════════════
 
+    [JsonPropertyName("cosmetics")]
+    public CosmeticData Cosmetics { get; set; } = new();
+
+    // --- Legacy-Weiterleitungen (Backward-Kompatibilität für V4-Saves) ---
+
     [JsonPropertyName("unlockedCosmetics")]
-    public List<string> UnlockedCosmetics { get; set; } = ["ct_default"];
+    public List<string> UnlockedCosmetics { get => Cosmetics.UnlockedCosmetics; set => Cosmetics.UnlockedCosmetics = value; }
 
     [JsonPropertyName("activeCityThemeId")]
-    public string ActiveCityThemeId { get; set; } = "ct_default";
+    public string ActiveCityThemeId { get => Cosmetics.ActiveCityThemeId; set => Cosmetics.ActiveCityThemeId = value; }
 
     [JsonPropertyName("activeWorkshopSkins")]
-    public Dictionary<string, string> ActiveWorkshopSkins { get; set; } = new();
+    public Dictionary<string, string> ActiveWorkshopSkins { get => Cosmetics.ActiveWorkshopSkins; set => Cosmetics.ActiveWorkshopSkins = value; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // UI/UX STATE

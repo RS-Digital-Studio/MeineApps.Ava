@@ -31,6 +31,9 @@ public sealed class GoalService : IGoalService
         _prestigeService = prestigeService;
         _ascensionService = ascensionService;
         _rebirthService = rebirthService;
+
+        // Bei State-Wechsel (Prestige/Import/Reset) Cache invalidieren
+        _gameStateService.StateLoaded += (_, _) => Invalidate();
     }
 
     public GameGoal? GetCurrentGoal()

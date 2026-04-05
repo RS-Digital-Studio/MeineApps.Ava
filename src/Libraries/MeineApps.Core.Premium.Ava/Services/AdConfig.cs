@@ -103,6 +103,10 @@ public static class AdConfig
         public const string RewardedDailyChallengeRetry = "ca-app-pub-2588160251469436/7787863083";
         public const string RewardedAchievementBoost = "ca-app-pub-2588160251469436/9763289738";
         public const string RewardedOfflineDouble = "ca-app-pub-2588160251469436/5018911702";
+        // BAL-AD Neue Placements (04.04.2026) — Nutzen vorerst bestehende IDs, eigene im AdMob-Dashboard erstellen
+        public const string RewardedRushBoost = RewardedGoldenScrews;        // TODO: Eigene Ad-Unit-ID
+        public const string RewardedLuckySpin = RewardedGoldenScrews;        // TODO: Eigene Ad-Unit-ID
+        public const string RewardedShopReward = RewardedGoldenScrews;       // TODO: Eigene Ad-Unit-ID
     }
 
     public static class RebornSaga
@@ -205,6 +209,9 @@ public static class AdConfig
             ("HandwerkerImperium", "daily_challenge_retry") => HandwerkerImperium.RewardedDailyChallengeRetry,
             ("HandwerkerImperium", "achievement_boost") => HandwerkerImperium.RewardedAchievementBoost,
             ("HandwerkerImperium", "offline_double") => HandwerkerImperium.RewardedOfflineDouble,
+            ("HandwerkerImperium", "rush_boost") => HandwerkerImperium.RewardedRushBoost,
+            ("HandwerkerImperium", "lucky_spin") => HandwerkerImperium.RewardedLuckySpin,
+            ("HandwerkerImperium", "shop_reward") => HandwerkerImperium.RewardedShopReward,
             ("HandwerkerImperium", _) => HandwerkerImperium.RewardedGoldenScrews,
 
             // RebornSaga

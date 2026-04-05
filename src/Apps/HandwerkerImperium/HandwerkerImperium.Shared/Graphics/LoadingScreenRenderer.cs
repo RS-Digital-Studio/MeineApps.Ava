@@ -27,6 +27,9 @@ public sealed class LoadingScreenRenderer
     private static readonly SKFont s_subtitleFont = new(SKTypeface.Default, 14) { Edging = SKFontEdging.SubpixelAntialias };
     private static readonly SKFont s_tipFont = new(SKTypeface.Default, 11) { Edging = SKFontEdging.SubpixelAntialias };
 
+    // Gecachte Gradient-Positionen (vermeidet Array-Allokation pro Frame)
+    private static readonly float[] s_fillGradientPositions = [0, 0.2f, 0.8f, 1f];
+
     // Statisch gecachte Shader (Loading-Screen Bounds aendern sich nicht)
     private static SKShader? s_bgShader;
     private static SKShader? s_vignetteShader;
@@ -266,12 +269,13 @@ public sealed class LoadingScreenRenderer
             new SKPoint(fillRect.Left, y),
             new SKPoint(fillRect.Right, y),
             new SKColor[] { new(0xEA, 0x58, 0x0C, 0x60), new(0xEA, 0x58, 0x0C), new(0xFF, 0xA7, 0x26), new(0xEA, 0x58, 0x0C, 0x60) },
-            new float[] { 0, 0.2f, 0.8f, 1f },
+            s_fillGradientPositions,
             SKShaderTileMode.Clamp);
         s_barFillPaint.Shader = fillShader;
 
         canvas.Save();
-        canvas.ClipRoundRect(new SKRoundRect(barRect, 3, 3));
+        using var barRRect = new SKRoundRect(barRect, 3, 3);
+        canvas.ClipRoundRect(barRRect);
         canvas.DrawRect(fillRect, s_barFillPaint);
         canvas.Restore();
         s_barFillPaint.Shader = null;

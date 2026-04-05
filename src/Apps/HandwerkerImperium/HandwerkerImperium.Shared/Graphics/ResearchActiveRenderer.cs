@@ -60,6 +60,9 @@ public sealed class ResearchActiveRenderer : IDisposable
     private string _percentText = "";
     private float _percentTextWidth;
 
+    // TruncateText-Cache (vermeidet binäre Suche pro Frame)
+    private readonly Dictionary<(string, float), string> _truncateCache = new();
+
     // Gecachte Einzelzeichen-Strings für Countdown-Ziffern (vermeidet c.ToString() pro Frame)
     private static readonly string[] _charStrings = new string[128];
 
@@ -130,7 +133,7 @@ public sealed class ResearchActiveRenderer : IDisposable
     private static void DrawBackground(SKCanvas canvas, float x, float y, float w, float h, SKColor branchColor)
     {
         // Dunkler Karten-Hintergrund
-        var rect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 12);
+        using var rect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 12);
         _fill.Color = CardBg;
         canvas.DrawRoundRect(rect, _fill);
 
@@ -162,8 +165,8 @@ public sealed class ResearchActiveRenderer : IDisposable
         _stroke.StrokeWidth = 2;
         canvas.DrawRect(cx - neckW / 2, y, neckW, neckH, _stroke);
 
-        // Glas-Körper (breiter unterer Teil, abgerundet)
-        var bodyRect = new SKRoundRect(new SKRect(x, bodyTop, x + w, y + h), 4, 8);
+        // Glas-Koerper (breiter unterer Teil, abgerundet)
+        using var bodyRect = new SKRoundRect(new SKRect(x, bodyTop, x + w, y + h), 4, 8);
         canvas.DrawRoundRect(bodyRect, _stroke);
 
         // Flüssigkeit (Füllstand basierend auf Fortschritt)
@@ -175,7 +178,8 @@ public sealed class ResearchActiveRenderer : IDisposable
         liquidTop += pulse;
 
         canvas.Save();
-        canvas.ClipRoundRect(new SKRoundRect(new SKRect(x + 1, bodyTop + 1, x + w - 1, y + h - 1), 3, 7));
+        using var clipRect = new SKRoundRect(new SKRect(x + 1, bodyTop + 1, x + w - 1, y + h - 1), 3, 7);
+        canvas.ClipRoundRect(clipRect);
 
         // Flüssigkeits-Gradient (unten dunkler, oben heller)
         _fill.Color = branchColor.WithAlpha(200);
@@ -344,7 +348,7 @@ public sealed class ResearchActiveRenderer : IDisposable
             {
                 // Ziffern-Hintergrund
                 _fill.Color = CountdownBg;
-                var digitRect = new SKRoundRect(new SKRect(cx, y, cx + charW, y + charH), 3);
+                using var digitRect = new SKRoundRect(new SKRect(cx, y, cx + charW, y + charH), 3);
                 canvas.DrawRoundRect(digitRect, _fill);
 
                 // Trennlinie (Flip-Effekt)
@@ -371,7 +375,7 @@ public sealed class ResearchActiveRenderer : IDisposable
     {
         // Hintergrund
         _fill.Color = new SKColor(0x18, 0x10, 0x0C);
-        var bgRect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 2);
+        using var bgRect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 2);
         canvas.DrawRoundRect(bgRect, _fill);
 
         // Fortschritt
@@ -379,7 +383,7 @@ public sealed class ResearchActiveRenderer : IDisposable
         if (fillW > 1)
         {
             _fill.Color = branchColor;
-            var fillRect = new SKRoundRect(new SKRect(x, y, x + fillW, y + h), 2);
+            using var fillRect = new SKRoundRect(new SKRect(x, y, x + fillW, y + h), 2);
             canvas.DrawRoundRect(fillRect, _fill);
 
             // Glow am Ende
@@ -438,9 +442,27 @@ public sealed class ResearchActiveRenderer : IDisposable
     // HILFSMETHODEN
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static string TruncateText(string text, SKFont font, float maxWidth)
+    /// <summary>
+    /// Gibt den gekürzten Text zurück — mit Instanz-Cache,
+    /// damit die lineare Suche nicht pro Frame ausgeführt wird.
+    /// </summary>
+    private string TruncateText(string text, SKFont font, float maxWidth)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
+
+        float roundedWidth = MathF.Round(maxWidth);
+        var key = (text, roundedWidth);
+        if (_truncateCache.TryGetValue(key, out var cached))
+            return cached;
+
+        string result = TruncateTextInternal(text, font, maxWidth);
+        _truncateCache[key] = result;
+        return result;
+    }
+
+    /// <summary>Eigentliche Kürzungslogik (lineare Suche, nur bei Cache-Miss aufgerufen).</summary>
+    private static string TruncateTextInternal(string text, SKFont font, float maxWidth)
+    {
         if (font.MeasureText(text) <= maxWidth) return text;
 
         for (int i = text.Length - 1; i > 0; i--)

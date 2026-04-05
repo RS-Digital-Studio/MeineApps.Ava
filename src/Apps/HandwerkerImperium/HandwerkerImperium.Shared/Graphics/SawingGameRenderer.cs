@@ -97,6 +97,9 @@ public sealed class SawingGameRenderer : IDisposable
     private SKRect _lastBounds;
     private SKShader? _woodGradientShader;
 
+    // Gecachte Gradient-Positionen (vermeidet Array-Allokation pro Frame)
+    private static readonly float[] s_woodGradientPositions = [0, 0.5f, 1.0f];
+
     private struct SawdustParticle
     {
         public float X, Y, VelocityX, VelocityY, Life, MaxLife, Size;
@@ -106,6 +109,24 @@ public sealed class SawingGameRenderer : IDisposable
     {
         public float X, Y, VelocityX, VelocityY, Life, MaxLife, Width, Height, Rotation, RotSpeed;
         public SKColor Color;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // VORBERECHNETE RNG-ARRAYS (ersetzen new Random(seed) pro Frame)
+    // seed=42: 24 Werte fuer Saegeriss-Splitter (6 Iterationen x 4 Aufrufe)
+    // seed=123/456: 512 Werte fuer Rinden-Textur (bis ~128 Kacheln breit)
+    // ═══════════════════════════════════════════════════════════════════
+
+    private static readonly int[] s_woodRng = PrecomputeRng(42, 24);
+    private static readonly int[] s_barkRngTop = PrecomputeRng(123, 512);
+    private static readonly int[] s_barkRngBottom = PrecomputeRng(456, 512);
+
+    private static int[] PrecomputeRng(int seed, int count)
+    {
+        var rng = new Random(seed);
+        var arr = new int[count];
+        for (int i = 0; i < count; i++) arr[i] = rng.Next();
+        return arr;
     }
 
     // Deterministische Astloch-Positionen (relativ zum Brett)
@@ -164,7 +185,7 @@ public sealed class SawingGameRenderer : IDisposable
             _woodGradientShader = SKShader.CreateLinearGradient(
                 new SKPoint(wx, wt), new SKPoint(wx, wt + wh),
                 new SKColor[] { WoodDark.WithAlpha(60), SKColors.Transparent, WoodDark.WithAlpha(40) },
-                new float[] { 0, 0.5f, 1.0f },
+                s_woodGradientPositions,
                 SKShaderTileMode.Clamp);
         }
 
@@ -282,15 +303,16 @@ public sealed class SawingGameRenderer : IDisposable
             _strokeAAPaint.StrokeWidth = 2;
             canvas.DrawLine(cutX, y, cutX, y + cutDepth, _strokeAAPaint);
 
-            // Saegeriss-Splitter an der Schnittkante
+            // Saegeriss-Splitter an der Schnittkante (vorberechnetes RNG, kein new Random pro Frame)
             _cachedPath.Rewind();
-            var rng = new Random(42); // Deterministisch
+            int ri = 0;
             for (int i = 0; i < 6; i++)
             {
-                float ry = y + cutDepth - 4 + rng.Next(0, 8);
-                float rx = cutX + (rng.Next(0, 2) == 0 ? -1 : 1) * (1 + rng.Next(0, 3));
+                float ry = y + cutDepth - 4 + s_woodRng[ri++ % s_woodRng.Length] % 8;
+                float rx = cutX + (s_woodRng[ri++ % s_woodRng.Length] % 2 == 0 ? -1 : 1) * (1 + s_woodRng[ri++ % s_woodRng.Length] % 3);
                 _cachedPath.MoveTo(cutX, ry);
-                _cachedPath.LineTo(rx, ry + rng.Next(-2, 3));
+                // rng.Next(-2, 3) → Wertebereich -2..2: (Next()%5) - 2
+                _cachedPath.LineTo(rx, ry + s_woodRng[ri++ % s_woodRng.Length] % 5 - 2);
             }
             _strokePaint.Color = WoodDark.WithAlpha(80);
             _strokePaint.StrokeWidth = 1;
@@ -304,6 +326,7 @@ public sealed class SawingGameRenderer : IDisposable
             _strokePaint.PathEffect?.Dispose();
             _strokePaint.PathEffect = SKPathEffect.CreateDash([6, 4], 0);
             canvas.DrawLine(cutX, y + 2, cutX, y + height - 2, _strokePaint);
+            _strokePaint.PathEffect?.Dispose(); // Native-Speicher freigeben
             _strokePaint.PathEffect = null;
         }
 
@@ -471,14 +494,16 @@ public sealed class SawingGameRenderer : IDisposable
         _fillPaint.Color = BarkDark;
         canvas.DrawRect(x, y, width, barkHeight, _fillPaint);
 
-        // Raue Rinden-Textur (unregelmaeige Pixel-Bloecke)
+        // Raue Rinden-Textur (unregelmaeige Pixel-Bloecke, vorberechnetes RNG)
         _fillPaint.Color = BarkMedium;
-        var rng = new Random(isTop ? 123 : 456); // Deterministisch
-        for (float bx = x + 1; bx < x + width - 2; bx += 4 + rng.Next(0, 3))
+        var barkRng = isTop ? s_barkRngTop : s_barkRngBottom;
+        int bi = 0;
+        int barkH = Math.Max(1, (int)barkHeight - 1);
+        for (float bx = x + 1; bx < x + width - 2; bx += 4 + barkRng[bi++ % barkRng.Length] % 3)
         {
-            float by = y + rng.Next(0, (int)barkHeight - 1);
-            float bw = 2 + rng.Next(0, 3);
-            float bh = 1 + rng.Next(0, 2);
+            float by = y + barkRng[bi++ % barkRng.Length] % barkH;
+            float bw = 2 + barkRng[bi++ % barkRng.Length] % 3;
+            float bh = 1 + barkRng[bi++ % barkRng.Length] % 2;
             canvas.DrawRect(bx, by, bw, bh, _fillPaint);
         }
 

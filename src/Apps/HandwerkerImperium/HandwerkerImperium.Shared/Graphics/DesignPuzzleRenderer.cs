@@ -446,7 +446,8 @@ public sealed class DesignPuzzleRenderer : IDisposable
         _strokePaint.PathEffect?.Dispose();
         _strokePaint.PathEffect = SKPathEffect.CreateDash([6, 4], _time * 8);
         canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, _strokePaint);
-        _strokePaint.PathEffect = null; // Zuruecksetzen fuer andere Nutzungen
+        _strokePaint.PathEffect?.Dispose(); // Native-Speicher freigeben
+        _strokePaint.PathEffect = null;
 
         // "?" unter dem Punkt
         float qSize = Math.Min(w, h) * 0.2f;

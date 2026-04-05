@@ -51,6 +51,11 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
     private SKColor _lastProgressBranchColor;
     private float _lastProgressBarX, _lastProgressFillW;
 
+    // Dirty-Check für Progress-String (vermeidet String-Interpolation pro Frame)
+    private int _lastResearchedCount = -1;
+    private int _lastTotalCount = -1;
+    private string _progressText = "";
+
     /// <summary>
     /// Rendert das Branch-Banner.
     /// </summary>
@@ -102,7 +107,7 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
     {
         // Dunkler Hintergrund
         _fill.Color = BgDark;
-        var rect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 8);
+        using var rect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 8);
         canvas.DrawRoundRect(rect, _fill);
 
         // Farbiger Gradient-Overlay (lebhafter)
@@ -355,10 +360,16 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
         _text.Color = branchColor;
         canvas.DrawText(branchName, x + 8, y + h * 0.38f, _nameFont, _text);
 
-        // Fortschritt "7/15 erforscht"
+        // Fortschritt "7/15 erforscht" (Dirty-Check: String nur bei Änderung neu erstellen)
         _progressFont.Size = 11;
         _text.Color = new SKColor(0xA0, 0x90, 0x80);
-        canvas.DrawText($"{researchedCount}/{totalCount}", x + 8, y + h * 0.6f, _progressFont, _text);
+        if (researchedCount != _lastResearchedCount || totalCount != _lastTotalCount)
+        {
+            _progressText = $"{researchedCount}/{totalCount}";
+            _lastResearchedCount = researchedCount;
+            _lastTotalCount = totalCount;
+        }
+        canvas.DrawText(_progressText, x + 8, y + h * 0.6f, _progressFont, _text);
 
         // Fortschrittsbalken (breiter mit Gradient)
         float barX = x + 8;
@@ -368,7 +379,7 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
 
         // Hintergrund
         _fill.Color = new SKColor(0x20, 0x15, 0x12);
-        var bgRect = new SKRoundRect(new SKRect(barX, barY, barX + barW, barY + barH), 3);
+        using var bgRect = new SKRoundRect(new SKRect(barX, barY, barX + barW, barY + barH), 3);
         canvas.DrawRoundRect(bgRect, _fill);
 
         // Fortschritt mit Gradient
@@ -395,7 +406,8 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
                     _lastProgressBarX = barX;
                 }
                 _fill.Shader = _progressShaderCache;
-                canvas.DrawRoundRect(new SKRoundRect(fillRect, 3), _fill);
+                using var fillRRect = new SKRoundRect(fillRect, 3);
+                canvas.DrawRoundRect(fillRRect, _fill);
                 _fill.Shader = null;
             }
         }

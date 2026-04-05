@@ -129,7 +129,14 @@ public sealed class WiringGameRenderer : IDisposable
     private SKShader? _wallShader;
     private SKShader? _panelShaderLeft;
     private SKShader? _panelShaderRight;
-    // Stecker-Shader sind pro Kabel + Seite unterschiedlich positioniert → bleiben dynamisch
+
+    // Stecker-Shader (gecacht, pro Kabel und Seite)
+    // Max 7 Kabel (Expert-Schwierigkeitsgrad). Spart 10-14 Shader-Allokationen/Frame = ~420/s.
+    private const int MaxWireCount = 7;
+    private readonly SKShader?[] _leftPlugShaders = new SKShader?[MaxWireCount];
+    private readonly SKShader?[] _rightPlugShaders = new SKShader?[MaxWireCount];
+    // Letzter Layout-Parameter fuer Stecker-Shader (Rebuild wenn geaendert)
+    private float _lastWireX, _lastWireY, _lastWireWidth, _lastWireHeight, _lastPlugWireCount;
 
     private struct LightningBolt
     {
@@ -535,6 +542,13 @@ public sealed class WiringGameRenderer : IDisposable
         if (wires.Length == 0) return;
         float wireHeight = Math.Min(50, (height - (wires.Length - 1) * 8) / wires.Length);
 
+        // Stecker-Shader bei Layout-Aenderung neu erstellen
+        if (_lastWireX != x || _lastWireY != y || _lastWireWidth != width || _lastWireHeight != wireHeight || _lastPlugWireCount != wires.Length)
+        {
+            _lastWireX = x; _lastWireY = y; _lastWireWidth = width; _lastWireHeight = wireHeight; _lastPlugWireCount = wires.Length;
+            RebuildPlugShaders(x, y, width, wires.Length, wireHeight);
+        }
+
         for (int i = 0; i < wires.Length; i++)
         {
             var wire = wires[i];
@@ -589,16 +603,10 @@ public sealed class WiringGameRenderer : IDisposable
                 _fillPaint.Color = highlightColor;
                 canvas.DrawRect(x + width * 0.2f, cableY - cableThickness / 2,
                     width * 0.8f, 1, _fillPaint);
-                // Stecker-Ende (metallisch, pro Kabel unterschiedliche Y-Position)
-                var leftPlugShader = SKShader.CreateLinearGradient(
-                    new SKPoint(x + width - 6, cableY - cableThickness),
-                    new SKPoint(x + width, cableY + cableThickness),
-                    new[] { new SKColor(0x90, 0x90, 0x90), new SKColor(0x60, 0x60, 0x60) },
-                    null, SKShaderTileMode.Clamp);
-                _shaderPaint.Shader = leftPlugShader;
+                // Stecker-Ende (metallisch, gecachter Shader)
+                _shaderPaint.Shader = _leftPlugShaders[i];
                 canvas.DrawRect(x + width - 6, cableY - cableThickness - 1, 6, cableThickness * 2 + 2, _shaderPaint);
                 _shaderPaint.Shader = null;
-                leftPlugShader.Dispose();
             }
             else
             {
@@ -607,15 +615,10 @@ public sealed class WiringGameRenderer : IDisposable
                 _fillPaint.Color = highlightColor;
                 canvas.DrawRect(x, cableY - cableThickness / 2,
                     width * 0.8f, 1, _fillPaint);
-                var rightPlugShader = SKShader.CreateLinearGradient(
-                    new SKPoint(x, cableY - cableThickness),
-                    new SKPoint(x + 6, cableY + cableThickness),
-                    new[] { new SKColor(0x60, 0x60, 0x60), new SKColor(0x90, 0x90, 0x90) },
-                    null, SKShaderTileMode.Clamp);
-                _shaderPaint.Shader = rightPlugShader;
+                // Stecker-Ende (metallisch, gecachter Shader)
+                _shaderPaint.Shader = _rightPlugShaders[i];
                 canvas.DrawRect(x, cableY - cableThickness - 1, 6, cableThickness * 2 + 2, _shaderPaint);
                 _shaderPaint.Shader = null;
-                rightPlugShader.Dispose();
             }
 
             // Farbiger Indikator-Kreis
@@ -912,6 +915,40 @@ public sealed class WiringGameRenderer : IDisposable
     }
 
     /// <summary>
+    /// Erstellt Stecker-Shader fuer alle Kabel-Slots neu.
+    /// Wird nur bei Layout-Aenderung aufgerufen (Bounds oder Kabel-Anzahl).
+    /// </summary>
+    private void RebuildPlugShaders(float x, float y, float width, int wireCount, float wireHeight)
+    {
+        float cableThickness = 5;
+        for (int i = 0; i < MaxWireCount; i++)
+        {
+            _leftPlugShaders[i]?.Dispose();
+            _leftPlugShaders[i] = null;
+            _rightPlugShaders[i]?.Dispose();
+            _rightPlugShaders[i] = null;
+        }
+
+        for (int i = 0; i < Math.Min(wireCount, MaxWireCount); i++)
+        {
+            float wy = y + i * (wireHeight + 8);
+            float cableY = wy + wireHeight / 2;
+
+            _leftPlugShaders[i] = SKShader.CreateLinearGradient(
+                new SKPoint(x + width - 6, cableY - cableThickness),
+                new SKPoint(x + width, cableY + cableThickness),
+                new[] { new SKColor(0x90, 0x90, 0x90), new SKColor(0x60, 0x60, 0x60) },
+                null, SKShaderTileMode.Clamp);
+
+            _rightPlugShaders[i] = SKShader.CreateLinearGradient(
+                new SKPoint(x, cableY - cableThickness),
+                new SKPoint(x + 6, cableY + cableThickness),
+                new[] { new SKColor(0x60, 0x60, 0x60), new SKColor(0x90, 0x90, 0x90) },
+                null, SKShaderTileMode.Clamp);
+        }
+    }
+
+    /// <summary>
     /// Erstellt bounds-abhaengige Shader neu (Wand + 2 Panels).
     /// </summary>
     private void RebuildStaticShaders(SKRect bounds)
@@ -970,6 +1007,13 @@ public sealed class WiringGameRenderer : IDisposable
         _wallShader?.Dispose();
         _panelShaderLeft?.Dispose();
         _panelShaderRight?.Dispose();
+
+        // Gecachte Stecker-Shader
+        for (int i = 0; i < MaxWireCount; i++)
+        {
+            _leftPlugShaders[i]?.Dispose();
+            _rightPlugShaders[i]?.Dispose();
+        }
     }
 }
 

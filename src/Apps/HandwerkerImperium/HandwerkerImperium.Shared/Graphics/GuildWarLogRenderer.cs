@@ -24,6 +24,9 @@ public sealed class GuildWarLogRenderer : IDisposable
     private static readonly SKColor ScoreColor = new(0xEA, 0x58, 0x0C);
     private static readonly SKColor TextColor = new(0xAA, 0xAA, 0xAA);
 
+    // Gecachte Punkte-Strings (vermeidet $"+{x}" pro Eintrag pro Frame)
+    private readonly Dictionary<long, string> _pointsStringCache = new();
+
     /// <summary>
     /// Rendert die War-Log-Liste.
     /// </summary>
@@ -64,9 +67,14 @@ public sealed class GuildWarLogRenderer : IDisposable
             _fillPaint.Color = TextColor;
             canvas.DrawText(entry.Message ?? "", x + 4, ey + 15, SKTextAlign.Left, _textFont, _fillPaint);
 
-            // Punkte
+            // Punkte (gecachter String pro Wert)
+            if (!_pointsStringCache.TryGetValue(entry.Points, out var pointsText))
+            {
+                pointsText = $"+{entry.Points}";
+                _pointsStringCache[entry.Points] = pointsText;
+            }
             _fillPaint.Color = ScoreColor;
-            canvas.DrawText($"+{entry.Points}", x + w - 4, ey + 15, SKTextAlign.Right, _pointsFont, _fillPaint);
+            canvas.DrawText(pointsText, x + w - 4, ey + 15, SKTextAlign.Right, _pointsFont, _fillPaint);
         }
     }
 

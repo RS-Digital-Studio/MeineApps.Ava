@@ -66,6 +66,22 @@ public sealed class InventGameRenderer : IDisposable
     // Gecachter SKPath fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
     private readonly SKPath _cachedPath = new();
 
+    // Gecachte statische SKPaths fuer Icon-Methoden (sequenziell aufgerufen, Thread-safe durch UI-Thread)
+    private static readonly SKPath s_iconPath = new();
+    private static readonly SKPath s_iconPath2 = new(); // Fuer DrawLensIcon (braucht 2 Pfade gleichzeitig)
+
+    // Icon-Shader-Cache (normalisiert auf (0,0), gueltig solange iconHalf gleich bleibt)
+    private static float s_iconHalfCache;
+    private static SKShader? s_gearFillShader;
+    private static SKShader? s_pistonHeadShader;
+    private static SKShader? s_screwHeadShader;
+    private static SKShader? s_housingFillShader;
+    private static SKShader? s_motorBodyShader;
+
+    // Tile-Highlight-Shader-Cache
+    private static float s_cachedTileHeight;
+    private static SKShader? s_tileHighlightShader;
+
     // ═══════════════════════════════════════════════════════════════════════
     // FARBEN
     // ═══════════════════════════════════════════════════════════════════════
@@ -1039,15 +1055,22 @@ public sealed class InventGameRenderer : IDisposable
         canvas.DrawRoundRect(rect, cr, cr, _tileGradientPaint);
         _tileGradientPaint.Shader = null;
 
-        // Oberer Highlight-Streifen (Glaseffekt)
-        // Perf: Shader aendert sich pro Kachel (Bounds variieren), nicht cachebar
-        using var highlightShader = SKShader.CreateLinearGradient(
-            new SKPoint(rect.Left, rect.Top),
-            new SKPoint(rect.Left, rect.Top + rect.Height * 0.4f),
-            new[] { new SKColor(0xFF, 0xFF, 0xFF, 0x18), SKColors.Transparent },
-            null, SKShaderTileMode.Clamp);
-        _tileHighlightPaint.Shader = highlightShader;
-        canvas.DrawRoundRect(rect, cr, cr, _tileHighlightPaint);
+        // Oberer Highlight-Streifen (Glaseffekt) — gecachter Shader + Canvas-Translate
+        if (s_tileHighlightShader == null || MathF.Abs(rect.Height - s_cachedTileHeight) > 0.1f)
+        {
+            s_tileHighlightShader?.Dispose();
+            s_cachedTileHeight = rect.Height;
+            s_tileHighlightShader = SKShader.CreateLinearGradient(
+                SKPoint.Empty,
+                new SKPoint(0, rect.Height * 0.4f),
+                [new SKColor(0xFF, 0xFF, 0xFF, 0x18), SKColors.Transparent],
+                null, SKShaderTileMode.Clamp);
+        }
+        _tileHighlightPaint.Shader = s_tileHighlightShader;
+        canvas.Save();
+        canvas.Translate(rect.Left, rect.Top);
+        canvas.DrawRoundRect(0, 0, rect.Width, rect.Height, cr, cr, _tileHighlightPaint);
+        canvas.Restore();
         _tileHighlightPaint.Shader = null;
 
         // Rahmen basierend auf Zustand
@@ -1428,6 +1451,46 @@ public sealed class InventGameRenderer : IDisposable
     // BAUTEIL-ICONS (12 SkiaSharp-Zeichnungen)
     // ═══════════════════════════════════════════════════════════════════════
 
+    /// <summary>Erstellt Icon-Shader bei Groessenaenderung, normalisiert auf (0,0).</summary>
+    private static void EnsureIconShaderCache(float half)
+    {
+        if (MathF.Abs(half - s_iconHalfCache) < 0.01f) return;
+        s_iconHalfCache = half;
+
+        s_gearFillShader?.Dispose();
+        s_pistonHeadShader?.Dispose();
+        s_screwHeadShader?.Dispose();
+        s_housingFillShader?.Dispose();
+        s_motorBodyShader?.Dispose();
+
+        float outerR = half * 0.85f;
+        s_gearFillShader = SKShader.CreateRadialGradient(
+            new SKPoint(-half * 0.2f, -half * 0.2f), outerR * 1.2f,
+            [new SKColor(0xCF, 0xD8, 0xDC), new SKColor(0x90, 0xA4, 0xAE)],
+            null, SKShaderTileMode.Clamp);
+
+        s_pistonHeadShader = SKShader.CreateLinearGradient(
+            new SKPoint(0, -half * 0.7f), new SKPoint(0, 0),
+            [new SKColor(0xB0, 0xBE, 0xC5), new SKColor(0x78, 0x90, 0x9C)],
+            null, SKShaderTileMode.Clamp);
+
+        float radius = half * 0.7f;
+        s_screwHeadShader = SKShader.CreateRadialGradient(
+            new SKPoint(-radius * 0.2f, -radius * 0.2f), radius * 1.3f,
+            [new SKColor(0xCF, 0xD8, 0xDC), new SKColor(0x90, 0xA4, 0xAE)],
+            null, SKShaderTileMode.Clamp);
+
+        s_housingFillShader = SKShader.CreateLinearGradient(
+            new SKPoint(0, -half * 0.7f), new SKPoint(0, half * 0.7f),
+            [new SKColor(0x78, 0x90, 0x9C), new SKColor(0x54, 0x6E, 0x7A)],
+            null, SKShaderTileMode.Clamp);
+
+        s_motorBodyShader = SKShader.CreateLinearGradient(
+            new SKPoint(-half * 0.6f, 0), new SKPoint(half * 0.6f, 0),
+            [new SKColor(0x60, 0x7D, 0x8B), new SKColor(0x90, 0xA4, 0xAE)],
+            null, SKShaderTileMode.Clamp);
+    }
+
     private static void DrawTileIcon(SKCanvas canvas, SKRect rect, string iconId)
     {
         if (string.IsNullOrEmpty(iconId)) return;
@@ -1436,22 +1499,30 @@ public sealed class InventGameRenderer : IDisposable
         float cx = rect.MidX;
         float cy = rect.Top + rect.Height * 0.38f;
 
+        // Canvas auf Icon-Zentrum verschieben → alle Icons zeichnen bei (0,0)
+        // Ermoeglicht Shader-Caching da Koordinaten nicht mehr pro Kachel variieren
+        canvas.Save();
+        canvas.Translate(cx, cy);
+        EnsureIconShaderCache(iconSize / 2);
+
         switch (iconId)
         {
-            case "gear": DrawGearIcon(canvas, cx, cy, iconSize); break;
-            case "piston": DrawPistonIcon(canvas, cx, cy, iconSize); break;
-            case "wire": DrawWireIcon(canvas, cx, cy, iconSize); break;
-            case "board": DrawBoardIcon(canvas, cx, cy, iconSize); break;
-            case "screw": DrawScrewIcon(canvas, cx, cy, iconSize); break;
-            case "housing": DrawHousingIcon(canvas, cx, cy, iconSize); break;
-            case "spring": DrawSpringIcon(canvas, cx, cy, iconSize); break;
-            case "lens": DrawLensIcon(canvas, cx, cy, iconSize); break;
-            case "motor": DrawMotorIcon(canvas, cx, cy, iconSize); break;
-            case "battery": DrawBatteryIcon(canvas, cx, cy, iconSize); break;
-            case "switch": DrawSwitchIcon(canvas, cx, cy, iconSize); break;
-            case "antenna": DrawAntennaIcon(canvas, cx, cy, iconSize); break;
-            default: DrawDefaultIcon(canvas, cx, cy, iconSize); break;
+            case "gear": DrawGearIcon(canvas, 0, 0, iconSize); break;
+            case "piston": DrawPistonIcon(canvas, 0, 0, iconSize); break;
+            case "wire": DrawWireIcon(canvas, 0, 0, iconSize); break;
+            case "board": DrawBoardIcon(canvas, 0, 0, iconSize); break;
+            case "screw": DrawScrewIcon(canvas, 0, 0, iconSize); break;
+            case "housing": DrawHousingIcon(canvas, 0, 0, iconSize); break;
+            case "spring": DrawSpringIcon(canvas, 0, 0, iconSize); break;
+            case "lens": DrawLensIcon(canvas, 0, 0, iconSize); break;
+            case "motor": DrawMotorIcon(canvas, 0, 0, iconSize); break;
+            case "battery": DrawBatteryIcon(canvas, 0, 0, iconSize); break;
+            case "switch": DrawSwitchIcon(canvas, 0, 0, iconSize); break;
+            case "antenna": DrawAntennaIcon(canvas, 0, 0, iconSize); break;
+            default: DrawDefaultIcon(canvas, 0, 0, iconSize); break;
         }
+
+        canvas.Restore();
     }
 
     /// <summary>Zahnrad: Kreis mit 8 Zaehnen und Gradient.</summary>
@@ -1462,12 +1533,8 @@ public sealed class InventGameRenderer : IDisposable
         float toothW = half * 0.22f;
         int teeth = 8;
 
-        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
-        using var fillShader = SKShader.CreateRadialGradient(
-            new SKPoint(cx - half * 0.2f, cy - half * 0.2f), outerR * 1.2f,
-            new[] { new SKColor(0xCF, 0xD8, 0xDC), new SKColor(0x90, 0xA4, 0xAE) },
-            null, SKShaderTileMode.Clamp);
-        _gearFillPaint.Shader = fillShader;
+        // Gecachter Shader (Canvas auf Icon-Zentrum verschoben)
+        _gearFillPaint.Shader = s_gearFillShader;
         canvas.DrawCircle(cx, cy, outerR, _gearFillPaint);
         _gearFillPaint.Shader = null;
 
@@ -1497,12 +1564,8 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
-        using var headShader = SKShader.CreateLinearGradient(
-            new SKPoint(cx, cy - half * 0.7f), new SKPoint(cx, cy),
-            new[] { new SKColor(0xB0, 0xBE, 0xC5), new SKColor(0x78, 0x90, 0x9C) },
-            null, SKShaderTileMode.Clamp);
-        _pistonHeadPaint.Shader = headShader;
+        // Gecachter Shader (Canvas auf Icon-Zentrum verschoben)
+        _pistonHeadPaint.Shader = s_pistonHeadShader;
         var headRect = SKRect.Create(cx - half * 0.6f, cy - half * 0.7f, half * 1.2f, half * 0.7f);
         canvas.DrawRoundRect(headRect, 3, 3, _pistonHeadPaint);
         _pistonHeadPaint.Shader = null;
@@ -1522,17 +1585,17 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
-        using var path = new SKPath();
-        path.MoveTo(cx - half, cy);
+        // Gecachter statischer Pfad (Canvas auf Icon-Zentrum verschoben)
+        s_iconPath.Rewind();
+        s_iconPath.MoveTo(cx - half, cy);
         float segW = half * 2f / 3f;
         for (int i = 0; i < 3; i++)
         {
             float startX = cx - half + i * segW;
             float controlY = (i % 2 == 0) ? cy - half * 0.5f : cy + half * 0.5f;
-            path.QuadTo(startX + segW / 2, controlY, startX + segW, cy);
+            s_iconPath.QuadTo(startX + segW / 2, controlY, startX + segW, cy);
         }
-        canvas.DrawPath(path, _wirePaint);
+        canvas.DrawPath(s_iconPath, _wirePaint);
 
         canvas.DrawCircle(cx - half, cy, half * 0.15f, _wirePlugPaint);
         canvas.DrawCircle(cx + half, cy, half * 0.15f, _wirePlugPaint);
@@ -1562,12 +1625,8 @@ public sealed class InventGameRenderer : IDisposable
         float half = size / 2;
         float radius = half * 0.7f;
 
-        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
-        using var screwShader = SKShader.CreateRadialGradient(
-            new SKPoint(cx - radius * 0.2f, cy - radius * 0.2f), radius * 1.3f,
-            new[] { new SKColor(0xCF, 0xD8, 0xDC), new SKColor(0x90, 0xA4, 0xAE) },
-            null, SKShaderTileMode.Clamp);
-        _screwHeadPaint.Shader = screwShader;
+        // Gecachter Shader (Canvas auf Icon-Zentrum verschoben)
+        _screwHeadPaint.Shader = s_screwHeadShader;
         canvas.DrawCircle(cx, cy, radius, _screwHeadPaint);
         _screwHeadPaint.Shader = null;
 
@@ -1583,12 +1642,8 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
-        using var housingShader = SKShader.CreateLinearGradient(
-            new SKPoint(cx, cy - half * 0.7f), new SKPoint(cx, cy + half * 0.7f),
-            new[] { new SKColor(0x78, 0x90, 0x9C), new SKColor(0x54, 0x6E, 0x7A) },
-            null, SKShaderTileMode.Clamp);
-        _housingFillPaint.Shader = housingShader;
+        // Gecachter Shader (Canvas auf Icon-Zentrum verschoben)
+        _housingFillPaint.Shader = s_housingFillShader;
         var housingRect = SKRect.Create(cx - half * 0.8f, cy - half * 0.7f, half * 1.6f, half * 1.4f);
         canvas.DrawRoundRect(housingRect, 6, 6, _housingFillPaint);
         _housingFillPaint.Shader = null;
@@ -1620,16 +1675,16 @@ public sealed class InventGameRenderer : IDisposable
 
         canvas.DrawLine(cx - half * 0.15f, cy - half * 0.8f, cx + half * 0.15f, cy - half * 0.8f, _springPaint);
 
-        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
-        using var path = new SKPath();
-        path.MoveTo(cx, cy - half * 0.8f);
+        // Gecachter statischer Pfad (Canvas auf Icon-Zentrum verschoben)
+        s_iconPath.Rewind();
+        s_iconPath.MoveTo(cx, cy - half * 0.8f);
         for (int i = 0; i < segments; i++)
         {
             float y = cy - half * 0.8f + (i + 1) * segHeight;
             float x = (i % 2 == 0) ? cx + zigWidth : cx - zigWidth;
-            path.LineTo(x, y);
+            s_iconPath.LineTo(x, y);
         }
-        canvas.DrawPath(path, _springPaint);
+        canvas.DrawPath(s_iconPath, _springPaint);
 
         float bottomY = cy - half * 0.8f + segments * segHeight;
         float lastX = (segments % 2 != 0) ? cx + zigWidth : cx - zigWidth;
@@ -1642,23 +1697,23 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Perf: Icon-Pfade nicht cachebar (cx/cy variieren pro Kachel)
-        using var path = new SKPath();
+        // Gecachte statische Pfade (Canvas auf Icon-Zentrum verschoben)
+        s_iconPath.Rewind();
         float lensHeight = half * 1.4f;
         float bulgeFactor = half * 0.6f;
 
-        path.MoveTo(cx, cy - lensHeight / 2);
-        path.QuadTo(cx - bulgeFactor, cy, cx, cy + lensHeight / 2);
-        path.QuadTo(cx + bulgeFactor, cy, cx, cy - lensHeight / 2);
-        path.Close();
-        canvas.DrawPath(path, _lensFillPaint);
+        s_iconPath.MoveTo(cx, cy - lensHeight / 2);
+        s_iconPath.QuadTo(cx - bulgeFactor, cy, cx, cy + lensHeight / 2);
+        s_iconPath.QuadTo(cx + bulgeFactor, cy, cx, cy - lensHeight / 2);
+        s_iconPath.Close();
+        canvas.DrawPath(s_iconPath, _lensFillPaint);
 
-        canvas.DrawPath(path, _lensBorderPaint);
+        canvas.DrawPath(s_iconPath, _lensBorderPaint);
 
-        using var reflexPath = new SKPath();
-        reflexPath.MoveTo(cx - half * 0.2f, cy - half * 0.35f);
-        reflexPath.QuadTo(cx - half * 0.1f, cy - half * 0.45f, cx + half * 0.05f, cy - half * 0.35f);
-        canvas.DrawPath(reflexPath, _lensReflexPaint);
+        s_iconPath2.Rewind();
+        s_iconPath2.MoveTo(cx - half * 0.2f, cy - half * 0.35f);
+        s_iconPath2.QuadTo(cx - half * 0.1f, cy - half * 0.45f, cx + half * 0.05f, cy - half * 0.35f);
+        canvas.DrawPath(s_iconPath2, _lensReflexPaint);
     }
 
     /// <summary>Motor: Rechteck mit Achse und Wicklungs-Andeutung.</summary>
@@ -1666,12 +1721,8 @@ public sealed class InventGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Perf: Shader-Koordinaten haengen von cx/cy ab (variieren pro Kachel), nicht cachebar
-        using var bodyShader = SKShader.CreateLinearGradient(
-            new SKPoint(cx - half * 0.6f, cy), new SKPoint(cx + half * 0.6f, cy),
-            new[] { new SKColor(0x60, 0x7D, 0x8B), new SKColor(0x90, 0xA4, 0xAE) },
-            null, SKShaderTileMode.Clamp);
-        _motorBodyPaint.Shader = bodyShader;
+        // Gecachter Shader (Canvas auf Icon-Zentrum verschoben)
+        _motorBodyPaint.Shader = s_motorBodyShader;
         var bodyRect = SKRect.Create(cx - half * 0.6f, cy - half * 0.5f, half * 1.2f, half);
         canvas.DrawRoundRect(bodyRect, 4, 4, _motorBodyPaint);
         _motorBodyPaint.Shader = null;
@@ -1735,12 +1786,13 @@ public sealed class InventGameRenderer : IDisposable
         canvas.DrawLine(cx, cy + half * 0.5f, cx, cy - half * 0.5f, _antennaStickPaint);
 
         // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
-        using var basePath = new SKPath();
-        basePath.MoveTo(cx, cy + half * 0.5f);
-        basePath.LineTo(cx - half * 0.3f, cy + half * 0.85f);
-        basePath.LineTo(cx + half * 0.3f, cy + half * 0.85f);
-        basePath.Close();
-        canvas.DrawPath(basePath, _antennaBasePaint);
+        // Gecachter statischer Pfad (Canvas auf Icon-Zentrum verschoben)
+        s_iconPath.Rewind();
+        s_iconPath.MoveTo(cx, cy + half * 0.5f);
+        s_iconPath.LineTo(cx - half * 0.3f, cy + half * 0.85f);
+        s_iconPath.LineTo(cx + half * 0.3f, cy + half * 0.85f);
+        s_iconPath.Close();
+        canvas.DrawPath(s_iconPath, _antennaBasePaint);
 
         for (int i = 1; i <= 3; i++)
         {
@@ -1871,5 +1923,18 @@ public sealed class InventGameRenderer : IDisposable
         _numberGlowFont?.Dispose();
         _progressFont?.Dispose();
         _circuitLinePaint?.Dispose();
+    }
+
+    /// <summary>Statische Caches freigeben (bei App-Shutdown aufrufen).</summary>
+    public static void DisposeStaticResources()
+    {
+        s_iconPath?.Dispose();
+        s_iconPath2?.Dispose();
+        s_gearFillShader?.Dispose();
+        s_pistonHeadShader?.Dispose();
+        s_screwHeadShader?.Dispose();
+        s_housingFillShader?.Dispose();
+        s_motorBodyShader?.Dispose();
+        s_tileHighlightShader?.Dispose();
     }
 }

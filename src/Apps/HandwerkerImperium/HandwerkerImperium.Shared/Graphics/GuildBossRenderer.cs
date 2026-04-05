@@ -43,6 +43,11 @@ public sealed class GuildBossRenderer : IDisposable
     private float _trailHpPercent = 1f;
     private float _currentHpPercent = 1f;
 
+    // Dirty-Check für HP-Text (vermeidet String-Interpolation pro Frame)
+    private long _lastCurrentHp = -1;
+    private long _lastMaxHp = -1;
+    private string _hpText = "";
+
     private struct DamageFeedEntry
     {
         public string Text;
@@ -109,10 +114,16 @@ public sealed class GuildBossRenderer : IDisposable
         float barX = (w - barW) / 2;
         DrawHpBar(canvas, barX, barY, barW, barH, (float)data.HpPercent, bossColor, deltaTime);
 
-        // 4. HP-Text
+        // 4. HP-Text (Dirty-Check: String nur bei HP-Änderung neu erstellen)
         _hpFont.Size = 12;
         _fillPaint.Color = new SKColor(0xFF, 0x60, 0x60);
-        canvas.DrawText($"{data.CurrentHp:N0} / {data.MaxHp:N0}", cx, barY + barH + 16,
+        if (data.CurrentHp != _lastCurrentHp || data.MaxHp != _lastMaxHp)
+        {
+            _hpText = $"{data.CurrentHp:N0} / {data.MaxHp:N0}";
+            _lastCurrentHp = data.CurrentHp;
+            _lastMaxHp = data.MaxHp;
+        }
+        canvas.DrawText(_hpText, cx, barY + barH + 16,
             SKTextAlign.Center, _hpFont, _fillPaint);
 
         // 5. Damage-Feed

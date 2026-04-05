@@ -53,6 +53,8 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
     // --- AI-Splash-Hintergrund (direkt aus AvaloniaResource, kein DI nötig) ---
     private SKBitmap? _splashBackground;
     private bool _splashLoadAttempted;
+    // GC informieren: ~8 MB native Bitmap-Speicher sind belegt
+    private long _splashBitmapSize;
 
     // --- Gecachte MaskFilter ---
     private SKMaskFilter? _titleGlowFilter;
@@ -220,6 +222,13 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
         {
             _splashLoadAttempted = true;
             _splashBackground = LoadSplashFromResource();
+
+            // GC über nativen Bitmap-Speicher informieren (~8 MB)
+            if (_splashBackground != null)
+            {
+                _splashBitmapSize = _splashBackground.ByteCount;
+                GC.AddMemoryPressure(_splashBitmapSize);
+            }
         }
 
         if (_splashBackground != null)
@@ -594,6 +603,13 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
 
     protected override void OnDispose()
     {
+        // GC-Druck entfernen bevor Bitmap freigegeben wird
+        if (_splashBitmapSize > 0)
+        {
+            GC.RemoveMemoryPressure(_splashBitmapSize);
+            _splashBitmapSize = 0;
+        }
+
         _splashBackground?.Dispose();
         _bgPaint.Dispose();
         _titlePaint.Dispose();

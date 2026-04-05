@@ -90,6 +90,9 @@ public sealed class PaintingGameRenderer : IDisposable
     private readonly PaintSplatter[] _splatters = new PaintSplatter[MAX_SPLATTERS];
     private int _splatterCount;
 
+    // Gecachte Dash-Intervalle (vermeidet float[]-Allokation pro Zelle pro Frame)
+    private static readonly float[] s_dashIntervals = [4, 4];
+
     // Animations-Zeit
     private float _animTime;
 
@@ -160,7 +163,9 @@ public sealed class PaintingGameRenderer : IDisposable
         // 1. Wand-Hintergrund
         DrawWallBackground(canvas, bounds);
 
-        // 2. Zellen zeichnen
+        // 2. Zellen zeichnen (DashEffect einmal pro Frame fuer alle Zielzellen)
+        using var dashEffect = SKPathEffect.CreateDash(s_dashIntervals, _animTime * 10);
+        _dashPaint.PathEffect = dashEffect;
         for (int i = 0; i < cells.Length && i < gridSize * gridSize; i++)
         {
             int col = i % gridSize;
@@ -170,6 +175,7 @@ public sealed class PaintingGameRenderer : IDisposable
 
             DrawCell(canvas, cx, cy, tileSize, cells[i], paintColor, deltaTime);
         }
+        _dashPaint.PathEffect = null;
 
         // 3. Farbroller-Spritzer ueber den Zellen
         UpdateAndDrawSplatters(canvas, deltaTime);
@@ -394,14 +400,9 @@ public sealed class PaintingGameRenderer : IDisposable
             _markPaint.Color = paintColor.WithAlpha((byte)(pulse * 200));
             canvas.DrawCircle(innerX + innerSize / 2, innerY + innerSize / 2, pointSize, _markPaint);
 
-            // Gestrichelter animierter Rand
-            // Perf: dashPhase aendert sich pro Frame — SKPathEffect nicht cachebar
-            using var dashEffect = SKPathEffect.CreateDash([4, 4], _animTime * 10);
-            _dashPaint.PathEffect?.Dispose();
-            _dashPaint.PathEffect = dashEffect;
+            // Gestrichelter animierter Rand (gecachtes Intervall-Array, Phase pro Frame)
             _dashPaint.Color = paintColor.WithAlpha(120);
             canvas.DrawRect(innerX + 4, innerY + 4, innerSize - 8, innerSize - 8, _dashPaint);
-            _dashPaint.PathEffect = null;
         }
         else
         {

@@ -66,6 +66,13 @@ public sealed class ResearchTreeRenderer : IDisposable
     // Gecachte Kosten-Strings (CostDisplay → "EUR{CostDisplay}", nur bei neuen Werten allokieren)
     private static readonly Dictionary<string, string> _costStringCache = new();
 
+    // Gecachte trunkierte Namen (Name+maxWidth → trunkierter String)
+    private readonly Dictionary<(string, float), string> _truncatedNameCache = new();
+
+    // Gecachte Dash-Intervalle (vermeidet float[]-Allokation pro Frame)
+    private static readonly float[] s_dashIntervals_8_5 = [8, 5];
+    private static readonly float[] s_dashIntervals_4_4 = [4, 4];
+
     static ResearchTreeRenderer()
     {
         for (int i = 0; i <= 100; i++)
@@ -290,7 +297,7 @@ public sealed class ResearchTreeRenderer : IDisposable
             _stroke.Color = branchColor.WithAlpha(100);
             _stroke.StrokeWidth = 4f;
             // Perf: Phase aendert sich pro Frame (_time * 15), nicht cachebar
-            using var dashEffect = SKPathEffect.CreateDash([8, 5], _time * 15 % 13);
+            using var dashEffect = SKPathEffect.CreateDash(s_dashIntervals_8_5, _time * 15 % 13);
             _stroke.PathEffect = dashEffect;
             canvas.DrawPath(_connectionPath, _stroke);
             _stroke.PathEffect = null;
@@ -345,7 +352,7 @@ public sealed class ResearchTreeRenderer : IDisposable
             _stroke.Color = LineLocked.WithAlpha(128);
             _stroke.StrokeWidth = 2f;
             // Perf: Phase aendert sich pro Frame (_time * 5), nicht cachebar
-            using var dotEffect = SKPathEffect.CreateDash([4, 4], _time * 5 % 8);
+            using var dotEffect = SKPathEffect.CreateDash(s_dashIntervals_4_4, _time * 5 % 8);
             _stroke.PathEffect = dotEffect;
             canvas.DrawCircle(cx, cy, NodeSize / 2 + 3, _stroke);
             _stroke.PathEffect = null;
@@ -472,14 +479,23 @@ public sealed class ResearchTreeRenderer : IDisposable
         _fontBold.Size = 14;
         _text.Color = item.IsLocked ? TextMuted : item.IsResearched ? branchColor : TextPrimary;
 
-        // Text kürzen falls nötig
+        // Text kürzen falls nötig (gecacht, vermeidet ~100-200 String-Allokationen/s)
         string name = item.Name;
         float maxW = NodeSize * 1.8f;
         if (_fontBold.MeasureText(name) > maxW)
         {
-            while (name.Length > 3 && _fontBold.MeasureText(name + "..") > maxW)
-                name = name[..^1];
-            name += "..";
+            var cacheKey = (item.Name, maxW);
+            if (!_truncatedNameCache.TryGetValue(cacheKey, out var cached))
+            {
+                while (name.Length > 3 && _fontBold.MeasureText(name + "..") > maxW)
+                    name = name[..^1];
+                name += "..";
+                _truncatedNameCache[cacheKey] = name;
+            }
+            else
+            {
+                name = cached;
+            }
         }
 
         canvas.DrawText(name, cx, y + 9, SKTextAlign.Center, _fontBold, _text);

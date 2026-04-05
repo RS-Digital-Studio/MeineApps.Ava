@@ -51,6 +51,13 @@ public static class ResearchItemRenderer
         new SKColor(0, 0, 0, 140), SKBlendMode.DstIn);
     private static readonly SKPaint _dimPaint = new() { ColorFilter = _dimFilter, IsAntialias = true };
 
+    // String-Caches (vermeidet String-Interpolation pro Frame)
+    private static readonly Dictionary<int, string> _levelTextCache = new(16);
+    private static readonly Dictionary<(string, float), string> _truncateCache = new();
+    private static readonly Dictionary<string, string> _costTextCache = new(64);
+    private static readonly Dictionary<string, string> _durationTextCache = new(64);
+    private static readonly Dictionary<string, string> _screwCostTextCache = new(32);
+
     /// <summary>
     /// Rendert eine einzelne Forschungs-Karte.
     /// </summary>
@@ -517,10 +524,15 @@ public static class ResearchItemRenderer
         _fillPaint.Color = GetBranchColor(branch);
         canvas.DrawRoundRect(badgeRect, _fillPaint);
 
-        // Level-Text
+        // Level-Text (gecacht: Level ändert sich selten)
         _fontBold.Size = 11;
         _textPaint.Color = SKColors.White;
-        canvas.DrawText($"Lv.{level}", x + 17, y + 13, SKTextAlign.Center, _fontBold, _textPaint);
+        if (!_levelTextCache.TryGetValue(level, out var levelText))
+        {
+            levelText = $"Lv.{level}";
+            _levelTextCache[level] = levelText;
+        }
+        canvas.DrawText(levelText, x + 17, y + 13, SKTextAlign.Center, _fontBold, _textPaint);
     }
 
     private static void DrawName(SKCanvas canvas, float x, float y, float maxWidth, string name, bool isLocked)
@@ -603,23 +615,38 @@ public static class ResearchItemRenderer
         _fontRegular.Size = 11;
         _fontRegular.Embolden = false;
 
-        // Kosten (Euro)
+        // Kosten (Euro, gecacht)
         _textPaint.Color = WarningColor;
-        string costText = $"\u20ac {item.CostDisplay}";
+        if (!_costTextCache.TryGetValue(item.CostDisplay, out var costText))
+        {
+            costText = $"\u20ac {item.CostDisplay}";
+            _costTextCache[item.CostDisplay] = costText;
+        }
         canvas.DrawText(costText, x, y + 10, _fontBold, _textPaint);
 
         float costWidth = _fontBold.MeasureText(costText);
 
-        // Dauer (Uhr)
+        // Dauer (Uhr, gecacht)
         _textPaint.Color = TextSecondary;
-        canvas.DrawText($"\u23f0 {item.DurationDisplay}", x + costWidth + 16, y + 10, _fontRegular, _textPaint);
+        if (!_durationTextCache.TryGetValue(item.DurationDisplay, out var durationText))
+        {
+            durationText = $"\u23f0 {item.DurationDisplay}";
+            _durationTextCache[item.DurationDisplay] = durationText;
+        }
+        canvas.DrawText(durationText, x + costWidth + 16, y + 10, _fontRegular, _textPaint);
 
-        // Goldschrauben für Sofort-Finish (wenn verfügbar)
+        // Goldschrauben für Sofort-Finish (wenn verfügbar, gecacht)
         if (item.HasInstantFinishOption)
         {
-            float screwX = x + costWidth + 16 + _fontRegular.MeasureText($"\u23f0 {item.DurationDisplay}") + 16;
+            float screwX = x + costWidth + 16 + _fontRegular.MeasureText(durationText) + 16;
             _textPaint.Color = GoldColor;
-            canvas.DrawText($"\ud83d\udd29 {item.InstantFinishScrewCost}", screwX, y + 10, _fontRegular, _textPaint);
+            string screwKey = item.InstantFinishScrewCost.ToString();
+            if (!_screwCostTextCache.TryGetValue(screwKey, out var screwText))
+            {
+                screwText = $"\ud83d\udd29 {item.InstantFinishScrewCost}";
+                _screwCostTextCache[screwKey] = screwText;
+            }
+            canvas.DrawText(screwText, screwX, y + 10, _fontRegular, _textPaint);
         }
     }
 
@@ -678,9 +705,28 @@ public static class ResearchItemRenderer
         _ => ToolsColor
     };
 
+    /// <summary>
+    /// Gibt den auf maxWidth gekürzten Text zurück — mit Dictionary-Cache,
+    /// damit die binäre Suche nicht pro Frame ausgeführt wird.
+    /// </summary>
     private static string TruncateText(string text, SKFont font, float maxWidth)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
+
+        // Cache-Key: Text + gerundete Breite (1px Toleranz reicht)
+        float roundedWidth = MathF.Round(maxWidth);
+        var key = (text, roundedWidth);
+        if (_truncateCache.TryGetValue(key, out var cached))
+            return cached;
+
+        string result = TruncateTextInternal(text, font, maxWidth);
+        _truncateCache[key] = result;
+        return result;
+    }
+
+    /// <summary>Eigentliche Kürzungslogik (binäre Suche, nur bei Cache-Miss aufgerufen).</summary>
+    private static string TruncateTextInternal(string text, SKFont font, float maxWidth)
+    {
         if (font.MeasureText(text) <= maxWidth) return text;
 
         // Binäre Suche nach der maximalen Länge

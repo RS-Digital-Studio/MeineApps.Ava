@@ -63,6 +63,13 @@ public sealed class BlueprintGameRenderer : IDisposable
     // Gecachter SKPath fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
     private readonly SKPath _cachedPath = new();
 
+    // Gecachter statischer SKPath fuer Icon-Methoden (sequenziell aufgerufen)
+    private static readonly SKPath s_iconPath = new();
+
+    // Tile-Highlight-Shader-Cache
+    private static float s_cachedTileHeight;
+    private static SKShader? s_tileHighlightShader;
+
     // ═══════════════════════════════════════════════════════════════════════
     // FARBEN (Blaupausen-Farbschema)
     // ═══════════════════════════════════════════════════════════════════════
@@ -954,15 +961,22 @@ public sealed class BlueprintGameRenderer : IDisposable
         canvas.DrawRoundRect(rect, cr, cr, _tileBgPaint);
         _tileBgPaint.Shader = null;
 
-        // Oberer Highlight-Streifen (Glaseffekt)
-        // Perf: Shader aendert sich pro Kachel (Bounds variieren), nicht cachebar
-        using var highlightShader = SKShader.CreateLinearGradient(
-            new SKPoint(rect.Left, rect.Top),
-            new SKPoint(rect.Left, rect.Top + rect.Height * 0.4f),
-            new[] { new SKColor(0xFF, 0xFF, 0xFF, 0x18), SKColors.Transparent },
-            null, SKShaderTileMode.Clamp);
-        _tileHighlightPaint.Shader = highlightShader;
-        canvas.DrawRoundRect(rect, cr, cr, _tileHighlightPaint);
+        // Oberer Highlight-Streifen (Glaseffekt) — gecachter Shader + Canvas-Translate
+        if (s_tileHighlightShader == null || MathF.Abs(rect.Height - s_cachedTileHeight) > 0.1f)
+        {
+            s_tileHighlightShader?.Dispose();
+            s_cachedTileHeight = rect.Height;
+            s_tileHighlightShader = SKShader.CreateLinearGradient(
+                SKPoint.Empty,
+                new SKPoint(0, rect.Height * 0.4f),
+                [new SKColor(0xFF, 0xFF, 0xFF, 0x18), SKColors.Transparent],
+                null, SKShaderTileMode.Clamp);
+        }
+        _tileHighlightPaint.Shader = s_tileHighlightShader;
+        canvas.Save();
+        canvas.Translate(rect.Left, rect.Top);
+        canvas.DrawRoundRect(0, 0, rect.Width, rect.Height, cr, cr, _tileHighlightPaint);
+        canvas.Restore();
         _tileHighlightPaint.Shader = null;
 
         // Rahmen basierend auf Zustand
@@ -1385,22 +1399,28 @@ public sealed class BlueprintGameRenderer : IDisposable
         float cx = rect.MidX;
         float cy = rect.Top + rect.Height * 0.38f;
 
+        // Canvas auf Icon-Zentrum verschieben — gecachte Pfade bei (0,0) zeichnen
+        canvas.Save();
+        canvas.Translate(cx, cy);
+
         switch (iconId)
         {
-            case "foundation": DrawFoundationIcon(canvas, cx, cy, iconSize); break;
-            case "walls": DrawWallsIcon(canvas, cx, cy, iconSize); break;
-            case "framework": DrawFrameworkIcon(canvas, cx, cy, iconSize); break;
-            case "electrics": DrawElectricsIcon(canvas, cx, cy, iconSize); break;
-            case "plumbing": DrawPlumbingIcon(canvas, cx, cy, iconSize); break;
-            case "windows": DrawWindowsIcon(canvas, cx, cy, iconSize); break;
-            case "doors": DrawDoorsIcon(canvas, cx, cy, iconSize); break;
-            case "painting": DrawPaintingIcon(canvas, cx, cy, iconSize); break;
-            case "roof": DrawRoofIcon(canvas, cx, cy, iconSize); break;
-            case "fittings": DrawFittingsIcon(canvas, cx, cy, iconSize); break;
-            case "measuring": DrawMeasuringIcon(canvas, cx, cy, iconSize); break;
-            case "scaffolding": DrawScaffoldingIcon(canvas, cx, cy, iconSize); break;
-            default: DrawDefaultIcon(canvas, cx, cy, iconSize); break;
+            case "foundation": DrawFoundationIcon(canvas, 0, 0, iconSize); break;
+            case "walls": DrawWallsIcon(canvas, 0, 0, iconSize); break;
+            case "framework": DrawFrameworkIcon(canvas, 0, 0, iconSize); break;
+            case "electrics": DrawElectricsIcon(canvas, 0, 0, iconSize); break;
+            case "plumbing": DrawPlumbingIcon(canvas, 0, 0, iconSize); break;
+            case "windows": DrawWindowsIcon(canvas, 0, 0, iconSize); break;
+            case "doors": DrawDoorsIcon(canvas, 0, 0, iconSize); break;
+            case "painting": DrawPaintingIcon(canvas, 0, 0, iconSize); break;
+            case "roof": DrawRoofIcon(canvas, 0, 0, iconSize); break;
+            case "fittings": DrawFittingsIcon(canvas, 0, 0, iconSize); break;
+            case "measuring": DrawMeasuringIcon(canvas, 0, 0, iconSize); break;
+            case "scaffolding": DrawScaffoldingIcon(canvas, 0, 0, iconSize); break;
+            default: DrawDefaultIcon(canvas, 0, 0, iconSize); break;
         }
+
+        canvas.Restore();
     }
 
     /// <summary>Fundament: Trapez mit horizontalen Streifen.</summary>
@@ -1408,14 +1428,13 @@ public sealed class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Perf: Icon-Pfade in static Methoden sind nicht cachebar (cx/cy/size variieren pro Kachel)
-        using var path = new SKPath();
-        path.MoveTo(cx - half * 0.6f, cy - half);
-        path.LineTo(cx + half * 0.6f, cy - half);
-        path.LineTo(cx + half, cy + half);
-        path.LineTo(cx - half, cy + half);
-        path.Close();
-        canvas.DrawPath(path, _foundationFillPaint);
+        s_iconPath.Rewind();
+        s_iconPath.MoveTo(cx - half * 0.6f, cy - half);
+        s_iconPath.LineTo(cx + half * 0.6f, cy - half);
+        s_iconPath.LineTo(cx + half, cy + half);
+        s_iconPath.LineTo(cx - half, cy + half);
+        s_iconPath.Close();
+        canvas.DrawPath(s_iconPath, _foundationFillPaint);
 
         // 3 horizontale Streifen
         for (int i = 0; i < 3; i++)
@@ -1470,18 +1489,18 @@ public sealed class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
-        using var path = new SKPath();
-        path.MoveTo(cx + half * 0.1f, cy - half);
-        path.LineTo(cx - half * 0.4f, cy - half * 0.05f);
-        path.LineTo(cx + half * 0.15f, cy + half * 0.05f);
-        path.LineTo(cx - half * 0.15f, cy + half);
-        path.LineTo(cx + half * 0.5f, cy - half * 0.15f);
-        path.LineTo(cx - half * 0.05f, cy - half * 0.1f);
-        path.Close();
+        // Gecachter statischer Pfad (Canvas auf Icon-Zentrum verschoben)
+        s_iconPath.Rewind();
+        s_iconPath.MoveTo(cx + half * 0.1f, cy - half);
+        s_iconPath.LineTo(cx - half * 0.4f, cy - half * 0.05f);
+        s_iconPath.LineTo(cx + half * 0.15f, cy + half * 0.05f);
+        s_iconPath.LineTo(cx - half * 0.15f, cy + half);
+        s_iconPath.LineTo(cx + half * 0.5f, cy - half * 0.15f);
+        s_iconPath.LineTo(cx - half * 0.05f, cy - half * 0.1f);
+        s_iconPath.Close();
 
-        canvas.DrawPath(path, _electricsFillPaint);
-        canvas.DrawPath(path, _electricsStrokePaint);
+        canvas.DrawPath(s_iconPath, _electricsFillPaint);
+        canvas.DrawPath(s_iconPath, _electricsStrokePaint);
     }
 
     /// <summary>Sanitaer: Schraubenschluessel.</summary>
@@ -1493,15 +1512,15 @@ public sealed class BlueprintGameRenderer : IDisposable
         canvas.DrawLine(cx, cy - half * 0.1f, cx, cy + half, _plumbingHandlePaint);
 
         // Maulschluessel-Kopf (U-Form)
-        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
-        using var headPath = new SKPath();
-        headPath.MoveTo(cx - half * 0.5f, cy - half * 0.1f);
-        headPath.LineTo(cx - half * 0.5f, cy - half * 0.7f);
-        headPath.ArcTo(
+        // Gecachter statischer Pfad (Canvas auf Icon-Zentrum verschoben)
+        s_iconPath.Rewind();
+        s_iconPath.MoveTo(cx - half * 0.5f, cy - half * 0.1f);
+        s_iconPath.LineTo(cx - half * 0.5f, cy - half * 0.7f);
+        s_iconPath.ArcTo(
             SKRect.Create(cx - half * 0.5f, cy - half, half, half * 0.6f),
             180, -180, false);
-        headPath.LineTo(cx + half * 0.5f, cy - half * 0.1f);
-        canvas.DrawPath(headPath, _plumbingHeadPaint);
+        s_iconPath.LineTo(cx + half * 0.5f, cy - half * 0.1f);
+        canvas.DrawPath(s_iconPath, _plumbingHeadPaint);
     }
 
     /// <summary>Fenster: Blaues Rechteck mit weissem Kreuzrahmen.</summary>
@@ -1562,16 +1581,16 @@ public sealed class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Perf: Icon-Pfad nicht cachebar (cx/cy variieren pro Kachel)
-        using var path = new SKPath();
-        path.MoveTo(cx, cy - half);
-        path.LineTo(cx + half, cy + half * 0.5f);
-        path.LineTo(cx - half, cy + half * 0.5f);
-        path.Close();
-        canvas.DrawPath(path, _roofFillPaint);
+        // Gecachter statischer Pfad (Canvas auf Icon-Zentrum verschoben)
+        s_iconPath.Rewind();
+        s_iconPath.MoveTo(cx, cy - half);
+        s_iconPath.LineTo(cx + half, cy + half * 0.5f);
+        s_iconPath.LineTo(cx - half, cy + half * 0.5f);
+        s_iconPath.Close();
+        canvas.DrawPath(s_iconPath, _roofFillPaint);
 
         // Rand
-        canvas.DrawPath(path, _roofBorderPaint);
+        canvas.DrawPath(s_iconPath, _roofBorderPaint);
 
         // Schornstein (kleines Rechteck oben rechts)
         var chimneyRect = SKRect.Create(cx + half * 0.25f, cy - half * 0.7f, half * 0.25f, half * 0.55f);

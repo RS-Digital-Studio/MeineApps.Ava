@@ -29,6 +29,23 @@ public sealed class GuildWarDashboardRenderer : IDisposable
     private static readonly SKColor PhaseDefense = new(0x3B, 0x82, 0xF6);
     private static readonly SKColor PhaseEval = new(0xFF, 0xD7, 0x00);
 
+    // Gecachtes Phasen-Array (vermeidet Heap-Allokation pro Frame)
+    private static readonly (WarPhase Phase, SKColor Color, string Label)[] s_phases =
+    [
+        (WarPhase.Attack, PhaseAttack, "ATK"),
+        (WarPhase.Defense, PhaseDefense, "DEF"),
+        (WarPhase.Evaluation, PhaseEval, "END")
+    ];
+
+    // Gecachte Score-Strings (nur bei Wertänderung neu formatieren)
+    private string _cachedOwnScore = "";
+    private string _cachedOpponentScore = "";
+    private long _lastOwnScore = -1;
+    private long _lastOpponentScore = -1;
+
+    // Gecachte Bonus-Punkte-Strings (vermeidet $"+{x}" pro Frame pro Mission)
+    private readonly Dictionary<int, string> _bonusPointsCache = new();
+
     /// <summary>
     /// Rendert das War-Dashboard.
     /// </summary>
@@ -62,10 +79,22 @@ public sealed class GuildWarDashboardRenderer : IDisposable
 
     private void DrawScoreComparison(SKCanvas canvas, float cx, float y, float w, WarSeasonDisplayData data)
     {
+        // Score-Strings nur bei Änderung neu formatieren
+        if (_lastOwnScore != data.OwnScore)
+        {
+            _cachedOwnScore = FormatScore(data.OwnScore);
+            _lastOwnScore = data.OwnScore;
+        }
+        if (_lastOpponentScore != data.OpponentScore)
+        {
+            _cachedOpponentScore = FormatScore(data.OpponentScore);
+            _lastOpponentScore = data.OpponentScore;
+        }
+
         // Eigener Score (links)
         _scoreFont.Size = 22;
         _fillPaint.Color = OwnColor;
-        canvas.DrawText(FormatScore(data.OwnScore), cx - 60, y + 30,
+        canvas.DrawText(_cachedOwnScore, cx - 60, y + 30,
             SKTextAlign.Center, _scoreFont, _fillPaint);
 
         _labelFont.Size = 11;
@@ -82,7 +111,7 @@ public sealed class GuildWarDashboardRenderer : IDisposable
         // Gegner Score (rechts)
         _scoreFont.Size = 22;
         _fillPaint.Color = EnemyColor;
-        canvas.DrawText(FormatScore(data.OpponentScore), cx + 60, y + 30,
+        canvas.DrawText(_cachedOpponentScore, cx + 60, y + 30,
             SKTextAlign.Center, _scoreFont, _fillPaint);
 
         _labelFont.Size = 11;
@@ -111,13 +140,12 @@ public sealed class GuildWarDashboardRenderer : IDisposable
 
     private void DrawPhaseTimeline(SKCanvas canvas, float x, float y, float w, WarPhase currentPhase)
     {
-        // 3 Phasen: Angriff | Verteidigung | Auswertung
+        // 3 Phasen: Angriff | Verteidigung | Auswertung (gecachtes statisches Array)
         float segW = w / 3f;
-        var phases = new[] { (WarPhase.Attack, PhaseAttack, "ATK"), (WarPhase.Defense, PhaseDefense, "DEF"), (WarPhase.Evaluation, PhaseEval, "END") };
 
-        for (int i = 0; i < phases.Length; i++)
+        for (int i = 0; i < s_phases.Length; i++)
         {
-            var (phase, color, label) = phases[i];
+            var (phase, color, label) = s_phases[i];
             float sx = x + i * segW;
             bool active = currentPhase == phase;
 
@@ -167,9 +195,14 @@ public sealed class GuildWarDashboardRenderer : IDisposable
             _fillPaint.Color = barColor;
             canvas.DrawRoundRect(barX, my + 2, MathF.Max(barW * progress, 4), 10, 3, 3, _fillPaint);
 
-            // Bonus-Punkte
+            // Bonus-Punkte (gecachter String pro Wert)
+            if (!_bonusPointsCache.TryGetValue(m.BonusPoints, out var bonusText))
+            {
+                bonusText = $"+{m.BonusPoints}";
+                _bonusPointsCache[m.BonusPoints] = bonusText;
+            }
             _fillPaint.Color = new SKColor(0xFF, 0xD7, 0x00);
-            canvas.DrawText($"+{m.BonusPoints}", x + w, my + 10, SKTextAlign.Right, _labelFont, _fillPaint);
+            canvas.DrawText(bonusText, x + w, my + 10, SKTextAlign.Right, _labelFont, _fillPaint);
         }
     }
 

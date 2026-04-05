@@ -98,6 +98,10 @@ public sealed class LuckySpinWheelRenderer : IDisposable
     private readonly SKPath _starPathCache = new();
     private readonly SKPath _hexPathCache = new();
 
+    // Wiederverwendbare Arrays für DrawJackpotIcon-Juwelen (kein new float[3] pro Frame)
+    private static readonly float[] s_jackpotJx = new float[3];
+    private static readonly float[] s_jackpotJy = new float[3];
+
     // --- Shader/Path-Cache (gecacht nach Radius, invalidiert bei Radius-Aenderung) ---
 
     // Gecachte Paths (Wiederverwendung via Rewind)
@@ -675,12 +679,13 @@ public sealed class LuckySpinWheelRenderer : IDisposable
         _iconBorderPaint.StrokeWidth = size * 0.02f;
         _iconBorderPaint.Color = new SKColor(0xB7, 0x6E, 0x00);
         float jSize = s * 0.08f;
-        float[] jx = [cx - w * 0.5f, cx, cx + w * 0.5f];
-        float[] jy = [topY + s * 0.02f, topY - s * 0.08f, topY + s * 0.02f];
+        // Statische Arrays wiederverwenden (kein Heap-Alloc pro Frame)
+        s_jackpotJx[0] = cx - w * 0.5f; s_jackpotJx[1] = cx; s_jackpotJx[2] = cx + w * 0.5f;
+        s_jackpotJy[0] = topY + s * 0.02f; s_jackpotJy[1] = topY - s * 0.08f; s_jackpotJy[2] = topY + s * 0.02f;
         for (int j = 0; j < 3; j++)
         {
-            canvas.DrawCircle(jx[j], jy[j], jSize, _iconFillPaint);
-            canvas.DrawCircle(jx[j], jy[j], jSize, _iconBorderPaint);
+            canvas.DrawCircle(s_jackpotJx[j], s_jackpotJy[j], jSize, _iconFillPaint);
+            canvas.DrawCircle(s_jackpotJx[j], s_jackpotJy[j], jSize, _iconBorderPaint);
         }
     }
 

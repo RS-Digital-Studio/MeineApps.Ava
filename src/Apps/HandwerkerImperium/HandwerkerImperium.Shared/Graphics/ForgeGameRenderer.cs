@@ -142,6 +142,13 @@ public sealed class ForgeGameRenderer : IDisposable
     // Temperatur-Bar Hintergrund (Position statisch)
     private SKShader? _tempBarBgShader;
 
+    // Temperatur-Bar Zonen-Shader (gecacht, nur bei Positions-/Zonen-Aenderung neu)
+    // Spart 2 Shader-Allokationen/Frame bei 30fps = ~60 Shader/s
+    private SKShader? _goodZoneShader;
+    private SKShader? _perfectZoneShader;
+    private float _lastBarLeft, _lastBarTop, _lastBarWidth, _lastBarHeight;
+    private double _lastGoodStart, _lastGoodWidth, _lastPerfStart, _lastPerfWidth;
+
     /// <summary>
     /// Erstellt alle bounds-abhaengigen Shader neu.
     /// Wird nur aufgerufen wenn sich die Bounds aendern (Groessenaenderung/Rotation).
@@ -797,22 +804,41 @@ public sealed class ForgeGameRenderer : IDisposable
         // Good-Zone (orange) mit leichtem Gradient
         float goodLeft = innerX + (float)(gStart * innerW);
         float goodW = (float)(gWidth * innerW);
-        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
-            new SKPoint(goodLeft, innerY), new SKPoint(goodLeft, innerY + innerH),
-            new[] { GoodColor.WithAlpha(160), GoodColor.WithAlpha(120) },
-            null, SKShaderTileMode.Clamp));
-        canvas.DrawRect(goodLeft, innerY, goodW, innerH, _fillPaint);
-        SwapShader(_fillPaint, null);
 
         // Perfect-Zone (glueh-orange, hell) mit Gradient
         float perfLeft = innerX + (float)(pStart * innerW);
         float perfW = (float)(pWidth * innerW);
-        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
-            new SKPoint(perfLeft, innerY), new SKPoint(perfLeft, innerY + innerH),
-            new[] { PerfectColor.WithAlpha(220), PerfectColor.WithAlpha(180) },
-            null, SKShaderTileMode.Clamp));
+
+        // Zonen-Shader neu erstellen wenn sich Position oder Zonen-Parameter geaendert haben
+        if (_goodZoneShader == null || _perfectZoneShader == null
+            || _lastBarLeft != x || _lastBarTop != y || _lastBarWidth != w || _lastBarHeight != h
+            || _lastGoodStart != gStart || _lastGoodWidth != gWidth
+            || _lastPerfStart != pStart || _lastPerfWidth != pWidth)
+        {
+            _lastBarLeft = x; _lastBarTop = y; _lastBarWidth = w; _lastBarHeight = h;
+            _lastGoodStart = gStart; _lastGoodWidth = gWidth;
+            _lastPerfStart = pStart; _lastPerfWidth = pWidth;
+
+            _goodZoneShader?.Dispose();
+            _goodZoneShader = SKShader.CreateLinearGradient(
+                new SKPoint(goodLeft, innerY), new SKPoint(goodLeft, innerY + innerH),
+                new[] { GoodColor.WithAlpha(160), GoodColor.WithAlpha(120) },
+                null, SKShaderTileMode.Clamp);
+
+            _perfectZoneShader?.Dispose();
+            _perfectZoneShader = SKShader.CreateLinearGradient(
+                new SKPoint(perfLeft, innerY), new SKPoint(perfLeft, innerY + innerH),
+                new[] { PerfectColor.WithAlpha(220), PerfectColor.WithAlpha(180) },
+                null, SKShaderTileMode.Clamp);
+        }
+
+        _fillPaint.Shader = _goodZoneShader;
+        canvas.DrawRect(goodLeft, innerY, goodW, innerH, _fillPaint);
+        _fillPaint.Shader = null;
+
+        _fillPaint.Shader = _perfectZoneShader;
         canvas.DrawRect(perfLeft, innerY, perfW, innerH, _fillPaint);
-        SwapShader(_fillPaint, null);
+        _fillPaint.Shader = null;
 
         // Perfect-Zone Glow-Puls
         if (isPlaying)
@@ -1286,5 +1312,9 @@ public sealed class ForgeGameRenderer : IDisposable
         _coalBedShader?.Dispose();
         _bellowsShader?.Dispose();
         _tempBarBgShader?.Dispose();
+
+        // Gecachte Temperatur-Bar-Zonen-Shader
+        _goodZoneShader?.Dispose();
+        _perfectZoneShader?.Dispose();
     }
 }

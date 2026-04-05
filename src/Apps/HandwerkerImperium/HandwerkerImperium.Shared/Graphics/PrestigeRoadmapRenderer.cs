@@ -52,6 +52,9 @@ public sealed class PrestigeRoadmapRenderer : IDisposable
     // Tier-Symbole (einfache Unicode-Zeichen)
     private static readonly string[] TierSymbols = ["B", "S", "G", "P", "D", "M", "L"];
 
+    // Gecachte Count-Strings (vermeidet $"x{count}" pro Medaille pro Frame)
+    private readonly Dictionary<int, string> _countStringCache = new();
+
     // Gecachte Level-Strings (vermeidet String-Interpolation pro Frame)
     private static readonly string[] TierLevelStrings = AllTiers
         .Select(t => $"Lv.{t.GetRequiredLevel()}")
@@ -188,10 +191,16 @@ public sealed class PrestigeRoadmapRenderer : IDisposable
             int count = i < tierCounts.Length ? tierCounts[i] : 0;
             if (count > 0)
             {
+                // Gecachter Count-String (vermeidet String-Interpolation pro Medaille pro Frame)
+                if (!_countStringCache.TryGetValue(count, out var countText))
+                {
+                    countText = $"x{count}";
+                    _countStringCache[count] = countText;
+                }
                 _textPaint.Color = color.WithAlpha(200);
                 _textFont.Size = medalRadius * 0.55f;
                 _textFont.Embolden = false;
-                canvas.DrawText($"x{count}", cx, medalY + medalRadius + medalRadius * 0.7f, SKTextAlign.Center, _textFont, _textPaint);
+                canvas.DrawText(countText, cx, medalY + medalRadius + medalRadius * 0.7f, SKTextAlign.Center, _textFont, _textPaint);
             }
 
             // Benötigtes Level über der Medaille (gecachter String)

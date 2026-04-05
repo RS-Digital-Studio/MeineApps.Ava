@@ -526,6 +526,12 @@ public sealed class PipePuzzleRenderer : IDisposable
         canvas.DrawRect(tileX - 2, tileY - 2, tileSize + 4, tileSize + 4, _glowPaint);
     }
 
+    // Vorallozierte Pfeil-Positions- und Richtungs-Arrays (vermeidet float[][] pro Frame)
+    private readonly float[] _arrowPx = new float[4];
+    private readonly float[] _arrowPy = new float[4];
+    private readonly float[] _arrowDx = new float[4];
+    private readonly float[] _arrowDy = new float[4];
+
     private void DrawFlowArrows(SKCanvas canvas, float tileX, float tileY, float tileSize,
         float center, SKColor color, bool outward)
     {
@@ -538,21 +544,22 @@ public sealed class PipePuzzleRenderer : IDisposable
 
         _fillPaintAA.Color = color.WithAlpha(alpha);
 
-        float[][] positions =
-        [
-            [cx, tileY + offset], [cx, tileY + tileSize - offset],
-            [tileX + offset, cy], [tileX + tileSize - offset, cy]
-        ];
-        float[][] dirs =
-        [
-            [0, outward ? -1 : 1], [0, outward ? 1 : -1],
-            [outward ? -1 : 1, 0], [outward ? 1 : -1, 0]
-        ];
+        // Positionen in-place schreiben (keine Heap-Allokation)
+        _arrowPx[0] = cx;                      _arrowPy[0] = tileY + offset;
+        _arrowPx[1] = cx;                      _arrowPy[1] = tileY + tileSize - offset;
+        _arrowPx[2] = tileX + offset;          _arrowPy[2] = cy;
+        _arrowPx[3] = tileX + tileSize - offset; _arrowPy[3] = cy;
+
+        // Richtungen in-place schreiben
+        _arrowDx[0] = 0;                  _arrowDy[0] = outward ? -1 : 1;
+        _arrowDx[1] = 0;                  _arrowDy[1] = outward ? 1 : -1;
+        _arrowDx[2] = outward ? -1 : 1;  _arrowDy[2] = 0;
+        _arrowDx[3] = outward ? 1 : -1;  _arrowDy[3] = 0;
 
         for (int i = 0; i < 4; i++)
         {
-            float px = positions[i][0], py = positions[i][1];
-            float dx = dirs[i][0], dy = dirs[i][1];
+            float px = _arrowPx[i], py = _arrowPy[i];
+            float dx = _arrowDx[i], dy = _arrowDy[i];
             _cachedPath.Rewind();
             _cachedPath.MoveTo(px + dx * arrowSize, py + dy * arrowSize);
             _cachedPath.LineTo(px - dy * arrowSize * 0.5f, py + dx * arrowSize * 0.5f);
@@ -770,37 +777,54 @@ public sealed class PipePuzzleRenderer : IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // ROHR-OEFFNUNGEN
+    // ROHR-OEFFNUNGEN (vorberechnete Lookup-Tabelle, 0 Allokation pro Aufruf)
     // ═══════════════════════════════════════════════════════════════════════
+
+    // Lookup: s_openingsLookup[pipeType][rotationStep] → vorberechnetes int[]
+    // 4 Pipe-Typen x 4 Rotationsstufen = 16 Arrays, einmal beim Laden erstellt
+    private static readonly int[][][] s_openingsLookup = BuildOpeningsLookup();
+
+    private static int[][][] BuildOpeningsLookup()
+    {
+        // Basis-Oeffnungen pro Pipe-Typ (0=Oben, 1=Unten, 2=Links, 3=Rechts)
+        int[][] bases =
+        [
+            [2, 3],       // Straight: Links, Rechts
+            [3, 1],       // Corner: Rechts, Unten
+            [3, 1, 2],    // TJunction: Rechts, Unten, Links
+            [0, 1, 2, 3]  // Cross: Alle 4
+        ];
+
+        var lookup = new int[4][][];
+        for (int pipeType = 0; pipeType < 4; pipeType++)
+        {
+            lookup[pipeType] = new int[4][];
+            for (int step = 0; step < 4; step++)
+            {
+                var rotated = new int[bases[pipeType].Length];
+                for (int i = 0; i < bases[pipeType].Length; i++)
+                {
+                    int d = bases[pipeType][i];
+                    for (int s = 0; s < step; s++)
+                    {
+                        d = d switch
+                        {
+                            0 => 3, 3 => 1, 1 => 2, 2 => 0, _ => d
+                        };
+                    }
+                    rotated[i] = d;
+                }
+                lookup[pipeType][step] = rotated;
+            }
+        }
+        return lookup;
+    }
 
     private static int[] GetOpenings(int pipeType, int rotation)
     {
-        int[] baseOpenings = pipeType switch
-        {
-            0 => [2, 3],          // Straight: Links, Rechts
-            1 => [3, 1],          // Corner: Rechts, Unten
-            2 => [3, 1, 2],       // TJunction: Rechts, Unten, Links
-            3 => [0, 1, 2, 3],    // Cross: Alle 4
-            _ => [2, 3]
-        };
-
-        int steps = (rotation / 90) % 4;
-        if (steps == 0) return baseOpenings;
-
-        var rotated = new int[baseOpenings.Length];
-        for (int i = 0; i < baseOpenings.Length; i++)
-        {
-            int d = baseOpenings[i];
-            for (int s = 0; s < steps; s++)
-            {
-                d = d switch
-                {
-                    0 => 3, 3 => 1, 1 => 2, 2 => 0, _ => d
-                };
-            }
-            rotated[i] = d;
-        }
-        return rotated;
+        int type = pipeType is >= 0 and <= 3 ? pipeType : 0;
+        int step = (rotation / 90) % 4;
+        return s_openingsLookup[type][step];
     }
 
     // ═══════════════════════════════════════════════════════════════════════

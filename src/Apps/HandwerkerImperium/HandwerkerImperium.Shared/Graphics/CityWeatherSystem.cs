@@ -171,6 +171,17 @@ public sealed class CityWeatherSystem : IDisposable
         _particlePaint.Style = SKPaintStyle.Fill;
     }
 
+    // Statische Farb-Arrays: kein Array-Alloc pro Frame (GC-frei)
+    private static readonly SKColor[] s_rainbowColors =
+    [
+        new(0xFF, 0x00, 0x00), // Rot
+        new(0xFF, 0xA5, 0x00), // Orange
+        new(0xFF, 0xFF, 0x00), // Gelb
+        new(0x00, 0xFF, 0x00), // Grün
+        new(0x00, 0x00, 0xFF), // Blau
+        new(0x80, 0x00, 0xFF)  // Violett
+    ];
+
     /// <summary>
     /// Regenbogen-Bogen bei Regen (subtil, Alpha 0-0.6).
     /// </summary>
@@ -180,16 +191,8 @@ public sealed class CityWeatherSystem : IDisposable
         float cy = bounds.Top + bounds.Height * 0.6f;
         float radius = bounds.Width * 0.5f;
 
-        // 6 Farben des Regenbogens (von außen nach innen)
-        SKColor[] colors =
-        {
-            new(0xFF, 0x00, 0x00), // Rot
-            new(0xFF, 0xA5, 0x00), // Orange
-            new(0xFF, 0xFF, 0x00), // Gelb
-            new(0x00, 0xFF, 0x00), // Grün
-            new(0x00, 0x00, 0xFF), // Blau
-            new(0x80, 0x00, 0xFF)  // Violett
-        };
+        // 6 Farben des Regenbogens (von außen nach innen), statisch gecacht
+        SKColor[] colors = s_rainbowColors;
 
         for (int i = 0; i < colors.Length; i++)
         {
@@ -238,19 +241,22 @@ public sealed class CityWeatherSystem : IDisposable
     // BLÄTTER (Herbst)
     // ═══════════════════════════════════════════════════════════════
 
+    // Herbstfarben-Array: kein Array-Alloc pro Frame beim dauerhaften Herbst-Wetter
+    private static readonly SKColor[] s_leafColors =
+    [
+        new(0xFF, 0x8C, 0x00), // Orange
+        new(0xCD, 0x53, 0x1B), // Herbstbraun
+        new(0xD4, 0xA0, 0x17), // Dunkelgold
+        new(0x8B, 0x45, 0x13), // Sattbraun
+        new(0xCC, 0x55, 0x00)  // Rostrot
+    ];
+
     private void RenderLeaves(SKCanvas canvas, SKRect bounds)
     {
         _particlePaint.Style = SKPaintStyle.Fill;
 
-        // Herbstfarben
-        SKColor[] leafColors =
-        {
-            new(0xFF, 0x8C, 0x00), // Orange
-            new(0xCD, 0x53, 0x1B), // Herbstbraun
-            new(0xD4, 0xA0, 0x17), // Dunkelgold
-            new(0x8B, 0x45, 0x13), // Sattbraun
-            new(0xCC, 0x55, 0x00)  // Rostrot
-        };
+        // Herbstfarben, statisch gecacht
+        SKColor[] leafColors = s_leafColors;
 
         for (int i = 0; i < _activeCount; i++)
         {

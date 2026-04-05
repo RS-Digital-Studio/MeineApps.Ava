@@ -53,7 +53,8 @@
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="16" Margin="16">
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="16" Margin="16,16,16,84">
 
         <!-- ============================================================= -->
         <!-- WORKER INFO CARD                                              -->
@@ -270,14 +271,14 @@
                              TextAlignment="Center"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotHelmetLabel" />
                   <!-- Name oder "Leer" -->
-                  <TextBlock FontSize="9" TextAlignment="Center"
+                  <TextBlock FontSize="11" TextAlignment="Center"
                              TextTrimming="CharacterEllipsis" MaxLines="1"
                              IsVisible="{Binding EquippedHelmet, Converter={x:Static ObjectConverters.IsNotNull}}"
                              Foreground="{Binding EquippedHelmet.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#9E9E9E}"
                              Text="{Binding EquippedItemName}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotHelmetName" />
                   <TextBlock Text="{loc:Translate EquipmentEmpty}"
-                             FontSize="9" TextAlignment="Center"
+                             FontSize="11" TextAlignment="Center"
                              IsVisible="{Binding EquippedHelmet, Converter={x:Static ObjectConverters.IsNull}}"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotHelmetEmpty" />
@@ -303,14 +304,14 @@
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              TextAlignment="Center"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotGlovesLabel" />
-                  <TextBlock FontSize="9" TextAlignment="Center"
+                  <TextBlock FontSize="11" TextAlignment="Center"
                              TextTrimming="CharacterEllipsis" MaxLines="1"
                              IsVisible="{Binding EquippedGloves, Converter={x:Static ObjectConverters.IsNotNull}}"
                              Foreground="{Binding EquippedGloves.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#9E9E9E}"
                              Text="{Binding EquippedItemName}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotGlovesName" />
                   <TextBlock Text="{loc:Translate EquipmentEmpty}"
-                             FontSize="9" TextAlignment="Center"
+                             FontSize="11" TextAlignment="Center"
                              IsVisible="{Binding EquippedGloves, Converter={x:Static ObjectConverters.IsNull}}"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotGlovesEmpty" />
@@ -336,14 +337,14 @@
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              TextAlignment="Center"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBootsLabel" />
-                  <TextBlock FontSize="9" TextAlignment="Center"
+                  <TextBlock FontSize="11" TextAlignment="Center"
                              TextTrimming="CharacterEllipsis" MaxLines="1"
                              IsVisible="{Binding EquippedBoots, Converter={x:Static ObjectConverters.IsNotNull}}"
                              Foreground="{Binding EquippedBoots.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#9E9E9E}"
                              Text="{Binding EquippedItemName}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBootsName" />
                   <TextBlock Text="{loc:Translate EquipmentEmpty}"
-                             FontSize="9" TextAlignment="Center"
+                             FontSize="11" TextAlignment="Center"
                              IsVisible="{Binding EquippedBoots, Converter={x:Static ObjectConverters.IsNull}}"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBootsEmpty" />
@@ -369,14 +370,14 @@
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              TextAlignment="Center"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBeltLabel" />
-                  <TextBlock FontSize="9" TextAlignment="Center"
+                  <TextBlock FontSize="11" TextAlignment="Center"
                              TextTrimming="CharacterEllipsis" MaxLines="1"
                              IsVisible="{Binding EquippedBelt, Converter={x:Static ObjectConverters.IsNotNull}}"
                              Foreground="{Binding EquippedBelt.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#9E9E9E}"
                              Text="{Binding EquippedItemName}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBeltName" />
                   <TextBlock Text="{loc:Translate EquipmentEmpty}"
-                             FontSize="9" TextAlignment="Center"
+                             FontSize="11" TextAlignment="Center"
                              IsVisible="{Binding EquippedBelt, Converter={x:Static ObjectConverters.IsNull}}"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBeltEmpty" />

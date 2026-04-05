@@ -66,7 +66,7 @@
       </Style.Animations>
     </Style>
     <!-- Phase 5.4: Goldschrauben-Badge Shimmer-Pulse -->
-    <Style Selector="Border#GoldenScrewBadge">
+    <Style Selector="Button#GoldenScrewBadge">
       <Style.Animations>
         <Animation Duration="0:0:2" IterationCount="INFINITE">
           <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.85" /></KeyFrame>
@@ -145,10 +145,12 @@
                           VerticalAlignment="Center">
                 <!-- CL-1: MasterTools entfernt -->
                 <!-- Goldschrauben-Badge mit Glow -->
-                <Border x:Name="GoldenScrewBadge" Classes="GoldenBadge"
+                <Button x:Name="GoldenScrewBadge" Classes="Text GoldenBadge"
                         Background="#30000000" CornerRadius="12" Padding="8,4"
+                        MinHeight="44"
                         VerticalAlignment="Center"
-                        AutomationProperties.AutomationId="Dashboard_Border_GoldenScrews">
+                        Command="{Binding SelectShopTabCommand}"
+                        AutomationProperties.AutomationId="Dashboard_Btn_GoldenScrews">
                   <StackPanel Orientation="Horizontal" Spacing="4"
                               VerticalAlignment="Center">
                     <icons:GameIcon Kind="ScrewFlatTop" Width="20" Height="20"
@@ -160,7 +162,7 @@
                                VerticalAlignment="Center"
                                AutomationProperties.AutomationId="Dashboard_Txt_GoldenScrews" />
                   </StackPanel>
-                </Border>
+                </Button>
 
                 <!-- Daily Reward Badge -->
                 <Button Classes="Primary"
@@ -170,7 +172,7 @@
                         IsVisible="{Binding HasDailyReward}"
                         Command="{Binding ClaimDailyRewardCommand}"
                         AutomationProperties.AutomationId="Dashboard_Btn_DailyReward">
-                  <icons:GameIcon Kind="Gift" Width="24" Height="24" Foreground="#3D1C00"
+                  <icons:GameIcon Kind="Gift" Width="24" Height="24" Foreground="{StaticResource CraftDarkBrownBrush}"
                                    AutomationProperties.AutomationId="Dashboard_Icon_DailyReward" />
                 </Button>
                 <!-- Einstellungen (Zahnrad) -->
@@ -275,7 +277,8 @@
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                   Name="DashboardScrollViewer"
                   AutomationProperties.AutomationId="Dashboard_Scroll_Main">
-      <StackPanel Spacing="20" Margin="16" AutomationProperties.AutomationId="Dashboard_Panel_MainContent">
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="20" Margin="16,16,16,84" AutomationProperties.AutomationId="Dashboard_Panel_MainContent">
 
         <!-- ============================================================= -->
         <!-- WORKSHOPS (ganz oben auf dem Dashboard)                       -->
@@ -283,7 +286,7 @@
         <Grid ColumnDefinitions="*,Auto" AutomationProperties.AutomationId="Dashboard_Grid_WorkshopsHeader">
           <TextBlock Text="{loc:Translate Workshops}" FontSize="18" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Classes="Text" Padding="8,4" CornerRadius="12"
+          <Button Grid.Column="1" Classes="Text" Padding="10,6" MinHeight="44" CornerRadius="12"
                   Background="{StaticResource CraftPrimaryBrush}"
                   Command="{Binding CycleBulkBuyCommand}">
             <TextBlock Text="{Binding BulkBuyLabel}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryContrastBrush}" />
@@ -395,6 +398,20 @@
 
           <!-- ============ Orders-Liste (wenn Orders-Tab aktiv) ============ -->
           <StackPanel IsVisible="{Binding IsOrdersTabActive}" Spacing="8">
+            <!-- Aktiver Auftrag Hinweis -->
+            <Border IsVisible="{Binding HasActiveOrder}"
+                    Background="#15D97706" CornerRadius="8" Padding="10,8"
+                    AutomationProperties.AutomationId="Dashboard_Border_ActiveOrderHint">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <icons:GameIcon Kind="PlayCircle" Width="18" Height="18"
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                 VerticalAlignment="Center" />
+                <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                  <Run Text="{loc:Translate ActiveOrderHint}" /><Run Text=": " /><Run Text="{Binding ActiveOrder.DisplayTitle}" />
+                </TextBlock>
+              </StackPanel>
+            </Border>
             <!-- Empty State -->
             <Border Classes="Card" Padding="24"
                     IsVisible="{Binding HasNoOrders}"
@@ -454,7 +471,7 @@
                           <StackPanel Orientation="Horizontal" Spacing="2">
                             <icons:GameIcon Kind="Heart" Width="12" Height="12" Foreground="{StaticResource CraftGoldBrush}" />
                             <TextBlock Text="{loc:Translate RegularCustomerBonus}"
-                                       FontSize="9" Foreground="{StaticResource CraftGoldBrush}" />
+                                       FontSize="11" Foreground="{StaticResource CraftGoldBrush}" />
                           </StackPanel>
                         </Border>
                       </StackPanel>

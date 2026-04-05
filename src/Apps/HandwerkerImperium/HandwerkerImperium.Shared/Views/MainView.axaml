@@ -352,7 +352,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
             IsVisible="{Binding WorkerProfileViewModel.ShowUndoFireWorker}"
             VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
             Margin="16,0,16,16"
-            Background="#E6333333" CornerRadius="12" Padding="12,10"
+            Background="{StaticResource SnackbarBackgroundBrush}" CornerRadius="12" Padding="12,10"
             ZIndex="90"
             AutomationProperties.AutomationId="Main_Border_UndoFireWorker">
       <Grid ColumnDefinitions="*,Auto">
@@ -363,7 +363,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
         <Button Grid.Column="1"
                 Command="{Binding WorkerProfileViewModel.UndoFireWorkerCommand}"
                 Background="Transparent" BorderThickness="0"
-                Padding="8,4" Cursor="Hand"
+                Padding="12,8" MinHeight="44" Cursor="Hand"
                 AutomationProperties.AutomationId="Main_Btn_UndoFireWorker">
           <TextBlock Text="{loc:Translate Undo}"
                      Foreground="{StaticResource CraftGoldBrush}"

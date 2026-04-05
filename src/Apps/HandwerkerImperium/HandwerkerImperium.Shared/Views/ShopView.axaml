@@ -87,7 +87,8 @@
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                   AutomationProperties.AutomationId="Shop_ScrollViewer_Content">
-      <StackPanel Spacing="16" Margin="16"
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="16" Margin="16,16,16,84"
                   AutomationProperties.AutomationId="Shop_Panel_Content">
 
         <!-- PREMIUM STATUS (if premium) -->
@@ -115,7 +116,7 @@
               <TextBlock Text="{loc:Translate PremiumBenefits}"
                          AutomationProperties.AutomationId="Shop_Txt_PremiumBenefits"
                          FontSize="12"
-                         Foreground="#FFE0B2" />
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" Opacity="0.85" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -334,7 +335,7 @@
                     AutomationProperties.AutomationId="Shop_Panel_EquipmentSectionHeader">
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="Shop_Border_EquipmentIconBg"
-                  Background="#9C27B0">
+                  Background="{StaticResource EquipmentAccentBrush}">
             <icons:GameIcon Kind="Shield" Width="18" Height="18" Foreground="{DynamicResource PrimaryContrastBrush}"
                              AutomationProperties.AutomationId="Shop_Icon_EquipmentHeader" />
           </Border>

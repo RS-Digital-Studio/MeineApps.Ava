@@ -60,7 +60,8 @@
     <!-- CONTENT - 6 flache, mutual-exclusive Panels via ViewState         -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="16" Margin="16,16,16,16">
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="16" Margin="16,16,16,84">
 
         <!-- ============================================================= -->
         <!-- STATE: Loading                                                -->
@@ -261,9 +262,10 @@
                                    FontSize="15" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                          <TextBlock Text="{Binding GuildLevel, StringFormat='Lv.{0}'}"
-                                     FontSize="12"
-                                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                          <TextBlock FontSize="12"
+                                     Foreground="{StaticResource CraftPrimaryLightBrush}">
+                            <Run Text="{loc:Translate LevelPrefix}" /><Run Text="{Binding GuildLevel}" />
+                          </TextBlock>
                           <TextBlock Text="{Binding MemberDisplay}"
                                      FontSize="12"
                                      Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -363,9 +365,10 @@
                                  FontSize="15" FontWeight="Bold"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
                       <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{Binding Level, StringFormat='Lv.{0}'}"
-                                   FontSize="12"
-                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                        <TextBlock FontSize="12"
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}">
+                          <Run Text="{loc:Translate LevelPrefix}" /><Run Text="{Binding Level}" />
+                        </TextBlock>
                         <TextBlock Text="{Binding MembersDisplay}"
                                    FontSize="12"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -513,14 +516,15 @@
                          FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource PrimaryContrastBrush}"
                          HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding GuildLevel, StringFormat='Lv.{0}'}"
-                         AutomationProperties.AutomationId="Guild_Txt_CurrentGuildLevel"
+              <TextBlock AutomationProperties.AutomationId="Guild_Txt_CurrentGuildLevel"
                          FontSize="14"
                          Foreground="{StaticResource CraftGoldBrush}"
-                         HorizontalAlignment="Center" />
+                         HorizontalAlignment="Center">
+                <Run Text="{loc:Translate LevelPrefix}" /><Run Text="{Binding GuildLevel}" />
+              </TextBlock>
               <TextBlock Text="{Binding IncomeBonusDetailDisplay}"
                          FontSize="12"
-                         Foreground="#BBFFFFFF"
+                         Foreground="{StaticResource TextWhiteMediumBrush}"
                          HorizontalAlignment="Center" />
             </StackPanel>
           </Border>
@@ -595,7 +599,7 @@
             <Border Classes="Card" Padding="8" Margin="4,0,0,8">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
                 <icons:GameIcon Kind="Skull" Width="20" Height="20"
-                                 Foreground="#7C3AED"
+                                 Foreground="{StaticResource CraftBossAccentBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding BossQuickStatus}"
                            FontSize="10" TextTrimming="CharacterEllipsis"
@@ -607,7 +611,7 @@
             <Border Classes="Card" Padding="8" Margin="0,0,4,0">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
                 <icons:GameIcon Kind="OfficeBuildingCog" Width="20" Height="20"
-                                 Foreground="#D97706"
+                                 Foreground="{StaticResource CraftPrimaryBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding HallQuickStatus}"
                            FontSize="10" TextTrimming="CharacterEllipsis"
@@ -619,7 +623,7 @@
             <Border Classes="Card" Padding="8" Margin="4,0,0,0">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
                 <icons:GameIcon Kind="FlaskOutline" Width="20" Height="20"
-                                 Foreground="#EA580C"
+                                 Foreground="{StaticResource CraftResearchAccentBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding ResearchQuickStatus}"
                            FontSize="10" TextTrimming="CharacterEllipsis"
@@ -694,7 +698,7 @@
                     <SolidColorBrush Color="#7C3AED" Opacity="0.15" />
                   </Border.Background>
                   <icons:GameIcon Kind="Skull" Width="26" Height="26"
-                                   Foreground="#7C3AED"
+                                   Foreground="{StaticResource CraftBossAccentBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
@@ -721,10 +725,10 @@
                 <Border Width="40" Height="40" CornerRadius="10"
                         VerticalAlignment="Center">
                   <Border.Background>
-                    <SolidColorBrush Color="#D97706" Opacity="0.15" />
+                    <SolidColorBrush Color="{DynamicResource PrimaryColor}" Opacity="0.15" />
                   </Border.Background>
                   <icons:GameIcon Kind="OfficeBuildingCog" Width="26" Height="26"
-                                   Foreground="#D97706"
+                                   Foreground="{StaticResource CraftPrimaryBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
@@ -781,10 +785,10 @@
                 <Border Width="40" Height="40" CornerRadius="10"
                         VerticalAlignment="Center">
                   <Border.Background>
-                    <SolidColorBrush Color="#92400E" Opacity="0.15" />
+                    <SolidColorBrush Color="{DynamicResource SecondaryColor}" Opacity="0.15" />
                   </Border.Background>
                   <icons:GameIcon Kind="ChatBubble" Width="26" Height="26"
-                                   Foreground="#92400E"
+                                   Foreground="{StaticResource CraftChatAccentBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">

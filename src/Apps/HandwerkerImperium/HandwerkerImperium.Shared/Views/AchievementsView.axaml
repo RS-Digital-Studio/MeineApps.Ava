@@ -90,7 +90,8 @@
     </Border>
 
     <!-- Achievement List (virtualisiert) - ListBox hat eigenen internen ScrollViewer -->
-    <ListBox Grid.Row="2" ItemsSource="{Binding Achievements}" Margin="16,8,16,16"
+    <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+    <ListBox Grid.Row="2" ItemsSource="{Binding Achievements}" Margin="16,8,16,84"
              AutomationProperties.AutomationId="Achievements_Items_List"
              Background="Transparent" BorderThickness="0">
           <ListBox.ItemsPanel>

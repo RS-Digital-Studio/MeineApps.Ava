@@ -100,13 +100,13 @@
         <StackPanel Spacing="4" IsVisible="{Binding IsPrestigeTierSelectionVisible}"
                     AutomationProperties.AutomationId="Main_Panel_PrestigeExtras">
           <TextBlock Text="{Binding BonusPpPreview}" FontSize="12"
-                     Foreground="#A5D6A7" FontWeight="SemiBold"
+                     Foreground="{StaticResource PrestigeGainsBrush}" FontWeight="SemiBold"
                      IsVisible="{Binding BonusPpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           <TextBlock Text="{Binding ChallengePpPreview}" FontSize="12"
                      Foreground="{StaticResource CraftGoldBrush}" FontWeight="SemiBold"
                      IsVisible="{Binding ChallengePpPreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           <TextBlock Text="{Binding CurrentRunDurationText}" FontSize="11"
-                     Foreground="#FFFFFFAA"
+                     Foreground="{StaticResource TextWhiteMediumBrush}"
                      IsVisible="{Binding CurrentRunDurationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 

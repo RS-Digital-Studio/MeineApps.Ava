@@ -47,7 +47,7 @@
         <StackPanel IsVisible="{Binding !ChatMessages.Count}"
                     Spacing="8" HorizontalAlignment="Center" Margin="0,48">
           <icons:GameIcon Kind="ChatBubble" Width="40" Height="40"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextMutedBrush}"
                            HorizontalAlignment="Center" />
           <TextBlock Text="{Binding ChatSubtitle}"
                      FontSize="14"
@@ -70,7 +70,7 @@
                                FontSize="14" TextWrapping="Wrap"
                                Foreground="{DynamicResource PrimaryContrastBrush}" />
                     <TextBlock Text="{Binding TimestampDisplay}"
-                               FontSize="10" Foreground="#AAFFFFFF"
+                               FontSize="10" Foreground="{StaticResource TextWhiteMediumBrush}"
                                HorizontalAlignment="Right" />
                   </StackPanel>
                 </Border>
@@ -88,7 +88,7 @@
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="{Binding TimestampDisplay}"
                                FontSize="10"
-                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                HorizontalAlignment="Right" />
                   </StackPanel>
                 </Border>

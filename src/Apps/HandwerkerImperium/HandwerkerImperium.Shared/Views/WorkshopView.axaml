@@ -79,10 +79,11 @@
                   Padding="12,6"
                   RenderTransformOrigin="0.5,0.5"
                   AutomationProperties.AutomationId="Workshop_Border_LevelBadge">
-            <TextBlock Text="{Binding Level, StringFormat='Lvl {0}'}"
-                       FontWeight="Bold"
+            <TextBlock FontWeight="Bold"
                        Foreground="{DynamicResource SurfaceBrush}"
-                       AutomationProperties.AutomationId="Workshop_Txt_Level" />
+                       AutomationProperties.AutomationId="Workshop_Txt_Level">
+              <Run Text="{loc:Translate LevelPrefix}" /><Run Text="{Binding Level}" />
+            </TextBlock>
           </Border>
         </StackPanel>
 
@@ -103,7 +104,8 @@
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="20" Margin="16">
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="20" Margin="16,16,16,84">
 
         <!-- Level Progress Card -->
         <Border Classes="Card StatsCard"
@@ -137,8 +139,9 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <icons:GameIcon Kind="ChevronUp" Width="24" Height="24"
                                  AutomationProperties.AutomationId="Workshop_Icon_Upgrade" />
-                <TextBlock Text="{Binding UpgradeCostDisplay, StringFormat='Upgrade ({0})'}"
-                           AutomationProperties.AutomationId="Workshop_Txt_UpgradeCost" />
+                <TextBlock AutomationProperties.AutomationId="Workshop_Txt_UpgradeCost">
+                  <Run Text="{loc:Translate Upgrade}" /><Run Text=" (" /><Run Text="{Binding UpgradeCostDisplay}" /><Run Text=")" />
+                </TextBlock>
               </StackPanel>
             </Button>
 
@@ -390,7 +393,7 @@
                       CommandParameter="Efficiency"
                       AutomationProperties.AutomationId="Workshop_Btn_SpecEfficiency">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                  <Border Width="6" CornerRadius="3" Background="#FF9800" />
+                  <Border Width="6" CornerRadius="3" Background="{StaticResource SpecEfficiencyBrush}" />
                   <StackPanel Grid.Column="1" Spacing="1">
                     <TextBlock Text="{loc:Translate Specialization_Efficiency}"
                                FontSize="14" FontWeight="SemiBold"
@@ -412,7 +415,7 @@
                       CommandParameter="Quality"
                       AutomationProperties.AutomationId="Workshop_Btn_SpecQuality">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                  <Border Width="6" CornerRadius="3" Background="#2196F3" />
+                  <Border Width="6" CornerRadius="3" Background="{StaticResource SpecQualityBrush}" />
                   <StackPanel Grid.Column="1" Spacing="1">
                     <TextBlock Text="{loc:Translate Specialization_Quality}"
                                FontSize="14" FontWeight="SemiBold"
@@ -434,7 +437,7 @@
                       CommandParameter="Economy"
                       AutomationProperties.AutomationId="Workshop_Btn_SpecEconomy">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                  <Border Width="6" CornerRadius="3" Background="#4CAF50" />
+                  <Border Width="6" CornerRadius="3" Background="{StaticResource SpecEconomyBrush}" />
                   <StackPanel Grid.Column="1" Spacing="1">
                     <TextBlock Text="{loc:Translate Specialization_Economy}"
                                FontSize="14" FontWeight="SemiBold"
@@ -500,7 +503,7 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="Text" Padding="8,4" Margin="3"
+                  <Button Classes="Text" Padding="8,6" Margin="3" MinHeight="44"
                           HorizontalAlignment="Stretch"
                           HorizontalContentAlignment="Stretch"
                           Command="{Binding $parent[ItemsControl].((vm:WorkshopViewModel)DataContext).SelectWorkerCommand}"

@@ -66,6 +66,13 @@
                    HorizontalAlignment="Center"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    AutomationProperties.AutomationId="Main_Txt_OfflineDuration" />
+        <!-- Effizienz-Hinweis -->
+        <TextBlock Text="{Binding OfflineEfficiencyHint}"
+                   FontSize="11" FontStyle="Italic"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextMutedBrush}"
+                   IsVisible="{Binding OfflineEfficiencyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   AutomationProperties.AutomationId="Main_Txt_OfflineEfficiency" />
         <!-- Wiedereinsteiger-Tipp: Nächstes Ziel (nur bei >48h Pause) -->
         <Border Background="#15D97706" CornerRadius="8" Padding="12,8"
                 IsVisible="{Binding OfflineGoalText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"

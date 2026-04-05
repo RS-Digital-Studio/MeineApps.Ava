@@ -54,7 +54,8 @@
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                   AutomationProperties.AutomationId="Order_ScrollViewer_Content">
-      <StackPanel Spacing="20" Margin="16"
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="20" Margin="16,16,16,84"
                   AutomationProperties.AutomationId="Order_Panel_Content">
 
         <!-- ORDER INFO CARD -->

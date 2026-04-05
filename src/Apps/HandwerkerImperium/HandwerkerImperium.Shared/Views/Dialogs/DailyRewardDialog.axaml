@@ -89,7 +89,7 @@
                        HorizontalAlignment="Center"
                        Foreground="{DynamicResource WarningBrush}"
                        AutomationProperties.AutomationId="Main_Txt_StreakRescueWarning" />
-            <Button Classes="Primary" Background="#FF5722"
+            <Button Classes="Primary" Background="{StaticResource StreakRescueBrush}"
                     Command="{Binding MissionsVM.RescueStreakCommand}"
                     HorizontalAlignment="Center" MinWidth="160"
                     AutomationProperties.AutomationId="Main_Btn_RescueStreak">

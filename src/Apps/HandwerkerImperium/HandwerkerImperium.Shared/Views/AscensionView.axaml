@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.AscensionView"
              x:DataType="vm:AscensionViewModel"
              x:CompileBindings="True">
@@ -38,7 +39,7 @@
           <icons:GameIcon Kind="ArrowUpBold" Width="28" Height="28"
                            AutomationProperties.AutomationId="Ascension_Icon_Title"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
-          <TextBlock Text="Aufstieg"
+          <TextBlock Text="{loc:Translate AscensionTitle}"
                      AutomationProperties.AutomationId="Ascension_Txt_Title"
                      FontSize="20" FontWeight="Bold"
                      Foreground="{StaticResource CraftPrimaryLightBrush}" />
@@ -50,7 +51,7 @@
                 Background="{StaticResource CraftGoldBrush}"
                 CornerRadius="8"
                 Padding="12,6">
-          <TextBlock Text="{Binding AscensionLevel, StringFormat='Stufe {0}'}"
+          <TextBlock Text="{Binding AscensionLevelDisplay}"
                      AutomationProperties.AutomationId="Ascension_Txt_Level"
                      FontWeight="Bold"
                      Foreground="{DynamicResource SurfaceBrush}" />
@@ -64,7 +65,8 @@
     <ScrollViewer Grid.Row="1"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
-      <StackPanel Spacing="12" Margin="16"
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="12" Margin="16,16,16,84"
                   AutomationProperties.AutomationId="Ascension_Panel_Content">
 
         <!-- ============================================================= -->
@@ -73,17 +75,17 @@
         <Border Classes="CardElevated" CornerRadius="12" Padding="16"
                 AutomationProperties.AutomationId="Ascension_Border_APCard">
           <StackPanel Spacing="8">
-            <TextBlock Text="Aufstiegs-Punkte"
+            <TextBlock Text="{loc:Translate AscensionPoints}"
                        AutomationProperties.AutomationId="Ascension_Txt_APLabel"
                        FontSize="14" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="{Binding AvailablePoints, StringFormat='{}{0} AP verfuegbar'}"
+              <TextBlock Text="{Binding AvailablePointsDisplay}"
                          AutomationProperties.AutomationId="Ascension_Txt_APAvailable"
                          FontSize="24" FontWeight="Bold"
                          Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Grid.Column="1"
-                         Text="{Binding TotalPoints, StringFormat='Gesamt: {0}'}"
+                         Text="{Binding TotalPointsDisplay}"
                          AutomationProperties.AutomationId="Ascension_Txt_APTotal"
                          FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}"
@@ -96,7 +98,7 @@
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <icons:GameIcon Kind="Creation" Width="18" Height="18"
                                  Foreground="{StaticResource CraftGoldBrush}" />
-                <TextBlock Text="{Binding PendingPoints, StringFormat='Naechster Aufstieg: +{0} AP'}"
+                <TextBlock Text="{Binding PendingPointsDisplay}"
                            AutomationProperties.AutomationId="Ascension_Txt_PendingPoints"
                            FontSize="13" FontWeight="SemiBold"
                            Foreground="{StaticResource CraftGoldBrush}" />
@@ -219,7 +221,7 @@
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
             <icons:GameIcon Kind="ArrowUpBold" Width="24" Height="24"
                              AutomationProperties.AutomationId="Ascension_Icon_Ascend" />
-            <TextBlock Text="Aufsteigen" FontSize="16" FontWeight="Bold"
+            <TextBlock Text="{loc:Translate Ascend}" FontSize="16" FontWeight="Bold"
                        AutomationProperties.AutomationId="Ascension_Txt_Ascend" />
           </StackPanel>
         </Button>

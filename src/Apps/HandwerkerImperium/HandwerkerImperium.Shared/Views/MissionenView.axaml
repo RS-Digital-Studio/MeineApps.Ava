@@ -64,7 +64,8 @@
                   VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                   Name="MissionenScrollViewer"
                   AutomationProperties.AutomationId="Missionen_Scroll_Main">
-      <StackPanel Spacing="16" Margin="16"
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="16" Margin="16,16,16,84"
                   AutomationProperties.AutomationId="Missionen_Panel_MainContent">
 
         <!-- ============================================================= -->
@@ -102,7 +103,7 @@
                         Background="{StaticResource CraftGoldBrush}"
                         CornerRadius="8" Padding="6,2">
                   <TextBlock Text="{loc:Translate Free}" FontSize="10" FontWeight="Bold"
-                             Foreground="#1A1200" />
+                             Foreground="{StaticResource CraftDarkTextBrush}" />
                 </Border>
               </StackPanel>
             </Border>
@@ -283,7 +284,7 @@
               </Button>
 
               <!-- IA-3: Statistiken -->
-              <Button Classes="Text" Margin="4" Padding="0" HorizontalAlignment="Stretch" VerticalAlignment="Top" HorizontalContentAlignment="Stretch" Command="{Binding NavigateToStatisticsCommand}">
+              <Button Classes="Text" Margin="4" Padding="0" HorizontalAlignment="Stretch" VerticalAlignment="Top" HorizontalContentAlignment="Stretch" Command="{Binding NavigateToStatisticsCommand}" AutomationProperties.AutomationId="Missionen_Btn_Statistics">
                 <Border Classes="CardElevated" Padding="10" MinHeight="80">
                   <StackPanel Spacing="4" HorizontalAlignment="Center">
                     <Border CornerRadius="14" Width="40" Height="40" HorizontalAlignment="Center">
@@ -293,7 +294,7 @@
                           <GradientStop Color="#1514B8A6" Offset="1" />
                         </LinearGradientBrush>
                       </Border.Background>
-                      <icons:GameIcon Kind="ChartBar" Width="28" Height="28" Foreground="#0E7490" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <icons:GameIcon Kind="ChartBar" Width="28" Height="28" Foreground="{StaticResource PlumberBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <TextBlock Text="{loc:Translate StatisticsTitle}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>

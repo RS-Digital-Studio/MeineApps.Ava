@@ -22,6 +22,7 @@
         <!-- Cancel Button -->
         <Button AutomationProperties.AutomationId="Sawing_Btn_Cancel"
                 Classes="Text"
+                MinHeight="44" MinWidth="44"
                 Command="{Binding CancelCommand}">
           <icons:GameIcon AutomationProperties.AutomationId="Sawing_Icon_Close"
                            Kind="Close" Width="28" Height="28" />

@@ -34,7 +34,7 @@
                            Foreground="{DynamicResource ErrorBrush}" />
           <TextBlock Text="{loc:Translate GuildWarTitle}"
                      FontSize="18" FontWeight="Bold"
-                     Foreground="#FCA5A5"
+                     Foreground="{StaticResource WarTitleBrush}"
                      VerticalAlignment="Center" />
         </StackPanel>
       </Grid>
@@ -44,7 +44,8 @@
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12" Margin="16,12,16,16">
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="12" Margin="16,12,16,84">
 
         <!-- Kein aktiver Krieg -->
         <Border IsVisible="{Binding !HasActiveWar}"
@@ -52,9 +53,9 @@
                 CornerRadius="12" Padding="24,32">
           <StackPanel Spacing="12" HorizontalAlignment="Center">
             <icons:GameIcon Kind="SwordCross" Width="48" Height="48"
-                             Foreground="{DynamicResource TextTertiaryBrush}"
+                             Foreground="{DynamicResource TextMutedBrush}"
                              HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding WarSubtitle, FallbackValue='Kein aktiver Krieg'}"
+            <TextBlock Text="{Binding WarSubtitle}"
                        FontSize="16" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" TextAlignment="Center" />
@@ -78,7 +79,7 @@
                            HorizontalAlignment="Center" TextAlignment="Center" />
                 <TextBlock Grid.Column="1" Text="VS"
                            FontSize="14" FontWeight="Bold"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextMutedBrush}"
                            Margin="12,0" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2"
                            Text="{Binding ActiveWar.OpponentGuildName}"
@@ -160,7 +161,7 @@
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          VerticalAlignment="Center" />
               <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
-                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                               Foreground="{DynamicResource TextMutedBrush}" />
             </Grid>
           </Button>
 

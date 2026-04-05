@@ -53,7 +53,8 @@
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                   AutomationProperties.AutomationId="Settings_ScrollViewer_Content">
-      <StackPanel Spacing="12" Margin="16"
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="12" Margin="16,16,16,84"
                   AutomationProperties.AutomationId="Settings_Panel_Content">
 
         <!-- STATISTIK-LINK -->
@@ -69,7 +70,7 @@
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
             <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
-                             Foreground="{DynamicResource TextTertiaryBrush}" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
           </Grid>
         </Button>
 

@@ -54,7 +54,8 @@
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="16" Margin="16,16,16,16">
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <StackPanel Spacing="16" Margin="16,16,16,84">
 
         <!-- Aktive Herstellungen -->
         <StackPanel Spacing="8"

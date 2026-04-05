@@ -64,7 +64,8 @@
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                   AutomationProperties.AutomationId="Buildings_ScrollViewer_Content">
       <StackPanel>
-      <ItemsControl ItemsSource="{Binding Buildings}" Margin="16"
+      <!-- Bottom-Margin 84dp: 64dp Tab-Bar + 20dp Abstand -->
+      <ItemsControl ItemsSource="{Binding Buildings}" Margin="16,16,16,84"
                     AutomationProperties.AutomationId="Buildings_Items_List">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
@@ -139,10 +140,11 @@
                   <icons:GameIcon Kind="Lock" Width="18" Height="18"
                                    AutomationProperties.AutomationId="Buildings_Icon_ItemLock"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Text="{Binding UnlockLevel, StringFormat='Lv.{0}'}"
-                             AutomationProperties.AutomationId="Buildings_Txt_ItemUnlockLevel"
+                  <TextBlock AutomationProperties.AutomationId="Buildings_Txt_ItemUnlockLevel"
                              FontSize="11"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                             Foreground="{DynamicResource TextSecondaryBrush}">
+                    <Run Text="{loc:Translate LevelPrefix}" /><Run Text="{Binding UnlockLevel}" />
+                  </TextBlock>
                 </StackPanel>
 
                 <!-- Row 4: Max Level badge (gegenseitig exklusiv mit Lock info oben) -->

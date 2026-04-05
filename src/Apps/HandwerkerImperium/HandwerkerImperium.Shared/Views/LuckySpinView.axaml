@@ -73,7 +73,7 @@
 
     <!-- Spin-Button -->
     <Button Classes="Primary"
-            Background="#D97706"
+            Background="{StaticResource CraftPrimaryBrush}"
             Command="{Binding SpinCommand}"
             IsEnabled="{Binding CanSpin}"
             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"

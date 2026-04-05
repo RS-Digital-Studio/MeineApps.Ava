@@ -60,10 +60,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IGoalService _goalService;
     private readonly IWorkerService _workerService;
     private readonly IRebirthService? _rebirthService;
+    private readonly ITournamentService? _tournamentService;
     private bool _disposed;
     private decimal _pendingOfflineEarnings;
     private QuickJob? _activeQuickJob;
     private bool _quickJobMiniGamePlayed;
+    private bool _isTournamentRound;
 
     // Dialog-Kaskaden-Begrenzung: Verzögerte Dialoge nach Startup
     private bool _hasDeferredDailyReward;
@@ -97,7 +99,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     internal decimal _displayedMoney;
     internal decimal _targetMoney;
     private bool _moneyAnimActive;
-    private const decimal MoneyAnimSpeed = 0.15m; // Interpolations-Faktor pro Frame
+    private const decimal MoneyAnimSpeed = GameBalanceConstants.MoneyAnimationInterpolationFactor;
 
     // Wiederverwendbarer Timer für Level-Up Pulse (verhindert Timer-Leak bei rapidem Level-Up)
     private DispatcherTimer? _levelPulseTimer;
@@ -130,6 +132,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly Action<string, string> _ascensionFloatingTextHandler;
     private readonly Action _ascensionCelebrationHandler;
 
+    // Guild MessageRequested + Research CelebrationRequested Handler
+    private readonly Action<string, string>? _guildMessageHandler;
+    private readonly EventHandler<(ResearchBranch Branch, string BonusText)>? _researchCelebrationHandler;
+
     // Gespeicherte Delegate-Referenzen fuer MissionsVM Events (Dispose-sicher)
     private readonly Action<string, string> _missionsFloatingTextHandler;
     private readonly Action _missionsCelebrationHandler;
@@ -139,13 +145,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly Action _dialogPrestigeSummaryGoToShopHandler;
     private readonly Action<string, string> _dialogFloatingTextHandler;
 
+    /// <summary>
+    /// Alle Child-VMs die NavigationRequested per OnChildNavigation verdrahten.
+    /// Ermoeglicht Subscribe/Unsubscribe per Schleife statt 19+ Einzelzeilen.
+    /// LuckySpinViewModel ist NICHT enthalten (hat eigenen Handler).
+    /// </summary>
+    private readonly INavigable[] _navigableChildren;
+
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS FOR NAVIGATION AND DIALOGS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event EventHandler<OfflineEarningsEventArgs>? ShowOfflineEarnings;
-    public event EventHandler<DailyRewardEventArgs>? ShowDailyReward;
-    public event EventHandler<Achievement>? ShowAchievementUnlocked;
+    // ShowOfflineEarnings/ShowDailyReward/ShowAchievementUnlocked entfernt: Views nutzen Property-Bindings statt Events
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -539,6 +550,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isOfflineNewRecord;
 
+    /// <summary>Prozent-Hinweis im Offline-Dialog.</summary>
+    [ObservableProperty]
+    private string _offlineEfficiencyHint = "";
+
     /// <summary>Nächstes Ziel als Wiedereinsteiger-Tipp (nur bei >48h Offline-Pause).</summary>
     [ObservableProperty]
     private string _offlineGoalText = "";
@@ -588,7 +603,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // Progressive Disclosure: Sections erst ab bestimmtem Level anzeigen.
     // Nach dem ersten Prestige sind ALLE Features permanent freigeschaltet
     // (Spieler verliert sonst Zugang zu Gilde, Forschung etc. nach dem Reset).
-    private bool HasEverPrestiged => _gameStateService.State.Prestige.TotalPrestigeCount > 0;
+    private bool HasEverPrestiged => _gameStateService.Prestige.TotalPrestigeCount > 0;
     public bool ShowCraftingResearch => HasEverPrestiged || PlayerLevel >= LevelThresholds.CraftingResearch;
     public bool ShowManagerSection => HasEverPrestiged || PlayerLevel >= LevelThresholds.ManagerSection;
     public bool ShowMasterToolsSection => HasEverPrestiged || PlayerLevel >= LevelThresholds.MasterToolsSection;
@@ -621,12 +636,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Lieferungen automatisch einsammeln (ab Level 15).</summary>
     public bool AutoCollectDelivery
     {
-        get => _gameStateService.State.Automation.AutoCollectDelivery;
+        get => _gameStateService.Automation.AutoCollectDelivery;
         set
         {
-            if (_gameStateService.State.Automation.AutoCollectDelivery == value) return;
-            _gameStateService.State.Automation.AutoCollectDelivery = value;
-            _gameStateService.MarkDirty();
+            if (_gameStateService.Automation.AutoCollectDelivery == value) return;
+            _gameStateService.Automation.AutoCollectDelivery = value;
             _saveGameService.SaveAsync().FireAndForget();
             OnPropertyChanged();
         }
@@ -635,12 +649,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Besten Auftrag automatisch annehmen (ab Level 25).</summary>
     public bool AutoAcceptOrder
     {
-        get => _gameStateService.State.Automation.AutoAcceptOrder;
+        get => _gameStateService.Automation.AutoAcceptOrder;
         set
         {
-            if (_gameStateService.State.Automation.AutoAcceptOrder == value) return;
-            _gameStateService.State.Automation.AutoAcceptOrder = value;
-            _gameStateService.MarkDirty();
+            if (_gameStateService.Automation.AutoAcceptOrder == value) return;
+            _gameStateService.Automation.AutoAcceptOrder = value;
             _saveGameService.SaveAsync().FireAndForget();
             OnPropertyChanged();
         }
@@ -649,12 +662,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Daily Reward automatisch einlösen (nur Premium).</summary>
     public bool AutoClaimDaily
     {
-        get => _gameStateService.State.Automation.AutoClaimDaily;
+        get => _gameStateService.Automation.AutoClaimDaily;
         set
         {
-            if (_gameStateService.State.Automation.AutoClaimDaily == value) return;
-            _gameStateService.State.Automation.AutoClaimDaily = value;
-            _gameStateService.MarkDirty();
+            if (_gameStateService.Automation.AutoClaimDaily == value) return;
+            _gameStateService.Automation.AutoClaimDaily = value;
             _saveGameService.SaveAsync().FireAndForget();
             OnPropertyChanged();
         }
@@ -662,12 +674,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     public bool AutoAssignWorkers
     {
-        get => _gameStateService.State.Automation.AutoAssignWorkers;
+        get => _gameStateService.Automation.AutoAssignWorkers;
         set
         {
-            if (_gameStateService.State.Automation.AutoAssignWorkers == value) return;
-            _gameStateService.State.Automation.AutoAssignWorkers = value;
-            _gameStateService.MarkDirty();
+            if (_gameStateService.Automation.AutoAssignWorkers == value) return;
+            _gameStateService.Automation.AutoAssignWorkers = value;
             _saveGameService.SaveAsync().FireAndForget();
             OnPropertyChanged();
         }
@@ -993,6 +1004,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IContextualHintService contextualHintService,
         DialogViewModel dialogViewModel,
         MissionsFeatureViewModel missionsFeatureViewModel,
+        ITournamentService? tournamentService = null,
         IRebirthService? rebirthService = null,
         IStoryService? storyService = null,
         IReviewService? reviewService = null,
@@ -1025,6 +1037,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _goalService = goalService;
         _workerService = workerService;
         _rebirthService = rebirthService;
+        _tournamentService = tournamentService;
         GameJuiceEngine = gameJuiceEngine;
 
         // Delegate-Felder zuweisen (statt anonymer Lambdas, damit Dispose() abmelden kann)
@@ -1068,44 +1081,32 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _luckySpinNavHandler = _ => { MissionsVM?.HideLuckySpinCommand.Execute(null); IsLuckySpinVisible = false; };
         LuckySpinViewModel.NavigationRequested += _luckySpinNavHandler;
 
-        // Wire up child VM navigation events
-        ShopViewModel.NavigationRequested += OnChildNavigation;
-        StatisticsViewModel.NavigationRequested += OnChildNavigation;
-        AchievementsViewModel.NavigationRequested += OnChildNavigation;
-        SettingsViewModel.NavigationRequested += OnChildNavigation;
-        WorkshopViewModel.NavigationRequested += OnChildNavigation;
-        OrderViewModel.NavigationRequested += OnChildNavigation;
-        foreach (var mg in MiniGames.All)
-            mg.NavigationRequested += OnChildNavigation;
-        ManagerViewModel.NavigationRequested += OnChildNavigation;
-        TournamentViewModel.NavigationRequested += OnChildNavigation;
-        SeasonalEventViewModel.NavigationRequested += OnChildNavigation;
-        BattlePassViewModel.NavigationRequested += OnChildNavigation;
-        GuildViewModel.NavigationRequested += OnChildNavigation;
-        CraftingViewModel.NavigationRequested += OnChildNavigation;
-        AscensionViewModel.NavigationRequested += OnChildNavigation;
-
-        WorkerMarketViewModel.NavigationRequested += OnChildNavigation;
-        WorkerProfileViewModel.NavigationRequested += OnChildNavigation;
-        BuildingsViewModel.NavigationRequested += OnChildNavigation;
-        ResearchViewModel.NavigationRequested += OnChildNavigation;
+        // NavigationRequested per Schleife verdrahten (statt 19+ Einzelzeilen)
+        // LuckySpinViewModel hat eigenen Handler (_luckySpinNavHandler), daher nicht in der Liste
+        _navigableChildren =
+        [
+            ShopViewModel, StatisticsViewModel, AchievementsViewModel, SettingsViewModel,
+            WorkshopViewModel, OrderViewModel, WorkerMarketViewModel, WorkerProfileViewModel,
+            BuildingsViewModel, ResearchViewModel, ManagerViewModel, TournamentViewModel,
+            SeasonalEventViewModel, BattlePassViewModel, GuildViewModel, CraftingViewModel,
+            AscensionViewModel,
+            ..MiniGames.All // 10 MiniGame-VMs (alle erben INavigable via BaseMiniGameViewModel)
+        ];
+        foreach (var child in _navigableChildren)
+            child.NavigationRequested += OnChildNavigation;
 
         // Child-VM Events verdrahten (benannte Delegates fuer Dispose-Unsubscribe)
         _guildCelebrationHandler = () => CelebrationRequested?.Invoke();
         _guildFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         _workerProfileFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        // Benanntes Delegate-Feld fuer BuildingsVM FloatingText (statt anonymem Lambda -> Dispose-sicher)
         _buildingsFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        _ascensionFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        _ascensionCelebrationHandler = () => CelebrationRequested?.Invoke();
 
-        StatisticsViewModel.ShowPrestigeDialog += OnShowPrestigeDialog;
         WorkerProfileViewModel.FloatingTextRequested += _workerProfileFloatingTextHandler;
         BuildingsViewModel.FloatingTextRequested += _buildingsFloatingTextHandler;
         GuildViewModel.CelebrationRequested += _guildCelebrationHandler;
         GuildViewModel.FloatingTextRequested += _guildFloatingTextHandler;
-
-        // AscensionVM Events verdrahten (benannte Delegates fuer Dispose)
-        _ascensionFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        _ascensionCelebrationHandler = () => CelebrationRequested?.Invoke();
         AscensionViewModel.FloatingTextRequested += _ascensionFloatingTextHandler;
         AscensionViewModel.CelebrationRequested += _ascensionCelebrationHandler;
 
@@ -1366,7 +1367,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private void OnPrestigeCompleted(object? sender, EventArgs e)
     {
-        var prestigeCount = _gameStateService.State.Prestige.TotalPrestigeCount;
+        var prestigeCount = _gameStateService.Prestige.TotalPrestigeCount;
 
         // Zeremonie: Feuerwerk + Confetti + Sound
         CelebrationRequested?.Invoke();
@@ -1376,7 +1377,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         FloatingTextRequested?.Invoke($"Prestige #{prestigeCount}!", "level");
 
         // Ascension-Hint: Prüfen ob erstmals 3+ Legende-Prestiges erreicht
-        if (_gameStateService.State.Prestige.LegendeCount >= 3)
+        if (_gameStateService.Prestige.LegendeCount >= 3)
             _contextualHintService.TryShowHint(ContextualHints.AscensionAvailable);
 
         _reviewService?.OnMilestone("prestige", prestigeCount);
@@ -1520,14 +1521,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         RefreshOrders();
 
         // Hint beim ersten Auftragsabschluss
-        if (_gameStateService.State.Statistics.TotalOrdersCompleted == 1)
+        if (_gameStateService.Statistics.TotalOrdersCompleted == 1)
             _contextualHintService.TryShowHint(ContextualHints.OrderCompleted);
 
         // Story-Kapitel prüfen
         CheckForNewStoryChapter();
 
         // Review-Milestone prüfen
-        _reviewService?.OnMilestone("orders", _gameStateService.State.Statistics.TotalOrdersCompleted);
+        _reviewService?.OnMilestone("orders", _gameStateService.Statistics.TotalOrdersCompleted);
         CheckReviewPrompt();
 
         // Ziel-Cache invalidieren (Auftragsabschluss könnte Ziel erfüllen)
@@ -1552,6 +1553,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         // Flag setzen: MiniGame wurde tatsächlich gespielt (für QuickJob-Validierung)
         _quickJobMiniGamePlayed = true;
+
+        // Turnier-Score aufzeichnen (Rating → Prozent-Score: Miss=50, Ok=75, Good=100, Perfect=150)
+        if (_isTournamentRound)
+        {
+            int score = (int)(e.Rating.GetRewardPercentage() * 100);
+            _tournamentService?.RecordScore(score);
+        }
     }
 
     private void OnMasterToolUnlocked(object? sender, MasterToolDefinition tool)
@@ -1723,8 +1731,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         DialogVM.AchievementDescription = string.IsNullOrEmpty(desc) ? achievement.DescriptionFallback : desc;
         DialogVM.IsAchievementDialogVisible = true;
         CelebrationRequested?.Invoke();
-
-        ShowAchievementUnlocked?.Invoke(this, achievement);
     }
 
     private void OnPremiumStatusChanged(object? sender, EventArgs e)
@@ -2104,7 +2110,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             _gameLoopService.Pause();
 
         // Benachrichtigungen planen wenn aktiviert
-        if (_gameStateService.State.Settings.NotificationsEnabled)
+        if (_gameStateService.Settings.NotificationsEnabled)
             _notificationService?.ScheduleGameNotifications(_gameStateService.State);
     }
 
@@ -2131,30 +2137,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Stop the game loop and save
         _gameLoopService.Stop();
 
-        // Unsubscribe child VM navigation events
-        ShopViewModel.NavigationRequested -= OnChildNavigation;
-        StatisticsViewModel.NavigationRequested -= OnChildNavigation;
-        AchievementsViewModel.NavigationRequested -= OnChildNavigation;
-        SettingsViewModel.NavigationRequested -= OnChildNavigation;
-        WorkshopViewModel.NavigationRequested -= OnChildNavigation;
-        OrderViewModel.NavigationRequested -= OnChildNavigation;
-        foreach (var mg in MiniGames.All)
-            mg.NavigationRequested -= OnChildNavigation;
-        ManagerViewModel.NavigationRequested -= OnChildNavigation;
-        TournamentViewModel.NavigationRequested -= OnChildNavigation;
-        SeasonalEventViewModel.NavigationRequested -= OnChildNavigation;
-        BattlePassViewModel.NavigationRequested -= OnChildNavigation;
-        GuildViewModel.NavigationRequested -= OnChildNavigation;
-        CraftingViewModel.NavigationRequested -= OnChildNavigation;
-        AscensionViewModel.NavigationRequested -= OnChildNavigation;
+        // NavigationRequested per Schleife abmelden (symmetrisch zum Konstruktor)
+        foreach (var child in _navigableChildren)
+            child.NavigationRequested -= OnChildNavigation;
         LuckySpinViewModel.NavigationRequested -= _luckySpinNavHandler;
-        WorkerMarketViewModel.NavigationRequested -= OnChildNavigation;
-        WorkerProfileViewModel.NavigationRequested -= OnChildNavigation;
-        BuildingsViewModel.NavigationRequested -= OnChildNavigation;
-        ResearchViewModel.NavigationRequested -= OnChildNavigation;
 
-        // Unsubscribe child VM events
-        StatisticsViewModel.ShowPrestigeDialog -= OnShowPrestigeDialog;
+        // Child-VM Events abmelden (symmetrisch zum Konstruktor)
         WorkerProfileViewModel.FloatingTextRequested -= _workerProfileFloatingTextHandler;
         BuildingsViewModel.FloatingTextRequested -= _buildingsFloatingTextHandler;
         GuildViewModel.CelebrationRequested -= _guildCelebrationHandler;
@@ -2215,6 +2203,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         GuildViewModel.Dispose();
         ShopViewModel.Dispose();
         WorkshopViewModel.Dispose();
+        foreach (var mg in MiniGames.All)
+            mg.Dispose();
 
         _disposed = true;
         GC.SuppressFinalize(this);

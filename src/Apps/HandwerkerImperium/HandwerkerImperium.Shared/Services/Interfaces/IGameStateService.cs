@@ -1,22 +1,23 @@
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
-using HandwerkerImperium.Models.Events;
 
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// Central service for managing the game state.
-/// Acts as the single source of truth for all game data.
+/// Zentraler Service fuer die Verwaltung des Spielzustands.
+/// Einzige Quelle der Wahrheit fuer alle Spieldaten.
+/// Erbt von IGameCurrencyService, IGameWorkshopService und IGameOrderService
+/// fuer granulare Abhaengigkeiten (Interface Segregation).
 /// </summary>
-public interface IGameStateService
+public interface IGameStateService : IGameCurrencyService, IGameWorkshopService, IGameOrderService
 {
     /// <summary>
-    /// The current game state.
+    /// Der aktuelle Spielzustand.
     /// </summary>
     GameState State { get; }
 
     /// <summary>
-    /// Whether the game has been initialized.
+    /// Ob das Spiel initialisiert wurde.
     /// </summary>
     bool IsInitialized { get; }
 
@@ -34,210 +35,38 @@ public interface IGameStateService
     bool IsAutoAssignUnlocked { get; }
 
     // ===================================================================
-    // EVENTS
+    // EVENTS (nur noch State-uebergreifende Events)
     // ===================================================================
 
-    /// <summary>Fired when money changes.</summary>
-    event EventHandler<MoneyChangedEventArgs>? MoneyChanged;
-
-    /// <summary>Fired when player levels up.</summary>
-    event EventHandler<LevelUpEventArgs>? LevelUp;
-
-    /// <summary>Fired when XP is gained.</summary>
-    event EventHandler<XpGainedEventArgs>? XpGained;
-
-    /// <summary>Fired when a workshop is upgraded.</summary>
-    event EventHandler<WorkshopUpgradedEventArgs>? WorkshopUpgraded;
-
-    /// <summary>Fired when a worker is hired.</summary>
-    event EventHandler<WorkerHiredEventArgs>? WorkerHired;
-
-    /// <summary>Fired when an order is completed.</summary>
-    event EventHandler<OrderCompletedEventArgs>? OrderCompleted;
-
-    /// <summary>Fired when game state is loaded.</summary>
+    /// <summary>Wird ausgeloest wenn der Spielzustand geladen wird.</summary>
     event EventHandler? StateLoaded;
 
-    /// <summary>Fired when golden screws change.</summary>
-    event EventHandler<GoldenScrewsChangedEventArgs>? GoldenScrewsChanged;
-
-    /// <summary>Fired when a mini-game result is recorded.</summary>
-    event EventHandler<MiniGameResultRecordedEventArgs>? MiniGameResultRecorded;
+    /// <summary>
+    /// Feuert wenn Prestige-Shop-Boni sich geaendert haben (Kauf, Prestige-Reset, State-Load).
+    /// Ermoeglicht Services mit eigenen Prestige-Shop-Caches die Invalidierung.
+    /// </summary>
+    event EventHandler? PrestigeShopPurchased;
 
     // ===================================================================
-    // MONEY OPERATIONS
-    // ===================================================================
-
-    /// <summary>
-    /// Adds money to the player's balance.
-    /// </summary>
-    void AddMoney(decimal amount);
-
-    /// <summary>
-    /// Attempts to spend money. Returns true if successful.
-    /// </summary>
-    bool TrySpendMoney(decimal amount);
-
-    /// <summary>
-    /// Checks if the player can afford an amount.
-    /// </summary>
-    bool CanAfford(decimal amount);
-
-    // ===================================================================
-    // GOLDEN SCREWS OPERATIONS
+    // ZUSTANDSVERWALTUNG
     // ===================================================================
 
     /// <summary>
-    /// Adds golden screws to the player's balance.
-    /// </summary>
-    void AddGoldenScrews(int amount, bool fromPurchase = false);
-
-    /// <summary>
-    /// Attempts to spend golden screws. Returns true if successful.
-    /// </summary>
-    bool TrySpendGoldenScrews(int amount);
-
-    /// <summary>
-    /// Checks if the player has enough golden screws.
-    /// </summary>
-    bool CanAffordGoldenScrews(int amount);
-
-    // ===================================================================
-    // XP/LEVEL OPERATIONS
-    // ===================================================================
-
-    /// <summary>
-    /// Adds XP to the player. Handles level-ups automatically.
-    /// </summary>
-    void AddXp(int amount);
-
-    // ===================================================================
-    // WORKSHOP OPERATIONS
-    // ===================================================================
-
-    /// <summary>
-    /// Gets a workshop by type.
-    /// </summary>
-    Workshop? GetWorkshop(WorkshopType type);
-
-    /// <summary>
-    /// Attempts to upgrade a workshop. Returns true if successful.
-    /// </summary>
-    bool TryUpgradeWorkshop(WorkshopType type);
-
-    /// <summary>
-    /// Upgradet einen Workshop mehrfach (Bulk Buy). Gibt Anzahl Upgrades zurück.
-    /// count=0 bedeutet Max (so viele wie bezahlbar).
-    /// </summary>
-    int TryUpgradeWorkshopBulk(WorkshopType type, int count);
-
-    /// <summary>
-    /// Attempts to hire a worker for a workshop. Returns true if successful.
-    /// </summary>
-    bool TryHireWorker(WorkshopType type);
-
-    /// <summary>
-    /// Checks if a workshop is unlocked at the current player level.
-    /// </summary>
-    bool IsWorkshopUnlocked(WorkshopType type);
-
-    /// <summary>
-    /// Kauft eine Werkstatt frei (Level-Anforderung muss erfüllt sein, Kosten werden abgezogen).
-    /// </summary>
-    bool TryPurchaseWorkshop(WorkshopType type, decimal costOverride = -1);
-
-    /// <summary>
-    /// Prüft ob eine Werkstatt kaufbar ist (Level erreicht, nicht bereits freigeschaltet).
-    /// </summary>
-    bool CanPurchaseWorkshop(WorkshopType type);
-
-    // ===================================================================
-    // ORDER OPERATIONS
-    // ===================================================================
-
-    /// <summary>
-    /// Starts an order (moves it to active).
-    /// </summary>
-    void StartOrder(Order order);
-
-    /// <summary>
-    /// Gets the currently active order.
-    /// </summary>
-    Order? GetActiveOrder();
-
-    /// <summary>
-    /// Records a mini-game result for the active order.
-    /// </summary>
-    void RecordMiniGameResult(MiniGameRating rating);
-
-    /// <summary>
-    /// Completes the active order and grants rewards.
-    /// </summary>
-    void CompleteActiveOrder();
-
-    /// <summary>
-    /// Berechnet den kombinierten Auftrags-Belohnungsmultiplikator aus Research, Gebäuden,
-    /// Reputation, Events und Stammkunden. Wird für korrekte Belohnungsanzeige in MiniGames verwendet.
-    /// </summary>
-    decimal GetOrderRewardMultiplier(Order order);
-
-    /// <summary>
-    /// Cancels the active order without rewards.
-    /// </summary>
-    void CancelActiveOrder();
-
-    // ===================================================================
-    // MINI-GAME AUTO-COMPLETE
-    // ===================================================================
-
-    /// <summary>
-    /// Zählt ein Perfect-Rating für den angegebenen MiniGame-Typ.
-    /// </summary>
-    void RecordPerfectRating(MiniGameType type);
-
-    /// <summary>
-    /// Prüft ob Auto-Complete für diesen MiniGame-Typ verfügbar ist.
-    /// Premium-Spieler: 25 Perfects, Free-Spieler: 50 Perfects.
-    /// </summary>
-    bool CanAutoComplete(MiniGameType type, bool isPremium);
-
-    // ===================================================================
-    // STATE MANAGEMENT
-    // ===================================================================
-
-    /// <summary>
-    /// Initializes the game state (new game or loaded).
+    /// Initialisiert den Spielzustand (neues Spiel oder geladen).
     /// </summary>
     void Initialize(GameState? loadedState = null);
 
     /// <summary>
-    /// Resets the game state for a new game.
+    /// Setzt den Spielzustand fuer ein neues Spiel zurueck.
     /// </summary>
     void Reset();
 
     /// <summary>
-    /// Marks the state as dirty (needs saving).
-    /// </summary>
-    void MarkDirty();
-
-    /// <summary>
     /// Prestige-Shop-Bonus-Cache invalidieren (nach Kauf, Prestige-Reset oder State-Load).
     /// Betrifft gecachte GS-Bonus, XP-Bonus und OrderReward-Bonus.
-    /// Feuert auch PrestigeShopPurchased Event für andere Services (z.B. CraftingService).
+    /// Feuert auch PrestigeShopPurchased Event fuer andere Services (z.B. CraftingService).
     /// </summary>
     void InvalidatePrestigeBonusCache();
-
-    /// <summary>
-    /// Feuert wenn Prestige-Shop-Boni sich geändert haben (Kauf, Prestige-Reset, State-Load).
-    /// Ermöglicht Services mit eigenen Prestige-Shop-Caches die Invalidierung.
-    /// </summary>
-    event EventHandler? PrestigeShopPurchased;
-
-    /// <summary>
-    /// Schließt einen Lieferauftrag ab: Items abziehen, Belohnung gutschreiben.
-    /// Gibt den Geld-Ertrag zurück (0 wenn nicht möglich).
-    /// </summary>
-    decimal CompleteMaterialOrder(Order order);
 
     // ===================================================================
     // LOCK-DELEGATION (fuer zukuenftige Service-Extraktion)
@@ -250,21 +79,53 @@ public interface IGameStateService
     T ExecuteWithLock<T>(Func<T> func);
 
     // ===================================================================
-    // EVENT-RAISING (fuer extrahierte Services)
+    // EVENT-AUSLOESUNG (fuer extrahierte Services)
     // ===================================================================
 
-    /// <summary>Feuert WorkshopUpgraded + MoneyChanged Events.</summary>
+    /// <summary>Loest WorkshopUpgraded + MoneyChanged Events aus.</summary>
     void RaiseWorkshopUpgraded(WorkshopType type, int oldLevel, int newLevel, decimal cost, decimal moneyBefore, decimal moneyAfter);
 
-    /// <summary>Feuert WorkerHired + MoneyChanged Events.</summary>
+    /// <summary>Loest WorkerHired + MoneyChanged Events aus.</summary>
     void RaiseWorkerHired(WorkshopType type, Worker worker, decimal cost, int workerCount, decimal moneyBefore, decimal moneyAfter);
 
-    /// <summary>Feuert OrderCompleted Event.</summary>
+    /// <summary>Loest OrderCompleted Event aus.</summary>
     void RaiseOrderCompleted(Order order, decimal moneyReward, int xpReward, MiniGameRating avgRating);
 
-    /// <summary>Feuert MiniGameResultRecorded Event.</summary>
+    /// <summary>Loest MiniGameResultRecorded Event aus.</summary>
     void RaiseMiniGameResultRecorded(MiniGameRating rating);
 
-    /// <summary>Feuert MoneyChanged Event.</summary>
+    /// <summary>Loest MoneyChanged Event aus.</summary>
     void RaiseMoneyChanged(decimal oldAmount, decimal newAmount);
+
+    // ===================================================================
+    // KOMFORT-ZUGRIFFE (Law of Demeter)
+    // Vermeidet tiefe Zugriffsketten wie State.Prestige.TotalPrestigeCount
+    // ===================================================================
+
+    /// <summary>Automatisierungs-Einstellungen (Auto-Collect, Auto-Accept, etc.).</summary>
+    AutomationSettings Automation => State.Automation;
+
+    /// <summary>App-Einstellungen (Sound, Sprache, Grafik, etc.).</summary>
+    SettingsData Settings => State.Settings;
+
+    /// <summary>Prestige-Daten (Tier, Punkte, History, Shop, Challenges).</summary>
+    PrestigeData Prestige => State.Prestige;
+
+    /// <summary>Statistik-Daten (Zaehler, Bestzeiten, Tracking).</summary>
+    StatisticsData Statistics => State.Statistics;
+
+    /// <summary>Tutorial-Status (SeenHints, Abschluss-Flags).</summary>
+    TutorialState Tutorial => State.Tutorial;
+
+    /// <summary>Boost-Daten (Speed, XP, Rush, Soft-Cap).</summary>
+    BoostData Boosts => State.Boosts;
+
+    /// <summary>Täglicher Fortschritt (Daily Rewards, Quick Jobs, Welcome Back, Weekly Missions).</summary>
+    DailyProgressData DailyProgress => State.DailyProgress;
+
+    /// <summary>Kosmetische Daten (Themes, Skins).</summary>
+    CosmeticData Cosmetics => State.Cosmetics;
+
+    /// <summary>Aktuelles Spieler-Level.</summary>
+    int PlayerLevel => State.PlayerLevel;
 }

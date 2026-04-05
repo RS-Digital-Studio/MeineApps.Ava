@@ -199,6 +199,8 @@ Daten in `GameState.WorkshopStars` (Dictionary<string, int>), Runtime-Properties
 | 2 | Neues Worker-System, Buildings, Research, Events, Prestige, Reputation |
 | 3 | Workshop Rebirth Stars (WorkshopStars Dictionary) |
 | 3+ | Worker: ResumeTrainingType (Auto-Resume nach Ruhe), KeptWorkers indiziert (Top 3 bei Legende) |
+| 4 | Settings, Statistics, Tutorial in Sub-Objekte extrahiert (SettingsData, StatisticsData, TutorialState) |
+| 5 | Boosts, DailyProgress, Cosmetics in Sub-Objekte extrahiert (BoostData, DailyProgressData, CosmeticData). Legacy-Weiterleitungs-Properties auf GameState für volle Backward-Kompatibilität |
 
 ### Worker-System Details
 
@@ -227,18 +229,43 @@ Daten in `GameState.WorkshopStars` (Dictionary<string, int>), Runtime-Properties
 - **Shop Live-Vergleich**: `PremiumIncomeComparison` Property im ShopVM zeigt Nicht-Premium-Spielern "Dein Einkommen: X/s -> Mit Premium: Y/s"
 - **Starter-Offer**: Einmaliges Angebot ab Level 10, 24h-Countdown, Properties `StarterOfferShown`/`StarterOfferTimestamp` in GameState
 
-### Rewarded (9 Placements)
-1. `golden_screws` - 5 Goldschrauben (Dashboard, BAL: von 10 auf 5 reduziert für F2P-Balance)
-2. `score_double` - Mini-Game Score verdoppeln
-3. `market_refresh` - Arbeitermarkt-Pool neu wuerfeln
-4. `workshop_speedup` - 30min Produktionsertrag sofort (BAL-5: von 2h reduziert)
-5. `workshop_unlock` - Workshop ohne Level freischalten
-6. `worker_hire_bonus` - +1 Worker-Slot persistent
-7. `research_speedup` - Forschungszeit -50% (BAL-4: statt Sofortfertigstellung) + zeitbasierte GS-Sofortfertigstellung (5 GS/h, min 5, max 50)
-8. `daily_challenge_retry` - Challenge-Fortschritt zuruecksetzen
-9. `achievement_boost` - Achievement Progress +20%
+### Rewarded (13 Placements, BAL-AD Rebalancing 04.04.2026)
+1. `golden_screws` - 8 GS (eigener 4h-Cooldown, BAL-AD-1: von 5 auf 8, getrennt von Shop-Cooldown)
+2. `shop_reward` - Cash/Boost-Ads im Shop (3h-Cooldown, BAL-AD-1: getrennt von GS)
+3. `score_double` - Mini-Game Score verdoppeln
+4. `market_refresh` - Arbeitermarkt-Pool neu würfeln
+5. `workshop_speedup` - 2h Brutto-Ertrag eines WS (BAL-AD-3: von 30min auf 2h erhöht)
+6. `workshop_unlock` - 30% Rabatt auf Workshop-Kauf
+7. `worker_hire_bonus` - +1 Worker-Slot persistent (max 3/WS)
+8. `research_speedup` - Forschungszeit -50% (BAL-AD-4: nur ab 30min Restzeit) + GS-Sofortfertigstellung
+9. `daily_challenge_retry` - Challenge-Fortschritt zurücksetzen
+10. `achievement_boost` - Achievement Progress +20% (BAL-AD-7: nur bei TargetValue>5)
+11. `offline_double` - 2x Offline-Earnings
+12. `rush_boost` - 1h Rush per Video (BAL-AD-5: NEU, Alternative zu 10 GS für 2h Rush)
+13. `lucky_spin` - 1x/Tag Ad-Spin im Glücksrad (BAL-AD-6: NEU, nach Gratis-Spin)
+- **Zeitsprung (skip_time_1h)**: 2h Netto-Einkommen + Worker-Erholung + Forschungsbeschleunigung (BAL-AD-2)
 
 ## Architektur-Besonderheiten
+
+### Architektur-Refactoring (05.04.2026)
+
+**IGameStateService Interface Segregation**: Composite Interface Pattern - 3 neue Sub-Interfaces extrahiert:
+- `IGameCurrencyService` (Geld, Goldschrauben, XP + zugehörige Events)
+- `IGameWorkshopService` (Workshop-Operationen + Events)
+- `IGameOrderService` (Auftrags-Operationen + Events)
+- `IGameStateService : IGameCurrencyService, IGameWorkshopService, IGameOrderService` (100% backward-kompatibel)
+
+**MainViewModel INavigable-Pattern**: NavigationRequested-Wiring per Schleife über `_navigableChildren[]` statt 19+ Einzelzeilen. LuckySpinVM hat eigenen Handler.
+
+**GameState Sub-Models Phase 2**: 3 neue Sub-Objekte (V5 Migration):
+- `BoostData` (SpeedBoost, XpBoost, Rush, SoftCap)
+- `DailyProgressData` (DailyReward, QuickJobs, WelcomeBack, WeeklyMissions)
+- `CosmeticData` (Cosmetics, Themes, Skins)
+- Legacy-Properties auf GameState leiten an Sub-Objekte weiter (Backward-Kompatibilität)
+
+**GameIntegrityService**: HMAC-SHA256-Signierung für Gilden-relevante Werte (Level, Prestige, Money, GoldenScrews, Orders). Geräte-spezifischer Schlüssel (Package-Name + Installations-GUID). GuildService prüft Signatur vor Firebase-Updates.
+
+**Firebase Path Validation**: `IsValidFirebaseKey()` in GuildService prüft guildId/playerId auf Firebase-verbotene Zeichen an 8 Entry-Points.
 
 ### Architektur-Refactoring (03.04.2026)
 
@@ -399,6 +426,20 @@ Die Dialog-Controls `AchievementDialog`, `ContextualHintDialog`, `StoryDialog`, 
 - **Statistics-Zugang**: Über Missionen-Tab Wettbewerbe-Grid (IA-3) UND SettingsView
 - **Workshop-Canvas**: Dynamische Höhe via `WorkshopCanvasHeight` (2 Spalten, ~160dp/Reihe) statt fixe 800dp
 
+### UX-Optimierungen (04.04.2026)
+
+- **Touch-Targets**: Challenge-Chips (`Padding="10,6" MinHeight="36"`), Worker-Chips (`MinHeight="44"`), Aufgeben-Button (`MinHeight="44"`), BulkBuy-Button (`MinHeight="36"`), Undo-Button (`MinHeight="44"`)
+- **Goldschrauben-Badge klickbar**: `Border` → `Button` mit `SelectShopTabCommand` (Dashboard-Header)
+- **Aktiver-Auftrag-Banner**: Zeigt "Aktiver Auftrag: {Title}" über Order-Liste wenn Start-Buttons disabled
+- **Challenge-Effekt-Subtitles**: Jeder Challenge-Chip zeigt Effekt-Beschreibung als 8pt-Text (RESX-Key `Challenge_{Type}_Desc`)
+- **Speedrun-Timer Kontrast**: `#FFFFFFAA` auf `#10FFFFFF` → `TextSecondaryBrush` auf `#25FFFFFF`
+- **AutomationPanel**: Gesperrte Toggles durch goldene "Unlock bei Lv.X" Teaser-Badges ersetzt (kein grauer ToggleSwitch)
+- **Offline-Effizienz-Hinweis**: "~X% deiner Online-Einnahmen" im OfflineEarningsDialog (Property `OfflineEfficiencyHint`)
+- **Lokalisierung**: AscensionView → `AscensionLevelDisplay`/`AvailablePointsDisplay`/`TotalPointsDisplay`/`PendingPointsDisplay`, TournamentView → `BestScoreDisplay`
+- **Feature-Brushes**: `CraftBossAccentBrush`, `CraftResearchAccentBrush`, `CraftChatAccentBrush` in App.axaml (statt hardcodierter Farben in GuildView)
+- **AutomationIds**: `Missionen_Btn_Statistics`, 6x `Prestige_Btn_Challenge_{Type}` ergänzt
+- **ImperiumView Bottom-Spacer**: 24dp Border am Ende für kleine Screens
+
 ### Progressive Disclosure (Phase 2)
 
 Level-basierte Section-Visibility innerhalb der Views:
@@ -556,6 +597,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `GuildTipService` | Kontextuelle Gilden-Tipps (Preferences-basiert, 24h Cooldown) |
 | `GuildAchievementService` | 30 Gilden-Achievements (10 Typen x 3 Tiers), Firebase-Tracking |
 | `FirebaseService` | Anonymous Auth, Token-Refresh (55min, Retry bei Netzwerkfehler), CRUD, 5s Timeout, SemaphoreSlim. PlayerId-GUID (stabile Spieler-Identität, überlebt Account-Wechsel), auth_to_player Mapping via SyncAuthToPlayerMappingAsync() |
+| `GameIntegrityService` | HMAC-SHA256-Signierung für Gilden-relevante GameState-Werte (Level, Prestige, Money, GoldenScrews, Orders). Geräte-spezifischer Schlüssel (Package-Name + Installations-GUID). GuildService prüft Signatur vor Firebase-Updates |
 | `GameAssetService` | LRU-Cache 50MB, WebP→SKBitmap + animierte WebP Multi-Frame, PlatformAssetLoader. Statischer `GameAssetService.Current` Zugriff für Views (kein Service-Locator) |
 | `CraftingService` | 20 Rezepte in 3 Tiers, Produktionsketten, Echtzeit-Timer, skalierende Verkaufspreise (log₂-Formel × alle Einkommens-Multiplikatoren) |
 | `AutoProductionService` | Automatische Tier-1-Produktion: 180s/Worker (Standard), 120s (InnovationLab), 60s (MasterSmith). Unlock ab WS-Level 50. Offline-Produktion mit Staffelung |

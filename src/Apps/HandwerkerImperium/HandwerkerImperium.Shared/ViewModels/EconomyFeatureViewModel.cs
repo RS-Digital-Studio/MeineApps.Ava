@@ -73,7 +73,7 @@ internal sealed class EconomyFeatureViewModel
     private bool ShowAds => !_purchaseService.IsPremium;
 
     private void ShowAlertDialog(string? title, string? message, string? button)
-        => _dialogService.ShowAlertDialog(title, message, button);
+        => _dialogService.ShowAlertDialog(title ?? "", message ?? "", button ?? "OK");
 
     private Task<bool> ShowConfirmDialog(string title, string message, string accept, string cancel)
         => _dialogService.ShowConfirmDialog(title, message, accept, cancel);
@@ -386,7 +386,7 @@ internal sealed class EconomyFeatureViewModel
     private const int RushDurationHours = 2;
     private const int RushAdDurationHours = 1;
 
-    internal async void ActivateRush()
+    internal async Task ActivateRushAsync()
     {
         var state = _gameStateService.State;
         if (state.IsRushBoostActive) return;

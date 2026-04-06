@@ -139,12 +139,16 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, IDisposable
             // BAL-AD-6: Ad-Spin - erst Video, dann drehen
             var success = await _rewardedAdService!.ShowAdAsync("lucky_spin");
             if (!success) return;
-            _pendingPrize = _luckySpinService.SpinForAd();
+            var adPrize = _luckySpinService.SpinForAd();
+            if (adPrize == null) return; // Kauf fehlgeschlagen
+            _pendingPrize = adPrize.Value;
             _luckySpinService.MarkAdSpinUsed();
         }
         else
         {
-            _pendingPrize = _luckySpinService.Spin();
+            var prize = _luckySpinService.Spin();
+            if (prize == null) return; // Kauf fehlgeschlagen
+            _pendingPrize = prize.Value;
         }
 
         // UI-State vorbereiten

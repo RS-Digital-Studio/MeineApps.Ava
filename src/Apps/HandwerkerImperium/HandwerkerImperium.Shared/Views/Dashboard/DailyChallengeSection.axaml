@@ -12,7 +12,7 @@
         <Border Classes="CardElevated" Padding="12" IsVisible="{Binding HasDailyChallenges}"
                 AutomationProperties.AutomationId="Dashboard_Border_DailyChallenges">
           <StackPanel Spacing="8">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,*">
               <icons:GameIcon Kind="CalendarCheck" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryBrush}"
                                AutomationProperties.AutomationId="Dashboard_Icon_DailyChallenges" />
@@ -20,15 +20,8 @@
                          FontSize="16" FontWeight="Bold" Margin="8,0,0,0"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Dashboard_Txt_DailyChallengesTitle" />
-              <Button Grid.Column="2" Classes="Text" Padding="4"
-                      MinHeight="44" MinWidth="44"
-                      Command="{Binding ToggleChallengesExpandedCommand}"
-                      AutomationProperties.AutomationId="Dashboard_Btn_ToggleChallenges">
-                <icons:GameIcon Kind="{Binding ChallengesExpandIconKind}" Width="24" Height="24" />
-              </Button>
             </Grid>
             <ItemsControl ItemsSource="{Binding DailyChallenges}"
-                          IsVisible="{Binding IsChallengesExpanded}"
                           AutomationProperties.AutomationId="Dashboard_Items_DailyChallenges">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:DailyChallenge">

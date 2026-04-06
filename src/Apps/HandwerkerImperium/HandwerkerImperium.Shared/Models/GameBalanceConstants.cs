@@ -247,8 +247,9 @@ public static class GameBalanceConstants
     /// <summary>
     /// GAME-10: Maximale Kaufanzahl pro wiederholbarem Prestige-Shop-Item.
     /// Verhindert unendliche Skalierung der wiederholbaren Boni.
+    /// Ab Kauf 9 (3.840 PP) ist der Preis jenseits aller Erreichbarkeit.
     /// </summary>
-    public const int MaxRepeatableShopPurchases = 10;
+    public const int MaxRepeatableShopPurchases = 8;
 
     // ═══════════════════════════════════════════════════════════════════════
     // AUTO-PRODUKTION

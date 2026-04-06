@@ -1305,6 +1305,12 @@ public sealed class ForgeGameRenderer : IDisposable
         _textPaint?.Dispose();
         _textFont9?.Dispose();
 
+        // Gecachte SKPath-Objekte
+        _anvilBodyPath.Dispose();
+        _anvilReflectPath.Dispose();
+        _hornPath.Dispose();
+        _arrowPath.Dispose();
+
         // Gecachte statische Shader
         _anvilBodyShader?.Dispose();
         _hornShader?.Dispose();

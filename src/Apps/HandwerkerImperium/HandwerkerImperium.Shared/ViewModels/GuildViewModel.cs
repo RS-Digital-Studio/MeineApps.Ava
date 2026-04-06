@@ -517,11 +517,22 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
                 ViewState = GuildViewState.Browse;
             }
         }
-        catch
+        catch (Exception ex)
         {
             // GUILD-10: Gecachte Gilden-Boni auch bei Fehlern anzeigen
             UpdateCachedBonusInfo();
-            ViewState = GuildViewState.Offline;
+
+            // Nur "Offline" zeigen wenn Firebase tatsächlich nicht erreichbar ist.
+            // Bei anderen Fehlern (JSON-Parsing, Logik) → Browse-State als Fallback.
+            if (!_guildService.IsOnline)
+            {
+                ViewState = GuildViewState.Offline;
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"Gilden-Fehler (online): {ex.Message}");
+                ViewState = GuildViewState.Browse;
+            }
         }
     }
 

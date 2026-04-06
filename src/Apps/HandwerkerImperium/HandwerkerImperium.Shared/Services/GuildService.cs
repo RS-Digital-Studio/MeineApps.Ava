@@ -66,6 +66,9 @@ public sealed class GuildService : IGuildService, IDisposable
             var playerId = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(playerId)) return;
 
+            // auth_to_player Mapping sicherstellen (Security Rules benötigen es für Lese-Zugriff)
+            await _firebaseService.SyncAuthToPlayerMappingAsync();
+
             // PlayerId im GameState als Backup sichern
             if (_gameStateService.State.PlayerGuid != playerId)
             {
@@ -767,6 +770,13 @@ public sealed class GuildService : IGuildService, IDisposable
     {
         // Sicherheit: Name trimmen und auf max. 30 Zeichen begrenzen
         name = name.Trim();
+
+        // Zero-Width-Characters und Format-Zeichen entfernen
+        name = new string(name.Where(c =>
+            !char.IsControl(c) &&
+            char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format
+        ).ToArray()).Trim();
+
         if (name.Length > 30) name = name[..30];
         if (string.IsNullOrWhiteSpace(name)) return;
 

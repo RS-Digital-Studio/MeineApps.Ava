@@ -18,11 +18,11 @@ public interface ILuckySpinService
     /// <summary>Kosten pro Spin in Goldschrauben (wenn kein Gratis-/Ad-Spin verfügbar).</summary>
     int SpinCost { get; }
 
-    /// <summary>Führt einen Spin durch (Gratis oder kostenpflichtig).</summary>
-    LuckySpinPrizeType Spin();
+    /// <summary>Führt einen Spin durch (Gratis oder kostenpflichtig). Gibt null zurück wenn Kauf fehlschlägt.</summary>
+    LuckySpinPrizeType? Spin();
 
     /// <summary>BAL-AD-6: Bestimmt Gewinn für Ad-Spin (ohne Kosten). MarkAdSpinUsed() danach aufrufen.</summary>
-    LuckySpinPrizeType SpinForAd();
+    LuckySpinPrizeType? SpinForAd();
 
     /// <summary>BAL-AD-6: Markiert den Ad-Spin als heute verbraucht.</summary>
     void MarkAdSpinUsed();

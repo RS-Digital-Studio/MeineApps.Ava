@@ -83,8 +83,8 @@ public class SupplierDelivery
             // 1-3 Minuten Einkommen (Minimum 50)
             DeliveryType.Money => Math.Max(50m, Math.Round(
                 state.NetIncomePerSecond * random.Next(60, 180), 0)),
-            // 1-3 Goldschrauben
-            DeliveryType.GoldenScrews => random.Next(1, 4),
+            // 2-5 GS (verbessert von 1-3)
+            DeliveryType.GoldenScrews => random.Next(2, 6),
             // 20-100 XP (skaliert mit Level)
             DeliveryType.Experience => 20 + state.PlayerLevel * 2 + random.Next(0, 40),
             // Mood +10 für alle Worker

@@ -150,6 +150,13 @@ public partial class SawingGameView : UserControl
             _vm.OkZoneStart, _vm.OkZoneWidth,
             _vm.IsPlaying, _vm.IsResultShown,
             deltaTime);
+
+        // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
+        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
     }
 
     /// <summary>

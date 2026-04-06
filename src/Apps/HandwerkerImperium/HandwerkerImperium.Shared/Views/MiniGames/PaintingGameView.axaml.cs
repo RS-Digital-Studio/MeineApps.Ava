@@ -183,6 +183,13 @@ public partial class PaintingGameView : UserControl
         bool isAllPainted = _vm.TargetCellCount > 0 && _vm.PaintedTargetCount >= _vm.TargetCellCount;
 
         _renderer.Render(canvas, _lastBounds, _cachedCells, _vm.GridSize, paintColor, _vm.IsPlaying, isAllPainted, deltaTime);
+
+        // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
+        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
     }
 
     /// <summary>

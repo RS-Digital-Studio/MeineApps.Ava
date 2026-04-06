@@ -65,7 +65,7 @@ public sealed class OfflineProgressService : IOfflineProgressService
             ws.LevelResistanceBonus = levelResistance;
 
         // === Einkommen + Kosten via IncomeCalculatorService (zentrale Berechnung) ===
-        decimal prestigeBonus = GetPrestigeIncomeBonus(state);
+        decimal prestigeBonus = IncomeCalculatorService.GetPrestigeIncomeBonus(state);
         decimal grossIncome = _incomeCalculator?.CalculateGrossIncome(state, prestigeBonus)
                               ?? state.TotalIncomePerSecond;
         grossIncome = _incomeCalculator?.ApplySoftCap(state, grossIncome) ?? grossIncome;
@@ -204,33 +204,6 @@ public sealed class OfflineProgressService : IOfflineProgressService
             return TimeSpan.Zero;
 
         return now - lastPlayed;
-    }
-
-    /// <summary>
-    /// Berechnet Income-Multiplikator-Bonus aus gekauften Prestige-Shop-Items.
-    /// </summary>
-    private static decimal GetPrestigeIncomeBonus(GameState state)
-    {
-        var purchased = state.Prestige.PurchasedShopItems;
-        var repeatableCounts = state.Prestige.RepeatableItemCounts;
-        if (purchased.Count == 0 && repeatableCounts.Count == 0) return 0m;
-
-        decimal bonus = 0m;
-        foreach (var item in PrestigeShop.GetAllItems())
-        {
-            // Wiederholbare Items: Effekt * Kaufanzahl
-            if (item.IsRepeatable)
-            {
-                if (repeatableCounts.TryGetValue(item.Id, out var count) && count > 0
-                    && item.Effect.IncomeMultiplier > 0)
-                    bonus += item.Effect.IncomeMultiplier * count;
-                continue;
-            }
-
-            if (purchased.Contains(item.Id) && item.Effect.IncomeMultiplier > 0)
-                bonus += item.Effect.IncomeMultiplier;
-        }
-        return bonus;
     }
 
     /// <summary>

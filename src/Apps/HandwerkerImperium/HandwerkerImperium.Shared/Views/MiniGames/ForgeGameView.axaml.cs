@@ -165,6 +165,13 @@ public partial class ForgeGameView : UserControl
             _vm.IsHammering,
             isAllComplete,
             deltaTime);
+
+        // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
+        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
     }
 
     /// <summary>

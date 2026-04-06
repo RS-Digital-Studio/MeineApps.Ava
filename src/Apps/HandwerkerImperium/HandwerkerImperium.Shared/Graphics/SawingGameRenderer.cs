@@ -97,6 +97,14 @@ public sealed class SawingGameRenderer : IDisposable
     private SKRect _lastBounds;
     private SKShader? _woodGradientShader;
 
+    // Gecachte Säge-Shader (Toleranz-basiert: nur neu erstellen bei >2dp Positionsänderung)
+    private float _lastBladeY = float.NaN;
+    private float _lastHandleY = float.NaN;
+    private float _lastSawHalfWidth = float.NaN;
+    private float _lastSawX = float.NaN;
+    private SKShader? _cachedBladeShader;
+    private SKShader? _cachedHandleShader;
+
     // Gecachte Gradient-Positionen (vermeidet Array-Allokation pro Frame)
     private static readonly float[] s_woodGradientPositions = [0, 0.5f, 1.0f];
 
@@ -550,23 +558,51 @@ public sealed class SawingGameRenderer : IDisposable
 
     /// <summary>
     /// Zeichnet die Saege mit detailliertem Blatt, Zaehnen und Griff.
+    /// Shader werden mit 2dp-Toleranz gecacht (vermeidet 60 native Allokationen/s bei 30fps).
     /// </summary>
     private void DrawSaw(SKCanvas canvas, float x, float y, float sawHalfWidth)
     {
         float bladeH = 5;
         float toothH = 4;
 
-        // Saegeblatt (metallischer Gradient, Position dynamisch durch Animation)
-        var bladeShader = SKShader.CreateLinearGradient(
-            new SKPoint(x - sawHalfWidth, y),
-            new SKPoint(x - sawHalfWidth, y + bladeH),
-            [SawBladeShine, SawBlade, new SKColor(0x90, 0x90, 0x90)],
-            [0, 0.4f, 1.0f],
-            SKShaderTileMode.Clamp);
-        _shaderPaint.Shader = bladeShader;
+        // Shader bei >2dp Positionsänderung oder erstmalig neu erstellen
+        bool needNewShaders = _cachedBladeShader == null
+            || Math.Abs(y - _lastBladeY) > 2f
+            || Math.Abs(x - _lastSawX) > 2f
+            || Math.Abs(sawHalfWidth - _lastSawHalfWidth) > 0.5f;
+
+        if (needNewShaders)
+        {
+            _cachedBladeShader?.Dispose();
+            _cachedBladeShader = SKShader.CreateLinearGradient(
+                new SKPoint(x - sawHalfWidth, y),
+                new SKPoint(x - sawHalfWidth, y + bladeH),
+                [SawBladeShine, SawBlade, new SKColor(0x90, 0x90, 0x90)],
+                [0, 0.4f, 1.0f],
+                SKShaderTileMode.Clamp);
+
+            float handleW2 = 20;
+            float handleH2 = 16;
+            float hx = x - handleW2 / 2;
+            float hy = y - handleH2;
+            _cachedHandleShader?.Dispose();
+            _cachedHandleShader = SKShader.CreateLinearGradient(
+                new SKPoint(hx, hy),
+                new SKPoint(hx, hy + handleH2),
+                [SawHandleLight, SawHandle, SawHandleDark],
+                [0, 0.5f, 1.0f],
+                SKShaderTileMode.Clamp);
+
+            _lastBladeY = y;
+            _lastSawX = x;
+            _lastSawHalfWidth = sawHalfWidth;
+            _lastHandleY = hy;
+        }
+
+        // Saegeblatt
+        _shaderPaint.Shader = _cachedBladeShader;
         canvas.DrawRect(x - sawHalfWidth, y, sawHalfWidth * 2, bladeH, _shaderPaint);
         _shaderPaint.Shader = null;
-        bladeShader.Dispose();
 
         // Saegezaehne (alternierend gross/klein)
         _fillPaint.Color = SawTooth;
@@ -588,16 +624,9 @@ public sealed class SawingGameRenderer : IDisposable
         float handleX = x - handleW / 2;
         float handleY = y - handleH;
 
-        var handleShader = SKShader.CreateLinearGradient(
-            new SKPoint(handleX, handleY),
-            new SKPoint(handleX, handleY + handleH),
-            [SawHandleLight, SawHandle, SawHandleDark],
-            [0, 0.5f, 1.0f],
-            SKShaderTileMode.Clamp);
-        _shaderPaint.Shader = handleShader;
+        _shaderPaint.Shader = _cachedHandleShader;
         canvas.DrawRect(handleX, handleY, handleW, handleH, _shaderPaint);
         _shaderPaint.Shader = null;
-        handleShader.Dispose();
 
         // Griff-Akzent (Metallring oben/unten)
         _fillPaint.Color = new SKColor(0x90, 0x90, 0x90);
@@ -858,7 +887,9 @@ public sealed class SawingGameRenderer : IDisposable
         _fineGrainPaint?.Dispose();
         _knotBlurFilter?.Dispose();
 
-        // Gecachter statischer Shader
+        // Gecachte Shader
         _woodGradientShader?.Dispose();
+        _cachedBladeShader?.Dispose();
+        _cachedHandleShader?.Dispose();
     }
 }

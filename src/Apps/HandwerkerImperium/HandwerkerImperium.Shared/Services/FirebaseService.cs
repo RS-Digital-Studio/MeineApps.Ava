@@ -118,14 +118,26 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                     return;
                 }
 
-                // Refresh endgültig fehlgeschlagen → UID beibehalten, offline bleiben.
-                // Keinen neuen anonymen Account erstellen (würde UID ändern → Gilde verloren)
-                IsOnline = false;
-                throw new InvalidOperationException("Firebase Token-Refresh fehlgeschlagen");
+                // Refresh fehlgeschlagen → neuen anonymen Account als Fallback erstellen.
+                // Sicher seit PlayerId-Migration: Spielerdaten sind an PlayerId gebunden, nicht an UID.
+                _log.Error("Token-Refresh fehlgeschlagen, erstelle neuen anonymen Account als Fallback");
+                try
+                {
+                    await SignUpAnonymouslyAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    // Auch Signup fehlgeschlagen → wirklich offline
+                    _log.Error("Fallback-Signup fehlgeschlagen", ex);
+                    IsOnline = false;
+                    throw new InvalidOperationException("Firebase Auth komplett fehlgeschlagen", ex);
+                }
             }
-
-            // Erster Start ohne gespeicherten Account → neuen anonymen Account erstellen
-            await SignUpAnonymouslyAsync().ConfigureAwait(false);
+            else
+            {
+                // Erster Start ohne gespeicherten Account → neuen anonymen Account erstellen
+                await SignUpAnonymouslyAsync().ConfigureAwait(false);
+            }
 
             // auth_to_player Mapping schreiben (fire-and-forget)
             SyncAuthToPlayerMappingAsync().SafeFireAndForget();
@@ -251,11 +263,11 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                 return null;
             }
 
+            IsOnline = true;
             var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (string.IsNullOrEmpty(json) || json == "null")
                 return null;
 
-            IsOnline = true;
             return JsonSerializer.Deserialize<T>(json);
         }
         catch (Exception ex)
@@ -432,11 +444,11 @@ public sealed class FirebaseService : IFirebaseService, IDisposable
                 return null;
             }
 
+            IsOnline = true;
             var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (string.IsNullOrEmpty(json) || json == "null")
                 return null;
 
-            IsOnline = true;
             return json;
         }
         catch (Exception ex)

@@ -236,6 +236,17 @@
                                AutomationProperties.AutomationId="Dashboard_Txt_BoostMultiplier" />
                   </StackPanel>
                 </Border>
+                <!-- GAM-4: Saisonaler Multiplikator-Chip -->
+                <Border CornerRadius="10" Padding="6,2"
+                        Background="{DynamicResource SurfaceBrush}"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="Dashboard_Border_Season">
+                  <TextBlock Text="{Binding SeasonalModifierText}"
+                             FontSize="10"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             VerticalAlignment="Center"
+                             AutomationProperties.AutomationId="Dashboard_Txt_Season" />
+                </Border>
                 <!-- Reputation nur bei Warnung (<50) oder Highlight (>=80) -->
                 <Button Classes="Text" Padding="4,2"
                         MinHeight="44"
@@ -341,7 +352,8 @@
                            PointerMoved="OnWorkshopCardsPointerMoved" />
 
         <!-- Banner-Strip (kompakte Chips, ab Lv.3) -->
-        <dashboard:BannerStrip Margin="0,8,0,0" IsVisible="{Binding ShowBannerStrip}" />
+        <dashboard:BannerStrip Margin="0,8,0,0" IsVisible="{Binding ShowBannerStrip}"
+                              AutomationProperties.AutomationId="Dashboard_BannerStrip" />
 
         <!-- ============================================================= -->
         <!-- AUFTRÄGE + QUICK JOBS (Tab-Umschalter)                       -->

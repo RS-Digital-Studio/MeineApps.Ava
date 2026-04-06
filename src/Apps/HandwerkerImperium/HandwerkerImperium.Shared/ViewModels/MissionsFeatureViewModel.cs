@@ -106,13 +106,7 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
     private bool _hasDailyChallenges;
 
     [ObservableProperty]
-    private bool _isChallengesExpanded = false;
-
-    [ObservableProperty]
     private bool _canClaimAllBonus;
-
-    [ObservableProperty]
-    private string _challengesExpandIconKind = "ChevronDown";
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES - WEEKLY MISSIONS
@@ -132,12 +126,6 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
 
     [ObservableProperty]
     private string _weeklyMissionResetDisplay = "";
-
-    [ObservableProperty]
-    private bool _isWeeklyMissionsExpanded = false;
-
-    [ObservableProperty]
-    private string _weeklyMissionsExpandIconKind = "ChevronDown";
 
     /// <summary>
     /// Anzahl claimbarer Daily Challenges + Weekly Missions (fuer Tab-Bar Badge).
@@ -277,13 +265,6 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         CelebrationRequested?.Invoke();
         FloatingTextRequested?.Invoke($"+{_weeklyMissionService.AllCompletedBonusScrews} \u2699", "golden_screws");
         RefreshWeeklyMissions();
-    }
-
-    [RelayCommand]
-    private void ToggleWeeklyMissionsExpanded()
-    {
-        IsWeeklyMissionsExpanded = !IsWeeklyMissionsExpanded;
-        WeeklyMissionsExpandIconKind = IsWeeklyMissionsExpanded ? "ChevronUp" : "ChevronDown";
     }
 
     public void RefreshWeeklyMissions()
@@ -493,13 +474,6 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         // MiniGame-Navigation anfordern (MainViewModel routet zum richtigen MiniGame)
         var route = job.MiniGameType.GetRoute();
         NavigateToMiniGameRequested?.Invoke(route, "");
-    }
-
-    [RelayCommand]
-    private void ToggleChallengesExpanded()
-    {
-        IsChallengesExpanded = !IsChallengesExpanded;
-        ChallengesExpandIconKind = IsChallengesExpanded ? "ChevronUp" : "ChevronDown";
     }
 
     [RelayCommand]

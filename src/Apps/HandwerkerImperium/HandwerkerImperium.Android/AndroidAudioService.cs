@@ -53,7 +53,7 @@ public sealed class AndroidAudioService : IAudioService
         set
         {
             _gameStateService.State.Settings.SoundEnabled = value;
-            _gameStateService.MarkDirty();
+            // State wird via AutoSave (30s) persistiert
         }
     }
 
@@ -63,7 +63,7 @@ public sealed class AndroidAudioService : IAudioService
         set
         {
             _gameStateService.State.Settings.MusicEnabled = value;
-            _gameStateService.MarkDirty();
+            // State wird via AutoSave (30s) persistiert
             if (!value) StopMusic();
         }
     }

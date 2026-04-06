@@ -206,8 +206,8 @@ public sealed class CraftingService : ICraftingService
         // Level-Multiplikator: logarithmisch skalierend
         decimal levelMult = 1.0m + (decimal)Math.Log2(1.0 + workshopLevel / GameBalanceConstants.CraftingSellPriceLogDivisor);
 
-        // Prestige-Shop Income-Bonus (aus PrestigeShop-Items berechnen)
-        decimal prestigeIncomeBonus = GetPrestigeIncomeBonus(state);
+        // Prestige-Shop Income-Bonus (zentrale Berechnung in IncomeCalculatorService)
+        decimal prestigeIncomeBonus = IncomeCalculatorService.GetPrestigeIncomeBonus(state);
 
         // Rebirth-Bonus des Workshops
         decimal rebirthBonus = GetRebirthBonusForProduct(productId, state);
@@ -285,30 +285,4 @@ public sealed class CraftingService : ICraftingService
         return bonus;
     }
 
-    /// <summary>
-    /// Berechnet den Prestige-Shop-Einkommensbonus aus gekauften Items.
-    /// </summary>
-    private static decimal GetPrestigeIncomeBonus(GameState state)
-    {
-        var purchased = state.Prestige.PurchasedShopItems;
-        var repeatableCounts = state.Prestige.RepeatableItemCounts;
-        if (purchased.Count == 0 && repeatableCounts.Count == 0) return 0m;
-
-        decimal bonus = 0m;
-        var allItems = PrestigeShop.GetAllItems();
-        for (int i = 0; i < allItems.Count; i++)
-        {
-            var item = allItems[i];
-            if (item.IsRepeatable)
-            {
-                if (repeatableCounts.TryGetValue(item.Id, out var count) && count > 0
-                    && item.Effect.IncomeMultiplier > 0)
-                    bonus += item.Effect.IncomeMultiplier * count;
-                continue;
-            }
-            if (purchased.Contains(item.Id) && item.Effect.IncomeMultiplier > 0)
-                bonus += item.Effect.IncomeMultiplier;
-        }
-        return bonus;
-    }
 }

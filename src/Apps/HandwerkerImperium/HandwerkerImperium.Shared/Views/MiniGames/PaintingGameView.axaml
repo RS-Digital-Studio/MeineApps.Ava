@@ -22,7 +22,7 @@
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Cancel Button -->
         <Button AutomationProperties.AutomationId="Painting_Btn_Cancel"
-                Classes="Text"
+                Classes="Text" MinHeight="44" MinWidth="44"
                 Command="{Binding CancelCommand}">
           <icons:GameIcon AutomationProperties.AutomationId="Painting_Icon_Close"
                            Kind="Close" Width="28" Height="28" />
@@ -56,7 +56,7 @@
 
         <!-- Info + Timer -->
         <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4" HorizontalAlignment="Right">
-          <Button Classes="Text" Padding="4"
+          <Button Classes="Text" Padding="4" MinHeight="44" MinWidth="44"
                   Command="{Binding ShowTutorialInfoCommand}"
                   IsVisible="{Binding CanShowTutorialInfo}"
                   AutomationProperties.AutomationId="Painting_Btn_TutorialInfo">
@@ -132,7 +132,7 @@
         <Border Grid.Column="1"
                 x:Name="ComboBadge"
                 AutomationProperties.AutomationId="Painting_Border_ComboBadge"
-                Background="#E8AA00"
+                Background="{StaticResource CraftComboBadgeBrush}"
                 CornerRadius="12"
                 Padding="12,4"
                 IsVisible="{Binding IsComboActive}"

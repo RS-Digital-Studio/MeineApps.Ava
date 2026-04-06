@@ -83,6 +83,7 @@
     <SolidColorBrush x:Key="CraftResearchAccentBrush" Color="#EA580C" />
     <SolidColorBrush x:Key="CraftChatAccentBrush" Color="#92400E" />
     <SolidColorBrush x:Key="WarTitleBrush" Color="#FCA5A5" />
+    <SolidColorBrush x:Key="CraftComboBadgeBrush" Color="#E8AA00" />
     <SolidColorBrush x:Key="SpecEfficiencyBrush" Color="#FF9800" />
     <SolidColorBrush x:Key="SpecQualityBrush" Color="#2196F3" />
     <SolidColorBrush x:Key="SpecEconomyBrush" Color="#4CAF50" />

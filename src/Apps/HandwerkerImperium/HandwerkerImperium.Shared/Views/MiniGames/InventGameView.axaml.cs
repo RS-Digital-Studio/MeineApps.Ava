@@ -172,6 +172,13 @@ public partial class InventGameView : UserControl
 
         _renderer.Render(canvas, _lastBounds, _cachedParts, cols, _vm.IsMemorizing, _vm.IsPlaying,
             _vm.CompletedParts, _vm.TotalParts, deltaTime);
+
+        // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
+        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
     }
 
     /// <summary>

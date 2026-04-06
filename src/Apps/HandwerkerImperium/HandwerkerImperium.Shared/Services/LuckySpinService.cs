@@ -24,7 +24,7 @@ public sealed class LuckySpinService : ILuckySpinService
         (LuckySpinPrizeType.GoldenScrews5, 12),
         (LuckySpinPrizeType.SpeedBoost, 8),
         (LuckySpinPrizeType.ToolUpgrade, 4),
-        (LuckySpinPrizeType.Jackpot50, 1),
+        (LuckySpinPrizeType.Jackpot50, 2),  // 2% statt 1% (motivierender)
     ];
 
     private static readonly int TotalWeight = PrizeWeights.Sum(p => p.weight);
@@ -40,7 +40,7 @@ public sealed class LuckySpinService : ILuckySpinService
     private const int FlatSpinCost = 5;
     public int SpinCost => FlatSpinCost;
 
-    public LuckySpinPrizeType Spin()
+    public LuckySpinPrizeType? Spin()
     {
         var spinState = _gameStateService.State.LuckySpin;
         spinState.ResetDailyIfNeeded();
@@ -52,7 +52,7 @@ public sealed class LuckySpinService : ILuckySpinService
         else
         {
             if (!_gameStateService.TrySpendGoldenScrews(SpinCost))
-                return LuckySpinPrizeType.MoneySmall;
+                return null;
 
             spinState.PaidSpinsToday++;
             spinState.LastPaidSpinDate = DateTime.UtcNow;
@@ -63,7 +63,7 @@ public sealed class LuckySpinService : ILuckySpinService
     }
 
     /// <summary>BAL-AD-6: Gewinn für Ad-Spin bestimmen (ohne Kosten). MarkAdSpinUsed() danach.</summary>
-    public LuckySpinPrizeType SpinForAd()
+    public LuckySpinPrizeType? SpinForAd()
     {
         _gameStateService.State.LuckySpin.TotalSpins++;
         return GetRandomPrize();

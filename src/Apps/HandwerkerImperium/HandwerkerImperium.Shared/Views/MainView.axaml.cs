@@ -57,6 +57,7 @@ public partial class MainView : UserControl
         if (_vm != null)
         {
             _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm.PageTransitionStarting -= OnPageTransitionStarting;
             _vm.CelebrationRequested -= OnCelebrationRequested;
             _vm.CeremonyRequested -= OnCeremonyRequested;
             _vm = null;
@@ -74,6 +75,7 @@ public partial class MainView : UserControl
         if (_vm != null)
         {
             _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm.PageTransitionStarting -= OnPageTransitionStarting;
             _vm.CelebrationRequested -= OnCelebrationRequested;
             _vm.CeremonyRequested -= OnCeremonyRequested;
         }
@@ -83,6 +85,7 @@ public partial class MainView : UserControl
         if (_vm != null)
         {
             _vm.PropertyChanged += OnVmPropertyChanged;
+            _vm.PageTransitionStarting += OnPageTransitionStarting;
             _vm.CelebrationRequested += OnCelebrationRequested;
             _vm.CeremonyRequested += OnCeremonyRequested;
 
@@ -401,8 +404,19 @@ public partial class MainView : UserControl
     };
 
     /// <summary>
+    /// Setzt Opacity=0 VOR dem Binding-Update (verhindert Flimmern).
+    /// Wird von PageTransitionStarting aufgerufen — feuert bevor ActivePage-Wert sich ändert.
+    /// </summary>
+    private void OnPageTransitionStarting()
+    {
+        var panel = this.FindControl<Panel>("ContentPanel");
+        if (panel != null) panel.Opacity = 0;
+    }
+
+    /// <summary>
     /// Fade-In Animation für das ContentPanel bei Tab-Wechsel.
-    /// Startet bei Opacity 0 und animiert auf 1 (150ms, CubicEaseOut).
+    /// Animiert Opacity 0→1 (150ms, CubicEaseOut). Opacity=0 wurde bereits durch
+    /// OnPageTransitionStarting gesetzt bevor die Bindings updaten.
     /// </summary>
     private async void FadeInContentPanel()
     {
@@ -411,7 +425,6 @@ public partial class MainView : UserControl
             var panel = this.FindControl<Panel>("ContentPanel");
             if (panel == null) return;
 
-            panel.Opacity = 0;
             await s_fadeInAnimation.RunAsync(panel);
         }
         catch (Exception)

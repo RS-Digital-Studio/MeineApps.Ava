@@ -43,6 +43,10 @@ public static class ResearchIconRenderer
     // ein einziger gecachter Path reicht für alle 17 Verwendungen (kein GC-Druck)
     private static readonly SKPath _cachedPath = new();
 
+    // Gecachte Fonts (vermeidet native Allokation pro Render-Aufruf)
+    private static readonly SKFont _labelFont = new() { Embolden = true };
+    private static readonly SKFont _crownFont = new() { Embolden = true };
+
     /// <summary>
     /// Rendert das große Forschungs-Icon in einen quadratischen Bereich.
     /// </summary>
@@ -577,9 +581,9 @@ public static class ResearchIconRenderer
         canvas.DrawCircle(cx + scale * 0.5f, cy + scale * 0.1f, scale * 0.06f, _fill);
 
         // "AUTO" Label
-        using var font = new SKFont { Size = scale * 0.25f, Embolden = true };
+        _labelFont.Size = scale * 0.25f;
         _fill.Color = GreenStar;
-        canvas.DrawText("AUTO", cx, cy + scale * 0.55f, SKTextAlign.Center, font, _fill);
+        canvas.DrawText("AUTO", cx, cy + scale * 0.55f, SKTextAlign.Center, _labelFont, _fill);
     }
 
     /// <summary>Lupe (UnlocksHeadhunter)</summary>
@@ -666,9 +670,9 @@ public static class ResearchIconRenderer
         canvas.DrawCircle(cx + scale * 0.15f, cy - scale * 0.35f, scale * 0.06f, _fill);
 
         // "S" auf der Krone
-        using var font = new SKFont { Size = scale * 0.3f, Embolden = true };
+        _crownFont.Size = scale * 0.3f;
         _fill.Color = SKColors.White;
-        canvas.DrawText("S", cx, cy + scale * 0.03f, SKTextAlign.Center, font, _fill);
+        canvas.DrawText("S", cx, cy + scale * 0.03f, SKTextAlign.Center, _crownFont, _fill);
     }
 
     /// <summary>Netzwerk-Diagramm (UnlocksAutoAssign)</summary>
@@ -680,27 +684,26 @@ public static class ResearchIconRenderer
         _stroke.Color = new SKColor(0x60, 0x80, 0x60, 0xB0);
         _stroke.StrokeWidth = 2;
 
-        // Positionen der 5 Knoten
-        float[][] nodes =
-        [
-            [cx, cy - scale * 0.35f],               // Oben-Mitte
-            [cx - scale * 0.45f, cy + scale * 0.05f], // Links
-            [cx + scale * 0.45f, cy + scale * 0.05f], // Rechts
-            [cx - scale * 0.25f, cy + scale * 0.4f],  // Unten-links
-            [cx + scale * 0.25f, cy + scale * 0.4f]   // Unten-rechts
-        ];
+        // Positionen der 5 Knoten (lokale Variablen statt Jagged Array, vermeidet 6 Heap-Allokationen)
+        float n0x = cx, n0y = cy - scale * 0.35f;                         // Oben-Mitte
+        float n1x = cx - scale * 0.45f, n1y = cy + scale * 0.05f;         // Links
+        float n2x = cx + scale * 0.45f, n2y = cy + scale * 0.05f;         // Rechts
+        float n3x = cx - scale * 0.25f, n3y = cy + scale * 0.4f;          // Unten-links
+        float n4x = cx + scale * 0.25f, n4y = cy + scale * 0.4f;          // Unten-rechts
 
         // Verbindungen
-        canvas.DrawLine(nodes[0][0], nodes[0][1], nodes[1][0], nodes[1][1], _stroke);
-        canvas.DrawLine(nodes[0][0], nodes[0][1], nodes[2][0], nodes[2][1], _stroke);
-        canvas.DrawLine(nodes[1][0], nodes[1][1], nodes[3][0], nodes[3][1], _stroke);
-        canvas.DrawLine(nodes[2][0], nodes[2][1], nodes[4][0], nodes[4][1], _stroke);
-        canvas.DrawLine(nodes[3][0], nodes[3][1], nodes[4][0], nodes[4][1], _stroke);
+        canvas.DrawLine(n0x, n0y, n1x, n1y, _stroke);
+        canvas.DrawLine(n0x, n0y, n2x, n2y, _stroke);
+        canvas.DrawLine(n1x, n1y, n3x, n3y, _stroke);
+        canvas.DrawLine(n2x, n2y, n4x, n4y, _stroke);
+        canvas.DrawLine(n3x, n3y, n4x, n4y, _stroke);
 
         // Knoten
-        for (int i = 0; i < nodes.Length; i++)
+        ReadOnlySpan<float> nodeX = [n0x, n1x, n2x, n3x, n4x];
+        ReadOnlySpan<float> nodeY = [n0y, n1y, n2y, n3y, n4y];
+        for (int i = 0; i < 5; i++)
         {
-            float nx = nodes[i][0], ny = nodes[i][1];
+            float nx = nodeX[i], ny = nodeY[i];
 
             // Glow
             _fill.Color = GreenStar.WithAlpha(40);

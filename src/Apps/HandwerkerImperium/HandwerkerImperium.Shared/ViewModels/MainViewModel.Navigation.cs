@@ -158,6 +158,19 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void NavigateToWorkerMarket() => OnChildNavigation("workers");
 
+    /// <summary>
+    /// Navigiert direkt zum schlimmsten Worker (aus Worker-Warning-Chip im Dashboard).
+    /// Falls kein Worker identifiziert: Fallback auf Worker-Markt.
+    /// </summary>
+    [RelayCommand]
+    private void NavigateToWorkerWarning()
+    {
+        if (!string.IsNullOrEmpty(_worstWorkerId))
+            OnChildNavigation($"worker?id={_worstWorkerId}");
+        else
+            OnChildNavigation("workers");
+    }
+
     [RelayCommand]
     private void NavigateToResearch() => OnChildNavigation("research");
 
@@ -189,10 +202,36 @@ public sealed partial class MainViewModel
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // BACK-NAVIGATION (Double-Back-to-Exit)
+    // BACK-NAVIGATION (Stack-basiert: immer zurück woher man kam)
     // ═══════════════════════════════════════════════════════════════════════
 
     private readonly BackPressHelper _backPressHelper = new();
+
+    /// <summary>
+    /// Navigiert zur vorherigen Seite aus dem Back-Stack.
+    /// Fallback auf Dashboard wenn der Stack leer ist.
+    /// </summary>
+    private void NavigateBack()
+    {
+        _isNavigatingBack = true;
+        try
+        {
+            if (_navigationStack.Count > 0)
+            {
+                var target = _navigationStack.Pop();
+                ActivePage = target;
+            }
+            else
+            {
+                ActivePage = ActivePage.Dashboard;
+            }
+        }
+        finally
+        {
+            _isNavigatingBack = false;
+        }
+        RefreshFromState();
+    }
 
     /// <summary>
     /// Behandelt die Zurück-Taste. Gibt true zurück wenn konsumiert (App bleibt offen),
@@ -222,52 +261,16 @@ public sealed partial class MainViewModel
             return true;
         }
 
-        // 3. Seitenbasierte Rücknavigation via ActivePage
-        switch (ActivePage)
+        // 3. Stack-basierte Rücknavigation (immer zurück woher man kam)
+        if (ActivePage == ActivePage.Dashboard)
         {
-            // MiniGames → Dashboard
-            case ActivePage.SawingGame or ActivePage.PipePuzzle or ActivePage.WiringGame or
-                 ActivePage.PaintingGame or ActivePage.RoofTilingGame or ActivePage.BlueprintGame or
-                 ActivePage.DesignPuzzleGame or ActivePage.InspectionGame or
-                 ActivePage.ForgeGame or ActivePage.InventGame:
-            case ActivePage.WorkshopDetail or ActivePage.OrderDetail:
-                SelectDashboardTab();
-                return true;
-
-            // Guild-Sub-Seiten → Guild-Hub
-            case ActivePage.GuildResearch or ActivePage.GuildMembers or ActivePage.GuildInvite or
-                 ActivePage.GuildWarSeason or ActivePage.GuildBoss or ActivePage.GuildHall or
-                 ActivePage.GuildAchievements or ActivePage.GuildChat or ActivePage.GuildWar:
-                SelectGuildTab();
-                return true;
-
-            // Imperium-Sub-Views → Imperium-Tab
-            case ActivePage.WorkerMarket or ActivePage.Research or ActivePage.Manager or
-                 ActivePage.Crafting or ActivePage.Ascension:
-                SelectBuildingsTab();
-                return true;
-
-            // Missionen-Sub-Views → Missionen-Tab
-            case ActivePage.Tournament or ActivePage.SeasonalEvent or ActivePage.BattlePass:
-            case ActivePage.Statistics or ActivePage.Achievements:
-                SelectMissionenTab();
-                return true;
-
-            // Nicht-Dashboard Haupt-Tabs → Dashboard
-            case ActivePage.Shop or ActivePage.Settings or
-                 ActivePage.Buildings or ActivePage.Missionen or ActivePage.Guild:
-                SelectDashboardTab();
-                return true;
-
             // Dashboard → Double-Back-to-Exit
-            case ActivePage.Dashboard:
-                var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Erneut drücken zum Beenden";
-                return _backPressHelper.HandleDoubleBack(msg);
-
-            default:
-                SelectDashboardTab();
-                return true;
+            var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Erneut drücken zum Beenden";
+            return _backPressHelper.HandleDoubleBack(msg);
         }
+
+        NavigateBack();
+        return true;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -322,33 +325,8 @@ public sealed partial class MainViewModel
                 MissionsVM.RefreshQuickJobs();
             }
 
-            // Rücknavigation basierend auf aktuellem ActivePage
-            switch (ActivePage)
-            {
-                // Guild-Sub-Seiten → Guild-Hub
-                case ActivePage.GuildResearch or ActivePage.GuildMembers or ActivePage.GuildInvite or
-                     ActivePage.GuildWarSeason or ActivePage.GuildBoss or ActivePage.GuildHall or
-                     ActivePage.GuildAchievements or ActivePage.GuildChat or ActivePage.GuildWar:
-                    SelectGuildTab();
-                    return;
-
-                // Imperium-Sub-Views → Imperium-Tab
-                case ActivePage.WorkerMarket or ActivePage.Research or ActivePage.Manager or
-                     ActivePage.Crafting or ActivePage.Ascension:
-                    SelectBuildingsTab();
-                    RefreshFromState();
-                    return;
-
-                // Missionen-Sub-Views → Missionen-Tab
-                case ActivePage.Tournament or ActivePage.SeasonalEvent or ActivePage.BattlePass or
-                     ActivePage.Statistics or ActivePage.Achievements:
-                    SelectMissionenTab();
-                    RefreshFromState();
-                    return;
-            }
-
-            SelectDashboardTab();
-            RefreshFromState();
+            // Stack-basierte Rücknavigation (immer zurück woher man kam)
+            NavigateBack();
             return;
         }
 

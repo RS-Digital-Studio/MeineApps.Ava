@@ -24,6 +24,9 @@ public interface IFirebaseService : IDisposable
     /// <summary>Stellt sicher dass der User authentifiziert ist (Anonymous Auth).</summary>
     Task EnsureAuthenticatedAsync();
 
+    /// <summary>Schreibt das auth_to_player Mapping (UID → PlayerId) in Firebase.</summary>
+    Task SyncAuthToPlayerMappingAsync();
+
     /// <summary>GET-Request an Firebase Realtime Database.</summary>
     Task<T?> GetAsync<T>(string path) where T : class;
 

@@ -63,7 +63,7 @@ public sealed partial class MainViewModel
     private Task RefreshOrdersAsync() => EconomyVM.RefreshOrdersAsync();
 
     [RelayCommand]
-    private void ActivateRush() => EconomyVM.ActivateRush();
+    private Task ActivateRushAsync() => EconomyVM.ActivateRushAsync();
 
     [RelayCommand]
     private void ClaimDelivery() => EconomyVM.ClaimDelivery();

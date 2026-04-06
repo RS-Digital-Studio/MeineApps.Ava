@@ -36,6 +36,7 @@
             <!-- Back Button -->
             <Button Classes="Text"
                     AutomationProperties.AutomationId="Research_Btn_Back"
+                    MinHeight="44" MinWidth="44"
                     Command="{Binding GoBackCommand}">
               <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                                AutomationProperties.AutomationId="Research_Icon_Back"
@@ -164,7 +165,7 @@
     <!-- ================================================================= -->
     <Panel Grid.Row="2" Margin="16,8,16,0"
            AutomationProperties.AutomationId="Research_Panel_TabSelector">
-      <skia:SKCanvasView x:Name="TabCanvas" Height="44"
+      <skia:SKCanvasView x:Name="TabCanvas" Height="48"
                          AutomationProperties.AutomationId="Research_Canvas_Tabs" />
 
       <!-- Unsichtbare Touch-Buttons über den Tabs -->
@@ -172,6 +173,7 @@
         <Button Grid.Column="0"
                 AutomationProperties.AutomationId="Research_Btn_TabTools"
                 HorizontalAlignment="Stretch"
+                MinHeight="48"
                 Background="Transparent"
                 Foreground="Transparent"
                 Padding="0"
@@ -179,6 +181,7 @@
         <Button Grid.Column="1"
                 AutomationProperties.AutomationId="Research_Btn_TabManagement"
                 HorizontalAlignment="Stretch"
+                MinHeight="48"
                 Background="Transparent"
                 Foreground="Transparent"
                 Padding="0"
@@ -186,6 +189,7 @@
         <Button Grid.Column="2"
                 AutomationProperties.AutomationId="Research_Btn_TabMarketing"
                 HorizontalAlignment="Stretch"
+                MinHeight="48"
                 Background="Transparent"
                 Foreground="Transparent"
                 Padding="0"
@@ -199,7 +203,7 @@
     <ScrollViewer Grid.Row="3"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
-      <StackPanel Margin="16,0,16,0" Spacing="0">
+      <StackPanel Margin="16,0,16,84" Spacing="0">
 
         <!-- Branch-Banner (SkiaSharp animierte Szene) -->
         <skia:SKCanvasView x:Name="BranchBannerCanvas" Height="80" Margin="0,8,0,8"

@@ -80,7 +80,7 @@ public sealed partial class GameLoopService
     }
 
     /// <summary>
-    /// Verarbeitet AutoAssign: Weist idle Worker dem Workshop mit den meisten freien Plaetzen zu.
+    /// Verarbeitet AutoAssign: Reaktiviert ruhende Worker mit niedriger Erschöpfung (kleinergleich 20%).
     /// </summary>
     private void ProcessAutoAssign(GameState state)
     {

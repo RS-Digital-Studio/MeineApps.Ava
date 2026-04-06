@@ -12,7 +12,7 @@
         <Border Classes="CardElevated" Padding="12" IsVisible="{Binding HasWeeklyMissions}"
                 AutomationProperties.AutomationId="Dashboard_Border_WeeklyMissions">
           <StackPanel Spacing="8">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*">
               <icons:GameIcon Kind="ClipboardList" Width="24" Height="24"
                                Foreground="{StaticResource CraftPrimaryBrush}"
                                AutomationProperties.AutomationId="Dashboard_Icon_WeeklyMissions" />
@@ -25,15 +25,8 @@
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionsReset" />
               </StackPanel>
-              <Button Grid.Column="2" Classes="Text" Padding="4"
-                      MinHeight="44" MinWidth="44"
-                      Command="{Binding ToggleWeeklyMissionsExpandedCommand}"
-                      AutomationProperties.AutomationId="Dashboard_Btn_ToggleWeeklyMissions">
-                <icons:GameIcon Kind="{Binding WeeklyMissionsExpandIconKind}" Width="24" Height="24" />
-              </Button>
             </Grid>
             <ItemsControl ItemsSource="{Binding WeeklyMissions}"
-                          IsVisible="{Binding IsWeeklyMissionsExpanded}"
                           AutomationProperties.AutomationId="Dashboard_Items_WeeklyMissions">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:WeeklyMission">

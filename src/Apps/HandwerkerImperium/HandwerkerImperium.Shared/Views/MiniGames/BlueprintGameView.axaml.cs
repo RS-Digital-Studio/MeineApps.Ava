@@ -171,6 +171,13 @@ public partial class BlueprintGameView : UserControl
 
         _renderer.Render(canvas, _lastBounds, _cachedSteps, cols, _vm.IsMemorizing, _vm.IsPlaying,
             _vm.CompletedSteps, _vm.TotalSteps, deltaTime);
+
+        // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
+        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
     }
 
     /// <summary>

@@ -151,6 +151,13 @@ public partial class InspectionGameView : UserControl
         _renderer.Render(canvas, _lastBounds,
             cells, _vm.GridColumns, _vm.GridRows, _vm.IsPlaying,
             _vm.FoundDefects, _vm.TotalDefects, deltaTime);
+
+        // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
+        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
     }
 
     /// <summary>

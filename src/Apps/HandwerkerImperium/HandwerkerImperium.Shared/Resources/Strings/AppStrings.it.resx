@@ -2258,6 +2258,27 @@
   <data name="Specialization" xml:space="preserve">
     <value>Specializzazione</value>
   </data>
+  <data name="Specialization_Efficiency" xml:space="preserve">
+    <value>Efficienza</value>
+  </data>
+  <data name="Specialization_Efficiency_Desc" xml:space="preserve">
+    <value>+30% Reddito, -1 Posto lavoratore</value>
+  </data>
+  <data name="Specialization_Quality" xml:space="preserve">
+    <value>Qualit&#224;</value>
+  </data>
+  <data name="Specialization_Quality_Desc" xml:space="preserve">
+    <value>+15% Costi, +20% Efficienza</value>
+  </data>
+  <data name="Specialization_Economy" xml:space="preserve">
+    <value>Economia</value>
+  </data>
+  <data name="Specialization_Economy_Desc" xml:space="preserve">
+    <value>-5% Reddito, -25% Costi</value>
+  </data>
+  <data name="Costs" xml:space="preserve">
+    <value>Costi</value>
+  </data>
   <data name="StopResting" xml:space="preserve">
     <value>Interrompi riposo</value>
   </data>

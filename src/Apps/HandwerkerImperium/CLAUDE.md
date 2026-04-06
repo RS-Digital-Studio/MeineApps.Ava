@@ -6,7 +6,7 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Auftraege oder spiele Mini-Games.
 
-**Version:** 2.0.25 (VersionCode 33) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
+**Version:** 2.0.27 (VersionCode 35) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
 
 ## Icon-System (Bitmap-Icons, AI + Programmatisch)
 
@@ -96,10 +96,10 @@ Daten in `PrestigeData.ActiveChallenges`. Constraints zentral via `IChallengeCon
 
 | Challenge | Effekt | PP-Bonus |
 |-----------|--------|----------|
-| Spartaner | Max 3 Worker | +40% |
+| Spartaner | Max 3 Worker | +45% |
 | OhneForschung | Keine Forschung möglich | +30% |
 | Inflationszeit | Doppelte Upgrade-Kosten | +25% |
-| SoloMeister | Nur 1 Workshop | +60% |
+| SoloMeister | Nur 1 Workshop | +50% |
 | Sprint | Kein Offline-Einkommen | +35% |
 | KeinNetz | Keine Lieferanten | +20% |
 
@@ -646,6 +646,47 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | Research-Baum | 2D Top-Heroes-Style, Branch-Farben, Flow-Partikel, Branch-Banner, Celebration-Confetti |
 | Forschungs-Hintergrund | ResearchBackgroundRenderer: Nussholz, Holzmaserung, Zahnrad-Wasserzeichen, Vignette |
 
+## Review-Fixes (06.04.2026, 25 Findings)
+
+Umfassender Review durch 8 spezialisierte Agenten (Code, Game-Design, UI, Performance, SkiaSharp, Security, Lokalisierung, Health).
+
+### Kritisch + Hoch
+- **ActivateRush**: `async void` → `async Task` (Crash-Risiko bei Ad-Fehler behoben)
+- **Premium-Bonus +50%**: In `CalculateGrossIncome()` ergänzt (fehlte für Online UND Offline). Doppel-Bonus in `CalculateCraftingSellMultiplier()` entfernt
+- **LuckySpinService.Spin()**: Return-Typ nullable (`LuckySpinPrizeType?`), null bei fehlgeschlagenem GS-Kauf statt stiller MoneySmall-Rückgabe
+- **ForgeGameRenderer**: 4 SKPath-Objekte (`_anvilBodyPath` etc.) in `Dispose()` ergänzt
+- **Firebase Rules**: `database.rules.json` als Referenz-Datei im Repo. READ-Rules für `guild_members`, `guild_research`, `guild_bosses` etc. auf Mitgliedschafts-Prüfung verschärft (analog guild_chat)
+
+### UI-Fixes
+- **ResearchView**: Bottom-Margin 0→84dp (Content hinter Tab-Bar), Back-Button MinHeight/MinWidth 44, TabCanvas Height 44→48, Overlay-Buttons MinHeight 48
+- **ShopView**: Back-Button MinHeight/MinWidth 44
+- **PaintingGameView**: Tutorial-Button MinHeight/MinWidth 44 (Touch-Target)
+- **WorkerProfileView**: Bottom-Sheet Margin 84→24dp (kein Tab-Bar im Sheet)
+- **DashboardView**: BannerStrip AutomationId, Saison-Chip im Header (GAM-4)
+
+### Performance
+- **MiniGame Render-Loop**: Alle 10 Views stoppen 30fps Timer bei `IsResultShown` (statisches Ergebnis braucht keine Animation)
+
+### Balancing
+- **Lieferant GS-Drop**: 1-3 → 2-5 GS (bedeutsamer als Belohnung)
+- **Glücksrad Jackpot**: Gewicht 1→2 (2% statt 1%, motivierender)
+- **SoloMeister Challenge**: PP-Bonus 60%→50% (dominierte Meta)
+- **Spartaner Challenge**: PP-Bonus 40%→45% (näher an SoloMeister für Diversität)
+- **Bronze-Prestige Speed-Boost**: 30min→15min (verhindert Rush-Stacking zu 4-6x)
+- **Saison-Chip**: SeasonalModifierText im Dashboard-Header sichtbar (war unsichtbar für Spieler)
+
+### Code-Qualität + Security
+- **GetPrestigeIncomeBonus**: Aus 2 Duplikaten (OfflineProgress+Crafting) in `IncomeCalculatorService` zentralisiert
+- **AscensionService**: Leeren StateLoaded-Handler entfernt (No-Op)
+- **AutoAssign XML-Doc**: Kommentar korrigiert ("Reaktiviert ruhende Worker" statt "Weist idle Worker zu")
+- **ProfanityFilter**: Neuer `Helpers/ProfanityFilter.cs` für Gilden-Chat (Blacklist DE/EN/ES/FR/IT/PT, Play Store Compliance)
+- **Spielernamen Unicode-Filter**: Zero-Width-Characters und Format-Zeichen in `SetPlayerName()` entfernt
+- **`.gitignore`**: `**/google-services.json` hinzugefügt
+
+### Neue Dateien
+- `Helpers/ProfanityFilter.cs` — Profanity-Filter für Chat + Namen
+- `database.rules.json` — Firebase Security Rules Referenz-Datei
+
 ## UX-Verbesserungen (03.04.2026, 16 Fixes)
 
 Basierend auf umfassender UX-Analyse (17 Findings in 10 Kategorien).
@@ -936,14 +977,14 @@ Renderer nutzen gecachte Instanz-/Klassenfelder statt `using var` pro Frame (GC-
 |----------|----------------|
 | InventGameRenderer | `_cachedPath` |
 | BlueprintGameRenderer | `_cachedPath` |
-| SawingGameRenderer | `_cachedPath` |
+| SawingGameRenderer | `_cachedPath` + `_cachedBladeShader`/`_cachedHandleShader` (Toleranz 2dp, vermeidet 60 Shader-Allokationen/s) |
 | InspectionGameRenderer | `_cachedPath` |
 | WiringGameRenderer | 8 SKPaint + 3 MaskFilter + `_cachedPath` + `_cachedFont` |
 | DesignPuzzleRenderer | 7 SKPaint + `_cachedFont` |
 | PipePuzzleRenderer | `_cachedPath` |
 | RewardCeremonyRenderer | `_iconPath` |
 | WorkshopCardRenderer | `_cachedPath` (static, ersetzt 13 `using var SKPath` pro Render-Aufruf) |
-| ResearchIconRenderer | `_cachedPath` (static, ersetzt 17 `using var SKPath` — alle Icon-Methoden sequenziell) |
+| ResearchIconRenderer | `_cachedPath` + `_labelFont` + `_crownFont` (static, ersetzt 17 `using var SKPath` + 2 `using var SKFont` — alle Icon-Methoden sequenziell) |
 | GuildResearchIconRenderer | `_cachedPath` (static, ersetzt 12 `using var SKPath` — alle Icon-Methoden sequenziell) |
 
 **WorkerAvatarRenderer**: Statische wiederverwendbare Paints (s_fillNoAA, s_fillAA, s_strokeNoAA) + s_cachedPath. Kein IDisposable (static readonly Felder leben bis Prozessende). **GameCardRenderer**, **ResearchIconRenderer** und **GuildResearchIconRenderer** sind statische Klassen.
@@ -1002,7 +1043,7 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 | ResearchLabRenderer | 6 SKPaint |
 | ForgeGameRenderer | 10 SKPaint + 1 SKFont + 6 SKShader (gecacht) |
 | PipePuzzleRenderer | 6 SKPaint + 3 SKMaskFilter + 1 SKPath |
-| SawingGameRenderer | 10 SKPaint + 1 SKPath + 1 SKMaskFilter + 1 SKShader (gecacht) |
+| SawingGameRenderer | 10 SKPaint + 1 SKPath + 1 SKMaskFilter + 3 SKShader (gecacht: Holz + Blatt + Griff) |
 | BlueprintGameRenderer | 1 SKPath + 21 SKPaint (Instanz) + 3 SKFont + ~40 static readonly + 2 static MaskFilter + 1 SKShader (BG-Cache, per Bounds-Aenderung neu) + static float[] DashIntervals |
 | InventGameRenderer | 23 SKPaint + 1 SKPath + 1 SKShader (BG-Cache, per Bounds-Aenderung neu) + static float[] DashIntervals |
 | WiringGameRenderer | 8 SKPaint + 3 SKMaskFilter + 1 SKPath + 1 SKFont + 3 SKShader (gecacht) |

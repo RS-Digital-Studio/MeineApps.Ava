@@ -159,6 +159,13 @@ public partial class PipePuzzleView : UserControl
 
         _renderer.Render(canvas, _lastBounds, _cachedTiles, _vm.GridCols, _vm.GridRows,
             _vm.IsPuzzleSolved, _vm.MaxConnectionDistance, deltaTime);
+
+        // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
+        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
     }
 
     /// <summary>

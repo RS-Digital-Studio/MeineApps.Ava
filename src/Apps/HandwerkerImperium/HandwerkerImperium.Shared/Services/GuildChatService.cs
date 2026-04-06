@@ -52,6 +52,9 @@ public sealed class GuildChatService : IGuildChatService, IDisposable
             if (text.Length > MaxMessageLength)
                 text = text[..MaxMessageLength];
 
+            // Profanity-Filter (Play Store Compliance)
+            text = Helpers.ProfanityFilter.Clean(text);
+
             var playerName = _gameStateService.State.PlayerName ?? "Player";
 
             var message = new ChatMessage

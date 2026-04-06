@@ -180,6 +180,13 @@ public partial class WiringGameView : UserControl
         bool isAllConnected = _vm.ConnectedCount >= _vm.WireCount && _vm.WireCount > 0;
         _renderer.Render(canvas, _lastBounds, _cachedLeftData, _cachedRightData, selectedLeft,
             isAllConnected, _vm.ConnectedCount, deltaTime);
+
+        // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
+        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
     }
 
     /// <summary>

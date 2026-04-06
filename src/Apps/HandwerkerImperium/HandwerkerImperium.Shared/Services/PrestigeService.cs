@@ -181,11 +181,11 @@ public sealed partial class PrestigeService : IPrestigeService
         // Reset durchfuehren
         ResetProgress(state, tier);
 
-        // BAL-12: Speedrun-Phase nach Bronze-Prestige - 30min 3x Speed-Boost
-        // Damit sich der erste Reset nicht wie Bestrafung anfühlt
+        // BAL-12: Speedrun-Phase nach Bronze-Prestige - 15min 3x Speed-Boost
+        // Kurzer Motivationsschub nach Reset, aber nicht so lang dass normales Gameplay entwertet wird
         if (tier == PrestigeTier.Bronze)
         {
-            state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes(30);
+            state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes(15);
         }
 
         // KEIN ConfigureAwait(false): PrestigeCompleted-Event wird von MainViewModel

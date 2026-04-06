@@ -109,6 +109,10 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
                 grossIncome *= (1m + totalManagerEfficiency);
         }
 
+        // Premium: +50% Einkommensbonus
+        if (state.IsPremium)
+            grossIncome *= 1.5m;
+
         return grossIncome;
     }
 
@@ -169,6 +173,34 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         return grossIncome;
     }
 
+    /// <summary>
+    /// Berechnet den Income-Multiplikator-Bonus aus gekauften Prestige-Shop-Items.
+    /// Zentrale Methode - wird von OfflineProgressService und CraftingService genutzt.
+    /// </summary>
+    public static decimal GetPrestigeIncomeBonus(GameState state)
+    {
+        var purchased = state.Prestige.PurchasedShopItems;
+        var repeatableCounts = state.Prestige.RepeatableItemCounts;
+        if (purchased.Count == 0 && repeatableCounts.Count == 0) return 0m;
+
+        decimal bonus = 0m;
+        foreach (var item in PrestigeShop.GetAllItems())
+        {
+            // Wiederholbare Items: Effekt * Kaufanzahl
+            if (item.IsRepeatable)
+            {
+                if (repeatableCounts.TryGetValue(item.Id, out var count) && count > 0
+                    && item.Effect.IncomeMultiplier > 0)
+                    bonus += item.Effect.IncomeMultiplier * count;
+                continue;
+            }
+
+            if (purchased.Contains(item.Id) && item.Effect.IncomeMultiplier > 0)
+                bonus += item.Effect.IncomeMultiplier;
+        }
+        return bonus;
+    }
+
     public decimal CalculateCraftingSellMultiplier(GameState state, decimal prestigeIncomeBonus, decimal rebirthIncomeBonus, decimal masterToolBonus = -1m)
     {
         decimal mult = 1.0m;
@@ -221,11 +253,8 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         if (rebirthIncomeBonus > 0)
             mult *= (1m + rebirthIncomeBonus);
 
-        // Premium: +50%
-        if (state.IsPremium)
-            mult *= 1.5m;
-
         // KEIN Soft-Cap, KEIN Speed/Rush → bewusst weggelassen
+        // Premium-Bonus wird jetzt zentral in CalculateGrossIncome() angewendet
         return mult;
     }
 }

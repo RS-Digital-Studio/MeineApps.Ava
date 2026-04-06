@@ -264,6 +264,7 @@ public partial class App : Application
 
         // Game Services
         services.AddSingleton<IGameStateService, GameStateService>();
+        services.AddSingleton<IGameIntegrityService, GameIntegrityService>();
         services.AddSingleton<ISaveGameService, SaveGameService>();
         services.AddSingleton<IGameLoopService, GameLoopService>();
         services.AddSingleton<IAchievementService, AchievementService>();

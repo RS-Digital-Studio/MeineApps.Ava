@@ -84,8 +84,8 @@ public sealed class SaveGameService : ISaveGameService
             // Cloud-Save parallel (fire-and-forget, blockiert lokales Save nie)
             if (_playGamesService?.IsSignedIn == true && state.Settings.CloudSaveEnabled)
             {
-                // Für Cloud-Save müssen wir den JSON-String lesen (seltener Pfad, nur bei aktivem Cloud-Save)
-                var cloudJson = await File.ReadAllTextAsync(SaveFilePath);
+                // json-Variable wiederverwenden statt erneut von Datei lesen (vermeidet Race Condition + I/O)
+                var cloudJson = json;
                 _ = Task.Run(async () =>
                 {
                     try { await _playGamesService.SaveToCloudAsync(cloudJson, $"Level {state.PlayerLevel}"); }

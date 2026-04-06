@@ -95,7 +95,7 @@ F:\Meine_Apps_Ava\
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.0.25 | Banner + Rewarded | 4,99 Premium | Produktion |
+| HandwerkerImperium | v2.0.27 | Banner + Rewarded | 4,99 Premium | Produktion |
 | BomberBlast | v2.0.28 | Banner + Rewarded | 1,99 remove_ads | Geschlossener Test |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
 | BingXBot | v1.0.0 | Nein | Nein | Entwicklung (Desktop-only) |
@@ -404,6 +404,8 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | PipePuzzle Rating zu großzügig | `optimalMoves = GridCols * GridRows` statt Pfad-Länge → moveEfficiency immer > 1.0 | `optimalMoves = Tiles.Count(t => t.IsPartOfSolution && !t.IsLocked)` |
 | QuickJob Ad-Verdopplung nur in UI | `WatchAdAsync` setzt nur `order.IsScoreDoubled`, QuickJobs haben kein solches Flag | `QuickJob.IsScoreDoubled` Property + Verdopplung in MainViewModel.Navigation.cs |
 | SimulatedExchange nicht unter BingXBot.Core | Namespace in CLAUDE.md war `BingXBot.Core.Simulation` | SimulatedExchange liegt in `BingXBot.Backtest/Simulation/` (Namespace `BingXBot.Backtest.Simulation`). Immer `Glob` vor Edit |
+| Gilde zeigt immer "Keine Internetverbindung" | 3 Bugs: (1) `GetAsync()` setzte `IsOnline=true` NICHT bei 200 OK mit "null"-Body, (2) `EnsureAuthenticatedAsync()` warf Exception statt Fallback auf neuen Account, (3) `GuildViewModel` catch-Block setzte IMMER Offline | (1) `IsOnline=true` VOR null-Check in GetAsync/QueryAsync, (2) Fallback `SignUpAnonymouslyAsync()` statt throw (sicher seit PlayerId-Migration), (3) catch prüft `IsOnline` statt blind Offline zu setzen. Zusätzlich: `SyncAuthToPlayerMappingAsync()` in GuildService.InitializeAsync() awaiten statt fire-and-forget |
+| Bildschirm flimmert bei Tab-/View-Wechsel | `FadeInContentPanel()` setzt `Opacity=0` NACH Binding-Update → neuer View kurz sichtbar bei voller Opacity → schwarzer Blitz | `PageTransitionStarting` Event via `OnActivePageChanging()` — feuert VOR dem Wert-Wechsel. View setzt `Opacity=0` bevor Bindings die neue View einblenden |
 
 ---
 

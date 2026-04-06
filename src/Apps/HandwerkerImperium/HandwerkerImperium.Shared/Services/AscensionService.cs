@@ -20,6 +20,7 @@ public sealed class AscensionService : IAscensionService
 
     public event EventHandler? AscensionCompleted;
 
+    // Hinweis: Kein StateLoaded-Handler nötig - AscensionService hat keine lokalen Caches.
     public AscensionService(
         IGameStateService gameStateService,
         ISaveGameService saveGameService,
@@ -28,9 +29,6 @@ public sealed class AscensionService : IAscensionService
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
         _audioService = audioService;
-
-        // Bei State-Wechsel (Load/Import/Reset/Prestige) ggf. Caches invalidieren
-        _gameStateService.StateLoaded += (_, _) => { /* Keine lokalen Caches - State-Zugriff immer direkt */ };
     }
 
     // ===================================================================

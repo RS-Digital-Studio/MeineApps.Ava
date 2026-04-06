@@ -1936,5 +1936,7 @@ public sealed class InventGameRenderer : IDisposable
         s_housingFillShader?.Dispose();
         s_motorBodyShader?.Dispose();
         s_tileHighlightShader?.Dispose();
+        _blur3Filter?.Dispose();
+        _blur4Filter?.Dispose();
     }
 }

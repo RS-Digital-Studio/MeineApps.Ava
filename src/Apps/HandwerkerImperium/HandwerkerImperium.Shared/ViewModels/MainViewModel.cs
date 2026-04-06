@@ -132,10 +132,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly Action<string, string> _ascensionFloatingTextHandler;
     private readonly Action _ascensionCelebrationHandler;
 
-    // Guild MessageRequested + Research CelebrationRequested Handler
-    private readonly Action<string, string>? _guildMessageHandler;
-    private readonly EventHandler<(ResearchBranch Branch, string BonusText)>? _researchCelebrationHandler;
-
     // Gespeicherte Delegate-Referenzen fuer MissionsVM Events (Dispose-sicher)
     private readonly Action<string, string> _missionsFloatingTextHandler;
     private readonly Action _missionsCelebrationHandler;
@@ -205,14 +201,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private bool _hasWorkerWarning;
 
     /// <summary>
-    /// True wenn der Soft-Cap auf den Einkommens-Multiplikator aktiv ist.
-    /// Zeigt dem Spieler dass Boni ab 10x gedeckelt werden.
+    /// ID des schlimmsten Workers (für Direktnavigation aus Warning-Chip).
+    /// </summary>
+    private string _worstWorkerId = "";
+
+    /// <summary>
+    /// True wenn der Einkommens-Soft-Cap aktiv ist (Multiplikator > 8x).
     /// </summary>
     [ObservableProperty]
     private bool _isSoftCapActive;
 
     /// <summary>
-    /// Wie viel Prozent durch den Soft-Cap verloren gehen (z.B. "-25%").
+    /// Differenzierter Soft-Cap-Text fuer BannerStrip-Chip (z.B. "Einkommen -25%").
     /// </summary>
     [ObservableProperty]
     private string _softCapText = "";
@@ -623,6 +623,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Wird ausgelöst um einen Exit-Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").</summary>
     public event Action<string>? ExitHintRequested;
 
+    /// <summary>Feuert VOR dem Seitenwechsel, damit die View Opacity=0 setzen kann bevor Bindings updaten.</summary>
+    public event Action? PageTransitionStarting;
+
     // Navigation button texts
     public string NavHomeText => _localizationService.GetString("Home") ?? "Home";
     public string NavStatsText => _localizationService.GetString("Stats") ?? "Stats";
@@ -698,11 +701,59 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private ActivePage _activePage = ActivePage.Dashboard;
 
     /// <summary>
+    /// Feuert VOR dem ActivePage-Wert-Wechsel → View setzt Opacity=0 bevor Bindings updaten.
+    /// Verhindert Flimmern (schwarzer Blitz) beim Tab-Wechsel.
+    /// </summary>
+    partial void OnActivePageChanging(ActivePage value)
+    {
+        if (value != _activePage)
+            PageTransitionStarting?.Invoke();
+    }
+
+    /// <summary>
+    /// Navigations-History für kontextuelle Rück-Navigation.
+    /// Merkt sich die vorherige Seite damit Back immer dorthin zurückkehrt woher man kam.
+    /// Max 10 Einträge (reicht für tiefste Verschachtelung).
+    /// </summary>
+    private readonly Stack<ActivePage> _navigationStack = new();
+    private bool _isNavigatingBack;
+    private const int MaxNavigationStackSize = 10;
+
+    /// <summary>
     /// Zentrale Seitenumschaltung mit Seiteneffekten (GuildChat stoppen, PropertyChanged).
     /// Wird von CommunityToolkit automatisch aufgerufen wenn ActivePage sich ändert.
     /// </summary>
     partial void OnActivePageChanged(ActivePage oldValue, ActivePage newValue)
     {
+        // Back-Stack: Alte Seite merken (außer bei Rück-Navigation und Tab-Wechseln)
+        // Tab-Wechsel (Dashboard↔Shop↔Imperium↔Missionen↔Guild) werden NICHT getracked,
+        // damit Back nicht durch Tab-Ping-Pong läuft. Nur Sub-Navigationen landen auf dem Stack.
+        if (!_isNavigatingBack && oldValue != newValue)
+        {
+            bool isTabToTab = s_mainTabs.Contains(oldValue) && s_mainTabs.Contains(newValue);
+            // Settings zählt auch als "Tab-Level" (direkt vom Dashboard erreichbar)
+            isTabToTab = isTabToTab || (oldValue == ActivePage.Settings && s_mainTabs.Contains(newValue))
+                                   || (s_mainTabs.Contains(oldValue) && newValue == ActivePage.Settings);
+
+            if (!isTabToTab)
+            {
+                _navigationStack.Push(oldValue);
+                // Stack begrenzen
+                if (_navigationStack.Count > MaxNavigationStackSize)
+                {
+                    var temp = _navigationStack.ToArray();
+                    _navigationStack.Clear();
+                    for (int i = Math.Min(temp.Length - 1, MaxNavigationStackSize - 1); i >= 0; i--)
+                        _navigationStack.Push(temp[i]);
+                }
+            }
+            else
+            {
+                // Bei Tab-Wechsel: Stack leeren (frischer Kontext)
+                _navigationStack.Clear();
+            }
+        }
+
         // GuildChat-Polling stoppen wenn Chat verlassen wird
         if (oldValue == ActivePage.GuildChat)
             GuildViewModel.StopChatPolling();
@@ -1873,9 +1924,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
                 IsSoftCapActive = state.IsSoftCapActive;
                 if (state.IsSoftCapActive && state.SoftCapReductionPercent > 0)
-                    SoftCapText = $"-{state.SoftCapReductionPercent}%";
+                {
+                    // GAM-6: Differenzierter Text mit "Einkommen" Prefix
+                    var incomeLabel = _localizationService.GetString("SoftCapIncome") ?? "Einkommen";
+                    SoftCapText = $"{incomeLabel} -{state.SoftCapReductionPercent}%";
+                }
                 else if (!state.IsSoftCapActive)
                     SoftCapText = "";
+
+                // GAM-4: Saisonaler Indikator wird in UpdateEventChips() aktualisiert (SeasonalModifierText)
             }
 
             // Welcome Back Timer ist jetzt in MissionsVM.UpdatePeriodicState()
@@ -1983,6 +2040,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         int tiredCount = 0, unhappyCount = 0, quitRisk = 0;
         string? worstWorkshopName = null;
+        string worstWorkerId = "";
         decimal worstScore = decimal.MaxValue;
 
         foreach (var ws in state.Workshops)
@@ -1994,15 +2052,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 if (w.Mood < 30) unhappyCount++;
                 if (w.Mood < 15) quitRisk++;
 
-                // Schlimmsten Workshop tracken (niedrigste Mood oder höchste Fatigue)
+                // Schlimmsten Worker tracken (niedrigste Mood oder höchste Fatigue)
                 decimal score = w.Mood - w.Fatigue * 0.5m;
                 if (score < worstScore && (w.Fatigue > 80 || w.Mood < 30))
                 {
                     worstScore = score;
+                    worstWorkerId = w.Id;
                     worstWorkshopName = _localizationService.GetString(ws.Type.GetLocalizationKey()) ?? ws.Type.ToString();
                 }
             }
         }
+
+        _worstWorkerId = worstWorkerId;
 
         HasWorkerWarning = tiredCount > 0 || unhappyCount > 0;
 

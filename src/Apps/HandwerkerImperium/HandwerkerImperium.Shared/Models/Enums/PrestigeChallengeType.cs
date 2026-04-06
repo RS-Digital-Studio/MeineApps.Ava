@@ -37,10 +37,10 @@ public static class PrestigeChallengeExtensions
     /// <summary>Additiver PP-Bonus für diese Challenge (z.B. 0.40 = +40%).</summary>
     public static decimal GetPpBonus(this PrestigeChallengeType challenge) => challenge switch
     {
-        PrestigeChallengeType.Spartaner => 0.40m,
+        PrestigeChallengeType.Spartaner => 0.45m,        // von 0.40 erhöht (Meta-Balance: näher an SoloMeister)
         PrestigeChallengeType.OhneForschung => 0.30m,
         PrestigeChallengeType.Inflationszeit => 0.25m,
-        PrestigeChallengeType.SoloMeister => 0.60m,
+        PrestigeChallengeType.SoloMeister => 0.50m,    // von 0.60 gesenkt (dominierte die Meta)
         PrestigeChallengeType.Sprint => 0.35m,
         PrestigeChallengeType.KeinNetz => 0.20m,
         _ => 0m

@@ -168,6 +168,13 @@ public partial class RoofTilingGameView : UserControl
 
         _renderer.Render(canvas, bounds, _cachedTileData, _vm.GridColumns, _vm.GridRows,
             _vm.PlacedCount, _vm.TotalToPlace, deltaTime);
+
+        // Render-Loop stoppen wenn Ergebnis angezeigt wird (statisches Bild, kein 30fps nötig)
+        if (_vm is { IsResultShown: true } && _renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
     }
 
     /// <summary>

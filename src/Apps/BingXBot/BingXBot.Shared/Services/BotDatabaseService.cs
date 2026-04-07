@@ -16,7 +16,7 @@ public class BotDatabaseService
     private const int LogCleanupBatch = 10_000;
 
     /// <summary>Aktuelle Schema-Version. Bei Änderungen erhöhen und Migration in RunMigrationsAsync() hinzufügen.</summary>
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 4;
 
     public async Task InitializeAsync()
     {
@@ -68,6 +68,28 @@ public class BotDatabaseService
                 await _db.ExecuteAsync("ALTER TABLE Trades ADD COLUMN FundingPaid REAL DEFAULT 0");
             }
             catch { /* Spalte existiert bereits */ }
+        }
+
+        // Migration v2 → v3: Cross-Market Feature-Spalten in FeatureSnapshots (23 statt 19)
+        if (currentVersion < 3)
+        {
+            var crossMarketCols = new[] { "F_BtcReturn24h", "F_BtcTrend", "F_BtcCorrelation", "F_MarketSentiment" };
+            foreach (var col in crossMarketCols)
+            {
+                try { await _db.ExecuteAsync($"ALTER TABLE FeatureSnapshots ADD COLUMN {col} REAL DEFAULT 0"); }
+                catch { /* Spalte existiert bereits */ }
+            }
+        }
+
+        // Migration v3 → v4: Fear&Greed + Open Interest Spalten
+        if (currentVersion < 4)
+        {
+            var newCols = new[] { "F_FearGreedIndex", "F_OpenInterestChange" };
+            foreach (var col in newCols)
+            {
+                try { await _db.ExecuteAsync($"ALTER TABLE FeatureSnapshots ADD COLUMN {col} REAL DEFAULT 0"); }
+                catch { /* Spalte existiert bereits */ }
+            }
         }
 
         // Schema-Version aktualisieren

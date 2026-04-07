@@ -14,6 +14,11 @@ public class RiskManager : IRiskManager
     // Unrealisierte Verluste offener Positionen fliessen in den taeglichen Drawdown ein.
     private decimal _dailyPnl;
     private decimal _totalPnl;
+    /// <summary>Aktueller kumulativer PnL (für Equity-Curve-Trading).</summary>
+    public decimal TotalPnl => _totalPnl;
+    // Peak-Equity-Tracking für echten Peak-to-Trough-Drawdown (persistent über gesamte Laufzeit)
+    private decimal _peakEquity;
+    private bool _peakEquityInitialized;
     private readonly object _lock = new();
 
     public RiskManager(RiskSettings settings, ILogger<RiskManager> logger)
@@ -22,11 +27,11 @@ public class RiskManager : IRiskManager
         _logger = logger;
     }
 
-    /// <summary>Überladung ohne Funding-Rate (Abwärtskompatibilität).</summary>
+    /// <summary>Überladung ohne Funding-Rate und Leverage (Abwärtskompatibilität).</summary>
     public RiskCheckResult ValidateTrade(SignalResult signal, MarketContext context)
-        => ValidateTrade(signal, context, null);
+        => ValidateTrade(signal, context, null, 0);
 
-    public RiskCheckResult ValidateTrade(SignalResult signal, MarketContext context, decimal? currentFundingRate)
+    public RiskCheckResult ValidateTrade(SignalResult signal, MarketContext context, decimal? currentFundingRate, int actualLeverage = 0)
     {
         // 1. Signal prüfen
         if (signal.Signal == Signal.None)
@@ -41,9 +46,9 @@ public class RiskManager : IRiskManager
         if (symbolPositions >= _settings.MaxOpenPositionsPerSymbol)
             return new RiskCheckResult(false, $"Max {_settings.MaxOpenPositionsPerSymbol} Positionen pro Symbol erreicht", 0m);
 
-        // 4. Position-Größe berechnen (vor Drawdown-Check, damit wir das Risiko kennen)
+        // 4. Position-Größe berechnen mit tatsächlichem Leverage (nicht MaxLeverage)
         var entryPrice = signal.EntryPrice ?? context.CurrentTicker.LastPrice;
-        var posSize = CalculatePositionSize(context.Symbol, entryPrice, signal.StopLoss, context.Account);
+        var posSize = CalculatePositionSize(context.Symbol, entryPrice, signal.StopLoss, context.Account, actualLeverage);
 
         if (posSize <= 0)
             return new RiskCheckResult(false, "Position-Größe ist 0", 0m);
@@ -82,11 +87,38 @@ public class RiskManager : IRiskManager
                     $"Funding-Rate {absRate:F3}% gegen Position > {_settings.MaxAdverseFundingRatePercent}% Maximum", 0m);
         }
 
-        // 8. Taeglichen Drawdown pruefen (inkl. unrealisierter Verluste + Risiko der neuen Position)
+        // 8. Risk-Reward-Ratio prüfen: Trade muss Mindest-RRR erfüllen
+        if (_settings.MinRiskRewardRatio > 0 && signal.StopLoss.HasValue && signal.TakeProfit.HasValue
+            && signal.StopLoss.Value > 0 && signal.TakeProfit.Value > 0)
+        {
+            var slDistance = Math.Abs(entryPrice - signal.StopLoss.Value);
+            var tpDistance = Math.Abs(signal.TakeProfit.Value - entryPrice);
+            if (slDistance > 0)
+            {
+                var rrr = tpDistance / slDistance;
+                if (rrr < _settings.MinRiskRewardRatio)
+                    return new RiskCheckResult(false,
+                        $"Risk-Reward {rrr:F2}:1 < Min {_settings.MinRiskRewardRatio:F1}:1 (SL={slDistance:G6}, TP={tpDistance:G6})", 0m);
+            }
+        }
+
+        // 9. Taeglichen Drawdown pruefen (inkl. unrealisierter Verluste + Risiko der neuen Position)
         decimal dailyDrawdownPercent;
         decimal totalDrawdownPercent;
         lock (_lock)
         {
+            // Peak-Equity initialisieren beim ersten Trade (Balance + unrealisierte PnL)
+            var currentEquity = context.Account.Balance + context.Account.UnrealizedPnl;
+            if (!_peakEquityInitialized)
+            {
+                _peakEquity = currentEquity;
+                _peakEquityInitialized = true;
+            }
+
+            // Peak aktualisieren wenn Equity neues Hoch erreicht
+            if (currentEquity > _peakEquity)
+                _peakEquity = currentEquity;
+
             // Unrealisierte Verluste: Summe ALLER negativen PnL einzelner Positionen,
             // nicht die Netto-Summe. Verhindert dass Gewinne einer Position
             // die Verluste einer anderen maskieren.
@@ -105,64 +137,64 @@ public class RiskManager : IRiskManager
             }
             else
             {
-                // Ohne SL: Worst-Case = gesamte Margin (Positionsgröße in %)
-                newPositionRisk = context.Account.AvailableBalance * _settings.MaxPositionSizePercent / 100m * leverage;
+                // Ohne SL: Worst-Case = gesamte Margin (MaxPositionSizePercent der Balance)
+                newPositionRisk = context.Account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
             }
 
+            // Daily-Drawdown: Tagesbasiert wie bisher (PnL-basiert)
             var effectiveDailyPnl = _dailyPnl + unrealizedLoss - newPositionRisk;
-            var effectiveTotalPnl = _totalPnl + unrealizedLoss - newPositionRisk;
-
-            // Drawdown ist nur bei negativem PnL relevant.
-            // Positive PnL (Gewinn) soll NICHT als Drawdown gezaehlt werden.
             dailyDrawdownPercent = context.Account.Balance > 0 && effectiveDailyPnl < 0
                 ? Math.Abs(effectiveDailyPnl) / context.Account.Balance * 100m
                 : 0m;
-            totalDrawdownPercent = context.Account.Balance > 0 && effectiveTotalPnl < 0
-                ? Math.Abs(effectiveTotalPnl) / context.Account.Balance * 100m
+
+            // Total-Drawdown: Peak-to-Trough basiert (echte Equity-Kurve)
+            totalDrawdownPercent = _peakEquity > 0
+                ? Math.Max(0m, (_peakEquity - currentEquity + newPositionRisk) / _peakEquity * 100m)
                 : 0m;
         }
 
         if (dailyDrawdownPercent >= _settings.MaxDailyDrawdownPercent)
             return new RiskCheckResult(false, $"Tages-Drawdown {dailyDrawdownPercent:F1}% >= {_settings.MaxDailyDrawdownPercent}% (inkl. Risiko neuer Position)", 0m);
 
-        // 9. Gesamt-Drawdown pruefen
+        // 10. Gesamt-Drawdown pruefen
         if (totalDrawdownPercent >= _settings.MaxTotalDrawdownPercent)
             return new RiskCheckResult(false, $"Gesamt-Drawdown {totalDrawdownPercent:F1}% >= {_settings.MaxTotalDrawdownPercent}% (inkl. Risiko neuer Position)", 0m);
 
         return new RiskCheckResult(true, null, posSize);
     }
 
-    public decimal CalculatePositionSize(string symbol, decimal entryPrice, decimal? stopLoss, AccountInfo account)
+    /// <summary>
+    /// Berechnet die Positionsgröße (Quantity) basierend auf Positionswert-Cap und Risiko-Cap.
+    /// MaxPositionSizePercent = max. Positionswert in % der Balance (NICHT Margin, unabhängig vom Leverage).
+    /// </summary>
+    public decimal CalculatePositionSize(string symbol, decimal entryPrice, decimal? stopLoss, AccountInfo account, int actualLeverage = 0)
     {
         if (entryPrice <= 0 || account.AvailableBalance <= 0) return 0m;
 
-        // MaxLeverage muss > 0 sein, sonst Fallback auf 1
-        var leverage = _settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m;
+        // Tatsächlichen Leverage verwenden (0 = MaxLeverage als Fallback)
+        var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
 
-        // H-1 Fix: Risiko-basiertes Position-Sizing wenn SL vorhanden.
-        // MaxPositionSizePercent = max. Verlust in % der Balance bei SL-Hit.
-        // Beispiel: 2% Risk bei 10.000 USDT Balance = max 200 USDT Verlust.
+        // MaxPositionSizePercent = maximale MARGIN pro Trade in % der Balance.
+        // 10% bei 100 USDT Balance = 10 USDT Margin, unabhängig vom Leverage.
+        // Quantity = Margin * Leverage / Preis (mehr Leverage = größere Position, gleiche Margin)
+        var maxMargin = account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
+        var marginCapQty = maxMargin * leverage / entryPrice;
+
+        var finalQty = marginCapQty;
+
+        // Wenn SL vorhanden: Risiko-basierte Position kann die Margin-Grenze nur VERKLEINERN.
         if (stopLoss.HasValue && stopLoss.Value > 0)
         {
             var slDistance = Math.Abs(entryPrice - stopLoss.Value);
             if (slDistance > 0)
             {
-                var maxLoss = account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
-                var riskBasedQty = maxLoss / slDistance;
-
-                // Cap: Positionswert darf nicht größer sein als Balance * Leverage
-                var maxPositionValue = account.AvailableBalance * leverage;
-                var maxQty = maxPositionValue / entryPrice;
-
-                return Math.Min(riskBasedQty, maxQty);
+                var maxLoss = account.AvailableBalance * _settings.MaxMarginPerTradePercent / 100m;
+                var riskCapQty = maxLoss / slDistance;
+                finalQty = Math.Min(marginCapQty, riskCapQty);
             }
         }
 
-        // Fallback ohne SL: %-basierte Margin-Sizing (konservativer)
-        var marginAmount = account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
-        var positionValue = marginAmount * leverage;
-
-        return positionValue / entryPrice;
+        return finalQty;
     }
 
     /// <summary>
@@ -195,12 +227,78 @@ public class RiskManager : IRiskManager
         return totalExposure / balance * 100m;
     }
 
+    // Rolling-Metriken: Ringpuffer der letzten N Trades
+    private readonly List<CompletedTrade> _rollingTrades = new();
+    private const int RollingWindowSize = 30;
+
+    /// <summary>Zugriff auf die letzten Trades für PnL-Kalender und Statistiken.</summary>
+    public IReadOnlyList<CompletedTrade> RecentTrades => _rollingTrades;
+
+    /// <summary>Rolling WinRate der letzten 30 Trades (0-1).</summary>
+    public decimal RollingWinRate => _rollingTrades.Count > 0
+        ? (decimal)_rollingTrades.Count(t => t.Pnl > 0) / _rollingTrades.Count : 0m;
+
+    /// <summary>Rolling ProfitFactor der letzten 30 Trades.</summary>
+    public decimal RollingProfitFactor
+    {
+        get
+        {
+            var wins = _rollingTrades.Where(t => t.Pnl > 0).Sum(t => t.Pnl);
+            var losses = Math.Abs(_rollingTrades.Where(t => t.Pnl < 0).Sum(t => t.Pnl));
+            return losses > 0 ? wins / losses : wins > 0 ? 99m : 0m;
+        }
+    }
+
+    /// <summary>Rolling Sharpe Ratio (annualisiert, aus den letzten 30 Trades).</summary>
+    public decimal RollingSharpeRatio
+    {
+        get
+        {
+            if (_rollingTrades.Count < 5) return 0m;
+            var returns = _rollingTrades.Select(t => (double)t.Pnl).ToArray();
+            var avg = returns.Average();
+            var variance = returns.Select(r => (r - avg) * (r - avg)).Average();
+            var stdDev = Math.Sqrt(variance);
+            return stdDev > 0 ? (decimal)(avg / stdDev * Math.Sqrt(252)) : 0m;
+        }
+    }
+
+    /// <summary>Aufeinanderfolgende Verluste aktuell.</summary>
+    public int CurrentConsecutiveLosses { get; private set; }
+
+    /// <summary>
+    /// Prüft ob die Strategie degradiert ist und der Bot pausieren sollte.
+    /// Returns: Warnung-Text oder null wenn alles OK.
+    /// </summary>
+    public string? CheckStrategyHealth()
+    {
+        if (_rollingTrades.Count < 10) return null;
+
+        if (RollingSharpeRatio < 0.3m)
+            return $"Rolling Sharpe {RollingSharpeRatio:F2} < 0.3 (degradiert)";
+        if (RollingWinRate < 0.25m)
+            return $"Rolling WinRate {RollingWinRate:P0} < 25% (kritisch)";
+        if (CurrentConsecutiveLosses >= 5)
+            return $"{CurrentConsecutiveLosses} Verluste in Folge (Auto-Pause empfohlen)";
+
+        return null;
+    }
+
     public void UpdateDailyStats(CompletedTrade completedTrade)
     {
         lock (_lock)
         {
             _dailyPnl += completedTrade.Pnl;
             _totalPnl += completedTrade.Pnl;
+
+            // Rolling-Window aktualisieren
+            _rollingTrades.Add(completedTrade);
+            if (_rollingTrades.Count > RollingWindowSize)
+                _rollingTrades.RemoveAt(0);
+
+            // Consecutive Losses
+            if (completedTrade.Pnl < 0) CurrentConsecutiveLosses++;
+            else CurrentConsecutiveLosses = 0;
         }
     }
 
@@ -209,6 +307,22 @@ public class RiskManager : IRiskManager
         lock (_lock)
         {
             _dailyPnl = 0m;
+            // Peak-Equity wird NICHT zurückgesetzt (persistent über gesamte Laufzeit)
+        }
+    }
+
+    /// <summary>
+    /// Setzt alle Statistiken zurück (für kompletten Bot-Reset).
+    /// Im Gegensatz zu ResetDailyStats() wird auch Peak-Equity zurückgesetzt.
+    /// </summary>
+    public void ResetAll()
+    {
+        lock (_lock)
+        {
+            _dailyPnl = 0m;
+            _totalPnl = 0m;
+            _peakEquity = 0m;
+            _peakEquityInitialized = false;
         }
     }
 }

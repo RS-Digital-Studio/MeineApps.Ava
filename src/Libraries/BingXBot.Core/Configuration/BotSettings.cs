@@ -9,6 +9,8 @@ public class BotSettings
     public BacktestSettings Backtest { get; set; } = new();
     public TradingMode LastMode { get; set; } = TradingMode.Paper;
     public string? LastStrategyName { get; set; }
+    /// <summary>Letzter Trading-Modus (Scalping/DayTrading/Swing/Custom).</summary>
+    public TradingModePreset LastTradingModePreset { get; set; } = TradingModePreset.Swing;
     public Dictionary<string, string> StrategyParameters { get; set; } = new();
     public bool ShowBtcTicker { get; set; } = true;
 

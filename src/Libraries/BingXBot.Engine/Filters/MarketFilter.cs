@@ -11,10 +11,10 @@ namespace BingXBot.Engine.Filters;
 /// Filter:
 /// - BTC Health Score (-4 bis +4): Long/Short-Erlaubnis basierend auf BTC-Zustand
 /// - Funding-Rate: Contrarian-Signal, blockiert überhebelte Richtung
-/// - Session: Positionsgröße nach Tageszeit (US > EU > Asia)
-/// - Cooldown: Wartezeit nach Verlust-Trades
-/// - Wochenende: Keine neuen Entries Sa/So
-/// - Volatilitäts-Bremse: Halbe Position bei extremer ATR
+/// - Session: Liquiditäts-Gewichtung (US > EU > Asia), kein Wochenend-Block (Krypto 24/7)
+/// - Cooldown: Wartezeit nach Verlust-Trades (4h Basis, eskalierbar)
+/// - Funding-Settlement: 5min Pause um Funding-Spikes zu meiden
+/// - Volatilit��ts-Bremse: Halbe Position bei extremer ATR
 /// - Max Trades/Tag: Overtrading-Schutz
 /// </summary>
 public static class MarketFilter
@@ -124,47 +124,35 @@ public static class MarketFilter
 
     /// <summary>
     /// Gibt den Session-basierten Positionsgrößen-Faktor zurück.
-    /// US-Session (13-21 UTC) = 1.0, EU (7-15) = 0.9, Asia (0-8) = 0.75, Wochenende = 0.
+    /// Krypto-Märkte handeln 24/7 - KEIN Wochenend-Block.
+    /// Liquiditäts-Gewichtung: US (13-21 UTC) = 100%, EU/US-Overlap = 100%,
+    /// EU (7-13) = 95%, Asia (0-7) = 90%, Off-Hours (21-0) = 90%.
+    /// Krypto hat auch in der Asia-Session signifikante Liquidität (Korea, China, Japan).
+    /// Funding-Settlement (00:00, 08:00, 16:00 UTC): 5min Pause reicht, Spikes normalisieren schnell.
     /// </summary>
-    public static SessionFilterResult CheckSession(DateTime utcNow)
+    public static SessionFilterResult CheckSession(DateTime utcNow, TradingModePreset mode = TradingModePreset.Swing)
     {
-        var day = utcNow.DayOfWeek;
         var hour = utcNow.Hour;
 
-        // Wochenende: Keine neuen Entries (Fr 22:00 - Mo 06:00)
-        if (day == DayOfWeek.Saturday ||
-            day == DayOfWeek.Sunday ||
-            (day == DayOfWeek.Friday && hour >= 22) ||
-            (day == DayOfWeek.Monday && hour < 6))
-        {
-            return new SessionFilterResult(false, 0m, "Wochenende - keine neuen Entries");
-        }
-
-        // 15min vor/nach Funding-Settlement (00:00, 08:00, 16:00 UTC): Meiden
+        // 5min vor/nach Funding-Settlement (00:00, 08:00, 16:00 UTC): Kurze Pause
         var minuteOfDay = hour * 60 + utcNow.Minute;
         var fundingTimes = new[] { 0, 480, 960 }; // 00:00, 08:00, 16:00
         foreach (var ft in fundingTimes)
         {
             var diff = Math.Abs(minuteOfDay - ft);
-            if (diff < 15 || diff > 1425) // 1440-15 für Mitternachts-Wrap
-                return new SessionFilterResult(false, 0m, "Funding-Settlement in Kürze - warte 15min");
+            if (diff < 5 || diff > 1435)
+                return new SessionFilterResult(false, 0m, "Funding-Settlement - warte 5min");
         }
 
-        // Session-Scaling
-        var scale = hour switch
-        {
-            >= 13 and < 16 => 1.0m,  // EU/US Overlap: Peak
-            >= 13 and < 21 => 1.0m,  // US-Session: Volle Größe
-            >= 7 and < 15  => 0.9m,  // EU-Session: 90%
-            _              => 0.75m  // Asia/Off-Hours: 75%
-        };
+        // Krypto handelt 24/7 - keine Session-Beschränkung, volle Positionsgröße immer
+        var scale = 1.0m;
 
         var sessionName = hour switch
         {
             >= 13 and < 16 => "EU/US-Overlap (Peak)",
-            >= 13 and < 21 => "US-Session",
-            >= 7 and < 15  => "EU-Session",
-            >= 0 and < 8   => "Asia-Session",
+            >= 16 and < 21 => "US-Session",
+            >= 7 and < 13  => "EU-Session",
+            >= 0 and < 7   => "Asia-Session",
             _              => "Off-Hours"
         };
 

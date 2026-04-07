@@ -1,3 +1,4 @@
+using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
@@ -22,8 +23,9 @@ namespace BingXBot.Engine.Strategies;
 ///   +1  Funding-Rate günstig (extern via MarketContext)
 ///   +1  Cooldown respektiert (kein Verlust in letzten 8h, extern)
 ///
-/// Exit: Multi-Stage (TP1 50% → BE-Move → Chandelier-Trailing → TP2/Regime-Exit)
+/// Exit: Multi-Stage (TP1 30% → Smart-BE → TP2 30% → Chandelier-Trailing 40% / Regime-Exit)
 /// SL/TP: Volatilitäts-adaptiv basierend auf ATR-Perzentil (engere Stops in ruhigen, weitere in volatilen Phasen)
+/// Max erreichbarer Score: ~10 (Funding + Cooldown werden extern geprüft, nicht im Score)
 /// </summary>
 public class CryptoTrendProStrategy : IStrategy
 {
@@ -41,25 +43,60 @@ public class CryptoTrendProStrategy : IStrategy
 
     // ADX-Parameter
     private int _adxPeriod = 14;
-    private decimal _minAdx = 20m;
+    private decimal _minAdx = 18m;
 
     // RSI-Parameter
     private int _rsiPeriod = 14;
-    private decimal _rsiLongMin = 45m;
-    private decimal _rsiLongMax = 80m;
-    private decimal _rsiShortMin = 20m;
-    private decimal _rsiShortMax = 55m;
+    private decimal _rsiLongMin = 40m;
+    private decimal _rsiLongMax = 75m;
+    private decimal _rsiShortMin = 25m;
+    private decimal _rsiShortMax = 60m;
 
     // Volumen-Parameter
     private int _volumePeriod = 20;
-    private decimal _volumeMultiplier = 1.5m;
+    private decimal _volumeMultiplier = 1.0m;
 
     // ATR / Exit-Parameter
     private int _atrPeriod = 14;
     private int _atrPercentileLookback = 100;
 
     // Confluence
-    private int _minScore = 8;
+    private int _minScore = 6;
+
+    // Aktiver Modus (für vol-adaptive Multiplikatoren)
+    private TradingModePreset _activePreset = TradingModePreset.Swing;
+
+    /// <summary>Aktueller Trading-Modus.</summary>
+    public TradingModePreset ActivePreset => _activePreset;
+
+    /// <summary>
+    /// Wendet ein Trading-Mode-Preset auf alle Parameter an.
+    /// Danach sind die Felder für den gewählten Modus optimiert.
+    /// </summary>
+    public void ApplyPreset(TradingModePreset mode)
+    {
+        _activePreset = mode;
+        if (mode == TradingModePreset.Custom) return;
+
+        var p = TradingModeDefaults.GetStrategyPreset(mode);
+        _supertrendPeriod = p.SupertrendPeriod;
+        _supertrendMultiplier = p.SupertrendMultiplier;
+        _emaFast = p.EmaFast;
+        _emaSlow = p.EmaSlow;
+        _emaTrendFilter = p.EmaTrendFilter;
+        _adxPeriod = p.AdxPeriod;
+        _minAdx = p.MinAdx;
+        _rsiPeriod = p.RsiPeriod;
+        _rsiLongMin = p.RsiLongMin;
+        _rsiLongMax = p.RsiLongMax;
+        _rsiShortMin = p.RsiShortMin;
+        _rsiShortMax = p.RsiShortMax;
+        _volumePeriod = p.VolumePeriod;
+        _volumeMultiplier = p.VolumeMultiplier;
+        _atrPeriod = p.AtrPeriod;
+        _atrPercentileLookback = p.AtrPercentileLookback;
+        _minScore = p.MinScore;
+    }
 
     public IReadOnlyList<StrategyParameter> Parameters => new List<StrategyParameter>
     {
@@ -194,7 +231,7 @@ public class CryptoTrendProStrategy : IStrategy
             {
                 var (_, htfStBullish) = IndicatorHelper.CalculateSupertrend(
                     context.HigherTimeframeCandles, _supertrendPeriod, _supertrendMultiplier);
-                if (htfStBullish[^1] == true && longScore < 4) // Nur wenn D1-Punkte nicht schon voll
+                if (htfStBullish[^1] == true) // HTF-Supertrend-Bonus unabhängig vom aktuellen Score
                 {
                     longScore += 1; // Bonus für HTF-Supertrend-Alignment
                     longReasons.Add("HTF-ST↑");
@@ -262,7 +299,7 @@ public class CryptoTrendProStrategy : IStrategy
             {
                 var (_, htfStBullish) = IndicatorHelper.CalculateSupertrend(
                     context.HigherTimeframeCandles, _supertrendPeriod, _supertrendMultiplier);
-                if (htfStBullish[^1] == false && shortScore < 4)
+                if (htfStBullish[^1] == false) // HTF-Supertrend-Bonus unabhängig vom aktuellen Score
                 {
                     shortScore += 1;
                     shortReasons.Add("HTF-ST↓");
@@ -271,30 +308,33 @@ public class CryptoTrendProStrategy : IStrategy
         }
 
         // ═══════════════════════════════════════════════════════════
-        // Close-Signale: Supertrend-Flip gegen offene Position
+        // Close-Signale: Supertrend-Flip + ADX-Verfall
+        // Nur auslösen wenn ADX stark genug ist (Supertrend-Flip in Range = Noise, ignorieren)
         // ═══════════════════════════════════════════════════════════
 
-        // Wenn Supertrend gerade geflippt ist UND eine Position in die andere Richtung offen ist
-        if (supertrendJustFlippedBearish && context.OpenPositions.Any(p => p.Side == Side.Buy))
+        // Supertrend-Flip: Nur closen wenn ADX > 20 (echter Trendwechsel, nicht Range-Noise)
+        if (supertrendJustFlippedBearish && lastAdx.Value >= _minAdx
+            && context.OpenPositions.Any(p => p.Side == Side.Buy))
         {
             return new SignalResult(Signal.CloseLong, 0.9m, currentPrice, null, null,
                 $"Supertrend-Flip bearish → Long schließen (ADX={lastAdx.Value:F0})");
         }
-        if (supertrendJustFlippedBullish && context.OpenPositions.Any(p => p.Side == Side.Sell))
+        if (supertrendJustFlippedBullish && lastAdx.Value >= _minAdx
+            && context.OpenPositions.Any(p => p.Side == Side.Sell))
         {
             return new SignalResult(Signal.CloseShort, 0.9m, currentPrice, null, null,
                 $"Supertrend-Flip bullish → Short schließen (ADX={lastAdx.Value:F0})");
         }
 
-        // ADX-Verfall: Trend stirbt → Position schließen
-        if (lastAdx.Value < 15m && prevAdx.HasValue && prevAdx.Value >= 15m)
+        // ADX-Verfall: Nur bei starkem Verfall (unter 10, nicht 15 - bei M15 ist 15 normal)
+        if (lastAdx.Value < 10m && prevAdx.HasValue && prevAdx.Value >= 10m)
         {
             if (context.OpenPositions.Any(p => p.Side == Side.Buy))
                 return new SignalResult(Signal.CloseLong, 0.7m, currentPrice, null, null,
-                    $"ADX unter 15 gefallen → Trend tot, Long schließen");
+                    $"ADX unter 10 gefallen → Trend tot, Long schließen");
             if (context.OpenPositions.Any(p => p.Side == Side.Sell))
                 return new SignalResult(Signal.CloseShort, 0.7m, currentPrice, null, null,
-                    $"ADX unter 15 gefallen → Trend tot, Short schließen");
+                    $"ADX unter 10 gefallen → Trend tot, Short schließen");
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -305,8 +345,12 @@ public class CryptoTrendProStrategy : IStrategy
         var atrPercentile = IndicatorHelper.CalculateAtrPercentile(candles, _atrPeriod, _atrPercentileLookback);
         var (slMult, tp1Mult, tp2Mult, trailMult) = GetVolAdaptiveMultipliers(atrPercentile);
 
+        // Large-Caps (>500M Volume) brauchen weniger Confluence - stabiler und liquider
+        var isLargeCap = context.CurrentTicker.Volume24h >= 500_000_000m;
+        var effectiveMinScore = isLargeCap ? Math.Max(4, _minScore - 2) : _minScore;
+
         // Long-Signal
-        if (longScore >= _minScore && longScore > shortScore)
+        if (longScore >= effectiveMinScore && longScore > shortScore)
         {
             // Keine bestehende Long-Position im selben Symbol
             if (context.OpenPositions.Any(p => p.Symbol == context.Symbol && p.Side == Side.Buy))
@@ -317,13 +361,21 @@ public class CryptoTrendProStrategy : IStrategy
             var tp1 = currentPrice + atrValue * tp1Mult;
             var tp2 = currentPrice + atrValue * tp2Mult;
 
-            return new SignalResult(Signal.Long, confidence, currentPrice, sl, tp1,
+            // Sicherheit: SL mindestens 0.5% vom Entry entfernt (Spread-Schutz bei Meme-Coins)
+            var minSlDistance = currentPrice * 0.005m;
+            if (currentPrice - sl < minSlDistance)
+                sl = currentPrice - minSlDistance;
+
+            var preferLimit = longScore >= 10;
+            var limitEntry = preferLimit ? currentPrice - atrValue * 0.1m : currentPrice;
+
+            return new SignalResult(Signal.Long, confidence, limitEntry, sl, tp1,
                 $"CTP Long [{longScore}/12] ATR-P{atrPercentile}: {string.Join(", ", longReasons)}",
-                TakeProfit2: tp2, ConflueceScore: longScore);
+                TakeProfit2: tp2, ConfluenceScore: longScore, PreferLimitOrder: preferLimit);
         }
 
         // Short-Signal
-        if (shortScore >= _minScore && shortScore > longScore)
+        if (shortScore >= effectiveMinScore && shortScore > longScore)
         {
             if (context.OpenPositions.Any(p => p.Symbol == context.Symbol && p.Side == Side.Sell))
                 return NoSignal("Bereits Short in diesem Symbol");
@@ -333,9 +385,17 @@ public class CryptoTrendProStrategy : IStrategy
             var tp1 = currentPrice - atrValue * tp1Mult;
             var tp2 = currentPrice - atrValue * tp2Mult;
 
-            return new SignalResult(Signal.Short, confidence, currentPrice, sl, tp1,
+            // Sicherheit: SL mindestens 0.5% vom Entry entfernt (Spread-Schutz)
+            var minSlDistShort = currentPrice * 0.005m;
+            if (sl - currentPrice < minSlDistShort)
+                sl = currentPrice + minSlDistShort;
+
+            var preferLimitShort = shortScore >= 10;
+            var limitEntryShort = preferLimitShort ? currentPrice + atrValue * 0.1m : currentPrice;
+
+            return new SignalResult(Signal.Short, confidence, limitEntryShort, sl, tp1,
                 $"CTP Short [{shortScore}/12] ATR-P{atrPercentile}: {string.Join(", ", shortReasons)}",
-                TakeProfit2: tp2, ConflueceScore: shortScore);
+                TakeProfit2: tp2, ConfluenceScore: shortScore, PreferLimitOrder: preferLimitShort);
         }
 
         var bestSide = longScore > shortScore ? "Long" : "Short";
@@ -344,21 +404,13 @@ public class CryptoTrendProStrategy : IStrategy
     }
 
     /// <summary>
-    /// Volatilitäts-adaptive SL/TP-Multiplikatoren basierend auf ATR-Perzentil.
-    /// In ruhigen Märkten: Engere Stops (weniger Risiko), engere TPs (kleinere Moves).
-    /// In volatilen Märkten: Weitere Stops (Noise überleben), weitere TPs (größere Moves).
+    /// Volatilitäts-adaptive SL/TP-Multiplikatoren basierend auf ATR-Perzentil und aktivem Modus.
+    /// Scalping: Engere Multiplikatoren. DayTrading: Mittel. Swing: Weiter.
     /// </summary>
-    private static (decimal slMult, decimal tp1Mult, decimal tp2Mult, decimal trailMult)
+    private (decimal slMult, decimal tp1Mult, decimal tp2Mult, decimal trailMult)
         GetVolAdaptiveMultipliers(int atrPercentile)
     {
-        return atrPercentile switch
-        {
-            < 20  => (1.5m, 2.0m, 3.5m, 2.0m),   // Sehr ruhig: Enge Stops, kleine TPs
-            < 50  => (1.8m, 2.5m, 4.5m, 2.2m),   // Normal-ruhig
-            < 75  => (2.0m, 3.0m, 5.0m, 2.5m),   // Normal-volatil (Standard)
-            < 90  => (2.5m, 3.5m, 6.0m, 3.0m),   // Hoch-volatil: Weite Stops, große TPs
-            _     => (2.0m, 2.5m, 4.0m, 2.0m),    // Extrem: Konservativ, halbe Position (extern)
-        };
+        return TradingModeDefaults.GetVolAdaptiveMultipliers(_activePreset, atrPercentile);
     }
 
     /// <summary>
@@ -378,20 +430,22 @@ public class CryptoTrendProStrategy : IStrategy
     }
 
     /// <summary>
-    /// Gibt den empfohlenen Leverage basierend auf ATR-Perzentil und Score zurück.
+    /// Gibt den empfohlenen Leverage basierend auf MaxLeverage, ATR-Perzentil und Score zurück.
+    /// Der eingestellte MaxLeverage wird als Basis genommen und bei hoher Volatilität oder
+    /// schwachem Signal leicht reduziert (max -20..30%), nie drastisch.
     /// </summary>
-    public static int GetAdaptiveLeverage(int atrPercentile, int score, bool isBtc)
+    public static int GetAdaptiveLeverage(int atrPercentile, int score, bool isBtc, int maxLeverage = 3)
     {
-        var baseLeverage = isBtc ? 5 : 3;
+        var result = maxLeverage;
 
-        // Hohe Volatilität → weniger Leverage
-        if (atrPercentile >= 90) baseLeverage = 1;
-        else if (atrPercentile >= 75) baseLeverage = Math.Min(baseLeverage, 2);
+        // Hohe Volatilität → leichte Reduzierung (max 30% weniger)
+        if (atrPercentile >= 90) result = Math.Max(1, (int)(maxLeverage * 0.7m));      // Extrem: -30%
+        else if (atrPercentile >= 75) result = Math.Max(1, (int)(maxLeverage * 0.85m)); // Hoch: -15%
 
-        // Niedriger Score → weniger Leverage
-        if (score <= 9) baseLeverage = Math.Max(1, baseLeverage - 1);
+        // Niedriger Score → 1 Stufe weniger (nur wenn > 1)
+        if (score <= 9 && result > 1) result--;
 
-        return baseLeverage;
+        return Math.Max(1, result);
     }
 
     private static SignalResult NoSignal(string reason) =>
@@ -413,6 +467,7 @@ public class CryptoTrendProStrategy : IStrategy
 
     public IStrategy Clone() => new CryptoTrendProStrategy
     {
+        _activePreset = _activePreset,
         _supertrendPeriod = _supertrendPeriod,
         _supertrendMultiplier = _supertrendMultiplier,
         _emaFast = _emaFast,

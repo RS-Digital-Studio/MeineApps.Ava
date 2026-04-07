@@ -51,7 +51,7 @@ public class PositionExitState
     public decimal CurrentAtr { get; set; }
 
     /// <summary>Confluence-Score des Entry-Signals (0-12, für ATI-Lernen).</summary>
-    public int ConflueceScore { get; set; }
+    public int ConfluenceScore { get; set; }
 
     /// <summary>Seite der Position (Buy/Sell).</summary>
     public Side Side { get; set; }
@@ -64,4 +64,10 @@ public class PositionExitState
 
     /// <summary>Ob die Position bereits teilweise geschlossen wurde (TP1 Partial-Close).</summary>
     public bool PartialClosed { get; set; }
+
+    /// <summary>Ob TP2 bereits teilweise geschlossen wurde (Pyramid: 30% bei TP2, Rest Trailing).</summary>
+    public bool Tp2Closed { get; set; }
+
+    /// <summary>Ob der Auto-Breakeven bereits gesetzt wurde (SL auf Entry wenn Gewinn >= 100/Leverage %).</summary>
+    public bool BreakevenSet { get; set; }
 }

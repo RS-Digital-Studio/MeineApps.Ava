@@ -111,6 +111,11 @@
         <GradientStop Color="#EF5350" Offset="1" />
     </LinearGradientBrush>
 
+    <LinearGradientBrush x:Key="SecondaryGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#1565C0" Offset="0" />
+        <GradientStop Color="#2196F3" Offset="1" />
+    </LinearGradientBrush>
+
     <!-- Spacing / Design Tokens -->
     <CornerRadius x:Key="CardRadius">16</CornerRadius>
     <CornerRadius x:Key="ButtonRadius">12</CornerRadius>

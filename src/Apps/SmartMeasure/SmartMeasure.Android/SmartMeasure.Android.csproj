@@ -15,5 +15,6 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" />
+    <PackageReference Include="Vapolia.Google.ARCore" />
   </ItemGroup>
 </Project>

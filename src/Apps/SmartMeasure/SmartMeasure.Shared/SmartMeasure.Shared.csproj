@@ -17,7 +17,6 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Material.Icons.Avalonia" />
     <PackageReference Include="SkiaSharp" />
-    <PackageReference Include="Avalonia.Skia" />
     <PackageReference Include="Avalonia.Labs.Controls" />
 
     <!-- MVVM -->
@@ -32,14 +31,15 @@
     <!-- Datenbank -->
     <PackageReference Include="sqlite-net-pcl" />
     <PackageReference Include="SQLitePCLRaw.bundle_green" />
+
+    <!-- PDF Export -->
+    <PackageReference Include="PdfSharpCore" />
   </ItemGroup>
 
-  <!-- Lokalisierung (erst einbinden wenn RESX-Dateien erstellt sind)
   <ItemGroup>
     <EmbeddedResource Update="Resources\Strings\AppStrings.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>AppStrings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  -->
 </Project>

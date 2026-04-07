@@ -116,7 +116,7 @@ public class GardenPlanService : IGardenPlanService
                         Unit = "m³",
                         ElementName = $"Terrasse {element.Material}"
                     });
-                    if (element.VolumeMeters > 0)
+                    if (Math.Abs(element.VolumeMeters) > 0.001)
                     {
                         estimates.Add(new MaterialEstimate
                         {
@@ -165,7 +165,7 @@ public class GardenPlanService : IGardenPlanService
         {
             var arrays = JsonSerializer.Deserialize<double[][]>(json);
             if (arrays == null) return [];
-            return arrays.Select(a => (a[0], a[1])).ToList();
+            return arrays.Where(a => a.Length >= 2).Select(a => (a[0], a[1])).ToList();
         }
         catch
         {

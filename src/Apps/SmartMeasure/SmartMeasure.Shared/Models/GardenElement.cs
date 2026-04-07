@@ -59,5 +59,9 @@ public enum GardenElementType
     Rasen,
     Mauer,
     Zaun,
-    Terrasse
+    Terrasse,
+    Grenze,
+    Gebaeude,
+    Wasser,
+    Kante
 }

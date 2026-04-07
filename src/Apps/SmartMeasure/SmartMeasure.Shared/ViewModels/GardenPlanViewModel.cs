@@ -41,9 +41,13 @@ public partial class GardenPlanViewModel : ViewModelBase
     [ObservableProperty] private float _selectedHeight = 0.5f;
     [ObservableProperty] private string _selectedSubType = string.Empty;
     [ObservableProperty] private bool _isDrawing;
+    [ObservableProperty] private int _drawingPointCount;
 
     // Aktuell gezeichnetes Element (Punkte werden gesammelt)
     private readonly List<(double x, double y)> _currentDrawingPoints = [];
+
+    /// <summary>Aktuelle Zeichnungspunkte fuer Vorschau im Renderer</summary>
+    public IReadOnlyList<(double x, double y)> CurrentDrawingPoints => _currentDrawingPoints;
 
     // Undo/Redo
     private readonly Stack<GardenElement> _undoStack = new();
@@ -92,11 +96,86 @@ public partial class GardenPlanViewModel : ViewModelBase
         InvalidateRequested?.Invoke();
     }
 
+    /// <summary>Werkzeug wechseln (wird von Toolbar-Buttons aufgerufen)</summary>
+    [RelayCommand]
+    private void SelectTool(string toolName)
+    {
+        if (!Enum.TryParse<GardenElementType>(toolName, out var type)) return;
+
+        SelectedTool = type;
+
+        // Standard-Material je nach Werkzeug setzen
+        SelectedMaterial = type switch
+        {
+            GardenElementType.Weg => "Pflaster",
+            GardenElementType.Beet => "Erde",
+            GardenElementType.Rasen => "Rasen",
+            GardenElementType.Mauer => "Naturstein",
+            GardenElementType.Zaun => "Holz",
+            GardenElementType.Terrasse => "Holz",
+            _ => "Pflaster"
+        };
+
+        // Standard-Dimensionen je nach Werkzeug
+        (SelectedWidth, SelectedHeight) = type switch
+        {
+            GardenElementType.Weg => (1.2f, 0f),
+            GardenElementType.Mauer => (0.24f, 1.0f),
+            GardenElementType.Zaun => (0f, 1.2f),
+            _ => (0f, 0f)
+        };
+    }
+
+    /// <summary>Touch auf Canvas: Punkt in lokalen Meter-Koordinaten hinzufuegen</summary>
+    public void OnCanvasTapped(float canvasX, float canvasY)
+    {
+        if (_x.Length == 0) return;
+
+        // Canvas-Koordinaten zurueck in lokale Meter transformieren
+        // Inverse der Renderer-Transformation: canvas → lokal
+        var rangeX = _x.Max() - _x.Min();
+        var rangeY = _y.Max() - _y.Min();
+        var range = Math.Max(rangeX, rangeY);
+        if (range < 0.001) range = 1;
+
+        var centerX = (_x.Min() + _x.Max()) / 2.0;
+        var centerY = (_y.Min() + _y.Max()) / 2.0;
+
+        // Scale und Offsets muessen mit dem Renderer uebereinstimmen
+        // Renderer: canvas.Translate(midX + PanX, midY + PanY)
+        //           sx = (x - centerX) * scale
+        //           sy = (y - centerY) * scale * -1
+        // Inverse:  localX = sx / scale + centerX
+        //           localY = -(sy / scale) + centerY
+        // wobei sx = canvasX - (viewportMidX + PanX)
+        //       sy = canvasY - (viewportMidY + PanY)
+        var localX = (double)canvasX / Renderer.LastScale + centerX;
+        var localY = -((double)canvasY / Renderer.LastScale) + centerY;
+
+        AddDrawingPoint(localX, localY);
+    }
+
     /// <summary>Punkt zum aktuellen Zeichnungselement hinzufuegen</summary>
     public void AddDrawingPoint(double localX, double localY)
     {
         _currentDrawingPoints.Add((localX, localY));
         IsDrawing = true;
+        DrawingPointCount = _currentDrawingPoints.Count;
+        InvalidateRequested?.Invoke();
+    }
+
+    /// <summary>Letzten Zeichnungspunkt entfernen</summary>
+    [RelayCommand]
+    private void UndoDrawPoint()
+    {
+        if (_currentDrawingPoints.Count == 0) return;
+
+        _currentDrawingPoints.RemoveAt(_currentDrawingPoints.Count - 1);
+        DrawingPointCount = _currentDrawingPoints.Count;
+
+        if (_currentDrawingPoints.Count == 0)
+            IsDrawing = false;
+
         InvalidateRequested?.Invoke();
     }
 
@@ -108,6 +187,7 @@ public partial class GardenPlanViewModel : ViewModelBase
         {
             _currentDrawingPoints.Clear();
             IsDrawing = false;
+            DrawingPointCount = 0;
             return;
         }
 
@@ -147,6 +227,7 @@ public partial class GardenPlanViewModel : ViewModelBase
 
         _currentDrawingPoints.Clear();
         IsDrawing = false;
+        DrawingPointCount = 0;
 
         RecalculateMaterials();
         InvalidateRequested?.Invoke();
@@ -158,6 +239,7 @@ public partial class GardenPlanViewModel : ViewModelBase
     {
         _currentDrawingPoints.Clear();
         IsDrawing = false;
+        DrawingPointCount = 0;
         InvalidateRequested?.Invoke();
     }
 

@@ -8,11 +8,12 @@ using SmartMeasure.Shared.Services;
 
 namespace SmartMeasure.Shared.ViewModels;
 
-/// <summary>Live-Vermessung: Position, Punkt setzen, Labels</summary>
+/// <summary>Live-Vermessung: Position, Punkt setzen, Labels, AR-Capture</summary>
 public partial class SurveyViewModel : ViewModelBase
 {
     private readonly IBleService _bleService;
     private readonly IMeasurementService _measurementService;
+    private readonly IArCaptureService _arCaptureService;
 
     // Live-Position
     [ObservableProperty] private double _latitude;
@@ -39,10 +40,19 @@ public partial class SurveyViewModel : ViewModelBase
     // Abstand zum letzten Punkt
     [ObservableProperty] private string _distanceToLast = "—";
 
-    public SurveyViewModel(IBleService bleService, IMeasurementService measurementService)
+    // AR-Capture
+    [ObservableProperty] private bool _isArAvailable;
+    [ObservableProperty] private string _arStatusText = string.Empty;
+
+    /// <summary>AR-Capture abgeschlossen - MainViewModel soll Transfer starten</summary>
+    public event Action<Models.ArCaptureResult>? ArCaptureCompleted;
+
+    public SurveyViewModel(IBleService bleService, IMeasurementService measurementService,
+        IArCaptureService arCaptureService)
     {
         _bleService = bleService;
         _measurementService = measurementService;
+        _arCaptureService = arCaptureService;
 
         // BLE-Events kommen vom Background-Thread, daher Dispatcher
         _bleService.PositionUpdated += (lat, lon, alt) => Dispatcher.UIThread.Post(() =>
@@ -58,14 +68,7 @@ public partial class SurveyViewModel : ViewModelBase
         _bleService.FixQualityChanged += q => Dispatcher.UIThread.Post(() =>
         {
             FixQuality = q;
-            FixStatusText = q switch
-            {
-                4 => "RTK FIX",
-                5 => "FLOAT",
-                2 => "DGPS",
-                1 => "GPS",
-                _ => "KEIN FIX"
-            };
+            FixStatusText = _bleService.CurrentState.FixStatusText;
         });
 
         _bleService.AccuracyUpdated += (h, v) => Dispatcher.UIThread.Post(() =>
@@ -101,6 +104,31 @@ public partial class SurveyViewModel : ViewModelBase
     private void SetQuickLabel(string label)
     {
         PointLabel = label;
+    }
+
+    /// <summary>AR-Kamera-Capture starten</summary>
+    [RelayCommand]
+    private async Task StartArCaptureAsync()
+    {
+        var available = await _arCaptureService.IsAvailableAsync();
+        if (!available)
+        {
+            ArStatusText = "ARCore nicht verfuegbar";
+            return;
+        }
+
+        ArStatusText = "AR-Kamera aktiv...";
+        var result = await _arCaptureService.CaptureAsync();
+
+        if (result != null && result.TotalPointCount > 0)
+        {
+            ArStatusText = $"{result.TotalPointCount} Punkte erfasst";
+            ArCaptureCompleted?.Invoke(result);
+        }
+        else
+        {
+            ArStatusText = "AR-Capture abgebrochen";
+        }
     }
 
     /// <summary>Alle Punkte loeschen</summary>
@@ -139,7 +167,7 @@ public partial class SurveyViewModel : ViewModelBase
             Altitude = $"{point.Altitude:F2} m",
             Accuracy = $"±{point.HorizontalAccuracy:F1} cm",
             Distance = DistanceToLast,
-            FixStatus = point.FixQuality == 4 ? "FIX" : "FLOAT"
+            FixStatus = StickState.GetFixStatusText(point.FixQuality)
         });
     }
 }

@@ -10,4 +10,9 @@ public interface IExportService
 
     /// <summary>Punkte + Polygon als GeoJSON exportieren (fuer QGIS/Google Earth)</summary>
     string ExportToGeoJson(SurveyProject project);
+
+    /// <summary>Projekt-Bericht als PDF exportieren (Projekt-Info, Punkt-Tabelle, Materialliste)</summary>
+    /// <returns>Pfad zur generierten PDF-Datei</returns>
+    Task<string> ExportPdfAsync(SurveyProject project, List<SurveyPoint> points,
+        List<GardenElement> elements, TerrainMesh? mesh, string outputDir);
 }

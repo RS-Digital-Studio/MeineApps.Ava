@@ -31,7 +31,10 @@ public class StickState
     public int MagAccuracy { get; set; }
 
     /// <summary>Fix-Status als lesbarer Text</summary>
-    public string FixStatusText => FixQuality switch
+    public string FixStatusText => GetFixStatusText(FixQuality);
+
+    /// <summary>Fix-Quality als lesbaren Text (zentrale Definition)</summary>
+    public static string GetFixStatusText(int fixQuality) => fixQuality switch
     {
         4 => "RTK FIX",
         5 => "RTK FLOAT",

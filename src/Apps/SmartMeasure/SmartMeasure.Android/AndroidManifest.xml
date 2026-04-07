@@ -14,9 +14,15 @@
                      android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
-    <!-- GPS (Handy-Position fuer Karte) -->
+    <!-- GPS (Handy-Position fuer Karte + AR-Georeferenzierung) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Kamera (AR-Capture) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- ARCore Hardware-Feature (schraenkt Play Store auf ARCore-Geraete ein) -->
+    <uses-feature android:name="android.hardware.camera.ar" />
 
     <!-- Foreground-Service (BLE im Hintergrund halten) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -33,5 +39,8 @@
         android:roundIcon="@mipmap/appicon_round"
         android:label="SmartMeasure"
         android:theme="@style/MyTheme.NoActionBar">
+
+        <!-- ARCore Required (Google Play Services for AR wird automatisch installiert) -->
+        <meta-data android:name="com.google.ar.core" android:value="required" />
     </application>
 </manifest>

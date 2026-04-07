@@ -8,10 +8,11 @@ using SmartMeasure.Shared.Services;
 
 namespace SmartMeasure.Shared.ViewModels;
 
-/// <summary>Haupt-ViewModel: Navigation (6 Tabs + Verbindung), Status-Bar, Back-Button</summary>
+/// <summary>Haupt-ViewModel: Navigation (6 Tabs + Verbindung), Status-Bar, Back-Button, AR-Transfer</summary>
 public partial class MainViewModel : ViewModelBase
 {
     private readonly IBleService _bleService;
+    private readonly IArTransferService _arTransferService;
     private readonly BackPressHelper _backPressHelper = new();
 
     // Child-ViewModels
@@ -45,6 +46,7 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel(
         IBleService bleService,
+        IArTransferService arTransferService,
         ConnectViewModel connectVm,
         SurveyViewModel surveyVm,
         TerrainViewModel terrainVm,
@@ -54,6 +56,7 @@ public partial class MainViewModel : ViewModelBase
         SettingsViewModel settingsVm)
     {
         _bleService = bleService;
+        _arTransferService = arTransferService;
         ConnectVm = connectVm;
         SurveyVm = surveyVm;
         TerrainVm = terrainVm;
@@ -67,19 +70,29 @@ public partial class MainViewModel : ViewModelBase
         _bleService.FixQualityChanged += q => Dispatcher.UIThread.Post(() =>
         {
             FixQuality = q;
-            FixStatusText = q switch
-            {
-                4 => "RTK FIX",
-                5 => "FLOAT",
-                2 => "DGPS",
-                1 => "GPS",
-                _ => "KEIN FIX"
-            };
+            FixStatusText = _bleService.CurrentState.FixStatusText;
         });
         _bleService.AccuracyUpdated += (h, _) => Dispatcher.UIThread.Post(() => HorizontalAccuracy = h);
 
         // Back-Button
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+
+        // AR-Capture → Terrain-Transfer
+        SurveyVm.ArCaptureCompleted += async result =>
+        {
+            try
+            {
+                var projectId = ProjectsVm.SelectedProject?.Id ?? 0;
+                if (projectId <= 0) return;
+
+                var count = await _arTransferService.TransferToProjectAsync(result, projectId);
+                global::System.Diagnostics.Debug.WriteLine($"AR-Transfer: {count} Punkte uebertragen");
+            }
+            catch (Exception ex)
+            {
+                global::System.Diagnostics.Debug.WriteLine($"AR-Transfer fehlgeschlagen: {ex.Message}");
+            }
+        };
     }
 
     public Task InitializeAsync()

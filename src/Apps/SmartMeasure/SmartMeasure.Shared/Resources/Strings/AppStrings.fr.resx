@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter</value>
+  </resheader>
+
+  <!-- Navigation / Tabs -->
+  <data name="TabSurvey" xml:space="preserve">
+    <value>Mesure</value>
+  </data>
+  <data name="TabTerrain" xml:space="preserve">
+    <value>3D</value>
+  </data>
+  <data name="TabGarden" xml:space="preserve">
+    <value>Jardin</value>
+  </data>
+  <data name="TabMap" xml:space="preserve">
+    <value>Carte</value>
+  </data>
+  <data name="TabProjects" xml:space="preserve">
+    <value>Projets</value>
+  </data>
+  <data name="TabConnect" xml:space="preserve">
+    <value>BLE</value>
+  </data>
+  <data name="TabSettings" xml:space="preserve">
+    <value>Options</value>
+  </data>
+
+  <!-- Survey: Position -->
+  <data name="Position" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="Latitude" xml:space="preserve">
+    <value>Lat</value>
+  </data>
+  <data name="Longitude" xml:space="preserve">
+    <value>Lon</value>
+  </data>
+  <data name="Altitude" xml:space="preserve">
+    <value>Altitude</value>
+  </data>
+  <data name="HAccuracy" xml:space="preserve">
+    <value>Pr&#233;cision H</value>
+  </data>
+  <data name="VAccuracy" xml:space="preserve">
+    <value>Pr&#233;cision V</value>
+  </data>
+  <data name="Tilt" xml:space="preserve">
+    <value>Inclinaison</value>
+  </data>
+
+  <!-- Survey: Labels + Actions -->
+  <data name="PointLabel" xml:space="preserve">
+    <value>&#201;tiquette du point</value>
+  </data>
+  <data name="CustomLabelWatermark" xml:space="preserve">
+    <value>&#201;tiquette personnalis&#233;e...</value>
+  </data>
+  <data name="SetPoint" xml:space="preserve">
+    <value>POINT</value>
+  </data>
+  <data name="ArCamera" xml:space="preserve">
+    <value>CAM&#201;RA AR</value>
+  </data>
+  <data name="Distance" xml:space="preserve">
+    <value>Distance :</value>
+  </data>
+  <data name="MeasurePoints" xml:space="preserve">
+    <value>Points de mesure</value>
+  </data>
+  <data name="DeleteAll" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+
+  <!-- Survey: Quick Labels -->
+  <data name="QuickLabelCorner" xml:space="preserve">
+    <value>Coin</value>
+  </data>
+  <data name="QuickLabelBorder" xml:space="preserve">
+    <value>Limite</value>
+  </data>
+  <data name="QuickLabelTree" xml:space="preserve">
+    <value>Arbre</value>
+  </data>
+  <data name="QuickLabelPost" xml:space="preserve">
+    <value>Poteau</value>
+  </data>
+  <data name="QuickLabelPath" xml:space="preserve">
+    <value>All&#233;e</value>
+  </data>
+
+  <!-- Terrain -->
+  <data name="TerrainModel" xml:space="preserve">
+    <value>Mod&#232;le de terrain</value>
+  </data>
+  <data name="Points" xml:space="preserve">
+    <value>Points :</value>
+  </data>
+  <data name="Area" xml:space="preserve">
+    <value>Surface :</value>
+  </data>
+  <data name="HeightRange" xml:space="preserve">
+    <value>Hauteur :</value>
+  </data>
+  <data name="Elevation" xml:space="preserve">
+    <value>&#201;l&#233;vation :</value>
+  </data>
+  <data name="Wireframe" xml:space="preserve">
+    <value>Fil de fer</value>
+  </data>
+  <data name="Contours" xml:space="preserve">
+    <value>Courbes de niveau</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>R&#233;initialiser</value>
+  </data>
+  <data name="Flat" xml:space="preserve">
+    <value>Plat</value>
+  </data>
+
+  <!-- Garden -->
+  <data name="GardenPlan" xml:space="preserve">
+    <value>Plan de jardin</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>All&#233;e</value>
+  </data>
+  <data name="Bed" xml:space="preserve">
+    <value>Massif</value>
+  </data>
+  <data name="Lawn" xml:space="preserve">
+    <value>Pelouse</value>
+  </data>
+  <data name="GardenWall" xml:space="preserve">
+    <value>Mur</value>
+  </data>
+  <data name="Fence" xml:space="preserve">
+    <value>Cl&#244;ture</value>
+  </data>
+  <data name="Terrace" xml:space="preserve">
+    <value>Terrasse</value>
+  </data>
+  <data name="Building" xml:space="preserve">
+    <value>B&#226;timent</value>
+  </data>
+  <data name="Water" xml:space="preserve">
+    <value>Eau</value>
+  </data>
+  <data name="GardenBorder" xml:space="preserve">
+    <value>Bordure</value>
+  </data>
+  <data name="Materials" xml:space="preserve">
+    <value>Liste des mat&#233;riaux</value>
+  </data>
+  <data name="SafetyMarginNote" xml:space="preserve">
+    <value>Valeurs incl. 15% marge de s&#233;curit&#233;</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Redo" xml:space="preserve">
+    <value>R&#233;tablir</value>
+  </data>
+
+  <!-- Map -->
+  <data name="MapView" xml:space="preserve">
+    <value>Vue carte</value>
+  </data>
+  <data name="Perimeter" xml:space="preserve">
+    <value>P&#233;rim&#232;tre :</value>
+  </data>
+  <data name="PointCount" xml:space="preserve">
+    <value>Points</value>
+  </data>
+
+  <!-- Projects -->
+  <data name="Projects" xml:space="preserve">
+    <value>Projets</value>
+  </data>
+  <data name="NewProject" xml:space="preserve">
+    <value>Nouveau projet</value>
+  </data>
+  <data name="NewProjectWatermark" xml:space="preserve">
+    <value>Nouveau projet...</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>Nom du projet</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Cr&#233;er</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Ouvrir</value>
+  </data>
+  <data name="Duplicate" xml:space="preserve">
+    <value>Dupliquer</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copie</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Exporter</value>
+  </data>
+  <data name="ExportCsv" xml:space="preserve">
+    <value>CSV</value>
+  </data>
+  <data name="ExportGeoJson" xml:space="preserve">
+    <value>GeoJSON</value>
+  </data>
+  <data name="ExportObj" xml:space="preserve">
+    <value>OBJ (Blender)</value>
+  </data>
+  <data name="ExportPdf" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+
+  <!-- Connect -->
+  <data name="Connection" xml:space="preserve">
+    <value>Connexion de la canne</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Scanner</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>Connecter</value>
+  </data>
+  <data name="Disconnect" xml:space="preserve">
+    <value>D&#233;connecter</value>
+  </data>
+  <data name="Connecting" xml:space="preserve">
+    <value>Connexion...</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>Connect&#233;</value>
+  </data>
+  <data name="NotConnected" xml:space="preserve">
+    <value>Non connect&#233;</value>
+  </data>
+  <data name="ConnectionFailed" xml:space="preserve">
+    <value>&#201;chec de la connexion</value>
+  </data>
+  <data name="StickHeight" xml:space="preserve">
+    <value>Longueur de la canne</value>
+  </data>
+  <data name="StickHeightDescription" xml:space="preserve">
+    <value>Distance de l'antenne GPS (haut) &#224; la pointe (sol)</value>
+  </data>
+  <data name="SetHeight" xml:space="preserve">
+    <value>D&#233;finir</value>
+  </data>
+  <data name="NtripConfig" xml:space="preserve">
+    <value>NTRIP (Donn&#233;es de correction)</value>
+  </data>
+  <data name="NtripSend" xml:space="preserve">
+    <value>Envoyer NTRIP</value>
+  </data>
+  <data name="WifiConfig" xml:space="preserve">
+    <value>WiFi (Hotspot)</value>
+  </data>
+  <data name="WifiSend" xml:space="preserve">
+    <value>Envoyer WiFi</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>Serveur (IP ou nom d'h&#244;te)</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Mountpoint" xml:space="preserve">
+    <value>Mountpoint</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>Utilisateur</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Mot de passe</value>
+  </data>
+  <data name="CalibrateImu" xml:space="preserve">
+    <value>Calibrer l'IMU</value>
+  </data>
+
+  <!-- Settings -->
+  <data name="Settings" xml:space="preserve">
+    <value>Param&#232;tres</value>
+  </data>
+  <data name="Units" xml:space="preserve">
+    <value>Unit&#233;s</value>
+  </data>
+  <data name="Metric" xml:space="preserve">
+    <value>M&#233;trique</value>
+  </data>
+  <data name="Imperial" xml:space="preserve">
+    <value>Imp&#233;rial</value>
+  </data>
+  <data name="MinFixQuality" xml:space="preserve">
+    <value>Qualit&#233; minimale du fix</value>
+  </data>
+  <data name="MinFixQualityHint" xml:space="preserve">
+    <value>5 = Float (recommand&#233;), 4 = RTK Fix uniquement</value>
+  </data>
+  <data name="StickLengthSetting" xml:space="preserve">
+    <value>Longueur de la canne (antenne &#8594; pointe, en m)</value>
+  </data>
+  <data name="AppVersion" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>Lev&#233; topographique 3D + am&#233;nagement de jardin</value>
+  </data>
+  <data name="AppAccuracyNote" xml:space="preserve">
+    <value>Canne topographique RTK-GPS avec &#177;2cm de pr&#233;cision</value>
+  </data>
+
+  <!-- Common -->
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Retour</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Erreur</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Chargement...</value>
+  </data>
+  <data name="NoData" xml:space="preserve">
+    <value>Aucune donn&#233;e</value>
+  </data>
+  <data name="Confirm" xml:space="preserve">
+    <value>Confirmer</value>
+  </data>
+
+  <!-- AR -->
+  <data name="ArCapture" xml:space="preserve">
+    <value>Capture AR</value>
+  </data>
+  <data name="ArNotAvailable" xml:space="preserve">
+    <value>ARCore non disponible</value>
+  </data>
+  <data name="ArActive" xml:space="preserve">
+    <value>Cam&#233;ra AR active...</value>
+  </data>
+  <data name="ArPointsCaptured" xml:space="preserve">
+    <value>{0} points captur&#233;s</value>
+  </data>
+  <data name="ArCancelled" xml:space="preserve">
+    <value>Capture AR annul&#233;e</value>
+  </data>
+  <data name="PointMode" xml:space="preserve">
+    <value>Mode point</value>
+  </data>
+  <data name="LineMode" xml:space="preserve">
+    <value>Mode ligne</value>
+  </data>
+  <data name="CloseContour" xml:space="preserve">
+    <value>Fermer le contour</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>Terminer</value>
+  </data>
+
+  <!-- Fix Status -->
+  <data name="NoFix" xml:space="preserve">
+    <value>SANS FIX</value>
+  </data>
+  <data name="Gps" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="Dgps" xml:space="preserve">
+    <value>DGPS</value>
+  </data>
+  <data name="RtkFix" xml:space="preserve">
+    <value>RTK FIX</value>
+  </data>
+  <data name="RtkFloat" xml:space="preserve">
+    <value>RTK FLOAT</value>
+  </data>
+
+  <!-- Back Button -->
+  <data name="PressBackAgainToExit" xml:space="preserve">
+    <value>Appuyez &#224; nouveau pour quitter</value>
+  </data>
+</root>

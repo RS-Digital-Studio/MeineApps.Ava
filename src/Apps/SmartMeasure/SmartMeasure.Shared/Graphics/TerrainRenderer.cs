@@ -37,6 +37,7 @@ public class TerrainRenderer
     private readonly SKPaint _northPaint = new() { IsAntialias = true, Color = new SKColor(239, 83, 80), TextSize = 14f, FakeBoldText = true };
     private readonly SKPaint _scalePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f, Color = new SKColor(200, 200, 200) };
     private readonly SKPaint _bgPaint = new() { Color = new SKColor(26, 26, 46) }; // BgPrimaryColor
+    private readonly SKPaint _legendPaint = new() { IsAntialias = false };
 
     public void Render(SKCanvas canvas, SKRect bounds, TerrainMesh? mesh,
         List<ContourLine>? contours, string[]? labels)
@@ -299,13 +300,12 @@ public class TerrainRenderer
         var top = bounds.Top + 80;
         var height = bounds.Height * 0.4f;
 
-        // Farbverlauf
+        // Farbverlauf (gecachtes Paint, nur Color pro Zeile setzen)
         for (int i = 0; i < (int)height; i++)
         {
             var t = 1.0 - i / height;
-            var color = InterpolateHeightColor(t);
-            using var paint = new SKPaint { Color = color };
-            canvas.DrawLine(x - 8, top + i, x, top + i, paint);
+            _legendPaint.Color = InterpolateHeightColor(t);
+            canvas.DrawLine(x - 8, top + i, x, top + i, _legendPaint);
         }
 
         // Min/Max Beschriftung
@@ -344,5 +344,6 @@ public class TerrainRenderer
         _northPaint.Dispose();
         _scalePaint.Dispose();
         _bgPaint.Dispose();
+        _legendPaint.Dispose();
     }
 }

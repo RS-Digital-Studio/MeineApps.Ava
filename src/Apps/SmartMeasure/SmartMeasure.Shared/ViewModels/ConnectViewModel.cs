@@ -54,14 +54,7 @@ public partial class ConnectViewModel : ViewModelBase
         _bleService.FixQualityChanged += q => Dispatcher.UIThread.Post(() =>
         {
             FixQuality = q;
-            FixStatusText = q switch
-            {
-                4 => "RTK FIX",
-                5 => "RTK FLOAT",
-                2 => "DGPS",
-                1 => "GPS",
-                _ => "KEIN FIX"
-            };
+            FixStatusText = _bleService.CurrentState.FixStatusText;
         });
     }
 

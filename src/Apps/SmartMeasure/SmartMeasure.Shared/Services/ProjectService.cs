@@ -8,6 +8,7 @@ public class ProjectService : IProjectService
 {
     private readonly SQLiteAsyncConnection _db;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private readonly Task _initTask;
 
     public ProjectService()
     {
@@ -16,7 +17,7 @@ public class ProjectService : IProjectService
             "smartmeasure.db");
 
         _db = new SQLiteAsyncConnection(dbPath);
-        _ = InitializeAsync();
+        _initTask = InitializeAsync();
     }
 
     private async Task InitializeAsync()
@@ -26,8 +27,14 @@ public class ProjectService : IProjectService
         await _db.CreateTableAsync<GardenElement>();
     }
 
+    private async Task EnsureInitializedAsync()
+    {
+        await _initTask;
+    }
+
     public async Task<List<SurveyProject>> GetAllProjectsAsync()
     {
+        await EnsureInitializedAsync();
         await _semaphore.WaitAsync();
         try
         {
@@ -40,6 +47,7 @@ public class ProjectService : IProjectService
 
     public async Task<SurveyProject?> GetProjectAsync(int id)
     {
+        await EnsureInitializedAsync();
         await _semaphore.WaitAsync();
         try
         {
@@ -63,6 +71,7 @@ public class ProjectService : IProjectService
 
     public async Task<SurveyProject> CreateProjectAsync(string name, string type = "Grundstueck")
     {
+        await EnsureInitializedAsync();
         var project = new SurveyProject
         {
             Name = name,
@@ -83,6 +92,7 @@ public class ProjectService : IProjectService
 
     public async Task UpdateProjectAsync(SurveyProject project)
     {
+        await EnsureInitializedAsync();
         project.ModifiedAt = DateTime.UtcNow;
         await _semaphore.WaitAsync();
         try
@@ -94,6 +104,7 @@ public class ProjectService : IProjectService
 
     public async Task DeleteProjectAsync(int id)
     {
+        await EnsureInitializedAsync();
         await _semaphore.WaitAsync();
         try
         {
@@ -107,6 +118,7 @@ public class ProjectService : IProjectService
 
     public async Task<SurveyProject> DuplicateProjectAsync(int id, string newName)
     {
+        await EnsureInitializedAsync();
         var original = await GetProjectAsync(id);
         if (original == null)
             throw new InvalidOperationException($"Projekt {id} nicht gefunden");
@@ -165,6 +177,7 @@ public class ProjectService : IProjectService
 
     public async Task AddPointAsync(int projectId, SurveyPoint point)
     {
+        await EnsureInitializedAsync();
         point.ProjectId = projectId;
         await _semaphore.WaitAsync();
         try
@@ -176,6 +189,7 @@ public class ProjectService : IProjectService
 
     public async Task<List<SurveyPoint>> GetPointsAsync(int projectId)
     {
+        await EnsureInitializedAsync();
         await _semaphore.WaitAsync();
         try
         {
@@ -189,6 +203,7 @@ public class ProjectService : IProjectService
 
     public async Task AddGardenElementAsync(int projectId, GardenElement element)
     {
+        await EnsureInitializedAsync();
         element.ProjectId = projectId;
         await _semaphore.WaitAsync();
         try
@@ -200,6 +215,7 @@ public class ProjectService : IProjectService
 
     public async Task UpdateGardenElementAsync(GardenElement element)
     {
+        await EnsureInitializedAsync();
         await _semaphore.WaitAsync();
         try
         {
@@ -210,6 +226,7 @@ public class ProjectService : IProjectService
 
     public async Task DeleteGardenElementAsync(int id)
     {
+        await EnsureInitializedAsync();
         await _semaphore.WaitAsync();
         try
         {
@@ -220,6 +237,7 @@ public class ProjectService : IProjectService
 
     public async Task<List<GardenElement>> GetGardenElementsAsync(int projectId)
     {
+        await EnsureInitializedAsync();
         await _semaphore.WaitAsync();
         try
         {

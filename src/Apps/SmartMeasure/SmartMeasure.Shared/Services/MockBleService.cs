@@ -6,6 +6,7 @@ namespace SmartMeasure.Shared.Services;
 public class MockBleService : IBleService, IDisposable
 {
     private readonly Random _random = new();
+    private readonly object _stateLock = new();
     private Timer? _positionTimer;
     private bool _isConnected;
 
@@ -100,12 +101,20 @@ public class MockBleService : IBleService, IDisposable
     {
         if (!_isConnected) return;
 
+        double lat, lon, alt;
+        lock (_stateLock)
+        {
+            lat = _currentLat;
+            lon = _currentLon;
+            alt = _currentAlt;
+        }
+
         _pointCounter++;
         var point = new SurveyPoint
         {
-            Latitude = _currentLat,
-            Longitude = _currentLon,
-            Altitude = _currentAlt + (_random.NextDouble() - 0.5) * 2.0, // ±1m Variation
+            Latitude = lat,
+            Longitude = lon,
+            Altitude = alt + (_random.NextDouble() - 0.5) * 2.0, // ±1m Variation
             HorizontalAccuracy = 1.2f + (float)_random.NextDouble() * 0.8f,
             VerticalAccuracy = 1.8f + (float)_random.NextDouble() * 1.2f,
             TiltAngle = (float)_random.NextDouble() * 5f,
@@ -122,18 +131,25 @@ public class MockBleService : IBleService, IDisposable
 
     private void SimulatePositionUpdate(object? state)
     {
-        // Random Walk: Kleine Schwankungen simulieren (±2cm)
-        _currentLat += (_random.NextDouble() - 0.5) * 0.0000004;
-        _currentLon += (_random.NextDouble() - 0.5) * 0.0000004;
-        _currentAlt = BaseAlt + (_random.NextDouble() - 0.5) * 0.05;
+        double lat, lon, alt;
+        lock (_stateLock)
+        {
+            // Random Walk: Kleine Schwankungen simulieren (±2cm)
+            _currentLat += (_random.NextDouble() - 0.5) * 0.0000004;
+            _currentLon += (_random.NextDouble() - 0.5) * 0.0000004;
+            _currentAlt = BaseAlt + (_random.NextDouble() - 0.5) * 0.05;
+            lat = _currentLat;
+            lon = _currentLon;
+            alt = _currentAlt;
 
-        // Gelegentlich Neigung und Accuracy variieren
-        CurrentState.TiltAngle = (float)_random.NextDouble() * 3f;
-        CurrentState.HorizontalAccuracy = 1.2f + (float)_random.NextDouble() * 0.5f;
-        CurrentState.VerticalAccuracy = 1.8f + (float)_random.NextDouble() * 0.5f;
-        CurrentState.SatelliteCount = 20 + _random.Next(8);
+            // Gelegentlich Neigung und Accuracy variieren
+            CurrentState.TiltAngle = (float)_random.NextDouble() * 3f;
+            CurrentState.HorizontalAccuracy = 1.2f + (float)_random.NextDouble() * 0.5f;
+            CurrentState.VerticalAccuracy = 1.8f + (float)_random.NextDouble() * 0.5f;
+            CurrentState.SatelliteCount = 20 + _random.Next(8);
+        }
 
-        PositionUpdated?.Invoke(_currentLat, _currentLon, _currentAlt);
+        PositionUpdated?.Invoke(lat, lon, alt);
     }
 
     public void Dispose()

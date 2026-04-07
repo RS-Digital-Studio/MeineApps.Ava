@@ -16,6 +16,9 @@ public class App : Application
     /// <summary>Plattform-spezifischer BleService (Android: native, Desktop: InTheHand)</summary>
     public static Func<IServiceProvider, IBleService>? BleServiceFactory { get; set; }
 
+    /// <summary>Plattform-spezifischer AR-Capture-Service (Android: ARCore, Desktop: Mock)</summary>
+    public static Func<IServiceProvider, IArCaptureService>? ArCaptureServiceFactory { get; set; }
+
     private MainViewModel? _mainVm;
 
     public override void Initialize()
@@ -59,6 +62,12 @@ public class App : Application
         else
             services.AddSingleton<IBleService, MockBleService>();
 
+        // AR-Capture-Service (plattform-spezifisch oder Mock)
+        if (ArCaptureServiceFactory != null)
+            services.AddSingleton(ArCaptureServiceFactory);
+        else
+            services.AddSingleton<IArCaptureService, MockArCaptureService>();
+
         // Services
         services.AddSingleton<IMeasurementService, MeasurementService>();
         services.AddSingleton<ICoordinateService, CoordinateService>();
@@ -66,6 +75,8 @@ public class App : Application
         services.AddSingleton<IGardenPlanService, GardenPlanService>();
         services.AddSingleton<IProjectService, ProjectService>();
         services.AddSingleton<IExportService, ExportService>();
+        services.AddSingleton<IBlenderExportService, BlenderExportService>();
+        services.AddSingleton<IArTransferService, ArTransferService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

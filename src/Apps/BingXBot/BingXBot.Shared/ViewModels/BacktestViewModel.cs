@@ -1,4 +1,5 @@
 using BingXBot.Backtest;
+using BingXBot.Backtest.Reports;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
@@ -30,7 +31,7 @@ public partial class BacktestViewModel : ViewModelBase
     private CancellationTokenSource? _cts;
 
     [ObservableProperty] private string _symbol = "BTC-USDT";
-    [ObservableProperty] private string _selectedStrategy = "EMA Cross";
+    [ObservableProperty] private string _selectedStrategy = "CryptoTrendPro";
     [ObservableProperty] private string _selectedTimeFrame = "H1";
     [ObservableProperty] private DateTimeOffset? _startDate = DateTimeOffset.UtcNow.AddDays(-30);
     [ObservableProperty] private DateTimeOffset? _endDate = DateTimeOffset.UtcNow;
@@ -51,6 +52,28 @@ public partial class BacktestViewModel : ViewModelBase
     [ObservableProperty] private int _totalTrades;
     [ObservableProperty] private decimal _averageWin;
     [ObservableProperty] private decimal _averageLoss;
+
+    // Erweiterte Metriken
+    [ObservableProperty] private decimal _calmarRatio;
+    [ObservableProperty] private decimal _sortinoRatio;
+    [ObservableProperty] private decimal _recoveryFactor;
+    [ObservableProperty] private int _maxConsecutiveLosses;
+
+    // Monte Carlo
+    [ObservableProperty] private bool _hasMonteCarloResult;
+    [ObservableProperty] private decimal _mcMaxDrawdown95;
+    [ObservableProperty] private decimal _mcReturn5;
+    [ObservableProperty] private decimal _mcReturn50;
+    [ObservableProperty] private decimal _mcRuinProbability;
+
+    // CPCV
+    [ObservableProperty] private bool _hasCpcvResult;
+    [ObservableProperty] private decimal _cpcvPbo;
+    [ObservableProperty] private decimal _cpcvDegradation;
+    [ObservableProperty] private decimal _cpcvAvgOosReturn;
+
+    // Regime-Breakdown (formatiert als Text-Zeilen)
+    [ObservableProperty] private string _regimeBreakdownText = "";
 
     /// <summary>Ob das Gesamt-PnL positiv ist (für Farbsteuerung in der View).</summary>
     public bool IsPnlPositive => TotalPnl >= 0;
@@ -222,6 +245,40 @@ public partial class BacktestViewModel : ViewModelBase
             AverageWin = report.AverageWin;
             AverageLoss = report.AverageLoss;
 
+            // Erweiterte Metriken
+            CalmarRatio = report.CalmarRatio;
+            SortinoRatio = report.SortinoRatio;
+            RecoveryFactor = report.RecoveryFactor;
+            MaxConsecutiveLosses = report.MaxConsecutiveLosses;
+
+            // Monte Carlo Ergebnisse
+            if (report.MonteCarlo is { IsEmpty: false } mc)
+            {
+                HasMonteCarloResult = true;
+                McMaxDrawdown95 = mc.MaxDrawdown95;
+                McReturn5 = mc.Return5;
+                McReturn50 = mc.Return50;
+                McRuinProbability = mc.RuinProbability;
+            }
+
+            // CPCV Ergebnisse
+            if (report.Cpcv is { IsEmpty: false } cpcv)
+            {
+                HasCpcvResult = true;
+                CpcvPbo = cpcv.ProbabilityOfOverfitting;
+                CpcvDegradation = cpcv.Degradation;
+                CpcvAvgOosReturn = cpcv.AvgOutOfSampleReturn;
+            }
+
+            // Regime-Breakdown als Text formatieren
+            if (report.RegimeBreakdown.Count > 0)
+            {
+                var lines = report.RegimeBreakdown
+                    .OrderByDescending(r => r.Value.TradeCount)
+                    .Select(r => $"{r.Key}: {r.Value.TradeCount} Trades, WR {r.Value.WinRate:P0}, PnL {r.Value.TotalPnl:F2}, PF {r.Value.ProfitFactor:F2}");
+                RegimeBreakdownText = string.Join("\n", lines);
+            }
+
             // Abgeschlossene Trades als BacktestTradeItems darstellen
             foreach (var trade in report.Trades)
             {
@@ -281,6 +338,103 @@ public partial class BacktestViewModel : ViewModelBase
     private void CancelBacktest()
     {
         _cts?.Cancel();
+    }
+
+    // === Walk-Forward-Optimierung ===
+
+    [ObservableProperty] private bool _isWalkForwardRunning;
+    [ObservableProperty] private string _walkForwardResult = "";
+
+    [RelayCommand]
+    private async Task RunWalkForward()
+    {
+        if (_publicClient == null)
+        {
+            WalkForwardResult = "Kein Public Client verfügbar (Offline-Modus)";
+            return;
+        }
+
+        IsWalkForwardRunning = true;
+        WalkForwardResult = "Lade historische Daten für Walk-Forward-Optimierung...";
+
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
+
+        try
+        {
+            var strategy = CreateStrategy();
+            var timeFrame = ParseTimeFrame(SelectedTimeFrame);
+            var from = StartDate?.UtcDateTime ?? DateTime.UtcNow.AddDays(-90);
+            var to = EndDate?.UtcDateTime ?? DateTime.UtcNow;
+
+            // Historische Daten laden
+            var candles = await _publicClient.GetKlinesAsync(Symbol, timeFrame, from, to, _cts.Token).ConfigureAwait(false);
+            if (candles.Count < 200)
+            {
+                WalkForwardResult = $"Zu wenige Daten: {candles.Count} Candles (min. 200 benötigt)";
+                return;
+            }
+
+            WalkForwardResult = $"{candles.Count} Candles geladen, starte Walk-Forward...";
+
+            // WalkForward im ThreadPool ausführen (ist CPU-intensiv wegen GA)
+            var wfo = new BingXBot.Engine.ATI.WalkForwardOptimizer
+            {
+                PopulationSize = 30,
+                MaxGenerations = 20,
+                TrainTestRatio = 2
+            };
+
+            // Fitness-Funktion: Mini-Backtest pro Fenster (Sharpe-Ratio als Ziel)
+            var backtestSettings = new BacktestSettings { InitialBalance = InitialBalance };
+            var riskSettings = new RiskSettings { MaxLeverage = Leverage, MinRiskRewardRatio = 0 }; // RRR deaktiviert für Optimierung
+
+            Engine.ATI.WalkForwardOptimizer.WalkForwardResult result = null!;
+            await Task.Run(() =>
+            {
+                result = wfo.Optimize(strategy, candles, candles.Count / 6,
+                    (strat, windowCandles) =>
+                    {
+                        var simExchange = new SimulatedExchange(backtestSettings);
+                        var riskManager = new RiskManager(riskSettings, NullLogger<RiskManager>.Instance);
+                        var engine = new BacktestEngine(simExchange, NullLogger<BacktestEngine>.Instance);
+
+                        var report = engine.RunAsync(strat, riskManager, Symbol, timeFrame,
+                            windowCandles[0].OpenTime, windowCandles[^1].CloseTime,
+                            backtestSettings).GetAwaiter().GetResult();
+
+                        // Sharpe als Fitness
+                        return report.SharpeRatio;
+                    });
+            }, _cts.Token).ConfigureAwait(false);
+
+            // Ergebnis anzeigen
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Walk-Forward abgeschlossen: {result.Windows.Count} Fenster");
+            sb.AppendLine($"Aggregierter Sharpe: {result.AggregatedSharpe:F3}");
+            sb.AppendLine($"OOS-WinRate: {result.AggregatedWinRate:P0}");
+            sb.AppendLine("Optimierte Parameter:");
+            foreach (var (name, value) in result.BestParameters)
+                sb.AppendLine($"  {name} = {value}");
+
+            WalkForwardResult = sb.ToString();
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "WFO",
+                $"Walk-Forward auf {Symbol}: {result.Windows.Count} Fenster, Sharpe={result.AggregatedSharpe:F3}"));
+        }
+        catch (OperationCanceledException)
+        {
+            WalkForwardResult = "Walk-Forward abgebrochen";
+        }
+        catch (Exception ex)
+        {
+            WalkForwardResult = $"Fehler: {ex.Message}";
+        }
+        finally
+        {
+            IsWalkForwardRunning = false;
+        }
     }
 }
 

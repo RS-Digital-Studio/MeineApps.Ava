@@ -1,4 +1,5 @@
 using BingXBot.Core.Configuration;
+using BingXBot.Core.Enums;
 using BingXBot.Core.Models;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -32,56 +33,38 @@ public partial class RiskSettingsViewModel : ViewModelBase
     [ObservableProperty] private decimal _maxNetExposurePercent;
     [ObservableProperty] private bool _considerFundingRate;
     [ObservableProperty] private decimal _maxAdverseFundingRatePercent;
+
+    // Cooldown-Eskalation
+    [ObservableProperty] private bool _enableCooldownEscalation;
+    [ObservableProperty] private int _maxCooldownHours;
+
+    // Equity-Curve-Trading
+    [ObservableProperty] private bool _enableEquityCurveTrading;
+    [ObservableProperty] private int _equityCurvePeriod;
+
+    // Momentum-Decay
+    [ObservableProperty] private bool _enableMomentumDecay;
+
     [ObservableProperty] private string _saveStatus = "";
     [ObservableProperty] private bool _hasUnsavedChanges;
 
-    // Task speichern damit Save() darauf warten kann (verhindert Race Condition bei schnellem Klick)
-    private Task? _dbLoadTask;
+    private readonly BotSettings _botSettings;
+    private readonly ScannerSettings _scannerSettings;
 
-    public RiskSettingsViewModel(RiskSettings riskSettings, BotEventBus eventBus, BotDatabaseService? dbService = null)
+    public RiskSettingsViewModel(RiskSettings riskSettings, BotEventBus eventBus,
+        BotSettings botSettings, ScannerSettings scannerSettings,
+        BotDatabaseService? dbService = null)
     {
         _riskSettings = riskSettings;
         _eventBus = eventBus;
+        _botSettings = botSettings;
+        _scannerSettings = scannerSettings;
         _dbService = dbService;
+        // Settings sind bereits beim App-Start aus DB geladen (App.RestoreSettingsFromDb)
+        // UI nur noch von den DI-Singletons befüllen
         LoadFromSettings();
-
-        // Settings aus DB laden (überschreibt Defaults)
-        _dbLoadTask = LoadSettingsFromDbAsync();
     }
 
-    /// <summary>
-    /// Lädt persistierte Settings aus der SQLite-Datenbank.
-    /// </summary>
-    private async Task LoadSettingsFromDbAsync()
-    {
-        if (_dbService == null) return;
-        try
-        {
-            var settings = await _dbService.LoadSettingsAsync();
-            // Risk-Settings aus DB auf das echte Objekt und UI übertragen
-            _riskSettings.MaxPositionSizePercent = settings.Risk.MaxPositionSizePercent;
-            _riskSettings.MaxDailyDrawdownPercent = settings.Risk.MaxDailyDrawdownPercent;
-            _riskSettings.MaxTotalDrawdownPercent = settings.Risk.MaxTotalDrawdownPercent;
-            _riskSettings.MaxOpenPositions = settings.Risk.MaxOpenPositions;
-            _riskSettings.MaxOpenPositionsPerSymbol = settings.Risk.MaxOpenPositionsPerSymbol;
-            _riskSettings.MaxLeverage = settings.Risk.MaxLeverage;
-            _riskSettings.CheckCorrelation = settings.Risk.CheckCorrelation;
-            _riskSettings.MaxCorrelation = settings.Risk.MaxCorrelation;
-            _riskSettings.EnableTrailingStop = settings.Risk.EnableTrailingStop;
-            _riskSettings.TrailingStopPercent = settings.Risk.TrailingStopPercent;
-            _riskSettings.MinLiquidationDistancePercent = settings.Risk.MinLiquidationDistancePercent;
-            _riskSettings.MaxNetExposurePercent = settings.Risk.MaxNetExposurePercent;
-            _riskSettings.ConsiderFundingRate = settings.Risk.ConsiderFundingRate;
-            _riskSettings.MaxAdverseFundingRatePercent = settings.Risk.MaxAdverseFundingRatePercent;
-
-            // UI aktualisieren
-            LoadFromSettings();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Settings aus DB laden fehlgeschlagen: {ex.Message}");
-        }
-    }
 
     /// <summary>
     /// Lädt alle Werte aus dem echten RiskSettings-Objekt.
@@ -102,18 +85,16 @@ public partial class RiskSettingsViewModel : ViewModelBase
         MaxNetExposurePercent = _riskSettings.MaxNetExposurePercent;
         ConsiderFundingRate = _riskSettings.ConsiderFundingRate;
         MaxAdverseFundingRatePercent = _riskSettings.MaxAdverseFundingRatePercent;
+        EnableCooldownEscalation = _riskSettings.EnableCooldownEscalation;
+        MaxCooldownHours = _riskSettings.MaxCooldownHours;
+        EnableEquityCurveTrading = _riskSettings.EnableEquityCurveTrading;
+        EquityCurvePeriod = _riskSettings.EquityCurvePeriod;
+        EnableMomentumDecay = _riskSettings.EnableMomentumDecay;
     }
 
     [RelayCommand]
     private async Task SaveAsync()
     {
-        // Sicherstellen dass DB-Load abgeschlossen ist (Race Condition verhindern)
-        if (_dbLoadTask != null)
-        {
-            try { await _dbLoadTask; } catch { /* Fehler beim Laden ignoriert */ }
-            _dbLoadTask = null;
-        }
-
         // Werte zurück ins echte RiskSettings-Objekt schreiben
         _riskSettings.MaxPositionSizePercent = MaxPositionSizePercent;
         _riskSettings.MaxDailyDrawdownPercent = MaxDailyDrawdownPercent;
@@ -129,26 +110,17 @@ public partial class RiskSettingsViewModel : ViewModelBase
         _riskSettings.MaxNetExposurePercent = MaxNetExposurePercent;
         _riskSettings.ConsiderFundingRate = ConsiderFundingRate;
         _riskSettings.MaxAdverseFundingRatePercent = MaxAdverseFundingRatePercent;
+        _riskSettings.EnableCooldownEscalation = EnableCooldownEscalation;
+        _riskSettings.MaxCooldownHours = MaxCooldownHours;
+        _riskSettings.EnableEquityCurveTrading = EnableEquityCurveTrading;
+        _riskSettings.EquityCurvePeriod = EquityCurvePeriod;
+        _riskSettings.EnableMomentumDecay = EnableMomentumDecay;
 
         SaveStatus = "Gespeichert";
         HasUnsavedChanges = false;
 
-        // In DB persistieren (fire-and-forget)
-        if (_dbService != null)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    var botSettings = new BotSettings { Risk = _riskSettings };
-                    await _dbService.SaveSettingsAsync(botSettings);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Settings in DB speichern fehlgeschlagen: {ex.Message}");
-                }
-            });
-        }
+        // Zentral alle Settings persistieren (Risk + Scanner + Bot)
+        _ = App.SaveAllSettingsAsync();
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Risk",
             $"Risiko-Einstellungen gespeichert: MaxPos={MaxPositionSizePercent}%, MaxDD={MaxTotalDrawdownPercent}%, Hebel={MaxLeverage}x"));
@@ -174,6 +146,11 @@ public partial class RiskSettingsViewModel : ViewModelBase
         MaxNetExposurePercent = defaults.MaxNetExposurePercent;
         ConsiderFundingRate = defaults.ConsiderFundingRate;
         MaxAdverseFundingRatePercent = defaults.MaxAdverseFundingRatePercent;
+        EnableCooldownEscalation = defaults.EnableCooldownEscalation;
+        MaxCooldownHours = defaults.MaxCooldownHours;
+        EnableEquityCurveTrading = defaults.EnableEquityCurveTrading;
+        EquityCurvePeriod = defaults.EquityCurvePeriod;
+        EnableMomentumDecay = defaults.EnableMomentumDecay;
 
         // Auch ins echte Settings-Objekt schreiben
         _ = SaveAsync();
@@ -204,4 +181,9 @@ public partial class RiskSettingsViewModel : ViewModelBase
     partial void OnMaxNetExposurePercentChanged(decimal value) => MarkDirty();
     partial void OnConsiderFundingRateChanged(bool value) => MarkDirty();
     partial void OnMaxAdverseFundingRatePercentChanged(decimal value) => MarkDirty();
+    partial void OnEnableCooldownEscalationChanged(bool value) => MarkDirty();
+    partial void OnMaxCooldownHoursChanged(int value) => MarkDirty();
+    partial void OnEnableEquityCurveTradingChanged(bool value) => MarkDirty();
+    partial void OnEquityCurvePeriodChanged(int value) => MarkDirty();
+    partial void OnEnableMomentumDecayChanged(bool value) => MarkDirty();
 }

@@ -1,17 +1,18 @@
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Graphics;
 using BingXBot.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace BingXBot.ViewModels;
 
 /// <summary>
-/// ViewModel für den BTC-USDT Live-Ticker und Chart.
-/// Vollständig unabhängig - benötigt nur den öffentlichen Marktdaten-Client.
-/// Aktualisiert BTC-Preis alle 10s, volle Candle-Daten alle 60s.
+/// ViewModel für den interaktiven Chart mit Multi-Symbol-Support,
+/// Timeframe-Wechsel, Indikatoren, Regime-Hintergrund und Trade-Markers.
 /// </summary>
 public partial class BtcTickerViewModel : ViewModelBase, IDisposable
 {
@@ -22,8 +23,33 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private decimal _btcPrice;
     [ObservableProperty] private decimal _btcPriceChange;
     [ObservableProperty] private bool _isBtcLoading = true;
-    [ObservableProperty] private string _btcStatusText = "Lade BTC-Daten...";
+    [ObservableProperty] private string _btcStatusText = "Lade Daten...";
     [ObservableProperty] private bool _isEnabled = true;
+
+    // Chart-Timeframe (wechselbar über UI-Buttons)
+    [ObservableProperty] private string _selectedTimeframe = "1h";
+
+    // Multi-Symbol: Welches Symbol im Chart angezeigt wird
+    [ObservableProperty] private string _selectedSymbol = "BTC-USDT";
+
+    // Trade-Markers für den Chart (Entry/Exit-Punkte)
+    public ObservableCollection<TradeMarker> TradeMarkers { get; } = new();
+
+    // Aktive Position (SL/TP/Entry-Overlay auf dem Chart)
+    [ObservableProperty] private ActivePositionOverlay? _activeOverlay;
+
+    // Interaktiver Renderer (hält ChartState: Viewport, Crosshair, Zoom)
+    public InteractiveChartRenderer ChartRenderer { get; } = new();
+
+    // Indikator-Daten (werden beim Laden der Candles berechnet)
+    [ObservableProperty] private ChartIndicatorData? _indicators;
+
+    // Regime-Zonen (werden vom ATI RegimeDetector befüllt)
+    public ObservableCollection<RegimeZone> RegimeZones { get; } = new();
+
+    // Fear & Greed Index (wird von TradingServiceBase aktualisiert)
+    [ObservableProperty] private float _fearGreedValue;
+    [ObservableProperty] private string _fearGreedLabel = "n/a";
 
     private PeriodicTimer? _refreshTimer;
     private bool _disposed;
@@ -35,13 +61,32 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
         _publicClient = publicClient;
         _eventBus = eventBus;
 
-        // BTC-Daten laden und Auto-Refresh starten
-        _ = LoadBtcDataAsync();
+        // Chart-Daten laden und Auto-Refresh starten
+        _ = LoadChartDataAsync();
         _ = StartAutoRefreshAsync();
     }
 
-    /// <summary>Lädt BTC-Klinendaten von BingX (öffentlich, kein API-Key nötig).</summary>
-    public async Task LoadBtcDataAsync()
+    [RelayCommand]
+    private async Task SwitchTimeframe(string tf)
+    {
+        SelectedTimeframe = tf;
+        ChartRenderer.State.ResetViewport(0); // Viewport zurücksetzen bei TF-Wechsel
+        IsBtcLoading = true;
+        await LoadChartDataAsync();
+    }
+
+    [RelayCommand]
+    private async Task SwitchSymbol(string symbol)
+    {
+        SelectedSymbol = symbol;
+        TradeMarkers.Clear();
+        ChartRenderer.State.ResetViewport(0);
+        IsBtcLoading = true;
+        await LoadChartDataAsync();
+    }
+
+    /// <summary>Lädt Chart-Daten für das gewählte Symbol + Timeframe von BingX.</summary>
+    public async Task LoadChartDataAsync()
     {
         try
         {
@@ -52,39 +97,81 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            var candles = await _publicClient.GetKlinesAsync(
-                "BTC-USDT", TimeFrame.H1,
-                DateTime.UtcNow.AddHours(-100), DateTime.UtcNow);
+            var (tf, lookbackHours) = SelectedTimeframe switch
+            {
+                "4h" => (TimeFrame.H4, 400),
+                "1D" => (TimeFrame.D1, 2400),
+                _ => (TimeFrame.H1, 100)
+            };
 
-            // Preis/Status zuerst berechnen (off-thread), dann ein einzelner UI-Update
+            var candles = await _publicClient.GetKlinesAsync(
+                SelectedSymbol, tf,
+                DateTime.UtcNow.AddHours(-lookbackHours), DateTime.UtcNow);
+
+            // Indikatoren berechnen (off-thread)
+            var indicators = CalculateIndicators(candles);
+
             var lastPrice = candles.Count > 0 ? candles[^1].Close : 0m;
             var change = candles.Count > 1 && candles[0].Close != 0
                 ? (candles[^1].Close - candles[0].Close) / candles[0].Close * 100m
                 : 0m;
-            var status = candles.Count > 0 ? $"BTC-USDT | {candles.Count} Candles (1h)" : BtcStatusText;
+            var status = candles.Count > 0
+                ? $"{SelectedSymbol} | {candles.Count} Candles ({SelectedTimeframe})"
+                : BtcStatusText;
 
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                // Batch-Update: CollectionChanged erst nach komplettem Befüllen feuern
-                // indem wir Replace statt Clear+Add nutzen, wenn Anzahl gleich
                 BtcCandles.Clear();
                 foreach (var c in candles)
                     BtcCandles.Add(c);
 
+                Indicators = indicators;
                 BtcPrice = lastPrice;
                 BtcPriceChange = change;
                 BtcStatusText = status;
                 IsBtcLoading = false;
+
+                // Viewport auf geladene Daten setzen
+                if (ChartRenderer.State.ViewEnd == 0)
+                    ChartRenderer.State.ResetViewport(candles.Count);
             });
         }
         catch (Exception ex)
         {
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Dashboard",
-                $"BTC-Daten Ladefehler: {ex.Message}"));
+                $"Chart-Daten Ladefehler: {ex.Message}"));
             IsBtcLoading = false;
             BtcStatusText = "Daten nicht verfügbar (offline?)";
         }
     }
+
+    /// <summary>Berechnet Indikatoren für die geladenen Candles (EMA, Bollinger, Supertrend).</summary>
+    private static ChartIndicatorData? CalculateIndicators(IReadOnlyList<Candle> candles)
+    {
+        if (candles.Count < 50) return null;
+
+        try
+        {
+            var ema50 = Engine.Indicators.IndicatorHelper.CalculateEma(candles, 50);
+            var ema200 = candles.Count >= 200 ? Engine.Indicators.IndicatorHelper.CalculateEma(candles, 200) : null;
+            var bb = Engine.Indicators.IndicatorHelper.CalculateBollinger(candles);
+            var st = Engine.Indicators.IndicatorHelper.CalculateSupertrend(candles);
+
+            return new ChartIndicatorData
+            {
+                Ema50 = ema50,
+                Ema200 = ema200,
+                BollingerUpper = bb.Item1,  // Upper
+                BollingerLower = bb.Item3,  // Lower
+                SupertrendLine = st.SupertrendValue,
+                SupertrendBullish = st.IsBullish
+            };
+        }
+        catch { return null; }
+    }
+
+    /// <summary>Alias für Abwärtskompatibilität.</summary>
+    public Task LoadBtcDataAsync() => LoadChartDataAsync();
 
     /// <summary>Aktualisiert BTC-Preis alle 10s, volle Candles alle 60s.</summary>
     private async Task StartAutoRefreshAsync()
@@ -102,7 +189,7 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
                 if (tickCount % 6 == 0)
                 {
                     // Alle 60s: Volle Candle-Daten laden
-                    await LoadBtcDataAsync();
+                    await LoadChartDataAsync();
                 }
                 else
                 {
@@ -115,25 +202,21 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Aktualisiert nur den BTC-Preis (schnell, ein API-Call).
-    /// Nutzt GetKlinesAsync mit wenigen Candles statt GetAllTickersAsync (500+ Ticker deserialisieren).
+    /// Aktualisiert nur den aktuellen Preis (schnell, ein API-Call).
+    /// Nutzt GetKlinesAsync mit wenigen Candles statt GetAllTickersAsync.
     /// </summary>
     private async Task UpdateBtcPriceAsync()
     {
         if (_publicClient == null) return;
         try
         {
-            // Nur 2 Candles laden statt 500+ Ticker - deutlich weniger Netzwerk + Deserialisierung
             var candles = await _publicClient.GetKlinesAsync(
-                "BTC-USDT", TimeFrame.M1,
+                SelectedSymbol, TimeFrame.M1,
                 DateTime.UtcNow.AddMinutes(-5), DateTime.UtcNow);
             if (candles.Count > 0)
             {
                 var lastPrice = candles[^1].Close;
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                {
-                    BtcPrice = lastPrice;
-                });
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => BtcPrice = lastPrice);
             }
         }
         catch { /* Stille Fehlerbehandlung - nächster Tick versucht es erneut */ }

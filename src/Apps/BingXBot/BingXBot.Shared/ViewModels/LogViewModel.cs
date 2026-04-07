@@ -27,7 +27,7 @@ public partial class LogViewModel : ViewModelBase
     [ObservableProperty] private int _entryCount;
     [ObservableProperty] private string _emptyStateText = "Noch keine Log-Einträge. Starte den Bot oder einen Backtest.";
 
-    public string[] Categories => new[] { "Alle", "Trade", "Scanner", "Risk", "Engine", "WebSocket", "Backtest" };
+    public string[] Categories => new[] { "Alle", "Trade", "ATI", "ML", "Market", "Risk", "Health", "Exit", "Scanner", "Engine", "WebSocket", "Backtest" };
 
     public ObservableCollection<LogDisplayItem> LogEntries { get; } = new();
 

@@ -47,11 +47,15 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     private readonly ScannerSettings _scannerSettings;
     private readonly AdaptiveTradingIntelligence? _ati;
     private readonly BotSettings _botSettings;
+    private bool _isInitializing = true; // Unterdrückt Preset-Override beim Konstruktor
     private PeriodicTimer? _equityTimer;
     private PeriodicTimer? _accountUpdateTimer;
 
     // === Live-Trading (delegiert an LiveTradingManager) ===
     private readonly LiveTradingManager _liveManager;
+    // === Multi-Mode Orchestrator (alle 3 Modi gleichzeitig) ===
+    private readonly MultiModeOrchestrator _orchestrator;
+    private bool _isMultiMode;
     // CancellationToken für Account-Update-Timer (wird bei Stop gecancelled)
     private CancellationTokenSource? _accountUpdateCts;
 
@@ -79,10 +83,12 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _isRunning;
     [ObservableProperty] private bool _canStart = true;
 
-    // === Strategie-Auswahl (direkt im Dashboard) ===
-    [ObservableProperty] private string _selectedStrategy = "Trend-Following";
+    // === Strategie-Auswahl + Trading-Modus (direkt im Dashboard) ===
+    [ObservableProperty] private string _selectedStrategy = "CryptoTrendPro";
     [ObservableProperty] private string _strategyDescription = "";
+    [ObservableProperty] private string _selectedTradingMode = "Swing";
     public string[] AvailableStrategies => StrategyFactory.AvailableStrategies;
+    public string[] AvailableTradingModes => ["Scalping", "Day-Trading", "Swing", "Alle Modi"];
 
     // === Account (nur anzeigen wenn Daten vorhanden) ===
     [ObservableProperty] private bool _hasAccountData;
@@ -93,6 +99,13 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
     public bool IsUnrealizedPnlPositive => UnrealizedPnl >= 0;
     public bool IsTotalPnlPositive => TotalPnl >= 0;
+
+    // === Rolling Live-Metriken (30 Trades) ===
+    [ObservableProperty] private decimal _rollingWinRate;
+    [ObservableProperty] private decimal _rollingSharpe;
+    [ObservableProperty] private decimal _rollingProfitFactor;
+    [ObservableProperty] private string _strategyHealthText = "";
+    [ObservableProperty] private bool _hasStrategyWarning;
     public string StatusDotColor => BotStatusState switch
     {
         BotState.Running => "#10B981",
@@ -117,6 +130,22 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     // === Equity-Kurve ===
     public ObservableCollection<EquityPoint> EquityData { get; } = new();
 
+    // === Dashboard-Widgets ===
+    // Drawdown-Chart (nutzt EquityData, wird im selben Refresh-Zyklus aktualisiert)
+    // PnL-Kalender: Tägliche PnL aus Trade-History
+    public Dictionary<DateTime, decimal> DailyPnl { get; } = new();
+    // Korrelations-Matrix: Symbole + Matrix
+    public string[] CorrelationSymbols { get; set; } = [];
+    public float[,] CorrelationMatrix { get; set; } = new float[0, 0];
+    // Strategie-Gewichte (aus ATI AdaptiveEnsemble)
+    public List<(string Name, decimal Weight)> StrategyWeights { get; set; } = [];
+
+    /// <summary>
+    /// Wird ausgeloest wenn Widget-Daten (DailyPnl, StrategyWeights, FearGreed) aktualisiert wurden
+    /// und die SkiaSharp-Canvases neu gezeichnet werden muessen.
+    /// </summary>
+    public event Action? WidgetCanvasInvalidationRequested;
+
     // === Bestätigungs-Dialog ===
     [ObservableProperty] private bool _showConfirmDialog;
     [ObservableProperty] private string _confirmDialogTitle = "";
@@ -127,6 +156,28 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _showWelcomeHint = true;
     [ObservableProperty] private string _welcomeHintText = "Willkommen! Starte mit einem Backtest um eine Strategie zu testen, oder konfiguriere deine API-Keys in den Einstellungen.";
 
+    // === Watchlist (Crypto-Auswahl für Scanner) ===
+    [ObservableProperty] private string _watchlistInput = "";
+    [ObservableProperty] private bool _isWatchlistActive;
+    /// <summary>Aktive Watchlist-Symbole als Chips.</summary>
+    public ObservableCollection<string> WatchlistSymbols { get; } = new();
+    /// <summary>Alle verfügbaren Symbole von BingX (für AutoComplete). Sofort mit Top-Symbolen befüllt, wird async ersetzt.</summary>
+    public ObservableCollection<string> AvailableSymbols { get; } = new(DefaultSymbols);
+
+    private static readonly string[] DefaultSymbols =
+    [
+        "BTC-USDT", "ETH-USDT", "SOL-USDT", "XRP-USDT", "DOGE-USDT", "ADA-USDT",
+        "AVAX-USDT", "DOT-USDT", "LINK-USDT", "UNI-USDT", "ATOM-USDT", "NEAR-USDT",
+        "SUI-USDT", "AAVE-USDT", "TRX-USDT", "HBAR-USDT", "ALGO-USDT", "XLM-USDT",
+        "WIF-USDT", "PEPE-USDT", "BONK-USDT", "SHIB-USDT", "NOT-USDT", "BRETT-USDT",
+        "KAS-USDT", "KAIA-USDT", "MOVE-USDT", "EGLD-USDT", "LISTA-USDT",
+        "LTC-USDT", "FIL-USDT", "ARB-USDT", "OP-USDT", "APT-USDT", "SEI-USDT",
+        "INJ-USDT", "TIA-USDT", "FET-USDT", "RNDR-USDT", "WLD-USDT", "JUP-USDT",
+        "MKR-USDT", "SNX-USDT", "CRV-USDT", "RUNE-USDT", "STX-USDT", "IMX-USDT",
+        "GALA-USDT", "SAND-USDT", "BNB-USDT", "TON-USDT", "VET-USDT", "MATIC-USDT",
+        "MANA-USDT", "AXS-USDT", "ENS-USDT", "ALTCOIN-USDT"
+    ];
+
     public DashboardViewModel(
         BotEventBus eventBus,
         StrategyManager strategyManager,
@@ -135,6 +186,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         ScannerSettings scannerSettings,
         BotSettings botSettings,
         LiveTradingManager liveManager,
+        MultiModeOrchestrator orchestrator,
         IPublicMarketDataClient? publicClient = null,
         BotDatabaseService? dbService = null,
         ISecureStorageService? secureStorage = null,
@@ -147,6 +199,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _scannerSettings = scannerSettings;
         _botSettings = botSettings;
         _liveManager = liveManager;
+        _orchestrator = orchestrator;
         _publicClient = publicClient;
         _dbService = dbService;
         _secureStorage = secureStorage;
@@ -165,8 +218,42 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         if (HasApiKeys)
             LiveStatusText = "API-Keys vorhanden";
 
-        // Initiale Strategie-Beschreibung laden
+        // Letzte Strategie + Trading-Modus aus persistierten Settings laden
+        if (!string.IsNullOrEmpty(_botSettings.LastStrategyName))
+            SelectedStrategy = _botSettings.LastStrategyName;
         OnSelectedStrategyChanged(SelectedStrategy);
+
+        SelectedTradingMode = _botSettings.LastTradingModePreset switch
+        {
+            Core.Enums.TradingModePreset.Scalping => "Scalping",
+            Core.Enums.TradingModePreset.DayTrading => "Day-Trading",
+            Core.Enums.TradingModePreset.Custom => "Alle Modi",
+            _ => "Swing"
+        };
+
+        // Initiale Watchlist aus ScannerSettings laden (falls vorher gesetzt)
+        foreach (var sym in _scannerSettings.Whitelist)
+            WatchlistSymbols.Add(sym);
+        IsWatchlistActive = WatchlistSymbols.Count > 0;
+
+        // Verfügbare Symbole im Hintergrund laden (für AutoComplete)
+        _ = LoadAvailableSymbolsAsync();
+
+        // Trade-Markers: Bei Trade-Abschluss BTC-Marker hinzufügen
+        _eventBus.TradeCompleted += (_, trade) =>
+        {
+            if (trade.Symbol != "BTC-USDT") return;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                BtcTicker.TradeMarkers.Add(new TradeMarker(trade.EntryTime, trade.EntryPrice, trade.Side, true));
+                BtcTicker.TradeMarkers.Add(new TradeMarker(trade.ExitTime, trade.ExitPrice, trade.Side, false, trade.Pnl));
+                // Max 50 Marker behalten
+                while (BtcTicker.TradeMarkers.Count > 50)
+                    BtcTicker.TradeMarkers.RemoveAt(0);
+            });
+        };
+
+        _isInitializing = false; // Ab jetzt überschreiben Modus-Wechsel die Settings
     }
 
     partial void OnSelectedStrategyChanged(string value)
@@ -175,11 +262,67 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             var strategy = StrategyFactory.Create(value);
             StrategyDescription = strategy.Description;
+            _botSettings.LastStrategyName = value;
+            _ = App.SaveAllSettingsAsync();
         }
         catch
         {
             StrategyDescription = "";
         }
+    }
+
+    partial void OnSelectedTradingModeChanged(string value)
+    {
+        var preset = value switch
+        {
+            "Scalping" => Core.Enums.TradingModePreset.Scalping,
+            "Day-Trading" => Core.Enums.TradingModePreset.DayTrading,
+            "Alle Modi" => Core.Enums.TradingModePreset.Custom, // Custom = alle 3 Modi parallel
+            _ => Core.Enums.TradingModePreset.Swing
+        };
+
+        _botSettings.LastTradingModePreset = preset;
+
+        // Scanner-Settings IMMER aus dem Preset setzen (Timeframe MUSS zum Modus passen)
+        var scannerPresetInit = Core.Configuration.TradingModeDefaults.GetScannerPreset(preset);
+        _scannerSettings.ScanTimeFrame = scannerPresetInit.ScanTimeFrame;
+        _scannerSettings.UseM15EntryTiming = scannerPresetInit.UseM15EntryTiming;
+
+        // Beim App-Start: Risk-Settings (Leverage, PositionSize) NICHT überschreiben
+        // (die wurden aus der DB geladen und enthalten User-Anpassungen)
+        if (_isInitializing)
+        {
+            _ = App.SaveAllSettingsAsync();
+            return;
+        }
+
+        // Bei manuellem Modus-Wechsel im UI: ALLE Settings aus Preset anwenden
+        var riskPreset = Core.Configuration.TradingModeDefaults.GetRiskPreset(preset);
+        _riskSettings.MaxPositionSizePercent = riskPreset.MaxPositionSizePercent;
+        _riskSettings.MaxMarginPerTradePercent = riskPreset.MaxMarginPerTradePercent;
+        _riskSettings.MaxLeverage = riskPreset.MaxLeverage;
+        _riskSettings.CooldownHours = riskPreset.CooldownHours;
+        _riskSettings.MaxCooldownHours = riskPreset.MaxCooldownHours;
+        _riskSettings.MaxHoldHours = riskPreset.MaxHoldHours;
+        _riskSettings.MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1;
+        _riskSettings.Tp1CloseRatio = riskPreset.Tp1CloseRatio;
+        _riskSettings.Tp2CloseRatio = riskPreset.Tp2CloseRatio;
+        _riskSettings.SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier;
+        _riskSettings.MinRiskRewardRatio = riskPreset.MinRiskRewardRatio;
+
+        var scannerPreset = Core.Configuration.TradingModeDefaults.GetScannerPreset(preset);
+        _scannerSettings.ScanTimeFrame = scannerPreset.ScanTimeFrame;
+        _scannerSettings.MinVolume24h = scannerPreset.MinVolume24h;
+        _scannerSettings.MinPriceChange = scannerPreset.MinPriceChange;
+        _scannerSettings.MaxResults = scannerPreset.MaxResults;
+        _scannerSettings.UseM15EntryTiming = scannerPreset.UseM15EntryTiming;
+
+        _botSettings.LastTradingModePreset = preset;
+
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+            $"Trading-Modus gewechselt: {value} ({scannerPreset.ScanTimeFrame}, Risiko {riskPreset.MaxPositionSizePercent}%, Hebel {riskPreset.MaxLeverage}x)"));
+
+        _ = App.SaveAllSettingsAsync();
     }
 
     [RelayCommand]
@@ -204,8 +347,30 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     /// </summary>
     private async Task StartPaperTradingAsync()
     {
-        // Strategie aktivieren
+        // "Alle Modi": 3 Services parallel über den Orchestrator starten
+        if (_botSettings.LastTradingModePreset == Core.Enums.TradingModePreset.Custom)
+        {
+            _isMultiMode = true;
+            _orchestrator.StartPaper(_botSettings.PaperInitialBalance);
+            BotStatusText = "Paper (Alle Modi)";
+            BotStatusState = BotState.Running;
+            IsRunning = true;
+            CanStart = false;
+            _eventBus.PublishBotState(BotState.Running);
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
+                "Alle 3 Modi gestartet: Scalping (M15) + Day-Trading (H1) + Swing (H4)"));
+            _ = StartAccountUpdateAsync();
+            return;
+        }
+
+        _isMultiMode = false;
+        // Strategie aktivieren + Trading-Modus-Preset anwenden
         var strategy = StrategyFactory.Create(SelectedStrategy);
+        if (strategy is CryptoTrendProStrategy ctp)
+        {
+            var preset = _botSettings.LastTradingModePreset;
+            ctp.ApplyPreset(preset);
+        }
         _strategyManager.SetStrategy(strategy);
 
         // ATI: Alle Strategien im Ensemble registrieren und an Service übergeben
@@ -216,6 +381,57 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
             // ATI-Lernzustand aus DB laden (Training bleibt über Neustarts erhalten)
             await _liveManager.LoadAtiStateAsync();
+
+            // Feature-Snapshots bei Trade-Close in DB speichern (für ML-Training)
+            if (_dbService != null)
+            {
+                _ati.FeatureSnapshotCompleted += async (snapshot, trade, vote) =>
+                {
+                    try
+                    {
+                        var entity = Core.Data.FeatureSnapshotEntity.FromSnapshot(snapshot,
+                            (int)trade.Side, vote.AgreeingCount, vote.TotalCount, vote.WeightedConfidence);
+                        entity.Outcome = trade.Pnl > 0 ? 1 : -1;
+                        entity.Pnl = trade.Pnl;
+                        entity.HoldTimeMinutes = (int)(trade.ExitTime - trade.EntryTime).TotalMinutes;
+                        await _dbService.SaveFeatureSnapshotAsync(entity);
+                    }
+                    catch { /* DB-Fehler nicht an Trading-Pipeline propagieren */ }
+
+                    // Auto-Training prüfen (alle 10 Trades oder 24h)
+                    try
+                    {
+                        var labeled = await _dbService.GetLabeledSnapshotsAsync(5000);
+                        _ati.CheckAutoTraining(labeled);
+                    }
+                    catch { /* Training-Fehler nicht propagieren */ }
+                };
+            }
+
+            // Auto-Training-Events loggen
+            _ati.AutoTrainingCompleted += msg =>
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ML", msg));
+
+            // ATI Audit-Trail: Jede Entscheidung loggen (Annahme + Ablehnung mit Grund)
+            _ati.AuditCreated += audit =>
+            {
+                var level = audit.WasAccepted ? Core.Enums.LogLevel.Trade : Core.Enums.LogLevel.Debug;
+                var status = audit.WasAccepted ? "AKZEPTIERT" : "ABGELEHNT";
+                var msg = $"{audit.Symbol}: {audit.SignalDirection} {status} | " +
+                    $"Regime={audit.Regime} ({audit.RegimeConfidence:P0}), " +
+                    $"Ensemble={audit.StrategiesAgreeing}/{audit.StrategiesTotal} ({audit.AgreeingStrategies}), " +
+                    $"ML={audit.MlConfidence:P0}";
+
+                if (!audit.WasAccepted && audit.RejectionReason != null)
+                    msg += $" | Grund: {audit.RejectionReason}";
+
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, level, "ATI", msg, audit.Symbol));
+            };
+
+            // ONNX-Modell-Status loggen
+            if (_ati.OnnxModel is { IsModelLoaded: true })
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ML",
+                    $"ONNX-Modell geladen: {_ati.OnnxModel.GetModelInfo()}"));
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
                 $"Adaptive Trading Intelligence aktiviert ({StrategyFactory.AvailableStrategies.Length} Strategien im Ensemble)"));
@@ -348,15 +564,18 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _accountUpdateTimer = null;
         StopEquitySnapshotTimer();
 
-        if (IsPaperMode)
+        if (_isMultiMode)
         {
-            // ATI-Lernzustand speichern (Paper lernt auch, aber StopAsync() hat keinen eigenen Save)
+            await _orchestrator.StopAllAsync();
+            _isMultiMode = false;
+        }
+        else if (IsPaperMode)
+        {
             await _liveManager.SaveAtiStateAsync();
             await _paperService.StopAsync();
         }
         else
         {
-            // Live-Modus: StopAsync() speichert ATI-State intern vor dem Stop
             if (_liveManager.IsRunning)
                 await _liveManager.StopAsync();
             LiveStatusText = "Getrennt";
@@ -574,6 +793,92 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _confirmDialogAction = null;
     }
 
+    /// <summary>Lädt alle verfügbaren Symbole von BingX für AutoComplete. Ersetzt die Default-Liste bei Erfolg.</summary>
+    private async Task LoadAvailableSymbolsAsync()
+    {
+        if (_publicClient == null) return;
+        try
+        {
+            var symbols = await _publicClient.GetAllSymbolsAsync();
+            if (symbols.Count > 0)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    AvailableSymbols.Clear();
+                    foreach (var s in symbols.Take(300))
+                        AvailableSymbols.Add(s);
+                });
+            }
+        }
+        catch { /* Default-Liste bleibt aktiv */ }
+    }
+
+    /// <summary>Fügt ein Symbol zur Watchlist hinzu (aus AutoComplete oder manuelle Eingabe).</summary>
+    [RelayCommand]
+    private void AddToWatchlist()
+    {
+        var symbol = WatchlistInput?.Trim().ToUpperInvariant() ?? "";
+        if (string.IsNullOrEmpty(symbol)) return;
+
+        // Sicherstellen dass es ein gültiges Symbol ist (muss -USDT enthalten)
+        if (!symbol.EndsWith("-USDT") && !symbol.Contains("-"))
+            symbol += "-USDT";
+
+        if (WatchlistSymbols.Contains(symbol)) return;
+
+        WatchlistSymbols.Add(symbol);
+        WatchlistInput = "";
+        SyncWatchlistToScanner();
+    }
+
+    /// <summary>Entfernt ein einzelnes Symbol aus der Watchlist (Chip-X-Button).</summary>
+    [RelayCommand]
+    private void RemoveFromWatchlist(string symbol)
+    {
+        WatchlistSymbols.Remove(symbol);
+        SyncWatchlistToScanner();
+    }
+
+    /// <summary>Entfernt alle Symbole aus der Watchlist.</summary>
+    [RelayCommand]
+    private void ClearWatchlist()
+    {
+        WatchlistSymbols.Clear();
+        SyncWatchlistToScanner();
+    }
+
+    /// <summary>Synchronisiert die Watchlist-Symbole mit den ScannerSettings und persistiert in DB.</summary>
+    private void SyncWatchlistToScanner()
+    {
+        _scannerSettings.Whitelist = WatchlistSymbols.ToList();
+        IsWatchlistActive = WatchlistSymbols.Count > 0;
+
+        var msg = IsWatchlistActive
+            ? $"Watchlist: {string.Join(", ", WatchlistSymbols)}"
+            : "Watchlist deaktiviert (alle Symbole)";
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Scanner", msg));
+
+        // Watchlist dauerhaft speichern
+        _ = App.SaveAllSettingsAsync();
+    }
+
+    /// <summary>Aktualisiert die Trade-Markers und Positions-Overlay auf dem BTC-Chart.</summary>
+    private void UpdateChartOverlay()
+    {
+        // Aktive BTC-Position als Overlay anzeigen
+        var btcPos = OpenPositions.FirstOrDefault(p => p.Symbol == "BTC-USDT");
+        if (btcPos != null)
+        {
+            var signal = _paperService.GetPositionSignal(btcPos.Symbol, btcPos.Side);
+            BtcTicker.ActiveOverlay = new ActivePositionOverlay(
+                btcPos.EntryPrice, signal?.StopLoss, signal?.TakeProfit, signal?.TakeProfit2, btcPos.Side);
+        }
+        else
+        {
+            BtcTicker.ActiveOverlay = null;
+        }
+    }
+
     /// <summary>
     /// Erstellt ein PositionDisplayItem mit CloseRequested-Verdrahtung und SL/TP aus dem Service.
     /// </summary>
@@ -637,7 +942,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             }
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Trade",
-                $"{item.Symbol}: SL={item.StopLoss?.ToString("G8") ?? "---"} / TP={item.TakeProfit?.ToString("G8") ?? "---"}", item.Symbol));
+                $"{item.Symbol}: SL={item.StopLoss?.ToString("F8") ?? "---"} / TP={item.TakeProfit?.ToString("F8") ?? "---"}", item.Symbol));
         };
 
         return item;
@@ -715,7 +1020,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
         try
         {
-            while (await _accountUpdateTimer.WaitForNextTickAsync(ct))
+            while (_accountUpdateTimer != null && await _accountUpdateTimer.WaitForNextTickAsync(ct))
             {
                 if (!IsRunning) continue;
 
@@ -778,9 +1083,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             }
         }
         catch (OperationCanceledException) { }
+        catch (ObjectDisposedException) { } // Timer wurde disposed während WaitForNextTickAsync
     }
-
-
 
     /// <summary>
     /// Startet periodische Equity-Snapshots (alle 5 Minuten) in die DB.
@@ -820,6 +1124,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 while (EquityData.Count > 500)
                     EquityData.RemoveAt(0);
             });
+
+            // Rolling-Metriken vom RiskManager aktualisieren
+            UpdateRollingMetrics();
         }
         catch (Exception ex)
         {
@@ -827,6 +1134,110 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 $"Equity-Snapshot speichern fehlgeschlagen: {ex.Message}"));
         }
     }
+
+    /// <summary>Aktualisiert Rolling-Metriken + Widget-Daten aus dem aktiven Trading-Service.</summary>
+    private void UpdateRollingMetrics()
+    {
+        // RiskManager des aktiven Modus verwenden (Paper oder Live)
+        var rm = IsPaperMode ? _paperService.RiskManager : _liveManager.Service?.RiskManager;
+        if (rm == null) return;
+
+        // Daten auf dem Timer-Thread vorbereiten (Snapshots erstellen, nicht das Dictionary direkt mutieren)
+        var winRate = rm.RollingWinRate * 100m;
+        var sharpe = rm.RollingSharpeRatio;
+        var profitFactor = rm.RollingProfitFactor;
+        var health = rm.CheckStrategyHealth();
+
+        // DailyPnl aus Trades berechnen (Snapshot auf Timer-Thread, Zuweisung auf UI-Thread)
+        var dailyPnlSnapshot = BuildDailyPnlSnapshot(rm);
+
+        // ATI Strategie-Gewichte berechnen (Snapshot)
+        var weightsSnapshot = BuildStrategyWeightsSnapshot();
+
+        // Fear & Greed Index vom TradingService propagieren
+        var fgValue = GetFearGreedValueFromService();
+        var fgLabel = GetFearGreedLabelFromValue(fgValue);
+
+        // ALLE Mutationen auf dem UI-Thread (DailyPnl + StrategyWeights werden von Renderern gelesen)
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            RollingWinRate = winRate;
+            RollingSharpe = sharpe;
+            RollingProfitFactor = profitFactor;
+            HasStrategyWarning = health != null;
+            StrategyHealthText = health ?? "OK";
+
+            // DailyPnl Dictionary aktualisieren (thread-safe, da jetzt auf UI-Thread)
+            DailyPnl.Clear();
+            foreach (var (day, pnl) in dailyPnlSnapshot)
+                DailyPnl[day] = pnl;
+
+            // StrategyWeights aktualisieren
+            StrategyWeights = weightsSnapshot;
+
+            // Fear & Greed Index ans BtcTicker-SubVM propagieren
+            BtcTicker.FearGreedValue = fgValue;
+            BtcTicker.FearGreedLabel = fgLabel;
+
+            // Widget-Canvases muessen invalidiert werden, da DailyPnl/StrategyWeights/FearGreed
+            // keine ObservableProperties sind und kein CollectionChanged feuern.
+            // (EquityData.CollectionChanged invalidiert zwar auch, aber das Post laeuft
+            // in einem separaten Dispatcher-Tick VOR dieser Mutation.)
+            WidgetCanvasInvalidationRequested?.Invoke();
+        });
+    }
+
+    /// <summary>Erstellt einen Snapshot der täglichen PnL aus RiskManager-Trades (thread-safe).</summary>
+    private static List<(DateTime Day, decimal Pnl)> BuildDailyPnlSnapshot(Engine.Risk.RiskManager rm)
+    {
+        try
+        {
+            var result = new Dictionary<DateTime, decimal>();
+            foreach (var trade in rm.RecentTrades)
+            {
+                var day = trade.ExitTime.Date;
+                result.TryGetValue(day, out var existing);
+                result[day] = existing + trade.Pnl;
+            }
+            return result.Select(kv => (kv.Key, kv.Value)).ToList();
+        }
+        catch { return []; }
+    }
+
+    /// <summary>Erstellt einen Snapshot der ATI-Strategie-Gewichte (thread-safe).</summary>
+    private List<(string Name, decimal Weight)> BuildStrategyWeightsSnapshot()
+    {
+        if (_ati is not { IsEnabled: true }) return [];
+        try
+        {
+            var regime = _ati.RegimeDetector.CurrentRegime;
+            var raw = _ati.Ensemble.GetStrategyWeights(regime);
+            return raw.Select(kv => (kv.Key, (decimal)kv.Value.Weight)).ToList();
+        }
+        catch { return []; }
+    }
+
+    /// <summary>Holt den aktuellen Fear & Greed Wert vom TradingService (0-100 Skala).</summary>
+    private float GetFearGreedValueFromService()
+    {
+        // TradingServiceBase cached den Wert als [0,1]-normalisiert, wir brauchen 0-100
+        if (IsPaperMode)
+            return _paperService.CachedFearGreedIndex * 100f;
+        // Live: TradingServiceBase des LiveTradingService
+        if (_liveManager.Service is { } live)
+            return live.CachedFearGreedIndex * 100f;
+        return 0f;
+    }
+
+    private static string GetFearGreedLabelFromValue(float value) => value switch
+    {
+        <= 0 => "n/a", // Noch keine Daten
+        < 25 => "Extreme Fear",
+        < 45 => "Fear",
+        < 55 => "Neutral",
+        < 75 => "Greed",
+        _ => "Extreme Greed"
+    };
 
     /// <summary>
     /// Stoppt den Equity-Snapshot-Timer.
@@ -837,13 +1248,14 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _equityTimer = null;
     }
 
-    /// <summary>Aktualisiert HasOpenPositions + PositionsStatusText (3x genutzt).</summary>
+    /// <summary>Aktualisiert HasOpenPositions + PositionsStatusText + Chart-Overlay (3x genutzt).</summary>
     private void UpdatePositionsStatus()
     {
         HasOpenPositions = OpenPositions.Count > 0;
         PositionsStatusText = HasOpenPositions
             ? $"{OpenPositions.Count} offene Position(en)"
             : "Keine offenen Positionen";
+        UpdateChartOverlay();
     }
 }
 

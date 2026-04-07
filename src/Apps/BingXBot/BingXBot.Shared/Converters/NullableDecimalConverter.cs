@@ -18,15 +18,13 @@ public class NullableDecimalConverter : IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is decimal d)
-        {
-            // G-Format: Zeigt signifikante Stellen statt fixe Dezimalstellen.
-            // Verhindert Rundung auf 0.00 bei Micro-Cap Token-Preisen (z.B. 0.0000301)
-            return d.ToString("G10", CultureInfo.InvariantCulture);
-        }
+        // Unterstützt decimal UND decimal? (für Preis-Anzeige und SL/TP-TextBoxen)
+        if (value is not decimal d) return "";
 
-        // null → leerer String (zeigt Watermark)
-        return "";
+        // KEINE Exponentialnotation! Krypto-Preise wie 0.00005625 müssen als Dezimalzahl angezeigt werden.
+        if (d == 0) return "0";
+        var str = d.ToString("F20", CultureInfo.InvariantCulture).TrimEnd('0').TrimEnd('.');
+        return str;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

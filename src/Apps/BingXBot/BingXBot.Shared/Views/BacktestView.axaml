@@ -284,8 +284,8 @@
         </StackPanel>
 
         <!-- Ergebnis-Grid -->
-        <Grid IsVisible="{Binding HasResult}"
-              RowDefinitions="Auto,16,Auto,16,Auto"
+        <ScrollViewer IsVisible="{Binding HasResult}" VerticalScrollBarVisibility="Auto">
+        <Grid RowDefinitions="Auto,16,Auto,16,Auto,16,Auto,16,Auto"
               ColumnDefinitions="*,12,*,12,*,12,*">
 
           <!-- Zeile 1: P&L, WinRate, Max DD, Sharpe -->
@@ -436,7 +436,153 @@
             </StackPanel>
           </Border>
 
+          <!-- ═══ Zeile 3: Erweiterte Metriken ═══ -->
+          <Border Grid.Row="4" Grid.Column="0"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12"
+                  ToolTip.Tip="Annualisierte Rendite / Max. Drawdown">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Calmar Ratio" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding CalmarRatio, StringFormat={}{0:F2}}"
+                         FontSize="20" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+
+          <Border Grid.Row="4" Grid.Column="2"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12"
+                  ToolTip.Tip="Wie Sharpe, aber nur Downside-Volatilität">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Sortino Ratio" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding SortinoRatio, StringFormat={}{0:F2}}"
+                         FontSize="20" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+
+          <Border Grid.Row="4" Grid.Column="4"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12"
+                  ToolTip.Tip="Netto-Gewinn / Max. Drawdown">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Recovery Factor" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding RecoveryFactor, StringFormat={}{0:F2}}"
+                         FontSize="20" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+
+          <Border Grid.Row="4" Grid.Column="6"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Max. Verlust-Serie" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding MaxConsecutiveLosses}"
+                         FontSize="20" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource ErrorBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- ═══ Zeile 4: Monte Carlo (nur sichtbar wenn Ergebnis vorhanden) ═══ -->
+          <Border Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12"
+                  IsVisible="{Binding HasMonteCarloResult}">
+            <StackPanel Spacing="6">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="ChartBellCurveCumulative" Width="16" Height="16"
+                                 Foreground="{DynamicResource AppPrimaryBrush}" />
+                <TextBlock Text="Monte Carlo (1000 Simulationen)" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,*,*,*" Margin="0,4,0,0">
+                <StackPanel Grid.Column="0" Spacing="2">
+                  <TextBlock Text="Max DD 95%" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding McMaxDrawdown95, StringFormat={}{0:F1}%}"
+                             FontSize="15" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{DynamicResource ErrorBrush}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Return 5%" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding McReturn5, StringFormat={}{0:F1}%}"
+                             FontSize="15" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="2">
+                  <TextBlock Text="Return Median" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding McReturn50, StringFormat={}{0:F1}%}"
+                             FontSize="15" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+                <StackPanel Grid.Column="3" Spacing="2">
+                  <TextBlock Text="Ruin-Risiko" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding McRuinProbability, StringFormat={}{0:F1}%}"
+                             FontSize="15" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{DynamicResource WarningBrush}" />
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <!-- CPCV Overfitting-Check -->
+          <Border Grid.Row="6" Grid.Column="4" Grid.ColumnSpan="3"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12"
+                  IsVisible="{Binding HasCpcvResult}">
+            <StackPanel Spacing="6">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="ShieldCheck" Width="16" Height="16"
+                                 Foreground="{DynamicResource AppPrimaryBrush}" />
+                <TextBlock Text="CPCV Overfitting-Check" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,*,*" Margin="0,4,0,0">
+                <StackPanel Grid.Column="0" Spacing="2">
+                  <TextBlock Text="PBO" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding CpcvPbo, StringFormat={}{0:F1}%}"
+                             FontSize="15" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{DynamicResource WarningBrush}" />
+                  <TextBlock Text="&lt;30% = akzeptabel" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.6" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Degradation" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding CpcvDegradation, StringFormat={}{0:F1}%}"
+                             FontSize="15" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Text="IS → OOS Verlust" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.6" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="2">
+                  <TextBlock Text="OOS Return" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding CpcvAvgOosReturn, StringFormat={}{0:F2}%}"
+                             FontSize="15" FontWeight="Bold" FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <!-- ═══ Zeile 5: Regime-Breakdown ═══ -->
+          <Border Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="7"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="16,12"
+                  IsVisible="{Binding RegimeBreakdownText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <StackPanel Spacing="6">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="ChartDonut" Width="16" Height="16"
+                                 Foreground="{DynamicResource AppPrimaryBrush}" />
+                <TextBlock Text="Performance nach Markt-Regime" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+              <TextBlock Text="{Binding RegimeBreakdownText}"
+                         FontSize="12" FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
         </Grid>
+        </ScrollViewer>
         </Panel>
       </Border>
 

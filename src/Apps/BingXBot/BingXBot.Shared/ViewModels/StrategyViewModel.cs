@@ -20,8 +20,8 @@ public partial class StrategyViewModel : ViewModelBase
     private readonly StrategyManager _strategyManager;
     private readonly BotEventBus _eventBus;
 
-    [ObservableProperty] private string _selectedStrategy = "Trend-Following";
-    [ObservableProperty] private string _strategyDescription = "Multi-Indikator Trend-Following: EMA+RSI+MACD+Volume (5 Bedingungen, Krypto-optimiert)";
+    [ObservableProperty] private string _selectedStrategy = "CryptoTrendPro";
+    [ObservableProperty] private string _strategyDescription = "Primärstrategie: Supertrend + Confluence-Scoring (0-12) + vol-adaptive SL/TP + Pyramid Exit";
     [ObservableProperty] private bool _isActive;
     [ObservableProperty] private string _statusText = "Inaktiv";
     [ObservableProperty] private string _toggleButtonText = "Aktivieren";
@@ -82,6 +82,9 @@ public partial class StrategyViewModel : ViewModelBase
     {
         var strategy = StrategyFactory.Create(SelectedStrategy);
 
+        // Original-Parameter für Min/Max-Validierung
+        var strategyParams = strategy.Parameters;
+
         // Parameter aus der UI auf die Strategie-Instanz anwenden
         var type = strategy.GetType();
         foreach (var param in Parameters)
@@ -93,16 +96,23 @@ public partial class StrategyViewModel : ViewModelBase
 
             if (field == null) continue;
 
+            // Original-Parameter für Min/Max-Grenzen holen
+            var stratParam = strategyParams.FirstOrDefault(sp => sp.Name == param.Name);
+
             try
             {
                 if (param.ValueType == "decimal" && decimal.TryParse(param.Value,
                     System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out var decVal))
                 {
+                    // Min/Max-Validierung für decimal-Parameter
+                    decVal = ClampDecimal(decVal, stratParam, param.Name);
                     field.SetValue(strategy, decVal);
                 }
                 else if (param.ValueType == "int" && int.TryParse(param.Value, out var intVal))
                 {
+                    // Min/Max-Validierung für int-Parameter
+                    intVal = ClampInt(intVal, stratParam, param.Name);
                     field.SetValue(strategy, intVal);
                 }
             }
@@ -113,6 +123,88 @@ public partial class StrategyViewModel : ViewModelBase
         }
 
         return strategy;
+    }
+
+    /// <summary>Clampt einen decimal-Wert auf Min/Max-Grenzen des StrategyParameter.</summary>
+    private decimal ClampDecimal(decimal value, StrategyParameter? stratParam, string paramName)
+    {
+        if (stratParam == null) return value;
+
+        var min = stratParam.MinValue is decimal minDec ? minDec
+            : stratParam.MinValue is int minInt ? (decimal)minInt
+            : stratParam.MinValue is double minDbl ? (decimal)minDbl
+            : (decimal?)null;
+
+        var max = stratParam.MaxValue is decimal maxDec ? maxDec
+            : stratParam.MaxValue is int maxInt ? (decimal)maxInt
+            : stratParam.MaxValue is double maxDbl ? (decimal)maxDbl
+            : (decimal?)null;
+
+        if (min.HasValue && max.HasValue)
+        {
+            var clamped = Math.Clamp(value, min.Value, max.Value);
+            if (clamped != value)
+                System.Diagnostics.Debug.WriteLine(
+                    $"Parameter '{paramName}': Wert {value} auf [{min.Value}, {max.Value}] geclampt → {clamped}");
+            return clamped;
+        }
+
+        if (min.HasValue && value < min.Value)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Parameter '{paramName}': Wert {value} unter Minimum {min.Value} geclampt");
+            return min.Value;
+        }
+
+        if (max.HasValue && value > max.Value)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Parameter '{paramName}': Wert {value} über Maximum {max.Value} geclampt");
+            return max.Value;
+        }
+
+        return value;
+    }
+
+    /// <summary>Clampt einen int-Wert auf Min/Max-Grenzen des StrategyParameter.</summary>
+    private int ClampInt(int value, StrategyParameter? stratParam, string paramName)
+    {
+        if (stratParam == null) return value;
+
+        var min = stratParam.MinValue is int minInt ? minInt
+            : stratParam.MinValue is decimal minDec ? (int)minDec
+            : stratParam.MinValue is double minDbl ? (int)minDbl
+            : (int?)null;
+
+        var max = stratParam.MaxValue is int maxInt ? maxInt
+            : stratParam.MaxValue is decimal maxDec ? (int)maxDec
+            : stratParam.MaxValue is double maxDbl ? (int)maxDbl
+            : (int?)null;
+
+        if (min.HasValue && max.HasValue)
+        {
+            var clamped = Math.Clamp(value, min.Value, max.Value);
+            if (clamped != value)
+                System.Diagnostics.Debug.WriteLine(
+                    $"Parameter '{paramName}': Wert {value} auf [{min.Value}, {max.Value}] geclampt → {clamped}");
+            return clamped;
+        }
+
+        if (min.HasValue && value < min.Value)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Parameter '{paramName}': Wert {value} unter Minimum {min.Value} geclampt");
+            return min.Value;
+        }
+
+        if (max.HasValue && value > max.Value)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Parameter '{paramName}': Wert {value} über Maximum {max.Value} geclampt");
+            return max.Value;
+        }
+
+        return value;
     }
 
     [RelayCommand]

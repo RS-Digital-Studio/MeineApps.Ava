@@ -407,6 +407,79 @@
       </Border>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Adaptive Schutzmechanismen                              -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16" BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="ShieldHalfFull" Width="20" Height="20"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Adaptive Schutzmechanismen" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Cooldown-Eskalation -->
+          <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+            <StackPanel Grid.Row="0" Grid.Column="0">
+              <TextBlock Text="Cooldown-Eskalation" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Progressive Cooldowns bei Verlust-Serien (8h→16h→24h→48h)" FontSize="11"
+                         Foreground="{DynamicResource AppTextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding EnableCooldownEscalation}" />
+
+            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                        Orientation="Horizontal" Spacing="8" Margin="0,8,0,0"
+                        IsVisible="{Binding EnableCooldownEscalation}">
+              <TextBlock Text="Max. Cooldown (Stunden):" FontSize="13"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" VerticalAlignment="Center" />
+              <TextBox Classes="NumericInput" Text="{Binding MaxCooldownHours}" Width="60"
+                       ToolTip.Tip="Maximaler Cooldown bei Eskalation. Default: 48h" />
+            </StackPanel>
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource AppBorderBrush}" Opacity="0.3" />
+
+          <!-- Equity-Curve-Trading -->
+          <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+            <StackPanel Grid.Row="0" Grid.Column="0">
+              <TextBlock Text="Equity-Curve-Trading" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Halbe Position wenn Equity unter eigener EMA fällt" FontSize="11"
+                         Foreground="{DynamicResource AppTextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding EnableEquityCurveTrading}" />
+
+            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                        Orientation="Horizontal" Spacing="8" Margin="0,8,0,0"
+                        IsVisible="{Binding EnableEquityCurveTrading}">
+              <TextBlock Text="EMA-Periode (Trades):" FontSize="13"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" VerticalAlignment="Center" />
+              <TextBox Classes="NumericInput" Text="{Binding EquityCurvePeriod}" Width="60"
+                       ToolTip.Tip="Anzahl Trades für die Equity-EMA. Default: 20" />
+            </StackPanel>
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource AppBorderBrush}" Opacity="0.3" />
+
+          <!-- Momentum-Decay -->
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0">
+              <TextBlock Text="Momentum-Decay-Erkennung" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Schließt Position wenn Preis >1.5x ATR vom Höchstpunkt entfernt (nach TP1)" FontSize="11"
+                         Foreground="{DynamicResource AppTextMutedBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                          IsChecked="{Binding EnableMomentumDecay}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
       <!-- Buttons: Speichern + Reset                                      -->
       <!-- ═══════════════════════════════════════════════════════════════ -->
       <StackPanel Orientation="Horizontal" Spacing="12">

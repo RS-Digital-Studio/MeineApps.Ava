@@ -73,7 +73,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Credentials laden fehlgeschlagen: {ex}");
+            System.Diagnostics.Debug.WriteLine($"Credentials laden fehlgeschlagen: {ex.Message}");
             ConnectionStatus = "Laden fehlgeschlagen";
         }
     }

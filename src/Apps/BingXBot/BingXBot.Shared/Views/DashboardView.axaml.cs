@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Labs.Controls;
 using Avalonia.Media;
 using BingXBot.Graphics;
@@ -36,28 +37,39 @@ public partial class DashboardView : UserControl
         {
             _vm = dashVm;
 
-            // BtcCandles-Änderungen invalidieren den Canvas (delegiert an BtcTicker Sub-VM)
-            dashVm.BtcTicker.BtcCandles.CollectionChanged += (_, _) =>
-            {
-                if (this.FindControl<SKCanvasView>("BtcChartCanvas") is { } canvas)
-                    canvas.InvalidateSurface();
-            };
-
-            // Equity-Änderungen invalidieren den Canvas
-            dashVm.EquityData.CollectionChanged += (_, _) =>
-            {
-                if (this.FindControl<SKCanvasView>("EquityCanvas") is { } canvas)
-                    canvas.InvalidateSurface();
-            };
+            // CollectionChanged-Handler als benannte Methoden (für saubere Abmeldung in OnDetached)
+            dashVm.BtcTicker.BtcCandles.CollectionChanged += OnBtcCandlesChanged;
+            dashVm.BtcTicker.TradeMarkers.CollectionChanged += OnTradeMarkersChanged;
+            dashVm.EquityData.CollectionChanged += OnEquityDataChanged;
 
             // Property-Änderungen abonnieren fuer dynamische UI-Updates
             dashVm.PropertyChanged += OnViewModelPropertyChanged;
             dashVm.BtcTicker.PropertyChanged += OnBtcTickerPropertyChanged;
+            dashVm.WidgetCanvasInvalidationRequested += OnWidgetCanvasInvalidation;
 
             // Initiale Zuweisung (nur Modus-Buttons + BTC-Farbe, Rest via AXAML-Bindings)
             UpdateModeButtons();
             UpdateBtcChangeColor();
         }
+    }
+
+    // Benannte Handler für saubere Abmeldung
+    private void OnBtcCandlesChanged(object? s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (this.FindControl<SKCanvasView>("BtcChartCanvas") is { } c) c.InvalidateSurface();
+    }
+    private void OnTradeMarkersChanged(object? s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (this.FindControl<SKCanvasView>("BtcChartCanvas") is { } c) c.InvalidateSurface();
+    }
+    private void OnEquityDataChanged(object? s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (this.FindControl<SKCanvasView>("EquityCanvas") is { } c) c.InvalidateSurface();
+        // Widgets die von Equity/Trade-Daten abhängen auch aktualisieren
+        if (this.FindControl<SKCanvasView>("DrawdownCanvas") is { } d) d.InvalidateSurface();
+        if (this.FindControl<SKCanvasView>("PnlCalendarCanvas") is { } p) p.InvalidateSurface();
+        if (this.FindControl<SKCanvasView>("FearGreedCanvas") is { } f) f.InvalidateSurface();
+        if (this.FindControl<SKCanvasView>("StrategyWeightsCanvas") is { } w) w.InvalidateSurface();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -75,6 +87,12 @@ public partial class DashboardView : UserControl
     {
         if (e.PropertyName == nameof(BtcTickerViewModel.BtcPriceChange))
             UpdateBtcChangeColor();
+        // ActiveOverlay- oder Indikator-Änderung → Chart neu zeichnen
+        if (e.PropertyName is nameof(BtcTickerViewModel.ActiveOverlay) or nameof(BtcTickerViewModel.Indicators))
+        {
+            if (this.FindControl<SKCanvasView>("BtcChartCanvas") is { } canvas)
+                canvas.InvalidateSurface();
+        }
     }
 
     /// <summary>
@@ -121,6 +139,18 @@ public partial class DashboardView : UserControl
         }
     }
 
+    /// <summary>
+    /// Invalidiert Widget-Canvases wenn DailyPnl/StrategyWeights/FearGreed aktualisiert wurden.
+    /// Wird vom ViewModel nach Mutation auf dem UI-Thread aufgerufen.
+    /// </summary>
+    private void OnWidgetCanvasInvalidation()
+    {
+        if (this.FindControl<SKCanvasView>("PnlCalendarCanvas") is { } p) p.InvalidateSurface();
+        if (this.FindControl<SKCanvasView>("FearGreedCanvas") is { } f) f.InvalidateSurface();
+        if (this.FindControl<SKCanvasView>("StrategyWeightsCanvas") is { } w) w.InvalidateSurface();
+        if (this.FindControl<SKCanvasView>("CorrelationCanvas") is { } c) c.InvalidateSurface();
+    }
+
     private void OnEquityPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         if (_vm == null) return;
@@ -137,8 +167,119 @@ public partial class DashboardView : UserControl
         if (_vm == null) return;
 
         var canvas = e.Surface.Canvas;
-        var bounds = canvas.LocalClipBounds; // NICHT e.Info.Width/Height (DPI-Problem!)
-        BtcPriceChartRenderer.Render(canvas, bounds, _vm.BtcTicker.BtcCandles.ToList());
+        var bounds = canvas.LocalClipBounds;
+        var markers = _vm.BtcTicker.TradeMarkers.Count > 0 ? _vm.BtcTicker.TradeMarkers.ToList() : null;
+        var regimes = _vm.BtcTicker.RegimeZones.Count > 0 ? _vm.BtcTicker.RegimeZones.ToList() : null;
+
+        _vm.BtcTicker.ChartRenderer.Render(canvas, bounds, _vm.BtcTicker.BtcCandles.ToList(),
+            markers, _vm.BtcTicker.ActiveOverlay, _vm.BtcTicker.Indicators, regimes);
+    }
+
+    // ═══ Widget-Renderer ═══
+
+    private void OnFearGreedPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        if (_vm == null) return;
+        var canvas = e.Surface.Canvas;
+        var bounds = canvas.LocalClipBounds;
+        FearGreedGaugeRenderer.Render(canvas, bounds, _vm.BtcTicker.FearGreedValue, _vm.BtcTicker.FearGreedLabel);
+    }
+
+    private void OnDrawdownPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        if (_vm == null) return;
+        var canvas = e.Surface.Canvas;
+        var bounds = canvas.LocalClipBounds;
+        DrawdownChartRenderer.Render(canvas, bounds, _vm.EquityData.ToList(), _vm.Balance > 0 ? _vm.Balance : 10_000m);
+    }
+
+    private void OnPnlCalendarPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        if (_vm == null) return;
+        var canvas = e.Surface.Canvas;
+        var bounds = canvas.LocalClipBounds;
+        PnlCalendarRenderer.Render(canvas, bounds, _vm.DailyPnl);
+    }
+
+    private void OnStrategyWeightsPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        if (_vm == null) return;
+        var canvas = e.Surface.Canvas;
+        var bounds = canvas.LocalClipBounds;
+        StrategyWeightsRenderer.Render(canvas, bounds, _vm.StrategyWeights);
+    }
+
+    private void OnCorrelationPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        if (_vm == null) return;
+        var canvas = e.Surface.Canvas;
+        var bounds = canvas.LocalClipBounds;
+        CorrelationMatrixRenderer.Render(canvas, bounds, _vm.CorrelationSymbols, _vm.CorrelationMatrix);
+    }
+
+    // ═══ Chart-Interaktion: Crosshair, Zoom/Pan ═══
+
+    private void OnChartPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_vm == null || sender is not SKCanvasView canvas) return;
+        var pos = e.GetPosition(canvas);
+        var state = _vm.BtcTicker.ChartRenderer.State;
+        state.ShowCrosshair = true;
+        state.CrosshairX = (float)pos.X;
+        state.CrosshairY = (float)pos.Y;
+
+        // Pan: Wenn Drag aktiv, Viewport verschieben
+        if (state.IsDragging)
+        {
+            var dx = (float)pos.X - state.DragStartX;
+            var candlesShift = -(int)(dx / Math.Max(_vm.BtcTicker.ChartRenderer.CandleWidth, 1f));
+            var total = _vm.BtcTicker.BtcCandles.Count;
+            var vis = state.ViewEnd - state.ViewStart;
+            state.ViewStart = Math.Clamp(state.DragStartViewStart + candlesShift, 0, Math.Max(0, total - vis));
+            state.ViewEnd = Math.Min(total, state.ViewStart + vis);
+        }
+
+        canvas.InvalidateSurface();
+    }
+
+    private void OnChartPointerExited(object? sender, PointerEventArgs e)
+    {
+        if (_vm == null || sender is not SKCanvasView canvas) return;
+        _vm.BtcTicker.ChartRenderer.State.ShowCrosshair = false;
+        _vm.BtcTicker.ChartRenderer.State.IsDragging = false;
+        canvas.InvalidateSurface();
+    }
+
+    private void OnChartPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_vm == null || sender is not SKCanvasView canvas) return;
+        var pos = e.GetPosition(canvas);
+        var state = _vm.BtcTicker.ChartRenderer.State;
+        state.IsDragging = true;
+        state.DragStartX = (float)pos.X;
+        state.DragStartViewStart = state.ViewStart;
+    }
+
+    private void OnChartPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_vm == null) return;
+        _vm.BtcTicker.ChartRenderer.State.IsDragging = false;
+    }
+
+    private void OnChartPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (_vm == null || sender is not SKCanvasView canvas) return;
+        // Scroll-Event konsumieren damit die Seite nicht mitscrollt
+        e.Handled = true;
+        var delta = e.Delta.Y > 0 ? -5 : 5; // Hochscrollen = Reinzoomen (weniger Candles)
+        _vm.BtcTicker.ChartRenderer.State.Zoom(delta, _vm.BtcTicker.BtcCandles.Count);
+        canvas.InvalidateSurface();
+    }
+
+    private void OnRemoveWatchlistSymbol(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_vm == null || sender is not Button btn || btn.Tag is not string symbol) return;
+        _vm.RemoveFromWatchlistCommand.Execute(symbol);
     }
 
     private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)
@@ -147,6 +288,10 @@ public partial class DashboardView : UserControl
         {
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
             _vm.BtcTicker.PropertyChanged -= OnBtcTickerPropertyChanged;
+            _vm.WidgetCanvasInvalidationRequested -= OnWidgetCanvasInvalidation;
+            _vm.BtcTicker.BtcCandles.CollectionChanged -= OnBtcCandlesChanged;
+            _vm.BtcTicker.TradeMarkers.CollectionChanged -= OnTradeMarkersChanged;
+            _vm.EquityData.CollectionChanged -= OnEquityDataChanged;
         }
     }
 }

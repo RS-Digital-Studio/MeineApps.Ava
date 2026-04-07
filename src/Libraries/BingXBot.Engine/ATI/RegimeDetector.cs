@@ -260,6 +260,18 @@ public class RegimeDetector
         }
     }
 
+    /// <summary>Setzt alle gelernten Daten und Caches zurück (für ATI.Reset).</summary>
+    public void Reset()
+    {
+        _smoothedScores.Clear();
+        _lastRegime.Clear();
+        _currentRegime = MarketRegime.Range;
+        lock (_transitionLock)
+        {
+            InitializeDefaultTransitions();
+        }
+    }
+
     /// <summary>Serialisiert die Übergangsmatrix als flaches int-Array (4x4=16 Werte).</summary>
     public string SerializeState()
     {

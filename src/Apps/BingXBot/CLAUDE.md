@@ -877,3 +877,80 @@ ConfidenceGate Hybrid-Gewichtung:
 - Strategy-Health-Warnung: Rote Box mit AlertCircle-Icon wenn HasStrategyWarning=true
 - Rolling Live-Metriken: 3-Spalten UniformGrid mit WinRate/Sharpe/ProfitFactor (nur wenn Bot läuft)
 - Aktualisierung alle 5 Min aus RiskManager Rolling-Window (30 Trades)
+
+## Umfassender Audit + Fixes (07.04.2026)
+
+5-Agenten-Audit (Code-Review, Security, Performance, Architektur, Health-Check).
+
+### Kritische Fixes (2)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| ATI RegisterStrategies 3x im Loop | MultiModeOrchestrator.cs | `RegisterStrategies()` vor foreach-Schleife verschoben (rief intern `ClearStrategies()` auf → nur letzter Modus hatte Strategien) |
+| SetMarketConditions Thread-Safety | SimulatedExchange.cs | `_currentAtr`/`_currentVolumeRatio` auf `ConcurrentDictionary` umgestellt (wurde ohne Lock geschrieben, während `ApplySlippage()` unter `_rwLock` las) |
+
+### Hohe Fixes (3)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| _equityHistory Race Condition | TradingServiceBase.cs | `lock(_equityLock)` um `Add()` und `GetEquityCurveScaleFactor()` (parallele Loops) |
+| WebSocket Fire-and-forget | LiveTradingService.cs | `ContinueWith(OnlyOnFaulted)` mit Error-Logging für `StartUserDataStreamAsync`/`StartTickerStreamAsync` |
+| ExitOptimizer neg. TP-Multiplikator | ExitOptimizer.cs | `Math.Max(0.5f, sl/tp)` Floor-Clamp nach Verlierer-Anpassung (extreme AvgLosingTp konnte negativen TP erzeugen) |
+
+### Mittlere Fixes (2)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| MultiModeOrchestrator Dictionaries | MultiModeOrchestrator.cs | `_services`/`_strategyManagers`/`_scannerSettings` auf `ConcurrentDictionary` (StopModeAsync parallel zu IsAnyRunning) |
+| FeatureEngine statische Felder | FeatureEngine.cs | `_btcCorrelations`/`_openInterestChanges` auf `ConcurrentDictionary`, float-Felder `volatile` (Multi-Mode parallel) |
+
+### Niedriger Fix (1)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| RiskManager Rolling-Properties Lock | RiskManager.cs | `RollingWinRate`/`ProfitFactor`/`SharpeRatio`/`RecentTrades`/`CheckStrategyHealth()` unter `lock(_lock)` (UI-Thread liest parallel) |
+
+### Toter Code entfernt
+| Was | Datei | Grund |
+|-----|-------|-------|
+| PaperTradingEngine | BingXBot.Backtest/PaperTradingEngine.cs | 19 Zeilen, nirgends referenziert |
+| IDataFeed Interface | BingXBot.Core/Interfaces/IDataFeed.cs | Nie implementiert, nie in DI registriert. Parameter aus MarketScanner-Konstruktor entfernt |
+
+### ATI-Pipeline Tiefenprüfung + Fixes (07.04.2026)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| RegisterOpenTrade Key-Kollision | AdaptiveTradingIntelligence.cs, TradingServiceBase.cs | `sourceId` Parameter (Timeframe) in Key aufgenommen. Verhindert Überschreibung wenn Multi-Mode-Instanzen dasselbe Symbol traden. Key: `{Symbol}_{Side}_{Timeframe}` |
+| _tradesSinceLastTrain atomar | AdaptiveTradingIntelligence.cs | `Interlocked.Increment/Exchange` statt `++`/`=0`. Korrekte Trade-Zählung bei parallelen CheckAutoTraining-Aufrufen |
+
+### ATI Deep-Dive Fixes (07.04.2026)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| **Multi-Mode ATI-Events fehlten** | DashboardViewModel.cs | **KRITISCH**: Im Multi-Mode-Pfad (Alle Modi) fehlten ALLE ATI-Event-Subscriptions: FeatureSnapshotCompleted, AutoTrainingCompleted, AuditCreated + LoadAtiStateAsync(). ATI-Lernen war im Multi-Mode komplett tot. Fix: `WireUpAtiEventsAsync()` als gemeinsame Methode für Single- und Multi-Mode |
+| Multi-Mode SaveAtiState bei Stop | DashboardViewModel.cs | SaveAtiStateAsync() fehlte im Multi-Mode-Stop-Pfad (nur Single-Mode hatte es) |
+| **Multi-Mode RiskPresets pro Modus** | MultiModeOrchestrator.cs | **KRITISCH**: Alle 3 Modi teilten identische RiskSettings. Scalping (MaxHold=4h) bekam Swing-Werte (MaxHold=48h). Fix: `CreateRiskSettings(mode)` erstellt pro-Modus RiskSettings mit Preset-Werten (Haltezeit, Cooldown, TP-Ratios, Leverage, RRR) |
+| Multi-Mode UI-Initialisierung | DashboardViewModel.cs | Balance, HasAccountData, ShowWelcomeHint, EquitySnapshotTimer fehlten im Multi-Mode-Start |
+| **Live Multi-Mode implementiert** | DashboardViewModel.cs, MultiModeOrchestrator.cs | Custom-Preset startet jetzt auch im Live-Modus 3 parallele LiveTradingServices (Scalping M15/90s + DayTrading H1/3min + Swing H4/5min). Stop, Emergency-Stop und Pause/Resume funktionieren |
+| ModePrefix in Logs | PaperTradingService.cs, LiveTradingService.cs, MultiModeOrchestrator.cs | `[S]`, `[D]`, `[W]` Prefix im Multi-Mode für unterscheidbare Log-Nachrichten. Paper: `[S] BTC-USDT: Long...`, Live: `LIVE [S] BTC-USDT: Long...` |
+| Orchestrator Pause/Resume | MultiModeOrchestrator.cs | `PauseAll()`, `ResumeAll()`, `IsAnyPaused` für Multi-Mode Pause-Button |
+| **Paper Multi-Mode Account-Update** | DashboardViewModel.cs, MultiModeOrchestrator.cs | Account-Update nutzte `_paperService.Exchange` (Single-Mode) statt der 3 Orchestrator-Services. Fix: `GetAggregatedPaperAccountAsync()` summiert Balance/Positionen aller 3 Paper-Services |
+| Paper Multi-Mode Kapitalaufteilung | MultiModeOrchestrator.cs | Startkapital wird auf 3 Modi aufgeteilt (`initialBalance / 3`) statt 3x volles Kapital |
+| Paper Multi-Mode Close Position | DashboardViewModel.cs | Manuelles Schließen sucht Position in allen 3 Paper-Services statt nur im Single-Mode-Service |
+| LightGBM Modell bei AUC<0.55 nicht aktiviert | LightGbmClassifier.cs | Train() setzt _predictionEngine jetzt erst NACH AUC-Check (>= 0.55). Vorher wurde schwaches Modell sofort aktiviert und steuerte 60% der ConfidenceGate-Bewertung |
+| PredictionEngine Thread-Safety | LightGbmClassifier.cs | `_predictionLock` um Predict() und atomares Swap in Train(). ML.NET PredictionEngine ist nicht thread-safe |
+| InvalidateModel() Methode | LightGbmClassifier.cs | Ermöglicht explizites Verwerfen des Modells (genutzt von ATI.Reset()) |
+| RegimeDetector.Reset() | RegimeDetector.cs | Neue Methode: Räumt _smoothedScores, _lastRegime, _currentRegime und setzt Transitions auf Defaults. Vorher war DeserializeState("") ein No-op |
+| ExitOptimizer.Reset() | ExitOptimizer.cs | Neue Methode: Räumt _exitStats. Vorher war DeserializeState("") ein No-op |
+| ATI.Reset() vollständig | AdaptiveTradingIntelligence.cs | Nutzt jetzt die neuen Reset()-Methoden + LightGbm.InvalidateModel() |
+| Auto-Save Dreifach-Ausführung | AdaptiveTradingIntelligence.cs, TradingServiceBase.cs | `TryClaimAutoSave()` mit Interlocked-Guard: Im Multi-Mode gewinnt nur ein Service pro Intervall statt 3x parallel zu speichern |
+
+### ATI-Pipeline Verifiziert (07.04.2026)
+- FeatureEngine: 25 Features korrekt extrahiert, ConcurrentDictionary für Cross-Market
+- RegimeDetector: NormalizeInPlace-Fix verifiziert (Array-Kopien in SmoothScores + ApplyTransitionPrior)
+- AdaptiveEnsemble: Strategy.Evaluate() ist pure (keine mutable state-Zugriffe), Gewichte unter Lock
+- ConfidenceGate: 16 Bayesian Buckets thread-safe (ConcurrentDictionary + Lock), Cold-Start-Schutz aktiv
+- ExitOptimizer: Floor-Clamp korrekt (vor Default-Mix), RecordExitOutcome unter Lock
+- LearningLoop: ProcessTradeOutcome → Ensemble + ConfidenceGate + ExitOptimizer + DB alle unter Lock
+- Persistenz: SerializeState/DeserializeState alle 4 Komponenten thread-safe
+- Auto-Training: LightGBM nur aktiviert bei AUC >= 0.55, PredictionEngine unter Lock, Task.Run nicht-blockierend
+
+### Security-Ergebnisse (alle OK)
+- API-Keys: DPAPI (Windows) / AES-256-CBC + PBKDF2 100k (Linux)
+- credentials.dat in AppData (nicht im Repo), chmod 600 auf Linux
+- Keine Secrets in Logs, Keys in UI maskiert
+- WebSocket-API-Key-Felder bereits entfernt (05.04.2026)

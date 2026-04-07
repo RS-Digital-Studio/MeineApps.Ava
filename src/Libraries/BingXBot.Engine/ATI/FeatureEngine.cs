@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using BingXBot.Core.Models;
 using BingXBot.Core.Models.ATI;
 using BingXBot.Engine.Indicators;
@@ -11,12 +12,14 @@ namespace BingXBot.Engine.ATI;
 public static class FeatureEngine
 {
     // Cross-Market-Daten werden einmal pro Scan-Zyklus extern gesetzt (von TradingServiceBase)
-    private static float _btcReturn24h;
-    private static float _btcTrend;
-    private static float _marketSentiment;
-    private static float _fearGreedIndex;
-    private static readonly Dictionary<string, float> _btcCorrelations = new();
-    private static readonly Dictionary<string, float> _openInterestChanges = new();
+    // float-Felder sind auf x86/x64 atomar, Dictionaries brauchen ConcurrentDictionary
+    // da im Multi-Mode-Betrieb 3 TradingServiceBase-Instanzen parallel schreiben
+    private static volatile float _btcReturn24h;
+    private static volatile float _btcTrend;
+    private static volatile float _marketSentiment;
+    private static volatile float _fearGreedIndex;
+    private static readonly ConcurrentDictionary<string, float> _btcCorrelations = new();
+    private static readonly ConcurrentDictionary<string, float> _openInterestChanges = new();
 
     /// <summary>
     /// Setzt BTC- und Markt-Kontext für Cross-Market-Features (wird pro Scan-Zyklus aufgerufen).

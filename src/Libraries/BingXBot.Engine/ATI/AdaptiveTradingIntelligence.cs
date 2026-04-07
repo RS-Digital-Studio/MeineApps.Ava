@@ -38,7 +38,23 @@ public class AdaptiveTradingIntelligence
     }
 
     /// <summary>Zeitpunkt der letzten Auto-Save-Persistierung (für Timer-Logik in TradingServiceBase).</summary>
-    public DateTime LastAutoSaveTime { get; set; } = DateTime.UtcNow;
+    public DateTime LastAutoSaveTime { get; private set; } = DateTime.UtcNow;
+    private int _autoSaveGuard; // Verhindert parallele Auto-Saves im Multi-Mode
+
+    /// <summary>
+    /// Atomar prüfen ob Auto-Save fällig ist. Gibt true zurück und setzt LastAutoSaveTime
+    /// wenn genug Zeit vergangen ist. Nur ein Aufrufer pro Intervall kann true erhalten.
+    /// </summary>
+    public bool TryClaimAutoSave(int intervalMinutes)
+    {
+        if (intervalMinutes <= 0) return false;
+        if ((DateTime.UtcNow - LastAutoSaveTime).TotalMinutes < intervalMinutes) return false;
+        // Atomar: Nur ein Thread gewinnt den Claim
+        if (Interlocked.CompareExchange(ref _autoSaveGuard, 1, 0) != 0) return false;
+        LastAutoSaveTime = DateTime.UtcNow;
+        Interlocked.Exchange(ref _autoSaveGuard, 0);
+        return true;
+    }
 
     /// <summary>LightGBM Classifier (Phase 2). Wird automatisch trainiert wenn genug Daten vorhanden.</summary>
     public LightGbmClassifier LightGbm { get; } = new();
@@ -303,11 +319,14 @@ public class AdaptiveTradingIntelligence
     /// <summary>
     /// Speichert den Kontext eines eröffneten Trades (für späteres Lernen beim Close).
     /// Aufrufen NACH erfolgreicher Order-Platzierung.
+    /// sourceId: Optionaler Identifier für Multi-Mode-Betrieb (z.B. Timeframe), verhindert Key-Kollision
+    /// wenn mehrere TradingServiceBase-Instanzen dieselbe ATI teilen.
     /// </summary>
     public void RegisterOpenTrade(string symbol, Side side, FeatureSnapshot features,
-        RegimeState regime, EnsembleVote ensembleVote, decimal slMultiplier, decimal tpMultiplier)
+        RegimeState regime, EnsembleVote ensembleVote, decimal slMultiplier, decimal tpMultiplier,
+        string? sourceId = null)
     {
-        var key = $"{symbol}_{side}";
+        var key = sourceId != null ? $"{symbol}_{side}_{sourceId}" : $"{symbol}_{side}";
         _openTradeContexts[key] = new TradeContext(features, regime, ensembleVote,
             slMultiplier, tpMultiplier, DateTime.UtcNow);
     }
@@ -315,10 +334,11 @@ public class AdaptiveTradingIntelligence
     /// <summary>
     /// Verarbeitet ein Trade-Ergebnis und aktualisiert alle lernenden Komponenten.
     /// Aufrufen wenn ein Trade geschlossen wird.
+    /// sourceId: Muss dem Wert von RegisterOpenTrade entsprechen.
     /// </summary>
-    public void ProcessTradeOutcome(CompletedTrade trade)
+    public void ProcessTradeOutcome(CompletedTrade trade, string? sourceId = null)
     {
-        var key = $"{trade.Symbol}_{trade.Side}";
+        var key = sourceId != null ? $"{trade.Symbol}_{trade.Side}_{sourceId}" : $"{trade.Symbol}_{trade.Side}";
         if (!_openTradeContexts.TryRemove(key, out var ctx))
             return; // Kein gespeicherter Kontext (Trade wurde vor ATI eröffnet oder manuell)
 
@@ -391,14 +411,12 @@ public class AdaptiveTradingIntelligence
     /// <summary>Setzt alle lernenden Komponenten zurück.</summary>
     public void Reset()
     {
-        // M-3 Fix: ALLE Komponenten zurücksetzen, nicht nur ConfidenceGate
         _confidenceGate.Reset();
         _ensemble.ClearWeights(); // Nur Gewichte zurücksetzen, Strategien bleiben registriert
         _openTradeContexts.Clear();
-        // RegimeDetector + ExitOptimizer: Neu instanziieren wäre sauberer,
-        // aber die Instanzen sind readonly → stattdessen per Serialisierung zurücksetzen
-        _regimeDetector.DeserializeState(""); // No-op bei leerem String, Default-Transitions bleiben
-        _exitOptimizer.DeserializeState("");  // No-op bei leerem String
+        _regimeDetector.Reset(); // Caches + Transitions auf Defaults zurücksetzen
+        _exitOptimizer.Reset();  // Gelernte Exit-Statistiken zurücksetzen
+        LightGbm.InvalidateModel(); // Trainiertes ML-Modell verwerfen
     }
 
     // === Interne Methoden ===
@@ -445,14 +463,14 @@ public class AdaptiveTradingIntelligence
     /// </summary>
     public void CheckAutoTraining(IReadOnlyList<Core.Data.FeatureSnapshotEntity> labeledSnapshots)
     {
-        _tradesSinceLastTrain++;
+        var tradeCount = Interlocked.Increment(ref _tradesSinceLastTrain);
 
         // Training alle 10 Trades oder alle 24h (was zuerst kommt)
         var hoursSinceLastTrain = (DateTime.UtcNow - LastAutoTrainTime).TotalHours;
-        if (_tradesSinceLastTrain < 10 && hoursSinceLastTrain < 24) return;
+        if (tradeCount < 10 && hoursSinceLastTrain < 24) return;
         if (labeledSnapshots.Count < LightGbm.MinSamplesForTraining) return;
 
-        _tradesSinceLastTrain = 0;
+        Interlocked.Exchange(ref _tradesSinceLastTrain, 0);
 
         // Training im Background-Thread (blockiert nicht den Trading-Loop)
         Task.Run(() =>

@@ -232,20 +232,26 @@ public class RiskManager : IRiskManager
     private const int RollingWindowSize = 30;
 
     /// <summary>Zugriff auf die letzten Trades für PnL-Kalender und Statistiken.</summary>
-    public IReadOnlyList<CompletedTrade> RecentTrades => _rollingTrades;
+    public IReadOnlyList<CompletedTrade> RecentTrades { get { lock (_lock) return _rollingTrades.ToList(); } }
 
     /// <summary>Rolling WinRate der letzten 30 Trades (0-1).</summary>
-    public decimal RollingWinRate => _rollingTrades.Count > 0
-        ? (decimal)_rollingTrades.Count(t => t.Pnl > 0) / _rollingTrades.Count : 0m;
+    public decimal RollingWinRate
+    {
+        get { lock (_lock) return _rollingTrades.Count > 0
+            ? (decimal)_rollingTrades.Count(t => t.Pnl > 0) / _rollingTrades.Count : 0m; }
+    }
 
     /// <summary>Rolling ProfitFactor der letzten 30 Trades.</summary>
     public decimal RollingProfitFactor
     {
         get
         {
-            var wins = _rollingTrades.Where(t => t.Pnl > 0).Sum(t => t.Pnl);
-            var losses = Math.Abs(_rollingTrades.Where(t => t.Pnl < 0).Sum(t => t.Pnl));
-            return losses > 0 ? wins / losses : wins > 0 ? 99m : 0m;
+            lock (_lock)
+            {
+                var wins = _rollingTrades.Where(t => t.Pnl > 0).Sum(t => t.Pnl);
+                var losses = Math.Abs(_rollingTrades.Where(t => t.Pnl < 0).Sum(t => t.Pnl));
+                return losses > 0 ? wins / losses : wins > 0 ? 99m : 0m;
+            }
         }
     }
 
@@ -254,12 +260,15 @@ public class RiskManager : IRiskManager
     {
         get
         {
-            if (_rollingTrades.Count < 5) return 0m;
-            var returns = _rollingTrades.Select(t => (double)t.Pnl).ToArray();
-            var avg = returns.Average();
-            var variance = returns.Select(r => (r - avg) * (r - avg)).Average();
-            var stdDev = Math.Sqrt(variance);
-            return stdDev > 0 ? (decimal)(avg / stdDev * Math.Sqrt(252)) : 0m;
+            lock (_lock)
+            {
+                if (_rollingTrades.Count < 5) return 0m;
+                var returns = _rollingTrades.Select(t => (double)t.Pnl).ToArray();
+                var avg = returns.Average();
+                var variance = returns.Select(r => (r - avg) * (r - avg)).Average();
+                var stdDev = Math.Sqrt(variance);
+                return stdDev > 0 ? (decimal)(avg / stdDev * Math.Sqrt(252)) : 0m;
+            }
         }
     }
 
@@ -272,7 +281,9 @@ public class RiskManager : IRiskManager
     /// </summary>
     public string? CheckStrategyHealth()
     {
-        if (_rollingTrades.Count < 10) return null;
+        int tradeCount;
+        lock (_lock) tradeCount = _rollingTrades.Count;
+        if (tradeCount < 10) return null;
 
         if (RollingSharpeRatio < 0.3m)
             return $"Rolling Sharpe {RollingSharpeRatio:F2} < 0.3 (degradiert)";

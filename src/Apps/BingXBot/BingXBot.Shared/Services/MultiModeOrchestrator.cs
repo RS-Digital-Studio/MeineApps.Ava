@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
@@ -26,10 +27,11 @@ public class MultiModeOrchestrator : IDisposable
     // Geteilter RiskManager: Zählt Positionen + Drawdown über ALLE Modi
     private RiskManager? _sharedRiskManager;
 
-    // 3 Service-Instanzen (Paper oder Live)
-    private readonly Dictionary<TradingModePreset, TradingServiceBase> _services = new();
-    private readonly Dictionary<TradingModePreset, StrategyManager> _strategyManagers = new();
-    private readonly Dictionary<TradingModePreset, ScannerSettings> _scannerSettings = new();
+    // 3 Service-Instanzen (Paper oder Live) - ConcurrentDictionary für Thread-Safety
+    // (StopModeAsync kann parallel zu IsAnyRunning aufgerufen werden)
+    private readonly ConcurrentDictionary<TradingModePreset, TradingServiceBase> _services = new();
+    private readonly ConcurrentDictionary<TradingModePreset, StrategyManager> _strategyManagers = new();
+    private readonly ConcurrentDictionary<TradingModePreset, ScannerSettings> _scannerSettings = new();
 
     // Welche Modi aktiv sind
     public IReadOnlyDictionary<TradingModePreset, TradingServiceBase> ActiveServices => _services;
@@ -61,28 +63,34 @@ public class MultiModeOrchestrator : IDisposable
     {
         _sharedRiskManager = new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance);
 
+        // ATI-Strategien einmal registrieren (nicht pro Modus, da RegisterStrategies ClearStrategies aufruft)
+        if (_ati != null)
+            _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
+
+        // Kapital auf 3 Modi aufteilen (jeder handelt mit seinem Anteil)
+        var balancePerMode = Math.Floor(initialBalance / 3m);
+
         foreach (var mode in new[] { TradingModePreset.Scalping, TradingModePreset.DayTrading, TradingModePreset.Swing })
         {
             var scanSettings = CreateScannerSettings(mode);
+            var riskSettings = CreateRiskSettings(mode);
             var stratManager = CreateStrategyManager(mode);
             _scannerSettings[mode] = scanSettings;
             _strategyManagers[mode] = stratManager;
 
             var service = new PaperTradingService(
-                _publicClient, stratManager, _riskSettings, scanSettings, _eventBus, _botSettings);
+                _publicClient, stratManager, riskSettings, scanSettings, _eventBus, _botSettings);
             service.RiskManagerOverride = _sharedRiskManager;
+            service.ModePrefix = $"[{ModeLabel(mode)}] ";
 
             if (_ati != null)
-            {
-                _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
                 service.ATI = _ati;
-            }
 
             _services[mode] = service;
-            ((PaperTradingService)service).Start(initialBalance);
+            service.Start(balancePerMode);
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
-                $"[{ModeLabel(mode)}] Paper-Trading gestartet ({scanSettings.ScanTimeFrame})"));
+                $"[{ModeLabel(mode)}] Paper-Trading gestartet ({scanSettings.ScanTimeFrame}, {balancePerMode:N0} USDT, Scan alle {scanSettings.ScanIntervalSeconds}s, MaxHold={riskSettings.MaxHoldHours}h)"));
         }
     }
 
@@ -95,29 +103,32 @@ public class MultiModeOrchestrator : IDisposable
         _restClient = restClient;
         _sharedRiskManager = new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance);
 
+        // ATI-Strategien einmal registrieren (nicht pro Modus, da RegisterStrategies ClearStrategies aufruft)
+        if (_ati != null)
+            _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
+
         foreach (var mode in new[] { TradingModePreset.Scalping, TradingModePreset.DayTrading, TradingModePreset.Swing })
         {
             var scanSettings = CreateScannerSettings(mode);
+            var riskSettings = CreateRiskSettings(mode);
             var stratManager = CreateStrategyManager(mode);
             _scannerSettings[mode] = scanSettings;
             _strategyManagers[mode] = stratManager;
 
             var service = new LiveTradingService(
-                restClient, _publicClient, stratManager, _riskSettings, scanSettings, _eventBus, _botSettings,
+                restClient, _publicClient, stratManager, riskSettings, scanSettings, _eventBus, _botSettings,
                 dbService: _dbService);
             service.RiskManagerOverride = _sharedRiskManager;
+            service.ModePrefix = $"[{ModeLabel(mode)}] ";
 
             if (_ati != null)
-            {
-                _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
                 service.ATI = _ati;
-            }
 
             _services[mode] = service;
             service.Start();
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
-                $"[{ModeLabel(mode)}] Live-Trading gestartet ({scanSettings.ScanTimeFrame})"));
+                $"[{ModeLabel(mode)}] Live-Trading gestartet ({scanSettings.ScanTimeFrame}, Scan alle {scanSettings.ScanIntervalSeconds}s, MaxHold={riskSettings.MaxHoldHours}h)"));
         }
     }
 
@@ -146,14 +157,30 @@ public class MultiModeOrchestrator : IDisposable
     /// <summary>Stoppt einen einzelnen Modus.</summary>
     public async Task StopModeAsync(TradingModePreset mode)
     {
-        if (_services.TryGetValue(mode, out var service))
+        if (_services.TryRemove(mode, out var service))
         {
             await service.StopAsync();
-            _services.Remove(mode);
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
                 $"[{ModeLabel(mode)}] Gestoppt"));
         }
     }
+
+    /// <summary>Pausiert alle laufenden Modi.</summary>
+    public void PauseAll()
+    {
+        foreach (var service in _services.Values)
+            service.Pause();
+    }
+
+    /// <summary>Setzt alle pausierten Modi fort.</summary>
+    public void ResumeAll()
+    {
+        foreach (var service in _services.Values)
+            service.Resume();
+    }
+
+    /// <summary>Ob mindestens ein Service pausiert ist.</summary>
+    public bool IsAnyPaused => _services.Values.Any(s => s.IsPaused);
 
     /// <summary>Notfall-Stop: Alle Positionen schließen über alle Modi.</summary>
     public async Task EmergencyStopAllAsync()
@@ -169,6 +196,36 @@ public class MultiModeOrchestrator : IDisposable
     /// <summary>Geteilter RiskManager (für UI Rolling-Metriken).</summary>
     public RiskManager? SharedRiskManager => _sharedRiskManager;
 
+    /// <summary>
+    /// Aggregiert Account-Daten aller Paper-Services (Summe Balance, Positionen aus allen Modi).
+    /// Gibt null zurück wenn keine Services aktiv sind.
+    /// </summary>
+    public async Task<(AccountInfo? Account, IReadOnlyList<Position> Positions)?> GetAggregatedPaperAccountAsync()
+    {
+        var paperServices = _services.Values
+            .OfType<PaperTradingService>()
+            .Where(s => s.Exchange != null)
+            .ToList();
+
+        if (paperServices.Count == 0) return null;
+
+        decimal totalBalance = 0, totalAvailable = 0, totalUnrealized = 0;
+        var allPositions = new List<Position>();
+
+        foreach (var service in paperServices)
+        {
+            var account = await service.Exchange!.GetAccountInfoAsync();
+            var positions = await service.Exchange!.GetPositionsAsync();
+            totalBalance += account.Balance;
+            totalAvailable += account.AvailableBalance;
+            totalUnrealized += account.UnrealizedPnl;
+            allPositions.AddRange(positions);
+        }
+
+        var aggregated = new AccountInfo(totalBalance, totalAvailable, totalUnrealized, 0m);
+        return (aggregated, allPositions);
+    }
+
     private ScannerSettings CreateScannerSettings(TradingModePreset mode)
     {
         var preset = TradingModeDefaults.GetScannerPreset(mode);
@@ -182,6 +239,51 @@ public class MultiModeOrchestrator : IDisposable
             // Watchlist vom User übernehmen (gleich für alle Modi)
             Whitelist = _botSettings.Scanner?.Whitelist ?? new(),
             Blacklist = _botSettings.Scanner?.Blacklist ?? new()
+        };
+    }
+
+    /// <summary>
+    /// Erstellt mode-spezifische RiskSettings: Übernimmt globale Basis-Werte (Drawdown-Limits, Exposure etc.)
+    /// und überschreibt nur die pro-Modus variierenden Parameter (Haltezeit, Cooldown, TP-Ratios, RRR).
+    /// </summary>
+    private RiskSettings CreateRiskSettings(TradingModePreset mode)
+    {
+        var riskPreset = TradingModeDefaults.GetRiskPreset(mode);
+        return new RiskSettings
+        {
+            // Globale Werte vom User übernehmen
+            MaxDailyDrawdownPercent = _riskSettings.MaxDailyDrawdownPercent,
+            MaxTotalDrawdownPercent = _riskSettings.MaxTotalDrawdownPercent,
+            MaxOpenPositions = _riskSettings.MaxOpenPositions,
+            MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol,
+            UseAdaptiveLeverage = _riskSettings.UseAdaptiveLeverage,
+            CheckCorrelation = _riskSettings.CheckCorrelation,
+            MaxCorrelation = _riskSettings.MaxCorrelation,
+            EnableTrailingStop = _riskSettings.EnableTrailingStop,
+            TrailingStopPercent = _riskSettings.TrailingStopPercent,
+            EnableMultiStageExit = _riskSettings.EnableMultiStageExit,
+            EnableCooldownEscalation = _riskSettings.EnableCooldownEscalation,
+            EnableEquityCurveTrading = _riskSettings.EnableEquityCurveTrading,
+            EquityCurvePeriod = _riskSettings.EquityCurvePeriod,
+            EnableMomentumDecay = _riskSettings.EnableMomentumDecay,
+            MinLiquidationDistancePercent = _riskSettings.MinLiquidationDistancePercent,
+            MaxNetExposurePercent = _riskSettings.MaxNetExposurePercent,
+            ConsiderFundingRate = _riskSettings.ConsiderFundingRate,
+            MaxAdverseFundingRatePercent = _riskSettings.MaxAdverseFundingRatePercent,
+            MaxTradesPerDay = _riskSettings.MaxTradesPerDay,
+
+            // Mode-spezifische Werte aus Preset
+            MaxPositionSizePercent = riskPreset.MaxPositionSizePercent,
+            MaxMarginPerTradePercent = riskPreset.MaxMarginPerTradePercent,
+            MaxLeverage = riskPreset.MaxLeverage,
+            CooldownHours = riskPreset.CooldownHours,
+            MaxCooldownHours = riskPreset.MaxCooldownHours,
+            MaxHoldHours = riskPreset.MaxHoldHours,
+            MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
+            Tp1CloseRatio = riskPreset.Tp1CloseRatio,
+            Tp2CloseRatio = riskPreset.Tp2CloseRatio,
+            SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
+            MinRiskRewardRatio = riskPreset.MinRiskRewardRatio,
         };
     }
 

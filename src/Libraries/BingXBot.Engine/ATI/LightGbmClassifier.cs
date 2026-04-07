@@ -15,6 +15,9 @@ public class LightGbmClassifier
     private readonly MLContext _mlContext;
     private ITransformer? _model;
     private PredictionEngine<FeatureInput, FeaturePrediction>? _predictionEngine;
+    // Lock für PredictionEngine: ML.NET PredictionEngine ist nicht thread-safe.
+    // 3 parallele TradingServiceBase-Instanzen rufen Predict() gleichzeitig auf.
+    private readonly object _predictionLock = new();
 
     /// <summary>Mindestanzahl gelabelter Samples für Training.</summary>
     public int MinSamplesForTraining { get; set; } = 50;
@@ -111,11 +114,10 @@ public class LightGbmClassifier
                 numberOfIterations: 200));
 
         // Trainieren
-        _model = pipeline.Fit(split.TrainSet);
-        _predictionEngine = _mlContext.Model.CreatePredictionEngine<FeatureInput, FeaturePrediction>(_model);
+        var trainedModel = pipeline.Fit(split.TrainSet);
 
-        // Evaluieren auf Test-Set
-        var predictions = _model.Transform(split.TestSet);
+        // Evaluieren auf Test-Set BEVOR das Modell aktiviert wird
+        var predictions = trainedModel.Transform(split.TestSet);
         var metrics = _mlContext.BinaryClassification.Evaluate(predictions, "Label");
 
         LastTrainedAt = DateTime.UtcNow;
@@ -129,6 +131,18 @@ public class LightGbmClassifier
             TrainingSamples = (int)(labeledSnapshots.Count * 0.8),
             TestSamples = (int)(labeledSnapshots.Count * 0.2)
         };
+
+        // Modell nur aktivieren wenn AUC ausreicht (>= 0.55)
+        // Atomares Swap: Predict() liest unter _predictionLock, hier unter demselben Lock setzen
+        if (metrics.AreaUnderRocCurve >= 0.55)
+        {
+            var newEngine = _mlContext.Model.CreatePredictionEngine<FeatureInput, FeaturePrediction>(trainedModel);
+            lock (_predictionLock)
+            {
+                _model = trainedModel;
+                _predictionEngine = newEngine;
+            }
+        }
 
         return LastMetrics;
     }
@@ -173,8 +187,25 @@ public class LightGbmClassifier
             EnsembleConfidence = (float)ensembleConfidence
         };
 
-        var prediction = _predictionEngine.Predict(input);
-        return (decimal)prediction.Probability;
+        lock (_predictionLock)
+        {
+            if (_predictionEngine == null) return 0.5m; // Zwischen null-Check oben und Lock invalidiert
+            var prediction = _predictionEngine.Predict(input);
+            return (decimal)prediction.Probability;
+        }
+    }
+
+    /// <summary>
+    /// Invalidiert das aktuelle Modell (z.B. nach zu schwachem Training-Ergebnis).
+    /// IsModelReady wird false, ConfidenceGate fällt auf Bayesian zurück.
+    /// </summary>
+    public void InvalidateModel()
+    {
+        lock (_predictionLock)
+        {
+            _predictionEngine = null;
+            _model = null;
+        }
     }
 }
 

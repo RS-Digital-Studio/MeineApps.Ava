@@ -351,14 +351,25 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         if (_botSettings.LastTradingModePreset == Core.Enums.TradingModePreset.Custom)
         {
             _isMultiMode = true;
+
+            // ATI-Events verdrahten + State laden (gleich wie Single-Mode)
+            await WireUpAtiEventsAsync();
+
             _orchestrator.StartPaper(_botSettings.PaperInitialBalance);
             BotStatusText = "Paper (Alle Modi)";
             BotStatusState = BotState.Running;
             IsRunning = true;
             CanStart = false;
+            ShowWelcomeHint = false;
+            HasAccountData = true;
+            Balance = _botSettings.PaperInitialBalance;
+            AvailableBalance = _botSettings.PaperInitialBalance;
+            UnrealizedPnl = 0m;
+            TotalPnl = 0m;
             _eventBus.PublishBotState(BotState.Running);
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-                "Alle 3 Modi gestartet: Scalping (M15) + Day-Trading (H1) + Swing (H4)"));
+                "Alle 3 Modi gestartet: Scalping (M15/90s) + Day-Trading (H1/3min) + Swing (H4/5min)"));
+            _ = StartEquitySnapshotTimerAsync();
             _ = StartAccountUpdateAsync();
             return;
         }
@@ -378,63 +389,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
             _paperService.ATI = _ati;
-
-            // ATI-Lernzustand aus DB laden (Training bleibt über Neustarts erhalten)
-            await _liveManager.LoadAtiStateAsync();
-
-            // Feature-Snapshots bei Trade-Close in DB speichern (für ML-Training)
-            if (_dbService != null)
-            {
-                _ati.FeatureSnapshotCompleted += async (snapshot, trade, vote) =>
-                {
-                    try
-                    {
-                        var entity = Core.Data.FeatureSnapshotEntity.FromSnapshot(snapshot,
-                            (int)trade.Side, vote.AgreeingCount, vote.TotalCount, vote.WeightedConfidence);
-                        entity.Outcome = trade.Pnl > 0 ? 1 : -1;
-                        entity.Pnl = trade.Pnl;
-                        entity.HoldTimeMinutes = (int)(trade.ExitTime - trade.EntryTime).TotalMinutes;
-                        await _dbService.SaveFeatureSnapshotAsync(entity);
-                    }
-                    catch { /* DB-Fehler nicht an Trading-Pipeline propagieren */ }
-
-                    // Auto-Training prüfen (alle 10 Trades oder 24h)
-                    try
-                    {
-                        var labeled = await _dbService.GetLabeledSnapshotsAsync(5000);
-                        _ati.CheckAutoTraining(labeled);
-                    }
-                    catch { /* Training-Fehler nicht propagieren */ }
-                };
-            }
-
-            // Auto-Training-Events loggen
-            _ati.AutoTrainingCompleted += msg =>
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ML", msg));
-
-            // ATI Audit-Trail: Jede Entscheidung loggen (Annahme + Ablehnung mit Grund)
-            _ati.AuditCreated += audit =>
-            {
-                var level = audit.WasAccepted ? Core.Enums.LogLevel.Trade : Core.Enums.LogLevel.Debug;
-                var status = audit.WasAccepted ? "AKZEPTIERT" : "ABGELEHNT";
-                var msg = $"{audit.Symbol}: {audit.SignalDirection} {status} | " +
-                    $"Regime={audit.Regime} ({audit.RegimeConfidence:P0}), " +
-                    $"Ensemble={audit.StrategiesAgreeing}/{audit.StrategiesTotal} ({audit.AgreeingStrategies}), " +
-                    $"ML={audit.MlConfidence:P0}";
-
-                if (!audit.WasAccepted && audit.RejectionReason != null)
-                    msg += $" | Grund: {audit.RejectionReason}";
-
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, level, "ATI", msg, audit.Symbol));
-            };
-
-            // ONNX-Modell-Status loggen
-            if (_ati.OnnxModel is { IsModelLoaded: true })
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ML",
-                    $"ONNX-Modell geladen: {_ati.OnnxModel.GetModelInfo()}"));
-
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
-                $"Adaptive Trading Intelligence aktiviert ({StrategyFactory.AvailableStrategies.Length} Strategien im Ensemble)"));
+            await WireUpAtiEventsAsync();
         }
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
@@ -464,7 +419,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Startet den Live-Trading-Modus via LiveTradingManager.
+    /// Startet den Live-Trading-Modus. Bei Custom-Preset (Alle Modi) werden 3 parallele
+    /// LiveTradingServices über den Orchestrator gestartet, sonst ein einzelner über den LiveTradingManager.
     /// </summary>
     private async Task StartLiveTradingAsync()
     {
@@ -490,19 +446,36 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 UpdatePositionsStatus();
             });
 
-            await _liveManager.StartAsync(SelectedStrategy);
+            // Multi-Mode Live: 3 parallele LiveTradingServices (Scalping + DayTrading + Swing)
+            if (_botSettings.LastTradingModePreset == Core.Enums.TradingModePreset.Custom)
+            {
+                _isMultiMode = true;
+                await WireUpAtiEventsAsync();
+                _orchestrator.StartLive(_liveManager.RestClient!);
 
-            if (result.Positions.Count > 0)
-                await _liveManager.RestorePositionSignalsAsync(result.Positions);
+                BotStatusText = "LIVE (Alle Modi) - Handelt aktiv!";
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
+                    "LIVE MULTI-MODE: Scalping (M15/90s) + Day-Trading (H1/3min) + Swing (H4/5min) - Echtes Geld!"));
+            }
+            else
+            {
+                _isMultiMode = false;
+                await _liveManager.StartAsync(SelectedStrategy);
+
+                if (result.Positions.Count > 0)
+                    await _liveManager.RestorePositionSignalsAsync(result.Positions);
+
+                BotStatusText = "LIVE - Handelt aktiv!";
+            }
 
             IsRunning = true;
             CanStart = false;
-            BotStatusText = "LIVE - Handelt aktiv!";
             BotStatusState = BotState.Running;
             ShowWelcomeHint = false;
             LiveStatusText = "Handelt aktiv";
             IsLiveActive = true;
 
+            _ = StartEquitySnapshotTimerAsync();
             _ = StartAccountUpdateAsync();
         }
         catch (Exception ex)
@@ -510,6 +483,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             BotStatusText = ex.Message.Contains("API-Keys") ? ex.Message : "Verbindung fehlgeschlagen";
             BotStatusState = BotState.Error;
             CanStart = true;
+            _isMultiMode = false;
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
                 $"Live-Trading fehlgeschlagen: {ex.Message}"));
@@ -519,9 +493,30 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void PauseBot()
     {
+        // Multi-Mode: Alle Services pausieren/fortsetzen
+        if (_isMultiMode)
+        {
+            if (_orchestrator.IsAnyPaused)
+            {
+                _orchestrator.ResumeAll();
+                BotStatusText = IsPaperMode ? "Paper (Alle Modi)" : "LIVE (Alle Modi) - Handelt aktiv!";
+                BotStatusState = BotState.Running;
+                _ = StartAccountUpdateAsync();
+            }
+            else
+            {
+                _orchestrator.PauseAll();
+                _accountUpdateTimer?.Dispose();
+                _accountUpdateTimer = null;
+                BotStatusText = IsPaperMode ? "Pausiert (Alle Modi)" : "LIVE (Alle Modi) - Pausiert";
+                BotStatusState = BotState.Paused;
+            }
+            return;
+        }
+
         if (!IsPaperMode && _liveManager.Service != null)
         {
-            // Live-Modus: Pause/Resume über LiveTradingService
+            // Live Single-Modus: Pause/Resume über LiveTradingService
             if (_liveManager.Service!.IsPaused)
             {
                 _liveManager.Service!.Resume();
@@ -566,8 +561,14 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
         if (_isMultiMode)
         {
+            await _liveManager.SaveAtiStateAsync();
             await _orchestrator.StopAllAsync();
             _isMultiMode = false;
+            if (!IsPaperMode)
+            {
+                LiveStatusText = "Getrennt";
+                IsLiveActive = false;
+            }
         }
         else if (IsPaperMode)
         {
@@ -612,7 +613,21 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _accountUpdateTimer = null;
         StopEquitySnapshotTimer();
 
-        if (IsPaperMode)
+        if (_isMultiMode && !IsPaperMode)
+        {
+            // Live Multi-Mode: Alle 3 Services Emergency-Stop
+            await _orchestrator.EmergencyStopAllAsync();
+            _isMultiMode = false;
+            LiveStatusText = "Notfall-Stop";
+            IsLiveActive = false;
+        }
+        else if (_isMultiMode)
+        {
+            // Paper Multi-Mode
+            await _orchestrator.EmergencyStopAllAsync();
+            _isMultiMode = false;
+        }
+        else if (IsPaperMode)
         {
             await _paperService.EmergencyStopAsync();
         }
@@ -711,7 +726,23 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
         try
         {
-            if (IsPaperMode && _paperService.Exchange != null)
+            if (IsPaperMode && _isMultiMode)
+            {
+                // Paper Multi-Mode: Position in allen Services suchen und schließen
+                foreach (var service in _orchestrator.ActiveServices.Values.OfType<PaperTradingService>())
+                {
+                    if (service.Exchange == null) continue;
+                    var pos = (await service.Exchange.GetPositionsAsync()).FirstOrDefault(p => p.Symbol == position.Symbol && p.Side == side);
+                    if (pos != null)
+                    {
+                        service.Exchange.SetCurrentPrice(position.Symbol, position.MarkPrice);
+                        await service.Exchange.ClosePositionAsync(position.Symbol, side);
+                        service.RemovePositionSignal(position.Symbol, side);
+                        break;
+                    }
+                }
+            }
+            else if (IsPaperMode && _paperService.Exchange != null)
             {
                 _paperService.Exchange.SetCurrentPrice(position.Symbol, position.MarkPrice);
                 await _paperService.Exchange.ClosePositionAsync(position.Symbol, side);
@@ -1005,6 +1036,75 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
+    /// Verdrahtet ATI-Events (Lernen, Training, Audit-Logging) und lädt gespeicherten State.
+    /// Wird sowohl im Multi-Mode als auch im Single-Mode aufgerufen.
+    /// Guard verhindert doppelte Subscription bei mehrfachem Start.
+    /// </summary>
+    private bool _atiEventsWired;
+    private async Task WireUpAtiEventsAsync()
+    {
+        if (_ati == null || _atiEventsWired) return;
+        _atiEventsWired = true;
+
+        // ATI-Lernzustand aus DB laden (Training bleibt über Neustarts erhalten)
+        await _liveManager.LoadAtiStateAsync();
+
+        // Feature-Snapshots bei Trade-Close in DB speichern (für ML-Training)
+        if (_dbService != null)
+        {
+            _ati.FeatureSnapshotCompleted += async (snapshot, trade, vote) =>
+            {
+                try
+                {
+                    var entity = Core.Data.FeatureSnapshotEntity.FromSnapshot(snapshot,
+                        (int)trade.Side, vote.AgreeingCount, vote.TotalCount, vote.WeightedConfidence);
+                    entity.Outcome = trade.Pnl > 0 ? 1 : -1;
+                    entity.Pnl = trade.Pnl;
+                    entity.HoldTimeMinutes = (int)(trade.ExitTime - trade.EntryTime).TotalMinutes;
+                    await _dbService.SaveFeatureSnapshotAsync(entity);
+                }
+                catch { /* DB-Fehler nicht an Trading-Pipeline propagieren */ }
+
+                // Auto-Training prüfen (alle 10 Trades oder 24h)
+                try
+                {
+                    var labeled = await _dbService.GetLabeledSnapshotsAsync(5000);
+                    _ati.CheckAutoTraining(labeled);
+                }
+                catch { /* Training-Fehler nicht propagieren */ }
+            };
+        }
+
+        // Auto-Training-Events loggen
+        _ati.AutoTrainingCompleted += msg =>
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ML", msg));
+
+        // ATI Audit-Trail: Jede Entscheidung loggen (Annahme + Ablehnung mit Grund)
+        _ati.AuditCreated += audit =>
+        {
+            var level = audit.WasAccepted ? Core.Enums.LogLevel.Trade : Core.Enums.LogLevel.Debug;
+            var status = audit.WasAccepted ? "AKZEPTIERT" : "ABGELEHNT";
+            var msg = $"{audit.Symbol}: {audit.SignalDirection} {status} | " +
+                $"Regime={audit.Regime} ({audit.RegimeConfidence:P0}), " +
+                $"Ensemble={audit.StrategiesAgreeing}/{audit.StrategiesTotal} ({audit.AgreeingStrategies}), " +
+                $"ML={audit.MlConfidence:P0}";
+
+            if (!audit.WasAccepted && audit.RejectionReason != null)
+                msg += $" | Grund: {audit.RejectionReason}";
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, level, "ATI", msg, audit.Symbol));
+        };
+
+        // ONNX-Modell-Status loggen
+        if (_ati.OnnxModel is { IsModelLoaded: true })
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ML",
+                $"ONNX-Modell geladen: {_ati.OnnxModel.GetModelInfo()}"));
+
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
+            $"Adaptive Trading Intelligence aktiviert ({StrategyFactory.AvailableStrategies.Length} Strategien im Ensemble)"));
+    }
+
+    /// <summary>
     /// Aktualisiert Account-Daten und offene Positionen alle 5 Sekunden.
     /// Nutzt je nach Modus die SimulatedExchange (Paper) oder den echten BingXRestClient (Live).
     /// </summary>
@@ -1031,13 +1131,23 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
                     if (!IsPaperMode && _liveManager.RestClient != null)
                     {
-                        // Live-Modus: Echte Daten von BingX
+                        // Live-Modus (Single + Multi): Echte Daten von BingX
                         account = await _liveManager.RestClient!.GetAccountInfoAsync();
                         positions = await _liveManager.RestClient!.GetPositionsAsync();
                     }
+                    else if (IsPaperMode && _isMultiMode)
+                    {
+                        // Paper Multi-Mode: Aggregierte Daten aus allen 3 Services
+                        var result = await _orchestrator.GetAggregatedPaperAccountAsync();
+                        if (result != null)
+                        {
+                            account = result.Value.Account;
+                            positions = result.Value.Positions;
+                        }
+                    }
                     else if (IsPaperMode && _paperService.Exchange != null)
                     {
-                        // Paper-Modus: Simulierte Daten
+                        // Paper Single-Mode: Simulierte Daten
                         account = await _paperService.Exchange.GetAccountInfoAsync();
                         positions = await _paperService.Exchange.GetPositionsAsync();
                     }

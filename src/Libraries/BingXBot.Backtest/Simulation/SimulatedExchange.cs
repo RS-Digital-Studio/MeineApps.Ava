@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
@@ -23,14 +24,29 @@ public class SimulatedExchange : IExchangeClient
     /// <summary>Speichert die Opening-Fee pro Position fuer korrekte Fee-Auswertung im CompletedTrade.</summary>
     private readonly Dictionary<string, decimal> _positionOpenFees = new();
     private int _orderCounter;
-    // Gecachter Positions-Snapshot: Wird nur bei Preis-/Positionsänderung invalidiert
+    // Gecachter Positions-Snapshot: Wird nur bei Preis-/Positions��nderung invalidiert
     private IReadOnlyList<Position>? _cachedPositions;
     private bool _positionsDirty = true;
+    // Dynamisches Slippage-Modell: Aktuelle ATR und Volumen-Ratio pro Symbol
+    // ConcurrentDictionary: SetMarketConditions() wird außerhalb des _rwLock aufgerufen,
+    // während ApplySlippage() innerhalb des _rwLock liest
+    private readonly ConcurrentDictionary<string, decimal> _currentAtr = new();
+    private readonly ConcurrentDictionary<string, decimal> _currentVolumeRatio = new();
+    private readonly Random _rng = new(42); // Deterministisch für reproduzierbare Backtests
 
     public SimulatedExchange(BacktestSettings settings)
     {
         _settings = settings;
         _balance = settings.InitialBalance;
+    }
+
+    /// <summary>
+    /// Setzt ATR und Volume-Ratio für dynamische Slippage-Berechnung (vom BacktestEngine pro Candle).
+    /// </summary>
+    public void SetMarketConditions(string symbol, decimal atr, decimal volumeRatio)
+    {
+        _currentAtr[symbol] = atr;
+        _currentVolumeRatio[symbol] = volumeRatio;
     }
 
     /// <summary>
@@ -45,8 +61,66 @@ public class SimulatedExchange : IExchangeClient
             // Positions-Cache invalidieren wenn sich der Preis eines gehaltenen Symbols ändert
             if (_positions.Any(p => p.Symbol == symbol))
                 _positionsDirty = true;
+
+            // Limit-Order-Matching: Prüfe ob offene Orders getriggert werden
+            MatchOpenOrdersLocked(symbol, price);
         }
         finally { _rwLock.ExitWriteLock(); }
+    }
+
+    /// <summary>Matcht offene Limit-Orders gegen den aktuellen Preis (muss im Write-Lock aufgerufen werden).</summary>
+    private void MatchOpenOrdersLocked(string symbol, decimal price)
+    {
+        var toFill = new List<Order>();
+        foreach (var order in _openOrders.Where(o => o.Symbol == symbol && o.Status == OrderStatus.New))
+        {
+            var triggered = order.Type switch
+            {
+                OrderType.Limit when order.Side == Side.Buy && price <= order.Price => true,
+                OrderType.Limit when order.Side == Side.Sell && price >= order.Price => true,
+                OrderType.StopMarket when order.Side == Side.Buy && price >= (order.StopPrice ?? order.Price) => true,
+                OrderType.StopMarket when order.Side == Side.Sell && price <= (order.StopPrice ?? order.Price) => true,
+                _ => false
+            };
+
+            if (triggered) toFill.Add(order);
+        }
+
+        foreach (var order in toFill)
+        {
+            _openOrders.Remove(order);
+            // Ausführung wie Market-Order zum Order-Preis (mit Slippage)
+            var fillPrice = ApplySlippage(order.Price, order.Side);
+            ExecuteOrderLocked(order.Symbol, order.Side, order.Quantity, fillPrice);
+        }
+    }
+
+    /// <summary>Führt eine Order aus und erstellt/erweitert die Position (muss im Write-Lock aufgerufen werden).</summary>
+    private void ExecuteOrderLocked(string symbol, Side side, decimal quantity, decimal fillPrice)
+    {
+        var fee = _settings.TakerFee * quantity * fillPrice;
+        _balance -= fee;
+
+        var leverageKey = $"{symbol}_{side}";
+        var leverage = _leverageSettings.GetValueOrDefault(leverageKey, 10);
+
+        // Bestehende Position für dieses Symbol + Seite suchen
+        var existingIdx = _positions.FindIndex(p => p.Symbol == symbol && p.Side == side);
+        if (existingIdx >= 0)
+        {
+            // Position erweitern: Neuen Durchschnittspreis berechnen
+            var pos = _positions[existingIdx];
+            var totalQty = pos.Quantity + quantity;
+            var avgPrice = (pos.EntryPrice * pos.Quantity + fillPrice * quantity) / totalQty;
+            _positions[existingIdx] = pos with { EntryPrice = avgPrice, Quantity = totalQty };
+        }
+        else
+        {
+            // Neue Position eröffnen
+            _positions.Add(new Position(symbol, side, fillPrice, fillPrice, quantity,
+                0m, leverage, MarginType.Cross, DateTime.UtcNow));
+        }
+        _positionsDirty = true;
     }
 
     public Task<Order> PlaceOrderAsync(OrderRequest request)
@@ -60,7 +134,7 @@ public class SimulatedExchange : IExchangeClient
             {
                 // Market-Order sofort fuellen
                 var basePrice = GetPriceLocked(request.Symbol);
-                var fillPrice = ApplySlippage(basePrice, request.Side);
+                var fillPrice = ApplySlippage(basePrice, request.Side, request.Symbol);
                 var fee = _settings.TakerFee * request.Quantity * fillPrice;
 
                 // Leverage aus Settings holen (Default: 10x)
@@ -217,7 +291,7 @@ public class SimulatedExchange : IExchangeClient
 
             var pos = _positions[index];
             var exitPrice = GetPriceLocked(symbol);
-            var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy);
+            var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol);
 
             // PnL berechnen
             var pnl = CalculatePnl(pos.Side, pos.EntryPrice, exitPriceWithSlippage, pos.Quantity);
@@ -284,13 +358,28 @@ public class SimulatedExchange : IExchangeClient
             var pos = _positions[index];
             if (quantityToClose >= pos.Quantity)
             {
-                // Wenn mehr oder gleich der Gesamtmenge → normaler Close
-                _rwLock.ExitWriteLock();
-                return ClosePositionAsync(symbol, side);
+                // Voller Close inline (Lock wird NICHT freigegeben, kein Re-Entrant-Aufruf)
+                var fullExitPrice = GetPriceLocked(symbol);
+                var fullExitSlippage = ApplySlippage(fullExitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol);
+                var fullPnl = CalculatePnl(pos.Side, pos.EntryPrice, fullExitSlippage, pos.Quantity);
+                var fullClosingFee = _settings.TakerFee * pos.Quantity * fullExitSlippage;
+                var fullFeeKey = $"{pos.Symbol}_{pos.Side}";
+                var fullOpeningFee = _positionOpenFees.GetValueOrDefault(fullFeeKey, 0m);
+                _positionOpenFees.Remove(fullFeeKey);
+                _balance += fullPnl - fullClosingFee;
+                var fullTotalFee = fullOpeningFee + fullClosingFee;
+                var fullNetPnl = fullPnl - fullTotalFee;
+                _completedTrades.Add(new CompletedTrade(
+                    pos.Symbol, pos.Side, pos.EntryPrice, fullExitSlippage,
+                    pos.Quantity, fullNetPnl, fullTotalFee, pos.OpenTime, DateTime.UtcNow,
+                    "Manuell geschlossen", TradingMode.Paper));
+                _positions.RemoveAt(index);
+                _positionsDirty = true;
+                return Task.CompletedTask;
             }
 
             var exitPrice = GetPriceLocked(symbol);
-            var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy);
+            var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol);
 
             // PnL nur für den geschlossenen Teil
             var pnl = CalculatePnl(pos.Side, pos.EntryPrice, exitPriceWithSlippage, quantityToClose);
@@ -318,11 +407,7 @@ public class SimulatedExchange : IExchangeClient
             _positionsDirty = true;
             return Task.CompletedTask;
         }
-        finally
-        {
-            if (_rwLock.IsWriteLockHeld)
-                _rwLock.ExitWriteLock();
-        }
+        finally { _rwLock.ExitWriteLock(); }
     }
 
     public Task<AccountInfo> GetAccountInfoAsync()
@@ -452,15 +537,49 @@ public class SimulatedExchange : IExchangeClient
     }
 
     /// <summary>
-    /// Slippage anwenden: Buy = höherer Preis, Sell = niedrigerer Preis.
+    /// Dynamische Slippage + Spread anwenden: Buy = höherer Preis, Sell = niedrigerer Preis.
+    /// Bei aktiviertem dynamischen Modell: Slippage skaliert mit ATR-Perzentil und inversem Volumen.
+    /// Spread wird zusätzlich als Bid-Ask-Kosten aufgeschlagen.
     /// </summary>
-    private decimal ApplySlippage(decimal price, Side side)
+    private decimal ApplySlippage(decimal price, Side side, string? symbol = null)
     {
-        var slippageFactor = _settings.SlippagePercent / 100m;
+        decimal slippageFactor;
+
+        if (_settings.UseDynamicSlippage && symbol != null
+            && _currentAtr.TryGetValue(symbol, out var atr) && atr > 0 && price > 0)
+        {
+            // ATR-basierte Slippage: Prozent des Preises den ATR ausmacht
+            var atrPercent = atr / price;
+            // Volumen-Faktor: niedriges Volumen = höhere Slippage (illiquider Markt)
+            var volRatio = _currentVolumeRatio.GetValueOrDefault(symbol, 1m);
+            var volumeMultiplier = volRatio > 0 ? Math.Min(2m, 1m / volRatio) : 2m;
+
+            // Slippage = ATR-Anteil * Multiplikator * Volumen-Adjustierung + Random-Komponente
+            var baseSlippage = atrPercent * Lerp(
+                _settings.MinSlippageAtrMultiplier, _settings.MaxSlippageAtrMultiplier,
+                (decimal)_rng.NextDouble());
+            slippageFactor = baseSlippage * volumeMultiplier;
+
+            // Clamp: Mindestens 0.02%, maximal 2% Slippage
+            slippageFactor = Math.Clamp(slippageFactor, 0.0002m, 0.02m);
+        }
+        else
+        {
+            // Fallback: Fester Slippage-Prozentsatz
+            slippageFactor = _settings.SlippagePercent / 100m;
+        }
+
+        // Spread als zusätzliche Kosten (halber Spread pro Seite)
+        var halfSpread = _settings.SpreadPercent / 100m / 2m;
+
+        var totalImpact = slippageFactor + halfSpread;
         return side == Side.Buy
-            ? price * (1m + slippageFactor)
-            : price * (1m - slippageFactor);
+            ? price * (1m + totalImpact)
+            : price * (1m - totalImpact);
     }
+
+    private static decimal Lerp(decimal a, decimal b, decimal t)
+        => a + (b - a) * t;
 
     /// <summary>
     /// PnL für eine Position berechnen.

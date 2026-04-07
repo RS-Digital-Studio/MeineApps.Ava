@@ -141,6 +141,10 @@ public class ExitOptimizer
                     tp = tp * 0.8f + (tp - (stats.AvgLosingTp - tp) * 0.2f) * 0.2f;
             }
 
+            // Floor-Clamp: Bei extremen Werten können SL/TP negativ werden → Minimum sicherstellen
+            sl = Math.Max(0.5f, sl);
+            tp = Math.Max(0.5f, tp);
+
             // Sanft zwischen Default und gelerntem Wert mischen (70% gelernt, 30% default)
             sl = sl * 0.7f + defaults.SlMultiplier * 0.3f;
             tp = tp * 0.7f + defaults.TpMultiplier * 0.3f;
@@ -173,6 +177,12 @@ public class ExitOptimizer
     {
         if (current <= 0) return newValue;
         return current * (1f - alpha) + newValue * alpha;
+    }
+
+    /// <summary>Setzt alle gelernten Exit-Statistiken zurück (für ATI.Reset).</summary>
+    public void Reset()
+    {
+        _exitStats.Clear();
     }
 
     /// <summary>Serialisiert alle ExitStats als JSON.</summary>

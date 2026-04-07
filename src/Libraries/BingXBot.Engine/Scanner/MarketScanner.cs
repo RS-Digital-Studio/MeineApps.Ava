@@ -16,22 +16,20 @@ namespace BingXBot.Engine.Scanner;
 public class MarketScanner : IMarketScanner
 {
     private readonly IExchangeClient _exchangeClient;
-    private readonly IDataFeed _dataFeed;
     private readonly ILogger<MarketScanner> _logger;
 
     // Optionaler öffentlicher Client für Klines-Abfragen (kein API-Key nötig)
     private readonly IPublicMarketDataClient? _publicClient;
 
-    public MarketScanner(IExchangeClient exchangeClient, IDataFeed dataFeed, ILogger<MarketScanner> logger)
+    public MarketScanner(IExchangeClient exchangeClient, ILogger<MarketScanner> logger)
     {
         _exchangeClient = exchangeClient;
-        _dataFeed = dataFeed;
         _logger = logger;
     }
 
-    public MarketScanner(IExchangeClient exchangeClient, IDataFeed dataFeed,
+    public MarketScanner(IExchangeClient exchangeClient,
         IPublicMarketDataClient publicClient, ILogger<MarketScanner> logger)
-        : this(exchangeClient, dataFeed, logger)
+        : this(exchangeClient, logger)
     {
         _publicClient = publicClient;
     }

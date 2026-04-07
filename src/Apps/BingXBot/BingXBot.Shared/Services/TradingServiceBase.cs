@@ -62,7 +62,9 @@ public abstract class TradingServiceBase : IDisposable
     // Täglicher Trade-Counter (wird bei Tageswechsel zurückgesetzt)
     protected int _tradesToday;
     // Equity-Curve-Trading: Equity-Historie für EMA-Berechnung
+    // Lock nötig: Add() aus ProcessCompletedTrade, Lesen aus GetEquityCurveScaleFactor (verschiedene Loops)
     private readonly List<decimal> _equityHistory = new();
+    private readonly object _equityLock = new();
     // Semaphore für paralleles Klines-Laden (max 5 gleichzeitige Requests)
     private readonly SemaphoreSlim _klineSemaphore = new(5);
 
@@ -98,6 +100,12 @@ public abstract class TradingServiceBase : IDisposable
 
     /// <summary>Modus-Name für Log-Texte ("Paper-Trading" vs "Live-Trading").</summary>
     protected abstract string ModeName { get; }
+
+    /// <summary>
+    /// Eindeutiger Identifier für ATI-OpenTrade-Keys im Multi-Mode-Betrieb.
+    /// Verhindert Key-Kollision wenn mehrere Instanzen dieselbe ATI-Instanz teilen.
+    /// </summary>
+    private string AtiSourceId => _scannerSettings.ScanTimeFrame.ToString();
 
     protected TradingServiceBase(
         IPublicMarketDataClient publicClient,
@@ -328,14 +336,10 @@ public abstract class TradingServiceBase : IDisposable
                     _tickerPriceMap[t.Symbol] = t.LastPrice;
 
                 // ATI Auto-Save: Periodisch ATI-Lernzustand persistieren
-                if (_ati is { IsEnabled: true } && _botSettings.AtiAutoSaveIntervalMinutes > 0)
+                // TryClaimAutoSave ist atomar: Im Multi-Mode gewinnt nur ein Service pro Intervall
+                if (_ati is { IsEnabled: true } && _ati.TryClaimAutoSave(_botSettings.AtiAutoSaveIntervalMinutes))
                 {
-                    var minutesSinceLastSave = (DateTime.UtcNow - _ati.LastAutoSaveTime).TotalMinutes;
-                    if (minutesSinceLastSave >= _botSettings.AtiAutoSaveIntervalMinutes)
-                    {
-                        _ati.LastAutoSaveTime = DateTime.UtcNow;
-                        await OnAtiAutoSaveAsync().ConfigureAwait(false);
-                    }
+                    await OnAtiAutoSaveAsync().ConfigureAwait(false);
                 }
 
                 // Regime-Warnung: Bei Chaotic-Regime WARNEN, nicht automatisch schließen.
@@ -887,7 +891,7 @@ public abstract class TradingServiceBase : IDisposable
                     var tpMult = signal.TakeProfit.HasValue && atrLast > 0
                         ? Math.Abs(signal.TakeProfit.Value - ticker.LastPrice) / atrLast : 4m;
                     _ati.RegisterOpenTrade(ticker.Symbol, side, atiResult.Features,
-                        atiResult.Regime, atiResult.EnsembleVote, slMult, tpMult);
+                        atiResult.Regime, atiResult.EnsembleVote, slMult, tpMult, AtiSourceId);
 
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
                         $"{LogPrefix}{ticker.Symbol}: {side} {positionSize:F4} @ {ticker.LastPrice:F8} | Lev={adaptLev}x | SL={signal.StopLoss:F8} | TP1={signal.TakeProfit:F8} | TP2={signal.TakeProfit2:F8}",
@@ -1179,7 +1183,7 @@ public abstract class TradingServiceBase : IDisposable
     protected void ProcessCompletedTrade(CompletedTrade trade)
     {
         _riskManager?.UpdateDailyStats(trade);
-        _ati?.ProcessTradeOutcome(trade);
+        _ati?.ProcessTradeOutcome(trade, AtiSourceId);
 
         // Cooldown-Eskalation: Consecutive-Losses tracken
         if (trade.Pnl < 0)
@@ -1202,7 +1206,8 @@ public abstract class TradingServiceBase : IDisposable
         // Equity-Curve-Trading: Equity-Historie aktualisieren
         if (_riskSettings.EnableEquityCurveTrading && _riskManager != null)
         {
-            _equityHistory.Add(_riskManager.TotalPnl);
+            lock (_equityLock)
+                _equityHistory.Add(_riskManager.TotalPnl);
         }
 
         // Desktop-Notification senden
@@ -1229,19 +1234,22 @@ public abstract class TradingServiceBase : IDisposable
     /// <summary>Prüft ob die Equity-Curve unter ihrer EMA liegt (Position-Scaling reduzieren).</summary>
     protected decimal GetEquityCurveScaleFactor()
     {
-        if (!_riskSettings.EnableEquityCurveTrading || _equityHistory.Count < _riskSettings.EquityCurvePeriod)
-            return 1.0m;
+        lock (_equityLock)
+        {
+            if (!_riskSettings.EnableEquityCurveTrading || _equityHistory.Count < _riskSettings.EquityCurvePeriod)
+                return 1.0m;
 
-        // EMA der Equity-Kurve berechnen
-        var period = _riskSettings.EquityCurvePeriod;
-        var multiplier = 2m / (period + 1);
-        var ema = _equityHistory[^period];
-        for (int i = _equityHistory.Count - period + 1; i < _equityHistory.Count; i++)
-            ema = (_equityHistory[i] - ema) * multiplier + ema;
+            // EMA der Equity-Kurve berechnen
+            var period = _riskSettings.EquityCurvePeriod;
+            var multiplier = 2m / (period + 1);
+            var ema = _equityHistory[^period];
+            for (int i = _equityHistory.Count - period + 1; i < _equityHistory.Count; i++)
+                ema = (_equityHistory[i] - ema) * multiplier + ema;
 
-        var currentEquity = _equityHistory[^1];
-        // Wenn Equity unter EMA → halbe Position
-        return currentEquity < ema ? 0.5m : 1.0m;
+            var currentEquity = _equityHistory[^1];
+            // Wenn Equity unter EMA → halbe Position
+            return currentEquity < ema ? 0.5m : 1.0m;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════

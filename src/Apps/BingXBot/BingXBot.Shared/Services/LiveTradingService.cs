@@ -40,8 +40,13 @@ public class LiveTradingService : TradingServiceBase
     private readonly ConcurrentDictionary<string, (string OrderId, DateTime PlacedAt)> _pendingLimitOrders = new();
     private const int LimitOrderTimeoutMinutes = 5;
 
-    protected override string LogPrefix => "LIVE: ";
+    protected override string LogPrefix => ModePrefix.Length > 0 ? $"LIVE {ModePrefix}" : "LIVE: ";
     protected override string ModeName => "Live-Trading";
+
+    /// <summary>
+    /// Modus-Prefix für Log-Nachrichten im Multi-Mode (z.B. "[S] ").
+    /// </summary>
+    public string ModePrefix { get; set; } = "";
 
     public LiveTradingService(
         BingXRestClient restClient,
@@ -71,11 +76,22 @@ public class LiveTradingService : TradingServiceBase
 
         StartBase(new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance));
 
-        // WebSocket: User-Data-Stream + Ticker-Stream starten
+        // WebSocket: User-Data-Stream + Ticker-Stream starten (mit Fehler-Logging)
         if (_wsClient != null)
         {
-            _ = StartUserDataStreamAsync(_cts!.Token);
-            _ = StartTickerStreamAsync();
+            _ = StartUserDataStreamAsync(_cts!.Token).ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "WebSocket",
+                        $"User-Data-Stream fehlgeschlagen: {t.Exception?.GetBaseException().Message}"));
+            }, TaskContinuationOptions.OnlyOnFaulted);
+
+            _ = StartTickerStreamAsync().ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "WebSocket",
+                        $"Ticker-Stream fehlgeschlagen: {t.Exception?.GetBaseException().Message}"));
+            }, TaskContinuationOptions.OnlyOnFaulted);
         }
     }
 

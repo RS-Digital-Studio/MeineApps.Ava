@@ -19,8 +19,14 @@ public class PaperTradingService : TradingServiceBase
 {
     private SimulatedExchange? _exchange;
 
-    protected override string LogPrefix => "";
+    protected override string LogPrefix => ModePrefix;
     protected override string ModeName => "Paper-Trading";
+
+    /// <summary>
+    /// Modus-Prefix für Log-Nachrichten (z.B. "[S] " für Scalping).
+    /// Im Multi-Mode-Betrieb unterscheidbar, im Single-Mode leer.
+    /// </summary>
+    public string ModePrefix { get; set; } = "";
 
     /// <summary>Zugriff auf die simulierte Exchange für Account-Abfragen.</summary>
     public SimulatedExchange? Exchange => _exchange;

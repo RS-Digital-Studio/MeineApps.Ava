@@ -6,5 +6,6 @@ public enum OrderType
     Limit,
     StopMarket,
     StopLimit,
-    TakeProfitMarket
+    TakeProfitMarket,
+    TakeProfitLimit
 }

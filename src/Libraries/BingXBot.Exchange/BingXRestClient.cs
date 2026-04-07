@@ -29,6 +29,9 @@ public class BingXRestClient : IExchangeClient
     private bool? _isHedgeMode;
     private readonly SemaphoreSlim _modeLock = new(1, 1);
 
+    // Symbol-Info-Cache für Quantity/Price-Precision und Min-Order-Größe
+    private readonly SymbolInfoCache _symbolInfoCache;
+
     /// <summary>Timeout fuer einzelne HTTP-Requests (30s statt Endlos-Default).</summary>
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
 
@@ -40,18 +43,29 @@ public class BingXRestClient : IExchangeClient
         string apiSecret,
         HttpClient httpClient,
         RateLimiter rateLimiter,
-        ILogger<BingXRestClient> logger)
+        ILogger<BingXRestClient> logger,
+        SymbolInfoCache? symbolInfoCache = null)
     {
         _apiKey = apiKey;
         _apiSecret = apiSecret;
         _httpClient = httpClient;
         _rateLimiter = rateLimiter;
         _logger = logger;
+        _symbolInfoCache = symbolInfoCache ?? new SymbolInfoCache(logger);
 
         // Timeout konfigurieren falls noch nicht gesetzt
         if (_httpClient.Timeout == System.Threading.Timeout.InfiniteTimeSpan)
             _httpClient.Timeout = RequestTimeout;
     }
+
+    /// <summary>Zugriff auf den SymbolInfoCache (für externe Validierung, z.B. Min-Order-Check).</summary>
+    public SymbolInfoCache SymbolInfoCache => _symbolInfoCache;
+
+    /// <summary>
+    /// Initialisiert den SymbolInfoCache (lädt Contract-Details von BingX).
+    /// Sollte einmal nach der Erstellung aufgerufen werden.
+    /// </summary>
+    public Task InitializeSymbolInfoAsync() => _symbolInfoCache.InitializeAsync(_httpClient);
 
     #region Position-Modus Erkennung
 
@@ -141,16 +155,20 @@ public class BingXRestClient : IExchangeClient
             queryParams["timestamp"] = timestamp;
             queryParams["recvWindow"] = "5000"; // 5s Fenster gegen Replay-Angriffe
 
-            // Query-String sortiert aufbauen
+            // Query-String aufbauen: BingX berechnet Signatur über den RAW Query-String (ohne URL-Encoding)
+            // Dann wird der Query-String URL-encodiert für die tatsächliche URL
             var sortedParams = queryParams.OrderBy(kv => kv.Key);
-            var queryString = string.Join("&", sortedParams.Select(kv =>
+
+            // Signatur über rohen Query-String (OHNE URL-Encoding, so wie BingX es erwartet)
+            var rawQueryString = string.Join("&", sortedParams.Select(kv => $"{kv.Key}={kv.Value}"));
+            var signature = GenerateSignature(rawQueryString, _apiSecret);
+
+            // URL mit URL-encodierten Parametern aufbauen
+            var encodedQueryString = string.Join("&", sortedParams.Select(kv =>
                 $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
+            encodedQueryString += $"&signature={signature}";
 
-            // Signatur berechnen
-            var signature = GenerateSignature(queryString, _apiSecret);
-            queryString += $"&signature={signature}";
-
-            var url = $"{BaseUrl}{path}?{queryString}";
+            var url = $"{BaseUrl}{path}?{encodedQueryString}";
 
             try
             {
@@ -267,6 +285,7 @@ public class BingXRestClient : IExchangeClient
         "STOP_MARKET" => OrderType.StopMarket,
         "STOP" => OrderType.StopLimit,
         "TAKE_PROFIT_MARKET" => OrderType.TakeProfitMarket,
+        "TAKE_PROFIT" => OrderType.TakeProfitLimit,
         _ => OrderType.Market
     };
 
@@ -308,44 +327,61 @@ public class BingXRestClient : IExchangeClient
         // positionSide automatisch erkennen: Hedge-Mode → LONG/SHORT, One-Way → BOTH
         var positionSide = await GetPositionSideAsync(request.Side).ConfigureAwait(false);
 
+        // Quantity und Preise auf erlaubte Precision truncaten/runden (BingX lehnt zu viele Dezimalstellen ab)
+        var adjustedQty = _symbolInfoCache.TruncateQuantity(request.Symbol, request.Quantity);
+        if (adjustedQty <= 0)
+        {
+            _logger.LogWarning("Quantity nach Precision-Truncation ist 0 (Original: {Qty}, Symbol: {Symbol})",
+                request.Quantity, request.Symbol);
+            throw new BingXApiException(-2, $"Quantity {request.Quantity} ist nach Truncation auf Precision 0 für {request.Symbol}");
+        }
+
+        // Min-Order-Check: Quantity und Notional müssen Mindestwerte erfüllen
+        var checkPrice = request.Price ?? 0m;
+        if (!_symbolInfoCache.MeetsMinimumOrder(request.Symbol, adjustedQty, checkPrice))
+        {
+            var info = _symbolInfoCache.GetInfo(request.Symbol);
+            _logger.LogWarning("Order unterschreitet Minimum: Qty={Qty} (Min={MinQty}), Notional={Notional} (Min={MinNotional})",
+                adjustedQty, info.MinQuantity, adjustedQty * checkPrice, info.MinNotional);
+            throw new BingXApiException(-3, $"Order unterschreitet Minimum für {request.Symbol}: Qty={adjustedQty} < MinQty={info.MinQuantity} oder Notional < {info.MinNotional} USDT");
+        }
+
         var parameters = new Dictionary<string, string>
         {
             ["symbol"] = request.Symbol,
             ["side"] = SideToString(request.Side),
             ["type"] = OrderTypeToString(request.Type),
-            ["quantity"] = request.Quantity.ToString(CultureInfo.InvariantCulture),
+            ["quantity"] = adjustedQty.ToString(CultureInfo.InvariantCulture),
             ["positionSide"] = positionSide
         };
 
         if (request.Price.HasValue)
-            parameters["price"] = request.Price.Value.ToString(CultureInfo.InvariantCulture);
+            parameters["price"] = _symbolInfoCache.RoundPrice(request.Symbol, request.Price.Value)
+                .ToString(CultureInfo.InvariantCulture);
 
         if (request.StopPrice.HasValue)
-            parameters["stopPrice"] = request.StopPrice.Value.ToString(CultureInfo.InvariantCulture);
+            parameters["stopPrice"] = _symbolInfoCache.RoundPrice(request.Symbol, request.StopPrice.Value)
+                .ToString(CultureInfo.InvariantCulture);
 
         // Native SL/TP-Orders: BingX setzt SL/TP direkt auf der Position (serverseitig)
         if (request.StopLoss.HasValue && request.StopLoss.Value > 0)
         {
+            var roundedSl = _symbolInfoCache.RoundPrice(request.Symbol, request.StopLoss.Value);
             parameters["stopLoss"] = JsonSerializer.Serialize(new
             {
                 type = "STOP_MARKET",
-                stopPrice = request.StopLoss.Value,
+                stopPrice = roundedSl,
                 workingType = "MARK_PRICE"
             });
         }
 
-        if (request.TakeProfit.HasValue && request.TakeProfit.Value > 0)
-        {
-            parameters["takeProfit"] = JsonSerializer.Serialize(new
-            {
-                type = "TAKE_PROFIT_MARKET",
-                stopPrice = request.TakeProfit.Value,
-                workingType = "MARK_PRICE"
-            });
-        }
+        // TP wird NICHT nativ gesetzt: BingX native TP schließt die GESAMTE Position,
+        // aber der Bot nutzt Pyramid-Exit (TP1=30%, TP2=30%, Rest Trailing).
+        // TP-Management läuft komplett bot-seitig im PriceTickerLoop.
+        // Nur SL bleibt nativ als Sicherheitsnetz bei App-Crash.
 
-        _logger.LogInformation("Platziere Order: {Symbol} {Side} {Type} Qty={Quantity}",
-            request.Symbol, request.Side, request.Type, request.Quantity);
+        _logger.LogInformation("Platziere Order: {Symbol} {Side} {Type} Qty={Quantity} (Original: {OrigQty})",
+            request.Symbol, request.Side, request.Type, adjustedQty, request.Quantity);
 
         var data = await SendSignedRequestAsync<BingXOrderData>(
             HttpMethod.Post,
@@ -364,6 +400,92 @@ public class BingXRestClient : IExchangeClient
             string.IsNullOrEmpty(order.StopPrice) ? null : ParseDecimal(order.StopPrice),
             FromUnixMs(order.CreateTime),
             ParseOrderStatus(order.Status));
+    }
+
+    /// <summary>
+    /// Setzt/aktualisiert serverseitige SL/TP auf einer offenen Position (BingX Margin-SL/TP).
+    /// Verwendet die Cancel-Replace-API: Bestehende SL/TP-Orders werden gelöscht und neue erstellt.
+    /// </summary>
+    public async Task SetPositionSlTpAsync(string symbol, Side positionSide, decimal? stopLoss, decimal? takeProfit)
+    {
+        // 1. Nur bestehende SL-Orders canceln (TP wird bot-seitig verwaltet, nicht nativ)
+        if (stopLoss.HasValue && stopLoss.Value > 0)
+        {
+            try
+            {
+                var openOrders = await GetOpenOrdersAsync(symbol).ConfigureAwait(false);
+                foreach (var order in openOrders)
+                {
+                    // Nur STOP_MARKET canceln, nicht TAKE_PROFIT_MARKET
+                    if (order.Type == OrderType.StopMarket && order.Symbol == symbol)
+                        await CancelOrderAsync(order.OrderId, symbol).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Konnte bestehende SL-Orders nicht canceln: {Error}", ex.Message);
+            }
+        }
+
+        // 2. Neue SL/TP-Orders platzieren
+        var closeSide = positionSide == Side.Buy ? Side.Sell : Side.Buy;
+        var positionSideStr = await GetPositionSideAsync(positionSide).ConfigureAwait(false);
+
+        if (stopLoss.HasValue && stopLoss.Value > 0)
+        {
+            var roundedSlPrice = _symbolInfoCache.RoundPrice(symbol, stopLoss.Value);
+            var slParams = new Dictionary<string, string>
+            {
+                ["symbol"] = symbol,
+                ["side"] = SideToString(closeSide),
+                ["type"] = "STOP_MARKET",
+                ["quantity"] = "0", // 0 = gesamte Position schließen
+                ["stopPrice"] = roundedSlPrice.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["positionSide"] = positionSideStr,
+                ["workingType"] = "MARK_PRICE",
+                ["closePosition"] = "true"
+            };
+
+            try
+            {
+                await SendSignedRequestAsync<BingXOrderData>(
+                    HttpMethod.Post, "/openApi/swap/v2/trade/order", slParams, "orders");
+                _logger.LogInformation("SL-Order gesetzt: {Symbol} @ {Price}", symbol, stopLoss.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("SL-Order fehlgeschlagen: {Error}", ex.Message);
+            }
+        }
+
+        // TP wird NICHT nativ gesetzt: BingX native TP schließt die gesamte Position.
+        // Pyramid-Exit (TP1 30%, TP2 30%, Trailing 40%) wird bot-seitig im PriceTickerLoop gesteuert.
+        // Nur SL bleibt nativ als Sicherheitsnetz.
+        if (false && takeProfit.HasValue && takeProfit.Value > 0) // Deaktiviert - TP bot-seitig
+        {
+            var tpParams = new Dictionary<string, string>
+            {
+                ["symbol"] = symbol,
+                ["side"] = SideToString(closeSide),
+                ["type"] = "TAKE_PROFIT_MARKET",
+                ["quantity"] = "0",
+                ["stopPrice"] = takeProfit.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["positionSide"] = positionSideStr,
+                ["workingType"] = "MARK_PRICE",
+                ["closePosition"] = "true"
+            };
+
+            try
+            {
+                await SendSignedRequestAsync<BingXOrderData>(
+                    HttpMethod.Post, "/openApi/swap/v2/trade/order", tpParams, "orders");
+                _logger.LogInformation("TP-Order gesetzt: {Symbol} @ {Price}", symbol, takeProfit.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("TP-Order fehlgeschlagen: {Error}", ex.Message);
+            }
+        }
     }
 
     public async Task<bool> CancelOrderAsync(string orderId, string symbol)
@@ -521,6 +643,89 @@ public class BingXRestClient : IExchangeClient
             "orders");
     }
 
+    /// <summary>
+    /// Schließt einen Teil einer Position (Partial Close).
+    /// Verwendet die ORIGINAL-Seite für positionSide (nicht die Close-Seite).
+    /// </summary>
+    public async Task ClosePartialAsync(string symbol, Side originalSide, decimal quantity)
+    {
+        var closeSide = originalSide == Side.Buy ? Side.Sell : Side.Buy;
+        // positionSide = ORIGINAL-Seite: Hedge-Mode braucht LONG/SHORT der bestehenden Position
+        var positionSide = await GetPositionSideAsync(originalSide).ConfigureAwait(false);
+
+        // Quantity auf erlaubte Precision truncaten
+        var adjustedQty = _symbolInfoCache.TruncateQuantity(symbol, quantity);
+        if (adjustedQty <= 0)
+        {
+            _logger.LogWarning("Partial Close: Quantity nach Truncation ist 0 für {Symbol} (Original: {Qty})", symbol, quantity);
+            return;
+        }
+
+        _logger.LogInformation("Partial Close: {Symbol} {Side} Qty={Quantity} (Original: {OrigQty})", symbol, originalSide, adjustedQty, quantity);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["symbol"] = symbol,
+            ["side"] = SideToString(closeSide),
+            ["type"] = "MARKET",
+            ["quantity"] = adjustedQty.ToString(CultureInfo.InvariantCulture),
+            ["positionSide"] = positionSide
+        };
+
+        await SendSignedRequestAsync<BingXOrderData>(
+            HttpMethod.Post,
+            "/openApi/swap/v2/trade/order",
+            parameters,
+            "orders");
+    }
+
+    /// <summary>
+    /// Platziert eine Limit Take-Profit Order für einen Teil der Position (Partial TP).
+    /// Wird als TAKE_PROFIT Limit-Order mit spezifischer Quantity platziert (nicht closePosition).
+    /// Maker-Fee 0.02% statt Taker 0.05%.
+    /// </summary>
+    public async Task<Order> PlaceTpLimitOrderAsync(string symbol, Side positionSide, decimal quantity, decimal triggerPrice)
+    {
+        var closeSide = positionSide == Side.Buy ? Side.Sell : Side.Buy;
+        var positionSideStr = await GetPositionSideAsync(positionSide).ConfigureAwait(false);
+
+        // Precision anwenden
+        var adjustedQty = _symbolInfoCache.TruncateQuantity(symbol, quantity);
+        var roundedPrice = _symbolInfoCache.RoundPrice(symbol, triggerPrice);
+        if (adjustedQty <= 0) return new Order("", symbol, closeSide, OrderType.TakeProfitMarket,
+            triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.Rejected);
+
+        _logger.LogInformation("TP Limit-Order: {Symbol} {Side} Qty={Quantity} @ {Price} (Original: Qty={OrigQty}, Price={OrigPrice})",
+            symbol, positionSide, adjustedQty, roundedPrice, quantity, triggerPrice);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["symbol"] = symbol,
+            ["side"] = SideToString(closeSide),
+            ["type"] = "TAKE_PROFIT",
+            ["quantity"] = adjustedQty.ToString(CultureInfo.InvariantCulture),
+            ["stopPrice"] = roundedPrice.ToString(CultureInfo.InvariantCulture),
+            ["price"] = roundedPrice.ToString(CultureInfo.InvariantCulture),
+            ["positionSide"] = positionSideStr,
+            ["workingType"] = "MARK_PRICE"
+        };
+
+        return await SendSignedRequestAsync<BingXOrderData>(
+            HttpMethod.Post,
+            "/openApi/swap/v2/trade/order",
+            parameters,
+            "orders").ContinueWith(t =>
+        {
+            var data = t.Result;
+            var detail = data.Order;
+            return detail != null
+                ? new Order(detail.OrderId, symbol, closeSide, OrderType.TakeProfitMarket,
+                    triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.New)
+                : new Order("", symbol, closeSide, OrderType.TakeProfitMarket,
+                    triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.Rejected);
+        });
+    }
+
     public async Task CloseAllPositionsAsync()
     {
         var positions = await GetPositionsAsync().ConfigureAwait(false);
@@ -547,11 +752,13 @@ public class BingXRestClient : IExchangeClient
 
     public async Task SetLeverageAsync(string symbol, int leverage, Side side)
     {
+        // BingX Leverage-API erwartet "LONG"/"SHORT"/"BOTH" (nicht "BUY"/"SELL")
+        var positionSide = await GetPositionSideAsync(side).ConfigureAwait(false);
         var parameters = new Dictionary<string, string>
         {
             ["symbol"] = symbol,
             ["leverage"] = leverage.ToString(),
-            ["side"] = SideToString(side)
+            ["side"] = positionSide
         };
 
         _logger.LogInformation("Setze Leverage: {Symbol} {Side} = {Leverage}x",

@@ -17,7 +17,7 @@ namespace BingXBot.Engine.Strategies;
 ///   5. Volumen über 20-Perioden-SMA (Bestätigung)
 ///
 /// Short analog umgekehrt.
-/// SL: 2x ATR, TP: 3x ATR (RRR 1.5:1)
+/// SL: 2x ATR, TP: 4x ATR (RRR 2:1)
 /// Confidence: Anzahl erfüllter Bedingungen / 5 (partielle Signale möglich)
 /// </summary>
 public class TrendFollowStrategy : IStrategy
@@ -30,7 +30,7 @@ public class TrendFollowStrategy : IStrategy
     private int _rsiPeriod = 14;
     private int _atrPeriod = 14;
     private decimal _atrMultiplierSl = 2m;
-    private decimal _atrMultiplierTp = 3m;
+    private decimal _atrMultiplierTp = 4m;
     private int _volumePeriod = 20;
     private decimal _volumeMultiplier = 1.0m;
     private decimal _minConfidence = 0.6m;

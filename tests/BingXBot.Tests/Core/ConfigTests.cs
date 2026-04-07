@@ -18,7 +18,10 @@ public class ConfigTests
         s.MaxLeverage.Should().Be(3m);
         s.EnableTrailingStop.Should().BeTrue();
         s.EnableMultiStageExit.Should().BeTrue();
-        s.Tp1CloseRatio.Should().Be(0.5m);
+        s.Tp1CloseRatio.Should().Be(0.3m); // Pyramid TP: 30% bei TP1, 30% bei TP2, 40% Trailing
+        s.Tp2CloseRatio.Should().Be(0.3m);
+        s.MinRiskRewardRatio.Should().Be(1.5m);
+        s.SmartBreakevenAtrMultiplier.Should().Be(0.5m);
         s.MaxHoldHours.Should().Be(48);
         s.CooldownHours.Should().Be(8);
         s.MaxTradesPerDay.Should().Be(3);

@@ -93,8 +93,8 @@ public class MacdStrategy : IStrategy
                 var confidence = lastMacd > 0 ? 0.8m : 0.7m;
                 if (histogramConsecutiveRising) confidence += 0.05m;
 
-                var sl = currentPrice - atrValue * 1.5m;
-                var tp = currentPrice + atrValue * 1.5m * _tpMultiplier;
+                var sl = currentPrice - atrValue * 2.0m;
+                var tp = currentPrice + atrValue * 2.0m * _tpMultiplier;
                 return new SignalResult(Signal.Long, Math.Min(1m, confidence), currentPrice, sl, tp,
                     $"MACD Histogram bullish (Hist: {lastHist.Value:F4}, MACD: {lastMacd.Value:F4})");
             }
@@ -109,8 +109,8 @@ public class MacdStrategy : IStrategy
                 var confidence = lastMacd < 0 ? 0.8m : 0.7m;
                 if (histogramConsecutiveFalling) confidence += 0.05m;
 
-                var sl = currentPrice + atrValue * 1.5m;
-                var tp = currentPrice - atrValue * 1.5m * _tpMultiplier;
+                var sl = currentPrice + atrValue * 2.0m;
+                var tp = currentPrice - atrValue * 2.0m * _tpMultiplier;
                 return new SignalResult(Signal.Short, Math.Min(1m, confidence), currentPrice, sl, tp,
                     $"MACD Histogram bearish (Hist: {lastHist.Value:F4}, MACD: {lastMacd.Value:F4})");
             }

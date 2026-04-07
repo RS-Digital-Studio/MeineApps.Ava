@@ -52,12 +52,12 @@ Optimiert für Krypto-Futures 2024-2026. Confluence-Scoring statt binäre Beding
 - +1: Cooldown respektiert
 - **Min. Score: 8/12 für Trade**
 
-**Multi-Stage Exit (PositionExitState):**
-- TP1 bei 2.5-3x ATR → 50% Position schließen → SL auf Break-Even
-- Chandelier-Trailing (2.5x ATR unter Höchstpunkt) nach TP1
-- TP2 bei 4.5-5x ATR → Rest schließen
+**Pyramid Multi-Stage Exit (PositionExitState, seit 05.04.2026):**
+- TP1 bei 2.5-3x ATR → **30%** Position schließen → SL auf **Smart Breakeven** (Entry + 0.5*ATR)
+- TP2 bei 4.5-5x ATR → **30%** Position schließen → Rest trailing (kein TP mehr)
+- Chandelier-Trailing (2.5x ATR unter Höchstpunkt) für verbleibende **40%**
 - Time-Exit: 48h ohne TP1 → schließen
-- Regime-Exit: Supertrend-Flip → sofort schließen
+- **Regime-Exit**: ATI erkennt Chaotic → alle Positionen sofort schließen (PriceTickerLoop)
 - ADX-Exit: ADX < 15 → Trend tot
 
 **Volatilitäts-Adaptation (ATR-Perzentil):**
@@ -76,7 +76,7 @@ Globale Filter die VOR der Strategie-Evaluation greifen:
 - **Max Trades/Tag**: Default 3
 - **Volatilitäts-Bremse**: ATR >90. Perzentil → halbe Position
 
-### Neue Defaults (04.04.2026)
+### Neue Defaults (05.04.2026)
 
 | Setting | Alt | Neu |
 |---------|-----|-----|
@@ -89,6 +89,12 @@ Globale Filter die VOR der Strategie-Evaluation greifen:
 | Trailing-Stop | 1.5% fix | **2.5x ATR** (Chandelier) |
 | Min Volume | 10M | **50M** |
 | Max Kandidaten | 10 | **5** |
+| TP1 Close | 50% | **30%** (Pyramid) |
+| TP2 Close | - | **30%** (Pyramid) |
+| Min RRR | - | **1.5:1** |
+| Smart BE | Entry exakt | **Entry + 0.5*ATR** |
+| Backtest Slippage | 0.05% fix | **Dynamisch** (ATR/Volume) |
+| Backtest Spread | - | **0.08%** (Bid-Ask) |
 
 Alle Strategien implementieren `IStrategy` mit `Clone()` für Multi-Symbol-Support via `StrategyManager`.
 
@@ -253,7 +259,7 @@ Alle DB-Parameter sind optional (`BotDatabaseService?`), damit Tests ohne DB fun
 | IndicatorHelper.CacheKey IndexOutOfRange | IndicatorHelper.cs | CacheKey griff auf candles[^1] zu ohne Leerheits-Prüfung. Bei leerer Liste → IndexOutOfRangeException. Fix: Guard für Count==0 |
 | BeOneOf Test-Compile-Fehler | IndicatorHelperTests.cs | FluentAssertions BeOneOf(0, 1, "reason") interpretiert string als dritten int-Parameter. Fix: BeOneOf(new[] { 0, 1 }, "reason") |
 
-## Tests (180 Tests)
+## Tests (210 Tests)
 
 | Datei | Tests | Beschreibung |
 |-------|-------|--------------|
@@ -415,7 +421,7 @@ Candles → [1] FeatureEngine → [2] RegimeDetector → [3] AdaptiveEnsemble
 
 | Komponente | Datei | Beschreibung |
 |------------|-------|--------------|
-| FeatureEngine | ATI/FeatureEngine.cs | Extrahiert 19 normalisierte Features aus MarketContext (Preis, Momentum, Volatilität, Trend, Volumen, Session) |
+| FeatureEngine | ATI/FeatureEngine.cs | Extrahiert **25** normalisierte Features aus MarketContext (Preis, Momentum, Volatilität, Trend, Volumen, Session, BTC-Kontext, Markt-Stimmung, **Fear&Greed, Open Interest**) |
 | RegimeDetector | ATI/RegimeDetector.cs | HMM-basierte Regime-Erkennung (TrendingBull/Bear, Range, Chaotic). Regelbasiert + gelernte Übergangswahrscheinlichkeiten. EMA-Glättung gegen Flackern |
 | AdaptiveEnsemble | ATI/AdaptiveEnsemble.cs | Alle 6 Strategien parallel, dynamische Gewichte pro Regime (Bayesian Update). Konsens-Filter: Min 2 Strategien müssen übereinstimmen |
 | ConfidenceGate | ATI/ConfidenceGate.cs | Bayesian Naive Bayes auf diskretisierten Feature-Buckets. Lernt P(Win|Features) aus eigenen Trade-Ergebnissen. Online-Lernen ab Trade 1 |
@@ -429,10 +435,10 @@ Candles → [1] FeatureEngine → [2] RegimeDetector → [3] AdaptiveEnsemble
 |-------|--------------|
 | MarketRegime | Enum: TrendingBull, TrendingBear, Range, Chaotic |
 | RegimeState | Regime + Confidence + 4 Wahrscheinlichkeiten |
-| FeatureSnapshot | 19 normalisierte Features + Metadaten + ToFeatureArray() |
+| FeatureSnapshot | **25** normalisierte Features + Metadaten + ToFeatureArray() (inkl. Cross-Market, Fear&Greed, OpenInterest) |
 | EnsembleVote | Konsens-Signal + Gewichte + Einzelstimmen |
 | TradeAudit | Vollständiger Audit-Trail jeder Entscheidung |
-| FeatureSnapshotEntity | DB-Entity für ML-Training (19 Features + Outcome) |
+| FeatureSnapshotEntity | DB-Entity für ML-Training (25 Features + Outcome + FromSnapshot() Factory) |
 
 ### NuGet-Pakete (neu)
 
@@ -449,6 +455,49 @@ Candles → [1] FeatureEngine → [2] RegimeDetector → [3] AdaptiveEnsemble
 - DashboardViewModel: ATI per DI injiziert, Strategien beim Bot-Start ins Ensemble registriert
 - BotDatabaseService: FeatureSnapshots-Tabelle + CRUD-Methoden
 - App.axaml.cs: `AdaptiveTradingIntelligence` als Singleton registriert
+
+## Profit-Optimierung (05.04.2026)
+
+### Realistisches Backtest-Modell
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| Dynamische Slippage | SimulatedExchange.cs, BacktestSettings.cs | ATR/Volume-basierte Slippage statt fixem 0.05%. Skaliert mit Volatilität und inversem Volumen (0.02-2%) |
+| Bid-Ask Spread | SimulatedExchange.cs | SpreadPercent (Default 0.08%) wird als halber Spread pro Seite aufgeschlagen. Realistischer als Slippage-Only |
+| Market-Conditions pro Candle | BacktestEngine.cs → SimulatedExchange.SetMarketConditions() | ATR und Volume-Ratio werden pro Candle an SimulatedExchange übergeben |
+
+### Risk-Management Verbesserungen
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| RRR-Validierung | RiskManager.cs, RiskSettings.cs | MinRiskRewardRatio (Default 1.5:1). Trades mit schlechtem TP/SL-Verhältnis werden rejected |
+| Smart Breakeven | BacktestEngine.cs, TradingServiceBase.cs | SL nach TP1 = Entry + 0.5*ATR statt exakter Entry. Verhindert Rauswerfen bei kleinen Pullbacks |
+| Regime-Exit | TradingServiceBase.cs | Bei Chaotic-Regime werden alle offenen Positionen sofort geschlossen (PriceTickerLoop) |
+
+### Pyramid Take-Profit (30/30/40)
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| TP1: 30% Close | BacktestSettings.cs, RiskSettings.cs | Tp1CloseRatio von 0.5 auf 0.3 geändert |
+| TP2: 30% Close | BacktestEngine.cs (Tp2Closed State) | Neues TP2 Partial Close: 30% bei TP2, Rest trailing ohne TP |
+| Tp2CloseRatio | BacktestSettings.cs, RiskSettings.cs | Konfigurierbarer Anteil der Position bei TP2 (Default 0.3) |
+
+### Multi-dimensionaler Scanner
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| 5D-Scoring | MarketScanner.cs | Trend (30%) + Volumen (25%) + Momentum (20%) + Volatilität (15%) + Struktur (10%) statt simples |Price%| * Volume |
+| Indikator-basiert | MarketScanner.cs | Nutzt EMA, ADX, RSI, MACD, ATR, Bollinger für fundiertes Scoring. Klines werden per ExchangeClient geladen |
+| Mode-Gewichtung | MarketScanner.cs | Jeder ScanMode hat eigene Gewichtungs-Verteilung der 5 Dimensionen |
+
+### ATI Cross-Market Features
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| BTC-Kontext | FeatureEngine.cs, FeatureSnapshot.cs | BtcReturn24h, BtcTrend, BtcCorrelation, MarketSentiment als 4 neue Features (19→23) |
+| Cross-Market-Pipeline | TradingServiceBase.cs | UpdateCrossMarketFeaturesAsync() berechnet BTC-Korrelation und Markt-Stimmung pro Scan-Zyklus |
+| Regime CurrentRegime | RegimeDetector.cs | Neues `CurrentRegime` Property für Regime-Exit-Check in PriceTickerLoop |
+
+### Live-Trading Verbesserungen
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| Serverseitiges SL/TP-Update | BingXRestClient.cs, LiveTradingService.cs | SetPositionSlTpAsync() aktualisiert BingX SL/TP-Orders nach TP1 Partial Close (Smart BE + TP2) |
+| WalkForward im UI | BacktestViewModel.cs | RunWalkForwardCommand verdrahtet WalkForwardOptimizer im BacktestView (GA-basierte Parameter-Optimierung)
 
 ### Lernzyklus
 
@@ -595,6 +644,15 @@ Trade geschlossen → ProcessCompletedTrade()
 | BacktestEngine Funding | BacktestEngine.cs | Funding-Rate alle 8h im Tick-Loop angewendet. Konfigurierbar via BacktestSettings.SimulatedFundingRatePercent (Default: 0.01%) |
 | PaperTradingService Funding | PaperTradingService.cs | SimulatedExchange mit konfigurierter Funding-Rate aus BotSettings.SimulatedFundingRatePercent |
 
+### Multi-Stage Exit (Backtest)
+| Feature | Datei(en) | Beschreibung |
+|---------|-----------|--------------|
+| BacktestSettings Multi-Stage | BacktestSettings.cs | `SimulateMultiStageExit` (Default: true), `Tp1CloseRatio` (0.5), `TrailingAtrMultiplier` (2.5), `MaxHoldHoursInitial` (48), `MaxHoldHoursAfterTp1` (96) |
+| BacktestExitState | BacktestEngine.cs | Innere Klasse trackt Entry, OriginalQty, PartialClosed, ExtremePriceSinceEntry, CurrentAtr pro Position |
+| TP1 Partial Close | BacktestEngine.cs | Bei TP1-Hit: 50% Position via ReducePositionAsync schließen, SL auf Break-Even, TP auf TP2 verschieben |
+| Chandelier-Trailing | BacktestEngine.cs | Nach TP1: SL nachziehen basierend auf Extreme-Price minus ATR*Multiplikator, nur nach vorne |
+| Time-Exit | BacktestEngine.cs | Vor TP1: Schließen nach MaxHoldHoursInitial wenn nicht im Gewinn. Nach TP1: Schließen nach MaxHoldHoursAfterTp1 |
+
 ### Margin-Monitoring
 | Feature | Datei(en) | Beschreibung |
 |---------|-----------|--------------|
@@ -620,6 +678,52 @@ Trade geschlossen → ProcessCompletedTrade()
 
 ## Tests (210 Tests)
 
+## Code-Review Fixes (05.04.2026)
+
+### Kritische Fixes (3)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| SimulatedExchange Lock-Release Race | SimulatedExchange.cs | `ReducePositionAsync` Full-Close inline statt Lock-Release + ClosePositionAsync (Race zwischen ExitWriteLock und erneutem Lock) |
+| _tradesToday Thread-Safety | TradingServiceBase.cs | `Interlocked.Increment/Exchange` statt nicht-atomarem `++`/`=0` (UI-Thread schreibt parallel via StopBase) |
+| SemaphoreSlim als Klassenfeld | TradingServiceBase.cs | `_klineSemaphore` als Feld statt `new SemaphoreSlim(5)` pro ScanAndTradeAsync-Aufruf (Handle-Leak) |
+
+### Wichtige Fixes (6)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Peak-Equity Drawdown | RiskManager.cs | Total-Drawdown relativ zu `_peakEquity` statt kumulativem `_totalPnl`. Verhindert Unterschätzung nach Gewinnphasen |
+| Korrelation auf Log-Returns | CorrelationChecker.cs | `Math.Log(close[i] / close[i-1])` statt absolute Preise (vermeidet spurious Korrelation bei trending Märkten) |
+| Backtest SL/TP-Bias | BacktestEngine.cs | Candle-Richtung entscheidet bei gleichzeitigem SL+TP-Treffer (statt immer SL-first) |
+| BTC-Kontext-Scoring +2 | CryptoTrendProStrategy.cs | HTF-Supertrend-Bonus unabhängig vom bisherigen Score (war durch `longScore < 4` blockiert) |
+| ConflueceScore Typo | 7 Dateien | `ConflueceScore` → `ConfluenceScore` (Records, Properties, Referenzen) |
+| Klines ConcurrentDictionary | TradingServiceBase.cs | `Dictionary + lock` → `ConcurrentDictionary` in ScanAndTradeAsync (parallele Klines-Tasks) |
+
+### Sicherheits-Fixes (4)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| API-Keys aus WebSocketClient | BingXWebSocketClient.cs | Unbenutzte `_apiKey`/`_apiSecret` Felder entfernt (kein Klartext-Leak bei Memory-Dump) |
+| Credential-Error Logging | SettingsViewModel.cs | `{ex}` → `{ex.Message}` (kein Stacktrace mit Systempfaden) |
+| Linux credentials.dat chmod 600 | SecureStorageService.cs | `File.SetUnixFileMode(UserRead|UserWrite)` nach Schreiben |
+| Parameter Min/Max-Validierung | StrategyViewModel.cs | Reflection-Rückschreibung clampt Werte auf StrategyParameter.Min/Max |
+
+### Performance-Fixes (2)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Backtest CandleSlice (Zero-Copy) | BacktestEngine.cs | `CandleSlice : IReadOnlyList<Candle>` statt `GetRange()` pro Candle (vermeidet ~5000 List-Allokationen) |
+| Indikator-Cache Backtest-Limit | BacktestEngine.cs | `IndicatorHelper.ClearCache()` alle 500 Iterationen + nach Schleife (verhindert ~112 MB Cache-Wachstum) |
+
+### Strategie-Verbesserungen (4)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| TrendFollow RRR 2:1 | TrendFollowStrategy.cs | TP-Multiplier von 3x auf 4x ATR (RRR 1.5→2.0) |
+| MacdStrategy SL 2x ATR | MacdStrategy.cs | Histogram-SL von 1.5x auf 2x ATR (war zu eng für lagging MACD-Signals) |
+| GridStrategy Lookback-Grenzen | GridStrategy.cs | 50-Candle High/Low als Grid-Grenzen statt Bollinger-Bänder (keine spurious Squeeze-Verengung) |
+| PerformanceReport +5 Metriken | PerformanceReport.cs | CalmarRatio, SortinoRatio, RecoveryFactor, MaxConsecutiveLosses/Wins |
+
+### Defaults-Änderungen
+| Setting | Alt | Neu | Grund |
+|---------|-----|-----|-------|
+| MaxNetExposurePercent | 300% | 200% | Flash-Crash-Schutz bei 3x Leverage |
+
 ## Farbpalette
 
 Dark-Trading-Theme: Primary #3B82F6, Background #1E1E2E, Profit #10B981, Loss #EF4444
@@ -638,3 +742,138 @@ Dark-Trading-Theme: Primary #3B82F6, Background #1E1E2E, Profit #10B981, Loss #E
 | Status-Indikatoren | Dynamische Farben via ViewModel-Properties (ConnectionDotColor, StatusDotColor, BotStatusColor) |
 | Dark-Mode | `RequestedThemeVariant = ThemeVariant.Dark` in App.axaml.cs |
 | Hover-Farben | SuccessHoverBrush, WarningHoverBrush, ErrorHoverBrush, StopHoverBrush in AppPalette |
+
+## Professionalisierung (06.04.2026)
+
+### Bug-Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| TP2 Partial-Close im Live/Paper | TradingServiceBase.cs, PositionExitState.cs | TP2 schloss 100% statt 30%. Neues `Tp2Closed`-Property + Partial-Close-Block analog BacktestEngine. Phase wechselt auf `Trailing` |
+| FeatureSnapshotEntity 25 Features | FeatureSnapshotEntity.cs, BotDatabaseService.cs | 4 Cross-Market + 2 neue Features (FearGreed, OpenInterest) hinzugefügt. DB-Migration v2→v4. `FromSnapshot()` Factory-Methode |
+| GetAdaptiveLeverage verdrahtet | TradingServiceBase.cs, LiveTradingService.cs, PaperTradingService.cs | ATR-Perzentil + Score → adaptiver Leverage vor PlaceOrder. Min(adaptiv, MaxLeverage) |
+| Paper-Trading Slippage aktiv | PaperTradingService.cs | `SetMarketConditions()` wird jetzt aufgerufen. ATR aus ExitState oder 1.5% Fallback |
+| Scanner parallel | MarketScanner.cs | Klines-Loading parallelisiert mit SemaphoreSlim(5) + Task.WhenAll. 20+ Symbole: ~2s statt ~20s |
+
+### Neue Features
+| Feature | Dateien | Beschreibung |
+|---------|---------|--------------|
+| Open Interest Feature | BingXPublicClient.cs, FeatureEngine.cs, FeatureSnapshot.cs | OI-Change als normalisiertes Feature. Steigendes OI + steigender Preis = gesunder Trend |
+| Fear & Greed Index | TradingServiceBase.cs, FeatureEngine.cs | alternative.me API alle 15min. Normalisiert [0,1] als Feature. Extreme Werte = Signal-Warnung |
+| Cooldown-Eskalation | RiskSettings.cs, TradingServiceBase.cs | Progressive Cooldowns: 1 Verlust=8h, 2=16h, 3+=24h. Bei 3+ Verlusten: Leverage halbiert. Max 48h Cap |
+| Equity-Curve-Trading | RiskSettings.cs, TradingServiceBase.cs, RiskManager.cs | Equity unter EMA(20 Trades) → halbe Position. Automatischer Schutz vor Drawdown-Spiralen |
+| Momentum-Decay | TradingServiceBase.cs, RiskSettings.cs | Erkennt wenn Preis sich >1.5x ATR vom Höchstpunkt entfernt (nach TP1). Schließt Position statt auf SL zu warten |
+| Monte Carlo Simulation | MonteCarloSimulator.cs (NEU), PerformanceReport.cs | 1000 Trade-Shuffles, Konfidenz-Intervalle: MaxDD 50/95/99%, Return 5/50/95%, Ruin-Wahrscheinlichkeit |
+| Rolling Live-Metriken | RiskManager.cs | Rolling 30-Trade-Window: WinRate, ProfitFactor, Sharpe. Strategy-Health-Check warnt bei Degradation |
+| Regime-Backtest-Metriken | PerformanceReport.cs, CompletedTrade.cs | WinRate/PnL/ProfitFactor pro MarketRegime (TrendingBull/Bear/Range/Chaotic). CompletedTrade hat optionales Regime-Feld |
+| Limit-Orders | SignalResult.cs, LiveTradingService.cs, SimulatedExchange.cs | `PreferLimitOrder` Flag im Signal. Maker-Fee 0.02% statt Taker 0.05%. SimulatedExchange hat jetzt Limit-Order-Matching in SetCurrentPrice |
+| WebSocket Price-Ticker | BingXWebSocketClient.cs, LiveTradingService.cs | `SubscribeAllTickersAsync()` für Echtzeit-Preise. `TickerPriceReceived` Event. Sub-100ms Latenz für SL/TP-Monitoring |
+
+### Neue RiskSettings (06.04.2026)
+| Setting | Default | Beschreibung |
+|---------|---------|--------------|
+| EnableCooldownEscalation | true | Progressive Cooldown-Eskalation bei Verlusten |
+| MaxCooldownHours | 48 | Maximaler Cooldown bei Eskalation |
+| EnableEquityCurveTrading | true | Position reduzieren wenn Equity unter EMA |
+| EquityCurvePeriod | 20 | EMA-Periode in Anzahl Trades |
+| EnableMomentumDecay | true | Momentum-Decay-Detection im PriceTickerLoop |
+
+### FeatureEngine (25 Features, vorher 23)
+Neue Features: `FearGreedIndex` (Fear & Greed API), `OpenInterestChange` (BingX OI-API)
+
+### ML Phase 2: LightGBM Classifier (06.04.2026)
+- `LightGbmClassifier.cs` in `Engine/ATI/` - ML.NET LightGBM auf 25 Features + 3 Ensemble-Metadaten (28 Inputs)
+- Trainiert auf gelabelten FeatureSnapshotEntity aus DB (min. 50 Samples)
+- 80/20 Train/Test-Split, Metriken: Accuracy, AUC, F1, Precision, Recall
+- `Predict()` gibt P(Win) zurück - kann ConfidenceGate Phase 1 (Naive Bayes) ergänzen/ersetzen
+- Feature-Snapshots werden jetzt automatisch bei jedem Trade in DB gespeichert (ATI.FeatureSnapshotCompleted Event)
+
+### CPCV - Combinatorial Purged Cross-Validation (06.04.2026)
+- `CpcvValidator.cs` in `Backtest/Reports/` - 6 Blöcke, 2 Test-Blöcke pro Kombination, C(6,2)=15 Kombinationen
+- Purging: 2 Trades an Block-Grenzen entfernt (verhindert Daten-Leckage)
+- Ergebnis: **Probability of Backtest Overfitting (PBO)** + Degradation IS→OOS
+- Automatisch im PerformanceReport bei >=30 Trades
+- PBO < 30% = akzeptabel, Degradation < 30% = akzeptabel
+
+### ConfidenceGate Buckets (06.04.2026, 16 Buckets statt 12)
+- 12 Einzel-Buckets (vorher 9): +FearGreed, +OpenInterest, +BtcTrend
+- 4 Kombinations-Buckets (vorher 3): +FearGreed×Regime
+- Diskretisierung: FearGreed (5 Stufen), OpenInterest (3 Stufen), BtcTrend (3 Stufen)
+
+### Regime-Tracking im Backtest (06.04.2026)
+- RegimeDetector läuft im BacktestEngine mit (pro Candle-Iteration)
+- CompletedTrade hat optionales `Regime?` Feld (seit 06.04.2026)
+- Backtest-Trades werden mit dem Regime zum Entry-Zeitpunkt annotiert
+- PerformanceReport zeigt WinRate/PnL/ProfitFactor pro MarketRegime
+
+### ONNX-Runtime Infrastruktur (06.04.2026)
+- `OnnxModelInference.cs` in `Engine/ATI/` - Lädt .onnx Dateien, Single + Batch Inference
+- NuGet: `Microsoft.ML.OnnxRuntime` 1.22.0
+- Workflow: Python trainiert Transformer/LSTM → `torch.onnx.export()` → C# lädt + inferiert
+- Unterstützt variable Input-Shape: `[batch_size, feature_count]`
+- ATI hat `OnnxModel` Property für optionale ONNX-Integration
+
+### Auto-Training Pipeline (06.04.2026)
+- `ATI.CheckAutoTraining()` trainiert LightGBM alle 10 Trades oder 24h (was zuerst kommt)
+- Training im Background-Thread (blockiert nicht den Trading-Loop)
+- Modell wird nur übernommen wenn AUC > 0.55 (besser als Münzwurf)
+- Events: `AutoTrainingCompleted` für Logging, `FeatureSnapshotCompleted` für DB-Persistenz
+- DashboardViewModel verdrahtet beides: Snapshots speichern + Auto-Training triggern
+
+### Dashboard Rolling-Metriken (06.04.2026)
+- `RollingWinRate`, `RollingSharpe`, `RollingProfitFactor` Properties im DashboardViewModel
+- `StrategyHealthText` + `HasStrategyWarning` für Health-Check-Anzeige
+- Aktualisierung alle 5 Min (zusammen mit Equity-Snapshots)
+- RiskManager exponiert: `TotalPnl`, `RollingWinRate`, `RollingSharpeRatio`, `RollingProfitFactor`, `CheckStrategyHealth()`
+
+### Transparenz & Logging (06.04.2026)
+
+Alles wird im Activity-Feed und Log angezeigt:
+
+| Feature | Log-Kategorie | Was der User sieht |
+|---------|--------------|-------------------|
+| Fear & Greed Index | Market | `Fear & Greed Index: 42/100 (Fear)` alle 15 Min |
+| Open Interest | Market (Debug) | `BTC-USDT: OI steigend (+5.2%)` bei >3% Änderung |
+| Adaptiver Leverage | Trade | `BTC-USDT: Long 0.1 @ 65000 (Lev=2x, SL=...)` |
+| Equity-Curve-Scaling | Risk (Warning) | `Equity-Curve unter EMA → Position um 50% reduziert` |
+| Cooldown-Eskalation | Risk (Warning) | `3 Verluste in Folge → Cooldown eskaliert auf 24h` |
+| Momentum-Decay | Exit (Trade) | `Momentum-Decay: Preis 1.8x ATR vom Höchstpunkt` |
+| Strategy-Health | Health (Warning) | `Rolling Sharpe 0.28 < 0.3 (degradiert)` |
+| ATI-Entscheidungen | ATI | `BTC-USDT: Long AKZEPTIERT / Regime=TrendingBull, Ensemble=5/7, ML=72%` |
+| ATI-Ablehnungen | ATI (Debug) | `ETH-USDT: Short ABGELEHNT / Grund: Kein Ensemble-Konsens` |
+| Auto-Training | ML | `LightGBM trainiert: AUC=0.63, Acc=0.58` |
+| ONNX-Modell | ML | `ONNX-Modell geladen: Inputs: [features: -1x25]` |
+| WebSocket-Ticker | WebSocket | `Echtzeit-Ticker-Stream aktiv (sub-100ms Latenz)` |
+
+Log-Filter-Kategorien: Alle, Trade, ATI, ML, Market, Risk, Health, Exit, Scanner, Engine, WebSocket, Backtest
+
+### Limit-Orders (06.04.2026)
+CryptoTrendPro setzt `PreferLimitOrder=true` bei Score >= 10/12 (starkes Signal).
+Limit-Entry mit leichtem Pullback (0.1x ATR). Maker-Fee 0.02% statt Taker 0.05% = 60% Fee-Reduktion.
+
+### ONNX Auto-Load (06.04.2026)
+ATI prüft beim Start automatisch 2 Pfade:
+1. `%APPDATA%/BingXBot/bingxbot_model.onnx`
+2. `./bingxbot_model.onnx` (neben der .exe)
+
+ConfidenceGate Hybrid-Gewichtung:
+- Phase 1 (nur Bayesian): 100% Naive Bayes
+- Phase 2 (+ LightGBM): 60% LightGBM + 40% Bayesian
+- Phase 3 (+ ONNX): 50% ONNX + 30% Bayesian + 20% LightGBM
+
+### NuGet-Pakete (aktuell)
+| Paket | Version | Zweck |
+|-------|---------|-------|
+| Microsoft.ML | 5.0.0 | ML-Framework |
+| Microsoft.ML.LightGbm | 5.0.0 | Gradient Boosted Trees |
+| Microsoft.ML.OnnxRuntime | 1.22.0 | ONNX Model Inference |
+| GeneticSharp | 3.1.4 | Walk-Forward Optimierung |
+
+### BacktestView UI (06.04.2026)
+- 5 Zeilen Metriken-Cards: Basis (PnL, WinRate, DD, Sharpe) + Erweitert (PF, Trades, AvgWin/Loss) + Professionell (Calmar, Sortino, Recovery, MaxConsecLosses) + Monte Carlo (DD95%, Return 5/50%, Ruin%) + CPCV (PBO, Degradation, OOS-Return) + Regime-Breakdown
+- ScrollViewer für vertikales Scrollen wenn Platz nicht reicht
+- Monte Carlo + CPCV nur sichtbar wenn Ergebnis vorhanden (HasMonteCarloResult/HasCpcvResult)
+
+### DashboardView UI (06.04.2026)
+- Strategy-Health-Warnung: Rote Box mit AlertCircle-Icon wenn HasStrategyWarning=true
+- Rolling Live-Metriken: 3-Spalten UniformGrid mit WinRate/Sharpe/ProfitFactor (nur wenn Bot läuft)
+- Aktualisierung alle 5 Min aus RiskManager Rolling-Window (30 Trades)

@@ -7,7 +7,7 @@ namespace BingXBot.Engine.ATI;
 /// <summary>
 /// ML-basierter Confidence-Filter der aus Trade-Ergebnissen lernt.
 /// Phase 1: Bayesian Naive Bayes auf diskretisierten Feature-Buckets (online, kein Training nötig).
-/// Phase 2: ML.NET LightGBM (batch-Training, optional wenn genug Daten).
+/// Phase 2: LightGBM Hybrid (60% LightGBM + 40% Bayesian wenn Modell verfügbar).
 /// </summary>
 public class ConfidenceGate
 {
@@ -18,6 +18,12 @@ public class ConfidenceGate
     private int _totalWins;
     private int _totalLosses;
     private readonly object _statsLock = new();
+
+    /// <summary>LightGBM Classifier (Phase 2). Null = nur Bayesian.</summary>
+    public LightGbmClassifier? LightGbm { get; set; }
+
+    /// <summary>ONNX Model (Phase 3, z.B. Transformer). Null = nicht verfügbar.</summary>
+    public OnnxModelInference? OnnxModel { get; set; }
 
     /// <summary>Schwellwert: Unter dieser Confidence wird der Trade abgelehnt (default: 0.45).</summary>
     public decimal Threshold { get; set; } = 0.45m;
@@ -93,11 +99,27 @@ public class ConfidenceGate
             confidence = (decimal)Math.Clamp(probability, 0.01, 0.99);
         }
 
+        // Phase 2/3 Hybrid: ML-Modelle + Bayesian
+        if (OnnxModel is { IsModelLoaded: true })
+        {
+            // Phase 3: ONNX (Transformer/LSTM) hat Priorität wenn verfügbar
+            var onnxConf = (decimal)OnnxModel.Predict(features);
+            confidence = onnxConf * 0.5m + confidence * 0.3m +
+                (LightGbm is { IsModelReady: true } ? LightGbm.Predict(features, (int)regime, ensemble.AgreeingCount, ensemble.WeightedConfidence) * 0.2m : confidence * 0.2m);
+        }
+        else if (LightGbm is { IsModelReady: true })
+        {
+            // Phase 2: LightGBM + Bayesian
+            var mlConfidence = LightGbm.Predict(features, (int)regime,
+                ensemble.AgreeingCount, ensemble.WeightedConfidence);
+            confidence = mlConfidence * 0.6m + confidence * 0.4m;
+        }
+
         // Ensemble-Konsens als zusätzlichen Faktor einbeziehen
         if (ensemble.TotalCount > 0)
         {
             var consensusRatio = (decimal)ensemble.AgreeingCount / ensemble.TotalCount;
-            // 80% Bayesian, 20% Konsens-Stärke
+            // 80% ML/Bayesian, 20% Konsens-Stärke
             confidence = confidence * 0.8m + consensusRatio * 0.2m;
         }
 
@@ -205,7 +227,7 @@ public class ConfidenceGate
 
     private static List<string> DiscretizeFeatures(FeatureSnapshot f, MarketRegime regime, EnsembleVote ensemble)
     {
-        var buckets = new List<string>(12);
+        var buckets = new List<string>(16);
 
         // Einzelne Feature-Buckets (jeder wird separat getrackt)
         buckets.Add($"RSI:{DiscretizeRsi(f.RsiNormalized)}");
@@ -217,11 +239,15 @@ public class ConfidenceGate
         buckets.Add($"REGIME:{regime}");
         buckets.Add($"SESSION:{(int)f.SessionId}");
         buckets.Add($"CONSENSUS:{DiscretizeConsensus(ensemble)}");
+        buckets.Add($"FNG:{DiscretizeFearGreed(f.FearGreedIndex)}");
+        buckets.Add($"OI:{DiscretizeOpenInterest(f.OpenInterestChange)}");
+        buckets.Add($"BTC:{DiscretizeBtcTrend(f.BtcTrend)}");
 
         // Kombinations-Buckets (wichtige Feature-Paare)
         buckets.Add($"RSI+ADX:{DiscretizeRsi(f.RsiNormalized)}+{DiscretizeAdx(f.AdxNormalized)}");
         buckets.Add($"REGIME+VOL:{regime}+{DiscretizeVolume(f.VolumeRatio)}");
         buckets.Add($"REGIME+ADX:{regime}+{DiscretizeAdx(f.AdxNormalized)}");
+        buckets.Add($"FNG+REGIME:{DiscretizeFearGreed(f.FearGreedIndex)}+{regime}");
 
         return buckets;
     }
@@ -261,6 +287,29 @@ public class ConfidenceGate
         if (atrPct < 0.015f) return "low";
         if (atrPct > 0.04f) return "high";
         return "normal";
+    }
+
+    private static string DiscretizeFearGreed(float fng)
+    {
+        if (fng < 0.25f) return "extremeFear";
+        if (fng < 0.45f) return "fear";
+        if (fng > 0.75f) return "extremeGreed";
+        if (fng > 0.55f) return "greed";
+        return "neutral";
+    }
+
+    private static string DiscretizeOpenInterest(float oiChange)
+    {
+        if (oiChange < -0.05f) return "decreasing";
+        if (oiChange > 0.05f) return "increasing";
+        return "stable";
+    }
+
+    private static string DiscretizeBtcTrend(float btcTrend)
+    {
+        if (btcTrend < -0.3f) return "bearish";
+        if (btcTrend > 0.3f) return "bullish";
+        return "neutral";
     }
 
     private static string DiscretizeConsensus(EnsembleVote e)

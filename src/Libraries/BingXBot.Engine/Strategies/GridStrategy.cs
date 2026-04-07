@@ -81,15 +81,15 @@ public class GridStrategy : IStrategy
             return new SignalResult(Signal.None, 0m, null, null, null,
                 $"Zu hohe Volatilität für Grid (ATR {lastAtr.Value:F2} > Avg {atrAvg:F2})");
 
-        // 3. Dynamische Grid-Grenzen aus Bollinger-Bändern
-        var (upper, middle, lower) = IndicatorHelper.CalculateBollinger(candles, _bollingerPeriod, _bollingerStdDev);
-        var lastUpper = upper[^1];
-        var lastLower = lower[^1];
-        if (lastUpper == null || lastLower == null)
-            return new SignalResult(Signal.None, 0m, null, null, null, "Bollinger Bänder nicht bereit");
+        // 3. Dynamische Grid-Grenzen: Lookback High/Low (stabiler als Bollinger-Bänder)
+        // Bollinger-Bänder werden weiterhin für Squeeze-Erkennung genutzt, aber
+        // Grid-Grenzen basieren auf den tatsächlichen Extremwerten der letzten 50 Candles.
+        var lookbackCandles = candles.Skip(Math.Max(0, candles.Count - 50));
+        var lookbackHigh = lookbackCandles.Max(c => c.High);
+        var lookbackLow = lookbackCandles.Min(c => c.Low);
 
-        var gridUpper = lastUpper.Value;
-        var gridLower = lastLower.Value;
+        var gridUpper = lookbackHigh;
+        var gridLower = lookbackLow;
 
         if (currentPrice < gridLower || currentPrice > gridUpper)
             return new SignalResult(Signal.None, 0m, null, null, null,

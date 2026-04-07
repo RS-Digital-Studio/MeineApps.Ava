@@ -21,8 +21,6 @@ public class BingXWebSocketClient : IAsyncDisposable
     private static readonly ArrayPool<byte> BufferPool = ArrayPool<byte>.Shared;
 
     private ClientWebSocket? _ws;
-    private readonly string _apiKey;
-    private readonly string _apiSecret;
     private readonly ILogger<BingXWebSocketClient> _logger;
     private int _reconnectAttempts;
     private CancellationTokenSource? _cts;
@@ -39,16 +37,13 @@ public class BingXWebSocketClient : IAsyncDisposable
     public event EventHandler<bool>? ConnectionStateChanged;
     /// <summary>Wird bei Account-Updates (Balance, Position, Order) aus dem User-Data-Stream ausgelöst.</summary>
     public event EventHandler<string>? UserDataReceived;
+    /// <summary>Wird bei Echtzeit-Ticker-Updates ausgelöst (Symbol → LastPrice).</summary>
+    public event Action<string, decimal>? TickerPriceReceived;
     public bool IsConnected => _ws?.State == WebSocketState.Open;
     public bool IsUserDataConnected => _userWs?.State == WebSocketState.Open;
 
-    public BingXWebSocketClient(
-        string apiKey,
-        string apiSecret,
-        ILogger<BingXWebSocketClient> logger)
+    public BingXWebSocketClient(ILogger<BingXWebSocketClient> logger)
     {
-        _apiKey = apiKey;
-        _apiSecret = apiSecret;
         _logger = logger;
     }
 
@@ -108,6 +103,39 @@ public class BingXWebSocketClient : IAsyncDisposable
         await _ws!.SendAsync(bytes, WebSocketMessageType.Text, true, _cts?.Token ?? CancellationToken.None);
 
         _logger.LogInformation("Abonniert: {Channel}", channel);
+    }
+
+    /// <summary>
+    /// Abonniert den All-Market-Ticker-Stream für Echtzeit-Preise aller Symbole.
+    /// BingX Channel: "!ticker@arr" (alle Ticker gleichzeitig).
+    /// </summary>
+    public async Task SubscribeAllTickersAsync()
+    {
+        await SubscribeAsync("!ticker@arr", json =>
+        {
+            try
+            {
+                // BingX sendet Array von Ticker-Objekten: [{"s":"BTC-USDT","c":"65000.00",...},...]
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("data", out var dataArr) && dataArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in dataArr.EnumerateArray())
+                    {
+                        var symbol = item.GetProperty("s").GetString();
+                        var priceStr = item.GetProperty("c").GetString();
+                        if (symbol != null && decimal.TryParse(priceStr, System.Globalization.NumberStyles.Any,
+                            System.Globalization.CultureInfo.InvariantCulture, out var price) && price > 0)
+                        {
+                            TickerPriceReceived?.Invoke(symbol, price);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug("Ticker-Parse-Fehler: {Error}", ex.Message);
+            }
+        });
     }
 
     /// <summary>

@@ -21,6 +21,12 @@ public class RegimeDetector
     private readonly int[,] _transitionCounts = new int[4, 4];
     private readonly object _transitionLock = new();
 
+    // Letztes global erkanntes Regime (für Regime-Exit-Check in PriceTickerLoop)
+    private volatile MarketRegime _currentRegime = MarketRegime.Range;
+
+    /// <summary>Das zuletzt erkannte Regime (über alle Symbole hinweg, aktualisiert bei jedem Detect-Aufruf).</summary>
+    public MarketRegime CurrentRegime => _currentRegime;
+
     // EMA-Glättungsfaktor (0.2 = langsame Anpassung, weniger Flackern)
     private const float SmoothingAlpha = 0.2f;
 
@@ -53,6 +59,8 @@ public class RegimeDetector
 
         // 5. Regime bestimmen (mit Hysterese)
         var (regime, confidence) = DetermineRegime(features.Symbol, posterior);
+
+        _currentRegime = regime;
 
         return new RegimeState(
             regime, (decimal)confidence,

@@ -138,6 +138,34 @@ public class BingXPublicClient : IPublicMarketDataClient
     }
 
     /// <summary>
+    /// Lädt Open Interest für ein Symbol (öffentlich, kein API-Key nötig).
+    /// Gibt Open Interest in Contracts zurück (0 bei Fehler).
+    /// </summary>
+    public async Task<decimal> GetOpenInterestAsync(string symbol, CancellationToken ct = default)
+    {
+        try
+        {
+            return await SendWithRetryAsync(async () =>
+            {
+                await _rateLimiter.WaitForSlotAsync("queries", ct).ConfigureAwait(false);
+
+                var url = $"{BaseUrl}/openApi/swap/v2/quote/openInterest?symbol={symbol}";
+                var response = await _httpClient.GetStringAsync(url, ct).ConfigureAwait(false);
+                var result = JsonSerializer.Deserialize<BingXResponse<BingXOpenInterest>>(response);
+
+                if (result?.Code != 0 || result.Data == null)
+                    return 0m;
+
+                return ParseDecimal(result.Data.OpenInterest);
+            }, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            return 0m;
+        }
+    }
+
+    /// <summary>
     /// Lädt alle verfügbaren Symbole (nach Volumen sortiert).
     /// </summary>
     public async Task<List<string>> GetAllSymbolsAsync(CancellationToken ct = default)

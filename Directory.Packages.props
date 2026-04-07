@@ -104,6 +104,7 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="Microsoft.ML" Version="5.0.0" />
     <PackageVersion Include="Microsoft.ML.LightGbm" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.22.0" />
     <PackageVersion Include="GeneticSharp" Version="3.1.4" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->

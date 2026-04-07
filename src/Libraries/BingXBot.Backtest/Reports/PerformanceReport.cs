@@ -1,4 +1,5 @@
 using BingXBot.Core.Models;
+using BingXBot.Core.Models.ATI;
 
 namespace BingXBot.Backtest.Reports;
 
@@ -19,6 +20,22 @@ public class PerformanceReport
     public decimal AverageWin { get; set; }
     public decimal AverageLoss { get; set; }
     public TimeSpan AverageHoldTime { get; set; }
+
+    // Erweiterte Metriken
+    public decimal CalmarRatio { get; set; }
+    public int MaxConsecutiveLosses { get; set; }
+    public int MaxConsecutiveWins { get; set; }
+    public decimal SortinoRatio { get; set; }
+    public decimal RecoveryFactor { get; set; }
+
+    // Monte Carlo Simulation
+    public MonteCarloResult? MonteCarlo { get; set; }
+
+    // Regime-spezifische Metriken (aufgeschlüsselt nach MarketRegime)
+    public Dictionary<MarketRegime, RegimeMetrics> RegimeBreakdown { get; set; } = new();
+
+    // CPCV: Overfitting-Wahrscheinlichkeit
+    public CpcvResult? Cpcv { get; set; }
 
     public static PerformanceReport FromTrades(List<CompletedTrade> trades, List<EquityPoint> equityCurve, decimal initialBalance)
     {
@@ -71,6 +88,39 @@ public class PerformanceReport
         var grossLoss = Math.Abs(losers.Sum(t => t.Pnl));
         report.ProfitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? decimal.MaxValue : 0m;
 
+        // Calmar Ratio: Return / MaxDrawdown (vereinfacht, nicht annualisiert)
+        report.CalmarRatio = report.MaxDrawdownPercent > 0
+            ? (report.TotalPnl / initialBalance * 100m) / report.MaxDrawdownPercent
+            : 0m;
+
+        // Recovery Factor: TotalPnl / |MaxDrawdown|
+        report.RecoveryFactor = report.MaxDrawdown > 0
+            ? report.TotalPnl / report.MaxDrawdown
+            : 0m;
+
+        // Max aufeinanderfolgende Gewinne/Verluste
+        {
+            int currentWins = 0, currentLosses = 0;
+            int maxWins = 0, maxLosses = 0;
+            foreach (var trade in trades)
+            {
+                if (trade.Pnl > 0)
+                {
+                    currentWins++;
+                    currentLosses = 0;
+                    if (currentWins > maxWins) maxWins = currentWins;
+                }
+                else
+                {
+                    currentLosses++;
+                    currentWins = 0;
+                    if (currentLosses > maxLosses) maxLosses = currentLosses;
+                }
+            }
+            report.MaxConsecutiveWins = maxWins;
+            report.MaxConsecutiveLosses = maxLosses;
+        }
+
         // Sharpe Ratio (annualisiert) mit Running Balance.
         // Returns werden relativ zur aktuellen Balance berechnet, nicht zur initialen.
         // Verhindert Verzerrung bei wachsendem/schrumpfendem Account.
@@ -96,9 +146,62 @@ public class PerformanceReport
                 report.SharpeRatio = stdDev > 0
                     ? (decimal)(avgReturn / stdDev * Math.Sqrt(252))
                     : 0m;
+
+                // Sortino Ratio: avgReturn / downsideDeviation (nur negative Returns)
+                var negativeReturns = returns.Where(r => r < 0).ToList();
+                if (negativeReturns.Count > 0)
+                {
+                    var downsideVariance = negativeReturns.Select(r => r * r).Average();
+                    var downsideDeviation = Math.Sqrt(downsideVariance);
+                    report.SortinoRatio = downsideDeviation > 0
+                        ? (decimal)(avgReturn / downsideDeviation * Math.Sqrt(252))
+                        : 0m;
+                }
             }
+        }
+
+        // Monte Carlo Simulation (1000 Durchläufe)
+        if (trades.Count >= 5)
+        {
+            report.MonteCarlo = MonteCarloSimulator.Simulate(trades, initialBalance);
+        }
+
+        // CPCV: Combinatorial Purged Cross-Validation (min. 30 Trades)
+        if (trades.Count >= 30)
+        {
+            report.Cpcv = CpcvValidator.Validate(trades, initialBalance);
+        }
+
+        // Regime-spezifische Metriken (falls Regime-Daten vorhanden)
+        var regimeGroups = trades.Where(t => t.Regime.HasValue).GroupBy(t => t.Regime!.Value);
+        foreach (var group in regimeGroups)
+        {
+            var regimeTrades = group.ToList();
+            var wins = regimeTrades.Count(t => t.Pnl > 0);
+            var totalPnl = regimeTrades.Sum(t => t.Pnl);
+            var grossWins = regimeTrades.Where(t => t.Pnl > 0).Sum(t => t.Pnl);
+            var grossLosses = Math.Abs(regimeTrades.Where(t => t.Pnl < 0).Sum(t => t.Pnl));
+
+            report.RegimeBreakdown[group.Key] = new RegimeMetrics
+            {
+                TradeCount = regimeTrades.Count,
+                WinRate = regimeTrades.Count > 0 ? (decimal)wins / regimeTrades.Count : 0m,
+                TotalPnl = totalPnl,
+                ProfitFactor = grossLosses > 0 ? grossWins / grossLosses : grossWins > 0 ? 99m : 0m,
+                AverageRrr = regimeTrades.Count > 0 ? totalPnl / regimeTrades.Count : 0m
+            };
         }
 
         return report;
     }
+}
+
+/// <summary>Performance-Metriken aufgeschlüsselt nach MarketRegime.</summary>
+public class RegimeMetrics
+{
+    public int TradeCount { get; init; }
+    public decimal WinRate { get; init; }
+    public decimal TotalPnl { get; init; }
+    public decimal ProfitFactor { get; init; }
+    public decimal AverageRrr { get; init; }
 }

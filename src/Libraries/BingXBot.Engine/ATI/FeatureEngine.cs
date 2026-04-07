@@ -6,10 +6,45 @@ namespace BingXBot.Engine.ATI;
 
 /// <summary>
 /// Extrahiert normalisierte Features aus einem MarketContext.
-/// Alle 19 Features werden auf [-1,1] oder [0,1] normalisiert.
+/// Alle 25 Features werden auf [-1,1] oder [0,1] normalisiert.
 /// </summary>
 public static class FeatureEngine
 {
+    // Cross-Market-Daten werden einmal pro Scan-Zyklus extern gesetzt (von TradingServiceBase)
+    private static float _btcReturn24h;
+    private static float _btcTrend;
+    private static float _marketSentiment;
+    private static float _fearGreedIndex;
+    private static readonly Dictionary<string, float> _btcCorrelations = new();
+    private static readonly Dictionary<string, float> _openInterestChanges = new();
+
+    /// <summary>
+    /// Setzt BTC- und Markt-Kontext für Cross-Market-Features (wird pro Scan-Zyklus aufgerufen).
+    /// </summary>
+    public static void SetCrossMarketData(float btcReturn24h, float btcTrend, float marketSentiment, float fearGreedIndex = 0f)
+    {
+        _btcReturn24h = Math.Clamp(btcReturn24h, -2f, 2f);
+        _btcTrend = Math.Clamp(btcTrend, -1f, 1f);
+        _marketSentiment = Math.Clamp(marketSentiment, -2f, 2f);
+        _fearGreedIndex = Math.Clamp(fearGreedIndex, 0f, 1f);
+    }
+
+    /// <summary>
+    /// Setzt die Open Interest Change für ein Symbol (normalisiert, pro Scan-Zyklus).
+    /// </summary>
+    public static void SetOpenInterestChange(string symbol, float change)
+    {
+        _openInterestChanges[symbol] = Math.Clamp(change, -1f, 1f);
+    }
+
+    /// <summary>
+    /// Setzt die BTC-Korrelation für ein bestimmtes Symbol (berechnet in CorrelationChecker oder Scanner).
+    /// </summary>
+    public static void SetBtcCorrelation(string symbol, float correlation)
+    {
+        _btcCorrelations[symbol] = Math.Clamp(correlation, -1f, 1f);
+    }
+
     /// <summary>
     /// Extrahiert einen vollständigen Feature-Snapshot aus dem aktuellen Marktzustand.
     /// </summary>
@@ -84,6 +119,16 @@ public static class FeatureEngine
             var close20Ago = (float)candles[^21].Close;
             snapshot.RecentReturnPercent = (close20Ago > 0) ? Clamp((close - close20Ago) / close20Ago) : 0f;
         }
+
+        // Cross-Market Features (BTC-Kontext)
+        snapshot.BtcReturn24h = _btcReturn24h;
+        snapshot.BtcTrend = _btcTrend;
+        snapshot.MarketSentiment = _marketSentiment;
+        snapshot.BtcCorrelation = _btcCorrelations.GetValueOrDefault(context.Symbol, 0f);
+        snapshot.FearGreedIndex = _fearGreedIndex;
+
+        // Derivatives Features (Open Interest)
+        snapshot.OpenInterestChange = _openInterestChanges.GetValueOrDefault(context.Symbol, 0f);
 
         return snapshot;
     }

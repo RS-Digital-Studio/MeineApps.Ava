@@ -40,8 +40,24 @@ public class AdaptiveTradingIntelligence
     /// <summary>Zeitpunkt der letzten Auto-Save-Persistierung (für Timer-Logik in TradingServiceBase).</summary>
     public DateTime LastAutoSaveTime { get; set; } = DateTime.UtcNow;
 
+    /// <summary>LightGBM Classifier (Phase 2). Wird automatisch trainiert wenn genug Daten vorhanden.</summary>
+    public LightGbmClassifier LightGbm { get; } = new();
+
+    /// <summary>ONNX Model (Phase 3). Wird extern geladen wenn vorhanden.</summary>
+    public OnnxModelInference? OnnxModel { get; set; }
+
+    /// <summary>Zeitpunkt des letzten Auto-Trainings.</summary>
+    public DateTime LastAutoTrainTime { get; private set; } = DateTime.MinValue;
+    private int _tradesSinceLastTrain;
+
     /// <summary>Event: Wird ausgelöst wenn ein Audit-Trail erstellt wurde (für Logging/UI).</summary>
     public event Action<TradeAudit>? AuditCreated;
+
+    /// <summary>Event: Wird bei Trade-Close mit dem Feature-Snapshot + Outcome ausgelöst (für DB-Persistenz).</summary>
+    public event Action<FeatureSnapshot, CompletedTrade, EnsembleVote>? FeatureSnapshotCompleted;
+
+    /// <summary>Event: Wird ausgelöst wenn Auto-Training abgeschlossen ist (mit Metriken-Text).</summary>
+    public event Action<string>? AutoTrainingCompleted;
 
     // Ablehnungs-Zähler pro Scan-Zyklus (für Debug-Zusammenfassung)
     private int _rejectedChaotic;
@@ -81,6 +97,43 @@ public class AdaptiveTradingIntelligence
         _ensemble = new AdaptiveEnsemble();
         _confidenceGate = new ConfidenceGate();
         _exitOptimizer = new ExitOptimizer();
+
+        // LightGBM + ONNX mit ConfidenceGate verdrahten
+        _confidenceGate.LightGbm = LightGbm;
+
+        // ONNX-Modell automatisch laden wenn vorhanden
+        TryLoadOnnxModel();
+        _confidenceGate.OnnxModel = OnnxModel;
+    }
+
+    /// <summary>
+    /// Versucht ein ONNX-Modell aus dem Standard-Pfad zu laden.
+    /// Sucht in: AppData/BingXBot/bingxbot_model.onnx
+    /// </summary>
+    public bool TryLoadOnnxModel(string? customPath = null)
+    {
+        var paths = new List<string>();
+
+        if (customPath != null)
+            paths.Add(customPath);
+
+        // Standard-Pfade
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        paths.Add(Path.Combine(appData, "BingXBot", "bingxbot_model.onnx"));
+        paths.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bingxbot_model.onnx"));
+
+        foreach (var path in paths)
+        {
+            if (!File.Exists(path)) continue;
+
+            OnnxModel ??= new OnnxModelInference();
+            if (OnnxModel.LoadModel(path))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // === Komponenten-Zugriff (für UI/Debug) ===
@@ -215,13 +268,29 @@ public class AdaptiveTradingIntelligence
                      $"Ensemble={ensembleVote.AgreeingCount}/{ensembleVote.TotalCount} ({ensembleVote.AgreeingNames}), " +
                      $"ML={mlConfidence:P0}";
 
+        // ConfluenceScore aus Ensemble-Übereinstimmung ableiten (für Position-Sizing)
+        // Beispiel: 5/7 Strategien einig → Score 8, 7/7 → Score 12
+        var atiConfluenceScore = Math.Min(12, ensembleVote.AgreeingCount * 12 / Math.Max(ensembleVote.TotalCount, 1));
+
+        // TP2 berechnen: 1.5x Abstand von TP1 (für Pyramid-Exit)
+        decimal? tp2 = null;
+        if (finalTp.HasValue && entryPrice > 0)
+        {
+            var tpDist = Math.Abs(finalTp.Value - entryPrice);
+            tp2 = ensembleVote.ConsensusSignal == Signal.Long
+                ? entryPrice + tpDist * 1.5m
+                : entryPrice - tpDist * 1.5m;
+        }
+
         var optimizedSignal = new SignalResult(
             ensembleVote.ConsensusSignal,
             combinedConfidence,
             entryPrice,
             finalSl,
             finalTp,
-            reason);
+            reason,
+            TakeProfit2: tp2,
+            ConfluenceScore: atiConfluenceScore);
 
         // 10. Audit-Trail erstellen
         CreateAudit(features, regimeState, ensembleVote, mlConfidence, true, reason,
@@ -284,6 +353,9 @@ public class AdaptiveTradingIntelligence
         var pnlPercent = trade.EntryPrice > 0 ? trade.Pnl / (trade.EntryPrice * trade.Quantity) : 0m;
         _exitOptimizer.RecordExitOutcome(ctx.Regime.CurrentRegime, ctx.EnsembleVote.WeightedConfidence,
             ctx.SlMultiplier, ctx.TpMultiplier, won, pnlPercent);
+
+        // 4. Feature-Snapshot für DB-Persistenz (ML-Training) publizieren
+        FeatureSnapshotCompleted?.Invoke(ctx.Features, trade, ctx.EnsembleVote);
     }
 
     /// <summary>Serialisiert den gesamten ATI-Lernzustand als JSON.</summary>
@@ -365,6 +437,52 @@ public class AdaptiveTradingIntelligence
         public string ExitOptimizerStats { get; set; } = "";
         public string RegimeTransitions { get; set; } = "";
         public DateTime SavedAt { get; set; }
+    }
+
+    /// <summary>
+    /// Prüft ob Auto-Training ausgelöst werden soll und trainiert LightGBM wenn nötig.
+    /// Aufrufen nach jedem Trade-Close. Trainiert im Hintergrund alle 10 Trades oder 24h.
+    /// </summary>
+    public void CheckAutoTraining(IReadOnlyList<Core.Data.FeatureSnapshotEntity> labeledSnapshots)
+    {
+        _tradesSinceLastTrain++;
+
+        // Training alle 10 Trades oder alle 24h (was zuerst kommt)
+        var hoursSinceLastTrain = (DateTime.UtcNow - LastAutoTrainTime).TotalHours;
+        if (_tradesSinceLastTrain < 10 && hoursSinceLastTrain < 24) return;
+        if (labeledSnapshots.Count < LightGbm.MinSamplesForTraining) return;
+
+        _tradesSinceLastTrain = 0;
+
+        // Training im Background-Thread (blockiert nicht den Trading-Loop)
+        Task.Run(() =>
+        {
+            try
+            {
+                var metrics = LightGbm.Train(labeledSnapshots);
+                if (metrics == null) return;
+
+                LastAutoTrainTime = DateTime.UtcNow;
+
+                // Modell nur übernehmen wenn AUC > 0.55 (besser als Münzwurf)
+                if (metrics.Auc >= 0.55m)
+                {
+                    AutoTrainingCompleted?.Invoke(
+                        $"LightGBM trainiert: AUC={metrics.Auc:F3}, Acc={metrics.Accuracy:F3}, " +
+                        $"F1={metrics.F1Score:F3} ({metrics.TrainingSamples} Train, {metrics.TestSamples} Test)");
+                }
+                else
+                {
+                    // Modell zu schwach → Phase 1 Bayesian bleibt aktiv
+                    AutoTrainingCompleted?.Invoke(
+                        $"LightGBM Training: AUC={metrics.Auc:F3} < 0.55 → Modell verworfen, Bayesian bleibt aktiv");
+                }
+            }
+            catch (Exception ex)
+            {
+                AutoTrainingCompleted?.Invoke($"LightGBM Training fehlgeschlagen: {ex.Message}");
+            }
+        });
     }
 
     /// <summary>Gespeicherter Kontext eines offenen Trades (für Lernen beim Close).</summary>

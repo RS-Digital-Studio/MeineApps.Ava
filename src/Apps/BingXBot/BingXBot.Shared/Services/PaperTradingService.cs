@@ -4,6 +4,7 @@ using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Backtest.Simulation;
 using BingXBot.Engine;
+using BingXBot.Engine.Indicators;
 using BingXBot.Engine.Risk;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -55,7 +56,7 @@ public class PaperTradingService : TradingServiceBase
     }
 
     /// <summary>Stoppt das Paper-Trading und schließt alle offenen Positionen.</summary>
-    public async Task StopAsync()
+    public override async Task StopAsync()
     {
         if (!_isRunning) return;
         _cts?.Cancel();
@@ -68,7 +69,7 @@ public class PaperTradingService : TradingServiceBase
     }
 
     /// <summary>Notfall-Stop: Sofort alle Positionen schließen.</summary>
-    public async Task EmergencyStopAsync()
+    public override async Task EmergencyStopAsync()
     {
         _cts?.Cancel();
 
@@ -94,9 +95,16 @@ public class PaperTradingService : TradingServiceBase
     protected override void SetCurrentPriceIfNeeded(string symbol, decimal price) =>
         _exchange?.SetCurrentPrice(symbol, price);
 
-    protected override async Task<bool> PlaceOrderOnExchangeAsync(Ticker ticker, Side side, decimal quantity, SignalResult? signal = null)
+    protected override async Task<bool> PlaceOrderOnExchangeAsync(Ticker ticker, Side side, decimal quantity, SignalResult? signal = null, int adaptiveLeverage = 0)
     {
-        await _exchange!.SetLeverageAsync(ticker.Symbol, (int)_riskSettings.MaxLeverage, side);
+        var leverage = adaptiveLeverage > 0
+            ? Math.Min(adaptiveLeverage, (int)_riskSettings.MaxLeverage)
+            : (int)_riskSettings.MaxLeverage;
+        await _exchange!.SetLeverageAsync(ticker.Symbol, leverage, side);
+
+        // Dynamische Slippage: ATR/Volume aus gecachten Klines berechnen
+        UpdateMarketConditionsForSymbol(ticker.Symbol, ticker.LastPrice);
+
         var order = await _exchange.PlaceOrderAsync(new OrderRequest(
             ticker.Symbol, side, OrderType.Market, quantity));
 
@@ -160,6 +168,32 @@ public class PaperTradingService : TradingServiceBase
     // ═══════════════════════════════════════════════════════════════
     // Hilfsmethoden
     // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Setzt dynamische Slippage-Parameter auf der SimulatedExchange basierend auf aktuellen Marktdaten.
+    /// Nutzt den Indikator-Cache (wird während des Scan-Zyklus befüllt).
+    /// </summary>
+    private void UpdateMarketConditionsForSymbol(string symbol, decimal price)
+    {
+        if (_exchange == null || price <= 0) return;
+
+        // ATR und Volume-Ratio aus dem Indikator-Cache schätzen (falls im gleichen Scan-Zyklus berechnet)
+        // Fallback: Schätze ATR als 1.5% des Preises (typisch für H4-Krypto)
+        var estimatedAtr = price * 0.015m;
+        var estimatedVolumeRatio = 1.0m;
+
+        // Versuche aus letztem Signal-Kontext genauere Werte zu bekommen
+        foreach (var state in _exitStates.Values)
+        {
+            if (state.Symbol == symbol && state.CurrentAtr > 0)
+            {
+                estimatedAtr = state.CurrentAtr;
+                break;
+            }
+        }
+
+        _exchange.SetMarketConditions(symbol, estimatedAtr, estimatedVolumeRatio);
+    }
 
     /// <summary>Publiziert alle neuen CompletedTrades seit prevCount.</summary>
     private void PublishNewTrades(int prevCount)

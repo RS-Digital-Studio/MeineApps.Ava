@@ -87,6 +87,9 @@ public class LiveTradingManager : IDisposable
         var logger = NullLogger<BingXRestClient>.Instance;
         _restClient = new BingXRestClient(creds.Value.ApiKey, creds.Value.ApiSecret, _httpClient, _rateLimiter, logger);
 
+        // Symbol-Info-Cache laden (Quantity/Price-Precision, Min-Order-Größe pro Symbol)
+        await _restClient.InitializeSymbolInfoAsync();
+
         // Verbindung testen
         var account = await _restClient.GetAccountInfoAsync();
         var positions = await _restClient.GetPositionsAsync();
@@ -126,8 +129,13 @@ public class LiveTradingManager : IDisposable
             _botSettings,
             dbService: _dbService);
 
-        // Strategie aktivieren
+        // Strategie aktivieren + Trading-Modus-Preset anwenden
         var strategy = StrategyFactory.Create(strategyName);
+        if (strategy is CryptoTrendProStrategy ctp)
+        {
+            var preset = _botSettings.LastTradingModePreset;
+            ctp.ApplyPreset(preset);
+        }
         _strategyManager.SetStrategy(strategy);
 
         // ATI-Integration
@@ -145,6 +153,97 @@ public class LiveTradingManager : IDisposable
             $"LIVE-TRADING AKTIV mit Strategie '{strategyName}'. Echtes Geld!"));
 
         _service.Start();
+
+        // Offene Positionen prüfen und SL/Breakeven setzen
+        await RecoverOpenPositionsAsync();
+    }
+
+    /// <summary>
+    /// Prüft alle offenen Positionen beim Start und setzt fehlende SL/Auto-Breakeven.
+    /// Stellt sicher dass Positionen die vor dem Neustart eröffnet wurden geschützt sind.
+    /// </summary>
+    private async Task RecoverOpenPositionsAsync()
+    {
+        try
+        {
+            var positions = await _restClient!.GetPositionsAsync();
+            if (positions.Count == 0) return;
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
+                $"Prüfe {positions.Count} offene Position(en) auf fehlende SL/Breakeven..."));
+
+            var tickers = await _publicClient!.GetAllTickersAsync();
+            var tickerMap = tickers.ToDictionary(t => t.Symbol, t => t.LastPrice);
+
+            foreach (var pos in positions)
+            {
+                if (!tickerMap.TryGetValue(pos.Symbol, out var currentPrice) || currentPrice <= 0)
+                    continue;
+
+                // PnL berechnen
+                var pnlPercent = pos.Side == Side.Buy
+                    ? (currentPrice - pos.EntryPrice) / pos.EntryPrice * 100m
+                    : (pos.EntryPrice - currentPrice) / pos.EntryPrice * 100m;
+
+                // Auto-Breakeven prüfen: Gewinn% >= Leverage%
+                if (pnlPercent >= pos.Leverage && pos.Leverage > 0)
+                {
+                    var beSl = pos.Side == Side.Buy
+                        ? pos.EntryPrice * 1.001m
+                        : pos.EntryPrice * 0.999m;
+
+                    try
+                    {
+                        await _restClient.SetPositionSlTpAsync(pos.Symbol, pos.Side, beSl, null);
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Recovery",
+                            $"{pos.Symbol}: Auto-Breakeven gesetzt (PnL={pnlPercent:F1}%, Lev={pos.Leverage}x) → SL={beSl:F8}",
+                            pos.Symbol));
+                    }
+                    catch (Exception ex)
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                            $"{pos.Symbol}: Breakeven-SL fehlgeschlagen: {ex.Message}", pos.Symbol));
+                    }
+                }
+                // SL/TP aus BingX-Orders lesen und ins Signal-Dictionary schreiben (für UI-Anzeige)
+                try
+                {
+                    var orders = await _restClient.GetOpenOrdersAsync(pos.Symbol);
+                    decimal? slPrice = null, tpPrice = null;
+                    foreach (var order in orders)
+                    {
+                        if (order.Type == OrderType.StopMarket && order.StopPrice.HasValue)
+                            slPrice = order.StopPrice.Value;
+                        if (order.Type is OrderType.TakeProfitMarket or OrderType.TakeProfitLimit && order.StopPrice.HasValue)
+                            tpPrice = order.StopPrice.Value;
+                    }
+
+                    // Signal im Service registrieren damit das UI die Werte anzeigt
+                    if (slPrice.HasValue || tpPrice.HasValue)
+                    {
+                        var signal = new SignalResult(
+                            pos.Side == Side.Buy ? Signal.Long : Signal.Short,
+                            0.5m, pos.EntryPrice, slPrice, tpPrice, "Recovery: Aus BingX-Orders wiederhergestellt");
+                        _service!.RestorePositionSignal(pos.Symbol, pos.Side, signal);
+
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
+                            $"{pos.Symbol}: Wiederhergestellt (SL={slPrice?.ToString("F8") ?? "---"}, TP={tpPrice?.ToString("F8") ?? "---"}, PnL={pnlPercent:F1}%)"));
+                    }
+                    else
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                            $"{pos.Symbol}: KEIN SL/TP auf BingX! Position ist ungeschützt. PnL={pnlPercent:F1}%",
+                            pos.Symbol));
+                    }
+                }
+                catch { /* Best-effort */ }
+            }
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                $"Position-Recovery fehlgeschlagen: {ex.Message}"));
+        }
     }
 
     /// <summary>
@@ -203,7 +302,7 @@ public class LiveTradingManager : IDisposable
                     if (order.Symbol != pos.Symbol) continue;
                     if (order.Type == OrderType.StopMarket && order.StopPrice.HasValue)
                         sl = order.StopPrice.Value;
-                    else if (order.Type == OrderType.TakeProfitMarket && order.StopPrice.HasValue)
+                    else if (order.Type is OrderType.TakeProfitMarket or OrderType.TakeProfitLimit && order.StopPrice.HasValue)
                         tp = order.StopPrice.Value;
                 }
 

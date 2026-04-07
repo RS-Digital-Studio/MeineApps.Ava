@@ -28,6 +28,10 @@ public abstract class TradingServiceBase : IDisposable
     protected readonly BotEventBus _eventBus;
 
     protected RiskManager? _riskManager;
+    /// <summary>RiskManager-Instanz (für Rolling-Metriken im UI).</summary>
+    public RiskManager? RiskManager => _riskManager;
+    /// <summary>Geteilter RiskManager vom MultiModeOrchestrator. Wenn gesetzt, wird dieser statt des eigenen verwendet.</summary>
+    public RiskManager? RiskManagerOverride { get; set; }
     protected CancellationTokenSource? _cts;
     protected volatile bool _isRunning;
     protected volatile bool _isPaused;
@@ -52,15 +56,29 @@ public abstract class TradingServiceBase : IDisposable
 
     // Multi-Stage Exit: Vollständiger Positions-Zustand (ersetzt teilweise _positionSignals für Exit-Logik)
     protected readonly ConcurrentDictionary<string, PositionExitState> _exitStates = new();
-    // Cooldown: Zeitpunkt des letzten Verlust-Trades
+    // Cooldown-Eskalation: Verlust-Tracking
     protected DateTime? _lastLossTime;
+    protected int _consecutiveLosses;
     // Täglicher Trade-Counter (wird bei Tageswechsel zurückgesetzt)
     protected int _tradesToday;
+    // Equity-Curve-Trading: Equity-Historie für EMA-Berechnung
+    private readonly List<decimal> _equityHistory = new();
+    // Semaphore für paralleles Klines-Laden (max 5 gleichzeitige Requests)
+    private readonly SemaphoreSlim _klineSemaphore = new(5);
 
     // ATI: Adaptive Trading Intelligence (optional, kann aktiviert/deaktiviert werden)
     protected AdaptiveTradingIntelligence? _ati;
     // Bot-Einstellungen (für ATI Auto-Save Intervall, Notifications etc.)
     protected readonly BotSettings _botSettings;
+
+    // Fear & Greed Index Cache (wird alle 15 Min aktualisiert, API hat 60 req/min Limit)
+    private float _cachedFearGreedIndex;
+    /// <summary>Letzter Fear & Greed Wert [0, 1] normalisiert. Fuer Dashboard-Widget.</summary>
+    public float CachedFearGreedIndex => _cachedFearGreedIndex;
+    private DateTime _lastFearGreedFetch = DateTime.MinValue;
+    private static readonly HttpClient _fearGreedClient = new() { Timeout = TimeSpan.FromSeconds(10) };
+    // Open Interest Tracking pro Symbol: Vorheriger Wert für Change-Berechnung
+    private readonly ConcurrentDictionary<string, decimal> _previousOpenInterest = new();
 
     /// <summary>Adaptive Trading Intelligence Instanz (null = deaktiviert).</summary>
     public AdaptiveTradingIntelligence? ATI
@@ -130,6 +148,28 @@ public abstract class TradingServiceBase : IDisposable
         return signal;
     }
 
+    /// <summary>Stellt ein Signal für eine offene Position wieder her (z.B. nach App-Neustart aus BingX-Orders).</summary>
+    public void RestorePositionSignal(string symbol, Side side, SignalResult signal)
+    {
+        var key = $"{symbol}_{side}";
+        _positionSignals[key] = signal;
+        if (!_exitStates.ContainsKey(key))
+        {
+            var entry = signal.EntryPrice ?? 0m;
+            // BreakevenSet nur true wenn der SL bereits auf/über Entry liegt (= BE war schon gesetzt)
+            var slAlreadyAtBe = signal.StopLoss.HasValue && entry > 0 && (
+                (side == Side.Buy && signal.StopLoss.Value >= entry) ||
+                (side == Side.Sell && signal.StopLoss.Value <= entry));
+
+            _exitStates[key] = new PositionExitState
+            {
+                Signal = signal, Symbol = symbol, Side = side,
+                EntryPrice = entry,
+                BreakevenSet = slAlreadyAtBe
+            };
+        }
+    }
+
     /// <summary>
     /// Entfernt das gespeicherte Signal für eine Position (z.B. bei manuellem Close über Dashboard).
     /// Verhindert, dass PriceTickerLoop eine bereits geschlossene Position erneut zu schließen versucht.
@@ -176,7 +216,7 @@ public abstract class TradingServiceBase : IDisposable
     /// <summary>Initialisiert RiskManager, CancellationToken und startet die Loops.</summary>
     protected void StartBase(RiskManager riskManager)
     {
-        _riskManager = riskManager;
+        _riskManager = RiskManagerOverride ?? riskManager;
         // K-5 Fix: Cancel VOR Dispose — sonst laufen alte Loops weiter (ObjectDisposedException
         // wird nicht von catch(OperationCanceledException) gefangen)
         _cts?.Cancel();
@@ -201,7 +241,7 @@ public abstract class TradingServiceBase : IDisposable
         _positionTrailingPercent.Clear();
         _exitStates.Clear();
         _marginWarningsIssued.Clear();
-        _tradesToday = 0;
+        Interlocked.Exchange(ref _tradesToday, 0);
         OnSignalsClearedAll();
 
         // N-4 Fix: Cancel vor Dispose damit laufende Tasks sauber beendet werden
@@ -229,7 +269,7 @@ public abstract class TradingServiceBase : IDisposable
                 {
                     _riskManager?.ResetDailyStats();
                     _lastDailyResetDate = today;
-                    _tradesToday = 0;
+                    Interlocked.Exchange(ref _tradesToday, 0);
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
                         $"{LogPrefix}Tages-Drawdown + Trade-Counter zurückgesetzt (neuer Tag)"));
                 }
@@ -298,6 +338,19 @@ public abstract class TradingServiceBase : IDisposable
                     }
                 }
 
+                // Regime-Warnung: Bei Chaotic-Regime WARNEN, nicht automatisch schließen.
+                // SL schützt die Positionen. Automatisches Schließen bei Chaotic führt zu
+                // unnötigen Verlusten weil Krypto-Volatilität oft als "Chaotic" erkannt wird.
+                if (_ati is { IsEnabled: true } && positions.Count > 0)
+                {
+                    var regime = _ati.RegimeDetector.CurrentRegime;
+                    if (regime == Core.Models.ATI.MarketRegime.Chaotic)
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Regime",
+                            $"{LogPrefix}Chaotisches Regime erkannt - {positions.Count} Position(en) werden durch SL geschützt"));
+                    }
+                }
+
                 foreach (var pos in positions)
                 {
                     if (!_tickerPriceMap.TryGetValue(pos.Symbol, out var price)) continue;
@@ -325,7 +378,7 @@ public abstract class TradingServiceBase : IDisposable
                                     _marginWarningsIssued[posKey] = DateTime.UtcNow;
                                     _eventBus.PublishMarginWarning(pos.Symbol, price, liqPrice, distancePercent);
                                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Risk",
-                                        $"{LogPrefix}{pos.Symbol}: Liquidation nur noch {distancePercent:F1}% entfernt! (Liq={liqPrice:G6}, Preis={price:G6})",
+                                        $"{LogPrefix}{pos.Symbol}: Liquidation nur noch {distancePercent:F1}% entfernt! (Liq={liqPrice:F4}, Preis={price:F4})",
                                         pos.Symbol));
                                 }
                             }
@@ -338,6 +391,47 @@ public abstract class TradingServiceBase : IDisposable
                     }
 
                     var key = $"{pos.Symbol}_{pos.Side}";
+
+                    // ═══ Auto-Breakeven: SL auf Entry wenn Gewinn% >= Leverage% ═══
+                    // Funktioniert auch OHNE Signal (z.B. nach App-Neustart bevor Recovery gelaufen ist)
+                    if (pos.Leverage > 0 && pos.EntryPrice > 0)
+                    {
+                        var beAlreadySet = _exitStates.TryGetValue(key, out var beState) && beState.BreakevenSet;
+                        if (!beAlreadySet)
+                        {
+                            var pnlPercent = pos.Side == Side.Buy
+                                ? (price - pos.EntryPrice) / pos.EntryPrice * 100m
+                                : (pos.EntryPrice - price) / pos.EntryPrice * 100m;
+
+                            if (pnlPercent >= pos.Leverage)
+                            {
+                                var beSl = pos.Side == Side.Buy
+                                    ? pos.EntryPrice * 1.001m
+                                    : pos.EntryPrice * 0.999m;
+
+                                // Signal aktualisieren falls vorhanden
+                                if (_positionSignals.TryGetValue(key, out var sig))
+                                    _positionSignals[key] = sig with { StopLoss = beSl };
+
+                                // ExitState erstellen/aktualisieren
+                                if (beState != null)
+                                    beState.BreakevenSet = true;
+                                else
+                                    _exitStates[key] = new PositionExitState
+                                    {
+                                        Symbol = pos.Symbol, Side = pos.Side,
+                                        EntryPrice = pos.EntryPrice, BreakevenSet = true
+                                    };
+
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                    $"{LogPrefix}{pos.Symbol}: Auto-Breakeven bei {pnlPercent:F1}% Gewinn (Lev={pos.Leverage}x) → SL auf {beSl:F8}",
+                                    pos.Symbol));
+
+                                await OnBreakevenSetAsync(pos.Symbol, pos.Side, beSl).ConfigureAwait(false);
+                            }
+                        }
+                    }
+
                     if (!_positionSignals.TryGetValue(key, out var signal)) continue;
 
                     var hit = false;
@@ -361,17 +455,63 @@ public abstract class TradingServiceBase : IDisposable
                                 await OnPartialCloseAsync(pos, price, closeQty).ConfigureAwait(false);
                                 exitState.PartialClosed = true;
 
-                                // SL auf Break-Even verschieben
+                                // Smart Breakeven: SL = Entry + ATR-Puffer statt exakter Entry
                                 var beSl = exitState.EntryPrice;
+                                if (_riskSettings.SmartBreakevenAtrMultiplier > 0 && exitState.CurrentAtr > 0)
+                                {
+                                    beSl = pos.Side == Side.Buy
+                                        ? exitState.EntryPrice + exitState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier
+                                        : exitState.EntryPrice - exitState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier;
+                                }
                                 _positionSignals[key] = signal with { StopLoss = beSl, TakeProfit = exitState.Tp2 };
                                 exitState.Signal = _positionSignals[key];
                                 exitState.Phase = ExitPhase.Tp1Hit;
                                 exitState.MaxHoldHours = _riskSettings.MaxHoldHoursAfterTp1;
 
                                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
-                                    $"{LogPrefix}{pos.Symbol}: TP1 erreicht → {_riskSettings.Tp1CloseRatio:P0} geschlossen, SL→BE ({beSl:G8})",
+                                    $"{LogPrefix}{pos.Symbol}: TP1 erreicht → {_riskSettings.Tp1CloseRatio:P0} geschlossen, SL→BE ({beSl:F8})",
                                     pos.Symbol));
                                 continue; // Nächste Position, kein weiterer Check nötig
+                            }
+                        }
+
+                        // Phase Tp1Hit: Prüfe TP2 (Partial Close, Pyramid 30/30/40)
+                        if (exitState.Phase == ExitPhase.Tp1Hit && exitState.PartialClosed && !exitState.Tp2Closed
+                            && signal.TakeProfit.HasValue && _riskSettings.Tp2CloseRatio > 0 && _riskSettings.Tp2CloseRatio < 1m)
+                        {
+                            var tp2Hit = pos.Side == Side.Buy
+                                ? price >= signal.TakeProfit.Value
+                                : price <= signal.TakeProfit.Value;
+
+                            if (tp2Hit)
+                            {
+                                // TP2 erreicht: Tp2CloseRatio der verbleibenden Position schließen
+                                var remainingQty = pos.Quantity;
+                                var tp2CloseQty = Math.Round(remainingQty * (_riskSettings.Tp2CloseRatio / (1m - _riskSettings.Tp1CloseRatio)), 6);
+                                tp2CloseQty = Math.Min(tp2CloseQty, remainingQty);
+
+                                if (tp2CloseQty > 0 && tp2CloseQty < remainingQty)
+                                {
+                                    await OnPartialCloseAsync(pos, price, tp2CloseQty).ConfigureAwait(false);
+                                    exitState.Tp2Closed = true;
+                                    exitState.Phase = ExitPhase.Trailing;
+
+                                    // Rest läuft nur noch mit Chandelier-Trailing (kein TP mehr)
+                                    _positionSignals[key] = signal with { TakeProfit = null };
+                                    exitState.Signal = _positionSignals[key];
+
+                                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                        $"{LogPrefix}{pos.Symbol}: TP2 erreicht → {_riskSettings.Tp2CloseRatio:P0} geschlossen, Rest Chandelier-Trailing",
+                                        pos.Symbol));
+                                    continue;
+                                }
+                                else
+                                {
+                                    // Zu wenig übrig → komplett schließen
+                                    reason = $"TP2 bei {signal.TakeProfit.Value:F8} (Rest zu klein für Partial)";
+                                    hit = true;
+                                    isStopLoss = false;
+                                }
                             }
                         }
 
@@ -408,16 +548,16 @@ public abstract class TradingServiceBase : IDisposable
                         if (pos.Side == Side.Buy)
                         {
                             if (signal.StopLoss.HasValue && price <= signal.StopLoss.Value)
-                            { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:G8}"; }
+                            { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:F8}"; }
                             else if (signal.TakeProfit.HasValue && price >= signal.TakeProfit.Value)
-                            { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:G8}"; }
+                            { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:F8}"; }
                         }
                         else
                         {
                             if (signal.StopLoss.HasValue && price >= signal.StopLoss.Value)
-                            { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:G8}"; }
+                            { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:F8}"; }
                             else if (signal.TakeProfit.HasValue && price <= signal.TakeProfit.Value)
-                            { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:G8}"; }
+                            { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:F8}"; }
                         }
                     }
 
@@ -478,6 +618,33 @@ public abstract class TradingServiceBase : IDisposable
                         }
                     }
 
+                    // ═══ Momentum-Decay: MACD-Histogramm schrumpft → Position warnen/schließen ═══
+                    if (!hit && _riskSettings.EnableMomentumDecay
+                        && _exitStates.TryGetValue(key, out var mdState) && mdState.Phase != ExitPhase.Initial)
+                    {
+                        // Prüfe ob MACD-Histogramm 3+ Balken schrumpft (Momentum stirbt)
+                        // Nutzt gecachte Klines falls im gleichen Scan-Zyklus verfügbar
+                        if (mdState.CurrentAtr > 0 && mdState.PartialClosed)
+                        {
+                            // Einfache Heuristik: Wenn Preis sich vom Extreme-Preis entfernt (Momentum-Verlust)
+                            var extremeDistance = pos.Side == Side.Buy
+                                ? mdState.ExtremePriceSinceEntry - price
+                                : price - mdState.ExtremePriceSinceEntry;
+                            var atrThreshold = mdState.CurrentAtr * 1.5m;
+
+                            if (extremeDistance > atrThreshold && !mdState.Tp2Closed)
+                            {
+                                // Momentum-Decay erkannt → Position schließen statt auf SL warten
+                                reason = $"Momentum-Decay: Preis {extremeDistance / mdState.CurrentAtr:F1}x ATR vom Höchstpunkt entfernt";
+                                hit = true;
+                                isStopLoss = false;
+
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                    $"{LogPrefix}{pos.Symbol}: {reason}", pos.Symbol));
+                            }
+                        }
+                    }
+
                     if (hit)
                     {
                         // Cooldown: Verlust-Trade merken
@@ -509,45 +676,42 @@ public abstract class TradingServiceBase : IDisposable
             return;
         }
 
+        var scanStart = DateTime.UtcNow;
+        var nextScanTime = scanStart.AddSeconds(_scannerSettings.ScanIntervalSeconds).ToLocalTime();
+        var nextScanText = $"Nächster Scan: {nextScanTime:HH:mm:ss}";
+
         // 1. Alle Ticker holen und filtern
         var tickers = await _publicClient.GetAllTickersAsync(ct).ConfigureAwait(false);
-        if (tickers.Count == 0) return;
+        if (tickers.Count == 0)
+        {
+            PublishScanSummary("Keine Ticker verfügbar", nextScanText);
+            return;
+        }
 
         var candidates = ScanHelper.FilterCandidates(tickers, _scannerSettings);
-        if (candidates.Count == 0) return;
+        if (candidates.Count == 0)
+        {
+            PublishScanSummary("Keine Kandidaten (Volumen-/Momentum-Filter)", nextScanText);
+            return;
+        }
 
         if (_eventBus.HasLogSubscribers)
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Scanner",
                 $"{candidates.Count} Kandidaten gefunden"));
 
         // 2. Globale MarketFilter prüfen (VOR dem teuren Klines-Loading)
-        var sessionFilter = MarketFilter.CheckSession(DateTime.UtcNow);
+        var sessionFilter = MarketFilter.CheckSession(DateTime.UtcNow, _botSettings.LastTradingModePreset);
         if (!sessionFilter.IsAllowed)
         {
-            if (_eventBus.HasLogSubscribers)
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Filter",
-                    $"{LogPrefix}Scan übersprungen: {sessionFilter.SessionInfo}"));
+            PublishScanSummary($"Session-Filter: {sessionFilter.SessionInfo}", nextScanText);
             IndicatorHelper.ClearCache();
             return;
         }
 
-        if (MarketFilter.IsCooldownActive(_lastLossTime, _riskSettings.CooldownHours))
-        {
-            if (_eventBus.HasLogSubscribers)
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Filter",
-                    $"{LogPrefix}Cooldown aktiv (letzter Verlust: {_lastLossTime:HH:mm})"));
-            IndicatorHelper.ClearCache();
-            return;
-        }
+        // Cooldown deaktiviert - der SL schützt die Positionen, kein Grund für Handelspausen
 
-        if (_riskSettings.MaxTradesPerDay > 0 && MarketFilter.IsMaxDailyTradesReached(_tradesToday, _riskSettings.MaxTradesPerDay))
-        {
-            if (_eventBus.HasLogSubscribers)
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Filter",
-                    $"{LogPrefix}Max Trades/Tag erreicht ({_tradesToday}/{_riskSettings.MaxTradesPerDay})"));
-            IndicatorHelper.ClearCache();
-            return;
-        }
+        // MaxTradesPerDay nur als Statistik, nicht als Filter (MaxOpenPositions begrenzt gleichzeitige Trades)
+        var tradesToday = Volatile.Read(ref _tradesToday);
 
         // 3. Account + Positionen holen
         var account = await GetAccountAsync().ConfigureAwait(false);
@@ -556,13 +720,13 @@ public abstract class TradingServiceBase : IDisposable
         // 4. Klines für alle Kandidaten PARALLEL vorladen (statt sequenziell pro Kandidat)
         //    Begrenzt auf 5 parallele Requests um Rate-Limiter nicht zu überlasten
         var now = DateTime.UtcNow;
-        var klineResults = new Dictionary<string, List<Candle>>();
-        var htfResults = new Dictionary<string, List<Candle>?>();
+        var klineResults = new ConcurrentDictionary<string, List<Candle>>();
+        var htfResults = new ConcurrentDictionary<string, List<Candle>?>();
+        var m15Results = new ConcurrentDictionary<string, List<Candle>?>(); // M15 für Entry-Timing
 
-        var semaphore = new SemaphoreSlim(5);
         var klineTasks = candidates.Select(async ticker =>
         {
-            await semaphore.WaitAsync(ct).ConfigureAwait(false);
+            await _klineSemaphore.WaitAsync(ct).ConfigureAwait(false);
             try
             {
                 var candles = await _publicClient.GetKlinesAsync(
@@ -579,11 +743,24 @@ public abstract class TradingServiceBase : IDisposable
                 catch (OperationCanceledException) { throw; }
                 catch { /* HTF optional */ }
 
-                lock (klineResults)
+                // M15-Candles für Entry-Timing (bei H4/H1 Strategien)
+                List<Candle>? m15Candles = null;
+                if (_scannerSettings.UseM15EntryTiming &&
+                    _scannerSettings.ScanTimeFrame is TimeFrame.H4 or TimeFrame.H1 or TimeFrame.H2)
                 {
-                    klineResults[ticker.Symbol] = candles;
-                    htfResults[ticker.Symbol] = htfCandles;
+                    try
+                    {
+                        m15Candles = await _publicClient.GetKlinesAsync(
+                            ticker.Symbol, Core.Enums.TimeFrame.M15,
+                            now.AddHours(-12), now, ct).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch { /* M15 optional */ }
                 }
+
+                klineResults[ticker.Symbol] = candles;
+                htfResults[ticker.Symbol] = htfCandles;
+                m15Results[ticker.Symbol] = m15Candles;
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
@@ -592,12 +769,15 @@ public abstract class TradingServiceBase : IDisposable
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Scanner",
                         $"{ticker.Symbol}: Klines-Laden fehlgeschlagen: {ex.Message}", ticker.Symbol));
             }
-            finally { semaphore.Release(); }
+            finally { _klineSemaphore.Release(); }
         });
 
         await Task.WhenAll(klineTasks).ConfigureAwait(false);
 
-        // 4. Kandidaten sequenziell evaluieren (Order-Platzierung muss sequenziell sein)
+        // 4a. Cross-Market-Features für ATI: BTC-Kontext und Markt-Stimmung
+        await UpdateCrossMarketFeaturesAsync(tickers, candidates, klineResults, ct).ConfigureAwait(false);
+
+        // 5. Kandidaten sequenziell evaluieren (Order-Platzierung muss sequenziell sein)
         var orderPlaced = false;
 
         foreach (var ticker in candidates)
@@ -608,6 +788,7 @@ public abstract class TradingServiceBase : IDisposable
             if (!klineResults.TryGetValue(ticker.Symbol, out var candles) || candles.Count < 50)
                 continue;
             htfResults.TryGetValue(ticker.Symbol, out var htfCandles);
+            m15Results.TryGetValue(ticker.Symbol, out var m15Candles);
 
             try
             {
@@ -642,13 +823,41 @@ public abstract class TradingServiceBase : IDisposable
                         ticker.Symbol, positions, _riskSettings, _publicClient, candles, _eventBus, LogPrefix, ct))
                         continue;
 
-                    // Risk-Check
-                    var riskCheck = ScanHelper.ValidateRisk(signal, context, _riskManager!, _eventBus, LogPrefix, _currentFundingRate);
-                    if (!riskCheck.IsAllowed) continue;
+                    // Adaptiver Leverage: Eingestellter MaxLeverage als Basis, leicht reduziert bei Volatilität/schwachem Signal
+                    var atrForLev = IndicatorHelper.CalculateAtr(candles);
+                    var atrPctLev = atrForLev.Count > 0 && atrForLev[^1].HasValue && ticker.LastPrice > 0
+                        ? (int)(atrForLev[^1]!.Value / ticker.LastPrice * 100 * 100) : 50;
+                    var isBtcSymbol = ticker.Symbol.StartsWith("BTC", StringComparison.OrdinalIgnoreCase);
+                    var adaptLev = CryptoTrendProStrategy.GetAdaptiveLeverage(atrPctLev, signal.ConfluenceScore, isBtcSymbol, (int)_riskSettings.MaxLeverage);
+                    if (_riskSettings.EnableCooldownEscalation && _consecutiveLosses >= 3)
+                        adaptLev = Math.Max(1, adaptLev - 1); // Bei Verlusten nur -1 statt halbieren
+
+                    // Risk-Check mit tatsächlichem Leverage (für korrekte Margin-Berechnung)
+                    var riskCheck = _riskManager!.ValidateTrade(signal, context, _currentFundingRate, adaptLev);
+                    if (!riskCheck.IsAllowed)
+                    {
+                        if (_eventBus.HasLogSubscribers)
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                                $"{LogPrefix}{ticker.Symbol}: Trade abgelehnt - {riskCheck.RejectionReason}", ticker.Symbol));
+                        continue;
+                    }
+
+                    // Equity-Curve-Trading als zusätzlicher Schutz
+                    var equityScale = GetEquityCurveScaleFactor();
+                    var positionSize = riskCheck.AdjustedPositionSize * equityScale;
+                    if (equityScale < 1.0m)
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                            $"{LogPrefix}{ticker.Symbol}: Equity-Curve-Scaling ({equityScale:P0})"));
+                    }
+
+                    // M15-Entry-Timing: Bei H4/H1-Signal prüfen ob M15 den Einstieg bestätigt
+                    var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
+                    if (!CheckM15EntryTiming(m15Candles, side, ticker.Symbol))
+                        continue;
 
                     // Order platzieren (Signal für native SL/TP mitgeben)
-                    var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
-                    var placed = await PlaceOrderOnExchangeAsync(ticker, side, riskCheck.AdjustedPositionSize, signal).ConfigureAwait(false);
+                    var placed = await PlaceOrderOnExchangeAsync(ticker, side, positionSize, signal, adaptLev).ConfigureAwait(false);
                     if (!placed) continue;
 
                     // Signal speichern + Multi-Stage Exit State erstellen
@@ -666,10 +875,10 @@ public abstract class TradingServiceBase : IDisposable
                         EntryPrice = ticker.LastPrice, OriginalQuantity = riskCheck.AdjustedPositionSize,
                         Tp2 = signal.TakeProfit2, ExtremePriceSinceEntry = ticker.LastPrice,
                         TrailingAtrMultiplier = atiResult.TrailingStopPercent > 0 ? atiResult.TrailingStopPercent : 2.5m,
-                        CurrentAtr = atrLast, ConflueceScore = signal.ConflueceScore,
+                        CurrentAtr = atrLast, ConfluenceScore = signal.ConfluenceScore,
                         MaxHoldHours = _riskSettings.MaxHoldHours
                     };
-                    _tradesToday++;
+                    Interlocked.Increment(ref _tradesToday);
                     OnSignalCreated(slTpKey);
 
                     // ATI-Kontext für späteres Lernen speichern
@@ -681,7 +890,7 @@ public abstract class TradingServiceBase : IDisposable
                         atiResult.Regime, atiResult.EnsembleVote, slMult, tpMult);
 
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
-                        $"{LogPrefix}{ticker.Symbol}: {side} {riskCheck.AdjustedPositionSize:G6} @ {ticker.LastPrice:G8} (SL={signal.StopLoss:G6} TP={signal.TakeProfit:G6})",
+                        $"{LogPrefix}{ticker.Symbol}: {side} {positionSize:F4} @ {ticker.LastPrice:F8} | Lev={adaptLev}x | SL={signal.StopLoss:F8} | TP1={signal.TakeProfit:F8} | TP2={signal.TakeProfit2:F8}",
                         ticker.Symbol));
 
                     await OnOrderPlacedAsync(ticker, side, riskCheck.AdjustedPositionSize).ConfigureAwait(false);
@@ -715,18 +924,47 @@ public abstract class TradingServiceBase : IDisposable
                         continue;
                     }
 
-                    // Korrelations-Check + Risk-Check
+                    // Korrelations-Check
                     if (await ScanHelper.CheckCorrelationAsync(
                         ticker.Symbol, positions, _riskSettings, _publicClient, candles, _eventBus, LogPrefix, ct))
                         continue;
 
-                    var riskCheck = ScanHelper.ValidateRisk(signal, context, _riskManager, _eventBus, LogPrefix);
-                    if (!riskCheck.IsAllowed) continue;
+                    // Adaptiver Leverage: Eingestellter MaxLeverage als Basis, leicht reduziert bei Volatilität/schwachem Signal
+                    var atrForLevStd = IndicatorHelper.CalculateAtr(candles);
+                    var atrPctStd = atrForLevStd.Count > 0 && atrForLevStd[^1].HasValue && ticker.LastPrice > 0
+                        ? (int)(atrForLevStd[^1]!.Value / ticker.LastPrice * 100 * 100) : 50;
+                    var isBtcStd = ticker.Symbol.StartsWith("BTC", StringComparison.OrdinalIgnoreCase);
+                    var adaptLevStd = CryptoTrendProStrategy.GetAdaptiveLeverage(atrPctStd, signal.ConfluenceScore, isBtcStd, (int)_riskSettings.MaxLeverage);
+                    if (_riskSettings.EnableCooldownEscalation && _consecutiveLosses >= 3)
+                        adaptLevStd = Math.Max(1, adaptLevStd - 1);
+
+                    // Risk-Check mit tatsächlichem Leverage
+                    var riskCheck = _riskManager!.ValidateTrade(signal, context, null, adaptLevStd);
+                    if (!riskCheck.IsAllowed)
+                    {
+                        if (_eventBus.HasLogSubscribers)
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                                $"{LogPrefix}{ticker.Symbol}: Trade abgelehnt - {riskCheck.RejectionReason}", ticker.Symbol));
+                        continue;
+                    }
+
+                    // Score-basiertes + Equity-Curve Position-Sizing
+                    var scoreScaleStd = CryptoTrendProStrategy.GetPositionScaleFactor(signal.ConfluenceScore);
+                    var equityScaleStd = GetEquityCurveScaleFactor();
+                    var positionSizeStd = riskCheck.AdjustedPositionSize * scoreScaleStd * equityScaleStd;
+                    if (scoreScaleStd != 1.0m || equityScaleStd != 1.0m)
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                            $"{LogPrefix}{ticker.Symbol}: Position skaliert (Score={scoreScaleStd:P0}, Equity={equityScaleStd:P0})"));
+                    }
+
+                    // M15-Entry-Timing: Bei H4/H1-Signal prüfen ob M15 den Einstieg bestätigt
+                    var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
+                    if (!CheckM15EntryTiming(m15Candles, side, ticker.Symbol))
+                        continue;
 
                     // Order platzieren
-                    var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
-                    var placed = await PlaceOrderOnExchangeAsync(ticker, side, riskCheck.AdjustedPositionSize, signal).ConfigureAwait(false);
-
+                    var placed = await PlaceOrderOnExchangeAsync(ticker, side, positionSizeStd, signal, adaptLevStd).ConfigureAwait(false);
                     if (!placed) continue;
 
                     // SL/TP-Signal speichern + Multi-Stage Exit State
@@ -741,14 +979,14 @@ public abstract class TradingServiceBase : IDisposable
                         Signal = signal, Symbol = ticker.Symbol, Side = side,
                         EntryPrice = ticker.LastPrice, OriginalQuantity = riskCheck.AdjustedPositionSize,
                         Tp2 = signal.TakeProfit2, ExtremePriceSinceEntry = ticker.LastPrice,
-                        CurrentAtr = atrLastVal, ConflueceScore = signal.ConflueceScore,
+                        CurrentAtr = atrLastVal, ConfluenceScore = signal.ConfluenceScore,
                         MaxHoldHours = _riskSettings.MaxHoldHours
                     };
-                    _tradesToday++;
+                    Interlocked.Increment(ref _tradesToday);
                     OnSignalCreated(slTpKey);
 
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
-                        $"{LogPrefix}{ticker.Symbol}: {side} {riskCheck.AdjustedPositionSize:G6} @ {ticker.LastPrice:G8}",
+                        $"{LogPrefix}{ticker.Symbol}: {side} {positionSizeStd:F4} @ {ticker.LastPrice:F8} | Lev={adaptLevStd}x | SL={signal.StopLoss:F8} | TP1={signal.TakeProfit:F8} | TP2={signal.TakeProfit2:F8}",
                         ticker.Symbol));
 
                     await OnOrderPlacedAsync(ticker, side, riskCheck.AdjustedPositionSize).ConfigureAwait(false);
@@ -778,8 +1016,104 @@ public abstract class TradingServiceBase : IDisposable
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "ATI", summary));
         }
 
+        // Strategy-Health-Check: Warnung bei Performance-Degradation
+        if (_riskManager != null)
+        {
+            var healthWarning = _riskManager.CheckStrategyHealth();
+            if (healthWarning != null)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Health",
+                    $"{LogPrefix}Strategy-Health-Warnung: {healthWarning}"));
+
+                if (_botSettings.EnableDesktopNotifications)
+                    _eventBus.PublishNotification("Strategy Health", healthWarning);
+            }
+        }
+
+        // Scan-Zusammenfassung: Kompakte Info-Zeile mit Regime, Kandidaten, Ergebnis
+        var elapsed = (DateTime.UtcNow - scanStart).TotalSeconds;
+        var nextScanFinal = DateTime.UtcNow.AddSeconds(_scannerSettings.ScanIntervalSeconds).ToLocalTime();
+        var regimeText = _ati is { IsEnabled: true } ? _ati.RegimeDetector.CurrentRegime.ToString() : "n/a";
+        var posCount = positions.Count;
+        var scanSummary = $"{candidates.Count} Kandidaten geprüft | Regime: {regimeText} | " +
+            $"Positionen: {posCount}/{_riskSettings.MaxOpenPositions} | " +
+            $"{elapsed:F1}s | Nächster: {nextScanFinal:HH:mm:ss}";
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Scanner", $"{LogPrefix}{scanSummary}"));
+
         // Indikator-Cache nach Scan-Durchlauf leeren (Daten sind beim nächsten Scan veraltet)
         IndicatorHelper.ClearCache();
+    }
+
+    /// <summary>
+    /// M15-Entry-Timing: Prüft ob der Einstieg auf M15-Ebene bestätigt wird.
+    /// H4 gibt die Richtung vor, M15 bestätigt den Einstiegszeitpunkt.
+    /// Kriterien: RSI nicht überkauft/überverkauft + letzte M15-Candle in Trendrichtung.
+    /// Gibt true zurück wenn kein M15-Check aktiv ist oder wenn M15 den Entry bestätigt.
+    /// </summary>
+    private bool CheckM15EntryTiming(List<Candle>? m15Candles, Side side, string symbol)
+    {
+        // Wenn M15-Timing deaktiviert oder keine Daten → Entry erlaubt (kein Filter)
+        if (!_scannerSettings.UseM15EntryTiming || m15Candles == null || m15Candles.Count < 20)
+            return true;
+
+        // M15 RSI: Kein Entry bei extremen Werten (Reversal-Risiko)
+        var rsi = IndicatorHelper.CalculateRsi(m15Candles, 14);
+        if (rsi.Count > 0 && rsi[^1].HasValue)
+        {
+            var rsiVal = rsi[^1]!.Value;
+            if (side == Side.Buy && rsiVal > 75)
+            {
+                if (_eventBus.HasLogSubscribers)
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "M15-Timing",
+                        $"{LogPrefix}{symbol}: Long-Entry verzögert (M15 RSI {rsiVal:F0} > 75, überkauft)"));
+                return false;
+            }
+            if (side == Side.Sell && rsiVal < 25)
+            {
+                if (_eventBus.HasLogSubscribers)
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "M15-Timing",
+                        $"{LogPrefix}{symbol}: Short-Entry verzögert (M15 RSI {rsiVal:F0} < 25, überverkauft)"));
+                return false;
+            }
+        }
+
+        // M15 Candle-Richtung: Letzte geschlossene M15-Candle sollte in Trendrichtung sein
+        // (mindestens nicht stark gegen den Trend)
+        if (m15Candles.Count >= 2)
+        {
+            var lastClosed = m15Candles[^2]; // Vorletzte = letzte geschlossene
+            var candleBody = lastClosed.Close - lastClosed.Open;
+            var candleRange = lastClosed.High - lastClosed.Low;
+
+            // Starke Gegen-Candle blockiert Entry (>60% des Range gegen die Richtung)
+            if (candleRange > 0)
+            {
+                var bodyRatio = candleBody / candleRange;
+                if (side == Side.Buy && bodyRatio < -0.6m)
+                {
+                    if (_eventBus.HasLogSubscribers)
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "M15-Timing",
+                            $"{LogPrefix}{symbol}: Long-Entry verzögert (starke M15 Bär-Candle {bodyRatio:P0})"));
+                    return false;
+                }
+                if (side == Side.Sell && bodyRatio > 0.6m)
+                {
+                    if (_eventBus.HasLogSubscribers)
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "M15-Timing",
+                            $"{LogPrefix}{symbol}: Short-Entry verzögert (starke M15 Bull-Candle {bodyRatio:P0})"));
+                    return false;
+                }
+            }
+        }
+
+        return true; // M15 bestätigt den Entry
+    }
+
+    /// <summary>Publiziert eine kompakte Scan-Zusammenfassung (Info-Level) bei Early-Returns.</summary>
+    private void PublishScanSummary(string reason, string nextScanText)
+    {
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Scanner",
+            $"{LogPrefix}{reason} | {nextScanText}"));
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -798,8 +1132,8 @@ public abstract class TradingServiceBase : IDisposable
     /// <summary>Preis auf der Exchange setzen (nur für SimulatedExchange relevant, Live ignoriert).</summary>
     protected abstract void SetCurrentPriceIfNeeded(string symbol, decimal price);
 
-    /// <summary>Order auf der Exchange platzieren. Gibt true zurück bei Erfolg. Signal optional für native SL/TP.</summary>
-    protected abstract Task<bool> PlaceOrderOnExchangeAsync(Ticker ticker, Side side, decimal quantity, SignalResult? signal = null);
+    /// <summary>Order auf der Exchange platzieren. Gibt true zurück bei Erfolg. Signal optional für native SL/TP. adaptiveLeverage überschreibt MaxLeverage wenn > 0.</summary>
+    protected abstract Task<bool> PlaceOrderOnExchangeAsync(Ticker ticker, Side side, decimal quantity, SignalResult? signal = null, int adaptiveLeverage = 0);
 
     /// <summary>Position schließen und CompletedTrade publizieren.</summary>
     protected abstract Task ClosePositionAndPublishAsync(string symbol, Side side);
@@ -847,14 +1181,231 @@ public abstract class TradingServiceBase : IDisposable
         _riskManager?.UpdateDailyStats(trade);
         _ati?.ProcessTradeOutcome(trade);
 
+        // Cooldown-Eskalation: Consecutive-Losses tracken
+        if (trade.Pnl < 0)
+        {
+            _consecutiveLosses++;
+            _lastLossTime = DateTime.UtcNow;
+
+            if (_riskSettings.EnableCooldownEscalation && _consecutiveLosses >= 3)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Risk",
+                    $"{LogPrefix}{_consecutiveLosses} Verluste in Folge → Cooldown eskaliert auf {GetEscalatedCooldownHours()}h"));
+            }
+        }
+        else
+        {
+            _consecutiveLosses = 0;
+            _lastLossTime = null; // Cooldown aufheben bei Gewinn-Trade
+        }
+
+        // Equity-Curve-Trading: Equity-Historie aktualisieren
+        if (_riskSettings.EnableEquityCurveTrading && _riskManager != null)
+        {
+            _equityHistory.Add(_riskManager.TotalPnl);
+        }
+
         // Desktop-Notification senden
         if (_botSettings.EnableDesktopNotifications)
         {
             var direction = trade.Pnl >= 0 ? "Gewinn" : "Verlust";
             _eventBus.PublishNotification(
                 $"{LogPrefix}{trade.Symbol} geschlossen",
-                $"{direction}: {trade.Pnl:F2} USDT ({trade.Side}, {trade.EntryPrice:G6} → {trade.ExitPrice:G6})");
+                $"{direction}: {trade.Pnl:F2} USDT ({trade.Side}, {trade.EntryPrice:F4} → {trade.ExitPrice:F4})");
         }
+    }
+
+    /// <summary>Berechnet den eskalierten Cooldown basierend auf aufeinanderfolgenden Verlusten.</summary>
+    protected int GetEscalatedCooldownHours()
+    {
+        if (!_riskSettings.EnableCooldownEscalation || _consecutiveLosses <= 1)
+            return _riskSettings.CooldownHours;
+
+        // Eskalation: Base * 2^(losses-1), gecapped auf MaxCooldownHours
+        var escalated = _riskSettings.CooldownHours * (int)Math.Pow(2, Math.Min(_consecutiveLosses - 1, 3));
+        return Math.Min(escalated, _riskSettings.MaxCooldownHours);
+    }
+
+    /// <summary>Prüft ob die Equity-Curve unter ihrer EMA liegt (Position-Scaling reduzieren).</summary>
+    protected decimal GetEquityCurveScaleFactor()
+    {
+        if (!_riskSettings.EnableEquityCurveTrading || _equityHistory.Count < _riskSettings.EquityCurvePeriod)
+            return 1.0m;
+
+        // EMA der Equity-Kurve berechnen
+        var period = _riskSettings.EquityCurvePeriod;
+        var multiplier = 2m / (period + 1);
+        var ema = _equityHistory[^period];
+        for (int i = _equityHistory.Count - period + 1; i < _equityHistory.Count; i++)
+            ema = (_equityHistory[i] - ema) * multiplier + ema;
+
+        var currentEquity = _equityHistory[^1];
+        // Wenn Equity unter EMA → halbe Position
+        return currentEquity < ema ? 0.5m : 1.0m;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Cross-Market Features (BTC-Kontext für ATI)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Berechnet BTC-Kontext und Markt-Stimmung und setzt sie in der FeatureEngine.
+    /// Wird pro Scan-Zyklus aufgerufen (kostet keine zusätzlichen API-Calls).
+    /// </summary>
+    private async Task UpdateCrossMarketFeaturesAsync(
+        IReadOnlyList<Ticker> allTickers,
+        List<Ticker> candidates,
+        ConcurrentDictionary<string, List<Candle>> klineResults,
+        CancellationToken ct)
+    {
+        // BTC-Ticker finden (BTC-USDT)
+        var btcTicker = allTickers.FirstOrDefault(t =>
+            t.Symbol.Equals("BTC-USDT", StringComparison.OrdinalIgnoreCase));
+
+        var btcReturn24h = 0f;
+        var btcTrend = 0f;
+
+        if (btcTicker != null)
+        {
+            // BTC 24h-Return normalisiert
+            btcReturn24h = (float)(btcTicker.PriceChangePercent24h / 100m);
+
+            // BTC-Trend aus HTF-Klines (wenn verfügbar)
+            btcTrend = IndicatorHelper.GetHigherTimeframeTrend(null);
+        }
+
+        // Markt-Stimmung: Durchschnittlicher 24h-Return der Top-20 Coins nach Volumen
+        var top20 = allTickers
+            .Where(t => t.Volume24h > 0)
+            .OrderByDescending(t => t.Volume24h)
+            .Take(20);
+
+        var sentimentSum = 0f;
+        var sentimentCount = 0;
+        foreach (var t in top20)
+        {
+            sentimentSum += (float)t.PriceChangePercent24h;
+            sentimentCount++;
+        }
+        var marketSentiment = sentimentCount > 0 ? sentimentSum / sentimentCount / 100f : 0f;
+
+        // Fear & Greed Index: Alle 15 Min aktualisieren (alternative.me API, gratis)
+        if ((DateTime.UtcNow - _lastFearGreedFetch).TotalMinutes >= 15)
+        {
+            try
+            {
+                var json = await _fearGreedClient.GetStringAsync("https://api.alternative.me/fng/?limit=1", ct).ConfigureAwait(false);
+                // Einfaches Parsing: {"data":[{"value":"42",...}]}
+                var startIdx = json.IndexOf("\"value\":\"", StringComparison.Ordinal);
+                if (startIdx >= 0)
+                {
+                    startIdx += 9;
+                    var endIdx = json.IndexOf('"', startIdx);
+                    if (endIdx > startIdx && int.TryParse(json[startIdx..endIdx], out var fng))
+                    {
+                        _cachedFearGreedIndex = fng / 100f; // Normalisiert auf [0, 1]
+                        _lastFearGreedFetch = DateTime.UtcNow;
+
+                        var fngLabel = fng switch { < 25 => "Extreme Fear", < 45 => "Fear", < 55 => "Neutral", < 75 => "Greed", _ => "Extreme Greed" };
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Market",
+                            $"{LogPrefix}Fear & Greed Index: {fng}/100 ({fngLabel})"));
+                    }
+                }
+            }
+            catch
+            {
+                // API nicht erreichbar → letzten Wert behalten
+            }
+        }
+
+        FeatureEngine.SetCrossMarketData(btcReturn24h, btcTrend, marketSentiment, _cachedFearGreedIndex);
+
+        // BTC-Korrelation pro Kandidat berechnen (aus bereits geladenen Klines)
+        if (klineResults.TryGetValue("BTC-USDT", out var btcCandles) && btcCandles.Count > 20)
+        {
+            foreach (var candidate in candidates)
+            {
+                if (candidate.Symbol.Equals("BTC-USDT", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!klineResults.TryGetValue(candidate.Symbol, out var altCandles) || altCandles.Count < 20)
+                    continue;
+
+                // Einfache Pearson-Korrelation auf Log-Returns der letzten 20 Perioden
+                var correlation = CalculateSimpleCorrelation(btcCandles, altCandles, 20);
+                FeatureEngine.SetBtcCorrelation(candidate.Symbol, correlation);
+            }
+        }
+
+        // Open Interest Change pro Kandidat berechnen
+        if (_publicClient is BingXBot.Exchange.BingXPublicClient publicClient)
+        {
+            foreach (var candidate in candidates)
+            {
+                try
+                {
+                    var oi = await publicClient.GetOpenInterestAsync(candidate.Symbol, ct).ConfigureAwait(false);
+                    if (oi > 0)
+                    {
+                        var oiChange = 0f;
+                        if (_previousOpenInterest.TryGetValue(candidate.Symbol, out var prevOi) && prevOi > 0)
+                        {
+                            oiChange = (float)((oi - prevOi) / prevOi); // Normalisierter Change
+                            oiChange = Math.Clamp(oiChange, -1f, 1f);
+                        }
+                        _previousOpenInterest[candidate.Symbol] = oi;
+                        FeatureEngine.SetOpenInterestChange(candidate.Symbol, oiChange);
+
+                        if (Math.Abs(oiChange) > 0.03f) // Nur bei signifikanter Änderung loggen (>3%)
+                        {
+                            var direction = oiChange > 0 ? "steigend" : "fallend";
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Market",
+                                $"{LogPrefix}{candidate.Symbol}: OI {direction} ({oiChange:+0.0%;-0.0%})", candidate.Symbol));
+                        }
+                    }
+                }
+                catch { /* OI nicht verfügbar → 0 */ }
+            }
+        }
+    }
+
+    /// <summary>Berechnet Pearson-Korrelation auf Log-Returns der letzten N Candles.</summary>
+    private static float CalculateSimpleCorrelation(List<Candle> series1, List<Candle> series2, int periods)
+    {
+        var n = Math.Min(Math.Min(series1.Count, series2.Count), periods + 1);
+        if (n < 5) return 0f;
+
+        var returns1 = new float[n - 1];
+        var returns2 = new float[n - 1];
+
+        for (int i = 1; i < n; i++)
+        {
+            var idx1 = series1.Count - n + i;
+            var idx2 = series2.Count - n + i;
+            if (idx1 < 1 || idx2 < 1) continue;
+
+            returns1[i - 1] = series1[idx1].Close > 0 && series1[idx1 - 1].Close > 0
+                ? (float)Math.Log((double)(series1[idx1].Close / series1[idx1 - 1].Close))
+                : 0f;
+            returns2[i - 1] = series2[idx2].Close > 0 && series2[idx2 - 1].Close > 0
+                ? (float)Math.Log((double)(series2[idx2].Close / series2[idx2 - 1].Close))
+                : 0f;
+        }
+
+        // Pearson-Korrelation
+        var mean1 = returns1.Average();
+        var mean2 = returns2.Average();
+        var cov = 0f;
+        var var1 = 0f;
+        var var2 = 0f;
+        for (int i = 0; i < returns1.Length; i++)
+        {
+            var d1 = returns1[i] - mean1;
+            var d2 = returns2[i] - mean2;
+            cov += d1 * d2;
+            var1 += d1 * d1;
+            var2 += d2 * d2;
+        }
+        var denom = MathF.Sqrt(var1 * var2);
+        return denom > 0 ? cov / denom : 0f;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -870,6 +1421,23 @@ public abstract class TradingServiceBase : IDisposable
         _cts = null;
         DisposeAdditional();
     }
+
+    /// <summary>Stoppt den Service. Kann von Subklassen überschrieben werden.</summary>
+    public virtual Task StopAsync()
+    {
+        StopBase(BotState.Stopped, $"{ModeName} gestoppt");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Notfall-Stop: Alle Positionen schließen. Kann von Subklassen überschrieben werden.</summary>
+    public virtual Task EmergencyStopAsync()
+    {
+        StopBase(BotState.EmergencyStop, $"{ModeName} Notfall-Stop");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Hook: Wird aufgerufen wenn Auto-Breakeven gesetzt wird. LiveTradingService aktualisiert den nativen SL auf BingX.</summary>
+    protected virtual Task OnBreakevenSetAsync(string symbol, Side side, decimal breakevenPrice) => Task.CompletedTask;
 
     /// <summary>Hook: Zusätzliche Dispose-Logik für Subklassen (z.B. WebSocket-Cleanup).</summary>
     protected virtual void DisposeAdditional() { }

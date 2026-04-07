@@ -29,6 +29,14 @@ public class SecureStorageService : ISecureStorageService
         var data = JsonSerializer.Serialize(new { ApiKey = apiKey, ApiSecret = apiSecret });
         var encrypted = Protect(Encoding.UTF8.GetBytes(data));
         await File.WriteAllBytesAsync(_credentialsPath, encrypted);
+
+        // Linux/macOS: Dateiberechtigung auf Owner-only setzen (chmod 600)
+        if (!OperatingSystem.IsWindows())
+        {
+            try { File.SetUnixFileMode(_credentialsPath, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+            catch { /* Ignorieren wenn nicht unterstützt */ }
+        }
+
         _hasCredentials = true;
     }
 

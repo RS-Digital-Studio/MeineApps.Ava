@@ -18,16 +18,49 @@ public static class ScanHelper
     /// <summary>
     /// Filtert Ticker nach Scanner-Kriterien (Volumen, Preisänderung, Black-/Whitelist).
     /// </summary>
+    // Rotations-Offset: Pro Scan werden andere Symbole priorisiert
+    private static int _rotationOffset;
+
     public static List<Ticker> FilterCandidates(IReadOnlyList<Ticker> tickers, ScannerSettings settings)
     {
-        return tickers
+        // Whitelist hat Priorität: Wenn gesetzt, NUR diese Symbole scannen
+        if (settings.Whitelist.Count > 0)
+        {
+            return tickers
+                .Where(t => settings.Whitelist.Contains(t.Symbol))
+                .OrderByDescending(t => t.Volume24h)
+                .ToList();
+        }
+
+        var filtered = tickers
             .Where(t => t.Volume24h >= settings.MinVolume24h)
             .Where(t => Math.Abs(t.PriceChangePercent24h) >= settings.MinPriceChange)
             .Where(t => settings.Blacklist.Count == 0 || !settings.Blacklist.Contains(t.Symbol))
-            .Where(t => settings.Whitelist.Count == 0 || settings.Whitelist.Contains(t.Symbol))
-            .OrderByDescending(t => t.Volume24h)
-            .Take(settings.MaxResults)
             .ToList();
+
+        // Rotation: Nicht immer die gleichen Top-N nach Volume.
+        // Teile in 3 Gruppen: Top-Movers (Preisänderung), Top-Volume, Rotation.
+        var maxResults = settings.MaxResults;
+        var topMovers = filtered.OrderByDescending(t => Math.Abs(t.PriceChangePercent24h)).Take(maxResults / 3).ToList();
+        var topVolume = filtered.OrderByDescending(t => t.Volume24h).Take(maxResults / 3).ToList();
+
+        // Rotation: Jeder Scan nimmt andere Symbole aus dem Rest
+        var alreadyPicked = new HashSet<string>(topMovers.Select(t => t.Symbol).Concat(topVolume.Select(t => t.Symbol)));
+        var remaining = filtered.Where(t => !alreadyPicked.Contains(t.Symbol)).ToList();
+        var rotationCount = Math.Min(maxResults - topMovers.Count - topVolume.Count, remaining.Count);
+        var offset = Interlocked.Increment(ref _rotationOffset) * rotationCount % Math.Max(remaining.Count, 1);
+        var rotated = remaining.Skip(offset).Take(rotationCount)
+            .Concat(remaining.Take(Math.Max(0, rotationCount - (remaining.Count - offset))))
+            .ToList();
+
+        // Zusammenführen: Keine Duplikate
+        var result = new List<Ticker>(topMovers);
+        foreach (var t in topVolume)
+            if (!result.Any(r => r.Symbol == t.Symbol)) result.Add(t);
+        foreach (var t in rotated)
+            if (!result.Any(r => r.Symbol == t.Symbol)) result.Add(t);
+
+        return result.Take(maxResults).ToList();
     }
 
     /// <summary>

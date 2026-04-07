@@ -32,6 +32,13 @@ public class LiveTradingService : TradingServiceBase
     private string? _listenKey;
     private PeriodicTimer? _listenKeyRenewTimer;
     private DateTime _lastFundingRateUpdate = DateTime.MinValue;
+    // WebSocket-Ticker: Echtzeit-Preise für schnellere SL/TP-Prüfung
+    private readonly ConcurrentDictionary<string, decimal> _wsTickerPrices = new();
+    /// <summary>True wenn der WebSocket-Ticker-Stream aktiv ist (für schnellere SL/TP-Prüfung).</summary>
+    public bool IsWsTickerActive { get; private set; }
+    // Pending Limit-Orders die nach 5min gecancelled werden wenn nicht gefüllt
+    private readonly ConcurrentDictionary<string, (string OrderId, DateTime PlacedAt)> _pendingLimitOrders = new();
+    private const int LimitOrderTimeoutMinutes = 5;
 
     protected override string LogPrefix => "LIVE: ";
     protected override string ModeName => "Live-Trading";
@@ -64,15 +71,18 @@ public class LiveTradingService : TradingServiceBase
 
         StartBase(new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance));
 
-        // User-Data-Stream starten (optional, Fallback auf REST-Polling)
+        // WebSocket: User-Data-Stream + Ticker-Stream starten
         if (_wsClient != null)
+        {
             _ = StartUserDataStreamAsync(_cts!.Token);
+            _ = StartTickerStreamAsync();
+        }
     }
 
     /// <summary>
     /// Stoppt das Live-Trading. Offene Positionen bleiben bestehen (User entscheidet).
     /// </summary>
-    public async Task StopAsync()
+    public override async Task StopAsync()
     {
         if (!_isRunning) return;
         _cts?.Cancel();
@@ -85,7 +95,7 @@ public class LiveTradingService : TradingServiceBase
     /// <summary>
     /// Notfall-Stop: ALLE echten Positionen auf BingX sofort schließen!
     /// </summary>
-    public async Task EmergencyStopAsync()
+    public override async Task EmergencyStopAsync()
     {
         _cts?.Cancel();
 
@@ -99,6 +109,26 @@ public class LiveTradingService : TradingServiceBase
             // Ticker für Exit-Preise holen (ein API-Call)
             var tickers = await _publicClient.GetAllTickersAsync().ConfigureAwait(false);
             var tickerMap = tickers.ToDictionary(t => t.Symbol, t => t.LastPrice);
+
+            // Zuerst alle offenen Conditional Orders canceln (native SL/TP-Orders),
+            // damit sie nicht als Ghost-Orders bestehen bleiben nach dem Position-Close
+            try
+            {
+                var openOrders = await _restClient.GetOpenOrdersAsync().ConfigureAwait(false);
+                foreach (var order in openOrders)
+                {
+                    if (order.Type is Core.Enums.OrderType.StopMarket or Core.Enums.OrderType.TakeProfitMarket or Core.Enums.OrderType.TakeProfitLimit)
+                    {
+                        try { await _restClient.CancelOrderAsync(order.OrderId, order.Symbol).ConfigureAwait(false); }
+                        catch { /* Best-effort: Order koennte bereits gecancelt sein */ }
+                    }
+                }
+            }
+            catch (Exception cancelEx)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                    $"Konnte offene Conditional Orders nicht canceln: {cancelEx.Message}"));
+            }
 
             // Alle Positionen parallel schließen (schnellstmöglich bei Notfall)
             var closeTasks = positions.Select(pos => Task.Run(async () =>
@@ -161,17 +191,29 @@ public class LiveTradingService : TradingServiceBase
         // Live-Trading: Preis wird nicht gesetzt (echte Exchange hat eigene Preise)
     }
 
-    protected override async Task<bool> PlaceOrderOnExchangeAsync(Ticker ticker, Side side, decimal quantity, SignalResult? signal = null)
+    protected override async Task<bool> PlaceOrderOnExchangeAsync(Ticker ticker, Side side, decimal quantity, SignalResult? signal = null, int adaptiveLeverage = 0)
     {
         try
         {
-            // Leverage setzen
-            await _restClient.SetLeverageAsync(ticker.Symbol, (int)_riskSettings.MaxLeverage, side)
+            // Leverage setzen (adaptiv oder Default)
+            var leverage = adaptiveLeverage > 0
+                ? Math.Min(adaptiveLeverage, (int)_riskSettings.MaxLeverage)
+                : (int)_riskSettings.MaxLeverage;
+            await _restClient.SetLeverageAsync(ticker.Symbol, leverage, side)
                 .ConfigureAwait(false);
 
-            // Order platzieren (mit nativen SL/TP wenn Signal vorhanden)
+            // Order platzieren: Limit wenn bevorzugt und Entry-Preis vorhanden, sonst Market
+            var useLimit = signal?.PreferLimitOrder == true && signal.EntryPrice.HasValue && signal.EntryPrice.Value > 0;
+            var orderType = useLimit ? OrderType.Limit : OrderType.Market;
+            var limitPrice = useLimit ? signal!.EntryPrice : null;
+
+            if (useLimit)
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                    $"{ticker.Symbol}: Limit-Order bei {limitPrice:F8} (Pullback-Entry, Maker-Fee)", ticker.Symbol));
+
             var order = await _restClient.PlaceOrderAsync(new OrderRequest(
-                ticker.Symbol, side, OrderType.Market, quantity,
+                ticker.Symbol, side, orderType, quantity,
+                Price: limitPrice,
                 StopLoss: signal?.StopLoss,
                 TakeProfit: signal?.TakeProfit))
                 .ConfigureAwait(false);
@@ -181,6 +223,49 @@ public class LiveTradingService : TradingServiceBase
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
                     $"LIVE ORDER ABGELEHNT: {ticker.Symbol} {side}", ticker.Symbol));
                 return false;
+            }
+
+            // Limit-Order Timeout: Nach 5 Minuten prüfen ob gefüllt, sonst canceln
+            if (useLimit && order.OrderId != null)
+                _pendingLimitOrders[ticker.Symbol] = (order.OrderId, DateTime.UtcNow);
+
+            // TP1 als Limit Reduce-Only Order platzieren (Partial Close, Maker-Fee)
+            if (signal?.TakeProfit.HasValue == true && signal.TakeProfit.Value > 0)
+            {
+                try
+                {
+                    var tp1Qty = Math.Round(quantity * _riskSettings.Tp1CloseRatio, 6);
+                    if (tp1Qty > 0)
+                    {
+                        var tp1Order = await _restClient.PlaceTpLimitOrderAsync(
+                            ticker.Symbol, side, tp1Qty, signal.TakeProfit.Value).ConfigureAwait(false);
+
+                        if (tp1Order.Status != OrderStatus.Rejected)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                                $"LIVE: {ticker.Symbol} TP1 Limit-Order platziert: {tp1Qty:F8} @ {signal.TakeProfit.Value:F8} (Maker-Fee)", ticker.Symbol));
+
+                            // TP2 auch sofort platzieren (falls vorhanden)
+                            if (signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0)
+                            {
+                                var tp2Qty = Math.Round(quantity * _riskSettings.Tp2CloseRatio, 6);
+                                if (tp2Qty > 0)
+                                {
+                                    await _restClient.PlaceTpLimitOrderAsync(
+                                        ticker.Symbol, side, tp2Qty, signal.TakeProfit2.Value).ConfigureAwait(false);
+                                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                                        $"LIVE: {ticker.Symbol} TP2 Limit-Order platziert: {tp2Qty:F8} @ {signal.TakeProfit2.Value:F8}", ticker.Symbol));
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception tpEx)
+                {
+                    // TP-Limit fehlgeschlagen → Bot-seitiger PriceTickerLoop übernimmt als Fallback
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                        $"LIVE: {ticker.Symbol} TP Limit-Order fehlgeschlagen (Fallback: Bot-seitig): {tpEx.Message}", ticker.Symbol));
+                }
             }
 
             return true;
@@ -201,6 +286,8 @@ public class LiveTradingService : TradingServiceBase
             var positions = await _restClient.GetPositionsAsync().ConfigureAwait(false);
             var pos = positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == side);
 
+            // Native SL/TP-Orders canceln bevor die Position geschlossen wird
+            await CancelNativeSlTpOrdersAsync(symbol).ConfigureAwait(false);
             await _restClient.ClosePositionAsync(symbol, side).ConfigureAwait(false);
             RemoveSignalByKey($"{symbol}_{side}");
 
@@ -249,9 +336,14 @@ public class LiveTradingService : TradingServiceBase
             {
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
                     $"LIVE: {pos.Symbol} {pos.Side} bereits durch native SL/TP geschlossen", pos.Symbol));
+                // Verwaiste native SL/TP-Orders canceln (Position bereits geschlossen)
+                await CancelNativeSlTpOrdersAsync(pos.Symbol).ConfigureAwait(false);
                 return;
             }
 
+            // Native SL-Order canceln BEVOR wir die Position schließen,
+            // damit sie nicht als Ghost-Order nach dem Close bestehen bleibt
+            await CancelNativeSlTpOrdersAsync(pos.Symbol).ConfigureAwait(false);
             await _restClient.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
@@ -284,10 +376,12 @@ public class LiveTradingService : TradingServiceBase
     {
         try
         {
-            // Gegenorder mit reduzierter Menge = Partial Close
-            var closeSide = pos.Side == Side.Buy ? Side.Sell : Side.Buy;
-            await _restClient.PlaceOrderAsync(new OrderRequest(
-                pos.Symbol, closeSide, OrderType.Market, quantityToClose))
+            // Partial Close: Gegenorder mit reduzierter Menge
+            // WICHTIG: Im Hedge-Mode muss positionSide die ORIGINAL-Seite der Position sein (LONG/SHORT),
+            // nicht die Close-Seite. ClosePositionAsync verwendet dafuer die Original-Side.
+            // PlaceOrderAsync leitet positionSide aus request.Side ab (Buy→LONG, Sell→SHORT),
+            // daher muss hier die Original-Side verwendet werden damit positionSide korrekt ist.
+            await _restClient.ClosePartialAsync(pos.Symbol, pos.Side, quantityToClose)
                 .ConfigureAwait(false);
 
             // CompletedTrade für den geschlossenen Teil
@@ -306,7 +400,28 @@ public class LiveTradingService : TradingServiceBase
             ProcessCompletedTrade(trade);
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
-                $"LIVE: {pos.Symbol} Partial Close {quantityToClose:G6} @ {price:G8}", pos.Symbol));
+                $"LIVE: {pos.Symbol} Partial Close {quantityToClose:F4} @ {price:F8}", pos.Symbol));
+
+            // Serverseitige SL/TP aktualisieren (SL → Break-Even, TP → TP2)
+            var posKey = $"{pos.Symbol}_{pos.Side}";
+            if (_exitStates.TryGetValue(posKey, out var exitState) && _positionSignals.TryGetValue(posKey, out var updatedSignal))
+            {
+                try
+                {
+                    await _restClient.SetPositionSlTpAsync(
+                        pos.Symbol, pos.Side,
+                        updatedSignal.StopLoss,
+                        updatedSignal.TakeProfit).ConfigureAwait(false);
+
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                        $"LIVE: {pos.Symbol} SL/TP auf BingX aktualisiert (SL={updatedSignal.StopLoss:F8}, TP={updatedSignal.TakeProfit:F8})", pos.Symbol));
+                }
+                catch (Exception slTpEx)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                        $"LIVE: SL/TP-Update auf BingX fehlgeschlagen: {slTpEx.Message}", pos.Symbol));
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -355,6 +470,26 @@ public class LiveTradingService : TradingServiceBase
                     // Nur entfernen wenn Signal älter als 30 Sekunden (API-Latenz-Grace-Period)
                     if (_signalCreatedAt.TryGetValue(key, out var createdAt) && (now - createdAt).TotalSeconds > 30)
                         RemoveSignalByKey(key);
+                }
+            }
+        }
+
+        // Limit-Orders canceln die nach 5min nicht gefüllt wurden
+        if (_pendingLimitOrders.Count > 0)
+        {
+            var now2 = DateTime.UtcNow;
+            foreach (var kvp in _pendingLimitOrders)
+            {
+                if ((now2 - kvp.Value.PlacedAt).TotalMinutes >= LimitOrderTimeoutMinutes)
+                {
+                    try
+                    {
+                        await _restClient.CancelOrderAsync(kvp.Value.OrderId, kvp.Key).ConfigureAwait(false);
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                            $"{kvp.Key}: Limit-Order gecancelled (nicht gefüllt nach {LimitOrderTimeoutMinutes}min)", kvp.Key));
+                    }
+                    catch { /* Order möglicherweise bereits gefüllt/gecancelled */ }
+                    _pendingLimitOrders.TryRemove(kvp.Key, out _);
                 }
             }
         }
@@ -408,6 +543,36 @@ public class LiveTradingService : TradingServiceBase
                 $"ATI Auto-Save fehlgeschlagen: {ex.Message}"));
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // WebSocket Ticker-Stream (Echtzeit-Preise für SL/TP)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Startet den WebSocket-Ticker-Stream für Echtzeit-Preise.
+    /// Erlaubt schnellere SL/TP-Reaktion als 5s REST-Polling.
+    /// </summary>
+    private async Task StartTickerStreamAsync()
+    {
+        if (_wsClient == null) return;
+        try
+        {
+            _wsClient.TickerPriceReceived += (symbol, price) => _wsTickerPrices[symbol] = price;
+            await _wsClient.SubscribeAllTickersAsync().ConfigureAwait(false);
+            IsWsTickerActive = true;
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "WebSocket",
+                "Echtzeit-Ticker-Stream aktiv (sub-100ms Latenz)"));
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "WebSocket",
+                $"Ticker-Stream nicht verfügbar: {ex.Message}. Fallback auf 5s REST-Polling."));
+        }
+    }
+
+    /// <summary>Gibt den WebSocket-Preis für ein Symbol zurück, falls verfügbar.</summary>
+    public decimal? GetWebSocketPrice(string symbol) =>
+        _wsTickerPrices.TryGetValue(symbol, out var price) ? price : null;
 
     // ═══════════════════════════════════════════════════════════════
     // WebSocket User-Data-Stream (Live-spezifisch)
@@ -526,6 +691,47 @@ public class LiveTradingService : TradingServiceBase
         {
             _ = _restClient.DeleteListenKeyAsync(_listenKey);
             _listenKey = null;
+        }
+    }
+
+    /// <summary>
+    /// Cancelt alle nativen SL/TP-Orders (STOP_MARKET + TAKE_PROFIT_MARKET) für ein Symbol.
+    /// Muss VOR Position-Close aufgerufen werden, damit keine Ghost-Orders übrigbleiben.
+    /// </summary>
+    /// <summary>Aktualisiert den nativen SL auf BingX wenn Auto-Breakeven getriggert wird.</summary>
+    protected override async Task OnBreakevenSetAsync(string symbol, Side side, decimal breakevenPrice)
+    {
+        try
+        {
+            await _restClient.SetPositionSlTpAsync(symbol, side, breakevenPrice, null).ConfigureAwait(false);
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                $"LIVE: {symbol} Nativer SL auf Breakeven aktualisiert: {breakevenPrice:F8}", symbol));
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                $"LIVE: {symbol} Breakeven-SL-Update fehlgeschlagen: {ex.Message}", symbol));
+        }
+    }
+
+    private async Task CancelNativeSlTpOrdersAsync(string symbol)
+    {
+        try
+        {
+            var openOrders = await _restClient.GetOpenOrdersAsync(symbol).ConfigureAwait(false);
+            foreach (var order in openOrders)
+            {
+                if (order.Type is OrderType.StopMarket or OrderType.TakeProfitMarket or OrderType.TakeProfitLimit)
+                {
+                    try { await _restClient.CancelOrderAsync(order.OrderId, symbol).ConfigureAwait(false); }
+                    catch { /* Order möglicherweise bereits gecancelled */ }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
+                $"Native SL/TP-Cancel für {symbol} fehlgeschlagen: {ex.Message}", symbol));
         }
     }
 }

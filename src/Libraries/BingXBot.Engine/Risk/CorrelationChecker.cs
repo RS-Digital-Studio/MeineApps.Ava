@@ -68,22 +68,26 @@ public class CorrelationChecker
     }
 
     /// <summary>
-    /// Pearson-Korrelationskoeffizient direkt auf Candle-Listen (vermeidet Array-Kopien).
-    /// Liest die letzten minLength Close-Werte aus beiden Listen.
+    /// Pearson-Korrelationskoeffizient auf logarithmischen Returns (statt absoluten Preisen).
+    /// Log-Returns sind stationär und vermeiden Scheinkorrelationen bei Preis-Trends.
+    /// Liest die letzten minLength Close-Werte aus beiden Listen, berechnet minLength-1 Returns.
     /// </summary>
     public static decimal CalculatePearsonFromCandles(
         IReadOnlyList<Candle> x, IReadOnlyList<Candle> y, int minLength)
     {
-        if (minLength < 2) return 0m;
+        // Mindestens 3 Datenpunkte für 2 Returns nötig
+        if (minLength < 3) return 0m;
 
         var xOffset = x.Count - minLength;
         var yOffset = y.Count - minLength;
 
+        var n = minLength - 1; // Anzahl der Returns
         double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
-        for (int i = 0; i < minLength; i++)
+        for (int i = 1; i < minLength; i++)
         {
-            var xi = (double)x[xOffset + i].Close;
-            var yi = (double)y[yOffset + i].Close;
+            // Logarithmische Returns: ln(Close[i] / Close[i-1])
+            var xi = Math.Log((double)x[xOffset + i].Close / (double)x[xOffset + i - 1].Close);
+            var yi = Math.Log((double)y[yOffset + i].Close / (double)y[yOffset + i - 1].Close);
             sumX += xi;
             sumY += yi;
             sumXY += xi * yi;
@@ -91,9 +95,9 @@ public class CorrelationChecker
             sumY2 += yi * yi;
         }
 
-        var numerator = minLength * sumXY - sumX * sumY;
-        var denominatorX = minLength * sumX2 - sumX * sumX;
-        var denominatorY = minLength * sumY2 - sumY * sumY;
+        var numerator = n * sumXY - sumX * sumY;
+        var denominatorX = n * sumX2 - sumX * sumX;
+        var denominatorY = n * sumY2 - sumY * sumY;
         var denominator = Math.Sqrt(denominatorX * denominatorY);
 
         if (denominator == 0) return 0m;

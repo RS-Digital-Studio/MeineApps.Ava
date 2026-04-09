@@ -67,7 +67,7 @@ public class TrendFollowStrategy : IStrategy
         var atr = IndicatorHelper.CalculateAtr(candles, _atrPeriod);
         var (_, _, histogram) = IndicatorHelper.CalculateMacd(candles, 12, 26, 9);
         var volumeSma = IndicatorHelper.CalculateVolumeSma(candles, _volumePeriod);
-        var adx = IndicatorHelper.CalculateAdx(candles, _adxPeriod);
+        var (adx, pdi, mdi) = IndicatorHelper.CalculateAdxWithDi(candles, _adxPeriod);
 
         var lastEmaFast = emaFast[^1];
         var lastEmaSlow = emaSlow[^1];
@@ -178,16 +178,28 @@ public class TrendFollowStrategy : IStrategy
         var longConfidence = longConditions / 5m;
         var shortConfidence = shortConditions / 5m;
 
-        // ADX-Bonus: Starker Trend (>40) erhöht Confidence, schwacher (20-25) reduziert
+        // ADX-Bonus: Richtungsabhängig (DI+ vs DI-) — ADX allein misst nur Stärke, nicht Richtung
         if (lastAdx.HasValue)
         {
             var adxBonus = lastAdx.Value > 40m ? 0.1m : lastAdx.Value < 25m ? -0.05m : 0m;
-            longConfidence += adxBonus;
-            shortConfidence += adxBonus;
+            var lastPdi = pdi.Count > 0 ? pdi[^1] : null;
+            var lastMdi = mdi.Count > 0 ? mdi[^1] : null;
+            if (lastPdi.HasValue && lastMdi.HasValue)
+            {
+                // Bonus nur in DI-Richtung: +DI > -DI → Long-Bonus, -DI > +DI → Short-Bonus
+                if (lastPdi.Value > lastMdi.Value)
+                    longConfidence += adxBonus;
+                else
+                    shortConfidence += adxBonus;
+            }
         }
 
         // Higher-Timeframe Trend-Konfirmation (wenn verfügbar)
         var htfTrend = IndicatorHelper.GetHigherTimeframeTrend(context.HigherTimeframeCandles);
+
+        // Confidence auf [0, 1] clampen (ADX-Bonus + HTF-Bonus können > 1.0 erzeugen)
+        longConfidence = Math.Clamp(longConfidence, 0m, 1m);
+        shortConfidence = Math.Clamp(shortConfidence, 0m, 1m);
 
         // Long-Signal wenn genug Bedingungen erfüllt
         if (longConfidence >= _minConfidence && longConfidence > shortConfidence)

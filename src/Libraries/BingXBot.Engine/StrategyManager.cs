@@ -33,16 +33,15 @@ public class StrategyManager
     /// <summary>Gibt die Strategie-Instanz für ein Symbol zurück (klont beim ersten Aufruf)</summary>
     public IStrategy GetOrCreateForSymbol(string symbol)
     {
-        IStrategy? template;
+        // Lock hält Template-Lesen und GetOrAdd atomar, damit SetStrategy().Clear()
+        // nicht zwischen Lesen und Einfügen eine veraltete Instanz hinterlässt
         lock (_templateLock)
         {
-            template = _templateStrategy;
+            if (_templateStrategy == null)
+                throw new InvalidOperationException("Keine Strategie gesetzt");
+
+            return _symbolStrategies.GetOrAdd(symbol, _ => _templateStrategy.Clone());
         }
-
-        if (template == null)
-            throw new InvalidOperationException("Keine Strategie gesetzt");
-
-        return _symbolStrategies.GetOrAdd(symbol, _ => template.Clone());
     }
 
     /// <summary>Entfernt die Strategie-Instanz für ein Symbol</summary>

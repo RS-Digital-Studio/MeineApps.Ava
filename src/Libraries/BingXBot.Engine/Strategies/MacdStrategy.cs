@@ -59,8 +59,8 @@ public class MacdStrategy : IStrategy
         if (atrValue <= 0)
             return new SignalResult(Signal.None, 0m, null, null, null, "ATR ist 0 - kein valider SL/TP möglich");
 
-        // 1. Zero-Line-Cross (stärkstes Signal): MACD kreuzt die Null-Linie
-        if (prevMacd <= 0 && lastMacd > 0)
+        // 1. Zero-Line-Cross (stärkstes Signal): MACD kreuzt die Null-Linie (strikt: 0 ist neutral)
+        if (prevMacd < 0 && lastMacd > 0)
         {
             // Bullish: MACD von negativ zu positiv
             var sl = currentPrice - atrValue * 2m;
@@ -69,7 +69,7 @@ public class MacdStrategy : IStrategy
                 $"MACD Zero-Line-Cross bullish (MACD: {lastMacd.Value:F4})");
         }
 
-        if (prevMacd >= 0 && lastMacd < 0)
+        if (prevMacd > 0 && lastMacd < 0)
         {
             // Bearish: MACD von positiv zu negativ
             var sl = currentPrice + atrValue * 2m;
@@ -84,8 +84,8 @@ public class MacdStrategy : IStrategy
         var histogramFalling = lastHist < prevHist;
         var histogramConsecutiveFalling = prevPrevHist != null && prevHist < prevPrevHist && lastHist < prevHist;
 
-        // Long: Histogram wechselt von negativ zu positiv UND steigt konsekutiv
-        if (prevHist <= 0 && lastHist > 0 && histogramRising)
+        // Long: Histogram wechselt von negativ zu positiv UND steigt konsekutiv (strikt)
+        if (prevHist < 0 && lastHist > 0 && histogramRising)
         {
             // Trend-Kontext: Nur Long wenn MACD > 0 (Aufwärtstrend) oder gerade aufbauend
             if (lastMacd >= 0 || histogramConsecutiveRising)
@@ -100,8 +100,8 @@ public class MacdStrategy : IStrategy
             }
         }
 
-        // Short: Histogram wechselt von positiv zu negativ UND fällt konsekutiv
-        if (prevHist >= 0 && lastHist < 0 && histogramFalling)
+        // Short: Histogram wechselt von positiv zu negativ UND fällt konsekutiv (strikt)
+        if (prevHist > 0 && lastHist < 0 && histogramFalling)
         {
             // Trend-Kontext: Nur Short wenn MACD < 0 (Abwärtstrend) oder gerade abbauend
             if (lastMacd <= 0 || histogramConsecutiveFalling)

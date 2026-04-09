@@ -22,7 +22,7 @@ public class BollingerStrategy : IStrategy
     private int _atrPeriod = 14;
     private int _squeezePeriod = 120;
     private int _volumePeriod = 20;
-    private decimal _tpMultiplier = 2m;
+    private decimal _tpMultiplier = 2.5m;  // 2.5x: Krypto-Breakouts laufen weiter als traditionelle Märkte
 
     public IReadOnlyList<StrategyParameter> Parameters => new List<StrategyParameter>
     {
@@ -107,7 +107,10 @@ public class BollingerStrategy : IStrategy
             if (breakoutStrength > 0.1m) confidence = 0.85m;
             if (breakoutStrength > 0.2m) confidence = 0.9m;
 
-            var sl = lastMiddle.Value; // Mittleres Band als Stop-Loss
+            // SL: Middle Band, aber maximal 2x ATR vom Entry (verhindert schlechtes RRR bei breiten Bändern)
+            var middleSl = lastMiddle.Value;
+            var atrSl = currentPrice - atrValue * 2m;
+            var sl = Math.Max(middleSl, atrSl); // Engerer SL gewinnt (näher am Entry = höherer Wert bei Long)
             var tp = currentPrice + atrValue * 2m * _tpMultiplier;
             return new SignalResult(Signal.Long, confidence, currentPrice, sl, tp,
                 $"Bollinger Breakout Long nach Squeeze (Bandbreite: {currentBandWidth:F2} vs Avg: {avgBandWidth:F2})");
@@ -125,7 +128,10 @@ public class BollingerStrategy : IStrategy
             if (breakoutStrength > 0.1m) confidence = 0.85m;
             if (breakoutStrength > 0.2m) confidence = 0.9m;
 
-            var sl = lastMiddle.Value;
+            // SL: Middle Band, aber maximal 2x ATR vom Entry (verhindert schlechtes RRR bei breiten Bändern)
+            var middleSlShort = lastMiddle.Value;
+            var atrSlShort = currentPrice + atrValue * 2m;
+            var sl = Math.Min(middleSlShort, atrSlShort); // Engerer SL gewinnt (näher am Entry = niedrigerer Wert bei Short)
             var tp = currentPrice - atrValue * 2m * _tpMultiplier;
             return new SignalResult(Signal.Short, confidence, currentPrice, sl, tp,
                 $"Bollinger Breakout Short nach Squeeze (Bandbreite: {currentBandWidth:F2} vs Avg: {avgBandWidth:F2})");

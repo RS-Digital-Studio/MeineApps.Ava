@@ -15,8 +15,8 @@ public class EmaCrossStrategy : IStrategy
     public string Name => "EMA Cross";
     public string Description => "EMA-Cross mit Volume + Trend-Filter + ATR-Filter (Krypto-optimiert)";
 
-    private int _fastPeriod = 12;
-    private int _slowPeriod = 26;
+    private int _fastPeriod = 9;    // 9/21: De-facto-Standard für Krypto, schnellere Crosses als 12/26
+    private int _slowPeriod = 21;
     private int _trendPeriod = 200;
     private int _atrPeriod = 14;
     private int _volumePeriod = 20;
@@ -77,8 +77,8 @@ public class EmaCrossStrategy : IStrategy
         // Volume-Konfirmation: Volumen muss über dem SMA liegen
         var volumeAboveAvg = currentVolume > lastVolSma.Value;
 
-        // Bullish Cross: Fast kreuzt über Slow
-        if (prevFast <= prevSlow && lastFast > lastSlow)
+        // Bullish Cross: Fast kreuzt über Slow (strikt: Gleichheit ist kein Cross)
+        if (prevFast < prevSlow && lastFast > lastSlow)
         {
             // Trend-Filter: Nur Long wenn Preis über EMA200
             if (currentPrice < lastTrend.Value)
@@ -101,8 +101,8 @@ public class EmaCrossStrategy : IStrategy
                 $"EMA{_fastPeriod} kreuzt über EMA{_slowPeriod} (Trend+Volume bestätigt)");
         }
 
-        // Bearish Cross: Fast kreuzt unter Slow
-        if (prevFast >= prevSlow && lastFast < lastSlow)
+        // Bearish Cross: Fast kreuzt unter Slow (strikt: Gleichheit ist kein Cross)
+        if (prevFast > prevSlow && lastFast < lastSlow)
         {
             // Trend-Filter: Nur Short wenn Preis unter EMA200
             if (currentPrice > lastTrend.Value)

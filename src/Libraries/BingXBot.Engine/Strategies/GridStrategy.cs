@@ -105,36 +105,42 @@ public class GridStrategy : IStrategy
         for (int i = 1; i <= _gridLevels; i++)
             gridLevels.Add(gridLower + stepSize * i);
 
-        // Nächstes Grid-Level unter/über dem aktuellen Preis
-        var nearestBelow = gridLevels.Where(l => l < currentPrice).OrderByDescending(l => l).FirstOrDefault();
-        var nearestAbove = gridLevels.Where(l => l > currentPrice).OrderBy(l => l).FirstOrDefault();
+        // Nächstes Grid-Level unter/über dem aktuellen Preis (nullable, da am Rand keins existieren kann)
+        var belowLevels = gridLevels.Where(l => l < currentPrice).OrderByDescending(l => l).ToList();
+        var aboveLevels = gridLevels.Where(l => l > currentPrice).OrderBy(l => l).ToList();
+        decimal? nearestBelow = belowLevels.Count > 0 ? belowLevels[0] : null;
+        decimal? nearestAbove = aboveLevels.Count > 0 ? aboveLevels[0] : null;
+
+        // Am Grid-Rand: Kein Signal wenn kein Level in der gewünschten Richtung existiert
+        if (nearestBelow == null && nearestAbove == null)
+            return new SignalResult(Signal.None, 0m, null, null, null, "Preis zwischen keinen Grid-Levels");
 
         var spacingThreshold = currentPrice * _gridSpacingPercent / 100m;
         if (spacingThreshold <= 0)
             return new SignalResult(Signal.None, 0m, null, null, null, "Grid-Spacing ist 0");
 
-        // Preis nahe am unteren Grid-Level → Long
-        if (nearestBelow > 0 && currentPrice - nearestBelow < spacingThreshold)
+        // Preis nahe am unteren Grid-Level → Long (nur wenn auch ein oberes Level für TP existiert)
+        if (nearestBelow.HasValue && nearestAbove.HasValue && currentPrice - nearestBelow.Value < spacingThreshold)
         {
-            var sl = nearestBelow - stepSize * 0.5m;
-            var tp = nearestAbove > 0 ? nearestAbove : currentPrice + stepSize;
-            var confidence = 0.6m + (1m - (currentPrice - nearestBelow) / spacingThreshold) * 0.3m;
+            var sl = nearestBelow.Value - stepSize * 0.5m;
+            var tp = nearestAbove.Value;
+            var confidence = 0.6m + (1m - (currentPrice - nearestBelow.Value) / spacingThreshold) * 0.3m;
             return new SignalResult(Signal.Long, Math.Min(1m, confidence), currentPrice, sl, tp,
-                $"Smart Grid Buy-Zone bei {nearestBelow:F2} (Range-Markt bestätigt)");
+                $"Smart Grid Buy-Zone bei {nearestBelow.Value:F2} (Range-Markt bestätigt)");
         }
 
-        // Preis nahe am oberen Grid-Level → Short
-        if (nearestAbove > 0 && nearestAbove - currentPrice < spacingThreshold)
+        // Preis nahe am oberen Grid-Level → Short (nur wenn auch ein unteres Level für TP existiert)
+        if (nearestAbove.HasValue && nearestBelow.HasValue && nearestAbove.Value - currentPrice < spacingThreshold)
         {
-            var sl = nearestAbove + stepSize * 0.5m;
-            var tp = nearestBelow > 0 ? nearestBelow : currentPrice - stepSize;
-            var confidence = 0.6m + (1m - (nearestAbove - currentPrice) / spacingThreshold) * 0.3m;
+            var sl = nearestAbove.Value + stepSize * 0.5m;
+            var tp = nearestBelow.Value;
+            var confidence = 0.6m + (1m - (nearestAbove.Value - currentPrice) / spacingThreshold) * 0.3m;
             return new SignalResult(Signal.Short, Math.Min(1m, confidence), currentPrice, sl, tp,
-                $"Smart Grid Sell-Zone bei {nearestAbove:F2} (Range-Markt bestätigt)");
+                $"Smart Grid Sell-Zone bei {nearestAbove.Value:F2} (Range-Markt bestätigt)");
         }
 
         return new SignalResult(Signal.None, 0m, null, null, null,
-            $"Zwischen Grid-Levels (nächstes Buy: {nearestBelow:F2}, nächstes Sell: {nearestAbove:F2})");
+            $"Zwischen Grid-Levels (nächstes Buy: {nearestBelow?.ToString("F2") ?? "-"}, nächstes Sell: {nearestAbove?.ToString("F2") ?? "-"})");
     }
 
     public void WarmUp(IReadOnlyList<Candle> history)

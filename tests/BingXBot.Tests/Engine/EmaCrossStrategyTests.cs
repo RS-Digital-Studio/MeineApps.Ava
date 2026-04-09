@@ -86,12 +86,12 @@ public class EmaCrossStrategyTests
     }
 
     [Fact]
-    public void DefaultPeriods_ShouldBeBroader()
+    public void DefaultPeriods_ShouldBeKryptoOptimiert()
     {
         var strategy = new EmaCrossStrategy();
-        // Fast=12, Slow=26 statt 9/21 (weniger Noise)
-        strategy.Parameters.Should().Contain(p => p.Name == "FastPeriod" && (int)p.DefaultValue == 12);
-        strategy.Parameters.Should().Contain(p => p.Name == "SlowPeriod" && (int)p.DefaultValue == 26);
+        // 9/21: De-facto-Standard für Krypto, schnellere Crosses (Recherche 2024-2026)
+        strategy.Parameters.Should().Contain(p => p.Name == "FastPeriod" && (int)p.DefaultValue == 9);
+        strategy.Parameters.Should().Contain(p => p.Name == "SlowPeriod" && (int)p.DefaultValue == 21);
     }
 
     [Fact]

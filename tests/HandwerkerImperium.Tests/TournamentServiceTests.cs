@@ -100,21 +100,7 @@ public class TournamentServiceTests
         state.CurrentTournament!.WeekStart.Should().Be(GetCurrentMonday());
     }
 
-    [Fact]
-    public void CheckAndStartNewTournament_NeuesTurnier_FeuertTournamentUpdatedEvent()
-    {
-        // Vorbereitung
-        var (mock, state, sut) = ErstelleService();
-        state.CurrentTournament = null;
-        bool eventFired = false;
-        sut.TournamentUpdated += () => eventFired = true;
-
-        // Ausführung
-        sut.CheckAndStartNewTournament();
-
-        // Prüfung
-        eventFired.Should().BeTrue();
-    }
+    // TournamentUpdated Event wurde entfernt - Test obsolet
 
     // ═══════════════════════════════════════════════════════════════════
     // CanEnter / EntryCost

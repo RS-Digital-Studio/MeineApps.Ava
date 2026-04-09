@@ -346,22 +346,7 @@ public class QuickJobServiceTests
         state.QuickJobsCompletedToday.Should().Be(6);
     }
 
-    [Fact]
-    public void NotifyJobCompleted_FeuertQuickJobCompletedEvent()
-    {
-        // Vorbereitung
-        var state = ErstelleState();
-        var service = new QuickJobService(ErstelleMockStateService(state), ErstelleMockLocalizationService());
-        var job = new QuickJob { WorkshopType = WorkshopType.Carpenter };
-        QuickJob? empfangenerJob = null;
-        service.QuickJobCompleted += (_, j) => empfangenerJob = j;
-
-        // Ausführung
-        service.NotifyJobCompleted(job);
-
-        // Prüfung: Event wurde gefeuert mit korrektem Job
-        empfangenerJob.Should().BeSameAs(job);
-    }
+    // QuickJobCompleted Event wurde entfernt - Test obsolet
 
     // ═══════════════════════════════════════════════════════════════════
     // Rotation und NeedsRotation

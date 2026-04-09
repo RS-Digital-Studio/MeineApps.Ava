@@ -34,9 +34,9 @@ public class StrategyFactoryTests
     }
 
     [Fact]
-    public void AvailableStrategies_ShouldHave7Entries()
+    public void AvailableStrategies_ShouldHave9Entries()
     {
-        StrategyFactory.AvailableStrategies.Should().HaveCount(7);
+        StrategyFactory.AvailableStrategies.Should().HaveCount(9);
     }
 
     [Theory]

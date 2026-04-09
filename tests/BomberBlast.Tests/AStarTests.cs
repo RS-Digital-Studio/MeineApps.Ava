@@ -8,7 +8,7 @@ namespace BomberBlast.Tests;
 
 /// <summary>
 /// Tests für den A*-Pathfinding-Algorithmus.
-/// Isolierte Tests ohne GameEngine-Abhängigkeit.
+/// FindPath() gibt Pfadlänge zurück (0 = kein Pfad). Ergebnis via ResultPath abrufbar.
 /// </summary>
 public class AStarTests
 {
@@ -42,11 +42,11 @@ public class AStarTests
         var aStar = new AStar(grid);
 
         // Ausführung: Von (1,1) nach (5,5)
-        var pfad = aStar.FindPath(1, 1, 5, 5);
+        var pfadLaenge = aStar.FindPath(1, 1, 5, 5);
 
         // Prüfung
-        pfad.Should().NotBeEmpty("ein Pfad muss gefunden werden wenn kein Hindernis existiert");
-        pfad.Peek().Should().Be((2, 1), "der erste Schritt muss ein benachbarter Knoten sein");
+        pfadLaenge.Should().BeGreaterThan(0, "ein Pfad muss gefunden werden wenn kein Hindernis existiert");
+        aStar.ResultPath[0].Should().Be((2, 1), "der erste Schritt muss ein benachbarter Knoten sein");
     }
 
     [Fact]
@@ -57,11 +57,11 @@ public class AStarTests
         var aStar = new AStar(grid);
 
         // Ausführung: Start = Ziel
-        var pfad = aStar.FindPath(3, 3, 3, 3);
+        var pfadLaenge = aStar.FindPath(3, 3, 3, 3);
 
         // Prüfung: AStar gibt die Startposition selbst zurück
-        pfad.Should().HaveCount(1, "Start=Ziel → nur die Position selbst");
-        pfad.Peek().Should().Be((3, 3));
+        pfadLaenge.Should().Be(1, "Start=Ziel → nur die Position selbst");
+        aStar.ResultPath[0].Should().Be((3, 3));
     }
 
     [Fact]
@@ -76,13 +76,12 @@ public class AStarTests
         var aStar = new AStar(grid);
 
         // Ausführung
-        var pfad = aStar.FindPath(1, 3, 5, 3);
+        var pfadLaenge = aStar.FindPath(1, 3, 5, 3);
 
         // Prüfung: Pfad muss existieren aber über Umweg
-        pfad.Should().NotBeEmpty("Umweg über freie Zellen muss möglich sein");
+        pfadLaenge.Should().BeGreaterThan(0, "Umweg über freie Zellen muss möglich sein");
         // Der Pfad darf keine Wand-Zelle (3,3) enthalten
-        var schritte = new List<(int, int)>();
-        while (pfad.Count > 0) schritte.Add(pfad.Dequeue());
+        var schritte = aStar.ResultPath.ToList();
         schritte.Should().NotContain((3, 3), "Wand-Zellen dürfen nicht betreten werden");
     }
 
@@ -100,10 +99,10 @@ public class AStarTests
         var aStar = new AStar(grid);
 
         // Ausführung: Von eingeschlossenem Start (2,2) nach (10,5)
-        var pfad = aStar.FindPath(2, 2, 10, 5);
+        var pfadLaenge = aStar.FindPath(2, 2, 10, 5);
 
         // Prüfung
-        pfad.Should().BeEmpty("kein Pfad möglich wenn Start vollständig eingeschlossen ist");
+        pfadLaenge.Should().Be(0, "kein Pfad möglich wenn Start vollständig eingeschlossen ist");
     }
 
     [Fact]
@@ -114,10 +113,10 @@ public class AStarTests
         var aStar = new AStar(grid);
 
         // Ausführung: Horizontale Linie (1,1) → (5,1): 4 Schritte
-        var pfad = aStar.FindPath(1, 1, 5, 1);
+        var pfadLaenge = aStar.FindPath(1, 1, 5, 1);
 
         // Prüfung: In einem hindernisfreien Grid = Manhattan-Distanz
-        pfad.Should().HaveCount(4,
+        pfadLaenge.Should().Be(4,
             "Manhattan-Distanz von (1,1) nach (5,1) beträgt 4 Schritte");
     }
 
@@ -131,12 +130,11 @@ public class AStarTests
         var aStar = new AStar(grid);
 
         // Ausführung: Wallpass-Modus
-        var pfad = aStar.FindPath(1, 1, 5, 1, canPassWalls: true);
+        var pfadLaenge = aStar.FindPath(1, 1, 5, 1, canPassWalls: true);
 
         // Prüfung: Mit canPassWalls=true muss der Block betreten werden können
-        pfad.Should().NotBeEmpty("canPassWalls=true erlaubt Betreten von Block-Zellen");
-        var schritte = new List<(int x, int y)>();
-        while (pfad.Count > 0) schritte.Add(pfad.Dequeue());
+        pfadLaenge.Should().BeGreaterThan(0, "canPassWalls=true erlaubt Betreten von Block-Zellen");
+        var schritte = aStar.ResultPath.ToList();
         schritte.Should().Contain((3, 1), "Block-Zelle muss direkt betreten werden (kürzester Weg)");
     }
 
@@ -152,12 +150,11 @@ public class AStarTests
         var aStar = new AStar(grid);
 
         // Ausführung: avoidBombs=true (Standard)
-        var pfad = aStar.FindPath(1, 1, 5, 1, avoidBombs: true);
+        var pfadLaenge = aStar.FindPath(1, 1, 5, 1, avoidBombs: true);
 
         // Prüfung
-        pfad.Should().NotBeEmpty("Umweg um Bombe herum muss möglich sein");
-        var schritte = new List<(int x, int y)>();
-        while (pfad.Count > 0) schritte.Add(pfad.Dequeue());
+        pfadLaenge.Should().BeGreaterThan(0, "Umweg um Bombe herum muss möglich sein");
+        var schritte = aStar.ResultPath.ToList();
         schritte.Should().NotContain((3, 1), "Bomben-Zellen werden bei avoidBombs=true gemieden");
     }
 
@@ -173,10 +170,10 @@ public class AStarTests
         var aStar = new AStar(grid);
 
         // Ausführung: avoidBombs=false → direkter Weg trotz Bombe
-        var pfad = aStar.FindPath(1, 1, 5, 1, avoidBombs: false);
+        var pfadLaenge = aStar.FindPath(1, 1, 5, 1, avoidBombs: false);
 
         // Prüfung: Direkter Weg durch Bomben-Zelle
-        pfad.Should().HaveCount(4, "direkter Weg ohne Umweg: 4 Schritte");
+        pfadLaenge.Should().Be(4, "direkter Weg ohne Umweg: 4 Schritte");
     }
 
     // ─── Safe-Cell-Finder ────────────────────────────────────────────────────

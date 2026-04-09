@@ -443,20 +443,7 @@ public class OrderGeneratorServiceTests
         state.AvailableOrders.Should().Contain(a => a.OrderType == OrderType.MaterialOrder);
     }
 
-    [Fact]
-    public void RefreshOrders_MarkiertDirty()
-    {
-        // Vorbereitung
-        var state = ErstelleState();
-        var stateService = ErstelleMockStateService(state);
-        var service = ErstelleService(stateService);
-
-        // Ausführung
-        service.RefreshOrders();
-
-        // Prüfung: MarkDirty muss aufgerufen worden sein
-        stateService.Received().MarkDirty();
-    }
+    // MarkDirty() wurde aus IGameStateService entfernt - Test obsolet
 
     // ═══════════════════════════════════════════════════════════════════
     // GenerateMaterialOrder

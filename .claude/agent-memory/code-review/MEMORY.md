@@ -1,0 +1,17 @@
+# Code-Review Agent Memory
+
+- [HI Manager-Boni nicht verdrahtet](hi_manager_boni_nicht_verdrahtet.md) -- 14 Manager kosten Goldschrauben, tun aber nichts im Gameplay
+- [BingXBot Volume-SMA Bug](bingxbot_volumesma_bug.md) -- CalculateSma berechnet Close-SMA, wird aber als Volume-Durchschnitt verwendet
+- [BingXBot ATI Review v2](bingxbot_ati_review.md) -- 8 Findings nach Fixes: LightGBM AUC-Check wirkungslos, PredictionEngine nicht thread-safe, Reset() No-op
+- [BingXBot ATI Review v3](bingxbot_ati_review_v3.md) -- v2 komplett gefixt. 8 neue: Bayesian Prior N+1-fach, OnnxModel Thread-Safety, TP-Aufschaukelung, Buckets ohne Signal-Richtung
+- [BingXBot Trading-Kern Review](bingxbot_trading_kern_review.md) -- 12 Findings (3 kritisch): Doppel-SL/TP, Trailing-Stop Race, CTS-Dispose
+- [BingXBot Architektur-Refactoring Review](bingxbot_architektur_refactoring_review.md) -- 3 Findings gefixt: Dispose-Leak, doppelter ATI-Save, RateLimiter-Neuerstelling
+- [BingXBot Logik-Fixes Review](bingxbot_logikfixes_review.md) -- 7 Findings (3 kritisch): ATR=0 Bollinger, ATI Reset ClearStrategies, TrailingStop-Log
+- [BingXBot Trading-Modi Review](bingxbot_tradingmodes_review.md) -- 3 Findings gefixt: Live-Preset fehlt, LastTradingModePreset nicht restauriert, SaveAll Race
+- [BingXBot Vollreview Apr 2026](bingxbot_fullreview_april2026.md) -- 10 Findings (2 krit): MultiMode ATI-Loop, SimExchange Thread-Safety, EquityHistory Race
+- [BingXBot Live-Trailing + ATI Review](bingxbot_livetrailing_review.md) -- 7 Findings (2 krit): ExtremePriceSinceEntry=0 bei Recovery, Bucket-Key-Migration fehlt
+- [BingXBot Cross-Cutting Review](bingxbot_crosscutting_review_apr2026.md) -- 11 Findings (4 krit): MultiMode Recovery ohne SL, uncancellable RateLimiter, Cancel-Close Race, Partial-Qty Formel
+- [BingXBot Vollreview 2 Apr 2026](bingxbot_vollreview2_april2026.md) -- 11 Findings (3 krit): RateLimiter Leak, EmergencyStop ohne ATI-Save, TryClaimAutoSave Race
+- [BingXBot Tiefes ATI+DB+Exchange Review](bingxbot_deep_review_april2026.md) -- 10 Findings (3 krit): CheckAutoTraining Race, ExitOptimizer TP No-Op, Limit-Order Fee fehlt
+- [BingXBot Backtest+SimExchange Deep Review](bingxbot_backtest_deep_review.md) -- 10 Findings (5 krit): Limit-Fee noch offen, Pagination gleiche Daten, Ticker Bid/Ask falsch, Funding MarkPrice, TP2 DivByZero
+- [BingXBot Exchange-Clients + Security Review](bingxbot_exchange_review.md) -- 7 Findings (3 krit): CancellationToken nicht propagiert, ContinueWith statt await, User-Data-Stream ohne Reconnect

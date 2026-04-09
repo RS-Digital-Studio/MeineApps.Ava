@@ -1,0 +1,17 @@
+# BingXBot ONNX Model Trainer - Dependencies
+# pip install -r requirements.txt
+
+# Basis (immer noetig)
+numpy>=1.24
+scikit-learn>=1.3
+onnx>=1.15
+skl2onnx>=1.16
+
+# LightGBM (Default-Modell)
+lightgbm>=4.0
+
+# PyTorch (fuer MLP + Transformer)
+torch>=2.1
+
+# Optional: ONNX Runtime zum Testen des exportierten Modells
+onnxruntime>=1.17

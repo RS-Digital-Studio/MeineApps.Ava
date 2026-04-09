@@ -373,3 +373,6 @@ website/
 # Firebase Service Account Keys (NIEMALS committen!)
 *firebase-adminsdk*
 *service-account*.json
+
+# Firebase
+**/google-services.json

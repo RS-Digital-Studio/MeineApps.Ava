@@ -10,4 +10,5 @@ public record SignalResult(
     decimal? TakeProfit,
     string Reason,
     decimal? TakeProfit2 = null,
-    int ConflueceScore = 0);
+    int ConfluenceScore = 0,
+    bool PreferLimitOrder = false);

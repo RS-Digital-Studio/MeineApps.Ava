@@ -9,7 +9,7 @@ namespace BingXBot.Engine.Indicators;
 /// </summary>
 public enum IndicatorType : byte
 {
-    EMA, SMA, RSI, MACD, BollingerBands, ATR, ADX, Stochastic, Supertrend, AtrPercentile
+    EMA, SMA, RSI, MACD, BollingerBands, ATR, ADX, Stochastic, Supertrend, AtrPercentile, Fibonacci, Donchian
 }
 
 /// <summary>
@@ -347,6 +347,138 @@ public static class IndicatorHelper
     }
 
     /// <summary>
+    /// Fibonacci-Retracement- und Extension-Level basierend auf dem letzten signifikanten Swing.
+    /// Fractal-basierte Swing-Erkennung (swingStrength=5 Kerzen links+rechts = robust).
+    /// Gibt null zurück wenn kein signifikanter Swing gefunden wird oder Range zu klein (unter 2*ATR).
+    /// </summary>
+    // Sentinel-Objekt für null-Ergebnisse im Cache (ConcurrentDictionary erlaubt keine null-Values)
+    private static readonly object _fibNullSentinel = new();
+
+    public static FibonacciLevels? CalculateFibonacciLevels(IReadOnlyList<Candle> candles, int swingStrength = 5)
+    {
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.Fibonacci, swingStrength);
+        if (_cache.TryGetValue(key, out var cached))
+            return cached == _fibNullSentinel ? null : (FibonacciLevels?)cached;
+
+        var result = CalculateFibonacciInternal(candles, swingStrength);
+        _cache.TryAdd(key, result ?? _fibNullSentinel);
+        return result;
+    }
+
+    private static FibonacciLevels? CalculateFibonacciInternal(IReadOnlyList<Candle> candles, int swingStrength)
+    {
+        if (candles.Count < swingStrength * 2 + 10) return null;
+
+        // Fractal-basierte Swing-Erkennung: Ein Swing-High ist ein High das höher ist
+        // als die N Kerzen links UND rechts davon. Analog für Swing-Low.
+        decimal swingHigh = 0, swingLow = 0;
+        int swingHighIdx = -1, swingLowIdx = -1;
+
+        // Von rechts nach links suchen (neueste Swings zuerst)
+        // Start bei swingStrength vom Ende (brauchen N Kerzen rechts zur Bestätigung)
+        for (int i = candles.Count - 1 - swingStrength; i >= swingStrength; i--)
+        {
+            // Swing-High prüfen
+            if (swingHighIdx == -1)
+            {
+                var isSwingHigh = true;
+                var high = candles[i].High;
+                for (int j = 1; j <= swingStrength; j++)
+                {
+                    if (candles[i - j].High >= high || candles[i + j].High >= high)
+                    { isSwingHigh = false; break; }
+                }
+                if (isSwingHigh) { swingHigh = high; swingHighIdx = i; }
+            }
+
+            // Swing-Low prüfen
+            if (swingLowIdx == -1)
+            {
+                var isSwingLow = true;
+                var low = candles[i].Low;
+                for (int j = 1; j <= swingStrength; j++)
+                {
+                    if (candles[i - j].Low <= low || candles[i + j].Low <= low)
+                    { isSwingLow = false; break; }
+                }
+                if (isSwingLow) { swingLow = low; swingLowIdx = i; }
+            }
+
+            if (swingHighIdx != -1 && swingLowIdx != -1) break;
+        }
+
+        if (swingHighIdx == -1 || swingLowIdx == -1) return null;
+        // Swings müssen mindestens 3 Kerzen auseinander liegen (sonst bedeutungslos)
+        if (Math.Abs(swingHighIdx - swingLowIdx) < 3) return null;
+
+        var range = swingHigh - swingLow;
+        if (range <= 0) return null;
+
+        // Minimum-Range-Check: Swing muss signifikant sein (mindestens 1% des Preises)
+        var midPrice = (swingHigh + swingLow) / 2m;
+        if (midPrice > 0 && range / midPrice < 0.01m) return null;
+
+        // Trend-Richtung: Swing-High NACH Swing-Low = Uptrend (Retracement nach unten)
+        var isUptrend = swingHighIdx > swingLowIdx;
+
+        // Retracement-Level (zwischen Low und High)
+        var r236 = swingHigh - range * 0.236m;
+        var r382 = swingHigh - range * 0.382m;
+        var r500 = swingHigh - range * 0.500m;
+        var r618 = swingHigh - range * 0.618m;
+        var r786 = swingHigh - range * 0.786m;
+
+        // Extension-Level (über den Swing hinaus)
+        decimal ext1272, ext1618, ext2618;
+        if (isUptrend)
+        {
+            // Uptrend: Extensions über das High hinaus
+            ext1272 = swingLow + range * 1.272m;
+            ext1618 = swingLow + range * 1.618m;
+            ext2618 = swingLow + range * 2.618m;
+        }
+        else
+        {
+            // Downtrend: Extensions unter das Low hinaus
+            ext1272 = swingHigh - range * 1.272m;
+            ext1618 = swingHigh - range * 1.618m;
+            ext2618 = swingHigh - range * 2.618m;
+        }
+
+        return new FibonacciLevels(
+            swingHigh, swingLow, isUptrend,
+            r236, r382, r500, r618, r786,
+            ext1272, ext1618, ext2618);
+    }
+
+    /// <summary>
+    /// Berechnet die Nähe des aktuellen Preises zum nächsten Fibonacci-Level.
+    /// Gibt einen Wert zwischen 0 (weit entfernt) und 1 (exakt auf Level) zurück.
+    /// Toleranz = Anteil der ATR (default 0.5 = halbe ATR).
+    /// </summary>
+    public static float CalculateFibProximity(IReadOnlyList<Candle> candles, decimal currentPrice, decimal atr)
+    {
+        if (atr <= 0 || currentPrice <= 0) return 0f;
+
+        var fib = CalculateFibonacciLevels(candles);
+        if (fib == null) return 0f;
+
+        // Key-Level: 38.2%, 50%, 61.8% (die wichtigsten Retracement-Level)
+        var keyLevels = new[] { fib.R382, fib.R500, fib.R618 };
+        var minDistance = decimal.MaxValue;
+
+        foreach (var level in keyLevels)
+        {
+            var dist = Math.Abs(currentPrice - level);
+            if (dist < minDistance) minDistance = dist;
+        }
+
+        // Normalisiert: 1.0 bei Distanz=0, 0.0 bei Distanz >= ATR
+        var proximity = 1f - (float)(minDistance / atr);
+        return Math.Clamp(proximity, 0f, 1f);
+    }
+
+    /// <summary>
     /// ADX mit DI-Richtungen (+DI und -DI) für Trend-Richtung UND -Stärke.
     /// ADX = Stärke, +DI > -DI = bullish, -DI > +DI = bearish.
     /// ADX steigend = Trend wird stärker (wichtiger als absoluter Wert).
@@ -371,4 +503,70 @@ public static class IndicatorHelper
         _cache.TryAdd(key, result);
         return result;
     }
+
+    /// <summary>
+    /// Donchian-Channel: Höchstes High und niedrigstes Low der letzten N Perioden.
+    /// Für Breakout-Erkennung: Preis über Upper = Breakout bullish, unter Lower = Breakout bearish.
+    /// </summary>
+    public static (IReadOnlyList<decimal?> Upper, IReadOnlyList<decimal?> Lower, IReadOnlyList<decimal?> Middle)
+        CalculateDonchian(IReadOnlyList<Candle> candles, int period = 20)
+    {
+        var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.Donchian, period);
+        if (_cache.TryGetValue(key, out var cached))
+            return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
+
+        var upper = new List<decimal?>(candles.Count);
+        var lower = new List<decimal?>(candles.Count);
+        var middle = new List<decimal?>(candles.Count);
+
+        for (int i = 0; i < candles.Count; i++)
+        {
+            if (i < period - 1)
+            {
+                upper.Add(null);
+                lower.Add(null);
+                middle.Add(null);
+                continue;
+            }
+
+            var high = decimal.MinValue;
+            var low = decimal.MaxValue;
+            for (int j = i - period + 1; j <= i; j++)
+            {
+                if (candles[j].High > high) high = candles[j].High;
+                if (candles[j].Low < low) low = candles[j].Low;
+            }
+
+            upper.Add(high);
+            lower.Add(low);
+            middle.Add((high + low) / 2m);
+        }
+
+        var result = ((IReadOnlyList<decimal?>)upper, (IReadOnlyList<decimal?>)lower, (IReadOnlyList<decimal?>)middle);
+        _cache.TryAdd(key, result);
+        return result;
+    }
+}
+
+/// <summary>
+/// Fibonacci-Retracement- und Extension-Level basierend auf einem Swing-High/Low.
+/// </summary>
+public record FibonacciLevels(
+    decimal SwingHigh,
+    decimal SwingLow,
+    bool IsUptrend,
+    decimal R236,
+    decimal R382,
+    decimal R500,
+    decimal R618,
+    decimal R786,
+    decimal Ext1272,
+    decimal Ext1618,
+    decimal Ext2618)
+{
+    /// <summary>Swing-Range (High - Low).</summary>
+    public decimal Range => SwingHigh - SwingLow;
+
+    /// <summary>Alle Key-Retracement-Level (38.2%, 50%, 61.8%) als Array.</summary>
+    public decimal[] KeyLevels => [R382, R500, R618];
 }

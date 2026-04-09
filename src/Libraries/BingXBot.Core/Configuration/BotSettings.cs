@@ -19,7 +19,7 @@ public class BotSettings
 
     // === ATI-Konfiguration ===
     /// <summary>Mindestanzahl Trades bevor ATI-Gewichtungen aktiv werden (Cold-Start-Schutz).</summary>
-    public int AtiMinTradesBeforeLearning { get; set; } = 20;
+    public int AtiMinTradesBeforeLearning { get; set; } = 50;
     /// <summary>Intervall in Minuten für automatische ATI-State-Persistierung (0 = deaktiviert).</summary>
     public int AtiAutoSaveIntervalMinutes { get; set; } = 15;
 

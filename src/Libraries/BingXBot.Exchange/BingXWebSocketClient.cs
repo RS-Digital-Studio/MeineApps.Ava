@@ -22,7 +22,7 @@ public class BingXWebSocketClient : IAsyncDisposable
 
     private ClientWebSocket? _ws;
     private readonly ILogger<BingXWebSocketClient> _logger;
-    private int _reconnectAttempts;
+    private volatile int _reconnectAttempts;
     private CancellationTokenSource? _cts;
     private readonly ConcurrentDictionary<string, Action<string>> _handlers = new();
     // ListenKey für User-Data-Stream (Account/Position/Order Events)
@@ -275,14 +275,17 @@ public class BingXWebSocketClient : IAsyncDisposable
     /// </summary>
     private async Task ReconnectAsync()
     {
-        while (_reconnectAttempts < MaxReconnectAttempts)
+        var ct = _cts?.Token ?? CancellationToken.None;
+
+        while (_reconnectAttempts < MaxReconnectAttempts && !ct.IsCancellationRequested)
         {
             _reconnectAttempts++;
             var backoff = GetBackoff();
             _logger.LogWarning("Reconnect Versuch {Attempt}/{Max} in {Backoff}s...",
                 _reconnectAttempts, MaxReconnectAttempts, backoff.TotalSeconds);
 
-            await Task.Delay(backoff);
+            try { await Task.Delay(backoff, ct); }
+            catch (OperationCanceledException) { break; }
 
             try
             {
@@ -291,7 +294,7 @@ public class BingXWebSocketClient : IAsyncDisposable
                 _ws = new ClientWebSocket();
                 _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
 
-                await _ws.ConnectAsync(new Uri(WsBaseUrl), _cts?.Token ?? CancellationToken.None);
+                await _ws.ConnectAsync(new Uri(WsBaseUrl), ct);
                 _reconnectAttempts = 0;
                 ConnectionStateChanged?.Invoke(this, true);
                 _logger.LogInformation("Reconnect erfolgreich");
@@ -303,9 +306,10 @@ public class BingXWebSocketClient : IAsyncDisposable
                 }
 
                 // Receive-Loop neu starten
-                _receiveTask = Task.Run(() => ReceiveLoopAsync(_cts?.Token ?? CancellationToken.None));
+                _receiveTask = Task.Run(() => ReceiveLoopAsync(ct), ct);
                 return; // Erfolgreich verbunden
             }
+            catch (OperationCanceledException) { break; }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Reconnect fehlgeschlagen");

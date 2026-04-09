@@ -141,22 +141,26 @@ public class PerformanceReport
             if (returns.Count > 1)
             {
                 var avgReturn = returns.Average();
-                var variance = returns.Select(r => (r - avgReturn) * (r - avgReturn)).Average();
+                // Sample-Varianz (N-1) für korrekte Schätzung
+                var variance = returns.Select(r => (r - avgReturn) * (r - avgReturn)).Sum() / (returns.Count - 1);
                 var stdDev = Math.Sqrt(variance);
+
+                // Annualisierung: Trades/Jahr statt fixem sqrt(252)
+                var firstEntry = trades.First().EntryTime;
+                var lastExit = trades.Last().ExitTime;
+                var years = (lastExit - firstEntry).TotalDays / 365.25;
+                var annualizationFactor = years > 0 ? Math.Sqrt(trades.Count / years) : Math.Sqrt(252);
+
                 report.SharpeRatio = stdDev > 0
-                    ? (decimal)(avgReturn / stdDev * Math.Sqrt(252))
+                    ? (decimal)(avgReturn / stdDev * annualizationFactor)
                     : 0m;
 
-                // Sortino Ratio: avgReturn / downsideDeviation (nur negative Returns)
-                var negativeReturns = returns.Where(r => r < 0).ToList();
-                if (negativeReturns.Count > 0)
-                {
-                    var downsideVariance = negativeReturns.Select(r => r * r).Average();
-                    var downsideDeviation = Math.Sqrt(downsideVariance);
-                    report.SortinoRatio = downsideDeviation > 0
-                        ? (decimal)(avgReturn / downsideDeviation * Math.Sqrt(252))
-                        : 0m;
-                }
+                // Sortino Ratio: Downside-Deviation über ALLE Returns (positive als 0 behandeln)
+                var downsideVariance = returns.Select(r => r < 0 ? r * r : 0.0).Sum() / (returns.Count - 1);
+                var downsideDeviation = Math.Sqrt(downsideVariance);
+                report.SortinoRatio = downsideDeviation > 0
+                    ? (decimal)(avgReturn / downsideDeviation * annualizationFactor)
+                    : 0m;
             }
         }
 

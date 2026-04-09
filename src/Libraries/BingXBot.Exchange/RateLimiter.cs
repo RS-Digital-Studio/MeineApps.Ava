@@ -5,9 +5,9 @@ namespace BingXBot.Exchange;
 /// <summary>
 /// Token-Bucket Rate Limiter mit separaten Buckets pro Kategorie.
 /// "orders" = 10 Requests/Sekunde, "queries" = 20 Requests/Sekunde, Default = 20/s.
-/// Zugriff auf Queue<DateTime> ist durch SemaphoreSlim pro Kategorie geschuetzt.
+/// Zugriff auf Queue{DateTime} ist durch SemaphoreSlim pro Kategorie geschützt.
 /// </summary>
-public class RateLimiter
+public class RateLimiter : IDisposable
 {
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _semaphores = new();
     private readonly ConcurrentDictionary<string, Queue<DateTime>> _timestamps = new();
@@ -16,12 +16,15 @@ public class RateLimiter
         ["orders"] = 10,
         ["queries"] = 20
     };
+    private bool _disposed;
 
     /// <summary>
     /// Wartet bis ein Rate-Limit-Slot frei ist. Thread-safe pro Kategorie.
     /// </summary>
     public async Task WaitForSlotAsync(string category, CancellationToken ct)
     {
+        if (_disposed) return;
+
         var limit = _limits.GetValueOrDefault(category, 20);
         var semaphore = _semaphores.GetOrAdd(category, _ => new SemaphoreSlim(1, 1));
 
@@ -52,5 +55,15 @@ public class RateLimiter
         {
             semaphore.Release();
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        foreach (var semaphore in _semaphores.Values)
+            semaphore.Dispose();
+        _semaphores.Clear();
+        _timestamps.Clear();
     }
 }

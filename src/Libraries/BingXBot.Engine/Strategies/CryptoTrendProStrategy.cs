@@ -12,20 +12,19 @@ namespace BingXBot.Engine.Strategies;
 /// Kernprinzip: Wenige Trades mit hoher Überzeugung. Confluence-Scoring statt binäre Bedingungen.
 /// Supertrend als Primärsignal (weniger Whipsaws als EMA-Cross), volatilitäts-adaptive SL/TP.
 ///
-/// Entry (Long): Score >= 8 von 12 Punkten:
-///   +2  D1 Preis > EMA 50 (mittelfristiger Uptrend)
+/// Entry (Long): Score >= MinScore von max. 10 Punkten (intern):
+///   +2  D1 Preis > EMA 50 (mittelfristiger Uptrend, via HTF-Candles)
 ///   +2  H4 Supertrend(10, 3.0) bullish
 ///   +1  H4 EMA 12 > EMA 26 (Trend-Bestätigung)
 ///   +1  H4 ADX > 20 UND steigend (+DI > -DI)
 ///   +1  H4 RSI 45-80 (Momentum, nicht extrem)
 ///   +1  H4 Volumen > 1.5x SMA(20) (institutionelles Interesse)
-///   +2  BTC-Kontext (extern via MarketFilter, wird als HTF-Candles übergeben)
-///   +1  Funding-Rate günstig (extern via MarketContext)
-///   +1  Cooldown respektiert (kein Verlust in letzten 8h, extern)
+///   +1  HTF-Supertrend bullish (unabhängig vom D1>EMA Score)
+///   +1  Fibonacci-Retracement: Preis nahe Key-Level (38.2%, 50%, 61.8%) + Fib-Ext 161.8% als TP2
+/// Extern geprüft (nicht im Score): Funding-Rate, Cooldown, BTC-Health via MarketFilter.
 ///
 /// Exit: Multi-Stage (TP1 30% → Smart-BE → TP2 30% → Chandelier-Trailing 40% / Regime-Exit)
 /// SL/TP: Volatilitäts-adaptiv basierend auf ATR-Perzentil (engere Stops in ruhigen, weitere in volatilen Phasen)
-/// Max erreichbarer Score: ~10 (Funding + Cooldown werden extern geprüft, nicht im Score)
 /// </summary>
 public class CryptoTrendProStrategy : IStrategy
 {
@@ -43,18 +42,18 @@ public class CryptoTrendProStrategy : IStrategy
 
     // ADX-Parameter
     private int _adxPeriod = 14;
-    private decimal _minAdx = 18m;
+    private decimal _minAdx = 20m;  // 20: Universeller Standard für "Trend vorhanden"
 
     // RSI-Parameter
     private int _rsiPeriod = 14;
-    private decimal _rsiLongMin = 40m;
-    private decimal _rsiLongMax = 75m;
-    private decimal _rsiShortMin = 25m;
-    private decimal _rsiShortMax = 60m;
+    private decimal _rsiLongMin = 42m;   // 42: Krypto-Uptrends halten RSI oft bei 40+
+    private decimal _rsiLongMax = 78m;   // 78: Krypto-Uptrends pushen RSI regelmäßig über 75
+    private decimal _rsiShortMin = 22m;  // 22: Analog Short-Seite
+    private decimal _rsiShortMax = 58m;
 
     // Volumen-Parameter
     private int _volumePeriod = 20;
-    private decimal _volumeMultiplier = 1.0m;
+    private decimal _volumeMultiplier = 1.2m;  // 1.2x: Echte Volume-Bestätigung (1.0x filtert praktisch nichts)
 
     // ATR / Exit-Parameter
     private int _atrPeriod = 14;
@@ -62,6 +61,8 @@ public class CryptoTrendProStrategy : IStrategy
 
     // Confluence
     private int _minScore = 6;
+    // Max erreichbarer Score (2 D1>EMA + 2 ST + 1 EMA-Cross + 1 ADX + 1 RSI + 1 Vol + 1 HTF-ST + 1 Fib)
+    private const int MaxScore = 10;
 
     // Aktiver Modus (für vol-adaptive Multiplikatoren)
     private TradingModePreset _activePreset = TradingModePreset.Swing;
@@ -111,7 +112,7 @@ public class CryptoTrendProStrategy : IStrategy
         new("VolumePeriod", "Volumen-SMA Periode", "int", _volumePeriod, 10, 50, 5),
         new("VolumeMultiplier", "Volumen-Schwelle (x Durchschnitt)", "decimal", _volumeMultiplier, 1.0m, 3.0m, 0.1m),
         new("AtrPeriod", "ATR Periode (SL/TP-Berechnung)", "int", _atrPeriod, 7, 21, 1),
-        new("MinScore", "Min. Confluence-Score (8-12)", "int", _minScore, 6, 12, 1),
+        new("MinScore", "Min. Confluence-Score (4-10)", "int", _minScore, 4, MaxScore, 1),
     };
 
     public SignalResult Evaluate(MarketContext context)
@@ -121,6 +122,15 @@ public class CryptoTrendProStrategy : IStrategy
             return NoSignal("Zu wenig Daten");
 
         var currentPrice = context.CurrentTicker.LastPrice;
+
+        // Marktspezifische RSI-Ranges: Krypto hat breitere Ranges (Trends pushen RSI höher)
+        // TradFi (Gold, Nasdaq, Forex) nutzt Standard-RSI-Schwellen
+        var (rsiMinLong, rsiMaxLong) = context.Category == Core.Enums.MarketCategory.Crypto
+            ? (_rsiLongMin, _rsiLongMax)    // 42-78 (Krypto)
+            : (30m, 70m);                    // 30-70 (TradFi Standard)
+        var (rsiMinShort, rsiMaxShort) = context.Category == Core.Enums.MarketCategory.Crypto
+            ? (_rsiShortMin, _rsiShortMax)  // 22-58 (Krypto)
+            : (30m, 70m);                    // 30-70 (TradFi Standard)
 
         // ═══════════════════════════════════════════════════════════
         // Indikatoren berechnen
@@ -207,8 +217,8 @@ public class CryptoTrendProStrategy : IStrategy
             longReasons.Add($"ADX={lastAdx.Value:F0}↑");
         }
 
-        // +1: RSI im bullish-Bereich (45-80)
-        if (lastRsi.Value >= _rsiLongMin && lastRsi.Value <= _rsiLongMax)
+        // +1: RSI im bullish-Bereich (Krypto: 42-78, TradFi: 30-70)
+        if (lastRsi.Value >= rsiMinLong && lastRsi.Value <= rsiMaxLong)
         {
             longScore += 1;
             longReasons.Add($"RSI={lastRsi.Value:F0}");
@@ -221,20 +231,31 @@ public class CryptoTrendProStrategy : IStrategy
             longReasons.Add("Vol>Avg");
         }
 
-        // +2: BTC-Kontext (Higher-Timeframe Supertrend)
-        // Wird über HigherTimeframeCandles übergeben (BTC-Candles wenn Alt-Trade, eigene wenn BTC-Trade)
-        var htfTrend = IndicatorHelper.GetHigherTimeframeTrend(context.HigherTimeframeCandles, _emaTrendFilter);
-        if (htfTrend > 0)
+        // +1: HTF-Supertrend bullish (unabhängig vom D1>EMA Score - eigene Konfirmation)
+        if (context.HigherTimeframeCandles != null && context.HigherTimeframeCandles.Count > _supertrendPeriod + 5)
         {
-            // Bereits in D1>EMA gezählt, nur Bonus wenn Supertrend auch bullish
-            if (context.HigherTimeframeCandles != null && context.HigherTimeframeCandles.Count > _supertrendPeriod + 5)
+            var (_, htfStBullish) = IndicatorHelper.CalculateSupertrend(
+                context.HigherTimeframeCandles, _supertrendPeriod, _supertrendMultiplier);
+            if (htfStBullish[^1] == true)
             {
-                var (_, htfStBullish) = IndicatorHelper.CalculateSupertrend(
-                    context.HigherTimeframeCandles, _supertrendPeriod, _supertrendMultiplier);
-                if (htfStBullish[^1] == true) // HTF-Supertrend-Bonus unabhängig vom aktuellen Score
+                longScore += 1;
+                longReasons.Add("HTF-ST↑");
+            }
+        }
+
+        // +1: Fibonacci-Retracement: Preis nahe einem Key-Level (38.2%, 50%, 61.8%) im Uptrend
+        var fibLevels = IndicatorHelper.CalculateFibonacciLevels(candles);
+        if (fibLevels is { IsUptrend: true })
+        {
+            var fibTolerance = atrValue * 0.5m; // Halbe ATR als Toleranz
+            var fibLevelNames = new[] { "38.2%", "50%", "61.8%" };
+            for (int fi = 0; fi < fibLevels.KeyLevels.Length; fi++)
+            {
+                if (Math.Abs(currentPrice - fibLevels.KeyLevels[fi]) <= fibTolerance)
                 {
-                    longScore += 1; // Bonus für HTF-Supertrend-Alignment
-                    longReasons.Add("HTF-ST↑");
+                    longScore += 1;
+                    longReasons.Add($"Fib@{fibLevelNames[fi]}");
+                    break;
                 }
             }
         }
@@ -278,8 +299,8 @@ public class CryptoTrendProStrategy : IStrategy
             shortReasons.Add($"ADX={lastAdx.Value:F0}↑");
         }
 
-        // +1: RSI im bearish-Bereich (20-55)
-        if (lastRsi.Value >= _rsiShortMin && lastRsi.Value <= _rsiShortMax)
+        // +1: RSI im bearish-Bereich (Krypto: 22-58, TradFi: 30-70)
+        if (lastRsi.Value >= rsiMinShort && lastRsi.Value <= rsiMaxShort)
         {
             shortScore += 1;
             shortReasons.Add($"RSI={lastRsi.Value:F0}");
@@ -292,17 +313,31 @@ public class CryptoTrendProStrategy : IStrategy
             shortReasons.Add("Vol>Avg");
         }
 
-        // +1-2: HTF bearish
-        if (htfTrend < 0)
+        // +1: HTF-Supertrend bearish (unabhängig vom D1<EMA Score - eigene Konfirmation)
+        if (context.HigherTimeframeCandles != null && context.HigherTimeframeCandles.Count > _supertrendPeriod + 5)
         {
-            if (context.HigherTimeframeCandles != null && context.HigherTimeframeCandles.Count > _supertrendPeriod + 5)
+            var (_, htfStBullish) = IndicatorHelper.CalculateSupertrend(
+                context.HigherTimeframeCandles, _supertrendPeriod, _supertrendMultiplier);
+            if (htfStBullish[^1] == false)
             {
-                var (_, htfStBullish) = IndicatorHelper.CalculateSupertrend(
-                    context.HigherTimeframeCandles, _supertrendPeriod, _supertrendMultiplier);
-                if (htfStBullish[^1] == false) // HTF-Supertrend-Bonus unabhängig vom aktuellen Score
+                shortScore += 1;
+                shortReasons.Add("HTF-ST↓");
+            }
+        }
+
+        // +1: Fibonacci-Retracement: Preis nahe einem Key-Level im Downtrend
+        // fibLevels wird oben bereits berechnet (gecacht)
+        if (fibLevels is { IsUptrend: false })
+        {
+            var fibTolerance = atrValue * 0.5m;
+            var fibLevelNamesShort = new[] { "38.2%", "50%", "61.8%" };
+            for (int fi = 0; fi < fibLevels.KeyLevels.Length; fi++)
+            {
+                if (Math.Abs(currentPrice - fibLevels.KeyLevels[fi]) <= fibTolerance)
                 {
                     shortScore += 1;
-                    shortReasons.Add("HTF-ST↓");
+                    shortReasons.Add($"Fib@{fibLevelNamesShort[fi]}");
+                    break;
                 }
             }
         }
@@ -349,17 +384,22 @@ public class CryptoTrendProStrategy : IStrategy
         var isLargeCap = context.CurrentTicker.Volume24h >= 500_000_000m;
         var effectiveMinScore = isLargeCap ? Math.Max(4, _minScore - 2) : _minScore;
 
-        // Long-Signal
-        if (longScore >= effectiveMinScore && longScore > shortScore)
+        // Long-Signal (bei Gleichstand: Supertrend-Richtung als Tiebreaker)
+        var longWins = longScore > shortScore || (longScore == shortScore && supertrendIsBullish);
+        if (longScore >= effectiveMinScore && longWins)
         {
             // Keine bestehende Long-Position im selben Symbol
             if (context.OpenPositions.Any(p => p.Symbol == context.Symbol && p.Side == Side.Buy))
                 return NoSignal("Bereits Long in diesem Symbol");
 
-            var confidence = Math.Min(1m, longScore / 12m);
+            var confidence = Math.Min(1m, (decimal)longScore / MaxScore);
             var sl = currentPrice - atrValue * slMult;
             var tp1 = currentPrice + atrValue * tp1Mult;
             var tp2 = currentPrice + atrValue * tp2Mult;
+
+            // Fib-Extension 161.8% als alternatives TP2 (wenn weiter als ATR-basiert)
+            if (fibLevels is { IsUptrend: true } && fibLevels.Ext1618 > tp2 && fibLevels.Ext1618 > currentPrice)
+                tp2 = fibLevels.Ext1618;
 
             // Sicherheit: SL mindestens 0.5% vom Entry entfernt (Spread-Schutz bei Meme-Coins)
             var minSlDistance = currentPrice * 0.005m;
@@ -370,20 +410,25 @@ public class CryptoTrendProStrategy : IStrategy
             var limitEntry = preferLimit ? currentPrice - atrValue * 0.1m : currentPrice;
 
             return new SignalResult(Signal.Long, confidence, limitEntry, sl, tp1,
-                $"CTP Long [{longScore}/12] ATR-P{atrPercentile}: {string.Join(", ", longReasons)}",
+                $"CTP Long [{longScore}/{MaxScore}] ATR-P{atrPercentile}: {string.Join(", ", longReasons)}",
                 TakeProfit2: tp2, ConfluenceScore: longScore, PreferLimitOrder: preferLimit);
         }
 
-        // Short-Signal
-        if (shortScore >= effectiveMinScore && shortScore > longScore)
+        // Short-Signal (bei Gleichstand und bearischem Supertrend)
+        var shortWins = shortScore > longScore || (shortScore == longScore && !supertrendIsBullish);
+        if (shortScore >= effectiveMinScore && shortWins)
         {
             if (context.OpenPositions.Any(p => p.Symbol == context.Symbol && p.Side == Side.Sell))
                 return NoSignal("Bereits Short in diesem Symbol");
 
-            var confidence = Math.Min(1m, shortScore / 12m);
+            var confidence = Math.Min(1m, (decimal)shortScore / MaxScore);
             var sl = currentPrice + atrValue * slMult;
             var tp1 = currentPrice - atrValue * tp1Mult;
             var tp2 = currentPrice - atrValue * tp2Mult;
+
+            // Fib-Extension 161.8% als alternatives TP2 (wenn weiter als ATR-basiert)
+            if (fibLevels is { IsUptrend: false } && fibLevels.Ext1618 < tp2 && fibLevels.Ext1618 < currentPrice)
+                tp2 = fibLevels.Ext1618;
 
             // Sicherheit: SL mindestens 0.5% vom Entry entfernt (Spread-Schutz)
             var minSlDistShort = currentPrice * 0.005m;
@@ -394,13 +439,13 @@ public class CryptoTrendProStrategy : IStrategy
             var limitEntryShort = preferLimitShort ? currentPrice + atrValue * 0.1m : currentPrice;
 
             return new SignalResult(Signal.Short, confidence, limitEntryShort, sl, tp1,
-                $"CTP Short [{shortScore}/12] ATR-P{atrPercentile}: {string.Join(", ", shortReasons)}",
+                $"CTP Short [{shortScore}/{MaxScore}] ATR-P{atrPercentile}: {string.Join(", ", shortReasons)}",
                 TakeProfit2: tp2, ConfluenceScore: shortScore, PreferLimitOrder: preferLimitShort);
         }
 
         var bestSide = longScore > shortScore ? "Long" : "Short";
         var bestScore = Math.Max(longScore, shortScore);
-        return NoSignal($"Score zu niedrig ({bestSide}: {bestScore}/12, brauche {_minScore})");
+        return NoSignal($"Score zu niedrig ({bestSide}: {bestScore}/{MaxScore}, brauche {_minScore})");
     }
 
     /// <summary>
@@ -415,17 +460,18 @@ public class CryptoTrendProStrategy : IStrategy
 
     /// <summary>
     /// Gibt den empfohlenen Positions-Skalierungsfaktor basierend auf Confluence-Score zurück.
-    /// Score 8-9 = 75%, 10-11 = 100%, 12 = 125%.
+    /// Score 6-7 = 75%, 8-9 = 100%, 10 = 125%.
+    /// Score 0 (Nicht-CTP-Strategien ohne Confluence-Scoring) = 100%.
     /// Wird extern im TradingServiceBase angewendet.
     /// </summary>
     public static decimal GetPositionScaleFactor(int score)
     {
         return score switch
         {
-            >= 12 => 1.25m,
-            >= 10 => 1.0m,
-            >= 8  => 0.75m,
-            _     => 0m // Kein Trade
+            >= 10 => 1.25m, // Max-Score (volle Confluence) → 125% Position
+            >= 8  => 1.0m,
+            >= 6  => 0.75m,
+            _     => 1.0m // Nicht-CTP-Strategien ohne Score → volle Positionsgröße
         };
     }
 
@@ -434,7 +480,7 @@ public class CryptoTrendProStrategy : IStrategy
     /// Der eingestellte MaxLeverage wird als Basis genommen und bei hoher Volatilität oder
     /// schwachem Signal leicht reduziert (max -20..30%), nie drastisch.
     /// </summary>
-    public static int GetAdaptiveLeverage(int atrPercentile, int score, bool isBtc, int maxLeverage = 3)
+    public static int GetAdaptiveLeverage(int atrPercentile, int score, int maxLeverage = 3)
     {
         var result = maxLeverage;
 
@@ -442,8 +488,8 @@ public class CryptoTrendProStrategy : IStrategy
         if (atrPercentile >= 90) result = Math.Max(1, (int)(maxLeverage * 0.7m));      // Extrem: -30%
         else if (atrPercentile >= 75) result = Math.Max(1, (int)(maxLeverage * 0.85m)); // Hoch: -15%
 
-        // Niedriger Score → 1 Stufe weniger (nur wenn > 1)
-        if (score <= 9 && result > 1) result--;
+        // Schwacher Score → 1 Stufe weniger (score 0 = Non-CTP-Strategie → kein Abzug)
+        if (score > 0 && score <= 6 && result > 1) result--;
 
         return Math.Max(1, result);
     }
@@ -461,6 +507,7 @@ public class CryptoTrendProStrategy : IStrategy
         IndicatorHelper.CalculateRsi(history, _rsiPeriod);
         IndicatorHelper.CalculateAtr(history, _atrPeriod);
         IndicatorHelper.CalculateVolumeSma(history, _volumePeriod);
+        IndicatorHelper.CalculateFibonacciLevels(history);
     }
 
     public void Reset() { }

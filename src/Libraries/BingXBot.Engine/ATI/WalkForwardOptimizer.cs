@@ -51,7 +51,8 @@ public class WalkForwardOptimizer
         int windowSizeCandles, FitnessFunction fitnessFunc)
     {
         var trainSize = windowSizeCandles * TrainTestRatio;
-        var totalNeeded = trainSize + windowSizeCandles;
+        const int purgeGap = 12; // Candles zwischen Train/Test (verhindert Label-Leakage)
+        var totalNeeded = trainSize + purgeGap + windowSizeCandles;
 
         if (allCandles.Count < totalNeeded)
             throw new ArgumentException($"Nicht genug Daten: {allCandles.Count} Candles, benötigt {totalNeeded}");
@@ -65,8 +66,8 @@ public class WalkForwardOptimizer
         {
             // Train-Daten
             var trainCandles = allCandles.Skip(offset).Take(trainSize).ToList();
-            // Test-Daten
-            var testCandles = allCandles.Skip(offset + trainSize).Take(windowSizeCandles).ToList();
+            // Test-Daten (nach Purge-Gap)
+            var testCandles = allCandles.Skip(offset + trainSize + purgeGap).Take(windowSizeCandles).ToList();
 
             // GA: Beste Parameter auf Train-Daten finden
             var (bestParams, inSampleFitness) = OptimizeWindow(strategy, parameters, trainCandles, fitnessFunc);

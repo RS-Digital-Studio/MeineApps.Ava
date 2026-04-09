@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
+using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine.Indicators;
@@ -41,13 +42,51 @@ public class MarketScanner : IMarketScanner
         // Alle Ticker holen
         var tickers = await _exchangeClient.GetAllTickersAsync();
 
+        // MarketCap-Cache aktualisieren (CoinGecko, max 1x pro Stunde)
+        try { await MarketCapCache.RefreshIfNeededAsync().ConfigureAwait(false); }
+        catch { /* Fallback auf Volume-Ranking */ }
+
+        // Krypto und TradFi trennen
+        var cryptoTickers = tickers.Where(t => !SymbolClassifier.IsTradFi(t.Symbol)).ToList();
+        var tradfiTickers = settings.EnableTradFi && settings.IsHedgeModeActive
+            ? tickers.Where(t => SymbolClassifier.IsTradFi(t.Symbol)
+                              && SymbolClassifier.IsApiTradeable(t.Symbol)
+                              && settings.EnabledCategories.Contains(SymbolClassifier.Classify(t.Symbol))).ToList()
+            : new List<Ticker>();
+
+        // Top-100 Krypto nach Market Cap (CoinGecko) oder Fallback Volume
+        if (settings.OnlyTopByVolume && settings.TopCoinsCount > 0)
+        {
+            if (MarketCapCache.IsLoaded)
+            {
+                cryptoTickers = cryptoTickers
+                    .Where(t => MarketCapCache.IsTopCoin(t.Symbol, settings.TopCoinsCount))
+                    .ToList();
+            }
+            else
+            {
+                cryptoTickers = cryptoTickers
+                    .OrderByDescending(t => t.Volume24h)
+                    .Take(settings.TopCoinsCount).ToList();
+            }
+            _logger.LogDebug("Top-{Count} Filter (MarketCap={IsMcLoaded}): {Total} Ticker → {CryptoCount} Krypto + {TradFiCount} TradFi",
+                settings.TopCoinsCount, MarketCapCache.IsLoaded, tickers.Count, cryptoTickers.Count, tradfiTickers.Count);
+        }
+
         // Basis-Filter (Volumen, Preis, Black/Whitelist)
-        var filtered = tickers
+        var filteredCrypto = cryptoTickers
             .Where(t => !settings.Blacklist.Contains(t.Symbol))
             .Where(t => settings.Whitelist.Count == 0 || settings.Whitelist.Contains(t.Symbol))
             .Where(t => t.Volume24h >= settings.MinVolume24h)
             .Where(t => Math.Abs(t.PriceChangePercent24h) >= settings.MinPriceChange)
             .ToList();
+
+        var filteredTradFi = tradfiTickers
+            .Where(t => !settings.Blacklist.Contains(t.Symbol))
+            .Where(t => t.Volume24h >= settings.MinVolume24hTradFi)
+            .ToList();
+
+        var filtered = filteredCrypto.Concat(filteredTradFi).ToList();
 
         // Klines parallel vorladen (SemaphoreSlim begrenzt gleichzeitige API-Calls)
         var semaphore = new SemaphoreSlim(5, 5);
@@ -225,10 +264,13 @@ public class MarketScanner : IMarketScanner
         return (totalScore, indicators);
     }
 
-    /// <summary>Fallback-Scoring ohne Klines (nur Ticker-Daten).</summary>
+    /// <summary>
+    /// Fallback-Scoring ohne Klines (nur Ticker-Daten).
+    /// Normalisiert auf [0, 1] Bereich, damit SimpleScore nicht das Advanced-Scoring dominiert.
+    /// </summary>
     private static decimal CalculateSimpleScore(Ticker ticker, ScanMode mode)
     {
-        return mode switch
+        var raw = mode switch
         {
             ScanMode.Momentum => Math.Abs(ticker.PriceChangePercent24h) * (ticker.Volume24h / 1_000_000m) * 0.01m,
             ScanMode.Reversal => (100m - Math.Abs(ticker.PriceChangePercent24h)) * (ticker.Volume24h / 1_000_000m) * 0.01m,
@@ -236,6 +278,9 @@ public class MarketScanner : IMarketScanner
             ScanMode.VolumeSurge => ticker.Volume24h / 1_000_000m * 0.01m,
             _ => ticker.Volume24h / 1_000_000m * 0.01m
         };
+        // Clamp auf [0, 1] damit Kandidaten ohne Klines (SimpleScore) nicht die
+        // korrekt berechneten Advanced-Scores (ebenfalls 0-1) dominieren
+        return Math.Min(1m, raw);
     }
 
     /// <summary>Aktuelles Volumen relativ zum 20-Perioden-Durchschnitt.</summary>

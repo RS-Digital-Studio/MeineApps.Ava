@@ -71,6 +71,7 @@ public class LightGbmClassifier
             MarketSentiment = e.F_MarketSentiment,
             FearGreedIndex = e.F_FearGreedIndex,
             OpenInterestChange = e.F_OpenInterestChange,
+            FibProximity = e.F_FibProximity,
             ConsecutiveUpCandles = e.F_ConsecutiveUpCandles,
             ConsecutiveDownCandles = e.F_ConsecutiveDownCandles,
             RecentReturnPercent = e.F_RecentReturnPercent,
@@ -81,8 +82,11 @@ public class LightGbmClassifier
 
         var dataView = _mlContext.Data.LoadFromEnumerable(inputs);
 
-        // 80/20 Train/Test-Split
-        var split = _mlContext.Data.TrainTestSplit(dataView, testFraction: 0.2, seed: 42);
+        // Temporaler 80/20-Split (kein Random-Shuffle bei Zeitreihendaten → verhindert Data Leakage).
+        // Daten sind nach Timestamp sortiert: Training auf älteren, Test auf neueren Trades.
+        var trainCount = (int)(inputs.Count * 0.8);
+        var trainDataView = _mlContext.Data.LoadFromEnumerable(inputs.Take(trainCount));
+        var testDataView = _mlContext.Data.LoadFromEnumerable(inputs.Skip(trainCount));
 
         // Feature-Spalten definieren
         var featureColumns = new[]
@@ -98,6 +102,7 @@ public class LightGbmClassifier
             nameof(FeatureInput.BtcReturn24h), nameof(FeatureInput.BtcTrend),
             nameof(FeatureInput.BtcCorrelation), nameof(FeatureInput.MarketSentiment),
             nameof(FeatureInput.FearGreedIndex), nameof(FeatureInput.OpenInterestChange),
+            nameof(FeatureInput.FibProximity),
             nameof(FeatureInput.ConsecutiveUpCandles), nameof(FeatureInput.ConsecutiveDownCandles),
             nameof(FeatureInput.RecentReturnPercent), nameof(FeatureInput.Regime),
             nameof(FeatureInput.StrategiesAgreeing), nameof(FeatureInput.EnsembleConfidence)
@@ -113,11 +118,11 @@ public class LightGbmClassifier
                 learningRate: 0.05,
                 numberOfIterations: 200));
 
-        // Trainieren
-        var trainedModel = pipeline.Fit(split.TrainSet);
+        // Trainieren auf älteren Daten
+        var trainedModel = pipeline.Fit(trainDataView);
 
-        // Evaluieren auf Test-Set BEVOR das Modell aktiviert wird
-        var predictions = trainedModel.Transform(split.TestSet);
+        // Evaluieren auf neueren Daten BEVOR das Modell aktiviert wird
+        var predictions = trainedModel.Transform(testDataView);
         var metrics = _mlContext.BinaryClassification.Evaluate(predictions, "Label");
 
         LastTrainedAt = DateTime.UtcNow;
@@ -128,8 +133,8 @@ public class LightGbmClassifier
             F1Score = (decimal)metrics.F1Score,
             Precision = (decimal)metrics.PositivePrecision,
             Recall = (decimal)metrics.PositiveRecall,
-            TrainingSamples = (int)(labeledSnapshots.Count * 0.8),
-            TestSamples = (int)(labeledSnapshots.Count * 0.2)
+            TrainingSamples = trainCount,
+            TestSamples = inputs.Count - trainCount
         };
 
         // Modell nur aktivieren wenn AUC ausreicht (>= 0.55)
@@ -179,6 +184,7 @@ public class LightGbmClassifier
             MarketSentiment = snapshot.MarketSentiment,
             FearGreedIndex = snapshot.FearGreedIndex,
             OpenInterestChange = snapshot.OpenInterestChange,
+            FibProximity = snapshot.FibProximity,
             ConsecutiveUpCandles = snapshot.ConsecutiveUpCandles,
             ConsecutiveDownCandles = snapshot.ConsecutiveDownCandles,
             RecentReturnPercent = snapshot.RecentReturnPercent,
@@ -237,6 +243,7 @@ public class FeatureInput
     public float MarketSentiment { get; set; }
     public float FearGreedIndex { get; set; }
     public float OpenInterestChange { get; set; }
+    public float FibProximity { get; set; }
     public float ConsecutiveUpCandles { get; set; }
     public float ConsecutiveDownCandles { get; set; }
     public float RecentReturnPercent { get; set; }

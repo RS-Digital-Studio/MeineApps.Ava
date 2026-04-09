@@ -18,8 +18,8 @@ public class SymbolInfoCache
     private readonly ILogger _logger;
     private volatile bool _initialized;
 
-    // Fallback-Werte wenn kein Info verfügbar (konservativ: wenig Precision = größere Schritte)
-    private static readonly SymbolInfo DefaultInfo = new("UNKNOWN", 4, 2, 0.0001m, 5m);
+    // Fallback-Werte wenn kein Info verfügbar (konservativ: hohe Precision für Micro-Cap-Tokens)
+    private static readonly SymbolInfo DefaultInfo = new("UNKNOWN", 4, 8, 0.0001m, 5m);
 
     public SymbolInfoCache(ILogger logger)
     {

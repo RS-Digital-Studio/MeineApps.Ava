@@ -42,8 +42,9 @@ public class AdaptiveTradingIntelligence
     private int _autoSaveGuard; // Verhindert parallele Auto-Saves im Multi-Mode
 
     /// <summary>
-    /// Atomar prüfen ob Auto-Save fällig ist. Gibt true zurück und setzt LastAutoSaveTime
-    /// wenn genug Zeit vergangen ist. Nur ein Aufrufer pro Intervall kann true erhalten.
+    /// Atomar prüfen ob Auto-Save fällig ist. Gibt true zurück wenn genug Zeit vergangen ist.
+    /// Nur ein Aufrufer pro Intervall kann true erhalten. Aufrufer MUSS nach erfolgreichem
+    /// Save <see cref="ConfirmAutoSave"/> aufrufen — sonst wird beim nächsten Check erneut versucht.
     /// </summary>
     public bool TryClaimAutoSave(int intervalMinutes)
     {
@@ -51,9 +52,27 @@ public class AdaptiveTradingIntelligence
         if ((DateTime.UtcNow - LastAutoSaveTime).TotalMinutes < intervalMinutes) return false;
         // Atomar: Nur ein Thread gewinnt den Claim
         if (Interlocked.CompareExchange(ref _autoSaveGuard, 1, 0) != 0) return false;
+        // Zeitstempel wird NICHT hier gesetzt — erst nach erfolgreichem DB-Save via ConfirmAutoSave()
+        return true;
+    }
+
+    /// <summary>
+    /// Bestätigt den Auto-Save nach erfolgreichem DB-Schreiben und gibt den Guard frei.
+    /// Bei DB-Fehler stattdessen <see cref="ReleaseAutoSaveClaim"/> aufrufen.
+    /// </summary>
+    public void ConfirmAutoSave()
+    {
         LastAutoSaveTime = DateTime.UtcNow;
         Interlocked.Exchange(ref _autoSaveGuard, 0);
-        return true;
+    }
+
+    /// <summary>
+    /// Gibt den Auto-Save-Claim frei ohne Zeitstempel zu setzen (bei DB-Fehler).
+    /// Nächster Check wird erneut versuchen zu speichern.
+    /// </summary>
+    public void ReleaseAutoSaveClaim()
+    {
+        Interlocked.Exchange(ref _autoSaveGuard, 0);
     }
 
     /// <summary>LightGBM Classifier (Phase 2). Wird automatisch trainiert wenn genug Daten vorhanden.</summary>
@@ -339,10 +358,27 @@ public class AdaptiveTradingIntelligence
     public void ProcessTradeOutcome(CompletedTrade trade, string? sourceId = null)
     {
         var key = sourceId != null ? $"{trade.Symbol}_{trade.Side}_{sourceId}" : $"{trade.Symbol}_{trade.Side}";
-        if (!_openTradeContexts.TryRemove(key, out var ctx))
-            return; // Kein gespeicherter Kontext (Trade wurde vor ATI eröffnet oder manuell)
+
+        // Breakeven-Erkennung: |PnL| < 0.3% des Notional-Werts ist kein echter Gewinn/Verlust.
+        // BE-Trades entstehen durch Auto-Breakeven/Smart-BE und lehren nichts Nützliches
+        // (Entry war weder gut noch schlecht, Position wurde nur geschützt).
+        var notional = trade.EntryPrice * trade.Quantity;
+        var isBreakeven = notional > 0 && Math.Abs(trade.Pnl) / notional < 0.003m;
+        if (isBreakeven)
+        {
+            _openTradeContexts.TryRemove(key, out _); // Kontext aufräumen
+            return; // Kein Lernen bei Breakeven
+        }
 
         var won = trade.Pnl > 0;
+
+        if (!_openTradeContexts.TryRemove(key, out var ctx))
+        {
+            // Kein ATI-Kontext (Recovery-Position oder manuell) → trotzdem als Win/Loss zählen
+            // damit der Lernfortschritt-Counter korrekt ist
+            _confidenceGate.RecordOutcomeSimple(won);
+            return;
+        }
 
         // 1. Ensemble-Gewichte aktualisieren (pro Strategie)
         // M-4 Fix: Auch Dissens-Strategien belohnen/bestrafen.
@@ -461,6 +497,7 @@ public class AdaptiveTradingIntelligence
     /// Prüft ob Auto-Training ausgelöst werden soll und trainiert LightGBM wenn nötig.
     /// Aufrufen nach jedem Trade-Close. Trainiert im Hintergrund alle 10 Trades oder 24h.
     /// </summary>
+    private int _isTrainingInProgress;
     public void CheckAutoTraining(IReadOnlyList<Core.Data.FeatureSnapshotEntity> labeledSnapshots)
     {
         var tradeCount = Interlocked.Increment(ref _tradesSinceLastTrain);
@@ -470,6 +507,8 @@ public class AdaptiveTradingIntelligence
         if (tradeCount < 10 && hoursSinceLastTrain < 24) return;
         if (labeledSnapshots.Count < LightGbm.MinSamplesForTraining) return;
 
+        // Atomarer Guard: Nur ein Training gleichzeitig (verhindert paralleles Training bei Multi-Mode)
+        if (Interlocked.CompareExchange(ref _isTrainingInProgress, 1, 0) != 0) return;
         Interlocked.Exchange(ref _tradesSinceLastTrain, 0);
 
         // Training im Background-Thread (blockiert nicht den Trading-Loop)
@@ -499,6 +538,10 @@ public class AdaptiveTradingIntelligence
             catch (Exception ex)
             {
                 AutoTrainingCompleted?.Invoke($"LightGBM Training fehlgeschlagen: {ex.Message}");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _isTrainingInProgress, 0);
             }
         });
     }

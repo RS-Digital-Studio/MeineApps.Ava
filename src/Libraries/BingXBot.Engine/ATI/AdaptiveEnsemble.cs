@@ -172,14 +172,16 @@ public class AdaptiveEnsemble
             if (won)
             {
                 weight.Wins++;
-                // Gewicht erhöhen (EMA-Update mit Decay)
-                weight.CurrentWeight = weight.CurrentWeight * 0.9f + 0.1f * 1.2f;
+                // Gewicht erhöhen: EMA-Target 1.5 (vorher 1.2 — zu wenig Differenzierung)
+                // Bei 70% WinRate → Equilibrium ~1.3 statt ~1.08
+                weight.CurrentWeight = weight.CurrentWeight * 0.9f + 0.1f * 1.5f;
             }
             else
             {
                 weight.Losses++;
-                // Gewicht senken
-                weight.CurrentWeight = weight.CurrentWeight * 0.9f + 0.1f * 0.8f;
+                // Gewicht senken: EMA-Target 0.5 (vorher 0.8 — zu wenig Differenzierung)
+                // Bei 30% WinRate → Equilibrium ~0.7 statt ~0.92
+                weight.CurrentWeight = weight.CurrentWeight * 0.9f + 0.1f * 0.5f;
             }
 
             // Gewicht auf [0.2, 3.0] begrenzen (keine Strategie wird komplett deaktiviert)

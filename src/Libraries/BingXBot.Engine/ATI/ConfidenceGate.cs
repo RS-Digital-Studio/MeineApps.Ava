@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using BingXBot.Core.Enums;
 using BingXBot.Core.Models.ATI;
 
 namespace BingXBot.Engine.ATI;
@@ -36,7 +37,7 @@ public class ConfidenceGate
     /// Unter dieser Schwelle gibt Evaluate() immer (Prior, true) zurück → kein Filtern,
     /// nur Datensammlung. Schützt gegen schlechte Entscheidungen mit zu wenig Daten.
     /// </summary>
-    public int MinTradesBeforeLearning { get; set; } = 20;
+    public int MinTradesBeforeLearning { get; set; } = 50;
 
     /// <summary>
     /// Bewertet die Erfolgswahrscheinlichkeit basierend auf gelernten Mustern.
@@ -50,16 +51,19 @@ public class ConfidenceGate
         lock (_statsLock) { totalTrades = _totalWins + _totalLosses; }
         if (totalTrades < MinTradesBeforeLearning)
         {
-            var prior = (decimal)GetPriorWinRate();
-            return (prior, true); // Immer durchlassen, nur Daten sammeln
+            var coldStartPrior = (decimal)GetPriorWinRate();
+            return (coldStartPrior, true); // Immer durchlassen, nur Daten sammeln
         }
 
-        // Feature-Buckets diskretisieren
-        var buckets = DiscretizeFeatures(features, regime, ensemble);
+        // Feature-Buckets diskretisieren (richtungsabhängig: Long/Short getrennt)
+        var buckets = DiscretizeFeatures(features, regime, ensemble, ensemble.ConsensusSignal);
 
-        // Bayesian Naive Bayes: P(Win | bucket1, bucket2, ...) ∝ ∏ P(Win | bucket_i)
+        // Bayesian Naive Bayes: log P(Win|B1..Bn) = log P(Win) + Σ log(P(Bi|Win)/P(Bi|Loss))
+        // Wir berechnen Likelihood-Ratios relativ zum Prior, damit der Prior nur 1x zählt.
         var logOddsSum = 0.0;
         var bucketCount = 0;
+        var prior = GetPriorWinRate();
+        var priorOdds = Math.Log(prior / (1.0 - prior + 1e-10));
 
         foreach (var bucket in buckets)
         {
@@ -72,12 +76,11 @@ public class ConfidenceGate
             if (total < MinBucketSamples) continue;
 
             // Bayesian Smoothing: P(Win | bucket) mit Laplace-Glättung
-            var prior = GetPriorWinRate();
             var smoothedWinRate = (wins + prior * 2) / (total + 2); // Pseudo-Count = 2
 
-            // Log-Odds akkumulieren (vermeidet Floating-Point-Underflow bei vielen Buckets)
-            var odds = smoothedWinRate / (1.0 - smoothedWinRate + 1e-10);
-            logOddsSum += Math.Log(odds);
+            // Likelihood-Ratio: Wie viel besser/schlechter als Prior? (Prior-Anteil subtrahieren)
+            var bucketLogOdds = Math.Log(smoothedWinRate / (1.0 - smoothedWinRate + 1e-10));
+            logOddsSum += bucketLogOdds - priorOdds;
             bucketCount++;
         }
 
@@ -91,12 +94,13 @@ public class ConfidenceGate
         {
             // H-5 Fix: Prior-Term einbeziehen + Log-Odds SUMMIEREN (nicht mitteln).
             // Naive Bayes: log P(Win|B1..Bn) = log P(Win) + Σ log(P(Bi|Win)/P(Bi|Loss))
-            // Mitteln schwächt den Effekt ab und ist mathematisch falsch.
+            // Shrinkage-Faktor 0.5: Viele Buckets sind korreliert (z.B. RSI und BB-Position),
+            // daher Summe abschwächen um Overconfidence zu vermeiden.
             var priorWinRate = GetPriorWinRate();
             var priorLogOdds = Math.Log(priorWinRate / (1.0 - priorWinRate + 1e-10));
-            var totalLogOdds = priorLogOdds + logOddsSum;
+            var totalLogOdds = priorLogOdds + logOddsSum * 0.5;
             var probability = 1.0 / (1.0 + Math.Exp(-totalLogOdds));
-            confidence = (decimal)Math.Clamp(probability, 0.01, 0.99);
+            confidence = (decimal)Math.Clamp(probability, 0.05, 0.95);
         }
 
         // Phase 2/3 Hybrid: ML-Modelle + Bayesian
@@ -128,10 +132,11 @@ public class ConfidenceGate
 
     /// <summary>
     /// Zeichnet ein Trade-Ergebnis auf und aktualisiert alle betroffenen Buckets.
+    /// Signal-Richtung wird für richtungsabhängige Buckets benötigt.
     /// </summary>
     public void RecordOutcome(FeatureSnapshot features, MarketRegime regime, EnsembleVote ensemble, bool won)
     {
-        var buckets = DiscretizeFeatures(features, regime, ensemble);
+        var buckets = DiscretizeFeatures(features, regime, ensemble, ensemble.ConsensusSignal);
 
         foreach (var bucket in buckets)
         {
@@ -206,14 +211,46 @@ public class ConfidenceGate
                     lock (_statsLock) { _totalWins = kvp.Value[0]; _totalLosses = kvp.Value[1]; }
                     continue;
                 }
-                if (kvp.Value.Length >= 2)
+                if (kvp.Value.Length < 2) continue;
+
+                // Migration: Alte Keys ohne L:/S: Prefix → als beide Richtungen importieren (50/50 Split).
+                // Neue Keys (mit L: oder S: Prefix) werden direkt importiert.
+                if (kvp.Key.StartsWith("L:") || kvp.Key.StartsWith("S:"))
                 {
+                    // Neues Format: Direkt übernehmen
                     var stats = _bucketStats.GetOrAdd(kvp.Key, _ => new BucketStats());
                     lock (stats) { stats.Wins = kvp.Value[0]; stats.Losses = kvp.Value[1]; }
+                }
+                else
+                {
+                    // Altes Format: 50/50 auf Long und Short aufteilen
+                    var winsHalf = kvp.Value[0] / 2;
+                    var lossesHalf = kvp.Value[1] / 2;
+                    var winsRemainder = kvp.Value[0] - winsHalf * 2;
+                    var lossesRemainder = kvp.Value[1] - lossesHalf * 2;
+
+                    var longStats = _bucketStats.GetOrAdd($"L:{kvp.Key}", _ => new BucketStats());
+                    lock (longStats) { longStats.Wins += winsHalf + winsRemainder; longStats.Losses += lossesHalf + lossesRemainder; }
+
+                    var shortStats = _bucketStats.GetOrAdd($"S:{kvp.Key}", _ => new BucketStats());
+                    lock (shortStats) { shortStats.Wins += winsHalf; shortStats.Losses += lossesHalf; }
                 }
             }
         }
         catch { /* Korrupte Daten ignorieren */ }
+    }
+
+    /// <summary>
+    /// Zählt einen Trade als Win/Loss ohne Bucket-Updates (für Recovery-Positionen ohne ATI-Kontext).
+    /// Aktualisiert nur den Gesamt-Counter für Lernfortschritt.
+    /// </summary>
+    public void RecordOutcomeSimple(bool won)
+    {
+        lock (_statsLock)
+        {
+            if (won) _totalWins++;
+            else _totalLosses++;
+        }
     }
 
     /// <summary>Setzt den Classifier zurück (z.B. nach Strategie-Wechsel).</summary>
@@ -225,29 +262,33 @@ public class ConfidenceGate
 
     // === Feature-Diskretisierung ===
 
-    private static List<string> DiscretizeFeatures(FeatureSnapshot f, MarketRegime regime, EnsembleVote ensemble)
+    private static List<string> DiscretizeFeatures(FeatureSnapshot f, MarketRegime regime, EnsembleVote ensemble, Signal direction)
     {
         var buckets = new List<string>(16);
 
-        // Einzelne Feature-Buckets (jeder wird separat getrackt)
-        buckets.Add($"RSI:{DiscretizeRsi(f.RsiNormalized)}");
-        buckets.Add($"ADX:{DiscretizeAdx(f.AdxNormalized)}");
-        buckets.Add($"VOL:{DiscretizeVolume(f.VolumeRatio)}");
-        buckets.Add($"BB:{DiscretizeBBPosition(f.BollingerPosition)}");
-        buckets.Add($"ATR:{DiscretizeAtr(f.AtrPercent)}");
-        buckets.Add($"HTF:{(int)f.HtfTrend}");
-        buckets.Add($"REGIME:{regime}");
-        buckets.Add($"SESSION:{(int)f.SessionId}");
-        buckets.Add($"CONSENSUS:{DiscretizeConsensus(ensemble)}");
-        buckets.Add($"FNG:{DiscretizeFearGreed(f.FearGreedIndex)}");
-        buckets.Add($"OI:{DiscretizeOpenInterest(f.OpenInterestChange)}");
-        buckets.Add($"BTC:{DiscretizeBtcTrend(f.BtcTrend)}");
+        // Signal-Richtung als Prefix: Long/Short-Wins werden getrennt getrackt.
+        // "L:RSI:oversold" (Long bei RSI oversold) hat andere Win-Rate als "S:RSI:oversold".
+        var dir = direction == Signal.Long ? "L" : "S";
 
-        // Kombinations-Buckets (wichtige Feature-Paare)
-        buckets.Add($"RSI+ADX:{DiscretizeRsi(f.RsiNormalized)}+{DiscretizeAdx(f.AdxNormalized)}");
-        buckets.Add($"REGIME+VOL:{regime}+{DiscretizeVolume(f.VolumeRatio)}");
-        buckets.Add($"REGIME+ADX:{regime}+{DiscretizeAdx(f.AdxNormalized)}");
-        buckets.Add($"FNG+REGIME:{DiscretizeFearGreed(f.FearGreedIndex)}+{regime}");
+        // Einzelne Feature-Buckets (jeder wird separat getrackt, richtungsabhängig)
+        buckets.Add($"{dir}:RSI:{DiscretizeRsi(f.RsiNormalized)}");
+        buckets.Add($"{dir}:ADX:{DiscretizeAdx(f.AdxNormalized)}");
+        buckets.Add($"{dir}:VOL:{DiscretizeVolume(f.VolumeRatio)}");
+        buckets.Add($"{dir}:BB:{DiscretizeBBPosition(f.BollingerPosition)}");
+        buckets.Add($"{dir}:ATR:{DiscretizeAtr(f.AtrPercent)}");
+        buckets.Add($"{dir}:HTF:{(int)f.HtfTrend}");
+        buckets.Add($"{dir}:REGIME:{regime}");
+        buckets.Add($"{dir}:SESSION:{(int)f.SessionId}");
+        buckets.Add($"{dir}:CONSENSUS:{DiscretizeConsensus(ensemble)}");
+        buckets.Add($"{dir}:FNG:{DiscretizeFearGreed(f.FearGreedIndex)}");
+        buckets.Add($"{dir}:OI:{DiscretizeOpenInterest(f.OpenInterestChange)}");
+        buckets.Add($"{dir}:BTC:{DiscretizeBtcTrend(f.BtcTrend)}");
+
+        // Kombinations-Buckets (wichtige Feature-Paare, richtungsabhängig)
+        buckets.Add($"{dir}:RSI+ADX:{DiscretizeRsi(f.RsiNormalized)}+{DiscretizeAdx(f.AdxNormalized)}");
+        buckets.Add($"{dir}:REGIME+VOL:{regime}+{DiscretizeVolume(f.VolumeRatio)}");
+        buckets.Add($"{dir}:REGIME+ADX:{regime}+{DiscretizeAdx(f.AdxNormalized)}");
+        buckets.Add($"{dir}:FNG+REGIME:{DiscretizeFearGreed(f.FearGreedIndex)}+{regime}");
 
         return buckets;
     }

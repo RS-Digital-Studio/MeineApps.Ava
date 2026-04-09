@@ -13,6 +13,9 @@ public class OnnxModelInference : IDisposable
 {
     private InferenceSession? _session;
     private bool _disposed;
+    // Lock für LoadModel/Predict: Verhindert Race Condition wenn LoadModel die Session
+    // disposed während Predict sie gleichzeitig nutzt (TOCTOU)
+    private readonly object _sessionLock = new();
 
     /// <summary>True wenn ein ONNX-Modell geladen ist.</summary>
     public bool IsModelLoaded => _session != null;
@@ -39,15 +42,38 @@ public class OnnxModelInference : IDisposable
                 IntraOpNumThreads = Environment.ProcessorCount
             };
 
-            _session?.Dispose();
-            _session = new InferenceSession(modelPath, options);
+            // Neue Session erstellen BEVOR die alte disposed wird (atomic swap)
+            var newSession = new InferenceSession(modelPath, options);
+
+            // Feature-Count-Validierung: Input-Shape muss FeatureSnapshot.FeatureCount entsprechen
+            var inputMeta = newSession.InputMetadata;
+            if (inputMeta.Count > 0)
+            {
+                var firstInput = inputMeta.Values.First();
+                if (firstInput.Dimensions.Length >= 2 && firstInput.Dimensions[1] > 0
+                    && firstInput.Dimensions[1] != FeatureSnapshot.FeatureCount)
+                {
+                    newSession.Dispose();
+                    throw new InvalidOperationException(
+                        $"ONNX-Modell erwartet {firstInput.Dimensions[1]} Features, " +
+                        $"aber FeatureSnapshot hat {FeatureSnapshot.FeatureCount}. " +
+                        $"Modell mit aktuellem train_onnx.py neu trainieren!");
+                }
+            }
+
+            lock (_sessionLock)
+            {
+                var old = _session;
+                _session = newSession;
+                old?.Dispose();
+            }
             ModelPath = modelPath;
             LoadedAt = DateTime.UtcNow;
             return true;
         }
         catch
         {
-            _session = null;
+            lock (_sessionLock) { _session = null; }
             return false;
         }
     }
@@ -58,34 +84,36 @@ public class OnnxModelInference : IDisposable
     /// </summary>
     public float Predict(FeatureSnapshot snapshot)
     {
-        if (_session == null) return 0.5f;
-
-        try
+        lock (_sessionLock)
         {
-            var features = snapshot.ToFeatureArray();
-            var inputTensor = new DenseTensor<float>(features, new[] { 1, features.Length });
+            if (_session == null) return 0.5f;
 
-            // Input-Name aus dem Modell lesen (typisch: "input" oder "features")
-            var inputName = _session.InputNames[0];
-            var inputs = new List<NamedOnnxValue>
+            try
             {
-                NamedOnnxValue.CreateFromTensor(inputName, inputTensor)
-            };
+                var features = snapshot.ToFeatureArray();
+                var inputTensor = new DenseTensor<float>(features, new[] { 1, features.Length });
 
-            using var results = _session.Run(inputs);
-            var output = results[0].AsTensor<float>();
+                var inputName = _session.InputNames[0];
+                var inputs = new List<NamedOnnxValue>
+                {
+                    NamedOnnxValue.CreateFromTensor(inputName, inputTensor)
+                };
 
-            // Output interpretieren: Modell gibt entweder [P(Loss), P(Win)] oder [P(Win)] zurück
-            if (output.Length >= 2)
-                return output[1]; // [P(Loss), P(Win)] → Index 1 = P(Win)
-            if (output.Length == 1)
-                return output[0]; // Einzelner Wert = P(Win) direkt
+                using var results = _session.Run(inputs);
+                var output = results[0].AsTensor<float>();
 
-            return 0.5f;
-        }
-        catch
-        {
-            return 0.5f;
+                // Output: [P(Loss), P(Win)] oder [P(Win)]
+                if (output.Length >= 2)
+                    return output[1];
+                if (output.Length == 1)
+                    return output[0];
+
+                return 0.5f;
+            }
+            catch
+            {
+                return 0.5f;
+            }
         }
     }
 
@@ -95,7 +123,12 @@ public class OnnxModelInference : IDisposable
     /// </summary>
     public float[] PredictBatch(IReadOnlyList<FeatureSnapshot> snapshots)
     {
-        if (_session == null || snapshots.Count == 0)
+        if (snapshots.Count == 0)
+            return Array.Empty<float>();
+
+        lock (_sessionLock)
+        {
+        if (_session == null)
             return Array.Empty<float>();
 
         try
@@ -134,28 +167,38 @@ public class OnnxModelInference : IDisposable
         }
         catch
         {
-            return new float[snapshots.Count]; // Alle 0.0 bei Fehler
+            // 0.5f = neutral (konsistent mit Predict() Fehler-Return)
+            var fallback = new float[snapshots.Count];
+            Array.Fill(fallback, 0.5f);
+            return fallback;
         }
+        } // lock
     }
 
     /// <summary>Gibt Modell-Metadaten zurück (Input/Output-Shape, Opset-Version).</summary>
     public string GetModelInfo()
     {
-        if (_session == null) return "Kein Modell geladen";
+        lock (_sessionLock)
+        {
+            if (_session == null) return "Kein Modell geladen";
 
-        var inputs = string.Join(", ", _session.InputMetadata.Select(m =>
-            $"{m.Key}: {string.Join("x", m.Value.Dimensions)}"));
-        var outputs = string.Join(", ", _session.OutputMetadata.Select(m =>
-            $"{m.Key}: {string.Join("x", m.Value.Dimensions)}"));
+            var inputs = string.Join(", ", _session.InputMetadata.Select(m =>
+                $"{m.Key}: {string.Join("x", m.Value.Dimensions)}"));
+            var outputs = string.Join(", ", _session.OutputMetadata.Select(m =>
+                $"{m.Key}: {string.Join("x", m.Value.Dimensions)}"));
 
-        return $"Inputs: [{inputs}], Outputs: [{outputs}], Pfad: {ModelPath}";
+            return $"Inputs: [{inputs}], Outputs: [{outputs}], Pfad: {ModelPath}";
+        }
     }
 
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        _session?.Dispose();
-        _session = null;
+        lock (_sessionLock)
+        {
+            _session?.Dispose();
+            _session = null;
+        }
     }
 }

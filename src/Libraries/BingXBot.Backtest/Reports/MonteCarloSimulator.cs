@@ -64,12 +64,12 @@ public static class MonteCarloSimulator
             TradeCount = trades.Count,
             // Drawdown-Konfidenz: 95. Perzentil = "In 95% der Fälle ist der Max-DD nicht schlimmer als X%"
             MaxDrawdown50 = maxDrawdowns[iterations / 2],
-            MaxDrawdown95 = maxDrawdowns[(int)(iterations * 0.95)],
-            MaxDrawdown99 = maxDrawdowns[(int)(iterations * 0.99)],
+            MaxDrawdown95 = maxDrawdowns[Math.Min(iterations - 1, (int)(iterations * 0.95))],
+            MaxDrawdown99 = maxDrawdowns[Math.Min(iterations - 1, (int)(iterations * 0.99))],
             // Return-Konfidenz: 5. Perzentil = "In 95% der Fälle ist der Return mindestens X%"
-            Return5 = finalReturns[(int)(iterations * 0.05)],
+            Return5 = finalReturns[Math.Max(0, (int)(iterations * 0.05) - 1)],
             Return50 = finalReturns[iterations / 2],
-            Return95 = finalReturns[(int)(iterations * 0.95)],
+            Return95 = finalReturns[Math.Min(iterations - 1, (int)(iterations * 0.95))],
             // Ruin-Wahrscheinlichkeit
             RuinProbability = (decimal)ruinCount / iterations * 100m
         };

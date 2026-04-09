@@ -11,7 +11,7 @@ namespace BingXBot.Backtest.Simulation;
 /// Implementiert IExchangeClient mit internem State statt echten API-Aufrufen.
 /// Nutzt ReaderWriterLockSlim für bessere Parallelität bei Leseoperationen.
 /// </summary>
-public class SimulatedExchange : IExchangeClient
+public class SimulatedExchange : IExchangeClient, IDisposable
 {
     private readonly ReaderWriterLockSlim _rwLock = new();
     private decimal _balance;
@@ -103,6 +103,11 @@ public class SimulatedExchange : IExchangeClient
 
         var leverageKey = $"{symbol}_{side}";
         var leverage = _leverageSettings.GetValueOrDefault(leverageKey, 10);
+        var feeKey = $"{symbol}_{side}";
+
+        // Opening-Fee tracken (für korrekte PnL-Berechnung bei Limit-Order-Fills)
+        var existingOpenFee = _positionOpenFees.GetValueOrDefault(feeKey, 0m);
+        _positionOpenFees[feeKey] = existingOpenFee + fee;
 
         // Bestehende Position für dieses Symbol + Seite suchen
         var existingIdx = _positions.FindIndex(p => p.Symbol == symbol && p.Side == side);
@@ -486,7 +491,9 @@ public class SimulatedExchange : IExchangeClient
         {
             foreach (var pos in _positions)
             {
-                var positionValue = pos.Quantity * pos.MarkPrice;
+                // Aktuellen Marktpreis verwenden (nicht stale MarkPrice vom letzten Fill)
+                var currentPrice = GetPriceLocked(pos.Symbol);
+                var positionValue = pos.Quantity * currentPrice;
                 decimal fundingPayment;
 
                 if (pos.Side == Side.Buy)
@@ -605,4 +612,9 @@ public class SimulatedExchange : IExchangeClient
     }
 
     #endregion
+
+    public void Dispose()
+    {
+        _rwLock.Dispose();
+    }
 }

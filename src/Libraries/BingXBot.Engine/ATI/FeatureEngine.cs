@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using BingXBot.Core.Enums;
 using BingXBot.Core.Models;
 using BingXBot.Core.Models.ATI;
 using BingXBot.Engine.Indicators;
@@ -7,29 +8,30 @@ namespace BingXBot.Engine.ATI;
 
 /// <summary>
 /// Extrahiert normalisierte Features aus einem MarketContext.
-/// Alle 25 Features werden auf [-1,1] oder [0,1] normalisiert.
+/// Alle 26 Features werden auf [-1,1] oder [0,1] normalisiert.
 /// </summary>
 public static class FeatureEngine
 {
-    // Cross-Market-Daten werden einmal pro Scan-Zyklus extern gesetzt (von TradingServiceBase)
-    // float-Felder sind auf x86/x64 atomar, Dictionaries brauchen ConcurrentDictionary
-    // da im Multi-Mode-Betrieb 3 TradingServiceBase-Instanzen parallel schreiben
-    private static volatile float _btcReturn24h;
-    private static volatile float _btcTrend;
-    private static volatile float _marketSentiment;
-    private static volatile float _fearGreedIndex;
+    // Cross-Market-Daten: Immutable record für atomares Lesen/Schreiben.
+    // Im Multi-Mode schreiben 3 Services parallel → Volatile-Referenz-Swap statt 4 einzelne volatile floats.
+    private static volatile CrossMarketSnapshot _crossMarket = new(0f, 0f, 0f, 0f);
     private static readonly ConcurrentDictionary<string, float> _btcCorrelations = new();
     private static readonly ConcurrentDictionary<string, float> _openInterestChanges = new();
 
+    /// <summary>Immutable Snapshot der Cross-Market-Daten (atomar lesbar/schreibbar).</summary>
+    private record CrossMarketSnapshot(float BtcReturn24h, float BtcTrend, float MarketSentiment, float FearGreedIndex);
+
     /// <summary>
     /// Setzt BTC- und Markt-Kontext für Cross-Market-Features (wird pro Scan-Zyklus aufgerufen).
+    /// Atomarer Swap: Alle 4 Werte werden gleichzeitig sichtbar (kein inkonsistenter Snapshot).
     /// </summary>
     public static void SetCrossMarketData(float btcReturn24h, float btcTrend, float marketSentiment, float fearGreedIndex = 0f)
     {
-        _btcReturn24h = Math.Clamp(btcReturn24h, -2f, 2f);
-        _btcTrend = Math.Clamp(btcTrend, -1f, 1f);
-        _marketSentiment = Math.Clamp(marketSentiment, -2f, 2f);
-        _fearGreedIndex = Math.Clamp(fearGreedIndex, 0f, 1f);
+        _crossMarket = new CrossMarketSnapshot(
+            Math.Clamp(btcReturn24h, -2f, 2f),
+            Math.Clamp(btcTrend, -1f, 1f),
+            Math.Clamp(marketSentiment, -2f, 2f),
+            Math.Clamp(fearGreedIndex, 0f, 1f));
     }
 
     /// <summary>
@@ -123,15 +125,32 @@ public static class FeatureEngine
             snapshot.RecentReturnPercent = (close20Ago > 0) ? Clamp((close - close20Ago) / close20Ago) : 0f;
         }
 
-        // Cross-Market Features (BTC-Kontext)
-        snapshot.BtcReturn24h = _btcReturn24h;
-        snapshot.BtcTrend = _btcTrend;
-        snapshot.MarketSentiment = _marketSentiment;
+        // Cross-Market Features (BTC-Kontext) - atomarer Snapshot-Read
+        var cm = _crossMarket;
+        snapshot.BtcReturn24h = cm.BtcReturn24h;
+        snapshot.BtcTrend = cm.BtcTrend;
+        snapshot.MarketSentiment = cm.MarketSentiment;
         snapshot.BtcCorrelation = _btcCorrelations.GetValueOrDefault(context.Symbol, 0f);
-        snapshot.FearGreedIndex = _fearGreedIndex;
+        snapshot.FearGreedIndex = cm.FearGreedIndex;
 
         // Derivatives Features (Open Interest)
         snapshot.OpenInterestChange = _openInterestChanges.GetValueOrDefault(context.Symbol, 0f);
+
+        // Fibonacci-Features: Nähe zum nächsten Key-Level
+        snapshot.FibProximity = IndicatorHelper.CalculateFibProximity(candles, (decimal)close, (decimal)atrVal);
+
+        // TradFi-Assets: Krypto-spezifische Features auf neutral setzen
+        // (BTC-Kontext, Fear&Greed, Funding, OI haben keinen Einfluss auf Gold/Nasdaq/Forex)
+        if (context.Category != MarketCategory.Crypto)
+        {
+            snapshot.BtcReturn24h = 0f;
+            snapshot.BtcTrend = 0f;
+            snapshot.BtcCorrelation = 0f;
+            snapshot.MarketSentiment = 0f;
+            snapshot.FearGreedIndex = 0.5f;  // Neutral statt 0 (Mittelwert der Skala)
+            snapshot.FundingRate = 0f;
+            snapshot.OpenInterestChange = 0f;
+        }
 
         return snapshot;
     }

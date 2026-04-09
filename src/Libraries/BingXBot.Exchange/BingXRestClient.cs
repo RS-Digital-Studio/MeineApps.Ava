@@ -90,17 +90,65 @@ public class BingXRestClient : IExchangeClient
                     new Dictionary<string, string>(),
                     "queries");
 
-                // Response: {"dualSidePosition": true/false}
-                _isHedgeMode = data.TryGetProperty("dualSidePosition", out var prop) && prop.GetBoolean();
+                // Response: {"dualSidePosition": true/false} oder {"dualSidePosition": "true"/"false"}
+                // BingX gibt den Wert je nach API-Version als boolean ODER als String zurück
+                if (data.TryGetProperty("dualSidePosition", out var prop))
+                {
+                    _isHedgeMode = prop.ValueKind switch
+                    {
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        JsonValueKind.String => prop.GetString()?.Equals("true", StringComparison.OrdinalIgnoreCase) == true,
+                        _ => false
+                    };
+                }
+                else
+                {
+                    _isHedgeMode = false;
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                // Bei Fehler: Default One-Way-Mode (sicherer, da häufiger)
-                _isHedgeMode = false;
+                // NICHT cachen bei Fehler: Nächster Aufruf soll erneut versuchen.
+                // Fehlerhafte Erkennung führt zu falschen positionSide-Werten (BOTH vs LONG/SHORT)
+                _logger.LogWarning("Position-Modus-Erkennung fehlgeschlagen: {Error}. Wird erneut versucht.", ex.Message);
+                _isHedgeMode = null;
+                return false; // Temporärer Fallback, wird beim nächsten Aufruf erneut geprüft
             }
 
             _logger.LogInformation("Position-Modus erkannt: {Mode}", _isHedgeMode.Value ? "Hedge (Dual)" : "One-Way");
             return _isHedgeMode.Value;
+        }
+        finally { _modeLock.Release(); }
+    }
+
+    /// <summary>
+    /// Schaltet den Position-Modus auf Hedge (Dual-Side) oder One-Way.
+    /// ACHTUNG: Funktioniert nur wenn KEINE offenen Positionen vorhanden sind!
+    /// BingX gibt Error zurück wenn Positionen offen sind.
+    /// </summary>
+    public async Task<bool> SetHedgeModeAsync(bool enableHedge)
+    {
+        await _modeLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            var data = await SendSignedRequestAsync<JsonElement>(
+                HttpMethod.Post,
+                "/openApi/swap/v1/positionSide/dual",
+                new Dictionary<string, string>
+                {
+                    ["dualSidePosition"] = enableHedge.ToString().ToLower()
+                },
+                "queries");
+
+            _isHedgeMode = enableHedge;
+            _logger.LogInformation("Position-Modus umgeschaltet: {Mode}", enableHedge ? "Hedge (Dual)" : "One-Way");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Position-Modus konnte nicht umgeschaltet werden: {Error}", ex.Message);
+            return false;
         }
         finally { _modeLock.Release(); }
     }
@@ -136,15 +184,23 @@ public class BingXRestClient : IExchangeClient
     /// Baut Query-String, fügt Timestamp + Signatur hinzu, parst Response.
     /// Retry bei transienten Fehlern (HTTP 429, 5xx, Timeout) mit exponentiellem Backoff.
     /// </summary>
-    private async Task<T> SendSignedRequestAsync<T>(
+    private Task<T> SendSignedRequestAsync<T>(
         HttpMethod method,
         string path,
         Dictionary<string, string>? parameters,
         string rateCategory)
+        => SendSignedRequestAsync<T>(method, path, parameters, rateCategory, CancellationToken.None);
+
+    private async Task<T> SendSignedRequestAsync<T>(
+        HttpMethod method,
+        string path,
+        Dictionary<string, string>? parameters,
+        string rateCategory,
+        CancellationToken ct)
     {
         for (int attempt = 0; attempt <= MaxRetries; attempt++)
         {
-            await _rateLimiter.WaitForSlotAsync(rateCategory, CancellationToken.None).ConfigureAwait(false);
+            await _rateLimiter.WaitForSlotAsync(rateCategory, ct).ConfigureAwait(false);
 
             var queryParams = parameters != null
                 ? new Dictionary<string, string>(parameters)
@@ -177,8 +233,8 @@ public class BingXRestClient : IExchangeClient
 
                 _logger.LogDebug("{Method} {Path} (Versuch {Attempt})", method, path, attempt + 1);
 
-                using var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
-                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                using var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
                 // Transiente Fehler: Retry bei 429 (Rate Limit) und 5xx (Server-Fehler)
                 if (IsTransientError(response) && attempt < MaxRetries)
@@ -186,7 +242,7 @@ public class BingXRestClient : IExchangeClient
                     var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1)); // 2s, 4s, 8s
                     _logger.LogWarning("Transienter Fehler HTTP {StatusCode}, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
                         (int)response.StatusCode, backoff.TotalSeconds, attempt + 1, MaxRetries);
-                    await Task.Delay(backoff).ConfigureAwait(false);
+                    await Task.Delay(backoff, ct).ConfigureAwait(false);
                     continue;
                 }
 
@@ -427,35 +483,62 @@ public class BingXRestClient : IExchangeClient
             }
         }
 
-        // 2. Neue SL/TP-Orders platzieren
+        // 2. Aktuelle Positionsgröße abfragen (BingX akzeptiert quantity=0/closePosition nicht zuverlässig)
+        decimal positionQty = 0;
+        try
+        {
+            var positions = await GetPositionsAsync().ConfigureAwait(false);
+            var pos = positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == positionSide);
+            if (pos != null)
+                positionQty = _symbolInfoCache.TruncateQuantity(symbol, pos.Quantity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Konnte Positionsgröße nicht abfragen für SL: {Error}", ex.Message);
+        }
+
+        // 3. Neue SL-Order platzieren
         var closeSide = positionSide == Side.Buy ? Side.Sell : Side.Buy;
         var positionSideStr = await GetPositionSideAsync(positionSide).ConfigureAwait(false);
 
         if (stopLoss.HasValue && stopLoss.Value > 0)
         {
             var roundedSlPrice = _symbolInfoCache.RoundPrice(symbol, stopLoss.Value);
+            // Guard: Wenn Rundung den Preis auf 0 setzt (Micro-Cap mit zu niedriger Precision),
+            // den ungerundeten Wert mit 8 Dezimalstellen verwenden statt 0 zu senden
+            if (roundedSlPrice <= 0)
+            {
+                roundedSlPrice = Math.Round(stopLoss.Value, 8, MidpointRounding.AwayFromZero);
+                _logger.LogWarning("SL-Preis für {Symbol} auf 0 gerundet, verwende 8 Dezimalstellen: {Price}", symbol, roundedSlPrice);
+            }
+
             var slParams = new Dictionary<string, string>
             {
                 ["symbol"] = symbol,
                 ["side"] = SideToString(closeSide),
                 ["type"] = "STOP_MARKET",
-                ["quantity"] = "0", // 0 = gesamte Position schließen
                 ["stopPrice"] = roundedSlPrice.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["positionSide"] = positionSideStr,
-                ["workingType"] = "MARK_PRICE",
-                ["closePosition"] = "true"
+                ["workingType"] = "MARK_PRICE"
             };
 
-            try
+            // Echte Positionsgröße verwenden wenn verfügbar, sonst reduceOnly als Fallback
+            if (positionQty > 0)
             {
-                await SendSignedRequestAsync<BingXOrderData>(
-                    HttpMethod.Post, "/openApi/swap/v2/trade/order", slParams, "orders");
-                _logger.LogInformation("SL-Order gesetzt: {Symbol} @ {Price}", symbol, stopLoss.Value);
+                slParams["quantity"] = positionQty.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogWarning("SL-Order fehlgeschlagen: {Error}", ex.Message);
+                // Fallback: reduceOnly statt closePosition (BingX V2 unterstützt closePosition nicht zuverlässig)
+                slParams["quantity"] = "0";
+                slParams["closePosition"] = "true";
             }
+
+            // Exception NICHT verschlucken: Wenn alte SL gecancelt aber neue fehlschlägt,
+            // ist die Position ungeschützt. Caller muss das wissen.
+            await SendSignedRequestAsync<BingXOrderData>(
+                HttpMethod.Post, "/openApi/swap/v2/trade/order", slParams, "orders");
+            _logger.LogInformation("SL-Order gesetzt: {Symbol} @ {Price} Qty={Qty}", symbol, stopLoss.Value, positionQty);
         }
 
         // TP wird NICHT nativ gesetzt: BingX native TP schließt die gesamte Position.
@@ -632,7 +715,8 @@ public class BingXRestClient : IExchangeClient
             ["symbol"] = symbol,
             ["side"] = SideToString(closeSide),
             ["type"] = "MARKET",
-            ["quantity"] = position.Quantity.ToString(CultureInfo.InvariantCulture),
+            ["quantity"] = _symbolInfoCache.TruncateQuantity(symbol, position.Quantity)
+                .ToString(CultureInfo.InvariantCulture),
             ["positionSide"] = positionSide
         };
 
@@ -710,20 +794,17 @@ public class BingXRestClient : IExchangeClient
             ["workingType"] = "MARK_PRICE"
         };
 
-        return await SendSignedRequestAsync<BingXOrderData>(
+        var data = await SendSignedRequestAsync<BingXOrderData>(
             HttpMethod.Post,
             "/openApi/swap/v2/trade/order",
             parameters,
-            "orders").ContinueWith(t =>
-        {
-            var data = t.Result;
-            var detail = data.Order;
-            return detail != null
-                ? new Order(detail.OrderId, symbol, closeSide, OrderType.TakeProfitMarket,
-                    triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.New)
-                : new Order("", symbol, closeSide, OrderType.TakeProfitMarket,
-                    triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.Rejected);
-        });
+            "orders").ConfigureAwait(false);
+        var detail = data.Order;
+        return detail != null
+            ? new Order(detail.OrderId, symbol, closeSide, OrderType.TakeProfitMarket,
+                triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.New)
+            : new Order("", symbol, closeSide, OrderType.TakeProfitMarket,
+                triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.Rejected);
     }
 
     public async Task CloseAllPositionsAsync()

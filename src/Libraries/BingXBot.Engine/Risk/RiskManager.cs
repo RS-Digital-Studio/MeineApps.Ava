@@ -37,6 +37,10 @@ public class RiskManager : IRiskManager
         if (signal.Signal == Signal.None)
             return new RiskCheckResult(false, "Kein Signal", 0m);
 
+        // 1a. SL ist Pflicht: Ohne Stop-Loss wird die volle Margin riskiert → Konto-Gefahr
+        if (!signal.StopLoss.HasValue || signal.StopLoss.Value <= 0)
+            return new RiskCheckResult(false, "Kein Stop-Loss — Trade abgelehnt (Pflicht-SL)", 0m);
+
         // 2. Max offene Positionen
         if (context.OpenPositions.Count >= _settings.MaxOpenPositions)
             return new RiskCheckResult(false, $"Max {_settings.MaxOpenPositions} offene Positionen erreicht", 0m);
@@ -53,18 +57,20 @@ public class RiskManager : IRiskManager
         if (posSize <= 0)
             return new RiskCheckResult(false, "Position-Größe ist 0", 0m);
 
-        // 5. Netto-Exposure prüfen: Summe aller Positionswerte darf MaxNetExposurePercent nicht überschreiten
+        // 5. Netto-Exposure prüfen: Summe aller MARGIN-Werte (nicht Notional) darf MaxNetExposurePercent nicht überschreiten
         if (context.Account.Balance > 0)
         {
             var currentExposure = CalculateNetExposure(context.OpenPositions, context.Account.Balance);
-            var newPositionExposure = posSize * entryPrice / context.Account.Balance * 100m;
-            if (currentExposure + newPositionExposure > _settings.MaxNetExposurePercent)
+            var effLeverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
+            var newPositionMargin = posSize * entryPrice / effLeverage / context.Account.Balance * 100m;
+            if (currentExposure + newPositionMargin > _settings.MaxNetExposurePercent)
                 return new RiskCheckResult(false,
-                    $"Netto-Exposure {currentExposure + newPositionExposure:F1}% > {_settings.MaxNetExposurePercent}%", 0m);
+                    $"Netto-Exposure (Margin) {currentExposure + newPositionMargin:F1}% > {_settings.MaxNetExposurePercent}%", 0m);
         }
 
         // 6. Liquidation-Preis prüfen: Position darf nicht zu nah am Liquidationspreis eröffnet werden
-        var leverage = _settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m;
+        // Tatsächlichen Leverage verwenden (gleiche Logik wie CalculatePositionSize)
+        var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
         var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
         var liqPrice = CalculateLiquidationPrice(entryPrice, leverage, side);
         if (liqPrice > 0 && entryPrice > 0)
@@ -153,7 +159,7 @@ public class RiskManager : IRiskManager
                 : 0m;
         }
 
-        if (dailyDrawdownPercent >= _settings.MaxDailyDrawdownPercent)
+        if (_settings.MaxDailyDrawdownPercent > 0 && dailyDrawdownPercent >= _settings.MaxDailyDrawdownPercent)
             return new RiskCheckResult(false, $"Tages-Drawdown {dailyDrawdownPercent:F1}% >= {_settings.MaxDailyDrawdownPercent}% (inkl. Risiko neuer Position)", 0m);
 
         // 10. Gesamt-Drawdown pruefen
@@ -199,8 +205,8 @@ public class RiskManager : IRiskManager
 
     /// <summary>
     /// Berechnet den Liquidationspreis für Isolated Margin.
-    /// Formel: Long: EntryPrice * (1 - 1/Leverage + MaintenanceMarginRate)
-    ///         Short: EntryPrice * (1 + 1/Leverage - MaintenanceMarginRate)
+    /// Korrekte Formel: Long:  EntryPrice * (1 - (1 - MMR) / Leverage)
+    ///                  Short: EntryPrice * (1 + (1 - MMR) / Leverage)
     /// BingX Maintenance Margin Rate ~0.4% für die meisten Perpetuals.
     /// </summary>
     public decimal CalculateLiquidationPrice(decimal entryPrice, decimal leverage, Side side)
@@ -209,22 +215,34 @@ public class RiskManager : IRiskManager
 
         const decimal maintenanceMarginRate = 0.004m; // 0.4% BingX Standard
 
+        // Isolated-Margin-Formel. Bei Cross-Margin ist die echte Liquidation weiter weg
+        // (Account-Balance schützt), daher ist dieser Wert konservativ (blockiert eher zu viel als zu wenig).
+        // Bei niedrigem Leverage (<=2x) ist der Abstand groß genug, Prüfung überspringen.
+        if (leverage <= 2m) return 0m; // Kein Liquidations-Risiko bei <=2x
+
         if (side == Side.Buy)
-            return entryPrice * (1m - 1m / leverage + maintenanceMarginRate);
+            return entryPrice * (1m - (1m - maintenanceMarginRate) / leverage);
         else
-            return entryPrice * (1m + 1m / leverage - maintenanceMarginRate);
+            return entryPrice * (1m + (1m - maintenanceMarginRate) / leverage);
     }
 
     /// <summary>
     /// Berechnet das aktuelle Netto-Exposure aller offenen Positionen in % der Balance.
-    /// Netto = Summe(Qty * MarkPrice) für jede Position, geteilt durch Balance.
+    /// Basiert auf MARGIN (Notional / Leverage), nicht auf dem gehebelten Notional-Wert.
+    /// So wird ein 10%-Margin-Trade bei 3x Leverage gleich bewertet wie bei 20x Leverage.
+    /// Hedge-Positionen (Long+Short) reduzieren das Netto-Exposure.
     /// </summary>
     public decimal CalculateNetExposure(IReadOnlyList<Position> positions, decimal balance)
     {
         if (balance <= 0 || positions.Count == 0) return 0m;
 
-        var totalExposure = positions.Sum(p => p.Quantity * p.MarkPrice);
-        return totalExposure / balance * 100m;
+        // Margin-basiert: Notional / Leverage = tatsächlich gebundenes Kapital
+        var netMargin = positions.Sum(p =>
+        {
+            var lev = p.Leverage > 0 ? p.Leverage : 1m;
+            return (p.Side == Side.Buy ? 1m : -1m) * p.Quantity * p.MarkPrice / lev;
+        });
+        return Math.Abs(netMargin) / balance * 100m;
     }
 
     // Rolling-Metriken: Ringpuffer der letzten N Trades
@@ -255,7 +273,7 @@ public class RiskManager : IRiskManager
         }
     }
 
-    /// <summary>Rolling Sharpe Ratio (annualisiert, aus den letzten 30 Trades).</summary>
+    /// <summary>Rolling Sharpe Ratio (annualisiert, aus den letzten 30 Trades, auf prozentualen Returns basierend).</summary>
     public decimal RollingSharpeRatio
     {
         get
@@ -263,11 +281,17 @@ public class RiskManager : IRiskManager
             lock (_lock)
             {
                 if (_rollingTrades.Count < 5) return 0m;
-                var returns = _rollingTrades.Select(t => (double)t.Pnl).ToArray();
+                // Prozentuale Returns normalisiert auf Positionswert (nicht absolute PnL)
+                var returns = _rollingTrades
+                    .Where(t => t.EntryPrice > 0 && t.Quantity > 0)
+                    .Select(t => (double)(t.Pnl / (t.EntryPrice * t.Quantity)))
+                    .ToArray();
+                if (returns.Length < 5) return 0m;
                 var avg = returns.Average();
-                var variance = returns.Select(r => (r - avg) * (r - avg)).Average();
+                // Sample-Varianz (N-1) für korrekte Schätzung bei kleinen Stichproben
+                var variance = returns.Select(r => (r - avg) * (r - avg)).Sum() / (returns.Length - 1);
                 var stdDev = Math.Sqrt(variance);
-                return stdDev > 0 ? (decimal)(avg / stdDev * Math.Sqrt(252)) : 0m;
+                return stdDev > 0 ? (decimal)(avg / stdDev * Math.Sqrt(365)) : 0m; // 365 Tage (Krypto 24/7)
             }
         }
     }
@@ -334,6 +358,8 @@ public class RiskManager : IRiskManager
             _totalPnl = 0m;
             _peakEquity = 0m;
             _peakEquityInitialized = false;
+            _rollingTrades.Clear();
+            CurrentConsecutiveLosses = 0;
         }
     }
 }

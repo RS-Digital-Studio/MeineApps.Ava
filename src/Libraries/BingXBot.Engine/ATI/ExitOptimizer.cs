@@ -134,16 +134,17 @@ public class ExitOptimizer
                 if (stats.AvgLosingSl < sl)
                     sl = sl * 0.8f + (sl + (sl - stats.AvgLosingSl) * 0.3f) * 0.2f;
             }
-            // Verlierer-TP war zu weit (wird nie erreicht) → TP enger
+            // Verlierer-TP war zu weit (wird nie erreicht) → TP max 15% enger ziehen
+            // Alte Formel konvergierte bei extremem AvgLosingTp auf Floor (kein Lerneffekt)
             if (stats.AvgLosingTp > 0 && stats.Losses >= 5)
             {
                 if (stats.AvgLosingTp > tp)
-                    tp = tp * 0.8f + (tp - (stats.AvgLosingTp - tp) * 0.2f) * 0.2f;
+                    tp *= 1f - Math.Min(0.15f, (stats.AvgLosingTp - tp) / stats.AvgLosingTp * 0.5f);
             }
 
-            // Floor-Clamp: Bei extremen Werten können SL/TP negativ werden → Minimum sicherstellen
+            // Floor-Clamp: TP muss mindestens 1.5x SL sein (MinRRR), SL mindestens 0.5x ATR
             sl = Math.Max(0.5f, sl);
-            tp = Math.Max(0.5f, tp);
+            tp = Math.Max(sl * 1.5f, tp); // TP immer mindestens 1.5:1 RRR
 
             // Sanft zwischen Default und gelerntem Wert mischen (70% gelernt, 30% default)
             sl = sl * 0.7f + defaults.SlMultiplier * 0.3f;

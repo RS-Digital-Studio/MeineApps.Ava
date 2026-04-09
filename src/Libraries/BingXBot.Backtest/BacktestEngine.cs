@@ -5,6 +5,9 @@ using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Backtest.Simulation;
 using BingXBot.Backtest.Reports;
+using BingXBot.Core.Models.ATI;
+using BingXBot.Engine.ATI;
+using BingXBot.Engine.Indicators;
 using Microsoft.Extensions.Logging;
 
 namespace BingXBot.Backtest;
@@ -66,6 +69,45 @@ public class BacktestEngine
 
         _logger.LogInformation("Backtest gestartet: {Symbol} {TF} {Count} Candles", symbol, timeFrame, allCandles.Count);
 
+        // 1b. HTF-Candles laden (für Trend-Konfirmation in der Strategie)
+        List<Candle>? htfCandles = null;
+        if (settings.HtfTimeFrame.HasValue && settings.HtfTimeFrame.Value != timeFrame)
+        {
+            try
+            {
+                htfCandles = await LoadHistoricalDataAsync(symbol, settings.HtfTimeFrame.Value, from.AddDays(-14), to).ConfigureAwait(false);
+                if (htfCandles.Count > 0)
+                    _logger.LogInformation("HTF-Candles geladen: {TF} {Count} Candles", settings.HtfTimeFrame.Value, htfCandles.Count);
+            }
+            catch
+            {
+                // HTF-Candles sind optional - Strategie funktioniert auch ohne (weniger Score-Punkte)
+            }
+        }
+
+        // 1c. Entry-TF-Candles laden (SK-System 3. Ebene: M15 für H1, M5 für M15)
+        List<Candle>? entryTfCandles = null;
+        var entryTf = settings.EntryTimeFrame ?? timeFrame switch
+        {
+            TimeFrame.H4 => TimeFrame.H1,
+            TimeFrame.H1 => TimeFrame.M15,
+            TimeFrame.M15 => TimeFrame.M5,
+            _ => (TimeFrame?)null
+        };
+        if (entryTf.HasValue && entryTf.Value != timeFrame)
+        {
+            try
+            {
+                entryTfCandles = await LoadHistoricalDataAsync(symbol, entryTf.Value, from.AddDays(-7), to).ConfigureAwait(false);
+                if (entryTfCandles.Count > 0)
+                    _logger.LogInformation("Entry-TF-Candles geladen: {TF} {Count} Candles", entryTf.Value, entryTfCandles.Count);
+            }
+            catch { /* Entry-TF optional */ }
+        }
+
+        // Markt-Kategorie bestimmen
+        var category = Core.Helpers.SymbolClassifier.Classify(symbol);
+
         // 2. SimulatedExchange erstellen
         var simExchange = new SimulatedExchange(settings);
         var equityCurve = new List<EquityPoint>();
@@ -80,12 +122,45 @@ public class BacktestEngine
         // 4. SL/TP-Tracking: speichert das zugehörige Signal pro offener Position
         var positionSignals = new Dictionary<string, SignalResult>();
 
+        // 4a. Multi-Stage Exit State pro Position
+        var exitTracking = new Dictionary<string, BacktestExitState>();
+
+        // 4c. Regime-Tracking pro Position (für Regime-spezifische Metriken)
+        var positionRegimes = new Dictionary<string, MarketRegime>();
+        var regimeDetector = new RegimeDetector();
+
         // 4b. Funding-Rate-Tracking: Alle 8h auf offene Positionen anwenden
         var fundingRate = settings.SimulatedFundingRatePercent / 100m; // z.B. 0.01% → 0.0001
         simExchange.SetFundingRate(fundingRate);
         var lastFundingTime = allCandles.Count > warmupSize ? allCandles[warmupSize].OpenTime : DateTime.UtcNow;
 
         // 5. Candle-Iteration
+        // HTF inkrementeller Index: Letzte HTF-Candle die vor/bei Warmup-Start schließt
+        var htfIdx = -1;
+        if (htfCandles is { Count: > 0 })
+        {
+            var firstAfter = htfCandles.FindIndex(c => c.CloseTime > allCandles[warmupSize].CloseTime);
+            htfIdx = firstAfter switch
+            {
+                -1 => htfCandles.Count - 1,  // Alle HTF-Candles vor Warmup → letzte nehmen
+                0 => -1,                       // Keine HTF-Candle vor Warmup → noch kein Kontext
+                _ => firstAfter - 1            // Normalfall: letzte vor Warmup-Start
+            };
+        }
+
+        // Entry-TF inkrementeller Index (analog zu HTF)
+        var entryTfIdx = -1;
+        if (entryTfCandles is { Count: > 0 })
+        {
+            var firstAfterEntry = entryTfCandles.FindIndex(c => c.CloseTime > allCandles[warmupSize].CloseTime);
+            entryTfIdx = firstAfterEntry switch
+            {
+                -1 => entryTfCandles.Count - 1,
+                0 => -1,
+                _ => firstAfterEntry - 1
+            };
+        }
+
         var iterationCount = allCandles.Count - warmupSize;
         for (int i = warmupSize; i < allCandles.Count; i++)
         {
@@ -99,6 +174,30 @@ public class BacktestEngine
             var currentCandle = allCandles[i];
             simExchange.SetCurrentPrice(symbol, currentCandle.Close);
 
+            // Dynamische Slippage: ATR und Volume-Ratio an SimulatedExchange übergeben
+            if (settings.UseDynamicSlippage && i >= 15)
+            {
+                var sliceStart = Math.Max(0, i + 1 - 15);
+                var sliceLen = i + 1 - sliceStart;
+                IReadOnlyList<Candle> atrSlice = new CandleSlice(allCandles, sliceStart, sliceLen);
+                var atrVals = IndicatorHelper.CalculateAtr(atrSlice, 14);
+                var lastAtrVal = atrVals.Count > 0 && atrVals[^1].HasValue ? atrVals[^1]!.Value : 0m;
+
+                // Volume-Ratio: aktuelles Volumen / Durchschnitt der letzten 20
+                var volStart = Math.Max(0, i - 20);
+                var avgVol = 0m;
+                var volCount = 0;
+                for (int v = volStart; v < i; v++)
+                {
+                    avgVol += allCandles[v].Volume;
+                    volCount++;
+                }
+                avgVol = volCount > 0 ? avgVol / volCount : currentCandle.Volume;
+                var volRatio = avgVol > 0 ? currentCandle.Volume / avgVol : 1m;
+
+                simExchange.SetMarketConditions(symbol, lastAtrVal, volRatio);
+            }
+
             // Funding-Rate alle 8h anwenden (Perpetual Futures Standard)
             if (settings.SimulateFundingRate && (currentCandle.CloseTime - lastFundingTime).TotalHours >= 8)
             {
@@ -109,13 +208,48 @@ public class BacktestEngine
             // Kontext erstellen: Index-basierter Slice statt Take/TakeLast (O(1) statt O(n))
             var contextStart = Math.Max(0, i + 1 - 200);
             var contextCount = i + 1 - contextStart;
-            IReadOnlyList<Candle> contextCandles = allCandles.GetRange(contextStart, contextCount);
+            IReadOnlyList<Candle> contextCandles = new CandleSlice(allCandles, contextStart, contextCount);
+
+            // Indikator-Cache periodisch leeren um unbegrenztes Wachstum zu verhindern
+            if ((i - warmupSize) % 500 == 0 && i > warmupSize)
+                IndicatorHelper.ClearCache();
             var positions = await simExchange.GetPositionsAsync().ConfigureAwait(false);
             var account = await simExchange.GetAccountInfoAsync().ConfigureAwait(false);
-            var ticker = new Ticker(symbol, currentCandle.Close, currentCandle.Low, currentCandle.High,
+            // Realistischer Bid/Ask-Spread statt Candle Low/High
+            // (Low/High ist der Candle-Range, nicht der Spread → wäre massiv überzeichnet)
+            var halfSpread = currentCandle.Close * settings.SpreadPercent / 100m / 2m;
+            var ticker = new Ticker(symbol, currentCandle.Close,
+                currentCandle.Close - halfSpread, currentCandle.Close + halfSpread,
                 currentCandle.Volume, 0m, currentCandle.CloseTime);
 
-            var context = new MarketContext(symbol, contextCandles, ticker, positions, account);
+            // HTF-Kontext: Candles bis zum aktuellen Zeitpunkt (nicht in die Zukunft schauen)
+            // Inkrementeller Index statt FindLastIndex pro Iteration (O(1) statt O(n))
+            if (htfCandles != null && htfCandles.Count > 0)
+            {
+                while (htfIdx < htfCandles.Count - 1 && htfCandles[htfIdx + 1].CloseTime <= currentCandle.CloseTime)
+                    htfIdx++;
+            }
+            IReadOnlyList<Candle>? htfContext = null;
+            if (htfCandles != null && htfIdx >= 20)
+            {
+                var htfStart = Math.Max(0, htfIdx + 1 - 100);
+                htfContext = new CandleSlice(htfCandles, htfStart, htfIdx + 1 - htfStart);
+            }
+
+            // Entry-TF-Kontext: Candles bis zum aktuellen Zeitpunkt
+            if (entryTfCandles != null && entryTfCandles.Count > 0)
+            {
+                while (entryTfIdx < entryTfCandles.Count - 1 && entryTfCandles[entryTfIdx + 1].CloseTime <= currentCandle.CloseTime)
+                    entryTfIdx++;
+            }
+            IReadOnlyList<Candle>? entryTfContext = null;
+            if (entryTfCandles != null && entryTfIdx >= 20)
+            {
+                var entryStart = Math.Max(0, entryTfIdx + 1 - 100);
+                entryTfContext = new CandleSlice(entryTfCandles, entryStart, entryTfIdx + 1 - entryStart);
+            }
+
+            var context = new MarketContext(symbol, contextCandles, ticker, positions, account, htfContext, category, entryTfContext);
 
             // Strategie evaluieren
             var signal = strategy.Evaluate(context);
@@ -128,44 +262,212 @@ public class BacktestEngine
                 if (!positionSignals.TryGetValue(key, out var origSignal))
                     continue;
 
+                // --- Multi-Stage Exit (wenn aktiviert und ExitState vorhanden) ---
+                if (settings.SimulateMultiStageExit && exitTracking.TryGetValue(key, out var exitState))
+                {
+                    // Extreme-Price tracken (für Chandelier-Trailing nach TP1)
+                    if (pos.Side == Side.Buy)
+                        exitState.ExtremePriceSinceEntry = Math.Max(exitState.ExtremePriceSinceEntry, currentCandle.High);
+                    else
+                        exitState.ExtremePriceSinceEntry = Math.Min(exitState.ExtremePriceSinceEntry, currentCandle.Low);
+
+                    // TP1-Check: Partial Close wenn noch nicht geschehen
+                    var tp1Hit = false;
+                    if (!exitState.PartialClosed && origSignal.TakeProfit.HasValue)
+                    {
+                        tp1Hit = pos.Side == Side.Buy
+                            ? currentCandle.High >= origSignal.TakeProfit.Value
+                            : currentCandle.Low <= origSignal.TakeProfit.Value;
+                    }
+
+                    if (tp1Hit)
+                    {
+                        // 50% (konfigurierbar) der Originalposition schließen
+                        var closeQty = Math.Round(exitState.OriginalQuantity * settings.Tp1CloseRatio, 6);
+                        if (closeQty > 0)
+                        {
+                            simExchange.SetCurrentPrice(symbol, origSignal.TakeProfit!.Value);
+                            await simExchange.ReducePositionAsync(symbol, pos.Side, closeQty).ConfigureAwait(false);
+                            simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+                        }
+
+                        // Smart Breakeven: SL = Entry + ATR-Puffer statt exakter Entry (verhindert Rauswerfen bei Pullbacks)
+                        var beSl = exitState.EntryPrice;
+                        if (settings.SmartBreakevenAtrMultiplier > 0 && exitState.CurrentAtr > 0)
+                        {
+                            beSl = pos.Side == Side.Buy
+                                ? exitState.EntryPrice + exitState.CurrentAtr * settings.SmartBreakevenAtrMultiplier
+                                : exitState.EntryPrice - exitState.CurrentAtr * settings.SmartBreakevenAtrMultiplier;
+                        }
+                        positionSignals[key] = origSignal with
+                        {
+                            StopLoss = beSl,
+                            TakeProfit = exitState.Tp2
+                        };
+                        exitState.PartialClosed = true;
+                        exitState.MaxHoldHours = settings.MaxHoldHoursAfterTp1;
+                        continue; // Position bleibt offen mit Rest-Menge
+                    }
+
+                    // Time-Exit: Max Haltezeit überschritten
+                    var holdHours = (currentCandle.CloseTime - exitState.EntryTime).TotalHours;
+                    if (holdHours >= exitState.MaxHoldHours)
+                    {
+                        // Vor TP1: nur schließen wenn nicht im Gewinn (analog Live-Trading)
+                        var inProfit = pos.Side == Side.Buy
+                            ? currentCandle.Close > exitState.EntryPrice
+                            : currentCandle.Close < exitState.EntryPrice;
+
+                        if (exitState.PartialClosed || !inProfit)
+                        {
+                            await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
+                            positionSignals.Remove(key);
+                            exitTracking.Remove(key);
+                            continue;
+                        }
+                    }
+
+                    // Chandelier-Trailing nach TP1: SL nachziehen basierend auf Extreme-ATR
+                    if (exitState.PartialClosed && exitState.CurrentAtr > 0)
+                    {
+                        decimal newTrailingSl;
+                        if (pos.Side == Side.Buy)
+                            newTrailingSl = exitState.ExtremePriceSinceEntry
+                                - exitState.CurrentAtr * exitState.TrailingAtrMultiplier;
+                        else
+                            newTrailingSl = exitState.ExtremePriceSinceEntry
+                                + exitState.CurrentAtr * exitState.TrailingAtrMultiplier;
+
+                        // SL nur nach vorne verschieben (nie zurück)
+                        var currentSl = positionSignals[key].StopLoss ?? exitState.EntryPrice;
+                        var slImproved = pos.Side == Side.Buy
+                            ? newTrailingSl > currentSl
+                            : newTrailingSl < currentSl;
+
+                        if (slImproved)
+                            positionSignals[key] = positionSignals[key] with { StopLoss = newTrailingSl };
+
+                        // ATR aktualisieren für nächste Candle
+                        var atrValues = IndicatorHelper.CalculateAtr(contextCandles, 14);
+                        exitState.CurrentAtr = atrValues[^1] ?? exitState.CurrentAtr;
+                    }
+                }
+
+                // --- Standard SL/TP-Check (Fallback und finale Prüfung) ---
+                // Auch bei Multi-Stage: prüft den aktuellen SL/TP (ggf. bereits auf BE/TP2 verschoben)
+                var currentSignal = positionSignals[key]; // Kann durch Multi-Stage modifiziert sein
                 var slHit = false;
                 var tpHit = false;
 
+                // Wenn beide (SL+TP) in einer Candle getroffen werden:
+                // Candle-Richtung entscheidet welcher zuerst erreicht wurde.
+                // Bullish Candle (Close>Open) → Preis ging zuerst hoch → TP bei Long wahrscheinlicher.
+                // Bearish Candle (Close<Open) → Preis ging zuerst runter → SL bei Long wahrscheinlicher.
                 if (pos.Side == Side.Buy)
                 {
-                    // Long: SL wird bei Low getroffen, TP bei High
-                    if (origSignal.StopLoss.HasValue && currentCandle.Low <= origSignal.StopLoss.Value)
-                        slHit = true;
-                    else if (origSignal.TakeProfit.HasValue && currentCandle.High >= origSignal.TakeProfit.Value)
-                        tpHit = true;
+                    var slTriggered = currentSignal.StopLoss.HasValue && currentCandle.Low <= currentSignal.StopLoss.Value;
+                    var tpTriggered = currentSignal.TakeProfit.HasValue && currentCandle.High >= currentSignal.TakeProfit.Value;
+                    if (slTriggered && tpTriggered)
+                    {
+                        if (currentCandle.Close > currentCandle.Open)
+                            tpHit = true; // Bullish → TP zuerst
+                        else
+                            slHit = true; // Bearish → SL zuerst
+                    }
+                    else if (slTriggered) slHit = true;
+                    else if (tpTriggered) tpHit = true;
                 }
                 else // Short
                 {
-                    // Short: SL wird bei High getroffen, TP bei Low
-                    if (origSignal.StopLoss.HasValue && currentCandle.High >= origSignal.StopLoss.Value)
-                        slHit = true;
-                    else if (origSignal.TakeProfit.HasValue && currentCandle.Low <= origSignal.TakeProfit.Value)
-                        tpHit = true;
+                    var slTriggered = currentSignal.StopLoss.HasValue && currentCandle.High >= currentSignal.StopLoss.Value;
+                    var tpTriggered = currentSignal.TakeProfit.HasValue && currentCandle.Low <= currentSignal.TakeProfit.Value;
+                    if (slTriggered && tpTriggered)
+                    {
+                        if (currentCandle.Close < currentCandle.Open)
+                            tpHit = true; // Bearish → TP zuerst für Short
+                        else
+                            slHit = true; // Bullish → SL zuerst für Short
+                    }
+                    else if (slTriggered) slHit = true;
+                    else if (tpTriggered) tpHit = true;
                 }
 
                 if (slHit)
                 {
-                    simExchange.SetCurrentPrice(symbol, origSignal.StopLoss!.Value);
+                    simExchange.SetCurrentPrice(symbol, currentSignal.StopLoss!.Value);
                     await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
                     positionSignals.Remove(key);
+                    exitTracking.Remove(key);
                     simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                 }
                 else if (tpHit)
                 {
-                    simExchange.SetCurrentPrice(symbol, origSignal.TakeProfit!.Value);
-                    await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
-                    positionSignals.Remove(key);
-                    simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+                    // Pyramid TP2: Wenn TP1 schon geschlossen und Tp2CloseRatio < 1.0, nur Teil schließen
+                    BacktestExitState? tp2State = null;
+                    var isPartialTp2 = settings.SimulateMultiStageExit
+                        && exitTracking.TryGetValue(key, out tp2State)
+                        && tp2State.PartialClosed  // TP1 war schon
+                        && !tp2State.Tp2Closed      // TP2 noch nicht
+                        && settings.Tp2CloseRatio > 0 && settings.Tp2CloseRatio < 1m;
+
+                    if (isPartialTp2 && tp2State != null && settings.Tp1CloseRatio < 1m)
+                    {
+                        // TP2 Partial Close: Tp2CloseRatio der verbleibenden Position schließen
+                        var remainingQty = pos.Quantity;
+                        var tp2CloseQty = Math.Round(remainingQty * (settings.Tp2CloseRatio / (1m - settings.Tp1CloseRatio)), 6);
+                        tp2CloseQty = Math.Min(tp2CloseQty, remainingQty);
+
+                        if (tp2CloseQty > 0 && tp2CloseQty < remainingQty)
+                        {
+                            simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
+                            await simExchange.ReducePositionAsync(symbol, pos.Side, tp2CloseQty).ConfigureAwait(false);
+                            simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+
+                            // TP2 erledigt, Rest läuft mit Chandelier-Trailing weiter (kein TP mehr)
+                            tp2State.Tp2Closed = true;
+                            positionSignals[key] = currentSignal with { TakeProfit = null };
+                        }
+                        else
+                        {
+                            // Zu wenig übrig → komplett schließen
+                            simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
+                            await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
+                            positionSignals.Remove(key);
+                            exitTracking.Remove(key);
+                            simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+                        }
+                    }
+                    else
+                    {
+                        // Standard: Voller Close bei TP
+                        simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
+                        await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
+                        positionSignals.Remove(key);
+                        exitTracking.Remove(key);
+                        simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+                    }
                 }
             }
 
-            // Trade ausführen wenn Signal
-            if (signal.Signal is Signal.Long or Signal.Short)
+            // Regime erkennen (wie im Live-Bot: ATI filtert Chaotic + Range)
+            var features = FeatureEngine.Extract(context);
+            var regimeState = regimeDetector.Detect(features);
+
+            // Chaotic-Regime: Alle Positionen sofort schließen (wie Live-Bot PriceTickerLoop)
+            if (regimeState.CurrentRegime == MarketRegime.Chaotic && positions.Count > 0)
+            {
+                foreach (var pos in positions)
+                {
+                    await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
+                    var key2 = $"{symbol}_{pos.Side}";
+                    positionSignals.Remove(key2);
+                    exitTracking.Remove(key2);
+                }
+            }
+
+            // Trade ausführen wenn Signal (Regime-Filter: Kein neuer Trade in Range/Chaotic)
+            if (signal.Signal is Signal.Long or Signal.Short
+                && regimeState.CurrentRegime is MarketRegime.TrendingBull or MarketRegime.TrendingBear)
             {
                 var riskCheck = riskManager.ValidateTrade(signal, context);
                 if (riskCheck.IsAllowed && riskCheck.AdjustedPositionSize > 0)
@@ -181,6 +483,29 @@ public class BacktestEngine
                         {
                             var key = $"{symbol}_{side}";
                             positionSignals[key] = signal;
+                            positionRegimes[key] = regimeState.CurrentRegime;
+
+                            // Multi-Stage Exit State erstellen
+                            if (settings.SimulateMultiStageExit)
+                            {
+                                var atrValues = IndicatorHelper.CalculateAtr(contextCandles, 14);
+                                var lastAtr = atrValues[^1] ?? 0m;
+                                var entryPrice = order.Price;
+                                exitTracking[key] = new BacktestExitState
+                                {
+                                    EntryPrice = entryPrice,
+                                    OriginalQuantity = riskCheck.AdjustedPositionSize,
+                                    EntryTime = currentCandle.CloseTime,
+                                    Tp2 = signal.TakeProfit2,
+                                    CurrentAtr = lastAtr,
+                                    TrailingAtrMultiplier = settings.TrailingAtrMultiplier,
+                                    MaxHoldHours = settings.MaxHoldHoursInitial,
+                                    // Extreme-Price mit Entry initialisieren
+                                    ExtremePriceSinceEntry = side == Side.Buy
+                                        ? currentCandle.High
+                                        : currentCandle.Low
+                                };
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -195,6 +520,7 @@ public class BacktestEngine
                 {
                     await simExchange.ClosePositionAsync(symbol, Side.Buy).ConfigureAwait(false);
                     positionSignals.Remove($"{symbol}_{Side.Buy}");
+                    exitTracking.Remove($"{symbol}_{Side.Buy}");
                 }
             }
             else if (signal.Signal is Signal.CloseShort)
@@ -203,6 +529,7 @@ public class BacktestEngine
                 {
                     await simExchange.ClosePositionAsync(symbol, Side.Sell).ConfigureAwait(false);
                     positionSignals.Remove($"{symbol}_{Side.Sell}");
+                    exitTracking.Remove($"{symbol}_{Side.Sell}");
                 }
             }
 
@@ -214,9 +541,13 @@ public class BacktestEngine
             }
         }
 
+        // Indikator-Cache leeren um Memory-Wachstum zu begrenzen
+        IndicatorHelper.ClearCache();
+
         // 6. Alle offenen Positionen schließen
         await simExchange.CloseAllPositionsAsync().ConfigureAwait(false);
         positionSignals.Clear();
+        exitTracking.Clear();
 
         // Finaler Equity-Punkt
         var finalAccount = await simExchange.GetAccountInfoAsync().ConfigureAwait(false);
@@ -226,7 +557,12 @@ public class BacktestEngine
 
         // 7. Report erstellen
         var completedTrades = simExchange.GetCompletedTrades()
-            .Select(t => t with { Mode = TradingMode.Backtest })
+            .Select(t =>
+            {
+                var tradeKey = $"{t.Symbol}_{t.Side}";
+                positionRegimes.TryGetValue(tradeKey, out var regime);
+                return t with { Mode = TradingMode.Backtest, Regime = regime };
+            })
             .ToList();
 
         // RiskManager Stats updaten
@@ -302,8 +638,10 @@ public class BacktestEngine
         }
 
         // Paginiert laden: mehrere 1440er Batches
+        // Abbruch wenn sich allCandles.Count nicht mehr ändert (API liefert immer gleiche Daten ohne Offset)
         var allCandles = new List<Candle>();
         var batchCount = (int)Math.Ceiling((double)expectedCandles / batchSize);
+        var prevCount = -1;
 
         for (int batch = 0; batch < batchCount; batch++)
         {
@@ -318,6 +656,11 @@ public class BacktestEngine
                 .DistinctBy(c => c.OpenTime)
                 .OrderBy(c => c.OpenTime)
                 .ToList();
+
+            // Kein Fortschritt → API liefert immer gleiche Daten (kein from/to-Offset)
+            if (allCandles.Count == prevCount)
+                break;
+            prevCount = allCandles.Count;
 
             // Genug Daten?
             var filtered = allCandles.Where(c => c.OpenTime >= from && c.OpenTime <= to).ToList();
@@ -367,5 +710,55 @@ public class BacktestEngine
             price = Math.Max(close, 1m);
         }
         return candles;
+    }
+
+    /// <summary>Zero-Copy Slice über eine Candle-Liste (vermeidet GetRange-Allokation pro Candle im Backtest).</summary>
+    private sealed class CandleSlice : IReadOnlyList<Candle>
+    {
+        private readonly List<Candle> _source;
+        private readonly int _offset;
+        public int Count { get; }
+
+        public CandleSlice(List<Candle> source, int offset, int count)
+        {
+            _source = source;
+            _offset = offset;
+            Count = count;
+        }
+
+        public Candle this[int index] => _source[_offset + index];
+
+        public IEnumerator<Candle> GetEnumerator()
+        {
+            for (int i = 0; i < Count; i++)
+                yield return _source[_offset + i];
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    /// <summary>Tracking-State für Multi-Stage Exit im Backtest.</summary>
+    private sealed class BacktestExitState
+    {
+        /// <summary>Einstiegspreis der Position (für Break-Even-Berechnung).</summary>
+        public decimal EntryPrice { get; init; }
+        /// <summary>Ursprüngliche Positionsgröße (für Partial-Close-Berechnung).</summary>
+        public decimal OriginalQuantity { get; init; }
+        /// <summary>Zeitpunkt des Einstiegs (für Time-Exit).</summary>
+        public DateTime EntryTime { get; init; }
+        /// <summary>Zweites Take-Profit-Ziel (weiter entfernt als TP1).</summary>
+        public decimal? Tp2 { get; set; }
+        /// <summary>Ob TP1 bereits erreicht und Partial Close ausgeführt wurde.</summary>
+        public bool PartialClosed { get; set; }
+        /// <summary>Ob TP2 bereits erreicht und Partial Close ausgeführt wurde (Pyramid: Rest trailing).</summary>
+        public bool Tp2Closed { get; set; }
+        /// <summary>Höchster (Long) bzw. niedrigster (Short) Preis seit Entry (für Trailing).</summary>
+        public decimal ExtremePriceSinceEntry { get; set; }
+        /// <summary>Aktuelle ATR für Chandelier-Trailing-Berechnung.</summary>
+        public decimal CurrentAtr { get; set; }
+        /// <summary>ATR-Multiplikator für Trailing-Abstand.</summary>
+        public decimal TrailingAtrMultiplier { get; set; }
+        /// <summary>Maximale Haltezeit in Stunden (ändert sich nach TP1).</summary>
+        public int MaxHoldHours { get; set; }
     }
 }

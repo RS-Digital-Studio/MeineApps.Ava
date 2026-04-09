@@ -77,23 +77,24 @@ public static class MarketFilter
             }
         }
 
-        // Funding-Rate
-        if (btcFundingRate < 0.03m && btcFundingRate > -0.03m)
+        // Funding-Rate (symmetrische Schwellen: neutral ±0.03%, Malus ab ±0.05%)
+        // BingX API liefert Dezimalwerte: 0.0001 = 0.01%, daher Schwellen als Dezimal
+        if (btcFundingRate < 0.0003m && btcFundingRate > -0.0003m)
         { score++; reasons.Add("Fund=neutral"); }
-        else if (btcFundingRate >= 0.06m)
-        { score--; reasons.Add($"Fund={btcFundingRate:P2}↑↑"); }
-        else if (btcFundingRate <= -0.05m)
-        { score--; reasons.Add($"Fund={btcFundingRate:P2}↓↓"); }
+        else if (btcFundingRate >= 0.0005m)
+        { score--; reasons.Add($"Fund={btcFundingRate:P3}↑↑"); }
+        else if (btcFundingRate <= -0.0005m)
+        { score--; reasons.Add($"Fund={btcFundingRate:P3}↓↓"); }
 
         var allowLong = score >= -1; // Nur bei stark bearish (-2 oder weniger) Longs blockieren
         var allowShort = score <= 1; // Nur bei stark bullish (+2 oder mehr) Shorts blockieren
         var positionScale = score switch
         {
-            >= 3 => 1.0m,
-            >= 1 => 0.85m,
-            0 => 0.75m,
-            >= -2 => 0.85m,
-            _ => 1.0m
+            >= 3 => 1.0m,     // Stark bullish: volle Positionsgröße
+            >= 1 => 0.85m,    // Leicht bullish: minimal reduziert
+            0 => 0.75m,       // Neutral: vorsichtiger
+            >= -2 => 0.85m,   // Leicht bearish: minimal reduziert
+            _ => 0.65m        // Stark bearish: deutlich reduziert
         };
 
         return new BtcHealthResult(score, allowLong, allowShort, positionScale,
@@ -106,18 +107,19 @@ public static class MarketFilter
     /// </summary>
     public static FundingFilterResult CheckFunding(decimal fundingRate, Side desiredSide)
     {
+        // BingX API liefert Funding-Rate als Dezimalwert: 0.0001 = 0.01%
         // Positiv = Longs zahlen → Markt überhebelt Long
-        if (fundingRate >= 0.08m && desiredSide == Side.Buy)
+        if (fundingRate >= 0.0008m && desiredSide == Side.Buy)
             return new FundingFilterResult(false, true, $"Funding {fundingRate:P3} zu hoch für Long (Markt überhebelt)");
 
         // Negativ = Shorts zahlen → Markt überhebelt Short
-        if (fundingRate <= -0.05m && desiredSide == Side.Sell)
+        if (fundingRate <= -0.0005m && desiredSide == Side.Sell)
             return new FundingFilterResult(false, true, $"Funding {fundingRate:P3} zu negativ für Short (Markt überhebelt)");
 
         // Funding in unsere Richtung = Bonus
         var bonus = false;
-        if (fundingRate >= 0.05m && desiredSide == Side.Sell) bonus = true; // Shorts werden bezahlt
-        if (fundingRate <= -0.03m && desiredSide == Side.Buy) bonus = true; // Longs werden bezahlt
+        if (fundingRate >= 0.0005m && desiredSide == Side.Sell) bonus = true; // Shorts werden bezahlt
+        if (fundingRate <= -0.0003m && desiredSide == Side.Buy) bonus = true; // Longs werden bezahlt
 
         return new FundingFilterResult(true, bonus, null);
     }
@@ -135,12 +137,14 @@ public static class MarketFilter
         var hour = utcNow.Hour;
 
         // 5min vor/nach Funding-Settlement (00:00, 08:00, 16:00 UTC): Kurze Pause
+        // Wrap-Around-sichere Berechnung: Min(vorwärts, rückwärts) im 1440-Minuten-Ring
         var minuteOfDay = hour * 60 + utcNow.Minute;
         var fundingTimes = new[] { 0, 480, 960 }; // 00:00, 08:00, 16:00
         foreach (var ft in fundingTimes)
         {
-            var diff = Math.Abs(minuteOfDay - ft);
-            if (diff < 5 || diff > 1435)
+            var rawDiff = Math.Abs(minuteOfDay - ft);
+            var diff = Math.Min(rawDiff, 1440 - rawDiff);
+            if (diff < 5)
                 return new SessionFilterResult(false, 0m, "Funding-Settlement - warte 5min");
         }
 

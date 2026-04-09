@@ -14,7 +14,7 @@ public partial class ActivityFeedViewModel : ViewModelBase, IDisposable
 {
     private readonly BotEventBus _eventBus;
 
-    /// <summary>Letzte 20 Aktionen des Bots (kein Debug-Spam).</summary>
+    /// <summary>Letzte 50 Aktionen des Bots (kein Debug-Spam, enthält Regime-Wechsel + ATI-Entscheidungen).</summary>
     public ObservableCollection<ActivityItem> RecentActivity { get; } = new();
 
     public ActivityFeedViewModel(BotEventBus eventBus)
@@ -38,8 +38,8 @@ public partial class ActivityFeedViewModel : ViewModelBase, IDisposable
                 entry.Level,
                 entry.Symbol));
 
-            // Max 20 Einträge
-            while (RecentActivity.Count > 20)
+            // Max 50 Einträge (Regime-Wechsel + ATI-Details brauchen mehr Platz)
+            while (RecentActivity.Count > 50)
                 RecentActivity.RemoveAt(RecentActivity.Count - 1);
         });
     }

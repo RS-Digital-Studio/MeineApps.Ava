@@ -16,7 +16,7 @@ public class BotDatabaseService
     private const int LogCleanupBatch = 10_000;
 
     /// <summary>Aktuelle Schema-Version. Bei Änderungen erhöhen und Migration in RunMigrationsAsync() hinzufügen.</summary>
-    private const int CurrentSchemaVersion = 4;
+    private const int CurrentSchemaVersion = 6;
 
     public async Task InitializeAsync()
     {
@@ -62,34 +62,31 @@ public class BotDatabaseService
 
         // Migration v1 → v2: Funding-Rate-Spalte in Trades (für spätere Auswertung)
         if (currentVersion < 2)
-        {
-            try
-            {
-                await _db.ExecuteAsync("ALTER TABLE Trades ADD COLUMN FundingPaid REAL DEFAULT 0");
-            }
-            catch { /* Spalte existiert bereits */ }
-        }
+            await TryAddColumnAsync("Trades", "FundingPaid", "REAL DEFAULT 0");
 
         // Migration v2 → v3: Cross-Market Feature-Spalten in FeatureSnapshots (23 statt 19)
         if (currentVersion < 3)
         {
-            var crossMarketCols = new[] { "F_BtcReturn24h", "F_BtcTrend", "F_BtcCorrelation", "F_MarketSentiment" };
-            foreach (var col in crossMarketCols)
-            {
-                try { await _db.ExecuteAsync($"ALTER TABLE FeatureSnapshots ADD COLUMN {col} REAL DEFAULT 0"); }
-                catch { /* Spalte existiert bereits */ }
-            }
+            foreach (var col in new[] { "F_BtcReturn24h", "F_BtcTrend", "F_BtcCorrelation", "F_MarketSentiment" })
+                await TryAddColumnAsync("FeatureSnapshots", col, "REAL DEFAULT 0");
         }
 
         // Migration v3 → v4: Fear&Greed + Open Interest Spalten
         if (currentVersion < 4)
         {
-            var newCols = new[] { "F_FearGreedIndex", "F_OpenInterestChange" };
-            foreach (var col in newCols)
-            {
-                try { await _db.ExecuteAsync($"ALTER TABLE FeatureSnapshots ADD COLUMN {col} REAL DEFAULT 0"); }
-                catch { /* Spalte existiert bereits */ }
-            }
+            foreach (var col in new[] { "F_FearGreedIndex", "F_OpenInterestChange" })
+                await TryAddColumnAsync("FeatureSnapshots", col, "REAL DEFAULT 0");
+        }
+
+        // Migration v4 → v5: Fibonacci-Proximity Feature
+        if (currentVersion < 5)
+            await TryAddColumnAsync("FeatureSnapshots", "F_FibProximity", "REAL DEFAULT 0");
+
+        // Migration v5 → v6: Regime-Feld in Trades + WAL-Modus für bessere Concurrency
+        if (currentVersion < 6)
+        {
+            await TryAddColumnAsync("Trades", "Regime", "INTEGER");
+            await _db!.ExecuteAsync("PRAGMA journal_mode=WAL");
         }
 
         // Schema-Version aktualisieren
@@ -212,6 +209,51 @@ public class BotDatabaseService
             outcome, pnl, holdTimeMinutes, snapshotId);
     }
 
+    /// <summary>
+    /// Exportiert gelabelte FeatureSnapshots als CSV (für Python train_onnx.py).
+    /// Pfad: %APPDATA%/BingXBot/training_data.csv
+    /// </summary>
+    public async Task<(string Path, int Count)> ExportFeatureSnapshotsCsvAsync()
+    {
+        EnsureInitialized();
+        var snapshots = await GetLabeledSnapshotsAsync(10_000);
+        if (snapshots.Count == 0)
+            return ("", 0);
+
+        var folder = Path.GetDirectoryName(_db!.DatabasePath) ?? "";
+        var csvPath = Path.Combine(folder, "training_data.csv");
+
+        var featureNames = Core.Models.ATI.FeatureSnapshot.FeatureNames;
+        var header = string.Join(",", featureNames.Select(n => $"F_{n}")) + ",Outcome,Pnl,HoldTimeMinutes";
+
+        using var writer = new StreamWriter(csvPath, false, System.Text.Encoding.UTF8);
+        await writer.WriteLineAsync(header);
+
+        foreach (var s in snapshots)
+        {
+            var values = new List<string>
+            {
+                F(s.F_PriceVsEma20), F(s.F_PriceVsEma50), F(s.F_PriceVsEma200), F(s.F_EmaCrossDirection),
+                F(s.F_RsiNormalized), F(s.F_MacdHistogramNormalized), F(s.F_StochKNormalized), F(s.F_StochDNormalized),
+                F(s.F_AtrPercent), F(s.F_BollingerWidth), F(s.F_BollingerPosition),
+                F(s.F_AdxNormalized), F(s.F_HtfTrend),
+                F(s.F_VolumeRatio),
+                F(s.F_FundingRate), F(s.F_SessionId),
+                F(s.F_BtcReturn24h), F(s.F_BtcTrend), F(s.F_BtcCorrelation), F(s.F_MarketSentiment), F(s.F_FearGreedIndex),
+                F(s.F_OpenInterestChange),
+                F(s.F_FibProximity),
+                F(s.F_ConsecutiveUpCandles), F(s.F_ConsecutiveDownCandles), F(s.F_RecentReturnPercent),
+                s.Outcome.ToString(), s.Pnl.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                s.HoldTimeMinutes.ToString()
+            };
+            await writer.WriteLineAsync(string.Join(",", values));
+        }
+
+        return (csvPath, snapshots.Count);
+
+        static string F(float v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     // === Logs ===
 
     public async Task SaveLogAsync(LogEntry entry)
@@ -260,5 +302,21 @@ public class BotDatabaseService
     {
         if (_db == null)
             throw new InvalidOperationException("BotDatabaseService nicht initialisiert. InitializeAsync() zuerst aufrufen.");
+    }
+
+    /// <summary>
+    /// Fügt eine Spalte hinzu falls sie nicht existiert. Fängt nur "duplicate column" Fehler,
+    /// propagiert alle anderen (Syntax, Permissions, I/O).
+    /// </summary>
+    private async Task TryAddColumnAsync(string table, string column, string type)
+    {
+        try
+        {
+            await _db!.ExecuteAsync($"ALTER TABLE {table} ADD COLUMN {column} {type}");
+        }
+        catch (SQLite.SQLiteException ex) when (ex.Message.Contains("duplicate column", StringComparison.OrdinalIgnoreCase))
+        {
+            // Spalte existiert bereits → ok
+        }
     }
 }

@@ -24,7 +24,11 @@ public static class PnlCalendarRenderer
     public static void Render(SKCanvas canvas, SKRect bounds, Dictionary<DateTime, decimal> dailyPnl, int weeksToShow = 8)
     {
         canvas.Clear(BgColor);
-        if (dailyPnl.Count == 0) return;
+        if (dailyPnl.Count == 0)
+        {
+            DrawEmptyHint(canvas, bounds, "Noch keine abgeschlossenen Trades");
+            return;
+        }
 
         var headerH = 20f;
         var dayLabelW = 25f;
@@ -102,5 +106,15 @@ public static class PnlCalendarRenderer
                 current = current.AddDays(1);
             }
         }
+    }
+
+    private static readonly SKPaint HintPaint = new() { Color = SKColor.Parse("#64748B"), IsAntialias = true };
+    private static readonly SKFont HintFont = new(SKTypeface.Default, 13);
+
+    private static void DrawEmptyHint(SKCanvas canvas, SKRect bounds, string text)
+    {
+        var x = bounds.MidX;
+        var y = bounds.MidY;
+        canvas.DrawText(text, x, y, SKTextAlign.Center, HintFont, HintPaint);
     }
 }

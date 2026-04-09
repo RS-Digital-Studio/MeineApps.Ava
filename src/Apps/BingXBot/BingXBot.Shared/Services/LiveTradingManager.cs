@@ -94,8 +94,36 @@ public class LiveTradingManager : IDisposable
         var account = await _restClient.GetAccountInfoAsync();
         var positions = await _restClient.GetPositionsAsync();
 
+        // Hedge-Modus erkennen + automatisch umschalten für TradFi
+        var isHedge = await _restClient.IsHedgeModeAsync();
+        if (_scannerSettings.EnableTradFi && !isHedge)
+        {
+            // Automatisch auf Hedge umschalten (nur möglich wenn keine Positionen offen)
+            if (positions.Count == 0)
+            {
+                var switched = await _restClient.SetHedgeModeAsync(true);
+                if (switched)
+                {
+                    isHedge = true;
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
+                        "Position-Modus automatisch auf Hedge (Zwei-Wege) umgestellt für TradFi-Support"));
+                }
+                else
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                        "Hedge-Modus konnte nicht aktiviert werden. TradFi-Trading nicht möglich."));
+                }
+            }
+            else
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                    $"TradFi deaktiviert: Hedge-Modus erfordert 0 offene Positionen (aktuell: {positions.Count}). Schließe alle Positionen und starte den Bot neu."));
+            }
+        }
+        _scannerSettings.IsHedgeModeActive = isHedge;
+
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
-            $"Live-Verbindung hergestellt. Balance: {account.Balance:N2} USDT"));
+            $"Live-Verbindung hergestellt. Balance: {account.Balance:N2} USDT | Modus: {(isHedge ? "Hedge (TradFi möglich)" : "One-Way (nur Krypto)")}"));
 
         if (positions.Count > 0)
         {
@@ -188,9 +216,10 @@ public class LiveTradingManager : IDisposable
                 // Auto-Breakeven prüfen: Gewinn% >= Leverage%
                 if (pnlPercent >= pos.Leverage && pos.Leverage > 0)
                 {
+                    // Breakeven = Entry + Round-Trip-Fees (0.1%) + Sicherheitspuffer
                     var beSl = pos.Side == Side.Buy
-                        ? pos.EntryPrice * 1.001m
-                        : pos.EntryPrice * 0.999m;
+                        ? pos.EntryPrice * 1.0015m
+                        : pos.EntryPrice * 0.9985m;
 
                     try
                     {
@@ -231,9 +260,28 @@ public class LiveTradingManager : IDisposable
                     }
                     else
                     {
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
-                            $"{pos.Symbol}: KEIN SL/TP auf BingX! Position ist ungeschützt. PnL={pnlPercent:F1}%",
-                            pos.Symbol));
+                        // Kein SL auf BingX → Standard-SL berechnen (ATR-basiert wie bei Eröffnung)
+                        var recoverySl = await CalculateStandardSlAsync(pos);
+                        try
+                        {
+                            await _restClient.SetPositionSlTpAsync(pos.Symbol, pos.Side, recoverySl, null);
+                            var signal = new SignalResult(
+                                pos.Side == Side.Buy ? Signal.Long : Signal.Short,
+                                0.5m, pos.EntryPrice, recoverySl, null, "Recovery: Standard-SL gesetzt (ATR-basiert)");
+                            _service!.RestorePositionSignal(pos.Symbol, pos.Side, signal);
+
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                                $"{pos.Symbol}: Standard-SL gesetzt → SL={recoverySl:F8}. PnL={pnlPercent:F1}%",
+                                pos.Symbol));
+                        }
+                        catch (Exception emergEx)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Recovery",
+                                $"{pos.Symbol}: KRITISCH - SL konnte nicht gesetzt werden: {emergEx.Message}. Position UNGESCHÜTZT!",
+                                pos.Symbol));
+                            if (_botSettings.EnableDesktopNotifications)
+                                _eventBus.PublishNotification("POSITION UNGESCHÜTZT", $"{pos.Symbol}: SL konnte nicht gesetzt werden!");
+                        }
                     }
                 }
                 catch { /* Best-effort */ }
@@ -248,6 +296,7 @@ public class LiveTradingManager : IDisposable
 
     /// <summary>
     /// Stoppt das Live-Trading. Offene Positionen bleiben auf BingX bestehen.
+    /// _restClient bleibt erhalten bis Dispose() — verhindert NullRef in nachlaufenden Tasks.
     /// </summary>
     public async Task StopAsync()
     {
@@ -259,7 +308,8 @@ public class LiveTradingManager : IDisposable
             _service.Dispose();
             _service = null;
         }
-        _restClient = null;
+        // _restClient NICHT null setzen — PriceTickerLoop könnte noch eine letzte Iteration laufen.
+        // Wird bei Dispose() oder erneutem ConnectAsync() aufgeräumt.
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
             "Live-Trading gestoppt. Offene Positionen bleiben auf BingX bestehen."));
@@ -267,15 +317,23 @@ public class LiveTradingManager : IDisposable
 
     /// <summary>
     /// Notfall-Stop: Schließt ALLE echten Positionen auf BingX sofort.
+    /// Wartet auf vollständiges Dispose des Services bevor _restClient freigegeben wird.
     /// </summary>
     public async Task EmergencyStopAsync()
     {
         if (_service != null)
         {
+            // ATI-Lernzustand retten bevor alles geschlossen wird —
+            // EmergencyStop kann durch Crash/Absturz ausgelöst werden, State sonst verloren
+            await SaveAtiStateAsync();
+
+            // EmergencyStopAsync() wartet intern auf Task.WhenAll(closeTasks) —
+            // _restClient wird erst NACH vollständigem Abschluss genullt.
             await _service.EmergencyStopAsync();
             _service.Dispose();
             _service = null;
         }
+        // Jetzt sicher: Alle Close-Tasks sind abgeschlossen, _restClient kann null werden
         _restClient = null;
     }
 
@@ -337,6 +395,23 @@ public class LiveTradingManager : IDisposable
 
     // === ATI-Persistenz ===
 
+    /// <summary>Setzt den ATI-Lernzustand komplett zurück und löscht ihn aus der DB.</summary>
+    public async Task ResetAtiStateAsync()
+    {
+        if (_ati == null) return;
+        _ati.Reset();
+        if (_dbService != null)
+        {
+            try
+            {
+                await _dbService.SaveAtiStateAsync(""); // Leerer State = DB-Eintrag überschreiben
+            }
+            catch { /* Ignorieren wenn DB nicht bereit */ }
+        }
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "ATI",
+            "Lernzustand komplett zurückgesetzt (alle Buckets, Gewichte und Transitions gelöscht)"));
+    }
+
     /// <summary>Lädt ATI-Lernzustand aus der DB.</summary>
     public async Task LoadAtiStateAsync()
     {
@@ -376,6 +451,50 @@ public class LiveTradingManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Berechnet den Standard-SL wie bei Tradeeröffnung: ATR-basiert mit vol-adaptiven Multiplikatoren.
+    /// Fallback auf 3% vom Entry wenn keine Candle-Daten verfügbar.
+    /// </summary>
+    private async Task<decimal> CalculateStandardSlAsync(Position pos)
+    {
+        try
+        {
+            var candles = await _publicClient!.GetKlinesAsync(
+                pos.Symbol, _scannerSettings.ScanTimeFrame,
+                DateTime.UtcNow.AddHours(-100), DateTime.UtcNow).ConfigureAwait(false);
+
+            if (candles.Count >= 20)
+            {
+                var atr = Engine.Indicators.IndicatorHelper.CalculateAtr(candles);
+                if (atr.Count > 0 && atr[^1].HasValue && atr[^1]!.Value > 0)
+                {
+                    var atrValue = atr[^1]!.Value;
+                    var atrPercentile = Engine.Indicators.IndicatorHelper.CalculateAtrPercentile(candles);
+                    var (slMult, _, _, _) = TradingModeDefaults.GetVolAdaptiveMultipliers(
+                        _botSettings.LastTradingModePreset, atrPercentile);
+
+                    var sl = pos.Side == Side.Buy
+                        ? pos.EntryPrice - atrValue * slMult
+                        : pos.EntryPrice + atrValue * slMult;
+
+                    // Mindestens 0.5% Abstand (Spread-Schutz)
+                    var minDist = pos.EntryPrice * 0.005m;
+                    if (Math.Abs(pos.EntryPrice - sl) < minDist)
+                        sl = pos.Side == Side.Buy ? pos.EntryPrice - minDist : pos.EntryPrice + minDist;
+
+                    return sl;
+                }
+            }
+        }
+        catch { /* Candle-Laden fehlgeschlagen → Fallback */ }
+
+        // Fallback: 3% vom Entry (skaliert mit Leverage, mindestens 1.5%)
+        var fallbackPercent = Math.Max(0.015m, pos.Leverage > 0 ? 0.03m / pos.Leverage : 0.03m);
+        return pos.Side == Side.Buy
+            ? pos.EntryPrice * (1m - fallbackPercent)
+            : pos.EntryPrice * (1m + fallbackPercent);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -383,6 +502,8 @@ public class LiveTradingManager : IDisposable
         _service?.Dispose();
         _service = null;
         _restClient = null;
+        _rateLimiter?.Dispose();
+        _rateLimiter = null;
         _httpClient?.Dispose();
         _httpClient = null;
     }

@@ -70,6 +70,7 @@ public partial class DashboardView : UserControl
         if (this.FindControl<SKCanvasView>("PnlCalendarCanvas") is { } p) p.InvalidateSurface();
         if (this.FindControl<SKCanvasView>("FearGreedCanvas") is { } f) f.InvalidateSurface();
         if (this.FindControl<SKCanvasView>("StrategyWeightsCanvas") is { } w) w.InvalidateSurface();
+        if (this.FindControl<SKCanvasView>("AtiLearningCanvas") is { } a) a.InvalidateSurface();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -148,6 +149,7 @@ public partial class DashboardView : UserControl
         if (this.FindControl<SKCanvasView>("PnlCalendarCanvas") is { } p) p.InvalidateSurface();
         if (this.FindControl<SKCanvasView>("FearGreedCanvas") is { } f) f.InvalidateSurface();
         if (this.FindControl<SKCanvasView>("StrategyWeightsCanvas") is { } w) w.InvalidateSurface();
+        if (this.FindControl<SKCanvasView>("AtiLearningCanvas") is { } a) a.InvalidateSurface();
         if (this.FindControl<SKCanvasView>("CorrelationCanvas") is { } c) c.InvalidateSurface();
     }
 
@@ -207,6 +209,14 @@ public partial class DashboardView : UserControl
         var canvas = e.Surface.Canvas;
         var bounds = canvas.LocalClipBounds;
         StrategyWeightsRenderer.Render(canvas, bounds, _vm.StrategyWeights);
+    }
+
+    private void OnAtiLearningPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        if (_vm == null) return;
+        var canvas = e.Surface.Canvas;
+        var bounds = canvas.LocalClipBounds;
+        AtiLearningRenderer.Render(canvas, bounds, _vm.AtiLearningSnapshot ?? new Graphics.AtiLearningData());
     }
 
     private void OnCorrelationPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

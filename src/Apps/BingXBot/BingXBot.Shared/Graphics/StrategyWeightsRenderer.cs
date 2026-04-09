@@ -33,7 +33,13 @@ public static class StrategyWeightsRenderer
     public static void Render(SKCanvas canvas, SKRect bounds, IReadOnlyList<(string Name, decimal Weight)> weights)
     {
         canvas.Clear(BgColor);
-        if (weights.Count == 0) return;
+        if (weights.Count == 0 || weights.All(w => w.Weight == 0))
+        {
+            canvas.DrawText("ATI sammelt Daten... Gewichte werden nach ersten Trades sichtbar",
+                bounds.MidX, bounds.MidY, SKTextAlign.Center, new SKFont(SKTypeface.Default, 13),
+                new SKPaint { Color = SKColor.Parse("#64748B"), IsAntialias = true });
+            return;
+        }
 
         var padding = 12f;
         var labelW = 130f;

@@ -10,7 +10,7 @@ namespace BingXBot.ViewModels;
 /// Haupt-ViewModel mit Sidebar-Navigation und Status-Anzeige.
 /// Empfängt Bot-Status-Updates über den BotEventBus.
 /// </summary>
-public partial class MainViewModel : ViewModelBase
+public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private readonly BotEventBus _eventBus;
 
@@ -84,5 +84,10 @@ public partial class MainViewModel : ViewModelBase
         IsRiskSettingsActive = page == "RiskSettings";
         IsLogActive = page == "Log";
         IsSettingsActive = page == "Settings";
+    }
+
+    public void Dispose()
+    {
+        _eventBus.BotStateChanged -= OnBotStateChanged;
     }
 }

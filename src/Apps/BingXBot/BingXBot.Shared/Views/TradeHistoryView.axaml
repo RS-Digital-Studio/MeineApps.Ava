@@ -75,7 +75,7 @@
           <TextBlock Text="{Binding TotalPnl, StringFormat={}{0:+0.00;-0.00;0.00} USDT}"
                      FontSize="28" FontWeight="Bold"
                      FontFamily="Consolas, Courier New, monospace"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="{Binding TotalPnlColor}" />
         </StackPanel>
       </Border>
 

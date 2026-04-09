@@ -47,6 +47,9 @@ public class PaperTradingService : TradingServiceBase
     {
         if (_isRunning) return;
 
+        // Alte SimulatedExchange disposen (enthält ReaderWriterLockSlim)
+        _exchange?.Dispose();
+
         _exchange = new SimulatedExchange(new BacktestSettings
         {
             InitialBalance = initialBalance,
@@ -103,9 +106,11 @@ public class PaperTradingService : TradingServiceBase
 
     protected override async Task<bool> PlaceOrderOnExchangeAsync(Ticker ticker, Side side, decimal quantity, SignalResult? signal = null, int adaptiveLeverage = 0)
     {
+        var category = Core.Helpers.SymbolClassifier.Classify(ticker.Symbol);
+        var catMaxLev = (int)_riskSettings.GetCategorySettings(category).MaxLeverage;
         var leverage = adaptiveLeverage > 0
-            ? Math.Min(adaptiveLeverage, (int)_riskSettings.MaxLeverage)
-            : (int)_riskSettings.MaxLeverage;
+            ? Math.Min(adaptiveLeverage, catMaxLev)
+            : catMaxLev;
         await _exchange!.SetLeverageAsync(ticker.Symbol, leverage, side);
 
         // Dynamische Slippage: ATR/Volume aus gecachten Klines berechnen
@@ -207,8 +212,9 @@ public class PaperTradingService : TradingServiceBase
         var allTrades = _exchange!.GetCompletedTrades();
         for (int i = prevCount; i < allTrades.Count; i++)
         {
-            _eventBus.PublishTrade(allTrades[i]);
+            // ATI-Lernen ZUERST, DANN EventBus → Dashboard-Snapshot sieht aktuelle Counter
             ProcessCompletedTrade(allTrades[i]);
+            _eventBus.PublishTrade(allTrades[i]);
         }
     }
 

@@ -20,7 +20,13 @@ public static class CorrelationMatrixRenderer
     {
         canvas.Clear(BgColor);
         var n = symbols.Length;
-        if (n == 0) return;
+        if (n < 2)
+        {
+            canvas.DrawText("Min. 2 offene Positionen für Korrelations-Matrix",
+                bounds.MidX, bounds.MidY, SKTextAlign.Center, new SKFont(SKTypeface.Default, 13),
+                new SKPaint { Color = SKColor.Parse("#64748B"), IsAntialias = true });
+            return;
+        }
 
         var labelW = 70f;
         var cellSize = Math.Min((bounds.Width - labelW) / n, (bounds.Height - labelW) / n);

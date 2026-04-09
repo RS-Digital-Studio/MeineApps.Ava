@@ -26,7 +26,13 @@ public static class DrawdownChartRenderer
     {
         canvas.Clear(BgColor);
 
-        if (equityData.Count < 2) return;
+        if (equityData.Count < 2)
+        {
+            canvas.DrawText("Drawdown wird nach ersten Trades angezeigt",
+                bounds.MidX, bounds.MidY, SKTextAlign.Center, LabelFont,
+                new SKPaint { Color = TextColor, IsAntialias = true });
+            return;
+        }
 
         var padding = new SKRect(50, 10, 10, 20);
         var area = new SKRect(bounds.Left + padding.Left, bounds.Top + padding.Top,

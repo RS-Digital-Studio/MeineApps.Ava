@@ -24,11 +24,11 @@ BingXBot.Shared      <- Avalonia UI (ViewModels inkl. Sub-VMs, Views, Services m
 BingXBot.Desktop     <- Desktop Entry-Point
 ```
 
-## Strategien (7 Stück, CryptoTrendPro als Default)
+## Strategien (8 Stück, CryptoTrendPro als Default)
 
 | Strategie | Datei | Logik |
 |-----------|-------|-------|
-| **CryptoTrendPro** | CryptoTrendProStrategy.cs | **Primär-Strategie**: Supertrend + Confluence-Scoring (0-12) + vol-adaptive SL/TP + Multi-Stage Exit |
+| **CryptoTrendPro** | CryptoTrendProStrategy.cs | **Primär-Strategie**: Supertrend + Confluence-Scoring (0-10) + Fibonacci + vol-adaptive SL/TP + Multi-Stage Exit |
 | Trend-Following | TrendFollowStrategy.cs | Multi-Indikator (EMA+RSI+MACD+Volume), 5 Bedingungen, Confidence-basiert |
 | EMA Cross | EmaCrossStrategy.cs | EMA-Cross + Volume + EMA200 Trend-Filter + ATR-Volatilitätsfilter |
 | RSI Momentum | RsiStrategy.cs | RSI als Momentum-Indikator + Divergenz-Erkennung + Volume-Konfirmation |
@@ -40,17 +40,18 @@ BingXBot.Desktop     <- Desktop Entry-Point
 
 Optimiert für Krypto-Futures 2024-2026. Confluence-Scoring statt binäre Bedingungen.
 
-**Entry-Scoring (Long, 0-12 Punkte):**
-- +2: D1 Preis > EMA 50 (mittelfristiger Uptrend)
+**Entry-Scoring (Long, max 10 Punkte intern):**
+- +2: D1 Preis > EMA 50 (mittelfristiger Uptrend, via HTF-Candles)
 - +2: H4 Supertrend(10, 3.0) bullish
 - +1: H4 EMA 12 > EMA 26
 - +1: H4 ADX > 20 UND steigend (+DI > -DI)
 - +1: H4 RSI 45-80
 - +1: H4 Volumen > 1.5x SMA(20)
-- +2: BTC-Kontext (D1 > EMA50 + HTF Supertrend)
-- +1: Funding-Rate günstig
-- +1: Cooldown respektiert
-- **Min. Score: 8/12 für Trade**
+- +1: HTF-Supertrend bullish (unabhängig vom D1>EMA)
+- +1: Fibonacci-Retracement: Preis nahe Key-Level (38.2%/50%/61.8%, Toleranz 0.5*ATR)
+- Extern (nicht im Score): Funding-Rate, Cooldown, BTC-Health via MarketFilter
+- **Min. Score: 6 (Default), Large-Caps -2 Rabatt**
+- Fib-Extension 161.8% als alternatives TP2 (wenn weiter als ATR-basiert)
 
 **Pyramid Multi-Stage Exit (PositionExitState, seit 05.04.2026):**
 - TP1 bei 2.5-3x ATR → **30%** Position schließen → SL auf **Smart Breakeven** (Entry + 0.5*ATR)
@@ -58,7 +59,7 @@ Optimiert für Krypto-Futures 2024-2026. Confluence-Scoring statt binäre Beding
 - Chandelier-Trailing (2.5x ATR unter Höchstpunkt) für verbleibende **40%**
 - Time-Exit: 48h ohne TP1 → schließen
 - **Regime-Exit**: ATI erkennt Chaotic → alle Positionen sofort schließen (PriceTickerLoop)
-- ADX-Exit: ADX < 15 → Trend tot
+- ADX-Exit: ADX < 10 → Trend tot
 
 **Volatilitäts-Adaptation (ATR-Perzentil):**
 - Ruhig (<20%): SL 1.5x, TP1 2.0x, TP2 3.5x ATR
@@ -69,8 +70,8 @@ Optimiert für Krypto-Futures 2024-2026. Confluence-Scoring statt binäre Beding
 ### MarketFilter (Engine/Filters/MarketFilter.cs)
 
 Globale Filter die VOR der Strategie-Evaluation greifen:
-- **BTC Health Score** (-4 bis +4): D1>EMA50, H4 Supertrend, RSI, Funding → Long/Short/Position-Scale
-- **Session-Filter**: US (13-21 UTC) = 100%, EU = 90%, Asia = 75%, Wochenende = 0%
+- **BTC Health Score** (-4 bis +4): D1>EMA50, H4 Supertrend, RSI, Funding (symmetrisch ±0.05%) → Long/Short/Position-Scale
+- **Session-Filter**: 24/7 Krypto, Liquiditäts-Gewichtung (US/EU/Asia), Funding-Settlement ±5min Pause (Wrap-Around-sicher)
 - **Funding-Rate**: >+0.08% blockiert Longs, <-0.05% blockiert Shorts
 - **Cooldown**: 8h Pause nach Verlust-Trade
 - **Max Trades/Tag**: Default 3
@@ -954,3 +955,378 @@ ConfidenceGate Hybrid-Gewichtung:
 - credentials.dat in AppData (nicht im Repo), chmod 600 auf Linux
 - Keine Secrets in Logs, Keys in UI maskiert
 - WebSocket-API-Key-Felder bereits entfernt (05.04.2026)
+
+## Modi-Audit Fixes (07.04.2026)
+
+### Kritisch (Echtgeld-Schutz)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Live Multi-Mode Position-Recovery | MultiModeOrchestrator.cs | `RecoverOpenPositionsAsync()`: Liest SL/TP aus BingX-Orders + setzt Auto-Breakeven für ALLE Services. Vorher: Keine Recovery nach App-Neustart im Multi-Mode → ungeschützte Positionen |
+| Multi-Mode manueller Close | DashboardViewModel.cs | `FindServiceForPosition()` über Orchestrator statt `_liveManager.Service` (war null im Multi-Mode). Signal wird jetzt im richtigen Service entfernt |
+| Multi-Mode BotState-Spam | MultiModeOrchestrator.cs, TradingServiceBase.cs | `SuppressBotStateEvents` Flag: StopAll/EmergencyStop publiziert BotState nur einmal statt 3x |
+
+### Backtest-Genauigkeit
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Backtest ApplyPreset | BacktestViewModel.cs | `CreateStrategy()` wendet jetzt den Trading-Modus-Preset an (Scalping/DayTrading/Swing basierend auf Timeframe). Vorher: Default-Parameter unabhängig vom Timeframe |
+| Backtest RiskSettings vollständig | BacktestViewModel.cs | Alle ~25 RiskSettings-Felder werden aus dem Preset übernommen. Vorher: Nur 7 Felder → kein Multi-Stage-Exit, kein MinRRR, kein Cooldown im Backtest |
+| Backtest HTF-Candles | BacktestEngine.cs, BacktestSettings.cs | `HtfTimeFrame` Property: Lädt automatisch HTF-Candles für Trend-Konfirmation. Vorher: `MarketContext.HigherTimeframeCandles` immer null im Backtest |
+| Backtest Preset-Sync | BacktestViewModel.cs | `BacktestSettings.Tp1/Tp2CloseRatio`, `MaxHoldHours` etc. werden aus dem Preset synchronisiert |
+
+### HTF-Timeframe-Handling
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| HTF nicht mehr H4 hardcoded | TradingServiceBase.cs | `_scannerSettings.HtfTimeFrame` statt `TimeFrame.H4`. Scalping→H1, DayTrading→H4, Swing→D1 |
+| HtfTimeFrame computed Property | ScannerSettings.cs | `HtfTimeFrame` wird automatisch aus `ScanTimeFrame` abgeleitet (M15→H1, H1→H4, H4→D1) |
+
+### Multi-Mode UI
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| SL/TP-Anzeige Multi-Mode | DashboardViewModel.cs | `FindPositionSignal()` durchsucht alle aktiven Service-Modi (Orchestrator, Paper, Live) statt nur _paperService |
+| SL/TP-Edit Multi-Mode | DashboardViewModel.cs | PropertyChanged-Handler leitet Edits an den richtigen Service über `FindServiceForPosition()` |
+| Chart-Overlay Multi-Mode | DashboardViewModel.cs | `UpdateChartOverlay()` nutzt `FindPositionSignal()` statt hardcoded `_paperService` |
+
+### Stabilität
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| _consecutiveLosses Tageswechsel | TradingServiceBase.cs | Wird bei Tageswechsel zusammen mit _tradesToday zurückgesetzt. Vorher: Verlustserie von gestern eskalierte Cooldown heute weiter |
+| Cooldown-Kommentar korrigiert | TradingServiceBase.cs | Dokumentiert warum Basis-Cooldown deaktiviert ist aber Cooldown-Eskalation aktiv bleibt (Leverage-Reduktion statt Handelspause) |
+
+## Live-Modus Code-Review Fixes (07.04.2026)
+
+Gründliche Prüfung aller Live-Trading-Pfade auf Sicherheit, Race Conditions und Korrektheit.
+
+### Kritische Fixes (3 — Geldverlust-Risiko)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Trailing-Stop auf BingX synchronisieren | TradingServiceBase.cs, LiveTradingService.cs | `OnTrailingStopMovedAsync()` mit Side-Parameter + async Return. LiveTradingService ruft `SetPositionSlTpAsync()` mit Throttle (max 1 Update/30s pro Symbol). Vorher: Nativer SL auf BingX wurde NIE nachgezogen → bei App-Crash ging nachgezogener Gewinn verloren |
+| Doppelte Order verhindern | TradingServiceBase.cs | `_positionSignals.ContainsKey()` Check VOR `PlaceOrderOnExchangeAsync()` in beiden Pfaden (ATI + Standard). Verhindert doppelte Position wenn Limit-Order aus vorigem Scan noch pending |
+| Emergency-Stop null-Safety | LiveTradingManager.cs | `_restClient` wird bei `StopAsync()` NICHT mehr genullt (PriceTickerLoop könnte noch laufen). Bei `EmergencyStopAsync()` erst nach vollständigem Service-Dispose |
+
+### Hohe Fixes (2)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Native TP-Orders bei Trailing canceln | TradingServiceBase.cs, LiveTradingService.cs | Neuer Hook `OnEnterTrailingPhaseAsync()`. LiveTradingService cancelt alle nativen SL/TP-Orders und setzt nur SL neu. Vorher: BingX schloss Rest-40% ungewollt zum alten TP2-Preis statt Trailing laufen zu lassen |
+| Recovery EntryTime Karenz | PositionExitState.cs, TradingServiceBase.cs | Neues `IsRecovered` Property. Nach Recovery: MaxHoldHours=0 für 4h Karenz, dann aktiviert. Vorher: Time-Exit-Uhr startete bei 0, echte Haltezeit nach Neustart unbekannt |
+
+### Mittlere Fixes (3)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| WebSocket-Ticker Handler-Leak | LiveTradingService.cs | `_tickerPriceHandler` als Feld gespeichert, in `DisposeAdditional()` abgemeldet. Vorher: Lambda akkumulierte bei Start/Stop/Start |
+| Partial Close Quantity | TradingServiceBase.cs | TP1-CloseQty aus `pos.Quantity` statt `exitState.OriginalQuantity`. BingX kann Quantity truncaten → closeQty war evtl. > echte Position |
+| Funding-Rate pro Symbol | TradingServiceBase.cs, LiveTradingService.cs | `_fundingRates` Dictionary statt einzelner `_currentFundingRate`. Jedes offene Symbol wird separat abgefragt (Rates variieren stark zwischen Symbolen) |
+
+### Niedriger Fix (1)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| ListenKey-Reconnect | LiveTradingService.cs | Bei 2+ fehlgeschlagenen Renewals: Neuen ListenKey erstellen + WS-Verbindung neu aufbauen. Vorher: Nur geloggt, kein Reconnect |
+
+### Geänderte Hooks (TradingServiceBase.cs)
+| Hook | Alt | Neu |
+|------|-----|-----|
+| `OnTrailingStopMoved` | `void(string, decimal, decimal)` | `Task OnTrailingStopMovedAsync(string, Side, decimal, decimal)` |
+| `OnEnterTrailingPhaseAsync` | (neu) | `Task(string, Side, decimal?)` — nach TP2 in Trailing-Phase |
+
+## ATI-Lernlogik Review Fixes (07.04.2026)
+
+Gründliche Prüfung der gesamten ATI-Pipeline: FeatureEngine, RegimeDetector, AdaptiveEnsemble, ConfidenceGate, ExitOptimizer, LightGBM, ONNX.
+
+### Hohe Fixes (3)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| ConfidenceGate Signal-Richtung | ConfidenceGate.cs | Bucket-Keys enthalten jetzt `L:`/`S:` Prefix (Long/Short). Vorher: "RSI:oversold" trackte Long+Short gemeinsam → profitable "Buy the Dip"-Muster boosteten auch Short-Confidence |
+| ONNX Thread-Safety | OnnxModelInference.cs | `_sessionLock` um LoadModel (atomic swap), Predict, PredictBatch und Dispose. Vorher: TOCTOU Race wenn LoadModel die Session disposed während Predict sie nutzt |
+| Ensemble-Gewichte Differenzierung | AdaptiveEnsemble.cs | EMA-Targets von 1.2/0.8 auf 1.5/0.5 geändert. 70% WinRate → Gewicht ~1.3 (vorher ~1.08), 30% → ~0.7 (vorher ~0.92). Verdoppelte Differenzierung zwischen guten und schlechten Strategien |
+
+### Mittlerer Fix (1)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Bayesian Shrinkage | ConfidenceGate.cs | Log-Odds-Summe mit Faktor 0.5 multipliziert (Shrinkage). 16 korrelierte Buckets führten zu Overconfidence nahe 0/1. Clamp-Range auf [0.05, 0.95] verengt |
+
+### Review-Runde Fixes (07.04.2026)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| **ExtremePriceSinceEntry=0 bei Recovery** | TradingServiceBase.cs | **KRITISCH**: Default 0 → Short-Momentum-Decay sofort (price-0=riesig). Fix: Entry-Preis als Startwert in ExitState + _extremePriceSinceEntry Dictionary |
+| ConfidenceGate Bucket-Migration | ConfidenceGate.cs | Alte Keys ohne L:/S: Prefix werden bei DeserializeState 50/50 auf Long+Short aufgeteilt. Ohne Migration wären alle bisherigen ATI-Lerndaten verloren |
+| PredictBatch Fehler-Return | OnnxModelInference.cs | `Array.Fill(0.5f)` statt `new float[]` (Default 0.0f). Konsistent mit Predict() Fehler-Return |
+| GetModelInfo Thread-Safety | OnnxModelInference.cs | Unter `_sessionLock` (vorher ohne Lock → ObjectDisposedException möglich) |
+| OnEnterTrailingPhase SL-Retry | LiveTradingService.cs | 1 Retry bei SL-Fehler nach TP-Cancel. Ohne SL wäre Position komplett ungeschützt. LogLevel Error statt Warning |
+
+## Umfassende Logik-Analyse Fixes (07.04.2026)
+
+4-Agenten-Review über alle Bereiche. 21 Fixes.
+
+### Kritische Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| GetPositionScaleFactor(0)=0 | CryptoTrendProStrategy.cs | Alle 6 Nicht-CTP-Strategien konnten nie traden. Fix: `_ => 1.0m` |
+| MarketFilter Funding-Schwellen 100x falsch | MarketFilter.cs | 0.08 (8%) → 0.0008 (0.08%). BingX liefert Dezimalwerte |
+| Cooldown+MaxDailyTrades verdrahtet | TradingServiceBase.cs | MarketFilter-Checks waren nie aufgerufen. Jetzt in ScanAndTradeAsync |
+| BTC Health positionScale bearish | MarketFilter.cs | Score<=-3 gab 1.0m → Fix: 0.65m |
+| Event-Leaks in 3 ViewModels | Dashboard/TradeHistory/MainVM | IDisposable + benannte Handler + Abmeldung in Dispose() |
+
+### Verbesserungen
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| _consecutiveLosses Interlocked Return | TradingServiceBase.cs | Rückgabewert verwenden statt re-read |
+| EmergencyStopAllAsync parallel | MultiModeOrchestrator.cs | Task.WhenAll statt sequenziell |
+| Dispose ruft StopAsync | MultiModeOrchestrator.cs | Cleanup für _positionSignals |
+| ATI-Events benannte Felder | DashboardViewModel.cs | Saubere Abmeldung möglich |
+| EquityTimer CancellationToken | DashboardViewModel.cs | Sauberer Cancel |
+| BacktestViewModel IDisposable | BacktestViewModel.cs | CTS Cleanup |
+| isBtc Parameter entfernt | CryptoTrendProStrategy.cs | Ungenutzter Parameter |
+| SimpleScore normalisiert | MarketScanner.cs | Clamp [0,1] |
+| CheckAutoTraining Race Guard | AdaptiveTradingIntelligence.cs | CAS Guard bei Multi-Mode |
+| WebSocket _reconnectAttempts | BingXWebSocketClient.cs | volatile |
+| DB-Migrationen spezifischer Catch | BotDatabaseService.cs | Nur "duplicate column" fangen |
+
+## Vollaudit Fixes (07.04.2026 - Runde 2)
+
+5-Agenten-Audit (Code-Review, Security, Performance, Architektur, Health). 226 Tests grün.
+
+### Kritische Fixes (2)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| EmergencyStop ATI-Save | LiveTradingManager.cs | `SaveAtiStateAsync()` vor EmergencyStop aufrufen — sonst ATI-Lernzustand bei Notfall verloren |
+| TryClaimAutoSave Race | AdaptiveTradingIntelligence.cs | Zeitstempel erst NACH erfolgreichem DB-Save setzen. Neue Methoden: `ConfirmAutoSave()` + `ReleaseAutoSaveClaim()`. Bei DB-Fehler wird beim nächsten Check erneut versucht |
+
+### Hohe Fixes (2)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| SimulatedExchange IDisposable | SimulatedExchange.cs | `IDisposable` implementiert, `_rwLock.Dispose()`. Verhindert ReaderWriterLockSlim-Leak bei Start/Stop |
+| PaperTradingService Dispose alte Exchange | PaperTradingService.cs | `_exchange?.Dispose()` vor Neuerstellen in `Start()` |
+| LiveTradingService StopAsync CTS-Reihenfolge | LiveTradingService.cs | `CleanupUserDataStreamAsync()` VOR `_cts.Cancel()` — DeleteListenKey braucht nicht-gecancelltes Token |
+
+### Mittlere Fixes (1)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| _consecutiveLosses Thread-Safety | TradingServiceBase.cs | `volatile int` + `Interlocked.Increment/Exchange` an allen 4 Schreibstellen (ProcessCompletedTrade, Tageswechsel, Cooldown-Read) |
+
+### Sonstige Fixes (3)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| ExitOptimizer TP-Formel-Stabilität | ExitOptimizer.cs | Neue Formel: max 15% TP-Reduktion statt unbegrenzter Konvergenz auf Floor. Verhindert dass Lerneffekt bei extremen AvgLosingTp verloren geht |
+| MarketScannerTests IDataFeed entfernt | MarketScannerTests.cs | `IDataFeed`-Mock entfernt (Interface existiert nicht mehr). Nutzt jetzt 1-Parameter-Konstruktor `MarketScanner(client, logger)` |
+| ConfigTests + RiskManagerTests aktualisiert | ConfigTests.cs, RiskManagerTests.cs | Tests an aktuelle Default-Werte angepasst (MaxPositionSize 20%, CooldownHours 4, MinVolume 20M, ScanInterval 300s, MaxResults 50, MaxTradesPerDay 0) |
+
+## Deep-Dive Audit Fixes (07.04.2026 - Runde 3)
+
+5-Agenten Deep-Dive (Trading-Logik, ATI ML-Pipeline, Exchange+Network, ViewModel+UI). 226 Tests grün.
+
+### Kritische Fixes (7)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| ATR-"Perzentil" war kein Perzentil | TradingServiceBase.cs | `atr/price*10000` statt echtem Perzentil 0-100 → Leverage IMMER maximal reduziert. Fix: `CalculateAtrPercentile()` |
+| Bayesian Prior N+1-fach gezählt | ConfidenceGate.cs | Posterior-Odds enthielten Prior (Laplace) + nochmal addiert. Fix: Likelihood-Ratio relativ zum Prior |
+| LightGBM Random-Split = Data Leakage | LightGbmClassifier.cs | Random-Shuffle bei Zeitreihendaten. Fix: Temporaler 80/20-Split |
+| ATI-Events nach Stop/Start tot | DashboardViewModel.cs | `_atiEventsWired` nur in Dispose() zurückgesetzt. Fix: `UnwireAtiEvents()` in StopBot() |
+| MainView PropertyChanged-Leak | MainView.axaml.cs | Handler auf Singleton nie abgemeldet. Fix: DetachedFromVisualTree |
+| EquityTimer CancellationToken.None | DashboardViewModel.cs | Timer lief nach StopBot weiter. Fix: Eigener `_equityCts` |
+| HTTP SendAsync ohne CancellationToken | BingXRestClient.cs | Request nicht cancellbar. Fix: ct an SendAsync/ReadAsStringAsync |
+
+### Hohe Fixes (4)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| RegimeDetector global statt pro Symbol | RegimeDetector.cs | Multi-Mode: Letztes Symbol bestimmte Regime. Fix: `GetRegimeForSymbol()` |
+| GetAdaptiveLeverage Score<=9 zu streng | CryptoTrendProStrategy.cs | Non-CTP (Score=0) immer bestraft. Fix: `score > 0 && score <= 6` |
+| Sharpe sqrt(252) statt sqrt(365) | RiskManager.cs | Aktienmarkt-Wert für Krypto. Fix: `Math.Sqrt(365)` |
+| BacktestVM geteilter CTS | BacktestViewModel.cs | RunBacktest + RunWalkForward teilten CTS. Fix: Separate CTS-Felder |
+
+### Restliche Fixes (4)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Momentum-Decay Short-Threshold | TradingServiceBase.cs | Shorts: 2.5x ATR statt 1.5x (stärkere Pullbacks nach schnellem Abstieg) |
+| Liquidation-Check bei <=2x Leverage deaktiviert | RiskManager.cs | Isolated-Margin-Formel zu konservativ bei Cross-Margin. Bei <=2x kein Liquidationsrisiko → return 0 |
+| WalkForward Purge-Gap | WalkForwardOptimizer.cs | 12 Candles Embargo zwischen Train/Test (verhindert Label-Leakage bei offenen Trades) |
+| ScannerViewModel IDisposable | ScannerViewModel.cs | CTS wird bei Dispose() gecancelt und disposed |
+
+## Tiefenanalyse Fixes (07.04.2026 - Runde 2)
+
+5-Agenten-Tiefenanalyse: RiskManager-Mathematik, Backtest-Pipeline, Exchange-Client, alle 7 Strategien.
+
+### Kritische Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Liquidation-Formel korrigiert | RiskManager.cs | MMR wurde direkt addiert statt durch Leverage geteilt → Sicherheitsabstand war systematisch falsch. Korrekt: `(1 - MMR) / Leverage` |
+| Net-Exposure = Brutto → Netto | RiskManager.cs | Alle Positionen positiv summiert → Hedge-Positionen doppelt bestraft. Fix: Short als negativ, `Math.Abs(net)` |
+| Sharpe Population→Sample Varianz | RiskManager.cs, PerformanceReport.cs | `.Average()` (N) → `.Sum() / (N-1)`. Bei 5 Trades: 20% Unterschätzung korrigiert |
+| Sortino über ALLE Returns | PerformanceReport.cs | Downside-Deviation nur über negative Returns → über alle (positive als 0). Standard-Sortino-Formel |
+| Sharpe Annualisierung Trades/Jahr | PerformanceReport.cs | Fixem sqrt(252) → sqrt(TradesProJahr). Bei H4 mit 1 Trade/Woche war Sharpe massiv überschätzt |
+| Limit-Order Fee-Tracking | SimulatedExchange.cs | `ExecuteOrderLocked` (Limit-Fills) setzte `_positionOpenFees` nicht → PnL bei Limit-Orders zu hoch |
+| Ticker Bid/Ask korrigiert | BacktestEngine.cs | BidPrice=Candle.Low, AskPrice=Candle.High → realistischer halber Spread (SpreadPercent) |
+| TP2 Division-by-Zero Guard | BacktestEngine.cs | `Tp2CloseRatio / (1 - Tp1CloseRatio)` → Guard `Tp1CloseRatio < 1m` |
+| Pagination Endlos-Loop | BacktestEngine.cs | API ohne from/to liefert immer gleiche Daten → Abbruch wenn `allCandles.Count == prevCount` |
+| Close blockiert Entry | TradingServiceBase.cs | Nach CloseLong/Short sofort re-evaluieren für Entry in Gegenrichtung (Supertrend-Flip ist nur 1 Candle lang) |
+| TrendFollow ADX-Bonus richtungsabhängig | TrendFollowStrategy.cs | ADX-Bonus auf BEIDE Seiten → nur in DI-Richtung (+DI > -DI → Long-Bonus). Nutzt `CalculateAdxWithDi()` |
+| TrendFollow Confidence Clamp | TrendFollowStrategy.cs | Confidence konnte > 1.0 werden. Fix: `Math.Clamp(0, 1)` vor Signal-Generierung |
+| Retry-Delay mit CancellationToken | BingXRestClient.cs | `Task.Delay(backoff)` → `Task.Delay(backoff, ct)` — EmergencyStop wartet nicht mehr 8s |
+| ContinueWith → await | BingXRestClient.cs | PlaceTpLimitOrderAsync: AggregateException-Risiko + fehlender TaskScheduler eliminiert |
+
+### Verbesserungen
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| CTP Score-Gleichstand Tiebreaker | CryptoTrendProStrategy.cs | longScore==shortScore && beide >= minScore → Supertrend-Richtung entscheidet |
+| Funding-Rate auf aktuellen Preis | SimulatedExchange.cs | ApplyFundingRate: stale MarkPrice → `GetPriceLocked()` für aktuellen Preis |
+| Monte Carlo Perzentil Off-by-One | MonteCarloSimulator.cs | Index-Korrektur + Bounds-Check für Perzentil-Array-Zugriff |
+
+## Indikator-Optimierung + Top-100 Filter (08.04.2026)
+
+Basierend auf Recherche (2024-2026 Backtests, BingX-Doku, Krypto-Futures-Studien).
+
+### Top-100 Market-Cap-Filter
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| OnlyTopByVolume + TopCoinsCount | ScannerSettings.cs | Nur die Top-N Coins nach 24h-Volume analysieren. Auf Futures-Börsen korreliert Volume stark mit Market Cap. Default: Top 100 |
+| Volume-Ranking im Scanner | MarketScanner.cs | Vor dem Basis-Filter werden alle Ticker nach Volume sortiert und nur die Top-N behalten. Kleine/illiquide Coins ausgefiltert |
+| ScannerPreset erweitert | TradingModeDefaults.cs | `OnlyTopByVolume` + `TopCoinsCount` in ScannerPreset Record |
+| Multi-Mode + Dashboard | MultiModeOrchestrator.cs, DashboardViewModel.cs | Neue Properties werden bei Preset-Wechsel korrekt übernommen |
+
+### Indikator-Optimierungen (Recherche-basiert)
+| Änderung | Alt | Neu | Begründung |
+|----------|-----|-----|------------|
+| Volume-Multiplikator (alle Modi) | 1.0x | **1.2x** | 1.0x filtert de facto nichts (50% aller Kerzen haben über-durchschnittliches Volume). 1.2x ist echter Filter |
+| CTP MinAdx (Default + Swing/DayTrading) | 18/15 | **20** | 20 ist der universelle Standard für "Trend vorhanden". Scalping bleibt bei 15 (ADX auf M15 selten >25) |
+| DayTrading Supertrend-Multiplikator | 2.5 | **3.0** | Weniger Whipsaws auf H1. 2.5 erzeugt zu viele Fehlsignale bei Krypto-Volatilität. 3.0 ist Standard für alle TFs |
+| Bollinger TP-Multiplikator | 2.0x | **2.5x** | Krypto-Breakouts laufen weiter als traditionelle Märkte. Backtests zeigen 2.5-3.0x ATR als optimalen BB-TP |
+| EmaCross Perioden | 12/26 | **9/21** | 9/21 ist De-facto-Standard für Krypto (4H+M15). Schnellere Crosses fangen Momentum-Wechsel früher |
+| CTP RSI-Range (Swing) | 40-75 / 25-60 | **42-78 / 22-58** | Krypto-Uptrends halten RSI oft bei 75+. Erweiterte Range vermeidet vorzeitige Signal-Ablehnung |
+
+### Geänderte Defaults-Tabelle
+| Setting | Scalping | DayTrading | Swing |
+|---------|----------|-----------|-------|
+| Volume-Multiplikator | 1.2x | 1.2x | 1.2x |
+| MinAdx | 15 | **20** | **20** |
+| Supertrend-Mult. | 2.0 | **3.0** | 3.0 |
+| RSI Long-Range | 35-65 | 40-70 | **42-78** |
+| RSI Short-Range | 35-65 | 30-60 | **22-58** |
+| Top-100 Filter | aktiv | aktiv | aktiv |
+
+## Live-Trading Review Fixes (08.04.2026)
+
+9 Findings aus umfassendem Code-Review der Live-Trading-Logik.
+
+### Kritische Fixes (2)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| OriginalQuantity Diskrepanz | TradingServiceBase.cs | OriginalQuantity war `riskCheck.AdjustedPositionSize` statt tatsächlich platzierte Menge. Bei Equity-Scaling oder Score-Scaling wurde TP2-Qty zu groß berechnet → `Math.Min` kappte auf gesamte Rest-Position → Trailing-Phase übersprungen. Fix: `OriginalQuantity = positionSize` (ATI) / `positionSizeStd` (Standard) |
+| Multi-Mode dreifacher SL/TP-Trigger | MultiModeOrchestrator.cs | Recovery registrierte Signale in ALLEN 3 Services → 3 PriceTickerLoops versuchten gleichzeitig dieselbe Position zu schließen. Fix: Signal nur im ERSTEN Service registrieren |
+
+### Hohe Fixes (3)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| EmergencyStop cancelt CTS vor Close | LiveTradingService.cs | `_cts?.Cancel()` vor `GetPositionsAsync` → API-Calls konnten fehlschlagen. Fix: CTS-Cancel entfernt, `StopBase()` am Ende cancelt sicher |
+| MaxTradesPerDay nie geprüft | TradingServiceBase.cs | `_tradesToday` wurde gezählt aber nie gegen `RiskSettings.MaxTradesPerDay` validiert. Fix: Check in ScanAndTradeAsync nach Session-Filter (0 = unbegrenzt) |
+| TP1/TP2 Limit-Order Quantity auf untruncated Basis | LiveTradingService.cs | BingX truncated Quantity auf Symbol-Precision, TP-Qty wurde aber aus Order-Menge berechnet. Fix: Nach Haupt-Order echte Position von BingX lesen, TP-Qty darauf basieren |
+
+### Mittlere Fixes (3)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Multi-Mode StartLive ohne Recovery | MultiModeOrchestrator.cs | `StartLive()` → `StartLiveAsync()` mit integrierter Position-Recovery. Offene Positionen haben jetzt sofort SL-Schutz |
+| DeleteListenKeyAsync fire-and-forget in Dispose | LiveTradingService.cs | try-catch um `_restClient.DeleteListenKeyAsync()` — ObjectDisposedException bei Shutdown möglich |
+| PositionExitState Thread-Safety Dokumentation | PositionExitState.cs | Kommentar: Properties werden NUR aus PriceTickerLoop mutiert (sequentiell pro Service). ConcurrentDictionary sichert nur Add/Get/Remove |
+
+### Geänderte Methoden-Signaturen
+| Methode | Alt | Neu |
+|---------|-----|-----|
+| `MultiModeOrchestrator.StartLive()` | `void StartLive(restClient)` | `async Task StartLiveAsync(restClient)` — inkl. Auto-Recovery |
+
+### Neue Gotchas
+- OriginalQuantity IMMER die tatsächlich platzierte Menge verwenden (nach Equity/Score-Scaling), NICHT `riskCheck.AdjustedPositionSize`
+- Recovery-Signale im Multi-Mode NUR in einem Service registrieren (sonst N-facher Close-Versuch)
+- EmergencyStop: CTS NICHT vor Close-Operations canceln (API-Calls brauchen funktionierendes HTTP)
+- TP-Limit-Orders: Qty aus `GetPositionsAsync()` lesen (BingX truncated auf Symbol-Precision)
+
+## Umfassender App-Audit Fixes (08.04.2026)
+
+4-Agenten-Audit: Trade-Persistenz, UI/UX, Codebase-Health, Profitabilität.
+
+### Kritische Fixes (2)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Backtest-Trades fluten DB | TradeHistoryViewModel.cs | Backtest-Trades wurden bei jedem Run in DB gespeichert ohne Bereinigung → History geflutet. Fix: Backtest-Trades nicht mehr in DB persistieren (nur Paper+Live) |
+| SaveTradeAsync fire-and-forget | TradeHistoryViewModel.cs | Live-Trade-Persistierung war fire-and-forget → bei DB-Fehler stiller Datenverlust. Fix: try-catch mit Error-Logging an EventBus |
+
+### Hohe Fixes (3)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| TradeEntity verliert Regime | TradeEntity.cs, BotDatabaseService.cs | CompletedTrade.Regime wurde nie in DB persistiert. Fix: Regime-Feld + DB-Migration v6 |
+| Equity beim App-Start nie geladen | DashboardViewModel.cs | Equity-Chart startete bei jedem Start bei 0 trotz DB-Daten. Fix: LoadEquityFromDbAsync() im Konstruktor (letzte 30 Tage) |
+| RiskManager SL als Pflicht | RiskManager.cs | Ohne SL wurde 20% Margin als Fallback verwendet → Konto-Risiko. Fix: Trade wird ohne SL grundsätzlich abgelehnt |
+
+### UI-Fixes (4)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Doppelte KeyBindings | MainView.axaml | Identische Ctrl+1-8 Bindings zweimal definiert → toter Code entfernt |
+| AppTextMutedBrush fehlt | RiskSettingsView.axaml | 3 Texte referenzierten nicht-existierende Resource → Text unsichtbar. Fix: → `TextMutedBrush` |
+| TradeHistory PnL ohne Farbe | TradeHistoryView.axaml, TradeHistoryViewModel.cs | Gesamt-PnL immer weiß statt grün/rot. Fix: TotalPnlColor Property + Binding |
+| DB WAL-Modus | BotDatabaseService.cs | SQLite WAL-Modus für bessere Concurrency bei Multi-Mode (3 parallele Services) |
+
+### Neue Gotchas
+- Backtest-Trades NICHT in DB speichern — fluten sonst die History bei jedem Run
+- SaveTradeAsync bei Live-Trades IMMER mit try-catch absichern — stiller Datenverlust bei DB-Fehler
+- SL ist PFLICHT im RiskManager — Trade ohne SL wird grundsätzlich abgelehnt
+- DB-Migration v6: Regime-Spalte in Trades + WAL-Modus
+
+## Multi-Asset Trading: TradFi-Support (08.04.2026)
+
+### Neue Dateien
+| Datei | Beschreibung |
+|-------|--------------|
+| `Core/Enums/MarketCategory.cs` | Enum: Crypto, Commodity, Index, Forex, Stock |
+| `Core/Helpers/SymbolClassifier.cs` | Prefix-basierte Klassifikation (NCCO/NCSI/NCFX/NCSK) |
+| `Engine/Filters/TradingHoursFilter.cs` | Markt-Öffnungszeiten (Krypto 24/7, TradFi Mo-Fr) |
+
+### BUG-FIX: Top-100-Filter fehlte in Trading-Loop
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| OnlyTopByVolume nicht angewendet | ScanHelper.cs | `FilterCandidates()` ignorierte `OnlyTopByVolume`/`TopCoinsCount` komplett → Bot handelte ALLE Symbole inkl. illiquider Meme-Coins. Fix: Top-100 für Krypto, separate TradFi-Filterung |
+
+### TradFi-Symbole (BingX, 94 Stück)
+- **Commodities** (23): `NCCOGOLD2USD-USDT`, `NCCOXAG2USD-USDT`, `NCCO1OILWTI2USD-USDT` etc.
+- **Indices** (11): `NCSINASDAQ1002USD-USDT`, `NCSISP5002USD-USDT`, `NCSIDOWJONES2USD-USDT`
+- **Forex** (27): `NCFXEUR2USD-USDT`, `NCFXGBP2USD-USDT` etc.
+- **Stocks** (33): `NCSKTSLA2USD-USDT`, `NCSKNVDA2USD-USDT`, `NCSKAAPL2USD-USDT`
+- **Gleiche API-Endpunkte** wie Krypto (Klines, Ticker, Orders)
+- **Erkennung via Symbol-Prefix**: `NC` = TradFi, Rest = Krypto
+
+### Per-Markt Risk-Settings
+| Kategorie | Default-Leverage | Max-Leverage | Margin | RRR |
+|-----------|-----------------|-------------|--------|-----|
+| Krypto | 3x | 125x | 20% / 2% | 1.5:1 |
+| Rohstoffe | 10x | 500x | 15% / 1.5% | 1.5:1 |
+| Indices | 10x | 500x | 15% / 1.5% | 1.5:1 |
+| Forex | 20x | 500x | 10% / 1% | 2:1 |
+| Aktien | 3x | 25x | 15% / 2% | 1.5:1 |
+
+### Strategie-Anpassungen
+- **RSI-Ranges**: Krypto 42-78 (Trends pushen RSI höher), TradFi 30-70 (Standard)
+- **BTC-Health/FearGreed/Funding**: Nur für Krypto aktiv, für TradFi neutral
+- **ATI FeatureEngine**: 11 krypto-spezifische Features werden für TradFi auf 0/neutral gesetzt
+- **ConfidenceGate**: FNG/OI/BTC Buckets nur für Krypto generiert
+- **Trading-Hours**: Krypto 24/7, Forex 24/5, Commodities/Indices/Stocks Mo-Fr mit Zeiten
+
+### UI-Änderungen
+- **Dashboard**: Markt-Kategorie Checkboxen (Krypto immer an, TradFi opt-in)
+- **Risk-Settings**: Per-Markt-Leverage (5 NumericUpDowns) in neuer Sektion
+- **Marktspezifische Hebel**: Konfigurierbar pro Kategorie
+
+### Neue ScannerSettings
+| Property | Default | Beschreibung |
+|----------|---------|--------------|
+| EnableTradFi | false | TradFi-Assets aktivieren (opt-in) |
+| EnabledCategories | {Crypto} | Welche Kategorien gescannt werden |
+| MinVolume24hTradFi | 1M | Eigener Volume-Filter für TradFi |
+
+### Tests (264 gesamt, +38 neue)
+| Datei | Tests | Beschreibung |
+|-------|-------|--------------|
+| Core/SymbolClassifierTests.cs | 25 | Prefix-Erkennung, IsTradFi, Is24x7, IsApiTradeable, DisplayName |
+| Engine/TradingHoursFilterTests.cs | 8 | Wochenende, Handelszeiten, Krypto 24/7, Forex 24/5 |
+
+### Neue Gotchas
+- SymbolClassifier: `NCCO`=Commodity, `NCSI`=Index, `NCFX`=Forex, `NCSK`=Stock, Rest=Crypto
+- TradFi `EnableTradFi=false` Default → kein Risiko für bestehende Krypto-Logik
+- Trading-Hours: TradFi am Wochenende IMMER geschlossen, auch 724-Varianten haben API gesperrt
+- RSI-Ranges: 42-78 für Krypto, 30-70 für TradFi — in CryptoTrendPro.Evaluate() per context.Category
+- Funding-Rate: Nur für Krypto prüfen (`category == MarketCategory.Crypto`)
+- MarketContext hat jetzt `Category`-Feld (letzter Parameter, Default Crypto)

@@ -26,6 +26,12 @@ public partial class MainView : UserControl
             vm.PropertyChanged += OnViewModelPropertyChanged;
             UpdateConnectionDot();
         }
+
+        // Handler abmelden wenn View entladen wird (verhindert Memory-Leak bei Singleton-VM)
+        DetachedFromVisualTree += (_, _) =>
+        {
+            if (_vm != null) _vm.PropertyChanged -= OnViewModelPropertyChanged;
+        };
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

@@ -11,7 +11,7 @@ namespace BingXBot.ViewModels;
 /// ViewModel für Trade-History (abgeschlossene Trades, PnL-Übersicht).
 /// Empfängt echte Trades über den BotEventBus (von Bot und Backtest).
 /// </summary>
-public partial class TradeHistoryViewModel : ViewModelBase
+public partial class TradeHistoryViewModel : ViewModelBase, IDisposable
 {
     private readonly BotEventBus _eventBus;
     private readonly BotDatabaseService? _dbService;
@@ -26,6 +26,8 @@ public partial class TradeHistoryViewModel : ViewModelBase
     [ObservableProperty] private decimal _totalPnl;
     [ObservableProperty] private decimal _winRate;
     [ObservableProperty] private int _tradeCount;
+    /// <summary>Farbe für Gesamt-PnL: Grün bei Gewinn, Rot bei Verlust.</summary>
+    [ObservableProperty] private string _totalPnlColor = "#94A3B8";
 
     public string[] Modes => new[] { "Alle", "Live", "Paper", "Backtest" };
     public string[] Periods => new[] { "Heute", "Letzte 7 Tage", "Letzte 30 Tage", "Alles" };
@@ -55,6 +57,7 @@ public partial class TradeHistoryViewModel : ViewModelBase
         if (_dbService == null) return;
         try
         {
+            // Nur Paper+Live-Trades laden (Backtest-Trades werden nicht mehr persistiert)
             var trades = await _dbService.GetTradesAsync();
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
@@ -88,6 +91,21 @@ public partial class TradeHistoryViewModel : ViewModelBase
             _allTrades.Insert(0, item); // Neueste zuerst
             ApplyFilter();
         });
+
+        // Trade in DB persistieren (nur Paper + Live, NICHT Backtest — Backtests fluten sonst die DB)
+        if (_dbService != null && trade.Mode != Core.Enums.TradingMode.Backtest)
+        {
+            _ = Task.Run(async () =>
+            {
+                try { await _dbService.SaveTradeAsync(trade); }
+                catch (Exception ex)
+                {
+                    _eventBus.PublishLog(new BingXBot.Core.Models.LogEntry(
+                        DateTime.UtcNow, Core.Enums.LogLevel.Error, "DB",
+                        $"Trade-Persistierung fehlgeschlagen ({trade.Symbol}): {ex.Message}"));
+                }
+            });
+        }
     }
 
     private void OnBacktestCompleted(object? sender, BacktestCompletedArgs args)
@@ -156,6 +174,7 @@ public partial class TradeHistoryViewModel : ViewModelBase
     {
         TradeCount = Trades.Count;
         TotalPnl = Trades.Count > 0 ? Trades.Sum(t => t.Pnl) : 0m;
+        TotalPnlColor = TotalPnl > 0 ? "#10B981" : TotalPnl < 0 ? "#EF4444" : "#94A3B8";
         var wins = Trades.Count(t => t.Pnl > 0);
         WinRate = TradeCount > 0 ? (decimal)wins / TradeCount * 100m : 0m;
     }
@@ -166,6 +185,12 @@ public partial class TradeHistoryViewModel : ViewModelBase
         SelectedMode = "Alle";
         SymbolFilter = "";
         SelectedPeriod = "Letzte 7 Tage";
+    }
+
+    public void Dispose()
+    {
+        _eventBus.TradeCompleted -= OnTradeCompleted;
+        _eventBus.BacktestCompleted -= OnBacktestCompleted;
     }
 }
 

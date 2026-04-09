@@ -74,17 +74,7 @@
     </Style>
   </UserControl.Styles>
 
-  <UserControl.KeyBindings>
-    <!-- Navigation: Ctrl+1-8 -->
-    <KeyBinding Gesture="Ctrl+D1" Command="{Binding NavigateToCommand}" CommandParameter="Dashboard" />
-    <KeyBinding Gesture="Ctrl+D2" Command="{Binding NavigateToCommand}" CommandParameter="Scanner" />
-    <KeyBinding Gesture="Ctrl+D3" Command="{Binding NavigateToCommand}" CommandParameter="Strategie" />
-    <KeyBinding Gesture="Ctrl+D4" Command="{Binding NavigateToCommand}" CommandParameter="Backtest" />
-    <KeyBinding Gesture="Ctrl+D5" Command="{Binding NavigateToCommand}" CommandParameter="TradeHistory" />
-    <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateToCommand}" CommandParameter="RiskSettings" />
-    <KeyBinding Gesture="Ctrl+D7" Command="{Binding NavigateToCommand}" CommandParameter="Log" />
-    <KeyBinding Gesture="Ctrl+D8" Command="{Binding NavigateToCommand}" CommandParameter="Settings" />
-  </UserControl.KeyBindings>
+  <!-- Doppelte KeyBindings entfernt (bereits oben definiert) -->
 
   <Grid ColumnDefinitions="220,*" RowDefinitions="*,Auto">
 

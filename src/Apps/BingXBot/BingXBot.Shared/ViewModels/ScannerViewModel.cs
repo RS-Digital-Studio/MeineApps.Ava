@@ -15,7 +15,7 @@ namespace BingXBot.ViewModels;
 /// Nutzt BingXPublicClient für echte Ticker-Daten, IMarketScanner für Signal-Analyse.
 /// Publiziert Scan-Ergebnisse über den BotEventBus an die Log-Ansicht.
 /// </summary>
-public partial class ScannerViewModel : ViewModelBase
+public partial class ScannerViewModel : ViewModelBase, IDisposable
 {
     private readonly ScannerSettings _scannerSettings;
     private readonly IMarketScanner? _marketScanner;
@@ -246,6 +246,13 @@ public partial class ScannerViewModel : ViewModelBase
     private void StopScan()
     {
         _cts?.Cancel();
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
     }
 }
 

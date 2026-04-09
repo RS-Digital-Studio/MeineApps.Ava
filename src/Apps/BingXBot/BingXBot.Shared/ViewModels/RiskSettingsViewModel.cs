@@ -45,6 +45,41 @@ public partial class RiskSettingsViewModel : ViewModelBase
     // Momentum-Decay
     [ObservableProperty] private bool _enableMomentumDecay;
 
+    // === Marktspezifische Hebel (mappen auf RiskSettings.CategorySettings) ===
+    public decimal CryptoMaxLeverage
+    {
+        get => _riskSettings.GetCategorySettings(MarketCategory.Crypto).MaxLeverage;
+        set { UpdateCategoryLeverage(MarketCategory.Crypto, value); OnPropertyChanged(); MarkDirty(); }
+    }
+    public decimal CommodityMaxLeverage
+    {
+        get => _riskSettings.GetCategorySettings(MarketCategory.Commodity).MaxLeverage;
+        set { UpdateCategoryLeverage(MarketCategory.Commodity, value); OnPropertyChanged(); MarkDirty(); }
+    }
+    public decimal IndexMaxLeverage
+    {
+        get => _riskSettings.GetCategorySettings(MarketCategory.Index).MaxLeverage;
+        set { UpdateCategoryLeverage(MarketCategory.Index, value); OnPropertyChanged(); MarkDirty(); }
+    }
+    public decimal ForexMaxLeverage
+    {
+        get => _riskSettings.GetCategorySettings(MarketCategory.Forex).MaxLeverage;
+        set { UpdateCategoryLeverage(MarketCategory.Forex, value); OnPropertyChanged(); MarkDirty(); }
+    }
+    public decimal StockMaxLeverage
+    {
+        get => _riskSettings.GetCategorySettings(MarketCategory.Stock).MaxLeverage;
+        set { UpdateCategoryLeverage(MarketCategory.Stock, value); OnPropertyChanged(); MarkDirty(); }
+    }
+
+    /// <summary>Aktualisiert den MaxLeverage für eine Markt-Kategorie im RiskSettings-Dictionary.</summary>
+    private void UpdateCategoryLeverage(MarketCategory cat, decimal value)
+    {
+        if (!_riskSettings.CategorySettings.ContainsKey(cat))
+            _riskSettings.CategorySettings[cat] = new MarketCategorySettings();
+        _riskSettings.CategorySettings[cat] = _riskSettings.CategorySettings[cat] with { MaxLeverage = value };
+    }
+
     [ObservableProperty] private string _saveStatus = "";
     [ObservableProperty] private bool _hasUnsavedChanges;
 

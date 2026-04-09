@@ -49,6 +49,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     private readonly BotSettings _botSettings;
     private bool _isInitializing = true; // Unterdrückt Preset-Override beim Konstruktor
     private PeriodicTimer? _equityTimer;
+    private CancellationTokenSource? _equityCts;
     private PeriodicTimer? _accountUpdateTimer;
 
     // === Live-Trading (delegiert an LiveTradingManager) ===
@@ -119,6 +120,28 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     partial void OnTotalPnlChanged(decimal value) => OnPropertyChanged(nameof(IsTotalPnlPositive));
     partial void OnBotStatusStateChanged(BotState value) => OnPropertyChanged(nameof(StatusDotColor));
 
+    // Markt-Kategorie-Änderungen an ScannerSettings weiterleiten
+    partial void OnIsCommodityEnabledChanged(bool value) => UpdateEnabledCategories();
+    partial void OnIsIndexEnabledChanged(bool value) => UpdateEnabledCategories();
+    partial void OnIsForexEnabledChanged(bool value) => UpdateEnabledCategories();
+    partial void OnIsStockEnabledChanged(bool value) => UpdateEnabledCategories();
+
+    /// <summary>
+    /// Synchronisiert die UI-Checkboxen mit ScannerSettings.EnabledCategories.
+    /// Krypto ist immer aktiv. TradFi wird aktiviert sobald min. eine Kategorie gewählt.
+    /// </summary>
+    private void UpdateEnabledCategories()
+    {
+        _scannerSettings.EnableTradFi = IsCommodityEnabled || IsIndexEnabled || IsForexEnabled || IsStockEnabled;
+        _scannerSettings.EnabledCategories.Clear();
+        _scannerSettings.EnabledCategories.Add(MarketCategory.Crypto);
+        if (IsCommodityEnabled) _scannerSettings.EnabledCategories.Add(MarketCategory.Commodity);
+        if (IsIndexEnabled) _scannerSettings.EnabledCategories.Add(MarketCategory.Index);
+        if (IsForexEnabled) _scannerSettings.EnabledCategories.Add(MarketCategory.Forex);
+        if (IsStockEnabled) _scannerSettings.EnabledCategories.Add(MarketCategory.Stock);
+        _ = App.SaveAllSettingsAsync();
+    }
+
     // === Offene Positionen ===
     public ObservableCollection<PositionDisplayItem> OpenPositions { get; } = new();
     [ObservableProperty] private bool _hasOpenPositions;
@@ -139,6 +162,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     public float[,] CorrelationMatrix { get; set; } = new float[0, 0];
     // Strategie-Gewichte (aus ATI AdaptiveEnsemble)
     public List<(string Name, decimal Weight)> StrategyWeights { get; set; } = [];
+    // ATI-Lernfortschritt (ConfidenceGate, ExitOptimizer, Regime-Stats, Top-Buckets)
+    public Graphics.AtiLearningData? AtiLearningSnapshot { get; set; }
 
     /// <summary>
     /// Wird ausgeloest wenn Widget-Daten (DailyPnl, StrategyWeights, FearGreed) aktualisiert wurden
@@ -155,6 +180,13 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     // === Hinweise/Onboarding ===
     [ObservableProperty] private bool _showWelcomeHint = true;
     [ObservableProperty] private string _welcomeHintText = "Willkommen! Starte mit einem Backtest um eine Strategie zu testen, oder konfiguriere deine API-Keys in den Einstellungen.";
+
+    // === Markt-Kategorie-Toggles (steuern ScannerSettings.EnabledCategories) ===
+    [ObservableProperty] private bool _isCryptoEnabled = true;
+    [ObservableProperty] private bool _isCommodityEnabled = true;
+    [ObservableProperty] private bool _isIndexEnabled = true;
+    [ObservableProperty] private bool _isForexEnabled = true;
+    [ObservableProperty] private bool _isStockEnabled = true;
 
     // === Watchlist (Crypto-Auswahl für Scanner) ===
     [ObservableProperty] private string _watchlistInput = "";
@@ -239,19 +271,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         // Verfügbare Symbole im Hintergrund laden (für AutoComplete)
         _ = LoadAvailableSymbolsAsync();
 
-        // Trade-Markers: Bei Trade-Abschluss BTC-Marker hinzufügen
-        _eventBus.TradeCompleted += (_, trade) =>
-        {
-            if (trade.Symbol != "BTC-USDT") return;
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                BtcTicker.TradeMarkers.Add(new TradeMarker(trade.EntryTime, trade.EntryPrice, trade.Side, true));
-                BtcTicker.TradeMarkers.Add(new TradeMarker(trade.ExitTime, trade.ExitPrice, trade.Side, false, trade.Pnl));
-                // Max 50 Marker behalten
-                while (BtcTicker.TradeMarkers.Count > 50)
-                    BtcTicker.TradeMarkers.RemoveAt(0);
-            });
-        };
+        // Equity-Kurve aus DB laden (letzte 30 Tage)
+        _ = LoadEquityFromDbAsync();
+
+        // Trade-Markers + Metriken-Refresh bei jedem Trade-Abschluss
+        _eventBus.TradeCompleted += OnTradeCompletedForMarkers;
 
         _isInitializing = false; // Ab jetzt überschreiben Modus-Wechsel die Settings
     }
@@ -316,6 +340,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _scannerSettings.MinPriceChange = scannerPreset.MinPriceChange;
         _scannerSettings.MaxResults = scannerPreset.MaxResults;
         _scannerSettings.UseM15EntryTiming = scannerPreset.UseM15EntryTiming;
+        _scannerSettings.OnlyTopByVolume = scannerPreset.OnlyTopByVolume;
+        _scannerSettings.TopCoinsCount = scannerPreset.TopCoinsCount;
 
         _botSettings.LastTradingModePreset = preset;
 
@@ -451,7 +477,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             {
                 _isMultiMode = true;
                 await WireUpAtiEventsAsync();
-                _orchestrator.StartLive(_liveManager.RestClient!);
+                await _orchestrator.StartLiveAsync(_liveManager.RestClient!); // Inkl. Position-Recovery
 
                 BotStatusText = "LIVE (Alle Modi) - Handelt aktiv!";
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
@@ -583,6 +609,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             IsLiveActive = false;
         }
 
+        // ATI-Events abmelden damit WireUpAtiEventsAsync beim nächsten Start erneut verdrahtet
+        UnwireAtiEvents();
+
         IsRunning = false;
         CanStart = true;
         BotStatusText = "Gestoppt";
@@ -648,6 +677,15 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         OpenPositions.Clear();
         HasOpenPositions = false;
         PositionsStatusText = "Alle Positionen geschlossen";
+    }
+
+    [RelayCommand]
+    private async Task ResetAti()
+    {
+        if (IsRunning) return; // Nur wenn Bot gestoppt
+        await _liveManager.ResetAtiStateAsync();
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ATI",
+            "ML-Confidence startet bei 50% (neutral). Erste 50 Trades sammeln nur Daten, ohne zu filtern."));
     }
 
     [RelayCommand]
@@ -756,7 +794,17 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 var qty = position.Quantity;
 
                 await _liveManager.RestClient!.ClosePositionAsync(position.Symbol, side);
-                _liveManager.Service?.RemovePositionSignal(position.Symbol, side);
+
+                // Signal entfernen: Im Multi-Mode den richtigen Service finden
+                if (_isMultiMode)
+                {
+                    var owningService = _orchestrator.FindServiceForPosition(position.Symbol, side);
+                    owningService?.RemovePositionSignal(position.Symbol, side);
+                }
+                else
+                {
+                    _liveManager.Service?.RemovePositionSignal(position.Symbol, side);
+                }
 
                 // CompletedTrade erstellen damit ATI + RiskManager Feedback bekommen
                 var fee = qty * entryPrice * 0.0005m + qty * exitPrice * 0.0005m;
@@ -844,6 +892,25 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         catch { /* Default-Liste bleibt aktiv */ }
     }
 
+    /// <summary>Lädt persistierte Equity-Snapshots aus der DB (letzte 30 Tage).</summary>
+    private async Task LoadEquityFromDbAsync()
+    {
+        if (_dbService == null) return;
+        try
+        {
+            var snapshots = await _dbService.GetEquitySnapshotsAsync(from: DateTime.UtcNow.AddDays(-30));
+            if (snapshots.Count > 0)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    foreach (var point in snapshots.TakeLast(500))
+                        EquityData.Add(point);
+                });
+            }
+        }
+        catch { /* Equity-Chart startet leer — kein kritischer Fehler */ }
+    }
+
     /// <summary>Fügt ein Symbol zur Watchlist hinzu (aus AutoComplete oder manuelle Eingabe).</summary>
     [RelayCommand]
     private void AddToWatchlist()
@@ -893,14 +960,30 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _ = App.SaveAllSettingsAsync();
     }
 
+    /// <summary>
+    /// Sucht das Signal für eine Position über alle aktiven Service-Modi
+    /// (Multi-Mode Orchestrator, Paper-Service, Live-Service).
+    /// </summary>
+    private SignalResult? FindPositionSignal(string symbol, Side side)
+    {
+        if (_isMultiMode)
+        {
+            var service = _orchestrator.FindServiceForPosition(symbol, side);
+            return service?.GetPositionSignal(symbol, side);
+        }
+        if (IsPaperMode)
+            return _paperService.GetPositionSignal(symbol, side);
+        return _liveManager.Service?.GetPositionSignal(symbol, side);
+    }
+
     /// <summary>Aktualisiert die Trade-Markers und Positions-Overlay auf dem BTC-Chart.</summary>
     private void UpdateChartOverlay()
     {
-        // Aktive BTC-Position als Overlay anzeigen
+        // Aktive BTC-Position als Overlay anzeigen (alle Modi: Paper, Live, Multi-Mode)
         var btcPos = OpenPositions.FirstOrDefault(p => p.Symbol == "BTC-USDT");
         if (btcPos != null)
         {
-            var signal = _paperService.GetPositionSignal(btcPos.Symbol, btcPos.Side);
+            var signal = FindPositionSignal(btcPos.Symbol, btcPos.Side);
             BtcTicker.ActiveOverlay = new ActivePositionOverlay(
                 btcPos.EntryPrice, signal?.StopLoss, signal?.TakeProfit, signal?.TakeProfit2, btcPos.Side);
         }
@@ -929,32 +1012,20 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         // Close-Action verdrahten
         item.CloseRequested = (pos) => { RequestClosePosition(pos); return Task.CompletedTask; };
 
-        // SL/TP aus dem Service laden (programmatisch, OHNE PropertyChanged-Handler zu triggern)
+        // SL/TP aus dem richtigen Service laden (Single-Mode, Multi-Mode, Live)
         // Flag verhindert, dass die initiale Zuweisung das gespeicherte Signal überschreibt
         var suppressSlTpEvents = true;
 
-        if (IsPaperMode)
+        var signal = FindPositionSignal(p.Symbol, p.Side);
+        if (signal != null)
         {
-            var signal = _paperService.GetPositionSignal(p.Symbol, p.Side);
-            if (signal != null)
-            {
-                item.StopLoss = signal.StopLoss;
-                item.TakeProfit = signal.TakeProfit;
-            }
-        }
-        else if (_liveManager.Service != null)
-        {
-            var signal = _liveManager.Service.GetPositionSignal(p.Symbol, p.Side);
-            if (signal != null)
-            {
-                item.StopLoss = signal.StopLoss;
-                item.TakeProfit = signal.TakeProfit;
-            }
+            item.StopLoss = signal.StopLoss;
+            item.TakeProfit = signal.TakeProfit;
         }
 
         suppressSlTpEvents = false;
 
-        // SL/TP-Änderungen an den Service zurückschreiben (NUR bei User-Edits, nicht bei programmatischer Zuweisung)
+        // SL/TP-Änderungen an den richtigen Service zurückschreiben
         item.PropertyChanged += (_, e) =>
         {
             if (suppressSlTpEvents) return;
@@ -963,7 +1034,12 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             if (!OpenPositions.Contains(item)) return;
 
             var side = item.Side;
-            if (IsPaperMode)
+            if (_isMultiMode)
+            {
+                var owningService = _orchestrator.FindServiceForPosition(item.Symbol, side);
+                owningService?.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
+            }
+            else if (IsPaperMode)
             {
                 _paperService.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
             }
@@ -1021,10 +1097,35 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
     private bool _disposed;
 
+    /// <summary>
+    /// Benannter Handler für TradeCompleted (statt anonymem Lambda, damit -= in Dispose möglich).
+    /// </summary>
+    private void OnTradeCompletedForMarkers(object? sender, CompletedTrade trade)
+    {
+        // ATI-Lernfortschritt + Rolling-Metriken sofort aktualisieren (nicht 5 Min warten)
+        if (IsRunning)
+            UpdateRollingMetrics();
+
+        if (trade.Symbol != "BTC-USDT") return;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            BtcTicker.TradeMarkers.Add(new TradeMarker(trade.EntryTime, trade.EntryPrice, trade.Side, true));
+            BtcTicker.TradeMarkers.Add(new TradeMarker(trade.ExitTime, trade.ExitPrice, trade.Side, false, trade.Pnl));
+            // Max 50 Marker behalten
+            while (BtcTicker.TradeMarkers.Count > 50)
+                BtcTicker.TradeMarkers.RemoveAt(0);
+        });
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+
+        // EventBus-Handler sauber abmelden (verhindert Zugriff auf disposed-te Objekte)
+        _eventBus.TradeCompleted -= OnTradeCompletedForMarkers;
+        UnwireAtiEvents();
+
         _accountUpdateCts?.Cancel();
         _accountUpdateCts?.Dispose();
         _equityTimer?.Dispose();
@@ -1037,10 +1138,29 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
     /// <summary>
     /// Verdrahtet ATI-Events (Lernen, Training, Audit-Logging) und lädt gespeicherten State.
-    /// Wird sowohl im Multi-Mode als auch im Single-Mode aufgerufen.
+    /// Handler als Felder gespeichert damit sie in Dispose() abgemeldet werden können.
     /// Guard verhindert doppelte Subscription bei mehrfachem Start.
     /// </summary>
     private bool _atiEventsWired;
+    // Benannte Handler-Felder für saubere Abmeldung in Dispose() und StopBot()
+    private Action<Core.Models.ATI.FeatureSnapshot, CompletedTrade, Core.Models.ATI.EnsembleVote>? _atiFeatureSnapshotHandler;
+    private Action<string> _atiAutoTrainingHandler = null!;
+    private Action<Core.Models.ATI.TradeAudit> _atiAuditHandler = null!;
+
+    /// <summary>
+    /// Meldet ATI-Events ab. Wird sowohl bei StopBot als auch bei Dispose aufgerufen,
+    /// damit WireUpAtiEventsAsync beim nächsten Start erneut verdrahtet.
+    /// </summary>
+    private void UnwireAtiEvents()
+    {
+        if (_ati == null || !_atiEventsWired) return;
+        _ati.AutoTrainingCompleted -= _atiAutoTrainingHandler;
+        _ati.AuditCreated -= _atiAuditHandler;
+        if (_atiFeatureSnapshotHandler != null)
+            _ati.FeatureSnapshotCompleted -= _atiFeatureSnapshotHandler;
+        _atiEventsWired = false;
+    }
+
     private async Task WireUpAtiEventsAsync()
     {
         if (_ati == null || _atiEventsWired) return;
@@ -1052,7 +1172,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         // Feature-Snapshots bei Trade-Close in DB speichern (für ML-Training)
         if (_dbService != null)
         {
-            _ati.FeatureSnapshotCompleted += async (snapshot, trade, vote) =>
+            _atiFeatureSnapshotHandler = async (snapshot, trade, vote) =>
             {
                 try
                 {
@@ -1070,22 +1190,46 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 {
                     var labeled = await _dbService.GetLabeledSnapshotsAsync(5000);
                     _ati.CheckAutoTraining(labeled);
+
+                    // CSV-Export für Python-Training (alle 50 neuen gelabelten Snapshots)
+                    if (labeled.Count > 0 && labeled.Count % 50 == 0)
+                    {
+                        var (csvPath, csvCount) = await _dbService.ExportFeatureSnapshotsCsvAsync();
+                        if (csvCount > 0)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ML",
+                                $"Training-Daten exportiert: {csvCount} Samples → {csvPath}"));
+                            if (_botSettings.EnableDesktopNotifications)
+                                _eventBus.PublishNotification("ONNX-Training", $"{csvCount} Trainingsdaten exportiert. Python-Script ausführen für ONNX-Update.");
+                        }
+                    }
                 }
                 catch { /* Training-Fehler nicht propagieren */ }
             };
+            _ati.FeatureSnapshotCompleted += _atiFeatureSnapshotHandler;
         }
 
         // Auto-Training-Events loggen
-        _ati.AutoTrainingCompleted += msg =>
+        _atiAutoTrainingHandler = msg =>
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "ML", msg));
+        _ati.AutoTrainingCompleted += _atiAutoTrainingHandler;
 
         // ATI Audit-Trail: Jede Entscheidung loggen (Annahme + Ablehnung mit Grund)
-        _ati.AuditCreated += audit =>
+        // Abgelehnte Audits sind Info-Level damit sie im Activity Feed sichtbar sind
+        _atiAuditHandler = audit =>
         {
-            var level = audit.WasAccepted ? Core.Enums.LogLevel.Trade : Core.Enums.LogLevel.Debug;
+            var level = audit.WasAccepted ? Core.Enums.LogLevel.Trade : Core.Enums.LogLevel.Info;
+            var regimeNames = new Dictionary<Core.Models.ATI.MarketRegime, string>
+            {
+                [Core.Models.ATI.MarketRegime.TrendingBull] = "Bull",
+                [Core.Models.ATI.MarketRegime.TrendingBear] = "Bear",
+                [Core.Models.ATI.MarketRegime.Range] = "Range",
+                [Core.Models.ATI.MarketRegime.Chaotic] = "Chaotisch"
+            };
+            var regimeName = regimeNames.GetValueOrDefault(audit.Regime, audit.Regime.ToString());
             var status = audit.WasAccepted ? "AKZEPTIERT" : "ABGELEHNT";
             var msg = $"{audit.Symbol}: {audit.SignalDirection} {status} | " +
-                $"Regime={audit.Regime} ({audit.RegimeConfidence:P0}), " +
+                $"Regime={regimeName} ({audit.RegimeConfidence:P0}), " +
                 $"Ensemble={audit.StrategiesAgreeing}/{audit.StrategiesTotal} ({audit.AgreeingStrategies}), " +
                 $"ML={audit.MlConfidence:P0}";
 
@@ -1094,6 +1238,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, level, "ATI", msg, audit.Symbol));
         };
+        _ati.AuditCreated += _atiAuditHandler;
 
         // ONNX-Modell-Status loggen
         if (_ati.OnnxModel is { IsModelLoaded: true })
@@ -1204,20 +1349,24 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         if (_dbService == null) return;
 
         StopEquitySnapshotTimer();
+        _equityCts = new CancellationTokenSource();
         _equityTimer = new PeriodicTimer(TimeSpan.FromMinutes(5));
         try
         {
             // Ersten Snapshot sofort speichern
             await SaveEquitySnapshotAsync();
 
-            while (await _equityTimer.WaitForNextTickAsync())
+            // Eigener CTS: Unabhängig von _accountUpdateCts, wird bei StopBot/Dispose gecancelt
+            while (await _equityTimer.WaitForNextTickAsync(_equityCts.Token))
                 await SaveEquitySnapshotAsync();
         }
         catch (OperationCanceledException) { }
+        catch (ObjectDisposedException) { } // Timer wurde disposed bevor CancellationToken feuerte
     }
 
     /// <summary>
     /// Speichert einen einzelnen Equity-Snapshot in der DB.
+    /// Speichert auch den ATI-Lernzustand (Auto-Save alle 5 Min, Paper + Live).
     /// </summary>
     private async Task SaveEquitySnapshotAsync()
     {
@@ -1235,6 +1384,14 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                     EquityData.RemoveAt(0);
             });
 
+            // ATI Auto-Save: Hier statt in TradingServiceBase.OnAtiAutoSaveAsync(),
+            // weil PaperTradingService keinen DB-Zugriff hat. Funktioniert für Paper + Live.
+            if (_ati is { IsEnabled: true })
+            {
+                try { await _liveManager.SaveAtiStateAsync(); }
+                catch { /* DB-Fehler nicht an Equity-Timer propagieren */ }
+            }
+
             // Rolling-Metriken vom RiskManager aktualisieren
             UpdateRollingMetrics();
         }
@@ -1248,9 +1405,37 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     /// <summary>Aktualisiert Rolling-Metriken + Widget-Daten aus dem aktiven Trading-Service.</summary>
     private void UpdateRollingMetrics()
     {
-        // RiskManager des aktiven Modus verwenden (Paper oder Live)
-        var rm = IsPaperMode ? _paperService.RiskManager : _liveManager.Service?.RiskManager;
-        if (rm == null) return;
+        // RiskManager des aktiven Modus verwenden (Multi-Mode, Paper Single, Live)
+        Engine.Risk.RiskManager? rm;
+        if (_isMultiMode)
+        {
+            // Multi-Mode: Orchestrator hat geteilten RiskManager (erster aktiver Service)
+            rm = _orchestrator.ActiveServices.Values.FirstOrDefault()?.RiskManager;
+        }
+        else if (IsPaperMode)
+            rm = _paperService.RiskManager;
+        else
+            rm = _liveManager.Service?.RiskManager;
+
+        // Auch ohne RiskManager die ATI-Widgets aktualisieren (Counter leben im ATI-Singleton)
+        var weightsSnapshot = BuildStrategyWeightsSnapshot();
+        var atiLearning = BuildAtiLearningSnapshot();
+        var fgValue = GetFearGreedValueFromService();
+        var fgLabel = GetFearGreedLabelFromValue(fgValue);
+
+        if (rm == null)
+        {
+            // Nur ATI-Widgets aktualisieren wenn kein RiskManager vorhanden
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                StrategyWeights = weightsSnapshot;
+                AtiLearningSnapshot = atiLearning;
+                BtcTicker.FearGreedValue = fgValue;
+                BtcTicker.FearGreedLabel = fgLabel;
+                WidgetCanvasInvalidationRequested?.Invoke();
+            });
+            return;
+        }
 
         // Daten auf dem Timer-Thread vorbereiten (Snapshots erstellen, nicht das Dictionary direkt mutieren)
         var winRate = rm.RollingWinRate * 100m;
@@ -1260,13 +1445,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
         // DailyPnl aus Trades berechnen (Snapshot auf Timer-Thread, Zuweisung auf UI-Thread)
         var dailyPnlSnapshot = BuildDailyPnlSnapshot(rm);
-
-        // ATI Strategie-Gewichte berechnen (Snapshot)
-        var weightsSnapshot = BuildStrategyWeightsSnapshot();
-
-        // Fear & Greed Index vom TradingService propagieren
-        var fgValue = GetFearGreedValueFromService();
-        var fgLabel = GetFearGreedLabelFromValue(fgValue);
 
         // ALLE Mutationen auf dem UI-Thread (DailyPnl + StrategyWeights werden von Renderern gelesen)
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -1282,8 +1460,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             foreach (var (day, pnl) in dailyPnlSnapshot)
                 DailyPnl[day] = pnl;
 
-            // StrategyWeights aktualisieren
+            // StrategyWeights + ATI-Lernfortschritt aktualisieren
             StrategyWeights = weightsSnapshot;
+            AtiLearningSnapshot = atiLearning;
 
             // Fear & Greed Index ans BtcTicker-SubVM propagieren
             BtcTicker.FearGreedValue = fgValue;
@@ -1327,10 +1506,87 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         catch { return []; }
     }
 
+    /// <summary>Erstellt einen Snapshot des ATI-Lernfortschritts für den Renderer (thread-safe).</summary>
+    private Graphics.AtiLearningData? BuildAtiLearningSnapshot()
+    {
+        if (_ati is not { IsEnabled: true }) return null;
+        try
+        {
+            // ConfidenceGate-Statistiken
+            var stats = _ati.ConfidenceGate.GetStatistics();
+            var currentRegime = _ati.RegimeDetector.CurrentRegime;
+
+            // Regime-Performance aus Ensemble-Gewichten (Win/Loss pro Regime)
+            var regimeStats = new List<Graphics.RegimeStat>();
+            foreach (var regime in new[] { Core.Models.ATI.MarketRegime.TrendingBull, Core.Models.ATI.MarketRegime.TrendingBear,
+                Core.Models.ATI.MarketRegime.Range, Core.Models.ATI.MarketRegime.Chaotic })
+            {
+                var weights = _ati.Ensemble.GetStrategyWeights(regime);
+                var totalWins = weights.Values.Sum(w => w.Wins);
+                var totalLosses = weights.Values.Sum(w => w.Losses);
+                var total = totalWins + totalLosses;
+                var winRate = total > 0 ? (decimal)totalWins / total * 100m : 0m;
+
+                var label = regime switch
+                {
+                    Core.Models.ATI.MarketRegime.TrendingBull => "Bull",
+                    Core.Models.ATI.MarketRegime.TrendingBear => "Bear",
+                    Core.Models.ATI.MarketRegime.Range => "Range",
+                    _ => "Chaotic"
+                };
+
+                regimeStats.Add(new Graphics.RegimeStat(label, total, winRate, regime == currentRegime));
+            }
+
+            // Top-Buckets: Die besten Prädiktoren (nach Sample-Größe sortiert, min 3 Samples)
+            var topBuckets = stats.TopBuckets
+                .Where(b => (b.Wins + b.Losses) >= 3)
+                .OrderByDescending(b => b.Wins + b.Losses)
+                .Take(8)
+                .Select(b => new Graphics.BucketStat(b.Bucket, b.Wins + b.Losses, b.WinRate * 100m))
+                .ToList();
+
+            // LightGBM-Metriken
+            var lgbm = _ati.LightGbm;
+
+            // Aktives Modell bestimmen
+            var activeModel = "Bayesian";
+            if (_ati.OnnxModel?.IsModelLoaded == true) activeModel = "ONNX + LightGBM + Bayesian";
+            else if (lgbm.IsModelReady) activeModel = "LightGBM + Bayesian";
+
+            return new Graphics.AtiLearningData
+            {
+                TotalTrades = stats.TotalTrades,
+                MinTradesRequired = _ati.MinTradesBeforeLearning,
+                LearnedWinRate = stats.WinRate * 100m,
+                ActiveBuckets = stats.BucketCount,
+                IsLightGbmReady = lgbm.IsModelReady,
+                IsOnnxLoaded = _ati.OnnxModel?.IsModelLoaded ?? false,
+                LightGbmAuc = lgbm.LastMetrics?.Auc ?? 0m,
+                LightGbmF1 = lgbm.LastMetrics?.F1Score ?? 0m,
+                ActiveModelName = activeModel,
+                LastTrainedAt = lgbm.LastTrainedAt,
+                RegimeStats = regimeStats,
+                TopBuckets = topBuckets,
+            };
+        }
+        catch { return null; }
+    }
+
     /// <summary>Holt den aktuellen Fear & Greed Wert vom TradingService (0-100 Skala).</summary>
     private float GetFearGreedValueFromService()
     {
         // TradingServiceBase cached den Wert als [0,1]-normalisiert, wir brauchen 0-100
+        // Multi-Mode: Erster Service mit Wert > 0 gewinnt (alle fetchen denselben Index)
+        if (_isMultiMode)
+        {
+            foreach (var svc in _orchestrator.ActiveServices.Values)
+            {
+                if (svc.CachedFearGreedIndex > 0)
+                    return svc.CachedFearGreedIndex * 100f;
+            }
+        }
+
         if (IsPaperMode)
             return _paperService.CachedFearGreedIndex * 100f;
         // Live: TradingServiceBase des LiveTradingService
@@ -1354,6 +1610,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     /// </summary>
     private void StopEquitySnapshotTimer()
     {
+        _equityCts?.Cancel();
+        _equityCts?.Dispose();
+        _equityCts = null;
         _equityTimer?.Dispose();
         _equityTimer = null;
     }

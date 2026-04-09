@@ -1,8 +1,10 @@
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
+using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine;
+using BingXBot.Core.Models.ATI;
 using BingXBot.Engine.ATI;
 using BingXBot.Engine.Filters;
 using BingXBot.Engine.Indicators;
@@ -38,8 +40,8 @@ public abstract class TradingServiceBase : IDisposable
     protected bool _disposed;
     protected DateTime _lastDailyResetDate = DateTime.UtcNow.Date;
 
-    // Aktuelle Funding-Rate (wird von Subklassen aktualisiert, z.B. aus BingX API)
-    protected decimal _currentFundingRate;
+    // Funding-Rates pro Symbol (wird von Subklassen aktualisiert, z.B. aus BingX API)
+    protected readonly ConcurrentDictionary<string, decimal> _fundingRates = new();
     // Margin-Monitoring: Bereits gewarnte Positionen (nicht bei jedem Tick erneut warnen)
     private readonly ConcurrentDictionary<string, DateTime> _marginWarningsIssued = new();
 
@@ -56,9 +58,8 @@ public abstract class TradingServiceBase : IDisposable
 
     // Multi-Stage Exit: Vollständiger Positions-Zustand (ersetzt teilweise _positionSignals für Exit-Logik)
     protected readonly ConcurrentDictionary<string, PositionExitState> _exitStates = new();
-    // Cooldown-Eskalation: Verlust-Tracking
-    protected DateTime? _lastLossTime;
-    protected int _consecutiveLosses;
+    // Verlust-Tracking (für Leverage-Reduktion bei Verlusten, kein Cooldown-Pause mehr)
+    protected volatile int _consecutiveLosses;
     // Täglicher Trade-Counter (wird bei Tageswechsel zurückgesetzt)
     protected int _tradesToday;
     // Equity-Curve-Trading: Equity-Historie für EMA-Berechnung
@@ -66,10 +67,12 @@ public abstract class TradingServiceBase : IDisposable
     private readonly List<decimal> _equityHistory = new();
     private readonly object _equityLock = new();
     // Semaphore für paralleles Klines-Laden (max 5 gleichzeitige Requests)
-    private readonly SemaphoreSlim _klineSemaphore = new(5);
+    private readonly SemaphoreSlim _klineSemaphore = new(10); // 10 parallele Klines-Requests (war 5)
 
     // ATI: Adaptive Trading Intelligence (optional, kann aktiviert/deaktiviert werden)
     protected AdaptiveTradingIntelligence? _ati;
+    // Letztes erkanntes Regime (für Wechsel-Erkennung im Activity Feed)
+    private MarketRegime? _lastLoggedRegime;
     // Bot-Einstellungen (für ATI Auto-Save Intervall, Notifications etc.)
     protected readonly BotSettings _botSettings;
 
@@ -94,6 +97,12 @@ public abstract class TradingServiceBase : IDisposable
 
     /// <summary>Ob der Service pausiert ist.</summary>
     public bool IsPaused => _isPaused;
+
+    /// <summary>
+    /// Wenn true, werden BotState-Events in StopBase() unterdrückt.
+    /// Wird vom MultiModeOrchestrator gesetzt, damit StopAllAsync() nicht 3x BotState.Stopped feuert.
+    /// </summary>
+    public bool SuppressBotStateEvents { get; set; }
 
     /// <summary>Log-Präfix ("" für Paper, "LIVE: " für Live).</summary>
     protected abstract string LogPrefix { get; }
@@ -133,7 +142,9 @@ public abstract class TradingServiceBase : IDisposable
         if (!_isRunning || _isPaused) return;
         _isPaused = true;
 
-        _eventBus.PublishBotState(BotState.Paused);
+        // Im Multi-Mode unterdrückt der Orchestrator individuelle BotState-Events (wie bei Stop)
+        if (!SuppressBotStateEvents)
+            _eventBus.PublishBotState(BotState.Paused);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
             $"{ModeName} pausiert"));
     }
@@ -144,7 +155,8 @@ public abstract class TradingServiceBase : IDisposable
         if (!_isRunning || !_isPaused) return;
         _isPaused = false;
 
-        _eventBus.PublishBotState(BotState.Running);
+        if (!SuppressBotStateEvents)
+            _eventBus.PublishBotState(BotState.Running);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
             $"{ModeName} fortgesetzt"));
     }
@@ -161,9 +173,12 @@ public abstract class TradingServiceBase : IDisposable
     {
         var key = $"{symbol}_{side}";
         _positionSignals[key] = signal;
+        // Entry-Preis als Startwert für _extremePriceSinceEntry (Trailing-Stop-Dictionary)
+        var entry = signal.EntryPrice ?? 0m;
+        if (entry > 0)
+            _extremePriceSinceEntry[key] = entry;
         if (!_exitStates.ContainsKey(key))
         {
-            var entry = signal.EntryPrice ?? 0m;
             // BreakevenSet nur true wenn der SL bereits auf/über Entry liegt (= BE war schon gesetzt)
             var slAlreadyAtBe = signal.StopLoss.HasValue && entry > 0 && (
                 (side == Side.Buy && signal.StopLoss.Value >= entry) ||
@@ -173,7 +188,12 @@ public abstract class TradingServiceBase : IDisposable
             {
                 Signal = signal, Symbol = symbol, Side = side,
                 EntryPrice = entry,
-                BreakevenSet = slAlreadyAtBe
+                // Entry-Preis als konservativer Startwert für Trailing-Stop (nicht 0!)
+                // Bei 0 würde Momentum-Decay bei Short sofort triggern (price - 0 = riesig)
+                ExtremePriceSinceEntry = entry,
+                BreakevenSet = slAlreadyAtBe,
+                IsRecovered = true, // Echte Haltezeit unbekannt — Time-Exit mit Karenz
+                MaxHoldHours = 0    // Deaktiviert bis Karenz-Periode abgelaufen
             };
         }
     }
@@ -234,6 +254,7 @@ public abstract class TradingServiceBase : IDisposable
         _isPaused = false;
         _lastDailyResetDate = DateTime.UtcNow.Date;
 
+        // Scan-Loops starten (MarketCap-Cache wird im ersten Scan geladen)
         _ = RunLoopAsync(_cts.Token);
         _ = PriceTickerLoopAsync(_cts.Token);
     }
@@ -257,7 +278,9 @@ public abstract class TradingServiceBase : IDisposable
         _cts?.Dispose();
         _cts = null;
 
-        _eventBus.PublishBotState(endState);
+        // Im Multi-Mode unterdrückt der Orchestrator individuelle BotState-Events
+        if (!SuppressBotStateEvents)
+            _eventBus.PublishBotState(endState);
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine", logMessage));
     }
 
@@ -271,15 +294,16 @@ public abstract class TradingServiceBase : IDisposable
         {
             try
             {
-                // Tageswechsel: Daily-Drawdown zurücksetzen
+                // Tageswechsel: Daily-Drawdown + Consecutive-Losses zurücksetzen
                 var today = DateTime.UtcNow.Date;
                 if (today != _lastDailyResetDate)
                 {
                     _riskManager?.ResetDailyStats();
                     _lastDailyResetDate = today;
                     Interlocked.Exchange(ref _tradesToday, 0);
+                    Interlocked.Exchange(ref _consecutiveLosses, 0);
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
-                        $"{LogPrefix}Tages-Drawdown + Trade-Counter zurückgesetzt (neuer Tag)"));
+                        $"{LogPrefix}Tages-Drawdown + Trade-Counter + Verlustserie zurückgesetzt (neuer Tag)"));
                 }
 
                 // Bei Pause: Loop läuft weiter, überspringt aber den Scan
@@ -336,10 +360,20 @@ public abstract class TradingServiceBase : IDisposable
                     _tickerPriceMap[t.Symbol] = t.LastPrice;
 
                 // ATI Auto-Save: Periodisch ATI-Lernzustand persistieren
-                // TryClaimAutoSave ist atomar: Im Multi-Mode gewinnt nur ein Service pro Intervall
+                // TryClaimAutoSave ist atomar: Im Multi-Mode gewinnt nur ein Service pro Intervall.
+                // Zeitstempel wird erst nach erfolgreichem Save bestätigt.
                 if (_ati is { IsEnabled: true } && _ati.TryClaimAutoSave(_botSettings.AtiAutoSaveIntervalMinutes))
                 {
-                    await OnAtiAutoSaveAsync().ConfigureAwait(false);
+                    try
+                    {
+                        await OnAtiAutoSaveAsync().ConfigureAwait(false);
+                        _ati.ConfirmAutoSave();
+                    }
+                    catch
+                    {
+                        // DB-Fehler: Claim freigeben damit nächster Versuch möglich ist
+                        _ati.ReleaseAutoSaveClaim();
+                    }
                 }
 
                 // Regime-Warnung: Bei Chaotic-Regime WARNEN, nicht automatisch schließen.
@@ -348,7 +382,7 @@ public abstract class TradingServiceBase : IDisposable
                 if (_ati is { IsEnabled: true } && positions.Count > 0)
                 {
                     var regime = _ati.RegimeDetector.CurrentRegime;
-                    if (regime == Core.Models.ATI.MarketRegime.Chaotic)
+                    if (regime == MarketRegime.Chaotic)
                     {
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Regime",
                             $"{LogPrefix}Chaotisches Regime erkannt - {positions.Count} Position(en) werden durch SL geschützt"));
@@ -409,9 +443,11 @@ public abstract class TradingServiceBase : IDisposable
 
                             if (pnlPercent >= pos.Leverage)
                             {
+                                // Breakeven = Entry + Round-Trip-Fees (0.05% * 2 = 0.1%) + Sicherheitspuffer
+                                // 0.15% deckt Fees + minimale Slippage, damit BE-Hit kein Verlust ist
                                 var beSl = pos.Side == Side.Buy
-                                    ? pos.EntryPrice * 1.001m
-                                    : pos.EntryPrice * 0.999m;
+                                    ? pos.EntryPrice * 1.0015m
+                                    : pos.EntryPrice * 0.9985m;
 
                                 // Signal aktualisieren falls vorhanden
                                 if (_positionSignals.TryGetValue(key, out var sig))
@@ -454,18 +490,24 @@ public abstract class TradingServiceBase : IDisposable
 
                             if (tp1Hit)
                             {
-                                // TP1 erreicht: 50% Position schließen
-                                var closeQty = exitState.OriginalQuantity * _riskSettings.Tp1CloseRatio;
+                                // TP1 erreicht: Tp1CloseRatio der Position schließen
+                                // pos.Quantity statt OriginalQuantity — BingX kann die Quantity truncated haben
+                                var closeQty = pos.Quantity * _riskSettings.Tp1CloseRatio;
                                 await OnPartialCloseAsync(pos, price, closeQty).ConfigureAwait(false);
                                 exitState.PartialClosed = true;
 
-                                // Smart Breakeven: SL = Entry + ATR-Puffer statt exakter Entry
-                                var beSl = exitState.EntryPrice;
+                                // Smart Breakeven: SL = Entry + ATR-Puffer (oder mindestens Entry + Fees)
+                                // 0.15% = Round-Trip-Fees (0.1%) + Sicherheitspuffer
+                                var beSl = pos.Side == Side.Buy
+                                    ? exitState.EntryPrice * 1.0015m
+                                    : exitState.EntryPrice * 0.9985m;
                                 if (_riskSettings.SmartBreakevenAtrMultiplier > 0 && exitState.CurrentAtr > 0)
                                 {
-                                    beSl = pos.Side == Side.Buy
+                                    var atrBe = pos.Side == Side.Buy
                                         ? exitState.EntryPrice + exitState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier
                                         : exitState.EntryPrice - exitState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier;
+                                    // ATR-BE nur verwenden wenn es weiter vom Entry weg ist als das Fee-Minimum
+                                    beSl = pos.Side == Side.Buy ? Math.Max(beSl, atrBe) : Math.Min(beSl, atrBe);
                                 }
                                 _positionSignals[key] = signal with { StopLoss = beSl, TakeProfit = exitState.Tp2 };
                                 exitState.Signal = _positionSignals[key];
@@ -489,10 +531,10 @@ public abstract class TradingServiceBase : IDisposable
 
                             if (tp2Hit)
                             {
-                                // TP2 erreicht: Tp2CloseRatio der verbleibenden Position schließen
+                                // TP2 erreicht: Tp2CloseRatio der Gesamt-Position schließen (direkt berechnet)
                                 var remainingQty = pos.Quantity;
-                                var tp2CloseQty = Math.Round(remainingQty * (_riskSettings.Tp2CloseRatio / (1m - _riskSettings.Tp1CloseRatio)), 6);
-                                tp2CloseQty = Math.Min(tp2CloseQty, remainingQty);
+                                var tp2CloseQty = Math.Round(exitState.OriginalQuantity * _riskSettings.Tp2CloseRatio, 6);
+                                tp2CloseQty = Math.Min(tp2CloseQty, remainingQty); // Nicht mehr als vorhanden
 
                                 if (tp2CloseQty > 0 && tp2CloseQty < remainingQty)
                                 {
@@ -501,8 +543,13 @@ public abstract class TradingServiceBase : IDisposable
                                     exitState.Phase = ExitPhase.Trailing;
 
                                     // Rest läuft nur noch mit Chandelier-Trailing (kein TP mehr)
-                                    _positionSignals[key] = signal with { TakeProfit = null };
-                                    exitState.Signal = _positionSignals[key];
+                                    var updatedSignal = signal with { TakeProfit = null };
+                                    _positionSignals[key] = updatedSignal;
+                                    exitState.Signal = updatedSignal;
+
+                                    // Native TP-Orders auf Exchange canceln und nur SL aktualisieren
+                                    // (sonst schließt BingX die Rest-Position ungewollt zum alten TP-Preis)
+                                    await OnEnterTrailingPhaseAsync(pos.Symbol, pos.Side, updatedSignal.StopLoss).ConfigureAwait(false);
 
                                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
                                         $"{LogPrefix}{pos.Symbol}: TP2 erreicht → {_riskSettings.Tp2CloseRatio:P0} geschlossen, Rest Chandelier-Trailing",
@@ -516,6 +563,18 @@ public abstract class TradingServiceBase : IDisposable
                                     hit = true;
                                     isStopLoss = false;
                                 }
+                            }
+                        }
+
+                        // Recovered Positionen: MaxHoldHours nach 4h Karenz aktivieren
+                        // (echte Haltezeit unbekannt, BingX liefert kein OpenTime)
+                        if (exitState.IsRecovered && exitState.MaxHoldHours == 0)
+                        {
+                            var recoveryAge = (DateTime.UtcNow - exitState.EntryTime).TotalHours;
+                            if (recoveryAge >= 4)
+                            {
+                                exitState.MaxHoldHours = _riskSettings.MaxHoldHours;
+                                exitState.IsRecovered = false; // Karenz abgelaufen
                             }
                         }
 
@@ -584,12 +643,18 @@ public abstract class TradingServiceBase : IDisposable
                             trailDistance = price * trailPercent;
                         }
 
+                        // Extreme-Price: ExitState als primäre Quelle, _extremePriceSinceEntry als Sync
+                        var extreme = _exitStates.TryGetValue(key, out var trEs)
+                            ? trEs.ExtremePriceSinceEntry
+                            : _extremePriceSinceEntry.GetValueOrDefault(key, pos.EntryPrice);
+
                         if (pos.Side == Side.Buy)
                         {
-                            var prev = _extremePriceSinceEntry.GetValueOrDefault(key, pos.EntryPrice);
-                            if (price > prev) _extremePriceSinceEntry[key] = price;
-                            var highest = _extremePriceSinceEntry.GetValueOrDefault(key, price);
-                            var newSl = highest - trailDistance;
+                            if (price > extreme) extreme = price;
+                            _extremePriceSinceEntry[key] = extreme;
+                            if (trEs != null) trEs.ExtremePriceSinceEntry = extreme;
+
+                            var newSl = extreme - trailDistance;
                             if (newSl > signal.StopLoss.Value && newSl < price)
                             {
                                 var oldSl = signal.StopLoss.Value;
@@ -599,15 +664,16 @@ public abstract class TradingServiceBase : IDisposable
                                         ? current with { StopLoss = newSl }
                                         : current);
                                 if (updated.StopLoss.HasValue && updated.StopLoss.Value == newSl)
-                                    OnTrailingStopMoved(pos.Symbol, oldSl, newSl);
+                                    await OnTrailingStopMovedAsync(pos.Symbol, pos.Side, oldSl, newSl).ConfigureAwait(false);
                             }
                         }
                         else
                         {
-                            var prev = _extremePriceSinceEntry.GetValueOrDefault(key, pos.EntryPrice);
-                            if (price < prev) _extremePriceSinceEntry[key] = price;
-                            var lowest = _extremePriceSinceEntry.GetValueOrDefault(key, price);
-                            var newSl = lowest + trailDistance;
+                            if (price < extreme) extreme = price;
+                            _extremePriceSinceEntry[key] = extreme;
+                            if (trEs != null) trEs.ExtremePriceSinceEntry = extreme;
+
+                            var newSl = extreme + trailDistance;
                             if (newSl < signal.StopLoss.Value && newSl > price)
                             {
                                 var oldSl = signal.StopLoss.Value;
@@ -617,7 +683,7 @@ public abstract class TradingServiceBase : IDisposable
                                         ? current with { StopLoss = newSl }
                                         : current);
                                 if (updated.StopLoss.HasValue && updated.StopLoss.Value == newSl)
-                                    OnTrailingStopMoved(pos.Symbol, oldSl, newSl);
+                                    await OnTrailingStopMovedAsync(pos.Symbol, pos.Side, oldSl, newSl).ConfigureAwait(false);
                             }
                         }
                     }
@@ -634,7 +700,8 @@ public abstract class TradingServiceBase : IDisposable
                             var extremeDistance = pos.Side == Side.Buy
                                 ? mdState.ExtremePriceSinceEntry - price
                                 : price - mdState.ExtremePriceSinceEntry;
-                            var atrThreshold = mdState.CurrentAtr * 1.5m;
+                            // Shorts haben stärkere Pullbacks nach schnellem Abstieg → höherer Threshold
+                            var atrThreshold = mdState.CurrentAtr * (pos.Side == Side.Buy ? 1.5m : 2.5m);
 
                             if (extremeDistance > atrThreshold && !mdState.Tp2Closed)
                             {
@@ -651,8 +718,6 @@ public abstract class TradingServiceBase : IDisposable
 
                     if (hit)
                     {
-                        // Cooldown: Verlust-Trade merken
-                        if (isStopLoss) _lastLossTime = DateTime.UtcNow;
                         await OnSlTpHitAsync(pos, price, key, reason, isStopLoss).ConfigureAwait(false);
                     }
                 }
@@ -684,6 +749,31 @@ public abstract class TradingServiceBase : IDisposable
         var nextScanTime = scanStart.AddSeconds(_scannerSettings.ScanIntervalSeconds).ToLocalTime();
         var nextScanText = $"Nächster Scan: {nextScanTime:HH:mm:ss}";
 
+        // 0. Market-Cap-Cache aktualisieren (CoinGecko, max 1x pro Stunde)
+        // MUSS vor dem ersten Scan geladen sein, sonst kommen Meme-Coins durch
+        if (!Core.Helpers.MarketCapCache.IsLoaded)
+        {
+            try
+            {
+                await Core.Helpers.MarketCapCache.RefreshIfNeededAsync().ConfigureAwait(false);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Market",
+                    Core.Helpers.MarketCapCache.IsLoaded
+                        ? $"MarketCap-Cache geladen: {Core.Helpers.MarketCapCache.CachedCount} Coins von CoinGecko"
+                        : "MarketCap-Cache: CoinGecko gab leere Antwort — Volume-Fallback aktiv"));
+            }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Market",
+                    $"CoinGecko nicht erreichbar: {ex.Message} — Volume-Fallback aktiv (Meme-Coins möglich!)"));
+            }
+        }
+        else
+        {
+            // Cache ist geladen — nur stündlich refreshen (still, kein Log)
+            try { await Core.Helpers.MarketCapCache.RefreshIfNeededAsync().ConfigureAwait(false); }
+            catch { /* Stündlicher Refresh optional */ }
+        }
+
         // 1. Alle Ticker holen und filtern
         var tickers = await _publicClient.GetAllTickersAsync(ct).ConfigureAwait(false);
         if (tickers.Count == 0)
@@ -712,10 +802,15 @@ public abstract class TradingServiceBase : IDisposable
             return;
         }
 
-        // Cooldown deaktiviert - der SL schützt die Positionen, kein Grund für Handelspausen
+        // 2a. Max Trades/Tag prüfen (0 = unbegrenzt)
+        if (_riskSettings.MaxTradesPerDay > 0 && _tradesToday >= _riskSettings.MaxTradesPerDay)
+        {
+            PublishScanSummary($"Max Trades/Tag erreicht ({_tradesToday}/{_riskSettings.MaxTradesPerDay})", nextScanText);
+            IndicatorHelper.ClearCache();
+            return;
+        }
 
-        // MaxTradesPerDay nur als Statistik, nicht als Filter (MaxOpenPositions begrenzt gleichzeitige Trades)
-        var tradesToday = Volatile.Read(ref _tradesToday);
+        // Kein Cooldown-Pause mehr: SL schützt Positionen, Leverage-Reduktion bei Verlusten reicht.
 
         // 3. Account + Positionen holen
         var account = await GetAccountAsync().ConfigureAwait(false);
@@ -741,7 +836,7 @@ public abstract class TradingServiceBase : IDisposable
                 try
                 {
                     htfCandles = await _publicClient.GetKlinesAsync(
-                        ticker.Symbol, Core.Enums.TimeFrame.H4,
+                        ticker.Symbol, _scannerSettings.HtfTimeFrame,
                         now.AddDays(-14), now, ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) { throw; }
@@ -788,6 +883,13 @@ public abstract class TradingServiceBase : IDisposable
         {
             if (ct.IsCancellationRequested) break;
 
+            // Trading-Hours-Check für TradFi (Krypto = 24/7, immer offen)
+            if (!TradingHoursFilter.IsMarketOpen(ticker.Symbol, DateTime.UtcNow))
+                continue;
+
+            // Markt-Kategorie bestimmen (für per-Markt Leverage, Feature-Masking, etc.)
+            var category = SymbolClassifier.Classify(ticker.Symbol);
+
             // Vorgeladene Klines verwenden
             if (!klineResults.TryGetValue(ticker.Symbol, out var candles) || candles.Count < 50)
                 continue;
@@ -796,12 +898,14 @@ public abstract class TradingServiceBase : IDisposable
 
             try
             {
-                // ATI-Pipeline (wenn aktiviert): Alle Strategien als Ensemble evaluieren
-                if (_ati is { IsEnabled: true })
+                // ATI-Pipeline (wenn aktiviert UND Strategie ist ATI-kompatibel):
+                // SK-System hat eigene Multi-TF-Logik → nutzt den Standard-Pfad direkt
+                var isAtiCompatible = _strategyManager.CurrentTemplate is not Engine.Strategies.SequenzKonzeptStrategy;
+                if (_ati is { IsEnabled: true } && isAtiCompatible)
                 {
                     SetCurrentPriceIfNeeded(ticker.Symbol, ticker.LastPrice);
 
-                    var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles);
+                    var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles, category, m15Candles);
                     var atiResult = _ati.EvaluateCandidate(context);
                     if (atiResult == null) continue;
 
@@ -810,7 +914,8 @@ public abstract class TradingServiceBase : IDisposable
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "ATI",
                         $"{LogPrefix}{ticker.Symbol}: {signal.Signal} ({signal.Reason})", ticker.Symbol));
 
-                    // Close-Signale verarbeiten (Position schließen, kein neuer Trade)
+                    // Close-Signale verarbeiten, dann sofort re-evaluieren für Entry in Gegenrichtung
+                    // (Supertrend-Flip ist nur 1 Candle lang → nächster Scan in 15min verpasst das Entry)
                     if (signal.Signal is Signal.CloseLong or Signal.CloseShort)
                     {
                         var closeSide = signal.Signal == Signal.CloseLong ? Side.Buy : Side.Sell;
@@ -818,8 +923,22 @@ public abstract class TradingServiceBase : IDisposable
                         {
                             await ClosePositionAndPublishAsync(ticker.Symbol, closeSide).ConfigureAwait(false);
                             positions = await GetPositionsForScanAsync().ConfigureAwait(false);
+                            account = await GetAccountAsync().ConfigureAwait(false);
                         }
-                        continue;
+                        // Re-Evaluation: Nach Close kann ein Entry-Signal in Gegenrichtung vorliegen
+                        var reContext = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles, category, m15Candles);
+                        var reResult = _ati.EvaluateCandidate(reContext);
+                        if (reResult != null && reResult.Signal.Signal is Signal.Long or Signal.Short)
+                        {
+                            signal = reResult.Signal;
+                            atiResult = reResult;
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "ATI",
+                                $"{LogPrefix}{ticker.Symbol}: Re-Eval nach Close → {signal.Signal} ({signal.Reason})", ticker.Symbol));
+                        }
+                        else
+                        {
+                            continue;
+                        }
                     }
 
                     // Korrelations-Check (auch mit ATI noch relevant)
@@ -827,17 +946,18 @@ public abstract class TradingServiceBase : IDisposable
                         ticker.Symbol, positions, _riskSettings, _publicClient, candles, _eventBus, LogPrefix, ct))
                         continue;
 
-                    // Adaptiver Leverage: Eingestellter MaxLeverage als Basis, leicht reduziert bei Volatilität/schwachem Signal
-                    var atrForLev = IndicatorHelper.CalculateAtr(candles);
-                    var atrPctLev = atrForLev.Count > 0 && atrForLev[^1].HasValue && ticker.LastPrice > 0
-                        ? (int)(atrForLev[^1]!.Value / ticker.LastPrice * 100 * 100) : 50;
-                    var isBtcSymbol = ticker.Symbol.StartsWith("BTC", StringComparison.OrdinalIgnoreCase);
-                    var adaptLev = CryptoTrendProStrategy.GetAdaptiveLeverage(atrPctLev, signal.ConfluenceScore, isBtcSymbol, (int)_riskSettings.MaxLeverage);
+                    // Adaptiver Leverage: ATR-Perzentil + Score, mit marktspezifischem Maximum
+                    var catSettings = _riskSettings.GetCategorySettings(category);
+                    var atrPctLev = IndicatorHelper.CalculateAtrPercentile(candles);
+                    var adaptLev = CryptoTrendProStrategy.GetAdaptiveLeverage(atrPctLev, signal.ConfluenceScore, (int)catSettings.MaxLeverage);
                     if (_riskSettings.EnableCooldownEscalation && _consecutiveLosses >= 3)
-                        adaptLev = Math.Max(1, adaptLev - 1); // Bei Verlusten nur -1 statt halbieren
+                        adaptLev = Math.Max(1, adaptLev - 1);
 
                     // Risk-Check mit tatsächlichem Leverage (für korrekte Margin-Berechnung)
-                    var riskCheck = _riskManager!.ValidateTrade(signal, context, _currentFundingRate, adaptLev);
+                    // Funding-Rate nur für Krypto relevant (TradFi hat keine Perpetual Funding)
+                    var fundingRate = category == MarketCategory.Crypto
+                        ? _fundingRates.GetValueOrDefault(ticker.Symbol, 0m) : 0m;
+                    var riskCheck = _riskManager!.ValidateTrade(signal, context, fundingRate, adaptLev);
                     if (!riskCheck.IsAllowed)
                     {
                         if (_eventBus.HasLogSubscribers)
@@ -860,12 +980,21 @@ public abstract class TradingServiceBase : IDisposable
                     if (!CheckM15EntryTiming(m15Candles, side, ticker.Symbol))
                         continue;
 
+                    // Doppelte Order verhindern: Signal-Check ist atomarer als BingX-positions-Liste
+                    var slTpKey = $"{ticker.Symbol}_{side}";
+                    if (_positionSignals.ContainsKey(slTpKey))
+                    {
+                        if (_eventBus.HasLogSubscribers)
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Risk",
+                                $"{LogPrefix}{ticker.Symbol}: Übersprungen — Signal bereits aktiv für {side}", ticker.Symbol));
+                        continue;
+                    }
+
                     // Order platzieren (Signal für native SL/TP mitgeben)
                     var placed = await PlaceOrderOnExchangeAsync(ticker, side, positionSize, signal, adaptLev).ConfigureAwait(false);
                     if (!placed) continue;
 
                     // Signal speichern + Multi-Stage Exit State erstellen
-                    var slTpKey = $"{ticker.Symbol}_{side}";
                     _positionSignals[slTpKey] = signal;
                     _extremePriceSinceEntry[slTpKey] = ticker.LastPrice;
                     _positionTrailingPercent[slTpKey] = atiResult.TrailingStopPercent;
@@ -876,7 +1005,7 @@ public abstract class TradingServiceBase : IDisposable
                     _exitStates[slTpKey] = new PositionExitState
                     {
                         Signal = signal, Symbol = ticker.Symbol, Side = side,
-                        EntryPrice = ticker.LastPrice, OriginalQuantity = riskCheck.AdjustedPositionSize,
+                        EntryPrice = ticker.LastPrice, OriginalQuantity = positionSize, // Tatsächlich platzierte Menge (nach Equity-Scaling)
                         Tp2 = signal.TakeProfit2, ExtremePriceSinceEntry = ticker.LastPrice,
                         TrailingAtrMultiplier = atiResult.TrailingStopPercent > 0 ? atiResult.TrailingStopPercent : 2.5m,
                         CurrentAtr = atrLast, ConfluenceScore = signal.ConfluenceScore,
@@ -906,7 +1035,7 @@ public abstract class TradingServiceBase : IDisposable
                     SetCurrentPriceIfNeeded(ticker.Symbol, ticker.LastPrice);
 
                     var strategy = _strategyManager.GetOrCreateForSymbol(ticker.Symbol);
-                    var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles);
+                    var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles, category, m15Candles);
                     var signal = strategy.Evaluate(context);
 
                     if (signal.Signal == Signal.None) continue;
@@ -915,17 +1044,23 @@ public abstract class TradingServiceBase : IDisposable
                         $"{LogPrefix}{ticker.Symbol}: {signal.Signal} Signal (Confidence: {signal.Confidence:P0}) - {signal.Reason}",
                         ticker.Symbol));
 
-                    // Close-Signale verarbeiten
+                    // Close-Signale verarbeiten, dann re-evaluieren für Entry in Gegenrichtung
                     if (signal.Signal is Signal.CloseLong or Signal.CloseShort)
                     {
                         var closeSide = signal.Signal == Signal.CloseLong ? Side.Buy : Side.Sell;
                         if (positions.Any(p => p.Symbol == ticker.Symbol && p.Side == closeSide))
                         {
                             await ClosePositionAndPublishAsync(ticker.Symbol, closeSide).ConfigureAwait(false);
-                            // H-7 Fix: Positions-Liste aktualisieren (wie im ATI-Pfad)
                             positions = await GetPositionsForScanAsync().ConfigureAwait(false);
+                            account = await GetAccountAsync().ConfigureAwait(false);
                         }
-                        continue;
+                        // Re-Evaluation: Strategie erneut evaluieren (Position ist jetzt geschlossen)
+                        var reContext = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles, category, m15Candles);
+                        signal = strategy.Evaluate(reContext);
+                        if (signal.Signal is not (Signal.Long or Signal.Short))
+                            continue;
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Scanner",
+                            $"{LogPrefix}{ticker.Symbol}: Re-Eval nach Close → {signal.Signal} ({signal.Reason})", ticker.Symbol));
                     }
 
                     // Korrelations-Check
@@ -933,17 +1068,17 @@ public abstract class TradingServiceBase : IDisposable
                         ticker.Symbol, positions, _riskSettings, _publicClient, candles, _eventBus, LogPrefix, ct))
                         continue;
 
-                    // Adaptiver Leverage: Eingestellter MaxLeverage als Basis, leicht reduziert bei Volatilität/schwachem Signal
-                    var atrForLevStd = IndicatorHelper.CalculateAtr(candles);
-                    var atrPctStd = atrForLevStd.Count > 0 && atrForLevStd[^1].HasValue && ticker.LastPrice > 0
-                        ? (int)(atrForLevStd[^1]!.Value / ticker.LastPrice * 100 * 100) : 50;
-                    var isBtcStd = ticker.Symbol.StartsWith("BTC", StringComparison.OrdinalIgnoreCase);
-                    var adaptLevStd = CryptoTrendProStrategy.GetAdaptiveLeverage(atrPctStd, signal.ConfluenceScore, isBtcStd, (int)_riskSettings.MaxLeverage);
+                    // Adaptiver Leverage: ATR-Perzentil + Score, mit marktspezifischem Maximum
+                    var catSettingsStd = _riskSettings.GetCategorySettings(category);
+                    var atrPctStd = IndicatorHelper.CalculateAtrPercentile(candles);
+                    var adaptLevStd = CryptoTrendProStrategy.GetAdaptiveLeverage(atrPctStd, signal.ConfluenceScore, (int)catSettingsStd.MaxLeverage);
                     if (_riskSettings.EnableCooldownEscalation && _consecutiveLosses >= 3)
                         adaptLevStd = Math.Max(1, adaptLevStd - 1);
 
-                    // Risk-Check mit tatsächlichem Leverage
-                    var riskCheck = _riskManager!.ValidateTrade(signal, context, null, adaptLevStd);
+                    // Funding-Rate nur für Krypto relevant
+                    var fundingRateStd = category == MarketCategory.Crypto
+                        ? _fundingRates.GetValueOrDefault(ticker.Symbol, 0m) : 0m;
+                    var riskCheck = _riskManager!.ValidateTrade(signal, context, fundingRateStd, adaptLevStd);
                     if (!riskCheck.IsAllowed)
                     {
                         if (_eventBus.HasLogSubscribers)
@@ -967,12 +1102,21 @@ public abstract class TradingServiceBase : IDisposable
                     if (!CheckM15EntryTiming(m15Candles, side, ticker.Symbol))
                         continue;
 
+                    // Doppelte Order verhindern: Signal-Check ist atomarer als BingX-positions-Liste
+                    var slTpKey = $"{ticker.Symbol}_{side}";
+                    if (_positionSignals.ContainsKey(slTpKey))
+                    {
+                        if (_eventBus.HasLogSubscribers)
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Risk",
+                                $"{LogPrefix}{ticker.Symbol}: Übersprungen — Signal bereits aktiv für {side}", ticker.Symbol));
+                        continue;
+                    }
+
                     // Order platzieren
                     var placed = await PlaceOrderOnExchangeAsync(ticker, side, positionSizeStd, signal, adaptLevStd).ConfigureAwait(false);
                     if (!placed) continue;
 
                     // SL/TP-Signal speichern + Multi-Stage Exit State
-                    var slTpKey = $"{ticker.Symbol}_{side}";
                     _positionSignals[slTpKey] = signal;
                     _extremePriceSinceEntry[slTpKey] = ticker.LastPrice;
 
@@ -981,7 +1125,7 @@ public abstract class TradingServiceBase : IDisposable
                     _exitStates[slTpKey] = new PositionExitState
                     {
                         Signal = signal, Symbol = ticker.Symbol, Side = side,
-                        EntryPrice = ticker.LastPrice, OriginalQuantity = riskCheck.AdjustedPositionSize,
+                        EntryPrice = ticker.LastPrice, OriginalQuantity = positionSizeStd, // Tatsächlich platzierte Menge (nach Score+Equity-Scaling)
                         Tp2 = signal.TakeProfit2, ExtremePriceSinceEntry = ticker.LastPrice,
                         CurrentAtr = atrLastVal, ConfluenceScore = signal.ConfluenceScore,
                         MaxHoldHours = _riskSettings.MaxHoldHours
@@ -1012,12 +1156,36 @@ public abstract class TradingServiceBase : IDisposable
             }
         }
 
-        // ATI: Debug-Zusammenfassung loggen
+        // ATI: Ablehnungs-Zusammenfassung loggen (Info statt Debug, damit im Activity Feed sichtbar)
         if (_ati is { IsEnabled: true } && _eventBus.HasLogSubscribers)
         {
             var summary = _ati.GetScanSummaryAndReset();
             if (summary != null)
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "ATI", summary));
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "ATI",
+                    $"{LogPrefix}{summary}"));
+        }
+
+        // ATI: Regime-Wechsel erkennen und detailliert loggen
+        if (_ati is { IsEnabled: true })
+        {
+            var currentRegime = _ati.RegimeDetector.CurrentRegime;
+            if (_lastLoggedRegime.HasValue && _lastLoggedRegime.Value != currentRegime)
+            {
+                var regimeNames = new Dictionary<MarketRegime, string>
+                {
+                    [MarketRegime.TrendingBull] = "Aufwärtstrend",
+                    [MarketRegime.TrendingBear] = "Abwärtstrend",
+                    [MarketRegime.Range] = "Seitwärtsmarkt",
+                    [MarketRegime.Chaotic] = "Chaotisch"
+                };
+                var fromName = regimeNames.GetValueOrDefault(_lastLoggedRegime.Value, _lastLoggedRegime.Value.ToString());
+                var toName = regimeNames.GetValueOrDefault(currentRegime, currentRegime.ToString());
+
+                var level = currentRegime == MarketRegime.Chaotic ? LogLevel.Warning : LogLevel.Info;
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, level, "Regime",
+                    $"{LogPrefix}Regime-Wechsel: {fromName} → {toName}"));
+            }
+            _lastLoggedRegime = currentRegime;
         }
 
         // Strategy-Health-Check: Warnung bei Performance-Degradation
@@ -1037,9 +1205,22 @@ public abstract class TradingServiceBase : IDisposable
         // Scan-Zusammenfassung: Kompakte Info-Zeile mit Regime, Kandidaten, Ergebnis
         var elapsed = (DateTime.UtcNow - scanStart).TotalSeconds;
         var nextScanFinal = DateTime.UtcNow.AddSeconds(_scannerSettings.ScanIntervalSeconds).ToLocalTime();
-        var regimeText = _ati is { IsEnabled: true } ? _ati.RegimeDetector.CurrentRegime.ToString() : "n/a";
+        var strategyInfo = _strategyManager.CurrentTemplate?.Name ?? "n/a";
+        // SK-System: Keine ATI-Regime-Info (hat eigene Sequenz-Logik)
+        if (_ati is { IsEnabled: true } && _strategyManager.CurrentTemplate is not Engine.Strategies.SequenzKonzeptStrategy)
+        {
+            var regime = _ati.RegimeDetector.CurrentRegime;
+            var regimeNames = new Dictionary<MarketRegime, string>
+            {
+                [MarketRegime.TrendingBull] = "Bull",
+                [MarketRegime.TrendingBear] = "Bear",
+                [MarketRegime.Range] = "Range",
+                [MarketRegime.Chaotic] = "Chaotisch"
+            };
+            strategyInfo = $"Regime: {regimeNames.GetValueOrDefault(regime, regime.ToString())}";
+        }
         var posCount = positions.Count;
-        var scanSummary = $"{candidates.Count} Kandidaten geprüft | Regime: {regimeText} | " +
+        var scanSummary = $"{candidates.Count} Kandidaten | {strategyInfo} | " +
             $"Positionen: {posCount}/{_riskSettings.MaxOpenPositions} | " +
             $"{elapsed:F1}s | Nächster: {nextScanFinal:HH:mm:ss}";
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Scanner", $"{LogPrefix}{scanSummary}"));
@@ -1170,8 +1351,11 @@ public abstract class TradingServiceBase : IDisposable
     /// <summary>Hook: Zusätzliche Aktionen nach erfolgreicher Order-Platzierung.</summary>
     protected virtual Task OnOrderPlacedAsync(Ticker ticker, Side side, decimal quantity) => Task.CompletedTask;
 
-    /// <summary>Hook: Trailing-Stop wurde nachgezogen (für Logging in Live).</summary>
-    protected virtual void OnTrailingStopMoved(string symbol, decimal oldSl, decimal newSl) { }
+    /// <summary>Hook: Trailing-Stop wurde nachgezogen. Live synchronisiert den SL auf BingX.</summary>
+    protected virtual Task OnTrailingStopMovedAsync(string symbol, Side side, decimal oldSl, decimal newSl) => Task.CompletedTask;
+
+    /// <summary>Hook: Position wechselt in Trailing-Phase (nach TP2). Live cancelt native TP-Orders und setzt nur SL.</summary>
+    protected virtual Task OnEnterTrailingPhaseAsync(string symbol, Side side, decimal? currentSl) => Task.CompletedTask;
 
     /// <summary>Hook: ATI Auto-Save (Subklassen implementieren DB-Zugriff).</summary>
     protected virtual Task OnAtiAutoSaveAsync() => Task.CompletedTask;
@@ -1183,24 +1367,41 @@ public abstract class TradingServiceBase : IDisposable
     protected void ProcessCompletedTrade(CompletedTrade trade)
     {
         _riskManager?.UpdateDailyStats(trade);
-        _ati?.ProcessTradeOutcome(trade, AtiSourceId);
 
-        // Cooldown-Eskalation: Consecutive-Losses tracken
+        // ATI-Lernen: NUR bei finalem Close, NICHT bei Partial Close (TP1/TP2).
+        // Partial Close entfernt sonst den OpenTrade-Kontext → finale Close-Phase lernt nicht.
+        // Partial Closes haben "Partial Close" im Reason-Feld.
+        var isPartialClose = trade.Reason != null &&
+            trade.Reason.Contains("Partial", StringComparison.OrdinalIgnoreCase);
+        if (!isPartialClose)
+        {
+            if (_ati != null)
+            {
+                _ati.ProcessTradeOutcome(trade, AtiSourceId);
+                // Diagnostik: ATI-Counter nach Trade-Verarbeitung loggen
+                if (_eventBus.HasLogSubscribers)
+                {
+                    var stats = _ati.ConfidenceGate.GetStatistics();
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "ATI",
+                        $"{LogPrefix}Trade gelernt: {trade.Symbol} {(trade.Pnl > 0 ? "Win" : "Loss")} → {stats.TotalTrades}/{_ati.MinTradesBeforeLearning} Trades",
+                        trade.Symbol));
+                }
+            }
+        }
+
+        // Consecutive-Losses tracken (für Leverage-Reduktion, kein Cooldown-Pause)
         if (trade.Pnl < 0)
         {
-            _consecutiveLosses++;
-            _lastLossTime = DateTime.UtcNow;
-
-            if (_riskSettings.EnableCooldownEscalation && _consecutiveLosses >= 3)
+            var losses = Interlocked.Increment(ref _consecutiveLosses);
+            if (losses >= 3)
             {
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Risk",
-                    $"{LogPrefix}{_consecutiveLosses} Verluste in Folge → Cooldown eskaliert auf {GetEscalatedCooldownHours()}h"));
+                    $"{LogPrefix}{losses} Verluste in Folge → Leverage wird reduziert"));
             }
         }
         else
         {
-            _consecutiveLosses = 0;
-            _lastLossTime = null; // Cooldown aufheben bei Gewinn-Trade
+            Interlocked.Exchange(ref _consecutiveLosses, 0);
         }
 
         // Equity-Curve-Trading: Equity-Historie aktualisieren
@@ -1218,17 +1419,6 @@ public abstract class TradingServiceBase : IDisposable
                 $"{LogPrefix}{trade.Symbol} geschlossen",
                 $"{direction}: {trade.Pnl:F2} USDT ({trade.Side}, {trade.EntryPrice:F4} → {trade.ExitPrice:F4})");
         }
-    }
-
-    /// <summary>Berechnet den eskalierten Cooldown basierend auf aufeinanderfolgenden Verlusten.</summary>
-    protected int GetEscalatedCooldownHours()
-    {
-        if (!_riskSettings.EnableCooldownEscalation || _consecutiveLosses <= 1)
-            return _riskSettings.CooldownHours;
-
-        // Eskalation: Base * 2^(losses-1), gecapped auf MaxCooldownHours
-        var escalated = _riskSettings.CooldownHours * (int)Math.Pow(2, Math.Min(_consecutiveLosses - 1, 3));
-        return Math.Min(escalated, _riskSettings.MaxCooldownHours);
     }
 
     /// <summary>Prüft ob die Equity-Curve unter ihrer EMA liegt (Position-Scaling reduzieren).</summary>

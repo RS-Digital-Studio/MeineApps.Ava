@@ -22,13 +22,14 @@ namespace BingXBot.ViewModels;
 /// Nutzt echte BacktestEngine mit BingXPublicClient für echte Marktdaten (kein API-Key nötig).
 /// Publiziert Ergebnisse über den BotEventBus an TradeHistory und Log.
 /// </summary>
-public partial class BacktestViewModel : ViewModelBase
+public partial class BacktestViewModel : ViewModelBase, IDisposable
 {
     private readonly RiskSettings _riskSettings;
     private readonly IPublicMarketDataClient? _publicClient;
     private readonly BotEventBus _eventBus;
     private readonly BotDatabaseService? _dbService;
-    private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _backtestCts;
+    private CancellationTokenSource? _walkForwardCts;
 
     [ObservableProperty] private string _symbol = "BTC-USDT";
     [ObservableProperty] private string _selectedStrategy = "CryptoTrendPro";
@@ -140,9 +141,24 @@ public partial class BacktestViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Erstellt die passende IStrategy-Instanz basierend auf SelectedStrategy.
+    /// Erstellt die passende IStrategy-Instanz und wendet den aktiven Trading-Modus-Preset an.
     /// </summary>
-    private IStrategy CreateStrategy() => StrategyFactory.Create(SelectedStrategy);
+    private IStrategy CreateStrategy()
+    {
+        var strategy = StrategyFactory.Create(SelectedStrategy);
+        if (strategy is CryptoTrendProStrategy ctp)
+        {
+            // Preset aus dem Timeframe ableiten (gleiche Logik wie im Live/Paper-Modus)
+            var preset = SelectedTimeFrame switch
+            {
+                "M5" or "M15" => TradingModePreset.Scalping,
+                "M30" or "H1" => TradingModePreset.DayTrading,
+                _ => TradingModePreset.Swing
+            };
+            ctp.ApplyPreset(preset);
+        }
+        return strategy;
+    }
 
     /// <summary>
     /// Parsed den TimeFrame-String in das entsprechende Enum.
@@ -166,9 +182,9 @@ public partial class BacktestViewModel : ViewModelBase
         StatusText = "Lade historische Daten von BingX...";
         Trades.Clear();
 
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = new CancellationTokenSource();
+        _backtestCts?.Cancel();
+        _backtestCts?.Dispose();
+        _backtestCts = new CancellationTokenSource();
 
         // Log: Backtest gestartet
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Backtest",
@@ -176,13 +192,25 @@ public partial class BacktestViewModel : ViewModelBase
 
         try
         {
+            // Timeframe zuerst parsen (wird für Preset + HTF-Konfiguration gebraucht)
+            var timeFrame = ParseTimeFrame(SelectedTimeFrame);
+
             // Echte Strategie erstellen
             var strategy = CreateStrategy();
 
-            // RiskSettings mit konfiguriertem Leverage übernehmen
+            // Preset-spezifische RiskSettings: Alle Felder übernehmen damit Backtest
+            // das gleiche Verhalten zeigt wie Paper/Live-Trading
+            var preset = SelectedTimeFrame switch
+            {
+                "M5" or "M15" => TradingModePreset.Scalping,
+                "M30" or "H1" => TradingModePreset.DayTrading,
+                _ => TradingModePreset.Swing
+            };
+            var riskPreset = Core.Configuration.TradingModeDefaults.GetRiskPreset(preset);
+
             var riskSettings = new RiskSettings
             {
-                MaxPositionSizePercent = _riskSettings.MaxPositionSizePercent,
+                // Globale Werte vom User
                 MaxDailyDrawdownPercent = _riskSettings.MaxDailyDrawdownPercent,
                 MaxTotalDrawdownPercent = _riskSettings.MaxTotalDrawdownPercent,
                 MaxOpenPositions = _riskSettings.MaxOpenPositions,
@@ -191,13 +219,47 @@ public partial class BacktestViewModel : ViewModelBase
                 CheckCorrelation = _riskSettings.CheckCorrelation,
                 MaxCorrelation = _riskSettings.MaxCorrelation,
                 EnableTrailingStop = _riskSettings.EnableTrailingStop,
-                TrailingStopPercent = _riskSettings.TrailingStopPercent
+                TrailingStopPercent = _riskSettings.TrailingStopPercent,
+                UseAdaptiveLeverage = _riskSettings.UseAdaptiveLeverage,
+                EnableMultiStageExit = _riskSettings.EnableMultiStageExit,
+                EnableCooldownEscalation = _riskSettings.EnableCooldownEscalation,
+                EnableEquityCurveTrading = _riskSettings.EnableEquityCurveTrading,
+                EquityCurvePeriod = _riskSettings.EquityCurvePeriod,
+                EnableMomentumDecay = _riskSettings.EnableMomentumDecay,
+                MinLiquidationDistancePercent = _riskSettings.MinLiquidationDistancePercent,
+                MaxNetExposurePercent = _riskSettings.MaxNetExposurePercent,
+                ConsiderFundingRate = _riskSettings.ConsiderFundingRate,
+                MaxAdverseFundingRatePercent = _riskSettings.MaxAdverseFundingRatePercent,
+                // Preset-spezifische Werte
+                MaxPositionSizePercent = riskPreset.MaxPositionSizePercent,
+                MaxMarginPerTradePercent = riskPreset.MaxMarginPerTradePercent,
+                CooldownHours = riskPreset.CooldownHours,
+                MaxCooldownHours = riskPreset.MaxCooldownHours,
+                MaxHoldHours = riskPreset.MaxHoldHours,
+                MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
+                Tp1CloseRatio = riskPreset.Tp1CloseRatio,
+                Tp2CloseRatio = riskPreset.Tp2CloseRatio,
+                SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
+                MinRiskRewardRatio = riskPreset.MinRiskRewardRatio,
             };
 
             var riskManager = new RiskManager(riskSettings, NullLogger<RiskManager>.Instance);
 
-            // BacktestSettings mit konfiguriertem Startkapital
-            var backtestSettings = new BacktestSettings { InitialBalance = InitialBalance };
+            // BacktestSettings mit konfiguriertem Startkapital + Preset-Werten synchronisiert
+            var strategyPreset = Core.Configuration.TradingModeDefaults.GetStrategyPreset(preset);
+            var backtestSettings = new BacktestSettings
+            {
+                InitialBalance = InitialBalance,
+                Tp1CloseRatio = riskPreset.Tp1CloseRatio,
+                Tp2CloseRatio = riskPreset.Tp2CloseRatio,
+                SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
+                MaxHoldHoursInitial = riskPreset.MaxHoldHours,
+                MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
+                MinRiskRewardRatio = riskPreset.MinRiskRewardRatio,
+                // HTF-Candles für Trend-Konfirmation (wie im Live/Paper-Modus)
+                HtfTimeFrame = strategyPreset.HtfConfirmationTimeframe != timeFrame
+                    ? strategyPreset.HtfConfirmationTimeframe : null,
+            };
 
             // BacktestEngine: Echte Marktdaten wenn Public Client verfügbar, sonst Demo
             BacktestEngine engine;
@@ -212,7 +274,6 @@ public partial class BacktestViewModel : ViewModelBase
                 engine = new BacktestEngine(simExchange, NullLogger<BacktestEngine>.Instance);
             }
 
-            var timeFrame = ParseTimeFrame(SelectedTimeFrame);
             var from = StartDate?.UtcDateTime ?? DateTime.UtcNow.AddDays(-30);
             var to = EndDate?.UtcDateTime ?? DateTime.UtcNow;
 
@@ -233,7 +294,7 @@ public partial class BacktestViewModel : ViewModelBase
                 to,
                 backtestSettings,
                 progress,
-                _cts.Token);
+                _backtestCts.Token);
 
             // Report-Ergebnisse in Properties übertragen
             TotalPnl = report.TotalPnl;
@@ -337,7 +398,7 @@ public partial class BacktestViewModel : ViewModelBase
     [RelayCommand]
     private void CancelBacktest()
     {
-        _cts?.Cancel();
+        _backtestCts?.Cancel();
     }
 
     // === Walk-Forward-Optimierung ===
@@ -357,9 +418,9 @@ public partial class BacktestViewModel : ViewModelBase
         IsWalkForwardRunning = true;
         WalkForwardResult = "Lade historische Daten für Walk-Forward-Optimierung...";
 
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = new CancellationTokenSource();
+        _walkForwardCts?.Cancel();
+        _walkForwardCts?.Dispose();
+        _walkForwardCts = new CancellationTokenSource();
 
         try
         {
@@ -369,7 +430,7 @@ public partial class BacktestViewModel : ViewModelBase
             var to = EndDate?.UtcDateTime ?? DateTime.UtcNow;
 
             // Historische Daten laden
-            var candles = await _publicClient.GetKlinesAsync(Symbol, timeFrame, from, to, _cts.Token).ConfigureAwait(false);
+            var candles = await _publicClient.GetKlinesAsync(Symbol, timeFrame, from, to, _walkForwardCts.Token).ConfigureAwait(false);
             if (candles.Count < 200)
             {
                 WalkForwardResult = $"Zu wenige Daten: {candles.Count} Candles (min. 200 benötigt)";
@@ -407,7 +468,7 @@ public partial class BacktestViewModel : ViewModelBase
                         // Sharpe als Fitness
                         return report.SharpeRatio;
                     });
-            }, _cts.Token).ConfigureAwait(false);
+            }, _walkForwardCts.Token).ConfigureAwait(false);
 
             // Ergebnis anzeigen
             var sb = new System.Text.StringBuilder();
@@ -435,6 +496,16 @@ public partial class BacktestViewModel : ViewModelBase
         {
             IsWalkForwardRunning = false;
         }
+    }
+
+    public void Dispose()
+    {
+        _backtestCts?.Cancel();
+        _backtestCts?.Dispose();
+        _backtestCts = null;
+        _walkForwardCts?.Cancel();
+        _walkForwardCts?.Dispose();
+        _walkForwardCts = null;
     }
 }
 

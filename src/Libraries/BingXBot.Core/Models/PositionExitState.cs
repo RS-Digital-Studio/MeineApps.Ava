@@ -18,8 +18,9 @@ public enum ExitPhase
 
 /// <summary>
 /// Vollständiger Zustand einer offenen Position für das Multi-Stage Exit System.
-/// Ersetzt die separaten Dictionaries (_positionSignals, _extremePriceSinceEntry, _positionTrailingPercent).
-/// Thread-safe durch ConcurrentDictionary im TradingServiceBase.
+/// Gespeichert in ConcurrentDictionary im TradingServiceBase.
+/// THREAD-SAFETY: Properties werden NUR aus dem PriceTickerLoop mutiert (sequentiell pro Service).
+/// Kein paralleler Schreibzugriff erlaubt — ConcurrentDictionary sichert nur Add/Get/Remove.
 /// </summary>
 public class PositionExitState
 {
@@ -70,4 +71,11 @@ public class PositionExitState
 
     /// <summary>Ob der Auto-Breakeven bereits gesetzt wurde (SL auf Entry wenn Gewinn >= 100/Leverage %).</summary>
     public bool BreakevenSet { get; set; }
+
+    /// <summary>
+    /// Ob diese Position nach App-Neustart wiederhergestellt wurde.
+    /// Time-Exit bekommt eine Karenz, da die echte Haltezeit unbekannt ist
+    /// (BingX liefert kein OpenTime in GetPositionsAsync).
+    /// </summary>
+    public bool IsRecovered { get; set; }
 }

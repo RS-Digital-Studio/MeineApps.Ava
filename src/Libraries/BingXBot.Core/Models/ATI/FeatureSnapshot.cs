@@ -51,6 +51,26 @@ public class FeatureSnapshot
     /// <summary>Trading-Session: 0=Asia(0-8 UTC), 1=Europe(8-14 UTC), 2=US(14-22 UTC), 3=Late(22-0)</summary>
     public float SessionId { get; set; }
 
+    // === Cross-Market Features (BTC-Kontext für Alt-Trading) ===
+    /// <summary>BTC 24h-Return normalisiert auf [-1, 1]. Positiv = BTC steigt, Alts folgen oft.</summary>
+    public float BtcReturn24h { get; set; }
+    /// <summary>BTC-Trend: -1=bearish, 0=neutral, 1=bullish (Preis vs EMA50 auf D1).</summary>
+    public float BtcTrend { get; set; }
+    /// <summary>Korrelation des Symbols mit BTC über 20 Perioden. Hoch (>0.7) = BTC-abhängig.</summary>
+    public float BtcCorrelation { get; set; }
+    /// <summary>Gesamtmarkt-Stimmung: Mittlerer 24h-Return der Top-Coins. Positiv = Altseason.</summary>
+    public float MarketSentiment { get; set; }
+    /// <summary>Fear & Greed Index (0-100, normalisiert auf [0, 1]). 0 = Extreme Fear, 1 = Extreme Greed.</summary>
+    public float FearGreedIndex { get; set; }
+
+    // === Derivatives-Features ===
+    /// <summary>Open Interest Change (normalisiert): Positive Werte = OI steigt, negative = OI sinkt.</summary>
+    public float OpenInterestChange { get; set; }
+
+    // === Fibonacci-Features ===
+    /// <summary>Nähe zum nächsten Fib-Key-Level (38.2%/50%/61.8%): 1.0=exakt, 0.0=weiter als 1 ATR</summary>
+    public float FibProximity { get; set; }
+
     // === Pattern-Features ===
     /// <summary>Aufeinanderfolgende gruene Kerzen / 10 -> normalisiert</summary>
     public float ConsecutiveUpCandles { get; set; }
@@ -79,11 +99,14 @@ public class FeatureSnapshot
         AdxNormalized, HtfTrend,
         VolumeRatio,
         FundingRate, SessionId,
+        BtcReturn24h, BtcTrend, BtcCorrelation, MarketSentiment, FearGreedIndex,
+        OpenInterestChange,
+        FibProximity,
         ConsecutiveUpCandles, ConsecutiveDownCandles, RecentReturnPercent
     ];
 
     /// <summary>Anzahl der numerischen Features (fuer ML-Pipeline).</summary>
-    public const int FeatureCount = 19;
+    public const int FeatureCount = 26;
 
     /// <summary>Feature-Namen in der gleichen Reihenfolge wie ToFeatureArray().</summary>
     public static readonly string[] FeatureNames =
@@ -94,6 +117,9 @@ public class FeatureSnapshot
         "AdxNormalized", "HtfTrend",
         "VolumeRatio",
         "FundingRate", "SessionId",
+        "BtcReturn24h", "BtcTrend", "BtcCorrelation", "MarketSentiment", "FearGreedIndex",
+        "OpenInterestChange",
+        "FibProximity",
         "ConsecutiveUpCandles", "ConsecutiveDownCandles", "RecentReturnPercent"
     ];
 }

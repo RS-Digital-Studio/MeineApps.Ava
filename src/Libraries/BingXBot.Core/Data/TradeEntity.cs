@@ -1,5 +1,6 @@
 using BingXBot.Core.Enums;
 using BingXBot.Core.Models;
+using BingXBot.Core.Models.ATI;
 using SQLite;
 
 namespace BingXBot.Core.Data;
@@ -21,6 +22,8 @@ public class TradeEntity
     public DateTime ExitTime { get; set; }
     public string Reason { get; set; } = "";
     public int Mode { get; set; }
+    /// <summary>MarketRegime zum Zeitpunkt des Entry (nullable, ältere Trades haben keins).</summary>
+    public int? Regime { get; set; }
 
     public CompletedTrade ToRecord() => new(
         Symbol,
@@ -33,7 +36,10 @@ public class TradeEntity
         EntryTime,
         ExitTime,
         Reason,
-        (TradingMode)Mode);
+        (TradingMode)Mode)
+    {
+        Regime = Regime.HasValue ? (Models.ATI.MarketRegime)Regime.Value : null
+    };
 
     public static TradeEntity FromRecord(CompletedTrade t) => new()
     {
@@ -47,6 +53,7 @@ public class TradeEntity
         EntryTime = t.EntryTime,
         ExitTime = t.ExitTime,
         Reason = t.Reason,
-        Mode = (int)t.Mode
+        Mode = (int)t.Mode,
+        Regime = t.Regime.HasValue ? (int)t.Regime.Value : null
     };
 }

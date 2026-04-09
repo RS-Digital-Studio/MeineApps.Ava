@@ -17,6 +17,7 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
 {
     private readonly ILocalizationService _localization;
     private readonly IProjectService _projectService;
+    private readonly ICalculationHistoryService _historyService;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
     private Timer? _debounceTimer;
@@ -25,6 +26,7 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
+    public event Action? CalculationPerformed;
 
     #region Gemeinsame Eingabe
 
@@ -92,16 +94,20 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
     [ObservableProperty] private bool _showSaveDialog;
     [ObservableProperty] private string _saveProjectName = "";
 
+    private string DefaultProjectName => _localization.GetString("CalcMaterialCompare") ?? "Material-Vergleich";
+
     #endregion
 
     public MaterialCompareViewModel(
         ILocalizationService localization,
         IProjectService projectService,
+        ICalculationHistoryService historyService,
         IMaterialExportService exportService,
         IFileShareService fileShareService)
     {
         _localization = localization;
         _projectService = projectService;
+        _historyService = historyService;
         _exportService = exportService;
         _fileShareService = fileShareService;
     }
@@ -109,13 +115,13 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
     private void ScheduleAutoCalculate()
     {
         if (_debounceTimer == null)
-            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(Calculate), null, 300, Timeout.Infinite);
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
         else
             _debounceTimer.Change(300, Timeout.Infinite);
     }
 
     [RelayCommand]
-    private void Calculate()
+    private async Task Calculate()
     {
         if (Area <= 0 || PriceA <= 0 || PriceB <= 0 || ConsumptionA <= 0 || ConsumptionB <= 0)
         {
@@ -123,7 +129,7 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
             return;
         }
 
-        // Gesamtkosten = Fläche × Verbrauch/m² × (1 + Verschnitt%) × Preis
+        // Gesamtkosten = Fläche x Verbrauch/m² x (1 + Verschnitt%) x Preis
         TotalCostA = Area * ConsumptionA * (1 + WasteA / 100) * PriceA;
         TotalCostB = Area * ConsumptionB * (1 + WasteB / 100) * PriceB;
 
@@ -135,6 +141,47 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
         CheaperProduct = IsAcheaper ? ProductAName : ProductBName;
 
         HasResult = true;
+        CalculationPerformed?.Invoke();
+
+        // In History speichern
+        await SaveToHistoryAsync();
+    }
+
+    /// <summary>Berechnung in die History speichern</summary>
+    private async Task SaveToHistoryAsync()
+    {
+        try
+        {
+            var title = $"{ProductAName}: {TotalCostA:F2} € vs {ProductBName}: {TotalCostB:F2} €";
+            var data = new Dictionary<string, object>
+            {
+                ["Area"] = Area,
+                ["ProductAName"] = ProductAName,
+                ["PriceA"] = PriceA,
+                ["ConsumptionA"] = ConsumptionA,
+                ["WasteA"] = WasteA,
+                ["ProductBName"] = ProductBName,
+                ["PriceB"] = PriceB,
+                ["ConsumptionB"] = ConsumptionB,
+                ["WasteB"] = WasteB,
+                ["Result"] = new Dictionary<string, object>
+                {
+                    ["TotalCostA"] = TotalCostA,
+                    ["TotalCostB"] = TotalCostB,
+                    ["SavingsAmount"] = SavingsAmount,
+                    ["SavingsPercent"] = SavingsPercent,
+                    ["CheaperProduct"] = CheaperProduct
+                }
+            };
+
+            await _historyService.AddCalculationAsync("MaterialCompareCalculator", title, data);
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] History: {ex.Message}");
+#endif
+        }
     }
 
     [RelayCommand]
@@ -151,11 +198,14 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
     [RelayCommand]
     private async Task ConfirmSaveProjectAsync()
     {
-        if (string.IsNullOrWhiteSpace(SaveProjectName)) return;
+        // Bei leerem Namen auf lokalisierten Default zurueckfallen
+        var name = SaveProjectName;
+        if (string.IsNullOrWhiteSpace(name))
+            name = DefaultProjectName;
 
         var project = new Models.Project
         {
-            Name = SaveProjectName.Trim(),
+            Name = name.Trim(),
             CalculatorType = Models.CalculatorType.MaterialCompare
         };
 
@@ -185,6 +235,7 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
     private async Task ExportPdfAsync()
     {
         if (!HasResult) return;
+
         try
         {
             var inputs = new Dictionary<string, string>
@@ -219,6 +270,7 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
     private async Task ExportCsvAsync()
     {
         if (!HasResult) return;
+
         try
         {
             var inputs = new Dictionary<string, string>
@@ -272,9 +324,18 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
         PriceB = project.GetValue<double>("PriceB", 35.0);
         ConsumptionB = project.GetValue<double>("ConsumptionB", 0.8);
         WasteB = project.GetValue<double>("WasteB", 10.0);
-        Calculate();
+        await Calculate();
     }
 
-    public void Cleanup() => _debounceTimer?.Dispose();
-    public void Dispose() => _debounceTimer?.Dispose();
+    public void Cleanup()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 }

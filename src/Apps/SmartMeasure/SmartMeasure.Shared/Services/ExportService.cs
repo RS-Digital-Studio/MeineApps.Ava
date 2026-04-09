@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using PdfSharpCore.Drawing;
+using PdfSharpCore.Fonts;
 using PdfSharpCore.Pdf;
 using SmartMeasure.Shared.Models;
 
@@ -10,19 +11,85 @@ namespace SmartMeasure.Shared.Services;
 /// <summary>CSV + GeoJSON + PDF Export</summary>
 public class ExportService : IExportService
 {
-    // PDF-Fonts
-    private static readonly XFont TitleFont = new("Arial", 18, XFontStyle.Bold);
-    private static readonly XFont SubtitleFont = new("Arial", 12, XFontStyle.Bold);
-    private static readonly XFont HeaderFont = new("Arial", 9, XFontStyle.Bold);
-    private static readonly XFont BodyFont = new("Arial", 9, XFontStyle.Regular);
-    private static readonly XFont SmallFont = new("Arial", 7.5, XFontStyle.Regular);
-    private static readonly XFont FooterFont = new("Arial", 7, XFontStyle.Italic);
+    // PDF-Fonts werden lazy initialisiert (PdfSharpCore braucht registrierten FontResolver,
+    // der auf Android nicht automatisch verfuegbar ist → static-Init wuerde crashen)
+    private static XFont? _titleFont;
+    private static XFont? _subtitleFont;
+    private static XFont? _headerFont;
+    private static XFont? _bodyFont;
+    private static XFont? _smallFont;
+    private static XFont? _footerFont;
+    private static bool _fontsInitialized;
 
-    // PDF-Farben
+    private static XFont TitleFont => _titleFont ??= new("Arial", 18, XFontStyle.Bold);
+    private static XFont SubtitleFont => _subtitleFont ??= new("Arial", 12, XFontStyle.Bold);
+    private static XFont HeaderFont => _headerFont ??= new("Arial", 9, XFontStyle.Bold);
+    private static XFont BodyFont => _bodyFont ??= new("Arial", 9, XFontStyle.Regular);
+    private static XFont SmallFont => _smallFont ??= new("Arial", 7.5, XFontStyle.Regular);
+    private static XFont FooterFont => _footerFont ??= new("Arial", 7, XFontStyle.Italic);
+
+    // PDF-Farben (keine PdfSharp-Abhaengigkeit, sicher als static)
     private static readonly XColor PrimaryColor = XColor.FromArgb(255, 107, 0); // #FF6B00
     private static readonly XColor HeaderBgColor = XColor.FromArgb(42, 42, 64);  // Dunkel
     private static readonly XColor AltRowColor = XColor.FromArgb(245, 245, 250);
     private static readonly XColor BorderColor = XColor.FromArgb(200, 200, 210);
+
+    /// <summary>FontResolver fuer Android registrieren (muss vor dem ersten PDF-Export aufgerufen werden)</summary>
+    public static void EnsureFontResolver()
+    {
+        if (_fontsInitialized) return;
+        _fontsInitialized = true;
+
+        try
+        {
+            // Pruefen ob bereits ein Resolver gesetzt ist (Desktop hat einen Default)
+            _ = GlobalFontSettings.FontResolver;
+        }
+        catch
+        {
+            // Android hat keinen Default-Resolver → Fallback registrieren
+            GlobalFontSettings.FontResolver = new AndroidFontResolver();
+        }
+    }
+
+    /// <summary>Einfacher Font-Resolver fuer Android (/system/fonts/).
+    /// Mapped alle Font-Anfragen auf Roboto (auf Android immer verfuegbar).</summary>
+    private class AndroidFontResolver : IFontResolver
+    {
+        public string DefaultFontName => "Roboto";
+
+        public FontResolverInfo ResolveTypeface(string familyName, bool isBold, bool isItalic)
+        {
+            // Alle Font-Anfragen auf Roboto mappen (Android-System-Font)
+            var suffix = isBold && isItalic ? "-BoldItalic" : isBold ? "-Bold" : isItalic ? "-Italic" : "-Regular";
+            var faceName = $"Roboto{suffix}";
+            return new FontResolverInfo(faceName, isBold, isItalic);
+        }
+
+        public byte[] GetFont(string faceName)
+        {
+            // Roboto-Varianten aus /system/fonts/ laden
+            var paths = new[]
+            {
+                $"/system/fonts/{faceName}.ttf",
+                "/system/fonts/Roboto-Regular.ttf",
+                "/system/fonts/DroidSans.ttf"
+            };
+
+            foreach (var path in paths)
+            {
+                if (File.Exists(path))
+                    return File.ReadAllBytes(path);
+            }
+
+            // Letzter Fallback: irgendeinen .ttf Font nehmen
+            var fallback = Directory.GetFiles("/system/fonts/", "*.ttf").FirstOrDefault();
+            if (fallback != null)
+                return File.ReadAllBytes(fallback);
+
+            throw new FileNotFoundException($"Kein Font gefunden fuer: {faceName}");
+        }
+    }
 
     public string ExportToCsv(SurveyProject project)
     {
@@ -111,18 +178,18 @@ public class ExportService : IExportService
 
         return JsonSerializer.Serialize(geoJson, new JsonSerializerOptions
         {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            WriteIndented = true
         });
     }
 
     public Task<string> ExportPdfAsync(SurveyProject project, List<SurveyPoint> points,
         List<GardenElement> elements, TerrainMesh? mesh, string outputDir)
     {
+        EnsureFontResolver();
         return Task.Run(() =>
         {
             var sanitizedName = SanitizeFileName(project.Name);
-            var fileName = $"SmartMeasure_{sanitizedName}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+            var fileName = $"SmartMeasure_{sanitizedName}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
             var filePath = Path.Combine(outputDir, fileName);
 
             Directory.CreateDirectory(outputDir);
@@ -435,7 +502,7 @@ public class ExportService : IExportService
         var footerY = page.Height - 30;
         gfx.DrawLine(new XPen(BorderColor, 0.5), 40, footerY - 4, page.Width - 40, footerY - 4);
         gfx.DrawString($"SmartMeasure — {projectName}", FooterFont, XBrushes.Gray, 40, footerY);
-        gfx.DrawString($"Erstellt: {DateTime.Now:dd.MM.yyyy HH:mm}", FooterFont, XBrushes.Gray,
+        gfx.DrawString($"Erstellt: {DateTime.UtcNow.ToLocalTime():dd.MM.yyyy HH:mm}", FooterFont, XBrushes.Gray,
             page.Width - 170, footerY);
     }
 

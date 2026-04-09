@@ -914,7 +914,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     public string BreadcrumbText => ActivePage switch
     {
-        ActivePage.WorkshopDetail or ActivePage.OrderDetail => _localizationService.GetString("TabWorkshop") ?? "Werkstatt",
+        ActivePage.WorkshopDetail or ActivePage.OrderDetail or
+        ActivePage.SawingGame or ActivePage.PipePuzzle or ActivePage.WiringGame or
+        ActivePage.PaintingGame or ActivePage.RoofTilingGame or ActivePage.BlueprintGame or
+        ActivePage.DesignPuzzleGame or ActivePage.InspectionGame or ActivePage.ForgeGame or
+        ActivePage.InventGame => _localizationService.GetString("TabWorkshop") ?? "Werkstatt",
         ActivePage.WorkerMarket or ActivePage.Research or ActivePage.Manager or
         ActivePage.Crafting or ActivePage.Ascension => _localizationService.GetString("TabImperium") ?? "Imperium",
         ActivePage.Tournament or ActivePage.SeasonalEvent or ActivePage.BattlePass or

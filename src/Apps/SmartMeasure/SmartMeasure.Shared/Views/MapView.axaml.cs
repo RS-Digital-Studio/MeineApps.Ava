@@ -9,6 +9,8 @@ public partial class MapView : UserControl
     {
         InitializeComponent();
 
+        // Mapsui MapControl hat kein AvaloniaProperty fuer Map → Binding nicht moeglich,
+        // deshalb manuelle Zuweisung im Code-Behind (Mapsui-Limitation)
         DataContextChanged += (_, _) =>
         {
             if (DataContext is MapViewModel vm)

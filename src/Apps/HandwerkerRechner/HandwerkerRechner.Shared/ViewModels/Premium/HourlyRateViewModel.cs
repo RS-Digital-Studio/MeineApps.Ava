@@ -17,6 +17,7 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
 {
     private readonly ILocalizationService _localization;
     private readonly IProjectService _projectService;
+    private readonly ICalculationHistoryService _historyService;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
     private Timer? _debounceTimer;
@@ -25,6 +26,7 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
+    public event Action? CalculationPerformed;
 
     #region Eingaben
 
@@ -79,16 +81,20 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
     [ObservableProperty] private bool _showSaveDialog;
     [ObservableProperty] private string _saveProjectName = "";
 
+    private string DefaultProjectName => _localization.GetString("CalcHourlyRate") ?? "Stundenrechner";
+
     #endregion
 
     public HourlyRateViewModel(
         ILocalizationService localization,
         IProjectService projectService,
+        ICalculationHistoryService historyService,
         IMaterialExportService exportService,
         IFileShareService fileShareService)
     {
         _localization = localization;
         _projectService = projectService;
+        _historyService = historyService;
         _exportService = exportService;
         _fileShareService = fileShareService;
     }
@@ -96,13 +102,13 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
     private void ScheduleAutoCalculate()
     {
         if (_debounceTimer == null)
-            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(Calculate), null, 300, Timeout.Infinite);
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
         else
             _debounceTimer.Change(300, Timeout.Infinite);
     }
 
     [RelayCommand]
-    private void Calculate()
+    private async Task Calculate()
     {
         if (WorkHours <= 0 || HourlyRate <= 0 || Workers <= 0)
         {
@@ -130,6 +136,45 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
         TotalGross = TotalNet + VatAmount;
 
         HasResult = true;
+        CalculationPerformed?.Invoke();
+
+        // In History speichern
+        await SaveToHistoryAsync();
+    }
+
+    /// <summary>Berechnung in die History speichern</summary>
+    private async Task SaveToHistoryAsync()
+    {
+        try
+        {
+            var title = $"{Workers}× {HourlyRate:F2} €/h, {NetWorkHours:F1} h → {TotalGross:F2} €";
+            var data = new Dictionary<string, object>
+            {
+                ["HourlyRate"] = HourlyRate,
+                ["WorkHours"] = WorkHours,
+                ["BreakMinutes"] = BreakMinutes,
+                ["OverheadPercent"] = OverheadPercent,
+                ["VatPercent"] = VatPercent,
+                ["Workers"] = Workers,
+                ["Result"] = new Dictionary<string, object>
+                {
+                    ["NetWorkHours"] = NetWorkHours,
+                    ["NetLaborCost"] = NetLaborCost,
+                    ["OverheadAmount"] = OverheadAmount,
+                    ["TotalNet"] = TotalNet,
+                    ["VatAmount"] = VatAmount,
+                    ["TotalGross"] = TotalGross
+                }
+            };
+
+            await _historyService.AddCalculationAsync("HourlyRateCalculator", title, data);
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] History: {ex.Message}");
+#endif
+        }
     }
 
     [RelayCommand]
@@ -152,11 +197,14 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
     [RelayCommand]
     private async Task ConfirmSaveProjectAsync()
     {
-        if (string.IsNullOrWhiteSpace(SaveProjectName)) return;
+        // Bei leerem Namen auf lokalisierten Default zurueckfallen
+        var name = SaveProjectName;
+        if (string.IsNullOrWhiteSpace(name))
+            name = DefaultProjectName;
 
         var project = new Models.Project
         {
-            Name = SaveProjectName.Trim(),
+            Name = name.Trim(),
             CalculatorType = Models.CalculatorType.HourlyRate
         };
 
@@ -183,6 +231,7 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
     private async Task ExportPdfAsync()
     {
         if (!HasResult) return;
+
         try
         {
             var inputs = new Dictionary<string, string>
@@ -219,6 +268,7 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
     private async Task ExportCsvAsync()
     {
         if (!HasResult) return;
+
         try
         {
             var inputs = new Dictionary<string, string>
@@ -273,10 +323,18 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
         OverheadPercent = project.GetValue<double>("OverheadPercent", 20.0);
         VatPercent = project.GetValue<double>("VatPercent", 19.0);
         Workers = project.GetValue<int>("Workers", 1);
-        Calculate();
+        await Calculate();
     }
 
-    public void Cleanup() => _debounceTimer?.Dispose();
+    public void Cleanup()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 
-    public void Dispose() => _debounceTimer?.Dispose();
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 }

@@ -120,6 +120,10 @@ public sealed partial class CollectionViewModel : ViewModelBase, INavigable, IGa
     public ObservableCollection<CollectionDisplayItem> Items { get; } = [];
     public ObservableCollection<MilestoneDisplayItem> Milestones { get; } = [];
 
+    /// <summary>Ob die aktuelle Kategorie Items enthält (für Compiled Bindings, da !Items.Count ungültig)</summary>
+    [ObservableProperty]
+    private bool _hasItems;
+
     // ═══════════════════════════════════════════════════════════════════════
     // KATEGORIE-MAPPING
     // ═══════════════════════════════════════════════════════════════════════
@@ -227,6 +231,7 @@ public sealed partial class CollectionViewModel : ViewModelBase, INavigable, IGa
             Items.Add(CreateDisplayItem(entry, category));
         }
 
+        HasItems = Items.Count > 0;
         UpdateProgress();
     }
 

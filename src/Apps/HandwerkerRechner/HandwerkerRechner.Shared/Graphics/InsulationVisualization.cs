@@ -28,7 +28,6 @@ public static class InsulationVisualization
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
     private static readonly SKPaint _texturePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
-    private static readonly Random _rng = new(42);
 
     // Farben: Mauerwerk
     private static readonly SKColor _wallColor = new(0x9C, 0x8B, 0x7A);
@@ -43,6 +42,9 @@ public static class InsulationVisualization
         float areaSqm, float thicknessCm, int insulationType, float lambda)
     {
         if (areaSqm <= 0 || thicknessCm <= 0) return;
+
+        // Lokale Random mit festem Seed: deterministisch pro Render, kein "Wandern"
+        var _rng = new Random(42);
 
         _animation.UpdateAnimation();
         float progress = _animation.AnimationProgress;
@@ -101,7 +103,7 @@ public static class InsulationVisualization
         canvas.DrawRect(wallX + wallW, wallY, insulW, wallH, _insulationFill);
 
         // Dämmstoff-Textur je nach Typ
-        DrawInsulationTexture(canvas, wallX + wallW, wallY, insulW, wallH, insulationType);
+        DrawInsulationTexture(canvas, wallX + wallW, wallY, insulW, wallH, insulationType, _rng);
 
         // Umriss Gesamtquerschnitt
         _strokePaint.Color = SkiaThemeHelper.TextSecondary;
@@ -132,7 +134,7 @@ public static class InsulationVisualization
     /// <summary>
     /// Zeichnet Typ-spezifische Texturen in die Dämmschicht
     /// </summary>
-    private static void DrawInsulationTexture(SKCanvas canvas, float x, float y, float w, float h, int insulationType)
+    private static void DrawInsulationTexture(SKCanvas canvas, float x, float y, float w, float h, int insulationType, Random _rng)
     {
         if (w < 4f || h < 4f) return;
 

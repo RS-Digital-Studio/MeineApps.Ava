@@ -330,7 +330,7 @@
                                 IsVisible="{Binding !IsEmpty}"
                                 Command="{Binding #Deck_Root.DataContext.UnequipSlotCommand}"
                                 CommandParameter="{Binding SlotIndex}"
-                                MinWidth="36" MinHeight="36"
+                                MinWidth="44" MinHeight="44"
                                 Padding="4">
                           <icons:GameIcon Kind="Close" Width="14" Height="14"
                                            Foreground="{DynamicResource TextMutedBrush}" />

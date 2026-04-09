@@ -189,7 +189,7 @@
                 <!-- 8 Upgrade-Einträge -->
                 <ItemsControl ItemsSource="{Binding UpgradeItems}">
                   <ItemsControl.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="vm:DungeonUpgradeDisplayItem">
                       <Border Background="#15FFFFFF" CornerRadius="10" Padding="10,8" Margin="0,2"
                               BorderBrush="#E040FB" BorderThickness="2,0,0,0">
                         <Grid ColumnDefinitions="*,Auto,Auto">
@@ -210,7 +210,7 @@
                                      Margin="8,0" />
                           <!-- Kauf-Button -->
                           <Button Grid.Column="2"
-                                  Command="{ReflectionBinding DataContext.BuyUpgradeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  Command="{Binding $parent[ItemsControl].((vm:DungeonViewModel)DataContext).BuyUpgradeCommand}"
                                   CommandParameter="{Binding UpgradeId}"
                                   Classes="Text"
                                   IsEnabled="{Binding CanBuy}"
@@ -406,9 +406,9 @@
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <Button Command="{ReflectionBinding DataContext.SelectBuffCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                      CommandParameter="{ReflectionBinding Type}"
+            <DataTemplate x:DataType="vm:DungeonBuffDisplayItem">
+              <Button Command="{Binding $parent[ItemsControl].((vm:DungeonViewModel)DataContext).SelectBuffCommand}"
+                      CommandParameter="{Binding Type}"
                       Classes="Text BuffCard"
                       Margin="6"
                       RenderTransformOrigin="0.5,0.5"

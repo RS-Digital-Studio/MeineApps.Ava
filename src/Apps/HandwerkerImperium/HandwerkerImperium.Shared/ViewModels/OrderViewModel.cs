@@ -223,11 +223,12 @@ public sealed partial class OrderViewModel : ViewModelBase, INavigable
     {
         if (Order == null) return;
 
-        // Get the mini-game route based on workshop type
-        var route = GetMiniGameRoute(Order.WorkshopType);
+        // Aktuellen Task-Typ verwenden (korrekt für Cooperation, MasterSmith, InnovationLab)
+        var currentTask = Order.CurrentTask;
+        if (currentTask == null) return;
 
-        // Navigate with difficulty parameter
-        NavigationRequested?.Invoke($"{route}?difficulty={(int)Order.Difficulty}");
+        var route = currentTask.GameType.GetRoute();
+        NavigationRequested?.Invoke($"{route}?orderId={Order.Id}");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -261,19 +262,6 @@ public sealed partial class OrderViewModel : ViewModelBase, INavigable
         OrderDifficulty.Medium => "#FFD700",
         OrderDifficulty.Hard => "#FF6B6B",
         _ => "#FFFFFF"
-    };
-
-    private static string GetMiniGameRoute(WorkshopType type) => type switch
-    {
-        WorkshopType.Carpenter => "minigame/sawing",
-        WorkshopType.Plumber => "minigame/pipes",
-        WorkshopType.Electrician => "minigame/wiring",
-        WorkshopType.Painter => "minigame/painting",
-        WorkshopType.Roofer => "minigame/rooftiling",
-        WorkshopType.Contractor => "minigame/blueprint",
-        WorkshopType.Architect => "minigame/designpuzzle",
-        WorkshopType.GeneralContractor => "minigame/inspection",
-        _ => "minigame/sawing"
     };
 
     private static string FormatMoney(decimal amount) => MoneyFormatter.Format(amount, 1);

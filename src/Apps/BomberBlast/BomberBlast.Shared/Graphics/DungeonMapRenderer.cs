@@ -20,6 +20,8 @@ public static class DungeonMapRenderer
     private const float LINE_WIDTH = 2f;
     private const float COMPLETED_LINE_WIDTH = 3f;
     private const float GLOW_RADIUS = 6f;
+    // Gecachter MaskFilter (Puls-Variation 1.0-1.15 ist visuell vernachlässigbar)
+    private static readonly SKMaskFilter _nodeGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, GLOW_RADIUS * 1.07f);
 
     // Gepoolte SKPaint-Objekte
     private static readonly SKPaint _nodePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -162,11 +164,8 @@ public static class DungeonMapRenderer
                 {
                     float pulse = 1f + 0.15f * MathF.Sin(time * 3f);
                     _glowPaint.Color = nodeColor.WithAlpha(50);
-                    _glowPaint.MaskFilter?.Dispose();
-
-                    _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, GLOW_RADIUS * pulse);
+                    _glowPaint.MaskFilter = _nodeGlow;
                     canvas.DrawCircle(nodeX, nodeY, radius + 4f, _glowPaint);
-                    _glowPaint.MaskFilter?.Dispose();
                     _glowPaint.MaskFilter = null;
                 }
 

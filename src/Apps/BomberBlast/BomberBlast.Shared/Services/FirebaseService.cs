@@ -12,6 +12,8 @@ namespace BomberBlast.Services;
 public sealed class FirebaseService : IFirebaseService
 {
     // Firebase-Projekt: bomberblast-league
+    // Web-API-Key: Bewusst im Quellcode - in jeder APK (google-services.json) ohnehin
+    // extrahierbar. Schutz über Firebase Security Rules, nicht Key-Geheimhaltung.
     private const string ApiKey = "AIzaSyDr63VL86diNabbjQjeXX9Dal02cQF6CHs";
     private const string DatabaseUrl = "https://bomberblast-league-default-rtdb.europe-west1.firebasedatabase.app";
     private const string AuthUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=";

@@ -20,6 +20,7 @@ public partial class AreaMeasureView : CalculatorViewBase
 
     protected override void OnResultPropertyChanged()
     {
+        AreaMeasureVisualization.StartAnimation();
         AreaMeasureCanvas.InvalidateSurface();
     }
 
@@ -40,6 +41,9 @@ public partial class AreaMeasureView : CalculatorViewBase
                 vm.Dimension4,
                 vm.Dimension5,
                 vm.CurrentShapeArea);
+
+            if (AreaMeasureVisualization.NeedsRedraw)
+                RequestAnimationFrame(sender);
         }
     }
 }

@@ -7,7 +7,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.InsulationView"
-             x:DataType="vm:InsulationViewModel">
+             x:DataType="vm:InsulationViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*,Auto"
         AutomationProperties.AutomationId="Insulation_RootGrid">

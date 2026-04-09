@@ -28,27 +28,35 @@ public class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        var services = new ServiceCollection();
-        ConfigureServices(services);
-        Services = services.BuildServiceProvider();
-        _mainVm = Services.GetRequiredService<MainViewModel>();
-
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        try
         {
-            desktop.MainWindow = new Window
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            Services = services.BuildServiceProvider();
+            _mainVm = Services.GetRequiredService<MainViewModel>();
+
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                Title = "SmartMeasure - 3D-Vermessung",
-                Width = 450,
-                Height = 900,
-                Content = new MainView { DataContext = _mainVm }
-            };
+                desktop.MainWindow = new Window
+                {
+                    Title = "SmartMeasure - 3D-Vermessung",
+                    Width = 450,
+                    Height = 900,
+                    Content = new MainView { DataContext = _mainVm }
+                };
 
-            _ = _mainVm.InitializeAsync();
+                _ = _mainVm.InitializeAsync();
+            }
+            else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+            {
+                singleView.MainView = new MainView { DataContext = _mainVm };
+                _ = _mainVm.InitializeAsync();
+            }
         }
-        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+        catch (Exception ex)
         {
-            singleView.MainView = new MainView { DataContext = _mainVm };
-            _ = _mainVm.InitializeAsync();
+            System.Diagnostics.Debug.WriteLine($"SmartMeasure Start-Fehler: {ex}");
+            throw; // Weiterwerfen damit der Crash-Log im Logcat sichtbar ist
         }
 
         base.OnFrameworkInitializationCompleted();

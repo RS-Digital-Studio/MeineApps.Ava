@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using SmartMeasure.Shared.Models;
 using SmartMeasure.Shared.Services;
 
@@ -13,6 +14,7 @@ public partial class MainViewModel : ViewModelBase
 {
     private readonly IBleService _bleService;
     private readonly IArTransferService _arTransferService;
+    private readonly IMeasurementService _measurementService;
     private readonly BackPressHelper _backPressHelper = new();
 
     // Child-ViewModels
@@ -47,6 +49,7 @@ public partial class MainViewModel : ViewModelBase
     public MainViewModel(
         IBleService bleService,
         IArTransferService arTransferService,
+        IMeasurementService measurementService,
         ConnectViewModel connectVm,
         SurveyViewModel surveyVm,
         TerrainViewModel terrainVm,
@@ -57,6 +60,7 @@ public partial class MainViewModel : ViewModelBase
     {
         _bleService = bleService;
         _arTransferService = arTransferService;
+        _measurementService = measurementService;
         ConnectVm = connectVm;
         SurveyVm = surveyVm;
         TerrainVm = terrainVm;
@@ -77,20 +81,57 @@ public partial class MainViewModel : ViewModelBase
         // Back-Button
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
+        // Projekt-Events verdrahten
+        ProjectsVm.ProjectSelected += async project =>
+        {
+            ProjectsVm.SelectedProject = project;
+            GardenPlanVm.CurrentProjectId = project.Id;
+
+            // Punkte in MeasurementService laden fuer TerrainView/MapView/GardenPlanView
+            var projectService = App.Services.GetRequiredService<IProjectService>();
+            var full = await projectService.GetProjectAsync(project.Id);
+            if (full != null)
+            {
+                _measurementService.ClearPoints();
+                foreach (var pt in full.Points)
+                    _measurementService.AddPoint(pt);
+
+                await GardenPlanVm.LoadElementsFromProjectAsync(project.Id);
+            }
+
+            Navigate("Survey");
+        };
+
+        // Export-Events: Dateipfad dem User mitteilen
+        ProjectsVm.FileExportReady += path =>
+            System.Diagnostics.Debug.WriteLine($"Export erstellt: {path}");
+
         // AR-Capture → Terrain-Transfer
         SurveyVm.ArCaptureCompleted += async result =>
         {
             try
             {
-                var projectId = ProjectsVm.SelectedProject?.Id ?? 0;
-                if (projectId <= 0) return;
+                // Projekt sicherstellen (automatisch erstellen wenn keins ausgewaehlt)
+                var project = ProjectsVm.SelectedProject;
+                if (project == null)
+                {
+                    project = await ProjectsVm.EnsureProjectExistsAsync();
+                    if (project == null)
+                    {
+                        System.Diagnostics.Debug.WriteLine("AR-Transfer: Kein Projekt verfuegbar");
+                        return;
+                    }
+                }
 
-                var count = await _arTransferService.TransferToProjectAsync(result, projectId);
-                global::System.Diagnostics.Debug.WriteLine($"AR-Transfer: {count} Punkte uebertragen");
+                var count = await _arTransferService.TransferToProjectAsync(result, project.Id);
+                System.Diagnostics.Debug.WriteLine($"AR-Transfer: {count} Punkte uebertragen");
+
+                // GardenPlan mit neuen Konturen aktualisieren
+                await GardenPlanVm.LoadElementsFromProjectAsync(project.Id);
             }
             catch (Exception ex)
             {
-                global::System.Diagnostics.Debug.WriteLine($"AR-Transfer fehlgeschlagen: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"AR-Transfer fehlgeschlagen: {ex.Message}");
             }
         };
     }

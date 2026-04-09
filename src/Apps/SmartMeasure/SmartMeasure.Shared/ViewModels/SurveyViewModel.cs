@@ -40,9 +40,15 @@ public partial class SurveyViewModel : ViewModelBase
     // Abstand zum letzten Punkt
     [ObservableProperty] private string _distanceToLast = "—";
 
+    // Live-Kompass Renderer
+    public Graphics.SurveyLiveRenderer CompassRenderer { get; } = new();
+
     // AR-Capture
     [ObservableProperty] private bool _isArAvailable;
     [ObservableProperty] private string _arStatusText = string.Empty;
+
+    /// <summary>Kompass-Canvas muss neu gezeichnet werden</summary>
+    public event Action? CompassInvalidateRequested;
 
     /// <summary>AR-Capture abgeschlossen - MainViewModel soll Transfer starten</summary>
     public event Action<Models.ArCaptureResult>? ArCaptureCompleted;
@@ -81,6 +87,14 @@ public partial class SurveyViewModel : ViewModelBase
         {
             SatelliteCount = state.SatelliteCount;
             TiltAngle = state.TiltAngle;
+
+            // Kompass-Renderer mit aktuellen Daten versorgen
+            CompassRenderer.HorizontalAccuracy = state.HorizontalAccuracy;
+            CompassRenderer.VerticalAccuracy = state.VerticalAccuracy;
+            CompassRenderer.SatelliteCount = state.SatelliteCount;
+            CompassRenderer.FixQuality = state.FixQuality;
+            CompassRenderer.TiltAngle = state.TiltAngle;
+            CompassInvalidateRequested?.Invoke();
         });
 
         // Punkte vom Stab empfangen (auch auf UI-Thread fuer ObservableCollection)

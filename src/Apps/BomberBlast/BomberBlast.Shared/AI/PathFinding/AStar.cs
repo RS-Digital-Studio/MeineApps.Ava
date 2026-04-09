@@ -28,8 +28,11 @@ public sealed class AStar
     // Gepoolte Liste fuer ReconstructPath() (vermeidet Allokation pro Pfadsuche)
     private readonly List<(int x, int y)> _pathBuffer = new();
 
-    // Singleton leere Queue (vermeidet Allokation bei fehlgeschlagener Pfadsuche)
-    private static readonly Queue<(int x, int y)> EmptyPath = new();
+    /// <summary>
+    /// Ergebnis-Pfad der letzten erfolgreichen FindPath()-Suche.
+    /// Nur gültig bis zum nächsten FindPath()-Aufruf. Aufrufer muss Daten kopieren.
+    /// </summary>
+    public IReadOnlyList<(int x, int y)> ResultPath => _pathBuffer;
 
     public AStar(GameGrid grid)
     {
@@ -45,8 +48,8 @@ public sealed class AStar
     /// <param name="goalY">Goal grid Y</param>
     /// <param name="canPassWalls">Whether entity can pass through blocks</param>
     /// <param name="avoidBombs">Whether to avoid bomb cells</param>
-    /// <returns>Queue of grid positions to follow, or empty if no path</returns>
-    public Queue<(int x, int y)> FindPath(int startX, int startY, int goalX, int goalY,
+    /// <returns>Pfadlänge (0 = kein Pfad). Ergebnis via ResultPath abrufbar.</returns>
+    public int FindPath(int startX, int startY, int goalX, int goalY,
         bool canPassWalls = false, bool avoidBombs = true)
     {
         // Gepoolte Collections zuruecksetzen
@@ -54,6 +57,7 @@ public sealed class AStar
         _closedSet.Clear();
         _cameFrom.Clear();
         _gScore.Clear();
+        _pathBuffer.Clear();
 
         _gScore[(startX, startY)] = 0;
         _openSet.Enqueue((startX, startY), Heuristic(startX, startY, goalX, goalY));
@@ -64,7 +68,8 @@ public sealed class AStar
 
             if (current.X == goalX && current.Y == goalY)
             {
-                return ReconstructPath(_cameFrom, (goalX, goalY));
+                ReconstructPath(_cameFrom, (goalX, goalY));
+                return _pathBuffer.Count;
             }
 
             _closedSet.Add((current.X, current.Y));
@@ -89,8 +94,8 @@ public sealed class AStar
             }
         }
 
-        // Kein Pfad gefunden - Singleton statt neue Allokation
-        return EmptyPath;
+        // Kein Pfad gefunden
+        return 0;
     }
 
     /// <summary>
@@ -170,7 +175,11 @@ public sealed class AStar
         return Math.Abs(x2 - x1) + Math.Abs(y2 - y1);
     }
 
-    private Queue<(int x, int y)> ReconstructPath(Dictionary<(int, int), (int, int)> cameFrom, (int x, int y) current)
+    /// <summary>
+    /// Baut Pfad in _pathBuffer auf (keine Heap-Allokation).
+    /// Ergebnis über ResultPath abrufbar bis zum nächsten FindPath()-Aufruf.
+    /// </summary>
+    private void ReconstructPath(Dictionary<(int, int), (int, int)> cameFrom, (int x, int y) current)
     {
         _pathBuffer.Clear();
         _pathBuffer.Add(current);
@@ -186,7 +195,5 @@ public sealed class AStar
         // Start-Position überspringen
         if (_pathBuffer.Count > 1)
             _pathBuffer.RemoveAt(0);
-
-        return new Queue<(int x, int y)>(_pathBuffer);
     }
 }

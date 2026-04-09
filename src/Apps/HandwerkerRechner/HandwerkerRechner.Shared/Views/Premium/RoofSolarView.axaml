@@ -8,7 +8,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.RoofSolarView"
-             x:DataType="vm:RoofSolarViewModel">
+             x:DataType="vm:RoofSolarViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <conv:IntEqualsConverter x:Key="IntEquals" />

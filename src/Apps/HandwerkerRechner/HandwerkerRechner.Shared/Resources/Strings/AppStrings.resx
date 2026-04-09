@@ -949,8 +949,9 @@ Save 0.96 € compared to individual purchase!</value>
   <data name="HistoryEmpty" xml:space="preserve">
     <value>No calculations yet. Your calculations will appear here.</value>
   </data>
+  <!-- Veraltet: Extended History Hinweis in HistoryView (altes Modell) -->
   <data name="HistoryExtendedHint" xml:space="preserve">
-    <value>Watch an ad to see up to 30 entries per calculator!</value>
+    <value>Your last 30 calculations are saved here.</value>
   </data>
   <data name="WatchAdForHistory" xml:space="preserve">
     <value>Watch Video</value>
@@ -1625,24 +1626,38 @@ Coverage decreases on rough surfaces!</value>
     <value>Pro Tools</value>
   </data>
   <data name="CalculatorCount" xml:space="preserve">
-    <value>11 Calculators</value>
+    <value>19 Calculators</value>
   </data>
   <data name="GetPremium" xml:space="preserve">
     <value>Go Ad-Free</value>
   </data>
   <data name="PremiumPrice" xml:space="preserve">
-    <value>From 3.99 € - one-time</value>
+    <value>3.99 € - one-time</value>
+  </data>
+  <data name="PremiumFeatures" xml:space="preserve">
+    <value>No video ads • No banner • Unlimited history • Direct export</value>
   </data>
 
-  <!-- Rewarded Ads -->
+  <!-- Rewarded Ads - Calculation Interstitial (nach jeder 3. Berechnung) -->
+  <data name="AdInterstitialTitle" xml:space="preserve">
+    <value>Short ad break</value>
+  </data>
+  <data name="AdInterstitialDesc" xml:space="preserve">
+    <value>Watch a short video to continue. Or go ad-free with Premium.</value>
+  </data>
+  <data name="AdInterstitialButton" xml:space="preserve">
+    <value>Watch Video → Continue</value>
+  </data>
+  <data name="AccessGranted" xml:space="preserve">
+    <value>Access granted!</value>
+  </data>
+
+  <!-- Veraltet: altes 30-Min-Zugang-Modell (Keys bleiben fuer Rueckwaertskompatibilitaet) -->
   <data name="PremiumCalculatorsLocked" xml:space="preserve">
     <value>Unlock Premium Calculators</value>
   </data>
   <data name="WatchVideoFor30Min" xml:space="preserve">
-    <value>Watch a video for 30 min access to all premium calculators.</value>
-  </data>
-  <data name="AccessGranted" xml:space="preserve">
-    <value>Access granted!</value>
+    <value>Watch a short video to continue.</value>
   </data>
   <data name="AccessExpiresIn" xml:space="preserve">
     <value>Access expires in {0} min</value>
@@ -1651,15 +1666,15 @@ Coverage decreases on rough surfaces!</value>
     <value>Premium access active</value>
   </data>
   <data name="VideoFor30Min" xml:space="preserve">
-    <value>Watch Video → 30 Min Access</value>
+    <value>Watch Video → Continue</value>
   </data>
 
-  <!-- Rewarded Ads - Extended History -->
+  <!-- Veraltet: Extended History per Werbung (Keys bleiben fuer Rueckwaertskompatibilitaet) -->
   <data name="ExtendedHistoryTitle" xml:space="preserve">
-    <value>Extended History</value>
+    <value>History</value>
   </data>
   <data name="ExtendedHistoryDesc" xml:space="preserve">
-    <value>Watch a video for 24h access to 30 calculations</value>
+    <value>All your calculations are saved here.</value>
   </data>
 
   <!-- Rewarded Ads - Material Export -->

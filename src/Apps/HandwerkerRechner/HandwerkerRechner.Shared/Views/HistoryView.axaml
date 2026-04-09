@@ -7,7 +7,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:core="using:MeineApps.Core.Ava.Services"
              x:Class="HandwerkerRechner.Views.HistoryView"
-             x:DataType="vm:HistoryViewModel">
+             x:DataType="vm:HistoryViewModel"
+             x:CompileBindings="True">
 
   <Grid AutomationProperties.AutomationId="History_RootGrid" RowDefinitions="Auto,*" Margin="16">
 
@@ -35,26 +36,6 @@
                     VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12">
 
-          <!-- Hinweis-Banner: Extended History freischalten -->
-          <Border AutomationProperties.AutomationId="History_ExtendedHintBanner"
-                  IsVisible="{Binding ShowExtendedHint}"
-                  Classes="Card"
-                  CornerRadius="12"
-                  Padding="16"
-                  Margin="0,0,0,4">
-            <i:Interaction.Behaviors>
-              <behaviors:FadeInBehavior Duration="300" />
-            </i:Interaction.Behaviors>
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Spacing="4">
-                <TextBlock AutomationProperties.AutomationId="History_TxtExtendedHint"
-                           Text="{Binding ExtendedHintText}"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           FontSize="13"
-                           TextWrapping="Wrap" />
-              </StackPanel>
-            </Grid>
-          </Border>
 
           <!-- Gruppen-Liste -->
           <ItemsControl AutomationProperties.AutomationId="History_GroupList"

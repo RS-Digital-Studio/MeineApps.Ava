@@ -405,7 +405,7 @@ public sealed partial class MainViewModel : ViewModelBase
     /// Typsichere Navigation: Konvertiert NavigationRequest in Route-String
     /// und delegiert an die bestehende String-basierte NavigateTo-Methode.
     /// </summary>
-    public void NavigateTo(NavigationRequest request)
+    public async void NavigateTo(NavigationRequest request)
     {
         var route = request switch
         {
@@ -435,7 +435,7 @@ public sealed partial class MainViewModel : ViewModelBase
             GoResetThen r => $"//MainMenu/{NavigationRequestToRoute(r.Then)}",
             _ => "MainMenu"
         };
-        NavigateToRoute(route);
+        await NavigateToRouteAsync(route);
     }
 
     /// <summary>
@@ -457,7 +457,7 @@ public sealed partial class MainViewModel : ViewModelBase
     /// Unterstützt Routen wie "Game?mode=story&amp;level=5" und
     /// zusammengesetzte Routen wie "//MainMenu/Game?mode=story".
     /// </summary>
-    public async void NavigateToRoute(string route)
+    public async Task NavigateToRouteAsync(string route)
     {
         try
         {

@@ -16,6 +16,10 @@ public class GardenPlanRenderer
     /// <summary>Letzte berechnete Skalierung (Pixel pro Meter) - fuer inverse Transformation in OnCanvasTapped</summary>
     public double LastScale { get; private set; }
 
+    /// <summary>Letzte berechnete Zentrum-Koordinaten (Meter) - fuer inverse Transformation</summary>
+    public double LastCenterX { get; private set; }
+    public double LastCenterY { get; private set; }
+
     // Farben fuer Element-Typen
     private static readonly Dictionary<GardenElementType, SKColor> ElementColors = new()
     {
@@ -102,6 +106,8 @@ public class GardenPlanRenderer
 
         var centerX = (x.Min() + x.Max()) / 2.0;
         var centerY = (y.Min() + y.Max()) / 2.0;
+        LastCenterX = centerX;
+        LastCenterY = centerY;
 
         // Grid zeichnen (1m Raster)
         if (ShowGrid)
@@ -293,6 +299,7 @@ public class GardenPlanRenderer
         _measurePaint.Dispose();
         _fillPaint.Dispose();
         _strokePaint.Dispose();
+        _drawPreviewStrokePaint.PathEffect?.Dispose();
         _drawPreviewStrokePaint.Dispose();
         _drawPreviewFillPaint.Dispose();
         _drawPreviewPointPaint.Dispose();

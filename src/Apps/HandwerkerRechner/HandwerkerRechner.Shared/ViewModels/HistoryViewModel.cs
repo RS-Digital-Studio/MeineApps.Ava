@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
-using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels;
@@ -16,8 +15,6 @@ public sealed partial class HistoryViewModel : ViewModelBase
 {
     private readonly ICalculationHistoryService _historyService;
     private readonly ILocalizationService _localization;
-    private readonly IPremiumAccessService _premiumAccessService;
-    private readonly IPurchaseService _purchaseService;
 
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
@@ -25,23 +22,16 @@ public sealed partial class HistoryViewModel : ViewModelBase
     [ObservableProperty] private ObservableCollection<CalculationHistoryGroup> _groups = new();
     [ObservableProperty] private bool _isEmpty = true;
     [ObservableProperty] private string _emptyText = "No calculations yet";
-    [ObservableProperty] private string _extendedHintText = "";
-    [ObservableProperty] private bool _showExtendedHint;
 
     // Lokalisierte Texte
     [ObservableProperty] private string _headerText = "History";
-    [ObservableProperty] private string _watchAdText = "Watch Video";
 
     public HistoryViewModel(
         ICalculationHistoryService historyService,
-        ILocalizationService localization,
-        IPremiumAccessService premiumAccessService,
-        IPurchaseService purchaseService)
+        ILocalizationService localization)
     {
         _historyService = historyService;
         _localization = localization;
-        _premiumAccessService = premiumAccessService;
-        _purchaseService = purchaseService;
         UpdateLocalizedTexts();
     }
 
@@ -49,18 +39,13 @@ public sealed partial class HistoryViewModel : ViewModelBase
     {
         HeaderText = _localization.GetString("TabHistory") ?? "History";
         EmptyText = _localization.GetString("HistoryEmpty") ?? "No calculations yet. Your calculations will appear here.";
-        ExtendedHintText = _localization.GetString("HistoryExtendedHint") ?? "Watch an ad to see up to 30 entries per calculator!";
-        WatchAdText = _localization.GetString("WatchAdForHistory") ?? "Watch Video";
     }
 
     [RelayCommand]
     public async Task LoadHistoryAsync()
     {
-        var isPremium = _purchaseService.IsPremium;
-        var hasExtended = _premiumAccessService.HasExtendedHistory;
-        var maxItems = (isPremium || hasExtended) ? 30 : 5;
-
-        ShowExtendedHint = !isPremium && !hasExtended;
+        // Alle Nutzer sehen 30 Eintraege pro Rechner (kein Premium-Gate mehr)
+        const int maxItems = 30;
 
         var allItems = await _historyService.GetAllHistoryAsync(maxItems);
 

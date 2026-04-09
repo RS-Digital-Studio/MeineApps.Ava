@@ -27,24 +27,43 @@ public partial class MapViewModel : ViewModelBase
     [ObservableProperty] private string _perimeterText = "—";
     [ObservableProperty] private int _pointCount;
 
+    private bool _isInitialized;
+
     public MapViewModel(IMeasurementService measurementService)
     {
         _measurementService = measurementService;
 
-        // Karte mit OpenStreetMap initialisieren
+        // Karte wird lazy erstellt (erst bei EnsureInitialized), weil
+        // Mapsui auf Android beim sofortigen Erstellen crashen kann (GL-Kontext nicht bereit)
         MapInstance = new Map();
-        MapInstance.Layers.Add(OpenStreetMap.CreateTileLayer());
-
-        // Punkt-Layer
-        _pointLayer = new WritableLayer { Name = "Messpunkte", Style = null };
-        MapInstance.Layers.Add(_pointLayer);
-
-        // Polygon-Layer
-        _polygonLayer = new WritableLayer { Name = "Grundstück", Style = null };
-        MapInstance.Layers.Add(_polygonLayer);
 
         // Wenn Punkte hinzugefuegt werden
-        _measurementService.PointAdded += _ => UpdateMap();
+        _measurementService.PointAdded += _ =>
+        {
+            if (_isInitialized) UpdateMap();
+        };
+    }
+
+    /// <summary>Karte initialisieren (lazy, erst bei erstem Tab-Wechsel)</summary>
+    public void EnsureInitialized()
+    {
+        if (_isInitialized) return;
+        _isInitialized = true;
+
+        try
+        {
+            MapInstance.Layers.Add(OpenStreetMap.CreateTileLayer());
+
+            _pointLayer = new WritableLayer { Name = "Messpunkte", Style = null };
+            MapInstance.Layers.Add(_pointLayer);
+
+            _polygonLayer = new WritableLayer { Name = "Grundstück", Style = null };
+            MapInstance.Layers.Add(_polygonLayer);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Mapsui-Init fehlgeschlagen: {ex.Message}");
+        }
     }
 
     /// <summary>Karte mit aktuellen Messpunkten aktualisieren</summary>

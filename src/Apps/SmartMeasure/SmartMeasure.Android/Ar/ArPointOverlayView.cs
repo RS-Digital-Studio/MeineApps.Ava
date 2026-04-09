@@ -197,9 +197,10 @@ public class ArPointOverlayView : View
         if (_projectedPoints.Count == 0 && _projectedContourPoints.Count == 0
             && _points.Count == 0 && _contours.Count == 0)
         {
-            canvas.DrawText(
-                "Tippe auf eine Flaeche um einen Punkt zu setzen",
-                width / 2f, height / 2f, _hintPaint);
+            var hint = _projectedPlanes.Count == 0
+                ? "Bewege die Kamera langsam über den Boden..."
+                : "Tippe auf eine Fläche um einen Punkt zu setzen";
+            canvas.DrawText(hint, width / 2f, height / 2f, _hintPaint);
             return;
         }
 

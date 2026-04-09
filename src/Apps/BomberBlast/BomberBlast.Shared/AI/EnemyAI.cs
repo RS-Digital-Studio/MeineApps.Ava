@@ -20,6 +20,7 @@ public sealed class EnemyAI
 
     // Gepoolte Collections - vermeidet Heap-Allokationen pro Frame
     private readonly HashSet<(int, int)> _dangerZone = new();
+    private readonly HashSet<(int, int)> _processedBombs = new();
     private readonly List<Direction> _validDirections = new(4);
 
     public EnemyAI(GameGrid grid)
@@ -154,19 +155,20 @@ public sealed class EnemyAI
             if (TryFollowCachedPath(enemy, dangerZone))
                 return;
 
-            // Calculate new path
-            var path = _pathfinder.FindPath(
+            // Pfad berechnen (Ergebnis in _pathfinder.ResultPath, keine Queue-Allokation)
+            int pathLen = _pathfinder.FindPath(
                 enemy.GridX, enemy.GridY,
                 player.GridX, player.GridY,
                 enemy.CanPassWalls, avoidBombs: true);
 
-            if (path.Count > 0)
+            if (pathLen > 0)
             {
-                // Cache the path
-                enemy.Path = path;
+                // Pfad in die existierende Queue des Enemy kopieren (keine Heap-Allokation)
+                var result = _pathfinder.ResultPath;
+                enemy.CopyPathFrom(result);
                 enemy.TargetPosition = (player.GridX, player.GridY);
 
-                var next = path.Peek();
+                var next = result[0];
                 enemy.MovementDirection = GetDirectionTo(enemy.GridX, enemy.GridY, next.x, next.y);
                 return;
             }
@@ -201,21 +203,22 @@ public sealed class EnemyAI
             if (TryFollowCachedPath(enemy, dangerZone))
                 return;
 
-            // Calculate new path
-            var path = _pathfinder.FindPath(
+            // Pfad berechnen (Ergebnis in _pathfinder.ResultPath, keine Queue-Allokation)
+            int pathLen = _pathfinder.FindPath(
                 enemy.GridX, enemy.GridY,
                 player.GridX, player.GridY,
                 enemy.CanPassWalls, avoidBombs: true);
 
-            if (path.Count > 0)
+            if (pathLen > 0)
             {
-                var next = path.Peek();
+                var result = _pathfinder.ResultPath;
+                var next = result[0];
 
-                // Don't move into danger zone
+                // Nicht in Gefahrenzone laufen
                 if (!dangerZone.Contains((next.x, next.y)))
                 {
-                    // Cache the path
-                    enemy.Path = path;
+                    // Pfad in die existierende Queue des Enemy kopieren
+                    enemy.CopyPathFrom(result);
                     enemy.TargetPosition = (player.GridX, player.GridY);
 
                     enemy.MovementDirection = GetDirectionTo(enemy.GridX, enemy.GridY, next.x, next.y);
@@ -340,39 +343,38 @@ public sealed class EnemyAI
 
     private HashSet<(int, int)> CalculateDangerZone(IEnumerable<Bomb> bombs)
     {
-        // Gepooltes HashSet wiederverwenden statt neu allokieren
+        // Gepoolte HashSets wiederverwenden statt neu allokieren
         _dangerZone.Clear();
+        _processedBombs.Clear();
 
-        // Phase 1: Alle Bomben und ihre Explosionsbereiche berechnen
+        // Phase 1: Alle aktiven Bomben und ihre Explosionsbereiche berechnen
         foreach (var bomb in bombs)
         {
             if (!bomb.IsActive)
                 continue;
 
             AddBombDangerZone(bomb.GridX, bomb.GridY, bomb.Range);
+            _processedBombs.Add((bomb.GridX, bomb.GridY));
         }
 
-        // Phase 2: Kettenreaktionen berücksichtigen
-        // Bomben in der Gefahrenzone anderer Bomben lösen Kettenreaktionen aus
+        // Phase 2: Kettenreaktionen (Sicherheitsnetz für zukünftige Mechaniken)
+        // Da Phase 1 ALLE aktiven Bomben verarbeitet, terminiert Phase 2 sofort in O(1)
         bool changed = true;
         int iterations = 0;
-        while (changed && iterations < 3) // Max 3 Iterationen (Performance + ausreichend für Ketten)
+        while (changed && iterations < 3)
         {
             changed = false;
             iterations++;
             foreach (var bomb in bombs)
             {
-                if (!bomb.IsActive)
+                if (!bomb.IsActive || _processedBombs.Contains((bomb.GridX, bomb.GridY)))
                     continue;
 
-                // Prüfe ob diese Bombe in der Gefahrenzone einer anderen liegt
                 if (_dangerZone.Contains((bomb.GridX, bomb.GridY)))
                 {
-                    // Berechne auch den Bereich dieser Bombe (falls noch nicht geschehen)
-                    int countBefore = _dangerZone.Count;
                     AddBombDangerZone(bomb.GridX, bomb.GridY, bomb.Range);
-                    if (_dangerZone.Count > countBefore)
-                        changed = true;
+                    _processedBombs.Add((bomb.GridX, bomb.GridY));
+                    changed = true;
                 }
             }
         }

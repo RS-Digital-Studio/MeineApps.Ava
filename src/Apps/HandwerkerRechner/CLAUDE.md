@@ -6,7 +6,7 @@
 
 Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, Angebots-Generator, Vorlagen und Einheiten-Umrechnung.
 
-**Version:** 2.0.6 | **Package-ID:** com.meineapps.handwerkerrechner | **Status:** Geschlossener Test
+**Version:** 2.0.7 | **Package-ID:** com.meineapps.handwerkerrechner | **Status:** Geschlossener Test
 
 ## Features
 
@@ -160,6 +160,5 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 - Premium-VMs haben zusätzlich `Cleanup()` Methode für Timer-Dispose bei Navigation weg
 - Kein manuelles "Berechnen"-Drücken mehr nötig (Button bleibt aber als Fallback)
 
-### Game Juice
-- **FloatingText**: "Projekt wurde gespeichert!" nach ConfirmSaveProject
-- **Celebration**: Confetti bei erfolgreichem Save
+### UI-Feedback
+- **FloatingText**: Dezentes Feedback bei Aktionen (Save, Export, Clipboard) - seriöse App, kein Confetti

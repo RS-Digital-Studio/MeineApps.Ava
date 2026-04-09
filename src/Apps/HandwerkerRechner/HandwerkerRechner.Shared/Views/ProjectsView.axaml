@@ -8,9 +8,13 @@
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="HandwerkerRechner.Views.ProjectsView"
-             x:DataType="vm:ProjectsViewModel">
+             x:DataType="vm:ProjectsViewModel"
+             x:CompileBindings="True">
 
-  <Grid AutomationProperties.AutomationId="Projects_RootGrid" RowDefinitions="Auto,*" Margin="16">
+  <!-- Panel-Wrapper: Overlays als letzte Kinder ohne ZIndex - Android Hit-Testing funktioniert korrekt -->
+  <Panel>
+
+    <Grid AutomationProperties.AutomationId="Projects_RootGrid" RowDefinitions="Auto,*" Margin="16">
 
     <!-- Header -->
     <TextBlock AutomationProperties.AutomationId="Projects_TxtTitle"
@@ -128,10 +132,11 @@
 
     </Panel>
 
+    </Grid>
+
     <!-- Delete Confirmation Dialog Overlay -->
+    <!-- Kein ZIndex: Als letztes Panel-Kind liegt es automatisch oben (Android-kompatibel) -->
     <Border AutomationProperties.AutomationId="Projects_DeleteOverlay"
-            Grid.Row="0" Grid.RowSpan="2"
-            ZIndex="100"
             Background="#80000000"
             IsVisible="{Binding ShowDeleteConfirmation}">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -177,9 +182,8 @@
     </Border>
 
     <!-- Notizen-Editor Overlay -->
-    <Border Grid.Row="0" Grid.RowSpan="2"
-            ZIndex="100"
-            Background="#80000000"
+    <!-- Kein ZIndex: Als letztes Panel-Kind liegt es automatisch oben (Android-kompatibel) -->
+    <Border Background="#80000000"
             IsVisible="{Binding ShowNotesEditor}">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16"
@@ -229,7 +233,7 @@
                         <Button Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).DeletePhotoCommand}"
                                 CommandParameter="{Binding}"
                                 Background="#AA000000" CornerRadius="0,8,0,8"
-                                Padding="4" MinWidth="24" MinHeight="24"
+                                Padding="4" MinWidth="36" MinHeight="36"
                                 HorizontalAlignment="Right" VerticalAlignment="Top">
                           <mi:MaterialIcon Kind="Close" Width="14" Height="14"
                                            Foreground="White" />
@@ -276,6 +280,6 @@
       </Border>
     </Border>
 
-  </Grid>
+  </Panel>
 
 </UserControl>

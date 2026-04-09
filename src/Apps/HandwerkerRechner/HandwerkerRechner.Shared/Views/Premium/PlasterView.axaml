@@ -7,7 +7,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.PlasterView"
-             x:DataType="vm:PlasterViewModel">
+             x:DataType="vm:PlasterViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*,Auto"
         AutomationProperties.AutomationId="Plaster_RootGrid">

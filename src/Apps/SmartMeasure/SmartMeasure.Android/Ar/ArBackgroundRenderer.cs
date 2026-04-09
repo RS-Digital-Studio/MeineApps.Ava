@@ -13,6 +13,10 @@ public sealed class ArBackgroundRenderer : IDisposable
     private int _positionHandle;
     private int _texCoordHandle;
 
+    // Gecachte ByteBuffer/FloatBuffer (vermeidet Native Memory Leak bei 30fps Allokation)
+    private Java.Nio.ByteBuffer? _texCoordByteBuffer;
+    private Java.Nio.FloatBuffer? _texCoordFloatBuffer;
+
     // Fullscreen-Quad (2 Dreiecke, NDC -1..1)
     private static readonly float[] QuadVertices =
     [
@@ -159,14 +163,20 @@ public sealed class ArBackgroundRenderer : IDisposable
 
     private void UploadTexCoordBuffer()
     {
-        var buffer = Java.Nio.ByteBuffer.AllocateDirect(_texCoords.Length * 4)!;
-        buffer.Order(Java.Nio.ByteOrder.NativeOrder());
-        var floatBuffer = buffer.AsFloatBuffer()!;
-        floatBuffer.Put(_texCoords);
-        floatBuffer.Position(0);
+        // ByteBuffer einmal erstellen und wiederverwenden (kein Native Memory Leak bei 30fps)
+        if (_texCoordByteBuffer == null)
+        {
+            _texCoordByteBuffer = Java.Nio.ByteBuffer.AllocateDirect(_texCoords.Length * 4)!;
+            _texCoordByteBuffer.Order(Java.Nio.ByteOrder.NativeOrder());
+            _texCoordFloatBuffer = _texCoordByteBuffer.AsFloatBuffer()!;
+        }
+
+        _texCoordFloatBuffer!.Clear();
+        _texCoordFloatBuffer.Put(_texCoords);
+        _texCoordFloatBuffer.Position(0);
 
         GLES20.GlBindBuffer(GLES20.GlArrayBuffer, _texCoordBuffer);
-        GLES20.GlBufferData(GLES20.GlArrayBuffer, _texCoords.Length * 4, floatBuffer, GLES20.GlDynamicDraw);
+        GLES20.GlBufferData(GLES20.GlArrayBuffer, _texCoords.Length * 4, _texCoordFloatBuffer, GLES20.GlDynamicDraw);
     }
 
     private static int CompileShader(int type, string source)
@@ -203,6 +213,10 @@ public sealed class ArBackgroundRenderer : IDisposable
             _vertexBuffer = 0;
             _texCoordBuffer = 0;
         }
+
+        _texCoordByteBuffer?.Dispose();
+        _texCoordByteBuffer = null;
+        _texCoordFloatBuffer = null;
 
         _initialized = false;
     }

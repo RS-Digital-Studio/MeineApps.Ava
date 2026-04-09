@@ -55,11 +55,13 @@ public class BlenderExportService : IBlenderExportService
         var obj = new StringBuilder();
         WriteObjHeader(obj, mesh, projectName);
 
-        // Globaler Vertex-Offset (OBJ ist 1-basiert, Objekte teilen den Vertex-Pool)
+        // Globaler Vertex/Normal-Offset (OBJ ist 1-basiert, Objekte teilen den Pool)
         int vertexOffset = 1;
+        int normalOffset = 1;
 
         // Terrain exportieren
         vertexOffset = WriteTerrainObject(obj, mesh, vertexOffset);
+        normalOffset += mesh.TriangleCount; // Terrain schreibt eine Normale pro Dreieck
 
         // Gartenelemente exportieren
         var elementCounts = new Dictionary<GardenElementType, int>();
@@ -73,7 +75,12 @@ public class BlenderExportService : IBlenderExportService
             elementCounts[element.ElementType] = count;
 
             var objectName = $"{element.ElementType}_{count}";
-            vertexOffset = WriteGardenElementObject(obj, element, points, objectName, vertexOffset);
+            var prevVertexOffset = vertexOffset;
+            vertexOffset = WriteGardenElementObject(obj, element, points, objectName, vertexOffset, normalOffset);
+            // Normalen-Offset aktualisieren (Flaechen-Elemente schreiben 1 Normale, Extrudierte keine)
+            if (element.ElementType is GardenElementType.Beet or GardenElementType.Rasen or GardenElementType.Terrasse)
+                normalOffset++;
+
         }
 
         await File.WriteAllTextAsync(objPath, obj.ToString(), Encoding.UTF8);
@@ -186,7 +193,7 @@ public class BlenderExportService : IBlenderExportService
 
     /// <summary>Gartenelement als OBJ-Objekt. Gibt den naechsten Vertex-Offset zurueck.</summary>
     private static int WriteGardenElementObject(StringBuilder obj, GardenElement element,
-        List<(double x, double y)> points, string objectName, int vertexOffset)
+        List<(double x, double y)> points, string objectName, int vertexOffset, int normalOffset)
     {
         obj.AppendLine($"o {objectName}");
         obj.AppendLine($"usemtl {element.ElementType}");
@@ -196,7 +203,7 @@ public class BlenderExportService : IBlenderExportService
             case GardenElementType.Beet:
             case GardenElementType.Rasen:
             case GardenElementType.Terrasse:
-                return WriteFlatPolygon(obj, points, element, vertexOffset);
+                return WriteFlatPolygon(obj, points, element, vertexOffset, normalOffset);
 
             case GardenElementType.Weg:
             case GardenElementType.Mauer:
@@ -210,7 +217,7 @@ public class BlenderExportService : IBlenderExportService
 
     /// <summary>Flaechen-Element: Fan-Triangulierung mit Punkt 0 als Faechermittelpunkt</summary>
     private static int WriteFlatPolygon(StringBuilder obj, List<(double x, double y)> points,
-        GardenElement element, int vertexOffset)
+        GardenElement element, int vertexOffset, int normalOffset)
     {
         if (points.Count < 3) return vertexOffset;
 
@@ -235,8 +242,7 @@ public class BlenderExportService : IBlenderExportService
             "vn {0:F6} {1:F6} {2:F6}",
             0.0, 1.0, 0.0));
 
-        // Fan-Triangulierung (Punkt 0 als Zentrum)
-        var normalIdx = vertexOffset; // Vereinfacht: alle Faces teilen sich eine Normale
+        // Fan-Triangulierung (Punkt 0 als Zentrum), mit korrektem Normalen-Index
         for (int i = 1; i < points.Count - 1; i++)
         {
             var i0 = vertexOffset;
@@ -244,7 +250,8 @@ public class BlenderExportService : IBlenderExportService
             var i2 = vertexOffset + i + 1;
 
             obj.AppendLine(string.Format(CultureInfo.InvariantCulture,
-                "f {0} {1} {2}", i0, i1, i2));
+                "f {0}//{1} {2}//{3} {4}//{5}",
+                i0, normalOffset, i1, normalOffset, i2, normalOffset));
         }
 
         obj.AppendLine();

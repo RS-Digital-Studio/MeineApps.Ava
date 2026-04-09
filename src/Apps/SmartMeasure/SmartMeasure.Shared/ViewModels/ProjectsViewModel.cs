@@ -8,11 +8,14 @@ using SmartMeasure.Shared.Services;
 
 namespace SmartMeasure.Shared.ViewModels;
 
-/// <summary>Projektverwaltung: Liste, Erstellen, Duplizieren, Loeschen, Export</summary>
+/// <summary>Projektverwaltung: Liste, Erstellen, Duplizieren, Loeschen, Export (CSV, GeoJSON, Blender, PDF)</summary>
 public partial class ProjectsViewModel : ViewModelBase
 {
     private readonly IProjectService _projectService;
     private readonly IExportService _exportService;
+    private readonly IBlenderExportService _blenderExportService;
+    private readonly ITerrainService _terrainService;
+    private readonly ICoordinateService _coordinateService;
 
     public ObservableCollection<SurveyProject> Projects { get; } = [];
 
@@ -26,10 +29,64 @@ public partial class ProjectsViewModel : ViewModelBase
     /// <summary>Export-Daten bereit (Format, Inhalt)</summary>
     public event Action<string, string>? ExportReady;
 
-    public ProjectsViewModel(IProjectService projectService, IExportService exportService)
+    /// <summary>Export-Datei erstellt (Dateipfad)</summary>
+    public event Action<string>? FileExportReady;
+
+    private bool _isInitialized;
+    private readonly SemaphoreSlim _ensureLock = new(1, 1);
+
+    public ProjectsViewModel(IProjectService projectService, IExportService exportService,
+        IBlenderExportService blenderExportService, ITerrainService terrainService,
+        ICoordinateService coordinateService)
     {
         _projectService = projectService;
         _exportService = exportService;
+        _blenderExportService = blenderExportService;
+        _terrainService = terrainService;
+        _coordinateService = coordinateService;
+    }
+
+    /// <summary>Lazy-Init: Projekte beim ersten Aufruf laden (statt Loaded-Event in View)</summary>
+    public async Task EnsureInitializedAsync()
+    {
+        if (_isInitialized) return;
+        _isInitialized = true;
+        await LoadProjectsAsync();
+    }
+
+    /// <summary>Stellt sicher dass ein Projekt existiert und ausgewaehlt ist.
+    /// Erstellt automatisch eins wenn keins vorhanden (z.B. vor AR-Capture).
+    /// Thread-safe via SemaphoreSlim.</summary>
+    public async Task<SurveyProject?> EnsureProjectExistsAsync()
+    {
+        if (SelectedProject != null) return SelectedProject;
+
+        await _ensureLock.WaitAsync();
+        try
+        {
+            // Double-Check nach Lock
+            if (SelectedProject != null) return SelectedProject;
+
+            await EnsureInitializedAsync();
+
+            // Erstes Projekt waehlen wenn vorhanden
+            if (Projects.Count > 0)
+            {
+                SelectedProject = Projects[0];
+                return SelectedProject;
+            }
+
+            // Kein Projekt vorhanden → automatisch erstellen
+            var name = $"AR-Vermessung {DateTime.UtcNow.ToLocalTime():dd.MM.yyyy HH:mm}";
+            var project = await _projectService.CreateProjectAsync(name);
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                Projects.Insert(0, project);
+                SelectedProject = project;
+            });
+            return project;
+        }
+        finally { _ensureLock.Release(); }
     }
 
     /// <summary>Projekte laden</summary>
@@ -109,6 +166,63 @@ public partial class ProjectsViewModel : ViewModelBase
 
         var geoJson = _exportService.ExportToGeoJson(full);
         ExportReady?.Invoke("geojson", geoJson);
+    }
+
+    /// <summary>Projekt als OBJ+MTL fuer Blender exportieren (Terrain + Gartenelemente)</summary>
+    [RelayCommand]
+    private async Task ExportBlenderAsync(SurveyProject? project)
+    {
+        if (project == null) return;
+
+        var full = await _projectService.GetProjectAsync(project.Id);
+        if (full == null || full.Points.Count < 3) return;
+
+        // Terrain-Mesh berechnen
+        var lats = full.Points.Select(p => p.Latitude).ToArray();
+        var lons = full.Points.Select(p => p.Longitude).ToArray();
+        var alts = full.Points.Select(p => p.Altitude).ToArray();
+        var (x, y, z) = _coordinateService.ToLocalMetric(lats, lons, alts);
+        var mesh = _terrainService.CreateMesh(x, y, z);
+
+        var outputDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SmartMeasure", "Exports");
+        var sanitizedName = string.Join("_", project.Name.Split(Path.GetInvalidFileNameChars()));
+
+        var objPath = await _blenderExportService.ExportObjAsync(
+            mesh, full.GardenElements, outputDir, sanitizedName);
+
+        FileExportReady?.Invoke(objPath);
+    }
+
+    /// <summary>Projekt als PDF-Vermessungsbericht exportieren</summary>
+    [RelayCommand]
+    private async Task ExportPdfAsync(SurveyProject? project)
+    {
+        if (project == null) return;
+
+        var full = await _projectService.GetProjectAsync(project.Id);
+        if (full == null) return;
+
+        // Terrain-Mesh fuer Hoehendaten (optional)
+        TerrainMesh? mesh = null;
+        if (full.Points.Count >= 3)
+        {
+            var lats = full.Points.Select(p => p.Latitude).ToArray();
+            var lons = full.Points.Select(p => p.Longitude).ToArray();
+            var alts = full.Points.Select(p => p.Altitude).ToArray();
+            var (x, y, z) = _coordinateService.ToLocalMetric(lats, lons, alts);
+            mesh = _terrainService.CreateMesh(x, y, z);
+        }
+
+        var outputDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SmartMeasure", "Exports");
+
+        var pdfPath = await _exportService.ExportPdfAsync(
+            full, full.Points, full.GardenElements, mesh, outputDir);
+
+        FileExportReady?.Invoke(pdfPath);
     }
 
     /// <summary>Projekt oeffnen</summary>

@@ -100,7 +100,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "HandwerkerRechner",
-            AppVersion = "v2.0.6",
+            AppVersion = "v2.0.7",
             Renderer = new HandwerkerRechnerSplashRenderer()
         };
     }
@@ -140,7 +140,9 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+#if DEBUG
             Debug.WriteLine($"[HandwerkerRechner] Loading-Pipeline fehlgeschlagen: {ex}");
+#endif
             Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
         }
     }
@@ -169,7 +171,6 @@ public partial class App : Application
 
         // App Services
         services.AddSingleton<IProjectService, ProjectService>();
-        services.AddSingleton<IPremiumAccessService, PremiumAccessService>();
         services.AddSingleton<IFavoritesService, FavoritesService>();
         services.AddSingleton<IProjectTemplateService, ProjectTemplateService>();
         services.AddSingleton<IMaterialPriceService, MaterialPriceService>();

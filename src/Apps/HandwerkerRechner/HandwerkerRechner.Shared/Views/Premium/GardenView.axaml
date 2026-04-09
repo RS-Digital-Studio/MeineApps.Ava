@@ -8,7 +8,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.GardenView"
-             x:DataType="vm:GardenViewModel">
+             x:DataType="vm:GardenViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <conv:IntEqualsConverter x:Key="IntEquals" />

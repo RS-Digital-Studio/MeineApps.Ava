@@ -8,6 +8,7 @@
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.MaterialCompareView"
              x:DataType="vm:MaterialCompareViewModel"
+             x:CompileBindings="True"
              Background="Transparent">
 
   <Grid RowDefinitions="Auto,*,Auto"

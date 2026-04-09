@@ -22,6 +22,10 @@ public static class HudVisualization
     private static readonly SKMaskFilter _scoreGlow6 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
     private static readonly SKMaskFilter _timerGlow8 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
 
+    // Gecachter MaskFilter für PowerUp-Icon Glow (Größe ändert sich nicht pro Level)
+    private static SKMaskFilter? _cachedIconGlow;
+    private static float _cachedIconGlowRadius;
+
     // Score-Counter Animation
     private static int _displayScore;
     private static int _targetScore;
@@ -165,12 +169,16 @@ public static class HudVisualization
         float r = size / 2f;
         float pulse = 0.6f + 0.4f * MathF.Sin(animTime * 4f);
 
-        // Glow-Aura (pulsierend) - dynamischer Radius, daher nicht cachebar
+        // Glow-Aura (pulsierend) - gecachter MaskFilter (HUD-Icon-Größe ändert sich nicht pro Level)
         _glowPaint.Color = color.WithAlpha((byte)(pulse * 50));
-        _glowPaint.MaskFilter?.Dispose();
-        _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.4f);
+        if (_cachedIconGlow == null || MathF.Abs(_cachedIconGlowRadius - r * 0.4f) > 0.1f)
+        {
+            _cachedIconGlow?.Dispose();
+            _cachedIconGlowRadius = r * 0.4f;
+            _cachedIconGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, _cachedIconGlowRadius);
+        }
+        _glowPaint.MaskFilter = _cachedIconGlow;
         canvas.DrawCircle(cx, cy, r * 1.2f, _glowPaint);
-        _glowPaint.MaskFilter?.Dispose();
         _glowPaint.MaskFilter = null;
 
         // Icon-Hintergrund (Kreis)

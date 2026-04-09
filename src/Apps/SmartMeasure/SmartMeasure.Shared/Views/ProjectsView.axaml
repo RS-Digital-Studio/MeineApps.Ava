@@ -107,6 +107,20 @@
                                         <TextBlock Text="GeoJSON" />
                                     </Button>
                                     <Button Padding="8,4" CornerRadius="6" FontSize="11"
+                                            Background="{DynamicResource BgElevatedBrush}"
+                                            Foreground="{DynamicResource AccentBrush}"
+                                            Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportBlenderCommand}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="OBJ" />
+                                    </Button>
+                                    <Button Padding="8,4" CornerRadius="6" FontSize="11"
+                                            Background="{DynamicResource BgElevatedBrush}"
+                                            Foreground="{DynamicResource DangerBrush}"
+                                            Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportPdfCommand}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Text="PDF" />
+                                    </Button>
+                                    <Button Padding="8,4" CornerRadius="6" FontSize="11"
                                             Background="Transparent"
                                             Foreground="{DynamicResource DangerBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).DeleteProjectCommand}"

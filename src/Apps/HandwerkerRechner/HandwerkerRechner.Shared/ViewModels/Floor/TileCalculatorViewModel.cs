@@ -6,7 +6,6 @@ using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
-using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using HandwerkerRechner.ViewModels;
 
@@ -22,8 +21,6 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
     private readonly IUnitConverterService _unitConverter;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly IPurchaseService _purchaseService;
     private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
@@ -38,6 +35,7 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
+    public event Action? CalculationPerformed;
 
     [ObservableProperty]
     private bool _showSaveDialog;
@@ -63,8 +61,6 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         IUnitConverterService unitConverter,
         IMaterialExportService exportService,
         IFileShareService fileShareService,
-        IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService,
         IMaterialPriceService priceService)
     {
         _craftEngine = craftEngine;
@@ -74,8 +70,6 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         _unitConverter = unitConverter;
         _exportService = exportService;
         _fileShareService = fileShareService;
-        _rewardedAdService = rewardedAdService;
-        _purchaseService = purchaseService;
         _priceService = priceService;
 
         // Subscribe to unit system changes
@@ -100,7 +94,9 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -249,6 +245,7 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
 
             Result = _craftEngine.CalculateTiles(RoomLength, RoomWidth, TileLength, TileWidth, WastePercentage);
             HasResult = true;
+            CalculationPerformed?.Invoke();
 
             // Fugenmasse berechnen
             var groutKg = CalculateGroutMass(Result.RoomArea, TileLength, TileWidth, GroutWidthMm);
@@ -290,7 +287,9 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -420,7 +419,9 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -455,13 +456,6 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         try
         {
             IsExporting = true;
-
-            // Premium: Direkt. Free: Rewarded Ad
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
 
             var calcType = _localization.GetString("CalcTiles") ?? "Tiles";
             var inputs = new Dictionary<string, string>
@@ -508,12 +502,6 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         {
             IsExporting = true;
 
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
-
             var calcType = _localization.GetString("CalcTiles") ?? "Tiles";
             var inputs = new Dictionary<string, string>
             {
@@ -549,26 +537,14 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Fugenmasse berechnen (Industriestandard-Formel)
-    /// kg/m² = (L+B) / (L×B) × Fugenbreite(mm) × Fugentiefe(mm) × Dichte(g/cm³) / 1000
-    /// L,B in mm, Dichte = 1.6 g/cm³ (Standard-Fugenmörtel)
+    /// Fugenmasse berechnen - delegiert an CraftEngine.CalculateGrout()
+    /// Standard-Fugentiefe 6mm (Fliesenrechner-Kontext)
     /// </summary>
-    private double CalculateGroutMass(double roomAreaM2, double tileLengthCm, double tileWidthCm, double groutWidthMm)
+    private static double CalculateGroutMass(double roomAreaM2, double tileLengthCm, double tileWidthCm, double groutWidthMm)
     {
-        if (tileLengthCm <= 0 || tileWidthCm <= 0 || groutWidthMm <= 0) return 0;
-
-        const double groutDepthMm = 6.0; // Standard-Fugentiefe
-        const double groutDensityGPerCm3 = 1.6; // Fugenmörtel-Dichte
-
-        // Fliesenmaße in mm umrechnen
-        double tileLengthMm = tileLengthCm * 10;
-        double tileWidthMm = tileWidthCm * 10;
-
-        // Bedarf pro m² in kg: (L+B)/(L×B) × Breite × Tiefe × Dichte / 1000
-        double kgPerM2 = (tileLengthMm + tileWidthMm) / (tileLengthMm * tileWidthMm)
-                         * groutWidthMm * groutDepthMm * groutDensityGPerCm3;
-
-        return roomAreaM2 * kgPerM2;
+        const double defaultGroutDepthMm = 6.0;
+        var result = Models.CraftEngine.CalculateGrout(roomAreaM2, tileLengthCm, tileWidthCm, groutWidthMm, defaultGroutDepthMm);
+        return result.TotalKg; // Ohne Reserve - TileCalculator zeigt Rohwert
     }
 
     /// <summary>

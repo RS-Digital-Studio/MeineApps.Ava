@@ -134,11 +134,13 @@ public class SurveyLiveRenderer : IDisposable
         Color = new SKColor(33, 150, 243, 60)
     };
 
-    // Fix-Glow
+    // Fix-Glow (Shader wird pro Frame mit aktuellen Parametern erstellt)
     private readonly SKPaint _glowPaint = new()
     {
         IsAntialias = true, Style = SKPaintStyle.Fill
     };
+    private int _lastGlowFixQuality = -1;
+    private float _lastGlowCx, _lastGlowCy, _lastGlowRadius;
 
     // Neigungsindikator
     private readonly SKPaint _tiltBgPaint = new()
@@ -191,19 +193,32 @@ public class SurveyLiveRenderer : IDisposable
 
     private void DrawFixGlow(SKCanvas canvas, float cx, float cy, float radius)
     {
-        var glowColor = FixQuality >= 4 ? FixGreen
-            : FixQuality >= 2 ? FixYellow
-            : FixRed;
+        var glowRadius = radius * 1.1f;
 
-        _glowPaint.Shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy), radius * 1.1f,
-            [glowColor, SKColors.Transparent],
-            [0.3f, 1.0f],
-            SKShaderTileMode.Clamp);
+        // Shader nur bei geaenderten Parametern neu erstellen
+        if (_lastGlowFixQuality != FixQuality ||
+            Math.Abs(_lastGlowCx - cx) > 0.5f ||
+            Math.Abs(_lastGlowCy - cy) > 0.5f ||
+            Math.Abs(_lastGlowRadius - glowRadius) > 0.5f)
+        {
+            var glowColor = FixQuality >= 4 ? FixGreen
+                : FixQuality >= 2 ? FixYellow
+                : FixRed;
 
-        canvas.DrawCircle(cx, cy, radius * 1.1f, _glowPaint);
-        _glowPaint.Shader?.Dispose();
-        _glowPaint.Shader = null;
+            _glowPaint.Shader?.Dispose();
+            _glowPaint.Shader = SKShader.CreateRadialGradient(
+                new SKPoint(cx, cy), glowRadius,
+                [glowColor, SKColors.Transparent],
+                [0.3f, 1.0f],
+                SKShaderTileMode.Clamp);
+
+            _lastGlowFixQuality = FixQuality;
+            _lastGlowCx = cx;
+            _lastGlowCy = cy;
+            _lastGlowRadius = glowRadius;
+        }
+
+        canvas.DrawCircle(cx, cy, glowRadius, _glowPaint);
     }
 
     private void DrawCompassRing(SKCanvas canvas, float cx, float cy, float radius)
@@ -399,6 +414,7 @@ public class SurveyLiveRenderer : IDisposable
     /// <summary>Alle gecachten Paint-Objekte freigeben</summary>
     public void Dispose()
     {
+        _glowPaint.Shader?.Dispose();
         _bgPaint.Dispose();
         _compassRingPaint.Dispose();
         _tickPaint.Dispose();

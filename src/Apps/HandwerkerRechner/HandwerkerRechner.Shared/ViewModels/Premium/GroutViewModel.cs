@@ -6,7 +6,6 @@ using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
-using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using HandwerkerRechner.ViewModels;
 
@@ -24,8 +23,6 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
     private readonly ICalculationHistoryService _historyService;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly IPurchaseService _purchaseService;
     private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
@@ -33,6 +30,7 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
+    public event Action? CalculationPerformed;
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
     public GroutViewModel(
@@ -42,8 +40,6 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
         ICalculationHistoryService historyService,
         IMaterialExportService exportService,
         IFileShareService fileShareService,
-        IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService,
         IMaterialPriceService priceService)
     {
         _engine = engine;
@@ -52,8 +48,6 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
         _historyService = historyService;
         _exportService = exportService;
         _fileShareService = fileShareService;
-        _rewardedAdService = rewardedAdService;
-        _purchaseService = purchaseService;
         _priceService = priceService;
 
         // Standard-Materialpreis laden
@@ -125,6 +119,7 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
 
         if (HasResult)
         {
+            CalculationPerformed?.Invoke();
             TotalKgValue = result.TotalWithReserveKg;
             TotalKgDisplay = $"{result.TotalWithReserveKg:F1} kg";
             TotalWithReserveDisplay = $"{result.TotalWithReserveKg:F1} kg";
@@ -165,7 +160,9 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -263,7 +260,9 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -297,12 +296,6 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
         try
         {
             IsExporting = true;
-
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
 
             var calcType = _localization.GetString("CalcGrout") ?? "Fugenmasse";
             var inputs = new Dictionary<string, string>
@@ -345,12 +338,6 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
         {
             IsExporting = true;
 
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
-
             var calcType = _localization.GetString("CalcGrout") ?? "Fugenmasse";
             var inputs = new Dictionary<string, string>
             {
@@ -370,7 +357,7 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
 
             var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
             await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
-            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Erfolg", _localization.GetString("PdfExportSuccess") ?? "PDF exportiert!");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Erfolg", _localization.GetString("CsvExportSuccess") ?? "CSV exportiert!");
         }
         catch (Exception)
         {

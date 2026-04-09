@@ -7,7 +7,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.CableSizingView"
-             x:DataType="vm:CableSizingViewModel">
+             x:DataType="vm:CableSizingViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*,Auto"
         AutomationProperties.AutomationId="CableSizing_RootGrid">

@@ -320,6 +320,7 @@ public static class MaterialStackVisualization
             new[] { SkiaThemeHelper.AdjustBrightness(color, 1.4f), color },
             null, SKShaderTileMode.Clamp);
         canvas.DrawRoundRect(barRect, h / 2f, h / 2f, _iconFill);
+        _iconFill.Shader?.Dispose();
         _iconFill.Shader = null;
         canvas.DrawRoundRect(barRect, h / 2f, h / 2f, _iconStroke);
     }

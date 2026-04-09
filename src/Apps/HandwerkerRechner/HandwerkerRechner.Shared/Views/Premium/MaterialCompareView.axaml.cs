@@ -20,6 +20,7 @@ public partial class MaterialCompareView : CalculatorViewBase
 
     protected override void OnResultPropertyChanged()
     {
+        MaterialCompareVisualization.StartAnimation();
         MaterialCompareCanvas.InvalidateSurface();
     }
 
@@ -40,6 +41,9 @@ public partial class MaterialCompareView : CalculatorViewBase
                 vm.SavingsAmount,
                 vm.SavingsPercent,
                 vm.IsAcheaper);
+
+            if (MaterialCompareVisualization.NeedsRedraw)
+                RequestAnimationFrame(sender);
         }
     }
 }

@@ -1,21 +1,36 @@
+using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
 namespace HandwerkerRechner.Graphics;
 
 /// <summary>
-/// Visualisierung für den Aufmaß-Rechner: Schematische 2D-Zeichnung der gewählten Form.
-/// Zeigt die Form mit Bemaßungspfeilen und Flächenangabe.
+/// Visualisierung fuer den Aufmass-Rechner: Schematische 2D-Zeichnung der gewaehlten Form.
+/// Zeigt die Form mit Bemassungspfeilen und Flaechenangabe.
 /// </summary>
 public static class AreaMeasureVisualization
 {
+    // Einschwing-Animation (konsistent mit allen anderen Renderern)
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (fuer InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint FillPaint = new() { Color = new SKColor(59, 130, 246, 60), IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint StrokePaint = new() { Color = new SKColor(59, 130, 246), IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2.5f };
     private static readonly SKPaint DimPaint = new() { Color = new SKColor(245, 158, 11), IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
     private static readonly SKPaint TextPaint = new() { Color = SKColors.White, IsAntialias = true };
     private static readonly SKPaint AreaTextPaint = new() { Color = new SKColor(34, 197, 94), IsAntialias = true };
     private static readonly SKPaint BgPaint = new() { Color = new SKColor(30, 30, 30, 120), IsAntialias = true };
+    private static readonly SKPaint _layerPaint = new();
 
-    // SKFont-Objekte für Text-Rendering (nicht-veraltete API)
+    // SKFont-Objekte fuer Text-Rendering (nicht-veraltete API)
     private static readonly SKFont TextFont = new() { Size = 12f, Embolden = true };
     private static readonly SKFont AreaTextFont = new() { Size = 16f, Embolden = true };
 
@@ -25,6 +40,13 @@ public static class AreaMeasureVisualization
         double dim1, double dim2, double dim3, double dim4, double dim5,
         double area, float alpha = 1f)
     {
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
+        // Alpha-Fade via SaveLayer
+        _layerPaint.Color = _layerPaint.Color.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
+
         canvas.DrawRoundRect(bounds.Left, bounds.Top, bounds.Width, bounds.Height, 12, 12, BgPaint);
 
         var drawArea = new SKRect(
@@ -47,6 +69,8 @@ public static class AreaMeasureVisualization
         canvas.DrawText(areaText,
             bounds.Left + (bounds.Width - areaWidth) / 2,
             bounds.Bottom - 12, SKTextAlign.Left, AreaTextFont, AreaTextPaint);
+
+        canvas.Restore();
     }
 
     private static void DrawRectangle(SKCanvas canvas, SKRect area, double w, double h, double sqm, float alpha)

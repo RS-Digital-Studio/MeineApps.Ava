@@ -1415,8 +1415,9 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="HistoryEmpty" xml:space="preserve">
     <value>Noch keine Berechnungen. Deine Berechnungen erscheinen hier.</value>
   </data>
+  <!-- Veraltet: Extended History Hinweis in HistoryView (altes Modell) -->
   <data name="HistoryExtendedHint" xml:space="preserve">
-    <value>Schau ein Video um bis zu 30 Einträge pro Rechner zu sehen!</value>
+    <value>Deine letzten 30 Berechnungen sind hier gespeichert.</value>
   </data>
   <data name="WatchAdForHistory" xml:space="preserve">
     <value>Video ansehen</value>
@@ -1643,24 +1644,38 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
     <value>Profi-Werkzeuge</value>
   </data>
   <data name="CalculatorCount" xml:space="preserve">
-    <value>11 Rechner</value>
+    <value>19 Rechner</value>
   </data>
   <data name="GetPremium" xml:space="preserve">
     <value>Werbefrei</value>
   </data>
   <data name="PremiumPrice" xml:space="preserve">
-    <value>Ab 3,99 € – einmalig</value>
+    <value>3,99 € – einmalig</value>
+  </data>
+  <data name="PremiumFeatures" xml:space="preserve">
+    <value>Keine Video-Werbung • Kein Banner • Unbegrenzter Verlauf • Direkter Export</value>
   </data>
 
-  <!-- Rewarded Ads -->
+  <!-- Rewarded Ads - Berechnungs-Interstitial (nach jeder 3. Berechnung) -->
+  <data name="AdInterstitialTitle" xml:space="preserve">
+    <value>Kurze Werbepause</value>
+  </data>
+  <data name="AdInterstitialDesc" xml:space="preserve">
+    <value>Schau ein kurzes Video um weiterzumachen. Oder hol dir Premium für werbefreies Arbeiten.</value>
+  </data>
+  <data name="AdInterstitialButton" xml:space="preserve">
+    <value>Video schauen → Weiter</value>
+  </data>
+  <data name="AccessGranted" xml:space="preserve">
+    <value>Zugang freigeschaltet!</value>
+  </data>
+
+  <!-- Veraltet: altes 30-Min-Zugang-Modell (Keys bleiben für Rückwärtskompatibilität) -->
   <data name="PremiumCalculatorsLocked" xml:space="preserve">
     <value>Premium-Rechner freischalten</value>
   </data>
   <data name="WatchVideoFor30Min" xml:space="preserve">
-    <value>Video schauen für 30 Min Zugang zu allen Premium-Rechnern.</value>
-  </data>
-  <data name="AccessGranted" xml:space="preserve">
-    <value>Zugang freigeschaltet!</value>
+    <value>Schau ein kurzes Video um weiterzumachen.</value>
   </data>
   <data name="AccessExpiresIn" xml:space="preserve">
     <value>Zugang läuft ab in {0} Min</value>
@@ -1669,15 +1684,15 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
     <value>Premium-Zugang aktiv</value>
   </data>
   <data name="VideoFor30Min" xml:space="preserve">
-    <value>Video schauen → 30 Min Zugang</value>
+    <value>Video schauen → Weiter</value>
   </data>
 
-  <!-- Rewarded Ads - Erweiterte History -->
+  <!-- Veraltet: Erweiterte History per Werbung (Keys bleiben für Rückwärtskompatibilität) -->
   <data name="ExtendedHistoryTitle" xml:space="preserve">
-    <value>Erweiterte History</value>
+    <value>Verlauf</value>
   </data>
   <data name="ExtendedHistoryDesc" xml:space="preserve">
-    <value>Video schauen für 24h Zugang zu 30 Berechnungen</value>
+    <value>Deine letzten Berechnungen sind hier gespeichert.</value>
   </data>
 
   <!-- Rewarded Ads - Material Export -->

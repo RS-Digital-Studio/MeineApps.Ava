@@ -926,8 +926,9 @@ La publicidad ha sido desactivada.</value>
   <data name="HistoryEmpty" xml:space="preserve">
     <value>Sin cálculos aún. Tus cálculos aparecerán aquí.</value>
   </data>
+  <!-- Veraltet: Extended History Hinweis in HistoryView (altes Modell) -->
   <data name="HistoryExtendedHint" xml:space="preserve">
-    <value>¡Mira un anuncio para ver hasta 30 entradas por calculadora!</value>
+    <value>Tus últimos 30 cálculos están guardados aquí.</value>
   </data>
   <data name="WatchAdForHistory" xml:space="preserve">
     <value>Ver vídeo</value>

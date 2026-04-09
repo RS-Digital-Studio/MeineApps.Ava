@@ -2,11 +2,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SmartMeasure.Shared.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:labs="using:Avalonia.Labs.Controls"
              x:Class="SmartMeasure.Shared.Views.SurveyView"
              x:DataType="vm:SurveyViewModel">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12" Margin="16">
+
+            <!-- Live-Kompass mit Genauigkeits-Ring -->
+            <Border Background="{DynamicResource BgCardBrush}"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="8" HorizontalAlignment="Center">
+                <labs:SKCanvasView x:Name="CompassCanvas"
+                                   Width="200" Height="200" />
+            </Border>
 
             <!-- Koordinaten-Anzeige -->
             <Border Background="{DynamicResource BgCardBrush}"

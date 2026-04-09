@@ -7,7 +7,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Floor.WallpaperCalculatorView"
-             x:DataType="vm:WallpaperCalculatorViewModel">
+             x:DataType="vm:WallpaperCalculatorViewModel"
+             x:CompileBindings="True">
 
   <Grid AutomationProperties.AutomationId="Wallpaper_RootGrid" RowDefinitions="Auto,*,Auto">
 

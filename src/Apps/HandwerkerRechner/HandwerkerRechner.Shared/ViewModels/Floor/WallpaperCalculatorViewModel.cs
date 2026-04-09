@@ -6,7 +6,6 @@ using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
-using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using HandwerkerRechner.ViewModels;
 
@@ -22,8 +21,6 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
     private readonly IUnitConverterService _unitConverter;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly IPurchaseService _purchaseService;
     private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
@@ -38,6 +35,7 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
+    public event Action? CalculationPerformed;
 
     [ObservableProperty]
     private bool _showSaveDialog;
@@ -63,8 +61,6 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         IUnitConverterService unitConverter,
         IMaterialExportService exportService,
         IFileShareService fileShareService,
-        IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService,
         IMaterialPriceService priceService)
     {
         _craftEngine = craftEngine;
@@ -74,8 +70,6 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         _unitConverter = unitConverter;
         _exportService = exportService;
         _fileShareService = fileShareService;
-        _rewardedAdService = rewardedAdService;
-        _purchaseService = purchaseService;
         _priceService = priceService;
 
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
@@ -99,7 +93,9 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -285,6 +281,7 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
             // und berechnet perimeter = 2*(L+W). Mit L=Umfang/2, W=0 ergibt sich perimeter=Umfang.
             Result = _craftEngine.CalculateWallpaper(effectiveWallLength / 2, 0, RoomHeight, RollLength, RollWidth, PatternRepeat);
             HasResult = true;
+            CalculationPerformed?.Invoke();
 
             await SaveToHistoryAsync();
         }
@@ -329,7 +326,9 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -479,7 +478,9 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -515,12 +516,6 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         try
         {
             IsExporting = true;
-
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
 
             var calcType = _localization.GetString("CalcWallpaper") ?? "Wallpaper";
             var inputs = new Dictionary<string, string>
@@ -569,12 +564,6 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         {
             IsExporting = true;
 
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
-
             var calcType = _localization.GetString("CalcWallpaper") ?? "Wallpaper";
             var inputs = new Dictionary<string, string>
             {
@@ -599,7 +588,7 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
 
             var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
             await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
-            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("CsvExportSuccess") ?? "CSV exported!");
         }
         catch (Exception)
         {

@@ -20,7 +20,7 @@ namespace SmartMeasure.Android.Ar;
 /// Ergebnis wird ueber statisches Feld zurueckgegeben (zu gross fuer Intent-Extras).
 /// </summary>
 [Activity(
-    Theme = "@android:style/Theme.Black.NoTitleBar.Fullscreen",
+    Theme = "@style/MyTheme.Fullscreen",
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize,
     ScreenOrientation = ScreenOrientation.Portrait)]
 public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSurfaceView.IRenderer
@@ -102,6 +102,7 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
     // Letzter Frame fuer Hit-Testing
     private Frame? _lastFrame;
     private readonly object _frameLock = new();
+    private readonly object _dataLock = new(); // Schuetzt _points, _contours, _activeContour
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -139,36 +140,47 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         SetContentView(rootLayout);
     }
 
+    // Toolbar-Buttons fuer aktiven Modus
+    private Button? _btnPoint;
+    private Button? _btnContour;
+
     private void CreateToolbar(FrameLayout root)
     {
         var density = Resources!.DisplayMetrics!.Density;
 
-        // Toolbar-Container (unten)
-        var toolbar = new LinearLayout(this)
+        // Toolbar: HorizontalScrollView damit alle Buttons auf schmalen Bildschirmen erreichbar sind
+        var scrollView = new HorizontalScrollView(this)
         {
-            Orientation = global::Android.Widget.Orientation.Horizontal,
+            HorizontalScrollBarEnabled = false,
+            FillViewport = true
         };
-        toolbar.SetGravity(GravityFlags.Center);
-        toolbar.SetBackgroundColor(Color.Argb(180, 0, 0, 0));
-        toolbar.SetPadding(0, (int)(8 * density), 0, (int)(8 * density));
-
-        var toolbarParams = new FrameLayout.LayoutParams(
+        var scrollParams = new FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MatchParent,
             (int)(64 * density))
         {
             Gravity = GravityFlags.Bottom
         };
-        toolbar.LayoutParameters = toolbarParams;
+        scrollView.LayoutParameters = scrollParams;
+        scrollView.SetBackgroundColor(Color.Argb(180, 0, 0, 0));
 
-        // Toolbar-Buttons
-        AddToolbarButton(toolbar, "Punkt", density, () => SetMode(CaptureMode.Point));
-        AddToolbarButton(toolbar, "Linie", density, () => SetMode(CaptureMode.Contour));
-        AddToolbarButton(toolbar, "\u25CB", density, CloseActiveContour); // ○ Kontur schließen
-        AddToolbarButton(toolbar, "Undo", density, Undo);
-        AddToolbarButton(toolbar, "\u2716", density, DeleteSelectedPoint);
-        AddToolbarButton(toolbar, "Fertig", density, FinishCapture);
+        var toolbar = new LinearLayout(this)
+        {
+            Orientation = global::Android.Widget.Orientation.Horizontal,
+        };
+        toolbar.SetGravity(GravityFlags.CenterVertical);
+        toolbar.SetPadding((int)(4 * density), (int)(6 * density), (int)(4 * density), (int)(6 * density));
 
-        root.AddView(toolbar);
+        // Toolbar-Buttons (kompakter: 56dp statt 80dp, kein Margin-Overhead)
+        _btnPoint = AddToolbarButton(toolbar, "\u25CE Punkt", density, () => SetMode(CaptureMode.Point), true);
+        _btnContour = AddToolbarButton(toolbar, "\u2500 Linie", density, () => SetMode(CaptureMode.Contour));
+        AddToolbarButton(toolbar, "\u25EF Schließen", density, CloseActiveContour);
+        AddToolbarButton(toolbar, "\u21B6", density, Undo);
+        AddToolbarButton(toolbar, "\u21B7", density, Redo);
+        AddToolbarButton(toolbar, "\u2716 Löschen", density, DeleteSelectedPoint);
+        AddToolbarButton(toolbar, "\u2714 Fertig", density, FinishCapture);
+
+        scrollView.AddView(toolbar);
+        root.AddView(scrollView);
 
         // Zurueck-Button (oben links)
         var backButton = new ImageButton(this);
@@ -228,24 +240,32 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         root.AddView(_counterText);
     }
 
-    private void AddToolbarButton(LinearLayout toolbar, string text, float density, Action onClick)
+    private Button AddToolbarButton(LinearLayout toolbar, string text, float density,
+        Action onClick, bool isActive = false)
     {
         var button = new Button(this)
         {
             Text = text,
-            TextSize = 12,
+            TextSize = 11
         };
+        button.SetAllCaps(false);
         button.SetTextColor(Color.White);
-        button.SetBackgroundColor(Color.Argb(100, 255, 107, 0)); // Primary Orange
+        button.SetBackgroundColor(isActive
+            ? Color.Argb(220, 255, 107, 0)   // Aktiv: kräftiges Orange
+            : Color.Argb(80, 255, 255, 255)); // Inaktiv: dezentes Weiß
+        button.SetPadding((int)(6 * density), 0, (int)(6 * density), 0);
+        button.SetMinimumWidth(0);
+        button.SetMinWidth(0);
         var lp = new LinearLayout.LayoutParams(
-            (int)(80 * density), (int)(48 * density))
+            ViewGroup.LayoutParams.WrapContent, (int)(44 * density))
         {
-            LeftMargin = (int)(4 * density),
-            RightMargin = (int)(4 * density)
+            LeftMargin = (int)(2 * density),
+            RightMargin = (int)(2 * density)
         };
         button.LayoutParameters = lp;
         button.Click += (_, _) => onClick();
         toolbar.AddView(button);
+        return button;
     }
 
     private void SetMode(CaptureMode mode)
@@ -253,15 +273,23 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         // Aktive Kontur abschliessen wenn Modus wechselt
         if (_activeContour != null && _activeContour.Points.Count > 0)
         {
-            _contours.Add(_activeContour);
+            lock (_dataLock)
+                _contours.Add(_activeContour);
             _activeContour = null;
         }
 
         _captureMode = mode;
 
-        // Modus-Text aktualisieren
+        // Modus-Text + Button-Highlighting aktualisieren
         if (_modeText != null)
             _modeText.Text = mode == CaptureMode.Point ? "Modus: Punkt" : "Modus: Linie";
+
+        _btnPoint?.SetBackgroundColor(mode == CaptureMode.Point
+            ? Color.Argb(220, 255, 107, 0)    // Aktiv: kräftiges Orange
+            : Color.Argb(80, 255, 255, 255));  // Inaktiv: dezent
+        _btnContour?.SetBackgroundColor(mode == CaptureMode.Contour
+            ? Color.Argb(220, 255, 107, 0)
+            : Color.Argb(80, 255, 255, 255));
     }
 
     /// <summary>Aktive Kontur schliessen (letzten Punkt mit erstem verbinden)</summary>
@@ -270,7 +298,8 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         if (_activeContour == null || _activeContour.Points.Count < 3) return;
 
         _activeContour.IsClosed = true;
-        _contours.Add(_activeContour);
+        lock (_dataLock)
+            _contours.Add(_activeContour);
         _activeContour = null;
         UpdateCounter();
         _overlayView?.Invalidate();
@@ -279,17 +308,28 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             _modeText.Text = "Kontur geschlossen";
     }
 
-private void FinishCapture()
+    private void FinishCapture()
     {
         // Aktive Kontur abschliessen
-        if (_activeContour != null && _activeContour.Points.Count > 0)
-            _contours.Add(_activeContour);
+        lock (_dataLock)
+        {
+            if (_activeContour != null && _activeContour.Points.Count > 0)
+                _contours.Add(_activeContour);
+        }
 
-        // Ergebnis zusammenbauen
+        // Ergebnis zusammenbauen (Snapshot unter Lock)
+        List<ArPoint> pointsCopy;
+        List<ArContour> contoursCopy;
+        lock (_dataLock)
+        {
+            pointsCopy = new List<ArPoint>(_points);
+            contoursCopy = new List<ArContour>(_contours);
+        }
+
         _lastResult = new ArCaptureResult
         {
-            Points = new List<ArPoint>(_points),
-            Contours = new List<ArContour>(_contours),
+            Points = pointsCopy,
+            Contours = contoursCopy,
             GpsLatitude = _gpsLatitude,
             GpsLongitude = _gpsLongitude,
             GpsAltitude = _gpsAltitude,
@@ -321,8 +361,9 @@ private void FinishCapture()
         var density = Resources!.DisplayMetrics!.Density;
         var toolbarHeight = 64 * density;
 
-        // Toolbar-Bereich ignorieren
-        if (e.GetY() > Resources.DisplayMetrics!.HeightPixels - toolbarHeight)
+        // Toolbar-Bereich ignorieren (View-Höhe statt DisplayMetrics, korrekt bei Fullscreen)
+        var viewHeight = _glSurfaceView?.Height ?? Resources.DisplayMetrics!.HeightPixels;
+        if (e.GetY() > viewHeight - toolbarHeight)
             return base.OnTouchEvent(e);
 
         switch (e.Action)
@@ -367,7 +408,7 @@ private void FinishCapture()
         if (!_isContourPointSelected && _selectedPointIndex >= 0 && _selectedPointIndex < _points.Count)
             return _points[_selectedPointIndex];
 
-        if (_isContourPointSelected && _selectedContourIdx >= 0 && _selectedContourPointIdx >= 0)
+        if (_isContourPointSelected && _selectedContourPointIdx >= 0)
         {
             var contour = _selectedContourIdx == -1
                 ? _activeContour
@@ -390,9 +431,9 @@ private void FinishCapture()
             _isDragging = true;
         }
 
-        if (_isDragging && _selectedPointIndex >= 0)
+        if (_isDragging && (_selectedPointIndex >= 0 || _isContourPointSelected))
         {
-            // Ausgewaehlten Punkt per Hit-Test an neue Position verschieben
+            // Ausgewaehlten Punkt (Einzel- oder Kontur-Punkt) per Hit-Test verschieben
             MoveSelectedPoint(e.GetX(), e.GetY());
         }
 
@@ -486,22 +527,31 @@ private void FinishCapture()
     private void PlaceNewPoint(float screenX, float screenY)
     {
         var arPoint = HitTestAt(screenX, screenY);
-        if (arPoint == null) return;
+        if (arPoint == null)
+        {
+            // Feedback: Kein Plane erkannt → User muss Kamera bewegen
+            RunOnUiThread(() =>
+                Toast.MakeText(this, "Keine Fläche erkannt - Kamera langsam bewegen", ToastLength.Short)?.Show());
+            return;
+        }
 
         RunOnUiThread(() =>
         {
-            if (_captureMode == CaptureMode.Point)
+            lock (_dataLock)
             {
-                _undoStack.Push(new AddPointAction(_points, arPoint));
-                _redoStack.Clear();
-                _points.Add(arPoint);
-            }
-            else
-            {
-                _activeContour ??= new ArContour { ContourType = ArContourType.Grenze };
-                _undoStack.Push(new AddContourPointAction(_activeContour, arPoint));
-                _redoStack.Clear();
-                _activeContour.Points.Add(arPoint);
+                if (_captureMode == CaptureMode.Point)
+                {
+                    _undoStack.Push(new AddPointAction(_points, arPoint));
+                    _redoStack.Clear();
+                    _points.Add(arPoint);
+                }
+                else
+                {
+                    _activeContour ??= new ArContour { ContourType = ArContourType.Grenze };
+                    _undoStack.Push(new AddContourPointAction(_activeContour, arPoint));
+                    _redoStack.Clear();
+                    _activeContour.Points.Add(arPoint);
+                }
             }
             UpdateCounter();
             _overlayView?.Invalidate();
@@ -569,12 +619,8 @@ private void FinishCapture()
             // Snap-to-Edge: Pruefen ob eine Plane-Kante in der Naehe ist
             SnapToPlaneEdge(arPoint, frame);
 
-            try
-            {
-                var anchor = bestHit.CreateAnchor();
-                arPoint.AnchorId = anchor?.GetHashCode().ToString();
-            }
-            catch { /* Anchor optional */ }
+            // Kein Anchor erstellen: Wir nutzen nur die Pose-Koordinaten.
+            // CreateAnchor() hat Limit pro Session und die AnchorId wird nie aufgeloest.
 
             return arPoint;
         }
@@ -592,12 +638,16 @@ private void FinishCapture()
     {
         try
         {
+            // Alle bekannten Planes verwenden, nicht nur aktualisierte
             var planes = new List<Plane>();
-            foreach (var trackable in frame.GetUpdatedTrackables(Java.Lang.Class.FromType(typeof(Plane)))!)
+            if (_arSession != null)
             {
-                if (trackable is Plane plane && plane.TrackingState == TrackingState.Tracking
-                    && plane.SubsumedBy == null)
-                    planes.Add(plane);
+                foreach (var trackable in _arSession.GetAllTrackables(Java.Lang.Class.FromType(typeof(Plane)))!)
+                {
+                    if (trackable is Plane plane && plane.TrackingState == TrackingState.Tracking
+                        && plane.SubsumedBy == null)
+                        planes.Add(plane);
+                }
             }
 
             var bestDist = SNAP_DISTANCE_METERS;
@@ -612,6 +662,14 @@ private void FinishCapture()
                 var pose = plane.CenterPose;
                 if (pose == null) continue;
 
+                // Rotationsmatrix aus Quaternion extrahieren (fuer X/Z-Ebene)
+                var q = pose.GetRotationQuaternion();
+                float qx = q[0], qy = q[1], qz = q[2], qw = q[3];
+                float r00 = 1 - 2 * (qy * qy + qz * qz);
+                float r02 = 2 * (qx * qz + qw * qy);
+                float r20 = 2 * (qx * qz - qw * qy);
+                float r22 = 1 - 2 * (qx * qx + qy * qy);
+
                 // Polygon-Vertices auslesen (2D in Plane-Koordinaten)
                 var vertexCount = polygon.Remaining() / 2;
                 var vertices = new float[vertexCount * 2];
@@ -623,11 +681,16 @@ private void FinishCapture()
                 {
                     var j = (i + 1) % vertexCount;
 
-                    // Plane-lokale Koordinaten → Welt-Koordinaten
-                    var wx1 = pose.Tx() + vertices[i * 2] * pose.GetRotationQuaternion()[0]; // Vereinfacht
-                    var wz1 = pose.Tz() + vertices[i * 2 + 1];
-                    var wx2 = pose.Tx() + vertices[j * 2];
-                    var wz2 = pose.Tz() + vertices[j * 2 + 1];
+                    // Plane-lokale (lx, lz) → Welt-Koordinaten via Rotationsmatrix + Translation
+                    var lx1 = vertices[i * 2];
+                    var lz1 = vertices[i * 2 + 1];
+                    var wx1 = pose.Tx() + r00 * lx1 + r02 * lz1;
+                    var wz1 = pose.Tz() + r20 * lx1 + r22 * lz1;
+
+                    var lx2 = vertices[j * 2];
+                    var lz2 = vertices[j * 2 + 1];
+                    var wx2 = pose.Tx() + r00 * lx2 + r02 * lz2;
+                    var wz2 = pose.Tz() + r20 * lx2 + r22 * lz2;
 
                     // Punkt-zu-Linie Abstand (2D, X/Z-Ebene)
                     var dx = wx2 - wx1;
@@ -657,7 +720,8 @@ private void FinishCapture()
             {
                 point.X = snapX;
                 point.Z = snapZ;
-                point.Label = (point.Label ?? "") + " [snap]";
+                if (point.Label == null || !point.Label.Contains("[snap]"))
+                    point.Label = (point.Label ?? "") + " [snap]";
             }
         }
         catch (Exception ex)
@@ -671,26 +735,32 @@ private void FinishCapture()
     {
         if (!_isContourPointSelected && _selectedPointIndex >= 0 && _selectedPointIndex < _points.Count)
         {
-            _undoStack.Push(new DeletePointAction(_points, _selectedPointIndex, _points[_selectedPointIndex]));
-            _redoStack.Clear();
-            _points.RemoveAt(_selectedPointIndex);
+            lock (_dataLock)
+            {
+                _undoStack.Push(new DeletePointAction(_points, _selectedPointIndex, _points[_selectedPointIndex]));
+                _redoStack.Clear();
+                _points.RemoveAt(_selectedPointIndex);
+            }
             _selectedPointIndex = -1;
         }
         else if (_isContourPointSelected)
         {
-            var contour = _selectedContourIdx >= 0 && _selectedContourIdx < _contours.Count
-                ? _contours[_selectedContourIdx]
-                : _activeContour;
-            if (contour != null && _selectedContourPointIdx >= 0 && _selectedContourPointIdx < contour.Points.Count)
+            lock (_dataLock)
             {
-                var point = contour.Points[_selectedContourPointIdx];
-                _undoStack.Push(new DeleteContourPointAction(contour, _selectedContourPointIdx, point));
-                _redoStack.Clear();
-                contour.Points.RemoveAt(_selectedContourPointIdx);
-                _selectedContourIdx = -1;
-                _selectedContourPointIdx = -1;
-                _isContourPointSelected = false;
+                var contour = _selectedContourIdx >= 0 && _selectedContourIdx < _contours.Count
+                    ? _contours[_selectedContourIdx]
+                    : _activeContour;
+                if (contour != null && _selectedContourPointIdx >= 0 && _selectedContourPointIdx < contour.Points.Count)
+                {
+                    var point = contour.Points[_selectedContourPointIdx];
+                    _undoStack.Push(new DeleteContourPointAction(contour, _selectedContourPointIdx, point));
+                    _redoStack.Clear();
+                    contour.Points.RemoveAt(_selectedContourPointIdx);
+                }
             }
+            _selectedContourIdx = -1;
+            _selectedContourPointIdx = -1;
+            _isContourPointSelected = false;
         }
         _overlayView?.SetSelectedIndex(-1);
         UpdateCounter();
@@ -933,6 +1003,8 @@ private void FinishCapture()
 
             lock (_frameLock)
             {
+                // KEIN Dispose: ARCore verwaltet Frame-Lifecycle intern.
+                // Dispose wuerde JNI-Referenz freigeben → HitTestAt auf UI-Thread crasht
                 _lastFrame = frame;
             }
 
@@ -987,33 +1059,37 @@ private void FinishCapture()
         var newProjected = new List<(float, float, int)>();
         var newContourProjected = new List<(float, float, int, int)>();
 
-        // Einzelpunkte projizieren
-        for (var i = 0; i < _points.Count; i++)
+        // Punkte-Snapshot unter Lock erstellen (GL-Thread liest, UI-Thread schreibt)
+        lock (_dataLock)
         {
-            var screen = WorldToScreen(_points[i], mvpMatrix);
-            if (screen.HasValue)
-                newProjected.Add((screen.Value.x, screen.Value.y, i));
-        }
-
-        // Kontur-Punkte projizieren
-        for (var ci = 0; ci < _contours.Count; ci++)
-        {
-            for (var pi = 0; pi < _contours[ci].Points.Count; pi++)
+            // Einzelpunkte projizieren
+            for (var i = 0; i < _points.Count; i++)
             {
-                var screen = WorldToScreen(_contours[ci].Points[pi], mvpMatrix);
+                var screen = WorldToScreen(_points[i], mvpMatrix);
                 if (screen.HasValue)
-                    newContourProjected.Add((screen.Value.x, screen.Value.y, ci, pi));
+                    newProjected.Add((screen.Value.x, screen.Value.y, i));
             }
-        }
 
-        // Aktive Kontur
-        if (_activeContour != null)
-        {
-            for (var pi = 0; pi < _activeContour.Points.Count; pi++)
+            // Kontur-Punkte projizieren
+            for (var ci = 0; ci < _contours.Count; ci++)
             {
-                var screen = WorldToScreen(_activeContour.Points[pi], mvpMatrix);
-                if (screen.HasValue)
-                    newContourProjected.Add((screen.Value.x, screen.Value.y, -1, pi));
+                for (var pi = 0; pi < _contours[ci].Points.Count; pi++)
+                {
+                    var screen = WorldToScreen(_contours[ci].Points[pi], mvpMatrix);
+                    if (screen.HasValue)
+                        newContourProjected.Add((screen.Value.x, screen.Value.y, ci, pi));
+                }
+            }
+
+            // Aktive Kontur
+            if (_activeContour != null)
+            {
+                for (var pi = 0; pi < _activeContour.Points.Count; pi++)
+                {
+                    var screen = WorldToScreen(_activeContour.Points[pi], mvpMatrix);
+                    if (screen.HasValue)
+                        newContourProjected.Add((screen.Value.x, screen.Value.y, -1, pi));
+                }
             }
         }
 
@@ -1098,13 +1174,23 @@ private void FinishCapture()
                 polygon.Get(vertices);
                 polygon.Rewind();
 
+                // Rotationsmatrix aus Quaternion (wie in SnapToPlaneEdge)
+                var pq = pose.GetRotationQuaternion();
+                float pqx = pq[0], pqy = pq[1], pqz = pq[2], pqw = pq[3];
+                float pr00 = 1 - 2 * (pqy * pqy + pqz * pqz);
+                float pr02 = 2 * (pqx * pqz + pqw * pqy);
+                float pr20 = 2 * (pqx * pqz - pqw * pqy);
+                float pr22 = 1 - 2 * (pqx * pqx + pqy * pqy);
+
                 var screenPolygon = new List<(float, float)>();
                 for (var i = 0; i < vertexCount; i++)
                 {
-                    // Plane-lokale → Welt-Koordinaten (vereinfacht: Translation + lokaler Offset)
-                    var worldX = pose.Tx() + vertices[i * 2];
+                    // Plane-lokale → Welt-Koordinaten via Rotationsmatrix + Translation
+                    var lx = vertices[i * 2];
+                    var lz = vertices[i * 2 + 1];
+                    var worldX = pose.Tx() + pr00 * lx + pr02 * lz;
                     var worldY = pose.Ty();
-                    var worldZ = pose.Tz() + vertices[i * 2 + 1];
+                    var worldZ = pose.Tz() + pr20 * lx + pr22 * lz;
 
                     // Welt → Screen
                     var clipX = mvpMatrix[0] * worldX + mvpMatrix[4] * worldY + mvpMatrix[8] * worldZ + mvpMatrix[12];

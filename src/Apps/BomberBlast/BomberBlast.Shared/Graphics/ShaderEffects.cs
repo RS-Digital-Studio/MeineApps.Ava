@@ -51,6 +51,10 @@ public sealed class ShaderEffects : IDisposable
     private readonly float[] _resolutionArr = new float[2];
     private readonly float[] _centerArr = new float[2];
 
+    // Frame-Skipping für Water Ripple (natives Create+Dispose nur alle 2 Frames)
+    private SKShader? _cachedRippleShader;
+    private int _rippleFrameCounter;
+
     // SkSL Wasser-Ripple Shader (SkiaSharp 3.x SkSL-Syntax)
     private const string WaterRippleSkSL = @"
 uniform float2 iResolution;
@@ -273,18 +277,26 @@ half4 main(float2 coord) {
     {
         try
         {
-            // Gecachte Uniforms + Arrays wiederverwenden (keine Heap-Allokation pro Frame)
-            _cachedUniforms ??= new SKRuntimeEffectUniforms(_waterRippleEffect!);
-            _resolutionArr[0] = w;
-            _resolutionArr[1] = h;
-            _centerArr[0] = _playerScreenX;
-            _centerArr[1] = _playerScreenY;
-            _cachedUniforms["iResolution"] = _resolutionArr;
-            _cachedUniforms["iTime"] = timer;
-            _cachedUniforms["iCenter"] = _centerArr;
+            _rippleFrameCounter++;
 
-            using var shader = _waterRippleEffect!.ToShader(_cachedUniforms);
-            _ripplePaint.Shader = shader;
+            // Shader nur alle 2 Frames neu erzeugen (halbiert native Allokation, visuell identisch)
+            if (_rippleFrameCounter % 2 == 0 || _cachedRippleShader == null)
+            {
+                // Gecachte Uniforms + Arrays wiederverwenden (keine Heap-Allokation pro Frame)
+                _cachedUniforms ??= new SKRuntimeEffectUniforms(_waterRippleEffect!);
+                _resolutionArr[0] = w;
+                _resolutionArr[1] = h;
+                _centerArr[0] = _playerScreenX;
+                _centerArr[1] = _playerScreenY;
+                _cachedUniforms["iResolution"] = _resolutionArr;
+                _cachedUniforms["iTime"] = timer;
+                _cachedUniforms["iCenter"] = _centerArr;
+
+                _cachedRippleShader?.Dispose();
+                _cachedRippleShader = _waterRippleEffect!.ToShader(_cachedUniforms);
+            }
+
+            _ripplePaint.Shader = _cachedRippleShader;
             _ripplePaint.BlendMode = SKBlendMode.SrcOver;
             canvas.DrawRect(0, 0, w, h, _ripplePaint);
             _ripplePaint.Shader = null;
@@ -293,6 +305,8 @@ half4 main(float2 coord) {
         {
             // GPU-Shader fehlgeschlagen → ab jetzt CPU-Fallback
             _gpuRipplesAvailable = false;
+            _cachedRippleShader?.Dispose();
+            _cachedRippleShader = null;
             RenderWaterRipplesCPU(canvas, w, h, timer);
         }
     }
@@ -380,6 +394,8 @@ half4 main(float2 coord) {
         if (_disposed) return;
         _disposed = true;
 
+        _cachedRippleShader?.Dispose();
+        _cachedRippleShader = null;
         _waterRippleEffect?.Dispose();
         _cachedUniforms = null;
         _overlayPaint.Dispose();

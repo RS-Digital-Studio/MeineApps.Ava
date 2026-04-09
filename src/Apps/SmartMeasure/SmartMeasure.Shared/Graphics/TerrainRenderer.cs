@@ -38,6 +38,9 @@ public class TerrainRenderer
     private readonly SKPaint _scalePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f, Color = new SKColor(200, 200, 200) };
     private readonly SKPaint _bgPaint = new() { Color = new SKColor(26, 26, 46) }; // BgPrimaryColor
     private readonly SKPaint _legendPaint = new() { IsAntialias = false };
+    private readonly SKPaint _scaleTextPaint = new() { Color = new SKColor(200, 200, 200), TextSize = 10f, TextAlign = SKTextAlign.Center, IsAntialias = true };
+    private readonly SKPaint _legendLabelPaint = new() { Color = new SKColor(200, 200, 200), TextSize = 9f, IsAntialias = true };
+    private readonly SKPaint _arrowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(239, 83, 80) };
 
     public void Render(SKCanvas canvas, SKRect bounds, TerrainMesh? mesh,
         List<ContourLine>? contours, string[]? labels)
@@ -248,19 +251,12 @@ public class TerrainRenderer
         canvas.Save();
         canvas.RotateDegrees(-Azimuth + 180, cx, cy);
 
-        using var arrowPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill,
-            Color = new SKColor(239, 83, 80)
-        };
-
         using var path = new SKPath();
         path.MoveTo(cx, cy - 15);
         path.LineTo(cx - 6, cy + 8);
         path.LineTo(cx + 6, cy + 8);
         path.Close();
-        canvas.DrawPath(path, arrowPaint);
+        canvas.DrawPath(path, _arrowPaint);
 
         canvas.Restore();
         canvas.DrawText("N", cx - 4, cy - 18, _northPaint);
@@ -284,14 +280,7 @@ public class TerrainRenderer
         canvas.DrawLine(x, y - 4, x, y + 4, _scalePaint);
         canvas.DrawLine(x + barLength, y - 4, x + barLength, y + 4, _scalePaint);
 
-        using var textPaint = new SKPaint
-        {
-            Color = new SKColor(200, 200, 200),
-            TextSize = 10f,
-            TextAlign = SKTextAlign.Center,
-            IsAntialias = true
-        };
-        canvas.DrawText($"{rounded:G3} m", x + barLength / 2, y - 6, textPaint);
+        canvas.DrawText($"{rounded:G3} m", x + barLength / 2, y - 6, _scaleTextPaint);
     }
 
     private void DrawHeightLegend(SKCanvas canvas, SKRect bounds, double minZ, double maxZ)
@@ -309,14 +298,8 @@ public class TerrainRenderer
         }
 
         // Min/Max Beschriftung
-        using var labelPaint = new SKPaint
-        {
-            Color = new SKColor(200, 200, 200),
-            TextSize = 9f,
-            IsAntialias = true
-        };
-        canvas.DrawText($"{maxZ:F1}m", x - 30, top - 2, labelPaint);
-        canvas.DrawText($"{minZ:F1}m", x - 30, top + height + 10, labelPaint);
+        canvas.DrawText($"{maxZ:F1}m", x - 30, top - 2, _legendLabelPaint);
+        canvas.DrawText($"{minZ:F1}m", x - 30, top + height + 10, _legendLabelPaint);
     }
 
     private static double RoundToNice(double value)
@@ -345,5 +328,8 @@ public class TerrainRenderer
         _scalePaint.Dispose();
         _bgPaint.Dispose();
         _legendPaint.Dispose();
+        _scaleTextPaint.Dispose();
+        _legendLabelPaint.Dispose();
+        _arrowPaint.Dispose();
     }
 }

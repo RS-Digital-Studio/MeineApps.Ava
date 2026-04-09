@@ -6,7 +6,6 @@ using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
-using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using HandwerkerRechner.ViewModels;
 
@@ -22,8 +21,6 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
     private readonly IUnitConverterService _unitConverter;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly IPurchaseService _purchaseService;
     private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
@@ -38,6 +35,7 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
+    public event Action? CalculationPerformed;
 
     [ObservableProperty]
     private bool _showSaveDialog;
@@ -63,8 +61,6 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         IUnitConverterService unitConverter,
         IMaterialExportService exportService,
         IFileShareService fileShareService,
-        IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService,
         IMaterialPriceService priceService)
     {
         _craftEngine = craftEngine;
@@ -74,8 +70,6 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         _unitConverter = unitConverter;
         _exportService = exportService;
         _fileShareService = fileShareService;
-        _rewardedAdService = rewardedAdService;
-        _purchaseService = purchaseService;
         _priceService = priceService;
 
         // Einheitensystem-Änderungen abonnieren
@@ -100,7 +94,9 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -362,6 +358,7 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
             }
 
             HasResult = true;
+            CalculationPerformed?.Invoke();
 
             // In History speichern
             await SaveToHistoryAsync();
@@ -442,7 +439,9 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -609,7 +608,9 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -647,13 +648,6 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         try
         {
             IsExporting = true;
-
-            // Premium: Direkt. Free: Rewarded Ad
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
 
             var calcType = Calculators[SelectedCalculator];
             var inputs = new Dictionary<string, string>();
@@ -720,13 +714,6 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         {
             IsExporting = true;
 
-            // Premium: Direkt. Free: Rewarded Ad
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
-
             var calcType = Calculators[SelectedCalculator];
             var inputs = new Dictionary<string, string>();
             var results = new Dictionary<string, string>();
@@ -769,7 +756,7 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
 
             var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
             await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
-            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("CsvExportSuccess") ?? "CSV exported!");
         }
         catch (Exception)
         {

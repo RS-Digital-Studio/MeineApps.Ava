@@ -21,8 +21,8 @@
     <!-- Kamera (AR-Capture) -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- ARCore Hardware-Feature (schraenkt Play Store auf ARCore-Geraete ein) -->
-    <uses-feature android:name="android.hardware.camera.ar" />
+    <!-- ARCore Hardware-Feature (optional, damit App auch ohne AR-Support installierbar ist) -->
+    <uses-feature android:name="android.hardware.camera.ar" android:required="false" />
 
     <!-- Foreground-Service (BLE im Hintergrund halten) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

@@ -28,7 +28,6 @@ public static class ScreedVisualization
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
     private static readonly SKPaint _texturePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
-    private static readonly Random _rng = new(42);
 
     // Farben: Untergrund
     private static readonly SKColor _subfloorColor = new(0x4B, 0x55, 0x63);    // Dunkelgrau (Rohboden)
@@ -43,6 +42,9 @@ public static class ScreedVisualization
         float areaSqm, float thicknessCm, int screedType, int bagsNeeded)
     {
         if (areaSqm <= 0 || thicknessCm <= 0) return;
+
+        // Lokale Random mit festem Seed: deterministisch pro Render, kein "Wandern"
+        var _rng = new Random(42);
 
         _animation.UpdateAnimation();
         float progress = _animation.AnimationProgress;

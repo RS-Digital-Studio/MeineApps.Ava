@@ -86,7 +86,8 @@
                 <Grid ColumnDefinitions="Auto,*,36">
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtJoystickSize"
                              Text="{loc:Translate JoystickSize}"
-                             FontSize="11" TextTrimming="None"
+                             FontSize="11" TextTrimming="CharacterEllipsis"
+                             MaxWidth="180"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                   <Slider AutomationProperties.AutomationId="Settings_SliderJoystickSize"
@@ -107,7 +108,8 @@
                 <Grid ColumnDefinitions="Auto,*,36">
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtJoystickOpacity"
                              Text="{loc:Translate JoystickOpacity}"
-                             FontSize="11" TextTrimming="None"
+                             FontSize="11" TextTrimming="CharacterEllipsis"
+                             MaxWidth="180"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                   <Slider AutomationProperties.AutomationId="Settings_SliderJoystickOpacity"
@@ -764,7 +766,7 @@
           </Grid>
 
           <!-- Bottom Spacer (System-Navigationsleiste) -->
-          <Border Height="16" />
+          <Border Height="64" />
 
         </StackPanel>
       </ScrollViewer>

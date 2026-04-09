@@ -119,60 +119,88 @@ public class ProjectService : IProjectService
     public async Task<SurveyProject> DuplicateProjectAsync(int id, string newName)
     {
         await EnsureInitializedAsync();
-        var original = await GetProjectAsync(id);
-        if (original == null)
-            throw new InvalidOperationException($"Projekt {id} nicht gefunden");
 
-        var duplicate = await CreateProjectAsync(newName, original.ProjectType);
-        duplicate.Notes = original.Notes;
-        await UpdateProjectAsync(duplicate);
-
-        // Punkte kopieren
-        foreach (var point in original.Points)
+        // Alles atomar in einer Transaktion + einem Semaphore-Lock
+        await _semaphore.WaitAsync();
+        try
         {
-            var copy = new SurveyPoint
-            {
-                ProjectId = duplicate.Id,
-                Latitude = point.Latitude,
-                Longitude = point.Longitude,
-                Altitude = point.Altitude,
-                HorizontalAccuracy = point.HorizontalAccuracy,
-                VerticalAccuracy = point.VerticalAccuracy,
-                TiltAngle = point.TiltAngle,
-                TiltAzimuth = point.TiltAzimuth,
-                FixQuality = point.FixQuality,
-                SatelliteCount = point.SatelliteCount,
-                MagAccuracy = point.MagAccuracy,
-                Timestamp = point.Timestamp,
-                Label = point.Label
-            };
-            await AddPointAsync(duplicate.Id, copy);
-        }
+            // Original laden (ohne Semaphore, da wir ihn bereits halten)
+            var original = await _db.FindAsync<SurveyProject>(id);
+            if (original == null)
+                throw new InvalidOperationException($"Projekt {id} nicht gefunden");
 
-        // Gartenelemente kopieren
-        foreach (var element in original.GardenElements)
-        {
-            var copy = new GardenElement
-            {
-                ProjectId = duplicate.Id,
-                ElementType = element.ElementType,
-                PointsJson = element.PointsJson,
-                Width = element.Width,
-                Height = element.Height,
-                TargetAltitude = element.TargetAltitude,
-                Material = element.Material,
-                SubType = element.SubType,
-                LayerThicknessCm = element.LayerThicknessCm,
-                AreaSquareMeters = element.AreaSquareMeters,
-                LengthMeters = element.LengthMeters,
-                VolumeMeters = element.VolumeMeters,
-                Notes = element.Notes,
-                SortOrder = element.SortOrder
-            };
-            await AddGardenElementAsync(duplicate.Id, copy);
-        }
+            original.Points = await _db.Table<SurveyPoint>()
+                .Where(p => p.ProjectId == id)
+                .OrderBy(p => p.Timestamp)
+                .ToListAsync();
 
-        return duplicate;
+            original.GardenElements = await _db.Table<GardenElement>()
+                .Where(e => e.ProjectId == id)
+                .OrderBy(e => e.SortOrder)
+                .ToListAsync();
+
+            // Duplikat erstellen
+            var duplicate = new SurveyProject
+            {
+                Name = newName,
+                ProjectType = original.ProjectType,
+                Notes = original.Notes,
+                CreatedAt = DateTime.UtcNow,
+                ModifiedAt = DateTime.UtcNow
+            };
+
+            await _db.RunInTransactionAsync(db =>
+            {
+                db.Insert(duplicate);
+                // sqlite-net setzt ID direkt auf dem Objekt
+
+                foreach (var point in original.Points)
+                {
+                    var copy = new SurveyPoint
+                    {
+                        ProjectId = duplicate.Id,
+                        Latitude = point.Latitude,
+                        Longitude = point.Longitude,
+                        Altitude = point.Altitude,
+                        HorizontalAccuracy = point.HorizontalAccuracy,
+                        VerticalAccuracy = point.VerticalAccuracy,
+                        TiltAngle = point.TiltAngle,
+                        TiltAzimuth = point.TiltAzimuth,
+                        FixQuality = point.FixQuality,
+                        SatelliteCount = point.SatelliteCount,
+                        MagAccuracy = point.MagAccuracy,
+                        Timestamp = point.Timestamp,
+                        Label = point.Label
+                    };
+                    db.Insert(copy);
+                }
+
+                foreach (var element in original.GardenElements)
+                {
+                    var copy = new GardenElement
+                    {
+                        ProjectId = duplicate.Id,
+                        ElementType = element.ElementType,
+                        PointsJson = element.PointsJson,
+                        Width = element.Width,
+                        Height = element.Height,
+                        TargetAltitude = element.TargetAltitude,
+                        Material = element.Material,
+                        SubType = element.SubType,
+                        LayerThicknessCm = element.LayerThicknessCm,
+                        AreaSquareMeters = element.AreaSquareMeters,
+                        LengthMeters = element.LengthMeters,
+                        VolumeMeters = element.VolumeMeters,
+                        Notes = element.Notes,
+                        SortOrder = element.SortOrder
+                    };
+                    db.Insert(copy);
+                }
+            });
+
+            return duplicate;
+        }
+        finally { _semaphore.Release(); }
     }
 
     public async Task AddPointAsync(int projectId, SurveyPoint point)

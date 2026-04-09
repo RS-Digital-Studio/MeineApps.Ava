@@ -67,6 +67,8 @@ public sealed class GuildService : IGuildService, IDisposable
             if (string.IsNullOrEmpty(playerId)) return;
 
             // auth_to_player Mapping sicherstellen (Security Rules benötigen es für Lese-Zugriff)
+            // MUSS awaited werden: guild_members-Read-Rules prüfen auth_to_player/{uid}.
+            // Ohne Mapping schlagen alle Gilden-Reads fehl (Permission denied).
             await _firebaseService.SyncAuthToPlayerMappingAsync();
 
             // PlayerId im GameState als Backup sichern

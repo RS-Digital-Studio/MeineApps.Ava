@@ -139,12 +139,36 @@ FrameLayout (3 Schichten)
 
 ### AndroidManifest
 - `<uses-permission android:name="android.permission.CAMERA" />`
-- `<uses-feature android:name="android.hardware.camera.ar" />`
+- `<uses-feature android:name="android.hardware.camera.ar" android:required="false" />`
 - `<meta-data android:name="com.google.ar.core" android:value="required" />`
+
+### Android-spezifische Build-Settings (SmartMeasure.Android.csproj)
+- `RunAOTCompilation=false` + `AndroidEnableProguard=false` (Mapsui/NTS brauchen Reflection)
+- ArCaptureActivity Theme: `@style/MyTheme.Fullscreen` (AppCompat-basiert, nicht android:Theme.Black)
+
+### PdfSharpCore Android-Fix
+- `ExportService.EnsureFontResolver()` registriert `AndroidFontResolver` (nutzt `/system/fonts/Roboto-*.ttf`)
+- XFont-Felder sind lazy Properties (kein static-Init-Crash auf Android)
+
+### MapView Lazy-Init
+- Mapsui MapControl wird NICHT im XAML erstellt (GL-Crash auf Android beim Start)
+- MainView.axaml.cs erstellt MapView per Code-Behind erst wenn Karten-Tab aktiviert wird
+- MapViewModel.EnsureInitialized() erstellt Tile-Layer erst bei Bedarf
 
 ## Noch zu implementieren
 
 - BLE: AndroidBleService mit echter Hardware testen (ESP32-Firmware muss BLE-Protokoll definieren)
+
+## Bekannte Gotchas
+
+| Problem | Fix |
+|---------|-----|
+| PdfSharpCore crasht auf Android (FontResolver) | Lazy XFont-Properties + AndroidFontResolver (/system/fonts/) |
+| Mapsui MapControl crasht auf Android beim Start | Lazy-Init per Code-Behind (nicht im XAML) |
+| ArCaptureActivity Theme.Black crasht | AppCompat-Theme verwenden (MyTheme.Fullscreen) |
+| ARCore Frame.Dispose() → Use-after-Dispose | KEIN Dispose auf _lastFrame (ARCore verwaltet Lifecycle) |
+| ByteBuffer-Leak in ArBackgroundRenderer | Gecachter ByteBuffer statt pro-Frame AllocateDirect |
+| Thread-Safety _points/_contours | _dataLock fuer alle Schreib-/Lese-Zugriffe (GL+UI Thread) |
 
 ## Models (AR)
 

@@ -8,6 +8,9 @@ namespace BomberBlast.Graphics;
 /// </summary>
 public static class ProceduralTextures
 {
+    // Gepoolter SKPath für Draw-Methoden (Single-Thread Rendering, keine Allokation pro Aufruf)
+    private static readonly SKPath _poolPath = new();
+
     // Permutation-LUT für Noise (256 Werte, doppelt für Overflow)
     private static readonly int[] _perm = GeneratePermutation();
 
@@ -120,11 +123,11 @@ public static class ProceduralTextures
             byte g = (byte)(100 + CellRandom(gx, gy, i * 7 + 4) * 80);
             paint.Color = new SKColor(30, g, 20, alpha);
 
-            using var path = new SKPath();
-            path.MoveTo(baseX, baseY);
-            path.QuadTo(baseX + wind * 0.5f, baseY - height * 0.5f,
+            _poolPath.Rewind();
+            _poolPath.MoveTo(baseX, baseY);
+            _poolPath.QuadTo(baseX + wind * 0.5f, baseY - height * 0.5f,
                         baseX + wind, baseY - height);
-            canvas.DrawPath(path, paint);
+            canvas.DrawPath(_poolPath, paint);
         }
 
         paint.Style = SKPaintStyle.Fill;
@@ -152,10 +155,10 @@ public static class ProceduralTextures
             float midX = (startX + endX) * 0.5f + (CellRandom(gx, gy, 105 + i) - 0.5f) * cs * 0.3f;
             float midY = (startY + endY) * 0.5f + (CellRandom(gx, gy, 106 + i) - 0.5f) * cs * 0.3f;
 
-            using var path = new SKPath();
-            path.MoveTo(startX, startY);
-            path.QuadTo(midX, midY, endX, endY);
-            canvas.DrawPath(path, paint);
+            _poolPath.Rewind();
+            _poolPath.MoveTo(startX, startY);
+            _poolPath.QuadTo(midX, midY, endX, endY);
+            canvas.DrawPath(_poolPath, paint);
         }
 
         paint.Style = SKPaintStyle.Fill;
@@ -237,15 +240,15 @@ public static class ProceduralTextures
             float y = py + cs * (0.15f + i * 0.7f / lineCount);
             float wave = CellRandom(gx, gy, 301 + i) * 2f;
 
-            using var path = new SKPath();
-            path.MoveTo(px + 2, y);
+            _poolPath.Rewind();
+            _poolPath.MoveTo(px + 2, y);
             for (float x = 0.1f; x <= 1f; x += 0.1f)
             {
                 float wx = px + x * cs;
                 float wy = y + MathF.Sin(x * MathF.PI * 2 + wave) * 1.5f;
-                path.LineTo(wx, wy);
+                _poolPath.LineTo(wx, wy);
             }
-            canvas.DrawPath(path, paint);
+            canvas.DrawPath(_poolPath, paint);
         }
 
         paint.Style = SKPaintStyle.Fill;
@@ -437,15 +440,15 @@ public static class ProceduralTextures
             float startY = py + CellRandom(gx, gy, 801 + i * 2) * cs;
             float wave = CellRandom(gx, gy, 802 + i * 2) * 3f;
 
-            using var path = new SKPath();
-            path.MoveTo(px, startY);
+            _poolPath.Rewind();
+            _poolPath.MoveTo(px, startY);
             for (float t = 0.1f; t <= 1f; t += 0.05f)
             {
                 float x = px + t * cs;
                 float y = startY + MathF.Sin(t * MathF.PI * 2 * wave) * cs * 0.08f;
-                path.LineTo(x, y);
+                _poolPath.LineTo(x, y);
             }
-            canvas.DrawPath(path, paint);
+            canvas.DrawPath(_poolPath, paint);
         }
 
         paint.Style = SKPaintStyle.Fill;

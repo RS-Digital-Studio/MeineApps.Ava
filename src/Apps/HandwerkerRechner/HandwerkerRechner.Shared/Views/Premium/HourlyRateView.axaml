@@ -8,6 +8,7 @@
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.HourlyRateView"
              x:DataType="vm:HourlyRateViewModel"
+             x:CompileBindings="True"
              Background="Transparent">
 
   <Grid RowDefinitions="Auto,*,Auto"

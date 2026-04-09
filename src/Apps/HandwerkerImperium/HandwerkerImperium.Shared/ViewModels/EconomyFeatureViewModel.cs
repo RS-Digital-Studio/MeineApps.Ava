@@ -320,6 +320,8 @@ internal sealed class EconomyFeatureViewModel
         }
 
         _gameStateService.StartOrder(order);
+        _host.HasActiveOrder = true;
+        _host.ActiveOrder = order;
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
         // Hint beim ersten Auftrag

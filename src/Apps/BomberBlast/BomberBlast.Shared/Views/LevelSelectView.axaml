@@ -119,7 +119,8 @@
                                   Background="{Binding BackgroundColor}"
                                   BorderBrush="#40FFFFFF"
                                   BorderThickness="1"
-                                  MinHeight="56">
+                                  MinHeight="56"
+                                  MinWidth="48">
                             <Button Command="{Binding SelectCommand}"
                                     Classes="GameButton"
                                     Padding="0"

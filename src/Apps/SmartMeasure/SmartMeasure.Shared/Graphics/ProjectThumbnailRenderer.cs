@@ -16,6 +16,16 @@ public static class ProjectThumbnailRenderer
     private static readonly SKColor TextDimmed = new(136, 153, 170);
     private static readonly SKColor TypeBadgeColor = new(255, 255, 255, 30);
 
+    // Gecachte statische Paints (keine Allokation pro Render)
+    private static readonly SKPaint FillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = AccentColor };
+    private static readonly SKPaint PolygonStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f, Color = AccentStroke };
+    private static readonly SKPaint LinePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f, Color = SecondaryColor };
+    private static readonly SKPaint DotPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = PrimaryColor };
+    private static readonly SKPaint DotStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.8f, Color = new SKColor(255, 255, 255, 120) };
+    private static readonly SKPaint BadgeBgPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = TypeBadgeColor };
+    private static readonly SKPaint BadgeTextPaint = new() { IsAntialias = true, Color = TextDimmed, TextSize = 9f, TextAlign = SKTextAlign.Right };
+    private static readonly SKPaint EmptyTextPaint = new() { Color = TextDimmed, TextSize = 12f, TextAlign = SKTextAlign.Center, IsAntialias = true };
+
     /// <summary>Thumbnail rendern (statisch, kein State noetig)</summary>
     public static void Render(SKCanvas canvas, SKRect bounds,
         List<SurveyPoint> points, string projectType)
@@ -94,38 +104,16 @@ public static class ProjectThumbnailRenderer
             path.LineTo(pts[i]);
         path.Close();
 
-        using var fillPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill,
-            Color = AccentColor
-        };
-        canvas.DrawPath(path, fillPaint);
-
-        using var strokePaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1f,
-            Color = AccentStroke
-        };
-        canvas.DrawPath(path, strokePaint);
+        canvas.DrawPath(path, FillPaint);
+        canvas.DrawPath(path, PolygonStrokePaint);
     }
 
     private static void DrawConnectionLines(SKCanvas canvas, SKPoint[] pts)
     {
         if (pts.Length < 2) return;
 
-        using var linePaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1.5f,
-            Color = SecondaryColor
-        };
-
         for (int i = 0; i < pts.Length - 1; i++)
-            canvas.DrawLine(pts[i], pts[i + 1], linePaint);
+            canvas.DrawLine(pts[i], pts[i + 1], LinePaint);
     }
 
     private static void DrawPointDots(SKCanvas canvas, SKPoint[] pts)
@@ -133,64 +121,29 @@ public static class ProjectThumbnailRenderer
         // Dot-Groesse relativ zur Thumbnail-Groesse (min 2, max 5)
         var dotRadius = Math.Clamp(pts.Length < 10 ? 4f : 3f, 2f, 5f);
 
-        using var dotPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill,
-            Color = PrimaryColor
-        };
-        using var dotStrokePaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 0.8f,
-            Color = new SKColor(255, 255, 255, 120)
-        };
-
         foreach (var pt in pts)
         {
-            canvas.DrawCircle(pt, dotRadius, dotPaint);
-            canvas.DrawCircle(pt, dotRadius, dotStrokePaint);
+            canvas.DrawCircle(pt, dotRadius, DotPaint);
+            canvas.DrawCircle(pt, dotRadius, DotStrokePaint);
         }
     }
 
     private static void DrawTypeBadge(SKCanvas canvas, SKRect bounds, string projectType)
     {
-        using var bgPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill,
-            Color = TypeBadgeColor
-        };
-        using var textPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = TextDimmed,
-            TextSize = 9f,
-            TextAlign = SKTextAlign.Right
-        };
-
-        var textWidth = textPaint.MeasureText(projectType);
+        var textWidth = BadgeTextPaint.MeasureText(projectType);
         var badgeRect = new SKRect(
             bounds.Right - textWidth - 10f,
             bounds.Top + 2f,
             bounds.Right - 2f,
             bounds.Top + 16f);
 
-        canvas.DrawRoundRect(badgeRect, 3f, 3f, bgPaint);
-        canvas.DrawText(projectType, bounds.Right - 6f, bounds.Top + 13f, textPaint);
+        canvas.DrawRoundRect(badgeRect, 3f, 3f, BadgeBgPaint);
+        canvas.DrawText(projectType, bounds.Right - 6f, bounds.Top + 13f, BadgeTextPaint);
     }
 
     private static void DrawEmptyState(SKCanvas canvas, SKRect bounds)
     {
-        using var paint = new SKPaint
-        {
-            Color = TextDimmed,
-            TextSize = 12f,
-            TextAlign = SKTextAlign.Center,
-            IsAntialias = true
-        };
-        canvas.DrawText("Leer", bounds.MidX, bounds.MidY + 4f, paint);
+        canvas.DrawText("Leer", bounds.MidX, bounds.MidY + 4f, EmptyTextPaint);
     }
 
     /// <summary>Konvertiert Lat/Lon-Punkte in lokale Meter-Koordinaten (Schwerpunkt-basiert).

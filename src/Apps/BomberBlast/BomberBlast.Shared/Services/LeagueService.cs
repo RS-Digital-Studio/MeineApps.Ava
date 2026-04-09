@@ -146,12 +146,32 @@ public sealed class LeagueService : ILeagueService
     // SPIELERNAME
     // ═══════════════════════════════════════════════════════════════════════
 
+    // Einfacher Profanity-Filter für Spielernamen (Play Store Policy: UGC moderieren)
+    private static readonly HashSet<string> _blockedWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "fuck", "shit", "ass", "dick", "bitch", "nigger", "nigga", "cunt", "whore",
+        "arsch", "ficken", "scheiße", "hurensohn", "wichser", "fotze", "nazi",
+        "puta", "mierda", "perra", "coño", "merde", "putain", "connard",
+        "cazzo", "merda", "stronzo", "porra", "caralho", "foda"
+    };
+
     public void SetPlayerName(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) return;
         // Auf 16 Zeichen begrenzen, Whitespace trimmen
         name = name.Trim();
         if (name.Length > 16) name = name[..16];
+
+        // Profanity-Check: Blockierte Wörter im Namen filtern
+        foreach (var word in _blockedWords)
+        {
+            if (name.Contains(word, StringComparison.OrdinalIgnoreCase))
+            {
+                name = new string('*', name.Length);
+                break;
+            }
+        }
+
         _preferences.Set(PlayerNameKey, name);
 
         // Firebase-Eintrag aktualisieren

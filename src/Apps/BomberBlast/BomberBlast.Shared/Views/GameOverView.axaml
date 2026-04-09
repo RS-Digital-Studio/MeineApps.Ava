@@ -396,7 +396,7 @@
           </Panel>
 
           <!-- 3. Paid Continue (199 Coins, Alternative zur Ad) -->
-          <Panel MinHeight="40" IsVisible="{Binding CanPaidContinue}">
+          <Panel MinHeight="44" IsVisible="{Binding CanPaidContinue}">
             <ctrl:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.6" ButtonSeed="43" />
             <Button AutomationProperties.AutomationId="GameOver_BtnPaidContinue"
                     Command="{Binding PaidContinueCommand}"

@@ -19,6 +19,9 @@ public interface ICalculatorViewModel
     /// <summary>Text in die Zwischenablage kopieren</summary>
     event Action<string>? ClipboardRequested;
 
+    /// <summary>Wird nach jeder erfolgreichen Berechnung ausgelöst (für zentrales Ad-Tracking)</summary>
+    event Action? CalculationPerformed;
+
     /// <summary>Ob der Speichern-Dialog gerade offen ist (für Back-Navigation)</summary>
     bool ShowSaveDialog { get; set; }
 

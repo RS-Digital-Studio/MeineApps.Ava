@@ -1,20 +1,35 @@
+using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
 namespace HandwerkerRechner.Graphics;
 
 /// <summary>
-/// Visualisierung für den Material-Vergleich: Zwei Kostensäulen nebeneinander.
-/// Günstigere Option wird grün hervorgehoben, Ersparnis als Badge.
+/// Visualisierung fuer den Material-Vergleich: Zwei Kostensaeulen nebeneinander.
+/// Guenstigere Option wird gruen hervorgehoben, Ersparnis als Badge.
 /// </summary>
 public static class MaterialCompareVisualization
 {
+    // Einschwing-Animation (konsistent mit allen anderen Renderern)
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (fuer InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint BarAPaint = new() { Color = new SKColor(59, 130, 246), IsAntialias = true }; // Blau
     private static readonly SKPaint BarBPaint = new() { Color = new SKColor(168, 85, 247), IsAntialias = true }; // Lila
-    private static readonly SKPaint CheaperPaint = new() { Color = new SKColor(34, 197, 94), IsAntialias = true }; // Grün
+    private static readonly SKPaint CheaperPaint = new() { Color = new SKColor(34, 197, 94), IsAntialias = true }; // Gruen
     private static readonly SKPaint TextPaint = new() { Color = SKColors.White, IsAntialias = true };
     private static readonly SKPaint ValuePaint = new() { Color = SKColors.White, IsAntialias = true };
     private static readonly SKPaint BgPaint = new() { Color = new SKColor(30, 30, 30, 120), IsAntialias = true };
     private static readonly SKPaint SavingsBgPaint = new() { Color = new SKColor(34, 197, 94, 50), IsAntialias = true };
+    private static readonly SKPaint _layerPaint = new();
 
     // SKFont-Objekte (nicht-veraltete API)
     private static readonly SKFont TextFont = new() { Size = 14f };
@@ -26,6 +41,13 @@ public static class MaterialCompareVisualization
         float alpha = 1f)
     {
         if (costA <= 0 && costB <= 0) return;
+
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
+        // Alpha-Fade via SaveLayer
+        _layerPaint.Color = _layerPaint.Color.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
 
         canvas.DrawRoundRect(bounds.Left, bounds.Top, bounds.Width, bounds.Height, 12, 12, BgPaint);
 
@@ -79,5 +101,7 @@ public static class MaterialCompareVisualization
             canvas.DrawText(savingsText, badgeX + badgeWidth / 2, badgeY + 17,
                 SKTextAlign.Center, TextFont, CheaperPaint);
         }
+
+        canvas.Restore();
     }
 }

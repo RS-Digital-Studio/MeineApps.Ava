@@ -107,7 +107,11 @@ public class MainActivity : AvaloniaMainActivity<App>
         var playGames = App.Services.GetService<BomberBlast.Services.IPlayGamesService>()
             as MeineApps.Core.Premium.Ava.Droid.AndroidPlayGamesService;
         playGames?.InitializeSdk();
-        _ = playGames?.SignInAsync(); // Fire-and-Forget Auto-Login (GPGS v2 Standard)
+        _ = playGames?.SignInAsync().ContinueWith(t =>
+        {
+            if (t.IsFaulted)
+                Android.Util.Log.Warn("BomberBlast", $"GPGS SignIn: {t.Exception?.GetBaseException().Message}");
+        }, System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
 
         // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
         AdMobHelper.Initialize(this, () =>

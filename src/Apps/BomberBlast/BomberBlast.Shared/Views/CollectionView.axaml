@@ -248,7 +248,7 @@
         <Panel Grid.Row="1">
 
           <!-- Empty State (keine Items in Kategorie) -->
-          <StackPanel IsVisible="{Binding !Items.Count}"
+          <StackPanel IsVisible="{Binding !HasItems}"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Center"
                       Spacing="12">
@@ -263,7 +263,7 @@
 
           <!-- Items-Grid (Premium-Karten-Design wie DeckView) -->
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                        IsVisible="{Binding Items.Count}">
+                        IsVisible="{Binding HasItems}">
             <ItemsControl ItemsSource="{Binding Items}"
                           AutomationProperties.AutomationId="Collection_ItemGrid"
                           Margin="0,0,0,8">

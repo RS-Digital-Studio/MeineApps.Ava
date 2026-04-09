@@ -18,7 +18,6 @@
     <!-- Score Double Overlay (nach Level-Complete) -->
     <Border IsVisible="{Binding ShowScoreDoubleOverlay}"
             Background="#CC000000"
-            ZIndex="50"
             AutomationProperties.AutomationId="Game_ScoreDoubleOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="20"

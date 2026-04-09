@@ -19,6 +19,7 @@ public partial class HourlyRateView : CalculatorViewBase
 
     protected override void OnResultPropertyChanged()
     {
+        HourlyRateVisualization.StartAnimation();
         HourlyRateCanvas.InvalidateSurface();
     }
 
@@ -40,6 +41,9 @@ public partial class HourlyRateView : CalculatorViewBase
                 vm.OverheadAmountLabel,
                 vm.VatAmountLabel,
                 vm.TotalGrossLabel);
+
+            if (HourlyRateVisualization.NeedsRedraw)
+                RequestAnimationFrame(sender);
         }
     }
 }

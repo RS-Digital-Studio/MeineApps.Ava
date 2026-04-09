@@ -454,7 +454,10 @@
           </StackPanel>
 
           <!-- 7-Tage-Kalender -->
-          <ItemsControl Grid.Row="1" ItemsSource="{Binding RewardDays}"
+          <ScrollViewer Grid.Row="1"
+                        HorizontalScrollBarVisibility="Auto"
+                        VerticalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding RewardDays}"
                         AutomationProperties.AutomationId="MainMenu_RewardDays">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -508,6 +511,7 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+          </ScrollViewer>
 
           <!-- Buttons -->
           <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12"

@@ -60,7 +60,9 @@ public sealed class DesktopPhotoPickerService : IPhotoPickerService
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] Foto löschen fehlgeschlagen: {ex.Message}");
+#endif
         }
         return Task.CompletedTask;
     }

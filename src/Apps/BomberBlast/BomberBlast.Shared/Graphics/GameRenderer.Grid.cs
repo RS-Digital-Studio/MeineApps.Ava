@@ -17,6 +17,10 @@ public sealed partial class GameRenderer
     private int _floorCacheWorldIndex = -1;
     private GameVisualStyle _floorCacheStyle = (GameVisualStyle)(-1);
 
+    // Gepoolter SKPath für Wand/Block-Tile-Details (Kristalle, Ecken, Edelsteine)
+    // Vermeidet ~50-100 native SKPath-Allokationen pro Frame
+    private readonly SKPath _tilePath = new();
+
     /// <summary>
     /// Boden-Cache invalidieren (bei Welt- oder Style-Wechsel).
     /// Wird automatisch in SetWorldTheme() aufgerufen.
@@ -1022,19 +1026,19 @@ public sealed partial class GameRenderer
                         float crystalSize = 2f + ProceduralTextures.CellRandom(gx, gy, 54) * 2f;
                         byte crystalAlpha = isNeon ? (byte)40 : (byte)50;
                         _fillPaint.Color = new SKColor(160, 100, 220, crystalAlpha);
-                        // Raute (Kristall-Form)
-                        using var path = new SKPath();
-                        path.MoveTo(cx, cy - crystalSize);
-                        path.LineTo(cx + crystalSize * 0.6f, cy);
-                        path.LineTo(cx, cy + crystalSize);
-                        path.LineTo(cx - crystalSize * 0.6f, cy);
-                        path.Close();
-                        canvas.DrawPath(path, _fillPaint);
+                        // Raute (Kristall-Form) - gepoolter Pfad
+                        _tilePath.Rewind();
+                        _tilePath.MoveTo(cx, cy - crystalSize);
+                        _tilePath.LineTo(cx + crystalSize * 0.6f, cy);
+                        _tilePath.LineTo(cx, cy + crystalSize);
+                        _tilePath.LineTo(cx - crystalSize * 0.6f, cy);
+                        _tilePath.Close();
+                        canvas.DrawPath(_tilePath, _fillPaint);
                         if (isNeon)
                         {
                             _fillPaint.Color = new SKColor(200, 100, 255, 20);
                             _fillPaint.MaskFilter = _smallGlow;
-                            canvas.DrawPath(path, _fillPaint);
+                            canvas.DrawPath(_tilePath, _fillPaint);
                             _fillPaint.MaskFilter = null;
                         }
                     }
@@ -1068,12 +1072,12 @@ public sealed partial class GameRenderer
                         if (ProceduralTextures.CellRandom(gx, gy, 55) < 0.2f)
                         {
                             _fillPaint.Color = _palette.FloorBase.WithAlpha(180);
-                            using var chip = new SKPath();
-                            chip.MoveTo(px + cs, py);
-                            chip.LineTo(px + cs - 4, py);
-                            chip.LineTo(px + cs, py + 4);
-                            chip.Close();
-                            canvas.DrawPath(chip, _fillPaint);
+                            _tilePath.Rewind();
+                            _tilePath.MoveTo(px + cs, py);
+                            _tilePath.LineTo(px + cs - 4, py);
+                            _tilePath.LineTo(px + cs, py + 4);
+                            _tilePath.Close();
+                            canvas.DrawPath(_tilePath, _fillPaint);
                         }
                     }
                     break;
@@ -1309,15 +1313,15 @@ public sealed partial class GameRenderer
                         _ => new SKColor(100, 140, 240, crystalAlpha)
                     };
                     _fillPaint.Color = crystalColor;
-                    using (var facet = new SKPath())
                     {
+                        _tilePath.Rewind();
                         float fx = px + rng * cs * 0.25f + cs * 0.2f;
-                        facet.MoveTo(fx, py + 4);
-                        facet.LineTo(fx + cs * 0.35f, py + cs * 0.45f);
-                        facet.LineTo(fx + cs * 0.15f, py + cs * 0.55f);
-                        facet.LineTo(fx - cs * 0.1f, py + cs * 0.4f);
-                        facet.Close();
-                        canvas.DrawPath(facet, _fillPaint);
+                        _tilePath.MoveTo(fx, py + 4);
+                        _tilePath.LineTo(fx + cs * 0.35f, py + cs * 0.45f);
+                        _tilePath.LineTo(fx + cs * 0.15f, py + cs * 0.55f);
+                        _tilePath.LineTo(fx - cs * 0.1f, py + cs * 0.4f);
+                        _tilePath.Close();
+                        canvas.DrawPath(_tilePath, _fillPaint);
                     }
                     // Glanz-Highlight auf dem Kristall
                     _fillPaint.Color = new SKColor(255, 255, 255, 40);
@@ -1335,13 +1339,13 @@ public sealed partial class GameRenderer
                     if (ProceduralTextures.CellRandom(gx, gy, 75) < 0.5f)
                     {
                         _fillPaint.Color = crystalColor.WithAlpha((byte)(crystalAlpha * 0.6f));
-                        using var facet2 = new SKPath();
+                        _tilePath.Rewind();
                         float fx2 = px + cs * 0.55f;
-                        facet2.MoveTo(fx2, py + cs * 0.55f);
-                        facet2.LineTo(fx2 + cs * 0.2f, py + cs * 0.7f);
-                        facet2.LineTo(fx2 + cs * 0.05f, py + cs - 4);
-                        facet2.Close();
-                        canvas.DrawPath(facet2, _fillPaint);
+                        _tilePath.MoveTo(fx2, py + cs * 0.55f);
+                        _tilePath.LineTo(fx2 + cs * 0.2f, py + cs * 0.7f);
+                        _tilePath.LineTo(fx2 + cs * 0.05f, py + cs - 4);
+                        _tilePath.Close();
+                        canvas.DrawPath(_tilePath, _fillPaint);
                     }
                     break;
                 }
@@ -1425,12 +1429,12 @@ public sealed partial class GameRenderer
                         {
                             // Dunkles Dreieck in einer Ecke (abgebröckelt)
                             _fillPaint.Color = new SKColor(60, 50, 40, 50);
-                            using var chip = new SKPath();
-                            chip.MoveTo(px + cs - 3, py + 3);
-                            chip.LineTo(px + cs - 3, py + cs * 0.25f);
-                            chip.LineTo(px + cs * 0.75f, py + 3);
-                            chip.Close();
-                            canvas.DrawPath(chip, _fillPaint);
+                            _tilePath.Rewind();
+                            _tilePath.MoveTo(px + cs - 3, py + 3);
+                            _tilePath.LineTo(px + cs - 3, py + cs * 0.25f);
+                            _tilePath.LineTo(px + cs * 0.75f, py + 3);
+                            _tilePath.Close();
+                            canvas.DrawPath(_tilePath, _fillPaint);
                         }
                         // Efeu/Moos an Kanten (grüne Flecken)
                         if (ProceduralTextures.CellRandom(gx, gy, 77) < 0.4f)
@@ -1557,15 +1561,15 @@ public sealed partial class GameRenderer
                             _ => new SKColor(80, 200, 120, 90)   // Smaragd
                         };
                         _fillPaint.Color = gemClr;
-                        using (var gem = new SKPath())
                         {
+                            _tilePath.Rewind();
                             float gcx = px + cs * 0.5f, gcy = py + cs * 0.5f;
-                            gem.MoveTo(gcx, gcy - 3);
-                            gem.LineTo(gcx + 3, gcy);
-                            gem.LineTo(gcx, gcy + 3);
-                            gem.LineTo(gcx - 3, gcy);
-                            gem.Close();
-                            canvas.DrawPath(gem, _fillPaint);
+                            _tilePath.MoveTo(gcx, gcy - 3);
+                            _tilePath.LineTo(gcx + 3, gcy);
+                            _tilePath.LineTo(gcx, gcy + 3);
+                            _tilePath.LineTo(gcx - 3, gcy);
+                            _tilePath.Close();
+                            canvas.DrawPath(_tilePath, _fillPaint);
                         }
                         // Glanz auf dem Edelstein
                         _fillPaint.Color = new SKColor(255, 255, 255, 50);

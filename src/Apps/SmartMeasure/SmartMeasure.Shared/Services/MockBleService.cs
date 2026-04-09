@@ -132,6 +132,7 @@ public class MockBleService : IBleService, IDisposable
     private void SimulatePositionUpdate(object? state)
     {
         double lat, lon, alt;
+        float hAcc, vAcc;
         lock (_stateLock)
         {
             // Random Walk: Kleine Schwankungen simulieren (±2cm)
@@ -144,12 +145,16 @@ public class MockBleService : IBleService, IDisposable
 
             // Gelegentlich Neigung und Accuracy variieren
             CurrentState.TiltAngle = (float)_random.NextDouble() * 3f;
-            CurrentState.HorizontalAccuracy = 1.2f + (float)_random.NextDouble() * 0.5f;
-            CurrentState.VerticalAccuracy = 1.8f + (float)_random.NextDouble() * 0.5f;
+            hAcc = 1.2f + (float)_random.NextDouble() * 0.5f;
+            vAcc = 1.8f + (float)_random.NextDouble() * 0.5f;
+            CurrentState.HorizontalAccuracy = hAcc;
+            CurrentState.VerticalAccuracy = vAcc;
             CurrentState.SatelliteCount = 20 + _random.Next(8);
         }
 
         PositionUpdated?.Invoke(lat, lon, alt);
+        AccuracyUpdated?.Invoke(hAcc, vAcc);
+        StateChanged?.Invoke(CurrentState);
     }
 
     public void Dispose()

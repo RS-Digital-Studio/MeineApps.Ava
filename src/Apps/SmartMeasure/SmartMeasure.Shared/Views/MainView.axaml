@@ -101,7 +101,7 @@
             </Grid>
         </Border>
 
-        <!-- Content (alle Views, per Opacity umgeschaltet) -->
+        <!-- Content (alle Views per Opacity umgeschaltet, MapView lazy) -->
         <Panel Grid.Row="1">
             <Border Classes="TabContent" Classes.Active="{Binding IsSurveyActive}">
                 <views:SurveyView DataContext="{Binding SurveyVm}" />
@@ -112,9 +112,9 @@
             <Border Classes="TabContent" Classes.Active="{Binding IsGardenActive}">
                 <views:GardenPlanView DataContext="{Binding GardenPlanVm}" />
             </Border>
-            <Border Classes="TabContent" Classes.Active="{Binding IsMapActive}">
-                <views:MapView DataContext="{Binding MapVm}" />
-            </Border>
+            <!-- MapView wird NICHT im XAML erstellt - Mapsui MapControl crasht auf Android
+                 wenn GL-Kontext noch nicht bereit ist. Wird per Code-Behind lazy erzeugt. -->
+            <Border x:Name="MapContainer" Classes="TabContent" Classes.Active="{Binding IsMapActive}" />
             <Border Classes="TabContent" Classes.Active="{Binding IsProjectsActive}">
                 <views:ProjectsView DataContext="{Binding ProjectsVm}" />
             </Border>

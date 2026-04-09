@@ -8,7 +8,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerRechner.Views.Premium.GroutView"
-             x:DataType="vm:GroutViewModel">
+             x:DataType="vm:GroutViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*">
     <!-- Header -->

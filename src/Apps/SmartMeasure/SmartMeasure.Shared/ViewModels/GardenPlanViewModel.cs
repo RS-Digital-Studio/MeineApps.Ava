@@ -49,6 +49,9 @@ public partial class GardenPlanViewModel : ViewModelBase
     /// <summary>Aktuelle Zeichnungspunkte fuer Vorschau im Renderer</summary>
     public IReadOnlyList<(double x, double y)> CurrentDrawingPoints => _currentDrawingPoints;
 
+    // Aktuelle Projekt-ID (wird von MainViewModel gesetzt)
+    public int CurrentProjectId { get; set; }
+
     // Undo/Redo
     private readonly Stack<GardenElement> _undoStack = new();
     [ObservableProperty] private bool _canUndo;
@@ -59,17 +62,36 @@ public partial class GardenPlanViewModel : ViewModelBase
     /// <summary>Canvas muss neu gezeichnet werden</summary>
     public event Action? InvalidateRequested;
 
+    private readonly IProjectService _projectService;
+
     public GardenPlanViewModel(
         IMeasurementService measurementService,
         ICoordinateService coordinateService,
-        IGardenPlanService gardenPlanService)
+        IGardenPlanService gardenPlanService,
+        IProjectService projectService)
     {
         _measurementService = measurementService;
         _coordinateService = coordinateService;
         _gardenPlanService = gardenPlanService;
+        _projectService = projectService;
         Renderer = new GardenPlanRenderer(gardenPlanService);
 
         _measurementService.PointAdded += _ => UpdateCoordinates();
+    }
+
+    /// <summary>Gartenelemente aus der Datenbank laden (nach AR-Transfer oder Projekt-Wechsel)</summary>
+    public async Task LoadElementsFromProjectAsync(int projectId)
+    {
+        var dbElements = await _projectService.GetGardenElementsAsync(projectId);
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            Elements.Clear();
+            foreach (var elem in dbElements)
+                Elements.Add(elem);
+
+            RecalculateMaterials();
+            InvalidateRequested?.Invoke();
+        });
     }
 
     /// <summary>Koordinaten aus Messpunkten aktualisieren</summary>
@@ -131,26 +153,13 @@ public partial class GardenPlanViewModel : ViewModelBase
     {
         if (_x.Length == 0) return;
 
-        // Canvas-Koordinaten zurueck in lokale Meter transformieren
         // Inverse der Renderer-Transformation: canvas → lokal
-        var rangeX = _x.Max() - _x.Min();
-        var rangeY = _y.Max() - _y.Min();
-        var range = Math.Max(rangeX, rangeY);
-        if (range < 0.001) range = 1;
+        // Renderer exponiert LastScale, LastCenterX, LastCenterY fuer konsistente Umrechnung
+        var scale = Renderer.LastScale;
+        if (scale < 0.001) return;
 
-        var centerX = (_x.Min() + _x.Max()) / 2.0;
-        var centerY = (_y.Min() + _y.Max()) / 2.0;
-
-        // Scale und Offsets muessen mit dem Renderer uebereinstimmen
-        // Renderer: canvas.Translate(midX + PanX, midY + PanY)
-        //           sx = (x - centerX) * scale
-        //           sy = (y - centerY) * scale * -1
-        // Inverse:  localX = sx / scale + centerX
-        //           localY = -(sy / scale) + centerY
-        // wobei sx = canvasX - (viewportMidX + PanX)
-        //       sy = canvasY - (viewportMidY + PanY)
-        var localX = (double)canvasX / Renderer.LastScale + centerX;
-        var localY = -((double)canvasY / Renderer.LastScale) + centerY;
+        var localX = (double)canvasX / scale + Renderer.LastCenterX;
+        var localY = -((double)canvasY / scale) + Renderer.LastCenterY;
 
         AddDrawingPoint(localX, localY);
     }
@@ -181,7 +190,7 @@ public partial class GardenPlanViewModel : ViewModelBase
 
     /// <summary>Aktuelles Zeichnungselement fertigstellen</summary>
     [RelayCommand]
-    private void FinishDrawing()
+    private async Task FinishDrawingAsync()
     {
         if (_currentDrawingPoints.Count < 2)
         {
@@ -221,6 +230,13 @@ public partial class GardenPlanViewModel : ViewModelBase
                 break;
         }
 
+        // In DB persistieren (await damit sqlite-net die Id auf dem Objekt setzt)
+        if (CurrentProjectId > 0)
+        {
+            element.ProjectId = CurrentProjectId;
+            await _projectService.AddGardenElementAsync(CurrentProjectId, element);
+        }
+
         Elements.Add(element);
         _undoStack.Push(element);
         CanUndo = true;
@@ -243,14 +259,19 @@ public partial class GardenPlanViewModel : ViewModelBase
         InvalidateRequested?.Invoke();
     }
 
-    /// <summary>Letztes Element rueckgaengig machen</summary>
+    /// <summary>Letztes Element rueckgaengig machen (auch aus DB loeschen)</summary>
     [RelayCommand]
-    private void Undo()
+    private async Task UndoAsync()
     {
         if (_undoStack.Count == 0) return;
 
         var element = _undoStack.Pop();
         Elements.Remove(element);
+
+        // Aus DB loeschen (Id wurde durch await in FinishDrawingAsync korrekt gesetzt)
+        if (element.Id > 0)
+            await _projectService.DeleteGardenElementAsync(element.Id);
+
         CanUndo = _undoStack.Count > 0;
 
         RecalculateMaterials();

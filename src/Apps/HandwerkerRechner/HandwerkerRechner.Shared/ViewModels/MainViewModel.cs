@@ -19,8 +19,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IAdService _adService;
     private readonly ILocalizationService _localization;
     private readonly IRewardedAdService _rewardedAdService;
-    private readonly IPremiumAccessService _premiumAccessService;
     private readonly IFavoritesService _favoritesService;
+
+    // Zähler für Berechnungen: nach jeder 3. Berechnung wird ein Rewarded Video gezeigt
+    private int _calculationCount;
 
     // Sub-ViewModels
     public ProjectTemplatesViewModel ProjectTemplatesViewModel { get; }
@@ -37,7 +39,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
-    public event Action? CelebrationRequested;
     public event Action<string>? ClipboardRequested;
 
     // Sub-ViewModels for embedded tabs
@@ -53,7 +54,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         ProjectsViewModel projectsViewModel,
         HistoryViewModel historyViewModel,
         IRewardedAdService rewardedAdService,
-        IPremiumAccessService premiumAccessService,
         ICalculatorFactoryService calculatorFactory,
         IFavoritesService favoritesService,
         ProjectTemplatesViewModel projectTemplatesViewModel,
@@ -63,7 +63,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _adService = adService;
         _localization = localization;
         _rewardedAdService = rewardedAdService;
-        _premiumAccessService = premiumAccessService;
         _calculatorFactory = calculatorFactory;
         _favoritesService = favoritesService;
         ProjectTemplatesViewModel = projectTemplatesViewModel;
@@ -91,7 +90,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         SettingsViewModel.MessageRequested += OnChildMessage;
 
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
-        _premiumAccessService.AccessExpired += OnAccessExpired;
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
 
         // Subscribe to language changes
@@ -142,17 +140,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     /// <summary>
     /// Öffnet einen Favoriten-Rechner über die Schnellzugriff-Leiste.
-    /// Premium-Check wird berücksichtigt.
+    /// Alle Rechner sind frei zugänglich.
     /// </summary>
     [RelayCommand]
     private void OpenFavorite(string route)
     {
         if (string.IsNullOrEmpty(route)) return;
-
-        if (IsPremiumRoute(route))
-            NavigatePremium(route);
-        else
-            NavigateTo(route);
+        NavigateTo(route);
     }
 
     private void OnFavoritesChanged(object? sender, EventArgs e) => UpdateFavorites();
@@ -168,8 +162,57 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 FavoriteCalculators.Add(new FavoriteItem(key, label, icon, isPremium));
             }
             OnPropertyChanged(nameof(HasFavorites));
+            // Favoriten-Status aller 19 Rechner-Cards aktualisieren (Stern-Toggle)
+            NotifyFavoriteProperties();
         });
     }
+
+    /// <summary>
+    /// Benachrichtigt alle Favoriten-Properties damit die Sterne im UI korrekt aktualisiert werden.
+    /// </summary>
+    private void NotifyFavoriteProperties()
+    {
+        OnPropertyChanged(nameof(IsFavTileCalculator));
+        OnPropertyChanged(nameof(IsFavWallpaper));
+        OnPropertyChanged(nameof(IsFavPaint));
+        OnPropertyChanged(nameof(IsFavFlooring));
+        OnPropertyChanged(nameof(IsFavConcrete));
+        OnPropertyChanged(nameof(IsFavDrywall));
+        OnPropertyChanged(nameof(IsFavElectrical));
+        OnPropertyChanged(nameof(IsFavMetal));
+        OnPropertyChanged(nameof(IsFavGarden));
+        OnPropertyChanged(nameof(IsFavRoofSolar));
+        OnPropertyChanged(nameof(IsFavStairs));
+        OnPropertyChanged(nameof(IsFavPlaster));
+        OnPropertyChanged(nameof(IsFavScreed));
+        OnPropertyChanged(nameof(IsFavInsulation));
+        OnPropertyChanged(nameof(IsFavCableSizing));
+        OnPropertyChanged(nameof(IsFavGrout));
+        OnPropertyChanged(nameof(IsFavHourlyRate));
+        OnPropertyChanged(nameof(IsFavMaterialCompare));
+        OnPropertyChanged(nameof(IsFavAreaMeasure));
+    }
+
+    // Favoriten-Status je Rechner (Compiled-Binding-kompatibel, kein Converter nötig)
+    public bool IsFavTileCalculator  => _favoritesService.IsFavorite("TileCalculatorPage");
+    public bool IsFavWallpaper       => _favoritesService.IsFavorite("WallpaperCalculatorPage");
+    public bool IsFavPaint           => _favoritesService.IsFavorite("PaintCalculatorPage");
+    public bool IsFavFlooring        => _favoritesService.IsFavorite("FlooringCalculatorPage");
+    public bool IsFavConcrete        => _favoritesService.IsFavorite("ConcretePage");
+    public bool IsFavDrywall         => _favoritesService.IsFavorite("DrywallPage");
+    public bool IsFavElectrical      => _favoritesService.IsFavorite("ElectricalPage");
+    public bool IsFavMetal           => _favoritesService.IsFavorite("MetalPage");
+    public bool IsFavGarden          => _favoritesService.IsFavorite("GardenPage");
+    public bool IsFavRoofSolar       => _favoritesService.IsFavorite("RoofSolarPage");
+    public bool IsFavStairs          => _favoritesService.IsFavorite("StairsPage");
+    public bool IsFavPlaster         => _favoritesService.IsFavorite("PlasterPage");
+    public bool IsFavScreed          => _favoritesService.IsFavorite("ScreedPage");
+    public bool IsFavInsulation      => _favoritesService.IsFavorite("InsulationPage");
+    public bool IsFavCableSizing     => _favoritesService.IsFavorite("CableSizingPage");
+    public bool IsFavGrout           => _favoritesService.IsFavorite("GroutPage");
+    public bool IsFavHourlyRate      => _favoritesService.IsFavorite("HourlyRatePage");
+    public bool IsFavMaterialCompare => _favoritesService.IsFavorite("MaterialComparePage");
+    public bool IsFavAreaMeasure     => _favoritesService.IsFavorite("AreaMeasurePage");
 
     private (string Label, string Icon, bool IsPremium) GetCalculatorInfo(string route) => route switch
     {
@@ -178,20 +221,20 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         "PaintCalculatorPage" => (CalcPaintLabel, "FormatPaint", false),
         "FlooringCalculatorPage" => (CalcFlooringLabel, "Layers", false),
         "ConcretePage" => (CalcConcreteLabel, "CubeOutline", false),
-        "DrywallPage" => (CategoryDrywallLabel, "Wall", true),
-        "ElectricalPage" => (CategoryElectricalLabel, "Flash", true),
-        "MetalPage" => (CategoryMetalLabel, "Wrench", true),
-        "GardenPage" => (CategoryGardenLabel, "Flower", true),
-        "RoofSolarPage" => (CategoryRoofSolarLabel, "SolarPanel", true),
-        "StairsPage" => (CalcStairsLabel, "Stairs", true),
-        "PlasterPage" => (CalcPlasterLabel, "FormatPaint", true),
-        "ScreedPage" => (CalcScreedLabel, "Layers", true),
-        "InsulationPage" => (CalcInsulationLabel, "Snowflake", true),
-        "CableSizingPage" => (CalcCableSizingLabel, "CableData", true),
-        "GroutPage" => (CalcGroutLabel, "Texture", true),
-        "HourlyRatePage" => (CalcHourlyRateLabel, "ClockOutline", true),
-        "MaterialComparePage" => (CalcMaterialCompareLabel, "ScaleBalance", true),
-        "AreaMeasurePage" => (CalcAreaMeasureLabel, "RulerSquare", true),
+        "DrywallPage" => (CategoryDrywallLabel, "Wall", false),
+        "ElectricalPage" => (CategoryElectricalLabel, "Flash", false),
+        "MetalPage" => (CategoryMetalLabel, "Wrench", false),
+        "GardenPage" => (CategoryGardenLabel, "Flower", false),
+        "RoofSolarPage" => (CategoryRoofSolarLabel, "SolarPanel", false),
+        "StairsPage" => (CalcStairsLabel, "Stairs", false),
+        "PlasterPage" => (CalcPlasterLabel, "FormatPaint", false),
+        "ScreedPage" => (CalcScreedLabel, "Layers", false),
+        "InsulationPage" => (CalcInsulationLabel, "Snowflake", false),
+        "CableSizingPage" => (CalcCableSizingLabel, "CableData", false),
+        "GroutPage" => (CalcGroutLabel, "Texture", false),
+        "HourlyRatePage" => (CalcHourlyRateLabel, "ClockOutline", false),
+        "MaterialComparePage" => (CalcMaterialCompareLabel, "ScaleBalance", false),
+        "AreaMeasurePage" => (CalcAreaMeasureLabel, "RulerSquare", false),
         _ => (route, "Calculator", false)
     };
 
@@ -297,12 +340,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (value == "ProjectTemplatesPage")
         {
             CurrentCalculatorVm = ProjectTemplatesViewModel;
-            _ = ProjectTemplatesViewModel.LoadTemplatesAsync();
+            _ = LoadSafeAsync(ProjectTemplatesViewModel.LoadTemplatesAsync());
         }
         else if (value == "QuotePage")
         {
             CurrentCalculatorVm = QuoteViewModel;
-            _ = QuoteViewModel.LoadQuotesAsync();
+            _ = LoadSafeAsync(QuoteViewModel.LoadQuotesAsync());
         }
         else if (value != null)
             CurrentCalculatorVm = CreateCalculatorVm(value);
@@ -310,10 +353,32 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             CurrentCalculatorVm = null;
     }
 
+    /// <summary>
+    /// Sicherer Wrapper fuer fire-and-forget Ladeaufrufe.
+    /// Verhindert unbehandelte Exceptions bei discarded Tasks.
+    /// </summary>
+    private async Task LoadSafeAsync(Task loadTask)
+    {
+        try
+        {
+            await loadTask;
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] Laden fehlgeschlagen: {ex.Message}");
+#endif
+        }
+    }
+
     private void CleanupCurrentCalculator()
     {
         if (CurrentCalculatorVm is ICalculatorViewModel calc)
             calc.Cleanup();
+
+        // Transient-VMs disposen (Timer, Subscriptions freigeben)
+        if (CurrentCalculatorVm is IDisposable d)
+            d.Dispose();
     }
 
     private ObservableObject? CreateCalculatorVm(string page)
@@ -346,6 +411,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             calc.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
             calc.FloatingTextRequested += OnChildFloatingText;
             calc.ClipboardRequested += OnClipboardRequested;
+            calc.CalculationPerformed += OnCalculationPerformed;
             if (projectId != null) _ = calc.LoadFromProjectIdAsync(projectId);
         }
     }
@@ -353,8 +419,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private void OnChildFloatingText(string text, string category)
     {
         FloatingTextRequested?.Invoke(text, category);
-        if (category == "success")
-            CelebrationRequested?.Invoke();
     }
 
     private void OnClipboardRequested(string text)
@@ -370,47 +434,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>
-    /// Prüft ob eine Route zu einem Premium-Rechner führt
-    /// </summary>
-    private static bool IsPremiumRoute(string route)
-    {
-        // Route kann Query-Parameter enthalten (z.B. "DrywallPage?projectId=abc")
-        var routeName = route;
-        var qIdx = route.IndexOf('?');
-        if (qIdx >= 0)
-            routeName = route[..qIdx];
-
-        return routeName is "DrywallPage" or "ElectricalPage" or "MetalPage" or "GardenPage" or "RoofSolarPage" or "StairsPage" or "PlasterPage" or "ScreedPage" or "InsulationPage" or "CableSizingPage" or "GroutPage" or "HourlyRatePage" or "MaterialComparePage" or "AreaMeasurePage";
-    }
-
     private void OnProjectNavigation(string route)
     {
         if (route == "..") return;
-
-        // Premium-Check: Projekt-Laden darf Premium-Sperre nicht umgehen
-        if (IsPremiumRoute(route) && !_premiumAccessService.HasAccess)
-        {
-            PendingPremiumRoute = route;
-            ShowPremiumAccessOverlay = true;
-            return;
-        }
-
         CurrentPage = route;
     }
 
     private void OnHistoryNavigation(string route)
     {
         if (route == "..") return;
-
-        // Premium-Check: History-Navigation darf Premium-Sperre nicht umgehen
-        if (IsPremiumRoute(route) && !_premiumAccessService.HasAccess)
-        {
-            PendingPremiumRoute = route;
-            ShowPremiumAccessOverlay = true;
-            return;
-        }
-
         CurrentPage = route;
     }
 
@@ -513,52 +545,51 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void NavigateToFlooring() => NavigateTo("FlooringCalculatorPage");
 
-    // Premium Calculator Navigation (gated mit PremiumAccess oder Ad)
+    // Alle Rechner direkt zugänglich (kein Premium-Gate mehr)
     [RelayCommand]
-    private void NavigateToDrywall() => NavigatePremium("DrywallPage");
+    private void NavigateToDrywall() => NavigateTo("DrywallPage");
 
     [RelayCommand]
-    private void NavigateToElectrical() => NavigatePremium("ElectricalPage");
+    private void NavigateToElectrical() => NavigateTo("ElectricalPage");
 
     [RelayCommand]
-    private void NavigateToMetal() => NavigatePremium("MetalPage");
+    private void NavigateToMetal() => NavigateTo("MetalPage");
 
     [RelayCommand]
-    private void NavigateToGarden() => NavigatePremium("GardenPage");
+    private void NavigateToGarden() => NavigateTo("GardenPage");
 
     [RelayCommand]
-    private void NavigateToRoofSolar() => NavigatePremium("RoofSolarPage");
+    private void NavigateToRoofSolar() => NavigateTo("RoofSolarPage");
 
     [RelayCommand]
     private void NavigateToConcrete() => NavigateTo("ConcretePage");
 
     [RelayCommand]
-    private void NavigateToStairs() => NavigatePremium("StairsPage");
+    private void NavigateToStairs() => NavigateTo("StairsPage");
 
     [RelayCommand]
-    private void NavigateToPlaster() => NavigatePremium("PlasterPage");
+    private void NavigateToPlaster() => NavigateTo("PlasterPage");
 
     [RelayCommand]
-    private void NavigateToScreed() => NavigatePremium("ScreedPage");
+    private void NavigateToScreed() => NavigateTo("ScreedPage");
 
     [RelayCommand]
-    private void NavigateToInsulation() => NavigatePremium("InsulationPage");
+    private void NavigateToInsulation() => NavigateTo("InsulationPage");
 
     [RelayCommand]
-    private void NavigateToCableSizing() => NavigatePremium("CableSizingPage");
+    private void NavigateToCableSizing() => NavigateTo("CableSizingPage");
 
     [RelayCommand]
-    private void NavigateToGrout() => NavigatePremium("GroutPage");
-
-    // Profi-Werkzeuge Navigation
-    [RelayCommand]
-    private void NavigateToHourlyRate() => NavigatePremium("HourlyRatePage");
+    private void NavigateToGrout() => NavigateTo("GroutPage");
 
     [RelayCommand]
-    private void NavigateToMaterialCompare() => NavigatePremium("MaterialComparePage");
+    private void NavigateToHourlyRate() => NavigateTo("HourlyRatePage");
 
     [RelayCommand]
-    private void NavigateToAreaMeasure() => NavigatePremium("AreaMeasurePage");
+    private void NavigateToMaterialCompare() => NavigateTo("MaterialComparePage");
+
+    [RelayCommand]
+    private void NavigateToAreaMeasure() => NavigateTo("AreaMeasurePage");
 
     // Vorlagen + Angebote Navigation
     [RelayCommand]
@@ -567,122 +598,21 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void NavigateToQuotes() => CurrentPage = "QuotePage";
 
-    /// <summary>
-    /// Prueft Premium-Zugang vor Navigation zu Premium-Rechnern.
-    /// Premium oder temporaerer Zugang → direkt. Sonst → Ad-Overlay.
-    /// </summary>
-    private void NavigatePremium(string route)
-    {
-        if (_premiumAccessService.HasAccess)
-        {
-            NavigateTo(route);
-            return;
-        }
-        PendingPremiumRoute = route;
-        ShowPremiumAccessOverlay = true;
-    }
-
-    #region Premium Access Overlay
-
-    [ObservableProperty]
-    private bool _showPremiumAccessOverlay;
-
-    [ObservableProperty]
-    private string _pendingPremiumRoute = "";
-
-    [ObservableProperty]
-    private bool _hasTemporaryAccess;
-
-    [ObservableProperty]
-    private string _accessTimerText = "";
-
-    // Lokalisierte Texte fuer das Overlay
-    public string PremiumLockedText => _localization.GetString("PremiumCalculatorsLocked") ?? "Unlock Premium Calculators";
-    public string VideoFor30MinText => _localization.GetString("VideoFor30Min") ?? "Watch Video → 30 Min Access";
-    public string PremiumLockedDescText => _localization.GetString("WatchVideoFor30Min") ?? "Watch a video for 30 min access to all premium calculators.";
-
-    [RelayCommand]
-    private async Task ConfirmPremiumAdAsync()
-    {
-        ShowPremiumAccessOverlay = false;
-
-        var success = await _rewardedAdService.ShowAdAsync("premium_access");
-        if (success)
-        {
-            _premiumAccessService.GrantTemporaryAccess(TimeSpan.FromMinutes(30));
-            HasTemporaryAccess = true;
-
-            var msg = _localization.GetString("AccessGranted") ?? "Access granted!";
-            MessageRequested?.Invoke(msg, "");
-
-            // Gemerkten Rechner oeffnen
-            if (!string.IsNullOrEmpty(PendingPremiumRoute))
-                NavigateTo(PendingPremiumRoute);
-        }
-        PendingPremiumRoute = "";
-    }
-
-    [RelayCommand]
-    private void CancelPremiumAd()
-    {
-        ShowPremiumAccessOverlay = false;
-        PendingPremiumRoute = "";
-    }
-
-    private void OnAccessExpired(object? sender, EventArgs e)
-    {
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-        {
-            HasTemporaryAccess = false;
-            AccessTimerText = "";
-        });
-    }
-
-    #endregion
-
-    #region Extended History
-
-    [ObservableProperty]
-    private bool _showExtendedHistoryOverlay;
-
-    public string ExtendedHistoryTitleText => _localization.GetString("ExtendedHistoryTitle") ?? "Extended History";
-    public string ExtendedHistoryDescText => _localization.GetString("ExtendedHistoryDesc") ?? "Watch a video to unlock 30 saved calculations for 24 hours (instead of 5).";
+    #region Ad-Counter (alle 3 Berechnungen ein Rewarded Video)
 
     /// <summary>
-    /// Zeigt Overlay zum Freischalten der erweiterten History
+    /// Wird nach jeder erfolgreichen Berechnung aufgerufen.
+    /// Zeigt alle 3 Berechnungen ein Rewarded Video (außer Premium-User).
     /// </summary>
-    [RelayCommand]
-    private void ShowExtendedHistoryAd()
+    private async void OnCalculationPerformed()
     {
-        if (_premiumAccessService.HasExtendedHistory)
+        if (_purchaseService.IsPremium) return;
+        _calculationCount++;
+        if (_calculationCount >= 3)
         {
-            MessageRequested?.Invoke(
-                _localization.GetString("ExtendedHistoryTitle") ?? "Extended History",
-                _localization.GetString("AccessGranted") ?? "Already active!");
-            return;
+            _calculationCount = 0;
+            await _rewardedAdService.ShowAdAsync("calculation_ad");
         }
-        ShowExtendedHistoryOverlay = true;
-    }
-
-    [RelayCommand]
-    private async Task ConfirmExtendedHistoryAdAsync()
-    {
-        ShowExtendedHistoryOverlay = false;
-
-        var success = await _rewardedAdService.ShowAdAsync("extended_history");
-        if (success)
-        {
-            _premiumAccessService.GrantExtendedHistory();
-            MessageRequested?.Invoke(
-                _localization.GetString("AccessGranted") ?? "Access granted!",
-                _localization.GetString("ExtendedHistoryDesc") ?? "30 entries for 24h!");
-        }
-    }
-
-    [RelayCommand]
-    private void CancelExtendedHistoryAd()
-    {
-        ShowExtendedHistoryOverlay = false;
     }
 
     #endregion
@@ -721,13 +651,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private void OnTemplateNavigation(string route)
     {
         if (route == "..") { CurrentPage = null; return; }
-        // Template-Navigation: Kann Premium-Routen enthalten
-        if (IsPremiumRoute(route) && !_premiumAccessService.HasAccess)
-        {
-            PendingPremiumRoute = route;
-            ShowPremiumAccessOverlay = true;
-            return;
-        }
         CurrentPage = route;
     }
 
@@ -757,11 +680,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     public bool HandleBackPressed()
     {
-        // 1. Overlays schließen
-        if (ShowPremiumAccessOverlay) { CancelPremiumAd(); return true; }
-        if (ShowExtendedHistoryOverlay) { CancelExtendedHistoryAd(); return true; }
-
-        // 2. SaveDialog im aktuellen Calculator schließen
+        // 1. SaveDialog im aktuellen Calculator schließen
         if (CurrentCalculatorVm is ICalculatorViewModel calc)
         {
             if (calc.ShowSaveDialog)
@@ -805,7 +724,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         _adService.AdsStateChanged -= OnAdsStateChanged;
         _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
-        _premiumAccessService.AccessExpired -= OnAccessExpired;
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         SettingsViewModel.LanguageChanged -= OnLanguageChanged;
         SettingsViewModel.FeedbackRequested -= OnFeedbackRequested;

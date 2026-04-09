@@ -6,7 +6,6 @@ using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
-using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using HandwerkerRechner.ViewModels;
 
@@ -39,8 +38,6 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
     private readonly ICalculationHistoryService _historyService;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly IPurchaseService _purchaseService;
     private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
@@ -48,6 +45,7 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
+    public event Action? CalculationPerformed;
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
     public ElectricalViewModel(
@@ -57,8 +55,6 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         ICalculationHistoryService historyService,
         IMaterialExportService exportService,
         IFileShareService fileShareService,
-        IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService,
         IMaterialPriceService priceService)
     {
         _engine = engine;
@@ -67,8 +63,6 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         _historyService = historyService;
         _exportService = exportService;
         _fileShareService = fileShareService;
-        _rewardedAdService = rewardedAdService;
-        _purchaseService = purchaseService;
         _priceService = priceService;
 
         // Standard-Materialpreis laden
@@ -273,6 +267,7 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
                     break;
             }
             HasResult = true;
+            CalculationPerformed?.Invoke();
 
             // Save to history
             await SaveToHistoryAsync();
@@ -352,7 +347,9 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -547,7 +544,9 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -603,12 +602,6 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         try
         {
             IsExporting = true;
-
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
 
             var calcType = Calculators[SelectedCalculator];
             var inputs = new Dictionary<string, string>();
@@ -669,12 +662,6 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         {
             IsExporting = true;
 
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
-
             var calcType = Calculators[SelectedCalculator];
             var inputs = new Dictionary<string, string>();
             var results = new Dictionary<string, string>();
@@ -711,7 +698,7 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
 
             var path = await _exportService.ExportToCsvAsync(calcType, inputs, results);
             await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "text/csv");
-            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("PdfExportSuccess") ?? "PDF exported!");
+            MessageRequested?.Invoke(_localization.GetString("Success") ?? "Success", _localization.GetString("CsvExportSuccess") ?? "CSV exported!");
         }
         catch (Exception)
         {

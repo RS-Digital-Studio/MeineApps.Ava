@@ -10,6 +10,9 @@ namespace BomberBlast.Core;
 /// </summary>
 public sealed partial class GameEngine
 {
+    // Gecachte Countdown-Strings (vermeidet ToString()-Allokation im Render-Loop)
+    private static readonly string[] CountdownStrings = ["0", "1", "2", "3", "4", "5"];
+
     // Gepoolter SKPath für Iris-Wipe Clip (statt pro-Frame new SKPath())
     private readonly SKPath _irisClipPath = new();
 
@@ -285,7 +288,8 @@ public sealed partial class GameEngine
         int countdown = (int)MathF.Ceiling(START_DELAY - _stateTimer);
         _overlayFont.Size = 72;
         _overlayTextPaint.Color = SKColors.Yellow;
-        canvas.DrawText(countdown.ToString(), screenWidth / 2, screenHeight / 2 + 80, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        var countdownText = countdown >= 0 && countdown < CountdownStrings.Length ? CountdownStrings[countdown] : countdown.ToString();
+        canvas.DrawText(countdownText, screenWidth / 2, screenHeight / 2 + 80, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
     }
 
     private void RenderPausedOverlay(SKCanvas canvas, float screenWidth, float screenHeight)

@@ -9,7 +9,7 @@
              x:CompileBindings="True">
 
   <!-- Gem-Shop: Landscape-Layout mit Gem-Balance links und 3 Kauf-Karten rechts -->
-  <Panel Name="GemShop_Root" AutomationProperties.AutomationId="GemShop_Root">
+  <Panel x:Name="GemShop_Root" AutomationProperties.AutomationId="GemShop_Root">
     <controls:MenuBackgroundCanvas />
 
     <Grid ColumnDefinitions="*,1.5*" Margin="16,12,16,80">

@@ -34,8 +34,18 @@ public class Enemy : Entity
     /// <summary>Target grid position for AI pathfinding</summary>
     public (int x, int y)? TargetPosition { get; set; }
 
-    /// <summary>Current path for AI navigation</summary>
-    public Queue<(int x, int y)> Path { get; set; } = new();
+    /// <summary>Aktueller Pfad für AI-Navigation (wiederverwendete Queue, keine Heap-Allokation)</summary>
+    public Queue<(int x, int y)> Path { get; } = new();
+
+    /// <summary>
+    /// Kopiert Pfaddaten aus einer Quell-Liste in die existierende Queue (keine Allokation).
+    /// </summary>
+    public void CopyPathFrom(IReadOnlyList<(int x, int y)> source)
+    {
+        Path.Clear();
+        for (int i = 0; i < source.Count; i++)
+            Path.Enqueue(source[i]);
+    }
 
     /// <summary>Current AI behavior state (for hysteresis)</summary>
     public EnemyAIState AIState { get; set; } = EnemyAIState.Wandering;

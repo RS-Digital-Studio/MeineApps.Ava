@@ -215,6 +215,24 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ## Architektur-Entscheidungen
 
+### Compiled Bindings in DataTemplates
+- Alle DataTemplates MÜSSEN `x:DataType` angeben in CompileBindings="True" Views
+- Parent-ViewModel-Commands in DataTemplates: `{Binding $parent[ItemsControl].((vm:XxxViewModel)DataContext).CommandName}`
+- KEIN ReflectionBinding - immer Compiled Binding mit $parent[]-Syntax
+- Referenz-Pattern: ShopView.axaml:111
+
+### Performance-Conventions (Render-Loop)
+- Shader pro Frame: Gecachter SKShader mit Frame-Skipping (alle 2 Frames), kein pro-Frame ToShader()
+- ToString() in Render-Loops: Statische String-Arrays für bekannte Wertebereiche
+- AStar-Ergebnisse: Enemy besitzt eigene Queue, Pfad wird via CopyPathFrom() kopiert - keine Queue-Referenz auf AStar halten
+- SKPath-Pooling: ProceduralTextures nutzt statischen `_poolPath` mit `Rewind()`. GameRenderer nutzt `_tilePath` für Wand/Block-Details. KEIN `new SKPath()` im Render-Loop
+- MaskFilter-Caching: HUD-Icon Glow gecacht in HudVisualization. DungeonMap Node-Glow gecacht. KEIN `CreateBlur()` pro Frame
+
+### Security-Maßnahmen
+- Spielername: Profanity-Filter in LeagueService.SetPlayerName() (HashSet Blocklist, case-insensitive)
+- Firebase: Security Rules in Console setzen: `"$uid": { ".write": "auth.uid === $uid" }` + Score-Hard-Cap
+- Premium/Coins: Client-seitig (akzeptabel für 1,99€ App, RestorePurchases bei Start)
+
 - **Singleton-VM + Visual Tree**: GameView hat 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded (für verzögertes ViewLocator-DataContext), (3) OnPaintSurface Safety-Net (startet Render-Timer nach wenn InvalidateCanvasRequested keinen Subscriber hatte). TrySubscribeToViewModel() als zentrale idempotente Methode
 - **Game Loop**: DispatcherTimer (16ms), MAX_DELTA_TIME = 0.05f (50ms Cap)
 - **Touch-Koordinaten**: Proportionale Skalierung (Render-Bounds / Control-Bounds Ratio)

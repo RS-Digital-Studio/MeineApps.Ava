@@ -14,6 +14,7 @@
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerRechner.Views.MainView"
              x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
              Background="Transparent">
 
   <UserControl.Styles>
@@ -33,17 +34,6 @@
       <Setter Property="Opacity" Value="1" />
       <Setter Property="IsHitTestVisible" Value="True" />
       <Setter Property="IsVisible" Value="True" />
-    </Style>
-
-    <!-- Premium-Badge Gold-Glow (3s Loop) -->
-    <Style Selector="Border.GoldGlow">
-      <Style.Animations>
-        <Animation Duration="0:0:3" IterationCount="Infinite">
-          <KeyFrame Cue="0%"><Setter Property="BoxShadow" Value="0 0 4 0 #20FFD700"/></KeyFrame>
-          <KeyFrame Cue="50%"><Setter Property="BoxShadow" Value="0 0 14 0 #60FFD700"/></KeyFrame>
-          <KeyFrame Cue="100%"><Setter Property="BoxShadow" Value="0 0 4 0 #20FFD700"/></KeyFrame>
-        </Animation>
-      </Style.Animations>
     </Style>
 
     <!-- Premium-Card Shimmer (subtil) -->
@@ -335,11 +325,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <!-- Favoriten-Stern: gefüllt (Gold) wenn Favorit, Outline sonst -->
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="TileCalculatorPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavTileCalculator}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavTileCalculator}" />
+                        </Panel>
                       </Button>
                     </Panel>
                   </Button>
@@ -382,11 +378,16 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="WallpaperCalculatorPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavWallpaper}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavWallpaper}" />
+                        </Panel>
                       </Button>
                     </Panel>
                   </Button>
@@ -429,11 +430,16 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="PaintCalculatorPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavPaint}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavPaint}" />
+                        </Panel>
                       </Button>
                     </Panel>
                   </Button>
@@ -476,11 +482,16 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="FlooringCalculatorPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavFlooring}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavFlooring}" />
+                        </Panel>
                       </Button>
                     </Panel>
                   </Button>
@@ -522,11 +533,16 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="ConcretePage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavConcrete}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavConcrete}" />
+                        </Panel>
                       </Button>
                     </Panel>
                   </Button>
@@ -585,17 +601,18 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <!-- Favoriten-Stern: gefüllt (Gold) wenn Favorit, Outline sonst -->
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="DrywallPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavDrywall}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavDrywall}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -637,17 +654,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="ElectricalPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavElectrical}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavElectrical}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -689,17 +706,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="MetalPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavMetal}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavMetal}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -741,17 +758,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="GardenPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavGarden}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavGarden}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -793,17 +810,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="RoofSolarPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavRoofSolar}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavRoofSolar}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -845,17 +862,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="StairsPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavStairs}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavStairs}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -897,17 +914,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="PlasterPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavPlaster}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavPlaster}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -949,17 +966,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="ScreedPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavScreed}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavScreed}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -1001,17 +1018,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="InsulationPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavInsulation}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavInsulation}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -1053,17 +1070,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="CableSizingPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavCableSizing}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavCableSizing}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -1105,17 +1122,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="GroutPage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavGrout}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavGrout}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
                   <!-- Stundenrechner -->
@@ -1155,17 +1172,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="HourlyRatePage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavHourlyRate}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavHourlyRate}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -1206,17 +1223,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="MaterialComparePage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavMaterialCompare}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavMaterialCompare}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
 
@@ -1257,17 +1274,17 @@
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
-                      <Button Classes="Text" Padding="6"
+                      <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="AreaMeasurePage">
-                        <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
+                        <Panel>
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                                           IsVisible="{Binding IsFavAreaMeasure}" />
+                          <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding !IsFavAreaMeasure}" />
+                        </Panel>
                       </Button>
-                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
-                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
-                              Margin="0,-2,-2,0">
-                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
-                      </Border>
                     </Panel>
                   </Button>
                 </Grid>
@@ -1344,49 +1361,7 @@
                 </Grid>
               </StackPanel>
 
-              <!-- ========== Extended History Card ========== -->
-              <Button AutomationProperties.AutomationId="Main_BtnExtendedHistory"
-                      Background="Transparent" Padding="0" Height="NaN"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      VerticalContentAlignment="Stretch"
-                      IsVisible="{Binding !IsPremium}"
-                      Command="{Binding ShowExtendedHistoryAdCommand}">
-                <i:Interaction.Behaviors>
-                  <behaviors:TapScaleBehavior PressedScale="0.97"/>
-                  <behaviors:FadeInBehavior Delay="660" Duration="250"/>
-                </i:Interaction.Behaviors>
-                <Border Classes="Card" CornerRadius="12" Padding="16,14">
-                  <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Border Grid.Column="0" Width="44" Height="44"
-                            CornerRadius="22" Margin="0,0,12,0">
-                      <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                          <GradientStop Color="#3B82F6" Offset="0" />
-                          <GradientStop Color="#1D4ED8" Offset="1" />
-                        </LinearGradientBrush>
-                      </Border.Background>
-                      <mi:MaterialIcon Kind="History" Width="22" Height="22"
-                                       Foreground="White"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                      <TextBlock AutomationProperties.AutomationId="Main_TxtExtHistoryTitle"
-                                 Text="{Binding ExtendedHistoryTitleText}"
-                                 FontSize="14" FontWeight="Bold"
-                                 Foreground="{DynamicResource TextPrimaryBrush}" />
-                      <TextBlock AutomationProperties.AutomationId="Main_TxtExtHistoryDesc"
-                                 Text="{Binding ExtendedHistoryDescText}"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 TextWrapping="Wrap" />
-                    </StackPanel>
-                    <mi:MaterialIcon Grid.Column="2"
-                                     Kind="ChevronRight" Width="18" Height="18"
-                                     Foreground="{DynamicResource TextMutedBrush}"
-                                     VerticalAlignment="Center" />
-                  </Grid>
-                </Border>
-              </Button>
+
 
             </StackPanel>
 
@@ -1425,132 +1400,6 @@
              Background="{DynamicResource BackgroundBrush}">
         <ContentControl AutomationProperties.AutomationId="Main_CalculatorContent" Content="{Binding CurrentCalculatorVm}" />
       </Panel>
-
-      <!-- Premium Access Overlay -->
-      <Border AutomationProperties.AutomationId="Main_PremiumOverlay"
-              IsVisible="{Binding ShowPremiumAccessOverlay}"
-              Background="#CC000000"
-              ZIndex="100">
-        <Border Background="{DynamicResource CardBrush}"
-                CornerRadius="16"
-                Padding="24"
-                MaxWidth="340"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
-          <StackPanel Spacing="16" HorizontalAlignment="Center">
-            <TextBlock AutomationProperties.AutomationId="Main_TxtPremiumLocked"
-                       Text="{Binding PremiumLockedText}"
-                       FontSize="22" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap" TextAlignment="Center" />
-
-            <Border Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="30"
-                    Width="60" Height="60"
-                    HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Lock" Width="32" Height="32"
-                               Foreground="{DynamicResource AccentBrush}" />
-            </Border>
-
-            <TextBlock AutomationProperties.AutomationId="Main_TxtPremiumLockedDesc"
-                       Text="{Binding PremiumLockedDescText}"
-                       FontSize="14"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap"
-                       TextAlignment="Center" />
-
-            <StackPanel Spacing="8">
-              <Button AutomationProperties.AutomationId="Main_BtnConfirmPremiumAd"
-                      Classes="Filled"
-                      Command="{Binding ConfirmPremiumAdCommand}"
-                      HorizontalAlignment="Stretch"
-                      HorizontalContentAlignment="Center"
-                      Padding="16,12">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Video" Width="20" Height="20" />
-                  <TextBlock Text="{Binding VideoFor30MinText}"
-                             FontSize="15" FontWeight="SemiBold" />
-                </StackPanel>
-              </Button>
-
-              <Button AutomationProperties.AutomationId="Main_BtnCancelPremiumAd"
-                      Classes="Text"
-                      Command="{Binding CancelPremiumAdCommand}"
-                      HorizontalAlignment="Stretch"
-                      HorizontalContentAlignment="Center"
-                      Padding="12,10">
-                <TextBlock Text="{loc:Translate Cancel}"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-              </Button>
-            </StackPanel>
-          </StackPanel>
-        </Border>
-      </Border>
-
-      <!-- Extended History Overlay -->
-      <Border AutomationProperties.AutomationId="Main_ExtHistoryOverlay"
-              IsVisible="{Binding ShowExtendedHistoryOverlay}"
-              Background="#CC000000"
-              ZIndex="100">
-        <Border Background="{DynamicResource CardBrush}"
-                CornerRadius="16"
-                Padding="24"
-                MaxWidth="340"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
-          <StackPanel Spacing="16" HorizontalAlignment="Center">
-            <TextBlock Text="{Binding ExtendedHistoryTitleText}"
-                       FontSize="22" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap" TextAlignment="Center" />
-
-            <Border Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="30"
-                    Width="60" Height="60"
-                    HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="History" Width="32" Height="32"
-                               Foreground="{DynamicResource AccentBrush}" />
-            </Border>
-
-            <TextBlock Text="{Binding ExtendedHistoryDescText}"
-                       FontSize="14"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap"
-                       TextAlignment="Center" />
-
-            <StackPanel Spacing="8">
-              <Button AutomationProperties.AutomationId="Main_BtnConfirmExtHistoryAd"
-                      Classes="Filled"
-                      Command="{Binding ConfirmExtendedHistoryAdCommand}"
-                      HorizontalAlignment="Stretch"
-                      HorizontalContentAlignment="Center"
-                      Padding="16,12">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Video" Width="20" Height="20" />
-                  <TextBlock Text="{loc:Translate WatchVideoFor30Min}"
-                             FontSize="15" FontWeight="SemiBold" />
-                </StackPanel>
-              </Button>
-
-              <Button AutomationProperties.AutomationId="Main_BtnCancelExtHistoryAd"
-                      Classes="Text"
-                      Command="{Binding CancelExtendedHistoryAdCommand}"
-                      HorizontalAlignment="Stretch"
-                      HorizontalContentAlignment="Center"
-                      Padding="12,10">
-                <TextBlock Text="{loc:Translate Cancel}"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-              </Button>
-            </StackPanel>
-          </StackPanel>
-        </Border>
-      </Border>
 
     </Panel>
 
@@ -1661,7 +1510,7 @@
             </Border>
             <Border Height="3" IsVisible="{Binding !IsHistoryTab}" />
             <Panel>
-              <mi:MaterialIcon Kind="ClockOutline" Width="24" Height="24"
+              <mi:MaterialIcon Kind="Clock" Width="24" Height="24"
                                Foreground="{DynamicResource PrimaryBrush}"
                                IsVisible="{Binding IsHistoryTab}" />
               <mi:MaterialIcon Kind="ClockOutline" Width="24" Height="24"
@@ -1726,10 +1575,6 @@
                                   x:Name="FloatingTextCanvas"
                                   Grid.RowSpan="3" ZIndex="15"
                                   IsHitTestVisible="False" />
-    <controls:SkiaCelebrationOverlay AutomationProperties.AutomationId="Main_Celebration"
-                                     x:Name="CelebrationCanvas"
-                                     Grid.RowSpan="3" ZIndex="16"
-                                     IsHitTestVisible="False" />
 
   </Grid>
 

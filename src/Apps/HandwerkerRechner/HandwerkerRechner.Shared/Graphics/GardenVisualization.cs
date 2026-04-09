@@ -26,7 +26,6 @@ public static class GardenVisualization
     private static readonly SKPaint _soilFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _borderPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
-    private static readonly Random _rng = new(42);
 
     // Erdfarben
     private static readonly SKColor _topsoilColor = new(0x5C, 0x3D, 0x2E); // Mutterboden
@@ -71,6 +70,9 @@ public static class GardenVisualization
         float pavingArea, float stoneLenCm, float stoneWidCm, float jointMm, int stonesNeeded)
     {
         if (pavingArea <= 0 || stoneLenCm <= 0 || stoneWidCm <= 0) return;
+
+        // Lokale Random mit festem Seed: deterministisch pro Render, kein "Wandern"
+        var _rng = new Random(42);
 
         float sideLen = MathF.Sqrt(pavingArea);
         var fit = SkiaBlueprintCanvas.FitToCanvas(bounds, sideLen, sideLen, 35f);
@@ -151,6 +153,9 @@ public static class GardenVisualization
         float soilArea, float soilDepthCm, int bagsNeeded)
     {
         if (soilArea <= 0 || soilDepthCm <= 0) return;
+
+        // Lokale Random mit festem Seed: deterministisch pro Render, kein "Wandern"
+        var _rng = new Random(42);
 
         float sideLen = MathF.Sqrt(soilArea);
         // 3 Schichten: Mutterboden (gewünscht), Sand-Schicht (30% Tiefe), Kies/Untergrund (Rest)

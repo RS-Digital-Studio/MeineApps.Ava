@@ -5,14 +5,8 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using HandwerkerRechner.Graphics;
 using HandwerkerRechner.ViewModels;
-using MeineApps.Core.Ava.Localization;
-using MeineApps.Core.Ava.Services;
-using MeineApps.UI.SkiaSharp.Shaders;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace HandwerkerRechner.Views;
 
@@ -36,47 +30,8 @@ public partial class MainView : UserControl
     {
         base.OnAttachedToVisualTree(e);
 
-        var loc = App.Services.GetService<ILocalizationService>();
-
-        // Preloading-Tasks im SplashOverlay konfigurieren
-        Splash.PreloadAction = async (reportProgress) =>
-        {
-            // Schritt 1: SkSL-Shader vorab kompilieren (auf ThreadPool)
-            reportProgress(0.0f, loc?.GetString("LoadingShaders") ?? "Grafik-Engine wird vorbereitet...");
-            await Task.Run(() => ShaderPreloader.PreloadAll());
-
-            // Schritt 2: History-Service warm machen (erstellt Verzeichnis, liest erste Datei)
-            reportProgress(0.50f, loc?.GetString("LoadingDatabase") ?? "Datenbank wird geladen...");
-            try
-            {
-                var historyService = App.Services.GetService<ICalculationHistoryService>();
-                if (historyService != null)
-                    await historyService.GetAllHistoryAsync(1);
-            }
-            catch (Exception ex) { Debug.WriteLine($"[SplashPreload] HistoryService: {ex.Message}"); }
-
-            // Schritt 3: Projekte vorladen (via DI statt _vm, da DataContext evtl. noch nicht gesetzt)
-            reportProgress(0.70f, loc?.GetString("LoadingProjects") ?? "Projekte werden geladen...");
-            try
-            {
-                var mainVm = App.Services.GetService<MainViewModel>();
-                if (mainVm?.ProjectsViewModel != null)
-                    await mainVm.ProjectsViewModel.LoadProjectsCommand.ExecuteAsync(null);
-            }
-            catch (Exception ex) { Debug.WriteLine($"[SplashPreload] Projekte: {ex.Message}"); }
-
-            // Schritt 4: History vorladen
-            reportProgress(0.90f, loc?.GetString("LoadingHistory") ?? "Verlauf wird geladen...");
-            try
-            {
-                var mainVm = App.Services.GetService<MainViewModel>();
-                if (mainVm?.HistoryViewModel != null)
-                    await mainVm.HistoryViewModel.LoadHistoryAsync();
-            }
-            catch (Exception ex) { Debug.WriteLine($"[SplashPreload] History: {ex.Message}"); }
-
-            reportProgress(1.0f, "");
-        };
+        // Shader + ViewModel werden bereits in HandwerkerRechnerLoadingPipeline geladen.
+        // History und Projekte werden lazy beim Tab-Wechsel geladen (SelectHistoryTab/SelectProjectsTab).
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -96,7 +51,6 @@ public partial class MainView : UserControl
         if (_vm != null)
         {
             _vm.FloatingTextRequested -= OnFloatingText;
-            _vm.CelebrationRequested -= OnCelebration;
             _vm.ClipboardRequested -= OnClipboardRequested;
             _vm = null;
         }
@@ -108,7 +62,6 @@ public partial class MainView : UserControl
         if (_vm != null)
         {
             _vm.FloatingTextRequested -= OnFloatingText;
-            _vm.CelebrationRequested -= OnCelebration;
             _vm.ClipboardRequested -= OnClipboardRequested;
         }
 
@@ -118,7 +71,6 @@ public partial class MainView : UserControl
         if (_vm != null)
         {
             _vm.FloatingTextRequested += OnFloatingText;
-            _vm.CelebrationRequested += OnCelebration;
             _vm.ClipboardRequested += OnClipboardRequested;
 
             // Render-Timer einmalig starten wenn VM verfuegbar
@@ -162,7 +114,7 @@ public partial class MainView : UserControl
     }
 
     // =====================================================================
-    // Game Juice Events (FloatingText + Celebration + Clipboard)
+    // Game Juice Events (FloatingText + Clipboard)
     // =====================================================================
 
     private void OnFloatingText(string text, string category)
@@ -179,11 +131,6 @@ public partial class MainView : UserControl
         if (h < 10) h = 400;
 
         FloatingTextCanvas.ShowFloatingText(text, w * (0.2 + _rng.NextDouble() * 0.6), h * 0.4, color, 16);
-    }
-
-    private void OnCelebration()
-    {
-        CelebrationCanvas.ShowConfetti();
     }
 
     private async void OnClipboardRequested(string text)

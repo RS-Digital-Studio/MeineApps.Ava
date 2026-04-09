@@ -877,5 +877,6 @@ public sealed partial class GameRenderer : IDisposable
         _bgPath.Dispose();
         _charPath1.Dispose();
         _charPath2.Dispose();
+        _tilePath.Dispose();
     }
 }

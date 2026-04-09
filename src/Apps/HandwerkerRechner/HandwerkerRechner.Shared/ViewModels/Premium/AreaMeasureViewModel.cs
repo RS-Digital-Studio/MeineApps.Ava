@@ -19,6 +19,7 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
 {
     private readonly ILocalizationService _localization;
     private readonly IProjectService _projectService;
+    private readonly ICalculationHistoryService _historyService;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
     private Timer? _debounceTimer;
@@ -27,6 +28,7 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
+    public event Action? CalculationPerformed;
 
     #region Form-Auswahl
 
@@ -108,16 +110,20 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
     [ObservableProperty] private bool _showSaveDialog;
     [ObservableProperty] private string _saveProjectName = "";
 
+    private string DefaultProjectName => _localization.GetString("CalcAreaMeasure") ?? "Aufmaß-Rechner";
+
     #endregion
 
     public AreaMeasureViewModel(
         ILocalizationService localization,
         IProjectService projectService,
+        ICalculationHistoryService historyService,
         IMaterialExportService exportService,
         IFileShareService fileShareService)
     {
         _localization = localization;
         _projectService = projectService;
+        _historyService = historyService;
         _exportService = exportService;
         _fileShareService = fileShareService;
     }
@@ -133,13 +139,13 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
         OnPropertyChanged(nameof(Dim2Label));
 
         if (_debounceTimer == null)
-            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(Calculate), null, 300, Timeout.Infinite);
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
         else
             _debounceTimer.Change(300, Timeout.Infinite);
     }
 
     [RelayCommand]
-    private void Calculate()
+    private async Task Calculate()
     {
         CurrentShapeArea = SelectedShapeIndex switch
         {
@@ -154,6 +160,46 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
 
         HasResult = CurrentShapeArea > 0;
         RecalculateTotal();
+
+        if (HasResult)
+            CalculationPerformed?.Invoke();
+
+        // In History speichern
+        if (HasResult)
+            await SaveToHistoryAsync();
+    }
+
+    /// <summary>Berechnung in die History speichern</summary>
+    private async Task SaveToHistoryAsync()
+    {
+        try
+        {
+            var shapeName = SelectedShapeIndex < ShapeNames.Count ? ShapeNames[SelectedShapeIndex] : "?";
+            var title = $"{shapeName}: {CurrentShapeArea:F2} m² (Gesamt: {TotalArea:F2} m²)";
+            var data = new Dictionary<string, object>
+            {
+                ["SelectedShapeIndex"] = SelectedShapeIndex,
+                ["Dimension1"] = Dimension1,
+                ["Dimension2"] = Dimension2,
+                ["Dimension3"] = Dimension3,
+                ["Dimension4"] = Dimension4,
+                ["Dimension5"] = Dimension5,
+                ["Result"] = new Dictionary<string, object>
+                {
+                    ["CurrentShapeArea"] = CurrentShapeArea,
+                    ["TotalArea"] = TotalArea,
+                    ["PartsCount"] = AreaParts.Count
+                }
+            };
+
+            await _historyService.AddCalculationAsync("AreaMeasureCalculator", title, data);
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] History: {ex.Message}");
+#endif
+        }
     }
 
     private double CalculateRectangle() => Dimension1 * Dimension2;
@@ -199,12 +245,17 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
         if (CurrentShapeArea <= 0) return;
 
         var shapeName = SelectedShapeIndex < ShapeNames.Count ? ShapeNames[SelectedShapeIndex] : "?";
-        AreaParts.Add(new AreaPart(shapeName, CurrentShapeArea));
+        var addedArea = CurrentShapeArea;
+        AreaParts.Add(new AreaPart(shapeName, addedArea));
         OnPropertyChanged(nameof(HasParts));
+
+        // Aktuelle Form zuruecksetzen, damit RecalculateTotal() sie nicht doppelt zaehlt
+        CurrentShapeArea = 0;
+        HasResult = false;
         RecalculateTotal();
 
         FloatingTextRequested?.Invoke(
-            $"+{CurrentShapeArea:F2} m²", "success");
+            $"+{addedArea:F2} m²", "success");
     }
 
     [RelayCommand]
@@ -235,10 +286,10 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
     [RelayCommand]
     private void CopyTotalArea()
     {
-        var effectiveTotal = AreaParts.Count > 0 ? AreaParts.Sum(p => p.Area) : CurrentShapeArea;
-        ClipboardRequested?.Invoke($"{effectiveTotal:F2}");
+        // TotalArea verwenden - ist bereits korrekt berechnet (Parts + ggf. aktuelle Form)
+        ClipboardRequested?.Invoke($"{TotalArea:F2}");
         FloatingTextRequested?.Invoke(
-            $"{effectiveTotal:F2} m² " + (_localization.GetString("CopiedToClipboard") ?? "kopiert!"), "info");
+            $"{TotalArea:F2} m² " + (_localization.GetString("CopiedToClipboard") ?? "kopiert!"), "info");
     }
 
     [RelayCommand]
@@ -252,11 +303,14 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
     [RelayCommand]
     private async Task ConfirmSaveProjectAsync()
     {
-        if (string.IsNullOrWhiteSpace(SaveProjectName)) return;
+        // Bei leerem Namen auf lokalisierten Default zurueckfallen
+        var name = SaveProjectName;
+        if (string.IsNullOrWhiteSpace(name))
+            name = DefaultProjectName;
 
         var project = new Models.Project
         {
-            Name = SaveProjectName.Trim(),
+            Name = name.Trim(),
             CalculatorType = Models.CalculatorType.AreaMeasure
         };
 
@@ -285,6 +339,7 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
     private async Task ExportPdfAsync()
     {
         if (!HasResult && AreaParts.Count == 0) return;
+
         try
         {
             var inputs = new Dictionary<string, string>
@@ -316,6 +371,7 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
     private async Task ExportCsvAsync()
     {
         if (!HasResult && AreaParts.Count == 0) return;
+
         try
         {
             var inputs = new Dictionary<string, string>
@@ -354,11 +410,20 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
         Dimension3 = project.GetValue<double>("Dimension3", 2.0);
         Dimension4 = project.GetValue<double>("Dimension4", 1.5);
         Dimension5 = project.GetValue<double>("Dimension5", 3.0);
-        Calculate();
+        await Calculate();
     }
 
-    public void Cleanup() => _debounceTimer?.Dispose();
-    public void Dispose() => _debounceTimer?.Dispose();
+    public void Cleanup()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 }
 
 /// <summary>Eine Teilfläche im Aufmaß-Rechner</summary>

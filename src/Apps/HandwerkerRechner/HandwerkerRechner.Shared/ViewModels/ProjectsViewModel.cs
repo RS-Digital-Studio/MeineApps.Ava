@@ -6,7 +6,6 @@ using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
-using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels;
@@ -20,8 +19,6 @@ public sealed partial class ProjectsViewModel : ViewModelBase
     private readonly ILocalizationService _localization;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly IPurchaseService _purchaseService;
     private readonly IPhotoPickerService _photoPickerService;
 
     /// <summary>
@@ -62,16 +59,12 @@ public sealed partial class ProjectsViewModel : ViewModelBase
         ILocalizationService localization,
         IMaterialExportService exportService,
         IFileShareService fileShareService,
-        IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService,
         IPhotoPickerService photoPickerService)
     {
         _projectService = projectService;
         _localization = localization;
         _exportService = exportService;
         _fileShareService = fileShareService;
-        _rewardedAdService = rewardedAdService;
-        _purchaseService = purchaseService;
         _photoPickerService = photoPickerService;
     }
 
@@ -171,13 +164,6 @@ public sealed partial class ProjectsViewModel : ViewModelBase
 
         try
         {
-            // Ad-Gate: Premium direkt, Free nach Rewarded Ad
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("project_export");
-                if (!adResult) return;
-            }
-
             // Projekt-Daten als Inputs/Results aufbereiten
             var data = project.GetData();
             var inputs = new Dictionary<string, string>();

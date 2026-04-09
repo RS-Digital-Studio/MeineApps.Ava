@@ -3,7 +3,8 @@
              xmlns:vm="using:HandwerkerRechner.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="HandwerkerRechner.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
+             x:DataType="vm:SettingsViewModel"
+             x:CompileBindings="True">
 
   <ScrollViewer AutomationProperties.AutomationId="Settings_ScrollRoot" VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="16" Spacing="12">

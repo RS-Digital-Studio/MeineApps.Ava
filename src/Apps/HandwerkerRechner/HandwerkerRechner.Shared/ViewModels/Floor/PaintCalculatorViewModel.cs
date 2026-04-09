@@ -6,7 +6,6 @@ using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
-using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using HandwerkerRechner.ViewModels;
 
@@ -22,8 +21,6 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
     private readonly IUnitConverterService _unitConverter;
     private readonly IMaterialExportService _exportService;
     private readonly IFileShareService _fileShareService;
-    private readonly IRewardedAdService _rewardedAdService;
-    private readonly IPurchaseService _purchaseService;
     private readonly IMaterialPriceService _priceService;
     private string? _currentProjectId;
 
@@ -38,6 +35,7 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
+    public event Action? CalculationPerformed;
 
     [ObservableProperty]
     private bool _showSaveDialog;
@@ -63,8 +61,6 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         IUnitConverterService unitConverter,
         IMaterialExportService exportService,
         IFileShareService fileShareService,
-        IRewardedAdService rewardedAdService,
-        IPurchaseService purchaseService,
         IMaterialPriceService priceService)
     {
         _craftEngine = craftEngine;
@@ -74,8 +70,6 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         _unitConverter = unitConverter;
         _exportService = exportService;
         _fileShareService = fileShareService;
-        _rewardedAdService = rewardedAdService;
-        _purchaseService = purchaseService;
         _priceService = priceService;
 
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
@@ -99,7 +93,9 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -258,6 +254,7 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
 
             Result = _craftEngine.CalculatePaint(effectiveArea, CoveragePerLiter, NumberOfCoats);
             HasResult = true;
+            CalculationPerformed?.Invoke();
 
             await SaveToHistoryAsync();
         }
@@ -299,7 +296,9 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -442,7 +441,9 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
+#endif
         }
     }
 
@@ -478,12 +479,6 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         try
         {
             IsExporting = true;
-
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
 
             var calcType = _localization.GetString("CalcPaint") ?? "Paint";
             var inputs = new Dictionary<string, string>
@@ -528,12 +523,6 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         try
         {
             IsExporting = true;
-
-            if (!_purchaseService.IsPremium)
-            {
-                var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
-                if (!adResult) return;
-            }
 
             var calcType = _localization.GetString("CalcPaint") ?? "Paint";
             var inputs = new Dictionary<string, string>

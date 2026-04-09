@@ -4,9 +4,14 @@
     <OutputType>Exe</OutputType>
     <ApplicationId>com.rsdigital.smartmeasure</ApplicationId>
     <ApplicationTitle>SmartMeasure</ApplicationTitle>
-    <ApplicationVersion>1</ApplicationVersion>
-    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
-    <Version>1.0.0</Version>
+    <ApplicationVersion>3</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.2</ApplicationDisplayVersion>
+    <Version>1.0.2</Version>
+
+    <!-- Mapsui + NetTopologySuite nutzen Reflection die unter AOT/Trimmer fehlschlagen.
+         AOT deaktivieren: Kein JIT-Crash, kein Trimmer-Problem mit NTS-Geometrien -->
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidEnableProguard>false</AndroidEnableProguard>
   </PropertyGroup>
 
   <ItemGroup>

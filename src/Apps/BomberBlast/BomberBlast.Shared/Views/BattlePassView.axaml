@@ -244,7 +244,7 @@
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="vm:BattlePassTierDisplayItem">
                   <Border CornerRadius="12"
                           Padding="8"
                           Margin="4"
@@ -292,7 +292,7 @@
                           <!-- Claim-Button (wenn verfuegbar) -->
                           <Panel MinHeight="44" IsVisible="{Binding CanClaimFree}">
                             <controls:GameButtonCanvas ButtonColor="#4CAF50" DamageLevel="0.3" ButtonSeed="101" />
-                            <Button Command="{ReflectionBinding DataContext.ClaimFreeRewardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            <Button Command="{Binding $parent[ItemsControl].((vm:BattlePassViewModel)DataContext).ClaimFreeRewardCommand}"
                                     CommandParameter="{Binding TierIndex}"
                                     Classes="GameButton"
                                     Background="Transparent"
@@ -345,7 +345,7 @@
                           <!-- Claim-Button (Premium verfuegbar) -->
                           <Panel MinHeight="44" IsVisible="{Binding CanClaimPremium}">
                             <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.3" ButtonSeed="102" />
-                            <Button Command="{ReflectionBinding DataContext.ClaimPremiumRewardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            <Button Command="{Binding $parent[ItemsControl].((vm:BattlePassViewModel)DataContext).ClaimPremiumRewardCommand}"
                                     CommandParameter="{Binding TierIndex}"
                                     Classes="GameButton"
                                     Background="Transparent"

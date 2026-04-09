@@ -28,10 +28,16 @@ public static class GroutVisualization
     private static readonly SKPaint TileBorderPaint = new() { Color = new SKColor(0xBB, 0xB3, 0xA8), Style = SKPaintStyle.Stroke, StrokeWidth = 0.5f, IsAntialias = true };
     private static readonly SKPaint GroutPaint = new() { Color = new SKColor(0x78, 0x71, 0x6C), Style = SKPaintStyle.Fill, IsAntialias = true };
     private static readonly SKPaint DimensionPaint = new() { Color = new SKColor(0xEC, 0x48, 0x99), Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash(new[] { 4f, 4f }, 0) };
-    private static readonly SKPaint DimTextPaint = new() { Color = new SKColor(0xEC, 0x48, 0x99), TextSize = 11, IsAntialias = true, Typeface = SKTypeface.Default };
+    private static readonly SKPaint DimTextPaint = new() { Color = new SKColor(0xEC, 0x48, 0x99), IsAntialias = true };
     private static readonly SKPaint InfoBgPaint = new() { Color = new SKColor(0x30, 0xEC, 0x48, 0x99), Style = SKPaintStyle.Fill, IsAntialias = true };
-    private static readonly SKPaint InfoTextPaint = new() { Color = new SKColor(0xFF, 0xFF, 0xFF), TextSize = 12, IsAntialias = true, Typeface = SKTypeface.Default, FakeBoldText = true };
-    private static readonly SKPaint SubTextPaint = new() { Color = new SKColor(0xCC, 0xCC, 0xCC), TextSize = 10, IsAntialias = true, Typeface = SKTypeface.Default };
+    private static readonly SKPaint InfoTextPaint = new() { Color = new SKColor(0xFF, 0xFF, 0xFF), IsAntialias = true };
+    private static readonly SKPaint SubTextPaint = new() { Color = new SKColor(0xCC, 0xCC, 0xCC), IsAntialias = true };
+    private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
+
+    // Gecachte Fonts (3.x API)
+    private static readonly SKFont _dimFont = new() { Size = 11f };
+    private static readonly SKFont _infoFont = new() { Size = 12f, Embolden = true };
+    private static readonly SKFont _subFont = new() { Size = 10f };
 
     public static void Render(SKCanvas canvas, SKRect bounds, GroutResult result)
     {
@@ -42,8 +48,8 @@ public static class GroutVisualization
         float progress = _animation.AnimationProgress;
 
         // Global Alpha Fade-In
-        using var layerPaint = new SKPaint { Color = SKColors.White.WithAlpha((byte)(255 * progress)) };
-        canvas.SaveLayer(layerPaint);
+        _layerPaint.Color = SKColors.White.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
 
         float padding = 16;
         float drawW = bounds.Width - 2 * padding;
@@ -108,7 +114,7 @@ public static class GroutVisualization
             canvas.DrawLine(fX1, dimY - 4, fX1, dimY + 4, DimensionPaint);
             canvas.DrawLine(fX2, dimY - 4, fX2, dimY + 4, DimensionPaint);
             string dimText = $"{result.GroutWidthMm:F1} mm";
-            canvas.DrawText(dimText, fX2 + 4, dimY + 4, DimTextPaint);
+            canvas.DrawText(dimText, fX2 + 4, dimY + 4, SKTextAlign.Left, _dimFont, DimTextPaint);
         }
 
         // Info-Box (rechte 30%)
@@ -125,24 +131,24 @@ public static class GroutVisualization
         float textY = infoY + 24;
         float lineH = 22;
 
-        canvas.DrawText($"{result.TotalWithReserveKg:F1} kg", textX, textY, InfoTextPaint);
+        canvas.DrawText($"{result.TotalWithReserveKg:F1} kg", textX, textY, SKTextAlign.Left, _infoFont, InfoTextPaint);
         textY += 16;
-        canvas.DrawText("inkl. 10% Reserve", textX, textY, SubTextPaint);
+        canvas.DrawText("inkl. 10% Reserve", textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
         textY += lineH + 8;
 
-        canvas.DrawText($"{result.BucketsNeeded} Eimer", textX, textY, InfoTextPaint);
+        canvas.DrawText($"{result.BucketsNeeded} Eimer", textX, textY, SKTextAlign.Left, _infoFont, InfoTextPaint);
         textY += 16;
-        canvas.DrawText("\u00e0 5 kg", textX, textY, SubTextPaint);
+        canvas.DrawText("\u00e0 5 kg", textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
         textY += lineH + 8;
 
-        canvas.DrawText($"{result.ConsumptionPerSqm:F2} kg/m\u00b2", textX, textY, InfoTextPaint);
+        canvas.DrawText($"{result.ConsumptionPerSqm:F2} kg/m\u00b2", textX, textY, SKTextAlign.Left, _infoFont, InfoTextPaint);
         textY += 16;
-        canvas.DrawText("Verbrauch", textX, textY, SubTextPaint);
+        canvas.DrawText("Verbrauch", textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
         textY += lineH + 8;
 
-        canvas.DrawText($"{result.TotalCost:F2} \u20ac", textX, textY, InfoTextPaint);
+        canvas.DrawText($"{result.TotalCost:F2} \u20ac", textX, textY, SKTextAlign.Left, _infoFont, InfoTextPaint);
         textY += 16;
-        canvas.DrawText("Materialkosten", textX, textY, SubTextPaint);
+        canvas.DrawText("Materialkosten", textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
 
         canvas.Restore();
     }

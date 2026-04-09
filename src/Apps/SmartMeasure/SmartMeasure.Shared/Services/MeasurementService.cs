@@ -2,11 +2,13 @@ using SmartMeasure.Shared.Models;
 
 namespace SmartMeasure.Shared.Services;
 
-/// <summary>Verwaltet Messpunkte und berechnet geometrische Werte</summary>
+/// <summary>Verwaltet Messpunkte und berechnet geometrische Werte.
+/// Thread-Safety: Alle Zugriffe auf CurrentPoints muessen vom UI-Thread erfolgen.</summary>
 public class MeasurementService : IMeasurementService
 {
     private const double EarthRadius = 6371000.0; // Meter
 
+    /// <summary>Aktuelle Messpunkte. NUR vom UI-Thread lesen/schreiben.</summary>
     public List<SurveyPoint> CurrentPoints { get; } = [];
     public event Action<SurveyPoint>? PointAdded;
 

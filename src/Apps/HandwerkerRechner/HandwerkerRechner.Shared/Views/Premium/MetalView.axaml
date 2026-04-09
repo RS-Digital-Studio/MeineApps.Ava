@@ -8,7 +8,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.MetalView"
-             x:DataType="vm:MetalViewModel">
+             x:DataType="vm:MetalViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <conv:IntEqualsConverter x:Key="IntEquals" />

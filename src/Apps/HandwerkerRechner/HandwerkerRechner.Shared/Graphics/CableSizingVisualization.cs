@@ -27,6 +27,17 @@ public static class CableSizingVisualization
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _barFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
+    private static readonly SKPaint _dashPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f,
+        PathEffect = SKPathEffect.CreateDash(new[] { 4f, 3f }, 0)
+    };
+
+    // Gecachte Fonts (3.x API statt Paint.TextSize/Typeface)
+    private static readonly SKTypeface _boldTypeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
+    private static readonly SKFont _boldFont = new(_boldTypeface) { Size = 11f };
+    private static readonly SKFont _normalFont = new() { Size = 9f };
 
     // Farben
     private static readonly SKColor _copperColor = new(0xB8, 0x73, 0x33);      // Kupfer
@@ -47,8 +58,8 @@ public static class CableSizingVisualization
         SkiaBlueprintCanvas.DrawGrid(canvas, bounds, 20f);
 
         // Global Alpha Fade-In
-        using var layerPaint = new SKPaint { Color = SKColors.White.WithAlpha((byte)(255 * progress)) };
-        canvas.SaveLayer(layerPaint);
+        _layerPaint.Color = SKColors.White.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
 
         float margin = 30f;
         float availW = bounds.Width - 2 * margin;
@@ -80,16 +91,12 @@ public static class CableSizingVisualization
         // Leiter-Textur: Feines Glanzlicht (Halbkreis oben)
         if (leiterRadius * progress > 8f)
         {
-            using var glanzPaint = new SKPaint
-            {
-                IsAntialias = true,
-                Style = SKPaintStyle.Fill,
-                Color = SKColors.White.WithAlpha(40)
-            };
+            // Glanzlicht: _fillPaint temporär mit Weiß/Alpha nutzen
+            _fillPaint.Color = SKColors.White.WithAlpha(40);
             float glanzR = leiterRadius * progress * 0.7f;
             canvas.DrawArc(
                 new SKRect(centerX - glanzR, centerY - glanzR, centerX + glanzR, centerY + glanzR),
-                200f, 140f, true, glanzPaint);
+                200f, 140f, true, _fillPaint);
         }
 
         // Umriss
@@ -102,14 +109,14 @@ public static class CableSizingVisualization
         {
             float fontSize = Math.Clamp(leiterRadius * progress * 0.35f, 8f, 14f);
             _textPaint.Color = materialType == 1 ? SKColors.Black.WithAlpha(200) : SKColors.White.WithAlpha(220);
-            _textPaint.TextSize = fontSize;
-            _textPaint.TextAlign = SKTextAlign.Center;
-            _textPaint.Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
-            canvas.DrawText($"{recommendedCrossSection:F1}", centerX, centerY + fontSize * 0.35f, _textPaint);
+            _boldFont.Size = fontSize;
+            canvas.DrawText($"{recommendedCrossSection:F1}", centerX, centerY + fontSize * 0.35f,
+                SKTextAlign.Center, _boldFont, _textPaint);
 
             // mm² unter der Zahl
-            _textPaint.TextSize = fontSize * 0.7f;
-            canvas.DrawText("mm\u00b2", centerX, centerY + fontSize * 0.35f + fontSize * 0.8f, _textPaint);
+            _boldFont.Size = fontSize * 0.7f;
+            canvas.DrawText("mm\u00b2", centerX, centerY + fontSize * 0.35f + fontSize * 0.8f,
+                SKTextAlign.Center, _boldFont, _textPaint);
         }
 
         // Bemaßung: Durchmesser-Linie unter dem Kreis
@@ -149,33 +156,24 @@ public static class CableSizingVisualization
         // Grenzlinie bei maxDropPercent
         float limitRatio = Math.Clamp(maxDropPercent / maxDisplay, 0f, 1f);
         float limitY = barY + barH - barH * limitRatio;
-        using var dashPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1.5f,
-            Color = _vdeRed.WithAlpha(180),
-            PathEffect = SKPathEffect.CreateDash(new[] { 4f, 3f }, 0)
-        };
-        canvas.DrawLine(barX - 4f, limitY, barX + barW + 4f, limitY, dashPaint);
+        _dashPaint.Color = _vdeRed.WithAlpha(180);
+        canvas.DrawLine(barX - 4f, limitY, barX + barW + 4f, limitY, _dashPaint);
 
         // Grenzlinie-Label ("max 3%")
         _textPaint.Color = _vdeRed.WithAlpha(200);
-        _textPaint.TextSize = 9f;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal);
-        canvas.DrawText($"max {maxDropPercent:F0}%", barX + barW * 0.5f, limitY - 4f, _textPaint);
+        _normalFont.Size = 9f;
+        canvas.DrawText($"max {maxDropPercent:F0}%", barX + barW * 0.5f, limitY - 4f,
+            SKTextAlign.Center, _normalFont, _textPaint);
 
         // Ist-Wert Label am Balken
         float istLabelY = barY + barH - fillH - 4f;
         if (istLabelY < limitY + 14f && fillH > 0)
             istLabelY = barY + barH - fillH + 14f; // Unter dem Balken wenn zu nah an Grenzlinie
         _textPaint.Color = isVdeCompliant ? _vdeGreen : _vdeRed;
-        _textPaint.TextSize = 11f;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
+        _boldFont.Size = 11f;
         if (fillH > 2f)
-            canvas.DrawText($"{actualDropPercent:F1}%", barX + barW * 0.5f, istLabelY, _textPaint);
+            canvas.DrawText($"{actualDropPercent:F1}%", barX + barW * 0.5f, istLabelY,
+                SKTextAlign.Center, _boldFont, _textPaint);
 
         // Info-Text unten: Material + Spannung
         string materialText = materialType == 1 ? "Aluminium" : "Kupfer";

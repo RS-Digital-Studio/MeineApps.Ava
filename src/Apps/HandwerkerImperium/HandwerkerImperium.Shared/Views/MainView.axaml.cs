@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using HandwerkerImperium.Graphics;
+using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.ViewModels;
 using SkiaSharp;
 
@@ -189,22 +190,28 @@ public partial class MainView : UserControl
     }
 
     /// <summary>
-    /// Ermittelt den GameScreenType basierend auf dem aktiven Tab/View.
+    /// Ermittelt den GameScreenType basierend auf ActivePage.
+    /// ActivePage-Switch statt IsXxxActive-Kette → neue Pages werden nicht vergessen.
     /// </summary>
     private GameScreenType GetCurrentScreenType()
     {
         if (_vm == null) return GameScreenType.Dashboard;
-        if (_vm.IsDashboardActive) return GameScreenType.Dashboard;
-        if (_vm.IsBuildingsActive) return GameScreenType.Buildings;
-        if (_vm.IsMissionenActive) return GameScreenType.Dashboard; // Missionen nutzen Dashboard-Hintergrund
-        if (_vm.IsGuildActive || _vm.IsGuildResearchActive || _vm.IsGuildMembersActive || _vm.IsGuildInviteActive)
-            return GameScreenType.Guild;
-        if (_vm.IsShopActive) return GameScreenType.Shop;
-        if (_vm.IsSettingsActive) return GameScreenType.Settings;
-        if (_vm.IsWorkerMarketActive) return GameScreenType.Workers;
-        if (_vm.IsResearchActive) return GameScreenType.Research;
-        // Workshop-Detail, MiniGames etc. → Workshop-Hintergrund
-        return GameScreenType.Workshop;
+        return _vm.ActivePage switch
+        {
+            ActivePage.Dashboard => GameScreenType.Dashboard,
+            ActivePage.Buildings => GameScreenType.Buildings,
+            ActivePage.Missionen => GameScreenType.Dashboard, // Missionen nutzen Dashboard-Hintergrund
+            ActivePage.Guild or ActivePage.GuildResearch or ActivePage.GuildMembers or
+            ActivePage.GuildInvite or ActivePage.GuildWarSeason or ActivePage.GuildBoss or
+            ActivePage.GuildHall or ActivePage.GuildAchievements or ActivePage.GuildChat or
+            ActivePage.GuildWar => GameScreenType.Guild,
+            ActivePage.Shop => GameScreenType.Shop,
+            ActivePage.Settings => GameScreenType.Settings,
+            ActivePage.WorkerMarket => GameScreenType.Workers,
+            ActivePage.Research => GameScreenType.Research,
+            // Workshop-Detail, MiniGames, Turnier etc. → Workshop-Hintergrund
+            _ => GameScreenType.Workshop
+        };
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -344,42 +351,20 @@ public partial class MainView : UserControl
 
     private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        // Tab-Wechsel erkennen und Fade-Animation + Hintergrund-Wechsel auslösen
-        if (e.PropertyName is "IsDashboardActive" or "IsShopActive" or "IsStatisticsActive"
-            or "IsAchievementsActive" or "IsSettingsActive" or "IsWorkerMarketActive"
-            or "IsResearchActive" or "IsBuildingsActive" or "IsGuildActive"
-            or "IsGuildResearchActive" or "IsGuildMembersActive" or "IsGuildInviteActive"
-            or "IsMissionenActive")
+        // ActivePage feuert bei JEDEM Seitenwechsel (statt Whitelist einzelner IsXxxActive-Properties)
+        if (e.PropertyName == nameof(MainViewModel.ActivePage))
         {
             // Hintergrund-Typ aktualisieren
             _currentScreenType = GetCurrentScreenType();
 
-            // Prüfen ob ein neuer Tab aktiviert wurde
-            var newTab = GetActiveTab();
+            // Fade-Animation auslösen
+            var newTab = _vm?.ActivePage.ToString() ?? "";
             if (!string.IsNullOrEmpty(newTab) && newTab != _lastActiveTab)
             {
                 _lastActiveTab = newTab;
                 FadeInContentPanel();
             }
         }
-
-        // Hinweis: Hans-Animation wird jetzt direkt im StoryDialog UserControl verwaltet
-    }
-
-    private string GetActiveTab()
-    {
-        if (_vm == null) return "";
-        if (_vm.IsDashboardActive) return "Dashboard";
-        if (_vm.IsShopActive) return "Shop";
-        if (_vm.IsStatisticsActive) return "Statistics";
-        if (_vm.IsAchievementsActive) return "Achievements";
-        if (_vm.IsSettingsActive) return "Settings";
-        if (_vm.IsWorkerMarketActive) return "WorkerMarket";
-        if (_vm.IsResearchActive) return "Research";
-        if (_vm.IsBuildingsActive) return "Buildings";
-        if (_vm.IsGuildActive) return "Guild";
-        if (_vm.IsMissionenActive) return "Missionen";
-        return "";
     }
 
     // Gecachte FadeIn-Animation (vermeidet Allokation bei jedem Tab-Wechsel)
@@ -414,22 +399,30 @@ public partial class MainView : UserControl
     }
 
     /// <summary>
-    /// Fade-In Animation für das ContentPanel bei Tab-Wechsel.
+    /// Fade-In Animation für das ContentPanel bei Seitenwechsel.
     /// Animiert Opacity 0→1 (150ms, CubicEaseOut). Opacity=0 wurde bereits durch
     /// OnPageTransitionStarting gesetzt bevor die Bindings updaten.
+    /// Safety-Net: Setzt Opacity=1 auch wenn Animation fehlschlägt (Android-Stabilität).
     /// </summary>
     private async void FadeInContentPanel()
     {
+        var panel = this.FindControl<Panel>("ContentPanel");
+        if (panel == null) return;
+
         try
         {
-            var panel = this.FindControl<Panel>("ContentPanel");
-            if (panel == null) return;
-
             await s_fadeInAnimation.RunAsync(panel);
         }
         catch (Exception)
         {
-            // Animation-Fehler sind nicht kritisch (View evtl. bereits entladen)
+            // Animation-Fehler nicht kritisch (View evtl. bereits entladen)
+        }
+        finally
+        {
+            // Safety-Net: Sicherstellen dass Content IMMER sichtbar wird,
+            // auch wenn Animation gecancelt/fehlgeschlagen (Android-Robustheit)
+            if (panel.Opacity < 1.0)
+                panel.Opacity = 1.0;
         }
     }
 

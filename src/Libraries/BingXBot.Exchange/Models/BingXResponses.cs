@@ -34,7 +34,8 @@ public class BingXResponse<T>
     [JsonPropertyName("data")] public T? Data { get; set; }
 }
 
-// Account
+// Account (v3: data ist ein Array von Balance-Objekten, eines pro Settlement-Asset)
+// Wrapper für Deserialisierung: SendSignedRequestAsync<List<BingXBalanceDetail>> direkt
 public class BingXBalanceData
 {
     [JsonPropertyName("balance")] public BingXBalanceDetail? Balance { get; set; }
@@ -42,6 +43,7 @@ public class BingXBalanceData
 
 public class BingXBalanceDetail
 {
+    [JsonPropertyName("asset")] public string Asset { get; set; } = "USDT";
     [JsonPropertyName("balance"), JsonConverter(typeof(FlexibleStringConverter))] public string Balance { get; set; } = "";
     [JsonPropertyName("equity"), JsonConverter(typeof(FlexibleStringConverter))] public string Equity { get; set; } = "";
     [JsonPropertyName("availableMargin"), JsonConverter(typeof(FlexibleStringConverter))] public string AvailableMargin { get; set; } = "";
@@ -126,4 +128,40 @@ public class BingXContractDetail
     [JsonPropertyName("pricePrecision")] public int PricePrecision { get; set; }
     [JsonPropertyName("tradeMinQuantity"), JsonConverter(typeof(FlexibleStringConverter))] public string TradeMinQuantity { get; set; } = "0";
     [JsonPropertyName("tradeMinUSDT"), JsonConverter(typeof(FlexibleStringConverter))] public string TradeMinUSDT { get; set; } = "5";
+}
+
+// Server-Zeit Response
+public class BingXServerTime
+{
+    [JsonPropertyName("serverTime")] public long ServerTime { get; set; }
+}
+
+// Commission-Rate Response
+public class BingXCommissionData
+{
+    [JsonPropertyName("commission")] public BingXCommissionDetail? Commission { get; set; }
+}
+
+public class BingXCommissionDetail
+{
+    [JsonPropertyName("takerCommissionRate"), JsonConverter(typeof(FlexibleStringConverter))] public string TakerCommissionRate { get; set; } = "";
+    [JsonPropertyName("makerCommissionRate"), JsonConverter(typeof(FlexibleStringConverter))] public string MakerCommissionRate { get; set; } = "";
+}
+
+// Fund-Flow (Income) Response
+public class BingXIncomeDetail
+{
+    [JsonPropertyName("symbol")] public string Symbol { get; set; } = "";
+    [JsonPropertyName("incomeType")] public string IncomeType { get; set; } = "";
+    [JsonPropertyName("income"), JsonConverter(typeof(FlexibleStringConverter))] public string Income { get; set; } = "";
+    [JsonPropertyName("asset")] public string Asset { get; set; } = "";
+    [JsonPropertyName("info")] public string Info { get; set; } = "";
+    [JsonPropertyName("time")] public long Time { get; set; }
+    [JsonPropertyName("tranId"), JsonConverter(typeof(FlexibleStringConverter))] public string TranId { get; set; } = "";
+}
+
+// Cancel-All-After (Kill-Switch) Response
+public class BingXCancelAllAfterData
+{
+    [JsonPropertyName("triggerTime")] public long TriggerTime { get; set; }
 }

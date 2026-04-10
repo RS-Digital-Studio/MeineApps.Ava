@@ -72,6 +72,9 @@ public class PositionExitState
     /// <summary>Ob der Auto-Breakeven bereits gesetzt wurde (SL auf Entry wenn Gewinn >= 100/Leverage %).</summary>
     public bool BreakevenSet { get; set; }
 
+    /// <summary>SK-System Stufe 2: SL wurde auf TP1-Level nachgezogen (bei ~180% Extension).</summary>
+    public bool SkSlAtTp1 { get; set; }
+
     /// <summary>
     /// Ob diese Position nach App-Neustart wiederhergestellt wurde.
     /// Time-Exit bekommt eine Karenz, da die echte Haltezeit unbekannt ist

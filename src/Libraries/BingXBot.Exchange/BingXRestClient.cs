@@ -32,6 +32,10 @@ public class BingXRestClient : IExchangeClient
     // Symbol-Info-Cache für Quantity/Price-Precision und Min-Order-Größe
     private readonly SymbolInfoCache _symbolInfoCache;
 
+    // Server-Zeitversatz in Millisekunden (lokal - server). Wird bei SyncServerTimeAsync() berechnet.
+    // BingX erlaubt nur ±5s (recvWindow) — bei Systemzeit-Abweichung kommt Error 100421.
+    private long _serverTimeOffsetMs;
+
     /// <summary>Timeout fuer einzelne HTTP-Requests (30s statt Endlos-Default).</summary>
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
 
@@ -66,6 +70,36 @@ public class BingXRestClient : IExchangeClient
     /// Sollte einmal nach der Erstellung aufgerufen werden.
     /// </summary>
     public Task InitializeSymbolInfoAsync() => _symbolInfoCache.InitializeAsync(_httpClient);
+
+    /// <summary>
+    /// Synchronisiert die lokale Uhr mit dem BingX-Server.
+    /// Berechnet den Offset (lokal - server) und nutzt ihn für alle signierten Requests.
+    /// BingX Error 100421 tritt auf wenn die Abweichung > 5s (recvWindow) ist.
+    /// </summary>
+    public async Task SyncServerTimeAsync()
+    {
+        try
+        {
+            var localBefore = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var response = await _httpClient.GetStringAsync($"{BaseUrl}/openApi/swap/v2/server/time").ConfigureAwait(false);
+            var localAfter = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            var result = JsonSerializer.Deserialize<BingXResponse<BingXServerTime>>(response);
+            if (result?.Code == 0 && result.Data != null)
+            {
+                var serverTime = result.Data.ServerTime;
+                // Netzwerk-Latenz halbieren: Schätzung der Server-Zeit zum Zeitpunkt der Anfrage
+                var localEstimate = (localBefore + localAfter) / 2;
+                _serverTimeOffsetMs = localEstimate - serverTime;
+                _logger.LogInformation("Server-Zeit synchronisiert (Offset: {Offset}ms)", _serverTimeOffsetMs);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Server-Zeit-Synchronisation fehlgeschlagen: {Error}", ex.Message);
+            // Fallback: kein Offset, lokale Zeit verwenden
+        }
+    }
 
     #region Position-Modus Erkennung
 
@@ -207,7 +241,8 @@ public class BingXRestClient : IExchangeClient
                 : new Dictionary<string, string>();
 
             // Timestamp bei jedem Versuch neu setzen (muss aktuell sein)
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            // Server-Offset abziehen falls synchronisiert (BingX Error 100421 bei >5s Abweichung)
+            var timestamp = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - _serverTimeOffsetMs).ToString();
             queryParams["timestamp"] = timestamp;
             queryParams["recvWindow"] = "5000"; // 5s Fenster gegen Replay-Angriffe
 
@@ -807,6 +842,98 @@ public class BingXRestClient : IExchangeClient
                 triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.Rejected);
     }
 
+    /// <summary>
+    /// Platziert eine native TAKE_PROFIT_MARKET Order für einen Teil der Position (Partial TP).
+    /// Wird bei TriggerPrice als Market-Order ausgeführt → garantierter Fill, Taker-Fee.
+    /// Vorteil gegenüber Limit: Kein Matching-Risiko, nativ auf BingX auch bei Bot-Ausfall.
+    /// </summary>
+    public async Task<Order> PlaceTpMarketOrderAsync(string symbol, Side positionSide, decimal quantity, decimal triggerPrice)
+    {
+        var closeSide = positionSide == Side.Buy ? Side.Sell : Side.Buy;
+        var positionSideStr = await GetPositionSideAsync(positionSide).ConfigureAwait(false);
+
+        var adjustedQty = _symbolInfoCache.TruncateQuantity(symbol, quantity);
+        var roundedPrice = _symbolInfoCache.RoundPrice(symbol, triggerPrice);
+        if (adjustedQty <= 0) return new Order("", symbol, closeSide, OrderType.TakeProfitMarket,
+            triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.Rejected);
+
+        _logger.LogInformation("TP Market-Order: {Symbol} {Side} Qty={Quantity} @ {TriggerPrice}",
+            symbol, positionSide, adjustedQty, roundedPrice);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["symbol"] = symbol,
+            ["side"] = SideToString(closeSide),
+            ["type"] = "TAKE_PROFIT_MARKET",
+            ["quantity"] = adjustedQty.ToString(CultureInfo.InvariantCulture),
+            ["stopPrice"] = roundedPrice.ToString(CultureInfo.InvariantCulture),
+            ["positionSide"] = positionSideStr,
+            ["workingType"] = "MARK_PRICE"
+        };
+
+        var data = await SendSignedRequestAsync<BingXOrderData>(
+            HttpMethod.Post, "/openApi/swap/v2/trade/order", parameters, "orders").ConfigureAwait(false);
+        var detail = data.Order;
+        return detail != null
+            ? new Order(detail.OrderId, symbol, closeSide, OrderType.TakeProfitMarket,
+                triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.New)
+            : new Order("", symbol, closeSide, OrderType.TakeProfitMarket,
+                triggerPrice, quantity, triggerPrice, DateTime.UtcNow, OrderStatus.Rejected);
+    }
+
+    /// <summary>
+    /// Platziert eine reguläre LIMIT Reduce-Only Order für Partial TP.
+    /// Stackbar: BingX erlaubt beliebig viele LIMIT-Orders pro Position.
+    /// Maker-Fee (0.02%) statt Taker (0.05%). Wird für TP1 + TP2 bei Pyramid-Exit verwendet.
+    /// </summary>
+    public async Task<Order> PlaceTpReduceOnlyLimitAsync(string symbol, Side positionSide, decimal quantity, decimal limitPrice)
+    {
+        var closeSide = positionSide == Side.Buy ? Side.Sell : Side.Buy;
+        var positionSideStr = await GetPositionSideAsync(positionSide).ConfigureAwait(false);
+
+        var adjustedQty = _symbolInfoCache.TruncateQuantity(symbol, quantity);
+        var roundedPrice = _symbolInfoCache.RoundPrice(symbol, limitPrice);
+        if (adjustedQty <= 0) return new Order("", symbol, closeSide, OrderType.Limit,
+            limitPrice, quantity, null, DateTime.UtcNow, OrderStatus.Rejected);
+
+        _logger.LogInformation("TP Limit: {Symbol} {Side} Qty={Quantity} @ {Price} (positionSide={PosSide})",
+            symbol, closeSide, adjustedQty, roundedPrice, positionSideStr);
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["symbol"] = symbol,
+            ["side"] = SideToString(closeSide),
+            ["type"] = "LIMIT",
+            ["quantity"] = adjustedQty.ToString(CultureInfo.InvariantCulture),
+            ["price"] = roundedPrice.ToString(CultureInfo.InvariantCulture),
+            ["positionSide"] = positionSideStr,
+            ["timeInForce"] = "GTC"
+        };
+        // reduceOnly nur im One-Way-Mode (BOTH). Im Hedge-Mode (LONG/SHORT) ist
+        // side+positionSide bereits eindeutig — reduceOnly wird abgelehnt.
+        if (positionSideStr == "BOTH")
+            parameters["reduceOnly"] = "true";
+
+        try
+        {
+            var data = await SendSignedRequestAsync<BingXOrderData>(
+                HttpMethod.Post, "/openApi/swap/v2/trade/order", parameters, "orders").ConfigureAwait(false);
+            var detail = data.Order;
+            return detail != null
+                ? new Order(detail.OrderId, symbol, closeSide, OrderType.Limit,
+                    roundedPrice, adjustedQty, null, DateTime.UtcNow, ParseOrderStatus(detail.Status))
+                : new Order("", symbol, closeSide, OrderType.Limit,
+                    roundedPrice, adjustedQty, null, DateTime.UtcNow, OrderStatus.Rejected);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("TP Limit fehlgeschlagen: {Error}", ex.Message);
+            return new Order("", symbol, closeSide, OrderType.Limit,
+                roundedPrice, adjustedQty, null, DateTime.UtcNow, OrderStatus.Rejected,
+                RejectionReason: ex.Message);
+        }
+    }
+
     public async Task CloseAllPositionsAsync()
     {
         var positions = await GetPositionsAsync().ConfigureAwait(false);
@@ -869,19 +996,93 @@ public class BingXRestClient : IExchangeClient
             "orders");
     }
 
+    /// <summary>
+    /// Kill-Switch: Aktiviert Auto-Cancel-Countdown auf BingX.
+    /// Wenn der Bot nicht innerhalb von timeoutMs refresht, cancelt BingX ALLE offenen Orders.
+    /// Muss periodisch (z.B. alle 60s) mit neuem Timeout aufgerufen werden.
+    /// </summary>
+    public async Task ActivateKillSwitchAsync(int timeoutMs = 120_000)
+    {
+        await SendSignedRequestAsync<BingXCancelAllAfterData>(
+            HttpMethod.Post,
+            "/openApi/swap/v2/trade/cancelAllAfter",
+            new Dictionary<string, string>
+            {
+                ["type"] = "ACTIVATE",
+                ["timeOut"] = timeoutMs.ToString()
+            },
+            "orders");
+    }
+
+    /// <summary>
+    /// Kill-Switch deaktivieren (bei sauberem Bot-Stop).
+    /// </summary>
+    public async Task DeactivateKillSwitchAsync()
+    {
+        await SendSignedRequestAsync<BingXCancelAllAfterData>(
+            HttpMethod.Post,
+            "/openApi/swap/v2/trade/cancelAllAfter",
+            new Dictionary<string, string>
+            {
+                ["type"] = "CANCEL"
+            },
+            "orders");
+    }
+
+    /// <summary>
+    /// Ändert eine bestehende Order atomar (ohne Cancel+Replace).
+    /// Nützlich für SL-Nachziehen ohne schutzlose Lücke.
+    /// </summary>
+    public async Task<Order> AmendOrderAsync(string orderId, string symbol, decimal? newPrice = null, decimal? newStopPrice = null, decimal? newQuantity = null)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            ["orderId"] = orderId,
+            ["symbol"] = symbol
+        };
+        if (newPrice.HasValue)
+            parameters["price"] = newPrice.Value.ToString(CultureInfo.InvariantCulture);
+        if (newStopPrice.HasValue)
+            parameters["stopPrice"] = newStopPrice.Value.ToString(CultureInfo.InvariantCulture);
+        if (newQuantity.HasValue)
+            parameters["quantity"] = newQuantity.Value.ToString(CultureInfo.InvariantCulture);
+
+        var data = await SendSignedRequestAsync<BingXOrderData>(
+            HttpMethod.Post,
+            "/openApi/swap/v1/trade/amend",
+            parameters,
+            "orders");
+
+        var order = data.Order;
+        if (order == null)
+            return new Order("", symbol, Side.Buy, OrderType.Market, 0, 0, null, DateTime.UtcNow, OrderStatus.Rejected);
+
+        return new Order(
+            order.OrderId, order.Symbol, ParseSide(order.Side), ParseOrderType(order.Type),
+            ParseDecimal(order.Price), ParseDecimal(order.Quantity),
+            string.IsNullOrEmpty(order.StopPrice) ? null : ParseDecimal(order.StopPrice),
+            FromUnixMs(order.CreateTime), ParseOrderStatus(order.Status));
+    }
+
     #endregion
 
     #region Account
 
     public async Task<AccountInfo> GetAccountInfoAsync()
     {
-        var data = await SendSignedRequestAsync<BingXBalanceData>(
+        // v3: Response ist ein Array von Balance-Objekten (eines pro Settlement-Asset)
+        // Wir handeln nur USDT-M Futures → USDT-Eintrag nehmen
+        var balances = await SendSignedRequestAsync<List<BingXBalanceDetail>>(
             HttpMethod.Get,
-            "/openApi/swap/v2/user/balance",
+            "/openApi/swap/v3/user/balance",
             null,
             "queries");
 
-        var balance = data.Balance!;
+        // USDT-Balance finden (Standard für Perpetual Futures)
+        var balance = balances.FirstOrDefault(b => b.Asset == "USDT") ?? balances.FirstOrDefault();
+        if (balance == null)
+            return new AccountInfo(0, 0, 0, 0);
+
         return new AccountInfo(
             ParseDecimal(balance.Balance),
             ParseDecimal(balance.AvailableMargin),
@@ -889,6 +1090,54 @@ public class BingXRestClient : IExchangeClient
             ParseDecimal(balance.UsedMargin),
             ParseDecimal(balance.Equity),
             ParseDecimal(balance.RealisedProfit));
+    }
+
+    /// <summary>
+    /// Liest die tatsächlichen Maker/Taker-Gebühren für den Account.
+    /// Ersetzt hardcoded Fee-Konstanten durch echte Werte (VIP-Level-abhängig).
+    /// </summary>
+    public async Task<(decimal TakerRate, decimal MakerRate)> GetCommissionRateAsync()
+    {
+        var data = await SendSignedRequestAsync<BingXCommissionData>(
+            HttpMethod.Get,
+            "/openApi/swap/v2/user/commissionRate",
+            null,
+            "queries");
+
+        var commission = data.Commission;
+        if (commission == null) return (0.0005m, 0.0002m); // Fallback: Standard-Raten
+        return (ParseDecimal(commission.TakerCommissionRate), ParseDecimal(commission.MakerCommissionRate));
+    }
+
+    /// <summary>
+    /// Liest Fund-Flow-History (realisierte PnL, Funding-Fees, Trading-Fees etc.).
+    /// Für echtes Performance-Tracking und Steuer-Reporting.
+    /// </summary>
+    public async Task<List<IncomeRecord>> GetIncomeHistoryAsync(
+        string? symbol = null,
+        string? incomeType = null,
+        DateTime? startTime = null,
+        DateTime? endTime = null,
+        int limit = 100)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            ["limit"] = limit.ToString()
+        };
+        if (!string.IsNullOrEmpty(symbol)) parameters["symbol"] = symbol;
+        if (!string.IsNullOrEmpty(incomeType)) parameters["incomeType"] = incomeType;
+        if (startTime.HasValue) parameters["startTime"] = new DateTimeOffset(startTime.Value).ToUnixTimeMilliseconds().ToString();
+        if (endTime.HasValue) parameters["endTime"] = new DateTimeOffset(endTime.Value).ToUnixTimeMilliseconds().ToString();
+
+        var data = await SendSignedRequestAsync<List<BingXIncomeDetail>>(
+            HttpMethod.Get,
+            "/openApi/swap/v2/user/income",
+            parameters,
+            "queries");
+
+        return data.Select(d => new IncomeRecord(
+            d.Symbol, d.IncomeType, ParseDecimal(d.Income), d.Asset,
+            d.Info, FromUnixMs(d.Time))).ToList();
     }
 
     #endregion

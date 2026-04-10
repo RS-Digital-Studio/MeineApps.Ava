@@ -127,29 +127,23 @@ public static class MarketFilter
     /// <summary>
     /// Gibt den Session-basierten Positionsgrößen-Faktor zurück.
     /// Krypto-Märkte handeln 24/7 - KEIN Wochenend-Block.
-    /// Liquiditäts-Gewichtung: US (13-21 UTC) = 100%, EU/US-Overlap = 100%,
-    /// EU (7-13) = 95%, Asia (0-7) = 90%, Off-Hours (21-0) = 90%.
-    /// Krypto hat auch in der Asia-Session signifikante Liquidität (Korea, China, Japan).
-    /// Funding-Settlement (00:00, 08:00, 16:00 UTC): 5min Pause reicht, Spikes normalisieren schnell.
+    /// Funding-Settlement (00:00, 08:00, 16:00 UTC): 5min Pause — NUR für Krypto-Perpetuals relevant.
+    /// TradFi-Symbole haben kein Perpetual Funding und werden nicht blockiert.
     /// </summary>
-    public static SessionFilterResult CheckSession(DateTime utcNow, TradingModePreset mode = TradingModePreset.Swing)
+    public static SessionFilterResult CheckSession(DateTime utcNow, TradingModePreset mode = TradingModePreset.Swing,
+        bool hasTradFiCandidates = false)
     {
         var hour = utcNow.Hour;
 
         // 5min vor/nach Funding-Settlement (00:00, 08:00, 16:00 UTC): Kurze Pause
-        // Wrap-Around-sichere Berechnung: Min(vorwärts, rückwärts) im 1440-Minuten-Ring
-        var minuteOfDay = hour * 60 + utcNow.Minute;
-        var fundingTimes = new[] { 0, 480, 960 }; // 00:00, 08:00, 16:00
-        foreach (var ft in fundingTimes)
+        // NUR wenn ausschließlich Krypto-Kandidaten gescannt werden.
+        // Bei gemischtem Scan (Krypto+TradFi) wird der Funding-Check pro Kandidat in der
+        // Scan-Schleife geprüft (IsFundingSettlement), nicht als globaler Blocker.
+        if (!hasTradFiCandidates)
         {
-            var rawDiff = Math.Abs(minuteOfDay - ft);
-            var diff = Math.Min(rawDiff, 1440 - rawDiff);
-            if (diff < 5)
+            if (IsFundingSettlement(utcNow))
                 return new SessionFilterResult(false, 0m, "Funding-Settlement - warte 5min");
         }
-
-        // Krypto handelt 24/7 - keine Session-Beschränkung, volle Positionsgröße immer
-        var scale = 1.0m;
 
         var sessionName = hour switch
         {
@@ -160,7 +154,24 @@ public static class MarketFilter
             _              => "Off-Hours"
         };
 
-        return new SessionFilterResult(true, scale, sessionName);
+        return new SessionFilterResult(true, 1.0m, sessionName);
+    }
+
+    /// <summary>
+    /// Prüft ob gerade Funding-Settlement ist (±5min um 00:00, 08:00, 16:00 UTC).
+    /// Nur für Krypto-Perpetuals relevant — TradFi hat kein Funding.
+    /// </summary>
+    public static bool IsFundingSettlement(DateTime utcNow)
+    {
+        var minuteOfDay = utcNow.Hour * 60 + utcNow.Minute;
+        var fundingTimes = new[] { 0, 480, 960 }; // 00:00, 08:00, 16:00
+        foreach (var ft in fundingTimes)
+        {
+            var rawDiff = Math.Abs(minuteOfDay - ft);
+            var diff = Math.Min(rawDiff, 1440 - rawDiff);
+            if (diff < 5) return true;
+        }
+        return false;
     }
 
     /// <summary>

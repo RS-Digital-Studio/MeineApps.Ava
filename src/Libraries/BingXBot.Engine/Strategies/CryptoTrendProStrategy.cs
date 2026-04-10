@@ -380,8 +380,9 @@ public class CryptoTrendProStrategy : IStrategy
         var atrPercentile = IndicatorHelper.CalculateAtrPercentile(candles, _atrPeriod, _atrPercentileLookback);
         var (slMult, tp1Mult, tp2Mult, trailMult) = GetVolAdaptiveMultipliers(atrPercentile);
 
-        // Large-Caps (>500M Volume) brauchen weniger Confluence - stabiler und liquider
-        var isLargeCap = context.CurrentTicker.Volume24h >= 500_000_000m;
+        // Large-Cap-Rabatt nur für Krypto: >500M Volume = stabiler + liquider → weniger Confluence nötig
+        // TradFi-Symbole nutzen keine Volume-basierte Stabilitäts-Annahme (andere Marktdynamik)
+        var isLargeCap = context.Category == MarketCategory.Crypto && context.CurrentTicker.Volume24h >= 500_000_000m;
         var effectiveMinScore = isLargeCap ? Math.Max(4, _minScore - 2) : _minScore;
 
         // Long-Signal (bei Gleichstand: Supertrend-Richtung als Tiebreaker)

@@ -11,4 +11,5 @@ public record Order(
     decimal Quantity,
     decimal? StopPrice,
     DateTime CreateTime,
-    OrderStatus Status);
+    OrderStatus Status,
+    string? RejectionReason = null);

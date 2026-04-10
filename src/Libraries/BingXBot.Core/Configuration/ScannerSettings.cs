@@ -64,6 +64,13 @@ public class ScannerSettings
     public decimal MinVolume24hTradFi { get; set; } = 1_000_000m;
 
     /// <summary>
+    /// Min. 24h-Preisänderung für TradFi in %. Niedriger als Krypto weil TradFi weniger volatil ist.
+    /// Forex: typisch 0.1-0.5%, Aktien: 0.3-2%, Commodities: 0.2-1.5%, Indices: 0.1-1%.
+    /// 0.1% = fast alle TradFi-Symbole mit Aktivität passieren, filtert nur komplett flache.
+    /// </summary>
+    public decimal MinPriceChangeTradFi { get; set; } = 0.1m;
+
+    /// <summary>
     /// Wird zur Laufzeit gesetzt: True wenn der BingX-Account im Hedge-Modus (Dual-Side) ist.
     /// TradFi-Symbole brauchen Hedge-Modus (BingX Error 101414 bei One-Way-Mode).
     /// </summary>

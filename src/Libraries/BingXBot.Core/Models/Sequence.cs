@@ -64,6 +64,24 @@ public class Sequence
     /// <summary>True wenn dies eine interne Korrektur-Sequenz (IKI) innerhalb einer größeren ist.</summary>
     public bool IsIKI { get; init; }
 
+    /// <summary>Sequenztyp: Normal (handelbar), Überextendiert oder Langgezogen (nur Analyse).</summary>
+    public SequenceType Type { get; set; }
+
+    /// <summary>True wenn dieser Sequenztyp für Entries geeignet ist (nur Typ 1 = Normal).</summary>
+    public bool IsTradeableType => Type == SequenceType.Normal;
+
+    /// <summary>Charakter der A→B Welle (initialer Impuls). Impulsiv = gut.</summary>
+    public WaveCharacter WaveAB { get; set; }
+    /// <summary>Charakter der B→C Welle (Korrektur). Korrektiv = gut.</summary>
+    public WaveCharacter WaveBC { get; set; }
+
+    /// <summary>Gesamtcharakter der Sequenz: IKI (ideal), IKK, KIK, etc.</summary>
+    public string CharacterPattern => $"{(WaveAB == WaveCharacter.Impulsive ? 'I' : 'K')}" +
+                                       $"{(WaveBC == WaveCharacter.Corrective ? 'K' : 'I')}";
+
+    /// <summary>True wenn der Sequenzcharakter gut ist (IK = impulsiver Impuls + korrektive Korrektur).</summary>
+    public bool HasGoodCharacter => WaveAB == WaveCharacter.Impulsive && WaveBC == WaveCharacter.Corrective;
+
     // === Berechnete Properties ===
 
     /// <summary>Range der A→B Bewegung in Preis-Einheiten.</summary>
@@ -96,10 +114,15 @@ public class Sequence
         return price >= min && price <= max;
     }
 
-    /// <summary>Prüft ob der Preis die Extension-Zielzone (161.8%) erreicht hat.</summary>
+    /// <summary>Prüft ob der Preis die Extension-Zielzone (161.8%) erreicht hat — erste TP-Zone.</summary>
     public bool HasReachedTarget(decimal price) => IsLong
         ? price >= Extension1618
-        : price <= Extension1618;
+        : price <= Extension1618; // Short: Auch negative Extensions korrekt prüfen
+
+    /// <summary>Prüft ob die Sequenz vollständig abgearbeitet ist (200% Extension — SK-Regel).</summary>
+    public bool HasFullyCompleted(decimal price) => IsLong
+        ? price >= Extension200
+        : price <= Extension200;
 
     /// <summary>Prüft ob die Sequenz invalidiert ist (Preis unter/über Punkt A).</summary>
     public bool IsInvalidated(decimal price) => IsLong
@@ -126,10 +149,40 @@ public enum SequenceState
     WaitingBreak,
     /// <summary>Aktiviert: Kurs hat B durchbrochen. Ziel ist Extension-Zone.</summary>
     Active,
-    /// <summary>Zielzone (161.8% oder 261.8%) erreicht. Sequenz abgeschlossen.</summary>
+    /// <summary>Zielzone (161.8%) erreicht. Erste Gewinnmitnahme-Zone.</summary>
     TargetReached,
+    /// <summary>200% Extension erreicht. Sequenz vollständig abgearbeitet (SK-Regel).</summary>
+    FullyCompleted,
     /// <summary>Kurs unter A (Long) oder über A (Short). Sequenz ungültig.</summary>
     Invalidated
+}
+
+/// <summary>
+/// Wellencharakter im SK-System: Impulsiv (schnell, gerichtet) oder Korrektiv (langsam, seitwärts).
+/// Ideal: A→B impulsiv (starker Impuls), B→C korrektiv (ordentliche Korrektur).
+/// </summary>
+public enum WaveCharacter
+{
+    /// <summary>Noch nicht klassifiziert.</summary>
+    Unknown,
+    /// <summary>Impulsiv: Schnelle, gerichtete Bewegung mit großen Kerzen-Bodies. Gut für Impulswelle (A→B).</summary>
+    Impulsive,
+    /// <summary>Korrektiv: Langsame, seitwärts-gerichtete Bewegung mit kleinen Kerzen. Gut für Korrekturwelle (B→C).</summary>
+    Corrective
+}
+
+/// <summary>
+/// Sequenztyp nach SK-System (Stefan Kassing).
+/// Typ 1 = handelbar, Typ 2+3 = nur für übergeordnete Analyse.
+/// </summary>
+public enum SequenceType
+{
+    /// <summary>Normale Sequenz: B im 50-66.7% Retracement. Valid für Entry UND Analyse.</summary>
+    Normal,
+    /// <summary>Überextendiert: B-C Bewegung war stark impulsiv/zielstrebig. NUR Analyse, KEIN Entry.</summary>
+    Overextended,
+    /// <summary>Langgezogen: B-C Bewegung durch anhaltenden Druck verlängert. NUR Analyse, KEIN Entry.</summary>
+    Elongated
 }
 
 /// <summary>

@@ -84,6 +84,7 @@ public class MarketScanner : IMarketScanner
         var filteredTradFi = tradfiTickers
             .Where(t => !settings.Blacklist.Contains(t.Symbol))
             .Where(t => t.Volume24h >= settings.MinVolume24hTradFi)
+            .Where(t => Math.Abs(t.PriceChangePercent24h) >= settings.MinPriceChangeTradFi)
             .ToList();
 
         var filtered = filteredCrypto.Concat(filteredTradFi).ToList();
@@ -114,7 +115,8 @@ public class MarketScanner : IMarketScanner
         {
             ct.ThrowIfCancellationRequested();
 
-            var (score, indicators) = await CalculateAdvancedScoreAsync(ticker, settings, ct, klineCache.GetValueOrDefault(ticker.Symbol)).ConfigureAwait(false);
+            var category = SymbolClassifier.Classify(ticker.Symbol);
+            var (score, indicators) = await CalculateAdvancedScoreAsync(ticker, settings, ct, klineCache.GetValueOrDefault(ticker.Symbol), category).ConfigureAwait(false);
             if (score > 0)
             {
                 scored.Add(new ScanResult(
@@ -137,7 +139,8 @@ public class MarketScanner : IMarketScanner
     /// Gibt (Score, Indicators) zurück. Score = 0 wenn Kandidat abgelehnt wird.
     /// </summary>
     private async Task<(decimal Score, Dictionary<string, decimal> Indicators)> CalculateAdvancedScoreAsync(
-        Ticker ticker, ScannerSettings settings, CancellationToken ct, IReadOnlyList<Candle>? preloadedCandles = null)
+        Ticker ticker, ScannerSettings settings, CancellationToken ct, IReadOnlyList<Candle>? preloadedCandles = null,
+        MarketCategory category = MarketCategory.Crypto)
     {
         var indicators = new Dictionary<string, decimal>
         {
@@ -224,9 +227,19 @@ public class MarketScanner : IMarketScanner
         var atr = IndicatorHelper.CalculateAtr(candles, 14);
         var lastAtr = atr.Count > 0 && atr[^1].HasValue ? atr[^1]!.Value : 0m;
         var atrPercent = close > 0 ? lastAtr / close * 100m : 0m;
-        // Ideal: 1-4% ATR für H4 (genug Bewegung, nicht chaotisch)
-        var volatilityScore = atrPercent is >= 1m and <= 4m ? 1.0m
-            : atrPercent is >= 0.5m and <= 6m ? 0.6m
+        // Ideale ATR%-Ranges pro Markt-Kategorie (H4-basiert):
+        // Krypto: 1-4% (hohe Volatilität), Forex: 0.05-0.5% (engste Ranges),
+        // Aktien: 0.3-2%, Commodities: 0.5-3%, Indices: 0.2-1.5%
+        var (atrIdealMin, atrIdealMax, atrAcceptMin, atrAcceptMax) = category switch
+        {
+            MarketCategory.Forex     => (0.05m, 0.5m,  0.02m, 0.8m),
+            MarketCategory.Stock     => (0.3m,  2.0m,  0.1m,  3.5m),
+            MarketCategory.Commodity => (0.5m,  3.0m,  0.2m,  5.0m),
+            MarketCategory.Index     => (0.2m,  1.5m,  0.1m,  2.5m),
+            _                        => (1.0m,  4.0m,  0.5m,  6.0m), // Krypto
+        };
+        var volatilityScore = atrPercent >= atrIdealMin && atrPercent <= atrIdealMax ? 1.0m
+            : atrPercent >= atrAcceptMin && atrPercent <= atrAcceptMax ? 0.6m
             : 0.2m;
 
         indicators["ATR%"] = Math.Round(atrPercent, 2);
@@ -234,11 +247,20 @@ public class MarketScanner : IMarketScanner
 
         // === 5. STRUKTUR-SCORE (10%) - Pullback-Tiefe, kein Überschießen ===
         // Wie weit ist der Preis von EMA20 entfernt? Nahe = guter Entry, weit = Überkauft
+        // Schwellen category-abhängig (Forex-Paare haben engere Ranges als Krypto)
         var distFromEma = lastEma20 > 0 ? Math.Abs(close - lastEma20) / lastEma20 * 100m : 0m;
-        var structureScore = distFromEma < 1m ? 1.0m    // Sehr nahe an EMA = guter Pullback-Entry
-            : distFromEma < 2m ? 0.7m
-            : distFromEma < 4m ? 0.4m
-            : 0.1m;                                      // >4% = überdehnt, schlechter Entry
+        var (sDist1, sDist2, sDist3) = category switch
+        {
+            MarketCategory.Forex => (0.1m, 0.3m, 0.6m),    // Forex: engste Ranges
+            MarketCategory.Stock => (0.5m, 1.0m, 2.0m),
+            MarketCategory.Index => (0.3m, 0.8m, 1.5m),
+            MarketCategory.Commodity => (0.5m, 1.5m, 3.0m),
+            _ => (1.0m, 2.0m, 4.0m),                        // Krypto
+        };
+        var structureScore = distFromEma < sDist1 ? 1.0m
+            : distFromEma < sDist2 ? 0.7m
+            : distFromEma < sDist3 ? 0.4m
+            : 0.1m;
 
         indicators["EMA20Dist%"] = Math.Round(distFromEma, 2);
         indicators["StructureScore"] = Math.Round(structureScore, 3);

@@ -7,488 +7,372 @@ using BingXBot.Engine.Indicators;
 namespace BingXBot.Engine.Strategies;
 
 /// <summary>
-/// SK-System (Sequenz-Konzept) — strukturbasierte Trading-Strategie.
-/// Folgt den "Spuren der Market Maker" durch A-B-C Sequenzen.
-/// Multi-Timeframe: Übergeordnete Struktur (GKL) → Sequenz → Entry.
+/// SK-System "Holy Trinity" — 3-Ebenen Multi-Timeframe Strategie.
+/// 4H (Navigator) → 1H (Filter) → 15m (Trigger).
+/// Strikte Top-Down Ampel-Logik: Alle 3 TFs müssen aligned sein.
+/// SL unter 15m-Punkt-0 (winziges Risiko), TP bei 4H-Extension (riesiges CRV).
 /// </summary>
 public class SequenzKonzeptStrategy : IStrategy
 {
     public string Name => "SK-System";
-    public string Description => "Sequenz-Konzept: A-B-C Muster + Fibonacci-Zielzonen + GKL + Liquidität";
+    public string Description => "Holy Trinity: 4H Navigator → 1H Filter → 15m Trigger | Fibonacci-Sequenzen";
 
-    // === Parameter ===
-    private int _swingStrength = 5;           // Fractal-Stärke (3=Scalping, 5=DayTrading, 7=Swing)
-    private int _htfSwingStrength = 7;        // Swing-Stärke für HTF (GKL-Berechnung)
-    private decimal _minRangePercent = 0.5m;  // Min. A→B Range in % (filtert Noise)
-    private bool _requireCloseBreak = true;   // True=Close über B, False=Wick reicht
-    private bool _useGkl = true;              // GKL aus HTF verwenden
-    private bool _useLiquidity = true;        // Liquiditätszonen-Validierung
-    private bool _useIKI = true;              // Interne Korrektur-Sequenzen
-    private bool _useBOS = true;              // Break of Structure als Confluence
-    private bool _useChoCH = true;            // Change of Character als Warnung
-    private int _minConfluence = 4;           // Min. Confluence-Score (0-10) für Entry
-    private decimal _slBufferPercent = 0.2m;  // SL-Puffer unter Punkt A (in %)
+    // === Deduplizierung + Whipsaw-Schutz ===
+    private decimal _lastSignalPointA;
+    private decimal _lastSignalPointB;
+    private decimal _lastSignalPointC;
+    private string _lastSignalSymbol = "";
+    private bool _lastSignalIsLong;
+    private int _signalCooldown;
+    // === SK-Regel 4: Richtungs-Sperre + Gegensequenz nach Abarbeitung ===
+    private bool? _completedDirection;
+    private int _completedCooldown;
+    private decimal _completedGkl559; // GKL 55.9% der abgearbeiteten Sequenz
+    private decimal _completedGkl667; // GKL 66.7% der abgearbeiteten Sequenz
+
+    // === Holy Trinity Parameter (4H → 1H → 15m) ===
+    private int _h4SwingStrength = 5;         // 4H Navigator: Swing-Stärke
+    private int _h1SwingStrength = 3;         // 1H Filter: feinere Swings
+    private int _m15SwingStrength = 2;        // 15m Trigger: feinste Swings
+    private decimal _minRangePercent = 0.5m;  // Min. A→B Range in %
+    private bool _requireCloseBreak = true;   // 4H: Close über B für Aktivierung
+    private int _minConfluence = 3;           // Min. Confluence (niedrig weil 3-TF-UND ist starker Filter)
+    private decimal _slBufferPercent = 0.15m; // SL-Puffer unter 15m Punkt-0
     private TradingModePreset _activePreset = TradingModePreset.Swing;
 
-    /// <summary>Aktueller Trading-Modus.</summary>
+    /// <summary>Aktueller Trading-Modus (wird bei Holy Trinity ignoriert).</summary>
     public TradingModePreset ActivePreset => _activePreset;
 
-    // === IStrategy ===
+    /// <summary>SK-Regel: BE bei TP1 (50% Close, SL auf Entry).</summary>
+    public bool DisableSmartBreakeven { get; private set; }
 
     public IReadOnlyList<StrategyParameter> Parameters => new List<StrategyParameter>
     {
-        new("SwingStrength", "Fractal-Stärke für Swing-Erkennung", "int", _swingStrength, 2, 10, 1),
-        new("HtfSwingStrength", "Swing-Stärke für übergeordnete Struktur (HTF)", "int", _htfSwingStrength, 3, 15, 1),
-        new("MinRangePercent", "Min. A→B Range in % des Preises", "decimal", _minRangePercent, 0.1m, 3.0m, 0.1m),
-        new("RequireCloseBreak", "Close über B für Aktivierung (1=ja, 0=Wick reicht)", "int", _requireCloseBreak ? 1 : 0, 0, 1, 1),
-        new("UseGKL", "GKL aus HTF als Confluence (1=ja, 0=nein)", "int", _useGkl ? 1 : 0, 0, 1, 1),
-        new("UseLiquidity", "Liquiditätszonen-Validierung (1=ja, 0=nein)", "int", _useLiquidity ? 1 : 0, 0, 1, 1),
-        new("MinConfluence", "Min. Confluence-Score für Entry (0-10)", "int", _minConfluence, 0, 10, 1),
-        new("SLBufferPercent", "SL-Puffer unter Punkt A in %", "decimal", _slBufferPercent, 0.0m, 1.0m, 0.1m),
+        new("H4SwingStrength", "4H Navigator: Swing-Stärke", "int", _h4SwingStrength, 3, 10, 1),
+        new("H1SwingStrength", "1H Filter: Swing-Stärke", "int", _h1SwingStrength, 2, 7, 1),
+        new("M15SwingStrength", "15m Trigger: Swing-Stärke", "int", _m15SwingStrength, 1, 5, 1),
+        new("MinRangePercent", "Min. A→B Range in %", "decimal", _minRangePercent, 0.1m, 3.0m, 0.1m),
+        new("MinConfluence", "Min. Confluence-Score", "int", _minConfluence, 0, 10, 1),
+        new("SLBufferPercent", "SL-Puffer unter 15m Punkt-0", "decimal", _slBufferPercent, 0.0m, 1.0m, 0.05m),
     };
 
-    /// <summary>Preset für einen Trading-Modus anwenden.</summary>
+    /// <summary>Holy Trinity: IMMER gleiche Parameter, kein Mode-Switch.</summary>
     public void ApplyPreset(TradingModePreset mode)
     {
         _activePreset = mode;
-        if (mode == TradingModePreset.Custom) return;
-
-        switch (mode)
-        {
-            case TradingModePreset.Scalping:
-                _swingStrength = 3;
-                _htfSwingStrength = 5;
-                _minRangePercent = 0.3m;
-                _requireCloseBreak = false;  // Wick reicht bei Scalping (schnellerer Entry)
-                _useGkl = true;
-                _useLiquidity = true;
-                _useIKI = false;             // Zu schnell für IKI
-                _useBOS = true;
-                _useChoCH = true;
-                _minConfluence = 3;          // Niedrigerer Threshold für schnelle Entries
-                _slBufferPercent = 0.15m;
-                break;
-
-            case TradingModePreset.DayTrading:
-                _swingStrength = 5;
-                _htfSwingStrength = 7;
-                _minRangePercent = 0.5m;
-                _requireCloseBreak = true;
-                _useGkl = true;
-                _useLiquidity = true;
-                _useIKI = true;
-                _useBOS = true;
-                _useChoCH = true;
-                _minConfluence = 4;
-                _slBufferPercent = 0.2m;
-                break;
-
-            default: // Swing
-                _swingStrength = 7;
-                _htfSwingStrength = 10;
-                _minRangePercent = 1.0m;
-                _requireCloseBreak = true;
-                _useGkl = true;
-                _useLiquidity = true;
-                _useIKI = true;
-                _useBOS = true;
-                _useChoCH = true;
-                _minConfluence = 5;          // Höherer Threshold für Swing
-                _slBufferPercent = 0.3m;
-                break;
-        }
+        // Alle Modi nutzen die gleiche Holy Trinity Konfiguration
+        _h4SwingStrength = 5;
+        _h1SwingStrength = 3;
+        _m15SwingStrength = 2;
+        _minRangePercent = 0.5m;
+        _requireCloseBreak = true;
+        _minConfluence = 3;
+        _slBufferPercent = 0.15m;
+        DisableSmartBreakeven = true; // SK-spezifischer gestufter BE (2× SL-Distanz, SL→TP1 bei 120%)
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Hauptmethode: Evaluate
+    // Hauptmethode: Holy Trinity Evaluate
     // ═══════════════════════════════════════════════════════════════
 
     public SignalResult Evaluate(MarketContext context)
     {
-        var candles = context.Candles;
-        if (candles.Count < _swingStrength * 2 + 20)
-            return NoSignal("Zu wenig Daten");
+        // Holy Trinity: context.Candles = H4, HigherTimeframeCandles = H1, EntryTimeframeCandles = M15
+        var h4Candles = context.Candles;
+        var h1Candles = context.HigherTimeframeCandles;
+        var m15Candles = context.EntryTimeframeCandles;
+
+        if (h4Candles.Count < _h4SwingStrength * 2 + 20)
+            return NoSignal("Zu wenig H4-Daten");
 
         var currentPrice = context.CurrentTicker.LastPrice;
-        var currentClose = candles[^1].Close;
+        var currentClose = h4Candles[^1].Close;
+
+        // Cooldowns runterzählen
+        if (_signalCooldown > 0) _signalCooldown--;
+        if (_completedCooldown > 0) _completedCooldown--;
+        if (_completedCooldown > 0) _completedCooldown--;
+        else _completedDirection = null;
+
+        // Seitwärts-Filter: SK ist Trendfolge — ADX < 15 = kein Trend = pausieren
+        var adx = IndicatorHelper.CalculateAdx(h4Candles, 14);
+        if (adx.Count > 0 && adx[^1].HasValue && adx[^1]!.Value < 15m)
+            return NoSignal($"Seitwärtsmarkt (4H ADX={adx[^1]!.Value:F0} < 15) — SK pausiert");
 
         // ═══════════════════════════════════════════════════════════
-        // EBENE 1: Übergeordnete Struktur (HTF)
-        // Bestimmt Trend-Richtung + GKL der großen Bewegung
+        // AMPEL 1 (GELB): 4H Navigator
+        // Sucht aktivierte Sequenz mit Preis im GKL (50-66.7%)
         // ═══════════════════════════════════════════════════════════
 
-        bool? htfTrendDirection = null; // null = unbekannt, true = up, false = down
-        bool priceInHtfGkl = false;
-        Sequence? htfSequence = null;
+        // State Machine statt Fraktal-Erkennung: Trailing Low findet B dynamisch
+        var h4Machine = SequenceStateMachine.FromCandles(h4Candles, _minRangePercent, 0.3m);
+        if (h4Machine == null || h4Machine.State < SmState.SucheB)
+            return NoSignal($"4H: Keine Sequenz (State={h4Machine?.State})");
 
-        if (_useGkl && context.HigherTimeframeCandles is { Count: > 30 })
+        var h4Seq = h4Machine.ToSequence();
+        if (h4Seq == null)
+            return NoSignal("4H: Sequenz nicht konstruierbar");
+
+        // State Machine: SucheB = Korrektur läuft, Aktiviert = B gebrochen
+        // (Suche0/SucheA bereits oben gefiltert)
+
+        var inH4Gkl = h4Seq.IsInBuyZone(currentPrice) || h4Seq.IsInGklZone(currentPrice);
+
+        // 4H: Preis MUSS im GKL/Korrekturlevel liegen ODER Sequenz muss Active sein (Re-Entry)
+        // SK-Regel: Entry nur im 50-66.7% Retracement oder bei laufender Sequenz (BC-KL)
+        if (!inH4Gkl && h4Machine.State != SmState.Aktiviert)
+            return NoSignal("4H: Preis nicht im GKL und Sequenz nicht aktiviert");
+
+        // FullyCompleted: Direkt mit HasFullyCompleted prüfen (ToSequence setzt diesen State nicht)
+        if (h4Seq.HasFullyCompleted(currentPrice))
         {
-            // Vollständige HTF-Sequenz erkennen (nicht nur GKL-Level)
-            htfSequence = SequenceDetector.DetectSequence(
-                context.HigherTimeframeCandles, _htfSwingStrength, _minRangePercent * 2, true);
+            _completedDirection = h4Seq.IsLong;
+            _completedCooldown = 20;
+            _completedGkl559 = h4Seq.Retracement559;
+            _completedGkl667 = h4Seq.Retracement667;
+            return NoSignal("4H: Sequenz abgearbeitet (200%)");
+        }
 
-            if (htfSequence != null)
+        // SK-Regel 4 + 13: Richtungs-Sperre + aktive Gegensequenz-Suche
+        if (_completedDirection.HasValue && _completedDirection.Value == h4Seq.IsLong && _completedCooldown > 0)
+        {
+            // Während die alte Richtung gesperrt ist: Suche Gegensequenz ins GKL
+            var counterDir = !_completedDirection.Value;
+            var counterSeq = SequenceDetector.DetectSequence(h4Candles, _h4SwingStrength, _minRangePercent * 0.5m, false);
+            if (counterSeq != null && counterSeq.IsLong == counterDir
+                && counterSeq.State is SequenceState.WaitingBreak or SequenceState.Active
+                && _completedGkl559 > 0 && _completedGkl667 > 0
+                && SequenceDetector.IsInGKL(counterSeq.Extension1618, _completedGkl559, _completedGkl667))
             {
-                htfTrendDirection = htfSequence.IsLong;
-
-                // Preis im GKL der HTF-Sequenz? (55.9-66.7%)
-                priceInHtfGkl = htfSequence.IsInGklZone(currentPrice);
+                // Gegensequenz gefunden: Ziel liegt im GKL der abgearbeiteten Sequenz
+                // Override: Weiter mit Gegenrichtung (1H-Filter + 15m-Trigger prüfen)
+                h4Seq = counterSeq;
+                inH4Gkl = true; // Im GKL der alten Sequenz = gültiger Entry-Bereich
             }
             else
             {
-                // Fallback: Einfaches GKL aus letztem Swing-Paar
-                var gkl = SequenceDetector.CalculateGKL(context.HigherTimeframeCandles, _htfSwingStrength);
-                if (gkl.HasValue)
-                {
-                    htfTrendDirection = gkl.Value.IsUptrend;
-                    priceInHtfGkl = SequenceDetector.IsInGKL(currentPrice, gkl.Value.Gkl559, gkl.Value.Gkl667);
-                }
+                return NoSignal($"SK-Regel 4: {(h4Seq.IsLong ? "Long" : "Short")} gesperrt — {_completedCooldown} Kerzen (keine Gegensequenz ins GKL)");
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // EBENE 2: Sequenz-Erkennung (aktuelle TF)
-        // ═══════════════════════════════════════════════════════════
+        // Sequenztyp-Filter: Nur Typ 1 (Normal) handelbar
+        if (!h4Seq.IsTradeableType)
+            return NoSignal($"4H: Sequenz-Typ {h4Seq.Type} nicht handelbar");
 
-        var sequence = SequenceDetector.DetectSequence(candles, _swingStrength, _minRangePercent, _requireCloseBreak);
-        if (sequence == null)
-            return NoSignal("Keine gültige Sequenz erkannt");
-
-        // State aktualisieren
-        sequence.State = SequenceDetector.UpdateState(sequence, currentPrice, currentClose, _requireCloseBreak);
-
-        // HTF-Trend-Filter: Nur in Richtung des übergeordneten Trends traden
-        // Long-Sequenz nur bei HTF-Uptrend, Short nur bei HTF-Downtrend
-        if (htfTrendDirection.HasValue && sequence.IsLong != htfTrendDirection.Value)
-            return NoSignal($"Sequenz {(sequence.IsLong ? "Long" : "Short")} gegen HTF-Trend ({(htfTrendDirection.Value ? "Up" : "Down")})");
-
-        // ═══════════════════════════════════════════════════════════
-        // CLOSE-SIGNALE: Bestehende Positionen bei Zielzone schließen
-        // ═══════════════════════════════════════════════════════════
-
-        // Aktive Sequenz hat Extension erreicht → Close-Signal
-        if (sequence.State == SequenceState.TargetReached)
+        // Kill-Switch: Sandwich — Entry im Ziellevel einer AKTIVEN gegenlaufenden 4H-Sequenz
+        // Nur prüfen: Die aktuellste Gegensequenz (nicht alle historischen!)
+        // "Das größere Timeframe gewinnt immer"
+        var counterMachine = new SequenceStateMachine(_minRangePercent, 0.3m);
+        counterMachine.Reset();
+        // Gegenrichtung: Eigene State Machine laufen lassen
+        var counterSm = SequenceStateMachine.FromCandles(h4Candles, _minRangePercent, 0.3m);
+        if (counterSm != null && counterSm.IsLong != h4Seq.IsLong && counterSm.State == SmState.Aktiviert)
         {
-            var closeSide = sequence.IsLong ? Signal.CloseLong : Signal.CloseShort;
-            return new SignalResult(closeSide, 0.9m, null, null, null,
-                $"SK-Zielzone erreicht (161.8% Extension) — Position schließen");
+            // Gegensequenz ist AKTIVIERT — prüfe ob der aktuelle Preis im Ziellevel liegt
+            var counterTarget = counterSm.Extension1618;
+            var inCounterTarget = counterSm.IsLong
+                ? currentPrice >= counterTarget * 0.95m && currentPrice <= counterTarget * 1.05m
+                : currentPrice <= counterTarget * 1.05m && currentPrice >= counterTarget * 0.95m;
+            if (inCounterTarget)
+                return NoSignal("KILL: Sandwich — Entry im Ziellevel aktiver 4H-Gegensequenz");
         }
 
-        // Sequenz invalidiert + offene Position → Close-Signal (SL sollte greifen, aber Sicherheit)
-        if (sequence.State == SequenceState.Invalidated)
+        var tradeIsLong = h4Seq.IsLong;
+        // → GELB: 4H hat Sequenz, Preis im relevanten Bereich
+
+        // ═══════════════════════════════════════════════════════════
+        // AMPEL 2 (ORANGE): 1H Filter
+        // Korrektur verliert Schwung? Erstes HH/HL erkannt?
+        // ═══════════════════════════════════════════════════════════
+
+        if (h1Candles is not { Count: > 20 })
+            return NoSignal("1H: Keine Daten für Filter");
+
+        var h1Swings = SequenceDetector.FindSwingPoints(h1Candles, _h1SwingStrength);
+        var (correctionEnding, _) = SequenceDetector.DetectCorrectionEnd(h1Candles, h1Swings, tradeIsLong);
+
+        if (!correctionEnding)
         {
-            // Prüfe ob eine Position in dieser Richtung offen ist
-            var hasOpenPos = context.OpenPositions.Any(p =>
-                p.Symbol == context.Symbol &&
-                ((sequence.IsLong && p.Side == Side.Buy) || (!sequence.IsLong && p.Side == Side.Sell)));
-            if (hasOpenPos)
+            // Alternativ: Gibt es eine 1H-Sequenz in der gleichen Richtung?
+            var h1Seq = SequenceDetector.DetectSequence(h1Candles, _h1SwingStrength, _minRangePercent * 0.5m, false);
+            if (h1Seq == null || h1Seq.IsLong != tradeIsLong)
+                return NoSignal("1H: Korrektur läuft noch — kein HH/HL erkannt");
+            // 1H hat eine aligned Sequenz → das zählt als Filter-Bestätigung
+        }
+
+        // ChoCH auf 1H gegen die Trade-Richtung → blockieren
+        var h1ChoCH = SequenceDetector.DetectChoCH(h1Swings);
+        if (h1ChoCH != null && h1ChoCH.FromBullishToBearish == tradeIsLong)
+            return NoSignal("1H: ChoCH gegen Trade-Richtung");
+
+        // → ORANGE: 1H zeigt Korrektur-Ende
+
+        // ═══════════════════════════════════════════════════════════
+        // AMPEL 3 (GRÜN): 15m Trigger
+        // Micro-Sequenz aktiviert? (Break über Punkt A/B)
+        // ═══════════════════════════════════════════════════════════
+
+        if (m15Candles is not { Count: > 20 })
+            return NoSignal("15m: Keine Daten für Trigger");
+
+        // 15m State Machine: Trailing Low findet den präzisen Micro-Entry
+        var m15Machine = SequenceStateMachine.FromCandles(m15Candles, _minRangePercent * 0.3m, 0.15m);
+        if (m15Machine == null)
+            return NoSignal("15m: Keine Micro-Sequenz erkannt");
+
+        if (m15Machine.IsLong != tradeIsLong)
+            return NoSignal($"15m: Micro-Sequenz {(m15Machine.IsLong ? "Long" : "Short")} gegen 4H-Richtung");
+
+        var microSeq = m15Machine.ToSequence();
+        if (microSeq == null)
+            return NoSignal("15m: Micro-Sequenz nicht konstruierbar");
+
+        // 15m muss AKTIVIERT sein (State Machine: A wurde durchbrochen, B eingefroren)
+        if (m15Machine.State != SmState.Aktiviert)
+            return NoSignal($"15m: Micro-Sequenz nicht aktiviert (State={m15Machine.State})");
+
+        // Kill-Switch: Over-Extension — 15m schon über 100% Extension
+        var m15OverExt = tradeIsLong
+            ? currentPrice > m15Machine.Extension100
+            : currentPrice < m15Machine.Extension100; // Auch negative Extensions korrekt prüfen
+        if (m15OverExt)
+            return NoSignal("KILL: 15m über 100% Extension — Entry-Fenster verpasst");
+
+        // → GRÜN: Alle 3 Ampeln aktiv!
+
+        // ═══════════════════════════════════════════════════════════
+        // DEDUPLIZIERUNG + WHIPSAW-SCHUTZ
+        // ═══════════════════════════════════════════════════════════
+
+        if (_lastSignalSymbol == context.Symbol &&
+            _lastSignalPointA == microSeq.PointA.Price &&
+            _lastSignalPointB == microSeq.PointB.Price &&
+            _lastSignalPointC == (microSeq.PointC?.Price ?? 0))
+            return NoSignal("Sequenz bereits signalisiert (Deduplizierung)");
+
+        if (_signalCooldown > 0 && _lastSignalSymbol == context.Symbol && _lastSignalIsLong != tradeIsLong)
+            return NoSignal($"Whipsaw-Schutz: {_signalCooldown} Kerzen Cooldown");
+
+        // ═══════════════════════════════════════════════════════════
+        // SL / TP / SIGNAL
+        // ═══════════════════════════════════════════════════════════
+
+        // SL unter 15m Punkt-0 (= m15Machine.Point0, winziges Risiko)
+        var micro0 = m15Machine.Point0;
+        var microSlBuf = micro0 * _slBufferPercent / 100m;
+        var sl = tradeIsLong
+            ? micro0 - microSlBuf
+            : micro0 + microSlBuf;
+
+        // SL-Distanz-Minimum: 0.3% (Spread + Fees)
+        var slDistance = Math.Abs(currentPrice - sl);
+        if (currentPrice > 0 && slDistance / currentPrice < 0.003m)
+            return NoSignal($"SL-Distanz zu klein ({slDistance / currentPrice * 100:F2}%)");
+
+        // TP1 = 15m Extension 161.8% ODER mindestens 2x SL-Distanz (was größer ist)
+        // Verhindert dass TP1 fast gleich SL ist (RRR < 1.5 ist sinnlos)
+        var m15Tp = m15Machine.Extension1618;
+        var minTp1 = tradeIsLong
+            ? currentPrice + slDistance * 2.0m   // Mindestens 2:1 RRR für TP1
+            : currentPrice - slDistance * 2.0m;
+        var tp1 = tradeIsLong
+            ? Math.Max(m15Tp, minTp1)            // Größeres von beiden nehmen
+            : Math.Min(m15Tp, minTp1);
+
+        // TP2 = 4H Extension 161.8% (das große SK-Ziellevel — CRV 1:5 bis 1:10)
+        var tp2 = h4Seq.Extension1618;
+
+        // Wenn TP2 nicht weit genug vom Entry weg ist → 4H Extension 200% nehmen
+        var tp2Dist = Math.Abs(tp2 - currentPrice);
+        if (tp2Dist < slDistance * 3m)
+            tp2 = h4Seq.Extension200;
+
+        // RRR berechnen (auf TP2 — das ist das echte Ziel)
+        var tpDist = Math.Abs(tp2 - currentPrice);
+        var rrr = slDistance > 0 ? tpDist / slDistance : 0;
+
+        // Min-RRR: Wenn selbst mit 4H-TP die RRR < 3:1 → kein Trade (nicht lohnenswert)
+        if (rrr < 3m)
+            return NoSignal($"RRR zu klein ({rrr:F1}:1 < 3:1) — 15m-SL zu weit für 4H-TP");
+
+        // Confluence-Score (vereinfacht — die 3-TF-UND-Bedingung ist bereits ein starker Filter)
+        var score = 3; // Basis: 3 TFs aligned
+        var reasons = new List<string> { "4H+1H+15m" };
+
+        if (inH4Gkl) { score += 2; reasons.Add("H4-GKL"); }
+        if (h4Seq.HasGoodCharacter) { score += 1; reasons.Add($"H4-{h4Seq.CharacterPattern}"); }
+        if (microSeq.HasGoodCharacter) { score += 1; reasons.Add($"M15-{microSeq.CharacterPattern}"); }
+        if (rrr >= 5) { score += 1; reasons.Add($"RRR={rrr:F0}:1"); }
+
+        // Volume-Bestätigung auf 15m: Dünnes Volumen = möglicher Fake-Out
+        if (m15Candles.Count >= 20)
+        {
+            var avgVol = 0m;
+            for (int i = m15Candles.Count - 21; i < m15Candles.Count - 1; i++)
+                avgVol += m15Candles[i].Volume;
+            avgVol /= 20m;
+            if (avgVol > 0 && m15Candles[^1].Volume < avgVol * 0.5m)
             {
-                var closeSide = sequence.IsLong ? Signal.CloseLong : Signal.CloseShort;
-                return new SignalResult(closeSide, 1.0m, null, null, null,
-                    "SK-Sequenz invalidiert (unter Punkt A) — Position schließen");
-            }
-            return NoSignal("Sequenz invalidiert (unter Punkt A)");
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        // RE-ENTRY: Nach abgeschlossener Sequenz im GKL der größeren Struktur
-        // ═══════════════════════════════════════════════════════════
-
-        // Wenn die aktuelle Sequenz Active ist (B durchbrochen, Ziel noch nicht erreicht):
-        // Kein neuer Entry möglich, aber Re-Entry prüfen
-        if (sequence.State == SequenceState.Active)
-        {
-            // Re-Entry: Gibt es eine NEUE Sequenz innerhalb der aktiven?
-            // (Verschachtelte Sequenz im Retracement der aktiven Bewegung)
-            if (_useIKI && sequence.PointC != null)
-            {
-                var innerSeqs = SequenceDetector.DetectIKI(candles, sequence, Math.Max(2, _swingStrength - 2));
-                var reentrySeq = innerSeqs.FirstOrDefault(s =>
-                    s.IsLong == sequence.IsLong &&
-                    s.State is SequenceState.CorrectionZone or SequenceState.WaitingBreak &&
-                    s.IsInBuyZone(currentPrice));
-
-                if (reentrySeq != null)
-                {
-                    // IKI-basierter Re-Entry
-                    var ikiSlBuf = reentrySeq.PointA.Price * _slBufferPercent / 100m;
-                    var ikiSl = reentrySeq.IsLong
-                        ? reentrySeq.PointA.Price - ikiSlBuf
-                        : reentrySeq.PointA.Price + ikiSlBuf;
-
-                    return new SignalResult(
-                        reentrySeq.IsLong ? Signal.Long : Signal.Short,
-                        0.6m, currentPrice, ikiSl, sequence.Extension1618,
-                        $"SK Re-Entry via IKI | A={reentrySeq.PointA.Price:G8} B={reentrySeq.PointB.Price:G8}",
-                        TakeProfit2: sequence.Extension2618, ConfluenceScore: 5);
-                }
-            }
-
-            // Preis im GKL der HTF-Sequenz? → Re-Entry möglich in der größeren Struktur
-            if (priceInHtfGkl && htfSequence != null)
-            {
-                // Suche neue Sequenz die mit HTF-GKL aligned
-                var gklSeq = SequenceDetector.DetectSequence(candles, Math.Max(2, _swingStrength - 1), _minRangePercent * 0.5m, _requireCloseBreak);
-                if (gklSeq != null && gklSeq.IsLong == htfSequence.IsLong &&
-                    gklSeq.State is SequenceState.CorrectionZone or SequenceState.WaitingBreak &&
-                    gklSeq.IsInBuyZone(currentPrice))
-                {
-                    var gklSlBuf = gklSeq.PointA.Price * _slBufferPercent / 100m;
-                    var gklSl = gklSeq.IsLong
-                        ? gklSeq.PointA.Price - gklSlBuf
-                        : gklSeq.PointA.Price + gklSlBuf;
-
-                    return new SignalResult(
-                        gklSeq.IsLong ? Signal.Long : Signal.Short,
-                        0.7m, currentPrice, gklSl, gklSeq.Extension1618,
-                        $"SK GKL Re-Entry | HTF-GKL + neue Sequenz A={gklSeq.PointA.Price:G8}",
-                        TakeProfit2: gklSeq.Extension2618, ConfluenceScore: 6);
-                }
-            }
-
-            return NoSignal("Sequenz aktiv — kein Entry-Zeitpunkt (warte auf Re-Entry oder Zielzone)");
-        }
-
-        if (sequence.State == SequenceState.Forming)
-            return NoSignal("Sequenz bildet sich noch (wartet auf B-Bestätigung)");
-
-        // ═══════════════════════════════════════════════════════════
-        // ENTRY-LOGIK: CorrectionZone oder WaitingBreak
-        // ═══════════════════════════════════════════════════════════
-
-        if (sequence.State is not (SequenceState.CorrectionZone or SequenceState.WaitingBreak))
-            return NoSignal($"Sequenz-State {sequence.State} nicht geeignet für Entry");
-
-        // Prüfe ob Preis in der idealen Kaufzone liegt
-        var inBuyZone = sequence.IsInBuyZone(currentPrice);       // 50-61.8%
-        var inGklZone = sequence.IsInGklZone(currentPrice);       // 55.9-66.7% (SK-spezifisch)
-
-        if (!inBuyZone && !inGklZone)
-        {
-            // Erweiterte Zone: 38.2-78.6% — nur mit starker Confluence akzeptabel
-            var retLevel = sequence.Range > 0
-                ? Math.Abs(sequence.PointB.Price - currentPrice) / sequence.Range
-                : 0m;
-            if (retLevel < 0.382m || retLevel > 0.786m)
-                return NoSignal("Preis außerhalb der Retracement-Zone (38.2-78.6%)");
-        }
-
-        // SK-System 3. Ebene: Entry-TF-Candles für präzises Timing nutzen (M5/M15)
-        // Wenn EntryTimeframeCandles vorhanden → feinere Bestätigung auf kleinerem TF
-        // Wenn nicht → Bestätigung auf aktuellem TF (Fallback)
-        var entryCandles = context.EntryTimeframeCandles is { Count: > 20 }
-            ? context.EntryTimeframeCandles
-            : candles;
-
-        // Auf Entry-TF: Eigene Mini-Sequenz suchen die mit der Hauptsequenz aligned
-        if (context.EntryTimeframeCandles is { Count: > 30 })
-        {
-            var entrySwingStrength = Math.Max(2, _swingStrength - 2);
-            var entrySeq = SequenceDetector.DetectSequence(
-                context.EntryTimeframeCandles, entrySwingStrength, _minRangePercent * 0.5m, false);
-
-            // Entry-TF Sequenz muss in gleiche Richtung zeigen wie Hauptsequenz
-            if (entrySeq != null && entrySeq.IsLong == sequence.IsLong &&
-                entrySeq.State is SequenceState.CorrectionZone or SequenceState.WaitingBreak or SequenceState.Active)
-            {
-                // 3. Ebene bestätigt die Hauptsequenz → stärkeres Signal
-                // (wird unten als Confluence-Bonus gezählt)
-            }
-            else if (entrySeq != null && entrySeq.IsLong != sequence.IsLong)
-            {
-                // Entry-TF zeigt in ANDERE Richtung → Signal schwächer
-                return NoSignal("Entry-TF Sequenz gegen Hauptsequenz — kein Entry");
+                score -= 1;
+                reasons.Add("LowVol");
             }
         }
 
-        // SK-System: Entry-Bestätigung bei Punkt C (Stabilisierung/Candlestick-Muster)
-        // Nutzt Entry-TF-Candles für feinere Bestätigung wenn verfügbar
-        var entryConfirmation = SequenceDetector.DetectEntryConfirmation(entryCandles, sequence, currentPrice);
-        if (entryConfirmation == CandleConfirmation.None)
-            return NoSignal("Keine Entry-Bestätigung (Preis noch nicht in der Zone)");
-        // Nur PriceTouches (schwächste Bestätigung) → höherer Confluence-Threshold
-        var confirmationBonus = entryConfirmation switch
-        {
-            CandleConfirmation.StableInZone => 2,  // Stabilisierung = stärkstes Signal
-            CandleConfirmation.Engulfing => 2,      // Engulfing = starkes Umkehr-Signal
-            CandleConfirmation.HammerOrPin => 1,    // Hammer = gutes Signal
-            CandleConfirmation.HighVolume => 1,     // Hohes Volumen = institutionell
-            _ => 0                                   // PriceTouches = kein Bonus
-        };
+        if (score < _minConfluence)
+            return NoSignal($"Confluence {score}/{_minConfluence} ({string.Join(", ", reasons)})");
 
-        // ═══════════════════════════════════════════════════════════
-        // CONFLUENCE-SCORE (0-10)
-        // ═══════════════════════════════════════════════════════════
+        // Signal erstellen
+        _lastSignalSymbol = context.Symbol;
+        _lastSignalPointA = microSeq.PointA.Price;
+        _lastSignalPointB = microSeq.PointB.Price;
+        _lastSignalPointC = microSeq.PointC?.Price ?? 0;
+        _lastSignalIsLong = tradeIsLong;
+        _signalCooldown = 8;
 
-        var swings = SequenceDetector.FindSwingPoints(candles, _swingStrength);
-        int confluenceScore = 0;
-        var reasons = new List<string>();
+        var side = tradeIsLong ? Signal.Long : Signal.Short;
+        var confidence = Math.Clamp((decimal)score / 10m, 0m, 1m);
 
-        // +2: Sequenz im GKL der übergeordneten HTF-Struktur (stärkstes Signal)
-        if (_useGkl && priceInHtfGkl)
-        {
-            confluenceScore += 2;
-            reasons.Add("HTF-GKL");
-        }
+        var reasonText = $"SK Trinity {(tradeIsLong ? "Long" : "Short")} | " +
+                         $"4H:A={h4Seq.PointA.Price:G6} B={h4Seq.PointB.Price:G6} | " +
+                         $"15m:A={microSeq.PointA.Price:G6} B={microSeq.PointB.Price:G6} | " +
+                         $"Score={score} RRR={rrr:F1}:1 | {string.Join(", ", reasons)}";
 
-        // +2: BOS in Sequenz-Richtung (Struktur-Bestätigung)
-        if (_useBOS)
-        {
-            var bos = SequenceDetector.DetectBOS(candles, swings);
-            if (bos != null && bos.IsBullish == sequence.IsLong)
-            {
-                confluenceScore += 2;
-                reasons.Add("BOS");
-            }
-        }
-
-        // +1: HTF-Trend stimmt mit Sequenz überein
-        if (htfTrendDirection.HasValue && htfTrendDirection.Value == sequence.IsLong)
-        {
-            confluenceScore += 1;
-            reasons.Add("HTF-Trend");
-        }
-
-        // +1: Preis im idealen 50-61.8% Bereich
-        if (inBuyZone)
-        {
-            confluenceScore += 1;
-            reasons.Add("50-61.8%");
-        }
-
-        // +1: Preis im GKL-Bereich (55.9-66.7%)
-        if (inGklZone)
-        {
-            confluenceScore += 1;
-            reasons.Add("GKL");
-        }
-
-        // +1: Liquiditätszone bestätigt Zielzone (Market Maker treiben Preis dorthin)
-        if (_useLiquidity)
-        {
-            var liquidityZones = LiquidityAnalyzer.FindLiquidityZones(candles, swings);
-            if (LiquidityAnalyzer.IsInLiquidityZone(sequence.Extension1618, liquidityZones))
-            {
-                confluenceScore += 1;
-                reasons.Add("Liq-Target");
-            }
-            // Bonus: Entry-Zone ist auch eine Liquiditätszone (Akkumulation)
-            if (LiquidityAnalyzer.IsInLiquidityZone(currentPrice, liquidityZones))
-            {
-                confluenceScore += 1;
-                reasons.Add("Liq-Entry");
-            }
-        }
-
-        // +1: Volume-Bestätigung (institutionelles Interesse bei Punkt C)
-        var volSma = IndicatorHelper.CalculateVolumeSma(candles, 20);
-        if (volSma.Count > 0 && volSma[^1].HasValue && candles[^1].Volume > volSma[^1]!.Value * 1.2m)
-        {
-            confluenceScore += 1;
-            reasons.Add("Vol");
-        }
-
-        // +1: IKI bestätigt Richtung (interne Sequenz in der Korrektur)
-        if (_useIKI && sequence.PointC != null)
-        {
-            var ikiSequences = SequenceDetector.DetectIKI(candles, sequence, Math.Max(2, _swingStrength - 2));
-            if (ikiSequences.Any(iki => iki.IsLong == sequence.IsLong &&
-                iki.State is SequenceState.Active or SequenceState.WaitingBreak))
-            {
-                confluenceScore += 1;
-                reasons.Add("IKI");
-            }
-        }
-
-        // +1: Kein ChoCH gegen die Sequenz (Trendwechsel-Warnung)
-        if (_useChoCH)
-        {
-            var choch = SequenceDetector.DetectChoCH(swings);
-            if (choch != null && choch.FromBullishToBearish == sequence.IsLong)
-            {
-                // ChoCH GEGEN die Sequenz → Abzug statt Bonus
-                confluenceScore -= 2;
-                reasons.Add("ChoCH-WARNUNG!");
-            }
-            else
-            {
-                confluenceScore += 1;
-                reasons.Add("Kein ChoCH");
-            }
-        }
-
-        // Entry-Bestätigung als Confluence-Bonus (SK: Stabilisierung bei C stärkt das Signal)
-        confluenceScore += confirmationBonus;
-        if (confirmationBonus > 0)
-            reasons.Add(entryConfirmation.ToString());
-
-        // Confluence zu niedrig → kein Entry
-        // Bei schwacher Entry-Bestätigung (PriceTouches) brauchen wir MEHR Confluence
-        var effectiveMinConfluence = entryConfirmation == CandleConfirmation.PriceTouches
-            ? _minConfluence + 2  // +2 höherer Threshold bei schwacher Bestätigung
-            : _minConfluence;
-        if (confluenceScore < effectiveMinConfluence)
-            return NoSignal($"Confluence {confluenceScore}/{effectiveMinConfluence} ({string.Join(", ", reasons)})");
-
-        // ═══════════════════════════════════════════════════════════
-        // SIGNAL ERSTELLEN
-        // ═══════════════════════════════════════════════════════════
-
-        var side = sequence.IsLong ? Signal.Long : Signal.Short;
-        var confidence = Math.Min(1m, (decimal)confluenceScore / 10m);
-
-        // SL: Strukturell unter/über Punkt A mit Puffer
-        var slBuffer = sequence.PointA.Price * _slBufferPercent / 100m;
-        var sl = sequence.IsLong
-            ? sequence.PointA.Price - slBuffer
-            : sequence.PointA.Price + slBuffer;
-
-        // TP: Fibonacci-Extensions (strukturell, nicht ATR-basiert)
-        var tp1 = sequence.Extension1618;
-        var tp2 = sequence.Extension2618;
-
-        // RRR berechnen
-        var rrr = sequence.CalculateRRR(currentPrice);
-
-        var reasonText = $"SK {(sequence.IsLong ? "Long" : "Short")} | " +
-                        $"A={sequence.PointA.Price:G8} B={sequence.PointB.Price:G8}" +
-                        (sequence.PointC != null ? $" C={sequence.PointC.Price:G8}" : "") +
-                        $" | Score={confluenceScore}/10 RRR={rrr:F1}:1 | {string.Join(", ", reasons)}";
-
-        // Limit-Order empfehlen bei WaitingBreak (Preis hat B noch nicht durchbrochen)
-        var preferLimit = sequence.State == SequenceState.WaitingBreak;
-        var entryPrice = inBuyZone ? currentPrice : (decimal?)null;
-
-        return new SignalResult(side, confidence, entryPrice, sl, tp1, reasonText,
-            TakeProfit2: tp2, ConfluenceScore: confluenceScore, PreferLimitOrder: preferLimit);
+        return new SignalResult(side, confidence, currentPrice, sl, tp1, reasonText,
+            TakeProfit2: tp2, ConfluenceScore: score, PreferLimitOrder: false,
+            DisableSmartBreakeven: DisableSmartBreakeven, Tp1CloseRatioOverride: 0.5m);
     }
 
     // ═══════════════════════════════════════════════════════════════
     // IStrategy Methoden
     // ═══════════════════════════════════════════════════════════════
 
-    public void WarmUp(IReadOnlyList<Candle> history)
-    {
-        // SK-System ist stateless — Sequenz-Erkennung berechnet alles pro Evaluate()-Aufruf
-        // WarmUp nicht nötig (Swing-Punkte werden nicht gecached)
-    }
+    public void WarmUp(IReadOnlyList<Candle> history) { }
 
-    public void Reset() { }
+    public void Reset()
+    {
+        _lastSignalPointA = 0;
+        _lastSignalPointB = 0;
+        _lastSignalPointC = 0;
+        _lastSignalSymbol = "";
+        _lastSignalIsLong = false;
+        _signalCooldown = 0;
+        _completedDirection = null;
+        _completedCooldown = 0;
+        _completedGkl559 = 0;
+        _completedGkl667 = 0;
+    }
 
     public IStrategy Clone() => new SequenzKonzeptStrategy
     {
-        _swingStrength = _swingStrength,
-        _htfSwingStrength = _htfSwingStrength,
+        _h4SwingStrength = _h4SwingStrength,
+        _h1SwingStrength = _h1SwingStrength,
+        _m15SwingStrength = _m15SwingStrength,
         _minRangePercent = _minRangePercent,
         _requireCloseBreak = _requireCloseBreak,
-        _useGkl = _useGkl,
-        _useLiquidity = _useLiquidity,
-        _useIKI = _useIKI,
-        _useBOS = _useBOS,
-        _useChoCH = _useChoCH,
         _minConfluence = _minConfluence,
         _slBufferPercent = _slBufferPercent,
-        _activePreset = _activePreset
+        _activePreset = _activePreset,
+        DisableSmartBreakeven = DisableSmartBreakeven
     };
 
     private static SignalResult NoSignal(string reason) =>

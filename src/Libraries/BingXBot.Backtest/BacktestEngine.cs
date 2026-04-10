@@ -271,6 +271,31 @@ public class BacktestEngine
                     else
                         exitState.ExtremePriceSinceEntry = Math.Min(exitState.ExtremePriceSinceEntry, currentCandle.Low);
 
+                    // SK-System: Gestufter Breakeven (2× SL-Distanz → BE, 120% zum TP1 → SL auf TP1)
+                    if (origSignal.DisableSmartBreakeven && origSignal.StopLoss.HasValue && origSignal.TakeProfit.HasValue)
+                    {
+                        var slDist = Math.Abs(exitState.EntryPrice - origSignal.StopLoss.Value);
+                        var currentPrice = pos.Side == Side.Buy ? currentCandle.High : currentCandle.Low;
+                        var currentProfit = pos.Side == Side.Buy
+                            ? currentPrice - exitState.EntryPrice
+                            : exitState.EntryPrice - currentPrice;
+                        var entryToTp1 = Math.Abs(origSignal.TakeProfit.Value - exitState.EntryPrice);
+
+                        // Stufe 2: SL auf TP1-Level (wenn Preis weit über TP1)
+                        if (entryToTp1 > 0 && currentProfit / entryToTp1 >= 1.2m && !exitState.Tp2Closed)
+                        {
+                            positionSignals[key] = positionSignals[key] with { StopLoss = origSignal.TakeProfit.Value };
+                        }
+                        // Stufe 1: BE bei 2× SL-Distanz
+                        else if (slDist > 0 && currentProfit >= slDist * 2m && !exitState.PartialClosed)
+                        {
+                            var beSl = pos.Side == Side.Buy
+                                ? exitState.EntryPrice * 1.0015m
+                                : exitState.EntryPrice * 0.9985m;
+                            positionSignals[key] = positionSignals[key] with { StopLoss = beSl };
+                        }
+                    }
+
                     // TP1-Check: Partial Close wenn noch nicht geschehen
                     var tp1Hit = false;
                     if (!exitState.PartialClosed && origSignal.TakeProfit.HasValue)
@@ -282,8 +307,9 @@ public class BacktestEngine
 
                     if (tp1Hit)
                     {
-                        // 50% (konfigurierbar) der Originalposition schließen
-                        var closeQty = Math.Round(exitState.OriginalQuantity * settings.Tp1CloseRatio, 6);
+                        // SK-System: Tp1CloseRatioOverride hat Vorrang (0.5 = 50% bei TP1)
+                        var tp1Ratio = origSignal.Tp1CloseRatioOverride ?? settings.Tp1CloseRatio;
+                        var closeQty = Math.Round(exitState.OriginalQuantity * tp1Ratio, 6);
                         if (closeQty > 0)
                         {
                             simExchange.SetCurrentPrice(symbol, origSignal.TakeProfit!.Value);
@@ -291,19 +317,44 @@ public class BacktestEngine
                             simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                         }
 
-                        // Smart Breakeven: SL = Entry + ATR-Puffer statt exakter Entry (verhindert Rauswerfen bei Pullbacks)
-                        var beSl = exitState.EntryPrice;
-                        if (settings.SmartBreakevenAtrMultiplier > 0 && exitState.CurrentAtr > 0)
+                        // SK-System: Gestufter BE nach Kassing-Regeln
+                        // Bei TP1-Hit prüfen ob 2× SL-Distanz bereits erreicht → BE setzen
+                        if (origSignal.DisableSmartBreakeven)
                         {
-                            beSl = pos.Side == Side.Buy
-                                ? exitState.EntryPrice + exitState.CurrentAtr * settings.SmartBreakevenAtrMultiplier
-                                : exitState.EntryPrice - exitState.CurrentAtr * settings.SmartBreakevenAtrMultiplier;
+                            var slDist = Math.Abs(exitState.EntryPrice - (origSignal.StopLoss ?? exitState.EntryPrice));
+                            var profit = pos.Side == Side.Buy
+                                ? origSignal.TakeProfit!.Value - exitState.EntryPrice
+                                : exitState.EntryPrice - origSignal.TakeProfit!.Value;
+                            // Bei TP1-Hit ist Gewinn >= SL-Distanz (TP1 > 2×SL normalerweise) → BE setzen
+                            if (slDist > 0 && profit >= slDist * 2m)
+                            {
+                                var beSl = pos.Side == Side.Buy
+                                    ? exitState.EntryPrice * 1.0015m
+                                    : exitState.EntryPrice * 0.9985m;
+                                positionSignals[key] = origSignal with { StopLoss = beSl, TakeProfit = exitState.Tp2 };
+                            }
+                            else
+                            {
+                                // Noch nicht 2× SL → SL bleibt unter Punkt A, nur TP umstellen
+                                positionSignals[key] = origSignal with { TakeProfit = exitState.Tp2 };
+                            }
                         }
-                        positionSignals[key] = origSignal with
+                        else
                         {
-                            StopLoss = beSl,
-                            TakeProfit = exitState.Tp2
-                        };
+                            // Smart Breakeven: SL = Entry + ATR-Puffer statt exakter Entry
+                            var beSl = exitState.EntryPrice;
+                            if (settings.SmartBreakevenAtrMultiplier > 0 && exitState.CurrentAtr > 0)
+                            {
+                                beSl = pos.Side == Side.Buy
+                                    ? exitState.EntryPrice + exitState.CurrentAtr * settings.SmartBreakevenAtrMultiplier
+                                    : exitState.EntryPrice - exitState.CurrentAtr * settings.SmartBreakevenAtrMultiplier;
+                            }
+                            positionSignals[key] = origSignal with
+                            {
+                                StopLoss = beSl,
+                                TakeProfit = exitState.Tp2
+                            };
+                        }
                         exitState.PartialClosed = true;
                         exitState.MaxHoldHours = settings.MaxHoldHoursAfterTp1;
                         continue; // Position bleibt offen mit Rest-Menge
@@ -328,7 +379,8 @@ public class BacktestEngine
                     }
 
                     // Chandelier-Trailing nach TP1: SL nachziehen basierend auf Extreme-ATR
-                    if (exitState.PartialClosed && exitState.CurrentAtr > 0)
+                    // SK-System: Kein Trailing (SL bleibt strukturell unter Punkt A)
+                    if (exitState.PartialClosed && exitState.CurrentAtr > 0 && !origSignal.DisableSmartBreakeven)
                     {
                         decimal newTrailingSl;
                         if (pos.Side == Side.Buy)
@@ -410,7 +462,11 @@ public class BacktestEngine
                         && !tp2State.Tp2Closed      // TP2 noch nicht
                         && settings.Tp2CloseRatio > 0 && settings.Tp2CloseRatio < 1m;
 
-                    if (isPartialTp2 && tp2State != null && settings.Tp1CloseRatio < 1m)
+                    // SK: Full-Close bei TP2 → fällt in den else-Zweig (komplett schließen)
+                    // Standard: Partial TP2 nur wenn Tp1 < 100% (sonst ist nichts mehr übrig)
+                    var effectiveTp1Ratio = origSignal.Tp1CloseRatioOverride ?? settings.Tp1CloseRatio;
+                    if (isPartialTp2 && tp2State != null && effectiveTp1Ratio < 1m
+                        && !origSignal.DisableSmartBreakeven)
                     {
                         // TP2 Partial Close: Tp2CloseRatio der verbleibenden Position schließen
                         var remainingQty = pos.Quantity;

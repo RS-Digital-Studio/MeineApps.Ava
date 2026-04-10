@@ -29,17 +29,19 @@ public static class TradingHoursFilter
 
         return category switch
         {
-            // Forex: Mo 00:00 - Fr 22:00 UTC (24/5)
+            // Forex: Mo 00:00 - Fr 22:00 UTC (24/5, schließt Fr 22:00 UTC / 17:00 ET)
             MarketCategory.Forex => !(day == DayOfWeek.Friday && timeOfDay > 1320),
 
-            // Commodities: Mo 01:00 - Fr 21:00 UTC (Haupt-Sessions, Produkt-Pausen ignoriert)
-            MarketCategory.Commodity => timeOfDay >= 60 && timeOfDay <= 1260,
+            // Commodities: Fast 24/5, 1h Pause 22:00-23:00 UTC (CME Globex Maintenance)
+            // 23:00 UTC (18:00 ET) bis nächsten Tag 22:00 UTC (17:00 ET)
+            MarketCategory.Commodity => !(timeOfDay >= 1320 && timeOfDay < 1380),
 
-            // Stocks: Mo-Fr 10:00-21:00 UTC (Pre-Market 10:00, Regular 14:30, Close 21:00)
-            MarketCategory.Stock => timeOfDay >= 600 && timeOfDay <= 1260,
+            // Stocks: Mo-Fr 08:00-24:00 UTC (BingX Extended: Pre-Market 04:00 ET = 08:00 UTC,
+            // After-Hours bis 20:00 ET = 00:00 UTC/Mitternacht)
+            MarketCategory.Stock => timeOfDay >= 480,
 
-            // Indices: Mo 01:00 - Fr 21:00 UTC (extended hours, fast wie Commodities)
-            MarketCategory.Index => timeOfDay >= 60 && timeOfDay <= 1260,
+            // Indices: Fast 24/5, 1h Pause 22:00-23:00 UTC (CME E-mini Maintenance)
+            MarketCategory.Index => !(timeOfDay >= 1320 && timeOfDay < 1380),
 
             _ => true
         };

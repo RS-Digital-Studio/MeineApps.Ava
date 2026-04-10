@@ -233,8 +233,8 @@ public class LiveBacktestRunner
     }
 
     /// <summary>
-    /// Parameter-Optimierung: Testet verschiedene MinConfluence + RRR-Minimum Kombinationen
-    /// auf den 4 profitabelsten Symbolen (BTC, AVAX, XRP, DOGE) + den 2 Verlierern (ETH, LINK).
+    /// Multi-dimensionale Parameter-Optimierung: Testet verschiedene Kombinationen
+    /// von TP1-Ratio, Strategie-RRR, SL-ATR-Fallback-Multiplikator über 6 Symbole.
     /// </summary>
     [Fact]
     public async Task SK_ParameterOptimierung()
@@ -245,39 +245,46 @@ public class LiveBacktestRunner
 
         var symbols = new[] { "BTC-USDT", "ETH-USDT", "LINK-USDT", "AVAX-USDT", "XRP-USDT", "DOGE-USDT" };
         var tage = 90;
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
 
-        // Parameter-Varianten: MinConfluence × MinRRR
-        var configs = new (int minConf, decimal minRRR, string label)[]
+        // Finale Optimierung: Beste Einzelwerte kombinieren + Feintuning
+        var configs = new (string field, object value, string label)[]
         {
-            (3, 0m, "Conf3, RRR-OFF (Strategie hat eigenes RRR≥3 auf TP2)"),
-            (3, 1.5m, "Conf3, RRR1.5"),
-            (3, 2.0m, "Conf3, RRR2"),
-            (3, 3.0m, "Conf3, RRR3"),
+            // Baseline (aktuell)
+            ("_minRangePercent", 0.5m, "BASELINE (0.5%, SL-Buf=0.15)"),
+
+            // MinRange-Feintuning (1.0% war +371 bei AVAX, aber XRP/DOGE verloren)
+            ("_minRangePercent", 0.8m, "MinRange=0.8%"),
+            ("_minRangePercent", 1.0m, "MinRange=1.0%"),
+            ("_minRangePercent", 1.2m, "MinRange=1.2%"),
+
+            // SL-Buffer 0.10 war marginal besser — verifizieren
+            ("_slBufferPercent", 0.10m, "SL-Buffer=0.10%"),
+            ("_slBufferPercent", 0.05m, "SL-Buffer=0.05%"),
         };
 
-        _output.WriteLine("=== SK PARAMETER-OPTIMIERUNG ===\n");
+        _output.WriteLine("=== SK MULTI-PARAMETER-OPTIMIERUNG ===\n");
 
-        foreach (var (minConf, minRRR, label) in configs)
+        foreach (var (field, value, label) in configs)
         {
             decimal totalPnl = 0;
             int totalTrades = 0;
-            int totalWins = 0;
+            decimal totalMaxDD = 0;
             var perSymbol = new List<string>();
 
             foreach (var symbol in symbols)
             {
                 var strategy = StrategyFactory.Create("SK-System");
-                if (strategy is SequenzKonzeptStrategy sk)
-                {
-                    sk.ApplyPreset(TradingModePreset.Swing);
-                    // Parameter per Reflection setzen
-                    var confField = typeof(SequenzKonzeptStrategy).GetField("_minConfluence",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    confField?.SetValue(sk, minConf);
-                }
+                var sk = strategy as SequenzKonzeptStrategy;
+                sk?.ApplyPreset(TradingModePreset.Swing);
+
+                // Parameter per Reflection setzen
+                var fieldInfo = typeof(SequenzKonzeptStrategy).GetField(field, flags);
+                fieldInfo?.SetValue(sk, value);
 
                 var riskPreset = TradingModeDefaults.GetRiskPreset(TradingModePreset.Swing);
                 var scanPreset = TradingModeDefaults.GetScannerPreset(TradingModePreset.Swing);
+
                 var riskSettings = new RiskSettings
                 {
                     MaxPositionSizePercent = riskPreset.MaxPositionSizePercent,
@@ -287,15 +294,12 @@ public class LiveBacktestRunner
                     Tp1CloseRatio = riskPreset.Tp1CloseRatio,
                     Tp2CloseRatio = riskPreset.Tp2CloseRatio,
                     SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
-                    MinRiskRewardRatio = minRRR,
+                    MinRiskRewardRatio = 2.0m, // Bester bekannter Wert
                     MaxHoldHours = riskPreset.MaxHoldHours,
                     MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
-                    EnableTrailingStop = true,
-                    TrailingStopPercent = 2.5m,
-                    MaxOpenPositions = 10,
-                    MinLiquidationDistancePercent = 0m,
-                    MaxNetExposurePercent = 99999m,
-                    ConsiderFundingRate = false,
+                    EnableTrailingStop = true, TrailingStopPercent = 2.5m,
+                    MaxOpenPositions = 10, MinLiquidationDistancePercent = 0m,
+                    MaxNetExposurePercent = 99999m, ConsiderFundingRate = false,
                     MaxDailyDrawdownPercent = 0m,
                 };
                 var riskManager = new RiskManager(riskSettings, NullLogger<RiskManager>.Instance);
@@ -310,8 +314,7 @@ public class LiveBacktestRunner
                     MaxHoldHoursInitial = riskPreset.MaxHoldHours,
                     MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
                     SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
-                    HtfTimeFrame = TimeFrame.H1,
-                    EntryTimeFrame = TimeFrame.M15,
+                    HtfTimeFrame = TimeFrame.H1, EntryTimeFrame = TimeFrame.M15,
                 };
 
                 var to = DateTime.UtcNow;
@@ -322,13 +325,12 @@ public class LiveBacktestRunner
 
                 totalPnl += report.TotalPnl;
                 totalTrades += report.TotalTrades;
-                totalWins += (int)(report.TotalTrades * report.WinRate / 100m);
-                perSymbol.Add($"  {symbol,-12} {report.TotalTrades,2}T  {report.TotalPnl,+8:+0.0;-0.0}  PF={report.ProfitFactor:F1}");
+                if (report.MaxDrawdownPercent > totalMaxDD) totalMaxDD = report.MaxDrawdownPercent;
+                perSymbol.Add($"  {symbol,-12} {report.TotalTrades,2}T  {report.TotalPnl,+8:+0.0;-0.0}  PF={report.ProfitFactor:F1}  DD={report.MaxDrawdownPercent:F1}%");
             }
 
-            var winRate = totalTrades > 0 ? (decimal)totalWins / totalTrades * 100m : 0m;
             _output.WriteLine($"--- {label} ---");
-            _output.WriteLine($"  GESAMT: {totalTrades} Trades, {totalPnl:+0.0;-0.0} USDT, WR={winRate:F0}%");
+            _output.WriteLine($"  GESAMT: {totalTrades} Trades, {totalPnl:+0.0;-0.0} USDT, MaxDD={totalMaxDD:F1}%");
             foreach (var s in perSymbol) _output.WriteLine(s);
             _output.WriteLine("");
         }

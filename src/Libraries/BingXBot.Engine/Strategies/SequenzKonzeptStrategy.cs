@@ -51,7 +51,7 @@ public class SequenzKonzeptStrategy : IStrategy
     private decimal _minRangePercent = 0.5m;  // Min. A→B Range in %
     private bool _requireCloseBreak = true;   // 4H: Close über B für Aktivierung
     private int _minConfluence = 3;           // Min. Confluence (niedrig weil 3-TF-UND ist starker Filter)
-    private decimal _slBufferPercent = 0.15m; // SL-Puffer unter 15m Punkt-0
+    private decimal _slBufferPercent = 0.15m; // SL-Puffer unter Fib-Level (Liquidity-Grab-Schutz)
     private TradingModePreset _activePreset = TradingModePreset.Swing;
 
     /// <summary>Aktueller Trading-Modus (wird bei Holy Trinity ignoriert).</summary>

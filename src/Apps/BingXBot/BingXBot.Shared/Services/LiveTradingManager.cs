@@ -37,6 +37,11 @@ public class LiveTradingManager : IDisposable
     /// <summary>Aktueller REST-Client (null wenn nicht verbunden).</summary>
     public BingXRestClient? RestClient => _restClient;
 
+    /// <summary>Echte Taker-Fee-Rate vom BingX Account (geladen bei Connect). Fallback 0.05%.</summary>
+    public decimal CommissionTakerRate { get; private set; } = 0.0005m;
+    /// <summary>Echte Maker-Fee-Rate vom BingX Account (geladen bei Connect). Fallback 0.02%.</summary>
+    public decimal CommissionMakerRate { get; private set; } = 0.0002m;
+
     /// <summary>Aktueller Live-Trading-Service (null wenn nicht gestartet).</summary>
     public LiveTradingService? Service => _service;
 
@@ -87,8 +92,22 @@ public class LiveTradingManager : IDisposable
         var logger = NullLogger<BingXRestClient>.Instance;
         _restClient = new BingXRestClient(creds.Value.ApiKey, creds.Value.ApiSecret, _httpClient, _rateLimiter, logger);
 
+        // Server-Zeit synchronisieren (BingX Error 100421 bei Systemzeit-Abweichung >5s)
+        await _restClient.SyncServerTimeAsync();
+
         // Symbol-Info-Cache laden (Quantity/Price-Precision, Min-Order-Größe pro Symbol)
         await _restClient.InitializeSymbolInfoAsync();
+
+        // Commission-Rates laden (echte Maker/Taker-Fees statt hardcoded)
+        try
+        {
+            var (taker, maker) = await _restClient.GetCommissionRateAsync();
+            CommissionTakerRate = taker;
+            CommissionMakerRate = maker;
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Account",
+                $"Fees geladen: Taker={taker:P3}, Maker={maker:P3}"));
+        }
+        catch { /* Fallback auf Standard-Raten */ }
 
         // Verbindung testen
         var account = await _restClient.GetAccountInfoAsync();
@@ -156,6 +175,9 @@ public class LiveTradingManager : IDisposable
             _eventBus,
             _botSettings,
             dbService: _dbService);
+
+        // Echte Fee-Rates vom Account setzen (statt hardcoded)
+        _service.SetCommissionRates(CommissionTakerRate, CommissionMakerRate);
 
         // Strategie aktivieren + Trading-Modus-Preset anwenden
         var strategy = StrategyFactory.Create(strategyName);
@@ -300,6 +322,14 @@ public class LiveTradingManager : IDisposable
     /// </summary>
     public async Task StopAsync()
     {
+        // Kill-Switch deaktivieren (sauberer Stop → keine verwaisten Cancels)
+        // Nur wenn der Endpoint unterstützt wird (manche Accounts haben cancelAllAfter nicht)
+        if (_restClient != null)
+        {
+            try { await _restClient.DeactivateKillSwitchAsync(); }
+            catch { /* Endpoint nicht verfügbar oder Netzwerkfehler — kein Problem beim Stop */ }
+        }
+
         await SaveAtiStateAsync();
 
         if (_service != null)

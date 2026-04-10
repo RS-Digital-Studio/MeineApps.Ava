@@ -68,9 +68,10 @@ public static class ScanHelper
             .Where(t => settings.Blacklist.Count == 0 || !settings.Blacklist.Contains(t.Symbol))
             .ToList();
 
-        // TradFi: Eigener Volume-Filter (niedriger, da weniger Symbole)
+        // TradFi: Eigener Volume- und PriceChange-Filter (niedrigere Schwellen als Krypto)
         var filteredTradFi = tradfiTickers
             .Where(t => t.Volume24h >= settings.MinVolume24hTradFi)
+            .Where(t => Math.Abs(t.PriceChangePercent24h) >= settings.MinPriceChangeTradFi)
             .Where(t => settings.Blacklist.Count == 0 || !settings.Blacklist.Contains(t.Symbol))
             .ToList();
 
@@ -90,13 +91,15 @@ public static class ScanHelper
         var topVolume = filteredCrypto.OrderByDescending(t => t.Volume24h).Take(cryptoSlots / 3).ToList();
 
         // Rotation: Jeder Scan nimmt andere Krypto-Symbole aus dem Rest
+        // Sauberes Wrap-Around: Skip(offset)+Concat(Anfang)+Take(count) → keine Duplikate
         var alreadyPicked = new HashSet<string>(topMovers.Select(t => t.Symbol).Concat(topVolume.Select(t => t.Symbol)));
         var remaining = filteredCrypto.Where(t => !alreadyPicked.Contains(t.Symbol)).ToList();
         var rotationCount = Math.Min(cryptoSlots - topMovers.Count - topVolume.Count, remaining.Count);
-        var offset = Interlocked.Increment(ref _rotationOffset) * rotationCount % Math.Max(remaining.Count, 1);
-        var rotated = remaining.Skip(offset).Take(rotationCount)
-            .Concat(remaining.Take(Math.Max(0, rotationCount - (remaining.Count - offset))))
-            .ToList();
+        var offset = remaining.Count > 0
+            ? Interlocked.Increment(ref _rotationOffset) % remaining.Count
+            : 0;
+        // Wrap-Around: Ab offset bis Ende, dann vom Anfang bis offset → volle Rotation ohne Duplikate
+        var rotated = remaining.Skip(offset).Concat(remaining.Take(offset)).Take(rotationCount).ToList();
 
         // Zusammenführen: TradFi zuerst (garantiert), dann Krypto-Rotation
         var result = new List<Ticker>(tradFiResult);
@@ -147,10 +150,21 @@ public static class ScanHelper
                 $"{ticker.Symbol}: HTF-Candles nicht verfügbar: {ex.Message}", ticker.Symbol));
         }
 
+        // Entry-TF-Candles für SK-System 3. Ebene (M15 für DayTrading/Swing)
+        List<Candle>? entryTfCandles = null;
+        try
+        {
+            entryTfCandles = await publicClient.GetKlinesAsync(
+                ticker.Symbol, TimeFrame.M15,
+                DateTime.UtcNow.AddHours(-24), DateTime.UtcNow, ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch { /* Entry-TF optional */ }
+
         // Strategie evaluieren
         var strategy = strategyManager.GetOrCreateForSymbol(ticker.Symbol);
         var category = SymbolClassifier.Classify(ticker.Symbol);
-        var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles, category);
+        var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles, category, entryTfCandles);
         var signal = strategy.Evaluate(context);
 
         if (signal.Signal == Signal.None) return null;

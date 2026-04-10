@@ -190,14 +190,20 @@
                           MinWidth="180" FontSize="12" />
               </StackPanel>
 
-              <!-- Trading-Modus-Dropdown -->
-              <StackPanel Spacing="2">
+              <!-- Trading-Modus: Dropdown für CTP, fester Hinweis für SK -->
+              <StackPanel Spacing="2" IsVisible="{Binding !IsSkSystem}">
                 <TextBlock Text="Modus" FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
                 <ComboBox ItemsSource="{Binding AvailableTradingModes}"
                           SelectedItem="{Binding SelectedTradingMode}"
                           IsEnabled="{Binding !IsRunning}"
                           MinWidth="120" FontSize="12"
                           ToolTip.Tip="Scalping (M15): Schnelle Trades, enge SL/TP&#10;Day-Trading (H1): Intraday&#10;Swing (H4): Mehrtägig" />
+              </StackPanel>
+              <StackPanel Spacing="2" IsVisible="{Binding IsSkSystem}">
+                <TextBlock Text="Modus" FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                <TextBlock Text="4H / 1H / 15m" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AppAccentBrush}"
+                           ToolTip.Tip="SK Holy Trinity: 4H Navigator, 1H Filter, 15m Trigger" />
               </StackPanel>
 
               <!-- Buttons -->
@@ -643,107 +649,121 @@
                     BorderThickness="1" BorderBrush="{DynamicResource AppLossBrush}" />
           </Grid>
 
-          <!-- Positions-Cards -->
+          <!-- Positions-Cards (2 Spalten, kompakt, klickbar) -->
           <ItemsControl ItemsSource="{Binding OpenPositions}"
                         IsVisible="{Binding HasOpenPositions}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:PositionDisplayItem">
-                <Border Background="{DynamicResource CardBrush}" CornerRadius="8"
-                        Padding="16,12" Margin="0,4"
-                        BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}">
+                <Panel MinWidth="320" MaxWidth="500" Margin="2">
+                  <!-- Selektions-Highlight: Blauer Rand + dunkler Hintergrund wenn ausgewählt -->
+                  <Border CornerRadius="6" BorderThickness="2"
+                          BorderBrush="{DynamicResource AppPrimaryBrush}"
+                          Background="{DynamicResource SurfaceBrush}"
+                          IsVisible="{Binding IsSelected}" />
+                  <Border Background="{DynamicResource CardBrush}" CornerRadius="6"
+                          Padding="10,8"
+                          BorderThickness="1"
+                          BorderBrush="{DynamicResource AppBorderBrush}"
+                          Cursor="Hand"
+                          PointerPressed="PositionCard_PointerPressed">
+                  <Border.Styles>
+                    <Style Selector="Border:pointerover">
+                      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+                    </Style>
+                  </Border.Styles>
                   <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
 
-                    <!-- Zeile 1: Symbol + Side + Leverage | P&L + Close-Button -->
-                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="10">
-                      <TextBlock Text="{Binding Symbol}" FontSize="15" FontWeight="Bold"
+                    <!-- Zeile 1: Symbol + Side + Lev + Strategie | PnL + Close -->
+                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Symbol}" FontSize="13" FontWeight="Bold"
                                  Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
-                      <Border Background="{Binding SideColor}" CornerRadius="4" Padding="8,2"
+                      <Border Background="{Binding SideColor}" CornerRadius="3" Padding="5,1"
                               VerticalAlignment="Center">
-                        <TextBlock Text="{Binding SideText}" FontSize="11" FontWeight="Bold"
+                        <TextBlock Text="{Binding SideText}" FontSize="10" FontWeight="Bold"
                                    Foreground="{DynamicResource PrimaryContrastBrush}" />
                       </Border>
-                      <TextBlock Text="{Binding Leverage, StringFormat='{}{0:F0}x'}" FontSize="12"
+                      <TextBlock Text="{Binding Leverage, StringFormat='{}{0:F0}x'}" FontSize="11"
                                  FontFamily="Consolas, Courier New, monospace"
                                  Foreground="{DynamicResource AppTextSecondaryBrush}" VerticalAlignment="Center" />
+                      <!-- Strategie-Badge -->
+                      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="3" Padding="4,1"
+                              VerticalAlignment="Center" IsVisible="{Binding StrategyName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding StrategyName}" FontSize="9" FontWeight="Bold"
+                                   Foreground="{DynamicResource AppWarningBrush}" />
+                      </Border>
                     </StackPanel>
 
-                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                      <!-- P&L mit Prozent -->
+                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6">
                       <StackPanel HorizontalAlignment="Right">
-                        <TextBlock Text="{Binding PnlText}" FontSize="16" FontWeight="Bold"
+                        <TextBlock Text="{Binding PnlText}" FontSize="14" FontWeight="Bold"
                                    FontFamily="Consolas, Courier New, monospace"
                                    Foreground="{Binding PnlColor}" HorizontalAlignment="Right" />
-                        <TextBlock Text="{Binding PnlPercentText}" FontSize="11"
+                        <TextBlock Text="{Binding PnlPercentText}" FontSize="10"
                                    FontFamily="Consolas, Courier New, monospace"
                                    Foreground="{Binding PnlColor}" HorizontalAlignment="Right" />
                       </StackPanel>
-
-                      <!-- Close-Button -->
                       <Button Command="{Binding RequestCloseCommand}"
-                              Background="Transparent" Padding="6"
-                              CornerRadius="4" ToolTip.Tip="Position schliessen" Cursor="Hand"
-                              BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}">
-                        <mi:MaterialIcon Kind="Close" Width="14" Height="14"
+                              Background="Transparent" Padding="4"
+                              CornerRadius="3" ToolTip.Tip="Position schließen" Cursor="Hand"
+                              BorderThickness="0">
+                        <mi:MaterialIcon Kind="Close" Width="12" Height="12"
                                          Foreground="{DynamicResource AppLossBrush}" />
                       </Button>
                     </StackPanel>
 
-                    <!-- Zeile 2: Einstieg / Aktuell / Menge -->
-                    <!-- G8 statt N4: Krypto-Preise haben variable Dezimalstellen (Micro-Cap Tokens) -->
-                    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="20" Margin="0,10,0,0">
-                      <StackPanel>
-                        <TextBlock Text="Einstieg" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-                        <TextBlock Text="{Binding EntryPrice, Converter={StaticResource NullableDecimalConverter}}" FontSize="13"
-                                   FontFamily="Consolas, Courier New, monospace"
-                                   Foreground="{DynamicResource AppTextBrush}" />
-                      </StackPanel>
-                      <StackPanel>
-                        <TextBlock Text="Aktuell" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-                        <TextBlock Text="{Binding MarkPrice, Converter={StaticResource NullableDecimalConverter}}" FontSize="13"
-                                   FontFamily="Consolas, Courier New, monospace"
-                                   Foreground="{DynamicResource AppTextBrush}" />
-                      </StackPanel>
-                      <StackPanel>
-                        <TextBlock Text="Menge" FontSize="10" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-                        <TextBlock Text="{Binding Quantity, StringFormat='{}{0:N2}'}" FontSize="13"
-                                   FontFamily="Consolas, Courier New, monospace"
-                                   Foreground="{DynamicResource AppTextBrush}" />
-                      </StackPanel>
+                    <!-- Zeile 2: Entry → Aktuell | Menge | SL | TP -->
+                    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="10" Margin="0,5,0,0">
+                      <TextBlock FontSize="11" FontFamily="Consolas, Courier New, monospace"
+                                 Foreground="{DynamicResource AppTextSecondaryBrush}">
+                        <Run Text="E:" /><Run Text="{Binding EntryPrice, Converter={StaticResource NullableDecimalConverter}}" Foreground="{DynamicResource AppTextBrush}" />
+                        <Run Text=" →" /><Run Text="{Binding MarkPrice, Converter={StaticResource NullableDecimalConverter}}" Foreground="{Binding PnlColor}" />
+                      </TextBlock>
+                      <TextBlock FontSize="11" FontFamily="Consolas, Courier New, monospace"
+                                 Foreground="{DynamicResource AppTextSecondaryBrush}">
+                        <Run Text="Q:" /><Run Text="{Binding Quantity, StringFormat='{}{0:N2}'}" Foreground="{DynamicResource AppTextBrush}" />
+                      </TextBlock>
+                      <TextBlock FontSize="11" FontFamily="Consolas, Courier New, monospace"
+                                 Foreground="{DynamicResource AppLossBrush}" IsVisible="{Binding StopLoss, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <Run Text="SL:" /><Run Text="{Binding StopLoss, Converter={StaticResource NullableDecimalConverter}}" />
+                      </TextBlock>
+                      <TextBlock FontSize="11" FontFamily="Consolas, Courier New, monospace"
+                                 Foreground="{DynamicResource AppProfitBrush}" IsVisible="{Binding TakeProfit, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <Run Text="TP:" /><Run Text="{Binding TakeProfit, Converter={StaticResource NullableDecimalConverter}}" />
+                      </TextBlock>
                     </StackPanel>
 
-                    <!-- Zeile 3: SL / TP / Trailing (editierbar) -->
-                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="12" Margin="0,10,0,0">
-                      <StackPanel>
-                        <TextBlock Text="Stop-Loss" FontSize="10" Foreground="{DynamicResource AppLossBrush}" />
-                        <TextBox Text="{Binding StopLoss, Converter={StaticResource NullableDecimalConverter}}"
-                                 MinWidth="100" FontSize="11" Padding="6,4"
-                                 Background="{DynamicResource SurfaceBrush}"
-                                 BorderBrush="{DynamicResource AppBorderBrush}"
-                                 Foreground="{DynamicResource AppTextBrush}"
-                                 Watermark="Kein SL" CornerRadius="4" />
-                      </StackPanel>
-                      <StackPanel>
-                        <TextBlock Text="Take-Profit" FontSize="10" Foreground="{DynamicResource AppProfitBrush}" />
-                        <TextBox Text="{Binding TakeProfit, Converter={StaticResource NullableDecimalConverter}}"
-                                 MinWidth="100" FontSize="11" Padding="6,4"
-                                 Background="{DynamicResource SurfaceBrush}"
-                                 BorderBrush="{DynamicResource AppBorderBrush}"
-                                 Foreground="{DynamicResource AppTextBrush}"
-                                 Watermark="Kein TP" CornerRadius="4" />
-                      </StackPanel>
-                      <StackPanel>
-                        <TextBlock Text="Trailing %" FontSize="10" Foreground="{DynamicResource AppWarningBrush}" />
-                        <TextBox Text="{Binding TrailingStop, Converter={StaticResource NullableDecimalConverter}}"
-                                 MinWidth="80" FontSize="11" Padding="6,4"
-                                 Background="{DynamicResource SurfaceBrush}"
-                                 BorderBrush="{DynamicResource AppBorderBrush}"
-                                 Foreground="{DynamicResource AppTextBrush}"
-                                 Watermark="Aus" CornerRadius="4" />
-                      </StackPanel>
+                    <!-- Zeile 3: Info-Chips (Confluence, Charakter, Haltezeit) -->
+                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                      <!-- Confluence-Score Badge -->
+                      <Border CornerRadius="3" Padding="4,1" IsVisible="{Binding ConfluenceScore}"
+                              Background="{DynamicResource SurfaceBrush}">
+                        <TextBlock FontSize="9" FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{DynamicResource AppWarningBrush}">
+                          <Run Text="C:" /><Run Text="{Binding ConfluenceScore}" />
+                        </TextBlock>
+                      </Border>
+                      <!-- Charakter-Pattern Badge -->
+                      <Border CornerRadius="3" Padding="4,1"
+                              Background="{DynamicResource SurfaceBrush}"
+                              IsVisible="{Binding CharacterPattern, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding CharacterPattern}" FontSize="9" FontWeight="Bold"
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{DynamicResource AppTextBrush}" />
+                      </Border>
+                      <!-- Haltezeit -->
+                      <TextBlock Text="{Binding HoldTimeText}" FontSize="9"
+                                 Foreground="{DynamicResource AppTextSecondaryBrush}"
+                                 IsVisible="{Binding HoldTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
 
                   </Grid>
                 </Border>
+                </Panel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

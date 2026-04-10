@@ -62,6 +62,8 @@ public class MultiModeOrchestrator : IDisposable
     /// </summary>
     public void StartPaper(decimal initialBalance = 10_000m)
     {
+        // Paper-Trading unterstützt immer Hedge-Modus (SimulatedExchange erlaubt Long+Short)
+        _isHedgeModeActive = true;
         _sharedRiskManager = new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance);
 
         // ATI-Strategien einmal registrieren (nicht pro Modus, da RegisterStrategies ClearStrategies aufruft)
@@ -103,6 +105,8 @@ public class MultiModeOrchestrator : IDisposable
     public async Task StartLiveAsync(Exchange.BingXRestClient restClient)
     {
         _restClient = restClient;
+        // Hedge-Modus aus BingX abfragen (TradFi braucht Hedge-Modus, Error 101414 bei One-Way)
+        _isHedgeModeActive = _botSettings.Scanner?.IsHedgeModeActive ?? false;
         _sharedRiskManager = new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance);
 
         // ATI-Strategien einmal registrieren (nicht pro Modus, da RegisterStrategies ClearStrategies aufruft)
@@ -245,6 +249,9 @@ public class MultiModeOrchestrator : IDisposable
         return (aggregated, allPositions);
     }
 
+    /// <summary>Ob der BingX-Account im Hedge-Modus ist. Paper=true (SimExchange unterstützt Hedge), Live=aus API.</summary>
+    private bool _isHedgeModeActive;
+
     private ScannerSettings CreateScannerSettings(TradingModePreset mode)
     {
         var preset = TradingModeDefaults.GetScannerPreset(mode);
@@ -261,9 +268,16 @@ public class MultiModeOrchestrator : IDisposable
             Whitelist = _botSettings.Scanner?.Whitelist ?? new(),
             Blacklist = _botSettings.Scanner?.Blacklist ?? new(),
             // TradFi-Settings vom User übernehmen (gleich für alle Modi)
+            // Default: Alle 5 Kategorien — konsistent mit ScannerSettings-Default
             EnableTradFi = _botSettings.Scanner?.EnableTradFi ?? false,
-            EnabledCategories = _botSettings.Scanner?.EnabledCategories ?? new() { Core.Enums.MarketCategory.Crypto },
-            MinVolume24hTradFi = _botSettings.Scanner?.MinVolume24hTradFi ?? 1_000_000m
+            EnabledCategories = _botSettings.Scanner?.EnabledCategories ?? new()
+            {
+                Core.Enums.MarketCategory.Crypto, Core.Enums.MarketCategory.Commodity,
+                Core.Enums.MarketCategory.Index, Core.Enums.MarketCategory.Forex,
+                Core.Enums.MarketCategory.Stock
+            },
+            MinVolume24hTradFi = _botSettings.Scanner?.MinVolume24hTradFi ?? 1_000_000m,
+            IsHedgeModeActive = _isHedgeModeActive
         };
     }
 

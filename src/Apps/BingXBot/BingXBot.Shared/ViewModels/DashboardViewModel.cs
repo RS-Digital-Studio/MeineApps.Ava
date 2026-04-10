@@ -88,6 +88,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _selectedStrategy = "CryptoTrendPro";
     [ObservableProperty] private string _strategyDescription = "";
     [ObservableProperty] private string _selectedTradingMode = "Swing";
+    /// <summary>True wenn SK-System aktiv — Trading-Mode-Auswahl wird ausgeblendet (Holy Trinity hat feste TFs).</summary>
+    [ObservableProperty] private bool _isSkSystem;
     public string[] AvailableStrategies => StrategyFactory.AvailableStrategies;
     public string[] AvailableTradingModes => ["Scalping", "Day-Trading", "Swing", "Alle Modi"];
 
@@ -287,6 +289,10 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             var strategy = StrategyFactory.Create(value);
             StrategyDescription = strategy.Description;
             _botSettings.LastStrategyName = value;
+
+            // SK-System: Holy Trinity hat feste 4H/1H/15m → Trading-Mode irrelevant
+            IsSkSystem = value == "SK-System";
+
             _ = App.SaveAllSettingsAsync();
         }
         catch
@@ -976,11 +982,69 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         return _liveManager.Service?.GetPositionSignal(symbol, side);
     }
 
-    /// <summary>Aktualisiert die Trade-Markers und Positions-Overlay auf dem BTC-Chart.</summary>
+    private DateTime? FindEntryTime(string symbol, Side side)
+    {
+        if (_isMultiMode)
+        {
+            var service = _orchestrator.FindServiceForPosition(symbol, side);
+            return service?.GetEntryTime(symbol, side);
+        }
+        if (IsPaperMode)
+            return _paperService.GetEntryTime(symbol, side);
+        return _liveManager.Service?.GetEntryTime(symbol, side);
+    }
+
+    // Ausgewählte Position für Chart-Overlay
+    [ObservableProperty] private PositionDisplayItem? _selectedPosition;
+
+    /// <summary>Wählt eine Position aus und zeigt ihren Chart + SK-Overlay an.</summary>
+    [RelayCommand]
+    private async Task SelectPosition(PositionDisplayItem? pos)
+    {
+        // Alte Auswahl deselektieren
+        if (SelectedPosition != null)
+            SelectedPosition.IsSelected = false;
+
+        if (pos == null || pos == SelectedPosition)
+        {
+            // Deselektieren → zurück zu BTC
+            SelectedPosition = null;
+            await BtcTicker.SwitchSymbolCommand.ExecuteAsync("BTC-USDT");
+            BtcTicker.SequenceOverlay = null;
+            UpdateChartOverlay();
+            return;
+        }
+
+        SelectedPosition = pos;
+        pos.IsSelected = true;
+
+        // Chart auf das Symbol der Position wechseln
+        await BtcTicker.SwitchSymbolCommand.ExecuteAsync(pos.Symbol);
+
+        // Position-Overlay (Entry/SL/TP Linien)
+        var signal = FindPositionSignal(pos.Symbol, pos.Side);
+        BtcTicker.ActiveOverlay = new ActivePositionOverlay(
+            pos.EntryPrice, signal?.StopLoss, signal?.TakeProfit, signal?.TakeProfit2, pos.Side);
+
+        // SK-Sequenz-Overlay: On-demand aus den gerade geladenen Chart-Candles berechnen
+        BtcTicker.SequenceOverlay = BuildSequenceOverlay(BtcTicker.BtcCandles);
+    }
+
+    /// <summary>Aktualisiert die Trade-Markers und Positions-Overlay auf dem Chart.</summary>
     private void UpdateChartOverlay()
     {
-        // Aktive BTC-Position als Overlay anzeigen (alle Modi: Paper, Live, Multi-Mode)
-        var btcPos = OpenPositions.FirstOrDefault(p => p.Symbol == "BTC-USDT");
+        // Wenn eine Position ausgewählt ist → deren Overlay anzeigen
+        if (SelectedPosition != null)
+        {
+            var signal = FindPositionSignal(SelectedPosition.Symbol, SelectedPosition.Side);
+            BtcTicker.ActiveOverlay = new ActivePositionOverlay(
+                SelectedPosition.EntryPrice, signal?.StopLoss, signal?.TakeProfit, signal?.TakeProfit2, SelectedPosition.Side);
+            // SequenceOverlay bleibt vom SelectPosition-Call erhalten (wird dort berechnet)
+            return;
+        }
+
+        // Sonst: Aktive BTC-Position als Default-Overlay (alle Modi)
+        var btcPos = OpenPositions.FirstOrDefault(p => p.Symbol == BtcTicker.SelectedSymbol);
         if (btcPos != null)
         {
             var signal = FindPositionSignal(btcPos.Symbol, btcPos.Side);
@@ -991,6 +1055,23 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             BtcTicker.ActiveOverlay = null;
         }
+        BtcTicker.SequenceOverlay = null;
+    }
+
+    /// <summary>Berechnet SK-Sequenz-Overlay on-demand aus den Chart-Candles.</summary>
+    private static SequenceOverlay? BuildSequenceOverlay(IReadOnlyList<Candle> candles)
+    {
+        if (candles.Count < 50) return null;
+
+        var seq = Engine.Indicators.SequenceDetector.DetectSequence(candles, 5, 0.5m, true);
+        if (seq == null) return null;
+
+        return new SequenceOverlay(
+            seq.PointA.Price, seq.PointB.Price, seq.PointC?.Price,
+            seq.Retracement382, seq.Retracement500, seq.Retracement559,
+            seq.Retracement618, seq.Retracement667, seq.Retracement786,
+            seq.Extension100, seq.Extension1272, seq.Extension1618, seq.Extension200,
+            seq.IsLong, seq.CharacterPattern, seq.Type.ToString());
     }
 
     /// <summary>
@@ -1012,8 +1093,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         // Close-Action verdrahten
         item.CloseRequested = (pos) => { RequestClosePosition(pos); return Task.CompletedTask; };
 
-        // SL/TP aus dem richtigen Service laden (Single-Mode, Multi-Mode, Live)
-        // Flag verhindert, dass die initiale Zuweisung das gespeicherte Signal überschreibt
+        // SL/TP + erweiterte Infos aus dem Signal laden
         var suppressSlTpEvents = true;
 
         var signal = FindPositionSignal(p.Symbol, p.Side);
@@ -1021,6 +1101,12 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             item.StopLoss = signal.StopLoss;
             item.TakeProfit = signal.TakeProfit;
+            item.ConfluenceScore = signal.ConfluenceScore;
+            item.StrategyName = signal.DisableSmartBreakeven ? "SK" : "CTP";
+            item.CharacterPattern = signal.Reason.Contains("(IK)") ? "IK"
+                : signal.Reason.Contains("(KI)") ? "KI"
+                : signal.Reason.Contains("(KK)") ? "KK"
+                : signal.Reason.Contains("(II)") ? "II" : "";
         }
 
         suppressSlTpEvents = false;
@@ -1081,6 +1167,28 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 existing.Pnl = updated.UnrealizedPnl;
                 existing.Quantity = updated.Quantity;
                 existing.Leverage = updated.Leverage;
+
+                // Haltezeit aus ExitState berechnen
+                var entryTime = FindEntryTime(existing.Symbol, existing.Side);
+                if (entryTime.HasValue)
+                {
+                    var hold = DateTime.UtcNow - entryTime.Value;
+                    existing.HoldTimeText = hold.TotalHours >= 24
+                        ? $"{hold.Days}d {hold.Hours}h"
+                        : hold.TotalHours >= 1
+                            ? $"{(int)hold.TotalHours}h {hold.Minutes}m"
+                            : $"{hold.Minutes}m";
+                }
+
+                // Liquidationspreis berechnen (Isolated-Margin-Formel)
+                if (updated.Leverage > 0 && updated.EntryPrice > 0)
+                {
+                    const decimal mmr = 0.004m; // BingX Maintenance Margin Rate
+                    var liqDist = (1m - mmr) / updated.Leverage;
+                    existing.LiquidationPrice = updated.Side == Side.Buy
+                        ? updated.EntryPrice * (1m - liqDist)
+                        : updated.EntryPrice * (1m + liqDist);
+                }
                 posMap.Remove(existing.PositionKey);
             }
             else
@@ -1647,6 +1755,17 @@ public partial class PositionDisplayItem : ObservableObject
     [ObservableProperty] private decimal? _stopLoss;
     [ObservableProperty] private decimal? _takeProfit;
     [ObservableProperty] private decimal? _trailingStop; // In Prozent
+
+    // Erweiterte Infos (SK-System + Risiko)
+    [ObservableProperty] private int _confluenceScore;
+    [ObservableProperty] private string _strategyName = "";
+    [ObservableProperty] private string _characterPattern = "";
+    [ObservableProperty] private string _holdTimeText = "";
+    [ObservableProperty] private decimal _liquidationPrice;
+    [ObservableProperty] private bool _isSelected;
+
+    // SK-Sequenz-Daten für Chart-Overlay (null bei Nicht-SK-Trades)
+    public SequenceOverlay? SequenceOverlay { get; set; }
 
     // Berechnete Properties
     public bool IsProfit => Pnl > 0;

@@ -89,6 +89,23 @@ public class InteractiveChartRenderer
     private static readonly SKPaint Tp2Label = new() { Color = Tp2Color, IsAntialias = true };
     private static readonly SKPaint EntryLabel = new() { Color = EntryColor, IsAntialias = true };
 
+    // SK-Sequenz-Overlay Farben
+    private static readonly SKColor FibColor = SKColor.Parse("#FFD700");        // Gold für Fib-Level
+    private static readonly SKColor GklZoneColor = SKColor.Parse("#10B981");    // Grün für GKL-Zone
+    private static readonly SKColor BuyZoneColor = SKColor.Parse("#3B82F6");    // Blau für Buy-Zone
+    private static readonly SKColor PointAColor = SKColor.Parse("#F59E0B");     // Amber für Punkt A
+    private static readonly SKColor PointBColor = SKColor.Parse("#06B6D4");     // Cyan für Punkt B
+    private static readonly SKColor PointCColor = SKColor.Parse("#D946EF");     // Magenta für Punkt C
+
+    private static readonly SKPaint FibLinePaint = new() { Color = FibColor.WithAlpha(70), StrokeWidth = 0.8f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([3f, 5f], 0) };
+    private static readonly SKPaint FibLabelPaint = new() { Color = FibColor.WithAlpha(180), IsAntialias = true };
+    private static readonly SKPaint GklZonePaint = new() { Color = GklZoneColor.WithAlpha(20), Style = SKPaintStyle.Fill };
+    private static readonly SKPaint BuyZonePaint = new() { Color = BuyZoneColor.WithAlpha(12), Style = SKPaintStyle.Fill };
+    private static readonly SKPaint ExtLinePaint = new() { Color = FibColor.WithAlpha(90), StrokeWidth = 1f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
+    private static readonly SKPaint SeqLinePaint = new() { Color = SKColor.Parse("#94A3B8").WithAlpha(60), StrokeWidth = 1f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([2f, 3f], 0) };
+    private static readonly SKFont FibFont = new(SKTypeface.Default, 9);
+    private static readonly SKFont PointFont = new(SKTypeface.Default, 11);
+
     public ChartState State { get; } = new();
 
     // Berechnete Layout-Bereiche (für Mouse-Event-Handling im View)
@@ -102,7 +119,8 @@ public class InteractiveChartRenderer
         IReadOnlyList<TradeMarker>? markers = null,
         ActivePositionOverlay? overlay = null,
         ChartIndicatorData? indicators = null,
-        IReadOnlyList<RegimeZone>? regimeZones = null)
+        IReadOnlyList<RegimeZone>? regimeZones = null,
+        SequenceOverlay? sequenceOverlay = null)
     {
         canvas.Clear(BgColor);
 
@@ -208,15 +226,19 @@ public class InteractiveChartRenderer
         using var priceLbl = new SKPaint { Color = lastBull ? BullColor : BearColor, IsAntialias = true };
         canvas.DrawText($"{lastPrice:F1}", priceArea.Right + 3, lastY + 4, LabelFont, priceLbl);
 
-        // Layer 7: SL/TP-Overlay
+        // Layer 7: SK-Sequenz-Overlay (Fib-Level, GKL-Zone, A-B-C Punkte)
+        if (sequenceOverlay != null)
+            DrawSequenceOverlay(canvas, priceArea, minP, maxP, sequenceOverlay);
+
+        // Layer 8: SL/TP-Overlay
         if (overlay != null)
             DrawPositionOverlay(canvas, priceArea, minP, maxP, overlay);
 
-        // Layer 8: Trade-Markers
+        // Layer 9: Trade-Markers
         if (markers is { Count: > 0 })
             DrawTradeMarkers(canvas, priceArea, minP, maxP, candles, visStart, visEnd, markers);
 
-        // Layer 9: Crosshair (ganz oben)
+        // Layer 10: Crosshair (ganz oben)
         if (State.ShowCrosshair && State.CrosshairX >= priceArea.Left && State.CrosshairX <= priceArea.Right)
             DrawCrosshair(canvas, priceArea, volumeArea, minP, maxP, candles, visStart, visEnd);
     }
@@ -385,6 +407,113 @@ public class InteractiveChartRenderer
             DrawZone(canvas, area, entryY, slY, lossZone);
         }
     }
+
+    // ═══ SK-Sequenz-Overlay ═══
+
+    private static void DrawSequenceOverlay(SKCanvas canvas, SKRect area, decimal min, decimal max, SequenceOverlay seq)
+    {
+        // 1. GKL-Zone (55.9-66.7%) — halbtransparentes grünes Rechteck
+        var gklTop = MapY(Math.Max(seq.Ret559, seq.Ret667), area, min, max);
+        var gklBot = MapY(Math.Min(seq.Ret559, seq.Ret667), area, min, max);
+        if (gklBot > area.Top && gklTop < area.Bottom)
+            canvas.DrawRect(area.Left, Math.Max(gklTop, area.Top), area.Width,
+                Math.Min(gklBot, area.Bottom) - Math.Max(gklTop, area.Top), GklZonePaint);
+
+        // 2. Buy-Zone (50-66.7%) — breiteres halbtransparentes blaues Rechteck
+        var buyTop = MapY(Math.Max(seq.Ret500, seq.Ret667), area, min, max);
+        var buyBot = MapY(Math.Min(seq.Ret500, seq.Ret667), area, min, max);
+        if (buyBot > area.Top && buyTop < area.Bottom)
+            canvas.DrawRect(area.Left, Math.Max(buyTop, area.Top), area.Width,
+                Math.Min(buyBot, area.Bottom) - Math.Max(buyTop, area.Top), BuyZonePaint);
+
+        // 3. Fibonacci-Retracement-Linien mit Labels
+        DrawFibLine(canvas, area, min, max, seq.Ret382, "38.2%");
+        DrawFibLine(canvas, area, min, max, seq.Ret500, "50%");
+        DrawFibLine(canvas, area, min, max, seq.Ret559, "55.9%");
+        DrawFibLine(canvas, area, min, max, seq.Ret618, "61.8%");
+        DrawFibLine(canvas, area, min, max, seq.Ret667, "66.7%");
+        DrawFibLine(canvas, area, min, max, seq.Ret786, "78.6%");
+
+        // 4. Extension-Linien (Zielzonen)
+        DrawExtLine(canvas, area, min, max, seq.Ext100, "100%");
+        DrawExtLine(canvas, area, min, max, seq.Ext1272, "127.2%");
+        using var tp1ExtPaint = new SKPaint { Color = TpColor.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
+        using var tp1ExtLabel = new SKPaint { Color = TpColor.WithAlpha(200), IsAntialias = true };
+        DrawHLine(canvas, area, min, max, seq.Ext1618, tp1ExtPaint, "TP1 161.8%", tp1ExtLabel);
+        using var tp2ExtPaint = new SKPaint { Color = Tp2Color.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
+        using var tp2ExtLabel = new SKPaint { Color = Tp2Color.WithAlpha(200), IsAntialias = true };
+        DrawHLine(canvas, area, min, max, seq.Ext200, tp2ExtPaint, "TP2 200%", tp2ExtLabel);
+
+        // 5. A-B-C Punkt-Marker
+        DrawPointMarker(canvas, area, min, max, seq.PointA, "A", PointAColor);
+        DrawPointMarker(canvas, area, min, max, seq.PointB, "B", PointBColor);
+        if (seq.PointC.HasValue)
+            DrawPointMarker(canvas, area, min, max, seq.PointC.Value, "C", PointCColor);
+
+        // 6. A→B→C Verbindungslinie
+        var aY = MapY(seq.PointA, area, min, max);
+        var bY = MapY(seq.PointB, area, min, max);
+        // Punkte am linken Drittel verteilen (da wir keine X-Zeitposition haben)
+        var aX = area.Left + area.Width * 0.15f;
+        var bX = area.Left + area.Width * 0.30f;
+        if (aY >= area.Top && aY <= area.Bottom && bY >= area.Top && bY <= area.Bottom)
+            canvas.DrawLine(aX, aY, bX, bY, SeqLinePaint);
+        if (seq.PointC.HasValue)
+        {
+            var cY = MapY(seq.PointC.Value, area, min, max);
+            var cX = area.Left + area.Width * 0.45f;
+            if (bY >= area.Top && bY <= area.Bottom && cY >= area.Top && cY <= area.Bottom)
+                canvas.DrawLine(bX, bY, cX, cY, SeqLinePaint);
+        }
+
+        // 7. Charakter-Badge oben links
+        var badge = $"SK {seq.CharacterPattern} | {seq.SequenceType}";
+        using var badgeBg = new SKPaint { Color = SKColor.Parse("#1E1E2E").WithAlpha(200), Style = SKPaintStyle.Fill };
+        using var badgeText = new SKPaint { Color = FibColor, IsAntialias = true };
+        var badgeRect = new SKRect(area.Left + 5, area.Top + 5, area.Left + 5 + badge.Length * 7f + 10, area.Top + 22);
+        canvas.DrawRoundRect(badgeRect, 4, 4, badgeBg);
+        canvas.DrawText(badge, area.Left + 10, area.Top + 18, FibFont, badgeText);
+    }
+
+    private static void DrawFibLine(SKCanvas canvas, SKRect area, decimal min, decimal max, decimal price, string label)
+    {
+        var y = MapY(price, area, min, max);
+        if (y < area.Top || y > area.Bottom) return;
+        canvas.DrawLine(area.Left, y, area.Right, y, FibLinePaint);
+        canvas.DrawText($"{label} {price:G6}", area.Left + 3, y - 3, FibFont, FibLabelPaint);
+    }
+
+    private static void DrawExtLine(SKCanvas canvas, SKRect area, decimal min, decimal max, decimal price, string label)
+    {
+        var y = MapY(price, area, min, max);
+        if (y < area.Top || y > area.Bottom) return;
+        canvas.DrawLine(area.Left, y, area.Right, y, ExtLinePaint);
+        canvas.DrawText($"Ext {label}", area.Left + 3, y - 3, FibFont, FibLabelPaint);
+    }
+
+    private static void DrawPointMarker(SKCanvas canvas, SKRect area, decimal min, decimal max,
+        decimal price, string label, SKColor color)
+    {
+        var y = MapY(price, area, min, max);
+        if (y < area.Top || y > area.Bottom) return;
+
+        // Position horizontal (linkes Drittel, da keine X-Zeitinfo)
+        var x = label switch { "A" => area.Left + area.Width * 0.15f, "B" => area.Left + area.Width * 0.30f, _ => area.Left + area.Width * 0.45f };
+
+        // Kreis mit Buchstabe
+        using var circleFill = new SKPaint { Color = color.WithAlpha(40), Style = SKPaintStyle.Fill, IsAntialias = true };
+        using var circleBorder = new SKPaint { Color = color.WithAlpha(180), Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true };
+        using var textPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
+        canvas.DrawCircle(x, y, 10, circleFill);
+        canvas.DrawCircle(x, y, 10, circleBorder);
+        canvas.DrawText(label, x - 3.5f, y + 4, PointFont, textPaint);
+
+        // Preis-Label neben dem Punkt
+        using var pricePaint = new SKPaint { Color = color.WithAlpha(200), IsAntialias = true };
+        canvas.DrawText($"{price:G6}", x + 14, y + 4, SmallFont, pricePaint);
+    }
+
+    // ═══ Position-Overlay ═══
 
     private static void DrawHLine(SKCanvas canvas, SKRect area, decimal min, decimal max,
         decimal price, SKPaint linePaint, string label, SKPaint labelPaint)

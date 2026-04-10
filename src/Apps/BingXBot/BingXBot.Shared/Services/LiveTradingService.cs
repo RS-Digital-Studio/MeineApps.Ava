@@ -22,8 +22,22 @@ public class LiveTradingService : TradingServiceBase
     private readonly BingXWebSocketClient? _wsClient;
     private readonly BotDatabaseService? _dbService;
 
-    /// <summary>BingX Perpetual Futures Taker Fee: 0.05% (Standard-Level).</summary>
-    private const decimal TakerFeeRate = 0.0005m;
+    /// <summary>BingX Taker Fee — wird beim Start via API gelesen, Fallback 0.05%.</summary>
+    private decimal _takerFeeRate = 0.0005m;
+    private decimal _makerFeeRate = 0.0002m;
+
+    /// <summary>Setzt echte Maker/Taker-Fees vom BingX Account (statt Fallback-Werten).</summary>
+    public void SetCommissionRates(decimal takerRate, decimal makerRate)
+    {
+        _takerFeeRate = takerRate;
+        _makerFeeRate = makerRate;
+    }
+
+    /// <summary>Kill-Switch: Letzter Refresh-Zeitpunkt (alle 60s erneuern).</summary>
+    private DateTime _lastKillSwitchRefresh = DateTime.MinValue;
+    private const int KillSwitchTimeoutMs = 120_000;  // 2 Minuten bis Auto-Cancel
+    private const int KillSwitchRefreshIntervalSeconds = 60; // Alle 60s refreshen
+    private bool _killSwitchDisabled; // True wenn Endpoint nicht unterstützt wird (nach erstem Fehler deaktiviert)
 
     // Zeitpunkt der Signal-Erstellung (für Grace Period bei Bereinigung verwaister Signale)
     private readonly ConcurrentDictionary<string, DateTime> _signalCreatedAt = new();
@@ -161,8 +175,8 @@ public class LiveTradingService : TradingServiceBase
 
                     // CompletedTrade erstellen damit ATI + RiskManager Feedback bekommen
                     var exitPrice = tickerMap.GetValueOrDefault(pos.Symbol, pos.MarkPrice);
-                    var entryFee = pos.Quantity * pos.EntryPrice * TakerFeeRate;
-                    var exitFee = pos.Quantity * exitPrice * TakerFeeRate;
+                    var entryFee = pos.Quantity * pos.EntryPrice * _takerFeeRate;
+                    var exitFee = pos.Quantity * exitPrice * _takerFeeRate;
                     var totalFee = entryFee + exitFee;
                     var rawPnl = pos.Side == Side.Buy
                         ? (exitPrice - pos.EntryPrice) * pos.Quantity
@@ -236,11 +250,14 @@ public class LiveTradingService : TradingServiceBase
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
                     $"{ticker.Symbol}: Limit-Order bei {limitPrice:F8} (Pullback-Entry, Maker-Fee)", ticker.Symbol));
 
+            // TP wird NICHT im Haupt-Order gesetzt — stattdessen separate TP-Market-Orders
+            // mit spezifischer Quantity (TP1 30% bei 161.8%, TP2 Rest bei 200%)
+            // Nativer TP auf Haupt-Order würde 100% schließen und Partial-Close überschreiben
             var order = await _restClient.PlaceOrderAsync(new OrderRequest(
                 ticker.Symbol, side, orderType, quantity,
                 Price: limitPrice,
                 StopLoss: signal?.StopLoss,
-                TakeProfit: signal?.TakeProfit))
+                TakeProfit: null))
                 .ConfigureAwait(false);
 
             if (order.Status == OrderStatus.Rejected)
@@ -254,50 +271,18 @@ public class LiveTradingService : TradingServiceBase
             if (useLimit && order.OrderId != null)
                 _pendingLimitOrders[ticker.Symbol] = (order.OrderId, DateTime.UtcNow);
 
-            // TP1 als Limit Reduce-Only Order platzieren (Partial Close, Maker-Fee)
-            // Qty-Berechnung: BingX kann die Haupt-Order-Quantity truncaten (Symbol-Precision).
-            // Daher echte Position von BingX lesen und TP-Qty darauf basieren.
-            if (signal?.TakeProfit.HasValue == true && signal.TakeProfit.Value > 0)
+            // TP1 + TP2 als LIMIT Reduce-Only Orders auf BingX (stackbar, Maker-Fee 0.02%)
+            // Reguläre LIMIT-Orders mit reduceOnly=true: BingX erlaubt beliebig viele pro Position.
+            // Bei Entry-Limit-Orders: Überspringen — Position existiert noch nicht (pending).
+            // TP wird im PriceTickerLoop nachgeholt sobald die Limit-Order gefüllt ist.
+            if (!useLimit && signal?.TakeProfit.HasValue == true && signal.TakeProfit.Value > 0)
             {
-                try
-                {
-                    // Echte Position von BingX lesen (nach Truncation)
-                    var posAfterOrder = await _restClient.GetPositionsAsync().ConfigureAwait(false);
-                    var actualPos = posAfterOrder.FirstOrDefault(p => p.Symbol == ticker.Symbol && p.Side == side);
-                    var actualQty = actualPos?.Quantity ?? quantity; // Fallback auf Order-Qty
-
-                    var tp1Qty = Math.Round(actualQty * _riskSettings.Tp1CloseRatio, 6);
-                    if (tp1Qty > 0)
-                    {
-                        var tp1Order = await _restClient.PlaceTpLimitOrderAsync(
-                            ticker.Symbol, side, tp1Qty, signal.TakeProfit.Value).ConfigureAwait(false);
-
-                        if (tp1Order.Status != OrderStatus.Rejected)
-                        {
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                                $"LIVE: {ticker.Symbol} TP1 Limit-Order platziert: {tp1Qty:F8} @ {signal.TakeProfit.Value:F8} (Maker-Fee)", ticker.Symbol));
-
-                            // TP2 auch sofort platzieren (falls vorhanden)
-                            if (signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0)
-                            {
-                                var tp2Qty = Math.Round(actualQty * _riskSettings.Tp2CloseRatio, 6);
-                                if (tp2Qty > 0)
-                                {
-                                    await _restClient.PlaceTpLimitOrderAsync(
-                                        ticker.Symbol, side, tp2Qty, signal.TakeProfit2.Value).ConfigureAwait(false);
-                                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                                        $"LIVE: {ticker.Symbol} TP2 Limit-Order platziert: {tp2Qty:F8} @ {signal.TakeProfit2.Value:F8}", ticker.Symbol));
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception tpEx)
-                {
-                    // TP-Limit fehlgeschlagen → Bot-seitiger PriceTickerLoop übernimmt als Fallback
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                        $"LIVE: {ticker.Symbol} TP Limit-Order fehlgeschlagen (Fallback: Bot-seitig): {tpEx.Message}", ticker.Symbol));
-                }
+                await PlaceTpLimitOrdersAfterFillAsync(ticker.Symbol, side, quantity, signal).ConfigureAwait(false);
+            }
+            else if (useLimit && signal?.TakeProfit.HasValue == true)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                    $"LIVE: {ticker.Symbol} Limit-Order pending — TP wird nach Fill gesetzt", ticker.Symbol));
             }
 
             return true;
@@ -329,8 +314,8 @@ public class LiveTradingService : TradingServiceBase
             {
                 var tickers = await _publicClient.GetAllTickersAsync().ConfigureAwait(false);
                 var exitPrice = tickers.FirstOrDefault(t => t.Symbol == symbol)?.LastPrice ?? pos.MarkPrice;
-                var entryFee = pos.Quantity * pos.EntryPrice * TakerFeeRate;
-                var exitFee = pos.Quantity * exitPrice * TakerFeeRate;
+                var entryFee = pos.Quantity * pos.EntryPrice * _takerFeeRate;
+                var exitFee = pos.Quantity * exitPrice * _takerFeeRate;
                 var totalFee = entryFee + exitFee;
                 var rawPnl = side == Side.Buy
                     ? (exitPrice - pos.EntryPrice) * pos.Quantity
@@ -373,8 +358,8 @@ public class LiveTradingService : TradingServiceBase
                 await CancelNativeSlTpOrdersAsync(pos.Symbol).ConfigureAwait(false);
 
                 // CompletedTrade trotzdem erstellen (ATI-Lernen + TradeHistory + RiskManager)
-                var entryFeeNat = pos.Quantity * pos.EntryPrice * TakerFeeRate;
-                var exitFeeNat = pos.Quantity * price * TakerFeeRate;
+                var entryFeeNat = pos.Quantity * pos.EntryPrice * _takerFeeRate;
+                var exitFeeNat = pos.Quantity * price * _takerFeeRate;
                 var rawPnlNat = pos.Side == Side.Buy
                     ? (price - pos.EntryPrice) * pos.Quantity
                     : (pos.EntryPrice - price) * pos.Quantity;
@@ -399,8 +384,8 @@ public class LiveTradingService : TradingServiceBase
                 $"LIVE: {pos.Symbol}: {reason} ({pos.Side})", pos.Symbol));
 
             // CompletedTrade erstellen für TradeHistory
-            var entryFee = pos.Quantity * pos.EntryPrice * TakerFeeRate;
-            var exitFee = pos.Quantity * price * TakerFeeRate;
+            var entryFee = pos.Quantity * pos.EntryPrice * _takerFeeRate;
+            var exitFee = pos.Quantity * price * _takerFeeRate;
             var totalFee = entryFee + exitFee;
             var rawPnl = pos.Side == Side.Buy
                 ? (price - pos.EntryPrice) * pos.Quantity
@@ -432,8 +417,8 @@ public class LiveTradingService : TradingServiceBase
                 .ConfigureAwait(false);
 
             // CompletedTrade für den geschlossenen Teil
-            var entryFee = quantityToClose * pos.EntryPrice * TakerFeeRate;
-            var exitFee = quantityToClose * price * TakerFeeRate;
+            var entryFee = quantityToClose * pos.EntryPrice * _takerFeeRate;
+            var exitFee = quantityToClose * price * _takerFeeRate;
             var totalFee = entryFee + exitFee;
             var rawPnl = pos.Side == Side.Buy
                 ? (price - pos.EntryPrice) * quantityToClose
@@ -508,6 +493,24 @@ public class LiveTradingService : TradingServiceBase
     /// <summary>Verwaiste Signale bereinigen (Grace Period 30s) + Funding-Rate aktualisieren.</summary>
     protected override async Task OnBeforePriceTickerIteration(IReadOnlyList<Position> positions)
     {
+        // Kill-Switch: Countdown alle 60s refreshen (Dead-Man-Switch)
+        // Bei Bot-Crash oder Netzwerk-Verlust: BingX cancelt nach 120s alle offenen Orders
+        // Wird nach erstem Fehler dauerhaft deaktiviert (Endpoint nicht bei allen Account-Typen verfügbar)
+        if (!_killSwitchDisabled && (DateTime.UtcNow - _lastKillSwitchRefresh).TotalSeconds >= KillSwitchRefreshIntervalSeconds)
+        {
+            try
+            {
+                await _restClient.ActivateKillSwitchAsync(KillSwitchTimeoutMs).ConfigureAwait(false);
+                _lastKillSwitchRefresh = DateTime.UtcNow;
+            }
+            catch (Exception ex)
+            {
+                _killSwitchDisabled = true;
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Safety",
+                    $"Kill-Switch nicht verfügbar (wird deaktiviert): {ex.Message}"));
+            }
+        }
+
         if (_positionSignals.Count > 0)
         {
             var positionKeys = new HashSet<string>(positions.Select(p => $"{p.Symbol}_{p.Side}"));
@@ -523,12 +526,40 @@ public class LiveTradingService : TradingServiceBase
             }
         }
 
-        // Limit-Orders canceln die nach 5min nicht gefüllt wurden
+        // Pending Limit-Orders: Fill-Detection + Timeout
         if (_pendingLimitOrders.Count > 0)
         {
             var now2 = DateTime.UtcNow;
             foreach (var kvp in _pendingLimitOrders)
             {
+                // Fill-Detection: Position für dieses Symbol + Side vorhanden → Limit-Order wurde gefüllt
+                // Side aus Signal ableiten (verhindert Verwechslung mit bestehenden Positionen)
+                Side? expectedSide = null;
+                foreach (var side in new[] { Side.Buy, Side.Sell })
+                {
+                    if (_positionSignals.ContainsKey($"{kvp.Key}_{side}"))
+                    { expectedSide = side; break; }
+                }
+                var filledPos = expectedSide.HasValue
+                    ? positions.FirstOrDefault(p => p.Symbol == kvp.Key && p.Side == expectedSide.Value)
+                    : positions.FirstOrDefault(p => p.Symbol == kvp.Key);
+
+                if (filledPos != null && filledPos.Quantity > 0)
+                {
+                    _pendingLimitOrders.TryRemove(kvp.Key, out _);
+
+                    // TP-Limit-Orders nachholen (konnten bei Limit-Entry nicht sofort platziert werden)
+                    var posKey = $"{kvp.Key}_{filledPos.Side}";
+                    if (_positionSignals.TryGetValue(posKey, out var sig) && sig.TakeProfit.HasValue && sig.TakeProfit.Value > 0)
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
+                            $"LIVE: {kvp.Key} Limit-Entry gefüllt → TP-Limit-Orders werden platziert", kvp.Key));
+                        await PlaceTpLimitOrdersAfterFillAsync(kvp.Key, filledPos.Side, filledPos.Quantity, sig).ConfigureAwait(false);
+                    }
+                    continue; // Nächste pending Order
+                }
+
+                // Timeout: Nach 5min nicht gefüllt → canceln
                 if ((now2 - kvp.Value.PlacedAt).TotalMinutes >= LimitOrderTimeoutMinutes)
                 {
                     try
@@ -603,12 +634,78 @@ public class LiveTradingService : TradingServiceBase
         }
     }
 
+    /// <summary>
+    /// Platziert TP1 + TP2 als LIMIT Reduce-Only Orders nach dem Entry-Fill.
+    /// Stackbar: BingX erlaubt beliebig viele LIMIT-Orders pro Position.
+    /// Maker-Fee (0.02%) statt Taker (0.05%).
+    /// Wird von Market-Entry UND Limit-Fill-Detection aufgerufen.
+    /// </summary>
+    private async Task PlaceTpLimitOrdersAfterFillAsync(string symbol, Side side, decimal fallbackQty, SignalResult signal)
+    {
+        try
+        {
+            // Echte Position von BingX lesen (BingX kann Quantity truncaten)
+            var posAfterOrder = await _restClient.GetPositionsAsync().ConfigureAwait(false);
+            var actualPos = posAfterOrder.FirstOrDefault(p => p.Symbol == symbol && p.Side == side);
+            var actualQty = actualPos?.Quantity ?? fallbackQty;
+
+            // Tp1CloseRatioOverride hat Vorrang (SK: 0.5 = 50% bei TP1)
+            var tp1Ratio = signal.Tp1CloseRatioOverride ?? _riskSettings.Tp1CloseRatio;
+            var tp1Qty = Math.Round(actualQty * tp1Ratio, 6);
+            var tp2Qty = 0m;
+            var hasTp2 = signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0
+                         && signal.TakeProfit2.Value != signal.TakeProfit!.Value;
+            if (hasTp2)
+            {
+                tp2Qty = signal.DisableSmartBreakeven
+                    ? Math.Round(actualQty - tp1Qty, 6)  // SK: Rest (Sequenz abgearbeitet bei TP2)
+                    : Math.Round(actualQty * _riskSettings.Tp2CloseRatio, 6);
+            }
+
+            // Over-Close Guard: TP1+TP2 darf nie > Position
+            if (tp1Qty + tp2Qty > actualQty)
+                tp2Qty = Math.Round(actualQty - tp1Qty, 6);
+
+            // TP1 als LIMIT Reduce-Only
+            if (tp1Qty > 0)
+            {
+                var tp1Order = await _restClient.PlaceTpReduceOnlyLimitAsync(
+                    symbol, side, tp1Qty, signal.TakeProfit!.Value).ConfigureAwait(false);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow,
+                    tp1Order.Status == OrderStatus.Rejected ? LogLevel.Warning : LogLevel.Trade, "Trade",
+                    tp1Order.Status == OrderStatus.Rejected
+                        ? $"LIVE: {symbol} TP1 ABGELEHNT: {tp1Order.RejectionReason ?? "unbekannt"} (Qty={tp1Qty:F8}, Preis={signal.TakeProfit.Value:F8})"
+                        : $"LIVE: {symbol} TP1 Limit platziert: {tp1Qty:F8} @ {signal.TakeProfit.Value:F8} (Maker-Fee)",
+                    symbol));
+            }
+
+            // TP2 als LIMIT (stackbar — überschreibt TP1 nicht)
+            if (hasTp2 && tp2Qty > 0)
+            {
+                var tp2Order = await _restClient.PlaceTpReduceOnlyLimitAsync(
+                    symbol, side, tp2Qty, signal.TakeProfit2!.Value).ConfigureAwait(false);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow,
+                    tp2Order.Status == OrderStatus.Rejected ? LogLevel.Warning : LogLevel.Trade, "Trade",
+                    tp2Order.Status == OrderStatus.Rejected
+                        ? $"LIVE: {symbol} TP2 ABGELEHNT: {tp2Order.RejectionReason ?? "unbekannt"} (Qty={tp2Qty:F8}, Preis={signal.TakeProfit2.Value:F8})"
+                        : $"LIVE: {symbol} TP2 Limit platziert: {tp2Qty:F8} @ {signal.TakeProfit2.Value:F8} (Maker-Fee)",
+                    symbol));
+            }
+        }
+        catch (Exception ex)
+        {
+            // TP-Orders fehlgeschlagen → Bot-seitiger PriceTickerLoop übernimmt als Fallback
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                $"LIVE: {symbol} TP Limit-Orders fehlgeschlagen (Fallback: Bot-seitig): {ex.Message}", symbol));
+        }
+    }
+
     protected override Task OnOrderPlacedAsync(Ticker ticker, Side side, decimal quantity)
     {
         // Entry-Fee nur loggen, KEINEN CompletedTrade publizieren
         // (Ghost-Trade + doppelte Fee-Zählung vermeiden - Fee wird beim Close eingerechnet)
         var entryNotional = quantity * ticker.LastPrice;
-        var entryFee = entryNotional * TakerFeeRate;
+        var entryFee = entryNotional * _takerFeeRate;
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
             $"LIVE: {ticker.Symbol} Entry-Fee: {entryFee:N4} USDT", ticker.Symbol));
         return Task.CompletedTask;

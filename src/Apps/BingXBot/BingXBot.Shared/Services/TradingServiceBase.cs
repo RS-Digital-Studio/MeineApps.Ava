@@ -168,6 +168,13 @@ public abstract class TradingServiceBase : IDisposable
         return signal;
     }
 
+    /// <summary>Gibt die Entry-Zeit einer Position zurück (aus ExitState). Null wenn nicht bekannt.</summary>
+    public DateTime? GetEntryTime(string symbol, Side side)
+    {
+        _exitStates.TryGetValue($"{symbol}_{side}", out var state);
+        return state?.EntryTime;
+    }
+
     /// <summary>Stellt ein Signal für eine offene Position wieder her (z.B. nach App-Neustart aus BingX-Orders).</summary>
     public void RestorePositionSignal(string symbol, Side side, SignalResult signal)
     {
@@ -430,8 +437,14 @@ public abstract class TradingServiceBase : IDisposable
 
                     var key = $"{pos.Symbol}_{pos.Side}";
 
+                    // TradFi bei geschlossenem Markt: Nur Margin-Monitoring, kein SL/TP/Trailing
+                    // (Preise sind stale, SL/TP-Trigger auf letztem Kurs wäre falsch)
+                    if (!TradingHoursFilter.IsMarketOpen(pos.Symbol, DateTime.UtcNow))
+                        continue;
+
                     // ═══ Auto-Breakeven: SL auf Entry wenn Gewinn% >= Leverage% ═══
                     // Funktioniert auch OHNE Signal (z.B. nach App-Neustart bevor Recovery gelaufen ist)
+                    // Bleibt auch bei SK-Trades aktiv — Kapitalschutz hat Vorrang
                     if (pos.Leverage > 0 && pos.EntryPrice > 0)
                     {
                         var beAlreadySet = _exitStates.TryGetValue(key, out var beState) && beState.BreakevenSet;
@@ -478,6 +491,47 @@ public abstract class TradingServiceBase : IDisposable
                     var isStopLoss = false;
                     string reason = "";
 
+                    // ═══ SK-System: Gestufter Breakeven nach Stefan Kassing Regeln ═══
+                    // Stufe 1: Gewinn >= 2× SL-Distanz → SL auf Breakeven (Entry + Fees)
+                    //   (SK-Originalregel: "Freeride" — Risiko aus dem Markt nehmen)
+                    // Stufe 2: Preis über TP1 hinaus (~180% Extension) → SL auf TP1-Level
+                    if (signal.DisableSmartBreakeven && signal.StopLoss.HasValue && signal.TakeProfit.HasValue
+                        && _exitStates.TryGetValue(key, out var skState) && skState.EntryPrice > 0)
+                    {
+                        var slDistance = Math.Abs(skState.EntryPrice - signal.StopLoss.Value);
+                        var currentProfit = pos.Side == Side.Buy
+                            ? price - skState.EntryPrice
+                            : skState.EntryPrice - price;
+
+                        // Stufe 2: Preis über TP1 → SL auf TP1-Level (Gewinn absichern)
+                        var entryToTp1 = Math.Abs(signal.TakeProfit.Value - skState.EntryPrice);
+                        var progressToTp1 = entryToTp1 > 0 ? currentProfit / entryToTp1 : 0m;
+
+                        if (progressToTp1 >= 1.2m && !skState.SkSlAtTp1)
+                        {
+                            var tp1Sl = signal.TakeProfit.Value;
+                            _positionSignals[key] = signal with { StopLoss = tp1Sl };
+                            skState.SkSlAtTp1 = true;
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                $"{LogPrefix}{pos.Symbol}: SK SL→TP1 ({tp1Sl:F8}) — Preis {progressToTp1:P0} zum TP1",
+                                pos.Symbol));
+                            await OnBreakevenSetAsync(pos.Symbol, pos.Side, tp1Sl).ConfigureAwait(false);
+                        }
+                        // Stufe 1: Gewinn >= 2× SL-Distanz → Breakeven (Stefan Kassing Originalregel)
+                        else if (slDistance > 0 && currentProfit >= slDistance * 2m && !skState.BreakevenSet)
+                        {
+                            var beSl = pos.Side == Side.Buy
+                                ? skState.EntryPrice * 1.0015m  // Entry + Fees (0.15% Puffer)
+                                : skState.EntryPrice * 0.9985m;
+                            _positionSignals[key] = signal with { StopLoss = beSl };
+                            skState.BreakevenSet = true;
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                $"{LogPrefix}{pos.Symbol}: SK Breakeven ({beSl:F8}) — Gewinn {currentProfit:F8} >= 2× SL-Distanz {slDistance:F8}",
+                                pos.Symbol));
+                            await OnBreakevenSetAsync(pos.Symbol, pos.Side, beSl).ConfigureAwait(false);
+                        }
+                    }
+
                     // ═══ Multi-Stage Exit: TP1 Partial Close ═══
                     if (_riskSettings.EnableMultiStageExit && _exitStates.TryGetValue(key, out var exitState))
                     {
@@ -490,32 +544,45 @@ public abstract class TradingServiceBase : IDisposable
 
                             if (tp1Hit)
                             {
-                                // TP1 erreicht: Tp1CloseRatio der Position schließen
-                                // pos.Quantity statt OriginalQuantity — BingX kann die Quantity truncated haben
-                                var closeQty = pos.Quantity * _riskSettings.Tp1CloseRatio;
+                                // TP1 erreicht: Position teilweise schließen
+                                // SK-System: 50% bei TP1 (100% Extension = altes Hoch, Gewinne sichern)
+                                // SK Holy Trinity: 50% bei TP1 (Signal-Override), sonst globaler Default
+                                var tp1Ratio = signal.Tp1CloseRatioOverride ?? _riskSettings.Tp1CloseRatio;
+                                var closeQty = pos.Quantity * tp1Ratio;
                                 await OnPartialCloseAsync(pos, price, closeQty).ConfigureAwait(false);
                                 exitState.PartialClosed = true;
 
-                                // Smart Breakeven: SL = Entry + ATR-Puffer (oder mindestens Entry + Fees)
-                                // 0.15% = Round-Trip-Fees (0.1%) + Sicherheitspuffer
-                                var beSl = pos.Side == Side.Buy
-                                    ? exitState.EntryPrice * 1.0015m
-                                    : exitState.EntryPrice * 0.9985m;
-                                if (_riskSettings.SmartBreakevenAtrMultiplier > 0 && exitState.CurrentAtr > 0)
+                                if (!signal.DisableSmartBreakeven)
                                 {
-                                    var atrBe = pos.Side == Side.Buy
-                                        ? exitState.EntryPrice + exitState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier
-                                        : exitState.EntryPrice - exitState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier;
-                                    // ATR-BE nur verwenden wenn es weiter vom Entry weg ist als das Fee-Minimum
-                                    beSl = pos.Side == Side.Buy ? Math.Max(beSl, atrBe) : Math.Min(beSl, atrBe);
+                                    // Standard: Smart Breakeven bei TP1 — SL = Entry + ATR-Puffer
+                                    var beSl = pos.Side == Side.Buy
+                                        ? exitState.EntryPrice * 1.0015m
+                                        : exitState.EntryPrice * 0.9985m;
+                                    if (_riskSettings.SmartBreakevenAtrMultiplier > 0 && exitState.CurrentAtr > 0)
+                                    {
+                                        var atrBe = pos.Side == Side.Buy
+                                            ? exitState.EntryPrice + exitState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier
+                                            : exitState.EntryPrice - exitState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier;
+                                        beSl = pos.Side == Side.Buy ? Math.Max(beSl, atrBe) : Math.Min(beSl, atrBe);
+                                    }
+                                    _positionSignals[key] = signal with { StopLoss = beSl, TakeProfit = exitState.Tp2 };
+                                    exitState.Signal = _positionSignals[key];
                                 }
-                                _positionSignals[key] = signal with { StopLoss = beSl, TakeProfit = exitState.Tp2 };
-                                exitState.Signal = _positionSignals[key];
+                                else
+                                {
+                                    // SK-System bei TP1: SL mindestens auf Breakeven (gestufter Mechanismus hat
+                                    // das evtl. schon bei 50% gesetzt). TP auf TP2 verschieben.
+                                    var skSl = exitState.BreakevenSet ? _positionSignals[key].StopLoss : signal.StopLoss;
+                                    _positionSignals[key] = signal with { StopLoss = skSl, TakeProfit = exitState.Tp2 };
+                                    exitState.Signal = _positionSignals[key];
+                                }
                                 exitState.Phase = ExitPhase.Tp1Hit;
                                 exitState.MaxHoldHours = _riskSettings.MaxHoldHoursAfterTp1;
 
+                                var currentSl = _positionSignals[key].StopLoss;
+                                var beInfo = signal.DisableSmartBreakeven ? "SL unverändert (SK-Regel)" : $"SL→BE ({currentSl:F8})";
                                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
-                                    $"{LogPrefix}{pos.Symbol}: TP1 erreicht → {_riskSettings.Tp1CloseRatio:P0} geschlossen, SL→BE ({beSl:F8})",
+                                    $"{LogPrefix}{pos.Symbol}: TP1 erreicht → {_riskSettings.Tp1CloseRatio:P0} geschlossen, {beInfo}",
                                     pos.Symbol));
                                 continue; // Nächste Position, kein weiterer Check nötig
                             }
@@ -531,37 +598,46 @@ public abstract class TradingServiceBase : IDisposable
 
                             if (tp2Hit)
                             {
-                                // TP2 erreicht: Tp2CloseRatio der Gesamt-Position schließen (direkt berechnet)
-                                var remainingQty = pos.Quantity;
-                                var tp2CloseQty = Math.Round(exitState.OriginalQuantity * _riskSettings.Tp2CloseRatio, 6);
-                                tp2CloseQty = Math.Min(tp2CloseQty, remainingQty); // Nicht mehr als vorhanden
-
-                                if (tp2CloseQty > 0 && tp2CloseQty < remainingQty)
+                                // SK-System: TP2 = 200% = Sequenz abgearbeitet → ALLES schließen
+                                // Andere Strategien: Tp2CloseRatio (30%), Rest Chandelier-Trailing
+                                if (signal.DisableSmartBreakeven)
                                 {
-                                    await OnPartialCloseAsync(pos, price, tp2CloseQty).ConfigureAwait(false);
-                                    exitState.Tp2Closed = true;
-                                    exitState.Phase = ExitPhase.Trailing;
-
-                                    // Rest läuft nur noch mit Chandelier-Trailing (kein TP mehr)
-                                    var updatedSignal = signal with { TakeProfit = null };
-                                    _positionSignals[key] = updatedSignal;
-                                    exitState.Signal = updatedSignal;
-
-                                    // Native TP-Orders auf Exchange canceln und nur SL aktualisieren
-                                    // (sonst schließt BingX die Rest-Position ungewollt zum alten TP-Preis)
-                                    await OnEnterTrailingPhaseAsync(pos.Symbol, pos.Side, updatedSignal.StopLoss).ConfigureAwait(false);
-
-                                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
-                                        $"{LogPrefix}{pos.Symbol}: TP2 erreicht → {_riskSettings.Tp2CloseRatio:P0} geschlossen, Rest Chandelier-Trailing",
-                                        pos.Symbol));
-                                    continue;
+                                    // SK-Modus: Kompletter Close bei 200% (Sequenz abgearbeitet)
+                                    reason = $"SK TP2 bei {signal.TakeProfit.Value:F8} (200% Extension — Sequenz abgearbeitet)";
+                                    hit = true;
+                                    isStopLoss = false;
                                 }
                                 else
                                 {
-                                    // Zu wenig übrig → komplett schließen
-                                    reason = $"TP2 bei {signal.TakeProfit.Value:F8} (Rest zu klein für Partial)";
-                                    hit = true;
-                                    isStopLoss = false;
+                                    // Standard: Tp2CloseRatio der Gesamt-Position schließen (Pyramid 30/30/40)
+                                    var remainingQty = pos.Quantity;
+                                    var tp2CloseQty = Math.Round(exitState.OriginalQuantity * _riskSettings.Tp2CloseRatio, 6);
+                                    tp2CloseQty = Math.Min(tp2CloseQty, remainingQty);
+
+                                    if (tp2CloseQty > 0 && tp2CloseQty < remainingQty)
+                                    {
+                                        await OnPartialCloseAsync(pos, price, tp2CloseQty).ConfigureAwait(false);
+                                        exitState.Tp2Closed = true;
+                                        exitState.Phase = ExitPhase.Trailing;
+
+                                        // Rest läuft nur noch mit Chandelier-Trailing (kein TP mehr)
+                                        var updatedSignal = signal with { TakeProfit = null };
+                                        _positionSignals[key] = updatedSignal;
+                                        exitState.Signal = updatedSignal;
+
+                                        await OnEnterTrailingPhaseAsync(pos.Symbol, pos.Side, updatedSignal.StopLoss).ConfigureAwait(false);
+
+                                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                            $"{LogPrefix}{pos.Symbol}: TP2 erreicht → {_riskSettings.Tp2CloseRatio:P0} geschlossen, Rest Chandelier-Trailing",
+                                            pos.Symbol));
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        reason = $"TP2 bei {signal.TakeProfit.Value:F8} (Rest zu klein für Partial)";
+                                        hit = true;
+                                        isStopLoss = false;
+                                    }
                                 }
                             }
                         }
@@ -625,7 +701,9 @@ public abstract class TradingServiceBase : IDisposable
                     }
 
                     // ═══ Chandelier-Trailing (ATR-basiert statt Prozent-basiert) ═══
-                    if (!hit && _riskSettings.EnableTrailingStop && signal.StopLoss.HasValue)
+                    // SK-System: Kein Trailing — SL bleibt strukturell unter Punkt A
+                    if (!hit && _riskSettings.EnableTrailingStop && signal.StopLoss.HasValue
+                        && !signal.DisableSmartBreakeven)
                     {
                         // Chandelier-Trailing: SL = ExtremPrice - N*ATR (dynamisch, passt sich Volatilität an)
                         decimal trailDistance;
@@ -794,7 +872,10 @@ public abstract class TradingServiceBase : IDisposable
                 $"{candidates.Count} Kandidaten gefunden"));
 
         // 2. Globale MarketFilter prüfen (VOR dem teuren Klines-Loading)
-        var sessionFilter = MarketFilter.CheckSession(DateTime.UtcNow, _botSettings.LastTradingModePreset);
+        // Funding-Settlement blockiert nur wenn ausschließlich Krypto-Kandidaten gescannt werden.
+        // Bei gemischtem Scan (TradFi aktiv) wird Funding per-Kandidat im Loop geprüft.
+        var hasTradFi = _scannerSettings.EnableTradFi && candidates.Any(t => SymbolClassifier.IsTradFi(t.Symbol));
+        var sessionFilter = MarketFilter.CheckSession(DateTime.UtcNow, _botSettings.LastTradingModePreset, hasTradFi);
         if (!sessionFilter.IsAllowed)
         {
             PublishScanSummary($"Session-Filter: {sessionFilter.SessionInfo}", nextScanText);
@@ -832,26 +913,32 @@ public abstract class TradingServiceBase : IDisposable
                     ticker.Symbol, _scannerSettings.ScanTimeFrame,
                     now.AddHours(-100), now, ct).ConfigureAwait(false);
 
+                // SK Holy Trinity: H1 als Filter-TF (nicht D1!), M15 als Trigger-TF (immer laden)
+                // Andere Strategien: HtfTimeFrame aus ScannerSettings (z.B. D1)
+                var isSKSystem = _strategyManager.CurrentTemplate is Engine.Strategies.SequenzKonzeptStrategy;
+                var htfTimeFrame = isSKSystem ? Core.Enums.TimeFrame.H1 : _scannerSettings.HtfTimeFrame;
+
                 List<Candle>? htfCandles = null;
                 try
                 {
                     htfCandles = await _publicClient.GetKlinesAsync(
-                        ticker.Symbol, _scannerSettings.HtfTimeFrame,
+                        ticker.Symbol, htfTimeFrame,
                         now.AddDays(-14), now, ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) { throw; }
                 catch { /* HTF optional */ }
 
-                // M15-Candles für Entry-Timing (bei H4/H1 Strategien)
+                // M15-Candles: Bei SK IMMER laden (Trigger-TF), bei anderen optional
                 List<Candle>? m15Candles = null;
-                if (_scannerSettings.UseM15EntryTiming &&
-                    _scannerSettings.ScanTimeFrame is TimeFrame.H4 or TimeFrame.H1 or TimeFrame.H2)
+                var loadM15 = isSKSystem || (_scannerSettings.UseM15EntryTiming &&
+                    _scannerSettings.ScanTimeFrame is TimeFrame.H4 or TimeFrame.H1 or TimeFrame.H2);
+                if (loadM15)
                 {
                     try
                     {
                         m15Candles = await _publicClient.GetKlinesAsync(
                             ticker.Symbol, Core.Enums.TimeFrame.M15,
-                            now.AddHours(-12), now, ct).ConfigureAwait(false);
+                            now.AddHours(-24), now, ct).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException) { throw; }
                     catch { /* M15 optional */ }
@@ -889,6 +976,10 @@ public abstract class TradingServiceBase : IDisposable
 
             // Markt-Kategorie bestimmen (für per-Markt Leverage, Feature-Masking, etc.)
             var category = SymbolClassifier.Classify(ticker.Symbol);
+
+            // Funding-Settlement nur für Krypto-Perpetuals (TradFi hat kein Funding)
+            if (category == MarketCategory.Crypto && hasTradFi && MarketFilter.IsFundingSettlement(DateTime.UtcNow))
+                continue;
 
             // Vorgeladene Klines verwenden
             if (!klineResults.TryGetValue(ticker.Symbol, out var candles) || candles.Count < 50)

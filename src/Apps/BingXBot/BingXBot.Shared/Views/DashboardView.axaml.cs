@@ -88,8 +88,8 @@ public partial class DashboardView : UserControl
     {
         if (e.PropertyName == nameof(BtcTickerViewModel.BtcPriceChange))
             UpdateBtcChangeColor();
-        // ActiveOverlay- oder Indikator-Änderung → Chart neu zeichnen
-        if (e.PropertyName is nameof(BtcTickerViewModel.ActiveOverlay) or nameof(BtcTickerViewModel.Indicators))
+        // ActiveOverlay, SequenceOverlay oder Indikator-Änderung → Chart neu zeichnen
+        if (e.PropertyName is nameof(BtcTickerViewModel.ActiveOverlay) or nameof(BtcTickerViewModel.Indicators) or nameof(BtcTickerViewModel.SequenceOverlay))
         {
             if (this.FindControl<SKCanvasView>("BtcChartCanvas") is { } canvas)
                 canvas.InvalidateSurface();
@@ -174,7 +174,8 @@ public partial class DashboardView : UserControl
         var regimes = _vm.BtcTicker.RegimeZones.Count > 0 ? _vm.BtcTicker.RegimeZones.ToList() : null;
 
         _vm.BtcTicker.ChartRenderer.Render(canvas, bounds, _vm.BtcTicker.BtcCandles.ToList(),
-            markers, _vm.BtcTicker.ActiveOverlay, _vm.BtcTicker.Indicators, regimes);
+            markers, _vm.BtcTicker.ActiveOverlay, _vm.BtcTicker.Indicators, regimes,
+            _vm.BtcTicker.SequenceOverlay);
     }
 
     // ═══ Widget-Renderer ═══
@@ -290,6 +291,13 @@ public partial class DashboardView : UserControl
     {
         if (_vm == null || sender is not Button btn || btn.Tag is not string symbol) return;
         _vm.RemoveFromWatchlistCommand.Execute(symbol);
+    }
+
+    /// <summary>Klick auf Position-Card → Chart wechselt zum Symbol + SK-Overlay.</summary>
+    private void PositionCard_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_vm == null || sender is not Border border || border.DataContext is not PositionDisplayItem pos) return;
+        _ = _vm.SelectPositionCommand.ExecuteAsync(pos);
     }
 
     private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)

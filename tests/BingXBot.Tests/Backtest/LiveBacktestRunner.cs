@@ -155,8 +155,9 @@ public class LiveBacktestRunner
                 signalCount++;
             else
             {
-                // Reason kürzen auf Kernaussage
+                // Reason kürzen: Ampel-Prefix entfernen, dann auf Kernaussage kürzen
                 var r = sig.Reason;
+                var bracket = r.IndexOf(']'); if (bracket > 0) r = r[(bracket + 1)..].Trim();
                 var pipe = r.IndexOf('|'); if (pipe > 0) r = r[..pipe].Trim();
                 var paren = r.IndexOf('('); if (paren > 0) r = r[..paren].Trim();
                 reasonCounts.TryGetValue(r, out var c); reasonCounts[r] = c + 1;

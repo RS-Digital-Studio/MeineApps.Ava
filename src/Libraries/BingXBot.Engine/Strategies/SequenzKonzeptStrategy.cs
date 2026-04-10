@@ -229,22 +229,17 @@ public class SequenzKonzeptStrategy : IStrategy
         if (!h4Seq.IsTradeableType)
             return Blocked($"4H: Sequenz-Typ {h4Seq.Type} nicht handelbar");
 
-        // Kill-Switch: Sandwich — Entry im Ziellevel einer gegenlaufenden 4H-Sequenz
-        // DetectAllSequences findet BEIDE Richtungen (Long + Short) unabhängig
-        var allH4Seqs = SequenceDetector.DetectAllSequences(h4Candles, _h4SwingStrength, effectiveMinRange);
-        foreach (var counterH4 in allH4Seqs)
+        // Kill-Switch: Sandwich — Entry im Ziellevel einer AKTIVEN 4H-Gegensequenz
+        // Nur prüfen gegen die State Machine (aktuellste Gegensequenz), nicht alle historischen.
+        // Alte Variante (DetectAllSequences) blockierte 25% aller Evaluierungen weil der Preis
+        // fast immer nahe irgendeinem abgearbeiteten Ziellevel liegt.
+        var counterSm = SequenceStateMachine.FromCandles(h4Candles, effectiveMinRange, 0.3m);
+        if (counterSm != null && counterSm.IsLong != h4Seq.IsLong && counterSm.State == SmState.Aktiviert)
         {
-            if (counterH4.IsLong == h4Seq.IsLong) continue; // Gleiche Richtung = kein Sandwich
-            if (!counterH4.HasReachedTarget(currentPrice)) continue; // Nicht im Ziellevel
-
-            // Gegensequenz-Ziellevel erreicht — Preis nahe genug? (category-skaliert)
-            var sandwichTol = categoryFactor < 0.5m ? 0.01m : 0.05m;
-            var counterTarget = counterH4.Extension1618;
-            var dist = Math.Abs(currentPrice - counterTarget);
-            if (counterTarget > 0 && dist / counterTarget < sandwichTol)
-            {
-                return Blocked("KILL: Sandwich — Entry im Ziellevel einer 4H-Gegensequenz");
-            }
+            var counterTarget = counterSm.Extension1618;
+            var sandwichTol = 0.02m; // 2% Toleranz (enger als vorher 5%)
+            if (counterTarget > 0 && Math.Abs(currentPrice - counterTarget) / counterTarget < sandwichTol)
+                return Blocked("KILL: Sandwich — Entry im Ziellevel aktiver 4H-Gegensequenz");
         }
 
         var tradeIsLong = h4Seq.IsLong;
@@ -264,35 +259,31 @@ public class SequenzKonzeptStrategy : IStrategy
         // Korrektur verliert Schwung? Erstes HH/HL erkannt?
         // ═══════════════════════════════════════════════════════════
 
-        if (h1Candles is not { Count: > 20 })
-            return Blocked("1H: Keine Daten für Filter");
+        // 1H-Filter: Wenn keine Daten verfügbar → 15m-Trigger entscheidet allein
+        // (Im Live-Bot fehlt 1H nie, im Backtest kann es am Anfang fehlen)
+        var h1Available = h1Candles is { Count: > 20 };
+        var correctionEnding = false;
 
-        var h1Swings = SequenceDetector.FindSwingPoints(h1Candles, _h1SwingStrength);
-        var (correctionEnding, _) = SequenceDetector.DetectCorrectionEnd(h1Candles, h1Swings, tradeIsLong);
-
-        if (!correctionEnding)
+        if (h1Available)
         {
-            // Anti-MTFA-Deadlock: 1H darf noch bärisch aussehen — solange kein aktiver ChoCH gegen uns
-            // Der 15m-Trigger zeigt den Turnaround, nicht der 1H. 1H ist nur "weicher" Filter.
-            // Streng: Nur wenn 1H-Sequenz aktiv GEGEN uns ist = blockieren
-            var h1Seq = SequenceDetector.DetectSequence(h1Candles, _h1SwingStrength, effectiveMinRange * 0.5m, false);
-            if (h1Seq != null && h1Seq.IsLong != tradeIsLong
-                && h1Seq.State == SequenceState.Active)
-            {
-                // 1H hat eine AKTIVE Gegensequenz → harter Block
-                return Blocked("1H: Aktive Gegensequenz — Korrektur hat noch Schwung");
-            }
+            var h1Swings = SequenceDetector.FindSwingPoints(h1Candles, _h1SwingStrength);
+            (correctionEnding, _) = SequenceDetector.DetectCorrectionEnd(h1Candles, h1Swings, tradeIsLong);
 
-            // ChoCH nur prüfen wenn Korrektur noch AKTIV ist (nicht endet).
-            // Bei endender Korrektur ist der ChoCH ein Artefakt der Korrektur selbst,
-            // kein neues bearisches Signal. Sonst entsteht MTFA-Deadlock:
-            // 4H im GKL → 1H korrigiert (ChoCH bearish = normal!) → 1H endet → ChoCH blockiert trotzdem
-            var h1ChoCH = SequenceDetector.DetectChoCH(h1Swings);
-            if (h1ChoCH != null && h1ChoCH.FromBullishToBearish == tradeIsLong)
-                return Blocked("1H: ChoCH gegen Trade-Richtung");
+            if (!correctionEnding)
+            {
+                var h1Seq = SequenceDetector.DetectSequence(h1Candles, _h1SwingStrength, effectiveMinRange * 0.5m, false);
+                if (h1Seq != null && h1Seq.IsLong != tradeIsLong
+                    && h1Seq.State == SequenceState.Active)
+                    return Blocked("1H: Aktive Gegensequenz — Korrektur hat noch Schwung");
+
+                var h1ChoCH = SequenceDetector.DetectChoCH(h1Swings);
+                if (h1ChoCH != null && h1ChoCH.FromBullishToBearish == tradeIsLong)
+                    return Blocked("1H: ChoCH gegen Trade-Richtung");
+            }
         }
 
-        _curH1 = correctionEnding ? "ORANGE (Korrektur-Ende)" : "ORANGE (1H durchgelassen)";
+        _curH1 = !h1Available ? "ORANGE (keine 1H-Daten)" :
+                 correctionEnding ? "ORANGE (Korrektur-Ende)" : "ORANGE (1H durchgelassen)";
         // → ORANGE: 1H blockiert nicht (Korrektur endet ODER kein aktiver Gegentrend)
 
         // ═══════════════════════════════════════════════════════════
@@ -384,18 +375,20 @@ public class SequenzKonzeptStrategy : IStrategy
         var fibLevels = new[] { h4Seq.Retracement500, h4Seq.Retracement559, h4Seq.Retracement618, h4Seq.Retracement667, h4Seq.Retracement786 };
 
         // Finde das nächste tiefere Fib-Level als SL
+        // Skip(1): Nicht das direkt nächste Level (dort sammeln sich Stops → Liquidity-Grab),
+        // sondern das übernächste. Der fibBuffer gibt zusätzlichen Puffer.
         decimal sl;
-        var fibBuffer = currentPrice * _slBufferPercent / 100m; // Kleiner Puffer
+        var fibBuffer = currentPrice * _slBufferPercent / 100m;
         if (tradeIsLong)
         {
-            // Long: SL unter dem nächsten tieferen Fib-Level (absteigend sortiert für Long)
+            // Long: SL unter dem übernächsten tieferen Fib-Level
             var nextFib = fibLevels.Where(f => f < currentPrice).OrderByDescending(f => f).Skip(1).FirstOrDefault();
             if (nextFib == 0) nextFib = h4Seq.Retracement786; // Fallback: letztes Level
             sl = nextFib - fibBuffer;
         }
         else
         {
-            // Short: SL über dem nächsten höheren Fib-Level (aufsteigend sortiert für Short)
+            // Short: SL über dem übernächsten höheren Fib-Level
             var nextFib = fibLevels.Where(f => f > currentPrice).OrderBy(f => f).Skip(1).FirstOrDefault();
             if (nextFib == 0) nextFib = h4Seq.Retracement786; // Fallback: letztes Level
             sl = nextFib + fibBuffer;
@@ -403,16 +396,26 @@ public class SequenzKonzeptStrategy : IStrategy
 
         // Fallback: Wenn Fib-SL unrealistisch (>2% oder <0.2%) → 15m-Punkt-0 als Alternative
         var slDistance = Math.Abs(currentPrice - sl);
-        // SL-Grenzen category-skaliert (Forex hat engere SLs als Krypto)
-        var maxSlPercent = 0.025m * Math.Max(categoryFactor, 0.25m); // Forex: 0.625%, Crypto: 2.5%
-        var minSlPercent = 0.001m + 0.002m * categoryFactor;        // Forex: 0.15%, Crypto: 0.3%
+        // SL-Grenzen: Feste Prozent-Grenzen (einfach, robust, category-skaliert)
+        var maxSlPercent = 0.025m; // 2.5% max für Krypto
+        var minSlPercent = 0.002m; // 0.2% min
         var slPercent = currentPrice > 0 ? slDistance / currentPrice : 0m;
         if (slPercent > maxSlPercent || slPercent < minSlPercent * 0.5m)
         {
-            // Fib-SL unrealistisch → 15m-Punkt-0 mit kleinem Buffer als Fallback
-            var micro0 = m15Machine.Point0;
-            var microBuffer = Math.Max(m15AtrValue * 0.5m, micro0 * 0.001m);
-            sl = tradeIsLong ? micro0 - microBuffer : micro0 + microBuffer;
+            // Fib-SL unrealistisch → ATR-basierter SL als Fallback (statt 15m-Punkt-0)
+            // 3× ATR_15m = struktureller Stop der Volatilität entspricht
+            var atrSl = m15AtrValue * 3m;
+            if (atrSl > 0)
+            {
+                sl = tradeIsLong ? currentPrice - atrSl : currentPrice + atrSl;
+            }
+            else
+            {
+                // Kein ATR → 15m-Punkt-0 mit kleinem Buffer
+                var micro0 = m15Machine.Point0;
+                var microBuffer = Math.Max(m15AtrValue * 0.5m, micro0 * 0.001m);
+                sl = tradeIsLong ? micro0 - microBuffer : micro0 + microBuffer;
+            }
             slDistance = Math.Abs(currentPrice - sl);
             slPercent = currentPrice > 0 ? slDistance / currentPrice : 0m;
         }

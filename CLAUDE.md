@@ -409,6 +409,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Firebase-Pfad unsichtbar (Permission denied still) | `database.rules.json` hat keinen Eintrag fuer den Pfad → Firebase gibt `null` zurueck statt Daten, kein Error-Log (GetAsync faengt 200+null) | JEDEN neuen Firebase-Pfad auch in `database.rules.json` eintragen. Checkliste: player_guilds, player_invites, available_players, guild_invite_codes, invite_code_to_guild |
 | Firebase orderBy-Query liefert keine Daten | Kein `.indexOn` fuer das abgefragte Feld in den Security Rules | `.indexOn: ["feldname"]` unter dem Pfad in `database.rules.json` hinzufuegen |
 | Firebase guilds-Write schlaegt fehl bei Create | Write-Rule verlangt guild_members-Existenz, aber Member wird erst nach guilds geschrieben | `\|\| !data.exists()` zur Write-Rule hinzufuegen (erlaubt Erstellen neuer Eintraege) |
+| SK-System keine Trades trotz Signal | `CheckM15EntryTiming` (RSI>75 + Candle-Richtung) blockiert SK-Signale nach eigener 15m-Analyse | SK-System vom generischen M15-Timing-Check ausnehmen (`isSKSignal` Guard in TradingServiceBase) |
 
 ---
 

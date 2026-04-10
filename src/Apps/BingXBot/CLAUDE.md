@@ -1515,12 +1515,90 @@ Tiefenprüfung der A-B-C Punkt-Setzung und Trade-Logik gegen das originale SK-Sy
 | TP2 bei HTF-Ziellevel | Rest laufen lassen bis 4H Extension 161.8% |
 
 #### SK Gotchas
-- Entry-TF (15m) Micro-Sequenz MUSS State `Active` haben — WaitingBreak reicht nicht
+- Entry-TF (15m) Micro-Sequenz MUSS State `Aktiviert` haben (State Machine, nicht SequenceState)
 - Ohne aktivierte 15m-Micro-Sequenz kein Entry (wenn M15-Daten vorhanden)
-- Sandwich-Check prüft ob Entry im HTF-Ziellevel der Gegenrichtung liegt (HasReachedTarget)
-- Over-Extension: Micro-Sequenz bei 100%+ vom C-Punkt → zu spät für Entry
-- TP1 = 15m-Extension 161.8% (NICHT 100% Extension der Haupt-Sequenz)
-- TP2 = HTF-Extension 161.8% (NICHT 200% der Haupt-Sequenz) — Fallback: Haupt 200%
-- SK-TP1-Ratio = 50% (NICHT 30%) — 50% bei TP1 schließen, Rest als Free Ride
+- Sandwich-Check: `SequenceStateMachine.FromCandles` für Gegenrichtung + Ziellevel-Prüfung ±5%
+- Over-Extension: 15m schon bei 100%+ Extension → zu spät für Entry
+- TP1 = 15m-Extension 161.8% (mit Min-RRR 2:1 Guard)
+- TP2 = 4H-Extension 200% (Sequenz abgearbeitet). Fallback 161.8% wenn 200% zu nah
+- SK-TP1-Ratio = 50% (via `Tp1CloseRatioOverride=0.5m` im Signal)
 - `_completedDirection` + `_completedCooldown`: 20 Kerzen Sperre nach Sequenz-Abarbeitung
-- ADX-Filter < 15 ist eigenständig vom MinAdx der CryptoTrendPro-Strategie
+- ADX-Filter < 15 auf 4H (eigenständig vom MinAdx der CryptoTrendPro-Strategie)
+- `DisableSmartBreakeven = true` → gestufter BE (2× SL, SL→TP1 bei 120%), kein Standard-Smart-BE
+- Dochte vs. Bodies: Punkte (0/A/B) mit High/Low, Aktivierung mit Close, Invalidierung mit Low/High
+- `SmState.Abgearbeitet` bei 161.8% Extension → `SequenceState.TargetReached` → Richtungs-Sperre
+- Invalidierung in `ProcessAktiviert`: Docht (candle.Low/High), NICHT Close
+- SL-Buffer: `max(1.5× ATR_15m, 0.15%)` — Liquidity-Grab-Schutz
+- 15m-Sequenz Mindestgröße: 0→A Strecke >= 2× ATR_15m (filtert Rauschen)
+- Flash-Crash Cooldown: 4H-Kerze > 5% Bewegung → 4 Evaluierungen pausieren
+- MTFA Anti-Deadlock: 4H GKL nur Confluence-Bonus, 1H blockiert nur bei aktiver Gegensequenz
+- Gegensequenz: Nach Abarbeitung aktive Suche ins GKL der alten Sequenz (mit gespeicherten GKL-Leveln)
+- CheckM15EntryTiming (RSI+Candle-Filter in TradingServiceBase) wird für SK-System ÜBERSPRUNGEN — SK hat eigenen umfassenden 15m-Filter (State Machine, ChoCH, ATR-Mindestgröße, Over-Extension). Der generische RSI>75-Check blockiert SK-Signale kontraproduktiv (Impuls-Momentum ist GEWOLLT bei Aktivierung)
+
+## SK-System MTFA-Optimierung (10.04.2026)
+
+### State Machine Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Abgearbeitet-Sackgasse | SequenceStateMachine.cs | `ProcessAbgearbeitet()`: Reset auf Suche0 statt permanent stuck. Ohne Fix: 76-84% aller Evaluierungen blockiert |
+| TryActivate Methode | SequenceStateMachine.cs | Gemeinsame Aktivierungs-Logik: Zeit-Proportion + Elliott B-Retracement-Ratio + FibConfidence berechnen |
+| Elliott-Properties | SequenceStateMachine.cs | `BRetracementRatio`, `FibConfidence`, `ImpulseRange` — weiche Qualitätsbewertung, kein harter Filter |
+
+### Strategie-Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| 1H ChoCH MTFA-Deadlock | SequenzKonzeptStrategy.cs | ChoCH nur bei aktiver Korrektur prüfen (war vorher IMMER, auch bei endender Korrektur) |
+| GKL State-Memory | SequenzKonzeptStrategy.cs | `_h4GklActiveCountdown`: GKL-Flag bleibt 10 Evaluierungen aktiv (15m braucht Zeit zum Drehen) |
+| 4H-Sequenz Deduplizierung | SequenzKonzeptStrategy.cs | `_lastH4SeqPointA/LockedB`: Gleiche 4H-Sequenz nicht endlos handeln |
+| Fibonacci-Level SL | SequenzKonzeptStrategy.cs | SL am nächsten 4H-Fib-Level (Skip(1) für Liquidity-Grab-Schutz) statt unter 15m-Punkt-0 (war 2-5%) |
+| SL-Fallback ATR-Cap | SequenzKonzeptStrategy.cs | 3×ATR_15m statt 15m-Punkt-0 als Fallback (begrenzt Worst-Case-Verlust) |
+| TP1 1.5x statt 2.0x | SequenzKonzeptStrategy.cs | Min-TP1 = 1.5× SL-Distanz (Gewinn kommt aus TP2, TP1 dient nur zum Risiko-Rausnehmen) |
+| TP1-Ratio 30% statt 50% | SequenzKonzeptStrategy.cs | Weniger bei TP1 schließen, mehr für TP2-Run laufen lassen |
+| Sandwich nur aktive SM | SequenzKonzeptStrategy.cs | Sandwich-Check nur gegen AKTIVE Gegensequenz (war: alle historischen → 25% Blockrate) |
+| 1H-Filter optional | SequenzKonzeptStrategy.cs | Wenn keine 1H-Daten → 15m-Trigger entscheidet allein (Backtest-Anfang) |
+| Log-Nomenklatur | SequenzKonzeptStrategy.cs | SK-Original: `4H:0=... A=... B=...` statt Sequence-Mapping `A=... B=...` |
+| Elliott FibConfidence Score | SequenzKonzeptStrategy.cs | B-Punkt nahe idealem Fib-Level → +1 Confluence. Proportions-Bonus für 15m >= 10% von 4H |
+
+### TradingServiceBase Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Klines TF-abhängig | TradingServiceBase.cs | `TimeFrame-Duration × 200` Kerzen (H4: 200 statt 25 Kerzen) |
+| SK-Status vom Klon | TradingServiceBase.cs | `_lastSkStatus` vom Symbol-Klon statt Template (Template wird nie evaluiert) |
+| Regime-Bypass für SK | TradingServiceBase.cs | `DisableSmartBreakeven` als Bypass-Flag (SK hat eigenen ADX-Filter) |
+| M15-Timing Bypass | TradingServiceBase.cs | `CheckM15EntryTiming` übersprungen für SK (eigener 15m-Filter) |
+
+### BacktestEngine Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| M15 Sub-Iteration | BacktestEngine.cs | Innerhalb jeder H4-Kerze alle M15-Kerzen evaluieren (sonst 15/16 Signale verpasst) |
+| TF-Mappings für SK | BacktestEngine.cs + LiveBacktestRunner.cs | H1 als HTF, M15 als Entry-TF (war: D1+H1) |
+| Regime-Bypass | BacktestEngine.cs | SK-Signale am Regime-Gate vorbeileiten (DisableSmartBreakeven Flag) |
+| Entry-TF Zeitraum | BacktestEngine.cs | Gesamten Backtest-Zeitraum laden (war: nur -7d) |
+
+### Exchange Fix
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Klines-Pagination | BingXPublicClient.cs | Bei <1440 Ergebnissen nicht sofort abbrechen (BingX-API liefert manchmal weniger) |
+
+### Backtest-Ergebnisse (90 Tage, 10k Start, MinRiskRewardRatio=2.0)
+| Symbol | Trades | PnL | PF | WR | Avg Win | Avg Loss |
+|--------|--------|-----|----|----|---------|---------| 
+| BTC | 6 | +381 | 26.3 | 83% | +99 | -8 |
+| ETH | 4 | -147 | 0.1 | 25% | +24 | -57 |
+| SOL | 2 | -118 | 0.2 | 50% | +32 | -149 |
+| LINK | 2 | +60 | inf | 100% | +30 | 0 |
+| AVAX | 4 | +62 | 2.3 | 50% | +36 | -47 |
+| XRP | 2 | +11 | inf | 100% | +5 | 0 |
+| DOGE | 0 | 0 | - | - | - | - |
+| **Gesamt** | **20** | **+249** | - | **67%** | - | - |
+
+### Neue Gotchas (SK-System Session 10.04.2026)
+- State Machine `Abgearbeitet` MUSS auf `Suche0` resetten (sonst permanent stuck → 0 Trades)
+- `FromCandles()` verarbeitet alle Kerzen von 0 → nach Reset findet sie NEUE Sequenzen (nicht die alte nochmal wenn 4H-Dedup aktiv)
+- Sandwich-Check NUR gegen `SmState.Aktiviert` Gegensequenzen, NICHT gegen historische DetectAllSequences (25% Blockrate!)
+- 1H-Filter ist OPTIONAL — wenn keine Daten → 15m-Trigger entscheidet allein (kein harter Block)
+- Elliott B-Retracement: KEIN harter Filter in der State Machine (killt profitable Krypto-Setups). Nur FibConfidence als Score-Bonus
+- MinRiskRewardRatio im RiskManager = 2.0 (TP1-basiert). Strategie hat eigenes RRR >= 3 auf TP2-Basis. RRR3 im RiskManager blockierte 6+ profitable BTC-Trades
+- Fib-SL Skip(1) ist ABSICHT: Nicht das direkte nächste Level (Liquidity-Grab), sondern das übernächste
+- SL-Fallback: 3×ATR_15m statt 15m-Punkt-0 (begrenzt Verluste auf ~1% statt 3-5%)
+- Log zeigt SK-Original-Nomenklatur: `4H:0=Punkt0 A=PunktA B=PunktB` (nicht Sequence.PointA/B)

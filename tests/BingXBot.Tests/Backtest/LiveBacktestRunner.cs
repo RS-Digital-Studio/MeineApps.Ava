@@ -55,7 +55,7 @@ public class LiveBacktestRunner
             Tp1CloseRatio = riskPreset.Tp1CloseRatio,
             Tp2CloseRatio = riskPreset.Tp2CloseRatio,
             SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
-            MinRiskRewardRatio = 0m, // Deaktiviert für Backtest (Signalqualität messen)
+            MinRiskRewardRatio = 2.0m, // RRR≥2 auf TP1 (Strategie hat eigenes RRR≥3 auf TP2)
             MaxHoldHours = riskPreset.MaxHoldHours,
             MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
             EnableTrailingStop = true,
@@ -229,6 +229,108 @@ public class LiveBacktestRunner
         else
         {
             _output.WriteLine($"Zu wenig Trades ({report.TotalTrades}) für aussagekräftige Metriken.");
+        }
+    }
+
+    /// <summary>
+    /// Parameter-Optimierung: Testet verschiedene MinConfluence + RRR-Minimum Kombinationen
+    /// auf den 4 profitabelsten Symbolen (BTC, AVAX, XRP, DOGE) + den 2 Verlierern (ETH, LINK).
+    /// </summary>
+    [Fact]
+    public async Task SK_ParameterOptimierung()
+    {
+        var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        var rateLimiter = new RateLimiter();
+        var publicClient = new BingXPublicClient(httpClient, rateLimiter, NullLogger<BingXPublicClient>.Instance);
+
+        var symbols = new[] { "BTC-USDT", "ETH-USDT", "LINK-USDT", "AVAX-USDT", "XRP-USDT", "DOGE-USDT" };
+        var tage = 90;
+
+        // Parameter-Varianten: MinConfluence × MinRRR
+        var configs = new (int minConf, decimal minRRR, string label)[]
+        {
+            (3, 0m, "Conf3, RRR-OFF (Strategie hat eigenes RRR≥3 auf TP2)"),
+            (3, 1.5m, "Conf3, RRR1.5"),
+            (3, 2.0m, "Conf3, RRR2"),
+            (3, 3.0m, "Conf3, RRR3"),
+        };
+
+        _output.WriteLine("=== SK PARAMETER-OPTIMIERUNG ===\n");
+
+        foreach (var (minConf, minRRR, label) in configs)
+        {
+            decimal totalPnl = 0;
+            int totalTrades = 0;
+            int totalWins = 0;
+            var perSymbol = new List<string>();
+
+            foreach (var symbol in symbols)
+            {
+                var strategy = StrategyFactory.Create("SK-System");
+                if (strategy is SequenzKonzeptStrategy sk)
+                {
+                    sk.ApplyPreset(TradingModePreset.Swing);
+                    // Parameter per Reflection setzen
+                    var confField = typeof(SequenzKonzeptStrategy).GetField("_minConfluence",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    confField?.SetValue(sk, minConf);
+                }
+
+                var riskPreset = TradingModeDefaults.GetRiskPreset(TradingModePreset.Swing);
+                var scanPreset = TradingModeDefaults.GetScannerPreset(TradingModePreset.Swing);
+                var riskSettings = new RiskSettings
+                {
+                    MaxPositionSizePercent = riskPreset.MaxPositionSizePercent,
+                    MaxMarginPerTradePercent = riskPreset.MaxMarginPerTradePercent,
+                    MaxLeverage = riskPreset.MaxLeverage,
+                    EnableMultiStageExit = true,
+                    Tp1CloseRatio = riskPreset.Tp1CloseRatio,
+                    Tp2CloseRatio = riskPreset.Tp2CloseRatio,
+                    SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
+                    MinRiskRewardRatio = minRRR,
+                    MaxHoldHours = riskPreset.MaxHoldHours,
+                    MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
+                    EnableTrailingStop = true,
+                    TrailingStopPercent = 2.5m,
+                    MaxOpenPositions = 10,
+                    MinLiquidationDistancePercent = 0m,
+                    MaxNetExposurePercent = 99999m,
+                    ConsiderFundingRate = false,
+                    MaxDailyDrawdownPercent = 0m,
+                };
+                var riskManager = new RiskManager(riskSettings, NullLogger<RiskManager>.Instance);
+
+                var backtestSettings = new BacktestSettings
+                {
+                    InitialBalance = 10_000m, TakerFee = 0.0005m, MakerFee = 0.0002m,
+                    SpreadPercent = 0.08m, UseDynamicSlippage = true,
+                    SimulateMultiStageExit = true,
+                    Tp1CloseRatio = riskPreset.Tp1CloseRatio, Tp2CloseRatio = riskPreset.Tp2CloseRatio,
+                    TrailingAtrMultiplier = 2.5m,
+                    MaxHoldHoursInitial = riskPreset.MaxHoldHours,
+                    MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
+                    SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
+                    HtfTimeFrame = TimeFrame.H1,
+                    EntryTimeFrame = TimeFrame.M15,
+                };
+
+                var to = DateTime.UtcNow;
+                var from = to.AddDays(-tage);
+                var engine = new BacktestEngine(publicClient, NullLogger<BacktestEngine>.Instance);
+                var report = await engine.RunAsync(strategy, riskManager, symbol, scanPreset.ScanTimeFrame,
+                    from, to, backtestSettings, ct: CancellationToken.None);
+
+                totalPnl += report.TotalPnl;
+                totalTrades += report.TotalTrades;
+                totalWins += (int)(report.TotalTrades * report.WinRate / 100m);
+                perSymbol.Add($"  {symbol,-12} {report.TotalTrades,2}T  {report.TotalPnl,+8:+0.0;-0.0}  PF={report.ProfitFactor:F1}");
+            }
+
+            var winRate = totalTrades > 0 ? (decimal)totalWins / totalTrades * 100m : 0m;
+            _output.WriteLine($"--- {label} ---");
+            _output.WriteLine($"  GESAMT: {totalTrades} Trades, {totalPnl:+0.0;-0.0} USDT, WR={winRate:F0}%");
+            foreach (var s in perSymbol) _output.WriteLine(s);
+            _output.WriteLine("");
         }
     }
 }

@@ -7,7 +7,7 @@ namespace BingXBot.Engine.Indicators;
 /// Eliminiert das Fraktal-Lag-Problem: B-Punkt wird NICHT vorher fixiert,
 /// sondern rutscht mit dem Preis mit bis A durchbrochen wird.
 ///
-/// Zustände: SUCHE_0 → SUCHE_A → SUCHE_B (Trailing) → AKTIVIERT
+/// Zustände: SUCHE_0 → SUCHE_A → SUCHE_B (Trailing) → AKTIVIERT → ABGEARBEITET → SUCHE_0 (Neustart)
 /// </summary>
 public class SequenceStateMachine
 {
@@ -35,14 +35,31 @@ public class SequenceStateMachine
     public decimal Ret618 { get; private set; }
     public decimal Ret667 { get; private set; }
 
+    /// <summary>Impuls-Range (0→A) in Preis-Einheiten. Für Proportions-Vergleich mit Sub-Wellen.</summary>
+    public decimal ImpulseRange => Math.Abs(PointA - Point0);
+
+    /// <summary>B-Retracement als Ratio (0.0-1.0). Elliott: Ideal 0.382-0.618, max 0.886.</summary>
+    public decimal BRetracementRatio { get; private set; }
+
+    /// <summary>
+    /// Elliott-Fibonacci-Confidence (0.0-1.0). Misst wie nah der B-Punkt an idealen Fib-Leveln liegt.
+    /// 1.0 = exakt 61.8% (ideal), 0.0 = weit entfernt von allen Fib-Leveln.
+    /// </summary>
+    public decimal FibConfidence { get; private set; }
+
     // Konfiguration
     private readonly decimal _minImpulsePercent;  // Min. Impuls-Größe (0→A) in % vom Preis
     private readonly decimal _correctionThreshold; // Min. Korrektur von A um A zu locken (in %)
+    private readonly decimal _minBRetracement;     // Min. B-Retracement (Elliott: 0.236 tolerant, 0.382 streng)
+    private readonly decimal _maxBRetracement;     // Max. B-Retracement (Elliott: 0.886)
 
-    public SequenceStateMachine(decimal minImpulsePercent = 0.5m, decimal correctionThreshold = 0.3m)
+    public SequenceStateMachine(decimal minImpulsePercent = 0.5m, decimal correctionThreshold = 0.3m,
+        decimal minBRetracement = 0.236m, decimal maxBRetracement = 0.886m)
     {
         _minImpulsePercent = minImpulsePercent;
         _correctionThreshold = correctionThreshold;
+        _minBRetracement = minBRetracement;
+        _maxBRetracement = maxBRetracement;
     }
 
     /// <summary>
@@ -61,6 +78,8 @@ public class SequenceStateMachine
                 return ProcessSucheB(candle, index);
             case SmState.Aktiviert:
                 return ProcessAktiviert(candle, index);
+            case SmState.Abgearbeitet:
+                return ProcessAbgearbeitet(candle, index);
             default:
                 return false;
         }
@@ -68,13 +87,14 @@ public class SequenceStateMachine
 
     /// <summary>Verarbeitet eine komplette Candle-Historie und gibt die erkannte Sequenz zurück.</summary>
     public static SequenceStateMachine? FromCandles(IReadOnlyList<Candle> candles,
-        decimal minImpulsePercent = 0.5m, decimal correctionThreshold = 0.3m)
+        decimal minImpulsePercent = 0.5m, decimal correctionThreshold = 0.3m,
+        decimal minBRetracement = 0.236m, decimal maxBRetracement = 0.886m)
     {
         if (candles.Count < 20) return null;
 
         // Versuche Long UND Short, nimm die mit Aktivierung (oder die aktuellere)
-        var longMachine = new SequenceStateMachine(minImpulsePercent, correctionThreshold);
-        var shortMachine = new SequenceStateMachine(minImpulsePercent, correctionThreshold);
+        var longMachine = new SequenceStateMachine(minImpulsePercent, correctionThreshold, minBRetracement, maxBRetracement);
+        var shortMachine = new SequenceStateMachine(minImpulsePercent, correctionThreshold, minBRetracement, maxBRetracement);
         longMachine.IsLong = true;
         shortMachine.IsLong = false;
 
@@ -97,11 +117,20 @@ public class SequenceStateMachine
 
         // Bevorzuge die zuletzt aktivierte Sequenz
         if (longActivated && shortActivated)
+        {
+            // Aktuell aktive Machine hat Vorrang über historisch aktivierte (die inzwischen reset wurde)
+            var longAktiv = longMachine.State == SmState.Aktiviert;
+            var shortAktiv = shortMachine.State == SmState.Aktiviert;
+            if (longAktiv && !shortAktiv) return longMachine;
+            if (shortAktiv && !longAktiv) return shortMachine;
+            // Beide aktiv oder beide nicht aktiv → neueste Aktivierung gewinnt
             return longActivatedAt > shortActivatedAt ? longMachine : shortMachine;
+        }
         if (longActivated) return longMachine;
         if (shortActivated) return shortMachine;
 
         // Keine Aktivierung — gib die am weitesten fortgeschrittene zurück
+        // Abgearbeitet (nach Reset jetzt Suche0) soll nicht über SucheB/Aktiviert gewinnen
         if (longMachine.State > shortMachine.State) return longMachine;
         if (shortMachine.State > longMachine.State) return shortMachine;
         return longMachine; // Default: Long
@@ -150,6 +179,7 @@ public class SequenceStateMachine
         {
             SmState.SucheB => SequenceState.CorrectionZone,
             SmState.Aktiviert => SequenceState.Active,
+            SmState.Abgearbeitet => SequenceState.TargetReached,
             _ => SequenceState.Forming
         };
 
@@ -263,17 +293,13 @@ public class SequenceStateMachine
             // AKTIVIERUNG: Preis durchbricht A (Close über Punkt A)
             if (candle.Close > PointA)
             {
-                LockedB = PotentialB;
-                LockedBIndex = PotentialBIndex;
-                CalculateExtensions();
-                State = SmState.Aktiviert;
-                return true; // SIGNAL!
+                if (TryActivate(index))
+                    return true;
             }
 
             // INVALIDIERUNG: Preis fällt unter Punkt 0
             if (candle.Low < Point0)
             {
-                // Sequenz zerstört → neu starten mit aktuellem Low als Punkt 0
                 Point0 = candle.Low;
                 Point0Index = index;
                 PointA = 0;
@@ -292,11 +318,8 @@ public class SequenceStateMachine
             // AKTIVIERUNG: Close unter Punkt A
             if (candle.Close < PointA)
             {
-                LockedB = PotentialB;
-                LockedBIndex = PotentialBIndex;
-                CalculateExtensions();
-                State = SmState.Aktiviert;
-                return true;
+                if (TryActivate(index))
+                    return true;
             }
 
             // INVALIDIERUNG: Preis steigt über Punkt 0
@@ -311,18 +334,79 @@ public class SequenceStateMachine
         return false;
     }
 
+    /// <summary>
+    /// Gemeinsame Aktivierungs-Logik für Long und Short.
+    /// Prüft Elliott-Wellen-Regeln: Zeit-Proportion + B-Retracement-Validierung.
+    /// </summary>
+    private bool TryActivate(int index)
+    {
+        // Zeit-Proportions-Filter: Korrektur darf nicht zu schnell sein (Spike)
+        var impulsBars = PointAIndex - Point0Index;
+        var corrBars = PotentialBIndex - PointAIndex;
+        if (impulsBars > 0 && corrBars < impulsBars * 0.25m)
+            return false; // Spike-Korrektur: State bleibt SucheB
+
+        // Elliott B-Retracement-Validierung:
+        // B muss 38.2-88.6% der 0→A Strecke retrackieren (gemessen von A).
+        // Zu flach (<38.2%) = keine echte Korrektur, nur Konsolidierung.
+        // Zu tief (>88.6%) = fast Invalidierung, kein sauberer Wellencharakter.
+        var range = Math.Abs(PointA - Point0);
+        if (range <= 0) return false;
+
+        var bRetrace = Math.Abs(PointA - PotentialB) / range;
+
+        // Elliott B-Retracement: Nur berechnen, KEIN harter Filter.
+        // FibConfidence geht als Bonus/Malus in den Confluence-Score der Strategie.
+        // Harte Filter killten profitable Krypto-Setups (flache Korrekturen bei starken Trends).
+
+        // Aktivierung gültig — B einfrieren und Fibonacci berechnen
+        LockedB = PotentialB;
+        LockedBIndex = PotentialBIndex;
+        BRetracementRatio = bRetrace;
+        FibConfidence = CalculateFibConfidence(bRetrace);
+        CalculateExtensions();
+        State = SmState.Aktiviert;
+        return true;
+    }
+
+    /// <summary>
+    /// Berechnet wie nah der B-Punkt an idealen Elliott-Fibonacci-Leveln liegt.
+    /// 61.8% = ideal (Score 1.0), je weiter entfernt desto niedriger.
+    /// </summary>
+    private static decimal CalculateFibConfidence(decimal retracementRatio)
+    {
+        // Ideale Fib-Level für Welle 2 (B-Punkt): 38.2%, 50%, 61.8%, 78.6%
+        decimal[] idealLevels = [0.382m, 0.500m, 0.559m, 0.618m, 0.667m, 0.786m];
+        var minDist = idealLevels.Min(level => Math.Abs(retracementRatio - level));
+        // Score: 1.0 bei exaktem Treffer, 0.0 bei > 10% Abweichung
+        return Math.Max(0m, 1.0m - minDist / 0.10m);
+    }
+
     private bool ProcessAktiviert(Candle candle, int index)
     {
-        // Invalidierung: Preis fällt unter Punkt 0 (Long) oder steigt über Punkt 0 (Short)
-        // → Sequenz zerstört, State Machine resettet
-        if (IsLong && candle.Close < Point0)
+        // Ziellevel-Check: Sequenz abgearbeitet wenn 161.8% Extension erreicht
+        // SK: "Sobald Ziellevel berührt → State auf Abgearbeitet"
+        if (IsLong && candle.High >= Extension1618)
+        {
+            State = SmState.Abgearbeitet;
+            return false;
+        }
+        if (!IsLong && candle.Low <= Extension1618)
+        {
+            State = SmState.Abgearbeitet;
+            return false;
+        }
+
+        // Invalidierung: Docht(!) unter Punkt 0 = Struktur zerstört
+        // SK: "sobald auch nur ein Docht den Punkt 0 unterschreitet"
+        if (IsLong && candle.Low < Point0)
         {
             Point0 = candle.Low;
             Point0Index = index;
             PointA = 0; PotentialB = 0; LockedB = 0;
             State = SmState.Suche0;
         }
-        else if (!IsLong && candle.Close > Point0)
+        else if (!IsLong && candle.High > Point0)
         {
             Point0 = candle.High;
             Point0Index = index;
@@ -330,6 +414,25 @@ public class SequenceStateMachine
             State = SmState.Suche0;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Sequenz abgearbeitet (161.8% erreicht) → sofort neue Sequenzsuche starten.
+    /// SK-Regel: Eine abgearbeitete Sequenz ist "verbraucht". Der Markt formt danach
+    /// neue Sequenzen die wieder gehandelt werden können. Ohne diesen Reset bleibt
+    /// die Machine permanent in Abgearbeitet und blockiert alle weiteren Trades.
+    /// </summary>
+    private bool ProcessAbgearbeitet(Candle candle, int index)
+    {
+        // Komplett-Reset: Alle Punkte löschen, neue Suche von Grund auf
+        Point0 = 0;
+        Point0Index = index;
+        PointA = 0;
+        PotentialB = 0;
+        LockedB = 0;
+        State = SmState.Suche0;
+        // Aktuelle Kerze gleich als erste Suche0-Kerze verarbeiten (keine Kerze verschwenden)
+        return ProcessSuche0(candle, index);
     }
 
     private void CalculateExtensions()
@@ -366,5 +469,7 @@ public enum SmState
     /// <summary>Trailing Low/High: B rutscht mit dem Preis mit. Wartet auf A-Break (Aktivierung).</summary>
     SucheB,
     /// <summary>AKTIVIERT: A durchbrochen, B eingefroren. Trade läuft Richtung Ziellevel.</summary>
-    Aktiviert
+    Aktiviert,
+    /// <summary>ABGEARBEITET: Ziellevel (161.8%) erreicht. Keine neuen Trades in diese Richtung — nur GKL/Gegensequenz.</summary>
+    Abgearbeitet
 }

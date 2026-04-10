@@ -18,6 +18,7 @@ public class BacktestEngine
     private readonly IPublicMarketDataClient? _publicClient; // Öffentliche Marktdaten (kein API-Key nötig)
     private readonly ILogger<BacktestEngine> _logger;
 
+
     /// <summary>
     /// Konstruktor für echte Marktdaten über öffentlichen Client (kein API-Key nötig).
     /// </summary>
@@ -85,11 +86,11 @@ public class BacktestEngine
             }
         }
 
-        // 1c. Entry-TF-Candles laden (SK-System 3. Ebene: M15 für H1, M5 für M15)
+        // 1c. Entry-TF-Candles laden (SK-System: M15 als Trigger bei H4-Primary)
         List<Candle>? entryTfCandles = null;
         var entryTf = settings.EntryTimeFrame ?? timeFrame switch
         {
-            TimeFrame.H4 => TimeFrame.H1,
+            TimeFrame.H4 => TimeFrame.M15,  // SK Holy Trinity: 15m-Trigger bei H4-Primary
             TimeFrame.H1 => TimeFrame.M15,
             TimeFrame.M15 => TimeFrame.M5,
             _ => (TimeFrame?)null
@@ -98,7 +99,8 @@ public class BacktestEngine
         {
             try
             {
-                entryTfCandles = await LoadHistoricalDataAsync(symbol, entryTf.Value, from.AddDays(-7), to).ConfigureAwait(false);
+                // Entry-TF ab from laden (nicht nur -7d), damit der gesamte Backtest-Zeitraum abgedeckt ist
+                entryTfCandles = await LoadHistoricalDataAsync(symbol, entryTf.Value, from.AddDays(-2), to).ConfigureAwait(false);
                 if (entryTfCandles.Count > 0)
                     _logger.LogInformation("Entry-TF-Candles geladen: {TF} {Count} Candles", entryTf.Value, entryTfCandles.Count);
             }
@@ -236,23 +238,47 @@ public class BacktestEngine
                 htfContext = new CandleSlice(htfCandles, htfStart, htfIdx + 1 - htfStart);
             }
 
-            // Entry-TF-Kontext: Candles bis zum aktuellen Zeitpunkt
+            // Entry-TF Sub-Iteration: SK-Signale entstehen auf M15-Takt, nicht H4-Takt.
+            // Innerhalb jeder H4-Kerze alle zugehörigen M15-Kerzen durchiterieren und
+            // die Strategie bei jeder M15-Kerze evaluieren. Ohne das werden 15/16 M15-Signale verpasst.
+            SignalResult signal = new(Signal.None, 0m, null, null, null, "");
+
             if (entryTfCandles != null && entryTfCandles.Count > 0)
             {
+                // Alle Entry-TF-Kerzen durchiterieren die innerhalb dieser Primary-Kerze schließen
                 while (entryTfIdx < entryTfCandles.Count - 1 && entryTfCandles[entryTfIdx + 1].CloseTime <= currentCandle.CloseTime)
+                {
                     entryTfIdx++;
+                    if (entryTfIdx < 20) continue;
+
+                    // Entry-TF-Kontext bis zur aktuellen Sub-Kerze
+                    var entryCandle = entryTfCandles[entryTfIdx];
+                    var entryStart = Math.Max(0, entryTfIdx + 1 - 200);
+                    IReadOnlyList<Candle> entryTfContext = new CandleSlice(entryTfCandles, entryStart, entryTfIdx + 1 - entryStart);
+
+                    // Ticker mit dem Preis der Entry-TF-Kerze (nicht der H4-Kerze)
+                    var subHalfSpread = entryCandle.Close * settings.SpreadPercent / 100m / 2m;
+                    var subTicker = new Ticker(symbol, entryCandle.Close,
+                        entryCandle.Close - subHalfSpread, entryCandle.Close + subHalfSpread,
+                        entryCandle.Volume, 0m, entryCandle.CloseTime);
+
+                    var subContext = new MarketContext(symbol, contextCandles, subTicker, positions, account, htfContext, category, entryTfContext);
+                    signal = strategy.Evaluate(subContext);
+
+                    // Bei Signal sofort raus aus der Sub-Iteration (Trade platzieren)
+                    if (signal.Signal is Signal.Long or Signal.Short or Signal.CloseLong or Signal.CloseShort)
+                    {
+                        simExchange.SetCurrentPrice(symbol, entryCandle.Close);
+                        break;
+                    }
+                }
             }
-            IReadOnlyList<Candle>? entryTfContext = null;
-            if (entryTfCandles != null && entryTfIdx >= 20)
+            else
             {
-                var entryStart = Math.Max(0, entryTfIdx + 1 - 100);
-                entryTfContext = new CandleSlice(entryTfCandles, entryStart, entryTfIdx + 1 - entryStart);
+                // Kein Entry-TF: Standard-Evaluation auf Primary-TF (wie bisher)
+                var context = new MarketContext(symbol, contextCandles, ticker, positions, account, htfContext, category, null);
+                signal = strategy.Evaluate(context);
             }
-
-            var context = new MarketContext(symbol, contextCandles, ticker, positions, account, htfContext, category, entryTfContext);
-
-            // Strategie evaluieren
-            var signal = strategy.Evaluate(context);
 
             // SL/TP-Check auf offene Positionen mit echten Werten aus dem Signal
             // positions ist bereits eine Kopie (IReadOnlyList aus SimulatedExchange), kein ToList() nötig
@@ -506,7 +532,8 @@ public class BacktestEngine
             }
 
             // Regime erkennen (wie im Live-Bot: ATI filtert Chaotic + Range)
-            var features = FeatureEngine.Extract(context);
+            var regimeContext = new MarketContext(symbol, contextCandles, ticker, positions, account, htfContext, category, null);
+            var features = FeatureEngine.Extract(regimeContext);
             var regimeState = regimeDetector.Detect(features);
 
             // Chaotic-Regime: Alle Positionen sofort schließen (wie Live-Bot PriceTickerLoop)
@@ -522,10 +549,15 @@ public class BacktestEngine
             }
 
             // Trade ausführen wenn Signal (Regime-Filter: Kein neuer Trade in Range/Chaotic)
+            // SK-System: Eigener ADX<15 Filter, Regime-Gate überspringen (DisableSmartBreakeven = SK-Flag)
+            // Ohne das: ADX 15-25 = SK sagt "ok", RegimeDetector sagt "Range" → Trade verworfen
             if (signal.Signal is Signal.Long or Signal.Short
-                && regimeState.CurrentRegime is MarketRegime.TrendingBull or MarketRegime.TrendingBear)
+                && (signal.DisableSmartBreakeven
+                    || regimeState.CurrentRegime is MarketRegime.TrendingBull or MarketRegime.TrendingBear))
             {
-                var riskCheck = riskManager.ValidateTrade(signal, context);
+                // MarketContext für RiskManager: Aktuellen State verwenden
+                var riskContext = new MarketContext(symbol, contextCandles, ticker, positions, account, htfContext, category, null);
+                var riskCheck = riskManager.ValidateTrade(signal, riskContext);
                 if (riskCheck.IsAllowed && riskCheck.AdjustedPositionSize > 0)
                 {
                     var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;

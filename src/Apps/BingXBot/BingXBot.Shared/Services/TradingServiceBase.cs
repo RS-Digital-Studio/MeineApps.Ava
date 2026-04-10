@@ -48,6 +48,8 @@ public abstract class TradingServiceBase : IDisposable
     // SL/TP-Tracking: Speichert das Original-Signal pro offener Position (Symbol_Side → SignalResult)
     // ConcurrentDictionary weil PriceTickerLoop und ScanAndTradeAsync parallel darauf zugreifen
     protected readonly ConcurrentDictionary<string, SignalResult> _positionSignals = new();
+    // SK-System: Letzter Status für Scan-Summary (wird auf Symbol-Klonen evaluiert, nicht auf dem Template)
+    private string _lastSkStatus = "";
     // Trailing-Stop: Höchst-/Tiefstpreis seit Eröffnung pro Position (Symbol_Side → Preis)
     protected readonly ConcurrentDictionary<string, decimal> _extremePriceSinceEntry = new();
     // Trailing-Stop pro Position: ATI kann pro Trade einen optimierten Trailing-Prozentsatz setzen
@@ -909,9 +911,13 @@ public abstract class TradingServiceBase : IDisposable
             await _klineSemaphore.WaitAsync(ct).ConfigureAwait(false);
             try
             {
+                // Klines-Ladezeitraum TF-abhängig: H4 braucht ~200 Kerzen für State Machine + Indikatoren
+                // (100h / 4h = nur 25 Kerzen → zu wenig für SK-System das min. 30 braucht)
+                var tfDuration = TimeFrameHelper.ToDuration(_scannerSettings.ScanTimeFrame);
+                var klineHours = Math.Max(100, (int)(tfDuration.TotalHours * 200));
                 var candles = await _publicClient.GetKlinesAsync(
                     ticker.Symbol, _scannerSettings.ScanTimeFrame,
-                    now.AddHours(-100), now, ct).ConfigureAwait(false);
+                    now.AddHours(-klineHours), now, ct).ConfigureAwait(false);
 
                 // SK Holy Trinity: H1 als Filter-TF (nicht D1!), M15 als Trigger-TF (immer laden)
                 // Andere Strategien: HtfTimeFrame aus ScannerSettings (z.B. D1)
@@ -1129,7 +1135,20 @@ public abstract class TradingServiceBase : IDisposable
                     var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles, category, m15Candles);
                     var signal = strategy.Evaluate(context);
 
-                    if (signal.Signal == Signal.None) continue;
+                    // SK-System: Status vom Symbol-Klon speichern (Template wird nie evaluiert)
+                    if (strategy is Engine.Strategies.SequenzKonzeptStrategy skInst)
+                        _lastSkStatus = skInst.LastStatus;
+
+                    if (signal.Signal == Signal.None)
+                    {
+                        // SK-System: Jedes Symbol loggen (warum kein Trade)
+                        if (_eventBus.HasLogSubscribers && strategy is Engine.Strategies.SequenzKonzeptStrategy)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "SK",
+                                $"{LogPrefix}{ticker.Symbol}: {signal.Reason}", ticker.Symbol));
+                        }
+                        continue;
+                    }
 
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Scanner",
                         $"{LogPrefix}{ticker.Symbol}: {signal.Signal} Signal (Confidence: {signal.Confidence:P0}) - {signal.Reason}",
@@ -1189,8 +1208,11 @@ public abstract class TradingServiceBase : IDisposable
                     }
 
                     // M15-Entry-Timing: Bei H4/H1-Signal prüfen ob M15 den Einstieg bestätigt
+                    // SK-System hat eigenen umfassenden 15m-Filter (State Machine, ChoCH, ATR, Over-Extension)
+                    // → CheckM15EntryTiming (RSI + Candle-Richtung) würde SK-Signale kontraproduktiv blockieren
                     var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
-                    if (!CheckM15EntryTiming(m15Candles, side, ticker.Symbol))
+                    var isSKSignal = _strategyManager.CurrentTemplate is Engine.Strategies.SequenzKonzeptStrategy;
+                    if (!isSKSignal && !CheckM15EntryTiming(m15Candles, side, ticker.Symbol))
                         continue;
 
                     // Doppelte Order verhindern: Signal-Check ist atomarer als BingX-positions-Liste
@@ -1311,9 +1333,17 @@ public abstract class TradingServiceBase : IDisposable
             strategyInfo = $"Regime: {regimeNames.GetValueOrDefault(regime, regime.ToString())}";
         }
         var posCount = positions.Count;
+
+        // SK-System: Detaillierten Status des zuletzt evaluierten Symbols anzeigen
+        var skStatus = "";
+        if (!string.IsNullOrEmpty(_lastSkStatus))
+        {
+            skStatus = $" | SK: {_lastSkStatus}";
+        }
+
         var scanSummary = $"{candidates.Count} Kandidaten | {strategyInfo} | " +
             $"Positionen: {posCount}/{_riskSettings.MaxOpenPositions} | " +
-            $"{elapsed:F1}s | Nächster: {nextScanFinal:HH:mm:ss}";
+            $"{elapsed:F1}s | Nächster: {nextScanFinal:HH:mm:ss}{skStatus}";
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Scanner", $"{LogPrefix}{scanSummary}"));
 
         // Indikator-Cache nach Scan-Durchlauf leeren (Daten sind beim nächsten Scan veraltet)

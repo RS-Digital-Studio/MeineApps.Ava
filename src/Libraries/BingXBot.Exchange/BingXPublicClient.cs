@@ -82,13 +82,20 @@ public class BingXPublicClient : IPublicMarketDataClient
 
                 // Nächster Batch: nach der letzten Candle
                 var lastTime = DateTimeOffset.FromUnixTimeMilliseconds(result.Data.Max(k => k.Time)).UtcDateTime;
-                currentStart = lastTime.Add(candleDuration);
+                var newStart = lastTime.Add(candleDuration);
 
                 _logger.LogDebug("Geladen: {Count} Candles bis {Time}", result.Data.Count, lastTime);
 
-                // Wenn weniger als 1440 zurückkamen, gibt es keine weiteren
-                if (result.Data.Count < 1440)
+                // Abbruch wenn: (1) weniger Candles als erwartet UND (2) wir nicht weiter vorankommen
+                // BingX liefert max 1440 pro Batch. Bei exakt 1440 → nächster Batch.
+                // Bei <1440: Normalerweise fertig. ABER: Bei manchen TFs liefert die API
+                // weniger als 1440 obwohl noch Daten existieren (API-Inkonsistenz).
+                // Daher: Nur abbrechen wenn wir nicht vorankommen (lastTime nahe endTime).
+                if (result.Data.Count < 1440 && newStart >= to)
                     break;
+                if (newStart <= currentStart)
+                    break; // Endlos-Loop-Schutz: Kein Fortschritt
+                currentStart = newStart;
             }
             catch (OperationCanceledException)
             {

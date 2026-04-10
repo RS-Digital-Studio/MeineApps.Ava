@@ -83,12 +83,19 @@ public class LiveBacktestRunner
             MaxHoldHoursInitial = riskPreset.MaxHoldHours,
             MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
             SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
-            HtfTimeFrame = scanPreset.ScanTimeFrame switch
-            {
-                TimeFrame.M15 => TimeFrame.H1,
-                TimeFrame.H1 => TimeFrame.H4,
-                _ => TimeFrame.D1
-            }
+            // SK Holy Trinity: 4H=Primary, H1=Filter(HTF), M15=Trigger(Entry)
+            // Andere Strategien: HTF ist der HÖHERE TF zur Trend-Konfirmation
+            HtfTimeFrame = strategy is SequenzKonzeptStrategy
+                ? TimeFrame.H1   // SK: 1H als Filter-Ebene
+                : scanPreset.ScanTimeFrame switch
+                {
+                    TimeFrame.M15 => TimeFrame.H1,
+                    TimeFrame.H1 => TimeFrame.H4,
+                    _ => TimeFrame.D1
+                },
+            EntryTimeFrame = strategy is SequenzKonzeptStrategy
+                ? TimeFrame.M15  // SK: 15m als Trigger-Ebene
+                : null           // Andere: Default-Mapping in BacktestEngine
         };
 
         // Zeitraum

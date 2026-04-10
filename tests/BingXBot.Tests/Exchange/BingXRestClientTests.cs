@@ -101,7 +101,7 @@ public class BingXRestClientTests
     public async Task Retry_TransienterFehler500_WirdErfolgreichRetried()
     {
         // 1x HTTP 500, dann Erfolg → muss nach 1 Retry klappen
-        var balanceJson = """{"code":0,"msg":"OK","data":{"balance":{"balance":"10000","availableMargin":"8000","unrealizedProfit":"200","usedMargin":"2000"}}}""";
+        var balanceJson = """{"code":0,"msg":"OK","data":[{"asset":"USDT","balance":"10000","availableMargin":"8000","unrealizedProfit":"200","usedMargin":"2000"}]}""";
         var handler = new AnzahlFehlerHandler(fehlerAnzahl: 1, HttpStatusCode.InternalServerError, balanceJson);
         var client = ErstelleClient(handler);
 
@@ -115,7 +115,7 @@ public class BingXRestClientTests
     public async Task Retry_Http429RateLimit_WirdRetried()
     {
         // HTTP 429 ist ein transienter Fehler → Retry
-        var balanceJson = """{"code":0,"msg":"OK","data":{"balance":{"balance":"5000","availableMargin":"4000","unrealizedProfit":"0","usedMargin":"1000"}}}""";
+        var balanceJson = """{"code":0,"msg":"OK","data":[{"asset":"USDT","balance":"5000","availableMargin":"4000","unrealizedProfit":"0","usedMargin":"1000"}]}""";
         var handler = new AnzahlFehlerHandler(fehlerAnzahl: 1, HttpStatusCode.TooManyRequests, balanceJson);
         var client = ErstelleClient(handler);
 
@@ -171,7 +171,7 @@ public class BingXRestClientTests
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(
-                    """{"code":0,"msg":"OK","data":{"balance":{"balance":"1000","availableMargin":"1000","unrealizedProfit":"0","usedMargin":"0"}}}""",
+                    """{"code":0,"msg":"OK","data":[{"asset":"USDT","balance":"1000","availableMargin":"1000","unrealizedProfit":"0","usedMargin":"0"}]}""",
                     Encoding.UTF8, "application/json")
             };
         });

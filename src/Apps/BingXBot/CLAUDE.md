@@ -1323,10 +1323,204 @@ Basierend auf Recherche (2024-2026 Backtests, BingX-Doku, Krypto-Futures-Studien
 | Core/SymbolClassifierTests.cs | 25 | Prefix-Erkennung, IsTradFi, Is24x7, IsApiTradeable, DisplayName |
 | Engine/TradingHoursFilterTests.cs | 8 | Wochenende, Handelszeiten, Krypto 24/7, Forex 24/5 |
 
+### Neue ScannerSettings (09.04.2026)
+| Property | Default | Beschreibung |
+|----------|---------|--------------|
+| MinPriceChangeTradFi | 0.1% | Eigener PriceChange-Filter für TradFi (Krypto hat 0.5%) |
+
+### Fixes: Multi-Asset Verifizierung (09.04.2026)
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Funding-Settlement blockierte TradFi | MarketFilter.cs + TradingServiceBase.cs | `CheckSession()` blockierte ALLE Symbole 15min/Tag wegen Krypto-Funding-Settlement. Fix: `IsFundingSettlement()` extrahiert, bei gemischtem Scan nur Krypto-Kandidaten im Loop gefiltert |
+| MinPriceChange fehlte für TradFi | MarketScanner.cs + ScanHelper.cs | TradFi hatte keinen PriceChange-Filter → unnötige API-Calls. Fix: `MinPriceChangeTradFi=0.1%` in ScannerSettings + im Scanner/ScanHelper angewandt |
+| Stock-Handelszeiten zu restriktiv | TradingHoursFilter.cs | Stock 10:00-21:00 → 08:00-24:00 UTC. Commodity/Index: Fast 24/5 mit 1h Pause 22:00-23:00 UTC |
+| Scanner ATR%-Schwellen krypto-optimiert | MarketScanner.cs | 5D-Scoring ATR% 1-4% → category-abhängig: Forex 0.05-0.5%, Stock 0.3-2%, Commodity 0.5-3%, Index 0.2-1.5%. Auch Struktur-Score-Schwellen angepasst |
+| EnabledCategories-Default divergierte | MultiModeOrchestrator.cs | Alle-Modi-Modus Default war nur `{Crypto}` statt alle 5. Fix: Default konsistent mit ScannerSettings (alle 5 Kategorien) |
+| SK-System MinRange für Forex zu hoch | SequenzKonzeptStrategy.cs | 0.5-1.0% filterte fast alle Forex-Sequenzen. Fix: `categoryRangeFactor` skaliert MinRange (Forex: 0.25x, Stock: 0.5x, Index: 0.4x, Commodity: 0.6x) |
+| IsHedgeModeActive im Multi-Mode tot | MultiModeOrchestrator.cs | `IsHedgeModeActive` nicht gesetzt → TradFi im Alle-Modi komplett tot. Fix: Paper=true, Live=aus BotSettings |
+| Large-Cap-Rabatt galt für TradFi | CryptoTrendProStrategy.cs | MinScore-2 bei >500M Volume galt auch für TradFi → schwache Signale. Fix: Nur für `MarketCategory.Crypto` |
+| PriceTickerLoop ohne TradingHours | TradingServiceBase.cs | SL/TP/Trailing auf stale TradFi-Preisen bei geschlossenem Markt. Fix: `IsMarketOpen()` Check → Skip bei geschlossenem Markt |
+| Scanner-Rotation Wrap-Around | ScanHelper.cs | Offset-Berechnung erzeugte bei hohem Counter potentielle Duplikate. Fix: `% remaining.Count` + Skip+Concat+Take |
+| Balance v2→v3 | BingXRestClient.cs | v3 liefert Array pro Settlement-Asset, USDT-Filter für Futures-Wallet |
+| Limit-Order TP bei pending Entry | LiveTradingService.cs | TP bei Limit-Entry übersprungen. Fill-Detection im PriceTickerLoop holt nach |
+| Server-Zeit-Sync (Error 100421) | BingXRestClient.cs | `SyncServerTimeAsync()` berechnet Offset lokal↔Server bei Connect |
+
+### Neue API-Features (09.04.2026, verifiziert gegen offizielle BingX API Spec)
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| Kill-Switch (Dead-Man-Switch) | BingXRestClient + LiveTradingService | `ActivateKillSwitchAsync(120s)` alle 60s. Bot-Crash → BingX cancelt nach 2min alle Orders |
+| Commission-Rates von API | BingXRestClient + LiveTradingManager | Echte Maker/Taker-Fees beim Connect. VIP-Level-abhängig statt hardcoded |
+| Fund-Flow (Income) | BingXRestClient | `GetIncomeHistoryAsync()` — Realized PnL, Funding-Fees, Trading-Fees |
+| Order-Amendment | BingXRestClient | `AmendOrderAsync()` — Order atomar ändern (kein Cancel+Replace, keine SL-Lücke) |
+| Server-Time v2 | BingXRestClient | Upgrade von v1 auf `/openApi/swap/v2/server/time` |
+
 ### Neue Gotchas
 - SymbolClassifier: `NCCO`=Commodity, `NCSI`=Index, `NCFX`=Forex, `NCSK`=Stock, Rest=Crypto
 - TradFi `EnableTradFi=false` Default → kein Risiko für bestehende Krypto-Logik
 - Trading-Hours: TradFi am Wochenende IMMER geschlossen, auch 724-Varianten haben API gesperrt
 - RSI-Ranges: 42-78 für Krypto, 30-70 für TradFi — in CryptoTrendPro.Evaluate() per context.Category
 - Funding-Rate: Nur für Krypto prüfen (`category == MarketCategory.Crypto`)
+- Funding-Settlement: Nur für Krypto relevant — `MarketFilter.IsFundingSettlement()` NICHT auf TradFi anwenden
 - MarketContext hat jetzt `Category`-Feld (letzter Parameter, Default Crypto)
+- Scanner ATR%-Schwellen MÜSSEN category-abhängig sein — TradFi hat 10-50x niedrigere ATR% als Krypto
+
+## SK-System Vollständigkeits-Audit (09.04.2026)
+
+Online-Recherche des originalen Stefan-Kassing SK-Systems + Abgleich mit Implementierung. 13 Findings, alle gefixt.
+
+### Neue Models/Enums
+| Element | Datei | Beschreibung |
+|---------|-------|--------------|
+| SequenceType Enum | Sequence.cs | Normal (Typ 1, handelbar), Overextended (Typ 2, nur Analyse), Elongated (Typ 3, nur Analyse) |
+| SequenceState.FullyCompleted | Sequence.cs | 200% Extension erreicht — Sequenz vollständig abgearbeitet (SK-Regel) |
+| HasFullyCompleted(price) | Sequence.cs | Prüft 200% Extension (zusätzlich zu HasReachedTarget für 161.8%) |
+| IsTradeableType Property | Sequence.cs | Nur Typ 1 (Normal) darf Entries auslösen |
+| DisableSmartBreakeven | SignalResult.cs | SK-Regel: SL NICHT in den Gewinn verschieben (B-C Korrekturen stoppen aus) |
+
+### Neue SequenceDetector-Methoden
+| Methode | Datei | Beschreibung |
+|---------|-------|--------------|
+| CalculateBCKL() | SequenceDetector.cs | BC-Korrekturlevel: 50-66.7% Retracement der B-C Welle ab 100% Extension. Für Re-Entry nach Preis-Reaktion an Extension |
+| IsInBCKL() | SequenceDetector.cs | Prüft ob Preis im BCKL-Bereich liegt |
+| IsDestabilized() | SequenceDetector.cs | Erkennt Destabilisierung: Preis war in Zone (50-66.7%), hat sie verlassen ohne B-Break. Warnsignal |
+| ClassifySequenceType() | SequenceDetector.cs | Klassifiziert A-B-C als Typ 1/2/3 anhand B-C Impulsivität, Zeitverhältnis A-B vs B-C, Richtungskonsistenz |
+
+### Strategie-Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Sequenztyp-Filter | SequenzKonzeptStrategy.cs | Typ 2+3 Sequenzen werden für Entry gefiltert (nur Analyse). Typ 1 = handelbar |
+| 200% FullyCompleted Close | SequenzKonzeptStrategy.cs | Neues Close-Signal bei 200% Extension (Confidence 1.0). 161.8% = erste TP-Zone, 200% = abgearbeitet |
+| BOS Close-Break | SequenceDetector.cs | DetectBOS prüft jetzt Candle-Body-Close (SK-Regel: kein Docht!). requireCloseBreak Parameter |
+| BCKL Re-Entry | SequenzKonzeptStrategy.cs | Neuer Re-Entry-Typ: Preis im BC-Korrekturlevel nach 100% Extension. SL unter Punkt C (engerer Stop). Confidence 0.65 |
+| Destabilisierung Confluence | SequenzKonzeptStrategy.cs | -1 Confluence-Abzug bei erkannter Destabilisierung (Preis verlässt Korrektur-Zone) |
+| Entry-Zone auf GKL verengt | SequenceDetector.cs | StableInZone-Bestätigung prüft jetzt 55.9-66.7% (GKL) statt 50-66.7%. PriceTouches nutzt weiterhin 50-66.7% |
+| Volume SMA20 konsistent | SequenceDetector.cs | HighVolume-Bestätigung nutzt jetzt SMA-20 (wie Confluence-Check) statt Durchschnitt der letzten 3 Kerzen |
+| Limit-Order am Golden Ratio | SequenzKonzeptStrategy.cs | Wenn Preis außerhalb Buy/GKL-Zone → Limit-Order am 61.8% Retracement statt Marktpreis |
+| Smart BE deaktivierbar | SequenzKonzeptStrategy.cs, TradingServiceBase.cs | SK-Regel "SL NICHT verschieben". DisableSmartBreakeven Flag im Signal. SK setzt true, CTP/andere false |
+| ScanHelper Entry-TF | ScanHelper.cs | MarketContext bekommt jetzt M15-Candles als EntryTimeframeCandles (fehlte vorher) |
+
+### Neue Gotchas (SK-System)
+- SequenceType: Typ 2 (Überextendiert) = B-C impulsiv/schnell + >80% Richtungskonsistenz. Typ 3 (Langgezogen) = B-C > 3x A-B Dauer + flache Korrektur (<45%)
+- BCKL: SL unter Punkt C (nicht A!) — engerer Stop für Re-Entry
+- FullyCompleted bei 200% MUSS Positions schließen (höhere Priorität als TargetReached bei 161.8%)
+- BOS: IMMER Close-Break prüfen (SK-Regel). Nur Scalping darf Wick-Break nutzen
+- Smart Breakeven bei SK deaktiviert — B-C Korrekturen innerhalb der Zielbewegung können SL auf BE-Level triggern
+- Destabilisierung: Lookback 10 Kerzen. Prüft ob Preis IN der Zone war und sie dann GEGEN die Sequenz verlassen hat
+- ScanHelper Entry-TF: Lädt M15-Candles (24h) als 3. Ebene. Optional — bei Fehler wird auf Primary-TF zurückgefallen
+- BCKL-Range: Strecke C→Extension100 (NICHT B→C!). Extension100 = C + A-B Range
+- IKI-State MUSS nach Index-Mapping mit aktuellem Preis neu berechnet werden (Sub-Candle-State ist veraltet)
+- TargetReached (161.8%) löst KEIN Close-Signal aus — Multi-Stage Exit handhabt TP1. Nur FullyCompleted (200%) schließt
+- TP2 im SK-System ist 200% Extension (NICHT 261.8%). 200% = Sequenz abgearbeitet
+- Nomenklatur: Unser PointA = SK Punkt 0, PointB = SK Punkt A, PointC = SK Punkt B. Berechnung mathematisch äquivalent
+- SK SL/TP-Lebenszyklus: Entry→SL unter Punkt A→TP1 bei 161.8% (30% Partial)→TP2 bei 200% (ALLES schließen). Kein BE, kein Trailing
+- Auto-Breakeven bleibt auch bei SK aktiv (Kapitalschutz) — nur Smart-BE nach TP1 ist deaktiviert
+- Chandelier-Trailing prüft `DisableSmartBreakeven` — bei SK-Trades wird SL NICHT nachgezogen (bleibt unter Punkt A)
+- SK TP2 = Full Close (nicht Partial 30%). `DisableSmartBreakeven` steuert auch den TP2-Modus in TradingServiceBase
+- Sequenzcharakter: Jede Welle (A→B, B→C) wird als Impulsiv (I) oder Korrektiv (K) klassifiziert. IK = ideal (+1 Confluence), K* = schwach (-1 Confluence)
+- Charakter-Metriken: 40% Richtungskonsistenz + 30% Body/Range-Ratio + 30% Bewegungseffizienz → Score >= 0.55 = Impulsiv
+- `Sequence.CharacterPattern` zeigt z.B. "IK" (gut) oder "KI" (schlecht) im Log/Signal-Reason
+
+## Smart Money Concepts (SMC) Integration (09.04.2026)
+
+Institutionelle Preis-Muster als zusätzliche Confluence-Quellen für das SK-System.
+
+### Neue Dateien
+| Datei | Beschreibung |
+|-------|--------------|
+| `Core/Models/SmcModels.cs` | OrderBlock, FairValueGap, StructureConsistency Records + SmcZoneType Enum |
+| `Engine/Indicators/SmcAnalyzer.cs` | Static class: FindOrderBlocks, FindFairValueGaps, CheckStructureConsistency |
+
+### Confluence-Erweiterungen
+| Quelle | Score | Bedingung |
+|--------|-------|-----------|
+| Order Block Entry | +1 | Entry in unmitigiertem bullischen OB (Long) / bärischen OB (Short) |
+| OB-Widerstand | -2 | Gegenläufiger OB direkt über/unter Entry (<1% Distanz) |
+| FVG-Target | +1 | TP (161.8% Extension) liegt in unmitigiertem FVG |
+| Multi-TF Aligned | +1 | Alle verfügbaren TFs zeigen gleiche Richtung |
+| Multi-TF Divergent | -1 | ≤1 von 3 TFs aligned |
+
+### Weitere neue Methoden
+| Methode | Datei | Beschreibung |
+|---------|-------|--------------|
+| CalculateZigZag | IndicatorHelper.cs | Skender ZigZag-Wrapper → SwingPoints |
+| CrossValidateSwings | SequenceDetector.cs | Fractal + ZigZag Kreuzvalidierung |
+
+### Gotchas
+- OB-Mitigation: Preis muss Zone BERÜHRT haben (High/Low, nicht nur Close)
+- FVG: `candles[i].Low > candles[i-2].High` (bullisch) — High/Low-basiert, nicht Close
+- Order Blocks verfallen nach `maxAge=100` Kerzen
+- FVG minGapPercent=0.1% filtert Micro-Gaps bei illiquiden Assets
+- Alle SK-Features sind in ALLEN Modi aktiv (IKI, BCKL, FVG, OB, MTF) — SK-Regeln sind TF-unabhängig
+
+## SK-Kernlogik-Fixes (10.04.2026)
+
+Tiefenprüfung der A-B-C Punkt-Setzung und Trade-Logik gegen das originale SK-System.
+
+### Kritische Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| C-Punkt Validierung verschärft | SequenceDetector.cs | C nur noch bei 50-66.7% Retracement akzeptiert (war 38.2-78.6%). 38.2% = zu flach, 78.6% = fast Invalidierung. Betrifft FindBestSequence, DetectAllSequences, UpdateState |
+| Entry NUR bei WaitingBreak | SequenzKonzeptStrategy.cs | CorrectionZone (C noch nicht als Swing bestätigt) blockiert jetzt Entry. SK-Regel: Erst traden wenn C sich stabilisiert hat |
+| PointC=null blockiert Trade | SequenzKonzeptStrategy.cs | Ohne bestätigten C-Punkt sind Extensions Fallback-Werte (50% Retracement) → falscher TP. Jetzt NoSignal |
+| BuildSequence State-Init vereinfacht | SequenceDetector.cs | B-Break-Prüfung aus BuildSequence entfernt (ignorierte requireCloseBreak). State wird nur noch von UpdateState() gesetzt — korrekt mit Close vs Wick |
+| Re-Entry Reihenfolge korrigiert | SequenzKonzeptStrategy.cs | GKL (0.7) → BCKL (0.65) → IKI (0.6). Stärkstes Signal zuerst. Vorher: IKI zuerst → stärkere GKL-Signale verpasst |
+| Re-Entry nur bei WaitingBreak | SequenzKonzeptStrategy.cs | IKI + GKL Re-Entry nur wenn C bestätigt (WaitingBreak). Vorher: Auch CorrectionZone → unbestätigte Re-Entries |
+| DisableSmartBreakeven in Re-Entries | SequenzKonzeptStrategy.cs | Re-Entry Signale (GKL, BCKL, IKI) setzen jetzt auch DisableSmartBreakeven — vorher fehlte das Flag |
+| Alle Presets einheitlich | SequenzKonzeptStrategy.cs | Scalping aktiviert jetzt IKI, BCKL, FVG (waren deaktiviert). SK-Regeln gelten auf jedem TF |
+
+### Neue Gotchas
+- C-Punkt MUSS im 50-66.7% Retracement liegen (SK-GKL). NICHT 38.2-78.6%
+- Entry NIEMALS bei CorrectionZone — nur WaitingBreak (C als Swing bestätigt)
+- BuildSequence berechnet NUR Fibonacci-Level, KEIN State. State kommt von UpdateState()
+- Re-Entry Hierarchie: GKL (übergeordnet, stärkstes) → BCKL (BC-Level) → IKI (intern, schwächstes)
+
+- SK-System MinRangePercent MUSS category-abhängig skaliert werden (Forex 0.25x, sonst fast keine Sequenzen)
+- MultiModeOrchestrator.EnabledCategories Default MUSS alle 5 Kategorien enthalten (konsistent mit ScannerSettings)
+- MultiModeOrchestrator: `IsHedgeModeActive` MUSS gesetzt werden (Paper=true, Live=aus BotSettings) — sonst TradFi komplett tot
+- Large-Cap-Rabatt (MinScore-2) NUR für `MarketCategory.Crypto` — TradFi hat andere Stabilitäts-Dynamik
+- PriceTickerLoop: TradFi-Positionen bei geschlossenem Markt überspringen (stale Preise → falsches SL/TP)
+- TradingHours Commodity/Index: Nur 1h Pause 22:00-23:00 UTC (CME Maintenance), NICHT 00:00-01:00 geschlossen
+- Scanner-Rotation: `_rotationOffset % remaining.Count` für sauberes Wrap-Around — NICHT `offset * count % max`
+- Balance-Endpoint MUSS v3 sein (`/openApi/swap/v3/user/balance`) — v3 liefert Array, nach `asset=="USDT"` filtern
+- Kill-Switch: `ActivateKillSwitchAsync()` alle 60s refreshen, bei sauberem Stop `DeactivateKillSwitchAsync()` aufrufen
+- Commission-Rates: Beim Connect laden, nicht hardcoden — BingX hat VIP-Levels mit unterschiedlichen Fees
+- Limit-Order TP: NICHT sofort platzieren (Position existiert noch nicht). Fill-Detection im PriceTickerLoop
+- SyncServerTimeAsync: MUSS bei Connect aufgerufen werden — BingX Error 100421 bei Systemzeit-Abweichung >5s
+- Fund-Flow `incomeType`: REALIZED_PNL, FUNDING_FEE, TRADING_FEE, INSURANCE_CLEAR, ADL, TRANSFER
+
+### SK-System Redesign (10.04.2026 — Stefan Kassing Regelkonformität)
+
+#### Holy Trinity Architektur (4H/1H/15m)
+- **4H (Navigator)**: HTF-Sequenz bestimmt Richtung + GKL-Zonen. Entry nur in HTF-Richtung.
+- **1H (Filter)**: Haupt-TF prüft ob Korrektur im HTF-KL an Schwung verliert. Sequenz-Erkennung hier.
+- **15m (Scharfschütze)**: Entry NUR wenn Micro-Sequenz AKTIVIERT (A überschritten = Active). SL unter Micro-0.
+
+#### SK-Regeln implementiert
+| Regel | Implementation |
+|-------|---------------|
+| Entry nur bei WaitingBreak | CorrectionZone gesperrt (C muss Fraktal-bestätigt) |
+| Richtungs-Sperre nach Abarbeitung | 20 Kerzen Cooldown (`_completedDirection`) |
+| Gegensequenz-Erkennung | Nach FullyCompleted: Gegenrichtung suchen → ins GKL shorten/longen |
+| Verschachtelung (Micro-SL) | SL unter 15m-0 statt Macro-A (engerer SL → CRV 1:5 bis 1:10) |
+| Micro-Entry nur Active | WaitingBreak auf 15m = kein Entry (Sequenz noch nicht aktiviert) |
+| Ohne Micro → kein Entry | Kein Fallback auf Macro-SL wenn 15m-Daten vorhanden |
+| Over-Extension-Check | 15m schon bei 100%+ Extension → zu spät, kein Entry |
+| Sandwich-Check | 15m-Long im HTF-Short-Ziellevel → KEIN Trade (größerer TF gewinnt) |
+| Seitwärts-Filter | ADX < 15 → SK pausiert (Trendfolge-System) |
+| HTF-Ziellevel-Blocker | HTF am 161.8%/200% → übergeordnete Bewegung läuft aus |
+| Volume-Bestätigung | Low Volume bei Entry → Confidence halbiert |
+| BE bei 2× SL-Distanz | SK-Kassing Original (nicht 50% zum TP) |
+| SL→TP1 bei 120% Fortschritt | Gestufter Breakeven Stufe 2 |
+| TP1 bei Micro-161.8% | 50% schließen, dann Break-Even (Free Ride) |
+| TP2 bei HTF-Ziellevel | Rest laufen lassen bis 4H Extension 161.8% |
+
+#### SK Gotchas
+- Entry-TF (15m) Micro-Sequenz MUSS State `Active` haben — WaitingBreak reicht nicht
+- Ohne aktivierte 15m-Micro-Sequenz kein Entry (wenn M15-Daten vorhanden)
+- Sandwich-Check prüft ob Entry im HTF-Ziellevel der Gegenrichtung liegt (HasReachedTarget)
+- Over-Extension: Micro-Sequenz bei 100%+ vom C-Punkt → zu spät für Entry
+- TP1 = 15m-Extension 161.8% (NICHT 100% Extension der Haupt-Sequenz)
+- TP2 = HTF-Extension 161.8% (NICHT 200% der Haupt-Sequenz) — Fallback: Haupt 200%
+- SK-TP1-Ratio = 50% (NICHT 30%) — 50% bei TP1 schließen, Rest als Free Ride
+- `_completedDirection` + `_completedCooldown`: 20 Kerzen Sperre nach Sequenz-Abarbeitung
+- ADX-Filter < 15 ist eigenständig vom MinAdx der CryptoTrendPro-Strategie

@@ -29,6 +29,11 @@ public class BingXWebSocketClient : IAsyncDisposable
     private string? _listenKey;
     private Task? _receiveTask;
 
+    // Send-Lock: ClientWebSocket.SendAsync ist NICHT thread-safe.
+    // Subscribe, Unsubscribe und Pong (ReceiveLoop) können gleichzeitig senden.
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
+    private readonly SemaphoreSlim _userSendLock = new(1, 1);
+
     // User-Data-Stream: Separater WebSocket für Echtzeit-Account-Updates
     private ClientWebSocket? _userWs;
     private Task? _userReceiveTask;
@@ -100,7 +105,9 @@ public class BingXWebSocketClient : IAsyncDisposable
         });
 
         var bytes = Encoding.UTF8.GetBytes(subscribeMsg);
-        await _ws!.SendAsync(bytes, WebSocketMessageType.Text, true, _cts?.Token ?? CancellationToken.None);
+        await _sendLock.WaitAsync().ConfigureAwait(false);
+        try { await _ws!.SendAsync(bytes, WebSocketMessageType.Text, true, _cts?.Token ?? CancellationToken.None); }
+        finally { _sendLock.Release(); }
 
         _logger.LogInformation("Abonniert: {Channel}", channel);
     }
@@ -155,7 +162,9 @@ public class BingXWebSocketClient : IAsyncDisposable
         });
 
         var bytes = Encoding.UTF8.GetBytes(unsubMsg);
-        await _ws!.SendAsync(bytes, WebSocketMessageType.Text, true, _cts?.Token ?? CancellationToken.None);
+        await _sendLock.WaitAsync().ConfigureAwait(false);
+        try { await _ws!.SendAsync(bytes, WebSocketMessageType.Text, true, _cts?.Token ?? CancellationToken.None); }
+        finally { _sendLock.Release(); }
 
         _logger.LogInformation("Abbestellt: {Channel}", channel);
     }
@@ -219,7 +228,9 @@ public class BingXWebSocketClient : IAsyncDisposable
                 // Ping/Pong Handling - BingX sendet "Ping", erwartet "Pong"
                 if (message == "Ping" || message.Contains("\"ping\""))
                 {
-                    await _ws.SendAsync(pongBytes, WebSocketMessageType.Text, true, ct);
+                    await _sendLock.WaitAsync(ct).ConfigureAwait(false);
+                    try { await _ws.SendAsync(pongBytes, WebSocketMessageType.Text, true, ct); }
+                    finally { _sendLock.Release(); }
                     continue;
                 }
 
@@ -406,7 +417,9 @@ public class BingXWebSocketClient : IAsyncDisposable
 
                 if (message == "Ping" || message.Contains("\"ping\""))
                 {
-                    await _userWs.SendAsync(pongBytes, WebSocketMessageType.Text, true, ct);
+                    await _userSendLock.WaitAsync(ct).ConfigureAwait(false);
+                    try { await _userWs.SendAsync(pongBytes, WebSocketMessageType.Text, true, ct); }
+                    finally { _userSendLock.Release(); }
                     continue;
                 }
 
@@ -426,6 +439,52 @@ public class BingXWebSocketClient : IAsyncDisposable
         }
 
         _logger.LogWarning("User-Data-Stream: Verbindung beendet");
+
+        // Auto-Reconnect falls nicht explizit abgebrochen (gleicher Pattern wie Market-WS)
+        if (!ct.IsCancellationRequested && _listenKey != null)
+            await ReconnectUserDataStreamAsync(ct);
+    }
+
+    /// <summary>
+    /// Automatischer Reconnect für den User-Data-Stream mit exponentiellem Backoff.
+    /// Erstellt neuen ListenKey und baut WebSocket-Verbindung neu auf.
+    /// </summary>
+    private async Task ReconnectUserDataStreamAsync(CancellationToken ct)
+    {
+        for (int attempt = 1; attempt <= MaxReconnectAttempts && !ct.IsCancellationRequested; attempt++)
+        {
+            var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 2s, 4s, 8s, 16s, 32s
+            _logger.LogWarning("User-Data-Stream Reconnect Versuch {Attempt}/{Max} in {Backoff}s...",
+                attempt, MaxReconnectAttempts, backoff.TotalSeconds);
+
+            try { await Task.Delay(backoff, ct); }
+            catch (OperationCanceledException) { break; }
+
+            try
+            {
+                _userWs?.Dispose();
+                _userWs = new ClientWebSocket();
+                _userWs.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+
+                // ListenKey könnte abgelaufen sein — neuer wird vom LiveTradingService erstellt
+                // Hier verwenden wir den bestehenden (Renewal läuft extern)
+                var uri = new Uri($"{WsBaseUrl}?listenKey={_listenKey}");
+                await _userWs.ConnectAsync(uri, ct);
+                _logger.LogInformation("User-Data-Stream Reconnect erfolgreich");
+
+                // Receive-Loop neu starten
+                _userReceiveTask = Task.Run(() => UserDataReceiveLoopAsync(ct), ct);
+                return;
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "User-Data-Stream Reconnect fehlgeschlagen");
+            }
+        }
+
+        _logger.LogError("User-Data-Stream: Max Reconnect-Versuche ({Max}) erreicht — Fallback auf REST-Polling",
+            MaxReconnectAttempts);
     }
 
     /// <summary>Trennt den User-Data-Stream.</summary>
@@ -487,6 +546,9 @@ public class BingXWebSocketClient : IAsyncDisposable
             _ws.Dispose();
             _ws = null;
         }
+
+        _sendLock.Dispose();
+        _userSendLock.Dispose();
 
         if (_receiveTask is not null)
         {

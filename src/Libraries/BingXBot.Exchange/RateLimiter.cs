@@ -23,7 +23,7 @@ public class RateLimiter : IDisposable
     /// </summary>
     public async Task WaitForSlotAsync(string category, CancellationToken ct)
     {
-        if (_disposed) return;
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         var limit = _limits.GetValueOrDefault(category, 20);
         var semaphore = _semaphores.GetOrAdd(category, _ => new SemaphoreSlim(1, 1));

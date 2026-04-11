@@ -94,22 +94,12 @@ public class LiveTradingService : TradingServiceBase
 
         StartBase(new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance));
 
-        // WebSocket: User-Data-Stream + Ticker-Stream starten (mit Fehler-Logging)
+        // WebSocket: User-Data-Stream + Ticker-Stream starten (async Wrapper mit try/catch,
+        // kein ContinueWith das AggregateException verpackt oder TaskScheduler-Probleme hat)
         if (_wsClient != null)
         {
-            _ = StartUserDataStreamAsync(_cts!.Token).ContinueWith(t =>
-            {
-                if (t.IsFaulted)
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "WebSocket",
-                        $"User-Data-Stream fehlgeschlagen: {t.Exception?.GetBaseException().Message}"));
-            }, TaskContinuationOptions.OnlyOnFaulted);
-
-            _ = StartTickerStreamAsync().ContinueWith(t =>
-            {
-                if (t.IsFaulted)
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "WebSocket",
-                        $"Ticker-Stream fehlgeschlagen: {t.Exception?.GetBaseException().Message}"));
-            }, TaskContinuationOptions.OnlyOnFaulted);
+            _ = SafeStartAsync("User-Data-Stream", () => StartUserDataStreamAsync(_cts!.Token));
+            _ = SafeStartAsync("Ticker-Stream", StartTickerStreamAsync);
         }
     }
 
@@ -136,21 +126,28 @@ public class LiveTradingService : TradingServiceBase
         // StopBase() am Ende cancelt den CTS sicher.
 
         // Emergency: ALLE Positionen sofort schließen!
+        // Dedizierter CTS mit 10s Timeout — bei Netzwerkproblemen nicht 90s blockieren
+        using var emergencyCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var ect = emergencyCts.Token;
         try
         {
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
                 "NOTFALL-STOP: Schließe alle Positionen auf BingX..."));
 
-            var positions = await _restClient.GetPositionsAsync().ConfigureAwait(false);
+            var positions = await _restClient.GetPositionsAsync(ect).ConfigureAwait(false);
             // Ticker für Exit-Preise holen (ein API-Call)
-            var tickers = await _publicClient.GetAllTickersAsync().ConfigureAwait(false);
+            var tickers = await _publicClient.GetAllTickersAsync(ect).ConfigureAwait(false);
             var tickerMap = tickers.ToDictionary(t => t.Symbol, t => t.LastPrice);
 
             // Zuerst alle offenen Conditional Orders canceln (native SL/TP-Orders),
             // damit sie nicht als Ghost-Orders bestehen bleiben nach dem Position-Close
             try
             {
-                var openOrders = await _restClient.GetOpenOrdersAsync().ConfigureAwait(false);
+                // Timeout via ect: GetOpenOrdersAsync hat keinen CT-Parameter,
+                // daher Task.WhenAny mit Timeout als Safety-Net
+                var orderTask = _restClient.GetOpenOrdersAsync();
+                var completed = await Task.WhenAny(orderTask, Task.Delay(5000, ect)).ConfigureAwait(false);
+                var openOrders = completed == orderTask ? await orderTask : Array.Empty<Order>();
                 foreach (var order in openOrders)
                 {
                     if (order.Type is Core.Enums.OrderType.StopMarket or Core.Enums.OrderType.TakeProfitMarket or Core.Enums.OrderType.TakeProfitLimit)
@@ -232,6 +229,29 @@ public class LiveTradingService : TradingServiceBase
     {
         try
         {
+            // SK-VERIFY: [6.3] Isolated Margin VOR jeder Order sicherstellen
+            // Ohne Isolated Margin kann ein einzelner Trade das gesamte Konto liquidieren
+            try
+            {
+                await _restClient.SetMarginTypeAsync(ticker.Symbol, MarginType.Isolated)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception marginEx)
+            {
+                // SK-VERIFY: [6.3] Erwartete Fehler: Position offen (MarginType nicht änderbar)
+                // oder bereits Isolated. Unerwartete Fehler loggen.
+                var msg = marginEx.Message;
+                if (!msg.Contains("isolated", StringComparison.OrdinalIgnoreCase)
+                    && !msg.Contains("position", StringComparison.OrdinalIgnoreCase)
+                    && !msg.Contains("margin type", StringComparison.OrdinalIgnoreCase))
+                {
+                    _eventBus.PublishLog(new Core.Models.LogEntry(DateTime.UtcNow,
+                        Core.Enums.LogLevel.Warning, "Exchange",
+                        $"{ModePrefix}{ticker.Symbol}: SetMarginType(Isolated) fehlgeschlagen: {msg}",
+                        ticker.Symbol));
+                }
+            }
+
             // Leverage setzen (adaptiv oder kategoriespezifisch)
             var category = Core.Helpers.SymbolClassifier.Classify(ticker.Symbol);
             var catMaxLev = (int)_riskSettings.GetCategorySettings(category).MaxLeverage;
@@ -257,7 +277,8 @@ public class LiveTradingService : TradingServiceBase
                 ticker.Symbol, side, orderType, quantity,
                 Price: limitPrice,
                 StopLoss: signal?.StopLoss,
-                TakeProfit: null))
+                TakeProfit: null),
+                lastPrice: ticker.LastPrice)
                 .ConfigureAwait(false);
 
             if (order.Status == OrderStatus.Rejected)
@@ -521,7 +542,14 @@ public class LiveTradingService : TradingServiceBase
                 {
                     // Nur entfernen wenn Signal älter als 30 Sekunden (API-Latenz-Grace-Period)
                     if (_signalCreatedAt.TryGetValue(key, out var createdAt) && (now - createdAt).TotalSeconds > 30)
+                    {
+                        // SK-VERIFY: [6.2] Verwaiste native SL/TP-Orders aufräumen
+                        // Wenn User die Position manuell auf BingX schließt, bleiben die nativen Orders im Orderbuch
+                        var symbol = key.Split('_')[0];
+                        try { await CancelNativeSlTpOrdersAsync(symbol).ConfigureAwait(false); }
+                        catch { /* Best-effort: Verwaiste Orders sind ungefährlich */ }
                         RemoveSignalByKey(key);
+                    }
                 }
             }
         }
@@ -1047,6 +1075,21 @@ public class LiveTradingService : TradingServiceBase
                         _eventBus.PublishNotification("BE-SL FEHLT", $"{symbol}: Breakeven-SL nicht gesetzt!");
                 }
             }
+        }
+    }
+
+    /// <summary>Startet einen async Background-Task mit Fehler-Logging (kein ContinueWith nötig).</summary>
+    private async Task SafeStartAsync(string name, Func<Task> action)
+    {
+        try
+        {
+            await action().ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "WebSocket",
+                $"{name} fehlgeschlagen: {ex.Message}"));
         }
     }
 

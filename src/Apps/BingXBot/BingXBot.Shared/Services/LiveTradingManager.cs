@@ -202,6 +202,38 @@ public class LiveTradingManager : IDisposable
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
             $"LIVE-TRADING AKTIV mit Strategie '{strategyName}'. Echtes Geld!"));
 
+        // SK-VERIFY: [6.1] Runtime-State und ExitStates wiederherstellen VOR Start
+        if (_dbService == null)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                "State-Recovery übersprungen: Keine Datenbank verfügbar"));
+            _service.Start();
+            await RecoverOpenPositionsAsync();
+            return;
+        }
+        try
+        {
+            var runtimeState = await _dbService.LoadRuntimeStateAsync();
+            if (runtimeState.HasValue)
+            {
+                _service.RestoreRuntimeState(runtimeState.Value.TradesToday, runtimeState.Value.ConsecutiveLosses, runtimeState.Value.Cooldowns);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
+                    $"Runtime-State wiederhergestellt: {runtimeState.Value.TradesToday} Trades heute, {runtimeState.Value.ConsecutiveLosses} Verluste in Folge, {runtimeState.Value.Cooldowns.Count} Cooldowns"));
+            }
+            var savedExitStates = await _dbService.LoadExitStatesAsync();
+            if (savedExitStates is { Count: > 0 })
+            {
+                _service.RestoreExitStates(savedExitStates);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
+                    $"ExitStates wiederhergestellt: {savedExitStates.Count} Position(en) mit Phase/OriginalQty/Trailing"));
+            }
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                $"State-Recovery fehlgeschlagen (nicht kritisch): {ex.Message}"));
+        }
+
         _service.Start();
 
         // Offene Positionen prüfen und SL/Breakeven setzen
@@ -225,6 +257,9 @@ public class LiveTradingManager : IDisposable
             var tickers = await _publicClient!.GetAllTickersAsync();
             var tickerMap = tickers.ToDictionary(t => t.Symbol, t => t.LastPrice);
 
+            // Alle offenen Orders EINMAL laden (statt pro Position → weniger API-Calls)
+            var allOpenOrders = await _restClient.GetOpenOrdersAsync();
+
             foreach (var pos in positions)
             {
                 if (!tickerMap.TryGetValue(pos.Symbol, out var currentPrice) || currentPrice <= 0)
@@ -238,10 +273,27 @@ public class LiveTradingManager : IDisposable
                 // Auto-Breakeven prüfen: Gewinn% >= Leverage%
                 if (pnlPercent >= pos.Leverage && pos.Leverage > 0)
                 {
-                    // Breakeven = Entry + Round-Trip-Fees (0.1%) + Sicherheitspuffer
+                    // Breakeven = Entry + max(0.15%, ATR-basierter Puffer)
+                    // Konsistent mit TradingServiceBase + MultiModeOrchestrator
                     var beSl = pos.Side == Side.Buy
                         ? pos.EntryPrice * 1.0015m
                         : pos.EntryPrice * 0.9985m;
+                    // ATR-Puffer berechnen (verhindert Ausstoppen bei volatilen Coins)
+                    if (_riskSettings.SmartBreakevenAtrMultiplier > 0 && _publicClient != null)
+                    {
+                        try
+                        {
+                            var atr = await CalculateRecoveryAtrAsync(pos);
+                            if (atr > 0)
+                            {
+                                var atrBe = pos.Side == Side.Buy
+                                    ? pos.EntryPrice + atr * _riskSettings.SmartBreakevenAtrMultiplier
+                                    : pos.EntryPrice - atr * _riskSettings.SmartBreakevenAtrMultiplier;
+                                beSl = pos.Side == Side.Buy ? Math.Max(beSl, atrBe) : Math.Min(beSl, atrBe);
+                            }
+                        }
+                        catch { /* ATR-Berechnung fehlgeschlagen → Minimum-Puffer verwenden */ }
+                    }
 
                     try
                     {
@@ -259,9 +311,8 @@ public class LiveTradingManager : IDisposable
                 // SL/TP aus BingX-Orders lesen und ins Signal-Dictionary schreiben (für UI-Anzeige)
                 try
                 {
-                    var orders = await _restClient.GetOpenOrdersAsync(pos.Symbol);
                     decimal? slPrice = null, tpPrice = null;
-                    foreach (var order in orders)
+                    foreach (var order in allOpenOrders.Where(o => o.Symbol == pos.Symbol))
                     {
                         if (order.Type == OrderType.StopMarket && order.StopPrice.HasValue)
                             slPrice = order.StopPrice.Value;
@@ -332,6 +383,20 @@ public class LiveTradingManager : IDisposable
 
         await SaveAtiStateAsync();
 
+        // SK-VERIFY: [6.1] ExitStates + Runtime-State VOR StopAsync speichern (danach gecleart)
+        if (_service != null && _dbService != null)
+        {
+            try
+            {
+                var exitStates = _service.GetExitStatesSnapshot();
+                if (exitStates.Count > 0)
+                    await _dbService.SaveExitStatesAsync(exitStates);
+                var (tradesToday, losses, cooldowns) = _service.GetRuntimeStateSnapshot();
+                await _dbService.SaveRuntimeStateAsync(tradesToday, losses, cooldowns);
+            }
+            catch { /* Best-effort: DB-Fehler darf Stop nicht blockieren */ }
+        }
+
         if (_service != null)
         {
             await _service.StopAsync();
@@ -356,6 +421,20 @@ public class LiveTradingManager : IDisposable
             // ATI-Lernzustand retten bevor alles geschlossen wird —
             // EmergencyStop kann durch Crash/Absturz ausgelöst werden, State sonst verloren
             await SaveAtiStateAsync();
+
+            // SK-VERIFY: [6.1] ExitStates + Runtime-State auch bei EmergencyStop speichern
+            try
+            {
+                if (_dbService != null)
+                {
+                    var exitStates = _service.GetExitStatesSnapshot();
+                    if (exitStates.Count > 0)
+                        await _dbService.SaveExitStatesAsync(exitStates);
+                    var (tradesToday, losses, cooldowns) = _service.GetRuntimeStateSnapshot();
+                    await _dbService.SaveRuntimeStateAsync(tradesToday, losses, cooldowns);
+                }
+            }
+            catch { /* Best-effort: DB-Fehler darf EmergencyStop nicht blockieren */ }
 
             // EmergencyStopAsync() wartet intern auf Task.WhenAll(closeTasks) —
             // _restClient wird erst NACH vollständigem Abschluss genullt.
@@ -523,6 +602,22 @@ public class LiveTradingManager : IDisposable
         return pos.Side == Side.Buy
             ? pos.EntryPrice * (1m - fallbackPercent)
             : pos.EntryPrice * (1m + fallbackPercent);
+    }
+
+    /// <summary>Berechnet ATR-Wert für ein Symbol (für BE-Puffer bei Recovery).</summary>
+    private async Task<decimal> CalculateRecoveryAtrAsync(Position pos)
+    {
+        if (_publicClient == null) return 0m;
+        var candles = await _publicClient.GetKlinesAsync(
+            pos.Symbol, _scannerSettings.ScanTimeFrame,
+            DateTime.UtcNow.AddHours(-100), DateTime.UtcNow).ConfigureAwait(false);
+        if (candles.Count >= 20)
+        {
+            var atr = Engine.Indicators.IndicatorHelper.CalculateAtr(candles);
+            if (atr.Count > 0 && atr[^1].HasValue && atr[^1]!.Value > 0)
+                return atr[^1]!.Value;
+        }
+        return 0m;
     }
 
     public void Dispose()

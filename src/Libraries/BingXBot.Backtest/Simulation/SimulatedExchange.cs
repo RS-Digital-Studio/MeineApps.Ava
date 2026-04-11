@@ -123,12 +123,12 @@ public class SimulatedExchange : IExchangeClient, IDisposable
         {
             // Neue Position eröffnen
             _positions.Add(new Position(symbol, side, fillPrice, fillPrice, quantity,
-                0m, leverage, MarginType.Cross, DateTime.UtcNow));
+                0m, leverage, MarginType.Isolated, DateTime.UtcNow));
         }
         _positionsDirty = true;
     }
 
-    public Task<Order> PlaceOrderAsync(OrderRequest request)
+    public Task<Order> PlaceOrderAsync(OrderRequest request, decimal lastPrice = 0m)
     {
         _rwLock.EnterWriteLock();
         try
@@ -203,7 +203,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                         request.Quantity,
                         0m,
                         effectiveLeverage,
-                        MarginType.Cross,
+                        MarginType.Isolated,
                         DateTime.UtcNow));
                 }
 

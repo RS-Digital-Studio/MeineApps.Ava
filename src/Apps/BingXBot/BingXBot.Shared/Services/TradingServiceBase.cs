@@ -60,10 +60,13 @@ public abstract class TradingServiceBase : IDisposable
 
     // Multi-Stage Exit: Vollständiger Positions-Zustand (ersetzt teilweise _positionSignals für Exit-Logik)
     protected readonly ConcurrentDictionary<string, PositionExitState> _exitStates = new();
-    // Verlust-Tracking (für Leverage-Reduktion bei Verlusten, kein Cooldown-Pause mehr)
+    // Verlust-Tracking (für Leverage-Reduktion bei Verlusten)
     protected volatile int _consecutiveLosses;
     // Täglicher Trade-Counter (wird bei Tageswechsel zurückgesetzt)
-    protected int _tradesToday;
+    // volatile: wird per Interlocked geschrieben, aber ohne Interlocked gelesen (MaxTrades-Guard)
+    protected volatile int _tradesToday;
+    // SK-VERIFY: [5.3] Symbol-Cooldown nach SL-Hit (4h Sperre gegen Rache-Trades)
+    protected readonly ConcurrentDictionary<string, DateTime> _symbolCooldowns = new();
     // Equity-Curve-Trading: Equity-Historie für EMA-Berechnung
     // Lock nötig: Add() aus ProcessCompletedTrade, Lesen aus GetEquityCurveScaleFactor (verschiedene Loops)
     private readonly List<decimal> _equityHistory = new();
@@ -83,7 +86,11 @@ public abstract class TradingServiceBase : IDisposable
     /// <summary>Letzter Fear & Greed Wert [0, 1] normalisiert. Fuer Dashboard-Widget.</summary>
     public float CachedFearGreedIndex => _cachedFearGreedIndex;
     private DateTime _lastFearGreedFetch = DateTime.MinValue;
-    private static readonly HttpClient _fearGreedClient = new() { Timeout = TimeSpan.FromSeconds(10) };
+    // SocketsHttpHandler: DNS-Einträge nach 15 Min erneuern (statischer HttpClient cached DNS sonst ewig)
+    private static readonly HttpClient _fearGreedClient = new(new System.Net.Http.SocketsHttpHandler
+    {
+        PooledConnectionLifetime = TimeSpan.FromMinutes(15)
+    }) { Timeout = TimeSpan.FromSeconds(10) };
     // Open Interest Tracking pro Symbol: Vorheriger Wert für Change-Berechnung
     private readonly ConcurrentDictionary<string, decimal> _previousOpenInterest = new();
 
@@ -269,6 +276,31 @@ public abstract class TradingServiceBase : IDisposable
     }
 
     /// <summary>Gemeinsames Stop-Cleanup: CTS canceln, Signale leeren, State zurücksetzen.</summary>
+    // SK-VERIFY: [6.1] ExitState-Persistenz: Subklassen können ExitStates VOR dem Clear speichern
+    /// <summary>Gibt alle aktuellen ExitStates als Dictionary zurück (für DB-Persistenz).</summary>
+    public Dictionary<string, PositionExitState> GetExitStatesSnapshot()
+        => new(_exitStates);
+
+    /// <summary>Gibt Runtime-State zurück (TradesToday, ConsecutiveLosses, Cooldowns).</summary>
+    public (int TradesToday, int ConsecutiveLosses, Dictionary<string, DateTime> Cooldowns) GetRuntimeStateSnapshot()
+        => (_tradesToday, _consecutiveLosses, new Dictionary<string, DateTime>(_symbolCooldowns));
+
+    /// <summary>Stellt ExitStates aus DB-Persistenz wieder her.</summary>
+    public void RestoreExitStates(Dictionary<string, PositionExitState> states)
+    {
+        foreach (var kvp in states)
+            _exitStates.TryAdd(kvp.Key, kvp.Value);
+    }
+
+    /// <summary>Stellt Runtime-State aus DB-Persistenz wieder her.</summary>
+    public void RestoreRuntimeState(int tradesToday, int consecutiveLosses, Dictionary<string, DateTime> cooldowns)
+    {
+        Interlocked.Exchange(ref _tradesToday, tradesToday);
+        Interlocked.Exchange(ref _consecutiveLosses, consecutiveLosses);
+        foreach (var kvp in cooldowns)
+            _symbolCooldowns.TryAdd(kvp.Key, kvp.Value);
+    }
+
     protected void StopBase(BotState endState, string logMessage)
     {
         _isRunning = false;
@@ -279,6 +311,7 @@ public abstract class TradingServiceBase : IDisposable
         _positionTrailingPercent.Clear();
         _exitStates.Clear();
         _marginWarningsIssued.Clear();
+        _symbolCooldowns.Clear();
         Interlocked.Exchange(ref _tradesToday, 0);
         OnSignalsClearedAll();
 
@@ -458,11 +491,20 @@ public abstract class TradingServiceBase : IDisposable
 
                             if (pnlPercent >= pos.Leverage)
                             {
-                                // Breakeven = Entry + Round-Trip-Fees (0.05% * 2 = 0.1%) + Sicherheitspuffer
-                                // 0.15% deckt Fees + minimale Slippage, damit BE-Hit kein Verlust ist
+                                // Breakeven = Entry + max(0.15%, ATR-basierter Puffer)
+                                // 0.15% als Minimum deckt Round-Trip-Fees (0.1%) + Slippage.
+                                // ATR-Puffer verhindert Ausstoppen bei volatilen Coins (Spread+Fee ~ 0.13%)
                                 var beSl = pos.Side == Side.Buy
                                     ? pos.EntryPrice * 1.0015m
                                     : pos.EntryPrice * 0.9985m;
+                                if (beState != null && beState.CurrentAtr > 0
+                                    && _riskSettings.SmartBreakevenAtrMultiplier > 0)
+                                {
+                                    var atrBe = pos.Side == Side.Buy
+                                        ? pos.EntryPrice + beState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier
+                                        : pos.EntryPrice - beState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier;
+                                    beSl = pos.Side == Side.Buy ? Math.Max(beSl, atrBe) : Math.Min(beSl, atrBe);
+                                }
 
                                 // Signal aktualisieren falls vorhanden
                                 if (_positionSignals.TryGetValue(key, out var sig))
@@ -522,9 +564,17 @@ public abstract class TradingServiceBase : IDisposable
                         // Stufe 1: Gewinn >= 2× SL-Distanz → Breakeven (Stefan Kassing Originalregel)
                         else if (slDistance > 0 && currentProfit >= slDistance * 2m && !skState.BreakevenSet)
                         {
+                            // Breakeven = max(0.15%, ATR-basierter Puffer) — konsistent mit Auto-BE
                             var beSl = pos.Side == Side.Buy
-                                ? skState.EntryPrice * 1.0015m  // Entry + Fees (0.15% Puffer)
+                                ? skState.EntryPrice * 1.0015m
                                 : skState.EntryPrice * 0.9985m;
+                            if (skState.CurrentAtr > 0 && _riskSettings.SmartBreakevenAtrMultiplier > 0)
+                            {
+                                var atrBe = pos.Side == Side.Buy
+                                    ? skState.EntryPrice + skState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier
+                                    : skState.EntryPrice - skState.CurrentAtr * _riskSettings.SmartBreakevenAtrMultiplier;
+                                beSl = pos.Side == Side.Buy ? Math.Max(beSl, atrBe) : Math.Min(beSl, atrBe);
+                            }
                             _positionSignals[key] = signal with { StopLoss = beSl };
                             skState.BreakevenSet = true;
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
@@ -611,9 +661,15 @@ public abstract class TradingServiceBase : IDisposable
                                 }
                                 else
                                 {
-                                    // Standard: Tp2CloseRatio der Gesamt-Position schließen (Pyramid 30/30/40)
+                                    // Pyramid 30/30/40: TP2 schließt 30% der ORIGINAL-Position (nicht 30% vom Rest).
+                                    // Normalisierung: Tp2Ratio / (1 - Tp1Ratio) → bei 0.3/0.3: 0.3/0.7 ≈ 0.4286 vom Rest = 30% vom Original.
+                                    // Konsistent mit Backtest-Formel (BacktestEngine.cs:499).
                                     var remainingQty = pos.Quantity;
-                                    var tp2CloseQty = Math.Round(exitState.OriginalQuantity * _riskSettings.Tp2CloseRatio, 6);
+                                    var effectiveTp1Ratio = signal.Tp1CloseRatioOverride ?? _riskSettings.Tp1CloseRatio;
+                                    var normalizedTp2Ratio = effectiveTp1Ratio < 1m
+                                        ? _riskSettings.Tp2CloseRatio / (1m - effectiveTp1Ratio)
+                                        : _riskSettings.Tp2CloseRatio;
+                                    var tp2CloseQty = Math.Round(remainingQty * normalizedTp2Ratio, 6);
                                     tp2CloseQty = Math.Min(tp2CloseQty, remainingQty);
 
                                     if (tp2CloseQty > 0 && tp2CloseQty < remainingQty)
@@ -870,8 +926,13 @@ public abstract class TradingServiceBase : IDisposable
         }
 
         if (_eventBus.HasLogSubscribers)
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Scanner",
-                $"{candidates.Count} Kandidaten gefunden"));
+        {
+            var tradFiCount = candidates.Count(t => SymbolClassifier.IsTradFi(t.Symbol));
+            var cryptoCount = candidates.Count - tradFiCount;
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Scanner",
+                $"{LogPrefix}{candidates.Count} Kandidaten ({cryptoCount} Krypto + {tradFiCount} TradFi) | " +
+                $"EnableTradFi={_scannerSettings.EnableTradFi} HedgeMode={_scannerSettings.IsHedgeModeActive}"));
+        }
 
         // 2. Globale MarketFilter prüfen (VOR dem teuren Klines-Loading)
         // Funding-Settlement blockiert nur wenn ausschließlich Krypto-Kandidaten gescannt werden.
@@ -893,7 +954,10 @@ public abstract class TradingServiceBase : IDisposable
             return;
         }
 
-        // Kein Cooldown-Pause mehr: SL schützt Positionen, Leverage-Reduktion bei Verlusten reicht.
+        // SK-VERIFY: [5.3] Abgelaufene Cooldowns aufräumen
+        var expiredCooldowns = _symbolCooldowns.Where(kvp => kvp.Value <= DateTime.UtcNow).Select(kvp => kvp.Key).ToList();
+        foreach (var expired in expiredCooldowns)
+            _symbolCooldowns.TryRemove(expired, out _);
 
         // 3. Account + Positionen holen
         var account = await GetAccountAsync().ConfigureAwait(false);
@@ -969,6 +1033,17 @@ public abstract class TradingServiceBase : IDisposable
         // 4a. Cross-Market-Features für ATI: BTC-Kontext und Markt-Stimmung
         await UpdateCrossMarketFeaturesAsync(tickers, candidates, klineResults, ct).ConfigureAwait(false);
 
+        // 4b. SK-VERIFY: KILLER #6 — BTC Health Score berechnen (wenn BTC-H4-Klines verfügbar)
+        // Score: D1>EMA50, H4 Supertrend, H4 RSI, Funding. AllowLong/AllowShort als globaler Filter.
+        BtcHealthResult? btcHealth = null;
+        if (klineResults.TryGetValue("BTC-USDT", out var btcH4Candles) && btcH4Candles.Count > 50)
+        {
+            btcHealth = MarketFilter.CalculateBtcHealth(null, btcH4Candles);
+            if (_eventBus.HasLogSubscribers)
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "MarketFilter",
+                    $"{LogPrefix}BTC Health: Score={btcHealth.Score} AllowLong={btcHealth.AllowLong} AllowShort={btcHealth.AllowShort} ({btcHealth.Reasons})"));
+        }
+
         // 5. Kandidaten sequenziell evaluieren (Order-Platzierung muss sequenziell sein)
         var orderPlaced = false;
 
@@ -978,6 +1053,10 @@ public abstract class TradingServiceBase : IDisposable
 
             // Trading-Hours-Check für TradFi (Krypto = 24/7, immer offen)
             if (!TradingHoursFilter.IsMarketOpen(ticker.Symbol, DateTime.UtcNow))
+                continue;
+
+            // SK-VERIFY: [5.3] Symbol-Cooldown prüfen (4h Sperre nach Verlust-Trade)
+            if (_symbolCooldowns.TryGetValue(ticker.Symbol, out var cooldownUntil) && DateTime.UtcNow < cooldownUntil)
                 continue;
 
             // Markt-Kategorie bestimmen (für per-Markt Leverage, Feature-Masking, etc.)
@@ -1136,8 +1215,10 @@ public abstract class TradingServiceBase : IDisposable
                     var signal = strategy.Evaluate(context);
 
                     // SK-System: Status vom Symbol-Klon speichern (Template wird nie evaluiert)
-                    if (strategy is Engine.Strategies.SequenzKonzeptStrategy skInst)
-                        _lastSkStatus = skInst.LastStatus;
+                    // Nur den letzten nicht-blockierten Status zeigen (informativer als "Blocked" vom 50. Symbol)
+                    if (strategy is Engine.Strategies.SequenzKonzeptStrategy skInst
+                        && !skInst.LastStatus.StartsWith("[4H:—"))
+                        _lastSkStatus = $"{ticker.Symbol}: {skInst.LastStatus}";
 
                     if (signal.Signal == Signal.None)
                     {
@@ -1153,6 +1234,18 @@ public abstract class TradingServiceBase : IDisposable
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Scanner",
                         $"{LogPrefix}{ticker.Symbol}: {signal.Signal} Signal (Confidence: {signal.Confidence:P0}) - {signal.Reason}",
                         ticker.Symbol));
+
+                    // SK-VERIFY: KILLER #6 — BTC Health prüfen (Long/Short-Richtungs-Filter)
+                    if (btcHealth != null && signal.Signal is Signal.Long or Signal.Short)
+                    {
+                        var isLong = signal.Signal == Signal.Long;
+                        if ((isLong && !btcHealth.AllowLong) || (!isLong && !btcHealth.AllowShort))
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "MarketFilter",
+                                $"{LogPrefix}{ticker.Symbol}: BTC Health blockiert {signal.Signal} (Score={btcHealth.Score})", ticker.Symbol));
+                            continue;
+                        }
+                    }
 
                     // Close-Signale verarbeiten, dann re-evaluieren für Entry in Gegenrichtung
                     if (signal.Signal is Signal.CloseLong or Signal.CloseShort)
@@ -1198,7 +1291,12 @@ public abstract class TradingServiceBase : IDisposable
                     }
 
                     // Score-basiertes + Equity-Curve Position-Sizing
-                    var scoreScaleStd = CryptoTrendProStrategy.GetPositionScaleFactor(signal.ConfluenceScore);
+                    // SK-System: Eigenes Scoring (Basis 3, Max ~14) → 100% ab Score 5, 125% ab 10
+                    // CTP: Eigenes Scoring (Max ~10) → 75% bei 6-7, 100% bei 8-9, 125% bei 10
+                    var isSK = strategy is Engine.Strategies.SequenzKonzeptStrategy;
+                    var scoreScaleStd = isSK
+                        ? (signal.ConfluenceScore >= 10 ? 1.25m : signal.ConfluenceScore >= 5 ? 1.0m : 0.75m)
+                        : CryptoTrendProStrategy.GetPositionScaleFactor(signal.ConfluenceScore);
                     var equityScaleStd = GetEquityCurveScaleFactor();
                     var positionSizeStd = riskCheck.AdjustedPositionSize * scoreScaleStd * equityScaleStd;
                     if (scoreScaleStd != 1.0m || equityScaleStd != 1.0m)
@@ -1510,7 +1608,7 @@ public abstract class TradingServiceBase : IDisposable
             }
         }
 
-        // Consecutive-Losses tracken (für Leverage-Reduktion, kein Cooldown-Pause)
+        // Consecutive-Losses tracken (für Leverage-Reduktion)
         if (trade.Pnl < 0)
         {
             var losses = Interlocked.Increment(ref _consecutiveLosses);
@@ -1519,10 +1617,28 @@ public abstract class TradingServiceBase : IDisposable
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Risk",
                     $"{LogPrefix}{losses} Verluste in Folge → Leverage wird reduziert"));
             }
+
+            // SK-VERIFY: [5.3] Symbol-Cooldown nach Verlust-Trade (Sperre gegen Rache-Trades)
+            // Konfigurierbar via RiskSettings.CooldownHours, Fallback 4h (= 1 H4-Kerze)
+            if (!string.IsNullOrEmpty(trade.Symbol))
+            {
+                var cooldownH = _riskSettings.CooldownHours > 0 ? _riskSettings.CooldownHours : 4;
+                _symbolCooldowns[trade.Symbol] = DateTime.UtcNow.AddHours(cooldownH);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                    $"{LogPrefix}{trade.Symbol}: {cooldownH}h Cooldown aktiviert nach Verlust", trade.Symbol));
+            }
         }
         else
         {
             Interlocked.Exchange(ref _consecutiveLosses, 0);
+        }
+
+        // SK-VERIFY: KILLER #5 — Bottom-Up Feedback an SK-Strategy melden
+        if (!isPartialClose && _strategyManager.CurrentTemplate is Engine.Strategies.SequenzKonzeptStrategy skStrategy)
+        {
+            var isWin = trade.Pnl > 0;
+            var wasLong = trade.Side == Side.Buy;
+            skStrategy.RecordTradeOutcome(isWin, wasLong);
         }
 
         // Equity-Curve-Trading: Equity-Historie aktualisieren
@@ -1738,6 +1854,7 @@ public abstract class TradingServiceBase : IDisposable
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;
+        _klineSemaphore.Dispose();
         DisposeAdditional();
     }
 

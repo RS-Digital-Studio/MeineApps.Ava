@@ -93,9 +93,10 @@ public class InteractiveChartRenderer
     private static readonly SKColor FibColor = SKColor.Parse("#FFD700");        // Gold für Fib-Level
     private static readonly SKColor GklZoneColor = SKColor.Parse("#10B981");    // Grün für GKL-Zone
     private static readonly SKColor BuyZoneColor = SKColor.Parse("#3B82F6");    // Blau für Buy-Zone
-    private static readonly SKColor PointAColor = SKColor.Parse("#F59E0B");     // Amber für Punkt A
-    private static readonly SKColor PointBColor = SKColor.Parse("#06B6D4");     // Cyan für Punkt B
-    private static readonly SKColor PointCColor = SKColor.Parse("#D946EF");     // Magenta für Punkt C
+    // SK-VERIFY: Abweichung #4 — SK-Nomenklatur: 0-A-B statt A-B-C
+    private static readonly SKColor Point0Color = SKColor.Parse("#F59E0B");     // Amber für Punkt 0
+    private static readonly SKColor PointAColor = SKColor.Parse("#06B6D4");     // Cyan für Punkt A
+    private static readonly SKColor PointBColor = SKColor.Parse("#D946EF");     // Magenta für Punkt B
 
     private static readonly SKPaint FibLinePaint = new() { Color = FibColor.WithAlpha(70), StrokeWidth = 0.8f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([3f, 5f], 0) };
     private static readonly SKPaint FibLabelPaint = new() { Color = FibColor.WithAlpha(180), IsAntialias = true };
@@ -444,26 +445,26 @@ public class InteractiveChartRenderer
         using var tp2ExtLabel = new SKPaint { Color = Tp2Color.WithAlpha(200), IsAntialias = true };
         DrawHLine(canvas, area, min, max, seq.Ext200, tp2ExtPaint, "TP2 200%", tp2ExtLabel);
 
-        // 5. A-B-C Punkt-Marker
+        // 5. 0-A-B Punkt-Marker (SK-Nomenklatur)
+        DrawPointMarker(canvas, area, min, max, seq.Point0, "0", Point0Color);
         DrawPointMarker(canvas, area, min, max, seq.PointA, "A", PointAColor);
-        DrawPointMarker(canvas, area, min, max, seq.PointB, "B", PointBColor);
-        if (seq.PointC.HasValue)
-            DrawPointMarker(canvas, area, min, max, seq.PointC.Value, "C", PointCColor);
+        if (seq.PointB.HasValue)
+            DrawPointMarker(canvas, area, min, max, seq.PointB.Value, "B", PointBColor);
 
-        // 6. A→B→C Verbindungslinie
+        // 6. 0→A→B Verbindungslinie
+        var p0Y = MapY(seq.Point0, area, min, max);
         var aY = MapY(seq.PointA, area, min, max);
-        var bY = MapY(seq.PointB, area, min, max);
         // Punkte am linken Drittel verteilen (da wir keine X-Zeitposition haben)
-        var aX = area.Left + area.Width * 0.15f;
-        var bX = area.Left + area.Width * 0.30f;
-        if (aY >= area.Top && aY <= area.Bottom && bY >= area.Top && bY <= area.Bottom)
-            canvas.DrawLine(aX, aY, bX, bY, SeqLinePaint);
-        if (seq.PointC.HasValue)
+        var p0X = area.Left + area.Width * 0.15f;
+        var aX = area.Left + area.Width * 0.30f;
+        if (p0Y >= area.Top && p0Y <= area.Bottom && aY >= area.Top && aY <= area.Bottom)
+            canvas.DrawLine(p0X, p0Y, aX, aY, SeqLinePaint);
+        if (seq.PointB.HasValue)
         {
-            var cY = MapY(seq.PointC.Value, area, min, max);
-            var cX = area.Left + area.Width * 0.45f;
-            if (bY >= area.Top && bY <= area.Bottom && cY >= area.Top && cY <= area.Bottom)
-                canvas.DrawLine(bX, bY, cX, cY, SeqLinePaint);
+            var bY = MapY(seq.PointB.Value, area, min, max);
+            var bX = area.Left + area.Width * 0.45f;
+            if (aY >= area.Top && aY <= area.Bottom && bY >= area.Top && bY <= area.Bottom)
+                canvas.DrawLine(aX, aY, bX, bY, SeqLinePaint);
         }
 
         // 7. Charakter-Badge oben links

@@ -103,12 +103,14 @@ public static class TradingModeDefaults
             MaxResults: 40,               // 40 statt 15
             UseM15EntryTiming: true),
 
-        _ => new( // Swing
+        // SK-VERIFY: Infra-Bug #2+#3 — Reversal-Modus + MinPriceChange 0.1% für Stabilisierungsphasen
+        _ => new( // Swing (inkl. SK-System)
             ScanTimeFrame: TimeFrame.H4,
             MinVolume24h: 10_000_000m,   // 10M statt 20M
-            MinPriceChange: 0.3m,         // 0.3% statt 0.5%
+            MinPriceChange: 0.1m,         // 0.1% statt 0.3%: SK-Stabilisierungsphasen sichtbar
             MaxResults: 50,               // 50 statt 20
-            UseM15EntryTiming: true),
+            UseM15EntryTiming: true,
+            Mode: ScanMode.Reversal),     // SK = Mean-Reversion, nicht Momentum
     };
 
     /// <summary>Vol-adaptive SL/TP-Multiplikatoren pro Modus + ATR-Perzentil.</summary>
@@ -170,8 +172,10 @@ public record RiskPreset(
     decimal MinRiskRewardRatio);
 
 /// <summary>Scanner-Parameter-Preset.</summary>
+// SK-VERIFY: Infra-Bug #2 — ScanMode hinzugefügt, damit SK-System Reversal statt Momentum nutzt
 public record ScannerPreset(
     TimeFrame ScanTimeFrame,
     decimal MinVolume24h, decimal MinPriceChange,
     int MaxResults, bool UseM15EntryTiming,
-    bool OnlyTopByVolume = true, int TopCoinsCount = 100);
+    bool OnlyTopByVolume = true, int TopCoinsCount = 100,
+    ScanMode? Mode = null);

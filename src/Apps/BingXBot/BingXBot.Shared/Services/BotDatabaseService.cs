@@ -159,6 +159,55 @@ public class BotDatabaseService
         }
     }
 
+    // === SK-VERIFY: [6.1] ExitState + Runtime-State Persistenz ===
+
+    /// <summary>Speichert alle ExitStates für offene Positionen (bei Bot-Stop/Crash-Recovery).</summary>
+    public async Task SaveExitStatesAsync(Dictionary<string, PositionExitState> exitStates)
+    {
+        EnsureInitialized();
+        var json = JsonSerializer.Serialize(exitStates);
+        await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "ExitStates", Value = json });
+    }
+
+    /// <summary>Lädt gespeicherte ExitStates für Crash-Recovery.</summary>
+    public async Task<Dictionary<string, PositionExitState>?> LoadExitStatesAsync()
+    {
+        EnsureInitialized();
+        var entity = await _db!.FindAsync<SettingEntity>("ExitStates");
+        if (entity?.Value == null) return null;
+        try { return JsonSerializer.Deserialize<Dictionary<string, PositionExitState>>(entity.Value); }
+        catch { return null; }
+    }
+
+    /// <summary>Speichert Runtime-State (TradesToday, ConsecutiveLosses, Cooldowns) für Crash-Recovery.</summary>
+    public async Task SaveRuntimeStateAsync(int tradesToday, int consecutiveLosses, Dictionary<string, DateTime> cooldowns)
+    {
+        EnsureInitialized();
+        var state = new { TradesToday = tradesToday, ConsecutiveLosses = consecutiveLosses, Cooldowns = cooldowns };
+        var json = JsonSerializer.Serialize(state);
+        await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "RuntimeState", Value = json });
+    }
+
+    /// <summary>Lädt Runtime-State für Crash-Recovery.</summary>
+    public async Task<(int TradesToday, int ConsecutiveLosses, Dictionary<string, DateTime> Cooldowns)?> LoadRuntimeStateAsync()
+    {
+        EnsureInitialized();
+        var entity = await _db!.FindAsync<SettingEntity>("RuntimeState");
+        if (entity?.Value == null) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(entity.Value);
+            var root = doc.RootElement;
+            var tradesToday = root.GetProperty("TradesToday").GetInt32();
+            var consecutiveLosses = root.GetProperty("ConsecutiveLosses").GetInt32();
+            var cooldowns = root.TryGetProperty("Cooldowns", out var cd)
+                ? JsonSerializer.Deserialize<Dictionary<string, DateTime>>(cd.GetRawText()) ?? new()
+                : new Dictionary<string, DateTime>();
+            return (tradesToday, consecutiveLosses, cooldowns);
+        }
+        catch { return null; }
+    }
+
     // === ATI State ===
 
     public async Task SaveAtiStateAsync(string stateJson)

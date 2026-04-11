@@ -105,8 +105,15 @@ public class MultiModeOrchestrator : IDisposable
     public async Task StartLiveAsync(Exchange.BingXRestClient restClient)
     {
         _restClient = restClient;
-        // Hedge-Modus aus BingX abfragen (TradFi braucht Hedge-Modus, Error 101414 bei One-Way)
-        _isHedgeModeActive = _botSettings.Scanner?.IsHedgeModeActive ?? false;
+        // Hedge-Modus direkt von BingX abfragen (IsHedgeModeActive ist [JsonIgnore] → BotSettings hat immer false)
+        try
+        {
+            _isHedgeModeActive = await restClient.IsHedgeModeAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            _isHedgeModeActive = _botSettings.Scanner?.IsHedgeModeActive ?? false;
+        }
         _sharedRiskManager = new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance);
 
         // ATI-Strategien einmal registrieren (nicht pro Modus, da RegisterStrategies ClearStrategies aufruft)
@@ -132,6 +139,29 @@ public class MultiModeOrchestrator : IDisposable
                 service.ATI = _ati;
 
             _services[mode] = service;
+
+            // SK-VERIFY: [6.1] RuntimeState + ExitStates aus DB laden (analog zu LiveTradingManager.StartAsync)
+            if (_dbService != null)
+            {
+                try
+                {
+                    var runtimeState = await _dbService.LoadRuntimeStateAsync().ConfigureAwait(false);
+                    if (runtimeState.HasValue)
+                    {
+                        var (tradesToday, losses, cooldowns) = runtimeState.Value;
+                        service.RestoreRuntimeState(tradesToday, losses, cooldowns);
+                    }
+                }
+                catch { /* Best-effort: DB-Fehler darf Start nicht blockieren */ }
+                try
+                {
+                    var exitStates = await _dbService.LoadExitStatesAsync().ConfigureAwait(false);
+                    if (exitStates != null && exitStates.Count > 0)
+                        service.RestoreExitStates(exitStates);
+                }
+                catch { /* Best-effort */ }
+            }
+
             service.Start();
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
@@ -149,6 +179,20 @@ public class MultiModeOrchestrator : IDisposable
         {
             try
             {
+                // SK-VERIFY: [6.1] ExitStates + Runtime-State VOR Stop speichern
+                if (_dbService != null)
+                {
+                    try
+                    {
+                        var exitStates = service.GetExitStatesSnapshot();
+                        if (exitStates.Count > 0)
+                            await _dbService.SaveExitStatesAsync(exitStates);
+                        var (tradesToday, losses, cooldowns) = service.GetRuntimeStateSnapshot();
+                        await _dbService.SaveRuntimeStateAsync(tradesToday, losses, cooldowns);
+                    }
+                    catch { /* Best-effort: DB-Fehler darf Stop nicht blockieren */ }
+                }
+
                 // SuppressBotStateEvents: StopBase() soll nicht 3x BotState.Stopped publizieren
                 service.SuppressBotStateEvents = true;
                 await service.StopAsync();
@@ -199,19 +243,89 @@ public class MultiModeOrchestrator : IDisposable
     /// <summary>Ob mindestens ein Service pausiert ist.</summary>
     public bool IsAnyPaused => _services.Values.Any(s => s.IsPaused);
 
-    /// <summary>Notfall-Stop: Alle Positionen schließen über alle Modi (parallel für Schnelligkeit).</summary>
+    /// <summary>
+    /// Notfall-Stop: Alle Positionen schließen.
+    /// Im Live-Modus: Direkt über _restClient.CloseAllPositionsAsync() — verhindert dass
+    /// 3 Services dieselbe Position parallel schließen (→ Gegen-Position möglich).
+    /// Im Paper-Modus: Jeder Service schließt seine eigene SimulatedExchange-Positionen.
+    /// </summary>
     public async Task EmergencyStopAllAsync()
     {
-        var tasks = _services.Select(async kvp =>
+        // SK-VERIFY: [6.1] ExitStates + RuntimeState VOR NotfallStop speichern
+        if (_dbService != null)
+        {
+            foreach (var service in _services.Values)
+            {
+                try
+                {
+                    var exitStates = service.GetExitStatesSnapshot();
+                    if (exitStates.Count > 0)
+                        await _dbService.SaveExitStatesAsync(exitStates).ConfigureAwait(false);
+                    var (tradesToday, losses, cooldowns) = service.GetRuntimeStateSnapshot();
+                    await _dbService.SaveRuntimeStateAsync(tradesToday, losses, cooldowns).ConfigureAwait(false);
+                }
+                catch { /* Best-effort: DB-Fehler darf NotfallStop nicht blockieren */ }
+            }
+        }
+
+        // Live-Modus: EINEN zentralen Close über den RestClient (nicht 3x parallel)
+        if (_restClient != null)
         {
             try
             {
-                kvp.Value.SuppressBotStateEvents = true;
-                await kvp.Value.EmergencyStopAsync();
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                    "[Multi] NOTFALL-STOP: Schließe alle Positionen über BingX..."));
+
+                // Zuerst alle Conditional Orders canceln (native SL/TP)
+                try
+                {
+                    var openOrders = await _restClient.GetOpenOrdersAsync().ConfigureAwait(false);
+                    foreach (var order in openOrders)
+                    {
+                        if (order.Type is Core.Enums.OrderType.StopMarket or Core.Enums.OrderType.TakeProfitMarket or Core.Enums.OrderType.TakeProfitLimit)
+                        {
+                            try { await _restClient.CancelOrderAsync(order.OrderId, order.Symbol).ConfigureAwait(false); }
+                            catch { /* Best-effort */ }
+                        }
+                    }
+                }
+                catch { /* Best-effort */ }
+
+                // Alle Positionen atomar schließen (dedizierter BingX-Endpoint pro Symbol)
+                await _restClient.CloseAllPositionsAsync().ConfigureAwait(false);
             }
-            catch { /* Best-effort */ }
-        });
-        await Task.WhenAll(tasks);
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Engine",
+                    $"[Multi] NOTFALL-STOP Fehler: {ex.Message}"));
+            }
+
+            // Services nur stoppen (nicht EmergencyStop — Positionen sind bereits geschlossen)
+            foreach (var service in _services.Values)
+            {
+                try
+                {
+                    service.SuppressBotStateEvents = true;
+                    await service.StopAsync().ConfigureAwait(false);
+                }
+                catch { /* Best-effort */ }
+            }
+        }
+        else
+        {
+            // Paper-Modus: Jeder Service hat eigene SimulatedExchange → parallel OK
+            var tasks = _services.Select(async kvp =>
+            {
+                try
+                {
+                    kvp.Value.SuppressBotStateEvents = true;
+                    await kvp.Value.EmergencyStopAsync();
+                }
+                catch { /* Best-effort */ }
+            });
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+
         _services.Clear();
         _eventBus.PublishBotState(Core.Enums.BotState.EmergencyStop);
     }
@@ -264,12 +378,14 @@ public class MultiModeOrchestrator : IDisposable
             UseM15EntryTiming = preset.UseM15EntryTiming,
             OnlyTopByVolume = preset.OnlyTopByVolume,
             TopCoinsCount = preset.TopCoinsCount,
+            // SK-VERIFY: Infra-Bug #2 — ScanMode aus Preset übernehmen (Reversal für Swing/SK)
+            Mode = preset.Mode ?? Core.Enums.ScanMode.Momentum,
             // Watchlist vom User übernehmen (gleich für alle Modi)
             Whitelist = _botSettings.Scanner?.Whitelist ?? new(),
             Blacklist = _botSettings.Scanner?.Blacklist ?? new(),
             // TradFi-Settings vom User übernehmen (gleich für alle Modi)
             // Default: Alle 5 Kategorien — konsistent mit ScannerSettings-Default
-            EnableTradFi = _botSettings.Scanner?.EnableTradFi ?? false,
+            EnableTradFi = _botSettings.Scanner?.EnableTradFi ?? true,
             EnabledCategories = _botSettings.Scanner?.EnabledCategories ?? new()
             {
                 Core.Enums.MarketCategory.Crypto, Core.Enums.MarketCategory.Commodity,
@@ -377,10 +493,23 @@ public class MultiModeOrchestrator : IDisposable
 
                 if (pnlPercent >= pos.Leverage && pos.Leverage > 0)
                 {
-                    // Breakeven = Entry + Round-Trip-Fees (0.1%) + Sicherheitspuffer
+                    // Breakeven = Entry + max(0.15%, ATR-basierter Puffer)
                     var beSl = pos.Side == Core.Enums.Side.Buy
                         ? pos.EntryPrice * 1.0015m
                         : pos.EntryPrice * 0.9985m;
+                    // ATR-Puffer bei Recovery berechnen (gleiche Logik wie TradingServiceBase)
+                    try
+                    {
+                        var recoveryAtr = await CalculateRecoveryAtrAsync(pos, publicClient).ConfigureAwait(false);
+                        if (recoveryAtr > 0 && _riskSettings.SmartBreakevenAtrMultiplier > 0)
+                        {
+                            var atrBe = pos.Side == Core.Enums.Side.Buy
+                                ? pos.EntryPrice + recoveryAtr * _riskSettings.SmartBreakevenAtrMultiplier
+                                : pos.EntryPrice - recoveryAtr * _riskSettings.SmartBreakevenAtrMultiplier;
+                            beSl = pos.Side == Core.Enums.Side.Buy ? Math.Max(beSl, atrBe) : Math.Min(beSl, atrBe);
+                        }
+                    }
+                    catch { /* ATR-Berechnung fehlgeschlagen → Minimum-Puffer verwenden */ }
                     try
                     {
                         await restClient.SetPositionSlTpAsync(pos.Symbol, pos.Side, beSl, null);
@@ -471,6 +600,21 @@ public class MultiModeOrchestrator : IDisposable
         _ => "?"
     };
 
+    /// <summary>Berechnet ATR-Wert für ein Symbol (für BE-Puffer bei Recovery).</summary>
+    private async Task<decimal> CalculateRecoveryAtrAsync(Position pos, IPublicMarketDataClient publicClient)
+    {
+        var timeFrame = _scannerSettings.Values.FirstOrDefault()?.ScanTimeFrame ?? Core.Enums.TimeFrame.H4;
+        var candles = await publicClient.GetKlinesAsync(
+            pos.Symbol, timeFrame, DateTime.UtcNow.AddHours(-100), DateTime.UtcNow).ConfigureAwait(false);
+        if (candles.Count >= 20)
+        {
+            var atr = IndicatorHelper.CalculateAtr(candles);
+            if (atr.Count > 0 && atr[^1].HasValue && atr[^1]!.Value > 0)
+                return atr[^1]!.Value;
+        }
+        return 0m;
+    }
+
     /// <summary>Berechnet ATR-basierten Recovery-SL (gleiche Logik wie bei Tradeeröffnung).</summary>
     private async Task<decimal> CalculateRecoverySlAsync(Position pos, IPublicMarketDataClient publicClient)
     {
@@ -512,11 +656,18 @@ public class MultiModeOrchestrator : IDisposable
 
     public void Dispose()
     {
-        // StopBase() für jeden Service aufrufen damit _positionSignals geleert und BotState publiziert werden.
-        // StopAsync() ist synchron in TradingServiceBase (nur CTS-Cancel + State-Cleanup).
+        // Task.Run: StopAsync() komplett auf Threadpool ausführen, NICHT auf UI-Thread.
+        // Ohne Task.Run kann Wait() deadlocken wenn StopAsync-Continuations den
+        // SynchronizationContext (UI-Thread) brauchen, der aber durch Wait() blockiert ist.
         foreach (var service in _services.Values)
         {
-            try { service.StopAsync().GetAwaiter().GetResult(); }
+            try
+            {
+                var stopTask = Task.Run(() => service.StopAsync());
+                if (!stopTask.Wait(TimeSpan.FromSeconds(5)))
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                        $"Service-Stop Timeout (5s) — erzwinge Dispose"));
+            }
             catch { /* Best-effort beim Dispose */ }
             service.Dispose();
         }

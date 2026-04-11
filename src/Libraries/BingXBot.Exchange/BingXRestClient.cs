@@ -307,7 +307,7 @@ public class BingXRestClient : IExchangeClient
                 var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
                 _logger.LogWarning(ex, "Netzwerkfehler, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
                     backoff.TotalSeconds, attempt + 1, MaxRetries);
-                await Task.Delay(backoff).ConfigureAwait(false);
+                await Task.Delay(backoff, ct).ConfigureAwait(false);
             }
             catch (TaskCanceledException ex) when (!ex.CancellationToken.IsCancellationRequested && attempt < MaxRetries)
             {
@@ -315,7 +315,7 @@ public class BingXRestClient : IExchangeClient
                 var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
                 _logger.LogWarning("Request Timeout, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
                     backoff.TotalSeconds, attempt + 1, MaxRetries);
-                await Task.Delay(backoff).ConfigureAwait(false);
+                await Task.Delay(backoff, ct).ConfigureAwait(false);
             }
         }
 
@@ -413,7 +413,8 @@ public class BingXRestClient : IExchangeClient
 
     #region Trading
 
-    public async Task<Order> PlaceOrderAsync(OrderRequest request)
+    /// <param name="lastPrice">Aktueller Ticker-Preis für Min-Notional-Check bei Market-Orders (optional).</param>
+    public async Task<Order> PlaceOrderAsync(OrderRequest request, decimal lastPrice = 0m)
     {
         // positionSide automatisch erkennen: Hedge-Mode → LONG/SHORT, One-Way → BOTH
         var positionSide = await GetPositionSideAsync(request.Side).ConfigureAwait(false);
@@ -427,8 +428,8 @@ public class BingXRestClient : IExchangeClient
             throw new BingXApiException(-2, $"Quantity {request.Quantity} ist nach Truncation auf Precision 0 für {request.Symbol}");
         }
 
-        // Min-Order-Check: Quantity und Notional müssen Mindestwerte erfüllen
-        var checkPrice = request.Price ?? 0m;
+        // Min-Order-Check: Bei Market-Orders lastPrice verwenden (request.Price ist null)
+        var checkPrice = request.Price ?? lastPrice;
         if (!_symbolInfoCache.MeetsMinimumOrder(request.Symbol, adjustedQty, checkPrice))
         {
             var info = _symbolInfoCache.GetInfo(request.Symbol);
@@ -674,13 +675,17 @@ public class BingXRestClient : IExchangeClient
         return orders;
     }
 
-    public async Task<IReadOnlyList<Position>> GetPositionsAsync()
+    public Task<IReadOnlyList<Position>> GetPositionsAsync() =>
+        GetPositionsAsync(CancellationToken.None);
+
+    public async Task<IReadOnlyList<Position>> GetPositionsAsync(CancellationToken ct)
     {
         var data = await SendSignedRequestAsync<JsonElement>(
             HttpMethod.Get,
             "/openApi/swap/v2/user/positions",
             null,
-            "queries");
+            "queries",
+            ct);
 
         var positions = new List<Position>();
 
@@ -934,9 +939,11 @@ public class BingXRestClient : IExchangeClient
         }
     }
 
-    public async Task CloseAllPositionsAsync()
+    public Task CloseAllPositionsAsync() => CloseAllPositionsAsync(CancellationToken.None);
+
+    public async Task CloseAllPositionsAsync(CancellationToken ct)
     {
-        var positions = await GetPositionsAsync().ConfigureAwait(false);
+        var positions = await GetPositionsAsync(ct).ConfigureAwait(false);
         if (positions.Count == 0) return;
 
         // Eindeutige Symbole sammeln (ein API-Call pro Symbol statt pro Position)
@@ -945,15 +952,16 @@ public class BingXRestClient : IExchangeClient
         _logger.LogInformation("Schließe alle Positionen für {Count} Symbole", symbols.Count);
 
         // Parallel pro Symbol schließen via dediziertem BingX-Endpunkt
-        var tasks = symbols.Select(symbol => Task.Run(async () =>
+        var tasks = symbols.Select(async symbol =>
         {
             var parameters = new Dictionary<string, string> { ["symbol"] = symbol };
             await SendSignedRequestAsync<JsonElement>(
                 HttpMethod.Post,
                 "/openApi/swap/v2/trade/closeAllPositions",
                 parameters,
-                "orders").ConfigureAwait(false);
-        }));
+                "orders",
+                ct).ConfigureAwait(false);
+        });
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
     }
@@ -1040,12 +1048,16 @@ public class BingXRestClient : IExchangeClient
             ["orderId"] = orderId,
             ["symbol"] = symbol
         };
+        // Precision anwenden (wie PlaceOrderAsync): BingX lehnt Werte mit zu vielen Dezimalstellen ab
         if (newPrice.HasValue)
-            parameters["price"] = newPrice.Value.ToString(CultureInfo.InvariantCulture);
+            parameters["price"] = _symbolInfoCache.RoundPrice(symbol, newPrice.Value)
+                .ToString(CultureInfo.InvariantCulture);
         if (newStopPrice.HasValue)
-            parameters["stopPrice"] = newStopPrice.Value.ToString(CultureInfo.InvariantCulture);
+            parameters["stopPrice"] = _symbolInfoCache.RoundPrice(symbol, newStopPrice.Value)
+                .ToString(CultureInfo.InvariantCulture);
         if (newQuantity.HasValue)
-            parameters["quantity"] = newQuantity.Value.ToString(CultureInfo.InvariantCulture);
+            parameters["quantity"] = _symbolInfoCache.TruncateQuantity(symbol, newQuantity.Value)
+                .ToString(CultureInfo.InvariantCulture);
 
         var data = await SendSignedRequestAsync<BingXOrderData>(
             HttpMethod.Post,
@@ -1126,8 +1138,9 @@ public class BingXRestClient : IExchangeClient
         };
         if (!string.IsNullOrEmpty(symbol)) parameters["symbol"] = symbol;
         if (!string.IsNullOrEmpty(incomeType)) parameters["incomeType"] = incomeType;
-        if (startTime.HasValue) parameters["startTime"] = new DateTimeOffset(startTime.Value).ToUnixTimeMilliseconds().ToString();
-        if (endTime.HasValue) parameters["endTime"] = new DateTimeOffset(endTime.Value).ToUnixTimeMilliseconds().ToString();
+        // ToUniversalTime(): DateTime ohne Kind.Utc → DateTimeOffset nutzt lokale Timezone → falsche Timestamps
+        if (startTime.HasValue) parameters["startTime"] = new DateTimeOffset(startTime.Value.ToUniversalTime()).ToUnixTimeMilliseconds().ToString();
+        if (endTime.HasValue) parameters["endTime"] = new DateTimeOffset(endTime.Value.ToUniversalTime()).ToUnixTimeMilliseconds().ToString();
 
         var data = await SendSignedRequestAsync<List<BingXIncomeDetail>>(
             HttpMethod.Get,

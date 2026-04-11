@@ -5,7 +5,7 @@ namespace BingXBot.Core.Interfaces;
 
 public interface IExchangeClient
 {
-    Task<Order> PlaceOrderAsync(OrderRequest request);
+    Task<Order> PlaceOrderAsync(OrderRequest request, decimal lastPrice = 0m);
     Task<bool> CancelOrderAsync(string orderId, string symbol);
     Task<IReadOnlyList<Order>> GetOpenOrdersAsync(string? symbol = null);
     Task<IReadOnlyList<Position>> GetPositionsAsync();

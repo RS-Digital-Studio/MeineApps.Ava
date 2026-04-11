@@ -59,6 +59,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     private bool _isMultiMode;
     // CancellationToken für Account-Update-Timer (wird bei Stop gecancelled)
     private CancellationTokenSource? _accountUpdateCts;
+    // Task-Referenz: Verhindert parallele Timer-Loops bei schnellem Start/Stop
+    private Task? _accountUpdateTask;
+    // Hintergrund-Init-Tasks (gespeichert statt fire-and-forget für Debugging)
+    private Task? _initSymbolsTask;
+    private Task? _initEquityTask;
 
     // === Sub-ViewModels (delegierte Verantwortlichkeiten) ===
 
@@ -158,7 +163,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     // === Dashboard-Widgets ===
     // Drawdown-Chart (nutzt EquityData, wird im selben Refresh-Zyklus aktualisiert)
     // PnL-Kalender: Tägliche PnL aus Trade-History
-    public Dictionary<DateTime, decimal> DailyPnl { get; } = new();
+    // Setter für atomaren Swap (Thread-Safety: SkiaSharp-Renderer liest auf Render-Thread)
+    public Dictionary<DateTime, decimal> DailyPnl { get; private set; } = new();
     // Korrelations-Matrix: Symbole + Matrix
     public string[] CorrelationSymbols { get; set; } = [];
     public float[,] CorrelationMatrix { get; set; } = new float[0, 0];
@@ -270,11 +276,10 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             WatchlistSymbols.Add(sym);
         IsWatchlistActive = WatchlistSymbols.Count > 0;
 
-        // Verfügbare Symbole im Hintergrund laden (für AutoComplete)
-        _ = LoadAvailableSymbolsAsync();
-
-        // Equity-Kurve aus DB laden (letzte 30 Tage)
-        _ = LoadEquityFromDbAsync();
+        // Hintergrund-Init (Exceptions intern gefangen, kein Trading-Einfluss)
+        // Tasks gespeichert statt fire-and-forget → debugbar bei Problemen
+        _initSymbolsTask = LoadAvailableSymbolsAsync();
+        _initEquityTask = LoadEquityFromDbAsync();
 
         // Trade-Markers + Metriken-Refresh bei jedem Trade-Abschluss
         _eventBus.TradeCompleted += OnTradeCompletedForMarkers;
@@ -348,6 +353,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _scannerSettings.UseM15EntryTiming = scannerPreset.UseM15EntryTiming;
         _scannerSettings.OnlyTopByVolume = scannerPreset.OnlyTopByVolume;
         _scannerSettings.TopCoinsCount = scannerPreset.TopCoinsCount;
+        // SK-VERIFY: Infra-Bug #2 — ScanMode aus Preset übernehmen (Reversal für Swing/SK)
+        if (scannerPreset.Mode.HasValue)
+            _scannerSettings.Mode = scannerPreset.Mode.Value;
 
         _botSettings.LastTradingModePreset = preset;
 
@@ -402,7 +410,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
                 "Alle 3 Modi gestartet: Scalping (M15/90s) + Day-Trading (H1/3min) + Swing (H4/5min)"));
             _ = StartEquitySnapshotTimerAsync();
-            _ = StartAccountUpdateAsync();
+            _accountUpdateTask = StartAccountUpdateAsync();
             return;
         }
 
@@ -427,6 +435,10 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
             $"Strategie: {SelectedStrategy}"));
 
+        // Paper-Trading unterstützt immer Hedge-Modus (SimulatedExchange erlaubt Long+Short)
+        // Ohne dieses Flag werden TradFi-Symbole (Commodities, Stocks, Indices, Forex) komplett ignoriert
+        _scannerSettings.IsHedgeModeActive = true;
+
         // Paper-Trading-Service starten
         _paperService.Start(_botSettings.PaperInitialBalance);
 
@@ -447,7 +459,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _ = StartEquitySnapshotTimerAsync();
 
         // Account-Update Timer starten (alle 5 Sekunden)
-        _ = StartAccountUpdateAsync();
+        _accountUpdateTask = StartAccountUpdateAsync();
     }
 
     /// <summary>
@@ -508,7 +520,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             IsLiveActive = true;
 
             _ = StartEquitySnapshotTimerAsync();
-            _ = StartAccountUpdateAsync();
+            _accountUpdateTask = StartAccountUpdateAsync();
         }
         catch (Exception ex)
         {
@@ -533,7 +545,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 _orchestrator.ResumeAll();
                 BotStatusText = IsPaperMode ? "Paper (Alle Modi)" : "LIVE (Alle Modi) - Handelt aktiv!";
                 BotStatusState = BotState.Running;
-                _ = StartAccountUpdateAsync();
+                _accountUpdateTask = StartAccountUpdateAsync();
             }
             else
             {
@@ -554,7 +566,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 _liveManager.Service!.Resume();
                 BotStatusText = "LIVE - Handelt aktiv!";
                 BotStatusState = BotState.Running;
-                _ = StartAccountUpdateAsync();
+                _accountUpdateTask = StartAccountUpdateAsync();
             }
             else
             {
@@ -813,7 +825,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 }
 
                 // CompletedTrade erstellen damit ATI + RiskManager Feedback bekommen
-                var fee = qty * entryPrice * 0.0005m + qty * exitPrice * 0.0005m;
+                // Echte Commission-Rate vom BingX-Account (je nach VIP-Level 0.02%-0.075%)
+                var feeRate = _liveManager.CommissionTakerRate;
+                var fee = qty * entryPrice * feeRate + qty * exitPrice * feeRate;
                 var rawPnl = side == Side.Buy
                     ? (exitPrice - entryPrice) * qty
                     : (entryPrice - exitPrice) * qty;
@@ -1067,7 +1081,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         if (seq == null) return null;
 
         return new SequenceOverlay(
-            seq.PointA.Price, seq.PointB.Price, seq.PointC?.Price,
+            seq.Point0.Price, seq.PointA.Price, seq.PointB?.Price,
             seq.Retracement382, seq.Retracement500, seq.Retracement559,
             seq.Retracement618, seq.Retracement667, seq.Retracement786,
             seq.Extension100, seq.Extension1272, seq.Extension1618, seq.Extension200,
@@ -1563,10 +1577,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             HasStrategyWarning = health != null;
             StrategyHealthText = health ?? "OK";
 
-            // DailyPnl Dictionary aktualisieren (thread-safe, da jetzt auf UI-Thread)
-            DailyPnl.Clear();
-            foreach (var (day, pnl) in dailyPnlSnapshot)
-                DailyPnl[day] = pnl;
+            // Atomarer Swap: neues Dictionary zuweisen statt Clear+Re-Fill
+            // (SkiaSharp-Renderer liest auf Render-Thread → kein Clear während Iteration)
+            DailyPnl = dailyPnlSnapshot.ToDictionary(x => x.Day, x => x.Pnl);
 
             // StrategyWeights + ATI-Lernfortschritt aktualisieren
             StrategyWeights = weightsSnapshot;

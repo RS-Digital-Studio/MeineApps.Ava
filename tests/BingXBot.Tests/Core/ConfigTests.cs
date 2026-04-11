@@ -14,15 +14,15 @@ public class ConfigTests
         s.MaxPositionSizePercent.Should().Be(10m);
         s.MaxDailyDrawdownPercent.Should().Be(0m); // Deaktiviert
         s.MaxTotalDrawdownPercent.Should().Be(10m);
-        s.MaxOpenPositions.Should().Be(10);
+        s.MaxOpenPositions.Should().Be(3); // SK-VERIFY: [5.2] Default 3 (war 10)
         s.MaxLeverage.Should().Be(25m);
         s.EnableTrailingStop.Should().BeTrue();
         s.EnableMultiStageExit.Should().BeTrue();
         s.Tp1CloseRatio.Should().Be(0.3m);
         s.Tp2CloseRatio.Should().Be(0.3m);
-        s.MinRiskRewardRatio.Should().Be(1.0m);
+        s.MinRiskRewardRatio.Should().Be(0m); // SK-VERIFY: Deaktiviert (Strategie hat eigenen gestuften Check)
         s.SmartBreakevenAtrMultiplier.Should().Be(0.5m);
-        s.MaxHoldHours.Should().Be(48);
+        s.MaxHoldHours.Should().Be(0); // SK-VERIFY: Deaktiviert (SL/TP managed den Exit)
         s.CooldownHours.Should().Be(0); // Deaktiviert
         s.MaxTradesPerDay.Should().Be(0); // 0 = unbegrenzt (geändert)
     }
@@ -51,7 +51,7 @@ public class ConfigTests
         var s = new ScannerSettings();
         s.MinVolume24h.Should().Be(20_000_000m);
         s.ScanTimeFrame.Should().Be(TimeFrame.H4);
-        s.MaxResults.Should().Be(50);
+        s.MaxResults.Should().Be(100); // SK-VERIFY: 100 für SK-Reversal-Screening
         s.ScanIntervalSeconds.Should().Be(300); // H4 = 5min (Ticker + Kandidaten-Check)
     }
 }

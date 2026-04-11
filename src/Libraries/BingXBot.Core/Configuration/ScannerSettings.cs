@@ -5,13 +5,15 @@ namespace BingXBot.Core.Configuration;
 public class ScannerSettings
 {
     public decimal MinVolume24h { get; set; } = 20_000_000m;
-    /// <summary>Min. 24h-Preisänderung in %. 0.5% = fast alle relevanten Paare. Zu hoch = ruhige Märkte werden ignoriert.</summary>
-    public decimal MinPriceChange { get; set; } = 0.5m;
+    /// <summary>Min. 24h-Preisänderung in %. 0.1% = auch Stabilisierungsphasen (SK) sichtbar. Top-100-Filter schützt vor Spam.</summary>
+    // SK-VERIFY: Infra-Bug #3 — 0.5% filterte Stabilisierungsphasen (Prestabilisation) raus
+    public decimal MinPriceChange { get; set; } = 0.1m;
     public TimeFrame ScanTimeFrame { get; set; } = TimeFrame.H4;
     public List<string> Blacklist { get; set; } = new();
     public List<string> Whitelist { get; set; } = new();
-    /// <summary>Max. Kandidaten die pro Scan evaluiert werden. 50 = guter Kompromiss aus Abdeckung und API-Last.</summary>
-    public int MaxResults { get; set; } = 50;
+    /// <summary>Max. Kandidaten die pro Scan evaluiert werden. 100 = SK-Reversal-Setups brauchen breites Screening.
+    /// SK-VERIFY: Infra-Bug #4 — 50 filterte SK-Kandidaten (Reversal-Setups im GKL haben schlechten Momentum-Score).</summary>
+    public int MaxResults { get; set; } = 100;
     public ScanMode Mode { get; set; } = ScanMode.Momentum;
 
     /// <summary>

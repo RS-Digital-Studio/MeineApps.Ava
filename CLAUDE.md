@@ -410,6 +410,28 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Firebase orderBy-Query liefert keine Daten | Kein `.indexOn` fuer das abgefragte Feld in den Security Rules | `.indexOn: ["feldname"]` unter dem Pfad in `database.rules.json` hinzufuegen |
 | Firebase guilds-Write schlaegt fehl bei Create | Write-Rule verlangt guild_members-Existenz, aber Member wird erst nach guilds geschrieben | `\|\| !data.exists()` zur Write-Rule hinzufuegen (erlaubt Erstellen neuer Eintraege) |
 | SK-System keine Trades trotz Signal | `CheckM15EntryTiming` (RSI>75 + Candle-Richtung) blockiert SK-Signale nach eigener 15m-Analyse | SK-System vom generischen M15-Timing-Check ausnehmen (`isSKSignal` Guard in TradingServiceBase) |
+| TradFi (Rohstoffe/Aktien/Indices/Forex) nicht im Scan | Single-Mode Paper: `IsHedgeModeActive=false` (Default, nie gesetzt). Multi-Mode: `EnableTradFi` Fallback `false` | Single-Mode: `_scannerSettings.IsHedgeModeActive = true` vor Start. Multi-Mode: Fallback auf `true` |
+| MaxTrades/Tag umgehbar (4. Trade trotz Limit) | `_tradesToday` nicht `volatile` → JIT cached Register-Read zwischen Loops | `protected volatile int _tradesToday;` in TradingServiceBase |
+| ContinueWith verschluckt WebSocket-Exceptions | Ohne `TaskScheduler.Default` → Continuation auf falschem Thread | `CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default` |
+| ATI lernt falsche PnL bei manuellem Close | Hardcodierte Fee (0.05%) statt echte Commission-Rate | `_liveManager.CommissionTakerRate` statt `0.0005m` in DashboardViewModel |
+| SK Short-SL sofortiger Hit | Fallback `Retracement786` liegt bei Short unter currentPrice wenn Preis über 78.6% Retracement | Fallback auf `Retracement382` (höchstes Level) + Seitenprüfung: SL auf falscher Seite → ATR-Notfall-SL |
+| SK Flash-Crash beim ersten Evaluate nicht erkannt | `_lastH4Close=0` beim Klon-Start → Crash-Check übersprungen | Erster Evaluate initialisiert nur `_lastH4Close`, Crash-Check ab dem zweiten |
+| SK Sandwich-Check findet Gegensequenz nicht | `FromCandles()` gibt nur primäre Machine zurück | `FromCandlesBoth()` gibt Long+Short zurück, Gegenrichtung direkt verfügbar |
+| SK WaveCharacter/Type immer Default | `ToSequence()` rief nie `ClassifySequenceCharacter` auf | `ToSequence(candles)` Überladung setzt WaveAB/WaveBC/Type |
+| SK Invalidierung verschluckt Kerze | ProcessSucheB/ProcessAktiviert rief nach Reset nicht ProcessSuche0 auf | `return ProcessSuche0(candle, index)` nach Invalidierung |
+| SK Position-Sizing Score 6-7 = 75% | CryptoTrendPro.GetPositionScaleFactor für SK-Scores unpassend | Eigene SK-Schwellen: 100% ab Score 5, 125% ab Score 10 |
+| SK GKL falsche Basis (0→A statt 0→TargetC) | `_completedGkl559 = h4Seq.Retracement559` basierte auf 0→A Strecke | GKL = 50/66.7% von Extension1618→Point0 (Gesamtstrecke). Felder: `_completedGkl500`/`_completedGkl667` |
+| Isolated Margin nie gesetzt | `SetMarginTypeAsync()` nie aufgerufen → Cross Margin | `SetMarginTypeAsync(symbol, Isolated)` VOR jeder Order in LiveTradingService (try-catch) |
+| ExitState nach Neustart verloren | PositionExitState, TradesToday, Cooldowns nicht in DB | SaveExitStatesAsync/LoadExitStatesAsync + SaveRuntimeStateAsync/LoadRuntimeStateAsync in BotDatabaseService |
+| Verwaiste SL/TP bei manuellem Close | Signal entfernt, aber native BingX-Orders blieben | `CancelNativeSlTpOrdersAsync` in verwaiste-Signal-Erkennung ergänzt |
+| Multi-Mode kein TradFi (nur Crypto) | `_isHedgeModeActive` aus `[JsonIgnore]` Property gelesen → immer false | `restClient.IsHedgeModeAsync()` direkt abfragen statt aus BotSettings lesen |
+| SK 4H-Dedup permanent statt Time-Lock | Gleiche 4H-Sequenz nach 1 Trade für immer gesperrt → keine Re-Entries | Nur blockieren wenn `_signalCooldown > 0` (≈2h). Danach neue 15m-Entries erlaubt |
+| SK 100% Over-Extension = 0s Fenster | Preis schießt in einer 15m-Kerze über 100% → Entry-Fenster effektiv 0 | Block erst bei 138.2% Extension statt 100%. BC-Zone valid bis 138.2% |
+| SK Bottom-Up 3 Verluste = Deadlock | `_consecutiveFailsInDirection >= 3` → harter Block → kein Trade → kein Gewinn → Block ewig | Confluence-Erhöhung statt Block: `adjustedMinConfluence = _minConfluence + fails - 1` |
+| SK BTC Health -2 = alle Longs tot | `AllowLong = score >= -1` blockierte ALLE Altcoin-Longs bei BTC-Score -2 | `AllowLong = score >= -3` (nur extremer Crash blockt). PositionScale deckt Rest ab |
+| SK 15m falsche Richtung = sofort tot | `FromCandles()` wählt "beste" Sequenz — kann zufällig Short sein bei Long-4H | `FromCandlesBoth()` wählt direkt die passende Richtung (Long/Short Machine) |
+| SK RRR hart 3:1 tötet fortgeschrittene Trades | Bei 80% erreichtem 4H-Ziel ist verbleibender TP-Weg kurz → RRR < 3 | Gestaffeltes RRR: Score>=8: 1.5:1, >=6: 2.0:1, >=4: 2.5:1, sonst 3.0:1 |
+| SK BuyZone/GKL falsche Fibonacci-Level | `IsInBuyZone()` nutzte 50-61.8%, `IsInGklZone()` nutzte 55.9-66.7% → 4H +2 Confluence-Bonus verpasst bei SK-kritischen Leveln | SK Golden Pocket = 50-66.7% überall: Sequence.cs + SequenceDetector.cs. `Retracement559` nur als Confluence-Level, NICHT als Zone-Grenze |
 
 ---
 

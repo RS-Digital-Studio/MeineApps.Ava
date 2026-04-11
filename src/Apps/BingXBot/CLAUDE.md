@@ -77,7 +77,7 @@ Globale Filter die VOR der Strategie-Evaluation greifen:
 - **Max Trades/Tag**: Default 3
 - **Volatilitäts-Bremse**: ATR >90. Perzentil → halbe Position
 
-### Neue Defaults (05.04.2026)
+### Neue Defaults (05.04.2026, aktualisiert 11.04.2026)
 
 | Setting | Alt | Neu |
 |---------|-----|-----|
@@ -85,15 +85,18 @@ Globale Filter die VOR der Strategie-Evaluation greifen:
 | Scan-Intervall | 30s | **15min** (dynamisch per Timeframe) |
 | Leverage | 10x | **3x** |
 | Risiko/Trade | 2% | **1.5%** |
-| Daily Drawdown | 5% | **3%** |
+| Daily Drawdown | 5% | **0%** (deaktiviert) |
 | Total Drawdown | 15% | **10%** |
 | Trailing-Stop | 1.5% fix | **2.5x ATR** (Chandelier) |
-| Min Volume | 10M | **50M** |
-| Max Kandidaten | 10 | **5** |
+| Min Volume | 10M | **20M** |
+| Max Kandidaten | 10 | **100** (SK-Reversal-Screening) |
 | TP1 Close | 50% | **30%** (Pyramid) |
 | TP2 Close | - | **30%** (Pyramid) |
-| Min RRR | - | **1.5:1** |
+| Min RRR (global) | 1.0:1 | **0** (deaktiviert, Strategie hat eigenen Check) |
 | Smart BE | Entry exakt | **Entry + 0.5*ATR** |
+| Max Hold Hours | 48h | **0** (deaktiviert, SL/TP managed Exit) |
+| Max Korrelation | 0.7 | **0.85** |
+| Equity-Curve-Trading | An | **Aus** (Drawdowns normal bei SK) |
 | Backtest Slippage | 0.05% fix | **Dynamisch** (ATR/Volume) |
 | Backtest Spread | - | **0.08%** (Bid-Ask) |
 
@@ -260,7 +263,18 @@ Alle DB-Parameter sind optional (`BotDatabaseService?`), damit Tests ohne DB fun
 | IndicatorHelper.CacheKey IndexOutOfRange | IndicatorHelper.cs | CacheKey griff auf candles[^1] zu ohne Leerheits-Prüfung. Bei leerer Liste → IndexOutOfRangeException. Fix: Guard für Count==0 |
 | BeOneOf Test-Compile-Fehler | IndicatorHelperTests.cs | FluentAssertions BeOneOf(0, 1, "reason") interpretiert string als dritten int-Parameter. Fix: BeOneOf(new[] { 0, 1 }, "reason") |
 
-## Tests (210 Tests)
+## SK-System Verifikation (11.04.2026 — Vierte Re-Verifikation)
+
+35 Regeln geprüft, alle korrekt. 273 Tests bestanden. Details: `SK_VERIFY_REPORT.md`
+
+Letzte Fixes (Infra-Bug-Defaults):
+- MaxHoldHours: 48 → 0 (deaktiviert, SL/TP managed den Exit für SK-Swing-Trades)
+- MaxCorrelation: 0.7 → 0.85 (Krypto >70% korreliert in Trends)
+- MinRiskRewardRatio: 1.0 → 0 (deaktiviert, Strategie hat eigenen gestuften RRR-Check)
+- EnableEquityCurveTrading: true → false (Halbe Position nach Verlusten = Teufelskreis)
+- MaxResults (Scanner): 50 → 100 (SK-Reversal-Setups brauchen breiteres Screening)
+
+## Tests (273 Tests)
 
 | Datei | Tests | Beschreibung |
 |-------|-------|--------------|
@@ -1313,8 +1327,8 @@ Basierend auf Recherche (2024-2026 Backtests, BingX-Doku, Krypto-Futures-Studien
 ### Neue ScannerSettings
 | Property | Default | Beschreibung |
 |----------|---------|--------------|
-| EnableTradFi | false | TradFi-Assets aktivieren (opt-in) |
-| EnabledCategories | {Crypto} | Welche Kategorien gescannt werden |
+| EnableTradFi | true | TradFi-Assets aktivieren (alle Märkte per Default) |
+| EnabledCategories | {Crypto,Commodity,Index,Forex,Stock} | Welche Kategorien gescannt werden |
 | MinVolume24hTradFi | 1M | Eigener Volume-Filter für TradFi |
 
 ### Tests (264 gesamt, +38 neue)
@@ -1338,6 +1352,8 @@ Basierend auf Recherche (2024-2026 Backtests, BingX-Doku, Krypto-Futures-Studien
 | EnabledCategories-Default divergierte | MultiModeOrchestrator.cs | Alle-Modi-Modus Default war nur `{Crypto}` statt alle 5. Fix: Default konsistent mit ScannerSettings (alle 5 Kategorien) |
 | SK-System MinRange für Forex zu hoch | SequenzKonzeptStrategy.cs | 0.5-1.0% filterte fast alle Forex-Sequenzen. Fix: `categoryRangeFactor` skaliert MinRange (Forex: 0.25x, Stock: 0.5x, Index: 0.4x, Commodity: 0.6x) |
 | IsHedgeModeActive im Multi-Mode tot | MultiModeOrchestrator.cs | `IsHedgeModeActive` nicht gesetzt → TradFi im Alle-Modi komplett tot. Fix: Paper=true, Live=aus BotSettings |
+| IsHedgeModeActive im Single-Mode Paper tot | DashboardViewModel.cs | Single-Mode Paper-Trading setzte `IsHedgeModeActive` nie → TradFi komplett ignoriert. Fix: `_scannerSettings.IsHedgeModeActive = true` vor `_paperService.Start()` |
+| EnableTradFi-Fallback false im Orchestrator | MultiModeOrchestrator.cs | `_botSettings.Scanner?.EnableTradFi ?? false` → wenn BotSettings nicht gespeichert: TradFi aus. Fix: Fallback auf `true` (konsistent mit ScannerSettings-Default) |
 | Large-Cap-Rabatt galt für TradFi | CryptoTrendProStrategy.cs | MinScore-2 bei >500M Volume galt auch für TradFi → schwache Signale. Fix: Nur für `MarketCategory.Crypto` |
 | PriceTickerLoop ohne TradingHours | TradingServiceBase.cs | SL/TP/Trailing auf stale TradFi-Preisen bei geschlossenem Markt. Fix: `IsMarketOpen()` Check → Skip bei geschlossenem Markt |
 | Scanner-Rotation Wrap-Around | ScanHelper.cs | Offset-Berechnung erzeugte bei hohem Counter potentielle Duplikate. Fix: `% remaining.Count` + Skip+Concat+Take |
@@ -1356,7 +1372,7 @@ Basierend auf Recherche (2024-2026 Backtests, BingX-Doku, Krypto-Futures-Studien
 
 ### Neue Gotchas
 - SymbolClassifier: `NCCO`=Commodity, `NCSI`=Index, `NCFX`=Forex, `NCSK`=Stock, Rest=Crypto
-- TradFi `EnableTradFi=false` Default → kein Risiko für bestehende Krypto-Logik
+- TradFi `EnableTradFi=true` Default → alle Märkte per Default aktiv, UI-Checkboxen steuern Kategorien
 - Trading-Hours: TradFi am Wochenende IMMER geschlossen, auch 724-Varianten haben API gesperrt
 - RSI-Ranges: 42-78 für Krypto, 30-70 für TradFi — in CryptoTrendPro.Evaluate() per context.Category
 - Funding-Rate: Nur für Krypto prüfen (`category == MarketCategory.Crypto`)
@@ -1452,6 +1468,32 @@ Institutionelle Preis-Muster als zusätzliche Confluence-Quellen für das SK-Sys
 - FVG minGapPercent=0.1% filtert Micro-Gaps bei illiquiden Assets
 - Alle SK-Features sind in ALLEN Modi aktiv (IKI, BCKL, FVG, OB, MTF) — SK-Regeln sind TF-unabhängig
 
+## Live-Trading-Review Fixes (10.04.2026)
+
+| Severity | Fix | Datei | Beschreibung |
+|----------|-----|-------|--------------|
+| KRITISCH | Multi-Mode EmergencyStop | MultiModeOrchestrator.cs | EmergencyStopAllAsync() rief EmergencyStop auf ALLEN 3 Services parallel → doppelte Position möglich. Fix: Live-Mode nutzt direkt `_restClient.CloseAllPositionsAsync()` (atomarer BingX-Endpoint), Services werden nur gestoppt |
+| KRITISCH | TP2-Quantity | TradingServiceBase.cs | `tp2CloseQty = exitState.OriginalQuantity * Tp2CloseRatio` → `pos.Quantity * Tp2CloseRatio` (BingX truncated Quantity, OriginalQuantity stimmt nach Partial-Fill nicht mehr) |
+| KRITISCH | EmergencyStop CancellationToken | LiveTradingService.cs | GetPositionsAsync/GetAllTickersAsync ohne CT → 90s Blockade bei Netzwerkproblem. Fix: Dedizierter CTS mit 10s Timeout + CT-Überladung für GetPositionsAsync |
+| HOCH | User-Data-Stream Reconnect | BingXWebSocketClient.cs | UserDataReceiveLoopAsync hatte keinen Auto-Reconnect (Market-WS hatte einen). Fix: ReconnectUserDataStreamAsync() mit exponentiellem Backoff |
+| HOCH | Retry-Delay ohne CT | BingXRestClient.cs | HttpRequestException/TaskCanceledException catch-Blöcke: `Task.Delay(backoff)` → `Task.Delay(backoff, ct)` |
+| HOCH | Dispose Deadlock | MultiModeOrchestrator.cs | `GetAwaiter().GetResult()` → `Task.Run(() => StopAsync()).Wait(5s)` (verhindert UI-Thread Deadlock) |
+| HOCH | WebSocket fire-and-forget | LiveTradingService.cs | ContinueWith → async SafeStartAsync() Wrapper (kein AggregateException-Risiko, kein TaskScheduler-Problem) |
+| MITTEL | Min-Order Notional-Check | BingXRestClient.cs | Market-Orders: `checkPrice = request.Price ?? 0m` übersprung Notional-Check. Fix: `lastPrice` Parameter für aktuellen Ticker-Preis |
+| MITTEL | Auto-Breakeven Puffer | TradingServiceBase.cs + MultiModeOrchestrator.cs | 0.15% fix → `max(0.15%, SmartBreakevenAtrMultiplier * ATR)` (verhindert Ausstoppen bei volatilen Coins) |
+| NIEDRIG | RateLimiter disposed | RateLimiter.cs | `if (_disposed) return` → `ObjectDisposedException.ThrowIf()` (verhindert ungeschütztes Rate-Limiting nach Dispose) |
+
+### Runde 2 (Tiefenreview)
+
+| Severity | Fix | Datei | Beschreibung |
+|----------|-----|-------|--------------|
+| KRITISCH | LiveTradingManager Recovery BE-Puffer | LiveTradingManager.cs | RecoverOpenPositionsAsync nutzte noch fixen 0.15% statt ATR-basiert. Fix: `CalculateRecoveryAtrAsync()` + `max(0.15%, ATR*Mult)` — konsistent mit TradingServiceBase + MultiModeOrchestrator |
+| HOCH | CloseAllPositionsAsync ohne CT | BingXRestClient.cs | Task.Run ohne CT + SendSignedRequestAsync ohne CT. Fix: CT-Überladung, direkte async Calls statt Task.Run |
+| HOCH | DashboardVM doppelte Timer | DashboardViewModel.cs | 5x `_ = StartAccountUpdateAsync()` fire-and-forget → `_accountUpdateTask = ...` (Task-Referenz verhindert parallele Timer-Loops) |
+| MITTEL | Recovery N API-Calls | LiveTradingManager.cs | GetOpenOrdersAsync pro Position → einmal alle Orders laden, dann per LINQ filtern |
+| MITTEL | Balance=0 klare Meldung | RiskManager.cs | Explizite Prüfung `AvailableBalance <= 0` mit "Keine verfügbare Balance" statt "Position-Größe ist 0" |
+| MITTEL | SK-Breakeven ATR-Puffer | TradingServiceBase.cs | SK-System Breakeven bei 2× SL-Distanz nutzte noch fixen 0.15% → ATR-basiert wie Auto-BE |
+
 ## SK-Kernlogik-Fixes (10.04.2026)
 
 Tiefenprüfung der A-B-C Punkt-Setzung und Trade-Logik gegen das originale SK-System.
@@ -1477,6 +1519,8 @@ Tiefenprüfung der A-B-C Punkt-Setzung und Trade-Logik gegen das originale SK-Sy
 - SK-System MinRangePercent MUSS category-abhängig skaliert werden (Forex 0.25x, sonst fast keine Sequenzen)
 - MultiModeOrchestrator.EnabledCategories Default MUSS alle 5 Kategorien enthalten (konsistent mit ScannerSettings)
 - MultiModeOrchestrator: `IsHedgeModeActive` MUSS gesetzt werden (Paper=true, Live=aus BotSettings) — sonst TradFi komplett tot
+- Single-Mode Paper: `_scannerSettings.IsHedgeModeActive = true` VOR `_paperService.Start()` — sonst TradFi auch im Single-Mode tot
+- `EnableTradFi` Fallback-Werte MÜSSEN `true` sein (konsistent mit ScannerSettings.EnableTradFi Default)
 - Large-Cap-Rabatt (MinScore-2) NUR für `MarketCategory.Crypto` — TradFi hat andere Stabilitäts-Dynamik
 - PriceTickerLoop: TradFi-Positionen bei geschlossenem Markt überspringen (stale Preise → falsches SL/TP)
 - TradingHours Commodity/Index: Nur 1h Pause 22:00-23:00 UTC (CME Maintenance), NICHT 00:00-01:00 geschlossen
@@ -1487,6 +1531,20 @@ Tiefenprüfung der A-B-C Punkt-Setzung und Trade-Logik gegen das originale SK-Sy
 - Limit-Order TP: NICHT sofort platzieren (Position existiert noch nicht). Fill-Detection im PriceTickerLoop
 - SyncServerTimeAsync: MUSS bei Connect aufgerufen werden — BingX Error 100421 bei Systemzeit-Abweichung >5s
 - Fund-Flow `incomeType`: REALIZED_PNL, FUNDING_FEE, TRADING_FEE, INSURANCE_CLEAR, ADL, TRANSFER
+- `_tradesToday` MUSS `volatile` sein — wird per Interlocked geschrieben, ohne Interlocked gelesen (JIT darf cachen → MaxTrades umgehbar)
+- `ContinueWith` IMMER mit `TaskScheduler.Default` — ohne expliziten Scheduler nutzt es `TaskScheduler.Current` (kann UI-Thread sein → Deadlock)
+- DailyPnl Dictionary: Atomarer Swap (neues Objekt zuweisen), NICHT Clear+Re-Fill (SkiaSharp-Renderer liest auf Render-Thread)
+- MultiModeOrchestrator.Dispose: `Task.Run(() => StopAsync())` statt direktem `Wait()` — sonst Deadlock bei SynchronizationContext
+- `_klineSemaphore` in Dispose() freigeben — SemaphoreSlim hat OS-Handles, leakt bei Start/Stop-Zyklen
+- Sharpe-Ratio Annualisierung: Tatsächliche Trade-Frequenz berechnen, NICHT sqrt(365) (nimmt 1 Trade/Tag an)
+- Manueller Close: `_liveManager.CommissionTakerRate` statt hardcodierter 0.0005m — sonst lernt ATI mit falschen PnL-Werten
+- State Machine SucheB: INVALIDIERUNG (Low < Point0) MUSS VOR AKTIVIERUNG (Close > PointA) geprüft werden — eine Kerze kann beides gleichzeitig haben
+- Short-SL Fallback: Ret500 verwenden (höchstes Level im fibLevels-Array), NICHT Ret382 (nicht im Array, liegt auf falscher Seite)
+- TP2 Qty-Formel: `Tp2Ratio / (1 - Tp1Ratio)` normalisieren → 30% vom ORIGINAL statt 30% vom Rest (konsistent mit Backtest)
+- WebSocket `_ws.SendAsync` ist NICHT thread-safe — SemaphoreSlim `_sendLock` für alle Send-Aufrufe (Subscribe, Unsubscribe, Pong)
+- `AmendOrderAsync`: `RoundPrice`/`TruncateQuantity` anwenden — BingX lehnt Werte mit zu vielen Dezimalstellen ab
+- `GetIncomeHistoryAsync`: `startTime.Value.ToUniversalTime()` — ohne UTC-Kind nutzt DateTimeOffset lokale Timezone
+- `_requireCloseBreak` entfernt: Toter Code, State Machine nutzt immer Close-Break (ProcessSucheB Zeile 339)
 
 ### SK-System Redesign (10.04.2026 — Stefan Kassing Regelkonformität)
 
@@ -1517,7 +1575,7 @@ Tiefenprüfung der A-B-C Punkt-Setzung und Trade-Logik gegen das originale SK-Sy
 #### SK Gotchas
 - Entry-TF (15m) Micro-Sequenz MUSS State `Aktiviert` haben (State Machine, nicht SequenceState)
 - Ohne aktivierte 15m-Micro-Sequenz kein Entry (wenn M15-Daten vorhanden)
-- Sandwich-Check: `SequenceStateMachine.FromCandles` für Gegenrichtung + Ziellevel-Prüfung ±5%
+- Sandwich-Check: `FromCandlesBoth()` gibt beide Richtungen zurück → Gegenrichtung direkt für Sandwich-Check (kein doppelter FromCandles-Aufruf)
 - Over-Extension: 15m schon bei 100%+ Extension → zu spät für Entry
 - TP1 = 15m-Extension 161.8% (mit Min-RRR 2:1 Guard)
 - TP2 = 4H-Extension 200% (Sequenz abgearbeitet). Fallback 161.8% wenn 200% zu nah
@@ -1530,10 +1588,18 @@ Tiefenprüfung der A-B-C Punkt-Setzung und Trade-Logik gegen das originale SK-Sy
 - Invalidierung in `ProcessAktiviert`: Docht (candle.Low/High), NICHT Close
 - SL-Buffer: `max(1.5× ATR_15m, 0.15%)` — Liquidity-Grab-Schutz
 - 15m-Sequenz Mindestgröße: 0→A Strecke >= 2× ATR_15m (filtert Rauschen)
-- Flash-Crash Cooldown: 4H-Kerze > 5% Bewegung → 4 Evaluierungen pausieren
+- Flash-Crash Cooldown: 4H-Kerze > 5% Bewegung → 4 Evaluierungen pausieren. Erster Evaluate eines Klons initialisiert nur `_lastH4Close` (kein Crash-Check ohne Referenzwert)
 - MTFA Anti-Deadlock: 4H GKL nur Confluence-Bonus, 1H blockiert nur bei aktiver Gegensequenz
 - Gegensequenz: Nach Abarbeitung aktive Suche ins GKL der alten Sequenz (mit gespeicherten GKL-Leveln)
 - CheckM15EntryTiming (RSI+Candle-Filter in TradingServiceBase) wird für SK-System ÜBERSPRUNGEN — SK hat eigenen umfassenden 15m-Filter (State Machine, ChoCH, ATR-Mindestgröße, Over-Extension). Der generische RSI>75-Check blockiert SK-Signale kontraproduktiv (Impuls-Momentum ist GEWOLLT bei Aktivierung)
+- Short-SL Fallback: `Retracement382` (höchstes Level, nahe Point0/High) statt `Retracement786`. Zusätzlich Seitenprüfung: SL auf falscher Seite → ATR-Notfall-SL
+- `ToSequence()` bei SucheB: PointC = null (PotentialB ist instabil/Trailing). Erst ab Aktiviert wird LockedB als PointC gesetzt
+- `ToSequence(candles)`: Mit Candles-Parameter für WaveCharacter-Klassifikation (WaveAB/WaveBC + Type). Ohne Candles sind HasGoodCharacter/IsTradeableType immer false/true (tote Confluence-Punkte)
+- ProcessSucheB/ProcessAktiviert: Invalidierung ruft sofort `ProcessSuche0(candle, index)` auf (keine Kerze verschwenden, konsistent mit ProcessAbgearbeitet)
+- ProcessSucheB: Invalidierung wird VOR Aktivierung geprüft (Kerze mit Docht unter Point0 + Close über PointA → invalidieren, nicht aktivieren)
+- Position-Sizing: SK hat eigene Score-Schwellen (100% ab Score 5, 125% ab 10). NICHT CryptoTrendPro.GetPositionScaleFactor verwenden (reduziert SK-Scores 6-7 auf 75%)
+- `_lastSkStatus`: Zeigt Symbol-Name + Status des letzten nicht-trivialen Symbols (informativer als generisches "Blocked")
+- `Clone()`: `ApplyPreset()` MUSS vor dem ersten Clone aufgerufen worden sein (setzt DisableSmartBreakeven)
 
 ## SK-System MTFA-Optimierung (10.04.2026)
 
@@ -1602,3 +1668,218 @@ Tiefenprüfung der A-B-C Punkt-Setzung und Trade-Logik gegen das originale SK-Sy
 - Fib-SL Skip(1) ist ABSICHT: Nicht das direkte nächste Level (Liquidity-Grab), sondern das übernächste
 - SL-Fallback: 3×ATR_15m statt 15m-Punkt-0 (begrenzt Verluste auf ~1% statt 3-5%)
 - Log zeigt SK-Original-Nomenklatur: `4H:0=Punkt0 A=PunktA B=PunktB` (nicht Sequence.PointA/B)
+
+## SK-System Verifikation (10.04.2026)
+
+Vollständiges Audit des SK-Systems gegen den SK-Regel-Katalog (36 Regeln in 6 Kategorien).
+Report: `SK_VERIFY_REPORT.md` im Projekt-Root. Ergebnis: 17 korrekt, 14 Abweichungen, 5 fehlend → alle gefixt.
+
+### Kritische Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Isolated Margin | LiveTradingService.cs | `SetMarginTypeAsync(symbol, Isolated)` VOR jeder Order. War nie aufgerufen → Cross Margin = gesamtes Konto exponiert |
+| GKL-Berechnung | SequenzKonzeptStrategy.cs | War: 55.9/66.7% der 0→A Strecke. Korrekt: 50/66.7% der 0→Extension1618 (Gesamtstrecke). Fundamental falsche Kaufzonen für Gegensequenzen |
+| ExitState-Persistenz | BotDatabaseService.cs, LiveTradingManager.cs, TradingServiceBase.cs | ExitStates + RuntimeState (TradesToday, Losses, Cooldowns) in SQLite. Ohne: TP1 nach Neustart doppelt geschlossen |
+| Orphaned Orders | LiveTradingService.cs | `CancelNativeSlTpOrdersAsync` bei manuell geschlossenen Positionen (verwaiste-Signal-Erkennung) |
+| SimulatedExchange | SimulatedExchange.cs | `MarginType.Cross` → `MarginType.Isolated` (Paper-Trading spiegelt jetzt Live-Modus) |
+
+### Neue Features (SK-Regel-Konformität)
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| Trailing High/Low | SequenceStateMachine.cs | `CurrentHigh`/`CurrentLow` Properties + Tracking in ProcessAktiviert. Basis für dynamische BC-Zone |
+| Dynamische BC-Zone | SequenceStateMachine.cs | `GetDynamicBcZone()` — 50-66.7% Retracement von B bis CurrentHigh/Low |
+| 38.2% Mindestaktivierung | SequenzKonzeptStrategy.cs | Preis muss mindestens 38.2% Extension nach 15m-Aktivierung erreichen (zu schwache Bewegungen gefiltert) |
+| Symbol-Cooldown | TradingServiceBase.cs | 4h Sperre pro Symbol nach Verlust-Trade (gegen Rache-Trades). ConcurrentDictionary + DB-Persistenz |
+| 4H-ATR-Rausch-Filter | SequenzKonzeptStrategy.cs | 4H-Sequenz muss >= 2× ATR_4H sein (fehlte, nur 15m hatte den Filter) |
+
+### Default-Anpassungen (SK-Regel-Konformität)
+| Setting | Alt | Neu | Regel |
+|---------|-----|-----|-------|
+| MaxMarginPerTradePercent | 2% | 1% | [5.5] Max 1% Risiko pro Trade |
+| MaxOpenPositions | 10 | 3 | [5.2] Max 3 offene Trades |
+| ADX-Schwelle (Krypto) | 15 | 20 | [5.1] ADX < 25 = Seitwärtsmarkt |
+| ADX-Schwelle (TradFi) | 12 | 15 | [5.1] ADX < 25 = Seitwärtsmarkt |
+
+### Neue Gotchas
+- GKL MUSS auf Gesamtstrecke (Point0→Extension1618) basieren, NICHT auf 0→A Strecke. Die Felder heißen jetzt `_completedGkl500`/`_completedGkl667`
+- `SetMarginTypeAsync` VOR jeder Order aufrufen — BingX-Default kann Cross sein (try-catch: Fehler bei offener Position ignorieren)
+- `PositionExitState` wird jetzt in DB persistiert → nach Neustart korrekte Phase (kein doppelter TP1)
+- `_symbolCooldowns` ConcurrentDictionary: 4h Sperre nach Verlust, wird in ScanAndTradeAsync geprüft und in DB persistiert
+- `CurrentHigh`/`CurrentLow` in SequenceStateMachine: Wird bei jeder Kerze in ProcessAktiviert aktualisiert, Reset bei Invalidierung und State-Reset
+- `TryActivate` hat jetzt einen `Candle`-Parameter (für CurrentHigh/Low Initialisierung bei Aktivierung)
+- Multi-Mode Live: `_isHedgeModeActive` wurde aus `_botSettings.Scanner?.IsHedgeModeActive` gelesen — ist `[JsonIgnore]` = IMMER false → TradFi komplett tot. Fix: `restClient.IsHedgeModeAsync()` direkt abfragen
+
+## SK-System Vollständige Regelkonformität (10.04.2026)
+
+Vollständige Verifikation aller SK-Regeln aus SK_CLAUDE_INSTRUCTIONS.md. Alle Abweichungen behoben.
+
+### Fixes
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| TP1 50% statt 30% | SequenzKonzeptStrategy.cs | `Tp1CloseRatioOverride: 0.5m` — SK-Regel 4.5: 50% bei TP1 |
+| SL ATR-primär | SequenzKonzeptStrategy.cs | SL = Point0 - max(1.5×ATR_15m, 0.15%) — SK-Regel 4.2 |
+| BC-Zone als Confluence | SequenzKonzeptStrategy.cs | `GetDynamicBcZone()` gibt +1 Score wenn Preis in 50-66.7% Zone |
+| ADX auf 1H | SequenzKonzeptStrategy.cs | ADX-Check auf 4H UND 1H — SK-Regel 5.1 |
+| Zonen-Memory 10 Kerzen | SequenzKonzeptStrategy.cs | GKL-Flag 40h (10×4H) aktiv, nicht 10 Evaluierungen — SK-Regel 3.4 |
+| EmergencyStop State-Save | LiveTradingManager.cs | ExitStates + RuntimeState bei NotfallStop speichern — SK-Regel 6.1 |
+| _dbService Null-Guards | LiveTradingManager.cs | Null-Checks in Start/Stop/Emergency — SK-Regel 6.1 |
+| Multi-Mode State-Persistenz | MultiModeOrchestrator.cs | ExitStates + RuntimeState in StopAllAsync — SK-Regel 6.1 |
+| Gescheiterte→Größere Sequenz | SequenceStateMachine.cs | Fix M: Invalidierung prüft Upgrade auf größere Struktur |
+| Mehrere Sequenzen pro Symbol | SequenzKonzeptStrategy.cs | Fix H: DetectAllSequences evaluiert parallele Kandidaten, beste RRR gewinnt |
+
+### Neue Gotchas
+- SK-System: TP1 Ratio MUSS 0.5 (50%) sein, NICHT 0.3 (CTP-Default). Über `Tp1CloseRatioOverride` im Signal
+- SK-System: SL primär ATR-basiert (1.5× ATR_15m), Fib-Level nur noch Confluence. Buffer-Faktor konfigurierbar via `_slBufferPercent`
+- SK-System: ADX blockiert auf BEIDEN Timeframes (4H UND 1H). ADX < 20 (Krypto) / < 15 (TradFi) = kein Entry
+- SK-System: Zonen-Memory = 10 × 4H-Kerzen (40h), zeitbasiert über `_h4GklLastTouchTime` (nicht Evaluierungszähler)
+- SK-System: Gescheiterte Sequenz kann größere bilden: `FailedPoint0`/`FailedPointA`/`PromotedToLarger` in SequenceStateMachine
+- SK-System: `DetectAllSequences()` evaluiert parallele Kandidaten — beste RRR (>20% besser + >2:1) ersetzt SM-Sequenz
+- Multi-Mode + EmergencyStop: State-Persistenz ist PFLICHT (ExitStates + RuntimeState). Ohne: TradesToday/Cooldowns/TP-Phase verloren
+
+## SK-System Tiefenverifikation + Implementierung (11.04.2026)
+
+5-Agenten-Tiefenaudit aller 35 SK-Regeln aus SK_CLAUDE_INSTRUCTIONS.md. 10 Abweichungen + 3 fehlende Features + 3 Bugs gefunden und behoben.
+
+### Kritische Bugs gefixt
+| Fix | Datei | Beschreibung |
+|-----|-------|--------------|
+| Multi-Mode State-Load | MultiModeOrchestrator.cs | `StartLiveAsync()` lädt jetzt RuntimeState + ExitStates aus DB — vorher: alles bei 0 nach Neustart |
+| Multi-Mode EmergencyStop Save | MultiModeOrchestrator.cs | `EmergencyStopAllAsync()` speichert State VOR Stop — vorher: State-Verlust bei Notfall |
+| SetMarginType Logging | LiveTradingService.cs | Leerer catch → differenziertes Logging bei echten Fehlern (nicht nur erwartete Ignore) |
+
+### Fehlende Features implementiert
+| Feature | Datei | Beschreibung |
+|---------|-------|--------------|
+| Fahrplan (MarketBias) | SequenzKonzeptStrategy.cs | EMA-200 auf 4H → Long/Short-Bias. Trades gegen Bias blockiert. Bei jedem Evaluate neu bewertet |
+| Impulsive Reaktion | SequenzKonzeptStrategy.cs | Prüfung ob 15m-Aktivierung impulsiv war: >=3 Trend-Kerzen ODER Body > 1.5×ATR |
+| Sequenz-IDs → Untersequenzen | SequenzKonzeptStrategy.cs | 1H-Sequenz in 4H-Zone als sekundäre Bestätigung (+2 Confluence) |
+
+### Abweichungen behoben
+| Regel | Datei | Fix |
+|-------|-------|-----|
+| 2.4 100er Extension Gate | SequenceStateMachine.cs | `Has100ExtensionReached` Property — BC erst valid nach 100% |
+| 3.10 Wendebereiche | SequenzKonzeptStrategy.cs | GKL/SMC/ATH/ATL Check, -1 ohne validen Wendebereich |
+| 3.11 Bottom-Up Feedback | SequenzKonzeptStrategy.cs | `RecordTradeOutcome()` — 3+ Verluste in Richtung pausiert |
+| 3.12 Stabilisierung | SequenzKonzeptStrategy.cs | `DetectEntryConfirmation()` verdrahtet, +2 Confluence |
+| 3.13 Overtracing | SequenceStateMachine.cs | `SmState.Gewarnt` + `InvalidationTolerance` (0.3×ATR) |
+| 3.13 Refactoring | SequenceStateMachine.cs | `InvalidateAndPromote()` gemeinsame Methode für alle Pfade |
+
+### Neue SM-States
+| State | Beschreibung |
+|-------|--------------|
+| `SmState.Gewarnt` | Docht unter Point0 aber Close OK → mögliches Overtracing. Nächste Kerze entscheidet: Erholung → Aktiviert, Bestätigung → Invalidiert |
+
+### Neue SM-Properties
+| Property | Beschreibung |
+|----------|--------------|
+| `InvalidationTolerance` | ATR-basierte Toleranz (0.3×ATR), von Strategy gesetzt |
+| `Has100ExtensionReached` | True wenn 100% Extension seit Aktivierung erreicht |
+
+### Neue Strategy-Felder
+| Feld | Beschreibung |
+|------|--------------|
+| `_lastFahrplanBias` | EMA-200 Bias (true=Long, false=Short, null=Neutral) |
+| `_lastEma200` | Letzter EMA-200 Wert für Logging |
+| `_consecutiveFailsInDirection` | Bottom-Up Counter für Verluste in Fahrplan-Richtung |
+
+### Neue Gotchas
+- Fahrplan: EMA-200 auf 4H ≈ D1-EMA-33. Wird bei jedem Evaluate berechnet. Kein Fahrplan = neutral (nicht blockieren)
+- Overtracing: `SmState.Gewarnt` ist >= `SmState.Aktiviert` → `ToSequence()` mappt auf `Active` (Trade läuft weiter)
+- Impulsive Reaktion: Prüft die letzten 5 Kerzen NACH 15m-Aktivierung. Ohne Impuls: kein Entry
+- 100er Gate: `Has100ExtensionReached` wird bei Invalidierung zurückgesetzt (`InvalidateAndPromote`)
+- Bottom-Up: Nur Verluste IN der Fahrplan-Richtung zählen. Verluste gegen Fahrplan = irrelevant
+- Sekundäre Sequenz: Nur wenn Preis in 4H-GKL UND 1H-Daten vorhanden → +2 Confluence
+- Wendebereiche: -1 Score (nicht harter Block). Kann unter MinConfluence fallen → effektiver Filter
+
+## SK-System Killer-Fixes — Trade-Frequenz (11.04.2026)
+
+8 Blocking-Point-Entschärfungen. Die 38 Blocking-Points in der Strategy töteten fast alle Signale.
+
+### Implementierte Killer-Fixes
+
+| Killer | Fix | Datei | Beschreibung |
+|--------|-----|-------|--------------|
+| K1 | 4H-Dedup → Time-Lock | SequenzKonzeptStrategy.cs | Nur blockieren wenn `_signalCooldown > 0` (≈2h), nicht permanent. Mehrere 15m-Entries in derselben 4H-Sequenz möglich |
+| K2 | Impuls-Check erweitert | SequenzKonzeptStrategy.cs | Fenster 5→8 Kerzen + Methode 3: Netto-Bewegung > 1× ATR |
+| K3 | 100er Extension → 138.2% | SequenzKonzeptStrategy.cs | Entry erlaubt bis 138.2% Extension (statt 100%). BC-Zone noch valid |
+| K4 | RRR gestaffelt | SequenzKonzeptStrategy.cs | Score>=8: 1.5:1, >=6: 2.0:1, >=4: 2.5:1, sonst 3.0:1 |
+| K5 | Bottom-Up → Confluence | SequenzKonzeptStrategy.cs | 3+ Verluste erhöhen adjustedMinConfluence statt harter Block |
+| K6 | BTC Health softer | MarketFilter.cs | `AllowLong` ab Score -3 statt -1. Nur extremer Crash (-4) blockt |
+| K7 | Cooldown 20→8 | SequenzKonzeptStrategy.cs | Richtungs-Sperre: 8 statt 20 Evaluierungen (≈2h statt 5h) |
+| K8 | 15m FromCandlesBoth | SequenzKonzeptStrategy.cs | Direkte Richtungswahl statt "beste" Sequenz (kann falsche Richtung sein) |
+
+### Neue Gotchas (Killer-Fixes)
+- KILLER #1: `_signalCooldown` wird bei Signal-Erzeugung auf 8 gesetzt und pro Evaluate dekrementiert. Nach Ablauf darf dieselbe 4H-Sequenz neue 15m-Entries generieren
+- KILLER #3: 138.2% Extension = LockedB + impulseRange × 1.382 (impulseRange = |PointA - Point0|)
+- KILLER #4: RRR wird NACH dem Score berechnet (nicht davor). Score beeinflusst Min-RRR
+- KILLER #5: `adjustedMinConfluence = _minConfluence + _consecutiveFailsInDirection - 1` (ab 3 Fails)
+- KILLER #6: PositionScale (65-100%) deckt moderate BTC-Schwäche ab. Harter Block nur bei -4
+- KILLER #8: `FromCandlesBoth()` gibt 3 Werte zurück: (primary, longMachine, shortMachine). Primary wird mit `_` verworfen
+
+## SK-System Re-Verifikation — BuyZone/GKL-Fix (11.04.2026)
+
+Re-Audit der SK_CLAUDE_INSTRUCTIONS.md durch 3 parallele Analyse-Agenten + manuelle Code-Verifizierung. Der vorherige Report behauptete "35/35 korrekt" — tatsächlich waren 2 kritische Fibonacci-Zonen noch FALSCH.
+
+### Gefixte Bugs
+
+| Bug | Datei | Alt | Neu | Auswirkung |
+|-----|-------|-----|-----|------------|
+| BuyZone falsch | Sequence.cs | 50-61.8% (Ret500-Ret618) | 50-66.7% (Ret500-Ret667) | +10-20% qualifizierte Signale |
+| GKL-Zone falsch | Sequence.cs | 55.9-66.7% (Ret559-Ret667) | 50-66.7% (Ret500-Ret667) | GKL-Oberkante verpasst |
+| IsDestabilized Zone | SequenceDetector.cs Z.520 | Ret559-Ret667 | Ret500-Ret667 | Konsistenz |
+| DetectEntryConfirmation Zone | SequenceDetector.cs Z.856 | Ret559-Ret667 | Ret500-Ret667 | Konsistenz |
+
+**Warum kritisch:** `h4Seq.IsInBuyZone(currentPrice) || h4Seq.IsInGklZone(currentPrice)` (Strategy Z.247) steuert den +2 Confluence-Bonus. Die alten Zonen verpassten Entries zwischen 61.8-66.7% (BuyZone) und 50-55.9% (GKL) — laut SK genau die Level wo der Markt am häufigsten reagiert.
+
+**Hinweis:** `GetDynamicBcZone()` in SequenceStateMachine war bereits korrekt (50-66.7%). Die `_completedGkl500/667` Berechnung in der Strategy (Z.281-287) war ebenfalls korrekt. Nur das Sequence-Modell und SequenceDetector hatten die alten falschen Werte.
+
+### Weitere Abweichungs-Fixes (gleiche Session)
+
+| Abweichung | Fix | Datei | Beschreibung |
+|-----------|-----|-------|--------------|
+| #3 EMA-200 Fahrplan | Soft-Filter | SequenzKonzeptStrategy.cs | Hard-Block → -1 Confluence-Malus. SK: Mean Reversion erlaubt Trades gegen EMA (BLASH) |
+| #5 4H-Primary Richtung | Fahrplan-Fallback | SequenzKonzeptStrategy.cs Z.190 | Wenn primary gegen Fahrplan → aligned Machine versuchen (statt Block) |
+| #6 CompletedGkls | GKL-Historie | SequenceStateMachine.cs | `CompletedGkls` Liste (max 5 Einträge) + `CompletedGklEntry` Record. GKLs überleben ProcessAbgearbeitet-Reset |
+
+### Neue Gotchas
+
+- `Retracement559` sollte NICHT als Zone-Grenze verwendet werden, nur als Confluence-Level (Preis exakt am 55.9er → +1 Score). Zone-Grenzen sind IMMER 50% und 66.7%
+- `IdealBuyZone` und `GklZone` Properties in Sequence.cs sind jetzt identisch (beide 50-66.7%). Der Unterschied ist semantisch: BuyZone = BC-Korrektur, GKL = Gesamtkorrektur
+- EMA-200 ist KEIN Hard-Block mehr. `_tradeAgainstEma` Flag wird in Confluence-Score als -1 verrechnet. SK-System erlaubt bewusst Trades gegen den Trend (an Wendebereichen)
+- 4H-Primary wird jetzt bei Fahrplan-Mismatch durch die aligned Machine ersetzt (wenn die mindestens SucheB hat)
+- `CompletedGkls` in SequenceStateMachine speichert max 5 GKL-Zonen abgearbeiteter Sequenzen (mit Zeitstempel). NICHT in DB persistiert (bei Neustart aus Candles rekonstruiert)
+- `CompletedGklEntry` Record: (Gkl500, Gkl667, IsLong, CompletedAt)
+- Vollständiger Verifikationsbericht: `SK_VERIFY_REPORT.md` im Projekt-Root
+
+## SK-System Infra-Bug-Fixes (11.04.2026 — Zweite Re-Verifikation)
+
+Vollständige Abarbeitung der SK_CLAUDE_INSTRUCTIONS.md. 3 verbleibende Infra-Bugs identifiziert und gefixt.
+
+### Infra-Bug-Fixes
+| Bug | Datei | Beschreibung |
+|-----|-------|--------------|
+| Scanner Momentum statt Reversal | TradingModeDefaults.cs, ScannerSettings.cs | `ScanMode` in ScannerPreset Record ergänzt. Swing-Preset = `ScanMode.Reversal` (SK = Mean-Reversion). Multi-Mode + SingleMode übernehmen Mode aus Preset |
+| MinPriceChange 0.5% | ScannerSettings.cs, TradingModeDefaults.cs | Default 0.5%→0.1%. Swing-Preset 0.3%→0.1%. SK-Stabilisierungsphasen (Prestabilisation) werden nicht mehr ausgefiltert |
+| ScanMode-Anwendung | MultiModeOrchestrator.cs, DashboardViewModel.cs | Beide Pfade (Multi-Mode + SingleMode) übernehmen `ScanMode` aus dem ScannerPreset |
+
+### Neue Gotchas
+- `ScannerPreset.Mode` ist nullable (`ScanMode?`). Bei null wird `ScanMode.Momentum` als Fallback verwendet
+- Swing-Preset (Default-Fall in GetScannerPreset) setzt `ScanMode.Reversal` — betrifft SK-System und alle Swing-Strategien
+- MinPriceChange 0.1% + Top-100-Volume-Filter = ausreichender Spam-Schutz ohne SK-Kandidaten zu verlieren
+- Reversal-Modus gewichtet Struktur 35% (statt 10%) und Trend nur 10% (statt 30%) — optimal für Mean-Reversion
+
+### Naming-Refactoring (Abweichung #4 behoben)
+| Datei | Änderung |
+|-------|----------|
+| Sequence.cs | Properties: PointA→Point0, PointB→PointA, PointC→PointB (SK-Nomenklatur) |
+| ChartOverlay.cs | Record-Parameter: PointA→Point0, PointB→PointA, PointC→PointB |
+| SequenceStateMachine.cs | ToSequence(): `Point0=a, PointA=b, PointB=c` + Kommentar-Aktualisierung |
+| SequenzKonzeptStrategy.cs | Alle Sequence-Referenzen aktualisiert (Dedup, Signal, Logging) |
+| DashboardViewModel.cs | SequenceOverlay-Erstellung: Point0/PointA/PointB |
+| InteractiveChartRenderer.cs | Punkt-Marker: "0"/"A"/"B" statt "A"/"B"/"C" + Farben umbenannt |
+
+### Neue Gotchas (Naming)
+- Sequence.Point0 = SM.Point0 = SK's Punkt 0 (Ursprung). KONSISTENT!
+- Sequence.PointA = SM.PointA = SK's Punkt A (Impulsgipfel). KONSISTENT!
+- Sequence.PointB = SK's Punkt B (Korrekturende, nullable). SM.LockedB/PotentialB.
+- Private Felder `_lastSignalPointA/B/C` in Strategy speichern semantisch Point0/PointA/PointB (historische Namen, intern konsistent)

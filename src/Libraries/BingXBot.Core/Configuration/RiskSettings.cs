@@ -15,17 +15,18 @@ public class RiskSettings
 {
     /// <summary>Max. Margin pro Trade in % der Balance. Beispiel: 10% bei 100 USDT = max 10 USDT Margin pro Position.</summary>
     public decimal MaxPositionSizePercent { get; set; } = 10m;
-    /// <summary>Max. Risiko (Verlust bei SL-Hit) pro Trade in % der Balance. Beispiel: 2% bei 100 USDT = max 2 USDT Verlust wenn SL greift.</summary>
-    public decimal MaxMarginPerTradePercent { get; set; } = 2m;
+    /// <summary>Max. Risiko (Verlust bei SL-Hit) pro Trade in % der Balance. SK-VERIFY: [5.5] Default 1% (war 2%).</summary>
+    public decimal MaxMarginPerTradePercent { get; set; } = 1m;
     public decimal MaxDailyDrawdownPercent { get; set; } = 0m; // 0 = deaktiviert
     public decimal MaxTotalDrawdownPercent { get; set; } = 10m;
-    public int MaxOpenPositions { get; set; } = 10;
+    public int MaxOpenPositions { get; set; } = 3; // SK-VERIFY: [5.2] Default 3 (war 10)
     public int MaxOpenPositionsPerSymbol { get; set; } = 1;
     public decimal MaxLeverage { get; set; } = 25m;
     /// <summary>Ob der Leverage automatisch an Volatilität und Signal-Stärke angepasst wird. Aus = immer MaxLeverage.</summary>
     public bool UseAdaptiveLeverage { get; set; } = true;
     public bool CheckCorrelation { get; set; } = true;
-    public decimal MaxCorrelation { get; set; } = 0.7m;
+    // SK-VERIFY: Infra-Bug #3 — 0.7 blockierte fast alle Krypto-Trades (BTC/ETH/SOL >70% korreliert in Trends)
+    public decimal MaxCorrelation { get; set; } = 0.85m;
     public bool EnableTrailingStop { get; set; } = true;
     public decimal TrailingStopPercent { get; set; } = 2.5m;
 
@@ -36,16 +37,18 @@ public class RiskSettings
     public decimal Tp1CloseRatio { get; set; } = 0.3m;
     /// <summary>Anteil der Position der bei TP2 geschlossen wird (0.3 = 30%). Rest bleibt für Trailing.</summary>
     public decimal Tp2CloseRatio { get; set; } = 0.3m;
-    /// <summary>Max. Haltezeit in Stunden bevor Position geschlossen wird (0 = unbegrenzt).</summary>
-    public int MaxHoldHours { get; set; } = 48;
+    /// <summary>Max. Haltezeit in Stunden bevor Position geschlossen wird (0 = unbegrenzt).
+    /// SK-VERIFY: Infra-Bug #2 — 48h zu kurz für SK-System (4H-TP2 braucht 5-10 Tage). SL/TP managed den Exit.</summary>
+    public int MaxHoldHours { get; set; } = 0;
     /// <summary>Verlängerte Haltezeit nach TP1 in Stunden.</summary>
     public int MaxHoldHoursAfterTp1 { get; set; } = 96;
     /// <summary>ATR-Multiplikator für Smart Breakeven nach TP1 (SL = Entry + X*ATR statt Entry exakt). 0 = klassisches BE.</summary>
     public decimal SmartBreakevenAtrMultiplier { get; set; } = 0.5m;
 
     // === Risk-Reward-Ratio ===
-    /// <summary>Minimales Risiko-Ertrags-Verhältnis (TP/SL-Distanz). Trades unter diesem Wert werden abgelehnt. 0 = deaktiviert.</summary>
-    public decimal MinRiskRewardRatio { get; set; } = 1.0m; // 1.0: Multi-Stage Exit (30/30/40) gleicht niedrige initiale RRR aus
+    /// <summary>Minimales Risiko-Ertrags-Verhältnis (TP/SL-Distanz). Trades unter diesem Wert werden abgelehnt. 0 = deaktiviert.
+    /// SK-VERIFY: Infra-Bug #5 — Doppelter RRR-Check (Strategy + RiskManager). Strategy hat eigenen gestuften Check.</summary>
+    public decimal MinRiskRewardRatio { get; set; } = 0m;
 
     // === Cooldown-Eskalation ===
     /// <summary>Basis-Cooldown nach Verlust-Trade in Stunden (1 H4-Candle Pause).</summary>
@@ -58,8 +61,9 @@ public class RiskSettings
     public int MaxCooldownHours { get; set; } = 0;
 
     // === Equity-Curve-Trading ===
-    /// <summary>Ob Equity-Curve-Trading aktiv ist (Position reduzieren wenn Equity unter EMA).</summary>
-    public bool EnableEquityCurveTrading { get; set; } = true;
+    /// <summary>Ob Equity-Curve-Trading aktiv ist (Position reduzieren wenn Equity unter EMA).
+    /// SK-VERIFY: Infra-Bug #6 — Halbe Position nach Verlusten erzeugt Teufelskreis. SK: Drawdowns sind normal.</summary>
+    public bool EnableEquityCurveTrading { get; set; } = false;
     /// <summary>Periode für die Equity-EMA (in Anzahl Trades). Schnellere Reaktion bei wenig Trades.</summary>
     public int EquityCurvePeriod { get; set; } = 10;
 

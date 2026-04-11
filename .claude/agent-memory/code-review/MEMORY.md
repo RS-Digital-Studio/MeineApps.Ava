@@ -15,3 +15,5 @@
 - [BingXBot Tiefes ATI+DB+Exchange Review](bingxbot_deep_review_april2026.md) -- 10 Findings (3 krit): CheckAutoTraining Race, ExitOptimizer TP No-Op, Limit-Order Fee fehlt
 - [BingXBot Backtest+SimExchange Deep Review](bingxbot_backtest_deep_review.md) -- 10 Findings (5 krit): Limit-Fee noch offen, Pagination gleiche Daten, Ticker Bid/Ask falsch, Funding MarkPrice, TP2 DivByZero
 - [BingXBot Exchange-Clients + Security Review](bingxbot_exchange_review.md) -- 7 Findings (3 krit): CancellationToken nicht propagiert, ContinueWith statt await, User-Data-Stream ohne Reconnect
+- [BingXBot Vollreview 3 Apr 2026](bingxbot_vollreview3_april2026.md) -- 9 Findings (2 krit): SK-System Clone() ohne State, _tradesToday nicht volatile, SemaphoreSlim Leak
+- [BingXBot Trading-Flow + Backtest Deep Review](bingxbot_tradingflow_deep_review.md) -- 10 Findings (3 krit): TP2-Qty-Formel-Divergenz, Chaotic-Regime-Divergenz, Backtest TP1 OriginalQuantity

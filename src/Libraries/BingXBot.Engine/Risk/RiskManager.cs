@@ -52,6 +52,11 @@ public class RiskManager : IRiskManager
 
         // 4. Position-Größe berechnen mit tatsächlichem Leverage (nicht MaxLeverage)
         var entryPrice = signal.EntryPrice ?? context.CurrentTicker.LastPrice;
+
+        // Explizite Balance-Prüfung mit klarer Meldung (erleichtert Debugging bei Drawdown=100%)
+        if (context.Account.AvailableBalance <= 0)
+            return new RiskCheckResult(false, "Keine verfügbare Balance — kein Trade möglich", 0m);
+
         var posSize = CalculatePositionSize(context.Symbol, entryPrice, signal.StopLoss, context.Account, actualLeverage);
 
         if (posSize <= 0)
@@ -291,7 +296,16 @@ public class RiskManager : IRiskManager
                 // Sample-Varianz (N-1) für korrekte Schätzung bei kleinen Stichproben
                 var variance = returns.Select(r => (r - avg) * (r - avg)).Sum() / (returns.Length - 1);
                 var stdDev = Math.Sqrt(variance);
-                return stdDev > 0 ? (decimal)(avg / stdDev * Math.Sqrt(365)) : 0m; // 365 Tage (Krypto 24/7)
+                if (stdDev <= 0) return 0m;
+
+                // Annualisierung: Tatsächliche Trade-Frequenz statt fixem sqrt(365).
+                // sqrt(365) nimmt 1 Trade/Tag an — bei H4-Swing (0.3/Tag) oder Scalping (5/Tag) verzerrt.
+                var first = _rollingTrades[0].ExitTime;
+                var last = _rollingTrades[^1].ExitTime;
+                var spanDays = (last - first).TotalDays;
+                // Trades pro Jahr aus tatsächlicher Frequenz (Fallback: 365 bei <1 Tag Spanne)
+                var tradesPerYear = spanDays > 1 ? returns.Length / spanDays * 365 : 365;
+                return (decimal)(avg / stdDev * Math.Sqrt(tradesPerYear));
             }
         }
     }

@@ -26,8 +26,8 @@ public record ActivePositionOverlay(
 /// SK-System Sequenz-Overlay: Fibonacci-Level, A-B-C Punkte und Korrekturzonen im Chart.
 /// </summary>
 public record SequenceOverlay(
-    // A-B-C Punkte (Preis)
-    decimal PointA, decimal PointB, decimal? PointC,
+    // SK-VERIFY: Abweichung #4 — SK-Nomenklatur: 0-A-B statt A-B-C
+    decimal Point0, decimal PointA, decimal? PointB,
     // Fibonacci-Retracement Level
     decimal Ret382, decimal Ret500, decimal Ret559,
     decimal Ret618, decimal Ret667, decimal Ret786,

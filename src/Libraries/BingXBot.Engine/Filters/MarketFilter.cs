@@ -25,7 +25,7 @@ public static class MarketFilter
     ///
     /// +1: BTC D1 Preis > EMA50
     /// +1: BTC H4 Supertrend bullish
-    /// +1: BTC H4 RSI > 50
+    /// +1: BTC H4 RSI > 55 (Rauschfilter: 45-55 = neutral)
     /// +1: BTC Funding-Rate < 0.03%
     /// (Analog negativ für bearish)
     /// </summary>
@@ -86,8 +86,11 @@ public static class MarketFilter
         else if (btcFundingRate <= -0.0005m)
         { score--; reasons.Add($"Fund={btcFundingRate:P3}↓↓"); }
 
-        var allowLong = score >= -1; // Nur bei stark bearish (-2 oder weniger) Longs blockieren
-        var allowShort = score <= 1; // Nur bei stark bullish (+2 oder mehr) Shorts blockieren
+        // SK-VERIFY: KILLER #6 — BTC-Health als Confluence-Malus statt harter Block
+        // Nur bei extremem BTC-Crash (Score -4) hart blocken. Score -2/-3 wird über PositionScale abgedeckt.
+        // Alt: score >= -1 (blockierte bei -2, zu aggressiv für Altcoins mit eigener Struktur)
+        var allowLong = score >= -3;
+        var allowShort = score <= 3;
         var positionScale = score switch
         {
             >= 3 => 1.0m,     // Stark bullish: volle Positionsgröße
@@ -108,6 +111,8 @@ public static class MarketFilter
     public static FundingFilterResult CheckFunding(decimal fundingRate, Side desiredSide)
     {
         // BingX API liefert Funding-Rate als Dezimalwert: 0.0001 = 0.01%
+        // Asymmetrische Schwellen (bewusst): Short-Squeezes sind heftiger als Long-Liquidations,
+        // daher Shorts konservativer gefiltert (+0.08% Long-Block vs. -0.05% Short-Block).
         // Positiv = Longs zahlen → Markt überhebelt Long
         if (fundingRate >= 0.0008m && desiredSide == Side.Buy)
             return new FundingFilterResult(false, true, $"Funding {fundingRate:P3} zu hoch für Long (Markt überhebelt)");
@@ -172,16 +177,6 @@ public static class MarketFilter
             if (diff < 5) return true;
         }
         return false;
-    }
-
-    /// <summary>
-    /// Prüft ob der Cooldown nach einem Verlust-Trade eingehalten ist.
-    /// Default: 8h (2 H4-Candles) nach dem letzten Verlust-Trade.
-    /// </summary>
-    public static bool IsCooldownActive(DateTime? lastLossTime, int cooldownHours = 8)
-    {
-        if (lastLossTime == null) return false;
-        return (DateTime.UtcNow - lastLossTime.Value).TotalHours < cooldownHours;
     }
 
     /// <summary>

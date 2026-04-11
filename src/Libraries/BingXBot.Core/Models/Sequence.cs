@@ -16,14 +16,17 @@ public record SwingPoint(
 /// </summary>
 public class Sequence
 {
-    /// <summary>Punkt A: Startpunkt der Sequenz (Swing-Low bei Long, Swing-High bei Short).</summary>
+    // SK-VERIFY: Abweichung #4 — SK-Nomenklatur
+    /// <summary>Punkt 0: Startpunkt der Sequenz (Swing-Low bei Long, Swing-High bei Short).</summary>
+    public required SwingPoint Point0 { get; init; }
+
+    // SK-VERIFY: Abweichung #4 — SK-Nomenklatur
+    /// <summary>Punkt A: Ende des Impulses (Swing-High bei Long, Swing-Low bei Short).</summary>
     public required SwingPoint PointA { get; init; }
 
-    /// <summary>Punkt B: Ende des Impulses (Swing-High bei Long, Swing-Low bei Short).</summary>
-    public required SwingPoint PointB { get; init; }
-
-    /// <summary>Punkt C: Ende der Korrektur im Fibonacci-Retracement. Null wenn noch nicht gebildet.</summary>
-    public SwingPoint? PointC { get; init; }
+    // SK-VERIFY: Abweichung #4 — SK-Nomenklatur
+    /// <summary>Punkt B: Ende der Korrektur im Fibonacci-Retracement. Null wenn noch nicht gebildet.</summary>
+    public SwingPoint? PointB { get; init; }
 
     /// <summary>True = Aufwärts-Sequenz (A=Low→B=High→C=Low), False = Abwärts (A=High→B=Low→C=High).</summary>
     public bool IsLong { get; init; }
@@ -85,32 +88,36 @@ public class Sequence
     // === Berechnete Properties ===
 
     /// <summary>Range der A→B Bewegung in Preis-Einheiten.</summary>
-    public decimal Range => Math.Abs(PointB.Price - PointA.Price);
+    public decimal Range => Math.Abs(PointA.Price - Point0.Price);
 
-    /// <summary>Ideale Kaufzone: 50-61.8% Retracement.</summary>
+    // SK-VERIFY: [Abweichung #1] Kaufzone = 50-66.7% (SK Golden Pocket), NICHT 50-61.8%
+    /// <summary>Ideale Kaufzone: 50-66.7% Retracement (SK Golden Pocket).</summary>
     public (decimal Upper, decimal Lower) IdealBuyZone => IsLong
-        ? (Retracement500, Retracement618)
-        : (Retracement618, Retracement500);
+        ? (Retracement500, Retracement667)
+        : (Retracement667, Retracement500);
 
-    /// <summary>GKL-Zone: 55.9-66.7% Retracement (SK-spezifisch).</summary>
+    // SK-VERIFY: [Abweichung #2] GKL-Zone = 50-66.7%, NICHT 55.9-66.7%
+    /// <summary>GKL-Zone: 50-66.7% Retracement (SK Golden Pocket).</summary>
     public (decimal Upper, decimal Lower) GklZone => IsLong
-        ? (Retracement559, Retracement667)
-        : (Retracement667, Retracement559);
+        ? (Retracement500, Retracement667)
+        : (Retracement667, Retracement500);
 
-    /// <summary>Prüft ob ein Preis in der idealen Kaufzone (50-61.8%) liegt.</summary>
+    // SK-VERIFY: [Abweichung #1] Kaufzone korrigiert: 50-66.7% statt 50-61.8%
+    /// <summary>Prüft ob ein Preis in der Kaufzone (50-66.7% SK Golden Pocket) liegt.</summary>
     public bool IsInBuyZone(decimal price)
     {
         var (upper, lower) = IsLong
-            ? (Retracement500, Retracement618)  // Long: 50% ist höher als 61.8%
-            : (Retracement618, Retracement500); // Short: invertiert
+            ? (Retracement500, Retracement667)  // Long: 50% ist höher als 66.7%
+            : (Retracement667, Retracement500); // Short: invertiert
         return price >= Math.Min(upper, lower) && price <= Math.Max(upper, lower);
     }
 
-    /// <summary>Prüft ob ein Preis in der erweiterten GKL-Zone (55.9-66.7%) liegt.</summary>
+    // SK-VERIFY: [Abweichung #2] GKL korrigiert: 50-66.7% statt 55.9-66.7%
+    /// <summary>Prüft ob ein Preis in der GKL-Zone (50-66.7%) liegt.</summary>
     public bool IsInGklZone(decimal price)
     {
-        var min = Math.Min(Retracement559, Retracement667);
-        var max = Math.Max(Retracement559, Retracement667);
+        var min = Math.Min(Retracement500, Retracement667);
+        var max = Math.Max(Retracement500, Retracement667);
         return price >= min && price <= max;
     }
 
@@ -126,13 +133,13 @@ public class Sequence
 
     /// <summary>Prüft ob die Sequenz invalidiert ist (Preis unter/über Punkt A).</summary>
     public bool IsInvalidated(decimal price) => IsLong
-        ? price < PointA.Price
-        : price > PointA.Price;
+        ? price < Point0.Price
+        : price > Point0.Price;
 
     /// <summary>Berechnet die RRR für einen Entry am aktuellen Preis.</summary>
     public decimal CalculateRRR(decimal entryPrice)
     {
-        var slDistance = Math.Abs(entryPrice - PointA.Price);
+        var slDistance = Math.Abs(entryPrice - Point0.Price);
         var tpDistance = Math.Abs(Extension1618 - entryPrice);
         return slDistance > 0 ? tpDistance / slDistance : 0;
     }
@@ -153,7 +160,7 @@ public enum SequenceState
     TargetReached,
     /// <summary>200% Extension erreicht. Sequenz vollständig abgearbeitet (SK-Regel).</summary>
     FullyCompleted,
-    /// <summary>Kurs unter A (Long) oder über A (Short). Sequenz ungültig.</summary>
+    /// <summary>Kurs unter 0 (Long) oder über 0 (Short). Sequenz ungültig.</summary>
     Invalidated
 }
 

@@ -122,7 +122,7 @@ public static class SequenceDetector
         // Beste Sequenz: Die aktuellere (neuerer Punkt A) bevorzugen
         if (longSeq == null) return shortSeq;
         if (shortSeq == null) return longSeq;
-        return longSeq.PointA.CandleIndex > shortSeq.PointA.CandleIndex ? longSeq : shortSeq;
+        return longSeq.Point0.CandleIndex > shortSeq.Point0.CandleIndex ? longSeq : shortSeq;
     }
 
     /// <summary>Erkennt ALLE gültigen Sequenzen (für verschachtelte Analyse).</summary>
@@ -188,11 +188,11 @@ public static class SequenceDetector
         Sequence parentSequence,
         int innerSwingStrength = 3)
     {
-        if (parentSequence.PointC == null) return new();
+        if (parentSequence.PointB == null) return new();
 
         // Nur den Bereich B→C der übergeordneten Sequenz analysieren
-        var startIdx = parentSequence.PointB.CandleIndex;
-        var endIdx = parentSequence.PointC.CandleIndex;
+        var startIdx = parentSequence.PointA.CandleIndex;
+        var endIdx = parentSequence.PointB.CandleIndex;
         if (endIdx <= startIdx || endIdx >= candles.Count) return new();
 
         var subCandles = candles.Skip(startIdx).Take(endIdx - startIdx + 1).ToList();
@@ -201,15 +201,15 @@ public static class SequenceDetector
         var ikiSequences = DetectAllSequences(subCandles, innerSwingStrength, 0.2m);
 
         // IKI-Flag setzen, Parent-Referenz, und State mit AKTUELLEM Preis neu berechnen
-        // (Sub-Candle-State basiert auf altem Preis am PointC-Index — kann veraltet sein)
+        // (Sub-Candle-State basiert auf altem Preis am PointB-Index — kann veraltet sein)
         var currentPrice = candles[^1].Close;
         return ikiSequences.Select(s =>
         {
             var mapped = new Sequence
             {
+                Point0 = s.Point0 with { CandleIndex = s.Point0.CandleIndex + startIdx },
                 PointA = s.PointA with { CandleIndex = s.PointA.CandleIndex + startIdx },
-                PointB = s.PointB with { CandleIndex = s.PointB.CandleIndex + startIdx },
-                PointC = s.PointC != null ? s.PointC with { CandleIndex = s.PointC.CandleIndex + startIdx } : null,
+                PointB = s.PointB != null ? s.PointB with { CandleIndex = s.PointB.CandleIndex + startIdx } : null,
                 IsLong = s.IsLong, State = s.State, Type = s.Type,
                 WaveAB = s.WaveAB, WaveBC = s.WaveBC,
                 Retracement382 = s.Retracement382, Retracement500 = s.Retracement500,
@@ -431,15 +431,15 @@ public static class SequenceDetector
 
         // Aktiviert: B durchbrochen
         var breakPrice = useCloseBreak ? currentClose : currentPrice;
-        var bBroken = seq.IsLong ? breakPrice > seq.PointB.Price : breakPrice < seq.PointB.Price;
+        var bBroken = seq.IsLong ? breakPrice > seq.PointA.Price : breakPrice < seq.PointA.Price;
         if (bBroken)
             return SequenceState.Active;
 
         // Punkt C noch nicht gebildet
-        if (seq.PointC == null)
+        if (seq.PointB == null)
         {
             // Im Retracement-Bereich (38.2-78.6%)?
-            var retLevel = GetRetracementLevel(seq.PointA.Price, seq.PointB.Price, currentPrice, seq.IsLong);
+            var retLevel = GetRetracementLevel(seq.Point0.Price, seq.PointA.Price, currentPrice, seq.IsLong);
             if (retLevel >= 0.382m && retLevel <= 0.786m) // Gültiger Korrekturbereich (Entry-Zone 50-66.7% wird in der Strategie geprüft)
                 return SequenceState.CorrectionZone;
             return SequenceState.Forming;
@@ -465,11 +465,11 @@ public static class SequenceDetector
     public static (decimal Bckl500, decimal Bckl559, decimal Bckl618, decimal Bckl667)?
         CalculateBCKL(Sequence seq)
     {
-        if (seq.PointC == null || seq.State != SequenceState.Active) return null;
+        if (seq.PointB == null || seq.State != SequenceState.Active) return null;
 
         var ext100 = seq.Extension100;
         // BCKL-Range = Strecke C→Extension100 (die Zielbewegung, die zurückkorrigiert)
-        var bcklRange = Math.Abs(ext100 - seq.PointC.Price);
+        var bcklRange = Math.Abs(ext100 - seq.PointB.Price);
         if (bcklRange <= 0) return null;
 
         // BCKL = Fibonacci-Retracement der Bewegung C→ext100
@@ -512,13 +512,13 @@ public static class SequenceDetector
     /// </summary>
     public static bool IsDestabilized(IReadOnlyList<Candle> candles, Sequence seq, int lookbackCandles = 10)
     {
-        if (seq.PointC == null || candles.Count < lookbackCandles + 1) return false;
+        if (seq.PointB == null || candles.Count < lookbackCandles + 1) return false;
         if (seq.State is SequenceState.Active or SequenceState.TargetReached or SequenceState.FullyCompleted)
             return false;
 
-        // GKL-Zone (55.9-66.7%) — konsistent mit DetectEntryConfirmation
-        var zoneMin = Math.Min(seq.Retracement559, seq.Retracement667);
-        var zoneMax = Math.Max(seq.Retracement559, seq.Retracement667);
+        // SK-VERIFY: [Abweichung #2] GKL-Zone = 50-66.7% (SK Golden Pocket, war 55.9-66.7%)
+        var zoneMin = Math.Min(seq.Retracement500, seq.Retracement667);
+        var zoneMax = Math.Max(seq.Retracement500, seq.Retracement667);
 
         // Prüfe ob der Preis kürzlich IN der Zone war
         var wasInZone = false;
@@ -671,12 +671,12 @@ public static class SequenceDetector
 
         // A→B: Initialer Impuls — sollte impulsiv sein (expectedDirection = Sequenz-Richtung)
         var waveAB = ClassifyWaveCharacter(candles,
-            seq.PointA.CandleIndex, seq.PointB.CandleIndex, seq.IsLong);
+            seq.Point0.CandleIndex, seq.PointA.CandleIndex, seq.IsLong);
 
         // B→C: Korrektur — sollte korrektiv sein (expectedDirection = gegen Sequenz-Richtung)
-        var waveBC = seq.PointC != null
+        var waveBC = seq.PointB != null
             ? ClassifyWaveCharacter(candles,
-                seq.PointB.CandleIndex, seq.PointC.CandleIndex, !seq.IsLong)
+                seq.PointA.CandleIndex, seq.PointB.CandleIndex, !seq.IsLong)
             : WaveCharacter.Unknown;
 
         return (waveAB, waveBC);
@@ -818,7 +818,7 @@ public static class SequenceDetector
 
         var seq = new Sequence
         {
-            PointA = a, PointB = b, PointC = c, IsLong = isLong, State = state,
+            Point0 = a, PointA = b, PointB = c, IsLong = isLong, State = state,
             Retracement382 = r382, Retracement500 = r500, Retracement559 = r559,
             Retracement618 = r618, Retracement667 = r667, Retracement786 = r786,
             Extension100 = ext100, Extension1272 = ext1272,
@@ -852,11 +852,11 @@ public static class SequenceDetector
 
         // Letzte 3 Kerzen prüfen
         var last3 = new[] { candles[^3], candles[^2], candles[^1] };
-        // SK-System: GKL-Zone (55.9-66.7%) für Stabilisierung — das "Golden Pocket"
-        var gklMin = Math.Min(seq.Retracement559, seq.Retracement667);
-        var gklMax = Math.Max(seq.Retracement559, seq.Retracement667);
+        // SK-VERIFY: [Abweichung #2] GKL-Zone = 50-66.7% (SK Golden Pocket, war 55.9-66.7%)
+        var gklMin = Math.Min(seq.Retracement500, seq.Retracement667);
+        var gklMax = Math.Max(seq.Retracement500, seq.Retracement667);
 
-        // Stabilisierung: 2+ Kerzen schließen in der GKL-Zone (55.9-66.7%)
+        // Stabilisierung: 2+ Kerzen schließen in der GKL-Zone (50-66.7%)
         var closesInZone = last3.Count(c => c.Close >= gklMin && c.Close <= gklMax);
         if (closesInZone >= 2) return CandleConfirmation.StableInZone;
 

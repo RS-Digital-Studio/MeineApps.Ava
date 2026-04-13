@@ -20,8 +20,6 @@ public class RiskManagerTests
         {
             // Neue Checks relaxieren (Tests die diese Features testen, setzen eigene Werte)
             MinLiquidationDistancePercent = 0m, // Deaktiviert
-            MaxNetExposurePercent = 99999m,     // Praktisch unbegrenzt
-            ConsiderFundingRate = false,         // Deaktiviert
             MaxLeverage = 3m,                    // Fix für Tests (Default geändert auf 25)
             MaxDailyDrawdownPercent = 5m         // Fix für Tests (Default geändert auf 0)
         };
@@ -96,21 +94,18 @@ public class RiskManagerTests
     }
 
     [Fact]
-    public void CalculatePositionSize_MitUndOhneSL_UnterschiedlicheGroesse()
+    public void CalculatePositionSize_IgnoriertSL_NurMarginBasiert()
     {
-        // H-1 Fix: Risiko-basiertes Sizing: SL-Distanz bestimmt Positionsgröße.
-        // Enger SL → größere Position, weiter SL → kleinere Position.
-        // Ohne SL → Fallback auf Margin-basiertes Sizing.
-        // Weiter SL (10% Distanz) damit Risk-based < Margin-Cap wird:
-        // Risk-based: 200 USDT / 5000 = 0.04 BTC, Margin: 200*10/50000 = 0.04 → gleich bei 10%
-        // Noch weiter: SL bei 40000 (20% Distanz): 200/10000 = 0.02 BTC vs Margin 0.04
+        // SK-Buch: Kein SL-basiertes Sizing mehr — MaxPositionSizePercent bestimmt die Margin.
+        // CalculatePositionSize ignoriert den SL-Parameter (Risk wird über feste Pip-SL begrenzt).
         var settings = CreateTestSettings(s => { s.MaxPositionSizePercent = 2m; s.MaxLeverage = 10m; });
         var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
         var account = new AccountInfo(10000m, 10000m, 0m, 0m);
-        var withWideSl = risk.CalculatePositionSize("BTC-USDT", 50000m, 40000m, account);
+        var withSl = risk.CalculatePositionSize("BTC-USDT", 50000m, 40000m, account);
         var withoutSl = risk.CalculatePositionSize("BTC-USDT", 50000m, null, account);
-        // Weiter SL (20%): Risk-based greift → kleinere Position als Margin-basiert
-        withWideSl.Should().BeLessThan(withoutSl, "Weiter SL → Risk-basiert kleiner als Margin-basiert");
+        // Beide identisch: 10000 * 2% * 10 / 50000 = 0.04 BTC
+        withSl.Should().Be(withoutSl);
+        withSl.Should().Be(0.04m);
     }
 
     [Fact]
@@ -342,23 +337,6 @@ public class RiskManagerTests
     }
 
     [Fact]
-    public void ValidateTrade_ExposureExceeded_ShouldReject()
-    {
-        // Margin-basiert: 0.5 BTC * 50000 / 2x Leverage = 12500 USDT Margin = 125% von 10000
-        // MaxNetExposure = 50% → sollte blockiert werden (125% + neue Position > 50%)
-        var settings = CreateTestSettings(s => { s.MaxNetExposurePercent = 50m; s.MaxLeverage = 2m; });
-        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
-        var positions = new List<Position>
-        {
-            new("BTC-USDT", Side.Buy, 50000m, 50000m, 0.5m, 0m, 2m, MarginType.Cross, DateTime.UtcNow)
-        };
-        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
-        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m, customPositions: positions, symbol: "ETH-USDT"));
-        result.IsAllowed.Should().BeFalse();
-        result.RejectionReason.Should().Contain("Exposure");
-    }
-
-    [Fact]
     public void ValidateTrade_LiquidationTooClose_ShouldReject()
     {
         // 10x Leverage → Liquidation ~9.6% entfernt. MinLiquidationDistance=15% → blockiert
@@ -368,36 +346,5 @@ public class RiskManagerTests
         var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m));
         result.IsAllowed.Should().BeFalse();
         result.RejectionReason.Should().Contain("Liquidation");
-    }
-
-    [Fact]
-    public void ValidateTrade_AdverseFunding_ShouldReject()
-    {
-        var settings = CreateTestSettings(s =>
-        {
-            s.ConsiderFundingRate = true;
-            s.MaxAdverseFundingRatePercent = 0.05m;
-        });
-        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
-        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
-        // Long bei positiver Funding (0.1% > 0.05% Max) → blockiert
-        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m), currentFundingRate: 0.001m);
-        result.IsAllowed.Should().BeFalse();
-        result.RejectionReason.Should().Contain("Funding");
-    }
-
-    [Fact]
-    public void ValidateTrade_FavorableFunding_ShouldAllow()
-    {
-        var settings = CreateTestSettings(s =>
-        {
-            s.ConsiderFundingRate = true;
-            s.MaxAdverseFundingRatePercent = 0.05m;
-        });
-        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
-        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
-        // Long bei negativer Funding → günstig, nicht blockiert
-        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m), currentFundingRate: -0.001m);
-        result.IsAllowed.Should().BeTrue();
     }
 }

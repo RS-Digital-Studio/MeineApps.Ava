@@ -4,7 +4,6 @@ using Avalonia.Markup.Xaml;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Interfaces;
 using BingXBot.Engine;
-using BingXBot.Engine.ATI;
 using BingXBot.Exchange;
 using BingXBot.Services;
 using BingXBot.ViewModels;
@@ -69,7 +68,9 @@ public partial class App : Application
 
         // Risk-Settings
         risk.MaxPositionSizePercent = saved.Risk.MaxPositionSizePercent;
-        risk.MaxMarginPerTradePercent = saved.Risk.MaxMarginPerTradePercent;
+        // MaxMarginPerTradePercent: Mindestens so groß wie MaxPositionSizePercent
+        // (alte DB-Werte von 1-2% blockierten die Position auf winzige Beträge)
+        risk.MaxMarginPerTradePercent = Math.Max(saved.Risk.MaxMarginPerTradePercent, saved.Risk.MaxPositionSizePercent);
         risk.MaxDailyDrawdownPercent = saved.Risk.MaxDailyDrawdownPercent;
         risk.MaxTotalDrawdownPercent = saved.Risk.MaxTotalDrawdownPercent;
         risk.MaxOpenPositions = saved.Risk.MaxOpenPositions;
@@ -77,24 +78,11 @@ public partial class App : Application
         risk.MaxLeverage = saved.Risk.MaxLeverage;
         risk.CheckCorrelation = saved.Risk.CheckCorrelation;
         risk.MaxCorrelation = saved.Risk.MaxCorrelation;
-        risk.EnableTrailingStop = saved.Risk.EnableTrailingStop;
-        risk.TrailingStopPercent = saved.Risk.TrailingStopPercent;
         risk.MinLiquidationDistancePercent = saved.Risk.MinLiquidationDistancePercent;
-        risk.MaxNetExposurePercent = saved.Risk.MaxNetExposurePercent;
-        risk.ConsiderFundingRate = saved.Risk.ConsiderFundingRate;
-        risk.MaxAdverseFundingRatePercent = saved.Risk.MaxAdverseFundingRatePercent;
         risk.CooldownHours = saved.Risk.CooldownHours;
-        risk.EnableCooldownEscalation = saved.Risk.EnableCooldownEscalation;
-        risk.MaxCooldownHours = saved.Risk.MaxCooldownHours;
-        risk.EnableEquityCurveTrading = saved.Risk.EnableEquityCurveTrading;
-        risk.EquityCurvePeriod = saved.Risk.EquityCurvePeriod;
-        risk.EnableMomentumDecay = saved.Risk.EnableMomentumDecay;
-        risk.EnableMultiStageExit = saved.Risk.EnableMultiStageExit;
         risk.Tp1CloseRatio = saved.Risk.Tp1CloseRatio;
         risk.Tp2CloseRatio = saved.Risk.Tp2CloseRatio;
         risk.MaxHoldHours = saved.Risk.MaxHoldHours;
-        risk.MaxHoldHoursAfterTp1 = saved.Risk.MaxHoldHoursAfterTp1;
-        risk.SmartBreakevenAtrMultiplier = saved.Risk.SmartBreakevenAtrMultiplier;
         risk.MinRiskRewardRatio = saved.Risk.MinRiskRewardRatio;
 
         // Scanner-Settings (inkl. Watchlist)
@@ -104,7 +92,6 @@ public partial class App : Application
         scanner.MaxResults = saved.Scanner.MaxResults;
         scanner.Whitelist = saved.Scanner.Whitelist;
         scanner.Blacklist = saved.Scanner.Blacklist;
-        scanner.UseM15EntryTiming = saved.Scanner.UseM15EntryTiming;
 
         // Bot-Settings
         bot.LastMode = saved.LastMode;
@@ -114,8 +101,6 @@ public partial class App : Application
         bot.ShowBtcTicker = saved.ShowBtcTicker;
         bot.EnableDesktopNotifications = saved.EnableDesktopNotifications;
         bot.SimulatedFundingRatePercent = saved.SimulatedFundingRatePercent;
-        bot.AtiMinTradesBeforeLearning = saved.AtiMinTradesBeforeLearning;
-        bot.AtiAutoSaveIntervalMinutes = saved.AtiAutoSaveIntervalMinutes;
     }
 
     /// <summary>
@@ -166,9 +151,6 @@ public partial class App : Application
 
         // Engine
         services.AddSingleton<StrategyManager>();
-
-        // ATI - Adaptive Trading Intelligence
-        services.AddSingleton<AdaptiveTradingIntelligence>();
 
         // Trading Services
         services.AddSingleton<PaperTradingService>();

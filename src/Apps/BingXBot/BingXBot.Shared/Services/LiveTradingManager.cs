@@ -3,7 +3,6 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine;
-using BingXBot.Engine.ATI;
 using BingXBot.Engine.Strategies;
 using BingXBot.Exchange;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -12,7 +11,7 @@ namespace BingXBot.Services;
 
 /// <summary>
 /// Verwaltet die Live-Trading-Infrastruktur: Client-Erstellung, Verbindung,
-/// Service-Lifecycle und ATI-Integration. Kapselt die gesamte Live-spezifische
+/// Service-Lifecycle-Manager für Live-Trading. Kapselt die gesamte Live-spezifische
 /// Logik die sonst im DashboardViewModel lag.
 /// </summary>
 public class LiveTradingManager : IDisposable
@@ -24,7 +23,6 @@ public class LiveTradingManager : IDisposable
     private readonly ScannerSettings _scannerSettings;
     private readonly BotEventBus _eventBus;
     private readonly BotDatabaseService? _dbService;
-    private readonly AdaptiveTradingIntelligence? _ati;
     private readonly BotSettings _botSettings;
 
     // Wiederverwendbare Infrastruktur (vermeidet Socket-Exhaustion und Semaphore-Leaks bei Start/Stop)
@@ -59,8 +57,7 @@ public class LiveTradingManager : IDisposable
         ScannerSettings scannerSettings,
         BotEventBus eventBus,
         BotSettings botSettings,
-        BotDatabaseService? dbService = null,
-        AdaptiveTradingIntelligence? ati = null)
+        BotDatabaseService? dbService = null)
     {
         _secureStorage = secureStorage;
         _publicClient = publicClient;
@@ -70,7 +67,6 @@ public class LiveTradingManager : IDisposable
         _eventBus = eventBus;
         _botSettings = botSettings;
         _dbService = dbService;
-        _ati = ati;
     }
 
     /// <summary>
@@ -165,7 +161,7 @@ public class LiveTradingManager : IDisposable
         if (_publicClient == null)
             throw new InvalidOperationException("Marktdaten-Client nicht verfügbar");
 
-        // LiveTradingService erstellen (dbService für ATI Auto-Save)
+        // LiveTradingService erstellen
         _service = new LiveTradingService(
             _restClient,
             _publicClient,
@@ -181,23 +177,12 @@ public class LiveTradingManager : IDisposable
 
         // Strategie aktivieren + Trading-Modus-Preset anwenden
         var strategy = StrategyFactory.Create(strategyName);
-        if (strategy is CryptoTrendProStrategy ctp)
+        if (strategy is SequenzKonzeptStrategy sk)
         {
             var preset = _botSettings.LastTradingModePreset;
-            ctp.ApplyPreset(preset);
+            sk.ApplyPreset(preset);
         }
         _strategyManager.SetStrategy(strategy);
-
-        // ATI-Integration
-        if (_ati != null)
-        {
-            _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
-            _service.ATI = _ati;
-            await LoadAtiStateAsync();
-
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "ATI",
-                $"Adaptive Trading Intelligence aktiviert ({StrategyFactory.AvailableStrategies.Length} Strategien im Ensemble)"));
-        }
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
             $"LIVE-TRADING AKTIV mit Strategie '{strategyName}'. Echtes Geld!"));
@@ -216,16 +201,36 @@ public class LiveTradingManager : IDisposable
             var runtimeState = await _dbService.LoadRuntimeStateAsync();
             if (runtimeState.HasValue)
             {
-                _service.RestoreRuntimeState(runtimeState.Value.TradesToday, runtimeState.Value.ConsecutiveLosses, runtimeState.Value.Cooldowns);
+                _service.RestoreRuntimeState(runtimeState.Value.TradesToday, runtimeState.Value.ConsecutiveLosses);
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
-                    $"Runtime-State wiederhergestellt: {runtimeState.Value.TradesToday} Trades heute, {runtimeState.Value.ConsecutiveLosses} Verluste in Folge, {runtimeState.Value.Cooldowns.Count} Cooldowns"));
+                    $"Runtime-State wiederhergestellt: {runtimeState.Value.TradesToday} Trades heute, {runtimeState.Value.ConsecutiveLosses} Verluste in Folge"));
             }
             var savedExitStates = await _dbService.LoadExitStatesAsync();
             if (savedExitStates is { Count: > 0 })
             {
                 _service.RestoreExitStates(savedExitStates);
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
-                    $"ExitStates wiederhergestellt: {savedExitStates.Count} Position(en) mit Phase/OriginalQty/Trailing"));
+                    $"ExitStates wiederhergestellt: {savedExitStates.Count} Position(en) mit Phase/OriginalQty/BE-State"));
+            }
+
+            // Pending Limit-Orders wiederherstellen (TP-Recovery nach App-Neustart)
+            // ABGLEICH MIT BINGX: DB kann stale Orders enthalten (manuell gecancelt, gefüllt, expired).
+            // Nur Orders wiederherstellen die tatsächlich noch auf BingX offen sind.
+            var savedPendingOrders = await _dbService.LoadPendingLimitOrdersAsync();
+            if (savedPendingOrders is { Count: > 0 })
+            {
+                var reconciledOrders = await ReconcilePendingLimitOrdersAsync(savedPendingOrders);
+                if (reconciledOrders.Count > 0)
+                {
+                    _service.RestorePendingLimitOrders(reconciledOrders);
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
+                        $"Pending Limit-Orders wiederhergestellt: {reconciledOrders.Count} Order(s) mit TP-Werten"));
+                }
+                else if (savedPendingOrders.Count > 0)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
+                        $"Keine Pending-Orders wiederhergestellt: {savedPendingOrders.Count} DB-Einträge waren veraltet (nicht mehr auf BingX)"));
+                }
             }
         }
         catch (Exception ex)
@@ -236,12 +241,13 @@ public class LiveTradingManager : IDisposable
 
         _service.Start();
 
-        // Offene Positionen prüfen und SL/Breakeven setzen
+        // Offene Positionen prüfen und SL/Breakeven setzen + TP-Recovery
         await RecoverOpenPositionsAsync();
     }
 
     /// <summary>
     /// Prüft alle offenen Positionen beim Start und setzt fehlende SL/Auto-Breakeven.
+    /// Holt fehlende TP-Orders nach (z.B. wenn App zwischen Limit-Order und Fill neugestartet wurde).
     /// Stellt sicher dass Positionen die vor dem Neustart eröffnet wurden geschützt sind.
     /// </summary>
     private async Task RecoverOpenPositionsAsync()
@@ -252,7 +258,7 @@ public class LiveTradingManager : IDisposable
             if (positions.Count == 0) return;
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
-                $"Prüfe {positions.Count} offene Position(en) auf fehlende SL/Breakeven..."));
+                $"Prüfe {positions.Count} offene Position(en) auf fehlende SL/Breakeven/TP..."));
 
             var tickers = await _publicClient!.GetAllTickersAsync();
             var tickerMap = tickers.ToDictionary(t => t.Symbol, t => t.LastPrice);
@@ -260,55 +266,25 @@ public class LiveTradingManager : IDisposable
             // Alle offenen Orders EINMAL laden (statt pro Position → weniger API-Calls)
             var allOpenOrders = await _restClient.GetOpenOrdersAsync();
 
+            // TP-Orders pro Symbol zählen (LIMIT Reduce-Only = TP1/TP2)
+            var tpOrdersBySymbol = new Dictionary<string, int>();
+            foreach (var order in allOpenOrders)
+            {
+                if (order.Type is OrderType.TakeProfitMarket or OrderType.TakeProfitLimit
+                    || (order.Type == OrderType.Limit && order.StopPrice is null or 0))
+                {
+                    // Zähle Limit-Orders die TP sein könnten (Reduce-Only Limits haben keinen StopPrice)
+                    tpOrdersBySymbol.TryGetValue(order.Symbol, out var count);
+                    tpOrdersBySymbol[order.Symbol] = count + 1;
+                }
+            }
+
             foreach (var pos in positions)
             {
                 if (!tickerMap.TryGetValue(pos.Symbol, out var currentPrice) || currentPrice <= 0)
                     continue;
 
-                // PnL berechnen
-                var pnlPercent = pos.Side == Side.Buy
-                    ? (currentPrice - pos.EntryPrice) / pos.EntryPrice * 100m
-                    : (pos.EntryPrice - currentPrice) / pos.EntryPrice * 100m;
-
-                // Auto-Breakeven prüfen: Gewinn% >= Leverage%
-                if (pnlPercent >= pos.Leverage && pos.Leverage > 0)
-                {
-                    // Breakeven = Entry + max(0.15%, ATR-basierter Puffer)
-                    // Konsistent mit TradingServiceBase + MultiModeOrchestrator
-                    var beSl = pos.Side == Side.Buy
-                        ? pos.EntryPrice * 1.0015m
-                        : pos.EntryPrice * 0.9985m;
-                    // ATR-Puffer berechnen (verhindert Ausstoppen bei volatilen Coins)
-                    if (_riskSettings.SmartBreakevenAtrMultiplier > 0 && _publicClient != null)
-                    {
-                        try
-                        {
-                            var atr = await CalculateRecoveryAtrAsync(pos);
-                            if (atr > 0)
-                            {
-                                var atrBe = pos.Side == Side.Buy
-                                    ? pos.EntryPrice + atr * _riskSettings.SmartBreakevenAtrMultiplier
-                                    : pos.EntryPrice - atr * _riskSettings.SmartBreakevenAtrMultiplier;
-                                beSl = pos.Side == Side.Buy ? Math.Max(beSl, atrBe) : Math.Min(beSl, atrBe);
-                            }
-                        }
-                        catch { /* ATR-Berechnung fehlgeschlagen → Minimum-Puffer verwenden */ }
-                    }
-
-                    try
-                    {
-                        await _restClient.SetPositionSlTpAsync(pos.Symbol, pos.Side, beSl, null);
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Recovery",
-                            $"{pos.Symbol}: Auto-Breakeven gesetzt (PnL={pnlPercent:F1}%, Lev={pos.Leverage}x) → SL={beSl:F8}",
-                            pos.Symbol));
-                    }
-                    catch (Exception ex)
-                    {
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
-                            $"{pos.Symbol}: Breakeven-SL fehlgeschlagen: {ex.Message}", pos.Symbol));
-                    }
-                }
-                // SL/TP aus BingX-Orders lesen und ins Signal-Dictionary schreiben (für UI-Anzeige)
+                // SL/TP aus BingX-Orders lesen (brauchen wir für SK-BE-Check + Signal-Registrierung)
                 try
                 {
                     decimal? slPrice = null, tpPrice = null;
@@ -320,6 +296,40 @@ public class LiveTradingManager : IDisposable
                             tpPrice = order.StopPrice.Value;
                     }
 
+                    // SK-Buch BE-Recovery: Wenn Gewinn ≥ 2× SL-Distanz → BE setzen (Workflow 4.2)
+                    // Nutzt den aktuellen BingX-SL als slDist-Basis (Fallback: kein BE wenn SL fehlt)
+                    if (slPrice.HasValue && pos.EntryPrice > 0)
+                    {
+                        var slDist = Math.Abs(pos.EntryPrice - slPrice.Value);
+                        var currentProfit = pos.Side == Side.Buy
+                            ? currentPrice - pos.EntryPrice
+                            : pos.EntryPrice - currentPrice;
+
+                        var isLongSlBelowEntry = pos.Side == Side.Buy && slPrice.Value < pos.EntryPrice;
+                        var isShortSlAboveEntry = pos.Side == Side.Sell && slPrice.Value > pos.EntryPrice;
+                        var slStillAtRisk = isLongSlBelowEntry || isShortSlAboveEntry;
+
+                        if (slDist > 0 && currentProfit >= slDist * 2m && slStillAtRisk)
+                        {
+                            var beSl = pos.Side == Side.Buy
+                                ? pos.EntryPrice * 1.0015m
+                                : pos.EntryPrice * 0.9985m;
+                            try
+                            {
+                                await _restClient.SetPositionSlTpAsync(pos.Symbol, pos.Side, beSl, null);
+                                slPrice = beSl; // Signal-Registrierung unten nutzt den neuen SL
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Recovery",
+                                    $"{pos.Symbol}: SK-Buch BE gesetzt (Gewinn >= 2× SL-Distanz, Workflow 4.2) → SL={beSl:F8}",
+                                    pos.Symbol));
+                            }
+                            catch (Exception ex)
+                            {
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                                    $"{pos.Symbol}: BE-SL fehlgeschlagen: {ex.Message}", pos.Symbol));
+                            }
+                        }
+                    }
+
                     // Signal im Service registrieren damit das UI die Werte anzeigt
                     if (slPrice.HasValue || tpPrice.HasValue)
                     {
@@ -329,7 +339,7 @@ public class LiveTradingManager : IDisposable
                         _service!.RestorePositionSignal(pos.Symbol, pos.Side, signal);
 
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
-                            $"{pos.Symbol}: Wiederhergestellt (SL={slPrice?.ToString("F8") ?? "---"}, TP={tpPrice?.ToString("F8") ?? "---"}, PnL={pnlPercent:F1}%)"));
+                            $"{pos.Symbol}: Wiederhergestellt (SL={slPrice?.ToString("F8") ?? "---"}, TP={tpPrice?.ToString("F8") ?? "---"})"));
                     }
                     else
                     {
@@ -344,7 +354,7 @@ public class LiveTradingManager : IDisposable
                             _service!.RestorePositionSignal(pos.Symbol, pos.Side, signal);
 
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
-                                $"{pos.Symbol}: Standard-SL gesetzt → SL={recoverySl:F8}. PnL={pnlPercent:F1}%",
+                                $"{pos.Symbol}: Standard-SL gesetzt → SL={recoverySl:F8}",
                                 pos.Symbol));
                         }
                         catch (Exception emergEx)
@@ -356,14 +366,156 @@ public class LiveTradingManager : IDisposable
                                 _eventBus.PublishNotification("POSITION UNGESCHÜTZT", $"{pos.Symbol}: SL konnte nicht gesetzt werden!");
                         }
                     }
+
+                    // TP-Recovery: Position hat ExitState mit TP-Werten aber keine TP-Orders auf BingX.
+                    // Passiert wenn App zwischen Limit-Order-Platzierung und Fill neugestartet wurde
+                    // und die Limit-Order inzwischen gefüllt wurde (TP wurde nie als Reduce-Only platziert).
+                    await RecoverMissingTpOrdersAsync(pos, tpOrdersBySymbol, allOpenOrders);
                 }
                 catch { /* Best-effort */ }
+            }
+
+            // DB aufräumen: Pending Limit-Orders clearen die jetzt als Positionen existieren
+            if (_dbService != null)
+            {
+                try { await _dbService.ClearPendingLimitOrdersAsync(); }
+                catch { /* best-effort */ }
             }
         }
         catch (Exception ex)
         {
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
                 $"Position-Recovery fehlgeschlagen: {ex.Message}"));
+        }
+    }
+
+    /// <summary>
+    /// Prüft ob eine Position TP-Orders braucht und platziert sie nach.
+    /// Wird aufgerufen wenn eine Position existiert aber keine TP-Orders auf BingX gefunden werden.
+    /// TP-Werte kommen aus dem wiederhergestellten ExitState (enthält das Original-Signal mit TP1/TP2).
+    /// </summary>
+    private async Task RecoverMissingTpOrdersAsync(Position pos,
+        Dictionary<string, int> tpOrdersBySymbol, IReadOnlyList<Order> allOpenOrders)
+    {
+        if (_service == null) return;
+
+        // Prüfen ob bereits TP-Orders existieren (Limit Reduce-Only)
+        // BingX zeigt TP-Limit-Orders als reguläre LIMIT-Orders im Orderbuch
+        var hasExistingTpOrders = false;
+        foreach (var order in allOpenOrders)
+        {
+            if (order.Symbol != pos.Symbol) continue;
+            // TP-Limit-Orders: Sell-Limit für Long, Buy-Limit für Short (Reduce-Only)
+            if (order.Type == OrderType.Limit)
+            {
+                var isTpForLong = pos.Side == Side.Buy && order.Side == Side.Sell;
+                var isTpForShort = pos.Side == Side.Sell && order.Side == Side.Buy;
+                if (isTpForLong || isTpForShort)
+                {
+                    hasExistingTpOrders = true;
+                    break;
+                }
+            }
+            // Native TP-Orders (TakeProfitMarket/TakeProfitLimit)
+            if (order.Type is OrderType.TakeProfitMarket or OrderType.TakeProfitLimit)
+            {
+                hasExistingTpOrders = true;
+                break;
+            }
+        }
+
+        if (hasExistingTpOrders) return;
+
+        // Keine TP-Orders auf BingX → prüfen ob ExitState TP-Werte hat
+        var posKey = $"{pos.Symbol}_{pos.Side}";
+        var exitStates = _service.GetExitStatesSnapshot();
+        if (!exitStates.TryGetValue(posKey, out var exitState)) return;
+        if (exitState.Signal?.TakeProfit is not > 0) return;
+
+        // TP-Werte vorhanden aber keine Orders auf BingX → TP nachholen
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+            $"{pos.Symbol}: Position ohne TP-Orders erkannt → platziere TP1/TP2 (Recovery)",
+            pos.Symbol));
+
+        try
+        {
+            // Nutze die PlaceTpLimitOrdersAfterFillAsync vom LiveTradingService
+            // via das Signal das bereits in _positionSignals wiederhergestellt ist
+            var signal = exitState.Signal;
+            await _service.RecoverTpOrdersAsync(pos.Symbol, pos.Side, pos.Quantity, signal);
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Recovery",
+                $"{pos.Symbol}: TP-Orders erfolgreich nachgeholt (TP1={signal.TakeProfit:F8}, TP2={signal.TakeProfit2:F8})",
+                pos.Symbol));
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                $"{pos.Symbol}: TP-Recovery fehlgeschlagen (Fallback: Bot-seitig via PriceTickerLoop): {ex.Message}",
+                pos.Symbol));
+        }
+    }
+
+    /// <summary>
+    /// Gleicht gespeicherte Pending-Orders mit dem aktuellen BingX-Orderbuch ab.
+    /// Entfernt Einträge deren OrderId nicht mehr auf BingX existiert (gefüllt, gecancelt, expired)
+    /// und aktualisiert die DB mit der bereinigten Liste.
+    /// Bei API-Fehler: Fallback auf die gespeicherten Orders (best-effort, kein Abbruch).
+    /// </summary>
+    private async Task<Dictionary<string, PendingLimitOrderState>> ReconcilePendingLimitOrdersAsync(
+        Dictionary<string, PendingLimitOrderState> savedStates)
+    {
+        if (_restClient == null || savedStates.Count == 0) return savedStates;
+
+        try
+        {
+            // Alle aktuell offenen Orders von BingX holen (ohne Symbol-Filter → eine API-Call)
+            var allOpenOrders = await _restClient.GetOpenOrdersAsync();
+            var liveOrderIds = new HashSet<string>(allOpenOrders.Select(o => o.OrderId));
+
+            var valid = new Dictionary<string, PendingLimitOrderState>();
+            var staleSymbols = new List<string>();
+            foreach (var kvp in savedStates)
+            {
+                if (liveOrderIds.Contains(kvp.Value.OrderId))
+                {
+                    valid[kvp.Key] = kvp.Value;
+                }
+                else
+                {
+                    staleSymbols.Add(kvp.Key);
+                }
+            }
+
+            if (staleSymbols.Count > 0)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
+                    $"{staleSymbols.Count} Pending-Order(s) nicht mehr auf BingX → verworfen: {string.Join(", ", staleSymbols)}"));
+
+                // DB mit abgeglichener Liste aktualisieren damit wir beim nächsten Start sauber starten
+                if (_dbService != null)
+                {
+                    try
+                    {
+                        if (valid.Count > 0)
+                            await _dbService.SavePendingLimitOrdersAsync(valid);
+                        else
+                            await _dbService.ClearPendingLimitOrdersAsync();
+                    }
+                    catch { /* Best-effort: DB-Update nicht kritisch */ }
+                }
+            }
+
+            return valid;
+        }
+        catch (Exception ex)
+        {
+            // Bei API-Fehler: Fallback auf gespeicherte Orders (kein Abbruch).
+            // Sicherer Default als kompletter Verlust der Pending-Orders — Invalidierung
+            // greift ohnehin im PriceTickerLoop wenn Orders wirklich stale sind.
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
+                $"Pending-Order-Abgleich mit BingX fehlgeschlagen: {ex.Message} — nutze DB-Einträge unverändert"));
+            return savedStates;
         }
     }
 
@@ -381,8 +533,6 @@ public class LiveTradingManager : IDisposable
             catch { /* Endpoint nicht verfügbar oder Netzwerkfehler — kein Problem beim Stop */ }
         }
 
-        await SaveAtiStateAsync();
-
         // SK-VERIFY: [6.1] ExitStates + Runtime-State VOR StopAsync speichern (danach gecleart)
         if (_service != null && _dbService != null)
         {
@@ -391,8 +541,15 @@ public class LiveTradingManager : IDisposable
                 var exitStates = _service.GetExitStatesSnapshot();
                 if (exitStates.Count > 0)
                     await _dbService.SaveExitStatesAsync(exitStates);
-                var (tradesToday, losses, cooldowns) = _service.GetRuntimeStateSnapshot();
-                await _dbService.SaveRuntimeStateAsync(tradesToday, losses, cooldowns);
+                var (tradesToday, losses) = _service.GetRuntimeStateSnapshot();
+                await _dbService.SaveRuntimeStateAsync(tradesToday, losses);
+
+                // Pending Limit-Orders persistieren (TP-Recovery nach Neustart)
+                var pendingOrders = _service.GetPendingLimitOrdersSnapshot();
+                if (pendingOrders.Count > 0)
+                    await _dbService.SavePendingLimitOrdersAsync(pendingOrders);
+                else
+                    await _dbService.ClearPendingLimitOrdersAsync();
             }
             catch { /* Best-effort: DB-Fehler darf Stop nicht blockieren */ }
         }
@@ -418,10 +575,6 @@ public class LiveTradingManager : IDisposable
     {
         if (_service != null)
         {
-            // ATI-Lernzustand retten bevor alles geschlossen wird —
-            // EmergencyStop kann durch Crash/Absturz ausgelöst werden, State sonst verloren
-            await SaveAtiStateAsync();
-
             // SK-VERIFY: [6.1] ExitStates + Runtime-State auch bei EmergencyStop speichern
             try
             {
@@ -430,8 +583,10 @@ public class LiveTradingManager : IDisposable
                     var exitStates = _service.GetExitStatesSnapshot();
                     if (exitStates.Count > 0)
                         await _dbService.SaveExitStatesAsync(exitStates);
-                    var (tradesToday, losses, cooldowns) = _service.GetRuntimeStateSnapshot();
-                    await _dbService.SaveRuntimeStateAsync(tradesToday, losses, cooldowns);
+                    var (tradesToday, losses) = _service.GetRuntimeStateSnapshot();
+                    await _dbService.SaveRuntimeStateAsync(tradesToday, losses);
+                    // EmergencyStop schließt alle Positionen → pending orders nicht mehr relevant
+                    await _dbService.ClearPendingLimitOrdersAsync();
                 }
             }
             catch { /* Best-effort: DB-Fehler darf EmergencyStop nicht blockieren */ }
@@ -502,64 +657,6 @@ public class LiveTradingManager : IDisposable
         }
     }
 
-    // === ATI-Persistenz ===
-
-    /// <summary>Setzt den ATI-Lernzustand komplett zurück und löscht ihn aus der DB.</summary>
-    public async Task ResetAtiStateAsync()
-    {
-        if (_ati == null) return;
-        _ati.Reset();
-        if (_dbService != null)
-        {
-            try
-            {
-                await _dbService.SaveAtiStateAsync(""); // Leerer State = DB-Eintrag überschreiben
-            }
-            catch { /* Ignorieren wenn DB nicht bereit */ }
-        }
-        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "ATI",
-            "Lernzustand komplett zurückgesetzt (alle Buckets, Gewichte und Transitions gelöscht)"));
-    }
-
-    /// <summary>Lädt ATI-Lernzustand aus der DB.</summary>
-    public async Task LoadAtiStateAsync()
-    {
-        if (_ati == null || _dbService == null) return;
-        try
-        {
-            var json = await _dbService.LoadAtiStateAsync();
-            if (!string.IsNullOrEmpty(json))
-            {
-                _ati.DeserializeState(json);
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "ATI",
-                    "Lernzustand wiederhergestellt"));
-            }
-        }
-        catch (Exception ex)
-        {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "ATI",
-                $"Lernzustand konnte nicht geladen werden: {ex.Message}"));
-        }
-    }
-
-    /// <summary>Speichert ATI-Lernzustand in die DB.</summary>
-    public async Task SaveAtiStateAsync()
-    {
-        if (_ati == null || _dbService == null) return;
-        try
-        {
-            var json = _ati.SerializeState();
-            await _dbService.SaveAtiStateAsync(json);
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "ATI",
-                "Lernzustand gespeichert"));
-        }
-        catch (Exception ex)
-        {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "ATI",
-                $"Lernzustand konnte nicht gespeichert werden: {ex.Message}"));
-        }
-    }
-
     /// <summary>
     /// Berechnet den Standard-SL wie bei Tradeeröffnung: ATR-basiert mit vol-adaptiven Multiplikatoren.
     /// Fallback auf 3% vom Entry wenn keine Candle-Daten verfügbar.
@@ -579,8 +676,7 @@ public class LiveTradingManager : IDisposable
                 {
                     var atrValue = atr[^1]!.Value;
                     var atrPercentile = Engine.Indicators.IndicatorHelper.CalculateAtrPercentile(candles);
-                    var (slMult, _, _, _) = TradingModeDefaults.GetVolAdaptiveMultipliers(
-                        _botSettings.LastTradingModePreset, atrPercentile);
+                    var slMult = TradingModeDefaults.GetRecoverySlMultiplier(atrPercentile);
 
                     var sl = pos.Side == Side.Buy
                         ? pos.EntryPrice - atrValue * slMult

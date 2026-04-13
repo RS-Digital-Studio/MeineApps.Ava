@@ -18,9 +18,9 @@ public static class ScanHelper
 {
     /// <summary>
     /// Filtert Ticker nach Scanner-Kriterien (Volumen, Preisänderung, Black-/Whitelist).
+    /// Bei jedem Scan werden die Krypto-Kandidaten zufällig gemischt (Fisher-Yates-Shuffle).
     /// </summary>
-    // Rotations-Offset: Pro Scan werden andere Symbole priorisiert
-    private static int _rotationOffset;
+    [ThreadStatic] private static Random? _rng;
 
     public static List<Ticker> FilterCandidates(IReadOnlyList<Ticker> tickers, ScannerSettings settings)
     {
@@ -61,10 +61,10 @@ public static class ScanHelper
             }
         }
 
-        // Krypto: Standard Volume-Filter
+        // Krypto: Nur Volume-Filter (PriceChange-Filter entfernt — reduzierte den Pool
+        // bei ruhigem Markt auf ~15-20 Coins, sodass Rotation wirkungslos war)
         var filteredCrypto = cryptoTickers
             .Where(t => t.Volume24h >= settings.MinVolume24h)
-            .Where(t => Math.Abs(t.PriceChangePercent24h) >= settings.MinPriceChange)
             .Where(t => settings.Blacklist.Count == 0 || !settings.Blacklist.Contains(t.Symbol))
             .ToList();
 
@@ -75,101 +75,75 @@ public static class ScanHelper
             .Where(t => settings.Blacklist.Count == 0 || !settings.Blacklist.Contains(t.Symbol))
             .ToList();
 
-        // TradFi bekommt GARANTIERTE Slots (werden nicht von Krypto verdrängt)
-        // Krypto und TradFi getrennt rotieren, dann zusammenführen
-        var maxResults = settings.MaxResults;
+        // 60/40 Aufteilung: 60% Krypto, 40% TradFi (User-Vorgabe 13.04.2026)
+        // Ungenutzte Slots einer Seite werden an die andere Seite weitergegeben,
+        // damit das Scan-Volumen erhalten bleibt wenn ein Pool kleiner ist.
+        var maxResults = settings.MaxResults > 0 ? settings.MaxResults : 100;
+        var tradFiTargetSlots = (int)Math.Round(maxResults * 0.4);   // 40 bei 100
+        var cryptoTargetSlots = maxResults - tradFiTargetSlots;       // 60 bei 100
 
-        // TradFi: ALLE qualifizierten Assets kommen rein (max ~30-40, kleiner Pool)
-        // Sortiert nach Volume innerhalb jeder Kategorie
-        var tradFiResult = filteredTradFi
-            .OrderByDescending(t => t.Volume24h)
-            .ToList();
+        // TradFi-Subkategorien gleichmäßig verteilen (je 25% = 10 bei 40 Slots).
+        // Ohne Sub-Quoten dominieren Aktien (~55% des Pools nach Volume) und
+        // Indices/Rohstoffe verschwinden aus dem Scan.
+        var subCategories = new[]
+        {
+            MarketCategory.Commodity,
+            MarketCategory.Index,
+            MarketCategory.Forex,
+            MarketCategory.Stock
+        };
+        var slotsPerSubCat = tradFiTargetSlots / subCategories.Length;  // 10 bei 40
 
-        // Krypto: Restliche Slots nach Rotation (Top-Movers + Top-Volume + Rotation)
-        var cryptoSlots = Math.Max(maxResults - tradFiResult.Count, maxResults / 2); // Min. 50% für Krypto
-        var topMovers = filteredCrypto.OrderByDescending(t => Math.Abs(t.PriceChangePercent24h)).Take(cryptoSlots / 3).ToList();
-        var topVolume = filteredCrypto.OrderByDescending(t => t.Volume24h).Take(cryptoSlots / 3).ToList();
+        var tradFiResult = new List<Ticker>();
+        foreach (var subCat in subCategories)
+        {
+            var subResult = filteredTradFi
+                .Where(t => SymbolClassifier.Classify(t.Symbol) == subCat)
+                .OrderByDescending(t => t.Volume24h)
+                .Take(slotsPerSubCat)
+                .ToList();
+            tradFiResult.AddRange(subResult);
+        }
 
-        // Rotation: Jeder Scan nimmt andere Krypto-Symbole aus dem Rest
-        // Sauberes Wrap-Around: Skip(offset)+Concat(Anfang)+Take(count) → keine Duplikate
-        var alreadyPicked = new HashSet<string>(topMovers.Select(t => t.Symbol).Concat(topVolume.Select(t => t.Symbol)));
-        var remaining = filteredCrypto.Where(t => !alreadyPicked.Contains(t.Symbol)).ToList();
-        var rotationCount = Math.Min(cryptoSlots - topMovers.Count - topVolume.Count, remaining.Count);
-        var offset = remaining.Count > 0
-            ? Interlocked.Increment(ref _rotationOffset) % remaining.Count
-            : 0;
-        // Wrap-Around: Ab offset bis Ende, dann vom Anfang bis offset → volle Rotation ohne Duplikate
-        var rotated = remaining.Skip(offset).Concat(remaining.Take(offset)).Take(rotationCount).ToList();
+        // Ungenutzte Sub-Slots (z.B. Indices < 10 verfügbar) an Top-Volume-TradFi
+        // verteilen, damit die 40 TradFi-Slots tatsächlich gefüllt werden.
+        var unusedSubSlots = tradFiTargetSlots - tradFiResult.Count;
+        if (unusedSubSlots > 0)
+        {
+            var alreadyChosen = tradFiResult.Select(t => t.Symbol).ToHashSet();
+            var fillUp = filteredTradFi
+                .Where(t => !alreadyChosen.Contains(t.Symbol))
+                .OrderByDescending(t => t.Volume24h)
+                .Take(unusedSubSlots);
+            tradFiResult.AddRange(fillUp);
+        }
 
-        // Zusammenführen: TradFi zuerst (garantiert), dann Krypto-Rotation
+        // Wenn TradFi weniger als Ziel füllt: ungenutzte Slots an Krypto weitergeben
+        var unusedTradFiSlots = tradFiTargetSlots - tradFiResult.Count;
+        var effectiveCryptoSlots = cryptoTargetSlots + unusedTradFiSlots;
+
+        // Krypto: Shuffle + Slot-Limit (Rotation fairer Pool)
+        var shuffled = ShuffleList(filteredCrypto);
+        var cryptoResult = shuffled.Take(effectiveCryptoSlots).ToList();
+
+        // Symmetrisch: Wenn Krypto weniger als Ziel füllt, ungenutzte Slots an TradFi
+        var unusedCryptoSlots = effectiveCryptoSlots - cryptoResult.Count;
+        if (unusedCryptoSlots > 0 && filteredTradFi.Count > tradFiResult.Count)
+        {
+            var additionalTradFi = filteredTradFi
+                .OrderByDescending(t => t.Volume24h)
+                .Skip(tradFiResult.Count)
+                .Take(unusedCryptoSlots)
+                .ToList();
+            tradFiResult.AddRange(additionalTradFi);
+        }
+
+        // TradFi zuerst, danach Krypto (Reihenfolge im Scan-Loop)
         var result = new List<Ticker>(tradFiResult);
-        foreach (var t in topMovers)
-            if (!result.Any(r => r.Symbol == t.Symbol)) result.Add(t);
-        foreach (var t in topVolume)
-            if (!result.Any(r => r.Symbol == t.Symbol)) result.Add(t);
-        foreach (var t in rotated)
+        foreach (var t in cryptoResult)
             if (!result.Any(r => r.Symbol == t.Symbol)) result.Add(t);
 
-        return result.Take(maxResults + tradFiResult.Count).ToList(); // TradFi zählt nicht gegen MaxResults
-    }
-
-    /// <summary>
-    /// Lädt Klines + HTF-Candles und evaluiert die Strategie für einen Kandidaten.
-    /// Gibt null zurück wenn nicht genug Daten oder Signal=None.
-    /// </summary>
-    public static async Task<CandidateResult?> EvaluateCandidateAsync(
-        Ticker ticker,
-        IPublicMarketDataClient publicClient,
-        StrategyManager strategyManager,
-        ScannerSettings scannerSettings,
-        IReadOnlyList<Position> positions,
-        AccountInfo account,
-        CancellationToken ct,
-        BotEventBus? eventBus = null)
-    {
-        // Klines laden (letzte 100 Stunden-Candles)
-        var candles = await publicClient.GetKlinesAsync(
-            ticker.Symbol, scannerSettings.ScanTimeFrame,
-            DateTime.UtcNow.AddHours(-100), DateTime.UtcNow, ct).ConfigureAwait(false);
-
-        if (candles.Count < 50) return null;
-
-        // Higher-Timeframe Candles (4h) für Multi-TF-Konfirmation
-        List<Candle>? htfCandles = null;
-        try
-        {
-            htfCandles = await publicClient.GetKlinesAsync(
-                ticker.Symbol, TimeFrame.H4,
-                DateTime.UtcNow.AddDays(-14), DateTime.UtcNow, ct).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) { throw; } // Cancellation nicht verschlucken
-        catch (Exception ex)
-        {
-            // HTF-Daten optional, aber Fehler loggen für Diagnose
-            eventBus?.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Scanner",
-                $"{ticker.Symbol}: HTF-Candles nicht verfügbar: {ex.Message}", ticker.Symbol));
-        }
-
-        // Entry-TF-Candles für SK-System 3. Ebene (M15 für DayTrading/Swing)
-        List<Candle>? entryTfCandles = null;
-        try
-        {
-            entryTfCandles = await publicClient.GetKlinesAsync(
-                ticker.Symbol, TimeFrame.M15,
-                DateTime.UtcNow.AddHours(-24), DateTime.UtcNow, ct).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) { throw; }
-        catch { /* Entry-TF optional */ }
-
-        // Strategie evaluieren
-        var strategy = strategyManager.GetOrCreateForSymbol(ticker.Symbol);
-        var category = SymbolClassifier.Classify(ticker.Symbol);
-        var context = new MarketContext(ticker.Symbol, candles, ticker, positions, account, htfCandles, category, entryTfCandles);
-        var signal = strategy.Evaluate(context);
-
-        if (signal.Signal == Signal.None) return null;
-
-        return new CandidateResult(signal, context, candles);
+        return result;
     }
 
     /// <summary>
@@ -230,7 +204,19 @@ public static class ScanHelper
         }
         return riskCheck;
     }
+
+    /// <summary>Fisher-Yates-Shuffle: Gibt eine neue zufällig gemischte Liste zurück.</summary>
+    private static List<Ticker> ShuffleList(List<Ticker> source)
+    {
+        _rng ??= new Random();
+        var list = new List<Ticker>(source);
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = _rng.Next(i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
+        }
+        return list;
+    }
 }
 
 /// <summary>Ergebnis der Kandidaten-Evaluation (Signal + Context + Candles für Korrelation).</summary>
-public record CandidateResult(SignalResult Signal, MarketContext Context, IReadOnlyList<Candle> Candles);

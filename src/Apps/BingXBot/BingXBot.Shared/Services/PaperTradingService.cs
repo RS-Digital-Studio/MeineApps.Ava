@@ -12,7 +12,7 @@ namespace BingXBot.Services;
 
 /// <summary>
 /// Paper-Trading-Service: Echtzeit-Simulation mit REST-Polling.
-/// Erbt die gesamte Scan-/SL/TP-/Trailing-Stop-Logik von TradingServiceBase.
+/// Erbt die gesamte Scan-/SL/TP-/BE-Logik von TradingServiceBase.
 /// Nutzt SimulatedExchange als IExchangeClient.
 /// </summary>
 public class PaperTradingService : TradingServiceBase
@@ -188,22 +188,9 @@ public class PaperTradingService : TradingServiceBase
     {
         if (_exchange == null || price <= 0) return;
 
-        // ATR und Volume-Ratio aus dem Indikator-Cache schätzen (falls im gleichen Scan-Zyklus berechnet)
-        // Fallback: Schätze ATR als 1.5% des Preises (typisch für H4-Krypto)
+        // ATR-Schätzung: 1.5% des Preises (typisch für H4-Krypto)
         var estimatedAtr = price * 0.015m;
-        var estimatedVolumeRatio = 1.0m;
-
-        // Versuche aus letztem Signal-Kontext genauere Werte zu bekommen
-        foreach (var state in _exitStates.Values)
-        {
-            if (state.Symbol == symbol && state.CurrentAtr > 0)
-            {
-                estimatedAtr = state.CurrentAtr;
-                break;
-            }
-        }
-
-        _exchange.SetMarketConditions(symbol, estimatedAtr, estimatedVolumeRatio);
+        _exchange.SetMarketConditions(symbol, estimatedAtr, 1.0m);
     }
 
     /// <summary>Publiziert alle neuen CompletedTrades seit prevCount.</summary>
@@ -212,7 +199,7 @@ public class PaperTradingService : TradingServiceBase
         var allTrades = _exchange!.GetCompletedTrades();
         for (int i = prevCount; i < allTrades.Count; i++)
         {
-            // ATI-Lernen ZUERST, DANN EventBus → Dashboard-Snapshot sieht aktuelle Counter
+            // Trade-Outcome ZUERST verarbeiten, DANN EventBus → Dashboard-Snapshot sieht aktuelle Counter
             ProcessCompletedTrade(allTrades[i]);
             _eventBus.PublishTrade(allTrades[i]);
         }

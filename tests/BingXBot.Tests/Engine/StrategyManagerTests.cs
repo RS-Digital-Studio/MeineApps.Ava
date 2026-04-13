@@ -6,13 +6,16 @@ using Xunit;
 
 namespace BingXBot.Tests.Engine;
 
+/// <summary>
+/// Tests für den StrategyManager. Nach Buch-Refactoring nutzt das Template immer SequenzKonzeptStrategy.
+/// </summary>
 public class StrategyManagerTests
 {
     [Fact]
     public void GetOrCreateForSymbol_SameSymbol_ShouldReturnSameInstance()
     {
         var manager = new StrategyManager();
-        manager.SetStrategy(new EmaCrossStrategy());
+        manager.SetStrategy(new SequenzKonzeptStrategy());
 
         var first = manager.GetOrCreateForSymbol("BTC-USDT");
         var second = manager.GetOrCreateForSymbol("BTC-USDT");
@@ -24,20 +27,20 @@ public class StrategyManagerTests
     public void GetOrCreateForSymbol_DifferentSymbols_ShouldReturnDifferentInstances()
     {
         var manager = new StrategyManager();
-        manager.SetStrategy(new EmaCrossStrategy());
+        manager.SetStrategy(new SequenzKonzeptStrategy());
 
         var btc = manager.GetOrCreateForSymbol("BTC-USDT");
         var eth = manager.GetOrCreateForSymbol("ETH-USDT");
 
         btc.Should().NotBeSameAs(eth);
-        btc.Name.Should().Be(eth.Name); // Gleicher Typ
+        btc.Name.Should().Be(eth.Name);
     }
 
     [Fact]
     public void Reset_ShouldClearAllInstances()
     {
         var manager = new StrategyManager();
-        manager.SetStrategy(new EmaCrossStrategy());
+        manager.SetStrategy(new SequenzKonzeptStrategy());
 
         var before = manager.GetOrCreateForSymbol("BTC-USDT");
         manager.Reset();
@@ -61,15 +64,15 @@ public class StrategyManagerTests
     public void SetStrategy_ShouldClearExistingInstances()
     {
         var manager = new StrategyManager();
-        manager.SetStrategy(new EmaCrossStrategy());
-        var emaCross = manager.GetOrCreateForSymbol("BTC-USDT");
+        var skA = new SequenzKonzeptStrategy();
+        manager.SetStrategy(skA);
+        var beforeReset = manager.GetOrCreateForSymbol("BTC-USDT");
 
-        manager.SetStrategy(new RsiStrategy());
-        var rsi = manager.GetOrCreateForSymbol("BTC-USDT");
+        var skB = new SequenzKonzeptStrategy();
+        manager.SetStrategy(skB);
+        var afterReset = manager.GetOrCreateForSymbol("BTC-USDT");
 
-        emaCross.Name.Should().Be("EMA Cross");
-        rsi.Name.Should().Be("RSI Momentum");
-        emaCross.Should().NotBeSameAs(rsi);
+        beforeReset.Should().NotBeSameAs(afterReset);
     }
 
     [Fact]
@@ -78,17 +81,17 @@ public class StrategyManagerTests
         var manager = new StrategyManager();
         manager.CurrentTemplate.Should().BeNull();
 
-        var ema = new EmaCrossStrategy();
-        manager.SetStrategy(ema);
+        var sk = new SequenzKonzeptStrategy();
+        manager.SetStrategy(sk);
 
-        manager.CurrentTemplate.Should().BeSameAs(ema);
+        manager.CurrentTemplate.Should().BeSameAs(sk);
     }
 
     [Fact]
     public void RemoveSymbol_ShouldWork()
     {
         var manager = new StrategyManager();
-        manager.SetStrategy(new EmaCrossStrategy());
+        manager.SetStrategy(new SequenzKonzeptStrategy());
 
         var before = manager.GetOrCreateForSymbol("BTC-USDT");
         manager.RemoveSymbol("BTC-USDT");

@@ -6,24 +6,17 @@ using Xunit;
 namespace BingXBot.Tests.Engine;
 
 /// <summary>
-/// Tests für die StrategyFactory - Erstellung aller 6 Strategien.
+/// Tests für die StrategyFactory. Nach Buch-Refactoring (12.04.2026): nur noch SK-System.
 /// </summary>
 public class StrategyFactoryTests
 {
-    [Theory]
-    [InlineData("CryptoTrendPro")]
-    [InlineData("Trend-Following")]
-    [InlineData("EMA Cross")]
-    [InlineData("RSI Momentum")]
-    [InlineData("Bollinger Breakout")]
-    [InlineData("MACD")]
-    [InlineData("Smart Grid")]
-    public void Create_ShouldReturnCorrectStrategy(string name)
+    [Fact]
+    public void Create_SkSystem_ShouldReturnSequenzKonzeptStrategy()
     {
-        var strategy = StrategyFactory.Create(name);
+        var strategy = StrategyFactory.Create("SK-System");
         strategy.Should().NotBeNull();
+        strategy.Should().BeOfType<SequenzKonzeptStrategy>();
         strategy.Should().BeAssignableTo<IStrategy>();
-        strategy.Name.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -34,9 +27,20 @@ public class StrategyFactoryTests
     }
 
     [Fact]
-    public void AvailableStrategies_ShouldHave9Entries()
+    public void AvailableStrategies_ShouldContainOnlySkSystem()
     {
-        StrategyFactory.AvailableStrategies.Should().HaveCount(9);
+        StrategyFactory.AvailableStrategies.Should().ContainSingle();
+        StrategyFactory.AvailableStrategies[0].Should().Be("SK-System");
+    }
+
+    [Fact]
+    public void Create_SkSystem_ShouldBeCloneable()
+    {
+        var strategy = StrategyFactory.Create("SK-System");
+        var clone = strategy.Clone();
+        clone.Should().NotBeSameAs(strategy);
+        clone.Name.Should().Be(strategy.Name);
+        clone.Parameters.Count.Should().Be(strategy.Parameters.Count);
     }
 
     [Theory]
@@ -47,33 +51,11 @@ public class StrategyFactoryTests
     [InlineData("Bollinger Breakout")]
     [InlineData("MACD")]
     [InlineData("Smart Grid")]
-    public void Create_ShouldReturnCloneableStrategy(string name)
+    [InlineData("Breakout-Pullback")]
+    public void Create_RemovedStrategies_ShouldThrow(string removedName)
     {
-        var strategy = StrategyFactory.Create(name);
-        var clone = strategy.Clone();
-        clone.Should().NotBeSameAs(strategy);
-        clone.Name.Should().Be(strategy.Name);
-        clone.Parameters.Count.Should().Be(strategy.Parameters.Count);
-    }
-
-    [Fact]
-    public void Create_TrendFollowing_ShouldBeDefault()
-    {
-        // CryptoTrendPro ist die erste Strategie (Default für Krypto-Futures)
-        StrategyFactory.AvailableStrategies[0].Should().Be("CryptoTrendPro");
-    }
-
-    [Fact]
-    public void Create_OldNames_ShouldThrow()
-    {
-        // Alte Namen (vor Krypto-Optimierung) sollen nicht mehr funktionieren
-        var act1 = () => StrategyFactory.Create("RSI");
-        act1.Should().Throw<ArgumentException>();
-
-        var act2 = () => StrategyFactory.Create("Bollinger Bands");
-        act2.Should().Throw<ArgumentException>();
-
-        var act3 = () => StrategyFactory.Create("Grid");
-        act3.Should().Throw<ArgumentException>();
+        // Nach Buch-Refactoring (12.04.2026) sind alle Non-SK-Strategien entfernt
+        var act = () => StrategyFactory.Create(removedName);
+        act.Should().Throw<ArgumentException>();
     }
 }

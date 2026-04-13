@@ -430,12 +430,15 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | SK Bottom-Up 3 Verluste = Deadlock | `_consecutiveFailsInDirection >= 3` → harter Block → kein Trade → kein Gewinn → Block ewig | Confluence-Erhöhung statt Block: `adjustedMinConfluence = _minConfluence + fails - 1` |
 | SK BTC Health -2 = alle Longs tot | `AllowLong = score >= -1` blockierte ALLE Altcoin-Longs bei BTC-Score -2 | `AllowLong = score >= -3` (nur extremer Crash blockt). PositionScale deckt Rest ab |
 | SK 15m falsche Richtung = sofort tot | `FromCandles()` wählt "beste" Sequenz — kann zufällig Short sein bei Long-4H | `FromCandlesBoth()` wählt direkt die passende Richtung (Long/Short Machine) |
+| SK Multi-Tier: Tier 2/3 Candles fehlen | M5/M1-Candles werden nur geladen wenn `EnableTier2Intraday`/`EnableTier3Scalp` = true UND `isSKSystem` | Beide Settings default `true`. Tier 2/3 werden automatisch übersprungen wenn Candles fehlen (count < 20) |
 | SK RRR hart 3:1 tötet fortgeschrittene Trades | Bei 80% erreichtem 4H-Ziel ist verbleibender TP-Weg kurz → RRR < 3 | Gestaffeltes RRR: Score>=8: 1.5:1, >=6: 2.0:1, >=4: 2.5:1, sonst 3.0:1 |
 | SK BuyZone/GKL falsche Fibonacci-Level | `IsInBuyZone()` nutzte 50-61.8%, `IsInGklZone()` nutzte 55.9-66.7% → 4H +2 Confluence-Bonus verpasst bei SK-kritischen Leveln | SK Golden Pocket = 50-66.7% überall: Sequence.cs + SequenceDetector.cs. `Retracement559` nur als Confluence-Level, NICHT als Zone-Grenze |
-
----
-
-## Releases
-- **Alle im geschlossenen Test**
-- Keystore: `F:\Meine_Apps_Ava\Releases\meineapps.keystore` (Alias: meineapps, Pwd: MeineApps2025)
-- Store-Assets: `Releases/{AppName}/` (via StoreAssetGenerator)
+| TP-Orders fehlen nach App-Neustart | `_pendingLimitOrders` war nur In-Memory (ConcurrentDictionary). App-Neustart zwischen Limit-Order und Fill → Fill-Detection verloren → TP nie platziert | `PendingLimitOrderState`
+| SK Point 0 kein echtes Swing-Extrem | Jedes zufällige Low/High wurde sofort als Point 0 akzeptiert → Sequenzen auf Noise-Basis | `MinPoint0Candles = 3` + `_point0CandleCount` Counter. Point 0 muss 3 Kerzen bestätigt sein bevor SucheA startet |
+| SK B-Retracement nicht validiert | Sequenzen mit 5% oder 90% Retracement wurden aktiviert → kein echtes B | `TryActivate()` prüft B-Retracement 38.2-78.6%. Außerhalb → State bleibt SucheB |
+| SK Promote-Logik war toter Code | `InvalidateAndPromote`/`InvalidateAndPromoteSucheB` hatten Bedingung `newExtreme > failedP0` (Long) die logisch unmöglich war (Invalidierung garantiert Gegenteil). Selbst wenn getriggert: PotentialB=P0 → 100% B-Ret → TryActivate-Ablehnung | Beide Methoden komplett ersetzt: Reset auf Suche0 + `_point0CandleCount = _minPoint0Candles` (P0 sofort bestätigt). Kein direkter SucheB-Sprung mehr. Spart ~3 Kerzen Wartezeit nach Invalidierung |
+| SK feste Prozent-Schwellen (nur Crypto) | `minImpulse=0.5%`, `correctionThreshold=0.3%` funktionieren nur für Crypto (EUR/USD ATR ≈ 0.28%) | ATR-basierte Schwellen: `minImpulse = ATR% × 1.0`, `correction = ATR% × 1.5`. Alle 5 TFs (W1/D1/H4/H1/M30) |
+| SK B-Retracement Bounds zu locker (23.6-88.6%) | Default-Konstruktor `0.236m, 0.886m` erlaubte fast-Invalidierung als B | Alle 5 `FromCandlesBoth()`-Aufrufe explizit mit `0.382m, 0.786m` (SK Tradebook) |
+| SK `_point0CandleCount` stale bei Promote | Counter behielt alten Wert wenn Sequenz promoted wurde → nächster Point 0 übersprungen | `_point0CandleCount = _minPoint0Candles` in beiden Promote-Methoden (P0 sofort bestätigt, da Invalidierung bereits echtes Extrem beweist) |
+| SK Point-0 Bestätigung zu kurz (3 Kerzen fix) | `MinPoint0Candles = 3` war hart-kodiert — bei ~100+ Kerzen pro Sequenz nur ~3% Bestätigung, auf H4 = 12h für ein Multi-Wochen-Swing | `_minPoint0Candles` als Konstruktor-Parameter: W1=3, D1=5, H4=5 (20h ≈ 1 Tag), H1=3, M30=2 (1h für schnelle Entries) |
+| D1/M30 zu wenig Kerzen für SK-Sequenz | D1: 90 Tage = ~90 Kerzen (< 100 Mindest). M30: 48h = ~96 Kerzen (grenzwertig) | D1: 365 Tage (~365 Kerzen). M30: 120h/5 Tage (~240 Kerzen). In TradingServiceBase.cs |

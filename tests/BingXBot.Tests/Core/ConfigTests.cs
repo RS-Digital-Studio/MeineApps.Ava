@@ -8,23 +8,22 @@ namespace BingXBot.Tests.Core;
 public class ConfigTests
 {
     [Fact]
-    public void RiskSettings_ShouldHaveSafeDefaults()
+    public void RiskSettings_ShouldHaveBuchCompliantDefaults()
     {
+        // SK-Buch-Refactoring 12.04.2026: 1% Risiko/Trade (Buch S.13), max 3 offene Positionen
         var s = new RiskSettings();
-        s.MaxPositionSizePercent.Should().Be(10m);
-        s.MaxDailyDrawdownPercent.Should().Be(0m); // Deaktiviert
+        s.MaxPositionSizePercent.Should().Be(3m);           // Buch: 3% Margin-Limit
+        s.MaxMarginPerTradePercent.Should().Be(1m);         // Buch: 1% Risiko pro Trade
+        s.MaxDailyDrawdownPercent.Should().Be(0m);          // Deaktiviert (User-Entscheidung)
         s.MaxTotalDrawdownPercent.Should().Be(10m);
-        s.MaxOpenPositions.Should().Be(3); // SK-VERIFY: [5.2] Default 3 (war 10)
-        s.MaxLeverage.Should().Be(25m);
-        s.EnableTrailingStop.Should().BeTrue();
-        s.EnableMultiStageExit.Should().BeTrue();
-        s.Tp1CloseRatio.Should().Be(0.3m);
-        s.Tp2CloseRatio.Should().Be(0.3m);
-        s.MinRiskRewardRatio.Should().Be(0m); // SK-VERIFY: Deaktiviert (Strategie hat eigenen gestuften Check)
-        s.SmartBreakevenAtrMultiplier.Should().Be(0.5m);
-        s.MaxHoldHours.Should().Be(0); // SK-VERIFY: Deaktiviert (SL/TP managed den Exit)
-        s.CooldownHours.Should().Be(0); // Deaktiviert
-        s.MaxTradesPerDay.Should().Be(0); // 0 = unbegrenzt (geändert)
+        s.MaxOpenPositions.Should().Be(3);                  // Buch: max 3 Trades gleichzeitig
+        s.MaxLeverage.Should().Be(10m);
+        s.Tp1CloseRatio.Should().Be(0.5m);                  // Buch: 50% bei TP1
+        s.Tp2CloseRatio.Should().Be(0.5m);                  // Buch: 50% Rest bei TP2
+        s.MinRiskRewardRatio.Should().Be(0m);               // Strategy hat eigenen 1:1-Check
+        s.MaxHoldHours.Should().Be(0);                      // Unbegrenzt (SL/TP managed Exit)
+        s.CooldownHours.Should().Be(0);                     // Deaktiviert (Symbol-Cooldown direkt 4h)
+        s.MaxTradesPerDay.Should().Be(0);                   // Unbegrenzt
     }
 
     [Fact]
@@ -46,12 +45,15 @@ public class ConfigTests
     }
 
     [Fact]
-    public void ScannerSettings_ShouldHaveDefaults()
+    public void ScannerSettings_ShouldHaveBuchCompliantDefaults()
     {
+        // SK-Buch: H4 Navigator, Reversal-Modus, breites Screening, niedrige Min-Volume für Stabilisierungsphasen
         var s = new ScannerSettings();
-        s.MinVolume24h.Should().Be(20_000_000m);
+        s.MinVolume24h.Should().Be(1_000_000m);
         s.ScanTimeFrame.Should().Be(TimeFrame.H4);
-        s.MaxResults.Should().Be(100); // SK-VERIFY: 100 für SK-Reversal-Screening
-        s.ScanIntervalSeconds.Should().Be(300); // H4 = 5min (Ticker + Kandidaten-Check)
+        s.MaxResults.Should().Be(100);
+        s.ScanIntervalSeconds.Should().Be(60);              // H4 nutzt 60s für schnelle M30-Reaktion
+        s.Mode.Should().Be(ScanMode.Reversal);              // SK = Mean-Reversion
+        s.EnableTradFi.Should().BeTrue();
     }
 }

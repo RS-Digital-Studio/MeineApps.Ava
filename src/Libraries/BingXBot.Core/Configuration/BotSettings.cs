@@ -17,12 +17,6 @@ public class BotSettings
     /// <summary>Startkapital für Paper-Trading in USDT.</summary>
     public decimal PaperInitialBalance { get; set; } = 10_000m;
 
-    // === ATI-Konfiguration ===
-    /// <summary>Mindestanzahl Trades bevor ATI-Gewichtungen aktiv werden (Cold-Start-Schutz).</summary>
-    public int AtiMinTradesBeforeLearning { get; set; } = 50;
-    /// <summary>Intervall in Minuten für automatische ATI-State-Persistierung (0 = deaktiviert).</summary>
-    public int AtiAutoSaveIntervalMinutes { get; set; } = 15;
-
     // === Benachrichtigungen ===
     /// <summary>Desktop-Benachrichtigungen bei Trade-Eröffnung/-Schließung.</summary>
     public bool EnableDesktopNotifications { get; set; } = true;

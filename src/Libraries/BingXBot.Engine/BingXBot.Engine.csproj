@@ -8,9 +8,5 @@
   <ItemGroup>
     <PackageReference Include="Skender.Stock.Indicators" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-    <PackageReference Include="Microsoft.ML" />
-    <PackageReference Include="Microsoft.ML.LightGbm" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
-    <PackageReference Include="GeneticSharp" />
   </ItemGroup>
 </Project>

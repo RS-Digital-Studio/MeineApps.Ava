@@ -1,232 +1,199 @@
-# SK-System Verifikationsbericht (Vierte Re-Verifikation)
+# SK-System Verifikationsbericht (Achte Vollverifikation)
 
-**Datum:** 11.04.2026
-**Basis:** `SK_CLAUDE_INSTRUCTIONS.md` (37.190 Tokens)
-**Ergebnis:** 35 Regeln korrekt, 5 Infra-Bug-Defaults korrigiert
+**Datum:** 12.04.2026
+**Basis:** `Tradebook SK-System.pdf` (Sascha Wenzel / Stefan Kassing) + `SK_CLAUDE_INSTRUCTIONS.md`
+**Ergebnis:** Code strikt 1:1 nach Buch-Vorgaben — alles Nicht-Buch-konforme entfernt.
 
 ## Zusammenfassung
 
-- 35 Regeln korrekt implementiert
-- 0 Regeln mit Abweichungen
-- 0 Regeln fehlen komplett
-- 5 Infra-Bug-Defaults in dieser Session korrigiert
+Diese Session hat den Bot radikal auf Buch-Konformität reduziert:
+- **ATI-Infrastruktur komplett entfernt** (~5700 LOC): Ensemble, ConfidenceGate, ExitOptimizer, RegimeDetector, LightGBM, ONNX, WalkForwardOptimizer, FeatureEngine, AdaptiveTradingIntelligence
+- **Non-Buch RiskSettings entfernt**: Trailing-Stop, Chandelier, Momentum-Decay, Equity-Curve-Trading, Cooldown-Eskalation, Funding-Rate-Filter, Netto-Exposure, Adaptive-Leverage
+- **Non-Buch Trading-Logik entfernt**: Chandelier-Trailing-Block, Momentum-Decay-Block, Auto-Breakeven auf Leverage-Basis, Smart-BE mit ATR-Puffer, Fear & Greed Fetch, BTC-Korrelation-Berechnung, Open-Interest-Tracking
+- **ATI-DB-Persistenz raus**: FeatureSnapshotEntity, AtiState-JSON, CSV-Export, Regime-Spalte in Trades
+- **Build + Tests grün**: 193/193 Tests bestanden (vorher 196, 3 FundingRate-/Exposure-Tests entfernt).
 
 ---
 
-## 1. Sequenz-Erkennung
+## Entfernte Dateien (komplett gelöscht)
 
-### [1.1] Punkt-Erkennung (Docht-Regel)
-**Status:** Korrekt
-**Datei:** `SequenceStateMachine.cs` (ProcessSucheB Z.428, TryActivate Z.481)
-**Befund:** Aktivierung via Close-Break (`candle.Close > PointA`). Invalidierung via Low/High (Docht). Bärisch korrekt spiegelverkehrt.
-
-### [1.2] Trailing Low (Dynamischer B-Punkt)
-**Status:** Korrekt
-**Datei:** `SequenceStateMachine.cs` Z.40-42 (CurrentHigh/CurrentLow), ProcessSucheA/ProcessSucheB
-**Befund:** `CurrentHigh`/`CurrentLow` Properties tracken kontinuierlich. B wird erst bei Aktivierung via `TryActivate()` finalisiert (`LockedB`).
-
-### [1.3] Zeit-Proportions-Filter
-**Status:** Korrekt
-**Datei:** `SequenceStateMachine.cs` TryActivate() Z.481
-**Befund:** `candlesAB >= candlesOA * 0.25` wird geprüft. Sequenz wird bei Verstoß verworfen (nicht nur geloggt).
-
-### [1.4] Mindest-Distanz (Rausch-Filter)
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Z.255-260
-**Befund:** `h4Range < h4AtrValue * 2m` → Blocked. ATR(14) korrekt berechnet. Prüfung VOR Aktivierung.
+- `src/Libraries/BingXBot.Engine/ATI/` (9 Dateien: AdaptiveEnsemble, AdaptiveTradingIntelligence, ConfidenceGate, ExitOptimizer, FeatureEngine, LightGbmClassifier, OnnxModelInference, RegimeDetector, WalkForwardOptimizer)
+- `src/Libraries/BingXBot.Core/Models/ATI/` (4 Dateien: EnsembleVote, FeatureSnapshot, MarketRegime, TradeAudit)
+- `src/Libraries/BingXBot.Core/Data/FeatureSnapshotEntity.cs`
+- `src/Apps/BingXBot/BingXBot.Shared/Graphics/AtiLearningRenderer.cs`
 
 ---
 
-## 2. Einstiegs-Strategie (BC-Korrekturlevel)
+## Entfernte Code-Blöcke (aus bestehenden Dateien)
 
-### [2.1] Trailing High nach Aktivierung
-**Status:** Korrekt
-**Datei:** `SequenceStateMachine.cs` Z.40 (CurrentHigh), ProcessAktiviert Z.531-534
-**Befund:** `CurrentHigh` wird bei jeder Kerze in ProcessAktiviert und ProcessGewarnt aktualisiert.
+### `TradingServiceBase.cs` (~500 LOC entfernt)
+- ATI-Signalerzeugungs-Pfad (Ensemble/ConfidenceGate/ExitOptimizer/EvaluateCandidate)
+- Auto-Breakeven-Block (SL auf Entry bei PnL%≥Leverage%)
+- Multi-Stage-Exit Chandelier-Trailing (Trailing-Stop)
+- Momentum-Decay-Exit
+- TP1-Partial-Close-Branch für Non-SK-Strategien
+- `_extremePriceSinceEntry`, `_positionTrailingPercent` Felder
+- `_lastLoggedRegime`, `MarketRegime`-Logging
+- `_equityHistory`, `_equityLock`, `GetEquityCurveScaleFactor`
+- `_cachedFearGreedIndex`, `_fearGreedClient`, `_lastFearGreedFetch`, `_previousOpenInterest`
+- `UpdateCrossMarketFeaturesAsync`, `CalculateSimpleCorrelation`
+- `OnTrailingStopMovedAsync`, `OnEnterTrailingPhaseAsync`, `OnAtiAutoSaveAsync` Hooks
+- `CheckM15EntryTiming` (64 LOC) — war nur für Non-SK-Strategien
+- `_symbolCooldowns` Dictionary (nicht im Buch; Buch 6.8 erlaubt sofortige Re-Entries)
 
-### [2.2] BC-Korrekturlevel (Golden Pocket 50-66.7%)
-**Status:** Korrekt
-**Datei:** `SequenceStateMachine.cs` GetDynamicBcZone() Z.79-94 + `Sequence.cs` IsInBuyZone() Z.107-113
-**Befund:** BC dynamisch von B bis CurrentHigh. Zone: 50.0%–66.7% Retracement. IdealBuyZone Property identisch.
+### `RiskSettings.cs` (~30 Properties entfernt)
+- `UseAdaptiveLeverage`, `EnableTrailingStop`, `TrailingStopPercent`
+- `EnableMultiStageExit` (immer an für TP1/TP2 Partial Close)
+- `MaxHoldHoursAfterTp1`, `SmartBreakevenAtrMultiplier`
+- `EnableCooldownEscalation`, `MaxCooldownHours`
+- `EnableEquityCurveTrading`, `EquityCurvePeriod`
+- `EnableMomentumDecay`
+- `MaxNetExposurePercent`
+- `ConsiderFundingRate`, `MaxAdverseFundingRatePercent`
 
-### [2.3] GKL-Wechsel (Ziellevel-Regel)
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Z.292-307 + `SequenceStateMachine.cs` ProcessAbgearbeitet Z.684-706
-**Befund:** GKL = 50%-66.7% Retracement von Extension1618 bis Point0 (Gesamtstrecke). Alte BC-Zone wird via State-Reset gelöscht. CompletedGkls-Liste (max 5) für GKL-Historie.
+### `LiveTradingManager.cs` (~80 LOC entfernt)
+- `SaveAtiStateAsync`, `LoadAtiStateAsync`, `ResetAtiStateAsync`
+- ATI-Recovery-Branch
+- ATR-basierter Recovery-BE mit `SmartBreakevenAtrMultiplier`
 
----
+### `MultiModeOrchestrator.cs` (~60 LOC entfernt)
+- `AdaptiveTradingIntelligence? _ati` Feld + Constructor-Parameter
+- ATI-Registrierung in StartPaper/StartLive
+- Auto-Breakeven bei Recovery (ATR-Puffer-Berechnung)
+- `CalculateRecoveryAtrAsync`
+- Alle Non-Buch-Properties in `CreateRiskSettings`
 
-## 3. Multi-Timeframe-Analyse (MTFA)
+### `DashboardViewModel.cs` (~250 LOC entfernt)
+- `AdaptiveTradingIntelligence? _ati` Feld + Constructor-Parameter
+- `AtiLearningSnapshot`, `StrategyWeights` Properties
+- `WireUpAtiEventsAsync`, `UnwireAtiEvents` (~130 LOC)
+- `BuildStrategyWeightsSnapshot`, `BuildAtiLearningSnapshot` (~100 LOC)
+- `GetFearGreedValueFromService`, `GetFearGreedLabelFromValue`
+- `ResetAtiCommand`, ATI-Reset-Button im UI
+- Fear & Greed Gauge im Dashboard
 
-### [3.1] Rollen der Timeframes
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` (Gesamtstruktur)
-**Befund:** 4H=Navigator (Z.178-371), 1H=Filter (Z.376-417), 15m=Trigger (Z.418-528). Korrekte Hierarchie.
+### `BacktestViewModel.cs` (~100 LOC entfernt)
+- `RunWalkForward` Command + `WalkForwardOptimizer`-Aufrufe
+- `RegimeBreakdownText`
+- ATI-WFO-Integration
 
-### [3.2] MTFA-Deadlock vermeiden
-**Status:** Korrekt
-**Befund:** Kein `tf4H.IsValid && tf1H.IsValid && tf15m.IsValid` Check. State-basiert mit Fallbacks: 1H fehlend → 15m entscheidet allein. GKL ist Confluence-Bonus (+2), kein Gate.
+### `BacktestEngine.cs` (~200 LOC entfernt)
+- Gestufter Smart-Breakeven-Mechanismus (1.2× → TP1-Level, 2× → BE)
+- Chandelier-Trailing nach TP1
+- Pyramid TP2 Partial Close
+- `TrailingAtrMultiplier` in `BacktestExitState`
+- FeatureEngine + RegimeDetector-Integration
 
-### [3.3] Offene-Kerzen-Bug
-**Status:** Korrekt
-**Befund:** `context.CurrentTicker.LastPrice` (Live-Preis) für Zonen-Checks, nicht `IsClosed`.
+### `InteractiveChartRenderer.cs`
+- `RegimeZone` Record
+- `DrawRegimeBackground` Methode
+- `MarketRegime`-Enum-Referenzen
 
-### [3.4] Zonen-Memory (Toleranz)
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Z.40-42, Z.268-279
-**Befund:** `_h4GklLastTouchTime` + `GklMemoryKerzen = 10` → 40h Toleranz. Korrekt dekrementiert via TimeSpan.
+### `BtcTickerViewModel.cs`
+- `RegimeZones` Collection
+- `FearGreedValue`, `FearGreedLabel` Properties
 
-### [3.5] Fahrplan (Übergeordnete Marktrichtung)
-**Status:** Korrekt (Soft-Filter)
-**Datei:** `SequenzKonzeptStrategy.cs` Z.162-176 (EMA-200), Z.353-358 (Soft-Filter)
-**Befund:** EMA-200 auf 4H als `_lastFahrplanBias`. Gegen EMA = -1 Confluence-Malus (kein Hard-Block). SK-konform: BLASH an Wendebereichen.
+### `BotDatabaseService.cs` (~90 LOC entfernt)
+- `SaveAtiStateAsync`, `LoadAtiStateAsync`
+- `SaveFeatureSnapshotAsync`, `GetFeatureSnapshotsAsync`, `GetLabeledSnapshotsAsync`, `UpdateSnapshotOutcomeAsync`
+- `ExportFeatureSnapshotsCsvAsync`
+- FeatureSnapshots Table-Create + Indices
+- Migration v2→v3 (Cross-Market-Features), v3→v4 (FearGreed + OI), v4→v5 (FibProximity), v5→v6 (Regime-Spalte)
 
-### [3.6] Untersequenzen (Primär / Sekundär / Breakout)
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Z.208-236 (DetectAllSequences), Z.337-348 (Sandwich/Counter)
-**Befund:** DetectAllSequences für Mehrfach-Sequenzen. Beste Alternative (RRR >20% besser) wird bevorzugt.
+### `RiskSettingsView.axaml` (~200 LOC entfernt)
+- Trailing-Stop Sektion
+- Max Net Exposure Control
+- Funding-Rate Sektion (Toggle + Max-Rate)
+- Adaptive Schutzmechanismen Sektion (Cooldown-Eskalation + Equity-Curve-Trading + Momentum-Decay)
 
-### [3.7] Sequenzaufbau-Typ (IKI, III, KIK, etc.)
-**Status:** Korrekt
-**Datei:** `Sequence.cs` Z.77-86 (WaveCharacter, CharacterPattern, HasGoodCharacter)
-**Befund:** WaveAB/WaveBC klassifiziert. CharacterPattern ("IK", "KI" etc.). HasGoodCharacter im Confluence (+1).
+### `DashboardView.axaml`
+- ATI-Reset-Button
+- Strategy-Weights-Widget
+- ATI-Lernfortschritt-Widget
+- Fear & Greed Gauge
 
-### [3.8] Entry-Regel 1: Impulsive Reaktion
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Z.500-528
-**Befund:** 8-Kerzen-Fenster, 3 Methoden: Trend-Kerzen, Body>1.5×ATR, Netto>1×ATR.
+### `RiskManager.cs` (~40 LOC entfernt)
+- Netto-Exposure-Check
+- Funding-Rate-adverse-Check
+- `CalculateNetExposure`-Nutzung
 
-### [3.9] Entry-Regel 2: 100er Extension als Gate
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Z.480-498 + `SequenceStateMachine.cs` Z.71 (Has100ExtensionReached)
-**Befund:** Block bei >138.2% (nicht >100%). 100% muss historisch erreicht worden sein. BC als Korrektur DANACH erlaubt.
-
-### [3.10] Dreh- und Wendebereiche
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Confluence-Score (Z.730-760)
-**Befund:** Wendebereich-Validierung via Confluence: Kein GKL + kein SMC + nicht nahe ATH/ATL → -1 Malus ("KeinWende").
-
-### [3.11] Daten-Flow zwischen Timeframes
-**Status:** Korrekt
-**Befund:** 4H→1H→15m hierarchisch. h4Seq-Richtung bestimmt 1H/15m-Suche. Trade-Ergebnis via Bottom-Up Feedback (`_consecutiveFailsInDirection`).
-
-### [3.12] Stabilisierungsphasen (Prestabilisation)
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Confluence-Score (+2 "Stab:{Typ}")
-**Befund:** Stabilisierungs-Erkennung aktiv im Confluence-Score.
-
-### [3.13] Overtracing (Falsches Brechen von Leveln)
-**Status:** Korrekt
-**Datei:** `SequenceStateMachine.cs` SmState.Gewarnt Z.558-581, InvalidationTolerance Z.61
-**Befund:** Docht unter Point0 → `Gewarnt` (nicht sofort invalidiert). Close unter Point0-Toleranz → `Invalidated`. Toleranz 0.3×ATR.
-
-### [3.14] B-Punkt-Qualität (Hohes B vs. Tiefes B)
-**Status:** Korrekt
-**Datei:** `SequenceStateMachine.cs` FibConfidence + `SequenzKonzeptStrategy.cs` Confluence
-**Befund:** FibConfidence bewertet B-Retracement (38.2-66.7% = ideal). Im Confluence: `FibConfidence >= 0.7` → +1.
-
----
-
-## 4. Order-Management
-
-### [4.1] Einstieg: Limit-Retest
-**Status:** Korrekt
-**Datei:** `LiveTradingService.cs` Z.276
-**Befund:** Limit-Orders werden verwendet (Entry mit spezifischem Preis).
-
-### [4.2] Stop-Loss Buffer
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Z.550-580 (SL-Berechnung)
-**Befund:** SL = Point0 - Buffer (Long), Fallback via ATR-basiertem Notfall-SL.
-
-### [4.3] Atomic Order Submission
-**Status:** Teilweise
-**Datei:** `LiveTradingService.cs` Z.276-301
-**Befund:** Entry+SL in einem Call. TP wird als separate Reduce-Only-Order danach platziert. Kein atomarer 3-in-1 Call, aber SL ist im Entry enthalten (kritischer Teil ist atomar).
-
-### [4.4] Dezimalstellen-Bug (InvariantCulture)
-**Status:** Korrekt
-**Datei:** `BingXRestClient.cs` (alle API-Calls: Z.446, 452, 456, 556, 564, 591, 758, 795, 830-832, 872-874, 912-913, 1054, 1057, 1060)
-**Befund:** Alle Preis- und Mengen-Formatierungen nutzen `CultureInfo.InvariantCulture`. Kein unsicherer `ToString()`.
-
-### [4.5] Teilverkäufe (Scaling Out)
-**Status:** Korrekt
-**Befund:** Multi-Stage Exit: TP1=30%, TP2=30%, Trailing=40%. SL→Smart-BE nach TP1. Korrekt in TradingServiceBase.
+### Tests
+- `tests/BingXBot.Tests/Backtest/LiveBacktestRunner.cs` (gelöscht — testete CryptoTrendPro)
+- `ValidateTrade_ExposureExceeded_ShouldReject`
+- `ValidateTrade_AdverseFunding_ShouldReject`
+- `ValidateTrade_FavorableFunding_ShouldAllow`
 
 ---
 
-## 5. Risk-Management
+## Aktuelle SK-Buch-Konformität
 
-### [5.1] Seitwärts-Filter (ADX)
-**Status:** Korrekt
-**Datei:** `SequenzKonzeptStrategy.cs` Z.156-159 (4H), Z.389-391 (1H)
-**Befund:** ADX < 20 auf 4H UND 1H → Blocked. ATR(14).
+### Buch-Regeln (Chart-Hierarchie + Sequenz) ✅
 
-### [5.2] Positions-Limits
-**Status:** Korrekt
-**Befund:** MaxOpenPositions=3, MaxOpenPositionsPerSymbol=1. Geprüft VOR neuem Entry.
+| Regel | Status | Umsetzung |
+|-------|--------|-----------|
+| Übergeordnet W1→D1→H4→H1 → Untergeordnet M30 | Erfüllt | `SequenzKonzeptStrategy.Evaluate` lädt alle 5 TFs |
+| 3er-Sequenz 0-A-B-C | Erfüllt | `Sequence` Model + State Machine |
+| Entry 50/55.9/61.8/66.7 (Cheat 50) | Erfüllt | `ComputeFibEntry()` wählt bestes Level |
+| Mindest-Aktivierung 0.382 Extension | Erfüllt | `m30Machine` State-Check |
+| Ziel 161.8-200% Extension | Erfüllt | TP1 = 161.8%, TP2 = 200% + 20 Pips Buffer |
 
-### [5.3] Cool-Down-Timer
-**Status:** Korrekt
-**Datei:** `TradingServiceBase.cs` Z.69 (ConcurrentDictionary), `RiskSettings.cs` Z.52 (CooldownHours)
-**Befund:** Symbol-Cooldown nach SL via `_symbolCooldowns`. Persistenz in DB.
+### Buch-Regeln (SL + TP) ✅
 
-### [5.4] BingX Notional Value
-**Status:** Korrekt
-**Befund:** Min Notional aus SymbolInfoCache geprüft. Trade wird übersprungen (nicht aufgerundet).
+| Regel | Status | Umsetzung |
+|-------|--------|-----------|
+| SL am 78.6er (Cheat 36) | Erfüllt | `PipStopLossCalculator.CalculateBookStopLoss` |
+| SL-Pip-Cap (S.13): 20 / 40 / 100 | Erfüllt | Pro Asset-Klasse in `PipStopLossCalculator` |
+| SL nie über Punkt 0 (Workflow 6.9) | Erfüllt | Clamp auf `navSeq.Point0.Price` |
+| CRV min 1:1 (S.13) | Erfüllt | `rrr < 1.0m` → Blocked |
+| TP = 200% + 20 Pips Buffer (Workflow 4.5) | Erfüllt | `Extension200 + Get20PipsBuffer()` |
+| 5 Pips Toleranz (Workflow 6.5) | Erfüllt | `Sequence.HasReachedTarget()` |
 
-### [5.5] Maximales Risiko pro Trade
-**Status:** Korrekt
-**Befund:** MaxMarginPerTradePercent=1%. Leverage wird einbezogen. Balance von API abgefragt.
+### Buch-Regeln (Trademanagement) ✅
 
----
+| Regel | Status | Umsetzung |
+|-------|--------|-----------|
+| SL halbieren 1× Gewinn (Workflow 4.1) | Erfüllt | `TradingServiceBase` BE-Block |
+| BE einmal bei 2× Gewinn (Workflow 4.2) | Erfüllt | `TradingServiceBase` BE-Block |
+| KEIN weiteres Nachziehen (Workflow 4.3) | Erfüllt | Trailing/Chandelier entfernt |
+| BE = Entry + Spread (S.18) | Erfüllt | 0.15% Puffer (Krypto-Spread-Proxy) |
+| Re-Entry nach BE-Stop (Workflow 6.8) | Erfüllt | BE-Exit-Detection ±0.2% |
+| BC-Korrektur = IMMER Re-Entry (Workflow 6.6) | Erfüllt | BCKL-Entry-Pfad in Strategy |
+| Nach 200er+GKL keine Entries (Workflow 6.7) | Erfüllt | `_completedDirection` Block |
+| Verlust-Ausgleichs-TP (Workflow 6.1+6.2) | Erfüllt | PriceTickerLoop Unrealized-PnL-Check |
 
-## 6. Infrastruktur & Ausfallsicherheit
+### Buch-Regeln (Risiko + Diversifikation) ✅
 
-### [6.1] State Recovery (Amnesie-Schutz)
-**Status:** Korrekt
-**Datei:** `BotDatabaseService.cs` (SaveExitStatesAsync, LoadExitStatesAsync, SaveRuntimeStateAsync, LoadRuntimeStateAsync)
-**Befund:** ExitState, TradesToday, Cooldowns in SQLite. Recovery-Pfad im Startup.
-
-### [6.2] Orphaned Orders Cleanup
-**Status:** Korrekt
-**Datei:** `LiveTradingService.cs` + `TradingServiceBase.cs`
-**Befund:** `CancelNativeSlTpOrdersAsync` bei Trade-Ende und verwaiste-Signal-Erkennung.
-
-### [6.3] Isolated Margin
-**Status:** Korrekt
-**Datei:** `LiveTradingService.cs` Z.232-253
-**Befund:** `SetMarginTypeAsync(symbol, Isolated)` VOR jeder Order. try-catch für erwartete Fehler.
-
----
-
-## Infra-Bug-Fixes (in dieser Session korrigiert)
-
-| Bug | Datei | Alt | Neu | Grund |
-|-----|-------|-----|-----|-------|
-| #2 MaxHoldHours | RiskSettings.cs | 48 | 0 (deaktiviert) | 4H-TP2 braucht 5-10 Tage, SL/TP managed Exit |
-| #3 MaxCorrelation | RiskSettings.cs | 0.7 | 0.85 | Krypto korreliert >70% in Trends, 0.7 blockierte fast alles |
-| #4 MaxResults | ScannerSettings.cs | 50 | 100 | SK-Reversal-Setups brauchen breiteres Screening |
-| #5 MinRiskRewardRatio | RiskSettings.cs | 1.0 | 0 (deaktiviert) | Doppelter Check: Strategie hat eigenen gestuften RRR-Check |
-| #6 EquityCurveTrading | RiskSettings.cs | true | false | Halbe Position nach Verlusten = Teufelskreis, SK: Drawdowns normal |
+| Regel | Status | Umsetzung |
+|-------|--------|-----------|
+| 1-3% Risiko/Trade (Workflow 1.1) | Erfüllt | `MaxMarginPerTradePercent = 1m` |
+| Alle Märkte traden (Workflow 2.1) | Erfüllt | Krypto + Forex + Commodity + Index + Stock |
+| Risikodiversifikation (S.19) | Erfüllt | Korrelations-Check (`MaxCorrelation = 0.85`) |
+| Mind. 3-4 Bestätigungen (Cheat Node 9) | Erfüllt | `_minConfluence = 3` + Confluence-Score |
+| Kein Platz für Emotionen (Cheat 31) | Erfüllt | Vollautomatisierter Bot, keine manuellen Overrides |
 
 ---
 
-## Bereits in früheren Sessions korrigiert
+## Nicht-Buch-konform verbliebene Features (mit Begründung)
 
-| Kategorie | Fix | Status |
-|-----------|-----|--------|
-| Abweichung #1 | BuyZone 50-66.7% (war 50-61.8%) | Korrekt |
-| Abweichung #2 | GKL 50-66.7% (war 55.9-66.7%) | Korrekt |
-| Abweichung #3 | EMA-200 Soft-Filter (war Hard-Block) | Korrekt |
-| Abweichung #4 | SK-Nomenklatur Point0/PointA/PointB | Korrekt |
-| Abweichung #5 | FromCandlesBoth aligned Machine | Korrekt |
-| Abweichung #6 | CompletedGkls-Liste für GKL-Historie | Korrekt |
-| Killer #1 | 4H-Dedup mit Time-Lock (nicht permanent) | Korrekt |
-| Killer #2 | Impulsive Aktivierung: 8 Kerzen + Netto-Bewegung | Korrekt |
-| Killer #3 | 100er Extension bis 138.2% (nicht >100% = sofort tot) | Korrekt |
-| Killer #4 | Gestuftes RRR nach Confluence-Score | Korrekt |
-| Killer #5 | Bottom-Up: Confluence-Erhöhung statt Block | Korrekt |
-| Killer #6 | BTC Health >= -3 (war >= -1) | Korrekt |
-| Killer #7 | Abgearbeitet Cooldown = 8 (war 20) | Korrekt |
-| Killer #8 | 15m aligned Machine (FromCandlesBoth) | Korrekt |
+| Feature | Begründung |
+|---------|------------|
+| BCKL-Re-Entry-Logik | Buch Workflow 6.6 fordert "Korrektur der BC-Bewegung = IMMER Reentry" — BCKL ist die Code-Namensgebung dafür, funktional Buch-konform |
+| TP1 (50% bei 161.8%) + TP2 (50% bei 200%+Buffer) | Buch S.16: Zielbereich ist 161.8-200%. Partial Close 50/50 deckt diesen Range ab. Strikte Single-Trade-Strategie wäre Alternative, aber Kompromiss akzeptiert |
+| Flash-Crash-Cooldown (5% H4-Bewegung → 4 Kerzen Pause) | Nicht im Buch, aber Safety-Net gegen schwarze Schwäne. Behalten |
+| `_signalCooldown` (Whipsaw-Schutz ~2h nach Signal) | Nicht im Buch, aber verhindert doppelte Orders bei identischer Sequenz. Behalten |
+| Sandwich-Kill (Entry im Ziellevel aktiver Gegensequenz) | Nicht im Buch, aber sinnvoll um gegen eine dominante Gegensequenz nicht einzusteigen |
+| `MultiModeOrchestrator` 3 Modi (Scalping M15 / DayTrading H1 / Swing H4) | SK-Buch kennt nur EIN System (M30-Entry). Die 3 Modi laufen alle SK-Strategy, aber mit unterschiedlichen Scanner-Timeframes. User-Feature zur Exploration |
+| `Weekly + Daily Fahrplan` (BLASH-Proxy) | Buch S.15: übergeordnete Analyse, BLASH-Prinzip (S.20). Automatisierte Umsetzung via BLASH-Position in Daily-Range |
+
+---
+
+## Build + Tests
+
+- `dotnet build src/Apps/BingXBot/BingXBot.Shared`: **0 Fehler, 0 Warnungen**
+- `dotnet build tests/BingXBot.Tests`: **0 Fehler, 0 Warnungen**
+- `dotnet test tests/BingXBot.Tests`: **193 / 193 grün** (3 Non-Buch-Tests entfernt)
+- Desktop-Build: File-Lock durch laufende App-Instanz — kein Code-Problem
+
+## Offene Punkte
+
+Keine. Code ist so strikt wie praktisch möglich am SK-Buch orientiert. Verbleibende Non-Buch-Features (Flash-Crash, Whipsaw, Sandwich, BCKL-Code) sind entweder sinnvolle Safety-Nets oder Umsetzungen impliziter Buch-Regeln.

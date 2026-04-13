@@ -5,8 +5,6 @@ using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Backtest.Simulation;
 using BingXBot.Backtest.Reports;
-using BingXBot.Core.Models.ATI;
-using BingXBot.Engine.ATI;
 using BingXBot.Engine.Indicators;
 using Microsoft.Extensions.Logging;
 
@@ -90,7 +88,7 @@ public class BacktestEngine
         List<Candle>? entryTfCandles = null;
         var entryTf = settings.EntryTimeFrame ?? timeFrame switch
         {
-            TimeFrame.H4 => TimeFrame.M15,  // SK Holy Trinity: 15m-Trigger bei H4-Primary
+            TimeFrame.H4 => TimeFrame.M30,  // SK-Buch: M30 als Entry-Chart bei H4-Primary
             TimeFrame.H1 => TimeFrame.M15,
             TimeFrame.M15 => TimeFrame.M5,
             _ => (TimeFrame?)null
@@ -126,10 +124,6 @@ public class BacktestEngine
 
         // 4a. Multi-Stage Exit State pro Position
         var exitTracking = new Dictionary<string, BacktestExitState>();
-
-        // 4c. Regime-Tracking pro Position (für Regime-spezifische Metriken)
-        var positionRegimes = new Dictionary<string, MarketRegime>();
-        var regimeDetector = new RegimeDetector();
 
         // 4b. Funding-Rate-Tracking: Alle 8h auf offene Positionen anwenden
         var fundingRate = settings.SimulatedFundingRatePercent / 100m; // z.B. 0.01% → 0.0001
@@ -288,43 +282,44 @@ public class BacktestEngine
                 if (!positionSignals.TryGetValue(key, out var origSignal))
                     continue;
 
-                // --- Multi-Stage Exit (wenn aktiviert und ExitState vorhanden) ---
-                if (settings.SimulateMultiStageExit && exitTracking.TryGetValue(key, out var exitState))
+                // --- SK-Buch Multi-Stage Exit: TP1 Partial Close (161.8%), TP2 Rest (200%+Buffer) ---
+                // Buch Workflow 4.1/4.2: SL halbieren bei 1× Gewinn, BE einmal bei 2× Gewinn — KEIN Trailing (4.3)
+                if (exitTracking.TryGetValue(key, out var exitState))
                 {
-                    // Extreme-Price tracken (für Chandelier-Trailing nach TP1)
-                    if (pos.Side == Side.Buy)
-                        exitState.ExtremePriceSinceEntry = Math.Max(exitState.ExtremePriceSinceEntry, currentCandle.High);
-                    else
-                        exitState.ExtremePriceSinceEntry = Math.Min(exitState.ExtremePriceSinceEntry, currentCandle.Low);
-
-                    // SK-System: Gestufter Breakeven (2× SL-Distanz → BE, 120% zum TP1 → SL auf TP1)
-                    if (origSignal.DisableSmartBreakeven && origSignal.StopLoss.HasValue && origSignal.TakeProfit.HasValue)
+                    // SK-BE-Regel (Workflow 4.1 + 4.2) — identisch zu TradingServiceBase
+                    if (origSignal.StopLoss.HasValue)
                     {
                         var slDist = Math.Abs(exitState.EntryPrice - origSignal.StopLoss.Value);
                         var currentPrice = pos.Side == Side.Buy ? currentCandle.High : currentCandle.Low;
                         var currentProfit = pos.Side == Side.Buy
                             ? currentPrice - exitState.EntryPrice
                             : exitState.EntryPrice - currentPrice;
-                        var entryToTp1 = Math.Abs(origSignal.TakeProfit.Value - exitState.EntryPrice);
 
-                        // Stufe 2: SL auf TP1-Level (wenn Preis weit über TP1)
-                        if (entryToTp1 > 0 && currentProfit / entryToTp1 >= 1.2m && !exitState.Tp2Closed)
+                        // Workflow 4.1: SL halbieren bei 1× SL-Distanz Gewinn (nur einmal, via SlHalved-Flag)
+                        if (slDist > 0 && currentProfit >= slDist * 1m && currentProfit < slDist * 2m
+                            && !exitState.BreakevenSet && !exitState.SlHalved)
                         {
-                            positionSignals[key] = positionSignals[key] with { StopLoss = origSignal.TakeProfit.Value };
+                            var halvedSl = pos.Side == Side.Buy
+                                ? exitState.EntryPrice - slDist * 0.5m
+                                : exitState.EntryPrice + slDist * 0.5m;
+                            positionSignals[key] = positionSignals[key] with { StopLoss = halvedSl };
+                            exitState.SlHalved = true;
                         }
-                        // Stufe 1: BE bei 2× SL-Distanz
-                        else if (slDist > 0 && currentProfit >= slDist * 2m && !exitState.PartialClosed)
+                        // Workflow 4.2: BE einmal bei 2× SL-Distanz (danach nicht mehr nachziehen — 4.3)
+                        else if (slDist > 0 && currentProfit >= slDist * 2m && !exitState.BreakevenSet)
                         {
                             var beSl = pos.Side == Side.Buy
                                 ? exitState.EntryPrice * 1.0015m
                                 : exitState.EntryPrice * 0.9985m;
                             positionSignals[key] = positionSignals[key] with { StopLoss = beSl };
+                            exitState.BreakevenSet = true;
                         }
                     }
 
-                    // TP1-Check: Partial Close wenn noch nicht geschehen
+                    // TP1-Check: Partial Close (50% bei 161.8% Extension)
                     var tp1Hit = false;
-                    if (!exitState.PartialClosed && origSignal.TakeProfit.HasValue)
+                    if (!exitState.PartialClosed && origSignal.TakeProfit.HasValue
+                        && settings.Tp1CloseRatio > 0 && settings.Tp1CloseRatio < 1m)
                     {
                         tp1Hit = pos.Side == Side.Buy
                             ? currentCandle.High >= origSignal.TakeProfit.Value
@@ -333,101 +328,36 @@ public class BacktestEngine
 
                     if (tp1Hit)
                     {
-                        // SK-System: Tp1CloseRatioOverride hat Vorrang (0.5 = 50% bei TP1)
-                        var tp1Ratio = origSignal.Tp1CloseRatioOverride ?? settings.Tp1CloseRatio;
-                        var closeQty = Math.Round(exitState.OriginalQuantity * tp1Ratio, 6);
+                        var closeQty = Math.Round(exitState.OriginalQuantity * settings.Tp1CloseRatio, 6);
                         if (closeQty > 0)
                         {
                             simExchange.SetCurrentPrice(symbol, origSignal.TakeProfit!.Value);
                             await simExchange.ReducePositionAsync(symbol, pos.Side, closeQty).ConfigureAwait(false);
                             simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                         }
-
-                        // SK-System: Gestufter BE nach Kassing-Regeln
-                        // Bei TP1-Hit prüfen ob 2× SL-Distanz bereits erreicht → BE setzen
-                        if (origSignal.DisableSmartBreakeven)
-                        {
-                            var slDist = Math.Abs(exitState.EntryPrice - (origSignal.StopLoss ?? exitState.EntryPrice));
-                            var profit = pos.Side == Side.Buy
-                                ? origSignal.TakeProfit!.Value - exitState.EntryPrice
-                                : exitState.EntryPrice - origSignal.TakeProfit!.Value;
-                            // Bei TP1-Hit ist Gewinn >= SL-Distanz (TP1 > 2×SL normalerweise) → BE setzen
-                            if (slDist > 0 && profit >= slDist * 2m)
-                            {
-                                var beSl = pos.Side == Side.Buy
-                                    ? exitState.EntryPrice * 1.0015m
-                                    : exitState.EntryPrice * 0.9985m;
-                                positionSignals[key] = origSignal with { StopLoss = beSl, TakeProfit = exitState.Tp2 };
-                            }
-                            else
-                            {
-                                // Noch nicht 2× SL → SL bleibt unter Punkt A, nur TP umstellen
-                                positionSignals[key] = origSignal with { TakeProfit = exitState.Tp2 };
-                            }
-                        }
-                        else
-                        {
-                            // Smart Breakeven: SL = Entry + ATR-Puffer statt exakter Entry
-                            var beSl = exitState.EntryPrice;
-                            if (settings.SmartBreakevenAtrMultiplier > 0 && exitState.CurrentAtr > 0)
-                            {
-                                beSl = pos.Side == Side.Buy
-                                    ? exitState.EntryPrice + exitState.CurrentAtr * settings.SmartBreakevenAtrMultiplier
-                                    : exitState.EntryPrice - exitState.CurrentAtr * settings.SmartBreakevenAtrMultiplier;
-                            }
-                            positionSignals[key] = origSignal with
-                            {
-                                StopLoss = beSl,
-                                TakeProfit = exitState.Tp2
-                            };
-                        }
+                        // TP2 (200%+Buffer) als neues Ziel, SL bleibt (Buch 4.3)
+                        positionSignals[key] = origSignal with { TakeProfit = exitState.Tp2 };
                         exitState.PartialClosed = true;
-                        exitState.MaxHoldHours = settings.MaxHoldHoursAfterTp1;
-                        continue; // Position bleibt offen mit Rest-Menge
+                        continue;
                     }
 
-                    // Time-Exit: Max Haltezeit überschritten
-                    var holdHours = (currentCandle.CloseTime - exitState.EntryTime).TotalHours;
-                    if (holdHours >= exitState.MaxHoldHours)
+                    // Time-Exit: Max Haltezeit überschritten (nur wenn konfiguriert)
+                    if (exitState.MaxHoldHours > 0)
                     {
-                        // Vor TP1: nur schließen wenn nicht im Gewinn (analog Live-Trading)
-                        var inProfit = pos.Side == Side.Buy
-                            ? currentCandle.Close > exitState.EntryPrice
-                            : currentCandle.Close < exitState.EntryPrice;
-
-                        if (exitState.PartialClosed || !inProfit)
+                        var holdHours = (currentCandle.CloseTime - exitState.EntryTime).TotalHours;
+                        if (holdHours >= exitState.MaxHoldHours)
                         {
-                            await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
-                            positionSignals.Remove(key);
-                            exitTracking.Remove(key);
-                            continue;
+                            var inProfit = pos.Side == Side.Buy
+                                ? currentCandle.Close > exitState.EntryPrice
+                                : currentCandle.Close < exitState.EntryPrice;
+                            if (exitState.PartialClosed || !inProfit)
+                            {
+                                await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
+                                positionSignals.Remove(key);
+                                exitTracking.Remove(key);
+                                continue;
+                            }
                         }
-                    }
-
-                    // Chandelier-Trailing nach TP1: SL nachziehen basierend auf Extreme-ATR
-                    // SK-System: Kein Trailing (SL bleibt strukturell unter Punkt A)
-                    if (exitState.PartialClosed && exitState.CurrentAtr > 0 && !origSignal.DisableSmartBreakeven)
-                    {
-                        decimal newTrailingSl;
-                        if (pos.Side == Side.Buy)
-                            newTrailingSl = exitState.ExtremePriceSinceEntry
-                                - exitState.CurrentAtr * exitState.TrailingAtrMultiplier;
-                        else
-                            newTrailingSl = exitState.ExtremePriceSinceEntry
-                                + exitState.CurrentAtr * exitState.TrailingAtrMultiplier;
-
-                        // SL nur nach vorne verschieben (nie zurück)
-                        var currentSl = positionSignals[key].StopLoss ?? exitState.EntryPrice;
-                        var slImproved = pos.Side == Side.Buy
-                            ? newTrailingSl > currentSl
-                            : newTrailingSl < currentSl;
-
-                        if (slImproved)
-                            positionSignals[key] = positionSignals[key] with { StopLoss = newTrailingSl };
-
-                        // ATR aktualisieren für nächste Candle
-                        var atrValues = IndicatorHelper.CalculateAtr(contextCandles, 14);
-                        exitState.CurrentAtr = atrValues[^1] ?? exitState.CurrentAtr;
                     }
                 }
 
@@ -480,80 +410,17 @@ public class BacktestEngine
                 }
                 else if (tpHit)
                 {
-                    // Pyramid TP2: Wenn TP1 schon geschlossen und Tp2CloseRatio < 1.0, nur Teil schließen
-                    BacktestExitState? tp2State = null;
-                    var isPartialTp2 = settings.SimulateMultiStageExit
-                        && exitTracking.TryGetValue(key, out tp2State)
-                        && tp2State.PartialClosed  // TP1 war schon
-                        && !tp2State.Tp2Closed      // TP2 noch nicht
-                        && settings.Tp2CloseRatio > 0 && settings.Tp2CloseRatio < 1m;
-
-                    // SK: Full-Close bei TP2 → fällt in den else-Zweig (komplett schließen)
-                    // Standard: Partial TP2 nur wenn Tp1 < 100% (sonst ist nichts mehr übrig)
-                    var effectiveTp1Ratio = origSignal.Tp1CloseRatioOverride ?? settings.Tp1CloseRatio;
-                    if (isPartialTp2 && tp2State != null && effectiveTp1Ratio < 1m
-                        && !origSignal.DisableSmartBreakeven)
-                    {
-                        // TP2 Partial Close: Tp2CloseRatio der verbleibenden Position schließen
-                        var remainingQty = pos.Quantity;
-                        var tp2CloseQty = Math.Round(remainingQty * (settings.Tp2CloseRatio / (1m - settings.Tp1CloseRatio)), 6);
-                        tp2CloseQty = Math.Min(tp2CloseQty, remainingQty);
-
-                        if (tp2CloseQty > 0 && tp2CloseQty < remainingQty)
-                        {
-                            simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
-                            await simExchange.ReducePositionAsync(symbol, pos.Side, tp2CloseQty).ConfigureAwait(false);
-                            simExchange.SetCurrentPrice(symbol, currentCandle.Close);
-
-                            // TP2 erledigt, Rest läuft mit Chandelier-Trailing weiter (kein TP mehr)
-                            tp2State.Tp2Closed = true;
-                            positionSignals[key] = currentSignal with { TakeProfit = null };
-                        }
-                        else
-                        {
-                            // Zu wenig übrig → komplett schließen
-                            simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
-                            await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
-                            positionSignals.Remove(key);
-                            exitTracking.Remove(key);
-                            simExchange.SetCurrentPrice(symbol, currentCandle.Close);
-                        }
-                    }
-                    else
-                    {
-                        // Standard: Voller Close bei TP
-                        simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
-                        await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
-                        positionSignals.Remove(key);
-                        exitTracking.Remove(key);
-                        simExchange.SetCurrentPrice(symbol, currentCandle.Close);
-                    }
-                }
-            }
-
-            // Regime erkennen (wie im Live-Bot: ATI filtert Chaotic + Range)
-            var regimeContext = new MarketContext(symbol, contextCandles, ticker, positions, account, htfContext, category, null);
-            var features = FeatureEngine.Extract(regimeContext);
-            var regimeState = regimeDetector.Detect(features);
-
-            // Chaotic-Regime: Alle Positionen sofort schließen (wie Live-Bot PriceTickerLoop)
-            if (regimeState.CurrentRegime == MarketRegime.Chaotic && positions.Count > 0)
-            {
-                foreach (var pos in positions)
-                {
+                    // Buch: TP2 = 200% + Buffer → 100% Close (Sequenz abgearbeitet)
+                    simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
                     await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
-                    var key2 = $"{symbol}_{pos.Side}";
-                    positionSignals.Remove(key2);
-                    exitTracking.Remove(key2);
+                    positionSignals.Remove(key);
+                    exitTracking.Remove(key);
+                    simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                 }
             }
 
-            // Trade ausführen wenn Signal (Regime-Filter: Kein neuer Trade in Range/Chaotic)
-            // SK-System: Eigener ADX<15 Filter, Regime-Gate überspringen (DisableSmartBreakeven = SK-Flag)
-            // Ohne das: ADX 15-25 = SK sagt "ok", RegimeDetector sagt "Range" → Trade verworfen
-            if (signal.Signal is Signal.Long or Signal.Short
-                && (signal.DisableSmartBreakeven
-                    || regimeState.CurrentRegime is MarketRegime.TrendingBull or MarketRegime.TrendingBear))
+            // Trade ausführen wenn Signal (SK-Buch: keine Regime-Filter, SK hat eigene Workflow-Regeln)
+            if (signal.Signal is Signal.Long or Signal.Short)
             {
                 // MarketContext für RiskManager: Aktuellen State verwenden
                 var riskContext = new MarketContext(symbol, contextCandles, ticker, positions, account, htfContext, category, null);
@@ -571,29 +438,16 @@ public class BacktestEngine
                         {
                             var key = $"{symbol}_{side}";
                             positionSignals[key] = signal;
-                            positionRegimes[key] = regimeState.CurrentRegime;
 
-                            // Multi-Stage Exit State erstellen
-                            if (settings.SimulateMultiStageExit)
+                            // Exit State erstellen (SK-Buch: Partial Close 50/50 + Time-Exit)
+                            exitTracking[key] = new BacktestExitState
                             {
-                                var atrValues = IndicatorHelper.CalculateAtr(contextCandles, 14);
-                                var lastAtr = atrValues[^1] ?? 0m;
-                                var entryPrice = order.Price;
-                                exitTracking[key] = new BacktestExitState
-                                {
-                                    EntryPrice = entryPrice,
-                                    OriginalQuantity = riskCheck.AdjustedPositionSize,
-                                    EntryTime = currentCandle.CloseTime,
-                                    Tp2 = signal.TakeProfit2,
-                                    CurrentAtr = lastAtr,
-                                    TrailingAtrMultiplier = settings.TrailingAtrMultiplier,
-                                    MaxHoldHours = settings.MaxHoldHoursInitial,
-                                    // Extreme-Price mit Entry initialisieren
-                                    ExtremePriceSinceEntry = side == Side.Buy
-                                        ? currentCandle.High
-                                        : currentCandle.Low
-                                };
-                            }
+                                EntryPrice = order.Price,
+                                OriginalQuantity = riskCheck.AdjustedPositionSize,
+                                EntryTime = currentCandle.CloseTime,
+                                Tp2 = signal.TakeProfit2,
+                                MaxHoldHours = settings.MaxHoldHoursInitial,
+                            };
                         }
                     }
                     catch (Exception ex)
@@ -645,12 +499,7 @@ public class BacktestEngine
 
         // 7. Report erstellen
         var completedTrades = simExchange.GetCompletedTrades()
-            .Select(t =>
-            {
-                var tradeKey = $"{t.Symbol}_{t.Side}";
-                positionRegimes.TryGetValue(tradeKey, out var regime);
-                return t with { Mode = TradingMode.Backtest, Regime = regime };
-            })
+            .Select(t => t with { Mode = TradingMode.Backtest })
             .ToList();
 
         // RiskManager Stats updaten
@@ -834,19 +683,15 @@ public class BacktestEngine
         public decimal OriginalQuantity { get; init; }
         /// <summary>Zeitpunkt des Einstiegs (für Time-Exit).</summary>
         public DateTime EntryTime { get; init; }
-        /// <summary>Zweites Take-Profit-Ziel (weiter entfernt als TP1).</summary>
+        /// <summary>Zweites Take-Profit-Ziel (200% + Buffer).</summary>
         public decimal? Tp2 { get; set; }
         /// <summary>Ob TP1 bereits erreicht und Partial Close ausgeführt wurde.</summary>
         public bool PartialClosed { get; set; }
-        /// <summary>Ob TP2 bereits erreicht und Partial Close ausgeführt wurde (Pyramid: Rest trailing).</summary>
-        public bool Tp2Closed { get; set; }
-        /// <summary>Höchster (Long) bzw. niedrigster (Short) Preis seit Entry (für Trailing).</summary>
-        public decimal ExtremePriceSinceEntry { get; set; }
-        /// <summary>Aktuelle ATR für Chandelier-Trailing-Berechnung.</summary>
-        public decimal CurrentAtr { get; set; }
-        /// <summary>ATR-Multiplikator für Trailing-Abstand.</summary>
-        public decimal TrailingAtrMultiplier { get; set; }
-        /// <summary>Maximale Haltezeit in Stunden (ändert sich nach TP1).</summary>
+        /// <summary>SK-Buch Workflow 4.1: SL bereits halbiert (einmal bei 1× SL-Distanz Gewinn).</summary>
+        public bool SlHalved { get; set; }
+        /// <summary>SK-Buch Workflow 4.2: BE bereits gesetzt (einmal bei 2× SL-Distanz Gewinn).</summary>
+        public bool BreakevenSet { get; set; }
+        /// <summary>Maximale Haltezeit in Stunden.</summary>
         public int MaxHoldHours { get; set; }
     }
 }

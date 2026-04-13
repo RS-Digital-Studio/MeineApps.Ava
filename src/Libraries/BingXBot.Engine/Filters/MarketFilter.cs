@@ -132,23 +132,17 @@ public static class MarketFilter
     /// <summary>
     /// Gibt den Session-basierten Positionsgrößen-Faktor zurück.
     /// Krypto-Märkte handeln 24/7 - KEIN Wochenend-Block.
-    /// Funding-Settlement (00:00, 08:00, 16:00 UTC): 5min Pause — NUR für Krypto-Perpetuals relevant.
-    /// TradFi-Symbole haben kein Perpetual Funding und werden nicht blockiert.
+    /// Funding-Settlement (00:00, 08:00, 16:00 UTC): 5min Pause für ALLE Perpetuals
+    /// (Krypto UND TradFi auf BingX haben Funding-Settlements).
     /// </summary>
-    public static SessionFilterResult CheckSession(DateTime utcNow, TradingModePreset mode = TradingModePreset.Swing,
-        bool hasTradFiCandidates = false)
+    public static SessionFilterResult CheckSession(DateTime utcNow, TradingModePreset mode = TradingModePreset.Swing)
     {
         var hour = utcNow.Hour;
 
         // 5min vor/nach Funding-Settlement (00:00, 08:00, 16:00 UTC): Kurze Pause
-        // NUR wenn ausschließlich Krypto-Kandidaten gescannt werden.
-        // Bei gemischtem Scan (Krypto+TradFi) wird der Funding-Check pro Kandidat in der
-        // Scan-Schleife geprüft (IsFundingSettlement), nicht als globaler Blocker.
-        if (!hasTradFiCandidates)
-        {
-            if (IsFundingSettlement(utcNow))
-                return new SessionFilterResult(false, 0m, "Funding-Settlement - warte 5min");
-        }
+        // Gilt für ALLE BingX-Perpetuals (Krypto + TradFi haben Funding auf BingX).
+        if (IsFundingSettlement(utcNow))
+            return new SessionFilterResult(false, 0m, "Funding-Settlement - warte 5min");
 
         var sessionName = hour switch
         {
@@ -164,7 +158,7 @@ public static class MarketFilter
 
     /// <summary>
     /// Prüft ob gerade Funding-Settlement ist (±5min um 00:00, 08:00, 16:00 UTC).
-    /// Nur für Krypto-Perpetuals relevant — TradFi hat kein Funding.
+    /// Gilt für ALLE BingX-Perpetuals (Krypto + TradFi haben Funding auf BingX).
     /// </summary>
     public static bool IsFundingSettlement(DateTime utcNow)
     {

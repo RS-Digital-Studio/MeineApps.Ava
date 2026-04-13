@@ -306,11 +306,11 @@ public static class SequenceDetector
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Holy Trinity: 1H Korrektur-Ende Erkennung (Ebene 2)
+    // SK-Buch H1 Filter: Korrektur-Ende Erkennung
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Erkennt ob eine Korrektur an Schwung verliert (Holy Trinity Ebene 2: 1H Filter).
+    /// Erkennt ob eine Korrektur an Schwung verliert (Buch S.15: H1 als Filter-Chart).
     /// Long-Trade: Sucht erstes höheres Tief nach einer Serie fallender Tiefs.
     /// Short-Trade: Sucht erstes tieferes Hoch nach einer Serie steigender Hochs.
     /// </summary>
@@ -359,10 +359,10 @@ public static class SequenceDetector
 
     /// <summary>
     /// Berechnet das Gesamtkorrekturlevel (GKL) der übergeordneten Struktur.
-    /// GKL = 55.9%, 61.8%, 66.7% Retracement der gesamten Bewegung.
+    /// SK-Buch: GKL = 50%, 61.8%, 66.7% Retracement der gesamten Bewegung (Golden Pocket 50-66.7%).
     /// Wird typischerweise auf HTF-Candles angewendet.
     /// </summary>
-    public static (decimal Gkl559, decimal Gkl618, decimal Gkl667, bool IsUptrend, decimal SwingHigh, decimal SwingLow)?
+    public static (decimal Gkl500, decimal Gkl618, decimal Gkl667, bool IsUptrend, decimal SwingHigh, decimal SwingLow)?
         CalculateGKL(IReadOnlyList<Candle> candles, int swingStrength = 7)
     {
         if (candles.Count < swingStrength * 2 + 10) return null;
@@ -381,30 +381,31 @@ public static class SequenceDetector
         // Trend-Richtung: High kommt NACH Low = Uptrend
         var isUptrend = lastHigh.CandleIndex > lastLow.CandleIndex;
 
-        decimal gkl559, gkl618, gkl667;
+        // SK-Buch: GKL-Zone = 50-66.7% (Golden Pocket), korrigiert von 55.9-66.7%
+        decimal gkl500, gkl618, gkl667;
         if (isUptrend)
         {
             // Uptrend-GKL: Retracement von oben nach unten
-            gkl559 = lastHigh.Price - range * 0.559m;
+            gkl500 = lastHigh.Price - range * 0.500m;
             gkl618 = lastHigh.Price - range * 0.618m;
             gkl667 = lastHigh.Price - range * 0.667m;
         }
         else
         {
             // Downtrend-GKL: Retracement von unten nach oben
-            gkl559 = lastLow.Price + range * 0.559m;
+            gkl500 = lastLow.Price + range * 0.500m;
             gkl618 = lastLow.Price + range * 0.618m;
             gkl667 = lastLow.Price + range * 0.667m;
         }
 
-        return (gkl559, gkl618, gkl667, isUptrend, lastHigh.Price, lastLow.Price);
+        return (gkl500, gkl618, gkl667, isUptrend, lastHigh.Price, lastLow.Price);
     }
 
-    /// <summary>Prüft ob ein Preis im GKL-Bereich liegt (55.9-66.7%).</summary>
-    public static bool IsInGKL(decimal price, decimal gkl559, decimal gkl667)
+    /// <summary>Prüft ob ein Preis im GKL-Bereich liegt (50-66.7% — SK Golden Pocket).</summary>
+    public static bool IsInGKL(decimal price, decimal gkl500, decimal gkl667)
     {
-        var min = Math.Min(gkl559, gkl667);
-        var max = Math.Max(gkl559, gkl667);
+        var min = Math.Min(gkl500, gkl667);
+        var max = Math.Max(gkl500, gkl667);
         return price >= min && price <= max;
     }
 

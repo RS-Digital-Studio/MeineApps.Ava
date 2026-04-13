@@ -17,3 +17,5 @@
 - [BingXBot Exchange-Clients + Security Review](bingxbot_exchange_review.md) -- 7 Findings (3 krit): CancellationToken nicht propagiert, ContinueWith statt await, User-Data-Stream ohne Reconnect
 - [BingXBot Vollreview 3 Apr 2026](bingxbot_vollreview3_april2026.md) -- 9 Findings (2 krit): SK-System Clone() ohne State, _tradesToday nicht volatile, SemaphoreSlim Leak
 - [BingXBot Trading-Flow + Backtest Deep Review](bingxbot_tradingflow_deep_review.md) -- 10 Findings (3 krit): TP2-Qty-Formel-Divergenz, Chaotic-Regime-Divergenz, Backtest TP1 OriginalQuantity
+- [BingXBot Cleanup Review Apr 2026](bingxbot_cleanup_review_april2026.md) -- Nach ATI-Komplett-Entfernung: 11 Findings (4 krit): Zombie-Felder in PositionExitState/BotSettings, tote ML-Packages, veraltete CLAUDE.md, FeatureSnapshots-Migrations
+- [BingXBot Post-Cleanup Review Apr 2026](bingxbot_post_cleanup_review.md) -- 8 Findings (2 krit): Backtest BE-Divergenz (PartialClosed-Guard statt SlHalved), Scalping/DayTrading Tp1=1.0 deaktiviert Partial, Zombie-Felder in RiskPreset+PositionDisplayItem

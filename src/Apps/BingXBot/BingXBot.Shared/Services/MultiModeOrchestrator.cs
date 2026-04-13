@@ -4,7 +4,6 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine;
-using BingXBot.Engine.ATI;
 using BingXBot.Engine.Indicators;
 using BingXBot.Engine.Risk;
 using BingXBot.Engine.Strategies;
@@ -23,7 +22,6 @@ public class MultiModeOrchestrator : IDisposable
     private readonly RiskSettings _riskSettings;
     private readonly BotSettings _botSettings;
     private readonly BotDatabaseService? _dbService;
-    private readonly AdaptiveTradingIntelligence? _ati;
 
     // Geteilter RiskManager: Zählt Positionen + Drawdown über ALLE Modi
     private RiskManager? _sharedRiskManager;
@@ -46,15 +44,13 @@ public class MultiModeOrchestrator : IDisposable
         BotEventBus eventBus,
         RiskSettings riskSettings,
         BotSettings botSettings,
-        BotDatabaseService? dbService = null,
-        AdaptiveTradingIntelligence? ati = null)
+        BotDatabaseService? dbService = null)
     {
         _publicClient = publicClient;
         _eventBus = eventBus;
         _riskSettings = riskSettings;
         _botSettings = botSettings;
         _dbService = dbService;
-        _ati = ati;
     }
 
     /// <summary>
@@ -65,10 +61,6 @@ public class MultiModeOrchestrator : IDisposable
         // Paper-Trading unterstützt immer Hedge-Modus (SimulatedExchange erlaubt Long+Short)
         _isHedgeModeActive = true;
         _sharedRiskManager = new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance);
-
-        // ATI-Strategien einmal registrieren (nicht pro Modus, da RegisterStrategies ClearStrategies aufruft)
-        if (_ati != null)
-            _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
 
         // Kapital auf 3 Modi aufteilen (jeder handelt mit seinem Anteil)
         var balancePerMode = Math.Floor(initialBalance / 3m);
@@ -86,9 +78,6 @@ public class MultiModeOrchestrator : IDisposable
             service.RiskManagerOverride = _sharedRiskManager;
             service.ModePrefix = $"[{ModeLabel(mode)}] ";
             service.SuppressBotStateEvents = true; // Orchestrator publiziert BotState zentral
-
-            if (_ati != null)
-                service.ATI = _ati;
 
             _services[mode] = service;
             service.Start(balancePerMode);
@@ -116,10 +105,6 @@ public class MultiModeOrchestrator : IDisposable
         }
         _sharedRiskManager = new RiskManager(_riskSettings, NullLogger<RiskManager>.Instance);
 
-        // ATI-Strategien einmal registrieren (nicht pro Modus, da RegisterStrategies ClearStrategies aufruft)
-        if (_ati != null)
-            _ati.RegisterStrategies(StrategyFactory.AvailableStrategies.Select(StrategyFactory.Create));
-
         foreach (var mode in new[] { TradingModePreset.Scalping, TradingModePreset.DayTrading, TradingModePreset.Swing })
         {
             var scanSettings = CreateScannerSettings(mode);
@@ -135,9 +120,6 @@ public class MultiModeOrchestrator : IDisposable
             service.ModePrefix = $"[{ModeLabel(mode)}] ";
             service.SuppressBotStateEvents = true; // Orchestrator publiziert BotState zentral
 
-            if (_ati != null)
-                service.ATI = _ati;
-
             _services[mode] = service;
 
             // SK-VERIFY: [6.1] RuntimeState + ExitStates aus DB laden (analog zu LiveTradingManager.StartAsync)
@@ -148,8 +130,8 @@ public class MultiModeOrchestrator : IDisposable
                     var runtimeState = await _dbService.LoadRuntimeStateAsync().ConfigureAwait(false);
                     if (runtimeState.HasValue)
                     {
-                        var (tradesToday, losses, cooldowns) = runtimeState.Value;
-                        service.RestoreRuntimeState(tradesToday, losses, cooldowns);
+                        var (tradesToday, losses) = runtimeState.Value;
+                        service.RestoreRuntimeState(tradesToday, losses);
                     }
                 }
                 catch { /* Best-effort: DB-Fehler darf Start nicht blockieren */ }
@@ -187,8 +169,18 @@ public class MultiModeOrchestrator : IDisposable
                         var exitStates = service.GetExitStatesSnapshot();
                         if (exitStates.Count > 0)
                             await _dbService.SaveExitStatesAsync(exitStates);
-                        var (tradesToday, losses, cooldowns) = service.GetRuntimeStateSnapshot();
-                        await _dbService.SaveRuntimeStateAsync(tradesToday, losses, cooldowns);
+                        var (tradesToday, losses) = service.GetRuntimeStateSnapshot();
+                        await _dbService.SaveRuntimeStateAsync(tradesToday, losses);
+
+                        // Pending Limit-Orders persistieren (TP-Recovery nach Neustart)
+                        if (service is LiveTradingService lts)
+                        {
+                            var pendingOrders = lts.GetPendingLimitOrdersSnapshot();
+                            if (pendingOrders.Count > 0)
+                                await _dbService.SavePendingLimitOrdersAsync(pendingOrders);
+                            else
+                                await _dbService.ClearPendingLimitOrdersAsync();
+                        }
                     }
                     catch { /* Best-effort: DB-Fehler darf Stop nicht blockieren */ }
                 }
@@ -261,8 +253,10 @@ public class MultiModeOrchestrator : IDisposable
                     var exitStates = service.GetExitStatesSnapshot();
                     if (exitStates.Count > 0)
                         await _dbService.SaveExitStatesAsync(exitStates).ConfigureAwait(false);
-                    var (tradesToday, losses, cooldowns) = service.GetRuntimeStateSnapshot();
-                    await _dbService.SaveRuntimeStateAsync(tradesToday, losses, cooldowns).ConfigureAwait(false);
+                    var (tradesToday, losses) = service.GetRuntimeStateSnapshot();
+                    await _dbService.SaveRuntimeStateAsync(tradesToday, losses).ConfigureAwait(false);
+                    // EmergencyStop schließt alle Positionen → pending orders clearen
+                    await _dbService.ClearPendingLimitOrdersAsync().ConfigureAwait(false);
                 }
                 catch { /* Best-effort: DB-Fehler darf NotfallStop nicht blockieren */ }
             }
@@ -375,7 +369,6 @@ public class MultiModeOrchestrator : IDisposable
             MinVolume24h = preset.MinVolume24h,
             MinPriceChange = preset.MinPriceChange,
             MaxResults = preset.MaxResults,
-            UseM15EntryTiming = preset.UseM15EntryTiming,
             OnlyTopByVolume = preset.OnlyTopByVolume,
             TopCoinsCount = preset.TopCoinsCount,
             // SK-VERIFY: Infra-Bug #2 — ScanMode aus Preset übernehmen (Reversal für Swing/SK)
@@ -406,55 +399,36 @@ public class MultiModeOrchestrator : IDisposable
         var riskPreset = TradingModeDefaults.GetRiskPreset(mode);
         return new RiskSettings
         {
-            // Globale Werte vom User übernehmen
+            // Globale User-Einstellungen
             MaxDailyDrawdownPercent = _riskSettings.MaxDailyDrawdownPercent,
             MaxTotalDrawdownPercent = _riskSettings.MaxTotalDrawdownPercent,
             MaxOpenPositions = _riskSettings.MaxOpenPositions,
             MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol,
-            UseAdaptiveLeverage = _riskSettings.UseAdaptiveLeverage,
+            MaxLeverage = _riskSettings.MaxLeverage,
             CheckCorrelation = _riskSettings.CheckCorrelation,
             MaxCorrelation = _riskSettings.MaxCorrelation,
-            EnableTrailingStop = _riskSettings.EnableTrailingStop,
-            TrailingStopPercent = _riskSettings.TrailingStopPercent,
-            EnableMultiStageExit = _riskSettings.EnableMultiStageExit,
-            EnableCooldownEscalation = _riskSettings.EnableCooldownEscalation,
-            EnableEquityCurveTrading = _riskSettings.EnableEquityCurveTrading,
-            EquityCurvePeriod = _riskSettings.EquityCurvePeriod,
-            EnableMomentumDecay = _riskSettings.EnableMomentumDecay,
             MinLiquidationDistancePercent = _riskSettings.MinLiquidationDistancePercent,
-            MaxNetExposurePercent = _riskSettings.MaxNetExposurePercent,
-            ConsiderFundingRate = _riskSettings.ConsiderFundingRate,
-            MaxAdverseFundingRatePercent = _riskSettings.MaxAdverseFundingRatePercent,
 
-            // Mode-spezifische Werte: User-Einstellung hat Vorrang (konsistent mit Single-Mode),
-            // Preset als Fallback wenn User-Wert nicht gesetzt/default ist
+            // Mode-spezifische Preset-Werte
             MaxPositionSizePercent = riskPreset.MaxPositionSizePercent,
             MaxMarginPerTradePercent = riskPreset.MaxMarginPerTradePercent,
-            MaxLeverage = _riskSettings.MaxLeverage,
             CooldownHours = riskPreset.CooldownHours,
-            MaxCooldownHours = riskPreset.MaxCooldownHours,
             MaxHoldHours = riskPreset.MaxHoldHours,
-            MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
             Tp1CloseRatio = riskPreset.Tp1CloseRatio,
             Tp2CloseRatio = riskPreset.Tp2CloseRatio,
-            SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
             MinRiskRewardRatio = riskPreset.MinRiskRewardRatio,
 
-            // Per-Markt Leverage-Settings vom User übernehmen (gleich für alle Modi)
             CategorySettings = _riskSettings.CategorySettings,
         };
     }
 
     private StrategyManager CreateStrategyManager(TradingModePreset mode)
     {
-        // Strategie-Name aus BotSettings übernehmen (vom User im Dashboard gewählt)
-        var strategyName = _botSettings.LastStrategyName ?? "CryptoTrendPro";
+        // Strategie-Name aus BotSettings übernehmen (nach Refactoring: nur SK-System)
+        var strategyName = _botSettings.LastStrategyName ?? "SK-System";
         var strategy = StrategyFactory.Create(strategyName);
 
-        // ApplyPreset für alle Strategien die es unterstützen
-        if (strategy is CryptoTrendProStrategy ctp)
-            ctp.ApplyPreset(mode);
-        else if (strategy is SequenzKonzeptStrategy sk)
+        if (strategy is SequenzKonzeptStrategy sk)
             sk.ApplyPreset(mode);
 
         var manager = new StrategyManager();
@@ -464,8 +438,9 @@ public class MultiModeOrchestrator : IDisposable
 
     /// <summary>
     /// Stellt SL/TP-Signale für bestehende Positionen nach App-Neustart wieder her.
-    /// Liest offene Conditional Orders von BingX und registriert sie in ALLEN aktiven Services.
-    /// Setzt Auto-Breakeven für Positionen die weit genug im Gewinn sind.
+    /// Liest offene Conditional Orders von BingX und registriert sie in EINEM aktiven Service
+    /// (sonst triggern alle 3 PriceTickerLoops gleichzeitig OnSlTpHitAsync).
+    /// BE-Regel wird vom normalen PriceTickerLoop wieder angewendet, wenn State verfügbar.
     /// </summary>
     public async Task RecoverOpenPositionsAsync(Exchange.BingXRestClient restClient, IPublicMarketDataClient publicClient)
     {
@@ -475,7 +450,7 @@ public class MultiModeOrchestrator : IDisposable
             if (positions.Count == 0) return;
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
-                $"[Multi] Prüfe {positions.Count} offene Position(en) auf fehlende SL/Breakeven..."));
+                $"[Multi] Prüfe {positions.Count} offene Position(en) auf fehlende SL..."));
 
             var tickers = await publicClient.GetAllTickersAsync();
             var tickerMap = tickers.ToDictionary(t => t.Symbol, t => t.LastPrice);
@@ -485,40 +460,6 @@ public class MultiModeOrchestrator : IDisposable
             {
                 if (!tickerMap.TryGetValue(pos.Symbol, out var currentPrice) || currentPrice <= 0)
                     continue;
-
-                // Auto-Breakeven prüfen: Gewinn% >= Leverage%
-                var pnlPercent = pos.Side == Core.Enums.Side.Buy
-                    ? (currentPrice - pos.EntryPrice) / pos.EntryPrice * 100m
-                    : (pos.EntryPrice - currentPrice) / pos.EntryPrice * 100m;
-
-                if (pnlPercent >= pos.Leverage && pos.Leverage > 0)
-                {
-                    // Breakeven = Entry + max(0.15%, ATR-basierter Puffer)
-                    var beSl = pos.Side == Core.Enums.Side.Buy
-                        ? pos.EntryPrice * 1.0015m
-                        : pos.EntryPrice * 0.9985m;
-                    // ATR-Puffer bei Recovery berechnen (gleiche Logik wie TradingServiceBase)
-                    try
-                    {
-                        var recoveryAtr = await CalculateRecoveryAtrAsync(pos, publicClient).ConfigureAwait(false);
-                        if (recoveryAtr > 0 && _riskSettings.SmartBreakevenAtrMultiplier > 0)
-                        {
-                            var atrBe = pos.Side == Core.Enums.Side.Buy
-                                ? pos.EntryPrice + recoveryAtr * _riskSettings.SmartBreakevenAtrMultiplier
-                                : pos.EntryPrice - recoveryAtr * _riskSettings.SmartBreakevenAtrMultiplier;
-                            beSl = pos.Side == Core.Enums.Side.Buy ? Math.Max(beSl, atrBe) : Math.Min(beSl, atrBe);
-                        }
-                    }
-                    catch { /* ATR-Berechnung fehlgeschlagen → Minimum-Puffer verwenden */ }
-                    try
-                    {
-                        await restClient.SetPositionSlTpAsync(pos.Symbol, pos.Side, beSl, null);
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Recovery",
-                            $"[Multi] {pos.Symbol}: Auto-Breakeven gesetzt (PnL={pnlPercent:F1}%) → SL={beSl:F8}",
-                            pos.Symbol));
-                    }
-                    catch { /* Best-effort */ }
-                }
 
                 // SL/TP aus BingX-Orders lesen
                 decimal? slPrice = null, tpPrice = null;
@@ -559,7 +500,7 @@ public class MultiModeOrchestrator : IDisposable
                         targetService?.RestorePositionSignal(pos.Symbol, pos.Side, signal);
 
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
-                            $"[Multi] {pos.Symbol}: Standard-SL gesetzt → SL={recoverySl:F8}. PnL={pnlPercent:F1}%",
+                            $"[Multi] {pos.Symbol}: Standard-SL gesetzt → SL={recoverySl:F8}",
                             pos.Symbol));
                     }
                     catch (Exception emergEx)
@@ -600,21 +541,6 @@ public class MultiModeOrchestrator : IDisposable
         _ => "?"
     };
 
-    /// <summary>Berechnet ATR-Wert für ein Symbol (für BE-Puffer bei Recovery).</summary>
-    private async Task<decimal> CalculateRecoveryAtrAsync(Position pos, IPublicMarketDataClient publicClient)
-    {
-        var timeFrame = _scannerSettings.Values.FirstOrDefault()?.ScanTimeFrame ?? Core.Enums.TimeFrame.H4;
-        var candles = await publicClient.GetKlinesAsync(
-            pos.Symbol, timeFrame, DateTime.UtcNow.AddHours(-100), DateTime.UtcNow).ConfigureAwait(false);
-        if (candles.Count >= 20)
-        {
-            var atr = IndicatorHelper.CalculateAtr(candles);
-            if (atr.Count > 0 && atr[^1].HasValue && atr[^1]!.Value > 0)
-                return atr[^1]!.Value;
-        }
-        return 0m;
-    }
-
     /// <summary>Berechnet ATR-basierten Recovery-SL (gleiche Logik wie bei Tradeeröffnung).</summary>
     private async Task<decimal> CalculateRecoverySlAsync(Position pos, IPublicMarketDataClient publicClient)
     {
@@ -632,8 +558,7 @@ public class MultiModeOrchestrator : IDisposable
                 {
                     var atrValue = atr[^1]!.Value;
                     var atrPercentile = IndicatorHelper.CalculateAtrPercentile(candles);
-                    var (slMult, _, _, _) = TradingModeDefaults.GetVolAdaptiveMultipliers(
-                        _botSettings.LastTradingModePreset, atrPercentile);
+                    var slMult = TradingModeDefaults.GetRecoverySlMultiplier(atrPercentile);
 
                     var sl = pos.Side == Core.Enums.Side.Buy
                         ? pos.EntryPrice - atrValue * slMult

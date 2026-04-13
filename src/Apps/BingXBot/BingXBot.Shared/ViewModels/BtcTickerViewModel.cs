@@ -47,13 +47,6 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
     // Indikator-Daten (werden beim Laden der Candles berechnet)
     [ObservableProperty] private ChartIndicatorData? _indicators;
 
-    // Regime-Zonen (werden vom ATI RegimeDetector befüllt)
-    public ObservableCollection<RegimeZone> RegimeZones { get; } = new();
-
-    // Fear & Greed Index (wird von TradingServiceBase aktualisiert)
-    [ObservableProperty] private float _fearGreedValue;
-    [ObservableProperty] private string _fearGreedLabel = "n/a";
-
     private PeriodicTimer? _refreshTimer;
     private bool _disposed;
 

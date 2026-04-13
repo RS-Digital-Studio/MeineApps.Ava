@@ -29,10 +29,9 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
     private readonly BotEventBus _eventBus;
     private readonly BotDatabaseService? _dbService;
     private CancellationTokenSource? _backtestCts;
-    private CancellationTokenSource? _walkForwardCts;
 
     [ObservableProperty] private string _symbol = "BTC-USDT";
-    [ObservableProperty] private string _selectedStrategy = "CryptoTrendPro";
+    [ObservableProperty] private string _selectedStrategy = "SK-System";
     [ObservableProperty] private string _selectedTimeFrame = "H1";
     [ObservableProperty] private DateTimeOffset? _startDate = DateTimeOffset.UtcNow.AddDays(-30);
     [ObservableProperty] private DateTimeOffset? _endDate = DateTimeOffset.UtcNow;
@@ -146,17 +145,8 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
     private IStrategy CreateStrategy()
     {
         var strategy = StrategyFactory.Create(SelectedStrategy);
-        if (strategy is CryptoTrendProStrategy ctp)
-        {
-            // Preset aus dem Timeframe ableiten (gleiche Logik wie im Live/Paper-Modus)
-            var preset = SelectedTimeFrame switch
-            {
-                "M5" or "M15" => TradingModePreset.Scalping,
-                "M30" or "H1" => TradingModePreset.DayTrading,
-                _ => TradingModePreset.Swing
-            };
-            ctp.ApplyPreset(preset);
-        }
+        if (strategy is SequenzKonzeptStrategy sk)
+            sk.ApplyPreset(TradingModePreset.Swing);
         return strategy;
     }
 
@@ -210,7 +200,6 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
 
             var riskSettings = new RiskSettings
             {
-                // Globale Werte vom User
                 MaxDailyDrawdownPercent = _riskSettings.MaxDailyDrawdownPercent,
                 MaxTotalDrawdownPercent = _riskSettings.MaxTotalDrawdownPercent,
                 MaxOpenPositions = _riskSettings.MaxOpenPositions,
@@ -218,47 +207,26 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
                 MaxLeverage = Leverage,
                 CheckCorrelation = _riskSettings.CheckCorrelation,
                 MaxCorrelation = _riskSettings.MaxCorrelation,
-                EnableTrailingStop = _riskSettings.EnableTrailingStop,
-                TrailingStopPercent = _riskSettings.TrailingStopPercent,
-                UseAdaptiveLeverage = _riskSettings.UseAdaptiveLeverage,
-                EnableMultiStageExit = _riskSettings.EnableMultiStageExit,
-                EnableCooldownEscalation = _riskSettings.EnableCooldownEscalation,
-                EnableEquityCurveTrading = _riskSettings.EnableEquityCurveTrading,
-                EquityCurvePeriod = _riskSettings.EquityCurvePeriod,
-                EnableMomentumDecay = _riskSettings.EnableMomentumDecay,
                 MinLiquidationDistancePercent = _riskSettings.MinLiquidationDistancePercent,
-                MaxNetExposurePercent = _riskSettings.MaxNetExposurePercent,
-                ConsiderFundingRate = _riskSettings.ConsiderFundingRate,
-                MaxAdverseFundingRatePercent = _riskSettings.MaxAdverseFundingRatePercent,
-                // Preset-spezifische Werte
                 MaxPositionSizePercent = riskPreset.MaxPositionSizePercent,
                 MaxMarginPerTradePercent = riskPreset.MaxMarginPerTradePercent,
                 CooldownHours = riskPreset.CooldownHours,
-                MaxCooldownHours = riskPreset.MaxCooldownHours,
                 MaxHoldHours = riskPreset.MaxHoldHours,
-                MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
                 Tp1CloseRatio = riskPreset.Tp1CloseRatio,
                 Tp2CloseRatio = riskPreset.Tp2CloseRatio,
-                SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
                 MinRiskRewardRatio = riskPreset.MinRiskRewardRatio,
             };
 
             var riskManager = new RiskManager(riskSettings, NullLogger<RiskManager>.Instance);
 
-            // BacktestSettings mit konfiguriertem Startkapital + Preset-Werten synchronisiert
-            var strategyPreset = Core.Configuration.TradingModeDefaults.GetStrategyPreset(preset);
             var backtestSettings = new BacktestSettings
             {
                 InitialBalance = InitialBalance,
                 Tp1CloseRatio = riskPreset.Tp1CloseRatio,
                 Tp2CloseRatio = riskPreset.Tp2CloseRatio,
-                SmartBreakevenAtrMultiplier = riskPreset.SmartBreakevenAtrMultiplier,
                 MaxHoldHoursInitial = riskPreset.MaxHoldHours,
-                MaxHoldHoursAfterTp1 = riskPreset.MaxHoldHoursAfterTp1,
                 MinRiskRewardRatio = riskPreset.MinRiskRewardRatio,
-                // HTF-Candles für Trend-Konfirmation (wie im Live/Paper-Modus)
-                HtfTimeFrame = strategyPreset.HtfConfirmationTimeframe != timeFrame
-                    ? strategyPreset.HtfConfirmationTimeframe : null,
+                HtfTimeFrame = timeFrame != Core.Enums.TimeFrame.H1 ? Core.Enums.TimeFrame.H1 : null,
             };
 
             // BacktestEngine: Echte Marktdaten wenn Public Client verfügbar, sonst Demo
@@ -331,15 +299,6 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
                 CpcvAvgOosReturn = cpcv.AvgOutOfSampleReturn;
             }
 
-            // Regime-Breakdown als Text formatieren
-            if (report.RegimeBreakdown.Count > 0)
-            {
-                var lines = report.RegimeBreakdown
-                    .OrderByDescending(r => r.Value.TradeCount)
-                    .Select(r => $"{r.Key}: {r.Value.TradeCount} Trades, WR {r.Value.WinRate:P0}, PnL {r.Value.TotalPnl:F2}, PF {r.Value.ProfitFactor:F2}");
-                RegimeBreakdownText = string.Join("\n", lines);
-            }
-
             // Abgeschlossene Trades als BacktestTradeItems darstellen
             foreach (var trade in report.Trades)
             {
@@ -401,111 +360,11 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
         _backtestCts?.Cancel();
     }
 
-    // === Walk-Forward-Optimierung ===
-
-    [ObservableProperty] private bool _isWalkForwardRunning;
-    [ObservableProperty] private string _walkForwardResult = "";
-
-    [RelayCommand]
-    private async Task RunWalkForward()
-    {
-        if (_publicClient == null)
-        {
-            WalkForwardResult = "Kein Public Client verfügbar (Offline-Modus)";
-            return;
-        }
-
-        IsWalkForwardRunning = true;
-        WalkForwardResult = "Lade historische Daten für Walk-Forward-Optimierung...";
-
-        _walkForwardCts?.Cancel();
-        _walkForwardCts?.Dispose();
-        _walkForwardCts = new CancellationTokenSource();
-
-        try
-        {
-            var strategy = CreateStrategy();
-            var timeFrame = ParseTimeFrame(SelectedTimeFrame);
-            var from = StartDate?.UtcDateTime ?? DateTime.UtcNow.AddDays(-90);
-            var to = EndDate?.UtcDateTime ?? DateTime.UtcNow;
-
-            // Historische Daten laden
-            var candles = await _publicClient.GetKlinesAsync(Symbol, timeFrame, from, to, _walkForwardCts.Token).ConfigureAwait(false);
-            if (candles.Count < 200)
-            {
-                WalkForwardResult = $"Zu wenige Daten: {candles.Count} Candles (min. 200 benötigt)";
-                return;
-            }
-
-            WalkForwardResult = $"{candles.Count} Candles geladen, starte Walk-Forward...";
-
-            // WalkForward im ThreadPool ausführen (ist CPU-intensiv wegen GA)
-            var wfo = new BingXBot.Engine.ATI.WalkForwardOptimizer
-            {
-                PopulationSize = 30,
-                MaxGenerations = 20,
-                TrainTestRatio = 2
-            };
-
-            // Fitness-Funktion: Mini-Backtest pro Fenster (Sharpe-Ratio als Ziel)
-            var backtestSettings = new BacktestSettings { InitialBalance = InitialBalance };
-            var riskSettings = new RiskSettings { MaxLeverage = Leverage, MinRiskRewardRatio = 0 }; // RRR deaktiviert für Optimierung
-
-            Engine.ATI.WalkForwardOptimizer.WalkForwardResult result = null!;
-            await Task.Run(() =>
-            {
-                result = wfo.Optimize(strategy, candles, candles.Count / 6,
-                    (strat, windowCandles) =>
-                    {
-                        var simExchange = new SimulatedExchange(backtestSettings);
-                        var riskManager = new RiskManager(riskSettings, NullLogger<RiskManager>.Instance);
-                        var engine = new BacktestEngine(simExchange, NullLogger<BacktestEngine>.Instance);
-
-                        var report = engine.RunAsync(strat, riskManager, Symbol, timeFrame,
-                            windowCandles[0].OpenTime, windowCandles[^1].CloseTime,
-                            backtestSettings).GetAwaiter().GetResult();
-
-                        // Sharpe als Fitness
-                        return report.SharpeRatio;
-                    });
-            }, _walkForwardCts.Token).ConfigureAwait(false);
-
-            // Ergebnis anzeigen
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"Walk-Forward abgeschlossen: {result.Windows.Count} Fenster");
-            sb.AppendLine($"Aggregierter Sharpe: {result.AggregatedSharpe:F3}");
-            sb.AppendLine($"OOS-WinRate: {result.AggregatedWinRate:P0}");
-            sb.AppendLine("Optimierte Parameter:");
-            foreach (var (name, value) in result.BestParameters)
-                sb.AppendLine($"  {name} = {value}");
-
-            WalkForwardResult = sb.ToString();
-
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "WFO",
-                $"Walk-Forward auf {Symbol}: {result.Windows.Count} Fenster, Sharpe={result.AggregatedSharpe:F3}"));
-        }
-        catch (OperationCanceledException)
-        {
-            WalkForwardResult = "Walk-Forward abgebrochen";
-        }
-        catch (Exception ex)
-        {
-            WalkForwardResult = $"Fehler: {ex.Message}";
-        }
-        finally
-        {
-            IsWalkForwardRunning = false;
-        }
-    }
-
     public void Dispose()
     {
         _backtestCts?.Cancel();
         _backtestCts?.Dispose();
         _backtestCts = null;
-        _walkForwardCts?.Cancel();
-        _walkForwardCts?.Dispose();
-        _walkForwardCts = null;
     }
 }
 

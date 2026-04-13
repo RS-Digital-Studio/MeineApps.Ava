@@ -1,5 +1,4 @@
 using BingXBot.Core.Models;
-using BingXBot.Core.Models.ATI;
 
 namespace BingXBot.Backtest.Reports;
 
@@ -30,9 +29,6 @@ public class PerformanceReport
 
     // Monte Carlo Simulation
     public MonteCarloResult? MonteCarlo { get; set; }
-
-    // Regime-spezifische Metriken (aufgeschlüsselt nach MarketRegime)
-    public Dictionary<MarketRegime, RegimeMetrics> RegimeBreakdown { get; set; } = new();
 
     // CPCV: Overfitting-Wahrscheinlichkeit
     public CpcvResult? Cpcv { get; set; }
@@ -176,36 +172,6 @@ public class PerformanceReport
             report.Cpcv = CpcvValidator.Validate(trades, initialBalance);
         }
 
-        // Regime-spezifische Metriken (falls Regime-Daten vorhanden)
-        var regimeGroups = trades.Where(t => t.Regime.HasValue).GroupBy(t => t.Regime!.Value);
-        foreach (var group in regimeGroups)
-        {
-            var regimeTrades = group.ToList();
-            var wins = regimeTrades.Count(t => t.Pnl > 0);
-            var totalPnl = regimeTrades.Sum(t => t.Pnl);
-            var grossWins = regimeTrades.Where(t => t.Pnl > 0).Sum(t => t.Pnl);
-            var grossLosses = Math.Abs(regimeTrades.Where(t => t.Pnl < 0).Sum(t => t.Pnl));
-
-            report.RegimeBreakdown[group.Key] = new RegimeMetrics
-            {
-                TradeCount = regimeTrades.Count,
-                WinRate = regimeTrades.Count > 0 ? (decimal)wins / regimeTrades.Count : 0m,
-                TotalPnl = totalPnl,
-                ProfitFactor = grossLosses > 0 ? grossWins / grossLosses : grossWins > 0 ? 99m : 0m,
-                AverageRrr = regimeTrades.Count > 0 ? totalPnl / regimeTrades.Count : 0m
-            };
-        }
-
         return report;
     }
-}
-
-/// <summary>Performance-Metriken aufgeschlüsselt nach MarketRegime.</summary>
-public class RegimeMetrics
-{
-    public int TradeCount { get; init; }
-    public decimal WinRate { get; init; }
-    public decimal TotalPnl { get; init; }
-    public decimal ProfitFactor { get; init; }
-    public decimal AverageRrr { get; init; }
 }

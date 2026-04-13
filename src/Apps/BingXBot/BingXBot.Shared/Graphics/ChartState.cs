@@ -35,7 +35,6 @@ public class ChartState
     public bool ShowEma200 { get; set; } = true;
     public bool ShowBollingerBands { get; set; }
     public bool ShowSupertrend { get; set; } = true;
-    public bool ShowRegimeBackground { get; set; } = true;
 
     /// <summary>Setzt den Viewport auf den gesamten Candle-Bereich.</summary>
     public void ResetViewport(int candleCount)

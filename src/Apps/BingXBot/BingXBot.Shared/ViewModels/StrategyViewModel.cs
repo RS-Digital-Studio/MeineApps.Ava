@@ -20,8 +20,8 @@ public partial class StrategyViewModel : ViewModelBase
     private readonly StrategyManager _strategyManager;
     private readonly BotEventBus _eventBus;
 
-    [ObservableProperty] private string _selectedStrategy = "CryptoTrendPro";
-    [ObservableProperty] private string _strategyDescription = "Primärstrategie: Supertrend + Confluence-Scoring (0-12) + vol-adaptive SL/TP + Pyramid Exit";
+    [ObservableProperty] private string _selectedStrategy = "SK-System";
+    [ObservableProperty] private string _strategyDescription = "Buch-konformes Stefan-Kassing System (W1/D1/H4/H1/M30, Pip-SL, 3-4 Bestätigungen)";
     [ObservableProperty] private bool _isActive;
     [ObservableProperty] private string _statusText = "Inaktiv";
     [ObservableProperty] private string _toggleButtonText = "Aktivieren";

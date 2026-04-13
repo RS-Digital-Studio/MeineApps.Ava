@@ -67,6 +67,9 @@ public class Sequence
     /// <summary>True wenn dies eine interne Korrektur-Sequenz (IKI) innerhalb einer größeren ist.</summary>
     public bool IsIKI { get; init; }
 
+    /// <summary>Hierarchie der Sequenz im Multi-TF-Kontext.</summary>
+    public SequenceHierarchy Hierarchy { get; set; } = SequenceHierarchy.Primary;
+
     /// <summary>Sequenztyp: Normal (handelbar), Überextendiert oder Langgezogen (nur Analyse).</summary>
     public SequenceType Type { get; set; }
 
@@ -121,10 +124,18 @@ public class Sequence
         return price >= min && price <= max;
     }
 
-    /// <summary>Prüft ob der Preis die Extension-Zielzone (161.8%) erreicht hat — erste TP-Zone.</summary>
-    public bool HasReachedTarget(decimal price) => IsLong
-        ? price >= Extension1618
-        : price <= Extension1618; // Short: Auch negative Extensions korrekt prüfen
+    /// <summary>
+    /// Prüft ob der Preis die Extension-Zielzone (161.8%) erreicht hat — erste TP-Zone.
+    /// Buch Workflow 6.5: "Zielbereich gilt als abgearbeitet bei 5 Pips Toleranz vor dem 161.8er."
+    /// Toleranz = 0.03% des Preises (Krypto: ≈ 5 "Pips" bei 1 Pip = 1/10000).
+    /// </summary>
+    public bool HasReachedTarget(decimal price)
+    {
+        var tolerance = Math.Abs(Extension1618) * 0.0003m;  // Buch-Regel: 5 Pips ≈ 0.03%
+        return IsLong
+            ? price >= Extension1618 - tolerance
+            : price <= Extension1618 + tolerance;
+    }
 
     /// <summary>Prüft ob die Sequenz vollständig abgearbeitet ist (200% Extension — SK-Regel).</summary>
     public bool HasFullyCompleted(decimal price) => IsLong
@@ -190,6 +201,20 @@ public enum SequenceType
     Overextended,
     /// <summary>Langgezogen: B-C Bewegung durch anhaltenden Druck verlängert. NUR Analyse, KEIN Entry.</summary>
     Elongated
+}
+
+/// <summary>
+/// Hierarchie einer Sequenz im Multi-Timeframe-Kontext.
+/// Primary = Haupt-Sequenz, Secondary = untergeordnet in übergeordneter Zone, Breakout = nach Invalidierung.
+/// </summary>
+public enum SequenceHierarchy
+{
+    /// <summary>Haupt-Sequenz (direkt auf dem TF erkannt).</summary>
+    Primary,
+    /// <summary>Sekundäre Sequenz: 1H-Sequenz innerhalb einer 4H-Zone.</summary>
+    Secondary,
+    /// <summary>Breakout-Sequenz: Gegensequenz wurde invalidiert → Ausbruch in Hauptrichtung.</summary>
+    Breakout
 }
 
 /// <summary>

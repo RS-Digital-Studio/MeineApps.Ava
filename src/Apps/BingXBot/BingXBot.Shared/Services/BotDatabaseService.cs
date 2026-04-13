@@ -16,7 +16,7 @@ public class BotDatabaseService
     private const int LogCleanupBatch = 10_000;
 
     /// <summary>Aktuelle Schema-Version. Bei Änderungen erhöhen und Migration in RunMigrationsAsync() hinzufügen.</summary>
-    private const int CurrentSchemaVersion = 6;
+    private const int CurrentSchemaVersion = 7;
 
     public async Task InitializeAsync()
     {
@@ -31,7 +31,6 @@ public class BotDatabaseService
         await _db.CreateTableAsync<EquityEntity>();
         await _db.CreateTableAsync<LogEntity>();
         await _db.CreateTableAsync<SettingEntity>();
-        await _db.CreateTableAsync<FeatureSnapshotEntity>();
 
         // Indices für häufige Abfragen (idempotent dank IF NOT EXISTS)
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Trades_ExitTime ON Trades (ExitTime DESC)");
@@ -40,8 +39,6 @@ public class BotDatabaseService
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_EquitySnapshots_Time ON EquitySnapshots (Time)");
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_LogEntries_Timestamp ON LogEntries (Timestamp DESC)");
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_LogEntries_Level ON LogEntries (Level)");
-        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_FeatureSnapshots_Timestamp ON FeatureSnapshots (Timestamp DESC)");
-        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_FeatureSnapshots_Outcome ON FeatureSnapshots (Outcome)");
 
         // Schema-Versioning und Migrationen
         await RunMigrationsAsync();
@@ -64,29 +61,21 @@ public class BotDatabaseService
         if (currentVersion < 2)
             await TryAddColumnAsync("Trades", "FundingPaid", "REAL DEFAULT 0");
 
-        // Migration v2 → v3: Cross-Market Feature-Spalten in FeatureSnapshots (23 statt 19)
-        if (currentVersion < 3)
-        {
-            foreach (var col in new[] { "F_BtcReturn24h", "F_BtcTrend", "F_BtcCorrelation", "F_MarketSentiment" })
-                await TryAddColumnAsync("FeatureSnapshots", col, "REAL DEFAULT 0");
-        }
+        // Migrations v2→v5 betrafen die FeatureSnapshots-Tabelle (ATI-ML-Features).
+        // ATI wurde komplett entfernt (Buch-Refactoring) → Migrations übersprungen.
+        // Alte Installs haben die Spalten bereits, neue Installs brauchen sie gar nicht.
 
-        // Migration v3 → v4: Fear&Greed + Open Interest Spalten
-        if (currentVersion < 4)
-        {
-            foreach (var col in new[] { "F_FearGreedIndex", "F_OpenInterestChange" })
-                await TryAddColumnAsync("FeatureSnapshots", col, "REAL DEFAULT 0");
-        }
-
-        // Migration v4 → v5: Fibonacci-Proximity Feature
-        if (currentVersion < 5)
-            await TryAddColumnAsync("FeatureSnapshots", "F_FibProximity", "REAL DEFAULT 0");
-
-        // Migration v5 → v6: Regime-Feld in Trades + WAL-Modus für bessere Concurrency
+        // Migration v5 → v6: WAL-Modus für bessere Concurrency (Regime-Spalte ATI-spezifisch, skipped)
         if (currentVersion < 6)
         {
-            await TryAddColumnAsync("Trades", "Regime", "INTEGER");
             await _db!.ExecuteAsync("PRAGMA journal_mode=WAL");
+        }
+
+        // Migration v6 → v7: Verwaiste ATI-Daten aus alten Installs löschen
+        if (currentVersion < 7)
+        {
+            try { await _db!.ExecuteAsync("DELETE FROM Settings WHERE Key='AtiState'"); } catch { /* best-effort */ }
+            try { await _db!.ExecuteAsync("DROP TABLE IF EXISTS FeatureSnapshots"); } catch { /* best-effort */ }
         }
 
         // Schema-Version aktualisieren
@@ -179,17 +168,17 @@ public class BotDatabaseService
         catch { return null; }
     }
 
-    /// <summary>Speichert Runtime-State (TradesToday, ConsecutiveLosses, Cooldowns) für Crash-Recovery.</summary>
-    public async Task SaveRuntimeStateAsync(int tradesToday, int consecutiveLosses, Dictionary<string, DateTime> cooldowns)
+    /// <summary>Speichert Runtime-State (TradesToday, ConsecutiveLosses) für Crash-Recovery.</summary>
+    public async Task SaveRuntimeStateAsync(int tradesToday, int consecutiveLosses)
     {
         EnsureInitialized();
-        var state = new { TradesToday = tradesToday, ConsecutiveLosses = consecutiveLosses, Cooldowns = cooldowns };
+        var state = new { TradesToday = tradesToday, ConsecutiveLosses = consecutiveLosses };
         var json = JsonSerializer.Serialize(state);
         await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "RuntimeState", Value = json });
     }
 
     /// <summary>Lädt Runtime-State für Crash-Recovery.</summary>
-    public async Task<(int TradesToday, int ConsecutiveLosses, Dictionary<string, DateTime> Cooldowns)?> LoadRuntimeStateAsync()
+    public async Task<(int TradesToday, int ConsecutiveLosses)?> LoadRuntimeStateAsync()
     {
         EnsureInitialized();
         var entity = await _db!.FindAsync<SettingEntity>("RuntimeState");
@@ -200,107 +189,41 @@ public class BotDatabaseService
             var root = doc.RootElement;
             var tradesToday = root.GetProperty("TradesToday").GetInt32();
             var consecutiveLosses = root.GetProperty("ConsecutiveLosses").GetInt32();
-            var cooldowns = root.TryGetProperty("Cooldowns", out var cd)
-                ? JsonSerializer.Deserialize<Dictionary<string, DateTime>>(cd.GetRawText()) ?? new()
-                : new Dictionary<string, DateTime>();
-            return (tradesToday, consecutiveLosses, cooldowns);
+            return (tradesToday, consecutiveLosses);
         }
         catch { return null; }
     }
 
-    // === ATI State ===
-
-    public async Task SaveAtiStateAsync(string stateJson)
-    {
-        EnsureInitialized();
-        await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "AtiState", Value = stateJson });
-    }
-
-    public async Task<string?> LoadAtiStateAsync()
-    {
-        EnsureInitialized();
-        var entity = await _db!.FindAsync<SettingEntity>("AtiState");
-        return entity?.Value;
-    }
-
-    // === Feature Snapshots (ATI ML-Training) ===
-
-    public async Task SaveFeatureSnapshotAsync(FeatureSnapshotEntity snapshot)
-    {
-        EnsureInitialized();
-        await _db!.InsertAsync(snapshot);
-    }
-
-    public async Task<List<FeatureSnapshotEntity>> GetFeatureSnapshotsAsync(int limit = 1000)
-    {
-        EnsureInitialized();
-        return await _db!.Table<FeatureSnapshotEntity>()
-            .OrderByDescending(f => f.Timestamp)
-            .Take(limit)
-            .ToListAsync();
-    }
-
-    public async Task<List<FeatureSnapshotEntity>> GetLabeledSnapshotsAsync(int limit = 5000)
-    {
-        EnsureInitialized();
-        return await _db!.Table<FeatureSnapshotEntity>()
-            .Where(f => f.Outcome != 0)
-            .OrderByDescending(f => f.Timestamp)
-            .Take(limit)
-            .ToListAsync();
-    }
-
-    public async Task UpdateSnapshotOutcomeAsync(int snapshotId, int outcome, decimal pnl, int holdTimeMinutes)
-    {
-        EnsureInitialized();
-        await _db!.ExecuteAsync(
-            "UPDATE FeatureSnapshots SET Outcome = ?, Pnl = ?, HoldTimeMinutes = ? WHERE Id = ?",
-            outcome, pnl, holdTimeMinutes, snapshotId);
-    }
+    // === Pending Limit Orders Persistenz (TP-Recovery nach App-Neustart) ===
 
     /// <summary>
-    /// Exportiert gelabelte FeatureSnapshots als CSV (für Python train_onnx.py).
-    /// Pfad: %APPDATA%/BingXBot/training_data.csv
+    /// Speichert pending Limit-Orders für Recovery nach App-Neustart.
+    /// Ohne Persistenz geht nach Neustart die Fill-Detection verloren
+    /// und TP-Orders werden nie platziert.
     /// </summary>
-    public async Task<(string Path, int Count)> ExportFeatureSnapshotsCsvAsync()
+    public async Task SavePendingLimitOrdersAsync(Dictionary<string, PendingLimitOrderState> pendingOrders)
     {
         EnsureInitialized();
-        var snapshots = await GetLabeledSnapshotsAsync(10_000);
-        if (snapshots.Count == 0)
-            return ("", 0);
+        var json = JsonSerializer.Serialize(pendingOrders);
+        await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "PendingLimitOrders", Value = json });
+    }
 
-        var folder = Path.GetDirectoryName(_db!.DatabasePath) ?? "";
-        var csvPath = Path.Combine(folder, "training_data.csv");
+    /// <summary>Lädt gespeicherte Pending Limit-Orders für Crash-Recovery.</summary>
+    public async Task<Dictionary<string, PendingLimitOrderState>?> LoadPendingLimitOrdersAsync()
+    {
+        EnsureInitialized();
+        var entity = await _db!.FindAsync<SettingEntity>("PendingLimitOrders");
+        if (entity?.Value == null) return null;
+        try { return JsonSerializer.Deserialize<Dictionary<string, PendingLimitOrderState>>(entity.Value); }
+        catch { return null; }
+    }
 
-        var featureNames = Core.Models.ATI.FeatureSnapshot.FeatureNames;
-        var header = string.Join(",", featureNames.Select(n => $"F_{n}")) + ",Outcome,Pnl,HoldTimeMinutes";
-
-        using var writer = new StreamWriter(csvPath, false, System.Text.Encoding.UTF8);
-        await writer.WriteLineAsync(header);
-
-        foreach (var s in snapshots)
-        {
-            var values = new List<string>
-            {
-                F(s.F_PriceVsEma20), F(s.F_PriceVsEma50), F(s.F_PriceVsEma200), F(s.F_EmaCrossDirection),
-                F(s.F_RsiNormalized), F(s.F_MacdHistogramNormalized), F(s.F_StochKNormalized), F(s.F_StochDNormalized),
-                F(s.F_AtrPercent), F(s.F_BollingerWidth), F(s.F_BollingerPosition),
-                F(s.F_AdxNormalized), F(s.F_HtfTrend),
-                F(s.F_VolumeRatio),
-                F(s.F_FundingRate), F(s.F_SessionId),
-                F(s.F_BtcReturn24h), F(s.F_BtcTrend), F(s.F_BtcCorrelation), F(s.F_MarketSentiment), F(s.F_FearGreedIndex),
-                F(s.F_OpenInterestChange),
-                F(s.F_FibProximity),
-                F(s.F_ConsecutiveUpCandles), F(s.F_ConsecutiveDownCandles), F(s.F_RecentReturnPercent),
-                s.Outcome.ToString(), s.Pnl.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                s.HoldTimeMinutes.ToString()
-            };
-            await writer.WriteLineAsync(string.Join(",", values));
-        }
-
-        return (csvPath, snapshots.Count);
-
-        static string F(float v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    /// <summary>Löscht gespeicherte Pending Limit-Orders (nach erfolgreicher Recovery).</summary>
+    public async Task ClearPendingLimitOrdersAsync()
+    {
+        EnsureInitialized();
+        try { await _db!.ExecuteAsync("DELETE FROM Settings WHERE Key='PendingLimitOrders'"); }
+        catch { /* best-effort */ }
     }
 
     // === Logs ===

@@ -13,6 +13,8 @@ public class RiskManager : IRiskManager
     // Drawdown basiert auf realisierten + unrealisierten Verlusten.
     // Unrealisierte Verluste offener Positionen fliessen in den taeglichen Drawdown ein.
     private decimal _dailyPnl;
+    /// <summary>Kumulierter realisierter PnL des heutigen Tages (SK-Buch Workflow 6.1+6.2).</summary>
+    public decimal DailyPnl { get { lock (_lock) { return _dailyPnl; } } }
     private decimal _totalPnl;
     /// <summary>Aktueller kumulativer PnL (für Equity-Curve-Trading).</summary>
     public decimal TotalPnl => _totalPnl;
@@ -62,19 +64,7 @@ public class RiskManager : IRiskManager
         if (posSize <= 0)
             return new RiskCheckResult(false, "Position-Größe ist 0", 0m);
 
-        // 5. Netto-Exposure prüfen: Summe aller MARGIN-Werte (nicht Notional) darf MaxNetExposurePercent nicht überschreiten
-        if (context.Account.Balance > 0)
-        {
-            var currentExposure = CalculateNetExposure(context.OpenPositions, context.Account.Balance);
-            var effLeverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
-            var newPositionMargin = posSize * entryPrice / effLeverage / context.Account.Balance * 100m;
-            if (currentExposure + newPositionMargin > _settings.MaxNetExposurePercent)
-                return new RiskCheckResult(false,
-                    $"Netto-Exposure (Margin) {currentExposure + newPositionMargin:F1}% > {_settings.MaxNetExposurePercent}%", 0m);
-        }
-
-        // 6. Liquidation-Preis prüfen: Position darf nicht zu nah am Liquidationspreis eröffnet werden
-        // Tatsächlichen Leverage verwenden (gleiche Logik wie CalculatePositionSize)
+        // 5. Liquidation-Preis prüfen: Position darf nicht zu nah am Liquidationspreis eröffnet werden
         var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
         var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
         var liqPrice = CalculateLiquidationPrice(entryPrice, leverage, side);
@@ -86,19 +76,7 @@ public class RiskManager : IRiskManager
                     $"Liquidationspreis zu nah: {liqDistancePercent:F1}% Abstand < {_settings.MinLiquidationDistancePercent}% Minimum (Liq={liqPrice:G6})", 0m);
         }
 
-        // 7. Funding-Rate prüfen: Keine Trades gegen hohe Funding-Rate eröffnen
-        if (_settings.ConsiderFundingRate && currentFundingRate.HasValue && currentFundingRate.Value != 0)
-        {
-            // Positive Funding = Longs zahlen, negative Funding = Shorts zahlen
-            var isAdverse = (signal.Signal == Signal.Long && currentFundingRate.Value > 0) ||
-                            (signal.Signal == Signal.Short && currentFundingRate.Value < 0);
-            var absRate = Math.Abs(currentFundingRate.Value) * 100m; // In Prozent
-            if (isAdverse && absRate > _settings.MaxAdverseFundingRatePercent)
-                return new RiskCheckResult(false,
-                    $"Funding-Rate {absRate:F3}% gegen Position > {_settings.MaxAdverseFundingRatePercent}% Maximum", 0m);
-        }
-
-        // 8. Risk-Reward-Ratio prüfen: Trade muss Mindest-RRR erfüllen
+        // 6. Risk-Reward-Ratio prüfen: Trade muss Mindest-RRR erfüllen
         if (_settings.MinRiskRewardRatio > 0 && signal.StopLoss.HasValue && signal.TakeProfit.HasValue
             && signal.StopLoss.Value > 0 && signal.TakeProfit.Value > 0)
         {
@@ -148,8 +126,8 @@ public class RiskManager : IRiskManager
             }
             else
             {
-                // Ohne SL: Worst-Case = gesamte Margin (MaxPositionSizePercent der Balance)
-                newPositionRisk = context.Account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
+                // Ohne SL: Worst-Case = gesamte Margin (MaxPositionSizePercent der Wallet-Balance)
+                newPositionRisk = context.Account.Balance * _settings.MaxPositionSizePercent / 100m;
             }
 
             // Daily-Drawdown: Tagesbasiert wie bisher (PnL-basiert)
@@ -180,32 +158,18 @@ public class RiskManager : IRiskManager
     /// </summary>
     public decimal CalculatePositionSize(string symbol, decimal entryPrice, decimal? stopLoss, AccountInfo account, int actualLeverage = 0)
     {
-        if (entryPrice <= 0 || account.AvailableBalance <= 0) return 0m;
+        if (entryPrice <= 0 || account.Balance <= 0) return 0m;
 
-        // Tatsächlichen Leverage verwenden (0 = MaxLeverage als Fallback)
+        // Leverage: User-eingestellter Wert (kein adaptiver Abzug hier)
         var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
 
-        // MaxPositionSizePercent = maximale MARGIN pro Trade in % der Balance.
-        // 10% bei 100 USDT Balance = 10 USDT Margin, unabhängig vom Leverage.
-        // Quantity = Margin * Leverage / Preis (mehr Leverage = größere Position, gleiche Margin)
-        var maxMargin = account.AvailableBalance * _settings.MaxPositionSizePercent / 100m;
-        var marginCapQty = maxMargin * leverage / entryPrice;
+        // MaxPositionSizePercent der Wallet-Balance = die Margin für diesen Trade. Fertig.
+        // Keine SL-basierte Reduktion, keine weiteren Caps.
+        // Der User stellt X% ein → X% wird getradet.
+        var margin = account.Balance * _settings.MaxPositionSizePercent / 100m;
+        var qty = margin * leverage / entryPrice;
 
-        var finalQty = marginCapQty;
-
-        // Wenn SL vorhanden: Risiko-basierte Position kann die Margin-Grenze nur VERKLEINERN.
-        if (stopLoss.HasValue && stopLoss.Value > 0)
-        {
-            var slDistance = Math.Abs(entryPrice - stopLoss.Value);
-            if (slDistance > 0)
-            {
-                var maxLoss = account.AvailableBalance * _settings.MaxMarginPerTradePercent / 100m;
-                var riskCapQty = maxLoss / slDistance;
-                finalQty = Math.Min(marginCapQty, riskCapQty);
-            }
-        }
-
-        return finalQty;
+        return qty;
     }
 
     /// <summary>

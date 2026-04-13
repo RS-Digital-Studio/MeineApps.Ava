@@ -12,7 +12,7 @@ namespace BingXBot.Services;
 
 /// <summary>
 /// Live-Trading-Service: Echte Orders auf BingX platzieren.
-/// Erbt die gesamte Scan-/SL/TP-/Trailing-Stop-Logik von TradingServiceBase.
+/// Erbt die gesamte Scan-/SL/TP-/BE-Logik von TradingServiceBase.
 /// Nutzt BingXRestClient für Orders und IPublicMarketDataClient für Marktdaten.
 /// WARNUNG: Echtes Geld! Nur mit ausreichendem Paper-Testing verwenden.
 /// </summary>
@@ -50,10 +50,14 @@ public class LiveTradingService : TradingServiceBase
     private readonly ConcurrentDictionary<string, decimal> _wsTickerPrices = new();
     /// <summary>True wenn der WebSocket-Ticker-Stream aktiv ist (für schnellere SL/TP-Prüfung).</summary>
     public bool IsWsTickerActive { get; private set; }
-    // Pending Limit-Orders die nach 5min gecancelled werden wenn nicht gefüllt
-    private readonly ConcurrentDictionary<string, (string OrderId, DateTime PlacedAt)> _pendingLimitOrders = new();
-    private const int LimitOrderTimeoutMinutes = 5;
-    // Throttle für Trailing-Stop-Sync auf BingX (max 1 API-Call pro 30s pro Symbol)
+    // SK-Buch Workflow 5.3: "Entry wird solange getradet wie er valide ist."
+    // Invalidation-Level = Sequenz-Invalidierung (Preis jenseits Point0 ≈ StopLoss).
+    // Wenn Preis den Invalidation-Level erreicht BEVOR die Limit-Entry gefüllt wurde → cancel.
+    private readonly ConcurrentDictionary<string, (string OrderId, DateTime PlacedAt, decimal InvalidationLevel, bool IsLong)> _pendingLimitOrders = new();
+    // Hard-Expiry (Safety-Net): Limit-Order läuft nach 48h ab selbst ohne Invalidierung
+    // (Schutz gegen "vergessene" Orders bei Daten-/API-Ausfall, keine Buch-Regel).
+    private const int LimitOrderHardExpiryHours = 48;
+    // Throttle für SL-Sync auf BingX nach BE-Anpassung (max 1 API-Call pro 30s pro Symbol)
     private readonly ConcurrentDictionary<string, DateTime> _lastTrailingSyncTimes = new();
     // WebSocket-Ticker Event-Handler (gespeichert für sauberes Abmelden in Dispose)
     private Action<string, decimal>? _tickerPriceHandler;
@@ -170,7 +174,7 @@ public class LiveTradingService : TradingServiceBase
                 {
                     await _restClient.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
 
-                    // CompletedTrade erstellen damit ATI + RiskManager Feedback bekommen
+                    // CompletedTrade erstellen damit RiskManager Feedback bekommt
                     var exitPrice = tickerMap.GetValueOrDefault(pos.Symbol, pos.MarkPrice);
                     var entryFee = pos.Quantity * pos.EntryPrice * _takerFeeRate;
                     var exitFee = pos.Quantity * exitPrice * _takerFeeRate;
@@ -181,7 +185,7 @@ public class LiveTradingService : TradingServiceBase
                     var trade = new CompletedTrade(pos.Symbol, pos.Side, pos.EntryPrice, exitPrice,
                         pos.Quantity, rawPnl - totalFee, totalFee, pos.OpenTime, DateTime.UtcNow,
                         "Notfall-Stop", TradingMode.Live);
-                    // ATI-Lernen ZUERST, DANN EventBus → Dashboard-Snapshot sieht aktuelle Counter
+                    // Trade-Outcome ZUERST verarbeiten, DANN EventBus → Dashboard-Snapshot sieht aktuelle Counter
                     ProcessCompletedTrade(trade);
                     _eventBus.PublishTrade(trade);
 
@@ -288,9 +292,13 @@ public class LiveTradingService : TradingServiceBase
                 return false;
             }
 
-            // Limit-Order Timeout: Nach 5 Minuten prüfen ob gefüllt, sonst canceln
-            if (useLimit && order.OrderId != null)
-                _pendingLimitOrders[ticker.Symbol] = (order.OrderId, DateTime.UtcNow);
+            // SK-Buch Workflow 5.3: Limit-Order bleibt valid bis Sequenz invalid wird.
+            // Invalidation-Level = SignalResult.StopLoss (78.6er gecappt, ≈ Point0).
+            if (useLimit && order.OrderId != null && signal?.StopLoss.HasValue == true)
+            {
+                var isLong = side == Side.Buy;
+                _pendingLimitOrders[ticker.Symbol] = (order.OrderId, DateTime.UtcNow, signal.StopLoss.Value, isLong);
+            }
 
             // TP1 + TP2 als LIMIT Reduce-Only Orders auf BingX (stackbar, Maker-Fee 0.02%)
             // Reguläre LIMIT-Orders mit reduceOnly=true: BingX erlaubt beliebig viele pro Position.
@@ -302,8 +310,14 @@ public class LiveTradingService : TradingServiceBase
             }
             else if (useLimit && signal?.TakeProfit.HasValue == true)
             {
+                // Explizit zeigen dass TP bei Limit-Pending noch NICHT auf BingX ist — erst nach Fill.
+                // Ohne diesen Hinweis interpretieren User das Trade-Log ("TP1=... | TP2=...") fälschlich
+                // als "TP ist gesetzt" und suchen sie vergeblich im BingX-Orderbuch.
+                var tp1Str = signal.TakeProfit.Value.ToString("F8");
+                var tp2Str = signal.TakeProfit2.HasValue ? signal.TakeProfit2.Value.ToString("F8") : "---";
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                    $"LIVE: {ticker.Symbol} Limit-Order pending — TP wird nach Fill gesetzt", ticker.Symbol));
+                    $"LIVE: {ticker.Symbol} Limit-Order pending @ {limitPrice:F8} — TP1={tp1Str}, TP2={tp2Str} werden erst NACH Fill auf BingX platziert (Maker-Fee, nicht jetzt sichtbar im Orderbuch)",
+                    ticker.Symbol));
             }
 
             return true;
@@ -330,7 +344,7 @@ public class LiveTradingService : TradingServiceBase
             try { await CancelNativeSlTpOrdersAsync(symbol).ConfigureAwait(false); }
             catch { /* Verwaiste Orders sind ungefährlich */ }
 
-            // CompletedTrade erstellen damit ATI + RiskManager Feedback bekommen
+            // CompletedTrade erstellen damit RiskManager Feedback bekommt
             if (pos != null)
             {
                 var tickers = await _publicClient.GetAllTickersAsync().ConfigureAwait(false);
@@ -378,7 +392,7 @@ public class LiveTradingService : TradingServiceBase
                 // Verwaiste native SL/TP-Orders canceln (Position bereits geschlossen)
                 await CancelNativeSlTpOrdersAsync(pos.Symbol).ConfigureAwait(false);
 
-                // CompletedTrade trotzdem erstellen (ATI-Lernen + TradeHistory + RiskManager)
+                // CompletedTrade trotzdem erstellen (TradeHistory + RiskManager)
                 var entryFeeNat = pos.Quantity * pos.EntryPrice * _takerFeeRate;
                 var exitFeeNat = pos.Quantity * price * _takerFeeRate;
                 var rawPnlNat = pos.Side == Side.Buy
@@ -507,6 +521,81 @@ public class LiveTradingService : TradingServiceBase
         _positionOpenTimes[key] = DateTime.UtcNow;
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // Pending Limit Orders Persistenz (TP-Recovery nach App-Neustart)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Gibt einen Snapshot aller pending Limit-Orders für DB-Persistenz zurück.
+    /// Enthält TP-Werte aus _positionSignals damit nach Recovery TP platziert werden kann.
+    /// </summary>
+    public Dictionary<string, PendingLimitOrderState> GetPendingLimitOrdersSnapshot()
+    {
+        var result = new Dictionary<string, PendingLimitOrderState>();
+        foreach (var kvp in _pendingLimitOrders)
+        {
+            var state = new PendingLimitOrderState
+            {
+                OrderId = kvp.Value.OrderId,
+                PlacedAt = kvp.Value.PlacedAt,
+                InvalidationLevel = kvp.Value.InvalidationLevel,
+                IsLong = kvp.Value.IsLong
+            };
+
+            // TP-Werte aus dem zugehörigen Signal holen (für TP-Platzierung nach Recovery-Fill)
+            var expectedSide = kvp.Value.IsLong ? Side.Buy : Side.Sell;
+            var posKey = $"{kvp.Key}_{expectedSide}";
+            if (_positionSignals.TryGetValue(posKey, out var sig))
+            {
+                state.TakeProfit = sig.TakeProfit;
+                state.TakeProfit2 = sig.TakeProfit2;
+                state.DisableSmartBreakeven = sig.DisableSmartBreakeven;
+            }
+
+            result[kvp.Key] = state;
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Stellt pending Limit-Orders aus DB-Persistenz wieder her.
+    /// Wird beim Start vom LiveTradingManager aufgerufen.
+    /// </summary>
+    public void RestorePendingLimitOrders(Dictionary<string, PendingLimitOrderState> states)
+    {
+        foreach (var kvp in states)
+        {
+            _pendingLimitOrders[kvp.Key] = (kvp.Value.OrderId, kvp.Value.PlacedAt,
+                kvp.Value.InvalidationLevel, kvp.Value.IsLong);
+
+            // Signal muss auch existieren damit Fill-Detection das TP setzen kann
+            var expectedSide = kvp.Value.IsLong ? Side.Buy : Side.Sell;
+            var posKey = $"{kvp.Key}_{expectedSide}";
+            if (!_positionSignals.ContainsKey(posKey) && kvp.Value.TakeProfit.HasValue)
+            {
+                var signal = new SignalResult(
+                    kvp.Value.IsLong ? Signal.Long : Signal.Short,
+                    0.5m, null,
+                    StopLoss: kvp.Value.InvalidationLevel,
+                    TakeProfit: kvp.Value.TakeProfit,
+                    Reason: "Recovery: Pending Limit-Order wiederhergestellt",
+                    TakeProfit2: kvp.Value.TakeProfit2,
+                    DisableSmartBreakeven: kvp.Value.DisableSmartBreakeven);
+                _positionSignals[posKey] = signal;
+                OnSignalCreated(posKey);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Platziert TP-Orders für eine bestehende Position (Recovery nach App-Neustart).
+    /// Wird vom LiveTradingManager aufgerufen wenn eine Position ohne TP-Orders erkannt wird.
+    /// </summary>
+    public async Task RecoverTpOrdersAsync(string symbol, Side side, decimal quantity, SignalResult signal)
+    {
+        await PlaceTpLimitOrdersAfterFillAsync(symbol, side, quantity, signal).ConfigureAwait(false);
+    }
+
     /// <summary>Bei API-Fehler: 60s warten statt 30s (Rate-Limit-Schutz).</summary>
     protected override Task OnScanErrorAsync(CancellationToken ct) =>
         Task.Delay(60_000, ct);
@@ -540,12 +629,20 @@ public class LiveTradingService : TradingServiceBase
             {
                 if (!positionKeys.Contains(key))
                 {
+                    // KRITISCH: Signal NICHT als verwaist entfernen solange eine Pending-Limit-Order für
+                    // das Symbol existiert. Limit-Orders können Minuten/Stunden unbefüllt bleiben. Ohne
+                    // diesen Schutz wird das Signal nach 30s entfernt, dann füllt die Order → Position
+                    // existiert, aber kein Signal → Fill-Detection stuck in "retry nächster Tick" Endlos-Loop
+                    // → TP wird nie platziert.
+                    var symbol = key.Split('_')[0];
+                    if (_pendingLimitOrders.ContainsKey(symbol))
+                        continue;
+
                     // Nur entfernen wenn Signal älter als 30 Sekunden (API-Latenz-Grace-Period)
                     if (_signalCreatedAt.TryGetValue(key, out var createdAt) && (now - createdAt).TotalSeconds > 30)
                     {
                         // SK-VERIFY: [6.2] Verwaiste native SL/TP-Orders aufräumen
                         // Wenn User die Position manuell auf BingX schließt, bleiben die nativen Orders im Orderbuch
-                        var symbol = key.Split('_')[0];
                         try { await CancelNativeSlTpOrdersAsync(symbol).ConfigureAwait(false); }
                         catch { /* Best-effort: Verwaiste Orders sind ungefährlich */ }
                         RemoveSignalByKey(key);
@@ -554,47 +651,127 @@ public class LiveTradingService : TradingServiceBase
             }
         }
 
-        // Pending Limit-Orders: Fill-Detection + Timeout
+        // Pending Limit-Orders: Fill-Detection + Invalidation-Cancel (SK-Buch Workflow 5.3+6.9)
         if (_pendingLimitOrders.Count > 0)
         {
             var now2 = DateTime.UtcNow;
+            // Tickers nur laden wenn Invalidation-Check nötig (einer der pending Orders ohne WS-Preis)
+            List<Ticker>? tickers = null;
             foreach (var kvp in _pendingLimitOrders)
             {
-                // Fill-Detection: Position für dieses Symbol + Side vorhanden → Limit-Order wurde gefüllt
-                // Side aus Signal ableiten (verhindert Verwechslung mit bestehenden Positionen)
-                Side? expectedSide = null;
-                foreach (var side in new[] { Side.Buy, Side.Sell })
-                {
-                    if (_positionSignals.ContainsKey($"{kvp.Key}_{side}"))
-                    { expectedSide = side; break; }
-                }
-                var filledPos = expectedSide.HasValue
-                    ? positions.FirstOrDefault(p => p.Symbol == kvp.Key && p.Side == expectedSide.Value)
-                    : positions.FirstOrDefault(p => p.Symbol == kvp.Key);
+                // Side direkt aus pending-Order (verhindert Race mit _positionSignals-Initialisierung)
+                var expectedSide = kvp.Value.IsLong ? Side.Buy : Side.Sell;
+                var filledPos = positions.FirstOrDefault(p => p.Symbol == kvp.Key && p.Side == expectedSide);
 
                 if (filledPos != null && filledPos.Quantity > 0)
                 {
+                    var posKey = $"{kvp.Key}_{filledPos.Side}";
+
+                    // Race-Schutz: Wenn Signal noch nicht in _positionSignals ist (RunLoop hat's
+                    // noch nicht gesetzt), max 6 Ticks (30s) warten — nächster Tick versucht erneut.
+                    // Ohne Schutz geht das TP verloren wenn PriceTickerLoop die Position sieht bevor
+                    // RunLoop das Signal registriert hat.
+                    // Nach 30s: Signal aus Pending-State rekonstruieren (SL aus InvalidationLevel,
+                    // kein TP). Verhindert Endlos-Loop wenn Signal gar nicht mehr kommt (z.B. nach
+                    // Verwaist-Cleanup oder App-Neustart zwischen Platzierung und Fill ohne TP-State).
+                    if (!_positionSignals.TryGetValue(posKey, out var sig))
+                    {
+                        var pendingAge = (now2 - kvp.Value.PlacedAt).TotalSeconds;
+                        if (pendingAge < 30)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
+                                $"LIVE: {kvp.Key} Limit gefüllt @ {filledPos.EntryPrice:F8}, aber Signal noch nicht registriert — retry nächster Tick", kvp.Key));
+                            continue; // _pendingLimitOrders NICHT entfernen
+                        }
+
+                        // Signal aus Pending-State rekonstruieren
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                            $"LIVE: {kvp.Key} Signal nach {pendingAge:F0}s nicht registriert — rekonstruiere aus Pending-State (SL={kvp.Value.InvalidationLevel:F8}, TP unbekannt)", kvp.Key));
+
+                        var reconstructedSignal = new SignalResult(
+                            kvp.Value.IsLong ? Signal.Long : Signal.Short,
+                            0.5m,
+                            filledPos.EntryPrice,
+                            StopLoss: kvp.Value.InvalidationLevel,
+                            TakeProfit: null,
+                            Reason: "Rekonstruiert nach Signal-Verlust (Verwaist-Cleanup oder Neustart)",
+                            DisableSmartBreakeven: true);
+
+                        _positionSignals[posKey] = reconstructedSignal;
+                        OnSignalCreated(posKey);
+
+                        // Nativen SL auf BingX setzen damit Position geschützt ist
+                        try
+                        {
+                            await _restClient.SetPositionSlTpAsync(kvp.Key, filledPos.Side, kvp.Value.InvalidationLevel, null).ConfigureAwait(false);
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
+                                $"LIVE: {kvp.Key} Nativer SL gesetzt: {kvp.Value.InvalidationLevel:F8} (TP fehlt — PriceTickerLoop-Fallback ohne TP-Wert inaktiv, manuelle Überwachung nötig)", kvp.Key));
+                        }
+                        catch (Exception slEx)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
+                                $"LIVE: {kvp.Key} SL-Recovery fehlgeschlagen: {slEx.Message} — Position UNGESCHÜTZT!", kvp.Key));
+                        }
+
+                        sig = reconstructedSignal;
+                    }
+
                     _pendingLimitOrders.TryRemove(kvp.Key, out _);
 
+                    // ExitState mit echten Fill-Werten korrigieren (SK-Buch-kritisch):
+                    // Bei Order-Platzierung stand ticker.LastPrice als Proxy im ExitState.
+                    // Jetzt liefert BingX den tatsächlichen Fill-Preis und die gefüllte Menge.
+                    if (_exitStates.TryGetValue(posKey, out var exState))
+                    {
+                        exState.EntryPrice = filledPos.EntryPrice;
+                        exState.OriginalQuantity = filledPos.Quantity;
+                        exState.EntryTime = DateTime.UtcNow; // Fill-Zeit als Entry-Zeit
+                    }
+
                     // TP-Limit-Orders nachholen (konnten bei Limit-Entry nicht sofort platziert werden)
-                    var posKey = $"{kvp.Key}_{filledPos.Side}";
-                    if (_positionSignals.TryGetValue(posKey, out var sig) && sig.TakeProfit.HasValue && sig.TakeProfit.Value > 0)
+                    if (sig.TakeProfit.HasValue && sig.TakeProfit.Value > 0)
                     {
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
-                            $"LIVE: {kvp.Key} Limit-Entry gefüllt → TP-Limit-Orders werden platziert", kvp.Key));
+                            $"LIVE: {kvp.Key} Limit-Entry @ {filledPos.EntryPrice:F8} gefüllt → TP-Limit-Orders werden platziert", kvp.Key));
                         await PlaceTpLimitOrdersAfterFillAsync(kvp.Key, filledPos.Side, filledPos.Quantity, sig).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                            $"LIVE: {kvp.Key} Limit-Entry gefüllt, aber Signal hat kein TakeProfit — nur PriceTickerLoop-Fallback aktiv", kvp.Key));
                     }
                     continue; // Nächste pending Order
                 }
 
-                // Timeout: Nach 5min nicht gefüllt → canceln
-                if ((now2 - kvp.Value.PlacedAt).TotalMinutes >= LimitOrderTimeoutMinutes)
+                // SK-Buch Workflow 5.3+6.9: Limit-Order läuft bis Sequenz invalid wird.
+                // Invalidation = Preis hat den StopLoss-Level erreicht (= ≈Point0, 78.6er).
+                // Preis-Quelle: WS-Ticker (live, <1s Lag) → Mark-Price aus Positions → Tickers-Snapshot
+                var currentPx = _wsTickerPrices.TryGetValue(kvp.Key, out var wsP) && wsP > 0
+                    ? wsP
+                    : positions.FirstOrDefault(p => p.Symbol == kvp.Key)?.MarkPrice ?? 0m;
+                if (currentPx <= 0)
+                {
+                    tickers ??= await _publicClient.GetAllTickersAsync().ConfigureAwait(false);
+                    currentPx = tickers.FirstOrDefault(t => t.Symbol == kvp.Key)?.LastPrice ?? 0m;
+                }
+
+                var invalidated = currentPx > 0 && (kvp.Value.IsLong
+                    ? currentPx <= kvp.Value.InvalidationLevel   // Long: Preis fiel auf/unter 78.6er/Point0
+                    : currentPx >= kvp.Value.InvalidationLevel); // Short: Preis stieg auf/über 78.6er/Point0
+
+                // Hard-Expiry: Safety-Net gegen vergessene Orders bei Daten-Ausfall (nicht Buch-Regel)
+                var hardExpired = (now2 - kvp.Value.PlacedAt).TotalHours >= LimitOrderHardExpiryHours;
+
+                if (invalidated || hardExpired)
                 {
                     try
                     {
                         await _restClient.CancelOrderAsync(kvp.Value.OrderId, kvp.Key).ConfigureAwait(false);
+                        var reason = invalidated
+                            ? $"Sequenz invalid (Preis {currentPx:F8} erreichte Invalidation-Level {kvp.Value.InvalidationLevel:F8})"
+                            : $"Hard-Expiry nach {LimitOrderHardExpiryHours}h";
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"{kvp.Key}: Limit-Order gecancellt (nicht gefüllt nach {LimitOrderTimeoutMinutes}min)", kvp.Key));
+                            $"{kvp.Key}: Limit-Order gecancellt — {reason}", kvp.Key));
                     }
                     catch { /* Order möglicherweise bereits gefüllt/gecancellt */ }
                     _pendingLimitOrders.TryRemove(kvp.Key, out _);
@@ -606,11 +783,14 @@ public class LiveTradingService : TradingServiceBase
                         if (currentPos != null && currentPos.Quantity > 0)
                         {
                             // Teilweise gefüllt: TP-Limit-Orders auf BingX canceln (falsche Qty)
-                            // und Signal/ExitState mit korrekter Quantity aktualisieren
+                            // und Signal/ExitState mit korrekter Quantity + Fill-Preis aktualisieren
                             await CancelNativeSlTpOrdersAsync(kvp.Key).ConfigureAwait(false);
                             var posKey = $"{kvp.Key}_{currentPos.Side}";
                             if (_exitStates.TryGetValue(posKey, out var es))
+                            {
                                 es.OriginalQuantity = currentPos.Quantity;
+                                es.EntryPrice = currentPos.EntryPrice;
+                            }
 
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
                                 $"{kvp.Key}: Partial-Fill erkannt ({currentPos.Quantity:F4}), TP-Orders gecancellt, PriceTickerLoop übernimmt",
@@ -667,22 +847,47 @@ public class LiveTradingService : TradingServiceBase
     /// Stackbar: BingX erlaubt beliebig viele LIMIT-Orders pro Position.
     /// Maker-Fee (0.02%) statt Taker (0.05%).
     /// Wird von Market-Entry UND Limit-Fill-Detection aufgerufen.
+    /// Mit Retry: BingX kann Position-Registrierung einige Sekunden verzögern — bis zu 3 Versuche
+    /// mit Backoff. Nach Platzierung: Verifizierung via GetOpenOrders (Order-ID muss im Orderbuch sein).
     /// </summary>
     private async Task PlaceTpLimitOrdersAfterFillAsync(string symbol, Side side, decimal fallbackQty, SignalResult signal)
     {
         try
         {
-            // Echte Position von BingX lesen (BingX kann Quantity truncaten)
-            var posAfterOrder = await _restClient.GetPositionsAsync().ConfigureAwait(false);
-            var actualPos = posAfterOrder.FirstOrDefault(p => p.Symbol == symbol && p.Side == side);
-            var actualQty = actualPos?.Quantity ?? fallbackQty;
+            // Position mit Retry lesen: BingX braucht bei Market-Orders manchmal 1-3s bis die Position
+            // in GetPositionsAsync auftaucht. Ohne Retry würde TP-Order mit fallbackQty platziert und
+            // könnte als "keine Position" rejected werden (Hedge-Mode mit positionSide=LONG).
+            Position? actualPos = null;
+            for (int attempt = 1; attempt <= 3; attempt++)
+            {
+                var posAfterOrder = await _restClient.GetPositionsAsync().ConfigureAwait(false);
+                actualPos = posAfterOrder.FirstOrDefault(p => p.Symbol == symbol && p.Side == side);
+                if (actualPos != null && actualPos.Quantity > 0) break;
+                if (attempt < 3)
+                    await Task.Delay(1000).ConfigureAwait(false);
+            }
 
-            // Tp1CloseRatioOverride hat Vorrang (SK: 0.5 = 50% bei TP1)
-            var tp1Ratio = signal.Tp1CloseRatioOverride ?? _riskSettings.Tp1CloseRatio;
-            var tp1Qty = Math.Round(actualQty * tp1Ratio, 6);
+            if (actualPos == null || actualPos.Quantity <= 0)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                    $"LIVE: {symbol} TP-Platzierung übersprungen — Position nach 3s noch nicht bei BingX registriert (Fallback: Bot-seitig via PriceTickerLoop)", symbol));
+                return;
+            }
+
+            var actualQty = actualPos.Quantity;
+
+            // SK-Buch: Tp1CloseRatio aus RiskSettings (Default 0.5 = 50%)
+            var tp1Ratio = _riskSettings.Tp1CloseRatio;
             var tp2Qty = 0m;
             var hasTp2 = signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0
                          && signal.TakeProfit2.Value != signal.TakeProfit!.Value;
+
+            // Wenn TP1 == TP2 (BCKL-Fallback / tp1 auf falscher Seite):
+            // TP1 deckt die ganze Position ab, damit keine 50% ungeschützt bleiben.
+            var tp1Qty = hasTp2
+                ? Math.Round(actualQty * tp1Ratio, 6)
+                : Math.Round(actualQty, 6);
+
             if (hasTp2)
             {
                 tp2Qty = signal.DisableSmartBreakeven
@@ -694,30 +899,45 @@ public class LiveTradingService : TradingServiceBase
             if (tp1Qty + tp2Qty > actualQty)
                 tp2Qty = Math.Round(actualQty - tp1Qty, 6);
 
-            // TP1 als LIMIT Reduce-Only
+            // TP1 als LIMIT Reduce-Only (mit Retry bei Fehler)
+            string? tp1OrderId = null;
             if (tp1Qty > 0)
             {
-                var tp1Order = await _restClient.PlaceTpReduceOnlyLimitAsync(
-                    symbol, side, tp1Qty, signal.TakeProfit!.Value).ConfigureAwait(false);
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow,
-                    tp1Order.Status == OrderStatus.Rejected ? LogLevel.Warning : LogLevel.Trade, "Trade",
-                    tp1Order.Status == OrderStatus.Rejected
-                        ? $"LIVE: {symbol} TP1 ABGELEHNT: {tp1Order.RejectionReason ?? "unbekannt"} (Qty={tp1Qty:F8}, Preis={signal.TakeProfit.Value:F8})"
-                        : $"LIVE: {symbol} TP1 Limit platziert: {tp1Qty:F8} @ {signal.TakeProfit.Value:F8} (Maker-Fee)",
-                    symbol));
+                tp1OrderId = await PlaceTpWithRetryAsync(symbol, side, tp1Qty, signal.TakeProfit!.Value, "TP1").ConfigureAwait(false);
             }
 
-            // TP2 als LIMIT (stackbar — überschreibt TP1 nicht)
+            // TP2 als LIMIT (stackbar — überschreibt TP1 nicht, mit Retry bei Fehler)
+            string? tp2OrderId = null;
             if (hasTp2 && tp2Qty > 0)
             {
-                var tp2Order = await _restClient.PlaceTpReduceOnlyLimitAsync(
-                    symbol, side, tp2Qty, signal.TakeProfit2!.Value).ConfigureAwait(false);
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow,
-                    tp2Order.Status == OrderStatus.Rejected ? LogLevel.Warning : LogLevel.Trade, "Trade",
-                    tp2Order.Status == OrderStatus.Rejected
-                        ? $"LIVE: {symbol} TP2 ABGELEHNT: {tp2Order.RejectionReason ?? "unbekannt"} (Qty={tp2Qty:F8}, Preis={signal.TakeProfit2.Value:F8})"
-                        : $"LIVE: {symbol} TP2 Limit platziert: {tp2Qty:F8} @ {signal.TakeProfit2.Value:F8} (Maker-Fee)",
-                    symbol));
+                tp2OrderId = await PlaceTpWithRetryAsync(symbol, side, tp2Qty, signal.TakeProfit2!.Value, "TP2").ConfigureAwait(false);
+            }
+
+            // Verifizieren dass die platzierten TP-Orders tatsächlich im BingX-Orderbuch stehen
+            // (Schutz gegen "stumme" API-Erfolge wo Order zurückgegeben wird aber nicht existiert)
+            if (!string.IsNullOrEmpty(tp1OrderId) || !string.IsNullOrEmpty(tp2OrderId))
+            {
+                try
+                {
+                    var openOrders = await _restClient.GetOpenOrdersAsync(symbol).ConfigureAwait(false);
+                    var liveIds = new HashSet<string>(openOrders.Select(o => o.OrderId));
+
+                    if (!string.IsNullOrEmpty(tp1OrderId) && !liveIds.Contains(tp1OrderId))
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
+                            $"LIVE: {symbol} TP1 Verify fehlgeschlagen — Order {tp1OrderId} nicht im BingX-Orderbuch! (Fallback: Bot-seitig via PriceTickerLoop)", symbol));
+                    }
+                    if (!string.IsNullOrEmpty(tp2OrderId) && !liveIds.Contains(tp2OrderId))
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
+                            $"LIVE: {symbol} TP2 Verify fehlgeschlagen — Order {tp2OrderId} nicht im BingX-Orderbuch! (Fallback: Bot-seitig via PriceTickerLoop)", symbol));
+                    }
+                }
+                catch (Exception verifyEx)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
+                        $"LIVE: {symbol} TP-Verify übersprungen: {verifyEx.Message}", symbol));
+                }
             }
         }
         catch (Exception ex)
@@ -726,6 +946,42 @@ public class LiveTradingService : TradingServiceBase
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
                 $"LIVE: {symbol} TP Limit-Orders fehlgeschlagen (Fallback: Bot-seitig): {ex.Message}", symbol));
         }
+    }
+
+    /// <summary>
+    /// Platziert eine einzelne TP-Limit-Order mit Retry bei Rejection.
+    /// Gibt die OrderId zurück wenn erfolgreich, null bei endgültigem Fehler.
+    /// </summary>
+    private async Task<string?> PlaceTpWithRetryAsync(string symbol, Side side, decimal quantity, decimal price, string tpLabel)
+    {
+        for (int attempt = 1; attempt <= 3; attempt++)
+        {
+            var order = await _restClient.PlaceTpReduceOnlyLimitAsync(symbol, side, quantity, price).ConfigureAwait(false);
+
+            if (order.Status != OrderStatus.Rejected && !string.IsNullOrEmpty(order.OrderId))
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
+                    $"LIVE: {symbol} {tpLabel} Limit platziert: {quantity:F8} @ {price:F8} (OrderId={order.OrderId}, Maker-Fee)",
+                    symbol));
+                return order.OrderId;
+            }
+
+            var reason = order.RejectionReason ?? "unbekannt";
+            if (attempt < 3)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                    $"LIVE: {symbol} {tpLabel} Versuch {attempt}/3 abgelehnt: {reason} (Qty={quantity:F8}, Preis={price:F8}) — retry in 1.5s",
+                    symbol));
+                await Task.Delay(1500).ConfigureAwait(false);
+            }
+            else
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
+                    $"LIVE: {symbol} {tpLabel} ENDGÜLTIG ABGELEHNT nach 3 Versuchen: {reason} (Qty={quantity:F8}, Preis={price:F8})",
+                    symbol));
+            }
+        }
+        return null;
     }
 
     protected override Task OnOrderPlacedAsync(Ticker ticker, Side side, decimal quantity)
@@ -737,72 +993,6 @@ public class LiveTradingService : TradingServiceBase
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
             $"LIVE: {ticker.Symbol} Entry-Fee: {entryFee:N4} USDT", ticker.Symbol));
         return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Trailing-Stop auf BingX synchronisieren (mit Throttle: max 1 Update pro 30s pro Symbol).
-    /// Schützt gegen Gewinnverlust bei App-Crash — nativer SL auf BingX wird nachgezogen.
-    /// </summary>
-    protected override async Task OnTrailingStopMovedAsync(string symbol, Side side, decimal oldSl, decimal newSl)
-    {
-        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
-            $"LIVE: {symbol} Trailing-SL nachgezogen: {oldSl:N2} → {newSl:N2}", symbol));
-
-        // Throttle: Max 1 API-Call pro 30s pro Symbol (Rate-Limit-Schutz)
-        var throttleKey = $"{symbol}_{side}";
-        var now = DateTime.UtcNow;
-        if (_lastTrailingSyncTimes.TryGetValue(throttleKey, out var lastSync) && (now - lastSync).TotalSeconds < 30)
-            return;
-
-        _lastTrailingSyncTimes[throttleKey] = now;
-
-        // Retry: Wenn SL-Platzierung fehlschlägt (nach Cancel der alten), nochmal versuchen.
-        // Ohne nativen SL ist die Position bei App-Crash ungeschützt.
-        for (int attempt = 1; attempt <= 3; attempt++)
-        {
-            try
-            {
-                await _restClient.SetPositionSlTpAsync(symbol, side, newSl, null).ConfigureAwait(false);
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                    $"LIVE: {symbol} Nativer SL auf BingX nachgezogen: {newSl:F8}", symbol));
-                return; // Erfolg
-            }
-            catch (Exception ex)
-            {
-                if (attempt < 3)
-                {
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                        $"LIVE: {symbol} SL-Sync Versuch {attempt}/3 fehlgeschlagen: {ex.Message} - Retry in 2s", symbol));
-                    await Task.Delay(2000).ConfigureAwait(false);
-                }
-                else
-                {
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
-                        $"LIVE: {symbol} KRITISCH: Nativer SL konnte nach 3 Versuchen nicht gesetzt werden! Position möglicherweise ungeschützt. Letzter Fehler: {ex.Message}", symbol));
-                    if (_botSettings.EnableDesktopNotifications)
-                        _eventBus.PublishNotification("SL FEHLT", $"{symbol}: Nativer SL konnte nicht gesetzt werden!");
-                }
-            }
-        }
-    }
-
-    /// <summary>ATI-Lernzustand periodisch in DB persistieren (Schutz gegen App-Crash).</summary>
-    protected override async Task OnAtiAutoSaveAsync()
-    {
-        if (_dbService == null || _ati == null) return;
-        try
-        {
-            var stateJson = _ati.SerializeState();
-            await _dbService.SaveAtiStateAsync(stateJson).ConfigureAwait(false);
-            if (_eventBus.HasLogSubscribers)
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "ATI",
-                    "ATI-Lernzustand automatisch gespeichert"));
-        }
-        catch (Exception ex)
-        {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "ATI",
-                $"ATI Auto-Save fehlgeschlagen: {ex.Message}"));
-        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -995,68 +1185,20 @@ public class LiveTradingService : TradingServiceBase
     /// Cancelt alle nativen SL/TP-Orders (STOP_MARKET + TAKE_PROFIT_MARKET) für ein Symbol.
     /// Muss VOR Position-Close aufgerufen werden, damit keine Ghost-Orders übrigbleiben.
     /// </summary>
+
     /// <summary>
-    /// Beim Wechsel in die Trailing-Phase (nach TP2): Alle nativen TP-Orders canceln
-    /// und nur den SL auf BingX setzen. Verhindert dass BingX die Rest-Position
-    /// ungewollt zum alten TP-Preis schließt statt Chandelier-Trailing laufen zu lassen.
+    /// Aktualisiert den nativen SL auf BingX wenn SL angepasst wird (halbiert nach 4.1 oder BE nach 4.2).
+    /// Mit 3 Retries — bei Crash muss der neue SL auf BingX sein, sonst trägt User Original-SL-Verlust.
     /// </summary>
-    protected override async Task OnEnterTrailingPhaseAsync(string symbol, Side side, decimal? currentSl)
-    {
-        try
-        {
-            // Alle nativen SL/TP-Orders canceln
-            await CancelNativeSlTpOrdersAsync(symbol).ConfigureAwait(false);
-
-            // Nur den SL neu setzen (ohne TP — Rest läuft mit Chandelier-Trailing)
-            if (currentSl.HasValue)
-            {
-                // Retry bei Fehler: Ohne SL ist die Position nach Cancel komplett ungeschützt
-                for (var attempt = 0; attempt < 2; attempt++)
-                {
-                    try
-                    {
-                        await _restClient.SetPositionSlTpAsync(symbol, side, currentSl.Value, null).ConfigureAwait(false);
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                            $"LIVE: {symbol} Trailing-Phase: Native TP-Orders gecancelt, nur SL={currentSl.Value:F8}", symbol));
-                        return;
-                    }
-                    catch (Exception slEx) when (attempt == 0)
-                    {
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"LIVE: {symbol} SL-Setzen fehlgeschlagen, Retry... ({slEx.Message})", symbol));
-                        await Task.Delay(1000).ConfigureAwait(false);
-                    }
-                    catch (Exception slEx)
-                    {
-                        // 2. Versuch auch fehlgeschlagen — Position ist ungeschützt!
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
-                            $"LIVE: {symbol} KRITISCH: SL konnte nicht gesetzt werden nach TP-Cancel! Position ungeschützt! {slEx.Message}", symbol));
-                    }
-                }
-            }
-            else
-            {
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                    $"LIVE: {symbol} Trailing-Phase: Native TP-Orders gecancelt, KEIN SL gesetzt!", symbol));
-            }
-        }
-        catch (Exception ex)
-        {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
-                $"LIVE: {symbol} Trailing-Phase Cleanup fehlgeschlagen: {ex.Message}", symbol));
-        }
-    }
-
-    /// <summary>Aktualisiert den nativen SL auf BingX wenn Auto-Breakeven getriggert wird (mit 3 Retries).</summary>
-    protected override async Task OnBreakevenSetAsync(string symbol, Side side, decimal breakevenPrice)
+    protected override async Task OnStopLossAdjustedAsync(string symbol, Side side, decimal newStopLoss)
     {
         for (int attempt = 1; attempt <= 3; attempt++)
         {
             try
             {
-                await _restClient.SetPositionSlTpAsync(symbol, side, breakevenPrice, null).ConfigureAwait(false);
+                await _restClient.SetPositionSlTpAsync(symbol, side, newStopLoss, null).ConfigureAwait(false);
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                    $"LIVE: {symbol} Nativer SL auf Breakeven aktualisiert: {breakevenPrice:F8}", symbol));
+                    $"LIVE: {symbol} Nativer SL aktualisiert: {newStopLoss:F8}", symbol));
                 return;
             }
             catch (Exception ex)
@@ -1064,15 +1206,15 @@ public class LiveTradingService : TradingServiceBase
                 if (attempt < 3)
                 {
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                        $"LIVE: {symbol} Breakeven-SL Versuch {attempt}/3 fehlgeschlagen: {ex.Message} - Retry", symbol));
+                        $"LIVE: {symbol} SL-Update Versuch {attempt}/3 fehlgeschlagen: {ex.Message} - Retry", symbol));
                     await Task.Delay(2000).ConfigureAwait(false);
                 }
                 else
                 {
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
-                        $"LIVE: {symbol} KRITISCH: Breakeven-SL konnte nach 3 Versuchen nicht gesetzt werden: {ex.Message}", symbol));
+                        $"LIVE: {symbol} KRITISCH: SL-Update konnte nach 3 Versuchen nicht durchgeführt werden: {ex.Message}", symbol));
                     if (_botSettings.EnableDesktopNotifications)
-                        _eventBus.PublishNotification("BE-SL FEHLT", $"{symbol}: Breakeven-SL nicht gesetzt!");
+                        _eventBus.PublishNotification("SL-Update FEHLT", $"{symbol}: Nativer SL nicht aktualisiert!");
                 }
             }
         }

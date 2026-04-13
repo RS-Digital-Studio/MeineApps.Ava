@@ -6,100 +6,73 @@ namespace BingXBot.Core.Configuration;
 public record MarketCategorySettings
 {
     public decimal MaxLeverage { get; init; } = 3m;
-    public decimal MaxPositionSizePercent { get; init; } = 20m;
-    public decimal MaxMarginPerTradePercent { get; init; } = 2m;
-    public decimal MinRiskRewardRatio { get; init; } = 1.5m;
+    public decimal MaxPositionSizePercent { get; init; } = 3m;
+    /// <summary>SK-Buch S.13: 1% Risiko pro Trade (1-3% Tagesrisiko, bei mehreren Trades aufteilen).</summary>
+    public decimal MaxMarginPerTradePercent { get; init; } = 1m;
+    /// <summary>SK-Buch S.13: min CRV 1:1.</summary>
+    public decimal MinRiskRewardRatio { get; init; } = 1.0m;
 }
 
+/// <summary>
+/// Risk-Settings strikt nach SK-Buch (Tradebook Sascha Wenzel / Stefan Kassing).
+/// Alle Non-Buch-Features (Trailing, Chandelier, Momentum-Decay, Equity-Curve-Trading,
+/// Funding-Rate-Filter, Cooldown-Eskalation, Netto-Exposure, Adaptive-Leverage) entfernt.
+/// </summary>
 public class RiskSettings
 {
-    /// <summary>Max. Margin pro Trade in % der Balance. Beispiel: 10% bei 100 USDT = max 10 USDT Margin pro Position.</summary>
-    public decimal MaxPositionSizePercent { get; set; } = 10m;
-    /// <summary>Max. Risiko (Verlust bei SL-Hit) pro Trade in % der Balance. SK-VERIFY: [5.5] Default 1% (war 2%).</summary>
+    /// <summary>Max. Margin pro Trade in % der Balance. SK-Buch: 1-3%, konservativ 1%.</summary>
+    public decimal MaxPositionSizePercent { get; set; } = 3m;
+    /// <summary>Max. Risiko (Verlust bei SL-Hit) pro Trade in % der Balance. SK-Buch S.13: 1%.</summary>
     public decimal MaxMarginPerTradePercent { get; set; } = 1m;
-    public decimal MaxDailyDrawdownPercent { get; set; } = 0m; // 0 = deaktiviert
+    /// <summary>Max. Tages-Drawdown in %. 0 = deaktiviert.</summary>
+    public decimal MaxDailyDrawdownPercent { get; set; } = 0m;
+    /// <summary>Max. Total-Drawdown in % (Safety-Net gegen Bot-Crash).</summary>
     public decimal MaxTotalDrawdownPercent { get; set; } = 10m;
-    public int MaxOpenPositions { get; set; } = 3; // SK-VERIFY: [5.2] Default 3 (war 10)
+    /// <summary>Max. gleichzeitig offene Positionen. SK-Buch Workflow: max. 3 Trades parallel.</summary>
+    public int MaxOpenPositions { get; set; } = 3;
     public int MaxOpenPositionsPerSymbol { get; set; } = 1;
-    public decimal MaxLeverage { get; set; } = 25m;
-    /// <summary>Ob der Leverage automatisch an Volatilität und Signal-Stärke angepasst wird. Aus = immer MaxLeverage.</summary>
-    public bool UseAdaptiveLeverage { get; set; } = true;
+
+    /// <summary>Max. Leverage-Faktor.</summary>
+    public decimal MaxLeverage { get; set; } = 10m;
+
+    /// <summary>Risiko-Diversifikation (Buch S.19): Korrelations-Check gegen bestehende Positionen.</summary>
     public bool CheckCorrelation { get; set; } = true;
-    // SK-VERIFY: Infra-Bug #3 — 0.7 blockierte fast alle Krypto-Trades (BTC/ETH/SOL >70% korreliert in Trends)
     public decimal MaxCorrelation { get; set; } = 0.85m;
-    public bool EnableTrailingStop { get; set; } = true;
-    public decimal TrailingStopPercent { get; set; } = 2.5m;
 
-    // === Multi-Stage Exit ===
-    /// <summary>Ob Multi-Stage Exit aktiv ist (TP1→BE→Trailing→TP2).</summary>
-    public bool EnableMultiStageExit { get; set; } = true;
-    /// <summary>Anteil der Position der bei TP1 geschlossen wird (0.3 = 30%). Pyramid: TP1=30%, TP2=30%, Trailing=40%.</summary>
-    public decimal Tp1CloseRatio { get; set; } = 0.3m;
-    /// <summary>Anteil der Position der bei TP2 geschlossen wird (0.3 = 30%). Rest bleibt für Trailing.</summary>
-    public decimal Tp2CloseRatio { get; set; } = 0.3m;
-    /// <summary>Max. Haltezeit in Stunden bevor Position geschlossen wird (0 = unbegrenzt).
-    /// SK-VERIFY: Infra-Bug #2 — 48h zu kurz für SK-System (4H-TP2 braucht 5-10 Tage). SL/TP managed den Exit.</summary>
+    // === Partial Close (TP1 + TP2) — 50/50-Staffelung aus Buch S.16 Zielbereich 161.8-200% ===
+    /// <summary>Anteil der Position bei TP1 (161.8% Extension) geschlossen. SK: 50%.</summary>
+    public decimal Tp1CloseRatio { get; set; } = 0.5m;
+    /// <summary>Anteil der Position bei TP2 (200% + 20 Pips Buffer) geschlossen. SK: 50% Rest.</summary>
+    public decimal Tp2CloseRatio { get; set; } = 0.5m;
+
+    /// <summary>Max. Haltezeit in Stunden (0 = unbegrenzt — SL/TP managed Exit, Buch-konform).</summary>
     public int MaxHoldHours { get; set; } = 0;
-    /// <summary>Verlängerte Haltezeit nach TP1 in Stunden.</summary>
-    public int MaxHoldHoursAfterTp1 { get; set; } = 96;
-    /// <summary>ATR-Multiplikator für Smart Breakeven nach TP1 (SL = Entry + X*ATR statt Entry exakt). 0 = klassisches BE.</summary>
-    public decimal SmartBreakevenAtrMultiplier { get; set; } = 0.5m;
 
-    // === Risk-Reward-Ratio ===
-    /// <summary>Minimales Risiko-Ertrags-Verhältnis (TP/SL-Distanz). Trades unter diesem Wert werden abgelehnt. 0 = deaktiviert.
-    /// SK-VERIFY: Infra-Bug #5 — Doppelter RRR-Check (Strategy + RiskManager). Strategy hat eigenen gestuften Check.</summary>
+    /// <summary>
+    /// Minimales RRR. SK-Buch S.13: min 1:1. Strategy hat eigenen Check auf 1:1.
+    /// 0 = deaktiviert (Strategy-Check genügt).
+    /// </summary>
     public decimal MinRiskRewardRatio { get; set; } = 0m;
 
-    // === Cooldown-Eskalation ===
-    /// <summary>Basis-Cooldown nach Verlust-Trade in Stunden (1 H4-Candle Pause).</summary>
-    public int CooldownHours { get; set; } = 0; // 0 = deaktiviert
-    /// <summary>Max. Trades pro Tag (0 = unbegrenzt). Nicht als Filter aktiv, nur für Statistik.</summary>
+    /// <summary>Basis-Cooldown nach SL-Hit in Stunden (0 = deaktiviert, Buch 6.8: nach BE sofort Re-Entry).</summary>
+    public int CooldownHours { get; set; } = 0;
+    /// <summary>Max. Trades pro Tag (0 = unbegrenzt).</summary>
     public int MaxTradesPerDay { get; set; } = 0;
-    /// <summary>Ob progressive Cooldown-Eskalation aktiv ist (1 Verlust=4h, 2=8h, 3+=12h + halber Leverage).</summary>
-    public bool EnableCooldownEscalation { get; set; } = false;
-    /// <summary>Max. Cooldown in Stunden bei Eskalation (Cap).</summary>
-    public int MaxCooldownHours { get; set; } = 0;
 
-    // === Equity-Curve-Trading ===
-    /// <summary>Ob Equity-Curve-Trading aktiv ist (Position reduzieren wenn Equity unter EMA).
-    /// SK-VERIFY: Infra-Bug #6 — Halbe Position nach Verlusten erzeugt Teufelskreis. SK: Drawdowns sind normal.</summary>
-    public bool EnableEquityCurveTrading { get; set; } = false;
-    /// <summary>Periode für die Equity-EMA (in Anzahl Trades). Schnellere Reaktion bei wenig Trades.</summary>
-    public int EquityCurvePeriod { get; set; } = 10;
-
-    // === Momentum-Decay ===
-    /// <summary>Ob Momentum-Decay-Detection aktiv ist (Position reduzieren bei schrumpfendem MACD-Histogramm).</summary>
-    public bool EnableMomentumDecay { get; set; } = true;
-
-    // === Liquidation-Schutz ===
-    /// <summary>Mindestabstand zum Liquidationspreis in %. Nur Sicherheitsnetz - SL schützt primär. Bei hohem Leverage (10x) ist der Abstand mathematisch ~9.6%.</summary>
+    /// <summary>Mindest-Abstand zum Liquidationspreis in % (Safety-Net, nicht im Buch aber sinnvoll).</summary>
     public decimal MinLiquidationDistancePercent { get; set; } = 3m;
 
-    // === Netto-Exposure ===
-    /// <summary>Max. Netto-Exposure aller offenen Positionen in % der Balance (Summe aller notional Positionswerte, NICHT Margin).</summary>
-    public decimal MaxNetExposurePercent { get; set; } = 200m;
-
-    // === Funding-Rate ===
-    /// <summary>Ob Funding-Rate bei Trade-Entscheidungen berücksichtigt werden soll.</summary>
-    public bool ConsiderFundingRate { get; set; } = false;
-    /// <summary>Max. Funding-Rate in % gegen die Positionsrichtung. Darüber wird kein Trade eröffnet.</summary>
-    public decimal MaxAdverseFundingRatePercent { get; set; } = 0.1m;
-
     // === Per-Markt Risk-Overrides ===
-    /// <summary>
-    /// Marktspezifische Leverage- und Margin-Settings. Fehlende Kategorien nutzen globale Defaults.
-    /// Krypto: Konservativ (3x). Forex: Hoch (20x, Standard bei Forex-Brokern). Commodities/Indices: Mittel (10x). Stocks: Konservativ (3x).
-    /// </summary>
+    /// <summary>Marktspezifische Risk-Settings. SK-Buch: einheitlich 1% Risiko für alle Kategorien.</summary>
     public Dictionary<MarketCategory, MarketCategorySettings> CategorySettings { get; set; } = new()
     {
-        { MarketCategory.Crypto,    new() { MaxLeverage = 8m,  MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 2m, MinRiskRewardRatio = 1.5m } },
-        { MarketCategory.Commodity, new() { MaxLeverage = 10m, MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 2m, MinRiskRewardRatio = 1.5m } },
-        { MarketCategory.Index,     new() { MaxLeverage = 10m, MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 2m, MinRiskRewardRatio = 1.5m } },
-        { MarketCategory.Forex,     new() { MaxLeverage = 20m, MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 2m, MinRiskRewardRatio = 1.5m } },
-        { MarketCategory.Stock,     new() { MaxLeverage = 5m,  MaxPositionSizePercent = 10m, MaxMarginPerTradePercent = 2m, MinRiskRewardRatio = 1.5m } },
+        { MarketCategory.Crypto,    new() { MaxLeverage = 5m,  MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
+        { MarketCategory.Commodity, new() { MaxLeverage = 10m, MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
+        { MarketCategory.Index,     new() { MaxLeverage = 10m, MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
+        { MarketCategory.Forex,     new() { MaxLeverage = 20m, MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
+        { MarketCategory.Stock,     new() { MaxLeverage = 5m,  MaxPositionSizePercent = 3m, MaxMarginPerTradePercent = 1m, MinRiskRewardRatio = 1.0m } },
     };
 
-    /// <summary>Gibt MarketCategorySettings für eine Kategorie zurück (Fallback: globale Defaults).</summary>
     public MarketCategorySettings GetCategorySettings(MarketCategory category)
         => CategorySettings.GetValueOrDefault(category, new MarketCategorySettings
         {

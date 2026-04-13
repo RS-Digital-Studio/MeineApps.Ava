@@ -1,5 +1,4 @@
 using BingXBot.Core.Enums;
-using BingXBot.Core.Models.ATI;
 
 namespace BingXBot.Core.Models;
 
@@ -14,5 +13,4 @@ public record CompletedTrade(
     DateTime EntryTime,
     DateTime ExitTime,
     string Reason,
-    TradingMode Mode,
-    MarketRegime? Regime = null);
+    TradingMode Mode);

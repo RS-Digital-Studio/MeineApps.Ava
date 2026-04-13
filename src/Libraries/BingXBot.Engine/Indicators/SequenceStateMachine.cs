@@ -99,19 +99,47 @@ public class SequenceStateMachine
     /// </summary>
     public decimal FibConfidence { get; private set; }
 
-    // Konfiguration
+    // Konfiguration (von Strategy per ATR-basiertem Wert gesetzt)
+    //
+    // _minImpulsePercent (empfohlen: 1.0× ATR%):
+    //   Noise-Filter für 0→A Übergang. In Kombination mit minPoint0Candles stellt dies sicher,
+    //   dass Point 0 ein echtes Swing-Extrem ist. PointA trailed danach weiter →
+    //   der tatsächliche 0→A Impuls wird IMMER größer als dieser Schwellenwert.
+    //   1.0× ATR reicht als Gate, weil das Trailing den Rest erledigt.
+    //   Höhere Werte (1.5×+) würden bei niedrig-volatilen Assets (Forex) valide Sequenzen verpassen.
+    //
+    // _correctionThreshold (empfohlen: 1.5× ATR%):
+    //   A wird erst gelockt wenn Preis 1.5× ATR% von A zurücksetzt. Filtert Micro-Pullbacks
+    //   innerhalb eines Impulses. PotentialB trailed danach weiter tiefer.
+    //
+    // Der echte Qualitätsfilter ist TryActivate → B-Retracement (38.2-78.6%):
+    //   Unabhängig von ATR, prüft ob die Korrektur proportional zur 0→A Strecke ist.
     private readonly decimal _minImpulsePercent;  // Min. Impuls-Größe (0→A) in % vom Preis
     private readonly decimal _correctionThreshold; // Min. Korrektur von A um A zu locken (in %)
-    private readonly decimal _minBRetracement;     // Min. B-Retracement (Elliott: 0.236 tolerant, 0.382 streng)
-    private readonly decimal _maxBRetracement;     // Max. B-Retracement (Elliott: 0.886)
+    private readonly decimal _minBRetracement;     // Min. B-Retracement (SK-Default: 0.382 = 38.2%)
+    private readonly decimal _maxBRetracement;     // Max. B-Retracement (SK-Default: 0.786 = 78.6%)
+
+    // SK-FIX: Point-0-Swing-Validierung
+    // Point 0 muss ein echtes lokales Extrem sein (mindestens N Kerzen Gegenbewegung danach).
+    // Ohne diese Prüfung wird jedes zufällige Low/High sofort als Point 0 akzeptiert.
+    //
+    // Konfigurierbar pro Timeframe, weil eine SK-Sequenz typisch ~100+ Kerzen dauert:
+    //   W1: 3 (3 Wochen — Fahrplan, grob ausreichend)
+    //   D1: 5 (5 Tage = 1 Handelswoche — solider Swing)
+    //   H4: 5 (20h ≈ 1 Tag — echtes Tages-Extrem, ~5% einer 100-Kerzen-Sequenz)
+    //   H1: 3 (3h — Filter-Timeframe)
+    //   M30: 2 (1h — schnelle Entries im Trigger-Timeframe)
+    private int _point0CandleCount;                // Kerzen seit letztem Point0-Update
+    private readonly int _minPoint0Candles;         // Konfigurierbares Minimum pro Timeframe
 
     public SequenceStateMachine(decimal minImpulsePercent = 0.5m, decimal correctionThreshold = 0.3m,
-        decimal minBRetracement = 0.236m, decimal maxBRetracement = 0.886m)
+        decimal minBRetracement = 0.382m, decimal maxBRetracement = 0.786m, int minPoint0Candles = 3)
     {
         _minImpulsePercent = minImpulsePercent;
         _correctionThreshold = correctionThreshold;
         _minBRetracement = minBRetracement;
         _maxBRetracement = maxBRetracement;
+        _minPoint0Candles = minPoint0Candles;
     }
 
     /// <summary>
@@ -142,9 +170,9 @@ public class SequenceStateMachine
     /// <summary>Verarbeitet eine komplette Candle-Historie und gibt die erkannte Sequenz zurück.</summary>
     public static SequenceStateMachine? FromCandles(IReadOnlyList<Candle> candles,
         decimal minImpulsePercent = 0.5m, decimal correctionThreshold = 0.3m,
-        decimal minBRetracement = 0.236m, decimal maxBRetracement = 0.886m)
+        decimal minBRetracement = 0.382m, decimal maxBRetracement = 0.786m, int minPoint0Candles = 3)
     {
-        var (primary, _, _) = FromCandlesBoth(candles, minImpulsePercent, correctionThreshold, minBRetracement, maxBRetracement);
+        var (primary, _, _) = FromCandlesBoth(candles, minImpulsePercent, correctionThreshold, minBRetracement, maxBRetracement, minPoint0Candles);
         return primary;
     }
 
@@ -155,10 +183,10 @@ public class SequenceStateMachine
     public static (SequenceStateMachine? primary, SequenceStateMachine longMachine, SequenceStateMachine shortMachine)
         FromCandlesBoth(IReadOnlyList<Candle> candles,
             decimal minImpulsePercent = 0.5m, decimal correctionThreshold = 0.3m,
-            decimal minBRetracement = 0.236m, decimal maxBRetracement = 0.886m)
+            decimal minBRetracement = 0.382m, decimal maxBRetracement = 0.786m, int minPoint0Candles = 3)
     {
-        var longMachine = new SequenceStateMachine(minImpulsePercent, correctionThreshold, minBRetracement, maxBRetracement);
-        var shortMachine = new SequenceStateMachine(minImpulsePercent, correctionThreshold, minBRetracement, maxBRetracement);
+        var longMachine = new SequenceStateMachine(minImpulsePercent, correctionThreshold, minBRetracement, maxBRetracement, minPoint0Candles);
+        var shortMachine = new SequenceStateMachine(minImpulsePercent, correctionThreshold, minBRetracement, maxBRetracement, minPoint0Candles);
         longMachine.IsLong = true;
         shortMachine.IsLong = false;
 
@@ -302,47 +330,34 @@ public class SequenceStateMachine
         Point0 = 0; PointA = 0; PotentialB = 0; LockedB = 0;
         CurrentHigh = 0; CurrentLow = 0;
         Has100ExtensionReached = false;
+        _point0CandleCount = 0; // SK-FIX: Counter zurücksetzen
     }
 
     /// <summary>
     /// Invalidierung in SucheB: Keine Overtracing-Toleranz (noch kein Trade).
     /// SK-VERIFY: [3b.2] Gescheiterte → Größere Sequenz.
+    /// SK-FIX: Bei Invalidierung wird P0 sofort als bestätigt markiert (Promote),
+    /// damit die SM schneller eine neue (möglicherweise größere) Sequenz erkennt.
+    /// Das alte FailedPointA bleibt gespeichert für Analyse-Zwecke.
+    /// Hinweis: Die alte Logik (direkt nach SucheB mit PotentialB=P0) war toter Code,
+    /// weil die Promote-Bedingung (newExtreme > failedP0 bei Long) bei einer Invalidierung
+    /// logisch unmöglich war (Trigger: candle.Low &lt; Point0 → newExtreme &lt; failedP0 IMMER).
+    /// Zusätzlich hätte PotentialB=P0 immer 100% B-Retracement ergeben → TryActivate-Reject.
     /// </summary>
     private bool InvalidateAndPromoteSucheB(Candle candle, int index, decimal newExtreme, bool isLong)
     {
         FailedPoint0 = Point0;
         FailedPointA = PointA;
-        PromotedToLarger = false;
 
-        if (isLong)
-        {
-            if (FailedPointA > 0 && newExtreme > FailedPoint0)
-            {
-                PointA = FailedPointA;
-                PotentialB = newExtreme;
-                PotentialBIndex = index;
-                State = SmState.SucheB;
-                PromotedToLarger = true;
-                return false;
-            }
-            Point0 = newExtreme;
-        }
-        else
-        {
-            if (FailedPointA > 0 && newExtreme < FailedPoint0)
-            {
-                PointA = FailedPointA;
-                PotentialB = newExtreme;
-                PotentialBIndex = index;
-                State = SmState.SucheB;
-                PromotedToLarger = true;
-                return false;
-            }
-            Point0 = newExtreme;
-        }
-
+        // SK-Promote: Neues P0 = newExtreme. P0 gilt sofort als bestätigt
+        // (war Teil einer gescheiterten Sequenz → das Extrem ist ein echtes Swing-Level).
+        // Die SM startet Suche0 mit voller p0CandleCount → bei nächster passender Kerze
+        // direkt Übergang zu SucheA (spart die minPoint0Candles-Wartezeit).
+        Point0 = newExtreme;
         Point0Index = index;
         PointA = 0;
+        _point0CandleCount = _minPoint0Candles; // SK-Promote: P0 sofort bestätigt
+        PromotedToLarger = true;
         State = SmState.Suche0;
         return ProcessSuche0(candle, index);
     }
@@ -360,9 +375,17 @@ public class SequenceStateMachine
             {
                 Point0 = candle.Low;
                 Point0Index = index;
+                _point0CandleCount = 0; // SK-FIX: Counter zurücksetzen bei neuem Extrem
             }
-            // Wenn Preis signifikant steigt → Punkt 0 gefunden, suche A
-            if (Point0 > 0 && candle.High > Point0 * (1 + _minImpulsePercent / 100m))
+            else
+            {
+                _point0CandleCount++; // SK-FIX: Kerze ohne neues Low → Counter hoch
+            }
+
+            // SK-FIX: Point 0 muss mindestens _minPoint0Candles alt sein UND Preis signifikant gestiegen
+            // Damit wird sichergestellt dass Point 0 ein echtes Swing-Low ist (Gegenbewegung bestätigt)
+            if (Point0 > 0 && _point0CandleCount >= _minPoint0Candles
+                && candle.High > Point0 * (1 + _minImpulsePercent / 100m))
             {
                 PointA = candle.High;
                 PointAIndex = index;
@@ -376,8 +399,16 @@ public class SequenceStateMachine
             {
                 Point0 = candle.High;
                 Point0Index = index;
+                _point0CandleCount = 0; // SK-FIX: Counter zurücksetzen bei neuem Extrem
             }
-            if (Point0 > 0 && candle.Low < Point0 * (1 - _minImpulsePercent / 100m))
+            else
+            {
+                _point0CandleCount++; // SK-FIX: Kerze ohne neues High → Counter hoch
+            }
+
+            // SK-FIX: Point 0 muss mindestens _minPoint0Candles alt sein UND Preis signifikant gefallen
+            if (Point0 > 0 && _point0CandleCount >= _minPoint0Candles
+                && candle.Low < Point0 * (1 - _minImpulsePercent / 100m))
             {
                 PointA = candle.Low;
                 PointAIndex = index;
@@ -495,9 +526,16 @@ public class SequenceStateMachine
 
         var bRetrace = Math.Abs(PointA - PotentialB) / range;
 
-        // Elliott B-Retracement: Nur berechnen, KEIN harter Filter.
-        // FibConfidence geht als Bonus/Malus in den Confluence-Score der Strategie.
-        // Harte Filter killten profitable Krypto-Setups (flache Korrekturen bei starken Trends).
+        // SK-FIX: B-Retracement MUSS zwischen _minBRetracement und _maxBRetracement liegen.
+        // SK-System: Punkt B muss eine signifikante Korrektur sein (ideal 50-66.7%, akzeptabel 38.2-78.6%).
+        // Ohne Filter wurden "Sequenzen" mit 5% Retracement (= kein echtes B) oder 90% (= fast Invalidierung) aktiviert.
+        // Defaults sind jetzt SK-konform: _minBRetracement=0.382, _maxBRetracement=0.786.
+        // FibConfidence bleibt als Qualitäts-Score für die Nähe zu idealen Fib-Leveln.
+        if (bRetrace < _minBRetracement || bRetrace > _maxBRetracement)
+        {
+            // Retracement außerhalb des gültigen Bereichs → State bleibt SucheB, B wird weiter getrailed
+            return false;
+        }
 
         // Aktivierung gültig — B einfrieren und Fibonacci berechnen
         LockedB = PotentialB;
@@ -625,52 +663,30 @@ public class SequenceStateMachine
     }
 
     /// <summary>
-    /// Gemeinsame Invalidierungs-Logik: Prüft ob gescheiterte Sequenz eine größere bilden kann.
+    /// Gemeinsame Invalidierungs-Logik nach Aktivierung.
     /// SK-VERIFY: [3b.2] Gescheiterte → Größere Sequenz.
+    /// SK-Promote: P0 wird sofort als bestätigt markiert, damit die SM schneller
+    /// eine neue Sequenz erkennt. FailedPoint0/FailedPointA bleiben für Analyse gespeichert.
+    /// Hinweis: Die alte Logik (direkt nach SucheB mit PotentialB=P0) war toter Code,
+    /// weil die Promote-Bedingung (newExtreme > failedP0 bei Long) bei einer Invalidierung
+    /// logisch unmöglich war (Trigger: candle.Low &lt; Point0 → newExtreme &lt; failedP0 IMMER).
+    /// Zusätzlich hätte PotentialB=P0 immer 100% B-Retracement ergeben → TryActivate-Reject.
     /// </summary>
     private bool InvalidateAndPromote(Candle candle, int index, decimal newExtreme, bool isLongInvalidation)
     {
         FailedPoint0 = Point0;
         FailedPointA = PointA > 0 ? PointA : (isLongInvalidation ? CurrentHigh : CurrentLow);
-        PromotedToLarger = false;
 
-        if (isLongInvalidation)
-        {
-            if (FailedPointA > 0 && newExtreme > FailedPoint0)
-            {
-                PointA = FailedPointA;
-                PotentialB = newExtreme;
-                PotentialBIndex = index;
-                LockedB = 0;
-                CurrentHigh = 0; CurrentLow = 0;
-                Has100ExtensionReached = false;
-                State = SmState.SucheB;
-                PromotedToLarger = true;
-                return false;
-            }
-            Point0 = newExtreme;
-        }
-        else
-        {
-            if (FailedPointA > 0 && newExtreme < FailedPoint0)
-            {
-                PointA = FailedPointA;
-                PotentialB = newExtreme;
-                PotentialBIndex = index;
-                LockedB = 0;
-                CurrentHigh = 0; CurrentLow = 0;
-                Has100ExtensionReached = false;
-                State = SmState.SucheB;
-                PromotedToLarger = true;
-                return false;
-            }
-            Point0 = newExtreme;
-        }
-
+        // SK-Promote: Neues P0 = newExtreme, sofort bestätigt.
+        // Trade ist gescheitert, aber das neue Extrem ist ein bestätigtes Swing-Level
+        // (der Preis hat die gesamte alte Sequenz durchlaufen).
+        Point0 = newExtreme;
         Point0Index = index;
         PointA = 0; PotentialB = 0; LockedB = 0;
         CurrentHigh = 0; CurrentLow = 0;
         Has100ExtensionReached = false;
+        _point0CandleCount = _minPoint0Candles; // SK-Promote: P0 sofort bestätigt
+        PromotedToLarger = true;
         State = SmState.Suche0;
         return ProcessSuche0(candle, index);
     }
@@ -711,6 +727,7 @@ public class SequenceStateMachine
         PointA = 0;
         PotentialB = 0;
         LockedB = 0;
+        _point0CandleCount = 0; // SK-FIX: Counter zurücksetzen
         State = SmState.Suche0;
         // Aktuelle Kerze gleich als erste Suche0-Kerze verarbeiten (keine Kerze verschwenden)
         return ProcessSuche0(candle, index);

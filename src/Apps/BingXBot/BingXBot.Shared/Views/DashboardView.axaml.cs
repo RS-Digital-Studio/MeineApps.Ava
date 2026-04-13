@@ -68,9 +68,6 @@ public partial class DashboardView : UserControl
         // Widgets die von Equity/Trade-Daten abhängen auch aktualisieren
         if (this.FindControl<SKCanvasView>("DrawdownCanvas") is { } d) d.InvalidateSurface();
         if (this.FindControl<SKCanvasView>("PnlCalendarCanvas") is { } p) p.InvalidateSurface();
-        if (this.FindControl<SKCanvasView>("FearGreedCanvas") is { } f) f.InvalidateSurface();
-        if (this.FindControl<SKCanvasView>("StrategyWeightsCanvas") is { } w) w.InvalidateSurface();
-        if (this.FindControl<SKCanvasView>("AtiLearningCanvas") is { } a) a.InvalidateSurface();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -141,15 +138,12 @@ public partial class DashboardView : UserControl
     }
 
     /// <summary>
-    /// Invalidiert Widget-Canvases wenn DailyPnl/StrategyWeights/FearGreed aktualisiert wurden.
+    /// Invalidiert Widget-Canvases wenn DailyPnl aktualisiert wurde.
     /// Wird vom ViewModel nach Mutation auf dem UI-Thread aufgerufen.
     /// </summary>
     private void OnWidgetCanvasInvalidation()
     {
         if (this.FindControl<SKCanvasView>("PnlCalendarCanvas") is { } p) p.InvalidateSurface();
-        if (this.FindControl<SKCanvasView>("FearGreedCanvas") is { } f) f.InvalidateSurface();
-        if (this.FindControl<SKCanvasView>("StrategyWeightsCanvas") is { } w) w.InvalidateSurface();
-        if (this.FindControl<SKCanvasView>("AtiLearningCanvas") is { } a) a.InvalidateSurface();
         if (this.FindControl<SKCanvasView>("CorrelationCanvas") is { } c) c.InvalidateSurface();
     }
 
@@ -171,21 +165,10 @@ public partial class DashboardView : UserControl
         var canvas = e.Surface.Canvas;
         var bounds = canvas.LocalClipBounds;
         var markers = _vm.BtcTicker.TradeMarkers.Count > 0 ? _vm.BtcTicker.TradeMarkers.ToList() : null;
-        var regimes = _vm.BtcTicker.RegimeZones.Count > 0 ? _vm.BtcTicker.RegimeZones.ToList() : null;
 
         _vm.BtcTicker.ChartRenderer.Render(canvas, bounds, _vm.BtcTicker.BtcCandles.ToList(),
-            markers, _vm.BtcTicker.ActiveOverlay, _vm.BtcTicker.Indicators, regimes,
+            markers, _vm.BtcTicker.ActiveOverlay, _vm.BtcTicker.Indicators,
             _vm.BtcTicker.SequenceOverlay);
-    }
-
-    // ═══ Widget-Renderer ═══
-
-    private void OnFearGreedPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        if (_vm == null) return;
-        var canvas = e.Surface.Canvas;
-        var bounds = canvas.LocalClipBounds;
-        FearGreedGaugeRenderer.Render(canvas, bounds, _vm.BtcTicker.FearGreedValue, _vm.BtcTicker.FearGreedLabel);
     }
 
     private void OnDrawdownPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -202,22 +185,6 @@ public partial class DashboardView : UserControl
         var canvas = e.Surface.Canvas;
         var bounds = canvas.LocalClipBounds;
         PnlCalendarRenderer.Render(canvas, bounds, _vm.DailyPnl);
-    }
-
-    private void OnStrategyWeightsPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        if (_vm == null) return;
-        var canvas = e.Surface.Canvas;
-        var bounds = canvas.LocalClipBounds;
-        StrategyWeightsRenderer.Render(canvas, bounds, _vm.StrategyWeights);
-    }
-
-    private void OnAtiLearningPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        if (_vm == null) return;
-        var canvas = e.Surface.Canvas;
-        var bounds = canvas.LocalClipBounds;
-        AtiLearningRenderer.Render(canvas, bounds, _vm.AtiLearningSnapshot ?? new Graphics.AtiLearningData());
     }
 
     private void OnCorrelationPaintSurface(object? sender, SKPaintSurfaceEventArgs e)

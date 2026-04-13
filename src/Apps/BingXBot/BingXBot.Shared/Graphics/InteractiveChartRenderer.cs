@@ -1,7 +1,6 @@
 using SkiaSharp;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Models;
-using BingXBot.Core.Models.ATI;
 
 namespace BingXBot.Graphics;
 
@@ -120,7 +119,6 @@ public class InteractiveChartRenderer
         IReadOnlyList<TradeMarker>? markers = null,
         ActivePositionOverlay? overlay = null,
         ChartIndicatorData? indicators = null,
-        IReadOnlyList<RegimeZone>? regimeZones = null,
         SequenceOverlay? sequenceOverlay = null)
     {
         canvas.Clear(BgColor);
@@ -168,10 +166,6 @@ public class InteractiveChartRenderer
         CandleWidth = priceArea.Width / visCount;
         MinPrice = minP;
         MaxPrice = maxP;
-
-        // Layer 1: Regime-Hintergrund
-        if (State.ShowRegimeBackground && regimeZones is { Count: > 0 })
-            DrawRegimeBackground(canvas, priceArea, visStart, visEnd, regimeZones);
 
         // Layer 2: Grid
         DrawPriceGrid(canvas, priceArea, minP, maxP);
@@ -305,30 +299,6 @@ public class InteractiveChartRenderer
         // Linien zeichnen
         DrawIndicatorLine(canvas, area, min, max, visStart, visEnd, ind.BollingerUpper!, BbUpperPaint);
         DrawIndicatorLine(canvas, area, min, max, visStart, visEnd, ind.BollingerLower!, BbLowerPaint);
-    }
-
-    // ═══ Regime-Hintergrund ═══
-
-    private void DrawRegimeBackground(SKCanvas canvas, SKRect area, int visStart, int visEnd, IReadOnlyList<RegimeZone> zones)
-    {
-        foreach (var zone in zones)
-        {
-            if (zone.EndIndex <= visStart || zone.StartIndex >= visEnd) continue;
-            var s = Math.Max(zone.StartIndex - visStart, 0);
-            var e = Math.Min(zone.EndIndex - visStart, visEnd - visStart);
-            var x1 = area.Left + CandleWidth * s;
-            var x2 = area.Left + CandleWidth * e;
-            var color = zone.Regime switch
-            {
-                MarketRegime.TrendingBull => RegimeBullBg,
-                MarketRegime.TrendingBear => RegimeBearBg,
-                MarketRegime.Range => RegimeRangeBg,
-                MarketRegime.Chaotic => RegimeChaoticBg,
-                _ => SKColors.Transparent
-            };
-            using var paint = new SKPaint { Color = color, Style = SKPaintStyle.Fill };
-            canvas.DrawRect(x1, area.Top, x2 - x1, area.Height, paint);
-        }
     }
 
     // ═══ Crosshair + Tooltip ═══
@@ -632,6 +602,3 @@ public class ChartIndicatorData
     public IReadOnlyList<decimal?>? SupertrendLine { get; init; }
     public IReadOnlyList<bool?>? SupertrendBullish { get; init; }
 }
-
-/// <summary>Zeitbereich eines Markt-Regimes im Chart.</summary>
-public record RegimeZone(int StartIndex, int EndIndex, MarketRegime Regime);

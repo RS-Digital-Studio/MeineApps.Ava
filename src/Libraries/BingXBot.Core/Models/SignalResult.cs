@@ -14,5 +14,5 @@ public record SignalResult(
     bool PreferLimitOrder = false,
     /// <summary>SK-Regel: SL NICHT in den Gewinn verschieben (B-C Korrektionen stoppen aus).</summary>
     bool DisableSmartBreakeven = false,
-    /// <summary>SK Holy Trinity: TP1 Close-Ratio Override (0.5 = 50%). Null = globaler Default aus RiskSettings.</summary>
-    decimal? Tp1CloseRatioOverride = null);
+    /// <summary>SK-Regel: Zusätzlicher Entry (halbe Position) für Staffelung 50er voll + 66.7er halb.</summary>
+    bool IsAdditionalEntry = false);

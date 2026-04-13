@@ -4,27 +4,25 @@ namespace BingXBot.Core.Models;
 
 /// <summary>
 /// Exit-Phase einer offenen Position im Multi-Stage Exit System.
-/// Initial → Tp1Hit → Trailing (oder direkt SL/Regime-Exit).
+/// Buch-konform: Initial → Tp1Hit (nach TP1 Partial Close).
 /// </summary>
 public enum ExitPhase
 {
     /// <summary>Position offen, wartet auf TP1 oder SL.</summary>
     Initial,
-    /// <summary>TP1 erreicht: 50% geschlossen, SL auf Break-Even, Trailing aktiv.</summary>
+    /// <summary>TP1 (161.8%) erreicht: 50% geschlossen, Rest läuft bis TP2 (200%+Buffer).</summary>
     Tp1Hit,
-    /// <summary>Chandelier-Trailing aktiv nach TP1 (SL folgt dem Höchstpunkt).</summary>
-    Trailing
 }
 
 /// <summary>
-/// Vollständiger Zustand einer offenen Position für das Multi-Stage Exit System.
+/// Vollständiger Zustand einer offenen Position für das Buch-konforme Exit-System.
 /// Gespeichert in ConcurrentDictionary im TradingServiceBase.
 /// THREAD-SAFETY: Properties werden NUR aus dem PriceTickerLoop mutiert (sequentiell pro Service).
 /// Kein paralleler Schreibzugriff erlaubt — ConcurrentDictionary sichert nur Add/Get/Remove.
 /// </summary>
 public class PositionExitState
 {
-    /// <summary>Originales Signal mit SL/TP1 (wird bei TP1-Hit modifiziert: SL→Break-Even).</summary>
+    /// <summary>Originales Signal mit SL/TP1 (wird bei TP1-Hit modifiziert: TP auf TP2).</summary>
     public SignalResult Signal { get; set; } = null!;
 
     /// <summary>Aktuelle Exit-Phase.</summary>
@@ -36,23 +34,11 @@ public class PositionExitState
     /// <summary>Ursprüngliche Positionsgröße (für 50% Partial-Close bei TP1).</summary>
     public decimal OriginalQuantity { get; set; }
 
-    /// <summary>Take-Profit 2 (weiterer TP nach TP1 Partial-Close).</summary>
+    /// <summary>Take-Profit 2 (200% Extension + 20 Pips Buffer, Buch Workflow 4.5).</summary>
     public decimal? Tp2 { get; set; }
 
-    /// <summary>Zeitpunkt des Entries (für Time-based Exit: 48h ohne TP1 → schließen).</summary>
+    /// <summary>Zeitpunkt des Entries (für Time-based Exit).</summary>
     public DateTime EntryTime { get; set; } = DateTime.UtcNow;
-
-    /// <summary>Höchster (Long) oder niedrigster (Short) Preis seit Entry (für Chandelier-Trailing).</summary>
-    public decimal ExtremePriceSinceEntry { get; set; }
-
-    /// <summary>ATR-Multiplikator für den Chandelier-Trailing-Stop (vol-adaptiv, default 2.5).</summary>
-    public decimal TrailingAtrMultiplier { get; set; } = 2.5m;
-
-    /// <summary>Aktueller ATR-Wert zum Zeitpunkt des Entries (für vol-adaptive Exits).</summary>
-    public decimal CurrentAtr { get; set; }
-
-    /// <summary>Confluence-Score des Entry-Signals (0-12, für ATI-Lernen).</summary>
-    public int ConfluenceScore { get; set; }
 
     /// <summary>Seite der Position (Buy/Sell).</summary>
     public Side Side { get; set; }
@@ -60,20 +46,17 @@ public class PositionExitState
     /// <summary>Symbol der Position.</summary>
     public string Symbol { get; set; } = "";
 
-    /// <summary>Max. Haltezeit in Stunden (48h default, 96h nach TP1). 0 = unbegrenzt.</summary>
-    public int MaxHoldHours { get; set; } = 48;
+    /// <summary>Max. Haltezeit in Stunden. 0 = unbegrenzt (Buch-konform).</summary>
+    public int MaxHoldHours { get; set; } = 0;
 
     /// <summary>Ob die Position bereits teilweise geschlossen wurde (TP1 Partial-Close).</summary>
     public bool PartialClosed { get; set; }
 
-    /// <summary>Ob TP2 bereits teilweise geschlossen wurde (Pyramid: 30% bei TP2, Rest Trailing).</summary>
-    public bool Tp2Closed { get; set; }
-
-    /// <summary>Ob der Auto-Breakeven bereits gesetzt wurde (SL auf Entry wenn Gewinn >= 100/Leverage %).</summary>
+    /// <summary>Ob der Auto-Breakeven bereits gesetzt wurde (Buch Workflow 4.2).</summary>
     public bool BreakevenSet { get; set; }
 
-    /// <summary>SK-System Stufe 2: SL wurde auf TP1-Level nachgezogen (bei ~180% Extension).</summary>
-    public bool SkSlAtTp1 { get; set; }
+    /// <summary>SK-Buch: SL bereits halbiert (Workflow 4.1 — bei 1× SL-Distanz im Gewinn).</summary>
+    public bool SlHalved { get; set; }
 
     /// <summary>
     /// Ob diese Position nach App-Neustart wiederhergestellt wurde.

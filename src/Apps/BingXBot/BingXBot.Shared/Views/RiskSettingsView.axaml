@@ -309,54 +309,7 @@
       </Border>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- Sektion: Trailing-Stop                                           -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
-              Padding="20,16"
-              BoxShadow="{DynamicResource CardShadow}">
-        <StackPanel Spacing="16">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="ArrowDownBold" Width="18" Height="18"
-                             Foreground="{DynamicResource SuccessBrush}" />
-            <TextBlock Text="Trailing-Stop" FontSize="14" FontWeight="SemiBold"
-                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
-          </StackPanel>
-
-          <!-- Enable Trailing Stop -->
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="Trailing-Stop aktivieren" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Stop-Loss folgt dem Preis in Gewinnrichtung" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" Classes="RiskToggle"
-                          IsChecked="{Binding EnableTrailingStop}" />
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}"
-                  IsVisible="{Binding EnableTrailingStop}" />
-
-          <!-- Trailing Stop Percent -->
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto"
-                IsVisible="{Binding EnableTrailingStop}">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="Trailing-Stop Abstand" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Abstand zum aktuellen Preis (0.5 - 5.0%)" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <TextBox Classes="NumericInput" Text="{Binding TrailingStopPercent}" />
-              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
-                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
-            </StackPanel>
-          </Grid>
-        </StackPanel>
-      </Border>
-
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- Sektion: Liquidation + Exposure                                   -->
+      <!-- Sektion: Liquidation                                              -->
       <!-- ═══════════════════════════════════════════════════════════════ -->
       <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
               Padding="20,16"
@@ -365,7 +318,7 @@
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="AlertDecagram" Width="18" Height="18"
                              Foreground="{DynamicResource AppLossBrush}" />
-            <TextBlock Text="Liquidation + Exposure" FontSize="14" FontWeight="SemiBold"
+            <TextBlock Text="Liquidation" FontSize="14" FontWeight="SemiBold"
                        Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
           </StackPanel>
 
@@ -383,145 +336,6 @@
               <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
                          Foreground="{DynamicResource AppTextSecondaryBrush}" />
             </StackPanel>
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
-
-          <!-- Max Net Exposure -->
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="Max. Netto-Exposure" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Summe aller Positionswerte in % der Balance" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <TextBox Classes="NumericInput" Text="{Binding MaxNetExposurePercent}"
-                       ToolTip.Tip="Empfohlen: 30-60%. Begrenzt Gesamtrisiko" />
-              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
-                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
-            </StackPanel>
-          </Grid>
-        </StackPanel>
-      </Border>
-
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- Sektion: Funding-Rate                                            -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
-              Padding="20,16"
-              BoxShadow="{DynamicResource CardShadow}">
-        <StackPanel Spacing="16">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="CashClock" Width="18" Height="18"
-                             Foreground="{DynamicResource AppWarningBrush}" />
-            <TextBlock Text="Funding-Rate" FontSize="14" FontWeight="SemiBold"
-                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
-          </StackPanel>
-
-          <!-- Consider Funding Rate -->
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="Funding-Rate beachten" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Kein Trade gegen hohe Funding-Rate" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" Classes="RiskToggle"
-                          IsChecked="{Binding ConsiderFundingRate}" />
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}"
-                  IsVisible="{Binding ConsiderFundingRate}" />
-
-          <!-- Max Adverse Funding Rate -->
-          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto"
-                IsVisible="{Binding ConsiderFundingRate}">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="Max. adverse Funding-Rate" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Max. Funding gegen Positionsrichtung (alle 8h)" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <TextBox Classes="NumericInput" Text="{Binding MaxAdverseFundingRatePercent}"
-                       ToolTip.Tip="Empfohlen: 0.05-0.15%. Normal: ~0.01%" />
-              <TextBlock Text="%" FontSize="13" VerticalAlignment="Center"
-                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
-            </StackPanel>
-          </Grid>
-        </StackPanel>
-      </Border>
-
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- Sektion: Adaptive Schutzmechanismen                              -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
-              Padding="20,16" BoxShadow="{DynamicResource CardShadow}">
-        <StackPanel Spacing="16">
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <mi:MaterialIcon Kind="ShieldHalfFull" Width="20" Height="20"
-                             Foreground="{DynamicResource AppPrimaryBrush}" />
-            <TextBlock Text="Adaptive Schutzmechanismen" FontSize="14" FontWeight="SemiBold"
-                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
-          </StackPanel>
-
-          <!-- Cooldown-Eskalation -->
-          <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-            <StackPanel Grid.Row="0" Grid.Column="0">
-              <TextBlock Text="Cooldown-Eskalation" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Progressive Cooldowns bei Verlust-Serien (8h→16h→24h→48h)" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding EnableCooldownEscalation}" />
-
-            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                        Orientation="Horizontal" Spacing="8" Margin="0,8,0,0"
-                        IsVisible="{Binding EnableCooldownEscalation}">
-              <TextBlock Text="Max. Cooldown (Stunden):" FontSize="13"
-                         Foreground="{DynamicResource AppTextSecondaryBrush}" VerticalAlignment="Center" />
-              <TextBox Classes="NumericInput" Text="{Binding MaxCooldownHours}" Width="60"
-                       ToolTip.Tip="Maximaler Cooldown bei Eskalation. Default: 48h" />
-            </StackPanel>
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource AppBorderBrush}" Opacity="0.3" />
-
-          <!-- Equity-Curve-Trading -->
-          <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-            <StackPanel Grid.Row="0" Grid.Column="0">
-              <TextBlock Text="Equity-Curve-Trading" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Halbe Position wenn Equity unter eigener EMA fällt" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding EnableEquityCurveTrading}" />
-
-            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                        Orientation="Horizontal" Spacing="8" Margin="0,8,0,0"
-                        IsVisible="{Binding EnableEquityCurveTrading}">
-              <TextBlock Text="EMA-Periode (Trades):" FontSize="13"
-                         Foreground="{DynamicResource AppTextSecondaryBrush}" VerticalAlignment="Center" />
-              <TextBox Classes="NumericInput" Text="{Binding EquityCurvePeriod}" Width="60"
-                       ToolTip.Tip="Anzahl Trades für die Equity-EMA. Default: 20" />
-            </StackPanel>
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource AppBorderBrush}" Opacity="0.3" />
-
-          <!-- Momentum-Decay -->
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0">
-              <TextBlock Text="Momentum-Decay-Erkennung" FontSize="13"
-                         Foreground="{DynamicResource AppTextBrush}" />
-              <TextBlock Text="Schließt Position wenn Preis >1.5x ATR vom Höchstpunkt entfernt (nach TP1)" FontSize="11"
-                         Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                          IsChecked="{Binding EnableMomentumDecay}" />
           </Grid>
         </StackPanel>
       </Border>

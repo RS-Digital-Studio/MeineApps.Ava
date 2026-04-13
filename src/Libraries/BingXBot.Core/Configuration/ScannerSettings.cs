@@ -4,35 +4,23 @@ namespace BingXBot.Core.Configuration;
 
 public class ScannerSettings
 {
-    public decimal MinVolume24h { get; set; } = 20_000_000m;
-    /// <summary>Min. 24h-Preisänderung in %. 0.1% = auch Stabilisierungsphasen (SK) sichtbar. Top-100-Filter schützt vor Spam.</summary>
-    // SK-VERIFY: Infra-Bug #3 — 0.5% filterte Stabilisierungsphasen (Prestabilisation) raus
+    public decimal MinVolume24h { get; set; } = 1_000_000m;
+    /// <summary>Min. 24h-Preisänderung in %. 0.1% zeigt auch Stabilisierungsphasen (SK).</summary>
     public decimal MinPriceChange { get; set; } = 0.1m;
+    /// <summary>Scanner-Haupt-Timeframe (Navigator-Chart). SK-Buch: H4.</summary>
     public TimeFrame ScanTimeFrame { get; set; } = TimeFrame.H4;
     public List<string> Blacklist { get; set; } = new();
     public List<string> Whitelist { get; set; } = new();
-    /// <summary>Max. Kandidaten die pro Scan evaluiert werden. 100 = SK-Reversal-Setups brauchen breites Screening.
-    /// SK-VERIFY: Infra-Bug #4 — 50 filterte SK-Kandidaten (Reversal-Setups im GKL haben schlechten Momentum-Score).</summary>
+    /// <summary>Max. Kandidaten pro Scan. SK braucht breites Screening.</summary>
     public int MaxResults { get; set; } = 100;
-    public ScanMode Mode { get; set; } = ScanMode.Momentum;
+    /// <summary>SK = Mean-Reversion (nicht Momentum).</summary>
+    public ScanMode Mode { get; set; } = ScanMode.Reversal;
 
-    /// <summary>
-    /// Nur die Top-N Coins nach 24h-Volumen analysieren.
-    /// Auf Futures-Börsen korreliert 24h-Volume stark mit Market Cap:
-    /// Top-100 nach Volume auf BingX = effektiv die großen, liquiden Coins.
-    /// Kleine/Meme-Coins mit niedrigem Volume werden ausgefiltert.
-    /// </summary>
+    /// <summary>Top-N Coins nach Volume/Market-Cap.</summary>
     public bool OnlyTopByVolume { get; set; } = true;
-
-    /// <summary>Anzahl der Top-Coins nach Volume die analysiert werden. Default 100 = ~Top-100 Market Cap.</summary>
     public int TopCoinsCount { get; set; } = 100;
 
-    /// <summary>
-    /// Scan-Intervall in Sekunden. Bei H4 trotzdem alle 5min scannen:
-    /// H4-Candles ändern sich zwar nur alle 4h, aber der Ticker-Preis und
-    /// Volumen ändern sich ständig → neue Kandidaten können auftauchen.
-    /// Außerdem nutzt CryptoTrendPro interne M15-Checks für Entry-Timing.
-    /// </summary>
+    /// <summary>Scan-Intervall in Sekunden (abhängig vom Scan-Timeframe).</summary>
     public int ScanIntervalSeconds => ScanTimeFrame switch
     {
         TimeFrame.M1 => 30,
@@ -42,47 +30,32 @@ public class ScannerSettings
         TimeFrame.M30 => 120,
         TimeFrame.H1 => 180,
         TimeFrame.H2 => 300,
-        TimeFrame.H4 => 300,  // 5min: Ticker-Preis + Kandidaten-Check, nicht nur Candles
+        TimeFrame.H4 => 60,   // SK braucht schnelle M30-Trigger-Reaktion
         TimeFrame.H6 => 600,
         TimeFrame.H12 => 900,
         TimeFrame.D1 => 1800,
         _ => 300
     };
 
-    /// <summary>Ob M15-Candles zusätzlich für Entry-Timing geladen werden (bei H4/H1 Strategien).</summary>
-    public bool UseM15EntryTiming { get; set; } = true;
-
-    /// <summary>TradFi-Assets aktivieren (Gold, Nasdaq, Forex, Aktien). Default: true (alle Märkte).</summary>
+    /// <summary>TradFi-Assets aktivieren (Gold, Nasdaq, Forex, Aktien).</summary>
     public bool EnableTradFi { get; set; } = true;
 
-    /// <summary>Welche TradFi-Kategorien aktiviert sind. Default: Alle 5 Märkte.</summary>
+    /// <summary>Welche TradFi-Kategorien aktiviert sind.</summary>
     public HashSet<MarketCategory> EnabledCategories { get; set; } = new()
     {
         MarketCategory.Crypto, MarketCategory.Commodity, MarketCategory.Index,
         MarketCategory.Forex, MarketCategory.Stock
     };
 
-    /// <summary>Min. 24h-Volume für TradFi-Assets (niedriger als Krypto, da weniger Symbole).</summary>
+    /// <summary>Min. 24h-Volume für TradFi-Assets.</summary>
     public decimal MinVolume24hTradFi { get; set; } = 1_000_000m;
-
-    /// <summary>
-    /// Min. 24h-Preisänderung für TradFi in %. Niedriger als Krypto weil TradFi weniger volatil ist.
-    /// Forex: typisch 0.1-0.5%, Aktien: 0.3-2%, Commodities: 0.2-1.5%, Indices: 0.1-1%.
-    /// 0.1% = fast alle TradFi-Symbole mit Aktivität passieren, filtert nur komplett flache.
-    /// </summary>
     public decimal MinPriceChangeTradFi { get; set; } = 0.1m;
 
-    /// <summary>
-    /// Wird zur Laufzeit gesetzt: True wenn der BingX-Account im Hedge-Modus (Dual-Side) ist.
-    /// TradFi-Symbole brauchen Hedge-Modus (BingX Error 101414 bei One-Way-Mode).
-    /// </summary>
+    /// <summary>Wird zur Laufzeit gesetzt: True wenn BingX-Account im Hedge-Modus.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
     public bool IsHedgeModeActive { get; set; }
 
-    /// <summary>
-    /// Higher-Timeframe für Trend-Konfirmation. Wird automatisch aus dem ScanTimeFrame abgeleitet:
-    /// M15→H1, H1→H4, H4→D1. Kann vom Preset überschrieben werden.
-    /// </summary>
+    /// <summary>Higher-Timeframe (Filter-Chart). SK-Buch: H1 bei H4-Scanner.</summary>
     public TimeFrame HtfTimeFrame => ScanTimeFrame switch
     {
         TimeFrame.M1 or TimeFrame.M3 or TimeFrame.M5 => TimeFrame.M15,

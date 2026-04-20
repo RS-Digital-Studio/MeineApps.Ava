@@ -1,18 +1,18 @@
 # AppChecker v2.0
 
-Automatisches Pruef-Tool fuer alle 8 Avalonia-Apps. 22 Checker-Klassen, 150+ Pruefungen pro App.
+Automatisches Prüf-Tool für alle 8 Avalonia-Apps. 22 Checker-Klassen, 150+ Prüfungen pro App.
 Modulare Architektur mit IChecker-Interface und Datei-Caching via CheckContext.
 
 ## Verwendung
 
 ```bash
-# Alle 8 Apps pruefen
+# Alle 8 Apps prüfen
 dotnet run --project tools/AppChecker
 
-# Einzelne App pruefen
+# Einzelne App prüfen
 dotnet run --project tools/AppChecker RechnerPlus
 
-# Interaktiver Modus (ohne Argument): Auswahl per Menue
+# Interaktiver Modus (ohne Argument): Auswahl per Menü
 ```
 
 ## Exit Codes
@@ -43,7 +43,7 @@ tools/AppChecker/
     ├── AvaloniaUiChecker.cs      # MaterialIconStyles, SkiaThemeHelper, LocalizationService
     ├── AvaloniaGotchasChecker.cs # 12 Avalonia-Gotchas (translate px, Selector, ScrollViewer etc.)
     ├── ThemeChecker.cs           # StaticResource Brush, statisches Theme
-    ├── LocalizationChecker.cs    # resx-Dateien, Key-Vergleich, ueberflüssige Keys
+    ├── LocalizationChecker.cs    # resx-Dateien, Key-Vergleich, überflüssige Keys
     ├── AssetsChecker.cs          # icon.png, MainWindow Icon-Referenz
     ├── DiRegistrationChecker.cs  # ConfigureServices, Services, Constructor Cross-Check
     ├── VmWiringChecker.cs        # Tabs, Commands, LanguageChanged, UpdateLocalizedTexts
@@ -51,18 +51,18 @@ tools/AppChecker/
     ├── NavigationChecker.cs      # Tab-Buttons, Tab-Count, Overlays, NavigationRequested
     ├── AdLayoutChecker.cs        # Ad-Spacer 64dp, ScrollViewer Bottom-Margin, ShowBanner
     ├── CodeQualityChecker.cs     # Debug.WriteLine, ungenutzte Exception-Variablen
-    ├── AsyncPatternsChecker.cs   # async void, fire-and-forget, leere catch-Bloecke
+    ├── AsyncPatternsChecker.cs   # async void, fire-and-forget, leere catch-Blöcke
     ├── DateTimeChecker.cs        # DateTime.Now, Parse ohne RoundtripKind/InvariantCulture
     ├── SqliteChecker.cs          # InsertAsync ID-Bug, SemaphoreSlim
     ├── SkiaSharpChecker.cs       # DPI (LocalClipBounds), InvalidateSurface, ArcTo 360
-    ├── BillingChecker.cs         # Play Billing v8 API-Aenderungen
+    ├── BillingChecker.cs         # Play Billing v8 API-Änderungen
     ├── UriLauncherChecker.cs     # Process.Start statt UriLauncher in Shared
     └── EventCleanupChecker.cs    # += ohne -=, statische Event-Handler
 ```
 
 ## Datei-Caching
 
-`CheckContext` laedt alle .cs und .axaml Dateien einmal pro App und reicht sie an alle Checker durch:
+`CheckContext` lädt alle .cs und .axaml Dateien einmal pro App und reicht sie an alle Checker durch:
 - `CsFiles` - Alle .cs Dateien (Shared + Android + Desktop)
 - `SharedCsFiles` - Nur Shared .cs
 - `AndroidCsFiles` - Nur Android .cs
@@ -70,7 +70,7 @@ tools/AppChecker/
 
 ## Suppress-Kommentar
 
-`// AppChecker:ignore` auf der Zeile VOR dem Problem unterdrueckt die Warnung.
+`// AppChecker:ignore` auf der Zeile VOR dem Problem unterdrückt die Warnung.
 
 ## Bekannte Apps
 
@@ -94,7 +94,7 @@ tools/AppChecker/
 
 = AppName =
   [Kategorie]
-    [PASS] Pruefung bestanden
+    [PASS] Prüfung bestanden
     [INFO] Information
     [WARN] Warnung
     [FAIL] Fehler gefunden
@@ -105,16 +105,16 @@ tools/AppChecker/
   958 Checks in 1379ms (22 Checker, 8 Apps)
 ```
 
-## Neuen Checker hinzufuegen
+## Neuen Checker hinzufügen
 
 1. Neue Klasse in `Checkers/` erstellen die `IChecker` implementiert
 2. `Category` Property setzen (Ausgabe-Header)
 3. `Check(CheckContext ctx)` implementieren (pro App) und/oder `CheckGlobal(string solutionRoot)` (einmalig)
-4. In `Program.cs` zum `checkers` Array hinzufuegen
+4. In `Program.cs` zum `checkers` Array hinzufügen
 5. Gecachte Dateien aus `ctx.CsFiles`/`ctx.AxamlFiles` verwenden (NICHT erneut laden)
-6. `FileHelpers.IsSuppressed()` fuer `// AppChecker:ignore` Support
+6. `FileHelpers.IsSuppressed()` für `// AppChecker:ignore` Support
 
-## Abhaengigkeiten
+## Abhängigkeiten
 
 - .NET 10.0
 - Keine externen NuGet-Packages (nur System.Text.RegularExpressions, System.Xml.Linq)

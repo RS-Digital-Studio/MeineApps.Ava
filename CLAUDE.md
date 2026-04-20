@@ -23,7 +23,7 @@ dotnet publish src/Apps/{App}/{App}.Desktop -c Release -r linux-x64
 # Android Release (AAB)
 dotnet publish src/Apps/{App}/{App}.Android -c Release
 
-# AppChecker v2.0 (22 Checker, 150+ Pruefungen) - Alle 9 Apps / Einzelne App
+# AppChecker v2.0 (22 Checker, 150+ Prüfungen) - Alle 9 Apps / Einzelne App
 dotnet run --project tools/AppChecker
 dotnet run --project tools/AppChecker {App}
 
@@ -66,15 +66,15 @@ F:\Meine_Apps_Ava\
 │       ├── FitnessRechner/         # BMI/Kalorien/Barcode-Scanner
 │       ├── HandwerkerRechner/      # 11 Bau-Rechner (5 Free + 6 Premium)
 │       ├── WorkTimePro/            # Arbeitszeiterfassung + Export
-│       ├── HandwerkerImperium/     # Idle-Game (Werkstaetten + Arbeiter)
+│       ├── HandwerkerImperium/     # Idle-Game (Werkstätten + Arbeiter)
 │       ├── BomberBlast/            # Bomberman-Klon (SkiaSharp, Landscape)
 │       ├── RebornSaga/             # Anime Isekai-RPG (Volle SkiaSharp-Engine)
-│       ├── BingXBot/               # Trading Bot (BingX Futures, Desktop-only)
+│       ├── BingXBot/               # Trading Bot (Pi-Server 24/7 + Desktop + Android Remote)
 │       ├── GardenControl/          # Bewässerungssteuerung (Pi-Server + Desktop + Android)
 │       └── SmartMeasure/          # 3D-Grundstücksvermessung + Gartenplanung (RTK-GPS, privat)
 │
 ├── tools/
-│   ├── AppChecker/              # 10 Check-Kategorien, 100+ Pruefungen
+│   ├── AppChecker/              # 10 Check-Kategorien, 100+ Prüfungen
 │   ├── StoreAssetGenerator/     # Play Store Assets (SkiaSharp)
 │   └── SocialPostGenerator/     # Social-Media Posts + Promo-Bilder
 │
@@ -83,7 +83,7 @@ F:\Meine_Apps_Ava\
 
 ---
 
-## Status (6. März 2026)
+## Status (18. April 2026)
 
 7 Apps im geschlossenen Test. HandwerkerImperium in Produktion. RebornSaga + BingXBot in Entwicklung.
 
@@ -95,12 +95,12 @@ F:\Meine_Apps_Ava\
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.0.29 | Banner + Rewarded | 4,99 Premium | Produktion |
-| BomberBlast | v2.0.28 | Banner + Rewarded | 1,99 remove_ads | Geschlossener Test |
+| HandwerkerImperium | v2.0.32 | Banner + Rewarded | 4,99 Premium | Produktion |
+| BomberBlast | v2.0.32 | Banner + Rewarded | 1,99 remove_ads | Geschlossener Test |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
-| BingXBot | v1.0.0 | Nein | Nein | Entwicklung (Desktop-only) |
+| BingXBot | v1.2.0 | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote, Multi-TF Standalone seit 15.04.2026) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
-| SmartMeasure | v1.0.0 | Nein | Nein | Entwicklung (privat, RTK-GPS Vermessung) |
+| SmartMeasure | v1.0.2 | Nein | Nein | Entwicklung (privat, RTK-GPS Vermessung) |
 
 ---
 
@@ -123,23 +123,23 @@ Jede App hat eine eigene `Themes/AppPalette.axaml` im Shared-Projekt, statisch i
 | GardenControl | #2E7D32 Grün | Natur/Garten Dashboard |
 | SmartMeasure | #FF6B00 Orange | Technisch-Professionell, Vermessung |
 
-Implementierung: Jede App laedt `<StyleInclude Source="/Themes/AppPalette.axaml" />` in App.axaml. Alle DynamicResource-Keys bleiben identisch. Design-Tokens (Spacing, Radius, Fonts) kommen weiterhin aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml`.
+Implementierung: Jede App lädt `<StyleInclude Source="/Themes/AppPalette.axaml" />` in App.axaml. Alle DynamicResource-Keys bleiben identisch. Design-Tokens (Spacing, Radius, Fonts) kommen weiterhin aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml`.
 
 ---
 
-## Packages (Avalonia 11.3.12)
+## Packages (Avalonia 11.3.13)
 
 | Package | Version | Zweck |
 |---------|---------|-------|
-| Avalonia | 11.3.12 | UI Framework |
+| Avalonia | 11.3.13 | UI Framework |
 | Material.Icons.Avalonia | 3.0.0 | 7000+ SVG Icons (Auto-Sizing, Caching) |
-| CommunityToolkit.Mvvm | 8.4.0 | MVVM |
+| CommunityToolkit.Mvvm | 8.4.2 | MVVM |
 | Xaml.Behaviors.Avalonia | 11.3.9.5 | Behaviors |
 | SkiaSharp | 3.119.2 | 2D Graphics + SkSL GPU-Shader |
 | SkiaSharp.Skottie | 3.119.2 | Lottie-Animations-Backend |
 | Avalonia.Labs.Lottie | 11.3.1 | Lottie-Animationen (JSON) |
-| Xamarin.Android.Google.BillingClient | 8.3.0.1 | Google Play Billing |
-| Xamarin.Google.Android.Play.Review | 2.0.2.6 | Google In-App Review |
+| Xamarin.Android.Google.BillingClient | 8.3.0.2 | Google Play Billing |
+| Xamarin.Google.Android.Play.Review | 2.0.2.7 | Google In-App Review |
 | sqlite-net-pcl | 1.9.172 | Database |
 
 ---
@@ -206,7 +206,7 @@ NavigationRequested?.Invoke("route");
 // MainViewModel
 _childVM.NavigationRequested += route => CurrentPage = route;
 ```
-- `".."` = zurueck zum Parent
+- `".."` = zurück zum Parent
 - `"../subpage"` = zum Parent, dann zu subpage
 
 ### Android Back-Button Pattern (einheitlich, alle 9 Apps)
@@ -224,7 +224,7 @@ _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 public bool HandleBackPressed()
 {
     // 1. App-spezifische Overlays/Dialoge schließen
-    // 2. Sub-Navigation zurueck
+    // 2. Sub-Navigation zurück
     // 3. Double-Back-to-Exit (am Ende):
     var msg = _localization.GetString("PressBackAgainToExit") ?? "...";
     return _backPressHelper.HandleDoubleBack(msg);
@@ -259,7 +259,7 @@ catch (Exception) { MessageRequested?.Invoke("Fehler", "Speichern fehlgeschlagen
 - **Persistenz**: IMMER `DateTime.UtcNow` (NIE `DateTime.Now`)
 - **Format**: ISO 8601 "O" → `dateTime.ToString("O")`
 - **Parse**: IMMER `DateTime.Parse(str, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)`
-- **Tages-Tracking**: `DateTime.Today` fuer datumsbasierte Gruppierung
+- **Tages-Tracking**: `DateTime.Today` für datumsbasierte Gruppierung
 
 ### Thread-Safety
 
@@ -273,10 +273,10 @@ try { /* ... */ } finally { _semaphore.Release(); }
 Dispatcher.UIThread.Post(() => { SomeProperty = newValue; });
 ```
 
-### UriLauncher (Plattformuebergreifend)
+### UriLauncher (Plattformübergreifend)
 
 - `UriLauncher.OpenUri(uri)` statt `Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true })`
-- `UriLauncher.ShareText(text, title)` fuer natives Share-Sheet (Android) oder Clipboard (Desktop)
+- `UriLauncher.ShareText(text, title)` für natives Share-Sheet (Android) oder Clipboard (Desktop)
 - Desktop: Fallback auf Process.Start (OpenUri) bzw. Clipboard (ShareText)
 - Android: `PlatformOpenUri` wird in MainActivity auf `Intent.ActionView` gesetzt
 - Android: `PlatformShareText` wird in MainActivity auf `Intent.ActionSend` gesetzt
@@ -321,7 +321,7 @@ Dispatcher.UIThread.Post(() => { SomeProperty = newValue; });
 - Unterstützt InApp (non-consumable + consumable), Subscriptions, Auto-Reconnect
 
 ### Publisher-Account
-- **ca-app-pub-2588160251469436** fuer alle 6 werbe-unterstuetzten Apps
+- **ca-app-pub-2588160251469436** für alle 6 werbe-unterstützten Apps
 - RechnerPlus + ZeitManager sind werbefrei
 
 ---
@@ -340,7 +340,7 @@ dotnet publish src/Apps/{App}/{App}.Desktop -c Release -r linux-x64
 # Ausgabe: src/Apps/{App}/{App}.Desktop/bin/Release/net10.0/linux-x64/publish/
 ```
 
-### Android (AAB fuer Play Store)
+### Android (AAB für Play Store)
 ```bash
 dotnet publish src/Apps/{App}/{App}.Android -c Release
 # Ausgabe: src/Apps/{App}/{App}.Android/bin/Release/net10.0-android/publish/
@@ -348,9 +348,72 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 
 ---
 
+## Claude-Code Agents (24 Agents, Stand 16.04.2026)
+
+| Kategorie | Agent | Modell | Effort | Zweck |
+|-----------|-------|--------|--------|-------|
+| **Kritisches Denken** | `code-review` | opus | max | Code-Review mit MVVM-Violations-Check |
+|  | `debugger` | opus | max | Bug-Diagnose mit Hypothesen |
+|  | `pre-release` | opus | max | Release-Readiness inkl. Server-Checks |
+|  | `mvvm-auditor` | opus | max | Strikter MVVM-Audit (Code-Behind, Compiled Bindings, ViewLocator) |
+|  | `bingxbot` | opus | max | Trading-Domain-Experte (SK-System, ATI, BingX-API) |
+| **Architektur** | `architect` | opus | high | Design-Entscheidungen, Modul-Grenzen |
+|  | `planner` | opus | high | Feature-Planung mit Dateiliste + DI + RESX |
+|  | `devils-advocate` | opus | high | Ideen stress-testen |
+|  | `server-ops` | opus | high | Pi/systemd/SignalR/SSH-Deploy |
+| **Qualität** | `tester` | opus | high | Unit-Tests + Edge-Cases (MVVM, Trading-Logik) |
+|  | `refactor` | opus | high | Strukturelle Änderungen, Duplikate |
+|  | `migrator` | opus | high | Framework-Upgrades (Avalonia, .NET, SkiaSharp) |
+|  | `security` | opus | high | Secrets, Manifest, IAP, Compliance |
+|  | `performance` | opus | high | CPU/GC/UI-Stutter/Startup |
+|  | `skiasharp` | opus | high | Paint-Lifecycle, Shader, DPI |
+|  | `health` | opus | high | Makro-Gesundheit der Codebase |
+|  | `game-audit` | opus | high | Spieler-Perspektive (Balancing, UX, Economy) |
+| **Routine** | `ui` | sonnet | medium | AXAML/Styles/Touch/Bindings + MVVM-Basis |
+|  | `localize` | sonnet | medium | RESX-Vollständigkeit, Placeholder |
+|  | `documenter` | sonnet | medium | Kommentare, CLAUDE.md, Changelog |
+|  | `deploy` | sonnet | medium | Release-Pipeline (AAB) |
+|  | `dependency-checker` | sonnet | medium | NuGet-Updates, Vulnerabilities |
+|  | `git-detective` | sonnet | medium | Commit-History, Bug-Einführung |
+|  | `learn` | sonnet | medium | Code erklaeren, Patterns zeigen |
+
+### Workflows (häufige Szenarien)
+
+| Szenario | Ablauf |
+|----------|--------|
+| **Neue View bauen** | `planner` → `new-view` (Skill) → `mvvm-auditor` → `code-review` |
+| **Neuer Service** | `planner` → `new-service` (Skill) → `code-review` → `tester` |
+| **Bug fixen** | `debugger` → fixen → `code-review` → ggf. `tester` (Regression-Test) |
+| **Release (App)** | `pre-release` → `localize` → `deploy` |
+| **Release (Server)** | `pre-release` → `server-deploy` (Skill) → `server-ops` für Verifikation |
+| **BingXBot-Problem** | `bingxbot` (Domain) → ggf. `debugger` oder `server-ops` |
+| **MVVM-Sanierung** | `mvvm-auditor` (App-weit) → `code-review` → Build-Verifikation |
+| **Refactoring** | `health` → `refactor` → `code-review` → `tester` |
+
+### Skills (Projekt-lokal)
+
+| Skill | Zweck |
+|-------|-------|
+| `build-check` | Solution bauen + AppChecker |
+| `app-status` | Version, Commits, Metriken, TODOs einer App |
+| `new-view` | View + ViewModel nach Convention erstellen |
+| `new-service` | Interface + Impl + DI erstellen |
+| `mvvm-check` | Schneller Grep-MVVM-Audit (Pre-Commit) |
+| `localize-check` | RESX-Vollständigkeit (6 Sprachen) |
+| `release` | AAB bauen + Version erhöhen + Releases-Ordner |
+| `server-deploy` | BingXBot.Server/GardenControl.Server auf Pi deployen |
+| `changelog` | Changelog + Social-Posts (X, Reddit) aktualisieren |
+
+### Hooks (User-Settings `~/.claude/settings.json`)
+
+- **SessionStart**: MVVM-Strict-Reminder, auto-commit-Verbot, deutsche Umlaute, CLAUDE.md-Pflicht
+- **PostToolUse Write/Edit auf `View*.axaml.cs`**: Injizierter Reminder für Code-Behind-Hygiene
+
+---
+
 ## Troubleshooting
 
-| Problem | Ursache | Loesung |
+| Problem | Ursache | Lösung |
 |---------|---------|---------|
 | Material Icons unsichtbar | `MaterialIconStyles` nicht in App.axaml registriert | `<materialIcons:MaterialIconStyles />` in `<Application.Styles>` |
 | AdMob Crash auf Android | UMP Namespace hat Typo | `Xamarin.Google.UserMesssagingPlatform` (3x 's') |
@@ -364,16 +427,16 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | AAPT2260 Fehler | grantUriPermissions ohne 's' | `android:grantUriPermissions="true"` (mit 's') |
 | ${applicationId} geht nicht | .NET Android kennt keine Gradle-Placeholder | Hardcodierte Package-Namen verwenden |
 | Icons in Tab-Leiste fehlen | Material.Icons xmlns fehlt | `xmlns:materialIcons="using:Material.Icons.Avalonia"` |
-| VersionCode Ablehnung | Code bereits im Play Store | VOR Release aktuelle Codes im Play Store pruefen |
+| VersionCode Ablehnung | Code bereits im Play Store | VOR Release aktuelle Codes im Play Store prüfen |
 | Ads Error Code 0 + "Failed to instantiate ClientApi" | Ads vor SDK-Init geladen | `Initialize(activity, callback)` nutzen, Ads erst im Callback laden |
 | Release-App schließt sich beim 1. Start (VS) | VS kann in Release keinen Debugger anhängen | App manuell starten - funktioniert. Kein App-Bug, VS-Verhalten |
-| Process.Start PlatformNotSupportedException | Android unterstuetzt UseShellExecute nicht | `UriLauncher.OpenUri(uri)` verwenden (MeineApps.Core.Ava) |
+| Process.Start PlatformNotSupportedException | Android unterstützt UseShellExecute nicht | `UriLauncher.OpenUri(uri)` verwenden (MeineApps.Core.Ava) |
 | `\u20ac` als Text in XAML | XAML interpretiert C#-Unicode-Escapes nicht | Direkt `€` schreiben oder `&#x20AC;` verwenden |
 | TransformOperations CS0103 | `Avalonia.Media` reicht nicht | `using Avalonia.Media.Transformation;` hinzufügen |
 | IsAnimating Property-Warnung | Kollidiert mit `AvaloniaObject.IsAnimating()` | Property umbenennen (z.B. `IsPulsing`) oder `new` Keyword |
-| KeyFrame-Animation Crash "No animator" | `Style.Animations` hat keinen Animator fuer `RenderTransform` | NUR `Opacity`/`Width`/`Height` (double) in KeyFrames verwenden. `TransformOperationsTransition` in `Transitions` funktioniert |
-| TapScaleBehavior Crash "InvalidCastException" | `animation.RunAsync(ScaleTransform)` crasht in `TransformAnimator.Apply` | DispatcherTimer-basierte Animation statt Animation API fuer ScaleTransform verwenden |
-| Content hinter Ad-Banner abgeschnitten | Ad-Spacer 50dp, aber adaptive Banner 50-60dp+ | Ad-Spacer auf 64dp erhoehen (alle 6 MainViews). Adaptive Banner variieren je nach Geraet |
+| KeyFrame-Animation Crash "No animator" | `Style.Animations` hat keinen Animator für `RenderTransform` | NUR `Opacity`/`Width`/`Height` (double) in KeyFrames verwenden. `TransformOperationsTransition` in `Transitions` funktioniert |
+| TapScaleBehavior Crash "InvalidCastException" | `animation.RunAsync(ScaleTransform)` crasht in `TransformAnimator.Apply` | DispatcherTimer-basierte Animation statt Animation API für ScaleTransform verwenden |
+| Content hinter Ad-Banner abgeschnitten | Ad-Spacer 50dp, aber adaptive Banner 50-60dp+ | Ad-Spacer auf 64dp erhöhen (alle 6 MainViews). Adaptive Banner variieren je nach Gerät |
 | Style Selector AVLN2200 "Can not find parent" | `#Name` ohne Typ-Prefix | IMMER `Typ#Name` schreiben: `Grid#ModeSelector`, `Border#DisplayBorder` |
 | Enum-Werte englisch in UI | Direktes Binding an Enum-Property | Display-Property mit lokalisiertem Text verwenden, im ViewModel per `GetString()` setzen |
 | Daten erscheinen kurz, verschwinden | `_ = InitializeAsync()` mit `_list.Clear()` raced mit User-Aktionen | Task speichern: `_initTask = InitializeAsync()`, in Methoden `await _initTask` |
@@ -391,54 +454,21 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Play Review Namespace falsch | `Com.Google.Android.Play.Core.Review` existiert nicht | `Xamarin.Google.Android.Play.Core.Review` verwenden. Task/IOnCompleteListener aus `Android.Gms.Tasks`. `ReviewInfo` (Klasse), NICHT `IReviewInfo` |
 | MediaPlayer.PrepareAsync() gibt void zurück | Android Java-Binding: PrepareAsync() ist void, nicht Task | `Prepare()` synchron verwenden oder TaskCompletionSource mit Prepared-Event |
 | SKMaskFilter Native Memory Leak (OOM auf Android) | `paint.MaskFilter = SKMaskFilter.CreateBlur(...)` ohne Dispose des vorherigen Filters | Gecachte statische SKMaskFilter verwenden oder `paint.MaskFilter?.Dispose()` vor jeder Neuzuweisung |
-| JsonSerializer.Serialize auf Background-Thread → Collection-Crash | `Task.Run(() => Serialize(state))` waehrend GameLoop den State modifiziert | Serialisierung auf dem UI-Thread belassen (State ist klein, ~5-20ms). Alternative: DeepCopy vor Serialize |
-| Service-Caches stale nach Prestige/Import/Reset | GameLoopService/CraftingService subscriben nicht auf StateLoaded → Caches zeigen auf verwaiste Objekte | ALLE Services mit internen Caches MUESSEN `StateLoaded += ResetCaches` im Konstruktor haben |
+| JsonSerializer.Serialize auf Background-Thread → Collection-Crash | `Task.Run(() => Serialize(state))` während GameLoop den State modifiziert | Serialisierung auf dem UI-Thread belassen (State ist klein, ~5-20ms). Alternative: DeepCopy vor Serialize |
 | Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel | `PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium` Key fehlt | `IPurchaseService.InitializeAsync()` in Loading-Pipeline aufrufen (parallel zum ersten Schritt). Stellt Käufe + Abos via Google Play Billing wieder her |
 | SKCanvasView Game-Loop startet nicht (Countdown stuck) | ContentControl+ViewLocator setzt DataContext verzögert → `InvalidateCanvasRequested` hat beim `StartGameLoop()` keinen Subscriber → Render-Timer startet nie | 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded als Backup, (3) OnPaintSurface Safety-Net startet Timer nach. `TrySubscribeToViewModel()` als zentrale idempotente Methode |
-| Gilden-Mitglieder doppelt angezeigt | App-Datenverlust → neue PlayerId → Spieler tritt erneut bei → alter Eintrag bleibt in Firebase | 3-Maßnahmen-Fix: (1) `RemoveDuplicateMemberAsync` beim Join prüft auf gleichen Namen, (2) `CleanupStaleMembersAsync` entfernt >30d inaktive beim Laden, (3) UID→PlayerId Migration mit Retry auf DeleteAsync |
-| CanGiveBonus Button grau obwohl genug Geld | `CanGiveBonus` prüfte 24h Lohn, `GiveBonus` kostete nur 8h → Button zu restriktiv | Alle 3 Stellen auf 8h harmonisiert (WorkerProfileViewModel + WorkerService) |
-| Worker.AssignedWorkshop null bei Neustart | `GameState.CreateNew()` setzt `AssignedWorkshop` nicht → `IsWorking=false` → keine Fatigue-Akkumulation, falscher UI-Status | `AssignedWorkshop = WorkshopType.Carpenter` explizit setzen in `CreateNew()`. `SanitizeState` läuft nur bei geladenen Spielständen |
-| 5 Dialoge am allerersten Start | Daily Reward→Story→Welcome→FirstWorkshop→AcceptOrder erschlagen neue Spieler | Daily Reward Tag 1 still einsammeln. Welcome-Hint überspringen wenn Story Ch.1 gezeigt wurde (redundant) |
-| RecordMiniGameResult ignoriert QuickJobs | Early-Return bei `ActiveOrder == null` → Stats, Events, PerfectStreak nie aktualisiert bei QuickJobs → Belohnungen gehen verloren | `order.RecordTaskResult()` nur bei ActiveOrder, Stats+Events IMMER feuern |
-| Auto-Complete bei QuickJobs Navigation-Loop | `CanAutoComplete` wird true, aber `AutoCompleteGameAsync()` findet kein ActiveOrder → NavigateBack | `UpdateAutoCompleteStatus()` prüft `GetActiveOrder() != null` vor Auto-Complete |
-| PipePuzzle Rating zu großzügig | `optimalMoves = GridCols * GridRows` statt Pfad-Länge → moveEfficiency immer > 1.0 | `optimalMoves = Tiles.Count(t => t.IsPartOfSolution && !t.IsLocked)` |
-| QuickJob Ad-Verdopplung nur in UI | `WatchAdAsync` setzt nur `order.IsScoreDoubled`, QuickJobs haben kein solches Flag | `QuickJob.IsScoreDoubled` Property + Verdopplung in MainViewModel.Navigation.cs |
-| SimulatedExchange nicht unter BingXBot.Core | Namespace in CLAUDE.md war `BingXBot.Core.Simulation` | SimulatedExchange liegt in `BingXBot.Backtest/Simulation/` (Namespace `BingXBot.Backtest.Simulation`). Immer `Glob` vor Edit |
-| Gilde zeigt immer "Keine Internetverbindung" | 3 Bugs: (1) `GetAsync()` setzte `IsOnline=true` NICHT bei 200 OK mit "null"-Body, (2) `EnsureAuthenticatedAsync()` warf Exception statt Fallback auf neuen Account, (3) `GuildViewModel` catch-Block setzte IMMER Offline | (1) `IsOnline=true` VOR null-Check in GetAsync/QueryAsync, (2) Fallback `SignUpAnonymouslyAsync()` statt throw (sicher seit PlayerId-Migration), (3) catch prüft `IsOnline` statt blind Offline zu setzen. Zusätzlich: `SyncAuthToPlayerMappingAsync()` in GuildService.InitializeAsync() awaiten statt fire-and-forget |
 | Bildschirm flimmert bei Tab-/View-Wechsel | `FadeInContentPanel()` setzt `Opacity=0` NACH Binding-Update → neuer View kurz sichtbar bei voller Opacity → schwarzer Blitz | `PageTransitionStarting` Event via `OnActivePageChanging()` — feuert VOR dem Wert-Wechsel. View setzt `Opacity=0` bevor Bindings die neue View einblenden |
-| Firebase-Pfad unsichtbar (Permission denied still) | `database.rules.json` hat keinen Eintrag fuer den Pfad → Firebase gibt `null` zurueck statt Daten, kein Error-Log (GetAsync faengt 200+null) | JEDEN neuen Firebase-Pfad auch in `database.rules.json` eintragen. Checkliste: player_guilds, player_invites, available_players, guild_invite_codes, invite_code_to_guild |
-| Firebase orderBy-Query liefert keine Daten | Kein `.indexOn` fuer das abgefragte Feld in den Security Rules | `.indexOn: ["feldname"]` unter dem Pfad in `database.rules.json` hinzufuegen |
-| Firebase guilds-Write schlaegt fehl bei Create | Write-Rule verlangt guild_members-Existenz, aber Member wird erst nach guilds geschrieben | `\|\| !data.exists()` zur Write-Rule hinzufuegen (erlaubt Erstellen neuer Eintraege) |
-| SK-System keine Trades trotz Signal | `CheckM15EntryTiming` (RSI>75 + Candle-Richtung) blockiert SK-Signale nach eigener 15m-Analyse | SK-System vom generischen M15-Timing-Check ausnehmen (`isSKSignal` Guard in TradingServiceBase) |
-| TradFi (Rohstoffe/Aktien/Indices/Forex) nicht im Scan | Single-Mode Paper: `IsHedgeModeActive=false` (Default, nie gesetzt). Multi-Mode: `EnableTradFi` Fallback `false` | Single-Mode: `_scannerSettings.IsHedgeModeActive = true` vor Start. Multi-Mode: Fallback auf `true` |
-| MaxTrades/Tag umgehbar (4. Trade trotz Limit) | `_tradesToday` nicht `volatile` → JIT cached Register-Read zwischen Loops | `protected volatile int _tradesToday;` in TradingServiceBase |
-| ContinueWith verschluckt WebSocket-Exceptions | Ohne `TaskScheduler.Default` → Continuation auf falschem Thread | `CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default` |
-| ATI lernt falsche PnL bei manuellem Close | Hardcodierte Fee (0.05%) statt echte Commission-Rate | `_liveManager.CommissionTakerRate` statt `0.0005m` in DashboardViewModel |
-| SK Short-SL sofortiger Hit | Fallback `Retracement786` liegt bei Short unter currentPrice wenn Preis über 78.6% Retracement | Fallback auf `Retracement382` (höchstes Level) + Seitenprüfung: SL auf falscher Seite → ATR-Notfall-SL |
-| SK Flash-Crash beim ersten Evaluate nicht erkannt | `_lastH4Close=0` beim Klon-Start → Crash-Check übersprungen | Erster Evaluate initialisiert nur `_lastH4Close`, Crash-Check ab dem zweiten |
-| SK Sandwich-Check findet Gegensequenz nicht | `FromCandles()` gibt nur primäre Machine zurück | `FromCandlesBoth()` gibt Long+Short zurück, Gegenrichtung direkt verfügbar |
-| SK WaveCharacter/Type immer Default | `ToSequence()` rief nie `ClassifySequenceCharacter` auf | `ToSequence(candles)` Überladung setzt WaveAB/WaveBC/Type |
-| SK Invalidierung verschluckt Kerze | ProcessSucheB/ProcessAktiviert rief nach Reset nicht ProcessSuche0 auf | `return ProcessSuche0(candle, index)` nach Invalidierung |
-| SK Position-Sizing Score 6-7 = 75% | CryptoTrendPro.GetPositionScaleFactor für SK-Scores unpassend | Eigene SK-Schwellen: 100% ab Score 5, 125% ab Score 10 |
-| SK GKL falsche Basis (0→A statt 0→TargetC) | `_completedGkl559 = h4Seq.Retracement559` basierte auf 0→A Strecke | GKL = 50/66.7% von Extension1618→Point0 (Gesamtstrecke). Felder: `_completedGkl500`/`_completedGkl667` |
-| Isolated Margin nie gesetzt | `SetMarginTypeAsync()` nie aufgerufen → Cross Margin | `SetMarginTypeAsync(symbol, Isolated)` VOR jeder Order in LiveTradingService (try-catch) |
-| ExitState nach Neustart verloren | PositionExitState, TradesToday, Cooldowns nicht in DB | SaveExitStatesAsync/LoadExitStatesAsync + SaveRuntimeStateAsync/LoadRuntimeStateAsync in BotDatabaseService |
-| Verwaiste SL/TP bei manuellem Close | Signal entfernt, aber native BingX-Orders blieben | `CancelNativeSlTpOrdersAsync` in verwaiste-Signal-Erkennung ergänzt |
-| Multi-Mode kein TradFi (nur Crypto) | `_isHedgeModeActive` aus `[JsonIgnore]` Property gelesen → immer false | `restClient.IsHedgeModeAsync()` direkt abfragen statt aus BotSettings lesen |
-| SK 4H-Dedup permanent statt Time-Lock | Gleiche 4H-Sequenz nach 1 Trade für immer gesperrt → keine Re-Entries | Nur blockieren wenn `_signalCooldown > 0` (≈2h). Danach neue 15m-Entries erlaubt |
-| SK 100% Over-Extension = 0s Fenster | Preis schießt in einer 15m-Kerze über 100% → Entry-Fenster effektiv 0 | Block erst bei 138.2% Extension statt 100%. BC-Zone valid bis 138.2% |
-| SK Bottom-Up 3 Verluste = Deadlock | `_consecutiveFailsInDirection >= 3` → harter Block → kein Trade → kein Gewinn → Block ewig | Confluence-Erhöhung statt Block: `adjustedMinConfluence = _minConfluence + fails - 1` |
-| SK BTC Health -2 = alle Longs tot | `AllowLong = score >= -1` blockierte ALLE Altcoin-Longs bei BTC-Score -2 | `AllowLong = score >= -3` (nur extremer Crash blockt). PositionScale deckt Rest ab |
-| SK 15m falsche Richtung = sofort tot | `FromCandles()` wählt "beste" Sequenz — kann zufällig Short sein bei Long-4H | `FromCandlesBoth()` wählt direkt die passende Richtung (Long/Short Machine) |
-| SK Multi-Tier: Tier 2/3 Candles fehlen | M5/M1-Candles werden nur geladen wenn `EnableTier2Intraday`/`EnableTier3Scalp` = true UND `isSKSystem` | Beide Settings default `true`. Tier 2/3 werden automatisch übersprungen wenn Candles fehlen (count < 20) |
-| SK RRR hart 3:1 tötet fortgeschrittene Trades | Bei 80% erreichtem 4H-Ziel ist verbleibender TP-Weg kurz → RRR < 3 | Gestaffeltes RRR: Score>=8: 1.5:1, >=6: 2.0:1, >=4: 2.5:1, sonst 3.0:1 |
-| SK BuyZone/GKL falsche Fibonacci-Level | `IsInBuyZone()` nutzte 50-61.8%, `IsInGklZone()` nutzte 55.9-66.7% → 4H +2 Confluence-Bonus verpasst bei SK-kritischen Leveln | SK Golden Pocket = 50-66.7% überall: Sequence.cs + SequenceDetector.cs. `Retracement559` nur als Confluence-Level, NICHT als Zone-Grenze |
-| TP-Orders fehlen nach App-Neustart | `_pendingLimitOrders` war nur In-Memory (ConcurrentDictionary). App-Neustart zwischen Limit-Order und Fill → Fill-Detection verloren → TP nie platziert | `PendingLimitOrderState`
-| SK Point 0 kein echtes Swing-Extrem | Jedes zufällige Low/High wurde sofort als Point 0 akzeptiert → Sequenzen auf Noise-Basis | `MinPoint0Candles = 3` + `_point0CandleCount` Counter. Point 0 muss 3 Kerzen bestätigt sein bevor SucheA startet |
-| SK B-Retracement nicht validiert | Sequenzen mit 5% oder 90% Retracement wurden aktiviert → kein echtes B | `TryActivate()` prüft B-Retracement 38.2-78.6%. Außerhalb → State bleibt SucheB |
-| SK Promote-Logik war toter Code | `InvalidateAndPromote`/`InvalidateAndPromoteSucheB` hatten Bedingung `newExtreme > failedP0` (Long) die logisch unmöglich war (Invalidierung garantiert Gegenteil). Selbst wenn getriggert: PotentialB=P0 → 100% B-Ret → TryActivate-Ablehnung | Beide Methoden komplett ersetzt: Reset auf Suche0 + `_point0CandleCount = _minPoint0Candles` (P0 sofort bestätigt). Kein direkter SucheB-Sprung mehr. Spart ~3 Kerzen Wartezeit nach Invalidierung |
-| SK feste Prozent-Schwellen (nur Crypto) | `minImpulse=0.5%`, `correctionThreshold=0.3%` funktionieren nur für Crypto (EUR/USD ATR ≈ 0.28%) | ATR-basierte Schwellen: `minImpulse = ATR% × 1.0`, `correction = ATR% × 1.5`. Alle 5 TFs (W1/D1/H4/H1/M30) |
-| SK B-Retracement Bounds zu locker (23.6-88.6%) | Default-Konstruktor `0.236m, 0.886m` erlaubte fast-Invalidierung als B | Alle 5 `FromCandlesBoth()`-Aufrufe explizit mit `0.382m, 0.786m` (SK Tradebook) |
-| SK `_point0CandleCount` stale bei Promote | Counter behielt alten Wert wenn Sequenz promoted wurde → nächster Point 0 übersprungen | `_point0CandleCount = _minPoint0Candles` in beiden Promote-Methoden (P0 sofort bestätigt, da Invalidierung bereits echtes Extrem beweist) |
-| SK Point-0 Bestätigung zu kurz (3 Kerzen fix) | `MinPoint0Candles = 3` war hart-kodiert — bei ~100+ Kerzen pro Sequenz nur ~3% Bestätigung, auf H4 = 12h für ein Multi-Wochen-Swing | `_minPoint0Candles` als Konstruktor-Parameter: W1=3, D1=5, H4=5 (20h ≈ 1 Tag), H1=3, M30=2 (1h für schnelle Entries) |
-| D1/M30 zu wenig Kerzen für SK-Sequenz | D1: 90 Tage = ~90 Kerzen (< 100 Mindest). M30: 48h = ~96 Kerzen (grenzwertig) | D1: 365 Tage (~365 Kerzen). M30: 120h/5 Tage (~240 Kerzen). In TradingServiceBase.cs |
+
+---
+
+## App-spezifische Gotchas
+
+App-spezifische Bug-Patterns und Troubleshooting-Einträge liegen in den jeweiligen App-CLAUDE.md Dateien:
+
+- **HandwerkerImperium** (Service-Caches, Gilden/Firebase, Worker/Mini-Games): `src/Apps/HandwerkerImperium/CLAUDE.md`
+- **BingXBot** (SK-System, TP/SL, ATI, Triple-Entry, BingX-API): `src/Apps/BingXBot/CLAUDE.md`
+- **BomberBlast** (Cloud-Save, Dungeon-Run, Rewarded-Cooldown): `src/Apps/BomberBlast/CLAUDE.md`
+- **SmartMeasure** (BLE, ARCore, Bowyer-Watson, RTK-GPS): `src/Apps/SmartMeasure/CLAUDE.md`
+- **RebornSaga** (Sprite-Cache, Scene-Manager, StoryEngine): `src/Apps/RebornSaga/CLAUDE.md`
+
+Firebase-Security-Rules sind in `database.rules.json` (aktuell nur HandwerkerImperium).

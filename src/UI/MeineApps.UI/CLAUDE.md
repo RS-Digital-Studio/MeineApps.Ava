@@ -45,8 +45,8 @@ MeineApps.UI/
 ├── Behaviors/
 │   ├── TapScaleBehavior.cs         # Scale-Down Micro-Animation bei Tap
 │   ├── FadeInBehavior.cs           # Fade-In + Slide-from-Bottom Animation
-│   ├── StaggerFadeInBehavior.cs    # Gestaffelter Fade-In fuer Listen
-│   ├── CountUpBehavior.cs          # Animiertes Hochzaehlen fuer TextBlocks
+│   ├── StaggerFadeInBehavior.cs    # Gestaffelter Fade-In für Listen
+│   ├── CountUpBehavior.cs          # Animiertes Hochzählen für TextBlocks
 │   └── SwipeToRevealBehavior.cs    # Swipe-to-Reveal (Delete-Aktion)
 ├── SkiaSharp/
 │   ├── SkiaThemeHelper.cs           # Theme-Farben-Cache (SKColor)
@@ -411,7 +411,7 @@ public class MyAppLoadingPipeline : LoadingPipelineBase
 
 ## FloatingTextOverlay (Game Juice)
 
-Canvas-basiertes Control fuer animierten Floating-Text (schwebt nach oben, fadet aus).
+Canvas-basiertes Control für animierten Floating-Text (schwebt nach oben, fadet aus).
 
 ```axaml
 xmlns:controls="using:MeineApps.UI.Controls"
@@ -426,7 +426,7 @@ xmlns:controls="using:MeineApps.UI.Controls"
 FloatingTextCanvas.ShowFloatingText("Gespeichert!", x, y, Color.Parse("#22C55E"), fontSize: 16);
 ```
 
-- 1.2s Animation, 80px Aufwaertsbewegung, CubicEaseOut
+- 1.2s Animation, 80px Aufwärtsbewegung, CubicEaseOut
 - Fade-Out: 100% bis 30%, dann linear auf 0%
 - IsHitTestVisible=false, ClipToBounds=true
 - Kann mehrfach gleichzeitig aufgerufen werden (jeder Aufruf erstellt neuen TextBlock)
@@ -493,7 +493,7 @@ Fade-In Animation mit optionalem Slide-from-Bottom Effekt.
 
 ## StaggerFadeInBehavior
 
-Automatischer gestaffelter Fade-In fuer Listen-Items. Erkennt den Index im uebergeordneten Panel.
+Automatischer gestaffelter Fade-In für Listen-Items. Erkennt den Index im übergeordneten Panel.
 
 ```axaml
 <Border>
@@ -503,14 +503,14 @@ Automatischer gestaffelter Fade-In fuer Listen-Items. Erkennt den Index im ueber
 </Border>
 ```
 
-- StaggerDelay: Verzoegerung pro Element in ms (Default: 50)
+- StaggerDelay: Verzögerung pro Element in ms (Default: 50)
 - BaseDuration: Animationsdauer in ms (Default: 300)
 - FixedIndex: Fester Index statt Auto-Erkennung (-1 = automatisch)
 - Fade-In + Slide-Up (15px), CubicEaseOut
 
 ## CountUpBehavior
 
-Zaehlt einen TextBlock-Wert von 0 zum Zielwert hoch (animierte Zahl).
+Zählt einen TextBlock-Wert von 0 zum Zielwert hoch (animierte Zahl).
 
 ```axaml
 <TextBlock>
@@ -519,7 +519,7 @@ Zaehlt einen TextBlock-Wert von 0 zum Zielwert hoch (animierte Zahl).
   </i:Interaction.Behaviors>
 </TextBlock>
 
-<!-- Waehrungsbetraege mit Vorzeichen und de-DE Formatierung -->
+<!-- Währungsbetraege mit Vorzeichen und de-DE Formatierung -->
 <TextBlock>
   <i:Interaction.Behaviors>
     <behaviors:CountUpBehavior TargetValue="{Binding Balance}" Format="N2"
@@ -528,12 +528,12 @@ Zaehlt einen TextBlock-Wert von 0 zum Zielwert hoch (animierte Zahl).
 </TextBlock>
 ```
 
-- TargetValue: Zielwert (double, Binding-faehig)
+- TargetValue: Zielwert (double, Binding-fähig)
 - Format: Zahlenformat (Default: "F1")
 - Suffix: Text nach der Zahl (Default: "")
 - Prefix: Text vor der Zahl (Default: "")
-- CultureName: CultureInfo fuer Formatierung (Default: "" = InvariantCulture, z.B. "de-DE")
-- UseSignedPrefix: Automatisch "+" bei positiven Werten (Default: false). Ueberschreibt Prefix
+- CultureName: CultureInfo für Formatierung (Default: "" = InvariantCulture, z.B. "de-DE")
+- UseSignedPrefix: Automatisch "+" bei positiven Werten (Default: false). Überschreibt Prefix
 - Duration: Animationsdauer in ms (Default: 500)
 - 30 Frames, CubicEaseOut Interpolation
 
@@ -568,7 +568,7 @@ Swipe-to-Reveal Behavior: Verschiebt ein Control nach links um eine Aktion dahin
 
 ## TooltipBubble (Onboarding)
 
-Abgerundete Tooltip-Blase mit Tap-to-Dismiss fuer Onboarding-Flows.
+Abgerundete Tooltip-Blase mit Tap-to-Dismiss für Onboarding-Flows.
 
 ```axaml
 xmlns:controls="using:MeineApps.UI.Controls"
@@ -588,9 +588,9 @@ xmlns:controls="using:MeineApps.UI.Controls"
 
 ```csharp
 // Im Code-Behind:
-OnboardingTooltip.Text = "Wische nach links zum Loeschen";
+OnboardingTooltip.Text = "Wische nach links zum Löschen";
 OnboardingTooltip.Show();
-OnboardingTooltip.Dismissed += (_, _) => { /* naechster Tooltip */ };
+OnboardingTooltip.Dismissed += (_, _) => { /* nächster Tooltip */ };
 ```
 
 - Properties: Text (string), Arrow (Top/Bottom)

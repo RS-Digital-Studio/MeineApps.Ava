@@ -10,10 +10,27 @@
     <!-- Play Store erfordert AAB -->
     <AndroidPackageFormat>aab</AndroidPackageFormat>
 
-    <!-- Debug-Symbole auch im Release fuer VS-Debugger auf Android -->
+    <!-- Debug-Symbole NUR im Debug-Build. Im Release erschweren Symbole Reverse-Engineering
+         (Premium-Gates, Firebase-Keys). Fix 17.04.2026 Tiefen-Review Security-Finding. -->
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.Contains('android')) And '$(Configuration)' == 'Debug'">
     <AndroidIncludeDebugSymbols>true</AndroidIncludeDebugSymbols>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.Contains('android')) And '$(Configuration)' == 'Release'">
+    <!-- Symbole NICHT ins AAB (erschwert Reverse-Engineering), aber LOKAL erzeugen
+         damit Play Console "Native Debug Symbols"-Upload + ANR/Crash-Deobfuskation moeglich ist.
+         `embedded` bettet PDB in die DLL ein (kleinerer Footprint), `AndroidIncludeDebugSymbols=false`
+         verhindert, dass sie in die signierte AAB-Ausgabe einkopiert werden. -->
+    <AndroidIncludeDebugSymbols>false</AndroidIncludeDebugSymbols>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.Contains('android'))">
 
     <!-- Full AOT: ALLE Methoden AOT-kompiliert, kein JIT-Fallback.
          Behebt Mono JIT-Assertion "!ji->async" Crash auf manchen Geraeten (z.B. Huawei P30).

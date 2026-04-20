@@ -1,7 +1,7 @@
 # MeineApps.Core.Premium.Ava - Premium Features Library
 
 ## Zweck
-Monetarisierungs-Library fuer Avalonia Apps (Ads, IAP, Trial):
+Monetarisierungs-Library für Avalonia Apps (Ads, IAP, Trial):
 - Ad State Management (AdMob)
 - In-App Purchases State Management
 - 14-Day Trial System
@@ -44,12 +44,12 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 
 ## Unterschiede zu MAUI-Version
 - Nutzt IPreferencesService statt Preferences.Default
-- PurchaseService hat virtual Purchase-Methoden (plattformspezifisch ueberschreibbar)
+- PurchaseService hat virtual Purchase-Methoden (plattformspezifisch überschreibbar)
 - AdBannerView ist Avalonia UserControl statt MAUI ContentView
 - Kein Plugin.InAppBilling direkt - Billing wird in Android-Projekten implementiert
 - DI via IServiceCollection statt MauiAppBuilder
 
-## Apps (nur werbe-unterstuetzte)
+## Apps (nur werbe-unterstützte)
 | App | Premium | Modell |
 |-----|---------|--------|
 | HandwerkerRechner | Ja | 3,99 EUR remove_ads |
@@ -64,7 +64,7 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 - `premium_monthly` - Abo (WorkTimePro)
 - `premium_lifetime` - Einmalkauf (WorkTimePro)
 
-**WICHTIG:** RechnerPlus und ZeitManager sind werbefrei und referenzieren NICHT Core.Premium! Keine Ad-IDs in AdConfig.cs fuer diese Apps.
+**WICHTIG:** RechnerPlus und ZeitManager sind werbefrei und referenzieren NICHT Core.Premium! Keine Ad-IDs in AdConfig.cs für diese Apps.
 
 ## Android AdMob Integration (07.02.2026)
 
@@ -78,11 +78,11 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 - **Standard**: `GravityFlags.Bottom | GravityFlags.CenterHorizontal` mit `BottomMargin = tabBarHeightDp * density`
 - **Top-Position**: `IAdService.SetBannerPosition(true)` wechselt auf `GravityFlags.Top` (z.B. BomberBlast GameView)
 - Positioniert die Werbung direkt UEBER der Avalonia Tab-Bar (Bottom) oder am oberen Rand (Top)
-- `AdInsetListener` passt BottomMargin fuer Navigation-Bar-Insets an (Edge-to-Edge)
+- `AdInsetListener` passt BottomMargin für Navigation-Bar-Insets an (Edge-to-Edge)
 - `OnAdsStateChanged` reagiert auf `BannerVisible` (Show/Hide) UND `IsBannerTop` (Position-Wechsel)
-- **Adaptive Banner-Hoehe**: `GetCurrentOrientationAnchoredAdaptiveBannerAdSize` erzeugt Banner mit variabler Hoehe (50-60dp+ je nach Geraet). Avalonia Ad-Spacer muss 64dp sein (nicht 50dp)!
+- **Adaptive Banner-Höhe**: `GetCurrentOrientationAnchoredAdaptiveBannerAdSize` erzeugt Banner mit variabler Höhe (50-60dp+ je nach Gerät). Avalonia Ad-Spacer muss 64dp sein (nicht 50dp)!
 
-### Tab-Bar-Hoehen (tabBarHeightDp Parameter)
+### Tab-Bar-Höhen (tabBarHeightDp Parameter)
 | App | tabBarHeightDp | Grund |
 |-----|---------------|-------|
 | FinanzRechner | 56 | Buttons Height=56 |
@@ -95,9 +95,9 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 ### UMP (GDPR Consent)
 - **C# Namespace hat Typo:** `Xamarin.Google.UserMesssagingPlatform` (DREIFACHES 's')
 - `ConsentRequestParameters` + `UserMessagingPlatform.LoadAndShowConsentFormIfRequired()`
-- Zeigt GDPR-Consent-Dialog fuer EU-Nutzer
+- Zeigt GDPR-Consent-Dialog für EU-Nutzer
 - **SDK-Init-Callback (10.02.2026):** `Initialize(activity, onComplete)` nutzt `IOnInitializationCompleteListener` - Ads duerfen erst nach Callback geladen werden
-- `AttachToActivity` erstellt Layout + laedt Banner sofort (innerhalb Init-Callback)
+- `AttachToActivity` erstellt Layout + lädt Banner sofort (innerhalb Init-Callback)
 - `RequestConsent()` zeigt nur GDPR-Form, keine Ad-Logik mehr im Consent-Callback
 - Fehler werden geloggt (ConsentFailureListener + ConsentFormDismissedListener), nicht verschluckt
 
@@ -107,8 +107,8 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 - `Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` 1.10.0.1 (D8 Duplicate Fix)
 
 ### D8 Duplicate Class Fix
-- `Directory.Build.targets`: `Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` mit `ExcludeAssets="all" PrivateAssets="all"` fuer Android-Projekte
-- Behebt Konflikt zwischen `...Annotation.Jvm` und `...Annotation.Android` Transitiv-Abhaengigkeiten
+- `Directory.Build.targets`: `Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` mit `ExcludeAssets="all" PrivateAssets="all"` für Android-Projekte
+- Behebt Konflikt zwischen `...Annotation.Jvm` und `...Annotation.Android` Transitiv-Abhängigkeiten
 
 ### AdConfig.cs - Echte Ad-Unit-IDs
 - 1 Publisher-Account: `ca-app-pub-2588160251469436` (alle 6 Apps)
@@ -136,21 +136,21 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 #### DI-Integration in Apps
 - Jede App hat in `App.axaml.cs`: `static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory`
 - Nach `services.AddMeineAppsPremium()` wird Factory als DI-Override registriert (wenn gesetzt)
-- `MainActivity.cs` erstellt RewardedAdHelper, setzt Factory VOR base.OnCreate(), laedt Ad NACH DI-Build
-- Lazy Resolution: IPurchaseService wird erst beim ersten Aufruf ueber IServiceProvider aufgeloest
+- `MainActivity.cs` erstellt RewardedAdHelper, setzt Factory VOR base.OnCreate(), lädt Ad NACH DI-Build
+- Lazy Resolution: IPurchaseService wird erst beim ersten Aufruf über IServiceProvider aufgelöst
 
 #### IRewardedAdService Interface (Services/)
 - `IsAvailable`: bool - Ob Rewarded Ad geladen und bereit ist
-- `ShowRewardedAdAsync()`: Task<bool> - Zeigt Ad, gibt true bei Belohnung zurueck
+- `ShowRewardedAdAsync()`: Task<bool> - Zeigt Ad, gibt true bei Belohnung zurück
 - Premium-Nutzer: IsAvailable immer false (keine Ads)
 
 #### RewardedAdService (Services/) - Desktop Fallback
 - Simuliert Rewarded Ads auf Desktop (Task.Delay + immer true)
-- Wird ueberschrieben durch AndroidRewardedAdService auf Android
+- Wird überschrieben durch AndroidRewardedAdService auf Android
 
 #### DI-Registrierung
 - `AddMeineAppsPremium()` registriert `IRewardedAdService` als Singleton (RewardedAdService)
-- Apps ueberschreiben via `RewardedAdServiceFactory` Property fuer Android-Implementierung
+- Apps überschreiben via `RewardedAdServiceFactory` Property für Android-Implementierung
 
 ### Google Play Billing Client (17.02.2026)
 

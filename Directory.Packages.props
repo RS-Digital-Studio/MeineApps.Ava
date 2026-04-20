@@ -13,7 +13,7 @@
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.13" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.13" />
     <PackageVersion Include="Avalonia.Skia" Version="11.3.13" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.13" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.14" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- ICONS                                                            -->
@@ -85,14 +85,14 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DI & LOGGING                                                     -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.6" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.6" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.6" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- CRYPTOGRAPHY                                                    -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.5" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.6" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TRADING INDICATORS                                              -->
@@ -100,13 +100,10 @@
     <PackageVersion Include="Skender.Stock.Indicators" Version="2.7.1" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- ML / OPTIMIERUNG (BingXBot ATI - Adaptive Trading Intelligence) -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Microsoft.ML" Version="5.0.0" />
-    <PackageVersion Include="Microsoft.ML.LightGbm" Version="5.0.0" />
-    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.22.0" />
-    <PackageVersion Include="GeneticSharp" Version="3.1.4" />
-
+    <!-- ML / OPTIMIERUNG (BingXBot ATI - reserviert, bei Bedarf hinzufuegen) -->
+    <!-- Microsoft.ML 5.0.0, Microsoft.ML.LightGbm 5.0.0,                  -->
+    <!-- Microsoft.ML.OnnxRuntime 1.22.0, GeneticSharp 3.1.4               -->
+    <!-- entfernt 2026-04-18: nicht implementiert, ~300MB transitive       -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- KARTEN & BLE & AR (SmartMeasure)                                  -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -119,7 +116,7 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="System.Device.Gpio" Version="4.2.0" />
     <PackageVersion Include="Iot.Device.Bindings" Version="4.2.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.6" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- TESTING                                                          -->

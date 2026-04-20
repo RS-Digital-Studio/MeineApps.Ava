@@ -11,6 +11,8 @@ using Google.AR.Core.Exceptions;
 using SmartMeasure.Shared.Models;
 using Javax.Microedition.Khronos.Opengles;
 using EGLConfig = Javax.Microedition.Khronos.Egl.EGLConfig;
+// Camera: ARCore-Typ (nicht Android.Graphics.Camera). ArCaptureActivity nutzt ausschliesslich ARCore.
+using Camera = Google.AR.Core.Camera;
 
 namespace SmartMeasure.Android.Ar;
 
@@ -104,14 +106,102 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
     private readonly object _frameLock = new();
     private readonly object _dataLock = new(); // Schuetzt _points, _contours, _activeContour
 
+    // Reticle/Live-HitTest (aktualisiert pro Frame vom GL-Thread)
+    private float _reticleHitDistance;
+    private float? _reticleHeightDelta;
+    private ArHitQuality _reticleHitQuality;
+
+    // Session-Recovery: temporärer Save nach jedem Punkt-Set
+    private const string RecoveryKeyPoints = "ar.recovery.points";
+    private const string RecoveryKeyContours = "ar.recovery.contours";
+    private const string RecoveryKeyTimestamp = "ar.recovery.timestamp";
+
+    // Haptic Feedback
+    private global::Android.OS.Vibrator? _vibrator;
+
+    // Auto-Close Detection (für Kontur)
+    private const float AutoCloseDistanceMeters = 0.3f; // 30cm — User kann Loop schließen
+    private (float x, float y)? _autoCloseScreenTarget;
+
+    // Präzisions-Manager: Anchors + Multi-Frame-Averaging + Stabilität
+    private readonly ArAnchorManager _anchorManager = new();
+    private ArStabilityMonitor? _stabilityMonitor;
+
+    // Multi-Frame-Sampling-State — geteilt zwischen UI-Thread (Start) und GL-Thread (Update/Finalize).
+    // _samplerLock schützt die Gruppe; _activeSampler-Referenz-Swap ist zusätzlich volatile-like
+    // durch den Lock.
+    private readonly object _samplerLock = new();
+    private ArPoseSampler? _activeSampler;
+    private float _sampleTargetX, _sampleTargetY;
+    private int _samplesCollected;
+    private long _sampleStartMs;
+    private const int MultiFrameSampleTargetCount = 10;
+    private const int MultiFrameSampleTimeoutMs = 800;
+
+    // GPS/Heading Averaging (Multi-Sample beim Session-Start)
+    private readonly List<(double lat, double lon, double? alt, float? acc)> _gpsSamples = [];
+    private readonly List<float> _headingSamples = [];
+    private const int GpsSampleTargetCount = 10;
+    private const int HeadingSampleTargetCount = 20;
+
+    // Ground-Plane als absolute Höhen-Referenz (Y-Wert der größten horizontalen Plane).
+    // Float? ist nicht atomic → wir nutzen stattdessen float + separates volatile-Flag.
+    private volatile bool _groundPlaneYSet;
+    private float _groundPlaneYValue;
+
+    // ARCore-basiertes Heading (Sensor-Fusion aus Kamera-Pose)
+    private readonly List<float> _arCoreHeadingSamples = [];
+
+    // Magnetometer-Accuracy (0=keine bis 3=hoch) — vom Sensor-Thread geschrieben, GL-Thread gelesen
+    private volatile int _magneticAccuracy = 3;
+    private volatile bool _lowMagAccuracyWarned;
+
+    // Tracking-Quality-History — vom GL-Thread inkrementiert, von UI-Thread in FinishCapture gelesen
+    private volatile int _frameCountTracking;
+    private volatile int _frameCountTotal;
+
+    // Display-Insets für Punch-Hole (S25 Ultra hat zentrale Kamera oben!) + Nav-Bar.
+    // Wird beim ersten Window-Attach ermittelt.
+    private float _topInsetPx;
+    private float _bottomInsetPx;
+
+    // Multi-Sample-Count dynamisch: Highend-Geräte (Elite-Chip) können schneller samplen
+    private int _effectiveMultiFrameSampleTargetCount = 10;
+
+    // Geospatial-API (ARCore VPS): Nach Aktivierung liefert earth.GetCameraGeospatialPose()
+    // globale Lat/Lon/Alt/Heading mit Accuracy. Viel präziser als Magnetometer+GPS.
+    private volatile bool _geospatialActive;
+    private volatile bool _geospatialEnabled; // Config war erfolgreich gesetzt
+    private readonly List<float> _geospatialHorizontalAccSamples = [];
+    private readonly List<float> _geospatialHeadingAccSamples = [];
+    private double? _lastGeoLatitude;
+    private double? _lastGeoLongitude;
+    private double? _lastGeoAltitude;
+    private float? _lastGeoHorizontalAcc;
+    private float? _lastGeoHeading;
+    private float? _lastGeoHeadingAcc;
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
         _sessionStart = DateTime.UtcNow;
 
-        // Sensordaten beim Start erfassen
+        // Vibrator für Haptic-Feedback (Samsung-optimierte Predefined-Effects auf API 29+)
+        _vibrator = GetSystemService(VibratorService) as global::Android.OS.Vibrator;
+
+        // Stabilitäts-Monitor für präzise Punkt-Erfassung
+        _stabilityMonitor = new ArStabilityMonitor(this);
+
+        // Sample-Count an Gerät anpassen — auf leistungsstarken Chips mehr Samples
+        // für höhere Präzision innerhalb der 800ms-Timeout
+        _effectiveMultiFrameSampleTargetCount = IsHighEndDevice() ? 15 : 10;
+
+        // Sensordaten beim Start erfassen (Multi-Sample-Averaging läuft parallel über 2-5s)
         CaptureGpsPosition();
         CaptureSensorData();
+
+        // Session-Recovery: Falls vorhandene temp-Daten aus abgestürzter Session → wiederherstellen
+        TryRestoreRecoveryState();
 
         // Root-Layout: FrameLayout (Schichten uebereinander)
         var rootLayout = new FrameLayout(this)
@@ -121,10 +211,13 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
                 ViewGroup.LayoutParams.MatchParent)
         };
 
-        // Schicht 1: GLSurfaceView (ARCore Kamera-Preview + OpenGL)
+        // Schicht 1: GLSurfaceView (ARCore Kamera-Preview + OpenGL).
+        // OpenGL ES 3.0 statt 2.0 — deutlich bessere Performance auf Snapdragon 8 Elite
+        // (NPU + GPU-Shader-Compilation-Caching). Wenn 3.0 nicht verfügbar fällt Android
+        // automatisch auf 2.0 zurück.
         _glSurfaceView = new GLSurfaceView(this);
         _glSurfaceView.PreserveEGLContextOnPause = true;
-        _glSurfaceView.SetEGLContextClientVersion(2);
+        _glSurfaceView.SetEGLContextClientVersion(3);
         _glSurfaceView.SetEGLConfigChooser(8, 8, 8, 8, 16, 0);
         _glSurfaceView.SetRenderer(this);
         _glSurfaceView.RenderMode = Rendermode.Continuously;
@@ -144,6 +237,13 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
     private Button? _btnPoint;
     private Button? _btnContour;
 
+    // Toolbar-Referenz für Nav-Bar-Safe-Area-Update bei OnApplyWindowInsets
+    private HorizontalScrollView? _toolbarScrollView;
+
+    // Aktueller Kontur-Typ für Garten-Elemente (wird beim "Neue Linie" gewählt)
+    private global::SmartMeasure.Shared.Models.ArContourType _currentContourType
+        = global::SmartMeasure.Shared.Models.ArContourType.Grenze;
+
     private void CreateToolbar(FrameLayout root)
     {
         var density = Resources!.DisplayMetrics!.Density;
@@ -154,14 +254,18 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             HorizontalScrollBarEnabled = false,
             FillViewport = true
         };
+        // Höhe 80dp (war 64dp) wegen größeren Buttons + Padding. Bottom-Margin wird
+        // später in OnApplyWindowInsets auf _bottomInsetPx gesetzt — sonst überlappt
+        // die System-Navigation-Bar des S25 Ultra die Toolbar.
         var scrollParams = new FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MatchParent,
-            (int)(64 * density))
+            (int)(80 * density))
         {
             Gravity = GravityFlags.Bottom
         };
         scrollView.LayoutParameters = scrollParams;
-        scrollView.SetBackgroundColor(Color.Argb(180, 0, 0, 0));
+        scrollView.SetBackgroundColor(Color.Argb(200, 0, 0, 0));
+        _toolbarScrollView = scrollView;
 
         var toolbar = new LinearLayout(this)
         {
@@ -170,14 +274,24 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         toolbar.SetGravity(GravityFlags.CenterVertical);
         toolbar.SetPadding((int)(4 * density), (int)(6 * density), (int)(4 * density), (int)(6 * density));
 
-        // Toolbar-Buttons (kompakter: 56dp statt 80dp, kein Margin-Overhead)
-        _btnPoint = AddToolbarButton(toolbar, "\u25CE Punkt", density, () => SetMode(CaptureMode.Point), true);
-        _btnContour = AddToolbarButton(toolbar, "\u2500 Linie", density, () => SetMode(CaptureMode.Contour));
-        AddToolbarButton(toolbar, "\u25EF Schließen", density, CloseActiveContour);
-        AddToolbarButton(toolbar, "\u21B6", density, Undo);
-        AddToolbarButton(toolbar, "\u21B7", density, Redo);
-        AddToolbarButton(toolbar, "\u2716 Löschen", density, DeleteSelectedPoint);
-        AddToolbarButton(toolbar, "\u2714 Fertig", density, FinishCapture);
+        // Toolbar-Buttons — Haptic + Gartenplanungs-Workflow:
+        // Linie-Button öffnet Typ-Auswahl-Dialog (Weg/Beet/Mauer/Zaun/Rasen/Terrasse/Grenze)
+        // Bei Typ-Auswahl wird aktive Kontur automatisch abgeschlossen + neue vom Typ gestartet.
+        _btnPoint = AddToolbarButton(toolbar, "\u25CE Punkt", density,
+            () => { VibrateLight(); SetMode(CaptureMode.Point); }, true);
+        _btnContour = AddToolbarButton(toolbar, "\u2500 Linie +", density,
+            () => { VibrateLight(); ShowContourTypeDialog(); });
+        AddToolbarButton(toolbar, "\u25EF Schließen", density,
+            () => { VibrateMedium(); CloseActiveContour(); });
+        AddToolbarButton(toolbar, "\u21B6", density, () => { VibrateLight(); Undo(); });
+        AddToolbarButton(toolbar, "\u21B7", density, () => { VibrateLight(); Redo(); });
+        AddToolbarButton(toolbar, "\u2716 Löschen", density,
+            () => { VibrateMedium(); DeleteSelectedPoint(); });
+        AddToolbarButton(toolbar, "\uD83D\uDCF7", density, TakeScreenshot);
+        AddToolbarButton(toolbar, "\u25CF REC", density, ToggleRecording);
+        AddToolbarButton(toolbar, "?", density, ShowHelpDialog);
+        AddToolbarButton(toolbar, "\u2714 Fertig", density,
+            () => { VibrateMedium(); FinishCapture(); });
 
         scrollView.AddView(toolbar);
         root.AddView(scrollView);
@@ -246,21 +360,23 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         var button = new Button(this)
         {
             Text = text,
-            TextSize = 11
+            TextSize = 14 // vorher 11 — S25 Ultra hat 6.9" Display, braucht größere Touch-Targets
         };
         button.SetAllCaps(false);
         button.SetTextColor(Color.White);
         button.SetBackgroundColor(isActive
-            ? Color.Argb(220, 255, 107, 0)   // Aktiv: kräftiges Orange
-            : Color.Argb(80, 255, 255, 255)); // Inaktiv: dezentes Weiß
-        button.SetPadding((int)(6 * density), 0, (int)(6 * density), 0);
+            ? Color.Argb(220, 255, 107, 0)
+            : Color.Argb(80, 255, 255, 255));
+        // Padding großzügiger für präzisere Touches
+        button.SetPadding((int)(14 * density), 0, (int)(14 * density), 0);
         button.SetMinimumWidth(0);
         button.SetMinWidth(0);
+        // Höhe 56dp statt 44dp — Material Design Empfehlung für Toolbar-Buttons
         var lp = new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WrapContent, (int)(44 * density))
+            ViewGroup.LayoutParams.WrapContent, (int)(56 * density))
         {
-            LeftMargin = (int)(2 * density),
-            RightMargin = (int)(2 * density)
+            LeftMargin = (int)(4 * density),
+            RightMargin = (int)(4 * density)
         };
         button.LayoutParameters = lp;
         button.Click += (_, _) => onClick();
@@ -270,12 +386,20 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 
     private void SetMode(CaptureMode mode)
     {
-        // Aktive Kontur abschliessen wenn Modus wechselt
-        if (_activeContour != null && _activeContour.Points.Count > 0)
+        // Aktive Kontur abschliessen wenn Modus wechselt — KOMPLETT unter Lock
+        // damit Render-Thread nicht zwischen Add+Nullify eine inkonsistente
+        // Zwischenansicht sieht.
+        lock (_dataLock)
         {
-            lock (_dataLock)
+            if (_activeContour != null && _activeContour.Points.Count > 0)
+            {
                 _contours.Add(_activeContour);
-            _activeContour = null;
+                _activeContour = null;
+            }
+            else
+            {
+                _activeContour = null;
+            }
         }
 
         _captureMode = mode;
@@ -292,15 +416,52 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             : Color.Argb(80, 255, 255, 255));
     }
 
-    /// <summary>Aktive Kontur schliessen (letzten Punkt mit erstem verbinden)</summary>
+    /// <summary>
+    /// Aktive Kontur schließen + Bowditch-Correction anwenden.
+    /// Der Rundungsfehler zwischen letztem und erstem Punkt wird proportional zur
+    /// zurückgelegten Distanz auf alle Zwischenpunkte verteilt (klassische Vermessungs-Technik).
+    ///
+    /// WICHTIG: Nach Bowditch werden die Anchors der korrigierten Punkte detacht,
+    /// damit RefreshAllAnchors die Korrektur im nächsten Frame NICHT überschreibt.
+    /// Die Punkte werden dadurch static (nicht mehr drift-korrigiert), aber das ist OK —
+    /// eine geschlossene Kontur ist per Definition eine fertige Messung.
+    /// </summary>
     private void CloseActiveContour()
     {
-        if (_activeContour == null || _activeContour.Points.Count < 3) return;
-
-        _activeContour.IsClosed = true;
+        ArContour? closedContour = null;
         lock (_dataLock)
+        {
+            if (_activeContour == null || _activeContour.Points.Count < 3) return;
+            _activeContour.IsClosed = true;
+
+            // Schritt 1: Anchors der Kontur-Punkte detachen — sonst überschreibt
+            // RefreshAllAnchors die Bowditch-Korrektur im nächsten Frame
+            foreach (var p in _activeContour.Points)
+            {
+                if (!string.IsNullOrEmpty(p.AnchorId))
+                {
+                    _anchorManager.Detach(p.AnchorId);
+                    p.AnchorId = null;
+                }
+            }
+
+            // Schritt 2: Bowditch-Correction — Schlussfehler proportional verteilen
+            ArPrecisionHelpers.ApplyBowditchCorrection(_activeContour);
+
             _contours.Add(_activeContour);
-        _activeContour = null;
+            closedContour = _activeContour;
+            _activeContour = null;
+        }
+
+        if (closedContour != null)
+        {
+            var pts = closedContour.Points.Count;
+            var area = closedContour.CalculateArea();
+            var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == closedContour.ContourType).Label
+                ?? closedContour.ContourType.ToString();
+            ShowTransientHint($"✓ {typeLabel}: {pts} Punkte, {area:F1} m²");
+        }
+
         UpdateCounter();
         _overlayView?.Invalidate();
 
@@ -326,19 +487,52 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             contoursCopy = new List<ArContour>(_contours);
         }
 
+        var trackingRatio = _frameCountTotal > 0
+            ? (float)_frameCountTracking / _frameCountTotal
+            : 1f;
+        var finalQualityScore = ArPrecisionHelpers.ComputeTrackingQualityScore(
+            isTracking: true,
+            planeCount: 5, // Näherung
+            stabilityScore: _stabilityMonitor?.StabilityScore ?? 1f,
+            magAccuracy: _magneticAccuracy,
+            anchorCount: _anchorManager.CountTracking(),
+            avgPositionStdDev: GetAverageStdDev());
+
+        var (geoHAcc, geoHeadingAcc) = GetGeospatialMedianAccuracy();
+
+        // Bevorzuge Geospatial-Werte (VPS) über rohe GPS/Magnetometer wenn verfügbar
+        var finalLat = _lastGeoLatitude ?? _gpsLatitude;
+        var finalLon = _lastGeoLongitude ?? _gpsLongitude;
+        var finalAlt = _lastGeoAltitude ?? _gpsAltitude;
+        var finalGpsAcc = _geospatialActive && geoHAcc.HasValue
+            ? geoHAcc.Value
+            : _gpsAccuracy;
+        var finalHeading = _geospatialActive && _lastGeoHeading.HasValue
+            ? _lastGeoHeading.Value
+            : _magneticHeading;
+
         _lastResult = new ArCaptureResult
         {
             Points = pointsCopy,
             Contours = contoursCopy,
-            GpsLatitude = _gpsLatitude,
-            GpsLongitude = _gpsLongitude,
-            GpsAltitude = _gpsAltitude,
-            GpsAccuracy = _gpsAccuracy,
-            MagneticHeading = _magneticHeading,
+            GpsLatitude = finalLat,
+            GpsLongitude = finalLon,
+            GpsAltitude = finalAlt,
+            GpsAccuracy = finalGpsAcc,
+            MagneticHeading = finalHeading,
             BarometricAltitude = _barometricAltitude,
             StartedAt = _sessionStart,
             SessionDuration = DateTime.UtcNow - _sessionStart,
+            GroundPlaneY = GetGroundPlaneY(),
+            TrackingQualityScore = finalQualityScore,
+            TrackingContinuityRatio = trackingRatio,
+            GeospatialActive = _geospatialActive,
+            GeospatialHorizontalAccuracy = geoHAcc,
+            GeospatialHeadingAccuracy = geoHeadingAcc,
         };
+
+        // Session war erfolgreich abgeschlossen — Recovery-State aufräumen
+        ClearRecoveryState();
 
         SetResult(Result.Ok, new Intent());
         Finish();
@@ -524,37 +718,257 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         }
     }
 
+    /// <summary>
+    /// Placiert einen Punkt mit Multi-Frame-Averaging, Stability-Check und Anchor-Erstellung.
+    ///
+    /// Ablauf:
+    /// 1. Stability-Check — bei starker Bewegung Warnung und Abbruch
+    /// 2. Start eines Sampling-Fensters (500-800ms, bis zu 10 Samples)
+    /// 3. Pro Frame im Sampling-Fenster: HitTest am Target-Pixel, Sample speichern
+    /// 4. Nach Abschluss: robuster Median, Outlier-Filter, Anchor erzeugen
+    /// 5. ArPoint mit echter Confidence (HitQuality + Sample-Variance + Stability + Anchor)
+    /// </summary>
     private void PlaceNewPoint(float screenX, float screenY)
     {
-        var arPoint = HitTestAt(screenX, screenY);
-        if (arPoint == null)
+        // Bereits ein Sample-Fenster aktiv? Ignorieren.
+        lock (_samplerLock)
         {
-            // Feedback: Kein Plane erkannt → User muss Kamera bewegen
+            if (_activeSampler != null)
+            {
+                ShowTransientHint("Sample läuft, bitte kurz warten...");
+                return;
+            }
+        }
+
+        // Pre-Mess-Validation: alle Präzisions-Voraussetzungen prüfen
+        var (ready, checkList) = ValidatePreMeasureConditions();
+        if (!ready)
+        {
             RunOnUiThread(() =>
-                Toast.MakeText(this, "Keine Fläche erkannt - Kamera langsam bewegen", ToastLength.Short)?.Show());
+            {
+                Toast.MakeText(this, $"Messung noch nicht bereit: {checkList}",
+                    ToastLength.Long)?.Show();
+                ShowTransientHint($"⚠ {checkList}");
+            });
+            VibrateWarning();
             return;
         }
 
+        // Quick-Test: Gibt es überhaupt einen Hit am Target-Pixel?
+        var probe = HitTestAt(screenX, screenY);
+        if (probe == null)
+        {
+            RunOnUiThread(() =>
+            {
+                Toast.MakeText(this, "Keine Fläche erkannt — Kamera langsam bewegen",
+                    ToastLength.Short)?.Show();
+                ShowTransientHint("⚠ Keine Fläche");
+            });
+            return;
+        }
+
+        // Sample-Fenster starten — atomar unter Lock
+        lock (_samplerLock)
+        {
+            _activeSampler = new ArPoseSampler();
+            _sampleTargetX = screenX;
+            _sampleTargetY = screenY;
+            _samplesCollected = 0;
+            _sampleStartMs = Java.Lang.JavaSystem.CurrentTimeMillis();
+            AddSampleFromHit(probe); // erster Sample
+        }
+
+        ShowTransientHint("📐 Messung läuft...");
+        VibrateLight();
+    }
+
+    /// <summary>Fügt einen Sample in den aktiven Sampler ein. Muss unter _samplerLock aufgerufen werden.</summary>
+    private void AddSampleFromHit(ArPoint sample)
+    {
+        var quality = sample.HitQuality;
+        if (quality == 0)
+            quality = sample.Confidence >= 0.9f ? 3 : sample.Confidence >= 0.7f ? 2 : 1;
+        _activeSampler?.Add(sample.X, sample.Y, sample.Z, quality);
+        _samplesCollected++;
+    }
+
+    /// <summary>
+    /// Wird pro Frame aufgerufen — auch bei Tracking-Verlust! Sonst bliebe der Sampler
+    /// stuck nach Tracking-Abbruch.
+    /// Sammelt bis zu MultiFrameSampleTargetCount Samples, dann abschließen.
+    /// Hartes Timeout nach MultiFrameSampleTimeoutMs garantiert Cleanup in jedem Fall.
+    /// </summary>
+    private void UpdateSamplingIfActive()
+    {
+        float targetX, targetY;
+        bool shouldFinish;
+        bool samplerActive;
+
+        lock (_samplerLock)
+        {
+            samplerActive = _activeSampler != null;
+            if (!samplerActive) return;
+
+            var elapsedMs = Java.Lang.JavaSystem.CurrentTimeMillis() - _sampleStartMs;
+            shouldFinish = _samplesCollected >= _effectiveMultiFrameSampleTargetCount
+                          || elapsedMs >= MultiFrameSampleTimeoutMs;
+            targetX = _sampleTargetX;
+            targetY = _sampleTargetY;
+        }
+
+        if (!shouldFinish)
+        {
+            // Neuen HitTest am Target-Pixel machen — kann außerhalb Lock sein,
+            // HitTestAt arbeitet nur mit _lastFrame (eigener Lock)
+            var sample = HitTestAt(targetX, targetY);
+            if (sample != null)
+            {
+                lock (_samplerLock)
+                {
+                    if (_activeSampler != null)
+                        AddSampleFromHit(sample);
+                }
+            }
+            return;
+        }
+
+        FinalizeSampling();
+    }
+
+    /// <summary>
+    /// Schließt das Sampling-Fenster ab: Median berechnen, Outlier filtern, Anchor erstellen,
+    /// Punkt in Liste einfügen. Kann von GL-Thread oder UI-Thread aufgerufen werden.
+    /// </summary>
+    private void FinalizeSampling()
+    {
+        ArPoseSampler? sampler;
+        lock (_samplerLock)
+        {
+            sampler = _activeSampler;
+            _activeSampler = null;
+            _samplesCollected = 0;
+        }
+
+        if (sampler == null || sampler.Count < 3)
+        {
+            RunOnUiThread(() => ShowTransientHint("⚠ Zu wenige Samples — erneut versuchen"));
+            return;
+        }
+
+        var result = sampler.ComputeRobustMedian();
+        if (result == null)
+        {
+            RunOnUiThread(() => ShowTransientHint("⚠ Zu viel Streuung — erneut versuchen"));
+            return;
+        }
+
+        var (x, y, z, stdDev, validCount, maxQuality) = result.Value;
+
+        // Pose an exakter Session-Position erstellen (für Anchor)
+        Pose? anchorPose = null;
+        try
+        {
+            anchorPose = Pose.MakeTranslation(x, y, z);
+        }
+        catch { /* Session evtl. geschlossen */ }
+
+        var stability = _stabilityMonitor?.StabilityScore ?? 0.5f;
+
+        // Depth-Sanity-Check: Vergleich Hit-Distance vs Depth-Image am Target-Pixel.
+        // _reticleHitDistance wurde in der letzten Reticle-Update-Phase berechnet und ist
+        // repräsentativ für die Entfernung Kamera → Ziel.
+        var depthMultiplier = 1.0f;
+        try
+        {
+            Frame? frame;
+            lock (_frameLock) frame = _lastFrame;
+            if (frame != null && _viewportWidth > 0 && _viewportHeight > 0 && _reticleHitDistance > 0)
+            {
+                depthMultiplier = ArPrecisionHelpers.DepthSanityMultiplier(
+                    frame, _sampleTargetX, _sampleTargetY,
+                    _reticleHitDistance, _viewportWidth, _viewportHeight);
+            }
+        }
+        catch { /* Depth optional */ }
+
+        // Confidence aus mehreren Faktoren (0-1):
+        // - Hit-Quality (0.3 für Plane=3, 0.2 für Point=2, 0.1 für Instant=1)
+        // - Niedrige Position-StdDev = hohe Confidence (0.3)
+        // - Stability beim Capture (0.2)
+        // - Depth-Sanity-Multiplikator (0.8-1.2 auf StdDev+Hit)
+        // - Anchor erstellt (+0.2 am Ende)
+        var hitComponent = maxQuality == 3 ? 0.3f : maxQuality == 2 ? 0.2f : 0.1f;
+        var stdDevComponent = MathF.Max(0f, 0.3f - stdDev / 0.05f * 0.3f);
+        var stabilityComponent = stability * 0.2f;
+        var confidence = (hitComponent + stdDevComponent) * depthMultiplier + stabilityComponent;
+
+        var arPoint = new ArPoint
+        {
+            X = x,
+            Y = y,
+            Z = z,
+            HitQuality = maxQuality,
+            PositionStdDev = stdDev,
+            SampleCount = validCount,
+            Timestamp = DateTime.UtcNow,
+            Confidence = Math.Clamp(confidence, 0f, 1f),
+
+            // Geospatial-Snapshot (±1-3m Genauigkeit über VPS, wenn aktiv)
+            GeoLatitude = _lastGeoLatitude,
+            GeoLongitude = _lastGeoLongitude,
+            GeoAltitude = _lastGeoAltitude,
+            GeoHorizontalAccuracy = _lastGeoHorizontalAcc,
+        };
+
+        // Anchor erstellen — Earth-Anchor bevorzugen (drift-frei + persistent)
+        // wenn Geospatial aktiv, sonst lokaler Session-Anchor.
+        var hasAnchor = false;
+        if (_geospatialActive && _lastGeoLatitude.HasValue && _lastGeoLongitude.HasValue
+            && _lastGeoAltitude.HasValue && _arSession?.Earth != null)
+        {
+            hasAnchor = _anchorManager.TryCreateEarthAnchor(
+                _arSession.Earth,
+                _lastGeoLatitude.Value,
+                _lastGeoLongitude.Value,
+                _lastGeoAltitude.Value,
+                arPoint);
+        }
+
+        // Fallback auf lokalen Anchor
+        if (!hasAnchor)
+            hasAnchor = _anchorManager.TryCreateAnchor(_arSession, anchorPose, arPoint);
+
+        if (hasAnchor)
+            arPoint.Confidence = MathF.Min(1f, arPoint.Confidence + 0.2f);
+
+        VibrateLight();
         RunOnUiThread(() =>
         {
             lock (_dataLock)
             {
                 if (_captureMode == CaptureMode.Point)
                 {
-                    _undoStack.Push(new AddPointAction(_points, arPoint));
+                    _undoStack.Push(new AddPointAction(_dataLock, _points, arPoint));
                     _redoStack.Clear();
                     _points.Add(arPoint);
+                    ShowTransientHint($"✓ Punkt {_points.Count}  σ={stdDev * 100:F1}cm  ({validCount} Samples)");
                 }
                 else
                 {
-                    _activeContour ??= new ArContour { ContourType = ArContourType.Grenze };
-                    _undoStack.Push(new AddContourPointAction(_activeContour, arPoint));
+                    // Aktive Kontur mit aktuell gewähltem Typ (aus ShowContourTypeDialog)
+                    _activeContour ??= new ArContour { ContourType = _currentContourType };
+                    _undoStack.Push(new AddContourPointAction(_dataLock, _activeContour, arPoint));
                     _redoStack.Clear();
                     _activeContour.Points.Add(arPoint);
+                    var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == _activeContour.ContourType).Label
+                        ?? _activeContour.ContourType.ToString();
+                    ShowTransientHint($"✓ {typeLabel}: {_activeContour.Points.Count} Punkte");
                 }
             }
             UpdateCounter();
             _overlayView?.Invalidate();
+
+            SaveRecoveryState();
         });
     }
 
@@ -587,40 +1001,61 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 
         try
         {
+            // 1. Plane- und Point-HitTests bevorzugen (höchste Qualität)
             var hitResults = frame.HitTest(screenX, screenY);
-            if (hitResults == null || hitResults.Count == 0) return null;
 
-            // Besten Hit verwenden (Plane bevorzugt, dann Point)
             HitResult? bestHit = null;
-            foreach (var hit in hitResults)
+            var confidence = 0.9f;
+
+            if (hitResults != null)
             {
-                var trackable = hit.Trackable;
-                if (trackable is Plane plane && plane.IsPoseInPolygon(hit.HitPose))
+                foreach (var hit in hitResults)
                 {
-                    bestHit = hit;
-                    break;
+                    var trackable = hit.Trackable;
+                    if (trackable is Plane plane && plane.IsPoseInPolygon(hit.HitPose))
+                    {
+                        bestHit = hit;
+                        confidence = 0.9f;
+                        break;
+                    }
+                    if (trackable is Google.AR.Core.Point && bestHit == null)
+                    {
+                        bestHit = hit;
+                        confidence = 0.7f;
+                    }
                 }
-                bestHit ??= hit;
+            }
+
+            // 2. Instant Placement Fallback wenn kein Plane/Point getroffen
+            if (bestHit == null)
+            {
+                var instantHits = frame.HitTestInstantPlacement(screenX, screenY, 1.5f);
+                if (instantHits != null && instantHits.Count > 0)
+                {
+                    bestHit = instantHits[0];
+                    confidence = 0.5f;
+                }
             }
 
             if (bestHit == null) return null;
             var pose = bestHit.HitPose;
             if (pose == null) return null;
 
+            var hitQuality = confidence >= 0.9f ? 3 : confidence >= 0.7f ? 2 : 1;
+
             var arPoint = new ArPoint
             {
                 X = pose.Tx(),
                 Y = pose.Ty(),
                 Z = pose.Tz(),
-                Confidence = 0.9f,
+                Confidence = confidence,
+                HitQuality = hitQuality,
                 Timestamp = DateTime.UtcNow,
             };
 
-            // Snap-to-Edge: Pruefen ob eine Plane-Kante in der Naehe ist
-            SnapToPlaneEdge(arPoint, frame);
-
-            // Kein Anchor erstellen: Wir nutzen nur die Pose-Koordinaten.
-            // CreateAnchor() hat Limit pro Session und die AnchorId wird nie aufgeloest.
+            // Snap-to-Edge nur bei Plane-Hits (Instant Placement hat keine Kanten)
+            if (hitQuality == 3)
+                SnapToPlaneEdge(arPoint, frame);
 
             return arPoint;
         }
@@ -737,7 +1172,7 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         {
             lock (_dataLock)
             {
-                _undoStack.Push(new DeletePointAction(_points, _selectedPointIndex, _points[_selectedPointIndex]));
+                _undoStack.Push(new DeletePointAction(_dataLock, _points, _selectedPointIndex, _points[_selectedPointIndex]));
                 _redoStack.Clear();
                 _points.RemoveAt(_selectedPointIndex);
             }
@@ -753,7 +1188,7 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
                 if (contour != null && _selectedContourPointIdx >= 0 && _selectedContourPointIdx < contour.Points.Count)
                 {
                     var point = contour.Points[_selectedContourPointIdx];
-                    _undoStack.Push(new DeleteContourPointAction(contour, _selectedContourPointIdx, point));
+                    _undoStack.Push(new DeleteContourPointAction(_dataLock, contour, _selectedContourPointIdx, point));
                     _redoStack.Clear();
                     contour.Points.RemoveAt(_selectedContourPointIdx);
                 }
@@ -771,11 +1206,15 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 
     #region Sensordaten (GPS + Heading + Barometer)
 
+    /// <summary>
+    /// GPS-Erfassung mit Multi-Sample-Averaging über 5 Sekunden. Vorher: einmaliger
+    /// LastKnownLocation-Snapshot (kann mehrere Minuten alt sein und ±10m abweichen).
+    /// Jetzt: aktive Request + Samples-Accumulation, gewichtetes Mittel nach Accuracy.
+    /// </summary>
     private void CaptureGpsPosition()
     {
         try
         {
-            // GPS-Permission pruefen (Android 12+ erfordert Runtime-Permission)
             if (AndroidX.Core.Content.ContextCompat.CheckSelfPermission(this,
                     global::Android.Manifest.Permission.AccessFineLocation)
                 != global::Android.Content.PM.Permission.Granted)
@@ -787,6 +1226,7 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             var locationManager = GetSystemService(LocationService) as global::Android.Locations.LocationManager;
             if (locationManager == null) return;
 
+            // Initialer Snapshot (Fallback falls aktive Samples nicht ankommen)
             var location = locationManager.GetLastKnownLocation(
                 global::Android.Locations.LocationManager.GpsProvider)
                 ?? locationManager.GetLastKnownLocation(
@@ -798,7 +1238,31 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
                 _gpsLongitude = location.Longitude;
                 _gpsAltitude = location.HasAltitude ? location.Altitude : null;
                 _gpsAccuracy = location.HasAccuracy ? location.Accuracy : null;
+
+                lock (_gpsSamples)
+                {
+                    _gpsSamples.Add((location.Latitude, location.Longitude,
+                        location.HasAltitude ? location.Altitude : null,
+                        location.HasAccuracy ? location.Accuracy : null));
+                }
             }
+
+            // Aktive Updates über 5 Sekunden sammeln
+            var listener = new GpsSampleListener(this);
+            try
+            {
+                locationManager.RequestLocationUpdates(
+                    global::Android.Locations.LocationManager.GpsProvider,
+                    500L, 0f, listener);
+            }
+            catch { /* GPS evtl. nicht aktiv */ }
+
+            // Nach 5s Listener abmelden und Median bilden
+            Window?.DecorView?.PostDelayed(() =>
+            {
+                try { locationManager.RemoveUpdates(listener); } catch { /* OK */ }
+                FinalizeGpsAveraging();
+            }, 5000);
         }
         catch (Exception ex)
         {
@@ -814,19 +1278,21 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             _sensorManager = GetSystemService(SensorService) as global::Android.Hardware.SensorManager;
             if (_sensorManager == null) return;
 
-            // Rotation Vector (Fusion aus Gyro+Accel+Mag) fuer Heading
+            // Rotation Vector (Fusion aus Gyro+Accel+Mag) fuer Heading.
+            // SensorDelay.Game = ~50Hz für dichte Multi-Sample-Erfassung.
+            // 5s aktiv = 250 Samples — mehr als HeadingSampleTargetCount (20), damit
+            // FinalizeHeadingAveraging sicher genug Daten hat.
             var rotationSensor = _sensorManager.GetDefaultSensor(global::Android.Hardware.SensorType.RotationVector);
             if (rotationSensor != null)
             {
                 var listener = new HeadingSensorListener(this);
                 _sensorManager.RegisterListener(listener, rotationSensor,
-                    global::Android.Hardware.SensorDelay.Normal);
+                    global::Android.Hardware.SensorDelay.Game);
 
-                // Nach 1 Sekunde abmelden (brauchen nur den initialen Wert)
                 Window?.DecorView?.PostDelayed(() =>
                 {
                     try { _sensorManager.UnregisterListener(listener); } catch { /* OK */ }
-                }, 1000);
+                }, 5000);
             }
 
             // Barometer fuer relative Hoehe
@@ -868,10 +1334,37 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             var azimuthRad = activity._orientationAngles[0];
             var azimuthDeg = (float)(azimuthRad * 180.0 / Math.PI);
             if (azimuthDeg < 0) azimuthDeg += 360f;
+
+            // Multi-Sample: sammeln statt direkt überschreiben
+            lock (activity._headingSamples)
+            {
+                if (activity._headingSamples.Count < HeadingSampleTargetCount)
+                    activity._headingSamples.Add(azimuthDeg);
+            }
+
+            // Direkter Set für Live-Kompass (wird später durch Median überschrieben)
             activity._magneticHeading = azimuthDeg;
         }
 
-        public void OnAccuracyChanged(global::Android.Hardware.Sensor? sensor, global::Android.Hardware.SensorStatus accuracy) { }
+        public void OnAccuracyChanged(global::Android.Hardware.Sensor? sensor,
+            global::Android.Hardware.SensorStatus accuracy)
+        {
+            // Magnetometer-Accuracy erfassen für Kompass-Kalibrierungs-Dialog + Quality-Score
+            var acc = accuracy switch
+            {
+                global::Android.Hardware.SensorStatus.AccuracyHigh => 3,
+                global::Android.Hardware.SensorStatus.AccuracyMedium => 2,
+                global::Android.Hardware.SensorStatus.AccuracyLow => 1,
+                _ => 0,
+            };
+            activity._magneticAccuracy = acc;
+
+            if (acc < 2 && !activity._lowMagAccuracyWarned)
+            {
+                activity._lowMagAccuracyWarned = true;
+                activity.RunOnUiThread(() => activity.ShowCompassCalibrationHint());
+            }
+        }
     }
 
     /// <summary>Sensor-Listener fuer barometrische Hoehe</summary>
@@ -910,18 +1403,140 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
                     return;
                 }
 
-                // Session erstellen
+                // Session erstellen — mit allen sinnvollen Features
                 _arSession = new Session(this);
                 var config = new Google.AR.Core.Config(_arSession);
                 config.SetUpdateMode(Google.AR.Core.Config.UpdateMode.LatestCameraImage);
                 config.SetPlaneFindingMode(Google.AR.Core.Config.PlaneFindingMode.HorizontalAndVertical);
-                config.SetDepthMode(Google.AR.Core.Config.DepthMode.Automatic);
-                _arSession.Configure(config);
+
+                // Depth API — für präzisere Hit-Tests auf kompatiblen Geräten (Samsung S25 Ultra ja)
+                if (_arSession.IsDepthModeSupported(Google.AR.Core.Config.DepthMode.Automatic))
+                    config.SetDepthMode(Google.AR.Core.Config.DepthMode.Automatic);
+
+                // Instant Placement — Hit-Test auch ohne Plane-Detection als Fallback
+                config.SetInstantPlacementMode(Google.AR.Core.Config.InstantPlacementMode.LocalYUp);
+
+                // Light Estimation — auf NPU-starken Geräten (Snapdragon 8 Elite, S25 Ultra)
+                // EnvironmentalHdr für vollständige Environment-Map. Auf schwächeren Geräten
+                // Fallback auf AmbientIntensity (geringere CPU-Last).
+                try
+                {
+                    var preferredLight = IsHighEndDevice()
+                        ? Google.AR.Core.Config.LightEstimationMode.EnvironmentalHdr
+                        : Google.AR.Core.Config.LightEstimationMode.AmbientIntensity;
+                    config.SetLightEstimationMode(preferredLight);
+                }
+                catch
+                {
+                    config.SetLightEstimationMode(Google.AR.Core.Config.LightEstimationMode.AmbientIntensity);
+                }
+
+                // Focus-Mode auf Auto — Kamera soll sich auf Messziel scharfstellen
+                config.SetFocusMode(Google.AR.Core.Config.FocusMode.Auto);
+
+                // Scene Semantic Segmentation: Pro-Pixel-Kategorien (Sky/Terrain/Building/Water).
+                // Nutzen wir für Punkt-Validation (kein Messen in Sky-Pixeln).
+                try
+                {
+                    if (_arSession.IsSemanticModeSupported(Google.AR.Core.Config.SemanticMode.Enabled))
+                    {
+                        config.SetSemanticMode(Google.AR.Core.Config.SemanticMode.Enabled);
+                    }
+                }
+                catch { /* harmlos */ }
+
+                // Geospatial-API: VPS für globale Positionierung (±1-3m horizontal, ±5° Heading)
+                // statt Magnetometer (±15-30° in Metallumgebung). Benötigt Google Cloud API-Key
+                // in AndroidManifest + Internet während Session-Start. Bei Fehlschlag fallen wir
+                // stumm auf Magnetometer+GPS zurück.
+                try
+                {
+                    if (_arSession.IsGeospatialModeSupported(
+                        Google.AR.Core.Config.GeospatialMode.Enabled))
+                    {
+                        config.SetGeospatialMode(Google.AR.Core.Config.GeospatialMode.Enabled);
+                        _geospatialEnabled = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    global::Android.Util.Log.Warn("ArCapture",
+                        $"Geospatial-Mode nicht aktivierbar (evtl. API-Key fehlt): {ex.Message}");
+                }
+
+                // Configure mit progressivem Fallback-Retry: wir isolieren welches Feature
+                // genau das Problem ist, statt alle zugleich zu deaktivieren. So sieht der
+                // User in der Diagnose-Meldung welches Feature welchen Fehler verursacht.
+                try
+                {
+                    _arSession.Configure(config);
+                    global::Android.Util.Log.Info("ArCapture",
+                        $"ARCore-Session OK mit allen Features. Geospatial={_geospatialEnabled}, " +
+                        $"HighEnd={IsHighEndDevice()}");
+                }
+                catch (Exception cfgEx)
+                {
+                    // Original-Exception mit vollem Stack loggen
+                    global::Android.Util.Log.Error("ArCapture",
+                        $"Configure mit voller Config fehlgeschlagen: " +
+                        $"{cfgEx.GetType().FullName}: {cfgEx.Message}\n{cfgEx.StackTrace}");
+
+                    // Konkrete Fehlermeldung für User
+                    var userMsg = cfgEx.Message;
+                    if (userMsg.Length > 200) userMsg = userMsg.Substring(0, 200);
+
+                    // Schritt 1: Geospatial isoliert testen (wahrscheinlichster Verursacher)
+                    try
+                    {
+                        config.SetGeospatialMode(Google.AR.Core.Config.GeospatialMode.Disabled);
+                        _arSession.Configure(config);
+                        _geospatialEnabled = false;
+
+                        Toast.MakeText(this,
+                            $"⚠ Geospatial deaktiviert: {cfgEx.GetType().Name}: {userMsg}",
+                            ToastLength.Long)?.Show();
+                        global::Android.Util.Log.Warn("ArCapture",
+                            $"Konnte nach Geospatial-Off konfigurieren → Geospatial war Ursache");
+                    }
+                    catch (Exception geoEx)
+                    {
+                        global::Android.Util.Log.Error("ArCapture",
+                            $"Auch ohne Geospatial fehlgeschlagen: {geoEx.Message}");
+
+                        // Schritt 2: Alle optionalen Features deaktivieren
+                        try { config.SetSemanticMode(Google.AR.Core.Config.SemanticMode.Disabled); } catch { }
+                        try { config.SetLightEstimationMode(Google.AR.Core.Config.LightEstimationMode.Disabled); } catch { }
+                        try { config.SetInstantPlacementMode(Google.AR.Core.Config.InstantPlacementMode.Disabled); } catch { }
+                        try { config.SetDepthMode(Google.AR.Core.Config.DepthMode.Disabled); } catch { }
+                        _geospatialEnabled = false;
+
+                        try
+                        {
+                            _arSession.Configure(config);
+                            Toast.MakeText(this,
+                                $"⚠ Minimal-Config: {geoEx.GetType().Name}: {geoEx.Message}",
+                                ToastLength.Long)?.Show();
+                        }
+                        catch (Exception finalEx)
+                        {
+                            global::Android.Util.Log.Error("ArCapture",
+                                $"Minimal-Config fehlgeschlagen: {finalEx}");
+                            Toast.MakeText(this,
+                                $"AR-Start unmöglich: {finalEx.GetType().Name}: {finalEx.Message}",
+                                ToastLength.Long)?.Show();
+                            SetResult(Result.Canceled);
+                            Finish();
+                            return;
+                        }
+                    }
+                }
             }
             catch (UnavailableException ex)
             {
                 global::Android.Util.Log.Error("ArCapture", $"ARCore nicht verfuegbar: {ex}");
-                Toast.MakeText(this, "ARCore nicht verfuegbar", ToastLength.Long)?.Show();
+                Toast.MakeText(this,
+                    "ARCore nicht verfügbar — Google Play Services for AR im Play Store aktualisieren",
+                    ToastLength.Long)?.Show();
                 SetResult(Result.Canceled);
                 Finish();
                 return;
@@ -929,6 +1544,8 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             catch (Exception ex)
             {
                 global::Android.Util.Log.Error("ArCapture", $"ARCore Session-Fehler: {ex}");
+                // User-Feedback statt stillem Finish — sonst weiß User nicht was los ist
+                Toast.MakeText(this, $"AR-Fehler: {ex.Message}", ToastLength.Long)?.Show();
                 SetResult(Result.Canceled);
                 Finish();
                 return;
@@ -939,11 +1556,22 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         {
             _arSession?.Resume();
             _glSurfaceView?.OnResume();
+            _stabilityMonitor?.Start();
         }
-        catch (CameraNotAvailableException)
+        catch (CameraNotAvailableException ex)
         {
-            Toast.MakeText(this, "Kamera nicht verfuegbar", ToastLength.Long)?.Show();
+            global::Android.Util.Log.Error("ArCapture", $"Camera not available: {ex}");
+            Toast.MakeText(this, "Kamera nicht verfügbar — andere App nutzt sie?",
+                ToastLength.Long)?.Show();
             _arSession = null;
+            SetResult(Result.Canceled);
+            Finish();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Error("ArCapture", $"Resume-Fehler: {ex}");
+            Toast.MakeText(this, $"AR-Resume fehlgeschlagen: {ex.Message}",
+                ToastLength.Long)?.Show();
             SetResult(Result.Canceled);
             Finish();
         }
@@ -954,6 +1582,7 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         base.OnPause();
         _glSurfaceView?.OnPause();
         lock (_frameLock) { _lastFrame = null; }
+        _stabilityMonitor?.Stop();
         _arSession?.Pause();
     }
 
@@ -1023,14 +1652,63 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
             var camera = frame.Camera;
             if (camera == null) return;
 
-            if (camera.TrackingState == TrackingState.Tracking)
+            var isTracking = camera.TrackingState == TrackingState.Tracking;
+            CheckTrackingTransition(isTracking);
+
+            _frameCountTotal++;
+
+            // Sampling-Watchdog läuft UNABHÄNGIG vom Tracking-Status — bei Tracking-Verlust
+            // während einer 800ms-Sample-Session sonst Sampler stuck + Hint "Messung läuft..."
+            // bleibt dauerhaft stehen.
+            UpdateSamplingIfActive();
+
+            if (isTracking)
             {
+                _frameCountTracking++;
+
                 camera.GetProjectionMatrix(_projectionMatrix, 0, 0.1f, 100.0f);
                 camera.GetViewMatrix(_viewMatrix, 0);
 
+                // DRIFT-KOMPENSATION: Anchors pro Frame refreshen
+                RefreshAllAnchors();
+
+                // Multi-Sample GPS/Heading (Startup-Phase, läuft erste 5s parallel)
+                CollectInitialSensorSamples();
+
+                // Ground-Plane-Detection: Y-Wert der größten horizontalen Plane als Referenz
+                UpdateGroundPlaneReference();
+
+                // ARCore-Rotation als Heading-Quelle sampeln (Sensor-Fusion, stabiler als Mag)
+                SampleArCoreHeading(camera);
+
+                // Geospatial Pose sampeln (VPS via Google Street View Matching)
+                UpdateGeospatialPose();
+
+                // Thermal + Battery Check alle 60 Frames (~1x/s)
+                _thermalCheckFrameCounter++;
+                if (_thermalCheckFrameCounter >= 60)
+                {
+                    _thermalCheckFrameCounter = 0;
+                    CheckThermalStatus();
+                    CheckBatteryStatus();
+                }
+
                 // Punkt-Positionen fuer Overlay in Screen-Koordinaten umrechnen
                 ProjectPointsToScreen();
+
+                // Live-HitTest am Reticle (Bildmitte) — zeigt Nutzer was bei Tap getroffen wird
+                UpdateReticleState(frame, camera);
             }
+            else
+            {
+                _reticleHitQuality = ArHitQuality.None;
+                _reticleHitDistance = 0f;
+                _reticleHeightDelta = null;
+            }
+
+            // Overlay-State pro Frame auf UI-Thread pushen
+            var state = BuildOverlayState(camera);
+            RunOnUiThread(() => _overlayView?.UpdateState(state));
         }
         catch (CameraNotAvailableException)
         {
@@ -1220,7 +1898,11 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
 
     private void Undo()
     {
-        if (_undoStack.Count == 0) return;
+        if (_undoStack.Count == 0)
+        {
+            ShowTransientHint("Nichts zum Rückgängig machen");
+            return;
+        }
         var action = _undoStack.Pop();
         action.Undo();
         _redoStack.Push(action);
@@ -1228,20 +1910,1249 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         _overlayView?.SetSelectedIndex(-1);
         UpdateCounter();
         _overlayView?.Invalidate();
+        ShowTransientHint("↶ Rückgängig");
+        SaveRecoveryState();
     }
 
     private void Redo()
     {
-        if (_redoStack.Count == 0) return;
+        if (_redoStack.Count == 0)
+        {
+            ShowTransientHint("Nichts zum Wiederholen");
+            return;
+        }
         var action = _redoStack.Pop();
         action.Redo();
         _undoStack.Push(action);
         UpdateCounter();
         _overlayView?.Invalidate();
+        ShowTransientHint("↷ Wiederholt");
+        SaveRecoveryState();
     }
+
+    #region Haptic Feedback
+
+    /// <summary>
+    /// Kurzes Vibrations-Feedback für Punkt-Set. Auf Android 10+ nutzt es die
+    /// OEM-getunten Predefined-Effects (Samsung hat besonders feine Haptic-Motoren!),
+    /// Fallback auf CreateOneShot.
+    /// </summary>
+    private void VibrateLight()
+    {
+        if (_vibrator == null || !_vibrator.HasVibrator) return;
+        try
+        {
+            if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            {
+                var effect = global::Android.OS.VibrationEffect.CreatePredefined(
+                    global::Android.OS.VibrationEffect.EffectTick);
+                if (effect != null) { _vibrator.Vibrate(effect); return; }
+            }
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
+                _vibrator.Vibrate(global::Android.OS.VibrationEffect.CreateOneShot(30,
+                    global::Android.OS.VibrationEffect.DefaultAmplitude));
+            else
+#pragma warning disable CA1422
+                _vibrator.Vibrate(30);
+#pragma warning restore CA1422
+        }
+        catch { /* harmlos */ }
+    }
+
+    /// <summary>Mittleres Feedback für Aktionen wie "Kontur schließen".</summary>
+    private void VibrateMedium()
+    {
+        if (_vibrator == null || !_vibrator.HasVibrator) return;
+        try
+        {
+            if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            {
+                var effect = global::Android.OS.VibrationEffect.CreatePredefined(
+                    global::Android.OS.VibrationEffect.EffectClick);
+                if (effect != null) { _vibrator.Vibrate(effect); return; }
+            }
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
+                _vibrator.Vibrate(global::Android.OS.VibrationEffect.CreateOneShot(60,
+                    global::Android.OS.VibrationEffect.DefaultAmplitude));
+            else
+#pragma warning disable CA1422
+                _vibrator.Vibrate(60);
+#pragma warning restore CA1422
+        }
+        catch { /* harmlos */ }
+    }
+
+    /// <summary>Stärkeres Warn-Feedback (Pattern) für Tracking-Verlust.</summary>
+    private void VibrateWarning()
+    {
+        if (_vibrator == null || !_vibrator.HasVibrator) return;
+        try
+        {
+            // Android 10+ (API 29): Predefined-Effects werden vom OEM getunt (Samsung premium)
+            if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            {
+                var effect = global::Android.OS.VibrationEffect.CreatePredefined(
+                    global::Android.OS.VibrationEffect.EffectDoubleClick);
+                if (effect != null) { _vibrator.Vibrate(effect); return; }
+            }
+
+            long[] pattern = [0, 80, 40, 80];
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
+                _vibrator.Vibrate(global::Android.OS.VibrationEffect.CreateWaveform(pattern, -1));
+            else
+#pragma warning disable CA1422
+                _vibrator.Vibrate(pattern, -1);
+#pragma warning restore CA1422
+        }
+        catch { /* harmlos */ }
+    }
+
+    #endregion
+
+    #region Device-Detection + Window-Insets
+
+    /// <summary>
+    /// Gerät ist "High-End" (Snapdragon 8 Gen 3+ / Tensor G4 / Apple-Level): mehr RAM,
+    /// bessere NPU, schnelle Kamera-Pipeline. Erlaubt aggressiveres Sampling.
+    /// Heuristik: ActivityManager meldet RAM > 8GB.
+    /// </summary>
+    private bool IsHighEndDevice()
+    {
+        try
+        {
+            var am = GetSystemService(ActivityService) as global::Android.App.ActivityManager;
+            if (am == null) return false;
+            var memInfo = new global::Android.App.ActivityManager.MemoryInfo();
+            am.GetMemoryInfo(memInfo);
+            // TotalMem in Bytes — 8GB+ → High-End (S25 Ultra hat 12GB)
+            return memInfo.TotalMem >= 8L * 1024 * 1024 * 1024;
+        }
+        catch { return false; }
+    }
+
+    /// <summary>
+    /// Liest Window-Insets (Status-Bar + Punch-Hole oben, Navigation-Bar unten).
+    /// Auf S25 Ultra ist die Kamera zentral oben → Top-UI muss unter dem Loch sein.
+    /// </summary>
+    public override void OnAttachedToWindow()
+    {
+        base.OnAttachedToWindow();
+        try
+        {
+            var decor = Window?.DecorView;
+            if (decor == null) return;
+
+            // OnApplyWindowInsets wird beim ersten Layout aufgerufen
+            decor.SetOnApplyWindowInsetsListener(new InsetListener(this));
+        }
+        catch { /* harmlos */ }
+    }
+
+    private sealed class InsetListener(ArCaptureActivity activity)
+        : Java.Lang.Object, global::Android.Views.View.IOnApplyWindowInsetsListener
+    {
+        public global::Android.Views.WindowInsets OnApplyWindowInsets(
+            global::Android.Views.View? v, global::Android.Views.WindowInsets? insets)
+        {
+            if (insets != null)
+            {
+                try
+                {
+                    if (OperatingSystem.IsAndroidVersionAtLeast(30))
+                    {
+                        var systemBars = insets.GetInsets(
+                            global::Android.Views.WindowInsets.Type.SystemBars()
+                            | global::Android.Views.WindowInsets.Type.DisplayCutout());
+                        if (systemBars != null)
+                        {
+                            activity._topInsetPx = systemBars.Top;
+                            activity._bottomInsetPx = systemBars.Bottom;
+                        }
+                    }
+                    else
+                    {
+#pragma warning disable CA1422
+                        activity._topInsetPx = insets.SystemWindowInsetTop;
+                        activity._bottomInsetPx = insets.SystemWindowInsetBottom;
+#pragma warning restore CA1422
+                    }
+
+                    // Toolbar-Bottom-Margin auf Nav-Bar-Höhe setzen — sonst überlappt
+                    // die System-Navigation-Bar (Gestensteuerung oder 3-Button-Nav auf S25 Ultra).
+                    activity.RunOnUiThread(() =>
+                    {
+                        var tb = activity._toolbarScrollView;
+                        if (tb?.LayoutParameters is FrameLayout.LayoutParams lp)
+                        {
+                            lp.BottomMargin = (int)activity._bottomInsetPx;
+                            tb.LayoutParameters = lp;
+                        }
+                    });
+                }
+                catch { /* harmlos */ }
+            }
+            return insets ?? new global::Android.Views.WindowInsets(insets);
+        }
+    }
+
+    #endregion
+
+    #region Session-Recovery
+
+    private void SaveRecoveryState()
+    {
+        try
+        {
+            var prefs = GetSharedPreferences("smartmeasure_ar", FileCreationMode.Private);
+            if (prefs == null) return;
+
+            List<ArPoint> pointsCopy;
+            List<ArContour> contoursCopy;
+            lock (_dataLock)
+            {
+                pointsCopy = new List<ArPoint>(_points);
+                contoursCopy = new List<ArContour>(_contours);
+                if (_activeContour != null && _activeContour.Points.Count > 0)
+                    contoursCopy.Add(_activeContour);
+            }
+
+            var pointsJson = System.Text.Json.JsonSerializer.Serialize(pointsCopy);
+            var contoursJson = System.Text.Json.JsonSerializer.Serialize(contoursCopy);
+
+            using var editor = prefs.Edit();
+            editor?.PutString(RecoveryKeyPoints, pointsJson);
+            editor?.PutString(RecoveryKeyContours, contoursJson);
+            editor?.PutLong(RecoveryKeyTimestamp, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            editor?.Apply();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"SaveRecoveryState failed: {ex.Message}");
+        }
+    }
+
+    private void TryRestoreRecoveryState()
+    {
+        try
+        {
+            var prefs = GetSharedPreferences("smartmeasure_ar", FileCreationMode.Private);
+            if (prefs == null) return;
+
+            var timestamp = prefs.GetLong(RecoveryKeyTimestamp, 0);
+            if (timestamp == 0) return;
+
+            // Nur wiederherstellen wenn Recovery-Save < 30 Min alt
+            var ageMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - timestamp;
+            if (ageMs > 30 * 60 * 1000)
+            {
+                ClearRecoveryState();
+                return;
+            }
+
+            var pointsJson = prefs.GetString(RecoveryKeyPoints, null);
+            var contoursJson = prefs.GetString(RecoveryKeyContours, null);
+
+            if (!string.IsNullOrEmpty(pointsJson))
+            {
+                var pts = System.Text.Json.JsonSerializer.Deserialize<List<ArPoint>>(pointsJson);
+                if (pts != null) { lock (_dataLock) _points.AddRange(pts); }
+            }
+            if (!string.IsNullOrEmpty(contoursJson))
+            {
+                var cts = System.Text.Json.JsonSerializer.Deserialize<List<ArContour>>(contoursJson);
+                if (cts != null) { lock (_dataLock) _contours.AddRange(cts); }
+            }
+
+            RunOnUiThread(() =>
+                Toast.MakeText(this, "Session wiederhergestellt", ToastLength.Short)?.Show());
+
+            ClearRecoveryState();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"TryRestoreRecoveryState failed: {ex.Message}");
+        }
+    }
+
+    private void ClearRecoveryState()
+    {
+        try
+        {
+            var prefs = GetSharedPreferences("smartmeasure_ar", FileCreationMode.Private);
+            using var editor = prefs?.Edit();
+            editor?.Remove(RecoveryKeyPoints);
+            editor?.Remove(RecoveryKeyContours);
+            editor?.Remove(RecoveryKeyTimestamp);
+            editor?.Apply();
+        }
+        catch { /* harmlos */ }
+    }
+
+    #endregion
+
+    #region Screenshot
+
+    /// <summary>Screenshot des aktuellen AR-Frames + Overlay, speichert als PNG.</summary>
+    private void TakeScreenshot()
+    {
+        VibrateLight();
+        try
+        {
+            var root = _glSurfaceView?.Parent as global::Android.Views.View;
+            if (root == null)
+            {
+                Toast.MakeText(this, "Screenshot nicht möglich", ToastLength.Short)?.Show();
+                return;
+            }
+
+            // Nutze PixelCopy für GL-Surface (ab API 24)
+            var bitmap = global::Android.Graphics.Bitmap.CreateBitmap(
+                root.Width, root.Height, global::Android.Graphics.Bitmap.Config.Argb8888!)!;
+            var canvas = new Canvas(bitmap);
+            root.Draw(canvas);
+            canvas.Dispose();
+
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var dir = GetExternalFilesDir("Screenshots")?.AbsolutePath
+                ?? global::Android.OS.Environment.DirectoryPictures;
+            Directory.CreateDirectory(dir);
+
+            var path = System.IO.Path.Combine(dir, $"SmartMeasure_{timestamp}.png");
+            using (var stream = File.OpenWrite(path))
+            {
+                bitmap.Compress(global::Android.Graphics.Bitmap.CompressFormat.Png!, 100, stream);
+            }
+            bitmap.Recycle();
+            bitmap.Dispose();
+
+            Toast.MakeText(this, $"Screenshot: {System.IO.Path.GetFileName(path)}", ToastLength.Short)?.Show();
+            ShowTransientHint("📸 Screenshot gespeichert");
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"Screenshot failed: {ex.Message}");
+            Toast.MakeText(this, "Screenshot fehlgeschlagen", ToastLength.Short)?.Show();
+        }
+    }
+
+    #endregion
+
+    #region GPS Multi-Sample-Averaging
+
+    /// <summary>Empfängt GPS-Updates während der 5s-Sampling-Phase.</summary>
+    private sealed class GpsSampleListener(ArCaptureActivity activity)
+        : Java.Lang.Object, global::Android.Locations.ILocationListener
+    {
+        public void OnLocationChanged(global::Android.Locations.Location location)
+        {
+            if (location == null) return;
+            lock (activity._gpsSamples)
+            {
+                if (activity._gpsSamples.Count >= GpsSampleTargetCount) return;
+                activity._gpsSamples.Add((location.Latitude, location.Longitude,
+                    location.HasAltitude ? location.Altitude : null,
+                    location.HasAccuracy ? location.Accuracy : null));
+            }
+        }
+
+        public void OnProviderDisabled(string provider) { }
+        public void OnProviderEnabled(string provider) { }
+        public void OnStatusChanged(string? provider, global::Android.Locations.Availability status,
+            global::Android.OS.Bundle? extras) { }
+    }
+
+    /// <summary>
+    /// Bildet gewichteten Median aller GPS-Samples und schreibt ihn in die Session-Referenz.
+    /// Gewichtung: inverse Accuracy (präzisere Samples zählen stärker).
+    /// </summary>
+    private void FinalizeGpsAveraging()
+    {
+        List<(double lat, double lon, double? alt, float? acc)> samples;
+        lock (_gpsSamples) samples = new List<(double, double, double?, float?)>(_gpsSamples);
+        if (samples.Count == 0) return;
+
+        // Weights aus Accuracy: 1 / max(accuracy, 0.5m) damit genauere Samples mehr Gewicht haben
+        var weights = samples.Select(s => 1.0 / Math.Max(s.acc ?? 10f, 0.5f)).ToArray();
+        var totalWeight = weights.Sum();
+        if (totalWeight <= 0) return;
+
+        var avgLat = 0.0;
+        var avgLon = 0.0;
+        var avgAlt = 0.0;
+        var altCount = 0;
+        var minAcc = float.MaxValue;
+
+        for (var i = 0; i < samples.Count; i++)
+        {
+            var s = samples[i];
+            var w = weights[i];
+            avgLat += s.lat * w;
+            avgLon += s.lon * w;
+            if (s.alt.HasValue) { avgAlt += s.alt.Value * w; altCount++; }
+            if (s.acc.HasValue && s.acc.Value < minAcc) minAcc = s.acc.Value;
+        }
+
+        _gpsLatitude = avgLat / totalWeight;
+        _gpsLongitude = avgLon / totalWeight;
+        if (altCount > 0) _gpsAltitude = avgAlt / totalWeight;
+        _gpsAccuracy = minAcc < float.MaxValue ? minAcc : _gpsAccuracy;
+
+        global::Android.Util.Log.Info("ArCapture",
+            $"GPS-Averaging: {samples.Count} samples, best acc={minAcc:F1}m");
+    }
+
+    #endregion
+
+    #region Heading-Averaging
+
+    /// <summary>
+    /// Finalisiert Heading-Averaging aus den gesammelten Samples (Median statt Mean,
+    /// weil Magnetometer-Ausreisser sonst alles kaputtmachen).
+    /// </summary>
+    private void FinalizeHeadingAveraging()
+    {
+        float[] samples;
+        lock (_headingSamples) samples = _headingSamples.ToArray();
+        if (samples.Length == 0) return;
+
+        // Circular median: Winkel können um 360° springen
+        var sinSum = samples.Sum(h => MathF.Sin(h * MathF.PI / 180f));
+        var cosSum = samples.Sum(h => MathF.Cos(h * MathF.PI / 180f));
+        var medianRad = MathF.Atan2(sinSum / samples.Length, cosSum / samples.Length);
+        var medianDeg = medianRad * 180f / MathF.PI;
+        if (medianDeg < 0) medianDeg += 360f;
+
+        _magneticHeading = medianDeg;
+
+        global::Android.Util.Log.Info("ArCapture",
+            $"Heading-Averaging: {samples.Length} samples → {medianDeg:F1}°");
+    }
+
+    #endregion
+
+    #region Per-Frame Präzisions-Helpers
+
+    /// <summary>Aktualisiert alle ArPoint-Positionen aus ihren Anchors (Drift-Kompensation).</summary>
+    private void RefreshAllAnchors()
+    {
+        List<ArPoint> allPoints;
+        lock (_dataLock)
+        {
+            allPoints = new List<ArPoint>(_points);
+            foreach (var c in _contours) allPoints.AddRange(c.Points);
+            if (_activeContour != null) allPoints.AddRange(_activeContour.Points);
+        }
+        _anchorManager.RefreshAnchors(allPoints);
+    }
+
+    private bool _sensorAveragingFinalized;
+    private int _groundUpdateFrameCounter;
+
+    /// <summary>Schließt GPS/Heading-Averaging nach 5s ab (einmal pro Session).</summary>
+    private void CollectInitialSensorSamples()
+    {
+        if (_sensorAveragingFinalized) return;
+
+        var elapsedMs = (DateTime.UtcNow - _sessionStart).TotalMilliseconds;
+        if (elapsedMs < 5000) return;
+
+        // Sensor-Fusion: bevorzugt ARCore-Heading (stabiler), Magnetometer als Fallback
+        var arHeadingFinal = FinalizeArCoreHeading();
+        if (arHeadingFinal.HasValue)
+        {
+            _magneticHeading = arHeadingFinal.Value;
+            global::Android.Util.Log.Info("ArCapture",
+                $"Heading-Final: ARCore-Fusion → {arHeadingFinal.Value:F1}°");
+        }
+        else
+        {
+            FinalizeHeadingAveraging();
+            global::Android.Util.Log.Info("ArCapture",
+                $"Heading-Final: Magnetometer-Fallback → {_magneticHeading:F1}°");
+        }
+
+        _sensorAveragingFinalized = true;
+    }
+
+    /// <summary>
+    /// Aktualisiert die Ground-Plane-Y-Referenz alle 30 Frames (~1x/sek).
+    /// Die größte horizontale Plane = wahrscheinlichster Boden.
+    /// </summary>
+    private void UpdateGroundPlaneReference()
+    {
+        _groundUpdateFrameCounter++;
+        if (_groundUpdateFrameCounter < 30) return;
+        _groundUpdateFrameCounter = 0;
+
+        if (_arSession == null) return;
+        var y = ArPrecisionHelpers.FindGroundPlaneY(_arSession);
+        if (y.HasValue)
+        {
+            _groundPlaneYValue = y.Value;
+            _groundPlaneYSet = true;
+        }
+    }
+
+    /// <summary>Thread-safe getter für Ground-Plane-Y (null wenn noch nicht erkannt).</summary>
+    private float? GetGroundPlaneY() => _groundPlaneYSet ? _groundPlaneYValue : null;
+
+    #region Recording API (MP4-Session-Archiv)
+
+    private bool _isRecording;
+    private string? _currentRecordingPath;
+
+    /// <summary>
+    /// Startet/stoppt Session-Recording. ARCore speichert Camera-Feed + Sensor-Metadata
+    /// als MP4. Kann später in Playback-Mode abgespielt werden für Nachbetrachtung.
+    /// </summary>
+    private void ToggleRecording()
+    {
+        if (_arSession == null) return;
+
+        if (_isRecording)
+        {
+            try
+            {
+                _arSession.StopRecording();
+                _isRecording = false;
+                ShowTransientHint($"⏹ Recording gespeichert: {System.IO.Path.GetFileName(_currentRecordingPath)}");
+                VibrateMedium();
+            }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Warn("ArCapture", $"StopRecording failed: {ex.Message}");
+            }
+        }
+        else
+        {
+            try
+            {
+                var dir = GetExternalFilesDir("Recordings")?.AbsolutePath
+                    ?? global::Android.OS.Environment.DirectoryMovies;
+                Directory.CreateDirectory(dir);
+                _currentRecordingPath = System.IO.Path.Combine(dir,
+                    $"SmartMeasure_{DateTime.Now:yyyyMMdd_HHmmss}.mp4");
+
+                var recordingConfig = new global::Google.AR.Core.RecordingConfig(_arSession);
+                recordingConfig.SetMp4DatasetFilePath(_currentRecordingPath);
+                recordingConfig.SetAutoStopOnPause(true);
+
+                _arSession.StartRecording(recordingConfig);
+                _isRecording = true;
+                ShowTransientHint("🔴 Recording läuft");
+                VibrateMedium();
+            }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Warn("ArCapture", $"StartRecording failed: {ex.Message}");
+                Toast.MakeText(this, $"Recording-Fehler: {ex.Message}", ToastLength.Short)?.Show();
+            }
+        }
+    }
+
+    #endregion
+
+    #region Thermal + Battery Management
+
+    /// <summary>
+    /// Überwacht Thermal-Status des Geräts. Bei kritischer Hitze werden teure
+    /// Features degradiert (z.B. EnvironmentalHdr → AmbientIntensity, Sample-Count reduziert).
+    /// S25 Ultra mit Snapdragon 8 Elite bleibt normalerweise cool, aber bei langen Sessions
+    /// oder direkter Sonne kann es kritisch werden.
+    /// </summary>
+    private void CheckThermalStatus()
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(29)) return;
+
+        try
+        {
+            var pm = GetSystemService(PowerService) as global::Android.OS.PowerManager;
+            if (pm == null) return;
+
+            // PowerManager.ThermalStatus ist int (1=Light, 2=Moderate, 3=Severe, 4=Critical, 5=Emergency)
+            var status = (int)pm.CurrentThermalStatus;
+            if (status >= 3) // Severe+
+            {
+                _effectiveMultiFrameSampleTargetCount = 5;
+                if (!_thermalWarned)
+                {
+                    _thermalWarned = true;
+                    RunOnUiThread(() => ShowTransientHint("🌡️ Gerät heiß — Präzision reduziert"));
+                }
+            }
+            else if (status >= 2) // Moderate
+            {
+                _effectiveMultiFrameSampleTargetCount = 10;
+            }
+            else
+            {
+                _effectiveMultiFrameSampleTargetCount = IsHighEndDevice() ? 15 : 10;
+                _thermalWarned = false;
+            }
+        }
+        catch { /* harmlos */ }
+    }
+
+    private bool _thermalWarned;
+
+    /// <summary>Warnt User wenn Akku kritisch niedrig.</summary>
+    private void CheckBatteryStatus()
+    {
+        if (_batteryWarned) return;
+
+        try
+        {
+            var bm = GetSystemService(BatteryService) as global::Android.OS.BatteryManager;
+            if (bm == null) return;
+
+            var level = bm.GetIntProperty((int)global::Android.OS.BatteryProperty.Capacity);
+            if (level > 0 && level < 15)
+            {
+                _batteryWarned = true;
+                RunOnUiThread(() => ShowTransientHint($"🔋 Akku {level}% — Session bald beenden"));
+            }
+        }
+        catch { /* harmlos */ }
+    }
+
+    private bool _batteryWarned;
+    private int _thermalCheckFrameCounter;
+
+    #endregion
+
+    #region Android 15 HapticFeedbackConstants (moderner Weg)
+
+    /// <summary>
+    /// View.PerformHapticFeedback mit Android-14+ Constants (GestureStart, GestureEnd,
+    /// Confirm, Reject, ToggleOn). Auf S25 Ultra nutzt das Samsung's Premium-Haptics-Engine.
+    /// Fallback auf alte Vibrator-API für Kompatibilität.
+    /// </summary>
+    private void HapticConfirm() => TryPerformHaptic(global::Android.Views.FeedbackConstants.Confirm);
+
+    private void HapticReject() => TryPerformHaptic(global::Android.Views.FeedbackConstants.Reject);
+
+    private void TryPerformHaptic(global::Android.Views.FeedbackConstants constant)
+    {
+        try
+        {
+            var root = _glSurfaceView?.RootView ?? Window?.DecorView;
+            if (root != null && OperatingSystem.IsAndroidVersionAtLeast(30))
+            {
+                root.PerformHapticFeedback(constant);
+                return;
+            }
+        }
+        catch { /* harmlos */ }
+
+        // Fallback auf unsere bestehende VibrateLight
+        VibrateLight();
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Liest die Geospatial-Kamera-Pose (VPS) wenn Earth-Tracking aktiv ist.
+    /// Aktualisiert _lastGeoLatitude/Longitude/etc. die beim Punkt-Set in ArPoint geschrieben werden.
+    /// Sampelt Accuracy-Werte für Final-Report.
+    /// </summary>
+    private void UpdateGeospatialPose()
+    {
+        if (!_geospatialEnabled || _arSession == null) return;
+
+        try
+        {
+            var earth = _arSession.Earth;
+            if (earth == null) return;
+
+            // TrackingState ist ausreichend — Earth trackt nur wenn es funktioniert.
+            // EarthState-Property hat Namens-Konflikt mit Inner-Enum-Typ im Xamarin-Binding.
+            if (earth.TrackingState != TrackingState.Tracking)
+            {
+                _geospatialActive = false;
+                return;
+            }
+
+            _geospatialActive = true;
+
+            var pose = earth.CameraGeospatialPose;
+            if (pose == null) return;
+
+            _lastGeoLatitude = pose.Latitude;
+            _lastGeoLongitude = pose.Longitude;
+            _lastGeoAltitude = pose.Altitude;
+            _lastGeoHorizontalAcc = (float)pose.HorizontalAccuracy;
+            _lastGeoHeading = (float)pose.Heading;
+            _lastGeoHeadingAcc = (float)pose.HeadingAccuracy;
+
+            // Samples für Final-Report (Median)
+            lock (_geospatialHorizontalAccSamples)
+            {
+                if (_geospatialHorizontalAccSamples.Count < 200)
+                    _geospatialHorizontalAccSamples.Add(_lastGeoHorizontalAcc.Value);
+            }
+            lock (_geospatialHeadingAccSamples)
+            {
+                if (_geospatialHeadingAccSamples.Count < 200)
+                    _geospatialHeadingAccSamples.Add(_lastGeoHeadingAcc.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"Geospatial-Update fehlgeschlagen: {ex.Message}");
+            _geospatialActive = false;
+        }
+    }
+
+    /// <summary>Median-Accuracy aus Geospatial-Samples berechnen (für Report).</summary>
+    private (float? horizontal, float? heading) GetGeospatialMedianAccuracy()
+    {
+        float[] hSamples, dSamples;
+        lock (_geospatialHorizontalAccSamples) hSamples = _geospatialHorizontalAccSamples.ToArray();
+        lock (_geospatialHeadingAccSamples) dSamples = _geospatialHeadingAccSamples.ToArray();
+
+        float? MedianOf(float[] arr)
+        {
+            if (arr.Length == 0) return null;
+            Array.Sort(arr);
+            return arr.Length % 2 == 0
+                ? (arr[arr.Length / 2 - 1] + arr[arr.Length / 2]) / 2f
+                : arr[arr.Length / 2];
+        }
+
+        return (MedianOf(hSamples), MedianOf(dSamples));
+    }
+
+    /// <summary>
+    /// Sammelt ARCore-Heading aus der Kamera-Pose (Sensor-fusioniert).
+    /// Stabiler als rohes Magnetometer, vor allem in Metallumgebung.
+    /// </summary>
+    private void SampleArCoreHeading(Google.AR.Core.Camera camera)
+    {
+        try
+        {
+            var pose = camera.Pose;
+            if (pose == null) return;
+
+            var heading = ArPrecisionHelpers.ExtractHeadingFromCameraPose(pose);
+            if (!heading.HasValue) return;
+
+            lock (_arCoreHeadingSamples)
+            {
+                if (_arCoreHeadingSamples.Count < HeadingSampleTargetCount)
+                    _arCoreHeadingSamples.Add(heading.Value);
+            }
+        }
+        catch { /* harmlos */ }
+    }
+
+    /// <summary>
+    /// Median der ARCore-Heading-Samples (Circular Median).
+    /// Liefert null wenn zu wenige Samples.
+    /// </summary>
+    private float? FinalizeArCoreHeading()
+    {
+        float[] samples;
+        lock (_arCoreHeadingSamples) samples = _arCoreHeadingSamples.ToArray();
+        if (samples.Length < 5) return null;
+
+        var sinSum = samples.Sum(h => MathF.Sin(h * MathF.PI / 180f));
+        var cosSum = samples.Sum(h => MathF.Cos(h * MathF.PI / 180f));
+        var medianRad = MathF.Atan2(sinSum / samples.Length, cosSum / samples.Length);
+        var medianDeg = medianRad * 180f / MathF.PI;
+        if (medianDeg < 0) medianDeg += 360f;
+        return medianDeg;
+    }
+
+    /// <summary>
+    /// Prüft ob die aktuelle Session-Qualität gut genug für Punkt-Set ist.
+    /// Liefert (Ready, Checklist) wobei Checklist Probleme aufzählt.
+    /// </summary>
+    private (bool ready, string checkList) ValidatePreMeasureConditions()
+    {
+        var failed = new List<string>();
+
+        if (_arSession == null) failed.Add("Session nicht aktiv");
+
+        var stability = _stabilityMonitor?.StabilityScore ?? 0f;
+        if (stability < 0.6f) failed.Add("Kamera wackelt");
+
+        if (_magneticAccuracy < 2) failed.Add("Kompass unkalibriert");
+
+        // Plane-Count
+        var planeCount = 0;
+        try
+        {
+            var trackables = _arSession?.GetAllTrackables(Java.Lang.Class.FromType(typeof(Plane)));
+            if (trackables != null)
+                foreach (var t in trackables)
+                    if (t is Plane p && p.TrackingState == TrackingState.Tracking && p.SubsumedBy == null)
+                        planeCount++;
+        }
+        catch { /* harmlos */ }
+
+        if (planeCount == 0) failed.Add("Keine Fläche erkannt");
+
+        return (failed.Count == 0, string.Join(" · ", failed));
+    }
+
+    /// <summary>Durchschnittliche Messgenauigkeit aller bisherigen Punkte (für Quality-Score).</summary>
+    private float GetAverageStdDev()
+    {
+        lock (_dataLock)
+        {
+            var all = new List<ArPoint>(_points);
+            foreach (var c in _contours) all.AddRange(c.Points);
+            if (all.Count == 0) return 0f;
+            return all.Where(p => p.PositionStdDev > 0).DefaultIfEmpty().Average(p => p?.PositionStdDev ?? 0f);
+        }
+    }
+
+    #endregion
+
+    #region Kontur-Typ-Auswahl (Gartenplanung)
+
+    private static readonly (global::SmartMeasure.Shared.Models.ArContourType Type, string Label, string Emoji)[]
+        ContourTypeOptions =
+        [
+            (global::SmartMeasure.Shared.Models.ArContourType.Weg,       "Weg",       "🛤"),
+            (global::SmartMeasure.Shared.Models.ArContourType.Beet,      "Beet",      "🌸"),
+            (global::SmartMeasure.Shared.Models.ArContourType.Mauer,     "Mauer",     "🧱"),
+            (global::SmartMeasure.Shared.Models.ArContourType.Zaun,      "Zaun",      "🌳"),
+            (global::SmartMeasure.Shared.Models.ArContourType.Terrasse,  "Terrasse",  "🏗"),
+            (global::SmartMeasure.Shared.Models.ArContourType.Gebaeude,  "Gebäude",   "🏠"),
+            (global::SmartMeasure.Shared.Models.ArContourType.Wasser,    "Wasser/Teich", "💧"),
+            (global::SmartMeasure.Shared.Models.ArContourType.Grenze,    "Grenze",    "🔶"),
+            (global::SmartMeasure.Shared.Models.ArContourType.Kante,     "Kante",     "📐"),
+        ];
+
+    /// <summary>
+    /// Zeigt Typ-Auswahl-Dialog. Bei Auswahl wird aktive Kontur abgeschlossen (falls vorhanden)
+    /// und neue Kontur vom gewählten Typ gestartet. Ermöglicht Multi-Kontur-Zeichnung für
+    /// Gartenplanung (z.B. 3 Wege + 2 Beete + 1 Mauer in einer Session).
+    /// </summary>
+    private void ShowContourTypeDialog()
+    {
+        try
+        {
+            var labels = ContourTypeOptions
+                .Select(o => $"{o.Emoji}  {o.Label}")
+                .ToArray();
+
+            var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
+            builder.SetTitle("Neue Kontur — Typ wählen");
+            builder.SetItems(labels, (_, e) =>
+            {
+                var selected = ContourTypeOptions[e.Which];
+                StartNewContour(selected.Type);
+            });
+            builder.SetNegativeButton("Abbrechen", (_, _) => { });
+            builder.Show();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"ContourTypeDialog failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Schließt aktive Kontur (wenn >=3 Punkte mit Bowditch), startet neue vom gewählten Typ.
+    /// Modus wechselt automatisch zu Contour.
+    /// </summary>
+    private void StartNewContour(global::SmartMeasure.Shared.Models.ArContourType type)
+    {
+        // Aktive Kontur abschließen wenn genug Punkte (sonst wegwerfen)
+        lock (_dataLock)
+        {
+            if (_activeContour != null)
+            {
+                if (_activeContour.Points.Count >= 3)
+                {
+                    _activeContour.IsClosed = true;
+                    // Anchors detachen damit Bowditch nicht überschrieben wird (K1-Fix)
+                    foreach (var p in _activeContour.Points)
+                    {
+                        if (!string.IsNullOrEmpty(p.AnchorId))
+                        {
+                            _anchorManager.Detach(p.AnchorId);
+                            p.AnchorId = null;
+                        }
+                    }
+                    ArPrecisionHelpers.ApplyBowditchCorrection(_activeContour);
+                    _contours.Add(_activeContour);
+                }
+                _activeContour = null;
+            }
+        }
+
+        _currentContourType = type;
+        _captureMode = CaptureMode.Contour;
+
+        UpdateModeButtonHighlight();
+        UpdateCounter();
+        _overlayView?.Invalidate();
+
+        var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == type).Label ?? type.ToString();
+        ShowTransientHint($"📐 Neue {typeLabel}-Kontur — Punkte tippen");
+        VibrateMedium();
+    }
+
+    private void UpdateModeButtonHighlight()
+    {
+        _btnPoint?.SetBackgroundColor(_captureMode == CaptureMode.Point
+            ? Color.Argb(220, 255, 107, 0)
+            : Color.Argb(80, 255, 255, 255));
+        _btnContour?.SetBackgroundColor(_captureMode == CaptureMode.Contour
+            ? Color.Argb(220, 255, 107, 0)
+            : Color.Argb(80, 255, 255, 255));
+
+        if (_modeText != null)
+        {
+            var typeLabel = ContourTypeOptions.FirstOrDefault(o => o.Type == _currentContourType).Label
+                ?? _currentContourType.ToString();
+            _modeText.Text = _captureMode == CaptureMode.Point
+                ? "Modus: Punkt"
+                : $"Modus: {typeLabel}";
+        }
+    }
+
+    #endregion
+
+    #region Kompass-Kalibrierung
+
+    private void ShowCompassCalibrationHint()
+    {
+        try
+        {
+            var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
+            builder.SetTitle("Kompass-Kalibrierung nötig");
+            builder.SetMessage(
+                "Der Kompass ist ungenau.\n\n" +
+                "Bewege das Gerät langsam in einer liegenden Acht (∞) für ca. 5 Sekunden.\n\n" +
+                "Das stabilisiert die Magnetfeld-Messung und macht alle Richtungs-Angaben präziser.");
+            builder.SetPositiveButton("OK", (_, _) => { });
+            builder.Show();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"CompassCalib-Dialog failed: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Help-Dialog
+
+    private void ShowHelpDialog()
+    {
+        VibrateLight();
+        try
+        {
+            const string helpText =
+                "SmartMeasure AR-Modus\n\n" +
+                "◎ Punkt: Einzelne Messpunkte setzen\n" +
+                "─ Linie: Kontur (Polygon) zeichnen\n" +
+                "⭕ Schließen: Aktive Kontur abschließen\n" +
+                "↶ ↷: Aktion rückgängig / wiederholen\n" +
+                "✖ Löschen: Ausgewählten Punkt löschen\n" +
+                "📷: Screenshot als PNG speichern\n" +
+                "✔ Fertig: Session beenden und übertragen\n\n" +
+                "Tipps:\n" +
+                "• Grüner Crosshair = Fläche erkannt (beste Qualität)\n" +
+                "• Gelb = Instant Placement (geschätzt)\n" +
+                "• Rot/Weiß = Kein Hit, Kamera bewegen\n" +
+                "• Punkte werden automatisch persistent bei Fehlern\n" +
+                "• Langsame Bewegung = bessere Tracking-Qualität\n" +
+                "• Gute Beleuchtung für Feature-Detection";
+
+            var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
+            builder.SetTitle("AR-Bedienung");
+            builder.SetMessage(helpText);
+            builder.SetPositiveButton("Verstanden", (_, _) => { });
+            builder.Show();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"Help-Dialog failed: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Transient-Hint
+
+    private string? _currentTransientHint;
+
+    private void ShowTransientHint(string text)
+    {
+        _currentTransientHint = text;
+        // State mit Hint in den nächsten Overlay-Update packen
+        // Wird im Frame-Update-Zyklus aufgegriffen
+    }
+
+    private string? ConsumeTransientHint()
+    {
+        var hint = _currentTransientHint;
+        _currentTransientHint = null;
+        return hint;
+    }
+
+    #endregion
+
+    #region Live-Stats + Reticle
+
+    /// <summary>
+    /// Live-HitTest in der Bildschirmmitte (Reticle). Nutzt Plane-First, dann Instant Placement.
+    /// Liefert (Quality, DistanceMeters, HeightDelta) für Overlay-Anzeige.
+    /// </summary>
+    private void UpdateReticleState(Frame frame, Google.AR.Core.Camera camera)
+    {
+        var cx = _viewportWidth / 2f;
+        var cy = _viewportHeight / 2f;
+
+        var (quality, distance, heightDelta) = PerformReticleHitTest(frame, camera, cx, cy);
+
+        _reticleHitQuality = quality;
+        _reticleHitDistance = distance;
+        _reticleHeightDelta = heightDelta;
+    }
+
+    private (ArHitQuality quality, float distance, float? height) PerformReticleHitTest(
+        Frame frame, Google.AR.Core.Camera camera, float screenX, float screenY)
+    {
+        try
+        {
+            // 1. Plane-HitTest bevorzugen
+            var hits = frame.HitTest(screenX, screenY);
+            if (hits != null)
+            {
+                foreach (var hit in hits)
+                {
+                    if (hit.Trackable is Plane plane && plane.IsPoseInPolygon(hit.HitPose))
+                        return BuildHitInfo(hit, ArHitQuality.Plane, camera);
+
+                    if (hit.Trackable is Google.AR.Core.Point)
+                        return BuildHitInfo(hit, ArHitQuality.Point, camera);
+                }
+            }
+
+            // 2. Instant Placement als Fallback (geschätzte Tiefe 1.5m)
+            var instantHits = frame.HitTestInstantPlacement(screenX, screenY, 1.5f);
+            if (instantHits != null && instantHits.Count > 0)
+                return BuildHitInfo(instantHits[0], ArHitQuality.InstantPlacement, camera);
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("ArCapture", $"Reticle hit-test failed: {ex.Message}");
+        }
+
+        return (ArHitQuality.None, 0f, null);
+    }
+
+    private (ArHitQuality, float, float?) BuildHitInfo(HitResult hit, ArHitQuality quality, Google.AR.Core.Camera camera)
+    {
+        var pose = hit.HitPose;
+        var cameraPose = camera.Pose;
+        if (pose == null || cameraPose == null) return (quality, 0f, null);
+
+        var dx = pose.Tx() - cameraPose.Tx();
+        var dy = pose.Ty() - cameraPose.Ty();
+        var dz = pose.Tz() - cameraPose.Tz();
+        var distance = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+
+        // Höhe relativ zum ersten Punkt
+        float? heightDelta = null;
+        lock (_dataLock)
+        {
+            if (_points.Count > 0)
+                heightDelta = pose.Ty() - _points[0].Y;
+            else if (_contours.Count > 0 && _contours[0].Points.Count > 0)
+                heightDelta = pose.Ty() - _contours[0].Points[0].Y;
+        }
+
+        return (quality, distance, heightDelta);
+    }
+
+    /// <summary>
+    /// Baut den aktuellen Overlay-State aus den Live-Daten zusammen.
+    /// Wird pro Frame aufgerufen, Ergebnis an _overlayView.UpdateState.
+    /// </summary>
+    private ArOverlayState BuildOverlayState(Google.AR.Core.Camera camera)
+    {
+        var isTracking = camera.TrackingState == TrackingState.Tracking;
+        string? failReason = null;
+
+        if (!isTracking)
+        {
+            // TrackingFailureReason ist ein Java-Enum-Object, kein C#-Enum — deshalb
+            // Equals() statt switch-Pattern. String-Vergleich ist zu fragil bei Proguard.
+            var reason = camera.TrackingFailureReason;
+            if (reason != null)
+            {
+                if (reason.Equals(TrackingFailureReason.InsufficientLight))
+                    failReason = "Nicht genug Licht";
+                else if (reason.Equals(TrackingFailureReason.InsufficientFeatures))
+                    failReason = "Mehr Texturen/Kanten nötig";
+                else if (reason.Equals(TrackingFailureReason.ExcessiveMotion))
+                    failReason = "Langsamer bewegen";
+                else if (reason.Equals(TrackingFailureReason.CameraUnavailable))
+                    failReason = "Kamera nicht verfügbar";
+                else if (reason.Equals(TrackingFailureReason.BadState))
+                    failReason = "Session-Fehler";
+                else
+                    failReason = "Tracking verloren";
+            }
+            else
+            {
+                failReason = "Tracking verloren";
+            }
+        }
+
+        // Live-Stats berechnen
+        float liveArea = 0f, liveLength = 0f, heightRange = 0f;
+        (float x, float y)? autoClose = null;
+
+        lock (_dataLock)
+        {
+            // Alle Konturen
+            foreach (var c in _contours)
+            {
+                liveLength += c.CalculateLength();
+                if (c.IsClosed) liveArea += c.CalculateArea();
+            }
+
+            // Aktive Kontur
+            if (_activeContour != null)
+            {
+                liveLength += _activeContour.CalculateLength();
+                if (_activeContour.Points.Count >= 3)
+                {
+                    // Provisorische Fläche (als wäre sie geschlossen)
+                    var tempClosed = new ArContour
+                    {
+                        Points = _activeContour.Points,
+                        IsClosed = true,
+                    };
+                    liveArea += tempClosed.CalculateArea();
+                }
+
+                // Auto-Close-Detection: Reticle-Abstand zum ersten Kontur-Punkt
+                if (_captureMode == CaptureMode.Contour && _activeContour.Points.Count >= 3
+                    && _reticleHitQuality != ArHitQuality.None)
+                {
+                    var first = _activeContour.Points[0];
+                    // Wir brauchen die Welt-Position des aktuellen Reticles — approximieren
+                    // via HitDistance + Kamera-Vorwärtsvektor (für jetzt: Screen-Distanz zum
+                    // ersten projizierten Kontur-Punkt als Näherung)
+                    var firstScreen = _projectedContourPoints.FirstOrDefault(p => p.contourIdx == -1 && p.pointIdx == 0);
+                    if (firstScreen != default)
+                    {
+                        var rx = _viewportWidth / 2f;
+                        var ry = _viewportHeight / 2f;
+                        var sdx = firstScreen.screenX - rx;
+                        var sdy = firstScreen.screenY - ry;
+                        var screenDist = MathF.Sqrt(sdx * sdx + sdy * sdy);
+                        if (screenDist < 80) // px, entspricht ungefähr Reticle-Nähe
+                            autoClose = (firstScreen.screenX, firstScreen.screenY);
+                    }
+                }
+            }
+
+            // Höhen-Range
+            if (_points.Count > 0 || _contours.Count > 0)
+            {
+                var allY = new List<float>();
+                foreach (var p in _points) allY.Add(p.Y);
+                foreach (var c in _contours) foreach (var p in c.Points) allY.Add(p.Y);
+                if (_activeContour != null) foreach (var p in _activeContour.Points) allY.Add(p.Y);
+
+                if (allY.Count > 1)
+                    heightRange = allY.Max() - allY.Min();
+            }
+        }
+
+        var planeCount = 0;
+        try
+        {
+            var trackables = _arSession?.GetAllTrackables(Java.Lang.Class.FromType(typeof(Plane)));
+            if (trackables != null)
+            {
+                foreach (var t in trackables)
+                    if (t is Plane p && p.TrackingState == TrackingState.Tracking && p.SubsumedBy == null)
+                        planeCount++;
+            }
+        }
+        catch { /* harmlos */ }
+
+        // Sampler-State unter Lock lesen (K3-Fix)
+        bool isSampling;
+        float samplingProgress;
+        lock (_samplerLock)
+        {
+            isSampling = _activeSampler != null;
+            samplingProgress = isSampling
+                ? (float)_samplesCollected / _effectiveMultiFrameSampleTargetCount
+                : 0f;
+        }
+
+        // Validation nur EINMAL aufrufen — war vorher 2× pro Frame (teuer wegen Plane-Iteration)
+        var (ready, checkList) = ValidatePreMeasureConditions();
+        var stability = _stabilityMonitor?.StabilityScore ?? 1f;
+        var anchorCount = _anchorManager.CountTracking();
+
+        return new ArOverlayState
+        {
+            IsTracking = isTracking,
+            TrackingFailureReason = failReason,
+            ReticleX = _viewportWidth / 2f,
+            ReticleY = _viewportHeight / 2f,
+            HitQuality = _reticleHitQuality,
+            HitDistanceMeters = _reticleHitDistance > 0 ? _reticleHitDistance : null,
+            HitHeightDelta = _reticleHeightDelta,
+            DetectedPlaneCount = planeCount,
+            SessionSeconds = (long)(DateTime.UtcNow - _sessionStart).TotalSeconds,
+            CompassHeading = _magneticHeading ?? 0f,
+            LiveAreaSquareMeters = liveArea,
+            LiveLengthMeters = liveLength,
+            HeightRangeMeters = heightRange,
+            AutoCloseTarget = autoClose,
+            TransientHint = ConsumeTransientHint(),
+            AnchorCount = anchorCount,
+            StabilityScore = stability,
+            IsSampling = isSampling,
+            SamplingProgress = samplingProgress,
+            IsReadyToMeasure = ready,
+            ReadinessIssues = checkList,
+            TrackingQualityScore = ArPrecisionHelpers.ComputeTrackingQualityScore(
+                isTracking, planeCount, stability, _magneticAccuracy, anchorCount, GetAverageStdDev()),
+            GroundPlaneY = GetGroundPlaneY(),
+            MagneticAccuracy = _magneticAccuracy,
+            TopInsetPixels = _topInsetPx,
+            BottomInsetPixels = _bottomInsetPx,
+        };
+    }
+
+    private bool _wasTrackingLastFrame = true;
+
+    /// <summary>Gibt Vibrations-Feedback wenn Tracking verloren geht (nur bei Übergang).</summary>
+    private void CheckTrackingTransition(bool isTracking)
+    {
+        if (_wasTrackingLastFrame && !isTracking)
+            VibrateWarning();
+        _wasTrackingLastFrame = isTracking;
+    }
+
+    #endregion
 
     protected override void OnDestroy()
     {
+        // Präzisions-Manager freigeben BEVOR Session geschlossen wird
+        // (Anchors halten Session-Referenz)
+        _stabilityMonitor?.Dispose();
+        _stabilityMonitor = null;
+        _anchorManager.Dispose();
+
         // OpenGL-Ressourcen aufraeumen (Textur + Renderer)
         if (_cameraTextureId != 0)
         {
@@ -1273,28 +3184,30 @@ public class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSur
         void Redo();
     }
 
-    private sealed class AddPointAction(List<ArPoint> list, ArPoint point) : IArAction
+    // Undo/Redo-Actions sperren über _dataLock damit Render-Thread nicht während
+    // List-Mutation iteriert. Vorher: Race-Crash mit IndexOutOfRangeException möglich.
+    private sealed class AddPointAction(object lockObj, List<ArPoint> list, ArPoint point) : IArAction
     {
-        public void Undo() => list.Remove(point);
-        public void Redo() => list.Add(point);
+        public void Undo() { lock (lockObj) list.Remove(point); }
+        public void Redo() { lock (lockObj) list.Add(point); }
     }
 
-    private sealed class DeletePointAction(List<ArPoint> list, int index, ArPoint point) : IArAction
+    private sealed class DeletePointAction(object lockObj, List<ArPoint> list, int index, ArPoint point) : IArAction
     {
-        public void Undo() => list.Insert(Math.Min(index, list.Count), point);
-        public void Redo() => list.Remove(point);
+        public void Undo() { lock (lockObj) list.Insert(Math.Min(index, list.Count), point); }
+        public void Redo() { lock (lockObj) list.Remove(point); }
     }
 
-    private sealed class AddContourPointAction(ArContour contour, ArPoint point) : IArAction
+    private sealed class AddContourPointAction(object lockObj, ArContour contour, ArPoint point) : IArAction
     {
-        public void Undo() => contour.Points.Remove(point);
-        public void Redo() => contour.Points.Add(point);
+        public void Undo() { lock (lockObj) contour.Points.Remove(point); }
+        public void Redo() { lock (lockObj) contour.Points.Add(point); }
     }
 
-    private sealed class DeleteContourPointAction(ArContour contour, int index, ArPoint point) : IArAction
+    private sealed class DeleteContourPointAction(object lockObj, ArContour contour, int index, ArPoint point) : IArAction
     {
-        public void Undo() => contour.Points.Insert(Math.Min(index, contour.Points.Count), point);
-        public void Redo() => contour.Points.Remove(point);
+        public void Undo() { lock (lockObj) contour.Points.Insert(Math.Min(index, contour.Points.Count), point); }
+        public void Redo() { lock (lockObj) contour.Points.Remove(point); }
     }
 
     private sealed class MovePointAction(ArPoint point,

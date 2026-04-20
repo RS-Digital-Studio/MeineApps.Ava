@@ -11,15 +11,23 @@ namespace SmartMeasure.Android.Ar;
 
 /// <summary>
 /// Android-Implementation des IArCaptureService.
-/// Startet ArCaptureActivity (ARCore) und gibt das Ergebnis zurueck.
-/// Pattern: analog zu AndroidBarcodeService (FitnessRechner).
+/// Startet ArCaptureActivity (ARCore) und gibt das Ergebnis zurück.
+///
+/// Fehler-Behandlung: Abbrüche werden mit einem Error-String im TCS-Result
+/// getransport (<see cref="CaptureAsync"/> liefert null UND der Caller kann
+/// <see cref="LastError"/> abfragen für UX-Feedback). Die vorherige Variante
+/// gab still null zurück und User wusste nicht warum.
 /// </summary>
 public sealed class AndroidArCaptureService : IArCaptureService
 {
     private readonly Activity _activity;
+    private readonly object _tcsLock = new();
     private TaskCompletionSource<ArCaptureResult?>? _tcs;
 
     private const int CAMERA_PERMISSION_CODE = 9010;
+
+    /// <summary>Letzter Fehler-Grund falls CaptureAsync null zurückgibt.</summary>
+    public string? LastError { get; private set; }
 
     public AndroidArCaptureService(Activity activity)
     {
@@ -30,11 +38,8 @@ public sealed class AndroidArCaptureService : IArCaptureService
     {
         try
         {
-            // ARCore-Verfuegbarkeit pruefen
             var availability = Google.AR.Core.ArCoreApk.Instance!
                 .CheckAvailability(_activity);
-
-            // SUPPORTED_INSTALLED oder SUPPORTED_NOT_INSTALLED (kann installiert werden)
             var isSupported = availability?.ToString()?.Contains("SUPPORTED") == true;
             return Task.FromResult(isSupported);
         }
@@ -47,13 +52,23 @@ public sealed class AndroidArCaptureService : IArCaptureService
 
     public Task<ArCaptureResult?> CaptureAsync()
     {
-        // Laufende Capture-Session abbrechen falls vorhanden
-        _tcs?.TrySetResult(null);
-        _tcs = new TaskCompletionSource<ArCaptureResult?>();
+        // Laufende Capture-Session als abgebrochen markieren
+        TaskCompletionSource<ArCaptureResult?> newTcs;
+        lock (_tcsLock)
+        {
+            if (_tcs != null && !_tcs.Task.IsCompleted)
+            {
+                LastError = "Vorherige AR-Session wurde abgebrochen";
+                _tcs.TrySetResult(null);
+            }
+
+            newTcs = new TaskCompletionSource<ArCaptureResult?>();
+            _tcs = newTcs;
+            LastError = null;
+        }
 
         try
         {
-            // Kamera + GPS Permissions pruefen (GPS fuer Georeferenzierung)
             var needCamera = ContextCompat.CheckSelfPermission(_activity, Manifest.Permission.Camera)
                 != Permission.Granted;
             var needLocation = ContextCompat.CheckSelfPermission(_activity, Manifest.Permission.AccessFineLocation)
@@ -78,10 +93,10 @@ public sealed class AndroidArCaptureService : IArCaptureService
         catch (Exception ex)
         {
             global::Android.Util.Log.Error("ArCaptureService", $"CaptureAsync Fehler: {ex}");
-            _tcs.TrySetResult(null);
+            CompleteWithError($"AR-Session konnte nicht gestartet werden: {ex.Message}");
         }
 
-        return _tcs.Task;
+        return newTcs.Task;
     }
 
     private void StartCaptureActivity()
@@ -94,55 +109,74 @@ public sealed class AndroidArCaptureService : IArCaptureService
         catch (Exception ex)
         {
             global::Android.Util.Log.Error("ArCaptureService", $"StartCaptureActivity Fehler: {ex}");
-            _tcs?.TrySetResult(null);
+            CompleteWithError($"AR-Activity konnte nicht gestartet werden: {ex.Message}");
         }
     }
 
-    /// <summary>Wird von MainActivity.OnActivityResult aufgerufen</summary>
+    /// <summary>Wird von MainActivity.OnActivityResult aufgerufen.</summary>
     public void HandleActivityResult(int requestCode, Result resultCode, Intent? data)
     {
         if (requestCode != ArCaptureActivity.REQUEST_CODE) return;
 
-        if (resultCode == Result.Ok && data != null)
+        if (resultCode == Result.Ok)
         {
+            // Result auch ohne data akzeptieren — ArCaptureActivity nutzt ConsumeLastResult-Static-Bridge
             var result = ArCaptureActivity.ConsumeLastResult();
-            _tcs?.TrySetResult(result);
+            CompleteWithResult(result);
         }
         else
         {
-            _tcs?.TrySetResult(null);
+            // Result.Canceled ist User-Abbruch (Back-Button), nicht Fehler
+            CompleteWithError(resultCode == Result.Canceled ? null : "AR-Capture wurde nicht erfolgreich beendet");
         }
     }
 
-    /// <summary>Wird von MainActivity.OnRequestPermissionsResult aufgerufen</summary>
+    /// <summary>Wird von MainActivity.OnRequestPermissionsResult aufgerufen.</summary>
     public void HandlePermissionResult(int requestCode, Permission[] grantResults)
     {
         if (requestCode != CAMERA_PERMISSION_CODE) return;
 
-        if (grantResults.Length > 0 && grantResults[0] == Permission.Granted)
+        var allGranted = grantResults.Length > 0 && grantResults.All(r => r == Permission.Granted);
+        if (!allGranted)
         {
-            // Delay nach Permission-Grant (System braucht Zeit fuer Kamera-Aktivierung)
-            _activity.Window?.DecorView?.PostDelayed(() =>
-            {
-                try
-                {
-                    if (_activity.IsFinishing || _activity.IsDestroyed)
-                    {
-                        _tcs?.TrySetResult(null);
-                        return;
-                    }
-                    StartCaptureActivity();
-                }
-                catch (Exception ex)
-                {
-                    global::Android.Util.Log.Error("ArCaptureService",
-                        $"Activity-Start nach Permission fehlgeschlagen: {ex}");
-                    _tcs?.TrySetResult(null);
-                }
-            }, 500);
+            CompleteWithError("Kamera- und/oder Standort-Berechtigung verweigert");
+            return;
         }
-        else
+
+        // Kleiner Delay für das System (Camera-Subsystem braucht Zeit nach Permission-Grant)
+        _activity.Window?.DecorView?.PostDelayed(() =>
         {
+            try
+            {
+                if (_activity.IsFinishing || _activity.IsDestroyed)
+                {
+                    CompleteWithError("Activity wurde beendet bevor AR starten konnte");
+                    return;
+                }
+                StartCaptureActivity();
+            }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Error("ArCaptureService",
+                    $"Activity-Start nach Permission fehlgeschlagen: {ex}");
+                CompleteWithError($"AR-Start nach Berechtigung fehlgeschlagen: {ex.Message}");
+            }
+        }, 500);
+    }
+
+    private void CompleteWithResult(ArCaptureResult? result)
+    {
+        lock (_tcsLock)
+        {
+            _tcs?.TrySetResult(result);
+        }
+    }
+
+    private void CompleteWithError(string? error)
+    {
+        lock (_tcsLock)
+        {
+            if (error != null) LastError = error;
             _tcs?.TrySetResult(null);
         }
     }

@@ -15,11 +15,41 @@ public class ArPoint
     /// <summary>ARCore Anchor-ID (fuer stabile Positionierung in der Welt)</summary>
     public string? AnchorId { get; set; }
 
-    /// <summary>Konfidenz des Hit-Tests (0.0 - 1.0)</summary>
+    /// <summary>
+    /// Konfidenz (0.0 - 1.0). Setzt sich zusammen aus: Hit-Quality (Plane/Point/Instant),
+    /// Anchor-Tracking-Quality, Depth-Agreement, Multi-Frame-Variance, Stability-Score.
+    /// </summary>
     public float Confidence { get; set; }
+
+    /// <summary>Standardabweichung der Multi-Frame-Averaging-Samples in Metern (kleiner = besser).</summary>
+    public float PositionStdDev { get; set; }
+
+    /// <summary>Anzahl Samples die zum Punkt-Averaging beigetragen haben (typisch 5-10).</summary>
+    public int SampleCount { get; set; }
+
+    /// <summary>
+    /// Hit-Qualität beim Setzen: 3=Plane, 2=Feature-Point, 1=Instant Placement, 0=kein Hit.
+    /// Gibt Aufschluss ob Punkt drift-stabil ist (3) oder nur geschätzt (1).
+    /// </summary>
+    public int HitQuality { get; set; }
 
     /// <summary>Optionales Label ("Ecke Terrasse", "Beetkante")</summary>
     public string? Label { get; set; }
+
+    /// <summary>
+    /// Absolute WGS84-Latitude direkt aus ARCore Geospatial-API (nur wenn Earth-Tracking aktiv war).
+    /// Präziser als manuelle Konvertierung aus X/Z+Heading, weil VPS-gestützt (±1-3m).
+    /// </summary>
+    public double? GeoLatitude { get; set; }
+
+    /// <summary>Absolute WGS84-Longitude aus ARCore Geospatial-API.</summary>
+    public double? GeoLongitude { get; set; }
+
+    /// <summary>Absolute Höhe über WGS84-Ellipsoid in Metern aus ARCore Geospatial-API.</summary>
+    public double? GeoAltitude { get; set; }
+
+    /// <summary>Horizontale Genauigkeit der Geo-Position in Metern (beim Capture-Zeitpunkt).</summary>
+    public float? GeoHorizontalAccuracy { get; set; }
 
     /// <summary>Zeitpunkt der Erfassung (UTC)</summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;

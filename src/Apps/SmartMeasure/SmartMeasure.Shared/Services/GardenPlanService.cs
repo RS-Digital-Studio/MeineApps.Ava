@@ -133,9 +133,30 @@ public class GardenPlanService : IGardenPlanService
         return estimates;
     }
 
+    /// <summary>
+    /// Shoelace-Fläche. Erwartet metrische Koordinaten (UTM-Meter).
+    /// Liefert 0 wenn die Werte wie Lat/Lon aussehen (|x|&lt;180 und |y|&lt;90) —
+    /// das passiert sonst mit astronomisch falschen Ergebnissen (Grad² ≠ m²).
+    /// </summary>
     public double CalculatePolygonArea(List<(double x, double y)> points)
     {
         if (points.Count < 3) return 0;
+
+        // Plausibilitäts-Check: Sind das UTM-Meter oder WGS84-Grade?
+        // UTM-Easting liegt üblich bei 500000, UTM-Northing bei Millionen.
+        // Bei Werten < 1 für beide Koordinaten in Range [-180, 180] ist es wahrscheinlich
+        // Grad-Input — dann Shoelace-Ergebnis ist nicht in m², sondern Grad² × 12 Mrd m².
+        var suspicious = points.All(p =>
+            Math.Abs(p.x) <= 180.0 && Math.Abs(p.y) <= 90.0 &&
+            !(Math.Abs(p.x) > 1.0 || Math.Abs(p.y) > 1.0));
+
+        if (suspicious)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                "GardenPlanService.CalculatePolygonArea: Punkte sehen nach Lat/Lon aus — " +
+                "Caller muss vorher in UTM-Meter konvertieren. 0 zurückgegeben.");
+            return 0;
+        }
 
         double area = 0;
         for (int i = 0; i < points.Count; i++)

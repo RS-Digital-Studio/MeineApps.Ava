@@ -3,6 +3,7 @@
              xmlns:vm="using:SmartMeasure.Shared.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="SmartMeasure.Shared.Views.SettingsView"
+             x:CompileBindings="True"
              x:DataType="vm:SettingsViewModel">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">

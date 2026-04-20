@@ -23,8 +23,12 @@ public static class ProjectThumbnailRenderer
     private static readonly SKPaint DotPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = PrimaryColor };
     private static readonly SKPaint DotStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.8f, Color = new SKColor(255, 255, 255, 120) };
     private static readonly SKPaint BadgeBgPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = TypeBadgeColor };
-    private static readonly SKPaint BadgeTextPaint = new() { IsAntialias = true, Color = TextDimmed, TextSize = 9f, TextAlign = SKTextAlign.Right };
-    private static readonly SKPaint EmptyTextPaint = new() { Color = TextDimmed, TextSize = 12f, TextAlign = SKTextAlign.Center, IsAntialias = true };
+    private static readonly SKPaint BadgeTextPaint = new() { IsAntialias = true, Color = TextDimmed };
+    private static readonly SKPaint EmptyTextPaint = new() { Color = TextDimmed, IsAntialias = true };
+
+    // SKFont-Instanzen (SkiaSharp 3.x — statisch, da Renderer stateless)
+    private static readonly SKFont BadgeFont = new(SKTypeface.Default, 9f);
+    private static readonly SKFont EmptyFont = new(SKTypeface.Default, 12f);
 
     /// <summary>Thumbnail rendern (statisch, kein State noetig)</summary>
     public static void Render(SKCanvas canvas, SKRect bounds,
@@ -130,7 +134,7 @@ public static class ProjectThumbnailRenderer
 
     private static void DrawTypeBadge(SKCanvas canvas, SKRect bounds, string projectType)
     {
-        var textWidth = BadgeTextPaint.MeasureText(projectType);
+        var textWidth = BadgeFont.MeasureText(projectType);
         var badgeRect = new SKRect(
             bounds.Right - textWidth - 10f,
             bounds.Top + 2f,
@@ -138,12 +142,14 @@ public static class ProjectThumbnailRenderer
             bounds.Top + 16f);
 
         canvas.DrawRoundRect(badgeRect, 3f, 3f, BadgeBgPaint);
-        canvas.DrawText(projectType, bounds.Right - 6f, bounds.Top + 13f, BadgeTextPaint);
+        canvas.DrawText(projectType, bounds.Right - 6f, bounds.Top + 13f,
+            SKTextAlign.Right, BadgeFont, BadgeTextPaint);
     }
 
     private static void DrawEmptyState(SKCanvas canvas, SKRect bounds)
     {
-        canvas.DrawText("Leer", bounds.MidX, bounds.MidY + 4f, EmptyTextPaint);
+        canvas.DrawText("Leer", bounds.MidX, bounds.MidY + 4f,
+            SKTextAlign.Center, EmptyFont, EmptyTextPaint);
     }
 
     /// <summary>Konvertiert Lat/Lon-Punkte in lokale Meter-Koordinaten (Schwerpunkt-basiert).

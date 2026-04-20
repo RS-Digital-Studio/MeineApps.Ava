@@ -8,10 +8,13 @@ using SmartMeasure.Shared.Services;
 
 namespace SmartMeasure.Shared.ViewModels;
 
-/// <summary>BLE-Verbindung + NTRIP-Konfiguration</summary>
+/// <summary>BLE-Verbindung + NTRIP-Konfiguration. Fehler werden über StatusChanged sichtbar.</summary>
 public partial class ConnectViewModel : ViewModelBase
 {
     private readonly IBleService _bleService;
+
+    /// <summary>Fehler/Statusmeldung die als Toast angezeigt werden soll.</summary>
+    public event Action<string>? MessageRequested;
 
     // BLE
     [ObservableProperty] private bool _isScanning;
@@ -70,6 +73,15 @@ public partial class ConnectViewModel : ViewModelBase
             var devices = await _bleService.ScanAsync(cts.Token);
             foreach (var d in devices)
                 FoundDevices.Add(d);
+
+            if (devices.Count == 0)
+                MessageRequested?.Invoke("Keine Geräte gefunden — Bluetooth aktiv und Stab in Reichweite?");
+        }
+        catch (Exception ex)
+        {
+            // Bluetooth off, Permission denied, etc. — User soll einen Hinweis sehen
+            ConnectionStatus = "Scan fehlgeschlagen";
+            MessageRequested?.Invoke($"BLE-Scan fehlgeschlagen: {ex.Message}");
         }
         finally
         {
@@ -88,16 +100,24 @@ public partial class ConnectViewModel : ViewModelBase
             await _bleService.ConnectAsync(device);
             await _bleService.SetStabHeightAsync(StabHeight);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             ConnectionStatus = "Verbindung fehlgeschlagen";
+            MessageRequested?.Invoke($"Verbindung zu {device.Name} fehlgeschlagen: {ex.Message}");
         }
     }
 
     [RelayCommand]
     private async Task DisconnectAsync()
     {
-        await _bleService.DisconnectAsync();
+        try
+        {
+            await _bleService.DisconnectAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke($"Trennen fehlgeschlagen: {ex.Message}");
+        }
     }
 
     [RelayCommand]
@@ -113,25 +133,56 @@ public partial class ConnectViewModel : ViewModelBase
             IsOwnBase = IsOwnBase
         };
 
-        await _bleService.ConfigureNtripAsync(config);
+        try
+        {
+            await _bleService.ConfigureNtripAsync(config);
+            MessageRequested?.Invoke("NTRIP-Konfiguration gesendet");
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke($"NTRIP-Konfig fehlgeschlagen: {ex.Message}");
+        }
     }
 
     [RelayCommand]
     private async Task SendWiFiConfigAsync()
     {
         if (string.IsNullOrWhiteSpace(WifiSsid)) return;
-        await _bleService.ConfigureWiFiAsync(WifiSsid, WifiPassword);
+        try
+        {
+            await _bleService.ConfigureWiFiAsync(WifiSsid, WifiPassword);
+            MessageRequested?.Invoke("WLAN-Konfiguration gesendet");
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke($"WLAN-Konfig fehlgeschlagen: {ex.Message}");
+        }
     }
 
     [RelayCommand]
     private async Task UpdateStabHeightAsync()
     {
-        await _bleService.SetStabHeightAsync(StabHeight);
+        try
+        {
+            await _bleService.SetStabHeightAsync(StabHeight);
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke($"Stabhöhe-Update fehlgeschlagen: {ex.Message}");
+        }
     }
 
     [RelayCommand]
     private async Task CalibrateImuAsync()
     {
-        await _bleService.CalibrateImuAsync();
+        try
+        {
+            await _bleService.CalibrateImuAsync();
+            MessageRequested?.Invoke("Kalibrierung gestartet — Stab langsam 3x im Kreis drehen");
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke($"IMU-Kalibrierung fehlgeschlagen: {ex.Message}");
+        }
     }
 }

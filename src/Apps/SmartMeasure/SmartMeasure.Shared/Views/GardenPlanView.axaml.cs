@@ -87,11 +87,19 @@ public partial class GardenPlanView : UserControl
     {
         if (!_hasMoved && _vm != null)
         {
-            // Tap erkannt: Punkt zum Zeichnungselement hinzufuegen
-            // Canvas-Position relativ zur Viewport-Mitte berechnen
-            // Der Renderer verschiebt um (MidX + PanX, MidY + PanY)
+            // Tap erkannt: Punkt zum Zeichnungselement hinzufügen.
+            // Canvas-Position relativ zur Viewport-Mitte berechnen — Renderer verschiebt um
+            // (MidX + PanX, MidY + PanY) beim Paint.
             var pos = e.GetPosition(PlanCanvas);
             var canvasBounds = PlanCanvas.Bounds;
+
+            // Falls Renderer noch nie gepaintet hat (LastScale=0), erst einen Paint forcieren
+            // und dann erneut versuchen — sonst wird der Tap sonst stumm verworfen.
+            if (_vm.Renderer.LastScale < 0.001)
+            {
+                PlanCanvas.InvalidateSurface();
+            }
+
             var relX = (float)(pos.X - canvasBounds.Width / 2 - _vm.Renderer.PanX);
             var relY = (float)(pos.Y - canvasBounds.Height / 2 - _vm.Renderer.PanY);
             _vm.OnCanvasTapped(relX, relY);

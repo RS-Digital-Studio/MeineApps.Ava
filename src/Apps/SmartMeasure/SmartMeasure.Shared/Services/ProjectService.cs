@@ -10,13 +10,11 @@ public class ProjectService : IProjectService
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly Task _initTask;
 
-    public ProjectService()
+    public ProjectService(IAppPaths paths)
     {
-        var dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "smartmeasure.db");
-
-        _db = new SQLiteAsyncConnection(dbPath);
+        // IAppPaths liefert sandbox-sicheren Pfad auf Android (Context.FilesDir)
+        // und ApplicationData auf Desktop (Windows %APPDATA% / Linux ~/.config)
+        _db = new SQLiteAsyncConnection(paths.DatabasePath);
         _initTask = InitializeAsync();
     }
 
@@ -108,10 +106,14 @@ public class ProjectService : IProjectService
         await _semaphore.WaitAsync();
         try
         {
-            // Punkte + Elemente zuerst loeschen
-            await _db.ExecuteAsync("DELETE FROM SurveyPoint WHERE ProjectId = ?", id);
-            await _db.ExecuteAsync("DELETE FROM GardenElement WHERE ProjectId = ?", id);
-            await _db.DeleteAsync<SurveyProject>(id);
+            // Atomar: Punkte, Elemente und Projekt werden gemeinsam gelöscht oder gar nicht.
+            // App-Crash zwischen den Löschungen würde sonst verwaiste Zeilen hinterlassen.
+            await _db.RunInTransactionAsync(db =>
+            {
+                db.Execute("DELETE FROM SurveyPoint WHERE ProjectId = ?", id);
+                db.Execute("DELETE FROM GardenElement WHERE ProjectId = ?", id);
+                db.Delete<SurveyProject>(id);
+            });
         }
         finally { _semaphore.Release(); }
     }

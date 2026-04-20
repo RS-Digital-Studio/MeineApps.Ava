@@ -99,20 +99,36 @@ public class ExportService : IExportService
         int nr = 1;
         foreach (var point in project.Points)
         {
+            // RFC 4180-kompatibles Quoting: Felder mit Semikolon, Newline oder " werden gequoted,
+            // " im Text wird verdoppelt. Ohne das zerstören Labels wie 'Ecke; Baum' die Struktur.
             sb.AppendLine(string.Join(";",
-                nr++,
-                point.Label ?? "",
+                nr++.ToString(CultureInfo.InvariantCulture),
+                EscapeCsv(point.Label ?? string.Empty),
                 point.Latitude.ToString("F8", CultureInfo.InvariantCulture),
                 point.Longitude.ToString("F8", CultureInfo.InvariantCulture),
                 point.Altitude.ToString("F3", CultureInfo.InvariantCulture),
                 point.HorizontalAccuracy.ToString("F1", CultureInfo.InvariantCulture),
                 point.VerticalAccuracy.ToString("F1", CultureInfo.InvariantCulture),
-                point.FixQuality,
-                point.SatelliteCount,
+                point.FixQuality.ToString(CultureInfo.InvariantCulture),
+                point.SatelliteCount.ToString(CultureInfo.InvariantCulture),
                 point.Timestamp.ToString("O")));
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Quoted Feld gemäß RFC 4180 wenn es problematische Zeichen enthält.
+    /// Trennzeichen = Semikolon (europäisches CSV).
+    /// </summary>
+    private static string EscapeCsv(string field)
+    {
+        if (string.IsNullOrEmpty(field)) return string.Empty;
+
+        var needsQuoting = field.IndexOfAny([';', '"', '\n', '\r']) >= 0;
+        if (!needsQuoting) return field;
+
+        return "\"" + field.Replace("\"", "\"\"") + "\"";
     }
 
     public string ExportToGeoJson(SurveyProject project)

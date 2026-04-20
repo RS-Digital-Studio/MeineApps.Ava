@@ -1,0 +1,3 @@
+- [Audit 17.04.2026](audit_2026_04_17.md) — Erstaudit: 8 Views ohne x:CompileBindings, ein Service-Locator in MainViewModel. Alles gefixt
+- [Code-Behind-Muster](code_behind_pattern.md) — Warum TerrainView/GardenPlanView/SurveyView/MapView/ProjectsView/MainView Code-Behind haben (nicht MVVM-Verletzung)
+- [Kein ViewLocator](no_view_locator.md) — SmartMeasure nutzt KEINEN ViewLocator. DataContext wird im AXAML gesetzt (SubView-Pattern in MainView)

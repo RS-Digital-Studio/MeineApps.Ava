@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 using SmartMeasure.Shared.Models;
 using SmartMeasure.Shared.Services;
 
@@ -15,6 +14,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IBleService _bleService;
     private readonly IArTransferService _arTransferService;
     private readonly IMeasurementService _measurementService;
+    private readonly IProjectService _projectService;
     private readonly BackPressHelper _backPressHelper = new();
 
     // Child-ViewModels
@@ -46,10 +46,20 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Double-Back-to-Exit Hinweis</summary>
     public event Action<string>? ExitHintRequested;
 
+    /// <summary>Fehler-/Status-Nachricht anzeigen (Android: Toast, Desktop: Log)</summary>
+    public event Action<string, string>? MessageRequested;
+
+    /// <summary>
+    /// Foreground-Service-Status anfordern. true = starten (BLE verbunden oder AR aktiv),
+    /// false = stoppen. Android nutzt das gegen Doze-Kill. Desktop ignoriert es.
+    /// </summary>
+    public event Action<bool>? ForegroundServiceRequested;
+
     public MainViewModel(
         IBleService bleService,
         IArTransferService arTransferService,
         IMeasurementService measurementService,
+        IProjectService projectService,
         ConnectViewModel connectVm,
         SurveyViewModel surveyVm,
         TerrainViewModel terrainVm,
@@ -61,6 +71,7 @@ public partial class MainViewModel : ViewModelBase
         _bleService = bleService;
         _arTransferService = arTransferService;
         _measurementService = measurementService;
+        _projectService = projectService;
         ConnectVm = connectVm;
         SurveyVm = surveyVm;
         TerrainVm = terrainVm;
@@ -84,27 +95,39 @@ public partial class MainViewModel : ViewModelBase
         // Projekt-Events verdrahten
         ProjectsVm.ProjectSelected += async project =>
         {
-            ProjectsVm.SelectedProject = project;
-            GardenPlanVm.CurrentProjectId = project.Id;
-
-            // Punkte in MeasurementService laden fuer TerrainView/MapView/GardenPlanView
-            var projectService = App.Services.GetRequiredService<IProjectService>();
-            var full = await projectService.GetProjectAsync(project.Id);
-            if (full != null)
+            try
             {
-                _measurementService.ClearPoints();
-                foreach (var pt in full.Points)
-                    _measurementService.AddPoint(pt);
+                ProjectsVm.SelectedProject = project;
+                GardenPlanVm.CurrentProjectId = project.Id;
 
-                await GardenPlanVm.LoadElementsFromProjectAsync(project.Id);
+                // Punkte in MeasurementService laden für TerrainView/MapView/GardenPlanView.
+                // ReplacePoints feuert nur EIN PointsReset-Event — TerrainViewModel rechnet
+                // das Delaunay-Mesh einmal statt N-mal pro Punkt.
+                var full = await _projectService.GetProjectAsync(project.Id);
+                if (full != null)
+                {
+                    _measurementService.ReplacePoints(full.Points);
+                    await GardenPlanVm.LoadElementsFromProjectAsync(project.Id);
+                }
+
+                Navigate("Survey");
             }
-
-            Navigate("Survey");
+            catch (Exception ex)
+            {
+                MessageRequested?.Invoke("Projekt konnte nicht geladen werden", ex.Message);
+            }
         };
 
         // Export-Events: Dateipfad dem User mitteilen
         ProjectsVm.FileExportReady += path =>
-            System.Diagnostics.Debug.WriteLine($"Export erstellt: {path}");
+            MessageRequested?.Invoke("Export erstellt", path);
+
+        ProjectsVm.ExportFailed += reason =>
+            MessageRequested?.Invoke("Export fehlgeschlagen", reason);
+
+        // BLE-Fehler/Status aus ConnectView als Toast anzeigen
+        ConnectVm.MessageRequested += msg =>
+            MessageRequested?.Invoke("Verbindung", msg);
 
         // AR-Capture → Terrain-Transfer
         SurveyVm.ArCaptureCompleted += async result =>
@@ -118,20 +141,20 @@ public partial class MainViewModel : ViewModelBase
                     project = await ProjectsVm.EnsureProjectExistsAsync();
                     if (project == null)
                     {
-                        System.Diagnostics.Debug.WriteLine("AR-Transfer: Kein Projekt verfuegbar");
+                        MessageRequested?.Invoke("AR-Transfer", "Kein Projekt verfügbar");
                         return;
                     }
                 }
 
                 var count = await _arTransferService.TransferToProjectAsync(result, project.Id);
-                System.Diagnostics.Debug.WriteLine($"AR-Transfer: {count} Punkte uebertragen");
+                MessageRequested?.Invoke("AR-Capture", $"{count} Punkte übertragen");
 
                 // GardenPlan mit neuen Konturen aktualisieren
                 await GardenPlanVm.LoadElementsFromProjectAsync(project.Id);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"AR-Transfer fehlgeschlagen: {ex.Message}");
+                MessageRequested?.Invoke("AR-Transfer fehlgeschlagen", ex.Message);
             }
         };
     }
@@ -168,9 +191,15 @@ public partial class MainViewModel : ViewModelBase
 
     private void OnStateChanged(StickState state)
     {
+        var wasConnected = IsBleConnected;
         IsBleConnected = state.IsConnected;
         BatteryLevel = state.BatteryLevel;
         SatelliteCount = state.SatelliteCount;
         HorizontalAccuracy = state.HorizontalAccuracy;
+
+        // Foreground-Service parallel zum BLE-Status koppeln.
+        // Android blockiert den BLE-Stream im Doze-Mode ohne FG-Service.
+        if (wasConnected != state.IsConnected)
+            ForegroundServiceRequested?.Invoke(state.IsConnected);
     }
 }

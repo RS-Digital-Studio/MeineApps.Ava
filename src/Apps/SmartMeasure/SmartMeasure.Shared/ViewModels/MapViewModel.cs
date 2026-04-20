@@ -37,8 +37,14 @@ public partial class MapViewModel : ViewModelBase
         // Mapsui auf Android beim sofortigen Erstellen crashen kann (GL-Kontext nicht bereit)
         MapInstance = new Map();
 
-        // Wenn Punkte hinzugefuegt werden
+        // Wenn Punkte hinzugefügt werden (Einzel-Messung)
         _measurementService.PointAdded += _ =>
+        {
+            if (_isInitialized) UpdateMap();
+        };
+
+        // Batch-Änderung (Projekt-Load, Clear) — einmalige Update nach allem
+        _measurementService.PointsReset += () =>
         {
             if (_isInitialized) UpdateMap();
         };

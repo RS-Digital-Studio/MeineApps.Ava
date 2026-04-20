@@ -3,26 +3,36 @@ using SmartMeasure.Shared.Models;
 
 namespace SmartMeasure.Shared.Graphics;
 
-/// <summary>3D-Gelaendemodell Renderer: Dreiecke mit Hoehenfarbkodierung,
-/// Konturlinien, Perspektive, Rotation. Painter's Algorithm + Bitmap-Cache.</summary>
-public class TerrainRenderer
+/// <summary>
+/// 3D-Geländemodell-Renderer: Dreiecke mit Höhenfarbkodierung, Konturlinien,
+/// Perspektive, Rotation, Painter's Algorithm.
+///
+/// Performance-Optimierungen:
+/// - Arrays gecacht (kein GC-Druck während Touch-Drag)
+/// - Face-Normalen aus Mesh (vorberechnet, nicht pro Frame)
+/// - Kamera-Z als Sort-Key statt Screen-Y (korrekte Tiefensortierung)
+/// - Linien-Gradient für Höhen-Legende statt 400 DrawLine-Calls
+/// - Nordpfeil-Path einmalig in Ctor
+/// - SKFont explizit (SkiaSharp 3.x API)
+/// </summary>
+public sealed class TerrainRenderer : IDisposable
 {
     // Kamera/Rotation
-    public float Azimuth { get; set; } = 225f; // Grad (Blickrichtung)
-    public float Elevation { get; set; } = 35f;  // Grad (Blick von oben)
+    public float Azimuth { get; set; } = 225f;
+    public float Elevation { get; set; } = 35f;
     public float Zoom { get; set; } = 1.0f;
     public float PanX { get; set; }
     public float PanY { get; set; }
-    public float Exaggeration { get; set; } = 3.0f; // Hoehenueberhoehung
+    public float Exaggeration { get; set; } = 3.0f;
     public bool ShowWireframe { get; set; }
     public bool ShowContours { get; set; } = true;
     public bool ShowLabels { get; set; } = true;
 
-    // Hoehen-Farbverlauf (Gruen → Gelb → Orange → Braun)
+    // Höhen-Farbverlauf (Grün → Gelb → Orange → Braun)
     private static readonly SKColor[] HeightColors =
     [
-        new(27, 94, 32),    // Dunkelgruen (tief)
-        new(76, 175, 80),   // Hellgruen
+        new(27, 94, 32),    // Dunkelgrün (tief)
+        new(76, 175, 80),   // Hellgrün
         new(253, 216, 53),  // Gelb
         new(255, 143, 0),   // Orange
         new(93, 64, 55)     // Braun (hoch)
@@ -32,15 +42,53 @@ public class TerrainRenderer
     private readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _wirePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.5f, Color = new SKColor(255, 255, 255, 40) };
     private readonly SKPaint _contourPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f, Color = new SKColor(255, 255, 255, 100) };
-    private readonly SKPaint _contourLabelPaint = new() { IsAntialias = true, Color = new SKColor(255, 255, 255, 180), TextSize = 10f };
-    private readonly SKPaint _labelPaint = new() { IsAntialias = true, Color = new SKColor(255, 107, 0), TextSize = 11f, FakeBoldText = true };
-    private readonly SKPaint _northPaint = new() { IsAntialias = true, Color = new SKColor(239, 83, 80), TextSize = 14f, FakeBoldText = true };
+    private readonly SKPaint _labelPaint = new() { IsAntialias = true, Color = new SKColor(255, 107, 0) };
+    private readonly SKPaint _northPaint = new() { IsAntialias = true, Color = new SKColor(239, 83, 80) };
     private readonly SKPaint _scalePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f, Color = new SKColor(200, 200, 200) };
-    private readonly SKPaint _bgPaint = new() { Color = new SKColor(26, 26, 46) }; // BgPrimaryColor
+    private readonly SKPaint _bgPaint = new() { Color = new SKColor(26, 26, 46) };
     private readonly SKPaint _legendPaint = new() { IsAntialias = false };
-    private readonly SKPaint _scaleTextPaint = new() { Color = new SKColor(200, 200, 200), TextSize = 10f, TextAlign = SKTextAlign.Center, IsAntialias = true };
-    private readonly SKPaint _legendLabelPaint = new() { Color = new SKColor(200, 200, 200), TextSize = 9f, IsAntialias = true };
+    private readonly SKPaint _scaleTextPaint = new() { Color = new SKColor(200, 200, 200), IsAntialias = true };
+    private readonly SKPaint _legendLabelPaint = new() { Color = new SKColor(200, 200, 200), IsAntialias = true };
     private readonly SKPaint _arrowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(239, 83, 80) };
+    private readonly SKPaint _emptyTextPaint = new() { Color = new SKColor(136, 153, 170), IsAntialias = true };
+
+    // SkiaSharp 3.x: SKFont explizit statt SKPaint.TextSize
+    private readonly SKFont _labelFont = new(SKTypeface.Default, 11f) { Embolden = true };
+    private readonly SKFont _northFont = new(SKTypeface.Default, 14f) { Embolden = true };
+    private readonly SKFont _scaleFont = new(SKTypeface.Default, 10f);
+    private readonly SKFont _legendFont = new(SKTypeface.Default, 9f);
+    private readonly SKFont _emptyFont = new(SKTypeface.Default, 16f);
+
+    // Gecachter Nordpfeil-Pfad — einmal gebaut, pro Frame nur Save/Translate/Rotate/DrawPath
+    private readonly SKPath _northArrowPath;
+
+    // Gecachter Shader für die Höhen-Legende (Gradient, einmal gebaut)
+    private readonly SKShader _legendShader;
+
+    // Gecachte Arrays — werden bei Bedarf erweitert, nicht pro Frame neu allokiert
+    private float[] _screenX = Array.Empty<float>();
+    private float[] _screenY = Array.Empty<float>();
+    private float[] _screenZ = Array.Empty<float>();
+    private int[] _triIndices = Array.Empty<int>();
+    private float[] _triDepth = Array.Empty<float>();
+
+    public TerrainRenderer()
+    {
+        // Nordpfeil um (0,0) konstruieren — wird beim Zeichnen an Position translatiert
+        _northArrowPath = new SKPath();
+        _northArrowPath.MoveTo(0, -15);
+        _northArrowPath.LineTo(-6, 8);
+        _northArrowPath.LineTo(6, 8);
+        _northArrowPath.Close();
+
+        // Gradient-Shader für Legende: hoch (maxZ) → niedrig (minZ)
+        _legendShader = SKShader.CreateLinearGradient(
+            new SKPoint(0, 0),
+            new SKPoint(0, 1),
+            HeightColors,
+            null,
+            SKShaderTileMode.Clamp);
+    }
 
     public void Render(SKCanvas canvas, SKRect bounds, TerrainMesh? mesh,
         List<ContourLine>? contours, string[]? labels)
@@ -53,6 +101,8 @@ public class TerrainRenderer
             return;
         }
 
+        EnsureArrayCapacity(mesh.VertexCount, mesh.TriangleCount);
+
         canvas.Save();
         canvas.Translate(bounds.MidX + PanX, bounds.MidY + PanY);
 
@@ -63,7 +113,6 @@ public class TerrainRenderer
         if (range < 0.001) range = 1;
         var normalizeScale = scale / range;
 
-        // 3D-Projektion: Isometrisch mit Rotation
         var azRad = Azimuth * MathF.PI / 180f;
         var elRad = Elevation * MathF.PI / 180f;
         var cosAz = MathF.Cos(azRad);
@@ -71,74 +120,70 @@ public class TerrainRenderer
         var cosEl = MathF.Cos(elRad);
         var sinEl = MathF.Sin(elRad);
 
-        // Vertices in Screen-Space projizieren
         var centerX = (mesh.MinX + mesh.MaxX) / 2.0;
         var centerY = (mesh.MinY + mesh.MaxY) / 2.0;
         var centerZ = (mesh.MinZ + mesh.MaxZ) / 2.0;
 
-        var screenX = new float[mesh.VertexCount];
-        var screenY = new float[mesh.VertexCount];
-
+        // Vertices projizieren — Kamera-Z separat merken für korrekte Painter-Tiefensortierung
         for (int i = 0; i < mesh.VertexCount; i++)
         {
             var lx = (float)((mesh.X[i] - centerX) * normalizeScale);
             var ly = (float)((mesh.Y[i] - centerY) * normalizeScale);
             var lz = (float)((mesh.Z[i] - centerZ) * normalizeScale * Exaggeration);
 
-            // Rotation um Y-Achse (Azimuth) + X-Achse (Elevation)
             var rx = lx * cosAz - ly * sinAz;
             var ry = lx * sinAz * sinEl + ly * cosAz * sinEl + lz * cosEl;
             var rz = -lx * sinAz * cosEl - ly * cosAz * cosEl + lz * sinEl;
 
-            screenX[i] = rx;
-            screenY[i] = -ry; // Y invertieren (Bildschirm: Y nach unten)
+            _screenX[i] = rx;
+            _screenY[i] = -ry;
+            _screenZ[i] = rz; // Kamera-Tiefe — größer = weiter weg
         }
 
-        // Dreiecke nach Z-Tiefe sortieren (Painter's Algorithm)
-        var triIndices = new int[mesh.TriangleCount];
-        var triDepth = new float[mesh.TriangleCount];
-
+        // Painter's Algorithm: Dreiecke hinten→vorne sortieren nach mittlerer Kamera-Z
         for (int t = 0; t < mesh.TriangleCount; t++)
         {
-            triIndices[t] = t;
+            _triIndices[t] = t;
             var i0 = mesh.Triangles[t * 3];
             var i1 = mesh.Triangles[t * 3 + 1];
             var i2 = mesh.Triangles[t * 3 + 2];
-
-            // Mittlere Screen-Y als Tiefe (weiter oben = weiter weg)
-            triDepth[t] = (screenY[i0] + screenY[i1] + screenY[i2]) / 3f;
+            _triDepth[t] = (_screenZ[i0] + _screenZ[i1] + _screenZ[i2]) / 3f;
         }
 
-        Array.Sort(triDepth, triIndices);
+        Array.Sort(_triDepth, _triIndices, 0, mesh.TriangleCount);
+
+        // Rotierte Lichtrichtung (von oben-links, in Kamera-Raum)
+        // Licht fix im Kamera-Frame wirkt bei Azimut-Änderung natürlicher.
+        const float lightCamX = -0.3f;
+        const float lightCamY = -0.3f;
+        const float lightCamZ = 0.85f;
 
         // Dreiecke zeichnen (von hinten nach vorne)
         using var path = new SKPath();
-        for (int ti = 0; ti < triIndices.Length; ti++)
+        for (int ti = 0; ti < mesh.TriangleCount; ti++)
         {
-            var t = triIndices[ti];
+            var t = _triIndices[ti];
             var i0 = mesh.Triangles[t * 3];
             var i1 = mesh.Triangles[t * 3 + 1];
             var i2 = mesh.Triangles[t * 3 + 2];
 
-            // Durchschnittshoehe fuer Farbe
             var avgZ = (mesh.Z[i0] + mesh.Z[i1] + mesh.Z[i2]) / 3.0;
             var zNorm = mesh.MaxZ > mesh.MinZ
                 ? (avgZ - mesh.MinZ) / (mesh.MaxZ - mesh.MinZ)
                 : 0.5;
 
-            // Einfaches Diffuse-Shading (Normalvektor * Lichtrichtung)
-            var nx = (mesh.Y[i1] - mesh.Y[i0]) * (mesh.Z[i2] - mesh.Z[i0]) -
-                     (mesh.Z[i1] - mesh.Z[i0]) * (mesh.Y[i2] - mesh.Y[i0]);
-            var ny = (mesh.Z[i1] - mesh.Z[i0]) * (mesh.X[i2] - mesh.X[i0]) -
-                     (mesh.X[i1] - mesh.X[i0]) * (mesh.Z[i2] - mesh.Z[i0]);
-            var nz = (mesh.X[i1] - mesh.X[i0]) * (mesh.Y[i2] - mesh.Y[i0]) -
-                     (mesh.Y[i1] - mesh.Y[i0]) * (mesh.X[i2] - mesh.X[i0]);
-            var nLen = Math.Sqrt(nx * nx + ny * ny + nz * nz);
-            if (nLen > 0) { nx /= nLen; ny /= nLen; nz /= nLen; }
+            // Face-Normale aus Mesh (einmalig berechnet) — mit Azimut/Elevation rotieren
+            var nx = mesh.NormalsX[t];
+            var ny = mesh.NormalsY[t];
+            var nz = mesh.NormalsZ[t];
 
-            // Licht von oben-links
-            var light = (float)Math.Max(0.3, Math.Min(1.0,
-                0.3 + 0.7 * (nx * 0.3 + ny * 0.3 + nz * 0.8)));
+            // Normale in Kamera-Frame rotieren (gleiche Rotation wie Vertices)
+            var nRx = nx * cosAz - ny * sinAz;
+            var nRy = nx * sinAz * sinEl + ny * cosAz * sinEl + nz * cosEl;
+            var nRz = -nx * sinAz * cosEl - ny * cosAz * cosEl + nz * sinEl;
+
+            var dot = nRx * lightCamX + nRy * lightCamY + nRz * lightCamZ;
+            var light = Math.Clamp(0.3f + 0.7f * Math.Abs(dot), 0.3f, 1.0f);
 
             var baseColor = InterpolateHeightColor(zNorm);
             _fillPaint.Color = new SKColor(
@@ -146,10 +191,10 @@ public class TerrainRenderer
                 (byte)(baseColor.Green * light),
                 (byte)(baseColor.Blue * light));
 
-            path.Reset();
-            path.MoveTo(screenX[i0], screenY[i0]);
-            path.LineTo(screenX[i1], screenY[i1]);
-            path.LineTo(screenX[i2], screenY[i2]);
+            path.Rewind();
+            path.MoveTo(_screenX[i0], _screenY[i0]);
+            path.LineTo(_screenX[i1], _screenY[i1]);
+            path.LineTo(_screenX[i2], _screenY[i2]);
             path.Close();
 
             canvas.DrawPath(path, _fillPaint);
@@ -178,23 +223,35 @@ public class TerrainRenderer
         // Punkt-Labels zeichnen
         if (ShowLabels && labels != null)
         {
-            for (int i = 0; i < Math.Min(labels.Length, mesh.VertexCount); i++)
+            var max = Math.Min(labels.Length, mesh.VertexCount);
+            for (int i = 0; i < max; i++)
             {
                 if (string.IsNullOrEmpty(labels[i])) continue;
-                canvas.DrawText(labels[i], screenX[i] + 4, screenY[i] - 4, _labelPaint);
+                canvas.DrawText(labels[i], _screenX[i] + 4, _screenY[i] - 4,
+                    SKTextAlign.Left, _labelFont, _labelPaint);
             }
         }
 
         canvas.Restore();
 
-        // Nordpfeil (oben rechts)
         DrawNorthArrow(canvas, bounds);
-
-        // Massstab (unten links)
         DrawScale(canvas, bounds, range, scale);
-
-        // Hoehenskala (rechts)
         DrawHeightLegend(canvas, bounds, mesh.MinZ, mesh.MaxZ);
+    }
+
+    private void EnsureArrayCapacity(int vertexCount, int triangleCount)
+    {
+        if (_screenX.Length < vertexCount)
+        {
+            _screenX = new float[vertexCount];
+            _screenY = new float[vertexCount];
+            _screenZ = new float[vertexCount];
+        }
+        if (_triIndices.Length < triangleCount)
+        {
+            _triIndices = new int[triangleCount];
+            _triDepth = new float[triangleCount];
+        }
     }
 
     private (float sx, float sy) Project3D(double lx, double ly, double lz,
@@ -231,15 +288,9 @@ public class TerrainRenderer
 
     private void DrawEmptyState(SKCanvas canvas, SKRect bounds)
     {
-        using var paint = new SKPaint
-        {
-            Color = new SKColor(136, 153, 170),
-            TextSize = 16f,
-            TextAlign = SKTextAlign.Center,
-            IsAntialias = true
-        };
         canvas.DrawText("Mindestens 3 Punkte für Geländemodell nötig",
-            bounds.MidX, bounds.MidY, paint);
+            bounds.MidX, bounds.MidY,
+            SKTextAlign.Center, _emptyFont, _emptyTextPaint);
     }
 
     private void DrawNorthArrow(SKCanvas canvas, SKRect bounds)
@@ -247,29 +298,21 @@ public class TerrainRenderer
         var cx = bounds.Right - 30;
         var cy = bounds.Top + 40;
 
-        // Nordpfeil rotieren mit Azimuth
         canvas.Save();
-        canvas.RotateDegrees(-Azimuth + 180, cx, cy);
-
-        using var path = new SKPath();
-        path.MoveTo(cx, cy - 15);
-        path.LineTo(cx - 6, cy + 8);
-        path.LineTo(cx + 6, cy + 8);
-        path.Close();
-        canvas.DrawPath(path, _arrowPaint);
-
+        canvas.Translate(cx, cy);
+        canvas.RotateDegrees(-Azimuth + 180);
+        canvas.DrawPath(_northArrowPath, _arrowPaint);
         canvas.Restore();
-        canvas.DrawText("N", cx - 4, cy - 18, _northPaint);
+
+        canvas.DrawText("N", cx - 4, cy - 18, SKTextAlign.Left, _northFont, _northPaint);
     }
 
     private void DrawScale(SKCanvas canvas, SKRect bounds, double rangeMeters, float scalePixels)
     {
-        // Massstabsbalken unten links
-        var scaleLength = 50f; // Pixel
+        var scaleLength = 50f;
         var metersPerPixel = rangeMeters / (scalePixels * 2);
         var scaleMeters = scaleLength * metersPerPixel;
 
-        // Auf schoenen Wert runden (1, 2, 5, 10, 20, 50...)
         var rounded = RoundToNice(scaleMeters);
         var barLength = (float)(rounded / metersPerPixel);
 
@@ -280,7 +323,8 @@ public class TerrainRenderer
         canvas.DrawLine(x, y - 4, x, y + 4, _scalePaint);
         canvas.DrawLine(x + barLength, y - 4, x + barLength, y + 4, _scalePaint);
 
-        canvas.DrawText($"{rounded:G3} m", x + barLength / 2, y - 6, _scaleTextPaint);
+        canvas.DrawText($"{rounded:G3} m", x + barLength / 2, y - 6,
+            SKTextAlign.Center, _scaleFont, _scaleTextPaint);
     }
 
     private void DrawHeightLegend(SKCanvas canvas, SKRect bounds, double minZ, double maxZ)
@@ -288,22 +332,28 @@ public class TerrainRenderer
         var x = bounds.Right - 20;
         var top = bounds.Top + 80;
         var height = bounds.Height * 0.4f;
+        var rect = new SKRect(x - 8, top, x, top + height);
 
-        // Farbverlauf (gecachtes Paint, nur Color pro Zeile setzen)
-        for (int i = 0; i < (int)height; i++)
-        {
-            var t = 1.0 - i / height;
-            _legendPaint.Color = InterpolateHeightColor(t);
-            canvas.DrawLine(x - 8, top + i, x, top + i, _legendPaint);
-        }
+        // Gradient-Shader in Rect-Koordinaten transformieren (vorher war es 0..1 Unit-Rect).
+        // HeightColors ist hoch→tief sortiert, aber wir wollen oben=hoch anzeigen → wir zeichnen
+        // normal, das Ergebnis ist oben grün (tief), unten braun (hoch). Darum HeightColors-Reihenfolge
+        // ist tief→hoch, was visuell zu "oben=hoch, unten=tief" invertiert werden muss.
+        // Einfach: Shader-Localmatrix für Scale auf height + Translate auf top.
+        using var localShader = _legendShader.WithLocalMatrix(
+            SKMatrix.CreateScaleTranslation(1, -height, 0, top + height));
+        _legendPaint.Shader = localShader;
+        canvas.DrawRect(rect, _legendPaint);
+        _legendPaint.Shader = null;
 
-        // Min/Max Beschriftung
-        canvas.DrawText($"{maxZ:F1}m", x - 30, top - 2, _legendLabelPaint);
-        canvas.DrawText($"{minZ:F1}m", x - 30, top + height + 10, _legendLabelPaint);
+        canvas.DrawText($"{maxZ:F1}m", x - 30, top - 2,
+            SKTextAlign.Left, _legendFont, _legendLabelPaint);
+        canvas.DrawText($"{minZ:F1}m", x - 30, top + height + 10,
+            SKTextAlign.Left, _legendFont, _legendLabelPaint);
     }
 
     private static double RoundToNice(double value)
     {
+        if (value <= 0) return 1;
         var exponent = Math.Floor(Math.Log10(value));
         var fraction = value / Math.Pow(10, exponent);
 
@@ -316,13 +366,11 @@ public class TerrainRenderer
         return nice * Math.Pow(10, exponent);
     }
 
-    /// <summary>Alle Paints freigeben</summary>
     public void Dispose()
     {
         _fillPaint.Dispose();
         _wirePaint.Dispose();
         _contourPaint.Dispose();
-        _contourLabelPaint.Dispose();
         _labelPaint.Dispose();
         _northPaint.Dispose();
         _scalePaint.Dispose();
@@ -331,5 +379,13 @@ public class TerrainRenderer
         _scaleTextPaint.Dispose();
         _legendLabelPaint.Dispose();
         _arrowPaint.Dispose();
+        _emptyTextPaint.Dispose();
+        _labelFont.Dispose();
+        _northFont.Dispose();
+        _scaleFont.Dispose();
+        _legendFont.Dispose();
+        _emptyFont.Dispose();
+        _northArrowPath.Dispose();
+        _legendShader.Dispose();
     }
 }

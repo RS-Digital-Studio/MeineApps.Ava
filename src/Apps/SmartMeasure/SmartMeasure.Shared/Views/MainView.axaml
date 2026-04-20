@@ -4,6 +4,7 @@
              xmlns:views="using:SmartMeasure.Shared.Views"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="SmartMeasure.Shared.Views.MainView"
+             x:CompileBindings="True"
              x:DataType="vm:MainViewModel"
              Background="{DynamicResource BgPrimaryBrush}">
 

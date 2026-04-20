@@ -47,6 +47,13 @@ public partial class SurveyViewModel : ViewModelBase
     [ObservableProperty] private bool _isArAvailable;
     [ObservableProperty] private string _arStatusText = string.Empty;
 
+    /// <summary>True wenn MockBleService aktiv ist (Desktop-Entwicklung).
+    /// Im echten Betrieb drückt der User den Hardware-Knopf am Stab.</summary>
+    public bool IsMockMode { get; }
+
+    /// <summary>Warnung wenn Kompass-Kalibrierung während AR-Session schlecht wurde.</summary>
+    [ObservableProperty] private string _magWarning = string.Empty;
+
     /// <summary>Kompass-Canvas muss neu gezeichnet werden</summary>
     public event Action? CompassInvalidateRequested;
 
@@ -59,6 +66,7 @@ public partial class SurveyViewModel : ViewModelBase
         _bleService = bleService;
         _measurementService = measurementService;
         _arCaptureService = arCaptureService;
+        IsMockMode = bleService is MockBleService;
 
         // BLE-Events kommen vom Background-Thread, daher Dispatcher
         _bleService.PositionUpdated += (lat, lon, alt) => Dispatcher.UIThread.Post(() =>
@@ -75,6 +83,10 @@ public partial class SurveyViewModel : ViewModelBase
         {
             FixQuality = q;
             FixStatusText = _bleService.CurrentState.FixStatusText;
+
+            // Bei Fix-Verlust: UI-Werte zurücksetzen damit User nicht mit Stale-Daten misst
+            if (q == 0)
+                ResetLivePositionUi();
         });
 
         _bleService.AccuracyUpdated += (h, v) => Dispatcher.UIThread.Post(() =>
@@ -88,6 +100,15 @@ public partial class SurveyViewModel : ViewModelBase
             SatelliteCount = state.SatelliteCount;
             TiltAngle = state.TiltAngle;
 
+            // Disconnect-UX: Bei Verbindungsabbruch alle Live-Werte zurücksetzen
+            if (!state.IsConnected)
+                ResetLivePositionUi();
+
+            // Magnetometer-Warnung für AR-Qualität
+            MagWarning = state.MagAccuracy < 2 && state.IsConnected
+                ? "Kompass-Genauigkeit niedrig — bitte Stab 3x im Kreis drehen"
+                : string.Empty;
+
             // Kompass-Renderer mit aktuellen Daten versorgen
             CompassRenderer.HorizontalAccuracy = state.HorizontalAccuracy;
             CompassRenderer.VerticalAccuracy = state.VerticalAccuracy;
@@ -97,8 +118,20 @@ public partial class SurveyViewModel : ViewModelBase
             CompassInvalidateRequested?.Invoke();
         });
 
-        // Punkte vom Stab empfangen (auch auf UI-Thread fuer ObservableCollection)
+        // Punkte vom Stab empfangen (auch auf UI-Thread für ObservableCollection)
         _bleService.PointReceived += p => Dispatcher.UIThread.Post(() => OnPointReceived(p));
+    }
+
+    private void ResetLivePositionUi()
+    {
+        LatText = "—";
+        LonText = "—";
+        AltText = "—";
+        HorizontalAccuracy = 0;
+        VerticalAccuracy = 0;
+        SatelliteCount = 0;
+        TiltAngle = 0;
+        FixStatusText = "KEIN FIX";
     }
 
     /// <summary>Punkt manuell setzen (per App-Button, nicht per Stab-Knopf)</summary>

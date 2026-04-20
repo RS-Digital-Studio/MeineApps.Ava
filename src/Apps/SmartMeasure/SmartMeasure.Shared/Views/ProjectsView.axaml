@@ -4,6 +4,7 @@
              xmlns:models="using:SmartMeasure.Shared.Models"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="SmartMeasure.Shared.Views.ProjectsView"
+             x:CompileBindings="True"
              x:DataType="vm:ProjectsViewModel">
 
     <Grid RowDefinitions="Auto,*">
@@ -72,7 +73,7 @@
 
                                 <!-- Aktionen -->
                                 <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="0,8,0,0">
-                                    <Button Padding="8,4" CornerRadius="6" FontSize="11"
+                                    <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource TextPrimaryBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).OpenProjectCommand}"
@@ -82,7 +83,7 @@
                                             <TextBlock Text="Öffnen" />
                                         </StackPanel>
                                     </Button>
-                                    <Button Padding="8,4" CornerRadius="6" FontSize="11"
+                                    <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource TextSecondaryBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).DuplicateProjectCommand}"
@@ -92,35 +93,35 @@
                                             <TextBlock Text="Kopieren" />
                                         </StackPanel>
                                     </Button>
-                                    <Button Padding="8,4" CornerRadius="6" FontSize="11"
+                                    <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource SecondaryBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportCsvCommand}"
                                             CommandParameter="{Binding}">
                                         <TextBlock Text="CSV" />
                                     </Button>
-                                    <Button Padding="8,4" CornerRadius="6" FontSize="11"
+                                    <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource SecondaryBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportGeoJsonCommand}"
                                             CommandParameter="{Binding}">
                                         <TextBlock Text="GeoJSON" />
                                     </Button>
-                                    <Button Padding="8,4" CornerRadius="6" FontSize="11"
+                                    <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource AccentBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportBlenderCommand}"
                                             CommandParameter="{Binding}">
                                         <TextBlock Text="OBJ" />
                                     </Button>
-                                    <Button Padding="8,4" CornerRadius="6" FontSize="11"
+                                    <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource DangerBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportPdfCommand}"
                                             CommandParameter="{Binding}">
                                         <TextBlock Text="PDF" />
                                     </Button>
-                                    <Button Padding="8,4" CornerRadius="6" FontSize="11"
+                                    <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="Transparent"
                                             Foreground="{DynamicResource DangerBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).DeleteProjectCommand}"

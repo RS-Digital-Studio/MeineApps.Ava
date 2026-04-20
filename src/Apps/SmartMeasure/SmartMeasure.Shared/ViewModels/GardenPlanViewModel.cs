@@ -77,6 +77,7 @@ public partial class GardenPlanViewModel : ViewModelBase
         Renderer = new GardenPlanRenderer(gardenPlanService);
 
         _measurementService.PointAdded += _ => UpdateCoordinates();
+        _measurementService.PointsReset += UpdateCoordinates;
     }
 
     /// <summary>Gartenelemente aus der Datenbank laden (nach AR-Transfer oder Projekt-Wechsel)</summary>

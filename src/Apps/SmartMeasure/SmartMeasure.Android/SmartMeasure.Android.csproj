@@ -4,9 +4,14 @@
     <OutputType>Exe</OutputType>
     <ApplicationId>com.rsdigital.smartmeasure</ApplicationId>
     <ApplicationTitle>SmartMeasure</ApplicationTitle>
-    <ApplicationVersion>3</ApplicationVersion>
-    <ApplicationDisplayVersion>1.0.2</ApplicationDisplayVersion>
-    <Version>1.0.2</Version>
+    <ApplicationVersion>8</ApplicationVersion>
+    <ApplicationDisplayVersion>1.1.4</ApplicationDisplayVersion>
+    <Version>1.1.4</Version>
+
+    <!-- Min-API 26 (Android 8.0) — deckt NotificationChannel, FileProvider, PendingIntent.Immutable ab.
+         BLE-Scan (API 31+) und ForegroundServiceType (API 29+) werden zur Laufzeit via
+         Build.VERSION.SdkInt-Check abgesichert. -->
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
 
     <!-- Mapsui + NetTopologySuite nutzen Reflection die unter AOT/Trimmer fehlschlagen.
          AOT deaktivieren: Kein JIT-Crash, kein Trimmer-Problem mit NTS-Geometrien -->

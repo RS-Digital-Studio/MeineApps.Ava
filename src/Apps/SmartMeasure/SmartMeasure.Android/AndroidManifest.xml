@@ -42,5 +42,10 @@
 
         <!-- ARCore Required (Google Play Services for AR wird automatisch installiert) -->
         <meta-data android:name="com.google.ar.core" android:value="required" />
+
+        <!-- ARCore Geospatial API API-Key. Restriktiert auf SHA1 des Keystores +
+             Package com.rsdigital.smartmeasure. Privat, funktioniert nur mit signierter App. -->
+        <meta-data android:name="com.google.android.ar.API_KEY"
+                   android:value="AIzaSyAwiV05cpoj1Pcz5Z_2MReAtiHcywgrOQk" />
     </application>
 </manifest>

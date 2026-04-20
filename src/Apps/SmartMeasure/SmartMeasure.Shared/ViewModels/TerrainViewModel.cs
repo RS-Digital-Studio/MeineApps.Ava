@@ -43,8 +43,10 @@ public partial class TerrainViewModel : ViewModelBase
         _terrainService = terrainService;
         _coordinateService = coordinateService;
 
-        // Wenn ein neuer Punkt hinzukommt, Mesh neu berechnen
+        // Einzel-Messung: pro Punkt inkrementell neu triangulieren (RTK-Live-Ansicht)
         _measurementService.PointAdded += _ => RecalculateMesh();
+        // Batch-Änderung (Projekt-Load, Clear): einmalige Neuberechnung statt N²
+        _measurementService.PointsReset += RecalculateMesh;
     }
 
     /// <summary>Mesh aus aktuellen Messpunkten berechnen</summary>

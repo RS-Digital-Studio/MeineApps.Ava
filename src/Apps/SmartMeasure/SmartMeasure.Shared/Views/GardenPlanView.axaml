@@ -5,6 +5,7 @@
              xmlns:models="using:SmartMeasure.Shared.Models"
              xmlns:labs="using:Avalonia.Labs.Controls"
              x:Class="SmartMeasure.Shared.Views.GardenPlanView"
+             x:CompileBindings="True"
              x:DataType="vm:GardenPlanViewModel">
 
     <Grid RowDefinitions="Auto,Auto,*,Auto">

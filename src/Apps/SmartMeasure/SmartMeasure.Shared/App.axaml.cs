@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
 using SmartMeasure.Shared.Services;
 using SmartMeasure.Shared.ViewModels;
@@ -18,6 +19,9 @@ public class App : Application
 
     /// <summary>Plattform-spezifischer AR-Capture-Service (Android: ARCore, Desktop: Mock)</summary>
     public static Func<IServiceProvider, IArCaptureService>? ArCaptureServiceFactory { get; set; }
+
+    /// <summary>Plattform-spezifischer IAppPaths (Android: Context.FilesDir, Desktop: ApplicationData)</summary>
+    public static Func<IAppPaths>? AppPathsFactory { get; set; }
 
     private MainViewModel? _mainVm;
 
@@ -64,6 +68,17 @@ public class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // IAppPaths MUSS als erstes registriert werden — ProjectService, ExportService
+        // etc. hängen davon ab. Auf Android liefert Factory sandbox-sicheren Pfad,
+        // auf Desktop Fallback auf AppPaths (ApplicationData).
+        if (AppPathsFactory != null)
+            services.AddSingleton(_ => AppPathsFactory());
+        else
+            services.AddSingleton<IAppPaths, AppPaths>();
+
+        // Preferences (JSON-Persistenz für User-Settings)
+        services.AddSingleton<IPreferencesService>(_ => new PreferencesService("SmartMeasure"));
+
         // BLE-Service (plattform-spezifisch oder Mock)
         if (BleServiceFactory != null)
             services.AddSingleton(BleServiceFactory);

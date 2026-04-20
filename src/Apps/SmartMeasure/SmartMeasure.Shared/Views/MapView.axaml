@@ -4,11 +4,14 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:mapsui="using:Mapsui.UI.Avalonia"
              x:Class="SmartMeasure.Shared.Views.MapView"
+             x:CompileBindings="True"
              x:DataType="vm:MapViewModel">
 
     <Grid RowDefinitions="*,Auto">
-        <!-- Mapsui Karten-Control -->
-        <mapsui:MapControl x:Name="MapControl" Grid.Row="0" />
+        <!-- Mapsui Karten-Control wird im Code-Behind (Lazy-Init) erstellt —
+             im XAML deklariert crasht es beim App-Start auf Android (GL-Context).
+             Host-Border wird vom Code-Behind mit dem MapControl befüllt. -->
+        <Border x:Name="MapHost" Grid.Row="0" />
 
         <!-- Overlay: Statistiken -->
         <Border Grid.Row="0" Background="#80000000" CornerRadius="8" Padding="10,6"

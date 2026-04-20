@@ -16,6 +16,7 @@ public partial class ProjectsViewModel : ViewModelBase
     private readonly IBlenderExportService _blenderExportService;
     private readonly ITerrainService _terrainService;
     private readonly ICoordinateService _coordinateService;
+    private readonly IAppPaths _appPaths;
 
     public ObservableCollection<SurveyProject> Projects { get; } = [];
 
@@ -26,25 +27,30 @@ public partial class ProjectsViewModel : ViewModelBase
     /// <summary>Navigation zum Projekt angefordert</summary>
     public event Action<SurveyProject>? ProjectSelected;
 
-    /// <summary>Export-Daten bereit (Format, Inhalt)</summary>
-    public event Action<string, string>? ExportReady;
-
     /// <summary>Export-Datei erstellt (Dateipfad)</summary>
     public event Action<string>? FileExportReady;
+
+    /// <summary>Export fehlgeschlagen (Fehlermeldung)</summary>
+    public event Action<string>? ExportFailed;
 
     private bool _isInitialized;
     private readonly SemaphoreSlim _ensureLock = new(1, 1);
 
     public ProjectsViewModel(IProjectService projectService, IExportService exportService,
         IBlenderExportService blenderExportService, ITerrainService terrainService,
-        ICoordinateService coordinateService)
+        ICoordinateService coordinateService, IAppPaths appPaths)
     {
         _projectService = projectService;
         _exportService = exportService;
         _blenderExportService = blenderExportService;
         _terrainService = terrainService;
         _coordinateService = coordinateService;
+        _appPaths = appPaths;
     }
+
+    /// <summary>Sanitized Dateiname aus Projekt-Name.</summary>
+    private static string SanitizeFileName(string name)
+        => string.Join("_", name.Split(Path.GetInvalidFileNameChars())).Trim();
 
     /// <summary>Lazy-Init: Projekte beim ersten Aufruf laden (statt Loaded-Event in View)</summary>
     public async Task EnsureInitializedAsync()
@@ -142,87 +148,157 @@ public partial class ProjectsViewModel : ViewModelBase
         Dispatcher.UIThread.Post(() => Projects.Remove(project));
     }
 
-    /// <summary>Projekt als CSV exportieren</summary>
+    /// <summary>
+    /// Projekt als CSV-Datei exportieren. Schreibt in IAppPaths.ExportFolder und meldet
+    /// den resultierenden Pfad via FileExportReady.
+    /// </summary>
     [RelayCommand]
     private async Task ExportCsvAsync(SurveyProject? project)
     {
         if (project == null) return;
 
-        var full = await _projectService.GetProjectAsync(project.Id);
-        if (full == null) return;
+        try
+        {
+            var full = await _projectService.GetProjectAsync(project.Id);
+            if (full == null)
+            {
+                ExportFailed?.Invoke("Projekt konnte nicht geladen werden");
+                return;
+            }
 
-        var csv = _exportService.ExportToCsv(full);
-        ExportReady?.Invoke("csv", csv);
+            var csv = _exportService.ExportToCsv(full);
+            var path = await WriteExportFileAsync(project.Name, "csv", csv);
+            FileExportReady?.Invoke(path);
+        }
+        catch (Exception ex)
+        {
+            ExportFailed?.Invoke($"CSV-Export fehlgeschlagen: {ex.Message}");
+        }
     }
 
-    /// <summary>Projekt als GeoJSON exportieren</summary>
+    /// <summary>Projekt als GeoJSON-Datei exportieren.</summary>
     [RelayCommand]
     private async Task ExportGeoJsonAsync(SurveyProject? project)
     {
         if (project == null) return;
 
-        var full = await _projectService.GetProjectAsync(project.Id);
-        if (full == null) return;
+        try
+        {
+            var full = await _projectService.GetProjectAsync(project.Id);
+            if (full == null)
+            {
+                ExportFailed?.Invoke("Projekt konnte nicht geladen werden");
+                return;
+            }
 
-        var geoJson = _exportService.ExportToGeoJson(full);
-        ExportReady?.Invoke("geojson", geoJson);
+            var geoJson = _exportService.ExportToGeoJson(full);
+            var path = await WriteExportFileAsync(project.Name, "geojson", geoJson);
+            FileExportReady?.Invoke(path);
+        }
+        catch (Exception ex)
+        {
+            ExportFailed?.Invoke($"GeoJSON-Export fehlgeschlagen: {ex.Message}");
+        }
     }
 
-    /// <summary>Projekt als OBJ+MTL fuer Blender exportieren (Terrain + Gartenelemente)</summary>
+    /// <summary>Projekt als OBJ+MTL für Blender exportieren (Terrain + Gartenelemente).</summary>
     [RelayCommand]
     private async Task ExportBlenderAsync(SurveyProject? project)
     {
         if (project == null) return;
 
-        var full = await _projectService.GetProjectAsync(project.Id);
-        if (full == null || full.Points.Count < 3) return;
+        try
+        {
+            var full = await _projectService.GetProjectAsync(project.Id);
+            if (full == null || full.Points.Count < 3)
+            {
+                ExportFailed?.Invoke("Mindestens 3 Punkte für 3D-Export nötig");
+                return;
+            }
 
-        // Terrain-Mesh berechnen
-        var lats = full.Points.Select(p => p.Latitude).ToArray();
-        var lons = full.Points.Select(p => p.Longitude).ToArray();
-        var alts = full.Points.Select(p => p.Altitude).ToArray();
-        var (x, y, z) = _coordinateService.ToLocalMetric(lats, lons, alts);
-        var mesh = _terrainService.CreateMesh(x, y, z);
+            // Mesh auf Background-Thread berechnen — Delaunay kann bei 200+ Punkten sichtbar
+            // lange dauern und würde sonst die UI blockieren.
+            var points = full.Points;
+            var elements = full.GardenElements;
+            var sanitizedName = SanitizeFileName(project.Name);
+            var outputDir = _appPaths.ExportFolder;
 
-        var outputDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SmartMeasure", "Exports");
-        var sanitizedName = string.Join("_", project.Name.Split(Path.GetInvalidFileNameChars()));
+            var objPath = await Task.Run(async () =>
+            {
+                var lats = points.Select(p => p.Latitude).ToArray();
+                var lons = points.Select(p => p.Longitude).ToArray();
+                var alts = points.Select(p => p.Altitude).ToArray();
+                var (x, y, z) = _coordinateService.ToLocalMetric(lats, lons, alts);
+                var mesh = _terrainService.CreateMesh(x, y, z);
+                Directory.CreateDirectory(outputDir);
+                return await _blenderExportService.ExportObjAsync(mesh, elements, outputDir, sanitizedName);
+            });
 
-        var objPath = await _blenderExportService.ExportObjAsync(
-            mesh, full.GardenElements, outputDir, sanitizedName);
-
-        FileExportReady?.Invoke(objPath);
+            FileExportReady?.Invoke(objPath);
+        }
+        catch (Exception ex)
+        {
+            ExportFailed?.Invoke($"Blender-Export fehlgeschlagen: {ex.Message}");
+        }
     }
 
-    /// <summary>Projekt als PDF-Vermessungsbericht exportieren</summary>
+    /// <summary>Projekt als PDF-Vermessungsbericht exportieren.</summary>
     [RelayCommand]
     private async Task ExportPdfAsync(SurveyProject? project)
     {
         if (project == null) return;
 
-        var full = await _projectService.GetProjectAsync(project.Id);
-        if (full == null) return;
-
-        // Terrain-Mesh fuer Hoehendaten (optional)
-        TerrainMesh? mesh = null;
-        if (full.Points.Count >= 3)
+        try
         {
-            var lats = full.Points.Select(p => p.Latitude).ToArray();
-            var lons = full.Points.Select(p => p.Longitude).ToArray();
-            var alts = full.Points.Select(p => p.Altitude).ToArray();
-            var (x, y, z) = _coordinateService.ToLocalMetric(lats, lons, alts);
-            mesh = _terrainService.CreateMesh(x, y, z);
+            var full = await _projectService.GetProjectAsync(project.Id);
+            if (full == null)
+            {
+                ExportFailed?.Invoke("Projekt konnte nicht geladen werden");
+                return;
+            }
+
+            var points = full.Points;
+            var elements = full.GardenElements;
+            var outputDir = _appPaths.ExportFolder;
+
+            // Mesh + PDF-Render auf Background-Thread (PDF-Serialisierung ist I/O-lastig)
+            var pdfPath = await Task.Run(async () =>
+            {
+                TerrainMesh? mesh = null;
+                if (points.Count >= 3)
+                {
+                    var lats = points.Select(p => p.Latitude).ToArray();
+                    var lons = points.Select(p => p.Longitude).ToArray();
+                    var alts = points.Select(p => p.Altitude).ToArray();
+                    var (x, y, z) = _coordinateService.ToLocalMetric(lats, lons, alts);
+                    mesh = _terrainService.CreateMesh(x, y, z);
+                }
+                Directory.CreateDirectory(outputDir);
+                return await _exportService.ExportPdfAsync(full, points, elements, mesh, outputDir);
+            });
+
+            FileExportReady?.Invoke(pdfPath);
         }
+        catch (Exception ex)
+        {
+            ExportFailed?.Invoke($"PDF-Export fehlgeschlagen: {ex.Message}");
+        }
+    }
 
-        var outputDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SmartMeasure", "Exports");
+    /// <summary>
+    /// Schreibt Export-Content in IAppPaths.ExportFolder. Sanitized Dateiname + Timestamp
+    /// verhindert Kollisionen zwischen mehreren Exports desselben Projekts.
+    /// </summary>
+    private async Task<string> WriteExportFileAsync(string projectName, string extension, string content)
+    {
+        var sanitized = SanitizeFileName(projectName);
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        var fileName = $"{sanitized}_{timestamp}.{extension}";
+        var path = Path.Combine(_appPaths.ExportFolder, fileName);
 
-        var pdfPath = await _exportService.ExportPdfAsync(
-            full, full.Points, full.GardenElements, mesh, outputDir);
-
-        FileExportReady?.Invoke(pdfPath);
+        Directory.CreateDirectory(_appPaths.ExportFolder);
+        await File.WriteAllTextAsync(path, content, System.Text.Encoding.UTF8);
+        return path;
     }
 
     /// <summary>Projekt oeffnen</summary>

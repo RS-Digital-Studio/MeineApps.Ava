@@ -106,32 +106,52 @@ public class ArTransferService : IArTransferService
         var headingDeg = result.MagneticHeading ?? 0f;
         var gpsAccuracy = result.GpsAccuracy ?? 5f;
 
-        // AR-Genauigkeit: GPS-Basis * Faktor, mindestens MinArAccuracyCm
-        var arAccuracyCm = Math.Max(gpsAccuracy * GpsToArAccuracyFactor, MinArAccuracyCm);
+        // Fallback-Accuracy wenn Geospatial nicht aktiv (cm, aus GPS * Faktor)
+        var fallbackAccuracyCm = Math.Max(gpsAccuracy * GpsToArAccuracyFactor, MinArAccuracyCm);
 
-        // Heading in Radiant fuer Rotation (AR-Session startet in Geraete-Richtung, muss nach Norden rotiert werden)
+        // Heading-Rotation nur als Fallback — Geospatial-Koords pro Punkt werden bevorzugt
         var headingRad = headingDeg * Math.PI / 180.0;
         var sinH = Math.Sin(headingRad);
         var cosH = Math.Cos(headingRad);
-
-        // Meter pro Laengengrad an der GPS-Position
         var metersPerDegreeLon = MetersPerDegreeLat * Math.Cos(gpsLat * Math.PI / 180.0);
 
         var points = new List<SurveyPoint>(result.Points.Count);
 
         foreach (var arPoint in result.Points)
         {
-            var (newLat, newLon) = RotateAndProject(
-                arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, metersPerDegreeLon);
+            double finalLat, finalLon, finalAlt;
+            float finalAccuracyCm;
+
+            // Priorität 1: Geospatial-Koords pro Punkt (±1-3m via VPS, höchste Präzision)
+            if (arPoint.GeoLatitude.HasValue && arPoint.GeoLongitude.HasValue)
+            {
+                finalLat = arPoint.GeoLatitude.Value;
+                finalLon = arPoint.GeoLongitude.Value;
+                finalAlt = arPoint.GeoAltitude ?? (gpsAlt + arPoint.Y);
+                // Geo-Accuracy in Metern → cm umrechnen
+                finalAccuracyCm = arPoint.GeoHorizontalAccuracy.HasValue
+                    ? arPoint.GeoHorizontalAccuracy.Value * 100f
+                    : fallbackAccuracyCm;
+            }
+            else
+            {
+                // Priorität 2: Rotation aus AR-Lokal-Koords + Heading (Fallback ~±50cm)
+                var (newLat, newLon) = RotateAndProject(
+                    arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, metersPerDegreeLon);
+                finalLat = newLat;
+                finalLon = newLon;
+                finalAlt = gpsAlt + arPoint.Y;
+                finalAccuracyCm = fallbackAccuracyCm;
+            }
 
             points.Add(new SurveyPoint
             {
                 ProjectId = projectId,
-                Latitude = newLat,
-                Longitude = newLon,
-                Altitude = gpsAlt + arPoint.Y,
-                HorizontalAccuracy = arAccuracyCm,
-                VerticalAccuracy = arAccuracyCm,
+                Latitude = finalLat,
+                Longitude = finalLon,
+                Altitude = finalAlt,
+                HorizontalAccuracy = finalAccuracyCm,
+                VerticalAccuracy = finalAccuracyCm,
                 TiltAngle = 0f,
                 TiltAzimuth = 0f,
                 FixQuality = ArFixQuality,
@@ -166,13 +186,22 @@ public class ArTransferService : IArTransferService
             var contour = result.Contours[i];
             if (contour.Points.Count < 2) continue;
 
-            // Kontur-Punkte nach WGS84 umrechnen
+            // Kontur-Punkte nach WGS84 umrechnen — Geospatial-Koords pro Punkt bevorzugen
             var wgsPoints = new List<(double lat, double lon)>(contour.Points.Count);
             foreach (var arPoint in contour.Points)
             {
-                var (lat, lon) = RotateAndProject(
-                    arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, metersPerDegreeLon);
-                wgsPoints.Add((lat, lon));
+                if (arPoint.GeoLatitude.HasValue && arPoint.GeoLongitude.HasValue)
+                {
+                    // VPS-Koords direkt nutzen (höchste Präzision)
+                    wgsPoints.Add((arPoint.GeoLatitude.Value, arPoint.GeoLongitude.Value));
+                }
+                else
+                {
+                    // Fallback auf Heading-basierte Rotation aus AR-Lokal-Koords
+                    var (lat, lon) = RotateAndProject(
+                        arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, metersPerDegreeLon);
+                    wgsPoints.Add((lat, lon));
+                }
             }
 
             // WGS84 → lokale UTM-Meter fuer PointsJson
@@ -211,13 +240,30 @@ public class ArTransferService : IArTransferService
         return elements;
     }
 
-    /// <summary>AR-Punkt (X/Z lokal) nach Heading rotieren und in WGS84 projizieren</summary>
+    /// <summary>
+    /// AR-Punkt (X/Z lokal) nach Heading rotieren und in WGS84 projizieren.
+    /// </summary>
     /// <remarks>
-    /// AR-Koordinatensystem: X = rechts, Z = nach hinten (vom Geraet weg).
+    /// ARCore-Koordinatensystem: +X = rechts, +Y = oben, +Z = nach HINTEN (vom Gerät weg).
+    /// Entsprechend zeigt -Z in Blickrichtung der Kamera.
+    ///
     /// MagneticHeading: Grad von Norden im Uhrzeigersinn (0° = Norden, 90° = Osten).
-    /// Rotation richtet die AR-Achsen nach den Himmelsrichtungen aus:
-    ///   rotatedX = X * cos(heading) + Z * sin(heading)  → Ost-Offset in Metern
-    ///   rotatedZ = -X * sin(heading) + Z * cos(heading)  → Nord-Offset in Metern
+    ///
+    /// Transformation Local → World:
+    /// Lokaler "rechts"-Vektor +X zeigt bei Heading h im World-Frame nach (sin(h-90°), cos(h-90°))
+    ///   = (cos(h), -sin(h)) im (east, north)-System.
+    /// Lokaler "vorne"-Vektor -Z zeigt im World-Frame nach (sin(h), cos(h)).
+    ///
+    /// Daraus folgt:
+    ///   east  = arX * cos(h) + (-arZ) * sin(h) = arX * cos(h) - arZ * sin(h)
+    ///   north = arX * (-sin(h)) + (-arZ) * cos(h) = -arX * sin(h) - arZ * cos(h)
+    ///
+    /// Verifikations-Tests:
+    /// - Heading 0 (Nord), arZ=-1 (vorne): east=0, north=+1 ✓
+    /// - Heading 90 (Ost), arZ=-1 (vorne): east=+1, north=0 ✓
+    /// - Heading 90 (Ost), arX=-1 (links): east=0, north=+1 ✓
+    /// - Heading 180 (Süd), arZ=-1 (vorne): east=0, north=-1 ✓
+    /// - Heading 270 (West), arZ=-1 (vorne): east=-1, north=0 ✓
     /// </remarks>
     private static (double latitude, double longitude) RotateAndProject(
         float arX, float arZ,
@@ -225,13 +271,12 @@ public class ArTransferService : IArTransferService
         double sinH, double cosH,
         double metersPerDegreeLon)
     {
-        // Rotation: AR-lokal → Welt (Nord/Ost)
-        var rotatedX = arX * cosH + arZ * sinH;   // Ost-Offset in Metern
-        var rotatedZ = -arX * sinH + arZ * cosH;  // Nord-Offset in Metern
+        var eastOffset = arX * cosH - arZ * sinH;
+        var nordOffset = -arX * sinH - arZ * cosH;
 
         // Meter → WGS84 Grad-Offset
-        var newLat = gpsLat + rotatedZ / MetersPerDegreeLat;
-        var newLon = gpsLon + rotatedX / metersPerDegreeLon;
+        var newLat = gpsLat + nordOffset / MetersPerDegreeLat;
+        var newLon = gpsLon + eastOffset / metersPerDegreeLon;
 
         return (newLat, newLon);
     }

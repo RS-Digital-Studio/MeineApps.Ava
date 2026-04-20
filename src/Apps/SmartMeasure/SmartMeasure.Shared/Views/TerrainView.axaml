@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:labs="using:Avalonia.Labs.Controls"
              x:Class="SmartMeasure.Shared.Views.TerrainView"
+             x:CompileBindings="True"
              x:DataType="vm:TerrainViewModel">
 
     <Grid RowDefinitions="*,Auto">

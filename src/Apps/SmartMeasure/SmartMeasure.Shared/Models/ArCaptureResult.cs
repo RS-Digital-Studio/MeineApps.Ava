@@ -30,6 +30,40 @@ public class ArCaptureResult
     /// <summary>Dauer der AR-Session</summary>
     public TimeSpan SessionDuration { get; set; }
 
+    /// <summary>
+    /// Y-Wert der Ground-Plane in ARCore-Welt (lokale Höhe des Bodens).
+    /// Wenn gesetzt → alle ArPoint.Y-Werte werden nachträglich relativ zum Boden interpretiert.
+    /// Hilft bei absoluter Höhen-Messung unabhängig von der Startposition der Kamera.
+    /// </summary>
+    public float? GroundPlaneY { get; set; }
+
+    /// <summary>Tracking-Quality-Score der Session (0-100).</summary>
+    public int TrackingQualityScore { get; set; } = 100;
+
+    /// <summary>
+    /// Anzahl Frames im Tracking-State über die gesamte Session-Dauer.
+    /// Wenn &lt; 80% der Total-Frames → Session war unsicher, Präzision reduziert.
+    /// </summary>
+    public float TrackingContinuityRatio { get; set; } = 1f;
+
+    /// <summary>
+    /// War Geospatial-Tracking (VPS) während der Session aktiv? Wenn true sind
+    /// die Lat/Lon/Alt-Werte aus ARCore-Earth-API (±1-3m) statt Handy-GPS (±5m).
+    /// </summary>
+    public bool GeospatialActive { get; set; }
+
+    /// <summary>
+    /// Horizontale Genauigkeit des Geospatial-Trackings in Metern (Median über Session).
+    /// Typisch 1-3m in urbanen Gebieten, 5-20m auf dem Land.
+    /// </summary>
+    public float? GeospatialHorizontalAccuracy { get; set; }
+
+    /// <summary>
+    /// Heading-Genauigkeit des Geospatial-Trackings in Grad (Median über Session).
+    /// Typisch 5-10° mit VPS — Magnetometer-Alternative wäre 15-30° in Metallumgebung.
+    /// </summary>
+    public float? GeospatialHeadingAccuracy { get; set; }
+
     /// <summary>Zeitpunkt des Session-Starts (UTC)</summary>
     public DateTime StartedAt { get; set; }
 

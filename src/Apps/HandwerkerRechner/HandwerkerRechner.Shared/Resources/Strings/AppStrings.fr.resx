@@ -1805,7 +1805,6 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   <data name="CalcCableSizing" xml:space="preserve"><value>Section de câble</value></data>
   <data name="CalcCableSizingDesc" xml:space="preserve"><value>Calculer la section de câble</value></data>
   <data name="CableCurrent" xml:space="preserve"><value>Courant (A)</value></data>
-  <data name="CableLength" xml:space="preserve"><value>Longueur de câble (m)</value></data>
   <data name="CableVoltage" xml:space="preserve"><value>Tension</value></data>
   <data name="CableVoltage230" xml:space="preserve"><value>230 V (Monophasé)</value></data>
   <data name="CableVoltage400" xml:space="preserve"><value>400 V (Triphasé)</value></data>
@@ -1815,7 +1814,6 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   <data name="MaxVoltageDrop" xml:space="preserve"><value>Chute de tension max. (%)</value></data>
   <data name="RecommendedCrossSection" xml:space="preserve"><value>Section recommandée</value></data>
   <data name="MinCrossSection" xml:space="preserve"><value>Section minimale</value></data>
-  <data name="VoltageDrop" xml:space="preserve"><value>Chute de tension</value></data>
   <data name="VdeCompliant" xml:space="preserve"><value>Conforme VDE</value></data>
   <data name="VdeNotCompliant" xml:space="preserve"><value>Non conforme VDE</value></data>
   <data name="CalcTypeCableSizing" xml:space="preserve"><value>Section de câble</value></data>
@@ -2152,5 +2150,17 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   </data>
   <data name="MaxPhotosReached" xml:space="preserve">
     <value>Maximum 5 photos par projet</value>
+  </data>
+  <data name="AdInterstitialTitle" xml:space="preserve">
+    <value>Courte pause publicitaire</value>
+  </data>
+  <data name="AdInterstitialDesc" xml:space="preserve">
+    <value>Regardez une courte vidéo pour continuer. Ou obtenez Premium pour travailler sans publicité.</value>
+  </data>
+  <data name="AdInterstitialButton" xml:space="preserve">
+    <value>Regarder la vidéo → Continuer</value>
+  </data>
+  <data name="PremiumFeatures" xml:space="preserve">
+    <value>Sans publicité vidéo • Sans bannière • Historique illimité • Export direct</value>
   </data>
 </root>

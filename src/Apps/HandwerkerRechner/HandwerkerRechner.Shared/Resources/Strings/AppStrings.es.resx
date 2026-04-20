@@ -1806,7 +1806,6 @@ Valores típicos:
   <data name="CalcCableSizing" xml:space="preserve"><value>Sección de cable</value></data>
   <data name="CalcCableSizingDesc" xml:space="preserve"><value>Calcular sección de cable</value></data>
   <data name="CableCurrent" xml:space="preserve"><value>Corriente (A)</value></data>
-  <data name="CableLength" xml:space="preserve"><value>Longitud de cable (m)</value></data>
   <data name="CableVoltage" xml:space="preserve"><value>Tensión</value></data>
   <data name="CableVoltage230" xml:space="preserve"><value>230 V (Monofásico)</value></data>
   <data name="CableVoltage400" xml:space="preserve"><value>400 V (Trifásico)</value></data>
@@ -1816,7 +1815,6 @@ Valores típicos:
   <data name="MaxVoltageDrop" xml:space="preserve"><value>Caída de tensión máx. (%)</value></data>
   <data name="RecommendedCrossSection" xml:space="preserve"><value>Sección recomendada</value></data>
   <data name="MinCrossSection" xml:space="preserve"><value>Sección mínima</value></data>
-  <data name="VoltageDrop" xml:space="preserve"><value>Caída de tensión</value></data>
   <data name="VdeCompliant" xml:space="preserve"><value>Conforme VDE</value></data>
   <data name="VdeNotCompliant" xml:space="preserve"><value>No conforme VDE</value></data>
   <data name="CalcTypeCableSizing" xml:space="preserve"><value>Sección de cable</value></data>
@@ -2153,5 +2151,17 @@ Valores típicos:
   </data>
   <data name="MaxPhotosReached" xml:space="preserve">
     <value>Máximo 5 fotos por proyecto</value>
+  </data>
+  <data name="AdInterstitialTitle" xml:space="preserve">
+    <value>Breve pausa publicitaria</value>
+  </data>
+  <data name="AdInterstitialDesc" xml:space="preserve">
+    <value>Mira un vídeo corto para continuar. O consigue Premium para trabajar sin anuncios.</value>
+  </data>
+  <data name="AdInterstitialButton" xml:space="preserve">
+    <value>Ver vídeo → Continuar</value>
+  </data>
+  <data name="PremiumFeatures" xml:space="preserve">
+    <value>Sin anuncios de vídeo • Sin banner • Historial ilimitado • Exportación directa</value>
   </data>
 </root>

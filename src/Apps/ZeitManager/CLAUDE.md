@@ -1,6 +1,6 @@
 # ZeitManager - Timer, Stoppuhr, Wecker
 
-> Fuer Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 ## Status
 
@@ -45,7 +45,7 @@ ZeitManager.Shared/Audio/
 ```
 ZeitManager.Android/Services/
 ├── TimerForegroundService.cs     # Foreground Service mit Notification (Timer-Countdown)
-├── AlarmReceiver.cs              # BroadcastReceiver fuer Wecker-Ausloesung
+├── AlarmReceiver.cs              # BroadcastReceiver für Wecker-Auslösung
 ├── BootReceiver.cs               # BOOT_COMPLETED → Wecker neu planen
 ├── AlarmActivity.cs              # Fullscreen Lockscreen-Alarm (Dismiss/Snooze, Gradual Volume, Custom Sound)
 ├── AndroidAudioService.cs        # System-Ringtones via RingtoneManager + PlayUri + PickSound
@@ -59,15 +59,15 @@ ZeitManager.Android/Services/
 
 - **Loading-Pipeline:** `ZeitManagerLoadingPipeline` (in `Loading/`) führt echtes Preloading aus: DB-Init + Shader-Kompilierung parallel, dann AlarmScheduler, ViewModel-Erstellung. `SkiaLoadingSplash` zeigt Fortschrittsring + Statustext. App.axaml.cs setzt DataContext erst nach Pipeline-Abschluss (statt synchron). Bisheriges fire-and-forget `_ = InitializeServicesAsync()` entfernt.
 - **Alarm/Timer-Notifications (Hintergrund):** AlarmSchedulerService und TimerService nutzen INotificationService, um System-Notifications zu planen (Android: AlarmManager.SetAlarmClock, Desktop: Task.Delay). Dadurch funktionieren Alarme/Timer auch wenn die App minimiert/geschlossen ist. AlarmViewModel nutzt IAlarmSchedulerService statt direkt die DB, damit Notifications konsistent geplant/gecancelt werden.
-- **AlarmActivity:** Dedizierte Android Activity (ShowWhenLocked, TurnScreenOn) fuer Fullscreen-Alarm über Lockscreen. Wird von AlarmReceiver gestartet (via AlarmManager). Buttons (Dismiss/Snooze) lokalisiert via `App.Services.GetService<ILocalizationService>()`. Unterstützt benutzerdefinierte Alarm-Töne via `alarm_tone` Intent-Extra, Snooze-Dauer via `snooze_duration` Extra, ansteigende Lautstärke (Volume Ramp).
+- **AlarmActivity:** Dedizierte Android Activity (ShowWhenLocked, TurnScreenOn) für Fullscreen-Alarm über Lockscreen. Wird von AlarmReceiver gestartet (via AlarmManager). Buttons (Dismiss/Snooze) lokalisiert via `App.Services.GetService<ILocalizationService>()`. Unterstützt benutzerdefinierte Alarm-Töne via `alarm_tone` Intent-Extra, Snooze-Dauer via `snooze_duration` Extra, ansteigende Lautstärke (Volume Ramp).
 - **Sound-System:** IAudioService erweitert mit SystemSounds, PlayUriAsync, PickSoundAsync. Android: RingtoneManager für System-Sounds + RingtoneManager.ActionRingtonePicker für Auswahl (ActivityResult via MainActivity). Desktop: Avalonia StorageProvider.OpenFilePickerAsync + Kopie in AppData. SoundItem hat optionale Uri (null für eingebaute Töne).
 - **StableHash:** Deterministische Hash-Funktion für Alarm-IDs (statt GetHashCode() der nicht deterministisch ist). Verwendet in AndroidNotificationService, AlarmActivity.
 - **Foreground-Check:** `MainActivity.IsAppInForeground` statisches Flag. AlarmReceiver prüft dies um Doppel-Auslösung (AlarmActivity + In-App Overlay) zu vermeiden.
-- **UI-Thread:** System.Timers.Timer feuert auf ThreadPool → `Dispatcher.UIThread.Post()` fuer Property-Updates
-- **Stopwatch Undo:** TimeSpan _offset Pattern (Stopwatch unterstuetzt keine direkte Elapsed-Zuweisung)
-- **Thread-Safety:** TimerService und AlarmSchedulerService nutzen `lock(_lock)` fuer List-Zugriffe, AudioService lock-swap fuer CTS, DesktopNotificationService ConcurrentDictionary
-- **AlarmItem:** Erbt ObservableObject, IsEnabled nutzt SetProperty fuer UI-Notification
-- **CustomShiftPattern:** ShortName() nutzt LocalizationManager.GetString() fuer lokalisierte Schicht-Kuerzel
+- **UI-Thread:** System.Timers.Timer feuert auf ThreadPool → `Dispatcher.UIThread.Post()` für Property-Updates
+- **Stopwatch Undo:** TimeSpan _offset Pattern (Stopwatch unterstützt keine direkte Elapsed-Zuweisung)
+- **Thread-Safety:** TimerService und AlarmSchedulerService nutzen `lock(_lock)` für List-Zugriffe, AudioService lock-swap für CTS, DesktopNotificationService ConcurrentDictionary
+- **AlarmItem:** Erbt ObservableObject, IsEnabled nutzt SetProperty für UI-Notification
+- **CustomShiftPattern:** ShortName() nutzt LocalizationManager.GetString() für lokalisierte Schicht-Kürzel
 
 ## SkiaSharp-Visualisierungen
 
@@ -75,7 +75,7 @@ ZeitManager.Android/Services/
 
 | Datei | Beschreibung | Genutzt in |
 |-------|-------------|------------|
-| `ClockworkBackgroundRenderer.cs` | Animierter "Warm Clockwork"-Hintergrund (5 Layer): 3-Farben-Gradient (#382C22/#2A2018/#301A10), konzentrische pulsierende Uhrenringe (Alpha 8-10), driftende Gluehwuermchen-Partikel (Amber, Alpha 15-20, Glow via MaskFilter), 60 Tick-Markierungen, radiale Vignette. Struct-Pool (max 12), gecachte Paints/Shader, ~5fps DispatcherTimer | MainView |
+| `ClockworkBackgroundRenderer.cs` | Animierter "Warm Clockwork"-Hintergrund (5 Layer): 3-Farben-Gradient (#382C22/#2A2018/#301A10), konzentrische pulsierende Uhrenringe (Alpha 8-10), driftende Glühwuermchen-Partikel (Amber, Alpha 15-20, Glow via MaskFilter), 60 Tick-Markierungen, radiale Vignette. Struct-Pool (max 12), gecachte Paints/Shader, ~5fps DispatcherTimer | MainView |
 | `StopwatchVisualization.cs` | Stoppuhr-Ring mit Sekundenzeiger + Nachleucht-Trail (6 Ghost-Positionen), Runden-Sektoren (farbige Bögen pro Runde, 8 Farben), Sub-Dial (Minuten-Ring oben rechts), 60 Sekunden-Ticks, Glow, Rundenpunkte | StopwatchView |
 | `PomodoroVisualization.cs` | RenderRing: Fortschrittsring mit Pulsier-Effekt (2Hz) auf aktivem Zyklus-Segment + Glow, innerer Session-Ring (Tages-Fortschritt als Segment-Bögen); RenderWeeklyBars: Wochen-Balkendiagramm | PomodoroView |
 | `TimerVisualization.cs` | Timer-Ring mit Flüssigkeits-Füllung + Welleneffekt, Tropfen-Partikel (8 Stück, fallen von Oberfläche), Countdown-Ziffern (letzte 5s, Scale-Bounce 1.5→1.0), Ablauf-Burst (20 Confetti-Partikel bei Timer=0) | TimerView (Reserve) |
@@ -84,7 +84,7 @@ ZeitManager.Android/Services/
 
 **TimerView:** Nutzt `SkiaGradientRing` aus MeineApps.UI (Shared Control) statt `CircularProgress` pro Timer-Item, mit `GlowEnabled`/`IsPulsing` bei laufendem Timer.
 
-## Abhaengigkeiten
+## Abhängigkeiten
 
 - MeineApps.Core.Ava, MeineApps.UI
 - sqlite-net-pcl + SQLitePCLRaw.bundle_green

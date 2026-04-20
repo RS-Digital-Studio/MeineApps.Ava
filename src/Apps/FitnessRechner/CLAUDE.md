@@ -1,10 +1,10 @@
 # FitnessRechner (Avalonia)
 
-> Fuer Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 ## App-Beschreibung
 
-Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), Tracking mit Charts, Nahrungsmittel-Suche (114 lokale + Open Food Facts API), Intervallfasten-Timer, Aktivitäts-Tracking und Rezept-Editor.
+Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Körperfett), Tracking mit Charts, Nahrungsmittel-Suche (114 lokale + Open Food Facts API), Intervallfasten-Timer, Aktivitäts-Tracking und Rezept-Editor.
 
 **Version:** 2.0.6 | **Package-ID:** com.meineapps.fitnessrechner | **Status:** Geschlossener Test
 
@@ -13,7 +13,7 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 - **4 Tabs**: Home (Dashboard + Streak-Card + Fasten-Status + Tageszeit-Begrüßung), Progress (Tracking + 5 Sub-Tabs inkl. Aktivitäten), Food Search (+ Quick-Add + Rezepte), Settings (+ Benutzerprofil)
 - **5 Rechner**: BMI, Calories, Water, IdealWeight, BodyFat (alle mit Profil-Vorausfüllung)
 - **Benutzerprofil**: Größe, Alter, Geschlecht, Aktivitätslevel in Settings → automatische Vorausfüllung aller Rechner
-- **Tracking**: Gewicht (+ Gewichtsziel mit ProgressBar), BMI, Koerperfett, Wasser, Kalorien (JSON-basiert, TrackingService)
+- **Tracking**: Gewicht (+ Gewichtsziel mit ProgressBar), BMI, Körperfett, Wasser, Kalorien (JSON-basiert, TrackingService)
 - **Aktivitäts-Tracking**: 30 Aktivitäten mit MET-Werten, verbrannte Kalorien berechnen (kcal = MET * Gewicht * Dauer), Tages-Übersicht
 - **Charts**: SkiaSharp (HealthTrendVisualization für Gewicht/BMI/BodyFat, WeeklyCaloriesBarVisualization für Wochen-Kalorien), Chart-Zeitraum wählbar (7T/30T/90T)
 - **Mahlzeiten**: Gruppiert nach Typ (Frühstück/Mittag/Abend/Snack mit Icons + Subtotals), "Gestern kopieren" Funktion
@@ -29,13 +29,13 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 
 ## App-spezifische Services
 
-- **TrackingService**: JSON-Persistenz (TrackingEntry Model), IDisposable mit CancellationTokenSource Cleanup, `EntryAdded`-Event fuer Streak
-- **FoodSearchService**: Fuzzy Matching, Favorites, Recipes (generisch fuer FoodItem/Recipe), `FoodLogAdded`-Event fuer Streak, Batch-Methoden `GetFoodLogsInRangeAsync` + `GetDailySummariesInRangeAsync` (N+1 Query Fix)
-- **IStreakService / StreakService**: Logging-Streak (aufeinanderfolgende Tage mit Aktivitaet), Preferences-basiert, Meilenstein-Confetti (3/7/14/21/30/50/75/100/150/200/365 Tage)
+- **TrackingService**: JSON-Persistenz (TrackingEntry Model), IDisposable mit CancellationTokenSource Cleanup, `EntryAdded`-Event für Streak
+- **FoodSearchService**: Fuzzy Matching, Favorites, Recipes (generisch für FoodItem/Recipe), `FoodLogAdded`-Event für Streak, Batch-Methoden `GetFoodLogsInRangeAsync` + `GetDailySummariesInRangeAsync` (N+1 Query Fix)
+- **IStreakService / StreakService**: Logging-Streak (aufeinanderfolgende Tage mit Aktivität), Preferences-basiert, Meilenstein-Confetti (3/7/14/21/30/50/75/100/150/200/365 Tage)
 - **FoodDatabase**: 114 Nahrungsmittel mit lokalisierten Namen + Aliase (statische Liste)
 - **BarcodeLookupService**: Open Food Facts API, _barcodeCache Dictionary mit SemaphoreSlim
 - **IScanLimitService / ScanLimitService**: Tages-Limit (3 Scans/Tag), Bonus-Scans via Rewarded Ad
-- **IBarcodeService**: Plattform-Interface fuer nativen Barcode-Scan (Android: CameraX + ML Kit, Desktop: null → manuelle Eingabe)
+- **IBarcodeService**: Plattform-Interface für nativen Barcode-Scan (Android: CameraX + ML Kit, Desktop: null → manuelle Eingabe)
 - **IFastingService / FastingService**: Intervallfasten-Timer (16:8, 18:6, 20:4, Custom), Start/Stop, History (letzte 30 Perioden), Preferences-basiert
 - **IActivityService / ActivityService**: Sport-/Aktivitäts-Tracking mit MET-Werten, JSON-Persistenz (activity_log.json), Thread-safe
 - **ActivityDatabase**: 30 Aktivitäten mit MET-Werten in 4 Kategorien (Cardio/Kraft/Sport/Alltag), statische Liste
@@ -58,8 +58,8 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 
 ### Calculator-VM Factory Pattern
 - Calculator-VMs (BmiViewModel, CaloriesViewModel, etc.) als Transient registriert
-- MainViewModel erhaelt `Func<T>` Factories per Constructor Injection (kein Service-Locator)
-- Jedes Oeffnen eines Rechners erzeugt eine frische VM-Instanz
+- MainViewModel erhält `Func<T>` Factories per Constructor Injection (kein Service-Locator)
+- Jedes Öffnen eines Rechners erzeugt eine frische VM-Instanz
 
 ### ProgressView Sub-Tabs
 - 4 Sub-Tabs: Weight, BMI, BodyFat, Water/Calories
@@ -72,7 +72,7 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 
 ### Extended Food DB (24h Zugang)
 - **Ablauf-Key**: `extended_food_db_expiry` mit ISO 8601 UTC + `DateTimeStyles.RoundtripKind`
-- **Hint-Card**: Zeigt "Mehr laden" bei <=5 lokalen Ergebnissen fuer Non-Premium
+- **Hint-Card**: Zeigt "Mehr laden" bei <=5 lokalen Ergebnissen für Non-Premium
 
 ### Game Juice
 - **FloatingText**: "+{amount} ml" (Wasser), "+{calories} kcal" (Food), "+{value} kg/BMI/%" (Tracking)
@@ -84,8 +84,8 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
   - Semi-transparentes Overlay mit Scan-Bereich + Ecken-Akzente
   - `AndroidBarcodeService` → `StartActivityForResult` + `TaskCompletionSource`
   - `MainActivity.OnActivityResult` + `OnRequestPermissionsResult` leiten an Service weiter
-- **Desktop**: `DesktopBarcodeService` gibt null zurueck → `BarcodeScannerView` zeigt manuelle Texteingabe
-- **Flow**: FoodSearchVM.OpenBarcodeScanner → IBarcodeService.ScanBarcodeAsync → NavigationRequested("BarcodeScannerPage?barcode=...") → MainVM.CreateCalculatorVm → BarcodeScannerVM.OnBarcodeDetected → API-Lookup → UseFood → FoodSelected Event → zurueck zu FoodSearch
+- **Desktop**: `DesktopBarcodeService` gibt null zurück → `BarcodeScannerView` zeigt manuelle Texteingabe
+- **Flow**: FoodSearchVM.OpenBarcodeScanner → IBarcodeService.ScanBarcodeAsync → NavigationRequested("BarcodeScannerPage?barcode=...") → MainVM.CreateCalculatorVm → BarcodeScannerVM.OnBarcodeDetected → API-Lookup → UseFood → FoodSelected Event → zurück zu FoodSearch
 - **DI**: `App.BarcodeServiceFactory` (analog zu RewardedAdServiceFactory)
 - **Packages**: CameraX Camera2/Lifecycle/View 1.5.2.1 + ML Kit BarcodeScanning 117.3.0.5
 

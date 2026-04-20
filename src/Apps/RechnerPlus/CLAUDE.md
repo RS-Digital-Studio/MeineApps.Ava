@@ -123,13 +123,13 @@ baseValue = value * ToBase + Offset
 - Nur angezeigt wenn sich der Wert vom Display unterscheidet
 
 ### Landscape-Layout (CalculatorView.axaml.cs, 13.02.2026, aktualisiert 28.02.2026)
-- `OnSizeChanged` prueft Width > Height
+- `OnSizeChanged` prüft Width > Height
 - Automatischer Wechsel zu Scientific Mode mit `_autoSwitchedToScientific` Flag
-- Zurueck zu Basic nur wenn automatisch gewechselt wurde (nicht manuell)
+- Zurück zu Basic nur wenn automatisch gewechselt wurde (nicht manuell)
 - **2-Spalten-Layout**: Spalte 0 (40%): Display+FunctionGraph+ModeSelector+ScientificPanel+Memory | Spalte 1 (60%): BasicGrid (RowSpan=5)
 - RowDefinitions Portrait: `Auto,Auto,Auto,Auto,Auto,*` (Display, FunctionGraph, Mode, Scientific, Memory, BasicGrid)
 - RowDefinitions Landscape: `Auto,Auto,Auto,Auto,*` (Display, FunctionGraph, Mode, Scientific, Memory)
-- Memory-Row: `VerticalAlignment.Bottom` im Landscape (zurueckgesetzt auf Stretch in Portrait)
+- Memory-Row: `VerticalAlignment.Bottom` im Landscape (zurückgesetzt auf Stretch in Portrait)
 - FunctionGraph: 140px Portrait, 100px Landscape
 - Kompaktere Landscape-Styles: CalcButton MinHeight 36, Function MinHeight 32, Memory MinHeight 28
 - ModeSelector-Buttons: FontSize 11, Padding 8,3 im Landscape
@@ -238,9 +238,9 @@ baseValue = value * ToBase + Offset
 
 ### Animierter Hintergrund (05.03.2026)
 - "Digital Circuit Board"-Effekt in MainView (SKCanvasView, Grid.RowSpan=2, IsHitTestVisible=False)
-- 4 Layer: 3-Farben Gradient (#302A56→#221E40→#2C1850), Dot-Grid (32px Spacing, Drift 2px/s), Math-Partikel (15 Stueck, Indigo Alpha 8%), radiale Vignette
+- 4 Layer: 3-Farben Gradient (#302A56→#221E40→#2C1850), Dot-Grid (32px Spacing, Drift 2px/s), Math-Partikel (15 Stück, Indigo Alpha 8%), radiale Vignette
 - DispatcherTimer 200ms (~5fps), Update+InvalidateSurface pro Tick
-- Gecachte Paints, Shader-Cache (nur bei Groessenaenderung), SKFont gecacht (Size-Setter pro Partikel)
+- Gecachte Paints, Shader-Cache (nur bei Größenaenderung), SKFont gecacht (Size-Setter pro Partikel)
 - Start in OnAttachedToVisualTree, Stop+Dispose in OnDetachedFromVisualTree
 
 ### Error-Shake (28.02.2026)

@@ -2034,9 +2034,6 @@ Coverage decreases on rough surfaces!</value>
   <data name="CableCurrent" xml:space="preserve">
     <value>Current (A)</value>
   </data>
-  <data name="CableLength" xml:space="preserve">
-    <value>Cable length (m)</value>
-  </data>
   <data name="CableVoltage" xml:space="preserve">
     <value>Voltage</value>
   </data>
@@ -2063,9 +2060,6 @@ Coverage decreases on rough surfaces!</value>
   </data>
   <data name="MinCrossSection" xml:space="preserve">
     <value>Minimum cross-section</value>
-  </data>
-  <data name="VoltageDrop" xml:space="preserve">
-    <value>Voltage drop</value>
   </data>
   <data name="VdeCompliant" xml:space="preserve">
     <value>VDE compliant</value>

@@ -1,6 +1,6 @@
 # FinanzRechner (Avalonia)
 
-> Fuer Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 ## App-Beschreibung
 
@@ -79,13 +79,13 @@ Vollwertiger Finanz-Manager mit Multi-Konto, Ausgaben-Tracking, Budget-Verwaltun
 ## Besondere Architektur
 
 ### Export-Logik
-- **ExportService**: `GetExportDirectory()` gibt Android external-files-path zurueck
+- **ExportService**: `GetExportDirectory()` gibt Android external-files-path zurück
 - **ShareFileAsync**: Nach Export wird `IFileShareService.ShareFileAsync()` aufgerufen
-- **Fallback**: Android-Export faellt zurueck auf hardcodierte Pfade wenn FileDialog nicht verfuegbar
+- **Fallback**: Android-Export fällt zurück auf hardcodierte Pfade wenn FileDialog nicht verfügbar
 
 ### Budget-Verwaltung
-- **BudgetDisplayItem**: ObservableObject mit CategoryName Property (Sprachwechsel-faehig)
-- **Auto-Processing**: `MainViewModel.OnAppearingAsync()` verarbeitet faellige Dauerauftraege bei App-Start
+- **BudgetDisplayItem**: ObservableObject mit CategoryName Property (Sprachwechsel-fähig)
+- **Auto-Processing**: `MainViewModel.OnAppearingAsync()` verarbeitet fällige Daueraufträge bei App-Start
 - **Über-Budget-Anzeige**: Prozent >100% erlaubt, ProgressBar+Text werden rot (CSS-Klasse `.overLimit`)
 
 ### Cache-Invalidierung (Tab-Wechsel)
@@ -104,16 +104,16 @@ Vollwertiger Finanz-Manager mit Multi-Konto, Ausgaben-Tracking, Budget-Verwaltun
 
 ### SettingsView Events
 - **BackupCreated**: Datei teilen via IFileShareService
-- **RestoreFileRequested**: StorageProvider.OpenFilePickerAsync fuer JSON-Restore → zeigt Merge/Replace-Dialog (ShowRestoreConfirmation Overlay)
-- **OpenUrlRequested**: URL im Standardbrowser oeffnen (Process.Start)
-- **FeedbackRequested**: mailto-Link fuer Feedback-E-Mail
+- **RestoreFileRequested**: StorageProvider.OpenFilePickerAsync für JSON-Restore → zeigt Merge/Replace-Dialog (ShowRestoreConfirmation Overlay)
+- **OpenUrlRequested**: URL im Standardbrowser öffnen (Process.Start)
+- **FeedbackRequested**: mailto-Link für Feedback-E-Mail
 
 ### Restore Merge/Replace Dialog
 - Nach File-Picker wird `OnRestoreFileSelected(filePath)` aufgerufen → setzt ShowRestoreConfirmation=true
 - Dialog-Overlay in SettingsView.axaml mit Merge-Button (Primary) und Replace-Button (Secondary)
 - RestoreMergeCommand → ProcessRestoreFileAsync(path, merge:true)
 - RestoreReplaceCommand → ProcessRestoreFileAsync(path, merge:false)
-- CancelRestoreCommand → Dialog schliessen, IsBackupInProgress zuruecksetzen
+- CancelRestoreCommand → Dialog schließen, IsBackupInProgress zurücksetzen
 - RESX-Keys: RestoreQuestion, RestoreMerge, RestoreReplace, RestoreMergeDesc, RestoreReplaceDesc, TotalBudget
 
 ### Backup-Format v2.0 (Maerz 2026)
@@ -159,7 +159,7 @@ View-Zuordnung:
 - **BudgetsView**: SkiaGradientRing (Gesamt-Budget) + LinearProgress pro Kategorie
 
 ### Game Juice
-- **FloatingText**: Quick-Add (+/- Betrag, income=gruen, expense=rot)
+- **FloatingText**: Quick-Add (+/- Betrag, income=grün, expense=rot)
 - **Celebration**: Confetti bei Budget-Analyse (CelebrationRequested Event in MainViewModel)
 - **Animationen (MainView.axaml Styles)**: DialogOverlay (Scale+Opacity 200ms), BouncingFab (Pulse 2s infinite), EmptyPulse (Opacity 2.5s), PremiumShimmer (Opacity 3s), SummaryCard (Hover translateY+BoxShadow), InputError (Shake 0.4s), AnimatedValue (Opacity-Fade 0.3s), MonthFade (Opacity 0.15s), UndoTimer (ScaleX 5s Countdown), ThemePreview (Hover Scale 1.03)
 - **Farbige Kategorie-Chips**: In QuickAdd, AddExpense, AddRecurring Dialogen (CategoryToColorBrushConverter mit Opacity)

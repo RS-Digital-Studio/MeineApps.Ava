@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.CalcLib;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
@@ -8,8 +9,12 @@ namespace RechnerPlus.ViewModels;
 
 public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
+    private const string OnboardingShownKey = "onboarding_shown_v2";
+
     private bool _disposed;
     private readonly ILocalizationService _localization;
+    private readonly IPreferencesService _preferences;
+    private readonly ExpressionParser _expressionParser;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCalculatorActive))]
@@ -47,11 +52,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     public MainViewModel(
         ILocalizationService localization,
+        IPreferencesService preferences,
+        ExpressionParser expressionParser,
         CalculatorViewModel calculatorViewModel,
         ConverterViewModel converterViewModel,
         SettingsViewModel settingsViewModel)
     {
         _localization = localization;
+        _preferences = preferences;
+        _expressionParser = expressionParser;
         _calculatorViewModel = calculatorViewModel;
         _converterViewModel = converterViewModel;
         _settingsViewModel = settingsViewModel;
@@ -61,7 +70,37 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         // Floating-Text-Events vom Calculator weiterleiten
         CalculatorViewModel.FloatingTextRequested += OnCalculatorFloatingText;
+
+        // Calculator-Engine waermt sich synchron im Ctor auf (einmaliger Parse <1ms).
+        // Garantiert: WarmUp findet VOR jeglicher VM-Benutzung statt und kollidiert nicht
+        // mit spaeteren UI-Thread-Calls auf ExpressionParser (kein parallel-Zugriff).
+        try { _expressionParser.Evaluate("1+1"); }
+        catch { /* nicht kritisch - Pre-Warm */ }
     }
+
+    #region Splash / Onboarding (View-Texte + Persistenz via VM)
+
+    /// <summary>Lokalisierter Text: "Grafik-Engine wird vorbereitet..." (Splash-Progress).</summary>
+    public string LoadingShadersText => _localization.GetString("LoadingShaders") ?? "Grafik-Engine wird vorbereitet...";
+
+    /// <summary>Lokalisierter Text: "Rechner wird initialisiert..." (Splash-Progress).</summary>
+    public string LoadingCalculatorText => _localization.GetString("LoadingCalculator") ?? "Rechner wird initialisiert...";
+
+    /// <summary>Prueft ob das Onboarding bereits angezeigt wurde.</summary>
+    public bool IsOnboardingCompleted => _preferences.Get(OnboardingShownKey, false);
+
+    /// <summary>Markiert das Onboarding als abgeschlossen (Persistenz via IPreferencesService).</summary>
+    public void MarkOnboardingCompleted() => _preferences.Set(OnboardingShownKey, true);
+
+    /// <summary>Lokalisierte Onboarding-Texte in View-Reihenfolge.</summary>
+    public string[] GetOnboardingTexts() =>
+    [
+        _localization.GetString("OnboardingSwipeDelete") ?? "Wische nach links zum Löschen",
+        _localization.GetString("OnboardingSwipeHistory") ?? "Wische hoch für den Verlauf",
+        _localization.GetString("OnboardingScientific") ?? "Drehe dein Gerät für den Wissenschaftsmodus"
+    ];
+
+    #endregion
 
     private void OnCalculatorFloatingText(string text, string category)
     {

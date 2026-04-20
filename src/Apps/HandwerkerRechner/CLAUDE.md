@@ -1,6 +1,6 @@
 # HandwerkerRechner (Avalonia)
 
-> Fuer Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 ## App-Beschreibung
 
@@ -14,17 +14,17 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 
 **Free Floor Calculators (5):**
 1. TileCalculator - Fliesenbedarf (Raum, Verschnitt, Fugenmasse)
-2. WallpaperCalculator - Tapetenrollen (Wandhoehe, Muster-Rapport, Tür-/Fenster-Abzüge)
-3. PaintCalculator - Farbbedarf (Anstriche, Deckfaehigkeit, Tür-/Fenster-Abzüge)
+2. WallpaperCalculator - Tapetenrollen (Wandhöhe, Muster-Rapport, Tür-/Fenster-Abzüge)
+3. PaintCalculator - Farbbedarf (Anstriche, Deckfähigkeit, Tür-/Fenster-Abzüge)
 4. FlooringCalculator - Laminat/Parkett (Raumform, Verschnitt)
 5. ConcreteCalculator - Beton (Platte/Fundament/Säule, Volumen, Säcke, Mischverhältnis)
 
 **Premium Calculators (14):**
 6. DrywallCalculator - Trockenbau (Platten, Profile, Schrauben)
 7. ElectricalCalculator - Elektrik (Kabel, Kosten, Ohm'sches Gesetz)
-8. MetalCalculator - Metall (Gewicht, Gewindegroesse, Bohrung)
+8. MetalCalculator - Metall (Gewicht, Gewindegröße, Bohrung)
 9. GardenCalculator - Garten (Erde, Mulch, Pflaster, Rasen)
-10. RoofSolarCalculator - Dach+Solar (Dachflaeche, Solarpanel, Amortisation)
+10. RoofSolarCalculator - Dach+Solar (Dachfläche, Solarpanel, Amortisation)
 11. StairsCalculator - Treppen (DIN 18065, Schrittmaß, Stufenhöhe, Komfort)
 12. PlasterCalculator - Putz (Wandfläche, Putzdicke, Putzart, 30kg-Säcke)
 13. ScreedCalculator - Estrich (Bodenfläche, Dicke, Typ, Volumen, 40kg-Säcke, Trocknungszeit)
@@ -37,7 +37,7 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 
 ### Weitere Features
 - **Projektverwaltung**: CRUD mit JSON-Persistenz + SemaphoreSlim
-- **Einheiten-Umrechnung**: Laenge, Flaeche, Volumen, Gewicht (Metrisch/Imperial)
+- **Einheiten-Umrechnung**: Länge, Fläche, Volumen, Gewicht (Metrisch/Imperial)
 - **Material-Liste PDF Export**: PdfSharpCore-basiert (A4, Header, Inputs, Results, Footer)
 - **Material-Liste CSV Export**: Semikolon-getrennt, UTF-8-BOM, Excel-kompatibel. Alle 19 Calculator-VMs haben `ExportCsvCommand` (gleiche inputs/results wie PDF, selbes Ad-Gate)
 - **Angebots-Generator**: QuoteView - Kundendaten, Positions-Tabelle, Marge+MwSt, PDF-Export
@@ -48,16 +48,16 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 
 - **ProjectService**: JSON-Persistenz (Project Model), DateTime.UtcNow
 - **CalculationHistoryService**: MaxItemsPerCalculator 30 (5 free / 30 extended)
-- **UnitConverterService**: Laenge, Flaeche, Volumen, Gewicht
+- **UnitConverterService**: Länge, Fläche, Volumen, Gewicht
 - **IMaterialExportService / MaterialExportService**: PdfSharpCore A4 Export + CSV Export (Semikolon, UTF-8-BOM)
 - **IPhotoPickerService / DesktopPhotoPickerService**: Foto-Auswahl via StorageProvider, kopiert nach AppData/photos/ mit GUID-Name. Factory-Pattern in App.axaml.cs für Android-Override
-- **IPremiumAccessService / PremiumAccessService**: 30-Min temporaerer Zugang zu Premium-Rechnern, 24h Extended History
+- **IPremiumAccessService / PremiumAccessService**: 30-Min temporärer Zugang zu Premium-Rechnern, 24h Extended History
 
 ## Premium & Ads
 
 ### Ad-Placements (Rewarded)
 1. **premium_access**: 30 Minuten Zugang zu 11 Premium-Rechnern (HomeView)
-2. **extended_history**: 24h-Zugang zu 30 statt 10 History-Eintraegen (HomeView)
+2. **extended_history**: 24h-Zugang zu 30 statt 10 History-Einträgen (HomeView)
 3. **material_pdf**: Material-Liste PDF Export (alle 16 Calculator Views)
 4. **project_export**: Projekt-Export als PDF (ProjectsView)
 
@@ -71,7 +71,7 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 
 | Datei | Typ | Beschreibung |
 |-------|-----|--------------|
-| `BlueprintBackgroundRenderer.cs` | Background | Animierter Blueprint-Hintergrund (5 Layer: Gradient, Blueprint-Grid mit Drift, Massband-Markierungen, 8 Tool-Silhouetten, Vignette). Instance-basiert, IDisposable, 0 GC/Frame, ~5fps DispatcherTimer |
+| `BlueprintBackgroundRenderer.cs` | Background | Animierter Blueprint-Hintergrund (5 Layer: Gradient, Blueprint-Grid mit Drift, Maßband-Markierungen, 8 Tool-Silhouetten, Vignette). Instance-basiert, IDisposable, 0 GC/Frame, ~5fps DispatcherTimer |
 | `TileVisualization.cs` | Floor | 2D-Grundriss mit Fliesengitter, Verschnitt-Fliesen rot schraffiert, Verschnitt-Info-Box (Prozent+Fliesengröße), Einzelfliesen-Bemaßung |
 | `FlooringVisualization.cs` | Floor | Dielen-Verlegung mit 50%-Versatz, 3 Holzfarben, Verschnitt-Zone rot schraffiert an Rändern, Gesamtflächenbedarf+Verschnitt als Formel |
 | `WallpaperVisualization.cs` | Floor | Wand-Abwicklung mit vertikalen Bahnen, Rapport-Versatz gestrichelt |
@@ -94,10 +94,10 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 
 **Pattern**: Alle `public static void Render(SKCanvas, SKRect, ...)` mit gecachten `SKPaint` (static readonly), inkl. `_layerPaint` für Alpha-Fade-In (SaveLayer). Views haben `OnPaintVisualization` Code-Behind Handler mit Named-Handler-Pattern (explizites Unsubscribe bei DataContext-Wechsel). Visualisierung in `<Border Classes="Card" Height="220" ClipToBounds="True">` mit `IsVisible="{Binding HasResult}"`.
 
-**CalculatorViewBase** (`Views/CalculatorViewBase.cs`): Abstrakte Basisklasse fuer alle 19 Calculator-Views. Kapselt das gemeinsame PropertyChanged-Subscription-Pattern (`_currentVm`/`_resultHandler`, An-/Abmeldung bei DataContext-Wechsel). Abgeleitete Klassen ueberschreiben:
+**CalculatorViewBase** (`Views/CalculatorViewBase.cs`): Abstrakte Basisklasse für alle 19 Calculator-Views. Kapselt das gemeinsame PropertyChanged-Subscription-Pattern (`_currentVm`/`_resultHandler`, An-/Abmeldung bei DataContext-Wechsel). Abgeleitete Klassen überschreiben:
 - `ShouldInvalidateOnPropertyChanged(propertyName)`: Filter-Logik (Standard: `Contains("Result")`)
 - `OnResultPropertyChanged()`: Reaktion (Animation starten oder Canvas invalidieren)
-- `RequestAnimationFrame(sender)`: Statische Hilfsmethode fuer Animation-Loop (NeedsRedraw → InvalidateSurface)
+- `RequestAnimationFrame(sender)`: Statische Hilfsmethode für Animation-Loop (NeedsRedraw → InvalidateSurface)
 
 **Background Render-Loop**: MainView: DispatcherTimer 200ms (~5fps), `_backgroundRenderer.Update(0.2f)` + `BackgroundCanvas.InvalidateSurface()`. SKCanvasView mit `Grid.RowSpan="3"` + `IsHitTestVisible="False"` hinter Content. UserControl Background=Transparent (Gradient kommt vom Renderer). Start in `OnDataContextChanged`, Stop+Dispose in `OnDetachedFromVisualTree`.
 
@@ -125,7 +125,7 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 
 ### Calculator Overlay via DataTemplates
 - `MainViewModel`: `CurrentPage` + `CurrentCalculatorVm` Properties
-- `MainView`: DataTemplates fuer automatische View-Zuordnung per VM-Typ (19 VMs)
+- `MainView`: DataTemplates für automatische View-Zuordnung per VM-Typ (19 VMs)
 - Tab-Wechsel: `SelectHomeTab/SelectProjectsTab/SelectHistoryTab/SelectSettingsTab` setzen `CurrentPage=null`
 
 ### History-Tab
@@ -137,7 +137,7 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 
 ### ICalculatorViewModel Interface
 - Alle 19 Calculator-VMs implementieren `ICalculatorViewModel` (NavigationRequested, MessageRequested, FloatingTextRequested, ClipboardRequested, ShowSaveDialog, Cleanup(), LoadFromProjectIdAsync())
-- MainViewModel nutzt Interface-Polymorphie statt 19-facher switch/case-Bloecke fuer WireCalculatorEvents, CleanupCurrentCalculator, HandleBackPressed
+- MainViewModel nutzt Interface-Polymorphie statt 19-facher switch/case-Blöcke für WireCalculatorEvents, CleanupCurrentCalculator, HandleBackPressed
 - Factory-Dictionary `_calculatorFactories` (Route → Func<ObservableObject>) ersetzt 19 einzelne Func<T>-Fields
 - Interface-Datei: `ViewModels/ICalculatorViewModel.cs`
 

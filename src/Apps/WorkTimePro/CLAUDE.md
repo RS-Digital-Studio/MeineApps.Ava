@@ -1,6 +1,6 @@
 # WorkTimePro (Avalonia)
 
-> Fuer Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 ## App-Beschreibung
 
@@ -19,14 +19,14 @@ Zeiterfassung & Arbeitszeitmanagement mit Pausen, Kalender-Heatmap, Statistiken,
 
 ### Kern-Features
 - **Zeiterfassung**: Check-in/out mit Pausen-Management, Auto-Pause
-- **Kalender-Heatmap**: Monatsuebersicht mit Status-Overlay (Urlaub, Krank, HomeOffice etc.)
-- **Statistiken**: Charts (SkiaSharp) + Tabelle, Taeglich/Woechentlich/Monatlich/Quartal/Jahr
+- **Kalender-Heatmap**: Monatsübersicht mit Status-Overlay (Urlaub, Krank, HomeOffice etc.)
+- **Statistiken**: Charts (SkiaSharp) + Tabelle, Täglich/Wöchentlich/Monatlich/Quartal/Jahr
 - **Export**: PDF, Excel (XLSX), CSV via PdfSharpCore + ClosedXML (Format-Auswahl-Overlay in StatisticsView)
-- **Urlaubsverwaltung**: 9 Status-Typen, Resturlaub, Uebertrag, Urlaubsanspruch
+- **Urlaubsverwaltung**: 9 Status-Typen, Resturlaub, Übertrag, Urlaubsanspruch
 - **Feiertage**: Deutschland (16 Bundesländer), Österreich (9 Bundesländer), Schweiz (12 Kantone)
 - **§3 ArbZG Compliance**: 6-Monats-Durchschnitt darf 8h/Tag nicht überschreiten (Warnung in CheckLegalCompliance)
 - **Schichtplanung**: Wiederkehrende Muster mit Tagesnamen-Lokalisierung
-- **Projekte + Arbeitgeber**: CRUD mit Zuweisung zu Zeiteintraegen
+- **Projekte + Arbeitgeber**: CRUD mit Zuweisung zu Zeiteinträgen
 - **Smart Notifications**: 5 Reminder-Typen (Morgen/Abend/Pause/Überstunden/Wochenzusammenfassung), plattformübergreifend
 - **Zeitrundung**: 5/10/15/30 Minuten-Rundung der Arbeitszeit (Settings)
 - **Stundenlohn**: Verdienst-Berechnung mit Anzeige auf TodayView
@@ -67,10 +67,10 @@ MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOve
 
 | Feature | Placement-ID | Dauer |
 |---------|--------------|-------|
-| Urlaubseintrag/Quota/Uebertrag | `vacation_entry` | Einmalig |
+| Urlaubseintrag/Quota/Übertrag | `vacation_entry` | Einmalig |
 | PDF-Export | `export` | Einmalig |
 | Statistik-Export | `monthly_stats` | Einmalig |
-| Erweiterte Zeitraeume (Quartal/Jahr) | `monthly_stats` | 24h Zugang |
+| Erweiterte Zeiträume (Quartal/Jahr) | `monthly_stats` | 24h Zugang |
 
 **Erweiterte Stats**: `HasExtendedStatsAccess()` + Preference-Key `"ExtendedStatsExpiry"` (UTC + RoundtripKind)
 
@@ -89,7 +89,7 @@ MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOve
 
 ### Kalender-Overlay
 - Status-Eintrag direkt im Kalender via Overlay (statt NavigationRequested)
-- CalendarDay: StatusIconKind (MaterialIconKind) fuer visuelle Darstellung
+- CalendarDay: StatusIconKind (MaterialIconKind) für visuelle Darstellung
 
 ### Vacation-Typen (9)
 Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCompensation, Training, CompensatoryTime
@@ -126,7 +126,7 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 
 ## Game Juice
 
-- **FloatingText**: "Feierabend!" bei CheckOut + optionale Ueberstunden-Anzeige ("+X.Xh")
+- **FloatingText**: "Feierabend!" bei CheckOut + optionale Überstunden-Anzeige ("+X.Xh")
 - **Celebration**: Confetti bei Feierabend (MainViewModel.ToggleTrackingAsync)
 
 ## UI-Conventions

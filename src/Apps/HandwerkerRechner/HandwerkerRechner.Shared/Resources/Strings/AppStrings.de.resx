@@ -2049,9 +2049,6 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="CableCurrent" xml:space="preserve">
     <value>Strom (A)</value>
   </data>
-  <data name="CableLength" xml:space="preserve">
-    <value>Kabellänge (m)</value>
-  </data>
   <data name="CableVoltage" xml:space="preserve">
     <value>Spannung</value>
   </data>
@@ -2078,9 +2075,6 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   </data>
   <data name="MinCrossSection" xml:space="preserve">
     <value>Mindest-Querschnitt</value>
-  </data>
-  <data name="VoltageDrop" xml:space="preserve">
-    <value>Spannungsabfall</value>
   </data>
   <data name="VdeCompliant" xml:space="preserve">
     <value>VDE-konform</value>

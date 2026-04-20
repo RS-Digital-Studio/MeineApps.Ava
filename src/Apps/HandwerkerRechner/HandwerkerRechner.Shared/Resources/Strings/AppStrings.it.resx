@@ -1805,7 +1805,6 @@ Su superfici ruvide la resa diminuisce!</value>
   <data name="CalcCableSizing" xml:space="preserve"><value>Sezione cavo</value></data>
   <data name="CalcCableSizingDesc" xml:space="preserve"><value>Calcolare sezione cavo</value></data>
   <data name="CableCurrent" xml:space="preserve"><value>Corrente (A)</value></data>
-  <data name="CableLength" xml:space="preserve"><value>Lunghezza cavo (m)</value></data>
   <data name="CableVoltage" xml:space="preserve"><value>Tensione</value></data>
   <data name="CableVoltage230" xml:space="preserve"><value>230 V (Monofase)</value></data>
   <data name="CableVoltage400" xml:space="preserve"><value>400 V (Trifase)</value></data>
@@ -1815,7 +1814,6 @@ Su superfici ruvide la resa diminuisce!</value>
   <data name="MaxVoltageDrop" xml:space="preserve"><value>Caduta di tensione max. (%)</value></data>
   <data name="RecommendedCrossSection" xml:space="preserve"><value>Sezione consigliata</value></data>
   <data name="MinCrossSection" xml:space="preserve"><value>Sezione minima</value></data>
-  <data name="VoltageDrop" xml:space="preserve"><value>Caduta di tensione</value></data>
   <data name="VdeCompliant" xml:space="preserve"><value>Conforme VDE</value></data>
   <data name="VdeNotCompliant" xml:space="preserve"><value>Non conforme VDE</value></data>
   <data name="CalcTypeCableSizing" xml:space="preserve"><value>Sezione cavo</value></data>
@@ -2152,5 +2150,17 @@ Su superfici ruvide la resa diminuisce!</value>
   </data>
   <data name="MaxPhotosReached" xml:space="preserve">
     <value>Massimo 5 foto per progetto</value>
+  </data>
+  <data name="AdInterstitialTitle" xml:space="preserve">
+    <value>Breve pausa pubblicitaria</value>
+  </data>
+  <data name="AdInterstitialDesc" xml:space="preserve">
+    <value>Guarda un breve video per continuare. O ottieni Premium per lavorare senza pubblicità.</value>
+  </data>
+  <data name="AdInterstitialButton" xml:space="preserve">
+    <value>Guarda video → Continua</value>
+  </data>
+  <data name="PremiumFeatures" xml:space="preserve">
+    <value>Senza pubblicità video • Senza banner • Cronologia illimitata • Esportazione diretta</value>
   </data>
 </root>

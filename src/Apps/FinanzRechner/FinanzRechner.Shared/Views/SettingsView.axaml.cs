@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using FinanzRechner.ViewModels;
 using MeineApps.Core.Ava.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FinanzRechner.Views;
 
@@ -26,7 +25,6 @@ public partial class SettingsView : UserControl
         _vm.Initialize();
 
         // Events subscriben
-        _vm.BackupCreated += OnBackupCreated;
         _vm.RestoreFileRequested += OnRestoreFileRequested;
         _vm.OpenUrlRequested += OnOpenUrlRequested;
         _vm.FeedbackRequested += OnFeedbackRequested;
@@ -36,27 +34,10 @@ public partial class SettingsView : UserControl
     {
         if (_vm == null) return;
 
-        _vm.BackupCreated -= OnBackupCreated;
         _vm.RestoreFileRequested -= OnRestoreFileRequested;
         _vm.OpenUrlRequested -= OnOpenUrlRequested;
         _vm.FeedbackRequested -= OnFeedbackRequested;
         _vm = null;
-    }
-
-    /// <summary>
-    /// Backup-Datei teilen/oeffnen via IFileShareService.
-    /// </summary>
-    private async void OnBackupCreated(string filePath)
-    {
-        try
-        {
-            var fileShareService = App.Services.GetRequiredService<IFileShareService>();
-            await fileShareService.ShareFileAsync(filePath, "FinanzRechner Backup", "application/json");
-        }
-        catch (Exception)
-        {
-            // Fehler wird ignoriert - Backup-Datei bleibt im Temp-Verzeichnis
-        }
     }
 
     /// <summary>

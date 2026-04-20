@@ -10,11 +10,14 @@ namespace ZeitManager.ViewModels;
 
 public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
+    private const string OnboardingCompletedKey = "onboarding_completed";
+
     private bool _disposed;
     private readonly ILocalizationService _localization;
     private readonly ITimerService _timerService;
     private readonly IAlarmSchedulerService _alarmScheduler;
     private readonly IHapticService _haptic;
+    private readonly IPreferencesService _preferences;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsTimerActive))]
@@ -73,6 +76,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     public MainViewModel(
         ILocalizationService localization,
+        IPreferencesService preferences,
         ITimerService timerService,
         IAlarmSchedulerService alarmScheduler,
         IHapticService haptic,
@@ -84,6 +88,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         SettingsViewModel settingsViewModel)
     {
         _localization = localization;
+        _preferences = preferences;
         _timerService = timerService;
         _alarmScheduler = alarmScheduler;
         _haptic = haptic;
@@ -189,6 +194,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(NavSettingsText));
         PomodoroViewModel.UpdateLocalizedTexts();
     }
+
+    #region Onboarding (View liest Texte + Completion-State, VM kapselt Preferences)
+
+    /// <summary>Prueft ob das Onboarding bereits abgeschlossen wurde.</summary>
+    public bool IsOnboardingCompleted => _preferences.Get(OnboardingCompletedKey, false);
+
+    /// <summary>Markiert das Onboarding als abgeschlossen (Persistenz via IPreferencesService).</summary>
+    public void MarkOnboardingCompleted() => _preferences.Set(OnboardingCompletedKey, true);
+
+    /// <summary>Lokalisierter Text fuer Onboarding-Schritt 1 (Quick-Timer oben).</summary>
+    public string OnboardingQuickTimerText => _localization.GetString("OnboardingQuickTimer");
+
+    /// <summary>Lokalisierter Text fuer Onboarding-Schritt 2 (Custom-Timer unten).</summary>
+    public string OnboardingCreateTimerText => _localization.GetString("OnboardingCreateTimer");
+
+    #endregion
 
     #region Back-Navigation (Double-Back-to-Exit)
 

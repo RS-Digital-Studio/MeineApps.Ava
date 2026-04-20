@@ -1807,7 +1807,6 @@ O rendimento diminui em superfícies rugosas!</value>
   <data name="CalcCableSizing" xml:space="preserve"><value>Secção de cabo</value></data>
   <data name="CalcCableSizingDesc" xml:space="preserve"><value>Calcular secção de cabo</value></data>
   <data name="CableCurrent" xml:space="preserve"><value>Corrente (A)</value></data>
-  <data name="CableLength" xml:space="preserve"><value>Comprimento do cabo (m)</value></data>
   <data name="CableVoltage" xml:space="preserve"><value>Tensão</value></data>
   <data name="CableVoltage230" xml:space="preserve"><value>230 V (Monofásico)</value></data>
   <data name="CableVoltage400" xml:space="preserve"><value>400 V (Trifásico)</value></data>
@@ -1817,7 +1816,6 @@ O rendimento diminui em superfícies rugosas!</value>
   <data name="MaxVoltageDrop" xml:space="preserve"><value>Queda de tensão máx. (%)</value></data>
   <data name="RecommendedCrossSection" xml:space="preserve"><value>Secção recomendada</value></data>
   <data name="MinCrossSection" xml:space="preserve"><value>Secção mínima</value></data>
-  <data name="VoltageDrop" xml:space="preserve"><value>Queda de tensão</value></data>
   <data name="VdeCompliant" xml:space="preserve"><value>Conforme VDE</value></data>
   <data name="VdeNotCompliant" xml:space="preserve"><value>Não conforme VDE</value></data>
   <data name="CalcTypeCableSizing" xml:space="preserve"><value>Secção de cabo</value></data>
@@ -2154,5 +2152,17 @@ O rendimento diminui em superfícies rugosas!</value>
   </data>
   <data name="MaxPhotosReached" xml:space="preserve">
     <value>Máximo de 5 fotos por projeto</value>
+  </data>
+  <data name="AdInterstitialTitle" xml:space="preserve">
+    <value>Breve pausa publicitária</value>
+  </data>
+  <data name="AdInterstitialDesc" xml:space="preserve">
+    <value>Assista a um vídeo curto para continuar. Ou obtenha Premium para trabalhar sem anúncios.</value>
+  </data>
+  <data name="AdInterstitialButton" xml:space="preserve">
+    <value>Ver vídeo → Continuar</value>
+  </data>
+  <data name="PremiumFeatures" xml:space="preserve">
+    <value>Sem anúncios em vídeo • Sem banner • Histórico ilimitado • Exportação direta</value>
   </data>
 </root>

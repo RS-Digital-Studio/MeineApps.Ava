@@ -12,7 +12,6 @@ public sealed class MaterialPriceService : IMaterialPriceService
     private readonly string _pricesFilePath;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly List<MaterialPrice> _prices;
-    private bool _customLoaded;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -24,25 +23,18 @@ public sealed class MaterialPriceService : IMaterialPriceService
         Directory.CreateDirectory(appDataPath);
         _pricesFilePath = Path.Combine(appDataPath, "material_prices.json");
         _prices = CreateDefaultPrices();
+
+        // Custom-Overrides einmal synchron im Ctor laden (~5-20ms). Verhindert blockierende
+        // _semaphore.Wait() in sync GetPrice/GetAllPrices auf dem UI-Thread beim ersten Aufruf.
+        LoadCustomPrices();
     }
 
-    public MaterialPrice? GetPrice(string key)
-    {
-        EnsureCustomLoaded();
-        return _prices.Find(p => p.Key == key);
-    }
+    public MaterialPrice? GetPrice(string key) => _prices.Find(p => p.Key == key);
 
-    public List<MaterialPrice> GetAllPrices()
-    {
-        EnsureCustomLoaded();
-        return [.. _prices];
-    }
+    public List<MaterialPrice> GetAllPrices() => [.. _prices];
 
     public List<MaterialPrice> GetPricesByCategory(string category)
-    {
-        EnsureCustomLoaded();
-        return _prices.Where(p => p.Category == category).ToList();
-    }
+        => _prices.Where(p => p.Category == category).ToList();
 
     public async Task SetCustomPriceAsync(string key, double price)
     {
@@ -67,22 +59,6 @@ public sealed class MaterialPriceService : IMaterialPriceService
         foreach (var p in _prices)
             p.CustomPrice = -1;
         await SaveCustomPricesAsync();
-    }
-
-    private void EnsureCustomLoaded()
-    {
-        if (_customLoaded) return;
-        _semaphore.Wait();
-        try
-        {
-            if (_customLoaded) return;
-            LoadCustomPrices();
-            _customLoaded = true;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
     }
 
     private void LoadCustomPrices()

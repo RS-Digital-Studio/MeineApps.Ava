@@ -53,7 +53,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
-            var splash = new SkiaLoadingSplash { AppName = "ZeitManager", AppVersion = "v2.0.6", Renderer = new ZeitManagerSplashRenderer() };
+            var splash = new SkiaLoadingSplash { AppName = "ZeitManager", AppVersion = "v2.0.7", Renderer = new ZeitManagerSplashRenderer() };
             var panel = new Panel();
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);
@@ -63,7 +63,7 @@ public partial class App : Application
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
             // Android: MainView + Splash in ein Panel wrappen
-            var splash = new SkiaLoadingSplash { AppName = "ZeitManager", AppVersion = "v2.0.6", Renderer = new ZeitManagerSplashRenderer() };
+            var splash = new SkiaLoadingSplash { AppName = "ZeitManager", AppVersion = "v2.0.7", Renderer = new ZeitManagerSplashRenderer() };
             var panel = new Panel();
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);

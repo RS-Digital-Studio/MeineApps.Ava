@@ -184,19 +184,23 @@ public static class LevelProgressRenderer
     }
 
     // =====================================================================
-    // XP-Text
+    // XP-Text (mit Cache, 30fps Render-Loop darf nicht pro Frame messen+allokieren)
     // =====================================================================
 
+    private static readonly SKPaint s_measurePaint = new() { TextSize = 10f };
+    // ThreadStatic + Single-Entry: Cache gilt nur fuer letzten Text je Thread → kein Leak.
+    [ThreadStatic] private static string? s_lastXpText;
+    [ThreadStatic] private static float s_lastXpWidth;
+
     /// <summary>
-    /// Misst die Breite des XP-Texts (für Layout-Berechnung).
+    /// Misst die Breite des XP-Texts (für Layout-Berechnung). Cached, da Text nur bei XP-Aenderung wechselt.
     /// </summary>
     private static float MeasureXpText(string xpText)
     {
-        using var paint = new SKPaint
-        {
-            TextSize = 10f
-        };
-        return paint.MeasureText(xpText);
+        if (xpText == s_lastXpText) return s_lastXpWidth;
+        s_lastXpText = xpText;
+        s_lastXpWidth = s_measurePaint.MeasureText(xpText);
+        return s_lastXpWidth;
     }
 
     /// <summary>

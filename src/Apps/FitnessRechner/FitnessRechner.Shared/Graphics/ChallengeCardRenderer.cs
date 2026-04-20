@@ -10,6 +10,12 @@ namespace FitnessRechner.Graphics;
 /// </summary>
 public static class ChallengeCardRenderer
 {
+    // Cache: Truncated-Titel (Titel-Wechsel ~1x/Tag, Render-Loop ~30fps).
+    // ThreadStatic + Single-Entry = thread-safe + kein Wachstum.
+    [ThreadStatic] private static string? s_lastTitleInput;
+    [ThreadStatic] private static string? s_lastTitleOutput;
+    [ThreadStatic] private static float s_lastTitleMaxWidth;
+
     // Konstanten
     private const float CornerRadius = 12f;
     private const float BracketArmLength = 10f;
@@ -261,14 +267,26 @@ public static class ChallengeCardRenderer
         };
 
         float titleY = labelY + 14f;
-        // Titel abschneiden wenn zu lang
-        string displayTitle = title;
+        // Titel abschneiden wenn zu lang — Truncate-Ergebnis cachen, damit die Truncate-Schleife
+        // nicht bei 30fps pro Frame laeuft (Challenge-Titel wechselt nur 1x/Tag).
         float maxTitleWidth = right - left;
-        if (titlePaint.MeasureText(displayTitle) > maxTitleWidth)
+        string displayTitle;
+        if (title == s_lastTitleInput && Math.Abs(maxTitleWidth - s_lastTitleMaxWidth) < 0.5f)
         {
-            while (displayTitle.Length > 3 && titlePaint.MeasureText(displayTitle + "...") > maxTitleWidth)
-                displayTitle = displayTitle[..^1];
-            displayTitle += "...";
+            displayTitle = s_lastTitleOutput;
+        }
+        else
+        {
+            displayTitle = title;
+            if (titlePaint.MeasureText(displayTitle) > maxTitleWidth)
+            {
+                while (displayTitle.Length > 3 && titlePaint.MeasureText(displayTitle + "...") > maxTitleWidth)
+                    displayTitle = displayTitle[..^1];
+                displayTitle += "...";
+            }
+            s_lastTitleInput = title;
+            s_lastTitleMaxWidth = maxTitleWidth;
+            s_lastTitleOutput = displayTitle;
         }
         canvas.DrawText(displayTitle, left, titleY, titlePaint);
 

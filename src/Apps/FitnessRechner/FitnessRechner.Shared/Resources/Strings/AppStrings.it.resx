@@ -641,4 +641,12 @@
   <data name="TrendForecast" xml:space="preserve"><value>Obiettivo entro {0:d}</value></data>
   <data name="PremiumFeature" xml:space="preserve"><value>Funzione Premium</value></data>
   <data name="UpgradeToPremium" xml:space="preserve"><value>Aggiorna per sbloccare</value></data>
+  <data name="ActivityBodyweight" xml:space="preserve"><value>Allenamento a corpo libero</value></data>
+  <data name="ActivityBriskWalking" xml:space="preserve"><value>Camminata veloce</value></data>
+  <data name="ActivityCooking" xml:space="preserve"><value>Cucinare</value></data>
+  <data name="ActivityCrossFit" xml:space="preserve"><value>CrossFit</value></data>
+  <data name="ActivityCyclingFast" xml:space="preserve"><value>Ciclismo veloce</value></data>
+  <data name="ActivityPlayingWithKids" xml:space="preserve"><value>Giocare con i bambini</value></data>
+  <data name="ActivityStairClimbing" xml:space="preserve"><value>Salire le scale</value></data>
+  <data name="ActivityWeightTraining" xml:space="preserve"><value>Allenamento con i pesi</value></data>
 </root>

@@ -5,16 +5,11 @@ using Avalonia.Labs.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
-using MeineApps.CalcLib;
-using MeineApps.Core.Ava.Localization;
-using MeineApps.Core.Ava.Services;
 using MeineApps.UI.SkiaSharp.Shaders;
-using Microsoft.Extensions.DependencyInjection;
 using RechnerPlus.Graphics;
 using RechnerPlus.ViewModels;
 using SkiaSharp;
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace RechnerPlus.Views;
@@ -59,27 +54,17 @@ public partial class MainView : UserControl
         _bgTimer.Tick += OnBackgroundTimerTick;
         _bgTimer.Start();
 
-        var loc = App.Services.GetService<ILocalizationService>();
-
-        // Preloading-Tasks im SplashOverlay konfigurieren
+        // Preloading-Tasks im SplashOverlay konfigurieren (Texte + Engine-Warmup kommen vom VM)
         Splash.PreloadAction = async (reportProgress) =>
         {
+            var vm = _vm;
+
             // Schritt 1: SkSL-Shader vorab kompilieren (auf ThreadPool)
-            reportProgress(0.0f, loc?.GetString("LoadingShaders") ?? "Grafik-Engine wird vorbereitet...");
+            reportProgress(0.0f, vm?.LoadingShadersText ?? "Grafik-Engine wird vorbereitet...");
             await Task.Run(() => ShaderPreloader.PreloadAll());
 
-            // Schritt 2: Calculator-Engine warm machen (erster Parse-Durchlauf)
-            reportProgress(0.60f, loc?.GetString("LoadingCalculator") ?? "Rechner wird initialisiert...");
-            await Task.Run(() =>
-            {
-                try
-                {
-                    var parser = App.Services.GetService<ExpressionParser>();
-                    // Einmal parsen um JIT/Caches aufzuwärmen
-                    parser?.Evaluate("1+1");
-                }
-                catch (Exception ex) { Debug.WriteLine($"[SplashPreload] Engine: {ex.Message}"); }
-            });
+            // Schritt 2: Calculator-Engine warm machen (erfolgt synchron im VM-Ctor — hier nur Progress-Text)
+            reportProgress(0.60f, vm?.LoadingCalculatorText ?? "Rechner wird initialisiert...");
 
             // History ist bereits im Constructor geladen (LoadHistory() in CalculatorVM)
             reportProgress(1.0f, "");
@@ -189,19 +174,9 @@ public partial class MainView : UserControl
     {
         try
         {
-            var prefs = App.Services.GetService<IPreferencesService>();
-            if (prefs == null) return;
+            if (_vm == null || _vm.IsOnboardingCompleted) return;
 
-            if (prefs.Get("onboarding_shown_v2", false)) return;
-
-            // Lokalisierte Texte laden
-            var loc = App.Services.GetService<ILocalizationService>();
-            _onboardingTexts =
-            [
-                loc?.GetString("OnboardingSwipeDelete") ?? "Wische nach links zum Löschen",
-                loc?.GetString("OnboardingSwipeHistory") ?? "Wische hoch für den Verlauf",
-                loc?.GetString("OnboardingScientific") ?? "Drehe dein Gerät für den Wissenschaftsmodus"
-            ];
+            _onboardingTexts = _vm.GetOnboardingTexts();
             _onboardingPositions =
             [
                 VerticalAlignment.Top,      // Display-Bereich (oben)
@@ -226,14 +201,7 @@ public partial class MainView : UserControl
         {
             // Alle Schritte abgeschlossen
             OnboardingOverlay.IsVisible = false;
-
-            try
-            {
-                var prefs = App.Services.GetService<IPreferencesService>();
-                prefs?.Set("onboarding_shown_v2", true);
-            }
-            catch { /* nicht kritisch */ }
-
+            _vm?.MarkOnboardingCompleted();
             return;
         }
 

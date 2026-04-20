@@ -3,9 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
-using MeineApps.Core.Ava.Localization;
-using MeineApps.Core.Ava.Services;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 using ZeitManager.Graphics;
 using ZeitManager.ViewModels;
@@ -123,28 +120,32 @@ public partial class MainView : UserControl
 
     /// <summary>
     /// Startet das Onboarding wenn es noch nicht abgeschlossen wurde.
+    /// Texte und Completion-State kommen aus dem ViewModel.
     /// </summary>
     private async void TryStartOnboarding()
     {
         try
         {
-            var prefs = App.Services.GetRequiredService<IPreferencesService>();
-            if (prefs.Get("onboarding_completed", false))
+            if (_vm == null || _vm.IsOnboardingCompleted)
                 return;
 
-            // Kurz warten bis UI aufgebaut ist
+            // VM-Snapshot vor Delay: Schuetzt gegen VM-Wechsel waehrend des 800ms-Warten.
+            // Ohne Snapshot koennte der alte VM-Text im neuen VM-Kontext erscheinen oder
+            // zwei parallele TryStartOnboarding-Coroutines Events doppelt subscriben.
+            var vmSnapshot = _vm;
             await Task.Delay(800);
-
-            var localization = App.Services.GetRequiredService<ILocalizationService>();
+            if (_vm == null || !ReferenceEquals(_vm, vmSnapshot)) return;
 
             _onboardingStep = 0;
+            // Idempotent subscriben: erst unsubscribe (falls doppelt gerufen), dann neu verdrahten
+            OnboardingTooltip.Dismissed -= OnTooltipDismissed;
             OnboardingTooltip.Dismissed += OnTooltipDismissed;
 
             // Schritt 1: Quick-Timer Tipp (oben)
             OnboardingTooltip.Arrow = MeineApps.UI.Controls.ArrowPosition.Top;
             OnboardingTooltip.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top;
             OnboardingTooltip.Margin = new Avalonia.Thickness(32, 80, 32, 0);
-            OnboardingTooltip.Text = localization.GetString("OnboardingQuickTimer");
+            OnboardingTooltip.Text = _vm.OnboardingQuickTimerText;
             OnboardingOverlay.IsVisible = true;
             OnboardingTooltip.Show();
         }
@@ -156,16 +157,19 @@ public partial class MainView : UserControl
 
     private void OnTooltipDismissed(object? sender, EventArgs e)
     {
+        // Defensive Idempotenz: wenn Handler bereits abgearbeitet wurde (step >= 2)
+        // ignorieren. Schuetzt gegen doppeltes Dismissed-Event nach einer Event-Subscribe-Race.
+        if (_onboardingStep >= 2) return;
+
         _onboardingStep++;
 
-        if (_onboardingStep == 1)
+        if (_onboardingStep == 1 && _vm != null)
         {
             // Schritt 2: Custom-Timer Tipp (unten)
-            var localization = App.Services.GetRequiredService<ILocalizationService>();
             OnboardingTooltip.Arrow = MeineApps.UI.Controls.ArrowPosition.Bottom;
             OnboardingTooltip.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom;
             OnboardingTooltip.Margin = new Avalonia.Thickness(32, 0, 32, 100);
-            OnboardingTooltip.Text = localization.GetString("OnboardingCreateTimer");
+            OnboardingTooltip.Text = _vm.OnboardingCreateTimerText;
 
             // Kurz warten, dann zeigen
             DispatcherTimer.RunOnce(() => OnboardingTooltip.Show(), TimeSpan.FromMilliseconds(300));
@@ -175,9 +179,7 @@ public partial class MainView : UserControl
             // Onboarding abgeschlossen
             OnboardingOverlay.IsVisible = false;
             OnboardingTooltip.Dismissed -= OnTooltipDismissed;
-
-            var prefs = App.Services.GetRequiredService<IPreferencesService>();
-            prefs.Set("onboarding_completed", true);
+            _vm?.MarkOnboardingCompleted();
         }
     }
 }

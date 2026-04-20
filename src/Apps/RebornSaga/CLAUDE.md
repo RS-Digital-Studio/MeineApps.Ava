@@ -374,7 +374,7 @@ Intro → PlayerTurn → (Attack | Dodge | SkillSelect | ItemSelect | PlayerSkil
 - **StatusScene**: `CachedSkillEntry` struct für Skill-Display, Dirty-Flags für Neuberechnung
 - **ShopScene**: Gecachte Preis-Strings, nur bei Selektion aktualisiert
 - **InventoryScene**: Gecachte Item-Strings pro Slot
-- **Alle Renderer**: Statische SKPaint/SKFont/SKMaskFilter + SKPath-Felder mit Rewind(), keine per-Frame Allokationen. Cleanup() ist absichtlich leer (statische Ressourcen leben fuer App-Lifetime, Dispose crasht bei Wiederverwendung)
+- **Alle Renderer**: Statische SKPaint/SKFont/SKMaskFilter + SKPath-Felder mit Rewind(), keine per-Frame Allokationen. Cleanup() ist absichtlich leer (statische Ressourcen leben für App-Lifetime, Dispose crasht bei Wiederverwendung)
 - **BattleScene**: Gecachter Sprite-Key (`_cachedEnemySpriteKey`), nur bei Setup/Boss-Phasenwechsel aktualisiert. BackgroundCompositor.SetScene() in OnEnter() statt pro Frame
 - **SaveSlotScene**: Gecachte Slot-Labels, Level-Texte und PlayTime-Strings. BackgroundCompositor.SetScene() in OnEnter(). _isLoading Guard gegen Race Condition bei async Slot-Laden
 - **TutorialOverlay**: Gecachter ARIA-Titel-String

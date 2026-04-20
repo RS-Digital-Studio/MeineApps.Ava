@@ -10,6 +10,13 @@ namespace FitnessRechner.Graphics;
 /// </summary>
 public static class StreakCardRenderer
 {
+    // Cache: Best-Streak-Text+Width aendert sich nur bei Meilensteinen (nicht pro Frame bei 30fps).
+    // ThreadStatic: Avalonia-Paint laeuft auf UI-Thread, aber defensiv gegen Dialog-Overlay-Renders.
+    // Single-Entry (kein Dict) → kein unbegrenztes Wachstum.
+    [ThreadStatic] private static string? s_lastBestText;
+    [ThreadStatic] private static float s_lastBestWidth;
+
+
     // Konstanten
     private const float CornerRadius = 12f;
     private const float IconCircleSize = 44f;
@@ -238,7 +245,13 @@ public static class StreakCardRenderer
             TextAlign = SKTextAlign.Right
         };
 
-        float textWidth = textPaint.MeasureText(text);
+        // Cache: Best-Streak-Text aendert sich nur bei Meilensteinen, nicht pro Frame
+        if (text != s_lastBestText)
+        {
+            s_lastBestText = text;
+            s_lastBestWidth = textPaint.MeasureText(text);
+        }
+        float textWidth = s_lastBestWidth;
         float paddingH = 8f;
         float paddingV = 4f;
         float badgeWidth = textWidth + paddingH * 2f;

@@ -72,7 +72,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "RechnerPlus",
-            AppVersion = "v2.0.6",
+            AppVersion = "v2.0.7",
             Renderer = new RechnerPlusSplashRenderer()
         };
     }

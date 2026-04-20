@@ -19,6 +19,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly ISavingsGoalService _savingsGoalService;
     private readonly IDebtService _debtService;
     private readonly ICustomCategoryService _customCategoryService;
+    private readonly IFileShareService _fileShareService;
 
     public event Action<string, string>? MessageRequested;
 
@@ -32,7 +33,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         IAccountService accountService,
         ISavingsGoalService savingsGoalService,
         IDebtService debtService,
-        ICustomCategoryService customCategoryService)
+        ICustomCategoryService customCategoryService,
+        IFileShareService fileShareService)
     {
         _localizationService = localizationService;
         _purchaseService = purchaseService;
@@ -42,6 +44,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _savingsGoalService = savingsGoalService;
         _debtService = debtService;
         _customCategoryService = customCategoryService;
+        _fileShareService = fileShareService;
 
         _selectedLanguage = _localizationService.CurrentLanguage;
         _isPremium = _purchaseService.IsPremium;
@@ -260,7 +263,15 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
             await File.WriteAllTextAsync(filePath, json);
 
-            BackupCreated?.Invoke(filePath);
+            // Backup-Datei direkt teilen (Service per DI)
+            try
+            {
+                await _fileShareService.ShareFileAsync(filePath, "FinanzRechner Backup", "application/json");
+            }
+            catch
+            {
+                // Teilen fehlgeschlagen - Datei bleibt im Temp-Verzeichnis
+            }
         }
         catch (Exception ex)
         {
@@ -273,11 +284,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
             IsBackupInProgress = false;
         }
     }
-
-    /// <summary>
-    /// Event raised when a backup file was created (path to file)
-    /// </summary>
-    public event Action<string>? BackupCreated;
 
     [RelayCommand]
     private async Task RestoreBackupAsync()

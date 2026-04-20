@@ -146,30 +146,120 @@ public sealed class LeagueService : ILeagueService
     // SPIELERNAME
     // ═══════════════════════════════════════════════════════════════════════
 
-    // Einfacher Profanity-Filter für Spielernamen (Play Store Policy: UGC moderieren)
-    private static readonly HashSet<string> _blockedWords = new(StringComparer.OrdinalIgnoreCase)
+    // Einfacher Profanity-Filter für Spielernamen (Play Store Policy: UGC moderieren).
+    // Liste ist bewusst in "normalisierter" Form (lowercase, ohne Sonderzeichen) — der Input wird
+    // beim Check analog normalisiert, damit Bypass-Versuche wie "F.u.c.k", "FÜCK", "fVck" erkannt werden.
+    // WICHTIG: Keine Tokens < 4 Zeichen (z.B. "ass") — verursachen False-Positives bei legitimen
+    // Namen wie "Cassandra", "Passion", "Bass". Stattdessen laengere spezifische Formen verwenden.
+    private static readonly HashSet<string> _blockedWords = new(StringComparer.Ordinal)
     {
-        "fuck", "shit", "ass", "dick", "bitch", "nigger", "nigga", "cunt", "whore",
-        "arsch", "ficken", "scheiße", "hurensohn", "wichser", "fotze", "nazi",
-        "puta", "mierda", "perra", "coño", "merde", "putain", "connard",
-        "cazzo", "merda", "stronzo", "porra", "caralho", "foda"
+        // Englisch
+        "fuck", "shit", "dick", "bitch", "nigger", "nigga", "cunt", "whore", "asshole", "jackass",
+        "faggot", "retard", "pussy", "bastard", "motherfucker", "slut",
+        // Deutsch
+        "arsch", "ficken", "scheisse", "hurensohn", "wichser", "fotze", "wixer", "nutte",
+        // Spanisch
+        "puta", "mierda", "perra", "pendejo",
+        // Franzoesisch
+        "merde", "putain", "connard", "salope",
+        // Italienisch
+        "cazzo", "stronzo", "troia",
+        // Portugiesisch
+        "porra", "caralho", "puteiro",
+        // Leetspeak / Nach-Normalize-Varianten
+        "fvck", "fukk", "sh1t", "b1tch", "d1ck", "n1gger", "n1gga", "fuk",
+        // Hass / Verbotene Ideologie
+        "nazi", "heil", "hitler", "jihad", "islamist"
     };
+
+    /// <summary>
+    /// Normalisiert Nutzereingabe fuer Profanity-Check:
+    /// - Unicode-Normalisierung NFKD (trennt Diakritika ab)
+    /// - Entfernt alle kombinierenden Marks (Akzente)
+    /// - Entfernt Zero-Width / RTL-Override / andere Steuerzeichen
+    /// - Konvertiert auf ASCII-lowercase (Homoglyphen werden primitiv entfernt)
+    /// - Entfernt alle Non-Alphanumerischen Zeichen (Punkte, Leerzeichen, Emojis)
+    /// Damit werden Bypass-Versuche wie "F.u.c.k", "FÜCK", "f u c k", "f\u200Bu\u200Bck" erkannt.
+    /// </summary>
+    /// <summary>
+    /// Entfernt unsichtbare Zeichen (Zero-Width-Space, Zero-Width-Joiner, RTL-Override,
+    /// Byte-Order-Mark, Format/Control) aus dem Spielernamen. Verhindert Leaderboard-Spoofing
+    /// durch scheinbar leere oder identisch aussehende Namen.
+    /// </summary>
+    private static string StripInvisibleChars(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return input;
+        var sb = new System.Text.StringBuilder(input.Length);
+        foreach (var ch in input)
+        {
+            var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+            // Format (Zero-Width, RTL-Override etc.) und Control komplett verwerfen.
+            // NonSpacingMark/SpacingCombiningMark (Akzente) bleiben erhalten — legitime Namen wie "Müller".
+            if (cat == System.Globalization.UnicodeCategory.Format ||
+                cat == System.Globalization.UnicodeCategory.Control)
+                continue;
+            sb.Append(ch);
+        }
+        return sb.ToString();
+    }
+
+    private static string NormalizeForProfanityCheck(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return "";
+        var normalized = input.Normalize(System.Text.NormalizationForm.FormKD);
+        var sb = new System.Text.StringBuilder(normalized.Length);
+        foreach (var ch in normalized)
+        {
+            var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+            // Combining Marks (Akzente), Formatting (Zero-Width, RTL-Override) wegwerfen
+            if (cat == System.Globalization.UnicodeCategory.NonSpacingMark ||
+                cat == System.Globalization.UnicodeCategory.SpacingCombiningMark ||
+                cat == System.Globalization.UnicodeCategory.Format ||
+                cat == System.Globalization.UnicodeCategory.Control)
+                continue;
+            // Nur Buchstaben und Ziffern durchlassen, in lowercase
+            if (char.IsLetterOrDigit(ch))
+                sb.Append(char.ToLowerInvariant(ch));
+        }
+        return sb.ToString();
+    }
 
     public void SetPlayerName(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) return;
+        // Zero-Width / RTL-Override / Format-Control wegstrippen BEVOR der Längen-Check greift.
+        // Sonst reicht ein einziges \u200B, um als "gültiger Name" durchzugehen, obwohl
+        // im Leaderboard ein sichtbar leerer / spoofbarer Eintrag entstünde.
+        name = StripInvisibleChars(name);
         // Auf 16 Zeichen begrenzen, Whitespace trimmen
         name = name.Trim();
         if (name.Length > 16) name = name[..16];
+        // Nach Strip + Trim erneut prüfen ob überhaupt noch Inhalt da ist
+        if (string.IsNullOrWhiteSpace(name)) return;
 
-        // Profanity-Check: Blockierte Wörter im Namen filtern
-        foreach (var word in _blockedWords)
+        // Profanity-Check: Input normalisieren, dann gegen Blocklist pruefen.
+        // Bei Treffer: Ersatz-Name aus UID-Suffix (nicht "****") → Spieler im Leaderboard unterscheidbar
+        // und UI zeigt dem User explizit was passiert ist (via SuggestedName-Callback in ViewModel).
+        var normalized = NormalizeForProfanityCheck(name);
+        bool blocked = false;
+        if (normalized.Length > 0)
         {
-            if (name.Contains(word, StringComparison.OrdinalIgnoreCase))
+            foreach (var word in _blockedWords)
             {
-                name = new string('*', name.Length);
-                break;
+                if (normalized.Contains(word, StringComparison.Ordinal))
+                {
+                    blocked = true;
+                    break;
+                }
             }
+        }
+
+        if (blocked)
+        {
+            // Ersatz-Name basierend auf UID-Suffix (nicht "****"). Behaelt Eindeutigkeit im Leaderboard.
+            var uid = _firebase.Uid ?? "";
+            var suffix = uid.Length >= 4 ? uid[^4..] : Random.Shared.Next(1000, 9999).ToString();
+            name = $"Player_{suffix}";
         }
 
         _preferences.Set(PlayerNameKey, name);
@@ -328,7 +418,10 @@ public sealed class LeagueService : ILeagueService
             {
                 Name = PlayerName,
                 Points = _data.Points,
-                UpdatedUtc = DateTime.UtcNow.ToString("O")
+                UpdatedUtc = DateTime.UtcNow.ToString("O"),
+                // Server-Timestamp-Sentinel: Firebase löst das beim Write zur Server-Zeit in ms auf.
+                // Wird von Security-Rules für Rate-Limit verwendet (min. 60s zwischen Writes pro UID).
+                UpdatedMs = FirebaseServerTimestamp
             };
 
             var path = $"{GetSeasonTierPath()}/{uid}";
@@ -339,6 +432,12 @@ public sealed class LeagueService : ILeagueService
             // Netzwerkfehler → nächster Push-Versuch beim nächsten AddPoints
         }
     }
+
+    /// <summary>
+    /// Firebase ServerValue.TIMESTAMP-Sentinel. Wird beim Serialize als <c>{".sv":"timestamp"}</c>
+    /// transportiert und serverseitig in die aktuelle Server-Zeit (Millisekunden seit Epoch) aufgelöst.
+    /// </summary>
+    private static readonly Dictionary<string, string> FirebaseServerTimestamp = new() { [".sv"] = "timestamp" };
 
     /// <summary>Debounced Firebase-Push: Wartet 3s nach letztem AddPoints, dann pusht.</summary>
     private void ScheduleFirebasePush()

@@ -22,7 +22,12 @@ public sealed partial class ProfileViewModel : ViewModelBase, INavigable, IGameJ
 
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
+
+    // IGameJuiceEmitter-Pflichtevent. Profile-Screen triggert aktuell keine Celebration
+    // (Skin-Unlock-Celebration kommt beim Shop/GemShop/BattlePass) — CS0067 bewusst unterdrueckt.
+#pragma warning disable CS0067
     public event Action? CelebrationRequested;
+#pragma warning restore CS0067
 
     // === OBSERVABLE PROPERTIES ===
 

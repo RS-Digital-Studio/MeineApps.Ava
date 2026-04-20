@@ -74,6 +74,10 @@ public partial class App : Application
 
         // Statischer Logger für ShaderEffects (nicht DI-verwaltet)
         ShaderEffects.Logger = Services.GetRequiredService<IAppLogger>();
+        // PersistenceHealth: Logger setzen fuer Corrupt-Preferences-Meldungen (CoinService, GemService, ProgressService, DailyRewardService)
+        PersistenceHealth.Logger = Services.GetRequiredService<IAppLogger>();
+        // RewardedAdCooldownTracker: Preferences-Hook fuer persistierten Cooldown (Schutz gegen App-Restart-Bypass)
+        RewardedAdCooldownTracker.Preferences = Services.GetRequiredService<IPreferencesService>();
 
         // Statischer Accessor für AI-Asset-Renderer (statische Klassen ohne DI)
         GameAssetService.Current = Services.GetRequiredService<IGameAssetService>();
@@ -120,7 +124,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "BomberBlast",
-            AppVersion = "v2.0.28",
+            AppVersion = "v2.0.32",
             Renderer = new BomberBlastSplashRenderer()
         };
     }
@@ -160,7 +164,8 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[BomberBlast] Loading-Pipeline fehlgeschlagen: {ex}");
+            // Logger statt Debug.WriteLine - wird auch im Release-Build sichtbar (LogCat auf Android).
+            Services?.GetService<IAppLogger>()?.LogError("Loading-Pipeline fehlgeschlagen", ex);
             Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
         }
     }
@@ -182,6 +187,8 @@ public partial class App : Application
             (Services.GetService<GameViewModel>() as IDisposable)?.Dispose();
             (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
             (Services.GetService<IGameAssetService>() as IDisposable)?.Dispose();
+            // InputManager haelt NeonJoystick (20 SKPaint + 5 SKPath) - muss auch disposed werden
+            (Services.GetService<Input.InputManager>() as IDisposable)?.Dispose();
         }
         catch
         {
@@ -233,6 +240,7 @@ public partial class App : Application
         services.AddSingleton<ICoinService, CoinService>();
         services.AddSingleton<IGemService, GemService>();
         services.AddSingleton<IShopService, ShopService>();
+        services.AddSingleton<BomberBlast.Core.LevelGeneration.ILevelGenerator, BomberBlast.Core.LevelGeneration.LevelGenerator>();
         services.AddSingleton<ITutorialService, TutorialService>();
         services.AddSingleton<IDailyRewardService, DailyRewardService>();
         services.AddSingleton<IDailyChallengeService, DailyChallengeService>();

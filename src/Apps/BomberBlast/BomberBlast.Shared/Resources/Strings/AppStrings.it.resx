@@ -594,6 +594,39 @@
   <data name="CoinsDoubled" xml:space="preserve">
     <value>Raddoppiato!</value>
   </data>
+  <data name="AdLoadFailed" xml:space="preserve">
+    <value>Annuncio non disponibile</value>
+  </data>
+  <data name="FloatShield" xml:space="preserve">
+    <value>SCUDO!</value>
+  </data>
+  <data name="FloatPhantom" xml:space="preserve">
+    <value>FANTASMA!</value>
+  </data>
+  <data name="FloatRegen" xml:space="preserve">
+    <value>REGEN!</value>
+  </data>
+  <data name="FloatFall" xml:space="preserve">
+    <value>CADUTA!</value>
+  </data>
+  <data name="FloatBossBlockRain" xml:space="preserve">
+    <value>PIOGGIA DI BLOCCHI!</value>
+  </data>
+  <data name="FloatBossIceBreath" xml:space="preserve">
+    <value>ALITO GELIDO!</value>
+  </data>
+  <data name="FloatBossLavaWave" xml:space="preserve">
+    <value>ONDATA DI LAVA!</value>
+  </data>
+  <data name="FloatBossTeleport" xml:space="preserve">
+    <value>TELETRASPORTO!</value>
+  </data>
+  <data name="FloatMimic" xml:space="preserve">
+    <value>MIMIC!</value>
+  </data>
+  <data name="FloatLava" xml:space="preserve">
+    <value>LAVA!</value>
+  </data>
   <data name="ContinueGame" xml:space="preserve">
     <value>Continua</value>
   </data>
@@ -2992,9 +3025,6 @@
   </data>
 
   <!-- GameEngine Announcement Strings -->
-  <data name="AnnounceBossFight" xml:space="preserve">
-    <value>BOSS FIGHT!</value>
-  </data>
   <data name="AnnounceWorldFormat" xml:space="preserve">
     <value>MONDO {0}</value>
   </data>

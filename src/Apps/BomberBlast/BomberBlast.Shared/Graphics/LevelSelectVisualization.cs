@@ -19,6 +19,14 @@ public static class LevelSelectVisualization
     private static readonly SKFont _levelFont = new() { Size = 16f };
     private static readonly SKFont _smallFont = new() { Size = 9f };
 
+    // Gecachter Stern-Glow-MaskFilter (3f Blur) - vermeidet CreateBlur/Dispose pro Frame
+    private static readonly SKMaskFilter _starGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+
+    // Gepoolte Paths (via Rewind() wiederverwendet, keine Allokation pro Draw).
+    // Wichtig bei 100 Levels x 3-4 Paths/Cell bei LevelSelect-Scroll.
+    private static readonly SKPath _sharedPath = new();
+    private static readonly SKPath _starPath = new();
+
     // Welt-Farben (10 Welten)
     private static readonly SKColor[] WorldColors =
     {
@@ -101,9 +109,9 @@ public static class LevelSelectVisualization
         if (worldBitmap != null)
         {
             canvas.Save();
-            using var clipPath2 = new SKPath();
-            clipPath2.AddRoundRect(bounds, cornerR, cornerR);
-            canvas.ClipPath(clipPath2);
+            _sharedPath.Rewind();
+            _sharedPath.AddRoundRect(bounds, cornerR, cornerR);
+            canvas.ClipPath(_sharedPath);
             _cellPaint.Color = SKColors.White.WithAlpha(level.IsCompleted ? (byte)180 : (byte)100);
             canvas.DrawBitmap(worldBitmap, bounds, _cellPaint);
             _cellPaint.Color = SKColors.White;
@@ -114,9 +122,9 @@ public static class LevelSelectVisualization
             // Fallback: Subtiler Gradient-Overlay (oben heller)
             _cellPaint.Color = SKColors.White.WithAlpha(25);
             canvas.Save();
-            using var clipPath = new SKPath();
-            clipPath.AddRoundRect(bounds, cornerR, cornerR);
-            canvas.ClipPath(clipPath);
+            _sharedPath.Rewind();
+            _sharedPath.AddRoundRect(bounds, cornerR, cornerR);
+            canvas.ClipPath(_sharedPath);
             canvas.DrawRect(bounds.Left, bounds.Top, bounds.Width, bounds.Height * 0.4f, _cellPaint);
             canvas.Restore();
 
@@ -157,12 +165,12 @@ public static class LevelSelectVisualization
                 {
                     float tx = bounds.Left + bounds.Width * (0.25f + i * 0.5f);
                     float ty = bounds.Bottom - 6f;
-                    using var tree = new SKPath();
-                    tree.MoveTo(tx, ty - 12f);
-                    tree.LineTo(tx - 5f, ty);
-                    tree.LineTo(tx + 5f, ty);
-                    tree.Close();
-                    canvas.DrawPath(tree, _cellPaint);
+                    _sharedPath.Rewind();
+                    _sharedPath.MoveTo(tx, ty - 12f);
+                    _sharedPath.LineTo(tx - 5f, ty);
+                    _sharedPath.LineTo(tx + 5f, ty);
+                    _sharedPath.Close();
+                    canvas.DrawPath(_sharedPath, _cellPaint);
                 }
                 break;
 
@@ -184,13 +192,13 @@ public static class LevelSelectVisualization
                 {
                     float kx = bounds.Left + bounds.Width * (0.2f + i * 0.3f);
                     float ky = bounds.Top + bounds.Height * 0.3f + i * 4f;
-                    using var crystal = new SKPath();
-                    crystal.MoveTo(kx, ky - 4f);
-                    crystal.LineTo(kx + 3f, ky);
-                    crystal.LineTo(kx, ky + 4f);
-                    crystal.LineTo(kx - 3f, ky);
-                    crystal.Close();
-                    canvas.DrawPath(crystal, _cellPaint);
+                    _sharedPath.Rewind();
+                    _sharedPath.MoveTo(kx, ky - 4f);
+                    _sharedPath.LineTo(kx + 3f, ky);
+                    _sharedPath.LineTo(kx, ky + 4f);
+                    _sharedPath.LineTo(kx - 3f, ky);
+                    _sharedPath.Close();
+                    canvas.DrawPath(_sharedPath, _cellPaint);
                 }
                 break;
 
@@ -207,12 +215,12 @@ public static class LevelSelectVisualization
                     float fx = bounds.Left + bounds.Width * (0.2f + i * 0.3f);
                     float fy = bounds.Bottom - 4f;
                     float fh = 6f + MathF.Sin(animTime * 3f + i) * 2f;
-                    using var flame = new SKPath();
-                    flame.MoveTo(fx, fy - fh);
-                    flame.LineTo(fx - 3f, fy);
-                    flame.LineTo(fx + 3f, fy);
-                    flame.Close();
-                    canvas.DrawPath(flame, _cellPaint);
+                    _sharedPath.Rewind();
+                    _sharedPath.MoveTo(fx, fy - fh);
+                    _sharedPath.LineTo(fx - 3f, fy);
+                    _sharedPath.LineTo(fx + 3f, fy);
+                    _sharedPath.Close();
+                    canvas.DrawPath(_sharedPath, _cellPaint);
                 }
                 break;
 
@@ -230,27 +238,25 @@ public static class LevelSelectVisualization
                 for (int w = 0; w < 2; w++)
                 {
                     float wy = cy + (w - 0.5f) * 8f;
-                    using var wave = new SKPath();
-                    wave.MoveTo(bounds.Left + 3f, wy);
+                    _sharedPath.Rewind();
+                    _sharedPath.MoveTo(bounds.Left + 3f, wy);
                     for (float wx = bounds.Left + 3f; wx < bounds.Right - 3f; wx += 6f)
                     {
-                        wave.QuadTo(wx + 3f, wy - 3f, wx + 6f, wy);
+                        _sharedPath.QuadTo(wx + 3f, wy - 3f, wx + 6f, wy);
                     }
-                    canvas.DrawPath(wave, _starStroke);
+                    canvas.DrawPath(_sharedPath, _starStroke);
                 }
                 _starStroke.StrokeWidth = 1f;
                 break;
 
             case 7: // Volcano: Dreieck-Berg + Glow oben
                 _cellPaint.Color = new SKColor(0x8B, 0x2E, 0x0F, 35);
-                using (var mountain = new SKPath())
-                {
-                    mountain.MoveTo(cx, bounds.Top + 8f);
-                    mountain.LineTo(cx - 12f, bounds.Bottom - 6f);
-                    mountain.LineTo(cx + 12f, bounds.Bottom - 6f);
-                    mountain.Close();
-                    canvas.DrawPath(mountain, _cellPaint);
-                }
+                _sharedPath.Rewind();
+                _sharedPath.MoveTo(cx, bounds.Top + 8f);
+                _sharedPath.LineTo(cx - 12f, bounds.Bottom - 6f);
+                _sharedPath.LineTo(cx + 12f, bounds.Bottom - 6f);
+                _sharedPath.Close();
+                canvas.DrawPath(_sharedPath, _cellPaint);
                 _cellPaint.Color = new SKColor(0xFF, 0x6F, 0x00, 25);
                 canvas.DrawCircle(cx, bounds.Top + 10f, 4f, _cellPaint);
                 break;
@@ -304,13 +310,10 @@ public static class LevelSelectVisualization
                 _starPaint.Color = new SKColor(r, g, b);
                 DrawStarShape(canvas, sx, cy, starSize, _starPaint);
 
-                // Glow
+                // Glow (gecachter MaskFilter, keine Allokation pro Frame)
                 _glowPaint.Color = _starGold.WithAlpha(40);
-                _glowPaint.MaskFilter?.Dispose();
-
-                _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+                _glowPaint.MaskFilter = _starGlowFilter;
                 DrawStarShape(canvas, sx, cy, starSize * 1.1f, _glowPaint);
-                _glowPaint.MaskFilter?.Dispose();
                 _glowPaint.MaskFilter = null;
             }
             else
@@ -324,30 +327,31 @@ public static class LevelSelectVisualization
     }
 
     /// <summary>
-    /// Zeichnet einen 5-zackigen Stern (gefüllt).
+    /// Zeichnet einen 5-zackigen Stern (gefüllt). Verwendet gepoolten _starPath.
     /// </summary>
     private static void DrawStarShape(SKCanvas canvas, float cx, float cy, float r, SKPaint paint)
     {
-        using var path = CreateStarPath(cx, cy, r);
-        canvas.DrawPath(path, paint);
+        BuildStarPath(cx, cy, r);
+        canvas.DrawPath(_starPath, paint);
     }
 
     /// <summary>
-    /// Zeichnet einen 5-zackigen Stern (Outline).
+    /// Zeichnet einen 5-zackigen Stern (Outline). Verwendet gepoolten _starPath.
     /// </summary>
     private static void DrawStarShapeStroke(SKCanvas canvas, float cx, float cy, float r, SKPaint paint)
     {
-        using var path = CreateStarPath(cx, cy, r);
-        canvas.DrawPath(path, paint);
+        BuildStarPath(cx, cy, r);
+        canvas.DrawPath(_starPath, paint);
     }
 
     /// <summary>
-    /// Erstellt den Pfad für einen 5-zackigen Stern.
+    /// Baut den Pfad für einen 5-zackigen Stern in den gepoolten _starPath
+    /// (via Rewind() wiederverwendet, keine Allokation).
     /// </summary>
-    private static SKPath CreateStarPath(float cx, float cy, float outerR)
+    private static void BuildStarPath(float cx, float cy, float outerR)
     {
         float innerR = outerR * 0.4f;
-        var path = new SKPath();
+        _starPath.Rewind();
 
         for (int i = 0; i < 10; i++)
         {
@@ -356,12 +360,11 @@ public static class LevelSelectVisualization
             float px = cx + radius * MathF.Cos(angle);
             float py = cy + radius * MathF.Sin(angle);
 
-            if (i == 0) path.MoveTo(px, py);
-            else path.LineTo(px, py);
+            if (i == 0) _starPath.MoveTo(px, py);
+            else _starPath.LineTo(px, py);
         }
 
-        path.Close();
-        return path;
+        _starPath.Close();
     }
 
     /// <summary>
@@ -384,9 +387,9 @@ public static class LevelSelectVisualization
         float arcW = bodyW * 0.65f;
         float arcH = size * 0.4f;
         var arcRect = new SKRect(cx - arcW / 2f, bodyY - arcH, cx + arcW / 2f, bodyY);
-        using var arcPath = new SKPath();
-        arcPath.AddArc(arcRect, 180f, 180f);
-        canvas.DrawPath(arcPath, _starStroke);
+        _sharedPath.Rewind();
+        _sharedPath.AddArc(arcRect, 180f, 180f);
+        canvas.DrawPath(_sharedPath, _starStroke);
         _starStroke.StrokeWidth = 1f;
 
         // Schlüsselloch (kleiner Kreis + Dreieck)

@@ -16,7 +16,10 @@ public sealed class DungeonService : IDungeonService
     private const string RUN_STATE_KEY = "DungeonRunData";
     private const string STATS_KEY = "DungeonStatsData";
     private const int PAID_RUN_COIN_COST = 500;
-    private const int PAID_RUN_GEM_COST = 5;
+    // BAL-32 (18.04.2026): von 5 auf 3 Gems gesenkt.
+    // Early-Funnel: Spieler erreichen Dungeon ab Level 20, haben dann typisch 10-20 Gems angespart.
+    // 5G sperrte ~40% der Spieler aus, 3G erlaubt ersten Paid-Run direkt nach Unlock.
+    private const int PAID_RUN_GEM_COST = 3;
 
     private readonly IPreferencesService _preferences;
     private readonly ICoinService _coinService;
@@ -379,6 +382,19 @@ public sealed class DungeonService : IDungeonService
             ascensionLevelUp = true;
             if (_stats.AscensionLevel > _stats.HighestAscension)
                 _stats.HighestAscension = _stats.AscensionLevel;
+        }
+
+        // Fix 18.04.2026 Game-Audit: Floor-10-Repeat-Gems. Vorher gab es nur beim ersten
+        // Floor-10-Clear Gems (via Run-Meilenstein), Repeat-Clears belohnten nur Coins/DungeonCoins.
+        // Free-Player waren nach ~315G Lifetime gesperrt. Jetzt: 5G fuer jeden Floor-10-Clear
+        // (darf auch repeaten), plus +2G pro Ascension-Level-Up (bis max 5 = insgesamt 10G extra).
+        // Damit wird Dungeon zur permanenten Gem-Quelle fuer engagierte Spieler.
+        if (floorsCompleted >= 10)
+        {
+            int repeatGems = 5;
+            if (ascensionLevelUp) repeatGems += 2 * newAscension;
+            _gemService.AddGems(repeatGems);
+            _stats.TotalGemsEarned += repeatGems;
         }
 
         var summary = new DungeonRunSummary

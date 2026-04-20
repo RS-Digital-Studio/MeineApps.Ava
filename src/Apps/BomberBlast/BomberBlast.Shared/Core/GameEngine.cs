@@ -38,6 +38,7 @@ public sealed partial class GameEngine : IDisposable
     private readonly IGameStyleService _gameStyleService;
     private readonly IShopService _shopService;
     private readonly IPurchaseService _purchaseService;
+    private readonly BomberBlast.Core.LevelGeneration.ILevelGenerator _levelGenerator;
     private readonly GameRenderer _renderer;
     private readonly ITutorialService _tutorialService;
     private readonly TutorialOverlay _tutorialOverlay;
@@ -100,7 +101,7 @@ public sealed partial class GameEngine : IDisposable
     private bool _playerHadWallpassBeforePhantom; // Merkt ob Spieler echtes Wallpass hatte
 
     // Dungeon-Synergien (B5)
-    private bool _synergyBombardierActive;  // ExtraBomb+ExtraFire: +1 je
+    // Bombardier (ExtraBomb+ExtraFire): +1 Max/Fire. Effekt sofort auf _player angewandt, daher kein Runtime-Flag noetig.
     private bool _synergyBlitzkriegActive;  // SpeedBoost+BombTimer: -0.5s Zünd
     private bool _synergyFortressActive;    // Shield+ExtraLife: Shield-Regen 20s
     private float _fortressRegenTimer;      // Verstrichene Zeit ohne Schaden
@@ -123,8 +124,8 @@ public sealed partial class GameEngine : IDisposable
     // Gecachte Mechanik-Zellen (vermeidet 150-Zellen-Grid-Scan pro Frame)
     private readonly List<Cell> _mechanicCells = new();
 
-    // Wiederverwendbare Liste für Block-Zellen (vermeidet LINQ .ToList() Allokation in PlacePowerUps/PlaceExit)
-    private readonly List<Cell> _blockCells = new();
+    // _blockCells (wiederverwendbare Liste fuer PlacePowerUps/PlaceExit) ist in
+    // Core/LevelGeneration/LevelGenerator.cs gewandert (v2.0.30+).
 
     // Dirty-Listen für geänderte Zellen (vermeidet 3x komplette Grid-Iteration pro Frame)
     private readonly List<Cell> _destroyingCells = new();
@@ -186,7 +187,9 @@ public sealed partial class GameEngine : IDisposable
         _fortressRegenTimer = 0; // Festungs-Synergy: Timer bei Schaden zurücksetzen
         _dungeonModifierRegenTimer = 0; // Regen-Modifikator: Timer bei Schaden zurücksetzen
         _particleSystem.Emit(_player.X, _player.Y, particleCount, particleColor, spread, particleCount >= 16 ? 0.6f : 0.5f);
-        _floatingText.Spawn(_player.X, _player.Y - 16, "SHIELD!", new SKColor(0, 229, 255), 16f, 1.2f);
+        _floatingText.Spawn(_player.X, _player.Y - 16,
+            _localizationService.GetString("FloatShield") ?? "SHIELD!",
+            new SKColor(0, 229, 255), 16f, 1.2f);
         if (playSound)
             _soundManager.PlaySound(SoundManager.SFX_POWERUP);
         _player.ActivateInvincibility(0.5f);
@@ -207,6 +210,17 @@ public sealed partial class GameEngine : IDisposable
         _hudLabelDeck = _localizationService.GetString("HudDeck") ?? "DECK";
         _hudLabelBuffs = _localizationService.GetString("HudBuffs") ?? "BUFFS";
         CacheOverlayStrings();
+
+        // Dynamische Overlay-Caches auch bei Sprachwechsel aktualisieren (sonst bleiben
+        // "Stage X"/"Score: X"/"Level X" in alter Sprache bis zum naechsten State-Wechsel).
+        // Nur sinnvoll wenn bereits ein Level aktiv ist (nicht beim allerersten CacheHudLabels-Call im Ctor).
+        if (_currentLevel != null)
+        {
+            CacheStartingOverlayStrings();
+            CacheLevelCompleteOverlayStrings();
+            CacheGameOverOverlayStrings();
+            CacheVictoryOverlayStrings();
+        }
     }
 
     // Slow-Motion bei letztem Kill / hohem Combo
@@ -233,6 +247,27 @@ public sealed partial class GameEngine : IDisposable
     private const float PONTAN_WARNING_TIME = 1.5f; // Sekunden Vorwarnung vor Spawn
     private const int PONTAN_MIN_DISTANCE = 5; // Mindestabstand zum Spieler
     private readonly Random _pontanRandom = new(); // Wiederverwendbar statt new Random() pro Aufruf
+
+    // Lazy-initialisierter Context fuer SpecialExplosionEffects (v2.0.30+ Extract aus GameEngine.Explosion.cs).
+    // Erst beim ersten Aufruf erzeugt → _grid muss dann bereits initialisiert sein (im Ctor via new GameGrid()).
+    private BomberBlast.Core.Combat.ExplosionEffectsContext? _explosionCtx;
+    private BomberBlast.Core.Combat.ExplosionEffectsContext GetExplosionContext() =>
+        _explosionCtx ??= new BomberBlast.Core.Combat.ExplosionEffectsContext
+        {
+            Grid = _grid,
+            SpecialEffectCells = _specialEffectCells,
+            AfterglowCells = _afterglowCells,
+            PowerUps = _powerUps,
+            Enemies = _enemies,
+            Explosions = _explosions,
+            ParticleSystem = _particleSystem,
+            FloatingText = _floatingText,
+            LocalizationService = _localizationService,
+            PontanRandom = _pontanRandom,
+            DestroyBlock = DestroyBlock,
+            KillEnemy = KillEnemy,
+            ProcessExplosion = ProcessExplosion
+        };
 
     /// <summary>Maximale Pontan-Anzahl, skaliert nach Welt (Welt 1-2 weniger)</summary>
     private int GetPontanMaxCount()
@@ -458,6 +493,7 @@ public sealed partial class GameEngine : IDisposable
         IGameStyleService gameStyleService,
         IShopService shopService,
         IPurchaseService purchaseService,
+        BomberBlast.Core.LevelGeneration.ILevelGenerator levelGenerator,
         GameRenderer renderer,
         ITutorialService tutorialService,
         IDiscoveryService discoveryService,
@@ -474,6 +510,7 @@ public sealed partial class GameEngine : IDisposable
         _gameStyleService = gameStyleService;
         _shopService = shopService;
         _purchaseService = purchaseService;
+        _levelGenerator = levelGenerator;
 
         _renderer = renderer;
         _tutorialService = tutorialService;
@@ -590,7 +627,8 @@ public sealed partial class GameEngine : IDisposable
         _phantomWalkTimer = 5f;
         _player.HasWallpass = true;
 
-        _floatingText.Spawn(_player.X, _player.Y - 16, "PHANTOM!",
+        _floatingText.Spawn(_player.X, _player.Y - 16,
+            _localizationService.GetString("FloatPhantom") ?? "PHANTOM!",
             new SKColor(160, 32, 240), 14f, 1.0f);
         _soundManager.PlaySound(SoundManager.SFX_POWERUP);
     }
@@ -781,7 +819,8 @@ public sealed partial class GameEngine : IDisposable
             {
                 _player.HasShield = true;
                 _fortressRegenTimer = 0;
-                _floatingText.Spawn(_player.X, _player.Y - 16, "SHIELD!",
+                _floatingText.Spawn(_player.X, _player.Y - 16,
+                    _localizationService.GetString("FloatShield") ?? "SHIELD!",
                     new SKColor(0, 229, 255), 14f, 1.0f);
                 _particleSystem.Emit(_player.X, _player.Y, 8,
                     new SKColor(0, 229, 255), 60f, 0.5f);
@@ -797,7 +836,8 @@ public sealed partial class GameEngine : IDisposable
             {
                 _player.HasShield = true;
                 _dungeonModifierRegenTimer = 0;
-                _floatingText.Spawn(_player.X, _player.Y - 16, "REGEN!",
+                _floatingText.Spawn(_player.X, _player.Y - 16,
+                    _localizationService.GetString("FloatRegen") ?? "REGEN!",
                     new SKColor(76, 175, 80), 14f, 1.0f);
                 _particleSystem.Emit(_player.X, _player.Y, 8,
                     new SKColor(76, 175, 80), 60f, 0.5f);
@@ -1371,7 +1411,8 @@ public sealed partial class GameEngine : IDisposable
         if (cell?.Type == CellType.PlatformGap && !_player.IsDying && !_player.IsInvincible && !_player.HasSpawnProtection)
         {
             KillPlayer();
-            _floatingText.Spawn(_player.X, _player.Y - 16, "FALL!", SKColors.Red, 16f, 1.5f);
+            _floatingText.Spawn(_player.X, _player.Y - 16,
+                _localizationService.GetString("FloatFall") ?? "FALL!", SKColors.Red, 16f, 1.5f);
         }
     }
 
@@ -1638,7 +1679,8 @@ public sealed partial class GameEngine : IDisposable
         }
 
         _screenShake.Trigger(4f, 0.3f);
-        _floatingText.Spawn(boss.X, boss.Y - 24, "BLOCKREGEN!",
+        _floatingText.Spawn(boss.X, boss.Y - 24,
+            _localizationService.GetString("FloatBossBlockRain") ?? "BLOCK RAIN!",
             new SKColor(180, 140, 90), 18f, 1.5f);
         _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
     }
@@ -1663,7 +1705,8 @@ public sealed partial class GameEngine : IDisposable
         }
 
         _screenShake.Trigger(3f, 0.2f);
-        _floatingText.Spawn(boss.X, boss.Y - 24, "EISATEM!",
+        _floatingText.Spawn(boss.X, boss.Y - 24,
+            _localizationService.GetString("FloatBossIceBreath") ?? "ICE BREATH!",
             new SKColor(100, 200, 255), 18f, 1.5f);
         _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
 
@@ -1684,7 +1727,8 @@ public sealed partial class GameEngine : IDisposable
         }
 
         _screenShake.Trigger(4f, 0.3f);
-        _floatingText.Spawn(boss.X, boss.Y - 24, "LAVA-WELLE!",
+        _floatingText.Spawn(boss.X, boss.Y - 24,
+            _localizationService.GetString("FloatBossLavaWave") ?? "LAVA WAVE!",
             new SKColor(255, 100, 0), 18f, 1.5f);
         _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
     }
@@ -1729,7 +1773,8 @@ public sealed partial class GameEngine : IDisposable
         }
 
         _screenShake.Trigger(5f, 0.3f);
-        _floatingText.Spawn(boss.X, boss.Y - 24, "TELEPORT!",
+        _floatingText.Spawn(boss.X, boss.Y - 24,
+            _localizationService.GetString("FloatBossTeleport") ?? "TELEPORT!",
             new SKColor(150, 0, 255), 18f, 1.5f);
         _soundManager.PlaySound(SoundManager.SFX_ENEMY_DEATH);
     }

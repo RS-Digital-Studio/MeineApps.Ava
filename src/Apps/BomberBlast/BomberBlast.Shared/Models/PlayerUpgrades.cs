@@ -16,7 +16,7 @@ public class PlayerUpgrades
     {
         { UpgradeType.StartBombs, 3 },
         { UpgradeType.StartFire, 3 },
-        { UpgradeType.StartSpeed, 1 },
+        { UpgradeType.StartSpeed, 3 },
         { UpgradeType.ExtraLives, 2 },
         { UpgradeType.ScoreMultiplier, 3 },
         { UpgradeType.TimeBonus, 1 },
@@ -28,21 +28,26 @@ public class PlayerUpgrades
         { UpgradeType.StickyBomb, 1 }
     };
 
-    // Preise pro Level (Index 0 = Level 1, etc.) - ~50% reduziert fuer bessere Progression
+    // Preise pro Level (Index 0 = Level 1, etc.)
+    // Weitere -30% Reduktion (ueber frueheren -50%-Schritt hinaus): Gesamt-Shop-Grind von ~189.000 auf ~132.000 Coins.
+    // Welt-1-Level-Clear ~300-600 Coins, d.h. ~250 Clears fuer komplette Progression (vorher ~300).
     private static readonly Dictionary<UpgradeType, int[]> Prices = new()
     {
-        { UpgradeType.StartBombs, [1000, 3500, 10000] },
-        { UpgradeType.StartFire, [1000, 3500, 10000] },
-        { UpgradeType.StartSpeed, [2500] },
-        { UpgradeType.ExtraLives, [7500, 20000] },
-        { UpgradeType.ScoreMultiplier, [4000, 10000, 20000] },
-        { UpgradeType.TimeBonus, [6000] },
-        { UpgradeType.ShieldStart, [8000] },
-        { UpgradeType.CoinBonus, [8000, 25000] },
-        { UpgradeType.PowerUpLuck, [5000, 15000] },
-        { UpgradeType.IceBomb, [6000] },
-        { UpgradeType.FireBomb, [8000] },
-        { UpgradeType.StickyBomb, [10000] }
+        { UpgradeType.StartBombs, [700, 2500, 7000] },
+        { UpgradeType.StartFire, [700, 2500, 7000] },
+        // BAL-32 (18.04.2026): L1 von 1800 auf 1200 gesenkt.
+        // BAL-33 (20.04.2026): MaxLevel 1 -> 3 erweitert (war Dead-End, killte Shop-Progression-Feel).
+        // Preiskurve analog zu StartBombs/StartFire: L1 billig, L2 mittel, L3 teuer.
+        { UpgradeType.StartSpeed, [1200, 2500, 7000] },
+        { UpgradeType.ExtraLives, [5000, 14000] },
+        { UpgradeType.ScoreMultiplier, [2800, 7000, 14000] },
+        { UpgradeType.TimeBonus, [4000] },
+        { UpgradeType.ShieldStart, [5500] },
+        { UpgradeType.CoinBonus, [5500, 17000] },
+        { UpgradeType.PowerUpLuck, [3500, 10000] },
+        { UpgradeType.IceBomb, [4000] },
+        { UpgradeType.FireBomb, [5500] },
+        { UpgradeType.StickyBomb, [7000] }
     };
 
     // Score-Multiplikatoren pro Level

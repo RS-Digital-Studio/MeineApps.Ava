@@ -521,9 +521,17 @@ public sealed class BomberBlastSplashRenderer : SplashRendererBase
         _fuseSparkPaint.Dispose();
         _fusePath.Dispose();
         _titleFont.Dispose();
+
+        // MaskFilter/Shader-Felder NACH Dispose nullen, damit ein später Render-Frame
+        // (z.B. OnDispose → Dispose vor letztem Paint) die Felder per ??= neu allokiert
+        // statt auf einem disposed Objekt zu rendern.
         _titleGlowFilter?.Dispose();
+        _titleGlowFilter = null;
         _fuseGlowFilter?.Dispose();
+        _fuseGlowFilter = null;
         _bgShader?.Dispose();
+        _bgShader = null;
         _vignetteShader?.Dispose();
+        _vignetteShader = null;
     }
 }

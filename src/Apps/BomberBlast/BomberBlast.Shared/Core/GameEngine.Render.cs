@@ -152,10 +152,11 @@ public sealed partial class GameEngine
         // Survival-Modus: Verstrichene Zeit anzeigen statt Countdown
         float displayTime = _isSurvivalMode ? _survivalTimeElapsed : _timer.RemainingTime;
 
-        // Spiel rendern (gecachte Exit-Zelle + Spezialeffekt-Zellen übergeben für Performance)
-        _renderer.Render(canvas, _grid, _player,
+        // Spiel rendern (gecachte Exit-Zelle + Spezialeffekt-Zellen übergeben für Performance).
+        // _player ist im Ctor initialisiert und nie null zur Render-Zeit → Null-Forgiving (!) zulaessig.
+        _renderer.Render(canvas, _grid, _player!,
             _enemies, _bombs, _explosions, _powerUps,
-            displayTime, _player.Score, _player.Lives, _exitCell, _specialEffectCells);
+            displayTime, _player!.Score, _player.Lives, _exitCell, _specialEffectCells);
 
         // Partikel rendern (über dem Spielfeld, unter den Controls)
         if (_particleSystem.HasActiveParticles)

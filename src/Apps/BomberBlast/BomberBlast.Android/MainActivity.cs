@@ -85,14 +85,16 @@ public class MainActivity : AvaloniaMainActivity<App>
         var gameEngine = App.Services.GetService<GameEngine>();
         if (gameEngine != null)
         {
+#pragma warning disable CA1422 // VibratorService deprecated ab API 31 — funktioniert aber bis heute und ist mit VIBRATE-Permission kompatibel
             var vibrator = (Vibrator?)GetSystemService(VibratorService);
+#pragma warning restore CA1422
             if (vibrator != null)
             {
                 gameEngine.DirectionChanged += () =>
                 {
                     try
                     {
-                        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+                        if (OperatingSystem.IsAndroidVersionAtLeast(26))
                             vibrator.Vibrate(VibrationEffect.CreateOneShot(15, VibrationEffect.DefaultAmplitude));
                     }
                     catch (Java.Lang.SecurityException)
@@ -147,6 +149,8 @@ public class MainActivity : AvaloniaMainActivity<App>
     }
 
     [System.Obsolete("Avalonia nutzt OnBackPressed")]
+#pragma warning disable CS0809 // Obsolete member overrides non-obsolete member (Avalonia-Framework-Vorgabe)
+#pragma warning disable CA1422 // Deprecated in Android 33+ (OnBackInvokedDispatcher ist Nachfolger, aber Avalonia leitet noch via OnBackPressed)
     public override void OnBackPressed()
     {
         if (_mainVm != null && _mainVm.HandleBackPressed())
@@ -154,6 +158,8 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         base.OnBackPressed();
     }
+#pragma warning restore CA1422
+#pragma warning restore CS0809
 
     public override void OnWindowFocusChanged(bool hasFocus)
     {
@@ -169,9 +175,13 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         if (Window == null) return;
 
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.R) // API 30+
+        if (OperatingSystem.IsAndroidVersionAtLeast(30)) // API 30+
         {
+            // SetDecorFitsSystemWindows in Android 35+ deprecated zugunsten WindowCompat.SetDecorFitsSystemWindows,
+            // funktioniert aber weiterhin. Migration erfolgt mit AndroidX.Core-Integration.
+#pragma warning disable CA1422
             Window.SetDecorFitsSystemWindows(false);
+#pragma warning restore CA1422
             var controller = Window.InsetsController;
             if (controller != null)
             {
@@ -181,8 +191,9 @@ public class MainActivity : AvaloniaMainActivity<App>
         }
         else
         {
-            // Fallback fuer aeltere API-Versionen (< 30)
-#pragma warning disable CA1422 // Deprecated API fuer Kompatibilitaet
+            // Fallback fuer aeltere API-Versionen (< 30). SystemUiVisibility ist seit API 30 deprecated,
+            // aber der einzige Weg fuer API 24-29 Immersive-Mode.
+#pragma warning disable CA1422, CS0618
             Window.DecorView.SystemUiVisibility = (StatusBarVisibility)(
                 SystemUiFlags.ImmersiveSticky |
                 SystemUiFlags.LayoutStable |
@@ -190,7 +201,7 @@ public class MainActivity : AvaloniaMainActivity<App>
                 SystemUiFlags.LayoutFullscreen |
                 SystemUiFlags.HideNavigation |
                 SystemUiFlags.Fullscreen);
-#pragma warning restore CA1422
+#pragma warning restore CA1422, CS0618
         }
     }
 

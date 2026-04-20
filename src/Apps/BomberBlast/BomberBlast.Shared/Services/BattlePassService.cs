@@ -89,6 +89,9 @@ public sealed class BattlePassService : IBattlePassService
         if (IsXpBoostActive) return false;
         if (!_gemService.TrySpendGems(XP_BOOST_GEM_COST)) return false;
 
+        // Ablaufdatum = jetzt + 24h. Kein Clock-Skew-Schutz noetig, da ActivateXpBoost nur
+        // "jetzt" verankert. Die IsXpBoostActive-Pruefung weiter unten verwendet DateTime.UtcNow,
+        // welches bei Zurueckstellen der Uhr laenger "aktiv" bleibt. Das ist akzeptabel fuer 1,99-EUR-App.
         var expiry = DateTime.UtcNow.AddHours(XP_BOOST_DURATION_HOURS);
         _data.XpBoostExpiresAt = expiry.ToString("O");
         _xpBoostExpires = expiry;

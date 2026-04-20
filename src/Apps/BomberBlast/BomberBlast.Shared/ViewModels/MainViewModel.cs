@@ -14,6 +14,12 @@ namespace BomberBlast.ViewModels;
 /// Haupt-ViewModel für Navigation zwischen Views (MainMenu, Game, LevelSelect, etc.).
 /// Zeigt jeweils nur eine Child-View an.
 /// Hält alle Child-ViewModels für den korrekten DataContext.
+///
+/// <para><b>Lifetime-Hinweis:</b> Singleton mit App-Lifetime. Alle Event-Subscriptions
+/// im Konstruktor sind bewusst per Lambda registriert — Unsubscribe ist nicht nötig,
+/// weil Child-ViewModels (ebenfalls Singleton) und Services gemeinsam bis Prozess-Ende
+/// leben. <see cref="OnAdUnavailable"/> ist als benannter Handler ausgelegt als Referenz,
+/// falls in Zukunft eine View- oder VM-Recycling-Strategie eingeführt wird.</para>
 /// </summary>
 public sealed partial class MainViewModel : ViewModelBase
 {

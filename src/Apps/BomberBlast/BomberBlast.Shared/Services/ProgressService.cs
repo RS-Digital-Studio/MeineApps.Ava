@@ -23,7 +23,11 @@ public sealed class ProgressService : IProgressService
     }
 
     // Stern-Anforderungen pro Welt (Index = Welt-Nummer)
-    private static readonly int[] WorldStarsRequired = [0, 0, 10, 25, 45, 70, 100, 135, 175, 220, 240];
+    // Fix 18.04.2026 Game-Audit: Welt 9+10 weiter entschaerft (war 200/220):
+    // - 220/270 = 81% hatten Spieler noch als harte Mauer bei Mutator-Leveln (L63/66/69/73/76/79)
+    // - Neu: 180/200 → 2.0-2.2 Sterne/Level-Schnitt reicht. 2-Sterne ist fuer mittelmaessige
+    //   Spieler erreichbar ohne Perfektion-Grind. Endgame bleibt fordernd aber nicht blockiert.
+    private static readonly int[] WorldStarsRequired = [0, 0, 10, 25, 45, 70, 100, 135, 155, 180, 200];
 
     public bool IsLevelUnlocked(int level)
     {
@@ -109,7 +113,9 @@ public sealed class ProgressService : IProgressService
     public int GetLevelStars(int level)
     {
         int score = GetLevelBestScore(level);
-        if (score == 0)
+        // score <= 0 statt == 0: Defensiv gegen Negativwerte durch Persistenz-Korruption
+        // oder Overflow-Bugs. Ohne score>0 ist das Level nicht abgeschlossen.
+        if (score <= 0)
             return 0;
 
         // Stern-Schwellwerte: Level-abhaengige baseScore-Skalierung (fairer)
@@ -167,20 +173,23 @@ public sealed class ProgressService : IProgressService
 
     private void LoadProgress()
     {
+        string json = _preferences.Get<string>(PROGRESS_KEY, "");
+        if (string.IsNullOrEmpty(json))
+        {
+            _data = new ProgressData();
+            return;
+        }
+
         try
         {
-            string json = _preferences.Get<string>(PROGRESS_KEY, "");
-            if (!string.IsNullOrEmpty(json))
-            {
-                _data = JsonSerializer.Deserialize<ProgressData>(json) ?? new ProgressData();
-            }
-            else
-            {
-                _data = new ProgressData();
-            }
+            _data = JsonSerializer.Deserialize<ProgressData>(json) ?? new ProgressData();
         }
-        catch
+        catch (Exception ex)
         {
+            // Corrupt JSON → CloudSaveService bevorzugt Cloud-Pull (siehe PersistenceHealth).
+            // Sterne/Level-Fortschritt ist KERN-Daten — ein silent Reset wuerde die Cloud
+            // mit leerem Fortschritt ueberschreiben und alle Geraete verlieren den Progress.
+            PersistenceHealth.ReportCorruption(nameof(ProgressService), ex);
             _data = new ProgressData();
         }
     }

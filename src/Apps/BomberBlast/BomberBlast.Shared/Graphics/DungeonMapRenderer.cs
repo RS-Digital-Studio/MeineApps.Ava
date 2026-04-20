@@ -23,16 +23,23 @@ public static class DungeonMapRenderer
     // Gecachter MaskFilter (Puls-Variation 1.0-1.15 ist visuell vernachlässigbar)
     private static readonly SKMaskFilter _nodeGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, GLOW_RADIUS * 1.07f);
 
-    // Gepoolte SKPaint-Objekte
+    // Gepoolte SKPaint-Objekte (Text-Paints haben keine TextSize/TextAlign mehr — SkiaSharp 3.x)
     private static readonly SKPaint _nodePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _nodeBorderPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKPaint _linePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = LINE_WIDTH };
     private static readonly SKPaint _completedLinePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = COMPLETED_LINE_WIDTH };
     private static readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    private static readonly SKPaint _textPaint = new() { IsAntialias = true, TextSize = 10f, TextAlign = SKTextAlign.Center };
+    private static readonly SKPaint _textPaint = new() { IsAntialias = true };
     private static readonly SKPaint _modifierBadgePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    private static readonly SKPaint _labelPaint = new() { IsAntialias = true, TextSize = 9f, TextAlign = SKTextAlign.Center };
-    private static readonly SKPaint _floorLabelPaint = new() { IsAntialias = true, TextSize = 11f, TextAlign = SKTextAlign.Right };
+    private static readonly SKPaint _labelPaint = new() { IsAntialias = true };
+    private static readonly SKPaint _floorLabelPaint = new() { IsAntialias = true };
+
+    // Gepoolte SKFont-Objekte (SkiaSharp 3.x: Text-Size/Bold nicht mehr auf SKPaint).
+    private static readonly SKFont _symbolFontNormal = new() { Size = 11f };
+    private static readonly SKFont _symbolFontBoss = new() { Size = 14f, Embolden = true };
+    private static readonly SKFont _checkFont = new() { Size = 12f };
+    private static readonly SKFont _labelFont = new() { Size = 9f };
+    private static readonly SKFont _floorLabelFont = new() { Size = 11f };
 
     // Raum-Typ Farben
     private static readonly SKColor COLOR_NORMAL = new(158, 158, 158);   // Grau
@@ -134,7 +141,7 @@ public static class DungeonMapRenderer
             // Floor-Label links
             float labelY = GetNodeY(rowIdx, totalRows);
             _floorLabelPaint.Color = new SKColor(200, 200, 200, 120);
-            canvas.DrawText($"F{floor}", 28f, labelY + 4f, _floorLabelPaint);
+            canvas.DrawText($"F{floor}", 28f, labelY + 4f, SKTextAlign.Right, _floorLabelFont, _floorLabelPaint);
 
             foreach (var node in row)
             {
@@ -189,13 +196,11 @@ public static class DungeonMapRenderer
                 _nodeBorderPaint.StrokeWidth = 2f;
                 canvas.DrawCircle(nodeX, nodeY, radius, _nodeBorderPaint);
 
-                // Raum-Typ Icon/Symbol im Node
+                // Raum-Typ Icon/Symbol im Node (isBoss wählt den passenden gecachten Font)
                 _textPaint.Color = node.IsCompleted ? new SKColor(60, 60, 60) : SKColors.White;
-                _textPaint.TextSize = isBoss ? 14f : 11f;
-                _textPaint.FakeBoldText = isBoss;
                 string symbol = GetRoomTypeSymbol(node.RoomType, isBoss);
-                canvas.DrawText(symbol, nodeX, nodeY + 4f, _textPaint);
-                _textPaint.FakeBoldText = false;
+                canvas.DrawText(symbol, nodeX, nodeY + 4f, SKTextAlign.Center,
+                    isBoss ? _symbolFontBoss : _symbolFontNormal, _textPaint);
 
                 // Modifikator-Badge (kleiner Punkt rechts-oben)
                 if (node.Modifier != DungeonFloorModifier.None && !node.IsCompleted)
@@ -210,8 +215,7 @@ public static class DungeonMapRenderer
                 if (node.IsCompleted)
                 {
                     _textPaint.Color = new SKColor(76, 175, 80);
-                    _textPaint.TextSize = 12f;
-                    canvas.DrawText("\u2713", nodeX, nodeY + 4f, _textPaint);
+                    canvas.DrawText("\u2713", nodeX, nodeY + 4f, SKTextAlign.Center, _checkFont, _textPaint);
                 }
 
                 // Raum-Typ Label unter dem Node (nur für erreichbare/aktuelle, nicht abgeschlossene)
@@ -219,7 +223,7 @@ public static class DungeonMapRenderer
                 {
                     _labelPaint.Color = nodeColor.WithAlpha(180);
                     string label = GetRoomTypeLabel(node.RoomType, isBoss);
-                    canvas.DrawText(label, nodeX, nodeY + radius + 12f, _labelPaint);
+                    canvas.DrawText(label, nodeX, nodeY + radius + 12f, SKTextAlign.Center, _labelFont, _labelPaint);
                 }
             }
         }

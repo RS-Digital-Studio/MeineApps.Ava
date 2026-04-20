@@ -1063,6 +1063,52 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        internal static string AdLoadFailed {
+            get {
+                return ResourceManager.GetString("AdLoadFailed", resourceCulture);
+            }
+        }
+
+        internal static string FloatShield {
+            get { return ResourceManager.GetString("FloatShield", resourceCulture); }
+        }
+
+        internal static string FloatPhantom {
+            get { return ResourceManager.GetString("FloatPhantom", resourceCulture); }
+        }
+
+        internal static string FloatRegen {
+            get { return ResourceManager.GetString("FloatRegen", resourceCulture); }
+        }
+
+        internal static string FloatFall {
+            get { return ResourceManager.GetString("FloatFall", resourceCulture); }
+        }
+
+        internal static string FloatBossBlockRain {
+            get { return ResourceManager.GetString("FloatBossBlockRain", resourceCulture); }
+        }
+
+        internal static string FloatBossIceBreath {
+            get { return ResourceManager.GetString("FloatBossIceBreath", resourceCulture); }
+        }
+
+        internal static string FloatBossLavaWave {
+            get { return ResourceManager.GetString("FloatBossLavaWave", resourceCulture); }
+        }
+
+        internal static string FloatBossTeleport {
+            get { return ResourceManager.GetString("FloatBossTeleport", resourceCulture); }
+        }
+
+        internal static string FloatMimic {
+            get { return ResourceManager.GetString("FloatMimic", resourceCulture); }
+        }
+
+        internal static string FloatLava {
+            get { return ResourceManager.GetString("FloatLava", resourceCulture); }
+        }
+
         internal static string ContinueGame {
             get {
                 return ResourceManager.GetString("ContinueGame", resourceCulture);

@@ -14,7 +14,9 @@ public sealed class DailyRewardService : IDailyRewardService
 {
     private const string DAILY_REWARD_KEY = "DailyRewardData";
 
-    private static readonly int[] DayCoins = [500, 1000, 1500, 2000, 2500, 3000, 5000];
+    // BAL-33 (20.04.2026): Jackpot Tag 7 von 5000 auf 8000 erhoeht (war schwaecher
+    // als LuckySpin-Jackpot 3000+10G, 7-Tage-Streak muss sich mehr lohnen).
+    private static readonly int[] DayCoins = [500, 1000, 1500, 2000, 2500, 3000, 8000];
     private static readonly JsonSerializerOptions JsonOptions = new();
 
     private readonly IPreferencesService _preferences;
@@ -42,7 +44,7 @@ public sealed class DailyRewardService : IDailyRewardService
                 Day = day,
                 Coins = DayCoins[i],
                 ExtraLives = day == 5 ? 1 : 0,
-                Gems = day == 7 ? 10 : 0, // Tag 7: +10 Gems Bonus
+                Gems = day == 7 ? 15 : 0, // Tag 7: +15 Gems Bonus (BAL-33)
                 IsClaimed = day < _data.CurrentDay || (day == _data.CurrentDay && IsClaimedToday()),
                 IsCurrentDay = day == _data.CurrentDay && !IsClaimedToday(),
                 IsPast = day < _data.CurrentDay
@@ -65,12 +67,25 @@ public sealed class DailyRewardService : IDailyRewardService
             Day = _data.CurrentDay,
             Coins = DayCoins[dayIndex],
             ExtraLives = _data.CurrentDay == 5 ? 1 : 0,
-            Gems = _data.CurrentDay == 7 ? 10 : 0, // Tag 7: +10 Gems Bonus
+            Gems = _data.CurrentDay == 7 ? 15 : 0, // Tag 7: +15 Gems Bonus (BAL-33)
             IsClaimed = true,
             IsCurrentDay = false
         };
 
-        _data.LastClaimDate = DateTime.UtcNow.ToString("O");
+        // Clock-Skew-Schutz: LastClaimDate wird nicht kleiner als bisheriger Wert.
+        // Verhindert dass ein Spieler die Uhr vorstellt, einen Tag claimt, Uhr zurueckstellt
+        // und den Streak/Day-Zyklus mehrfach mit immer neuen Rewards durchlaeuft.
+        var now = DateTime.UtcNow;
+        if (!string.IsNullOrEmpty(_data.LastClaimDate))
+        {
+            try
+            {
+                var prev = DateTime.Parse(_data.LastClaimDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+                if (prev > now) now = prev; // Monotone Clamp
+            }
+            catch { /* Parse-Fehler → now verwenden */ }
+        }
+        _data.LastClaimDate = now.ToString("O");
         _data.Streak++;
 
         // Nächster Tag oder Zyklus-Reset
@@ -132,19 +147,19 @@ public sealed class DailyRewardService : IDailyRewardService
 
     private DailyRewardData Load()
     {
+        string json = _preferences.Get<string>(DAILY_REWARD_KEY, "");
+        if (string.IsNullOrEmpty(json))
+            return new DailyRewardData();
+
         try
         {
-            string json = _preferences.Get<string>(DAILY_REWARD_KEY, "");
-            if (!string.IsNullOrEmpty(json))
-            {
-                return JsonSerializer.Deserialize<DailyRewardData>(json, JsonOptions) ?? new DailyRewardData();
-            }
+            return JsonSerializer.Deserialize<DailyRewardData>(json, JsonOptions) ?? new DailyRewardData();
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler beim Laden → Standardwerte
+            PersistenceHealth.ReportCorruption(nameof(DailyRewardService), ex);
+            return new DailyRewardData();
         }
-        return new DailyRewardData();
     }
 
     private void Save()

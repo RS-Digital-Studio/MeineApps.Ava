@@ -44,7 +44,7 @@ public partial class DungeonView : UserControl
     {
         if (args.PropertyName == nameof(DungeonViewModel.IsMapSelection))
         {
-            if (_vm.IsMapSelection)
+            if (_vm?.IsMapSelection == true)
                 StartMapTimer();
             else
                 StopMapTimer();

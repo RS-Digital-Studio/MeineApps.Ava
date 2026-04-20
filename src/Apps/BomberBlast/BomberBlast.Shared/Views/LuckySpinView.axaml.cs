@@ -14,13 +14,20 @@ public partial class LuckySpinView : UserControl
     private DispatcherTimer? _animTimer;
     private DateTime _lastFrame;
 
-    // Gepoolte Paints (keine per-Frame Allokationen)
+    // Gepoolte Paints (keine per-Frame Allokationen). SkiaSharp 3.x: Text-Size/Bold sind auf SKFont.
     private readonly SKPaint _segmentPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _textPaint = new() { IsAntialias = true, Color = SKColors.White };
     private readonly SKPaint _outlinePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3, Color = SKColors.White };
     private readonly SKPaint _centerPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _pointerPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = SKColor.Parse("#FFD700") };
     private readonly SKPaint _jackpotPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2 };
+
+    // Gepoolte Paths (via Rewind() wiederverwendet, keine per-Frame Allokation)
+    private readonly SKPath _segmentPath = new();
+    private readonly SKPath _pointerPath = new();
+
+    // Persistenter Font, Size wird pro Draw reconfiguriert (Radius-abhaengig).
+    private readonly SKFont _textFont = new() { Embolden = true };
 
     // Segment-Farben (9 Segmente, abwechselnd warm/kühl)
     private static readonly SKColor[] SegmentColors =
@@ -61,7 +68,7 @@ public partial class LuckySpinView : UserControl
 
     private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
-        if (args.PropertyName == nameof(LuckySpinViewModel.IsSpinning) && _vm.IsSpinning)
+        if (args.PropertyName == nameof(LuckySpinViewModel.IsSpinning) && _vm?.IsSpinning == true)
             StartAnimationTimer();
         if (args.PropertyName == nameof(LuckySpinViewModel.CurrentAngle))
             WheelCanvas.InvalidateSurface();
@@ -139,21 +146,21 @@ public partial class LuckySpinView : UserControl
         {
             var startAngle = i * segmentAngle - 90f; // -90 damit Segment 0 oben ist
 
-            // Segment zeichnen
+            // Segment zeichnen (Path gepoolt via Rewind(), keine Allokation)
             _segmentPaint.Color = i < SegmentColors.Length ? SegmentColors[i] : SKColors.Gray;
-            using var path = new SKPath();
-            path.MoveTo(0, 0);
+            _segmentPath.Rewind();
+            _segmentPath.MoveTo(0, 0);
             var rect = new SKRect(-radius, -radius, radius, radius);
-            path.ArcTo(rect, startAngle, segmentAngle, false);
-            path.Close();
-            canvas.DrawPath(path, _segmentPaint);
+            _segmentPath.ArcTo(rect, startAngle, segmentAngle, false);
+            _segmentPath.Close();
+            canvas.DrawPath(_segmentPath, _segmentPaint);
 
             // Jackpot-Shimmer (letztes Segment = Index 8)
             if (rewards != null && i < rewards.Count && rewards[i].IsJackpot)
             {
                 var shimmer = (float)(Math.Sin(DateTime.UtcNow.Ticks / 5_000_000.0) * 0.3 + 0.7);
                 _jackpotPaint.Color = new SKColor(255, 255, 255, (byte)(80 * shimmer));
-                canvas.DrawPath(path, _jackpotPaint);
+                canvas.DrawPath(_segmentPath, _jackpotPaint);
             }
 
             // Segment-Trennlinien
@@ -185,13 +192,11 @@ public partial class LuckySpinView : UserControl
             else
                 segmentText = "?";
 
-            _textPaint.TextSize = radius * 0.10f;
-            _textPaint.FakeBoldText = true;
-            _textPaint.TextAlign = SKTextAlign.Center;
+            _textFont.Size = radius * 0.10f;
             // Jackpot = dunkle Schrift auf Gold, Rest = weiß
             var isJackpot = rewards != null && i < rewards.Count && rewards[i].IsJackpot;
             _textPaint.Color = isJackpot ? SKColor.Parse("#1A1A2A") : SKColors.White;
-            canvas.DrawText(segmentText, 0, _textPaint.TextSize * 0.35f, _textPaint);
+            canvas.DrawText(segmentText, 0, _textFont.Size * 0.35f, SKTextAlign.Center, _textFont, _textPaint);
 
             canvas.Restore();
         }
@@ -202,27 +207,53 @@ public partial class LuckySpinView : UserControl
         _centerPaint.Color = SKColor.Parse("#FFD700");
         canvas.DrawCircle(0, 0, radius * 0.12f, _centerPaint);
 
-        _textPaint.TextSize = radius * 0.1f;
+        _textFont.Size = radius * 0.1f;
         _textPaint.Color = SKColor.Parse("#1A1A2A");
-        _textPaint.FakeBoldText = true;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        canvas.DrawText("$", 0, _textPaint.TextSize * 0.35f, _textPaint);
+        canvas.DrawText("$", 0, _textFont.Size * 0.35f, SKTextAlign.Center, _textFont, _textPaint);
     }
 
     private void DrawPointer(SKCanvas canvas, float cx, float cy, float size)
     {
-        using var path = new SKPath();
-        path.MoveTo(cx, cy - size * 0.3f);
-        path.LineTo(cx - size * 0.6f, cy + size);
-        path.LineTo(cx + size * 0.6f, cy + size);
-        path.Close();
+        _pointerPath.Rewind();
+        _pointerPath.MoveTo(cx, cy - size * 0.3f);
+        _pointerPath.LineTo(cx - size * 0.6f, cy + size);
+        _pointerPath.LineTo(cx + size * 0.6f, cy + size);
+        _pointerPath.Close();
 
         _pointerPaint.Color = SKColor.Parse("#FFD700");
-        canvas.DrawPath(path, _pointerPaint);
+        canvas.DrawPath(_pointerPath, _pointerPaint);
 
         _outlinePaint.Color = SKColor.Parse("#B8860B");
         _outlinePaint.StrokeWidth = 2;
-        canvas.DrawPath(path, _outlinePaint);
+        canvas.DrawPath(_pointerPath, _outlinePaint);
+    }
+
+    /// <summary>
+    /// Dispose-Chain: Bei View-Detach alle SKPaint/SKFont/SKPath freigeben,
+    /// Timer stoppen, VM-Subscription abmelden. Verhindert Leaks bei View-Recycling.
+    /// </summary>
+    protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
+        _animTimer?.Stop();
+        _animTimer = null;
+
+        _segmentPaint.Dispose();
+        _textPaint.Dispose();
+        _outlinePaint.Dispose();
+        _centerPaint.Dispose();
+        _pointerPaint.Dispose();
+        _jackpotPaint.Dispose();
+        _textFont.Dispose();
+        _segmentPath.Dispose();
+        _pointerPath.Dispose();
     }
 
     private void DrawOuterGlow(SKCanvas canvas, float cx, float cy, float radius)

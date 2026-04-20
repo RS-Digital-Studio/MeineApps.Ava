@@ -204,8 +204,12 @@ public sealed class GameTrackingService : IGameTrackingService
         if (timeElapsed >= 60f)
             _battlePass.AddXp(100, "survival_60s");
 
-        // Survival-Meilensteine: Coins + Gems bei erreichten Schwellen
+        // Survival-Meilensteine: Coins + Gems bei erreichten Schwellen.
+        // Reihenfolge KRITISCH: HashSet-Update + Save VOR AddCoins/AddGems,
+        // damit bei Crash zwischen Reward-Vergabe und Persistenz KEIN Meilenstein doppelt vergeben wird.
         var reached = GetReachedMilestones();
+        bool anyFirstTime = false;
+        var pendingRewards = new List<(int coins, int gems)>();
         foreach (var (seconds, coins, gems) in SurvivalMilestones)
         {
             if (timeElapsed < seconds) break;
@@ -214,6 +218,23 @@ public sealed class GameTrackingService : IGameTrackingService
             int awardedCoins = isFirstTime ? coins : coins / 5; // Erstmalig voll, danach 20%
             int awardedGems = isFirstTime ? gems : 0; // Gems nur beim ersten Mal
 
+            if (isFirstTime)
+            {
+                reached.Add(seconds);
+                anyFirstTime = true;
+            }
+
+            pendingRewards.Add((awardedCoins, awardedGems));
+        }
+
+        // 1. HashSet-Update persistieren BEVOR Belohnungen vergeben werden.
+        if (anyFirstTime)
+            SaveReachedMilestones(reached);
+
+        // 2. Belohnungen vergeben. Bei Crash zwischen 1 und 2 geht der Coin-Reward verloren,
+        //    aber der Milestone wird NICHT doppelt vergeben (Anti-Exploit > Anti-Reward-Loss).
+        foreach (var (awardedCoins, awardedGems) in pendingRewards)
+        {
             if (awardedCoins > 0)
                 _coins.AddCoins(awardedCoins);
             if (awardedGems > 0)
@@ -222,13 +243,7 @@ public sealed class GameTrackingService : IGameTrackingService
                 _weekly.TrackProgress(WeeklyMissionType.EarnGems, awardedGems);
                 _daily.TrackProgress(WeeklyMissionType.EarnGems, awardedGems);
             }
-
-            if (isFirstTime)
-                reached.Add(seconds);
-
         }
-
-        SaveReachedMilestones(reached);
     }
 
     /// <summary>Geladene Survival-Meilensteine aus Preferences</summary>
@@ -257,11 +272,12 @@ public sealed class GameTrackingService : IGameTrackingService
 
     public void OnFirstThreeStars()
     {
-        // 2 Gems bei erstmaligem 3-Sterne-Abschluss (nachhaltige Gem-Quelle, ~2G pro perfektes Level)
-        // 100 Level × 2G = 200G → reicht für 1 Legendary (200G) durch reinen Grind
-        _gems.AddGems(2);
-        _weekly.TrackProgress(WeeklyMissionType.EarnGems, 2);
-        _daily.TrackProgress(WeeklyMissionType.EarnGems, 2);
+        // 3 Gems bei erstmaligem 3-Sterne-Abschluss (erhoeht von 2G -> 3G)
+        // 100 Level x 3G = 300G Story-Gesamt. Reicht fuer 1 Legendary (200G) + 5. Deck-Slot (20G) + Crystal-Skin (50G).
+        // Frueher: 200G Story-Gesamt wurde komplett von einem Legendary-Skin absorbiert -> zu stark kopplung an Premium-Kauf.
+        _gems.AddGems(3);
+        _weekly.TrackProgress(WeeklyMissionType.EarnGems, 3);
+        _daily.TrackProgress(WeeklyMissionType.EarnGems, 3);
     }
 
     // --- Persistenz ---

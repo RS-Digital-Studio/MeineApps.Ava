@@ -13,6 +13,26 @@ public static class AchievementIconRenderer
     private static readonly SKPaint _bgPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _iconPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // SKMaskFilter-Cache: 66 Achievements × 2 Blur-Calls pro Render × 30fps Scroll = ~4000/s
+    // Radius-Buckets 0.5px vermeiden native Allokationen ohne Visual-Impact.
+    private static readonly Dictionary<int, SKMaskFilter> _maskCache = new();
+    private static readonly object _maskLock = new();
+
+    private static SKMaskFilter GetBlur(float radius)
+    {
+        var bucket = (int)Math.Round(radius * 2f);
+        if (bucket < 1) bucket = 1;
+        lock (_maskLock)
+        {
+            if (!_maskCache.TryGetValue(bucket, out var f))
+            {
+                f = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, bucket * 0.5f);
+                _maskCache[bucket] = f;
+            }
+            return f;
+        }
+    }
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKFont _progressFont = new() { Size = 9f };
@@ -61,10 +81,8 @@ public static class AchievementIconRenderer
                 var catColor = GetCategoryColor(categoryIndex);
                 float pulse = 0.6f + 0.4f * MathF.Sin(animTime * 3f);
                 _glowPaint.Color = catColor.WithAlpha((byte)(pulse * 40));
-                _glowPaint.MaskFilter?.Dispose();
-                _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.15f);
+                _glowPaint.MaskFilter = GetBlur(size * 0.15f);
                 canvas.DrawCircle(cx, cy, half * 1.15f, _glowPaint);
-                _glowPaint.MaskFilter?.Dispose();
                 _glowPaint.MaskFilter = null;
 
                 canvas.DrawBitmap(bitmap, dest, _aiBitmapPaint);
@@ -82,11 +100,8 @@ public static class AchievementIconRenderer
             // Glow-Aura (pulsierend)
             float pulse = 0.6f + 0.4f * MathF.Sin(animTime * 3f);
             _glowPaint.Color = catColor2.WithAlpha((byte)(pulse * 40));
-            _glowPaint.MaskFilter?.Dispose();
-
-            _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.3f);
+            _glowPaint.MaskFilter = GetBlur(r * 0.3f);
             canvas.DrawCircle(cx, cy, r * 1.15f, _glowPaint);
-            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = null;
 
             // Hintergrund-Kreis

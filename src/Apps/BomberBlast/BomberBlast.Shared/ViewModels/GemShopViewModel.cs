@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 
 /// <summary>
 /// ViewModel für den Gem-Shop - ermöglicht den Kauf von Gems per In-App-Purchase.
-/// 3 Pakete: Klein (100 Gems), Mittel (500 Gems), Groß (1500 Gems).
+/// 4 Pakete: Small (100G/0,99€), Medium (600G/3,99€), Large (1500G/7,99€), Mega (5000G/14,99€).
 /// </summary>
 public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
@@ -118,9 +118,12 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
             },
             new GemPackageItem
             {
+                // BAL-33 (20.04.2026): 500G -> 600G. Bei 500G war G/€-Ratio (125) deutlich
+                // unter Large (188) und Mega (334), Conversion-Paket war unattraktiv.
+                // 600G gibt 150 G/€ = 1,5x Basis, klarer Vorteil gegenueber Small ohne Large zu kannibalisieren.
                 ProductId = "gem_pack_medium",
                 DisplayName = mediumName,
-                GemAmount = 500,
+                GemAmount = 600,
                 PriceText = "3,99 \u20ac",
                 IconKind = GameIconKind.Diamond,
                 IconColor = "#2196F3",

@@ -45,8 +45,12 @@ public sealed class CoinService : ICoinService
     {
         if (amount <= 0) return;
 
-        _data.Balance += amount;
-        _data.TotalEarned += amount;
+        // Overflow-Guard: Bei >2.147 Mrd Coins clamped auf int.MaxValue statt silent Negativ.
+        // Relevant bei Survival-Mega-Streaks oder kumulierten Premium-Boni.
+        long newBalance = (long)_data.Balance + amount;
+        long newTotal = (long)_data.TotalEarned + amount;
+        _data.Balance = newBalance > int.MaxValue ? int.MaxValue : (int)newBalance;
+        _data.TotalEarned = newTotal > int.MaxValue ? int.MaxValue : (int)newTotal;
         Save();
         BalanceChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -69,19 +73,31 @@ public sealed class CoinService : ICoinService
 
     private CoinData Load()
     {
+        string json = _preferences.Get<string>(COIN_DATA_KEY, "");
+        if (string.IsNullOrEmpty(json))
+            return new CoinData();
+
+        CoinData data;
         try
         {
-            string json = _preferences.Get<string>(COIN_DATA_KEY, "");
-            if (!string.IsNullOrEmpty(json))
-            {
-                return JsonSerializer.Deserialize<CoinData>(json, JsonOptions) ?? new CoinData();
-            }
+            data = JsonSerializer.Deserialize<CoinData>(json, JsonOptions) ?? new CoinData();
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler beim Laden → Standardwerte
+            // Corrupt JSON: Meldung an PersistenceHealth → CloudSaveService bevorzugt Cloud-Pull.
+            PersistenceHealth.ReportCorruption(nameof(CoinService), ex);
+            return new CoinData();
         }
-        return new CoinData();
+
+        // Negative-Balance-Defense: Pre-v2.0.30 Overflows oder manuelle Preferences-Edits
+        // koennten negative Werte hinterlassen. Clamp auf 0 + Corruption-Flag → Cloud-Pull.
+        if (data.Balance < 0 || data.TotalEarned < 0)
+        {
+            PersistenceHealth.ReportCorruption(nameof(CoinService));
+            if (data.Balance < 0) data.Balance = 0;
+            if (data.TotalEarned < 0) data.TotalEarned = 0;
+        }
+        return data;
     }
 
     private void Save()

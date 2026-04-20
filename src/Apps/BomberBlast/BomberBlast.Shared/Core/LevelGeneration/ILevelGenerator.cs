@@ -1,0 +1,55 @@
+using BomberBlast.Models.Entities;
+using BomberBlast.Models.Grid;
+using BomberBlast.Models.Levels;
+
+namespace BomberBlast.Core.LevelGeneration;
+
+/// <summary>
+/// Extrahierte Level-Fabrik: erstellt PowerUp-Platzierung, Exit-Platzierung, Enemy/Boss-Spawning.
+///
+/// Ist zustandslos (Singleton). Mutiert nur das übergebene <see cref="LevelGenerationContext"/>
+/// und gibt Entities zurück, die der Aufrufer in seine Listen einhängt. Keine Game-Events,
+/// keine Sounds, kein Tracking — das bleibt in GameEngine.
+/// </summary>
+public interface ILevelGenerator
+{
+    /// <summary>Lokalisierter Display-Name fuer einen Level-Mutator.</summary>
+    string GetMutatorDisplayName(LevelMutator mutator);
+
+    /// <summary>
+    /// Versteckt PowerUps unter Bloecken + zusaetzliche Power-Up-Luck-Boni.
+    /// Mutiert <see cref="GameGrid"/>-Zellen (setzt <c>HiddenPowerUp</c>).
+    /// </summary>
+    void PlacePowerUps(LevelGenerationContext context);
+
+    /// <summary>
+    /// Versteckt Exit unter einem Block (klassisches Bomberman).
+    /// Mutiert eine Zelle: setzt <c>HasHiddenExit = true</c> und <c>HiddenPowerUp = null</c>.
+    /// </summary>
+    void PlaceExit(LevelGenerationContext context);
+
+    /// <summary>
+    /// Spawnt alle Gegner (inkl. Boss/Duo-Boss) laut Level-Config.
+    /// Gibt die gespawnten Entities zurueck, damit der Aufrufer Boss-Encounter tracken kann.
+    /// </summary>
+    List<Enemy> SpawnEnemies(LevelGenerationContext context);
+}
+
+/// <summary>
+/// Input + Zustands-Handle für eine Level-Generierung.
+/// Der Generator schreibt auf <see cref="Grid"/>-Zellen und liest <see cref="Level"/>.
+/// </summary>
+public sealed class LevelGenerationContext
+{
+    /// <summary>Das Grid des aktuellen Levels (wird beim Platzieren mutiert).</summary>
+    public required GameGrid Grid { get; init; }
+
+    /// <summary>Die Level-Definition mit Enemy-/PowerUp-Config.</summary>
+    public required Level CurrentLevel { get; init; }
+
+    /// <summary>Seeded Random fuer reproduzierbare Generierung.</summary>
+    public required Random Random { get; init; }
+
+    /// <summary>PowerUpLuck-Upgrade-Level des Spielers (0-2), aus ShopService.</summary>
+    public int PowerUpLuckLevel { get; init; }
+}

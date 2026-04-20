@@ -308,47 +308,48 @@ public sealed partial class GameEngine
         // Explosionseffekte sofort verarbeiten
         ProcessExplosion(explosion);
 
-        // Spezial-Bomben-Effekte
+        // Spezial-Bomben-Effekte — delegiert an SpecialExplosionEffects (v2.0.30+ Extract)
+        var ectx = GetExplosionContext();
         switch (bomb.Type)
         {
             case BombType.Ice:
-                HandleIceExplosion(explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleIce(ectx, explosion);
                 break;
             case BombType.Fire:
-                HandleFireExplosion(bomb, explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleFire(ectx, bomb, explosion);
                 break;
             case BombType.Sticky:
-                HandleStickyExplosion(explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleSticky(ectx, explosion);
                 break;
             case BombType.Smoke:
-                HandleSmokeExplosion(explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleSmoke(ectx, explosion);
                 break;
             case BombType.Lightning:
-                HandleLightningExplosion(bomb);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleLightning(ectx, bomb);
                 break;
             case BombType.Gravity:
-                HandleGravityExplosion(bomb, explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleGravity(ectx, bomb, explosion);
                 break;
             case BombType.Poison:
-                HandlePoisonExplosion(explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandlePoison(ectx, explosion);
                 break;
             case BombType.TimeWarp:
-                HandleTimeWarpExplosion(explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleTimeWarp(ectx, explosion);
                 break;
             case BombType.Mirror:
-                HandleMirrorExplosion(bomb, explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleMirror(ectx, bomb, explosion);
                 break;
             case BombType.Vortex:
-                HandleVortexExplosion(bomb);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleVortex(ectx, bomb);
                 break;
             case BombType.Phantom:
-                HandlePhantomExplosion(bomb, explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandlePhantom(ectx, bomb, explosion);
                 break;
             case BombType.Nova:
-                HandleNovaExplosion(bomb);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleNova(ectx, bomb);
                 break;
             case BombType.BlackHole:
-                HandleBlackHoleExplosion(bomb, explosion);
+                BomberBlast.Core.Combat.SpecialExplosionEffects.HandleBlackHole(ectx, bomb, explosion);
                 break;
         }
     }
@@ -493,547 +494,12 @@ public sealed partial class GameEngine
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // SPEZIAL-BOMBEN-EFFEKTE
+    // SPEZIAL-BOMBEN-EFFEKTE — extrahiert in Core/Combat/SpecialExplosionEffects.cs
+    // (v2.0.30+). GameEngine delegiert via GetExplosionContext() + Handle*(ctx,...).
+    // Nur die 13 Handle*-Methoden wurden extrahiert; Infrastruktur (ProcessExplosion,
+    // UpdateSpecialBombEffects, DestroyBlock, Chain-Reaction) bleibt in GameEngine,
+    // da sie engine-interne Invarianten (Score, Events, State-Machine) mutiert.
     // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Eis-Explosion: Betroffene Zellen einfrieren (verlangsamt Gegner für 3s)
-    /// </summary>
-    private void HandleIceExplosion(Explosion explosion)
-    {
-        foreach (var cell in explosion.AffectedCells)
-        {
-            var gridCell = _grid.TryGetCell(cell.X, cell.Y);
-            if (gridCell == null) continue;
-
-            // Zelle einfrieren
-            gridCell.IsFrozen = true;
-            gridCell.FreezeTimer = 3.0f;
-            _specialEffectCells.Add(gridCell);
-
-            // Blaue Frost-Partikel
-            float px = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            float py = cell.Y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            _particleSystem.EmitExplosionSparks(px, py, 8, new SKColor(100, 200, 255), 100f);
-        }
-
-        // Floating Text über dem Explosions-Zentrum
-        float centerX = explosion.X;
-        float centerY = explosion.Y;
-        string frozenText = _localizationService.GetString("FrozenEffect") ?? "FROZEN!";
-        _floatingText.Spawn(centerX, centerY - 16, frozenText, new SKColor(100, 200, 255), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Feuer-Explosion: Lava-Nachwirkung auf betroffenen Zellen (3s Schaden bei Betreten)
-    /// </summary>
-    private void HandleFireExplosion(Bomb bomb, Explosion explosion)
-    {
-        foreach (var cell in explosion.AffectedCells)
-        {
-            var gridCell = _grid.TryGetCell(cell.X, cell.Y);
-            if (gridCell == null) continue;
-
-            // Lava-Nachwirkung aktivieren
-            gridCell.IsLavaActive = true;
-            gridCell.LavaTimer = 3.0f;
-            _specialEffectCells.Add(gridCell);
-
-            // Rote/orange Glut-Partikel
-            float px = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            float py = cell.Y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            _particleSystem.EmitEmbers(px, py, 10, new SKColor(255, 100, 0));
-        }
-
-        // Floating Text
-        float centerX = explosion.X;
-        float centerY = explosion.Y;
-        _floatingText.Spawn(centerX, centerY - 16, "LAVA!", new SKColor(255, 100, 0), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Klebe-Explosion: Kettenreaktionen + Verlangsamung (Klebe-Effekt auf betroffenen Zellen)
-    /// </summary>
-    private void HandleStickyExplosion(Explosion explosion)
-    {
-        foreach (var cell in explosion.AffectedCells)
-        {
-            var gridCell = _grid.TryGetCell(cell.X, cell.Y);
-            if (gridCell == null) continue;
-
-            // Alle Bomben in betroffenen Zellen sofort zur Kettenreaktion auslösen
-            if (gridCell.Bomb != null && !gridCell.Bomb.HasExploded)
-            {
-                gridCell.Bomb.ChainDepth = (explosion.SourceBomb?.ChainDepth ?? 0) + 1;
-                gridCell.Bomb.TriggerChainReaction();
-            }
-
-            // Klebe-Verlangsamung: Zelle einfrieren mit kürzerem Timer (1.5s)
-            gridCell.IsFrozen = true;
-            gridCell.FreezeTimer = 1.5f;
-            _specialEffectCells.Add(gridCell);
-
-            // Grüne Partikel
-            float px = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            float py = cell.Y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            _particleSystem.EmitShaped(px, py, 8, new SKColor(50, 205, 50),
-                ParticleShape.Circle, 60f, 0.6f, 3f);
-        }
-
-        // Floating Text
-        float centerX = explosion.X;
-        float centerY = explosion.Y;
-        string stuckText = _localizationService.GetString("StickyEffect") ?? "STUCK!";
-        _floatingText.Spawn(centerX, centerY - 16, stuckText, new SKColor(50, 205, 50), 16f, 1.5f);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // NEUE BOMBEN-EFFEKTE (Phase 1)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Rauch-Explosion: 3x3 Nebelwolke, Gegner-AI läuft 4s zufällig
-    /// </summary>
-    private void HandleSmokeExplosion(Explosion explosion)
-    {
-        int centerX = explosion.SourceBomb?.GridX ?? 0;
-        int centerY = explosion.SourceBomb?.GridY ?? 0;
-
-        // 3x3 Rauchwolke um Zentrum
-        for (int dy = -1; dy <= 1; dy++)
-        {
-            for (int dx = -1; dx <= 1; dx++)
-            {
-                var gridCell = _grid.TryGetCell(centerX + dx, centerY + dy);
-                if (gridCell == null || gridCell.Type == CellType.Wall) continue;
-
-                gridCell.IsSmokeCloud = true;
-                gridCell.SmokeTimer = 4.0f;
-                _specialEffectCells.Add(gridCell);
-
-                // Graue Rauchpartikel
-                float px = gridCell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-                float py = gridCell.Y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-                _particleSystem.EmitShaped(px, py, 6, new SKColor(160, 160, 160),
-                    ParticleShape.Circle, 40f, 0.8f, 4f);
-            }
-        }
-
-        float cx = centerX * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-        float cy = centerY * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-        string smokeText = _localizationService.GetString("SmokeEffect") ?? "SMOKE!";
-        _floatingText.Spawn(cx, cy - 16, smokeText, new SKColor(160, 160, 160), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Blitz-Explosion: Blitz springt zu 3 nächsten Gegnern, ignoriert Wände
-    /// </summary>
-    private void HandleLightningExplosion(Bomb bomb)
-    {
-        float bx = bomb.X;
-        float by = bomb.Y;
-
-        // Die 3 nächsten aktiven Gegner finden
-        var targets = new List<Enemy>();
-        foreach (var enemy in _enemies)
-        {
-            if (!enemy.IsActive || enemy.IsDying) continue;
-            targets.Add(enemy);
-        }
-
-        // Nach Distanz sortieren
-        targets.Sort((a, b) =>
-        {
-            float distA = MathF.Abs(a.X - bx) + MathF.Abs(a.Y - by);
-            float distB = MathF.Abs(b.X - bx) + MathF.Abs(b.Y - by);
-            return distA.CompareTo(distB);
-        });
-
-        int hits = Math.Min(3, targets.Count);
-        for (int i = 0; i < hits; i++)
-        {
-            var target = targets[i];
-
-            // Blitz-Partikel von Bombe zum Gegner
-            _particleSystem.EmitExplosionSparks(target.X, target.Y, 10,
-                new SKColor(255, 255, 100), 120f);
-
-            // Gegner direkt töten (normaler Todes-Prozess via KillEnemy)
-            if (target.TakeDamage())
-            {
-                KillEnemy(target);
-            }
-
-            // Blitz-Verbindungslinie als Partikel-Spur
-            float startX = (i == 0) ? bx : targets[i - 1].X;
-            float startY = (i == 0) ? by : targets[i - 1].Y;
-            int sparkSteps = 5;
-            for (int s = 0; s < sparkSteps; s++)
-            {
-                float t = s / (float)sparkSteps;
-                float sx = startX + (target.X - startX) * t;
-                float sy = startY + (target.Y - startY) * t;
-                _particleSystem.EmitShaped(sx, sy, 2, new SKColor(200, 200, 255),
-                    ParticleShape.Spark, 30f, 0.3f, 1.5f, hasGlow: true);
-            }
-        }
-
-        string lightningText = _localizationService.GetString("LightningEffect") ?? "ZAP!";
-        _floatingText.Spawn(bx, by - 16, lightningText, new SKColor(255, 255, 100), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Gravitations-Explosion: Zieht alle Gegner im 3-Zellen-Radius 1 Zelle zum Zentrum
-    /// </summary>
-    private void HandleGravityExplosion(Bomb bomb, Explosion explosion)
-    {
-        int centerX = bomb.GridX;
-        int centerY = bomb.GridY;
-        float bx = bomb.X;
-        float by = bomb.Y;
-
-        // Gravity-Well auf betroffenen Zellen setzen
-        foreach (var cell in explosion.AffectedCells)
-        {
-            var gridCell = _grid.TryGetCell(cell.X, cell.Y);
-            if (gridCell == null) continue;
-
-            gridCell.IsGravityWell = true;
-            gridCell.GravityTimer = 2.0f;
-            _specialEffectCells.Add(gridCell);
-        }
-
-        // Gegner im 3-Zellen-Radius 1 Zelle zum Zentrum ziehen
-        foreach (var enemy in _enemies)
-        {
-            if (!enemy.IsActive || enemy.IsDying) continue;
-
-            int distX = Math.Abs(enemy.GridX - centerX);
-            int distY = Math.Abs(enemy.GridY - centerY);
-            if (distX > 3 || distY > 3) continue;
-
-            // Richtung zum Zentrum berechnen
-            float dx = centerX - enemy.GridX;
-            float dy = centerY - enemy.GridY;
-
-            // 1 Zelle in Richtung Zentrum verschieben (wenn Zielzelle begehbar)
-            int moveX = dx != 0 ? Math.Sign(dx) : 0;
-            int moveY = dy != 0 ? Math.Sign(dy) : 0;
-            int targetX = enemy.GridX + moveX;
-            int targetY = enemy.GridY + moveY;
-
-            var targetCell = _grid.TryGetCell(targetX, targetY);
-            if (targetCell != null && targetCell.IsWalkable())
-            {
-                enemy.X = targetX * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-                enemy.Y = targetY * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            }
-        }
-
-        // Violette Gravitations-Partikel (spiralförmig zum Zentrum)
-        _particleSystem.EmitShaped(bx, by, 15, new SKColor(180, 100, 255),
-            ParticleShape.Circle, 80f, 0.6f, 3f, hasGlow: true);
-
-        string gravityText = _localizationService.GetString("GravityEffect") ?? "PULL!";
-        _floatingText.Spawn(bx, by - 16, gravityText, new SKColor(180, 100, 255), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Gift-Explosion: Gift-Zellen (3s), Gegner verlieren HP beim Betreten
-    /// </summary>
-    private void HandlePoisonExplosion(Explosion explosion)
-    {
-        foreach (var cell in explosion.AffectedCells)
-        {
-            var gridCell = _grid.TryGetCell(cell.X, cell.Y);
-            if (gridCell == null) continue;
-
-            gridCell.IsPoisoned = true;
-            gridCell.PoisonTimer = 3.0f;
-            _specialEffectCells.Add(gridCell);
-
-            // Grüne Gift-Partikel
-            float px = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            float py = cell.Y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-            _particleSystem.EmitShaped(px, py, 5, new SKColor(0, 200, 0),
-                ParticleShape.Circle, 30f, 0.5f, 3.5f);
-        }
-
-        float cx = explosion.X;
-        float cy = explosion.Y;
-        string poisonText = _localizationService.GetString("PoisonEffect") ?? "POISON!";
-        _floatingText.Spawn(cx, cy - 16, poisonText, new SKColor(0, 200, 0), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Zeitverzerrung: Alles im Radius 5s auf 50% verlangsamt inkl. Bomben-Timer
-    /// </summary>
-    private void HandleTimeWarpExplosion(Explosion explosion)
-    {
-        foreach (var cell in explosion.AffectedCells)
-        {
-            var gridCell = _grid.TryGetCell(cell.X, cell.Y);
-            if (gridCell == null) continue;
-
-            gridCell.IsTimeWarped = true;
-            gridCell.TimeWarpTimer = 5.0f;
-            _specialEffectCells.Add(gridCell);
-        }
-
-        // Blaue/violette Zeitverzerrungspartikel
-        float cx = explosion.X;
-        float cy = explosion.Y;
-        _particleSystem.EmitShaped(cx, cy, 20, new SKColor(100, 150, 255),
-            ParticleShape.Circle, 60f, 1.0f, 4f, hasGlow: true);
-        _particleSystem.EmitExplosionSparks(cx, cy, 12, new SKColor(200, 200, 255), 80f);
-
-        string timeText = _localizationService.GetString("TimeWarpEffect") ?? "SLOW!";
-        _floatingText.Spawn(cx, cy - 16, timeText, new SKColor(100, 150, 255), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Spiegel-Explosion: Explosion kopiert sich in Gegenrichtung (doppelte Reichweite effektiv)
-    /// </summary>
-    private void HandleMirrorExplosion(Bomb bomb, Explosion explosion)
-    {
-        // Zusätzliche Explosion mit doppeltem Range erzeugen
-        int mirrorRange = bomb.Range * 2;
-        var mirrorExplosion = new Explosion(bomb);
-        mirrorExplosion.CalculateSpread(_grid, mirrorRange);
-        _explosions.Add(mirrorExplosion);
-        ProcessExplosion(mirrorExplosion);
-
-        // Silberne Spiegel-Partikel
-        float cx = bomb.X;
-        float cy = bomb.Y;
-        _particleSystem.EmitExplosionSparks(cx, cy, 16, new SKColor(220, 220, 240), 140f);
-        _particleSystem.EmitShaped(cx, cy, 8, new SKColor(200, 200, 255),
-            ParticleShape.Circle, 100f, 0.4f, 2f, hasGlow: true);
-
-        string mirrorText = _localizationService.GetString("MirrorEffect") ?? "MIRROR!";
-        _floatingText.Spawn(cx, cy - 16, mirrorText, new SKColor(220, 220, 240), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Wirbel-Explosion: Spiralförmige Explosion, trifft mehr Zellen als lineare Ausbreitung
-    /// </summary>
-    private void HandleVortexExplosion(Bomb bomb)
-    {
-        int cx = bomb.GridX;
-        int cy = bomb.GridY;
-        int range = bomb.Range;
-
-        // Spiralförmig alle Zellen im Radius markieren (mehr als 4-Richtungen)
-        for (int r = 1; r <= range; r++)
-        {
-            // 8 Richtungen (inkl. Diagonalen) pro Ring
-            for (int dx = -r; dx <= r; dx++)
-            {
-                for (int dy = -r; dy <= r; dy++)
-                {
-                    if (Math.Abs(dx) + Math.Abs(dy) > range + 1) continue;
-                    if (dx == 0 && dy == 0) continue;
-
-                    var gridCell = _grid.TryGetCell(cx + dx, cy + dy);
-                    if (gridCell == null || gridCell.Type == CellType.Wall) continue;
-
-                    // Block zerstören
-                    if (gridCell.Type == CellType.Block && !gridCell.IsDestroying)
-                    {
-                        DestroyBlock(gridCell);
-                        continue; // Blöcke stoppen diesen Pfad
-                    }
-
-                    // Zelle als explodierend markieren
-                    gridCell.IsExploding = true;
-                    gridCell.ExplosionProgress = 0f;
-                    gridCell.AfterglowTimer = 0.4f;
-                    _afterglowCells.Add(gridCell);
-
-                    // Kettenreaktion
-                    if (gridCell.Bomb != null && !gridCell.Bomb.HasExploded)
-                    {
-                        gridCell.Bomb.ChainDepth = (bomb.ChainDepth) + 1;
-                        gridCell.Bomb.TriggerChainReaction();
-                    }
-                }
-            }
-        }
-
-        // Violette Wirbelpartikel
-        float px = bomb.X;
-        float py = bomb.Y;
-        _particleSystem.EmitShaped(px, py, 24, new SKColor(148, 0, 211),
-            ParticleShape.Circle, 100f, 0.6f, 3f, hasGlow: true);
-        _particleSystem.EmitExplosionSparks(px, py, 16, new SKColor(200, 100, 255), 120f);
-
-        string vortexText = _localizationService.GetString("VortexEffect") ?? "VORTEX!";
-        _floatingText.Spawn(px, py - 16, vortexText, new SKColor(148, 0, 211), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Phantom-Explosion: Explosion durchdringt 1 unzerstörbare Wand
-    /// </summary>
-    private void HandlePhantomExplosion(Bomb bomb, Explosion explosion)
-    {
-        // Zusätzliche Explosion erzeugen die 1 Wand durchdringt
-        // Für jede Richtung: Wenn Wand gefunden, dahinter weiter explodieren
-        int cx = bomb.GridX;
-        int cy = bomb.GridY;
-        int range = bomb.Range;
-
-        var deltas = new (int dx, int dy)[] { (1, 0), (-1, 0), (0, 1), (0, -1) };
-        foreach (var (dx, dy) in deltas)
-        {
-            bool wallPassed = false;
-            for (int i = 1; i <= range + 1; i++)
-            {
-                int gx = cx + dx * i;
-                int gy = cy + dy * i;
-                var cell = _grid.TryGetCell(gx, gy);
-                if (cell == null) break;
-
-                if (cell.Type == CellType.Wall && !wallPassed)
-                {
-                    wallPassed = true;
-                    // Geister-Partikel an der Wand
-                    float wx = gx * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-                    float wy = gy * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-                    _particleSystem.EmitShaped(wx, wy, 6, new SKColor(200, 200, 255, 128),
-                        ParticleShape.Circle, 40f, 0.4f, 2f, hasGlow: true);
-                    continue;
-                }
-
-                if (wallPassed && cell.Type == CellType.Wall) break; // Nur 1 Wand durchdringen
-
-                if (wallPassed)
-                {
-                    // Explosion hinter der Wand
-                    if (cell.Type == CellType.Block && !cell.IsDestroying)
-                    {
-                        DestroyBlock(cell);
-                        break;
-                    }
-
-                    cell.IsExploding = true;
-                    cell.ExplosionProgress = 0f;
-                    cell.AfterglowTimer = 0.4f;
-                    _afterglowCells.Add(cell);
-
-                    if (cell.Bomb != null && !cell.Bomb.HasExploded)
-                    {
-                        cell.Bomb.ChainDepth = bomb.ChainDepth + 1;
-                        cell.Bomb.TriggerChainReaction();
-                    }
-                }
-            }
-        }
-
-        // Geister-Partikel (halbtransparent weiß-blau)
-        _particleSystem.EmitShaped(bomb.X, bomb.Y, 12, new SKColor(200, 220, 255, 180),
-            ParticleShape.Circle, 80f, 0.5f, 2.5f, hasGlow: true);
-
-        string phantomText = _localizationService.GetString("PhantomEffect") ?? "PHANTOM!";
-        _floatingText.Spawn(bomb.X, bomb.Y - 16, phantomText, new SKColor(200, 220, 255), 16f, 1.5f);
-    }
-
-    /// <summary>
-    /// Nova-Explosion: 360-Grad Explosion (ALLE Zellen im Range), lässt PowerUp fallen
-    /// </summary>
-    private void HandleNovaExplosion(Bomb bomb)
-    {
-        int cx = bomb.GridX;
-        int cy = bomb.GridY;
-        int range = bomb.Range;
-
-        // ALLE Zellen im quadratischen Bereich explodieren
-        for (int dy = -range; dy <= range; dy++)
-        {
-            for (int dx = -range; dx <= range; dx++)
-            {
-                if (dx == 0 && dy == 0) continue;
-
-                var cell = _grid.TryGetCell(cx + dx, cy + dy);
-                if (cell == null || cell.Type == CellType.Wall) continue;
-
-                if (cell.Type == CellType.Block && !cell.IsDestroying)
-                {
-                    DestroyBlock(cell);
-                    continue;
-                }
-
-                cell.IsExploding = true;
-                cell.ExplosionProgress = 0f;
-                cell.AfterglowTimer = 0.4f;
-                _afterglowCells.Add(cell);
-
-                if (cell.Bomb != null && !cell.Bomb.HasExploded)
-                {
-                    cell.Bomb.ChainDepth = bomb.ChainDepth + 1;
-                    cell.Bomb.TriggerChainReaction();
-                }
-            }
-        }
-
-        // Zufälliges PowerUp an der Explosionsstelle droppen
-        var centerCell = _grid.TryGetCell(cx, cy);
-        if (centerCell != null && centerCell.PowerUp == null)
-        {
-            var types = new[] { PowerUpType.BombUp, PowerUpType.Fire, PowerUpType.Speed,
-                               PowerUpType.Kick, PowerUpType.Detonator, PowerUpType.Bombpass };
-            var randomType = types[_pontanRandom.Next(types.Length)];
-            var powerUp = PowerUp.CreateAtGrid(cx, cy, randomType);
-            powerUp.BirthTimer = Models.Entities.PowerUp.BIRTH_DURATION;
-            _powerUps.Add(powerUp);
-            centerCell.PowerUp = powerUp;
-        }
-
-        // Goldene Nova-Partikel-Explosion
-        _particleSystem.EmitShaped(bomb.X, bomb.Y, 30, new SKColor(255, 215, 0),
-            ParticleShape.Circle, 120f, 0.6f, 3f, hasGlow: true);
-        _particleSystem.EmitExplosionSparks(bomb.X, bomb.Y, 20, new SKColor(255, 255, 200), 160f);
-        _particleSystem.EmitEmbers(bomb.X, bomb.Y, 12, new SKColor(255, 200, 50));
-
-        string novaText = _localizationService.GetString("NovaEffect") ?? "NOVA!";
-        _floatingText.Spawn(bomb.X, bomb.Y - 16, novaText, new SKColor(255, 215, 0), 18f, 2f);
-    }
-
-    /// <summary>
-    /// Schwarzes-Loch: Saugt Gegner 3s ein, dann Explosion. Markiert Zellen mit BlackHole-Effekt.
-    /// </summary>
-    private void HandleBlackHoleExplosion(Bomb bomb, Explosion explosion)
-    {
-        int cx = bomb.GridX;
-        int cy = bomb.GridY;
-
-        // BlackHole-Zellen im Explosionsbereich setzen
-        foreach (var cell in explosion.AffectedCells)
-        {
-            var gridCell = _grid.TryGetCell(cell.X, cell.Y);
-            if (gridCell == null) continue;
-
-            gridCell.IsBlackHole = true;
-            gridCell.BlackHoleTimer = 3.0f;
-            _specialEffectCells.Add(gridCell);
-        }
-
-        // Zentrale Zelle als Anker
-        var centerCell = _grid.TryGetCell(cx, cy);
-        if (centerCell != null)
-        {
-            centerCell.IsBlackHole = true;
-            centerCell.BlackHoleTimer = 3.0f;
-            _specialEffectCells.Add(centerCell);
-        }
-
-        // Dunkle Partikel die zum Zentrum gezogen werden
-        _particleSystem.EmitShaped(bomb.X, bomb.Y, 20, new SKColor(30, 0, 60),
-            ParticleShape.Circle, 40f, 1.0f, 3f, hasGlow: true);
-        _particleSystem.EmitExplosionSparks(bomb.X, bomb.Y, 10, new SKColor(100, 0, 200), 60f);
-
-        string bhText = _localizationService.GetString("BlackHoleEffect") ?? "VOID!";
-        _floatingText.Spawn(bomb.X, bomb.Y - 16, bhText, new SKColor(100, 0, 200), 16f, 2f);
-    }
 
     /// <summary>
     /// Spezial-Bomben-Zellen-Effekte aktualisieren (Dirty-Liste statt kompletter Grid-Iteration).

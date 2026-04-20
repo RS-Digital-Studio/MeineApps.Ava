@@ -23,7 +23,9 @@ public sealed class LuckySpinService : ILuckySpinService
         new() { Index = 4, NameKey = "SpinReward100",   Coins = 100,  Weight = 20 },
         new() { Index = 5, NameKey = "SpinReward750",   Coins = 750,  Weight = 10 },
         new() { Index = 6, NameKey = "SpinReward250",   Coins = 250,  Weight = 18 },
-        new() { Index = 7, NameKey = "SpinReward5Gems", Gems = 5,     Weight = 8 },
+        // BAL-33 (20.04.2026): Weight 8 -> 12. Gem-Segment-Chance von 5.9% auf 8.6%,
+        // Gem-Erwartungswert/Spin von 0.66 auf 0.79 (+20%). Gratis-Gems waren schwach.
+        new() { Index = 7, NameKey = "SpinReward5Gems", Gems = 5,     Weight = 12 },
         new() { Index = 8, NameKey = "SpinRewardJackpot", Coins = 3000, Gems = 10, Weight = 5, IsJackpot = true },
     ];
 

@@ -17,7 +17,12 @@ public sealed partial class QuickPlayViewModel : ViewModelBase, INavigable, IGam
 
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
+
+    // IGameJuiceEmitter-Pflichtevent. QuickPlay selbst emittiert keine Celebration
+    // (Celebration kommt beim GameOver-Screen des QuickPlay-Runs) — CS0067 bewusst unterdrueckt.
+#pragma warning disable CS0067
     public event Action? CelebrationRequested;
+#pragma warning restore CS0067
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES

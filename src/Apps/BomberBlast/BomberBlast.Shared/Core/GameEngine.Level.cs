@@ -5,6 +5,8 @@ using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
 using BomberBlast.Models.Levels;
 using BomberBlast.Services;
+// MutatorEffects ist in BomberBlast.Core.LevelGeneration — Namespace nicht per using einbinden,
+// weil es mit Models.Levels.LevelGenerator kollidiert. Stattdessen voll qualifiziert unten referenziert.
 using SkiaSharp;
 
 namespace BomberBlast.Core;
@@ -30,7 +32,7 @@ public sealed partial class GameEngine
 
         _player.ResetForNewGame();
         ApplyUpgrades();
-        ApplyMutatorEffects();
+        BomberBlast.Core.LevelGeneration.MutatorEffects.Apply(_player, _activeMutator);
         await LoadLevelAsync();
 
         // Welt-spezifische Musik (Boss-Track hat Priorität, sonst Welt-Track mit Gameplay-Fallback)
@@ -49,7 +51,7 @@ public sealed partial class GameEngine
         else if (_activeMutator != LevelMutator.None)
         {
             // Mutator-Ankündigung (z.B. "MUTATOR: Double Speed")
-            var mutatorName = GetMutatorDisplayName(_activeMutator);
+            var mutatorName = _levelGenerator.GetMutatorDisplayName(_activeMutator);
             var format = _localizationService.GetString("MutatorActive") ?? "Mutator: {0}";
             _worldAnnouncementText = string.Format(format, mutatorName);
             _worldAnnouncementTimer = 2.5f;
@@ -339,7 +341,6 @@ public sealed partial class GameEngine
         }
 
         // Synergien prüfen (zwei bestimmte Buffs → Bonus-Effekt)
-        _synergyBombardierActive = false;
         _synergyBlitzkriegActive = false;
         _synergyFortressActive = false;
         _fortressRegenTimer = 0;
@@ -348,10 +349,9 @@ public sealed partial class GameEngine
 
         var buffs = state.ActiveBuffs;
 
-        // Bombardier: ExtraBomb + ExtraFire → nochmal +1 auf beides
+        // Bombardier: ExtraBomb + ExtraFire → nochmal +1 auf beides (sofort angewandt, kein Runtime-Flag).
         if (buffs.Contains(DungeonBuffType.ExtraBomb) && buffs.Contains(DungeonBuffType.ExtraFire))
         {
-            _synergyBombardierActive = true;
             _player.MaxBombs++;
             _player.FireRange++;
         }
@@ -405,7 +405,7 @@ public sealed partial class GameEngine
         _bombs.Clear();
         _explosions.Clear();
         _powerUps.Clear();
-        _enemyPositionCache.Clear();
+        _enemyPositionIndex.Clear();
         _enemyPositionHashSet.Clear();
         _destroyingCells.Clear();
         _afterglowCells.Clear();
@@ -459,15 +459,25 @@ public sealed partial class GameEngine
         _player.MovementDirection = Direction.None;
         _inputManager.Reset(); // Input-State zurücksetzen (verhindert Geister-Bewegung im nächsten Level)
 
-        // PowerUps in Blöcken platzieren
-        PlacePowerUps(random);
+        // Level-Generierung via LevelGenerator (extrahiert aus GameEngine.Level.cs, v2.0.30+)
+        var genCtx = BuildGenerationContext(random);
+
+        // PowerUps in Blöcken platzieren (mutiert Grid-Zellen direkt)
+        _levelGenerator.PlacePowerUps(genCtx);
 
         // Exit unter einem Block platzieren (nicht im Survival-Modus)
         if (!_isSurvivalMode)
-            PlaceExit(random);
+            _levelGenerator.PlaceExit(genCtx);
 
-        // Gegner spawnen
-        SpawnEnemies(random);
+        // Gegner spawnen — Generator gibt Liste zurueck, wir haengen sie in _enemies und tracken Boss-Encounter
+        var spawnedEnemies = _levelGenerator.SpawnEnemies(genCtx);
+        _enemies.AddRange(spawnedEnemies);
+        _enemiesRemainingDirty = true;
+        foreach (var e in spawnedEnemies)
+        {
+            if (e is BossEnemy boss)
+                _tracking.OnBossEncountered(boss.BossKind);
+        }
         _originalEnemyCount = _enemies.Count;
 
         // Welt-Theme setzen (basierend auf Level-Nummer)
@@ -551,295 +561,18 @@ public sealed partial class GameEngine
     }
 
     /// <summary>
-    /// Wendet Mutator-Effekte auf den Spieler und Level an.
-    /// Wird nach ApplyUpgrades() aufgerufen.
+    /// Baut den Context fuer den LevelGenerator aus Engine-State.
+    /// Zentraler Ort damit Generator-Aufrufe nicht jedes Mal die Felder durchreichen.
     /// </summary>
-    private void ApplyMutatorEffects()
+    private BomberBlast.Core.LevelGeneration.LevelGenerationContext BuildGenerationContext(Random random)
     {
-        switch (_activeMutator)
+        return new BomberBlast.Core.LevelGeneration.LevelGenerationContext
         {
-            case LevelMutator.DoubleSpeed:
-                // Spieler bewegt sich deutlich schneller (+2 Speed-Stufen)
-                _player.SpeedLevel = Math.Min(_player.SpeedLevel + 2, 3);
-                // Gegner-Speed wird per _activeMutator in UpdateEnemies() geprüft (1.5x Multiplikator)
-                break;
-
-            case LevelMutator.AllPowerBombs:
-                // Jede Bombe ist eine PowerBomb (Range = Fire + MaxBombs - 1)
-                _player.HasPowerBomb = true;
-                _player.FireRange = Math.Max(_player.FireRange, 4);
-                break;
-
-            case LevelMutator.NoTimer:
-                // Timer bereits auf 99999 im LevelGenerator gesetzt
-                break;
-
-            // MirrorControls: Wird in Update() bei Input-Verarbeitung geprüft
-            // InvisibleBlocks: Wird in GameRenderer.Grid.cs bei Block-Rendering geprüft
-        }
-    }
-
-    /// <summary>Lokalisierter Anzeigename für einen Mutator</summary>
-    private string GetMutatorDisplayName(LevelMutator mutator)
-    {
-        string key = mutator switch
-        {
-            LevelMutator.AllPowerBombs => "MutatorAllPowerBombs",
-            LevelMutator.DoubleSpeed => "MutatorDoubleSpeed",
-            LevelMutator.InvisibleBlocks => "MutatorInvisibleWalls",
-            LevelMutator.NoTimer => "MutatorNoTimer",
-            LevelMutator.MirrorControls => "MutatorMirrorControls",
-            _ => ""
+            Grid = _grid,
+            CurrentLevel = _currentLevel!,
+            Random = random,
+            PowerUpLuckLevel = _shopService.Upgrades.GetLevel(UpgradeType.PowerUpLuck)
         };
-
-        if (string.IsNullOrEmpty(key)) return "";
-
-        string fallback = mutator switch
-        {
-            LevelMutator.AllPowerBombs => "All PowerBombs",
-            LevelMutator.DoubleSpeed => "Double Speed",
-            LevelMutator.InvisibleBlocks => "Invisible Walls",
-            LevelMutator.NoTimer => "No Timer",
-            LevelMutator.MirrorControls => "Mirror Controls",
-            _ => ""
-        };
-
-        return _localizationService.GetString(key) ?? fallback;
-    }
-
-    private void PlacePowerUps(Random random)
-    {
-        // Wiederverwendbare Liste statt LINQ .ToList() (vermeidet Heap-Allokation pro Aufruf)
-        _blockCells.Clear();
-        for (int y = 0; y < _grid.Height; y++)
-            for (int x = 0; x < _grid.Width; x++)
-                if (_grid[x, y].Type == CellType.Block)
-                    _blockCells.Add(_grid[x, y]);
-
-        if (_blockCells.Count == 0 || _currentLevel?.PowerUps == null)
-            return;
-
-        var blocks = _blockCells;
-
-        // Fisher-Yates Shuffle (in-place, keine LINQ-Allokation)
-        for (int i = blocks.Count - 1; i > 0; i--)
-        {
-            int j = random.Next(i + 1);
-            (blocks[i], blocks[j]) = (blocks[j], blocks[i]);
-        }
-
-        int blockIndex = 0;
-        foreach (var powerUp in _currentLevel.PowerUps)
-        {
-            if (blockIndex >= blocks.Count)
-                break;
-
-            Cell targetCell;
-            if (powerUp.X.HasValue && powerUp.Y.HasValue)
-            {
-                targetCell = _grid.TryGetCell(powerUp.X.Value, powerUp.Y.Value) ?? blocks[blockIndex++];
-            }
-            else
-            {
-                targetCell = blocks[blockIndex++];
-            }
-
-            if (targetCell.Type == CellType.Block)
-            {
-                targetCell.HiddenPowerUp = powerUp.Type;
-            }
-        }
-
-        // PowerUpLuck-Upgrade: Zusätzliche zufällige PowerUps
-        int extraPowerUps = _shopService.Upgrades.GetLevel(UpgradeType.PowerUpLuck);
-        if (extraPowerUps > 0)
-        {
-            var basicPowerUps = new[] { PowerUpType.BombUp, PowerUpType.Fire, PowerUpType.Speed };
-            for (int i = 0; i < extraPowerUps && blockIndex < blocks.Count; i++)
-            {
-                var cell = blocks[blockIndex++];
-                if (cell.Type == CellType.Block && cell.HiddenPowerUp == null)
-                {
-                    cell.HiddenPowerUp = basicPowerUps[random.Next(basicPowerUps.Length)];
-                }
-            }
-        }
-    }
-
-    private void PlaceExit(Random random)
-    {
-        // Wiederverwendbare Liste statt LINQ .Where().ToList() (vermeidet Heap-Allokation)
-        _blockCells.Clear();
-        for (int y = 0; y < _grid.Height; y++)
-            for (int x = 0; x < _grid.Width; x++)
-            {
-                var c = _grid[x, y];
-                if (c.Type == CellType.Block && c.HiddenPowerUp == null)
-                    _blockCells.Add(c);
-            }
-
-        var blocks = _blockCells;
-
-        // Fallback: Wenn ALLE Blöcke ein HiddenPowerUp haben → alle Blöcke nehmen
-        // Exit hat Priorität über PowerUp (wird unten auf null gesetzt)
-        if (blocks.Count == 0)
-        {
-            for (int y = 0; y < _grid.Height; y++)
-                for (int x = 0; x < _grid.Width; x++)
-                    if (_grid[x, y].Type == CellType.Block)
-                        _blockCells.Add(_grid[x, y]);
-
-            if (blocks.Count == 0)
-                return;
-        }
-
-        Cell exitCell;
-        if (_currentLevel?.ExitPosition != null)
-        {
-            exitCell = _grid.TryGetCell(_currentLevel.ExitPosition.Value.x, _currentLevel.ExitPosition.Value.y)
-                ?? blocks[random.Next(blocks.Count)];
-        }
-        else
-        {
-            // Exit aus den entferntesten Blöcken zufällig wählen (nicht immer der gleiche Spot)
-            // Sammle alle Blöcke die mindestens 60% der maximalen Distanz haben
-            int maxDist = 0;
-            for (int i = 0; i < blocks.Count; i++)
-            {
-                int dist = Math.Abs(blocks[i].X - 1) + Math.Abs(blocks[i].Y - 1);
-                if (dist > maxDist) maxDist = dist;
-            }
-
-            int threshold = (int)(maxDist * 0.6f);
-            var farBlocks = new List<Cell>();
-            for (int i = 0; i < blocks.Count; i++)
-            {
-                int dist = Math.Abs(blocks[i].X - 1) + Math.Abs(blocks[i].Y - 1);
-                if (dist >= threshold)
-                    farBlocks.Add(blocks[i]);
-            }
-
-            exitCell = farBlocks.Count > 0
-                ? farBlocks[random.Next(farBlocks.Count)]
-                : blocks[random.Next(blocks.Count)];
-        }
-
-        // Exit unter dem Block verstecken (klassisches Bomberman)
-        exitCell.HiddenPowerUp = null;
-        exitCell.HasHiddenExit = true;
-    }
-
-    private void SpawnEnemies(Random random)
-    {
-        if (_currentLevel?.Enemies == null)
-            return;
-
-        // Gültige Spawn-Positionen (nicht in Spieler-Nähe, nicht auf Wänden/Blöcken)
-        var validPositions = new List<(int x, int y)>();
-        for (int x = 1; x < GameGrid.WIDTH - 1; x++)
-        {
-            for (int y = 1; y < GameGrid.HEIGHT - 1; y++)
-            {
-                if (x <= 3 && y <= 3)
-                    continue;
-
-                var cell = _grid[x, y];
-                if (cell.Type == CellType.Empty)
-                {
-                    validPositions.Add((x, y));
-                }
-            }
-        }
-
-        foreach (var spawn in _currentLevel.Enemies)
-        {
-            for (int i = 0; i < spawn.Count; i++)
-            {
-                (int x, int y) pos;
-                if (spawn.X.HasValue && spawn.Y.HasValue)
-                {
-                    pos = (spawn.X.Value, spawn.Y.Value);
-                }
-                else if (validPositions.Count > 0)
-                {
-                    int index = random.Next(validPositions.Count);
-                    pos = validPositions[index];
-                    validPositions.RemoveAt(index);
-                }
-                else
-                {
-                    // Fallback: Bis zu 40 Versuche für gültige Position
-                    bool placed = false;
-                    pos = (0, 0);
-                    for (int attempt = 0; attempt < 40; attempt++)
-                    {
-                        pos = (random.Next(3, GameGrid.WIDTH - 2), random.Next(3, GameGrid.HEIGHT - 2));
-                        var fallbackCell = _grid.TryGetCell(pos.x, pos.y);
-                        if (fallbackCell != null && fallbackCell.Type == CellType.Empty)
-                        {
-                            placed = true;
-                            break;
-                        }
-                    }
-                    if (!placed) continue; // Nur nach 40 Fehlversuchen aufgeben
-                }
-
-                var enemy = Enemy.CreateAtGrid(pos.x, pos.y, spawn.Type);
-                _enemies.Add(enemy);
-                _enemiesRemainingDirty = true;
-            }
-        }
-
-        // Boss(e) spawnen wenn Boss-Level
-        if (_currentLevel.BossKind.HasValue)
-        {
-            bool isDuoBoss = _currentLevel.BossKind2.HasValue;
-            var bossType1 = _currentLevel.BossKind.Value;
-
-            // Einzel-Boss: Mitte. Duo-Boss: Links und Rechts getrennt
-            int boss1X = isDuoBoss ? GameGrid.WIDTH / 4 : GameGrid.WIDTH / 2;
-            int boss1Y = GameGrid.HEIGHT / 2;
-
-            SpawnBossAtPosition(boss1X, boss1Y, bossType1);
-
-            // Zweiter Boss (Duo-Encounter Welt 9+10)
-            if (isDuoBoss)
-            {
-                var bossType2 = _currentLevel.BossKind2.Value;
-                int boss2X = GameGrid.WIDTH * 3 / 4;
-                int boss2Y = GameGrid.HEIGHT / 2;
-
-                SpawnBossAtPosition(boss2X, boss2Y, bossType2);
-            }
-        }
-    }
-
-    /// <summary>Spawnt einen Boss an einer Grid-Position und räumt die Zellen frei</summary>
-    private void SpawnBossAtPosition(int gridX, int gridY, BossType bossType)
-    {
-        int bossSize = bossType == BossType.FinalBoss ? 3 : 2;
-
-        // Sicherstellen dass die Boss-Zellen frei sind (Blöcke entfernen)
-        for (int dy = 0; dy < bossSize; dy++)
-        {
-            for (int dx = 0; dx < bossSize; dx++)
-            {
-                var cell = _grid.TryGetCell(gridX + dx, gridY + dy);
-                if (cell != null && cell.Type == CellType.Block)
-                {
-                    cell.Type = CellType.Empty;
-                    cell.HasHiddenExit = false;
-                    cell.HiddenPowerUp = null;
-                }
-            }
-        }
-
-        var boss = BossEnemy.CreateAtGrid(gridX, gridY, bossType);
-        _enemies.Add(boss);
-        _enemiesRemainingDirty = true;
-
-        // Sammlungs-Album: Boss als angetroffen melden
-        _tracking.OnBossEncountered(bossType);
     }
 
     private void CheckExitReveal()
@@ -956,7 +689,8 @@ public sealed partial class GameEngine
                 {
                     // Aktivierungs-Effekt: Partikel + Warnung
                     _particleSystem.Emit(enemy.X, enemy.Y, 10, new SKColor(255, 50, 50), 80f, 0.5f);
-                    _floatingText.Spawn(enemy.X, enemy.Y - 16, "MIMIC!", SKColors.Red, 16f, 1.5f);
+                    _floatingText.Spawn(enemy.X, enemy.Y - 16,
+                        _localizationService.GetString("FloatMimic") ?? "MIMIC!", SKColors.Red, 16f, 1.5f);
                     _soundManager.PlaySound(SoundManager.SFX_ENEMY_DEATH);
                 }
                 enemy.Update(deltaTime); // Getarnter Mimic braucht trotzdem Update (für Animation)
@@ -1161,6 +895,11 @@ public sealed partial class GameEngine
 
     private void CompleteLevel()
     {
+        // Idempotenz-Guard: Wenn bereits NICHT Playing (z.B. Spieler gerade gestorben oder Level bereits complete),
+        // nicht nochmal ausfuehren. Schuetzt gegen Tod+Exit-Race im selben Frame.
+        if (_state != GameState.Playing)
+            return;
+
         _state = GameState.LevelComplete;
         _stateTimer = 0;
         _levelCompleteHandled = false;
@@ -1172,16 +911,28 @@ public sealed partial class GameEngine
 
         // Bonusberechnung mit Shop-Upgrades
         int timeBonusMultiplier = _shopService.GetTimeBonusMultiplier();
-        int timeBonus = (int)_timer.RemainingTime * timeBonusMultiplier;
+        // NoTimer-Mutator cappen: TimeLimit=99999 ergaebe timeBonus = 99999*20 = ~2 Mio Bonus-Punkte pro Level → Score-Farming.
+        // Cap auf Level-spezifische maximale Sinnvolle Zeit (doppelte baseScore-Threshold aequivalent ~1,5min).
+        float cappedRemainingTime = _currentLevel != null && _currentLevel.Mutator == LevelMutator.NoTimer
+            ? 0f  // NoTimer = kein TimeBonus (Level ist bereits einfacher ohne Zeitdruck)
+            : _timer.RemainingTime;
+        int timeBonus = (int)cappedRemainingTime * timeBonusMultiplier;
 
-        // Gestufter Effizienzbonus (skaliert nach Welt, Welt 1-2 angehoben)
+        // Gestufter Effizienzbonus (skaliert nach Welt).
+        // BAL-32 (18.04.2026): Welt 1 bekommt großzügigere Schwellen (8/14/20 statt 5/8/12),
+        // weil Einsteiger noch kein Deck haben und mehr Blöcke räumen müssen. Ab Welt 2 gelten
+        // die klassischen, strengeren Schwellen als Skill-Maßstab.
         int world = (_currentLevelNumber - 1) / 10; // 0-9
+        int topBombThreshold = world == 0 ? 8 : 5;
+        int midBombThreshold = world == 0 ? 14 : 8;
+        int lowBombThreshold = world == 0 ? 20 : 12;
+
         int efficiencyBonus = 0;
-        if (_bombsUsed <= 5)
+        if (_bombsUsed <= topBombThreshold)
             efficiencyBonus = world switch { 0 => 4000, 1 => 6000, 2 => 8000, 3 => 12000, _ => 15000 };
-        else if (_bombsUsed <= 8)
+        else if (_bombsUsed <= midBombThreshold)
             efficiencyBonus = world switch { 0 => 2500, 1 => 4000, 2 => 5000, 3 => 8000, _ => 10000 };
-        else if (_bombsUsed <= 12)
+        else if (_bombsUsed <= lowBombThreshold)
             efficiencyBonus = world switch { 0 => 1500, 1 => 2000, 2 => 2500, 3 => 4000, _ => 5000 };
 
         // Score-Multiplikator NUR auf Level-Score anwenden (nicht den gesamten kumulierten Score)
@@ -1216,8 +967,16 @@ public sealed partial class GameEngine
         }
 
         // Coins basierend auf Level-Score (nicht kumuliert, verhindert Inflation)
-        // Welt 1 (Level 1-10): Score/2 statt Score/3 für bessere Früh-Progression
+        // Welt 1 (Level 1-10): Score/2 statt Score/3 für bessere Früh-Progression.
+        // Mutator-Level: Coin-Basis auf Max(echter Score, baseScore*3) — sonst bekommt
+        // Spieler 3 Sterne aber weniger Coins (timeBonus=0 bei NoTimer) → unfair, meidet Mutator-Levels.
         int levelScore = _player.Score - _scoreAtLevelStart;
+        if (_currentLevel != null && _currentLevel.Mutator != LevelMutator.None)
+        {
+            int fairMutatorScore = _progressService.GetBaseScoreForLevel(_currentLevelNumber) * 3;
+            if (fairMutatorScore > levelScore + _scoreAtLevelStart)
+                levelScore = fairMutatorScore - _scoreAtLevelStart;
+        }
         int coinDivisor = _currentLevelNumber <= 10 ? 2 : 3;
         int coins = levelScore / coinDivisor;
 
@@ -1280,20 +1039,31 @@ public sealed partial class GameEngine
         // Quick-Play: Kein Progress/Sterne/Achievements speichern (Spaß-Modus ohne Fortschritt)
         if (!_isQuickPlayMode)
         {
-            // Gem-Trickle: 1 Gem bei erstmaligem 3-Sterne-Abschluss (nachhaltige Gem-Quelle)
+            // Gem-Trickle: 3 Gems bei erstmaligem 3-Sterne-Abschluss (nachhaltige Gem-Quelle)
             int oldStars = _progressService.GetLevelStars(_currentLevelNumber);
-            _progressService.SetLevelBestScore(_currentLevelNumber, _player.Score);
+
+            // Mutator-Bonus: Mutator-Level (ab Welt 6) garantieren 3 Sterne bei Completion.
+            // Grund: DoubleSpeed/MirrorControls/InvisibleBlocks machen 3-Sterne-Runs statistisch unwahrscheinlich.
+            // Fairness-Logik: Schwierigkeit = Belohnung, nicht Strafe. Completion reicht fuer Max-Sterne.
+            int scoreToSave = _player.Score;
+            if (_currentLevel != null && _currentLevel.Mutator != LevelMutator.None)
+            {
+                int threeStarThreshold = _progressService.GetBaseScoreForLevel(_currentLevelNumber) * 3;
+                if (scoreToSave < threeStarThreshold)
+                    scoreToSave = threeStarThreshold;
+            }
+            _progressService.SetLevelBestScore(_currentLevelNumber, scoreToSave);
 
             int stars = _progressService.GetLevelStars(_currentLevelNumber);
             _levelCompleteStars = stars;
 
-            // Story-Modus: Erstmaliger 3-Sterne → 1 Gem Bonus (nachhaltige Gem-Quelle)
+            // Story-Modus: Erstmaliger 3-Sterne → 3 Gem Bonus (nachhaltige Gem-Quelle)
             if (stars == 3 && oldStars < 3 && !_isDailyChallenge && !_isSurvivalMode)
             {
                 _tracking.OnFirstThreeStars();
                 float gemX = _player.X;
                 float gemY = _player.Y - Models.Grid.GameGrid.CELL_SIZE * 1.5f;
-                _floatingText.Spawn(gemX, gemY, "+1 Gem", new SKColor(0, 188, 212), 16f, 1.5f);
+                _floatingText.Spawn(gemX, gemY, "+3 Gems", new SKColor(0, 188, 212), 16f, 1.5f);
             }
             float timeUsed = _currentLevel!.TimeLimit - _timer.RemainingTime;
 
@@ -1320,6 +1090,17 @@ public sealed partial class GameEngine
                 if (worldPerfect)
                     _tracking.OnWorldPerfected(currentWorld);
             }
+
+            // Alle Tracking-Daten persistieren BEVOR CompleteLevel die Level-Completion markiert.
+            // Wenn App zwischen Tracking und CompleteLevel crasht, sind Achievements/XP/Liga bereits sicher.
+            _tracking.FlushIfDirty();
+
+            // CompleteLevel als LETZTE Aktion persistieren:
+            // Wenn jetzt App crasht (Home-Button → OOM), ist Level nicht als abgeschlossen markiert
+            // → Spieler muss Level erneut durchspielen. Aber: Sterne + alle Tracking-Events sind gesichert.
+            // Rationale: Tracking-Loss waere irreversibel (kein Replay-Mechanismus),
+            // CompleteLevel-Loss ist durch Replay reparierbar.
+            _progressService.CompleteLevel(_currentLevelNumber);
         }
 
         // Tracking: Quick-Play (Achievement + Missionen)
@@ -1335,12 +1116,8 @@ public sealed partial class GameEngine
         {
             _levelCompleteHandled = true;
 
-            // Fortschritt speichern (BestScore bereits in CompleteLevel() gesetzt)
-            // Quick-Play: Kein Progress speichern
-            if (!_isQuickPlayMode)
-            {
-                _progressService.CompleteLevel(_currentLevelNumber);
-            }
+            // Fortschritt wurde bereits bei CompleteLevel() sofort persistiert (SetLevelBestScore + CompleteLevel).
+            // Hier nur noch Cleanup + Navigation-Event.
 
             _tracking.FlushIfDirty();
             LevelComplete?.Invoke();
@@ -1373,6 +1150,11 @@ public sealed partial class GameEngine
 
     private void OnTimeExpired()
     {
+        // State-Guard: Timer kann in der letzten Kerze laufen, waehrend Spieler gleichzeitig
+        // den Exit erreicht oder stirbt. In diesen Faellen kein Pontan mehr spawnen.
+        if (_state != GameState.Playing)
+            return;
+
         // Gestaffeltes Pontan-Spawning starten (welt-abhängige Gnadenfrist + Intervall)
         _pontanPunishmentActive = true;
         _pontanSpawned = 0;
@@ -1514,7 +1296,7 @@ public sealed partial class GameEngine
         }
         else if (_activeMutator != LevelMutator.None)
         {
-            var mutatorName = GetMutatorDisplayName(_activeMutator);
+            var mutatorName = _levelGenerator.GetMutatorDisplayName(_activeMutator);
             var format = _localizationService.GetString("MutatorActive") ?? "Mutator: {0}";
             _worldAnnouncementText = string.Format(format, mutatorName);
             _worldAnnouncementTimer = 2.5f;
@@ -1529,7 +1311,7 @@ public sealed partial class GameEngine
 
         // Upgrades + Mutator-Effekte anwenden
         ApplyUpgrades();
-        ApplyMutatorEffects();
+        BomberBlast.Core.LevelGeneration.MutatorEffects.Apply(_player, _activeMutator);
 
         // Musik-Wechsel bei Boss-Level
         if (_currentLevel.MusicTrack == "boss")

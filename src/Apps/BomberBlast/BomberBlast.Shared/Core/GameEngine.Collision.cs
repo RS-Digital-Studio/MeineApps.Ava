@@ -11,8 +11,9 @@ namespace BomberBlast.Core;
 /// </summary>
 public sealed partial class GameEngine
 {
-    // Positions-Cache für Gegner (vermeidet O(n) Iteration pro Explosionszelle → O(1) Lookup)
-    private readonly Dictionary<(int, int), List<Enemy>> _enemyPositionCache = new();
+    // Positions-Index fuer Gegner — v2.0.30+ nach Core/Combat/EnemyPositionIndex.cs extrahiert.
+    // Vermeidet O(n) Iteration pro Explosionszelle → O(1) Lookup, Bosse multi-cell registriert.
+    private readonly BomberBlast.Core.Combat.EnemyPositionIndex _enemyPositionIndex = new();
 
     // Poison-Schaden-Cooldown (periodisch statt sofort-Kill)
     private float _poisonDamageTimer;
@@ -21,71 +22,17 @@ public sealed partial class GameEngine
     // Ursprüngliche Gegner-Anzahl bei Level-Start (für Slow-Motion-Bedingung)
     private int _originalEnemyCount;
 
-    // Zähler für periodische Dict-Bereinigung (verwaiste Keys entfernen)
-    private int _cacheCleanupCounter;
-
     // Statische Offsets für Splitter-Spawn (vermeidet Array-Allokation pro Kill)
     private static readonly (int dx, int dy)[] SplitterOffsets = [(-1, 0), (1, 0), (0, -1), (0, 1)];
 
-    /// <summary>
-    /// Baut den Positions-Cache für alle aktiven Gegner auf.
-    /// Lists werden wiederverwendet statt pro Frame neu allokiert.
-    /// Bosse belegen mehrere Zellen und werden unter jeder registriert.
-    /// </summary>
-    private void RebuildEnemyPositionCache()
-    {
-        // Lists behalten und nur leeren (keine neue Allokation pro Frame)
-        foreach (var list in _enemyPositionCache.Values)
-            list.Clear();
-
-        foreach (var enemy in _enemies)
-        {
-            if (!enemy.IsActive || enemy.IsDying)
-                continue;
-
-            if (enemy is BossEnemy boss)
-            {
-                for (int bx = 0; bx < boss.BossSize; bx++)
-                for (int by = 0; by < boss.BossSize; by++)
-                    AddEnemyToCache((boss.GridX + bx, boss.GridY + by), boss);
-            }
-            else
-            {
-                AddEnemyToCache((enemy.GridX, enemy.GridY), enemy);
-            }
-        }
-
-        // Alle 120 Frames verwaiste Keys entfernen (Dict wächst sonst unbegrenzt)
-        if (++_cacheCleanupCounter >= 120)
-        {
-            _cacheCleanupCounter = 0;
-            List<(int, int)>? keysToRemove = null;
-            foreach (var kvp in _enemyPositionCache)
-            {
-                if (kvp.Value.Count == 0)
-                {
-                    keysToRemove ??= new List<(int, int)>();
-                    keysToRemove.Add(kvp.Key);
-                }
-            }
-            if (keysToRemove != null)
-                foreach (var key in keysToRemove)
-                    _enemyPositionCache.Remove(key);
-        }
-    }
-
-    private void AddEnemyToCache((int, int) key, Enemy enemy)
-    {
-        if (!_enemyPositionCache.TryGetValue(key, out var list))
-        {
-            list = new List<Enemy>(4);
-            _enemyPositionCache[key] = list;
-        }
-        list.Add(enemy);
-    }
-
     private void CheckCollisions()
     {
+        // NOTE: Kein blanker State-Guard hier — Enemy-Kills durch Explosionen und
+        // PowerUp-Collection sollen auch in Transition-States (LevelComplete, PlayerDied) laufen,
+        // damit die Frames vor dem tatsaechlichen State-Wechsel konsistent zu Ende gefuehrt werden.
+        // Double-Trigger-Schutz ist stattdessen in KillPlayer() (IsDying-Guard) und
+        // CompleteLevel() (State-Guard) selbst implementiert.
+
         // Spieler-Kollision mit Explosionen
         foreach (var explosion in _explosions)
         {
@@ -290,8 +237,8 @@ public sealed partial class GameEngine
             }
         }
 
-        // Gegner-Kollision mit Explosionen (Position-Cache → O(1) Lookup statt O(n) pro Zelle)
-        RebuildEnemyPositionCache();
+        // Gegner-Kollision mit Explosionen (Position-Index → O(1) Lookup statt O(n) pro Zelle)
+        _enemyPositionIndex.Rebuild(_enemies);
         foreach (var explosion in _explosions)
         {
             if (!explosion.IsActive)
@@ -299,7 +246,7 @@ public sealed partial class GameEngine
 
             foreach (var cell in explosion.AffectedCells)
             {
-                if (!_enemyPositionCache.TryGetValue((cell.X, cell.Y), out var enemiesAtCell))
+                if (!_enemyPositionIndex.TryGetAt(cell.X, cell.Y, out var enemiesAtCell))
                     continue;
 
                 for (int i = enemiesAtCell.Count - 1; i >= 0; i--)

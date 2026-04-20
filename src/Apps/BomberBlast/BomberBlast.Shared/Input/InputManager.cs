@@ -42,7 +42,7 @@ public class InputManager : IDisposable
         set
         {
             if (_handlers.TryGetValue(InputType.FloatingJoystick, out var fj))
-                ((FloatingJoystick)fj).HasDetonator = value;
+                ((NeonJoystick)fj).HasDetonator = value;
         }
     }
 
@@ -101,7 +101,7 @@ public class InputManager : IDisposable
     {
         _preferences = preferences;
 
-        var joystick = new FloatingJoystick();
+        var joystick = new NeonJoystick();
         joystick.DirectionChanged += () =>
         {
             if (_hapticEnabled) DirectionChanged?.Invoke();
@@ -180,7 +180,7 @@ public class InputManager : IDisposable
     {
         if (_handlers.TryGetValue(InputType.FloatingJoystick, out var joystick))
         {
-            var fj = (FloatingJoystick)joystick;
+            var fj = (NeonJoystick)joystick;
             fj.JoystickSize = _joystickSize;
             fj.Opacity = _joystickOpacity;
             fj.IsFixed = _joystickFixed;
@@ -318,7 +318,7 @@ public class InputManager : IDisposable
     }
 
     /// <summary>
-    /// Handler-Ressourcen freigeben (SKPaint/SKFont/SKPath in FloatingJoystick)
+    /// Handler-Ressourcen freigeben (SKPaint/SKPath in NeonJoystick)
     /// </summary>
     public void Dispose()
     {

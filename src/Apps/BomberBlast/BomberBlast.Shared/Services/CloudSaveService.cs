@@ -143,6 +143,18 @@ public sealed class CloudSaveService : ICloudSaveService
             if (cloudData == null)
                 return false;
 
+            // Persistenz-Korruption: Wenn ein Service beim Laden einen JSON-Parse-Fehler hatte,
+            // ist der lokale State nicht vertrauenswuerdig. Cloud-Pull ERZWINGEN, um zu verhindern,
+            // dass BuildCloudSaveData() einen leeren Local-State in die Cloud pusht (Data-Loss).
+            if (PersistenceHealth.WasCorruptionDetected)
+            {
+                _logger.LogWarning("CloudSave: Lokale Corruption erkannt → Cloud-Pull wird erzwungen.");
+                ApplyCloudData(cloudData);
+                UpdateLastSyncTime();
+                PersistenceHealth.ClearCorruptionFlag();
+                return true;
+            }
+
             // Lokalen Stand bauen
             var localData = BuildCloudSaveData();
 
@@ -182,6 +194,16 @@ public sealed class CloudSaveService : ICloudSaveService
         if (!IsEnabled || !_playGames.IsSignedIn)
             return;
 
+        // Push-seitige Corruption-Pruefung: Wenn lokale Daten als korrupt erkannt wurden,
+        // KEIN Push (wuerde leeren Local-State in Cloud schieben → Data-Loss auf allen Geraeten).
+        // Stattdessen: Ersten Pull erzwingen damit Cloud-State lokale Corruption ueberschreibt.
+        if (PersistenceHealth.WasCorruptionDetected)
+        {
+            _logger.LogWarning("CloudSave: Push blockiert wegen Corruption-Flag → erzwinge Pull stattdessen.");
+            await TryLoadFromCloudAsync();
+            return;
+        }
+
         // Vorherigen Debounce-Timer abbrechen
         _debounceCts?.Cancel();
         _debounceCts?.Dispose();
@@ -207,6 +229,15 @@ public sealed class CloudSaveService : ICloudSaveService
     {
         if (!IsEnabled || !_playGames.IsSignedIn)
             return;
+
+        // Gleiche Corruption-Schutz wie in SchedulePushAsync: auch direkter Upload blockiert
+        // wenn Local-State nicht vertrauenswuerdig ist.
+        if (PersistenceHealth.WasCorruptionDetected)
+        {
+            _logger.LogWarning("CloudSave: ForceUpload blockiert wegen Corruption-Flag → erzwinge Pull stattdessen.");
+            await TryLoadFromCloudAsync();
+            return;
+        }
 
         try
         {

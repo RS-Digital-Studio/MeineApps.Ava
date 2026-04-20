@@ -38,8 +38,11 @@ public sealed class GemService : IGemService
     {
         if (amount <= 0) return;
 
-        _data.Balance += amount;
-        _data.TotalEarned += amount;
+        // Overflow-Guard analog zu CoinService
+        long newBalance = (long)_data.Balance + amount;
+        long newTotal = (long)_data.TotalEarned + amount;
+        _data.Balance = newBalance > int.MaxValue ? int.MaxValue : (int)newBalance;
+        _data.TotalEarned = newTotal > int.MaxValue ? int.MaxValue : (int)newTotal;
         Save();
         BalanceChanged?.Invoke(this, EventArgs.Empty);
 
@@ -66,19 +69,30 @@ public sealed class GemService : IGemService
 
     private GemData Load()
     {
+        string json = _preferences.Get<string>(GEM_DATA_KEY, "");
+        if (string.IsNullOrEmpty(json))
+            return new GemData();
+
+        GemData data;
         try
         {
-            string json = _preferences.Get<string>(GEM_DATA_KEY, "");
-            if (!string.IsNullOrEmpty(json))
-            {
-                return JsonSerializer.Deserialize<GemData>(json, JsonOptions) ?? new GemData();
-            }
+            data = JsonSerializer.Deserialize<GemData>(json, JsonOptions) ?? new GemData();
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler beim Laden → Standardwerte
+            // Corrupt JSON → CloudSaveService bevorzugt Cloud-Pull (siehe PersistenceHealth).
+            PersistenceHealth.ReportCorruption(nameof(GemService), ex);
+            return new GemData();
         }
-        return new GemData();
+
+        // Negative-Balance-Defense analog CoinService.
+        if (data.Balance < 0 || data.TotalEarned < 0)
+        {
+            PersistenceHealth.ReportCorruption(nameof(GemService));
+            if (data.Balance < 0) data.Balance = 0;
+            if (data.TotalEarned < 0) data.TotalEarned = 0;
+        }
+        return data;
     }
 
     private void Save()

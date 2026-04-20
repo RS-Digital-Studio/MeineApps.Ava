@@ -594,6 +594,39 @@
   <data name="CoinsDoubled" xml:space="preserve">
     <value>¡Doblado!</value>
   </data>
+  <data name="AdLoadFailed" xml:space="preserve">
+    <value>Anuncio no disponible</value>
+  </data>
+  <data name="FloatShield" xml:space="preserve">
+    <value>¡ESCUDO!</value>
+  </data>
+  <data name="FloatPhantom" xml:space="preserve">
+    <value>¡FANTASMA!</value>
+  </data>
+  <data name="FloatRegen" xml:space="preserve">
+    <value>¡REGEN!</value>
+  </data>
+  <data name="FloatFall" xml:space="preserve">
+    <value>¡CAÍDA!</value>
+  </data>
+  <data name="FloatBossBlockRain" xml:space="preserve">
+    <value>¡LLUVIA DE BLOQUES!</value>
+  </data>
+  <data name="FloatBossIceBreath" xml:space="preserve">
+    <value>¡ALIENTO HELADO!</value>
+  </data>
+  <data name="FloatBossLavaWave" xml:space="preserve">
+    <value>¡OLA DE LAVA!</value>
+  </data>
+  <data name="FloatBossTeleport" xml:space="preserve">
+    <value>¡TELETRANSPORTE!</value>
+  </data>
+  <data name="FloatMimic" xml:space="preserve">
+    <value>¡IMITADOR!</value>
+  </data>
+  <data name="FloatLava" xml:space="preserve">
+    <value>¡LAVA!</value>
+  </data>
   <data name="ContinueGame" xml:space="preserve">
     <value>Continuar</value>
   </data>
@@ -3395,9 +3428,6 @@
   </data>
   <data name="FloatPowerBomb" xml:space="preserve">
     <value>+PODER</value>
-  </data>
-  <data name="AnnounceBossFight" xml:space="preserve">
-    <value>PELEA DE JEFE!</value>
   </data>
   <data name="AnnounceWorld" xml:space="preserve">
     <value>MUNDO {0}</value>

@@ -37,7 +37,12 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+
+    // IGameJuiceEmitter-Pflichtevent. Shop emittiert aktuell keine Celebration
+    // (Kauefe zeigen bereits PurchaseSucceeded mit Floating-Text) — CS0067 bewusst unterdrueckt.
+#pragma warning disable CS0067
     public event Action? CelebrationRequested;
+#pragma warning restore CS0067
 
     /// <summary>Kauf erfolgreich (Upgrade-Name)</summary>
     public event Action<string>? PurchaseSucceeded;
@@ -243,7 +248,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
             item.Refresh(_coinService.Balance, _gemService.Balance);
         }
 
-        ShopItems = new ObservableCollection<ShopDisplayItem>(items);
+        ReloadCollection(ShopItems, items);
     }
 
     private void RefreshPowerUpItems()
@@ -258,7 +263,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
                 GetPowerUpIcon(type),
                 GetPowerUpAvaloniaColor(type)));
         }
-        PowerUpItems = new ObservableCollection<PowerUpDisplayItem>(items);
+        ReloadCollection(PowerUpItems, items);
     }
 
     private void RefreshMechanicItems()
@@ -274,7 +279,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
                 GetMechanicIcon(mech),
                 GetMechanicColor(mech)));
         }
-        MechanicItems = new ObservableCollection<PowerUpDisplayItem>(items);
+        ReloadCollection(MechanicItems, items);
     }
 
     /// <summary>Erstellt ein PowerUpDisplayItem mit Unlock-Status-Logik</summary>
@@ -333,7 +338,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
                 StatusText = isEquipped ? equippedText : (isPremiumLocked ? lockedText : (isOwned ? selectText : ""))
             });
         }
-        SkinItems = new ObservableCollection<SkinDisplayItem>(items);
+        ReloadCollection(SkinItems, items);
     }
 
     private void RefreshBombSkinItems()
@@ -371,7 +376,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
                 StatusText = isEquipped ? equippedText : (isPremiumLocked ? lockedText : (isOwned ? selectText : ""))
             });
         }
-        BombSkinItems = new ObservableCollection<SkinDisplayItem>(items);
+        ReloadCollection(BombSkinItems, items);
     }
 
     private void RefreshExplosionSkinItems()
@@ -409,7 +414,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
                 StatusText = isEquipped ? equippedText : (isPremiumLocked ? lockedText : (isOwned ? selectText : ""))
             });
         }
-        ExplosionSkinItems = new ObservableCollection<SkinDisplayItem>(items);
+        ReloadCollection(ExplosionSkinItems, items);
     }
 
     private void RefreshTrailItems()
@@ -456,7 +461,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
                 StatusText = isEquipped ? equippedText : (isOwned ? selectText : "")
             });
         }
-        TrailItems = new ObservableCollection<SkinDisplayItem>(items);
+        ReloadCollection(TrailItems, items);
     }
 
     private void RefreshVictoryItems()
@@ -506,7 +511,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
                 StatusText = isEquipped ? equippedText : (isOwned ? selectText : "")
             });
         }
-        VictoryItems = new ObservableCollection<SkinDisplayItem>(items);
+        ReloadCollection(VictoryItems, items);
     }
 
     private void RefreshFrameItems()
@@ -553,7 +558,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
                 StatusText = isEquipped ? equippedText : (isOwned ? selectText : "")
             });
         }
-        FrameItems = new ObservableCollection<SkinDisplayItem>(items);
+        ReloadCollection(FrameItems, items);
     }
 
     private void UpdateCoinDisplay()
@@ -904,7 +909,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
     private void RefreshDailyDeals()
     {
         var deals = _rotatingDealsService.GetTodaysDeals();
-        DailyDeals = new ObservableCollection<RotatingDeal>(deals);
+        ReloadCollection(DailyDeals, deals);
         WeeklyDeal = _rotatingDealsService.GetWeeklyDeal();
     }
 
@@ -939,7 +944,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
                 StatusText = isEquipped ? equippedText : (isOwned ? selectText : $"{skin.GemPrice} Gems")
             });
         }
-        GemSkinItems = new ObservableCollection<SkinDisplayItem>(items);
+        ReloadCollection(GemSkinItems, items);
     }
 
     private void UpdateGemDisplay()
@@ -1002,4 +1007,16 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
         WorldMechanic.LavaCrack => Color.Parse("#FF5000"),
         _ => Colors.White
     };
+
+    /// <summary>
+    /// Collection in-place neuladen statt via Property-Assignment.
+    /// Vermeidet PropertyChanged-Event → Binding-komplett-Rebind (~50-150ms pro Tab-Wechsel).
+    /// Löst nur CollectionChanged-Events aus, ItemsControl re-nutzt vorhandene Container.
+    /// </summary>
+    private static void ReloadCollection<T>(ObservableCollection<T> target, IEnumerable<T> items)
+    {
+        target.Clear();
+        foreach (var item in items)
+            target.Add(item);
+    }
 }

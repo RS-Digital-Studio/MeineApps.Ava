@@ -27,13 +27,22 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
     private int _animatedCoins;
     private int _targetCoins;
 
+    // Gate gegen Double-Ad-Race: User drueckt Continue → Ad laedt → Back → Re-Tap → zweite Ad.
+    // Ohne Gate wuerden beide Rewards den PerformContinue aufrufen (Doppel-Continue, verschenkte Coins).
+    private bool _adInFlight;
+
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
+
+    // IGameJuiceEmitter-Pflichtevent. GameOver-Screen zeigt kein Confetti/Celebration
+    // (waere tonal unpassend nach Tod) — CS0067 bewusst unterdrueckt.
+#pragma warning disable CS0067
     public event Action? CelebrationRequested;
+#pragma warning restore CS0067
 
     /// <summary>Bestätigungsdialog anfordern (Titel, Nachricht, Akzeptieren, Abbrechen)</summary>
     public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
@@ -267,10 +276,12 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
         CanDoubleCoins = coins > 0 && (_purchaseService.IsPremium || adReady);
         CanContinue = canContinue && (adReady || _purchaseService.IsPremium);
 
-        // Level-Skip: Ab 2 Fehlversuchen (Free: Rewarded Ad, Premium: 1x kostenlos pro Session)
+        // Level-Skip: Ab 1 Fehlversuch (Free: Rewarded Ad, Premium: 1x kostenlos pro Session)
+        // Frueher: fails >= 2. Problem: Nach 2 Fails hohe Abandonment-Rate.
+        // Skip-Nutzer schauen ohnehin Rewarded → Monetarisierungs-Plus + weniger Churn.
         bool hasFreeSkip = _purchaseService.IsPremium && !_premiumSkipUsed;
         CanSkipLevel = !isLevelComplete && !IsSurvivalMode &&
-            (fails >= 2 && adReady || hasFreeSkip);
+            (fails >= 1 && adReady || hasFreeSkip);
         SkipLevelText = hasFreeSkip
             ? _localizationService.GetString("SkipLevelFree") ?? "Skip Level"
             : _localizationService.GetString("SkipLevel");
@@ -342,29 +353,40 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
     private async Task DoubleCoins()
     {
         if (HasDoubled || CoinsEarned <= 0) return;
+        if (_adInFlight) return; // Zweiter Klick waehrend erster Ad laeuft
 
         // Sofort deaktivieren um Doppelklick während async-Gap zu verhindern
         CanDoubleCoins = false;
-
-        // Premium: Reward sofort gratis (kein Ad nötig)
-        bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("continue");
-        if (rewarded)
+        _adInFlight = true;
+        try
         {
-            if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();
-            CoinsEarned *= 2;
-            CoinsEarnedText = $"+{CoinsEarned:N0}";
-            FloatingTextRequested?.Invoke("x2!", "gold");
-            HasDoubled = true;
-            DoubleCoinsButtonText = _localizationService.GetString("CoinsDoubled");
+            // Premium: Reward sofort gratis (kein Ad nötig)
+            bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("continue");
+            if (rewarded)
+            {
+                if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();
+                CoinsEarned *= 2;
+                CoinsEarnedText = $"+{CoinsEarned:N0}";
+                FloatingTextRequested?.Invoke("x2!", "gold");
+                HasDoubled = true;
+                DoubleCoinsButtonText = _localizationService.GetString("CoinsDoubled");
 
-            // Nach 2x: 3x-Option per zweiter Ad anbieten (nicht für Premium, die haben bereits automatisch x2)
-            CanTripleCoins = !_purchaseService.IsPremium &&
-                _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+                // Nach 2x: 3x-Option per zweiter Ad anbieten (nicht für Premium, die haben bereits automatisch x2)
+                CanTripleCoins = !_purchaseService.IsPremium &&
+                    _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+            }
+            else
+            {
+                // Ad fehlgeschlagen → Button wieder aktivieren + Nutzer-Feedback
+                CanDoubleCoins = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+                FloatingTextRequested?.Invoke(
+                    _localizationService.GetString("AdLoadFailed") ?? "Ad unavailable",
+                    "info");
+            }
         }
-        else
+        finally
         {
-            // Ad fehlgeschlagen → Button wieder aktivieren
-            CanDoubleCoins = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+            _adInFlight = false;
         }
     }
 
@@ -401,6 +423,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
     private async Task ContinueGame()
     {
         if (HasContinued || IsSurvivalMode) return;
+        if (_adInFlight) return;
 
         // Premium: Kostenloser Continue (kein Ad)
         if (_purchaseService.IsPremium)
@@ -410,11 +433,31 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
         }
 
         // Free: Rewarded Ad
-        bool revived = await _rewardedAdService.ShowAdAsync("revival");
-        if (revived)
+        _adInFlight = true;
+        CanContinue = false;
+        try
         {
-            RewardedAdCooldownTracker.RecordAdShown();
-            PerformContinue();
+            bool revived = await _rewardedAdService.ShowAdAsync("revival");
+            // Post-Ad Check: VM koennte bereits navigiert/disposed sein (User drueckt Back waehrend Ad).
+            if (HasContinued) return;
+
+            if (revived)
+            {
+                RewardedAdCooldownTracker.RecordAdShown();
+                PerformContinue();
+            }
+            else
+            {
+                // Ad-Fail Feedback + Button reaktivieren
+                CanContinue = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+                FloatingTextRequested?.Invoke(
+                    _localizationService.GetString("AdLoadFailed") ?? "Ad unavailable",
+                    "info");
+            }
+        }
+        finally
+        {
+            _adInFlight = false;
         }
     }
 
@@ -466,6 +509,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
     private async Task SkipLevelAsync()
     {
         if (!CanSkipLevel) return;
+        if (_adInFlight) return;
 
         // Bestätigungsdialog vor Level-Skip
         if (ConfirmationRequested != null)
@@ -487,20 +531,39 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable, IGame
         }
 
         // Free: Rewarded Ad
-        var success = await _rewardedAdService.ShowAdAsync("level_skip");
-        if (success)
+        _adInFlight = true;
+        CanSkipLevel = false;
+        try
         {
-            RewardedAdCooldownTracker.RecordAdShown();
-            PerformSkip();
+            var success = await _rewardedAdService.ShowAdAsync("level_skip");
+            if (success)
+            {
+                RewardedAdCooldownTracker.RecordAdShown();
+                PerformSkip();
+            }
+            else
+            {
+                // Ad-Fail Feedback
+                FloatingTextRequested?.Invoke(
+                    _localizationService.GetString("AdLoadFailed") ?? "Ad unavailable",
+                    "info");
+            }
+        }
+        finally
+        {
+            _adInFlight = false;
         }
     }
 
     private void PerformSkip()
     {
         CanSkipLevel = false;
-        // Level als bestanden markieren (minimaler Score fuer 1 Stern)
+        // Level als bestanden markieren mit explizit 1-Stern-Score (robust gegen Stern-Schwellen-Aenderungen).
+        // Frueher: fester Score 100 → verlaesst sich auf GetLevelStars()-Fallback (>=1 Stern bei Score>0).
+        // Neu: baseScore des Levels setzen → 1 garantierter Stern via regulaerer Schwelle.
         _progressService.CompleteLevel(Level);
-        _progressService.SetLevelBestScore(Level, 100);
+        int guaranteedOneStarScore = _progressService.GetBaseScoreForLevel(Level);
+        _progressService.SetLevelBestScore(Level, guaranteedOneStarScore);
 
         ClaimCoins();
         NavigationRequested?.Invoke(new GoLevelSelect());

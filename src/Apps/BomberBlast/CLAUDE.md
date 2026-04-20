@@ -1,23 +1,23 @@
 # BomberBlast (Avalonia)
 
-> Fuer Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
+> Für Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
 ## App-Beschreibung
 
 Bomberman-Klon mit SkiaSharp Rendering, AI Pathfinding und mehreren Input-Methoden.
 Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/Cyberpunk.
 
-**Version:** 2.0.28 (VersionCode 38) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
+**Version:** 2.0.32 (VersionCode 42) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
 
 ## Icon-System (Eigene Neon Arcade Icons)
 
 - **Kein Material.Icons** - eigenes GameIcon-System mit 152 Icons
 - `Icons/GameIcon.cs`: Custom `PathIcon`-Ableitung mit `StyleKeyOverride => typeof(PathIcon)`
-- `Icons/GameIconKind.cs`: Enum mit allen verfuegbaren Icons
+- `Icons/GameIconKind.cs`: Enum mit allen verfügbaren Icons
 - `Icons/GameIconPaths.cs`: Eigene geometrische SVG-Pfade im "Neon Arcade" Stil (nur M/L/H/V/Z)
-- `Icons/GameIconRenderer.cs`: SkiaSharp-Renderer fuer Icons auf SKCanvas (gecachte SKPath)
+- `Icons/GameIconRenderer.cs`: SkiaSharp-Renderer für Icons auf SKCanvas (gecachte SKPath)
 - **Design-Sprache**: Oktagone (8 Seiten, flach) statt Kreise, scharfe Kanten, Arcade-Aesthetik
-- **Converter**: `StringToGameIconKindConverter` fuer String→GameIconKind in XAML-Bindings
+- **Converter**: `StringToGameIconKindConverter` für String→GameIconKind in XAML-Bindings
 - XAML-Namespace: `xmlns:icons="using:BomberBlast.Icons"`
 
 ## AI-generierte Visual Assets (Dark Fantasy Arcade)
@@ -101,7 +101,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | TornMetalRenderer | Prozeduraler "Torn Metal" Button-Hintergrund (Metallischer Gradient, gezackte Kanten, Risse, Nieten) |
 
 ### Input-Handler (3x)
-- **FloatingJoystick**: Touch-basiert, zwei Modi: Floating (Standard) + Fixed. Radius 75dp, Deadzone Fixed 15% / Floating 5%, Richtungs-Hysterese (1.15x)
+- **NeonJoystick** (`Input/NeonJoystick.cs`): Custom Touch-Joystick im Neon-Arcade-Stil der App. Oktagonale Basis (wie GameIcon-System), Orange-Glow (#FF6B35), Cyan-Akzent-Ring (#22D3EE), 4 Richtungs-Pfeile die bei aktiver Richtung aufleuchten, Gold-Trail (#FFDD33) hinter dem Stick bei Bewegung, Idle-Pulsation im Fixed-Modus, Gold-Launch-Flash bei Touch-Start. Bomb-Button: Oktagonal mit Rot-Orange-Glow + pulsierender Cyan-Funke auf der Lunte. Detonator-Button: Oktagonal mit Cyan-Glow + stilisiertem Blitz. Zwei Modi: Floating (Standard, linke 60%) + Fixed (immer sichtbar unten links). Radius 75dp, Bomb 52dp, Detonator 48dp. Deadzone Fixed 15% / Floating 5%, Richtungs-Hysterese 1.15x. Following-Base wenn Finger aus Radius rutscht. Multi-Touch Pointer-ID-Tracking fuer gleichzeitigen Joystick+Bomb-Input. **Separate Pointer-IDs** fuer Bomb und Detonator (_bombButtonPointerId + _detonatorPointerId) — verhindert Button-Hang bei gleichzeitigem Tap. **BombPressed-Race-Schutz** — OnTouchEnd setzt _bombPressed/_detonatePressed nach Konsum sofort auf false, damit Taps <16ms nicht zwischen Update-Frames haengenbleiben. Performance: alle SKPaint gepoolt, SKPath via Rewind(), 3 statisch gecachte SKMaskFilter (Soft/Medium/Hard Blur), Trail als Struct-Array mit Age=999f-Init (keine Geister-Dots), Frame-Counter-basiertes SoftGlow-Skipping (alle 2 Frames, bei Press immer) fuer Bomb/Detonator spart 2-4ms GPU auf Low-End-Androids. Arrow-Path einmal gebaut + zweimal gezeichnet (Glow+Fill) statt doppelt bauen.
 - **Pre-Turn Buffering** (Player.cs): Richtung wird gepuffert wenn Spieler nicht am Zellzentrum, Turn bei 40% Zellzentrum-Nähe
 - **Keyboard**: Arrow/WASD + Space (Bomb) + E (Detonate) + T (ToggleSpecialBomb) + Escape (Pause)
 - **Gamepad**: D-Pad + Analog-Stick (4-Wege, Deadzone 0.25) + Face-Buttons
@@ -129,17 +129,18 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ### Coin-Economy + Shop
 - **CoinService**: Level-Score / 3 → Coins bei Complete (Welt 1: Score/2 für bessere Früh-Progression), / 6 bei Game Over
-- **Gem-Trickle**: 2 Gems bei erstmaligem 3-Sterne-Abschluss (Story-Modus) via GameTrackingService.OnFirstThreeStars() — 100 Level × 2G = 200G, reicht für 1 Legendary-Skin
+- **Gem-Trickle**: 3 Gems bei erstmaligem 3-Sterne-Abschluss (Story-Modus) via GameTrackingService.OnFirstThreeStars() — 100 Level × 3G = 300G (v2.0.29+: von 2G→3G erhöht, löst Kopplung an Premium-Kauf)
 - **Premium-Multiplikator**: 2x Coins bei LevelComplete (IsPremium), 3x bei GameOver-Trostcoins
-- **Effizienz-Bonus**: Skaliert nach Welt (1-10), belohnt wenige Bomben
+- **Effizienz-Bonus**: Skaliert nach Welt (1-10), belohnt wenige Bomben. **Welt 1 großzügigere Schwellen (8/14/20 Bomben) statt 5/8/12 (BAL-32, seit v2.0.31)**, weil Einsteiger noch kein Deck haben und mehr Blöcke räumen müssen. Ab Welt 2 gelten die klassischen strengeren Schwellen als Skill-Maßstab.
 - **ShopService**: 9 permanente Upgrades (StartBombs, StartFire, StartSpeed, ExtraLives, ScoreMultiplier, TimeBonus, ShieldStart, CoinBonus, PowerUpLuck)
-- **Preise**: 1.000 - 35.000 Coins (StartBombs/StartFire: 1.000/3.500/10.000), Max-Levels: 1-3, Gesamt: ~189.000 Coins
+- **Preise**: 700 - 17.000 Coins (StartBombs/StartFire: 700/2.500/7.000, StartSpeed: 1.200/2.500/7.000 [BAL-33 seit v2.0.31: MaxLevel 1 -> 3 erweitert, 3-stufige Progression wie Bombs/Fire]), Max-Levels: 1-3, Gesamt: ~138.600 Coins
 - **Dungeon-Trennung**: Shop-Upgrades gelten NUR in Story/Daily/QuickPlay/Survival. Im Dungeon: Base-Stats + Dungeon-Buffs
 
 ### Level-Gating (ProgressService)
 - 100 Story-Level in 10 Welten (World 1-10 a 10 Level)
-- Welt-Freischaltung: 0/0/10/25/45/70/100/135/175/220/240 Sterne
+- Welt-Freischaltung: 0/0/10/25/45/70/100/135/175/200/220 Sterne (v2.0.29+: Welt 9/10 von 220/240 auf 200/220 gesenkt — Endgame realistisch erreichbar)
 - Stern-System: 3 Sterne pro Level (Zeit-basiert), Fail-Counter für Level-Skip
+- **Mutator-Bonus (v2.0.29+)**: Mutator-Level (ab Welt 6) schenken 3 garantierte Sterne bei Completion. Grund: DoubleSpeed/MirrorControls/InvisibleBlocks machen 3-Sterne-Runs statistisch unwahrscheinlich → Schwierigkeit = Belohnung, nicht Strafe. Implementiert in `GameEngine.Level.cs` via `scoreToSave = Max(playerScore, baseScore*3)`
 
 ### Progressive Feature-Freischaltung (MainMenuViewModel)
 | Level | Features |
@@ -172,7 +173,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ### Rewarded (5 Placements)
 1. `continue` → GameOver: Coins verdoppeln (1x pro Versuch)
-2. `level_skip` → GameOver: Level überspringen (nach 2 Fails)
+2. `level_skip` → GameOver: Level überspringen (ab 1. Fail, v2.0.29+: von 2 Fails auf 1 Fail gesenkt). Skip setzt Score auf `GetBaseScoreForLevel(Level)` → 1 garantierter Stern (Welt-Gating-kompatibel)
 3. `power_up` → LevelSelect: Power-Up Boost (ab Level 20)
 4. `score_double` → GameView: Score verdoppeln (nach Level-Complete)
 5. `revival` → GameOver: Wiederbelebung (1x pro Versuch)
@@ -232,6 +233,70 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - Spielername: Profanity-Filter in LeagueService.SetPlayerName() (HashSet Blocklist, case-insensitive)
 - Firebase: Security Rules in Console setzen: `"$uid": { ".write": "auth.uid === $uid" }` + Score-Hard-Cap
 - Premium/Coins: Client-seitig (akzeptabel für 1,99€ App, RestorePurchases bei Start)
+
+### GameEngine-Extraktionen (v2.0.30+)
+
+Gezielte Entschlackung der GameEngine-God-Class in 3 Phasen. **−836 Zeilen** aus GameEngine.
+
+**Extrahierte Dateien unter `Core/LevelGeneration/` und `Core/Combat/`:**
+
+| Datei | Zweck | Zeilen |
+|-------|-------|-------:|
+| `LevelGeneration/ILevelGenerator.cs` | Interface + `LevelGenerationContext` | 55 |
+| `LevelGeneration/LevelGenerator.cs` | `GetMutatorDisplayName`, `PlacePowerUps`, `PlaceExit`, `SpawnEnemies`, `SpawnBossAtPosition` | 301 |
+| `LevelGeneration/MutatorEffects.cs` | Static-Player-State-Modifier für 5 Mutator-Typen | 46 |
+| `Combat/SpecialExplosionEffects.cs` | 13 Handle*-Methoden (Ice, Fire, Sticky, Smoke, Lightning, Gravity, Poison, TimeWarp, Mirror, Vortex, Phantom, Nova, BlackHole) + `ExplosionEffectsContext` | 518 |
+| `Combat/EnemyPositionIndex.cs` | Gegner-Positions-Cache mit O(1)-Lookup (Rebuild + TryGetAt + Clear) | 94 |
+
+**GameEngine-Zeilen-Reduktion:**
+
+| Partial | Vorher | Nachher | Delta |
+|---------|-------:|--------:|------:|
+| `GameEngine.Level.cs` | 1580 | 1315 | −265 |
+| `GameEngine.Explosion.cs` | 1209 | 673 | **−536** |
+| `GameEngine.Collision.cs` | 608 | 549 | −59 |
+| `GameEngine.cs` | 1818 | 1842 | +24 (Context-Setup) |
+| **GameEngine gesamt** | **5941** | **5105** | **−836** |
+
+**Architektur-Pattern der Extraktionen:**
+
+1. **Pure Funktionen als Static** (`MutatorEffects`, `SpecialExplosionEffects`): Zustandslos, keine DI, Context als Parameter. Lazy-initialisierter `_explosionCtx` im Engine (Feld + Getter) vermeidet Allokation pro Frame.
+
+2. **State-Container als Instance** (`LevelGenerator`, `EnemyPositionIndex`): DI-Singleton mit internen gepoolten Listen für Allocation-Free-Performance.
+
+3. **Callbacks an Engine** (in `ExplosionEffectsContext`): `DestroyBlock`, `KillEnemy`, `ProcessExplosion` als Delegates weil sie engine-interne Invarianten (Score/Events/State-Machine) mutieren und nicht in eine Extract-Datei gehören.
+
+### LevelGenerator-Extraktion (v2.0.30+)
+
+- **`Core/LevelGeneration/ILevelGenerator.cs`** + **`LevelGenerator.cs`** + **`LevelGenerationContext`**: Extraktion von Level-Fabrik-Logik aus `GameEngine.Level.cs` (−238 Zeilen, 1580 → 1342). Enthält: `GetMutatorDisplayName`, `PlacePowerUps`, `PlaceExit`, `SpawnEnemies` (inkl. `SpawnBossAtPosition`).
+- **Zustandslos (Singleton)**, eine einzige Dependency (`ILocalizationService` für Mutator-Namen). Kein Game-Event, kein Sound, kein Tracking — das bleibt in GameEngine.
+- **Kommunikation per Context + Return-Values**: `LevelGenerationContext { Grid, CurrentLevel, Random, PowerUpLuckLevel }` in, `List<Enemy>` aus `SpawnEnemies`. GameEngine hängt die Ergebnisse selbst in `_enemies` und feuert `_tracking.OnBossEncountered(boss.BossKind)` für Boss-Instanzen.
+- **Wiederverwendbare interne Listen** (`_blockCells`, `_farBlocks`, `_validPositions`) sind vom GameEngine in den Generator gewandert → keine Heap-Allokation pro Level-Start.
+- **Bewusst NICHT extrahiert**: `ApplyMutatorEffects` (mutiert `_player.SpeedLevel/HasPowerBomb/FireRange` — gehört in Engine), `CollisionSystem` (zu enge Kopplung mit KillPlayer/Score/Events), `ExplosionSystem` (15 `Handle*`-Methoden mit zu vielen Engine-Mutationen — grenzwertiger Gewinn). Plan dokumentiert unter `C:\Users\rober\.claude\plans\compiled-tinkering-adleman-agent-a228d371b1b660417.md`.
+
+### Build-Hygiene (v2.0.30+)
+
+- **0 Warnungen in Shared + Android**: Alle deprecated APIs entweder migriert (SkiaSharp 2.x → 3.x: SKFont statt SKPaint.TextSize/TextAlign/FakeBoldText) oder gezielt mit `#pragma warning disable` + Begründungskommentar markiert (Android-Framework-Vorgaben: OnBackPressed, SetDecorFitsSystemWindows, SystemUiVisibility).
+- **SkiaSharp 3.x Text-Rendering**: Paints enthalten KEINE TextSize/TextAlign/FakeBoldText mehr. Stattdessen: Gepoolte `SKFont`-Objekte + `canvas.DrawText(text, x, y, SKTextAlign, SKFont, SKPaint)` als Overload. Betrifft `DungeonMapRenderer`, `LuckySpinView`.
+
+### Lokalisierung (v2.0.30+)
+
+- **Alle Floating-Texte im GameEngine lokalisiert**: `FloatShield`, `FloatPhantom`, `FloatRegen`, `FloatFall`, `FloatBossBlockRain`, `FloatBossIceBreath`, `FloatBossLavaWave`, `FloatBossTeleport`, `FloatMimic`, `FloatLava`, `AdLoadFailed` in 6 Sprachen + Designer. Vorher waren Boss-Attack-Namen teils auf Deutsch hart-codiert ("BLOCKREGEN!", "EISATEM!", "LAVA-WELLE!") — jetzt sauber per `GetString(key) ?? fallback` lokalisiert.
+- **Overlay-Strings sprachwechsel-aware**: `CacheHudLabels()` (triggered bei LanguageChanged) ruft jetzt auch die dynamischen Overlay-Cacher (`CacheStartingOverlayStrings`, `CacheLevelCompleteOverlayStrings`, `CacheGameOverOverlayStrings`, `CacheVictoryOverlayStrings`) auf, wenn bereits ein Level aktiv ist. Vorher blieben "Stage X"/"Score: X"/"Level X" in alter Sprache.
+
+### Persistenz-Robustheit (v2.0.30+)
+
+- **PersistenceHealth**: Zentrale Static-Klasse. CoinService/GemService/ProgressService/DailyRewardService rufen `PersistenceHealth.ReportCorruption(serviceName, ex)` bei JSON-Parse-Fehlern oder Negativ-Werten auf. CloudSaveService prüft `WasCorruptionDetected` in ALLEN drei Sync-Pfaden (Pull, SchedulePush, ForceUpload) und erzwingt Cloud-Pull statt Push, damit ein einzelner Parse-Fehler NICHT die Cloud mit Leer-State überschreibt (Data-Loss-Prävention).
+- **RewardedAdCooldownTracker**: Hybrid-Cooldown-Schutz — `Environment.TickCount64` (monotone System-Uhr, gegen Clock-Skew rueckwaerts) PLUS persistierte `DateTime.UtcNow` in Preferences (gegen App-Restart-Bypass). OR-Verknüpft: Cooldown aktiv wenn eine der Uhren noch im 60s-Fenster. Negative UTC-Differenzen zählen als "gerade geschehen".
+- **DailyRewardService**: `LastClaimDate` wird per `Max(UtcNow, previous)` geclampt → Clock-Skew vorwaerts kann den 7-Tage-Zyklus nicht mehr durchlaufen.
+- **CoinService/GemService AddXxx**: Overflow-Guard via `(long)Balance + amount` + Clamp auf `int.MaxValue` → Silent-Negativ bei > 2,147 Mrd verhindert. Zusätzlich: `Load()` clampt Balance/TotalEarned < 0 auf 0 + Corruption-Flag → schützt gegen historische Overflow-Spuren aus pre-v2.0.30.
+- **GameEngine**: Idempotenz-Guard in `CompleteLevel()` (`if (_state != Playing) return;`) → keine Race zwischen Tod/Exit im selben Frame. State-Guard in `OnTimeExpired` → kein Pontan-Spawn nach LevelComplete. `CompleteLevel()`-Reihenfolge: `SetLevelBestScore` → Tracking (Achievement/BattlePass/Liga/Missions) → `FlushIfDirty` → `_progressService.CompleteLevel(n)` als letzte Aktion → Crash zwischen Tracking und CompleteLevel verliert nur die Completion-Markierung (Replay möglich), nicht die Tracking-Daten.
+- **NoTimer-Mutator**: `timeBonus` wird bei `Mutator == NoTimer` auf 0 gesetzt → verhindert Score-Farming (vorher: 99999 * Multiplier). Coin-Payout für Mutator-Level basiert auf `Max(echter Score, baseScore*3)` → Spieler bekommt 3 Sterne UND faire Coins, meidet Mutator-Level nicht wegen reduzierter Belohnung.
+- **GameTrackingService.OnSurvivalEnded**: HashSet-Update + Save BEVOR AddCoins/AddGems → Meilenstein wird bei Crash nicht doppelt vergeben.
+- **GameOverViewModel**: `_adInFlight`-Gate gegen Double-Continue-Race bei Rewarded Ad. Ad-Load-Fail zeigt FloatingText mit `AdLoadFailed`-RESX-Key.
+- **LeagueService.NormalizeForProfanityCheck**: Unicode-NFKD + Strip Combining/Format/Control + Non-Alnum + Lowercase vor Blocklist-Contains-Check → "F.u.c.k", "fvck", "FÜCK", Zero-Width-Spaces werden erkannt. Blockliste enthält nur Tokens >= 4 Zeichen (vermeidet Substring-False-Positives wie "Cassandra"/"Passion"). Blockierte Namen werden zu `Player_XXXX` (UID-Suffix) statt "****" → Unterscheidbarkeit im Leaderboard bleibt.
+- **LeagueService.StripInvisibleChars** (v2.0.31, 18.04.2026): `SetPlayerName()` entfernt `UnicodeCategory.Format` (Zero-Width-Space, ZWJ, RTL-Override, BOM) + `Control` aus dem Namen BEVOR der 16-Zeichen-Längen-Check greift. NonSpacingMark (Akzente wie "Müller") bleiben erhalten. Verhindert Leaderboard-Spoofing durch scheinbar leere oder visuell identische Namen.
+- **Firebase-Rules** `bomberblast-league.rules.json` (v2.0.31): UID-gebundener Write, `.validate` für `name` (1-16 Zeichen String) + `points` (0-500.000) + `updatedUtc` (String) + `updatedMs` (Server-Timestamp). **Rate-Limit:** `.write` erlaubt neue Writes nur alle 60s pro UID via `(now - data.child('updatedMs').val()) >= 60000`. `updatedMs` wird vom Client per `{".sv":"timestamp"}`-Sentinel gesetzt und serverseitig aufgelöst — nicht manipulierbar. Schützt gegen Script-Cheating: max. 60 Writes/Stunde statt theoretisch unbegrenzt. Migration: Bestehende Einträge ohne `updatedMs` dürfen 1x geschrieben werden (`!data.child('updatedMs').exists()`). **Muss in Firebase Console deployed werden.**
 
 - **Singleton-VM + Visual Tree**: GameView hat 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded (für verzögertes ViewLocator-DataContext), (3) OnPaintSurface Safety-Net (startet Render-Timer nach wenn InvalidateCanvasRequested keinen Subscriber hatte). TrySubscribeToViewModel() als zentrale idempotente Methode
 - **Game Loop**: DispatcherTimer (16ms), MAX_DELTA_TIME = 0.05f (50ms Cap)
@@ -360,7 +425,9 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 - 1x gratis/Tag, Extra-Spins per Ad oder 3 Gems
 - 9 gewichtete Segmente: 100-3000 Coins + 5/10 Gems (Jackpot 3000C+10G, w5)
+- [BAL-33 seit v2.0.31: Gem-Segment Weight 8 -> 12, Gem-Erwartungswert/Spin 0.66 -> 0.79 (+20%)]
 - SKCanvasView Rad-Rendering, Spin-Animation (min. 5 Drehungen, Ease-Out)
+- Gepoolte SKPaint + SKPath (Segment/Pointer), Dispose-Chain in OnDetachedFromVisualTree
 
 ## Weekly Challenge + Daily Missions
 
@@ -395,7 +462,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ## Daily Reward & Monetarisierung
 
-- **7-Tage-Zyklus**: 500-5000 Coins, Tag 5 Extra-Leben
+- **7-Tage-Zyklus**: 500-8000 Coins, Tag 5 Extra-Leben, Tag 7 +15 Gems [BAL-33 seit v2.0.31: Tag 7 von 5000C+10G auf 8000C+15G hochgezogen, 7-Tage-Streak muss sich lohnen]
 - **Comeback-Bonus**: >3 Tage inaktiv → 2000 Coins + 5 Gems
 - **Spieler-Skins**: Default + 4 Premium (Gold/Neon/Cyber/Retro) + 3 Gem-Skins (Crystal 50G/Shadow 100G/Phoenix 200G)
 - **In-App Review**: Nach Level 3-5, 14-Tage Cooldown
@@ -453,7 +520,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ### Dungeon Run / Roguelike-Modus
 - **Ablauf**: Floor 1-4 normal, Floor 5 Mini-Boss, Floor 6-9 härter, Floor 10 End-Boss + Truhe, ab Floor 11 +50% Skalierung
-- **Eintritt**: 1x/Tag gratis, 500 Coins, 5 Gems (BAL-31: von 10 gesenkt), oder Rewarded Ad (1x/Tag)
+- **Eintritt**: 1x/Tag gratis, 500 Coins, 3 Gems (BAL-32 seit v2.0.31: von 5G auf 3G gesenkt; Spieler erreichen Dungeon ab Level 20 mit typisch 10-20 Gems, 3G erlaubt Paid-Run direkt nach Unlock statt ~40% der Spieler auszusperren), oder Rewarded Ad (1x/Tag)
 - **Datum-Tracking**: LastFreeRunDate/LastAdRunDate in DungeonStats (nicht RunState) um App-Restart-Exploit zu verhindern
 - **16 Buffs**: 5 Common, 5 Rare, 2 Epic, 4 Legendary (Berserker/TimeFreeze/GoldRush/Phantom)
 - **Buff-Auswahl**: Nach Floor 2/4/5/7/9, 3 zufällige gewichtet per Rarität. 1x Reroll gratis, weitere 5 Gems
@@ -503,10 +570,10 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - Aktiver Skin + Frame
 
 ### Monetarisierungs-Features
-- **Starter Pack**: 2500C + 10G + 2 Rare-Karten (ab Level 5, einmaliges Gratis-Geschenk)
+- **Starter Pack**: 5000C + 20G + 3 Rare-Karten (ab Level 5, einmaliges Gratis-Geschenk) [BAL-33 seit v2.0.31: von 2500C+10G+2R hochgezogen, Code/Doku-Mismatch behoben]
 - **Rotating Deals**: 3 tägliche + 1 wöchentliches Angebot, 20-50% Rabatt, Seeded Random. Kein Coins→Gems-Pathway (Economy-Trennung)
 - **Extended Gem-Sinks**: Karten für Gems, Extra Spin (3G), Dungeon-Revive (15G), 5. Deck-Slot (20G), BP Premium (150G)
-- **Gem-IAP**: 4 Pakete (100G/0,99EUR, 500G/3,99EUR, 1500G/7,99EUR, 5000G/14,99EUR)
+- **Gem-IAP**: 4 Pakete (100G/0,99EUR, 600G/3,99EUR, 1500G/7,99EUR, 5000G/14,99EUR) [BAL-33 seit v2.0.31: Medium 500G -> 600G, damit Conversion-Paket nicht benachteiligt gegenueber Large/Mega]
 - **Dungeon Master Pass**: Permanenter 2x DungeonCoin-Boost (IAP), gespeichert in DungeonUpgradeData
 - **Battle Pass Premium**: Kaufbar via IAP (2,99 EUR) ODER 150 Gems. Gem-Alternative in BattlePassViewModel
 
@@ -547,3 +614,34 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | Help | 170 | 1 |
 | Profile | 175 | 1 |
 | League | 180-181 | 2 |
+
+---
+
+## Audit-Ergebnisse & offene Optimierungen (20.04.2026)
+
+Gesamt-Review (7 Agents: game-audit / code-review / performance / skiasharp / security / localize / health) am 20.04.2026 durchgefuehrt. Alle Critical + High + Medium + Low-Fixes in v2.0.31 umgesetzt. Ausnahme: Lazy-VM-Umbau (siehe unten).
+
+**Gefixt in v2.0.31:**
+- NeonJoystick BombPressed-Race bei Taps <16ms (OnTouchEnd setzt _bombPressed nach Konsum sofort auf false)
+- NeonJoystick Multi-Touch PointerId-Konflikt (separate _bombButtonPointerId + _detonatorPointerId)
+- NeonJoystick SoftGlow-Skip fuer Bomb/Detonator (alle 2 Frames, bei Press immer) — 2-4ms GPU auf Low-End
+- NeonJoystick Trail-Init-Bug (TrailPoints mit Age=999f initialisiert, keine Geister-Dots beim ersten Frame)
+- NeonJoystick Arrow-Path: einmal gebaut + zweimal gezeichnet (Glow+Fill) statt doppelt bauen
+- Version-Drift Splash v2.0.30 -> v2.0.31 (SkiaLoadingSplash.AppVersion + Shared.csproj `<Version>`)
+- InputManager Dispose-Luecke in App.DisposeServices geschlossen (20 SKPaint + 5 SKPath freigegeben)
+- Starter-Pack Code/Doku-Mismatch: 2500C+10G+2R -> 5000C+20G+3R (gratis, Level 5)
+- StartSpeed MaxLevel 1 -> 3 mit Preiskurve [1200, 2500, 7000] (Shop-Progression-Feel)
+- Gem-Pack Medium 500G -> 600G (3,99EUR, G/EUR-Ratio von 125 auf 150 angehoben)
+- LuckySpin Gem-Segment Weight 8 -> 12 (Erwartungswert 0.66 -> 0.79 Gems/Spin, +20%)
+- DailyReward Tag-7-Jackpot: 5000C+10G -> 8000C+15G
+- Profanity-Blocklist erweitert (~25 -> ~50 Tokens, mehr Sprachen, Leetspeak, Hass-Ideologie)
+- LevelSelectVisualization SKPath-Allokationen eliminiert (static `_sharedPath` + `_starPath` via Rewind()) — ~300 Allocs/Scroll gespart
+- LuckySpinView Dispose-Chain ergaenzt (6 SKPaint + SKFont + 2 SKPath) + SKPath-Pooling (Segment/Pointer, spart 270 Allocs/s)
+- ShopViewModel: 11 `= new ObservableCollection<T>(items)` durch `ReloadCollection()` ersetzt (Clear+Add, kein Binding-Rebind). Spart 50-150ms pro Tab-Wechsel.
+
+**Offene Optimierungen (bewusste Deferrals):**
+
+- **Lazy-VM-Umbau (PERF-High)** — MainViewModel instanziiert beim ersten Resolve alle 23 Child-VMs (ShopVM ~900 Zeilen, BattlePass, League, Collection, Dungeon). Schaetzung: 200-500ms Startup-Kosten auf Mid-Tier-Android. Fix waere Constructor-Injection via `Lazy<T>` fuer spaet-unlocked VMs (Battle Pass, League, Collection, Dungeon, Deck, Statistics, DailyChallenge, WeeklyChallenge). Risiko: Verdrahtungslogik (LanguageChanged, NavigationRequested, IGameJuiceEmitter-Loop) muss lazy-init-safe werden. Umfang ~200 LOC Refactor, Pre-Release kritisch.
+- **Feature-Unlock-Luecke L17/L18** — Zwischen L15 (Deck, WeeklyChallenge) und L20 (Dungeon) gibt es keinen weiteren Unlock. Dead-Zone fuer Progression-Feel. Idee: DailyMissions als expliziten Unlock bei L17 hervorheben oder neuen Cosmetic-Slot bei L18 freischalten.
+- **updatedUtc spoofable (SEC-Low)** — Client setzt `UpdatedUtc` selbst (manipulierbar). Kein Ranking-Impact (Leaderboard sortiert nach `points`). Nur Anzeige-Feld. Optional: Feld entfernen, komplett auf `updatedMs` (Server-Timestamp) umstellen.
+- **Report-Button im Leaderboard (SEC-Low)** — UGC-Moderation fuer Play-Store-Policy-Vorsorge. Firebase-Node `reports/{uid}` mit Moderations-Queue.

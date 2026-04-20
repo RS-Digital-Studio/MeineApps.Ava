@@ -98,6 +98,12 @@ half4 main(float2 coord) {
             _gpuRipplesAvailable = _waterRippleEffect != null;
             if (!_gpuRipplesAvailable)
                 Logger?.LogWarning($"SkSL Kompilierung fehlgeschlagen: {errors}");
+
+            // Uniforms eager initialisieren (statt lazy in RenderWaterRipples).
+            // Vermeidet einmaligen Kaltstart-Jitter beim ersten Ocean-Frame, wenn der
+            // native SKData-Handle für die 3 Uniform-Slots allokiert werden muss.
+            if (_gpuRipplesAvailable)
+                _cachedUniforms = new SKRuntimeEffectUniforms(_waterRippleEffect!);
         }
         catch (Exception ex)
         {
@@ -397,6 +403,9 @@ half4 main(float2 coord) {
         _cachedRippleShader?.Dispose();
         _cachedRippleShader = null;
         _waterRippleEffect?.Dispose();
+        // SKRuntimeEffectUniforms haelt einen nativen SkData-Handle pro Uniform-Slot.
+        // Ohne explizites Dispose lebt das Objekt bis der Finalizer greift.
+        _cachedUniforms?.Dispose();
         _cachedUniforms = null;
         _overlayPaint.Dispose();
         _ripplePaint.Dispose();

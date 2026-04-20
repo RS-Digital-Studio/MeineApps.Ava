@@ -1,0 +1,1 @@
+- [Games + BingXBot Checks 18.04.2026](games_bingxbot_2026_04_18.md) — HandwerkerImperium v2.0.30, BomberBlast v2.0.30, BingXBot v1.2.0 Android-Check

@@ -1,0 +1,1 @@
+- [HandwerkerImperium MainViewModel Split](handwerkerimperium_mvm_split.md) — Multi-Session-Epic, Phase 1 abgeschlossen 17.04.2026

@@ -1,0 +1,6 @@
+- [BomberBlast Audit 2026-04-17](project_bomberblast_2026-04-17.md) — saubere App, kein Service-Locator, klassischer Window+MainView+ViewLocator-loser Tab-Switch über IsXxxActive-Klassen
+- [BomberBlast Audit 2026-04-18](project_bomberblast_2026-04-18.md) — Regression-Check nach GameEngine-Extraktionen: unverändert clean, MVVM-Referenz-Implementierung
+- [Runde 2 MVVM-Audit 2026-04-17](project_runde2_2026-04-17.md) — Regression-Check: Lazy-T OK, keine neuen Service-Locator, dokumentierte Ausnahmen (SmartMeasure MapView, RechnerPlus Warmup)
+- [HandwerkerImperium Audit 2026-04-18](project_handwerkerimperium_2026-04-18.md) — vorbildlich nach Phase 1-4, ViewLocator aktiv, nur MainWindow fehlte x:CompileBindings (gefixt)
+- [Fullsweep aller 12 Apps 2026-04-18](project_fullsweep_2026-04-18.md) — 0 KRITISCHE Findings, AvaloniaUseCompiledBindingsByDefault=true global aktiv, nur 4 MainWindow-Wrapper ohne x:DataType (by design)
+- [BingXBot Audit 2026-04-20](project_bingxbot_2026-04-20.md) — Regression nach v1.1.4-Crash + Mobile-Shell-Refactor: 0 Findings, ViewLocator + Lazy<T> MVVM-Referenz

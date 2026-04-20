@@ -105,6 +105,14 @@ bash src/Apps/GardenControl/GardenControl.Server/Install/deploy.sh gardencontrol
 | HistoryViewModel | Verlauf | Bewässerungsereignisse, Zeitfilter (1h-30d), Zone-Filter |
 | SettingsViewModel | Einstellungen | Server-URL, Verbindungstest, Server-Info |
 
+## Android Back-Button
+
+MainViewModel nutzt `BackPressHelper` aus MeineApps.Core.Ava.Services (Convention aller Apps):
+
+- `ExitHintRequested` Event für Toast-Anzeige
+- `HandleBackPressed()` Reihenfolge: Error-Banner schließen → Tab zurück zu Dashboard → Double-Back-to-Exit
+- MainActivity verdrahtet Event per `OnCreate`, delegiert `OnBackPressed` an VM
+
 ## Farbpalette
 
 - Primary: `#2E7D32` (Sattes Grün)

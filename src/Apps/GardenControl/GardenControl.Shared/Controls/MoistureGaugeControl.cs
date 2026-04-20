@@ -75,7 +75,8 @@ public class MoistureGaugeControl : Control
 
     /// <summary>
     /// SkiaSharp-Zeichenoperation für den Gauge.
-    /// Typefaces werden statisch gecacht um native Memory Leaks zu vermeiden.
+    /// Typefaces, Paints, Shader und MaskFilter werden statisch gecacht,
+    /// um Pro-Frame-Allokationen und native Memory-Leaks zu vermeiden.
     /// </summary>
     private class GaugeDrawOperation : ICustomDrawOperation
     {
@@ -84,6 +85,78 @@ public class MoistureGaugeControl : Control
             SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
         private static readonly SKTypeface InterSemiBold = SKTypeface.FromFamilyName("Inter",
             SKFontStyleWeight.SemiBold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
+
+        // Gecachte Paints - wiederverwendet pro Frame (Properties werden mutiert)
+        // Kein Dispose noetig - leben bis Prozess-Ende.
+        private static readonly SKPaint _strokePaint = new()
+        {
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            StrokeCap = SKStrokeCap.Round
+        };
+        private static readonly SKPaint _gaugePaint = new()
+        {
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            StrokeCap = SKStrokeCap.Round
+        };
+        private static readonly SKPaint _glowPaint = new()
+        {
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            StrokeCap = SKStrokeCap.Round
+        };
+        private static readonly SKPaint _markerPaint = new()
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2.5f,
+            Color = new SKColor(255, 167, 38),
+            IsAntialias = true,
+            StrokeCap = SKStrokeCap.Round
+        };
+        private static readonly SKPaint _textPaint = new()
+        {
+            Color = SKColors.White,
+            IsAntialias = true,
+            TextAlign = SKTextAlign.Center,
+            Typeface = InterBold
+        };
+        private static readonly SKPaint _unitPaint = new()
+        {
+            Color = new SKColor(138, 164, 188),
+            IsAntialias = true,
+            TextAlign = SKTextAlign.Left,
+            Typeface = InterSemiBold
+        };
+        private static readonly SKPaint _namePaint = new()
+        {
+            Color = new SKColor(138, 164, 188),
+            IsAntialias = true,
+            TextAlign = SKTextAlign.Center,
+            Typeface = InterSemiBold
+        };
+        private static readonly SKPaint _statusPaint = new()
+        {
+            IsAntialias = true,
+            TextAlign = SKTextAlign.Center,
+            Typeface = InterSemiBold
+        };
+
+        // Gecachter Sweep-Gradient-Shader (Farben und Positionen konstant)
+        // Wird neu erstellt wenn Center-Punkt sich aendert (Bounds-Wechsel)
+        private static readonly SKColor[] _gradientColors =
+        {
+            new(239, 83, 80),
+            new(255, 167, 38),
+            new(102, 187, 106),
+            new(66, 165, 245),
+            new(66, 165, 245)
+        };
+        private static readonly float[] _gradientPositions = { 0f, 0.25f, 0.5f, 0.75f, 1f };
+
+        // Gecachter MaskFilter fuer Watering-Glow (Radius 4)
+        private static readonly SKMaskFilter _glowBlurFilter =
+            SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
 
         private readonly double _moisture;
         private readonly int _threshold;
@@ -119,15 +192,9 @@ public class MoistureGaugeControl : Control
             var radius = size / 2f - 12f;
             var strokeWidth = size * 0.08f; // 8% der Größe
 
-            // Hintergrund-Ring (dunkel)
-            using var bgPaint = new SKPaint
-            {
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = strokeWidth,
-                Color = new SKColor(30, 40, 55),
-                IsAntialias = true,
-                StrokeCap = SKStrokeCap.Round
-            };
+            // Hintergrund-Ring (dunkel) - gecachter _strokePaint
+            _strokePaint.StrokeWidth = strokeWidth;
+            _strokePaint.Color = new SKColor(30, 40, 55);
 
             var arcRect = new SKRect(
                 centerX - radius, centerY - radius,
@@ -137,129 +204,69 @@ public class MoistureGaugeControl : Control
             const float startAngle = 135f;
             const float totalSweep = 270f;
 
-            canvas.DrawArc(arcRect, startAngle, totalSweep, false, bgPaint);
+            canvas.DrawArc(arcRect, startAngle, totalSweep, false, _strokePaint);
 
-            // Farbiger Bogen (Feuchtigkeit)
+            // Farbiger Bogen (Feuchtigkeit) - Shader lokal (Center-Punkt-abhaengig)
             var sweepAngle = (float)(_moisture / 100.0 * totalSweep);
             if (sweepAngle > 0.5f)
             {
-                var gaugeColor = GetMoistureColor((float)_moisture);
-
-                using var gaugePaint = new SKPaint
+                _gaugePaint.StrokeWidth = strokeWidth;
+                using (var shader = SKShader.CreateSweepGradient(
+                    new SKPoint(centerX, centerY), _gradientColors, _gradientPositions))
                 {
-                    Style = SKPaintStyle.Stroke,
-                    StrokeWidth = strokeWidth,
-                    IsAntialias = true,
-                    StrokeCap = SKStrokeCap.Round
-                };
+                    _gaugePaint.Shader = shader;
+                    canvas.DrawArc(arcRect, startAngle, sweepAngle, false, _gaugePaint);
+                    _gaugePaint.Shader = null;
+                }
 
-                // Gradient entlang des Bogens
-                using var shader = SKShader.CreateSweepGradient(
-                    new SKPoint(centerX, centerY),
-                    new[] {
-                        new SKColor(239, 83, 80),   // Rot (trocken)
-                        new SKColor(255, 167, 38),  // Orange
-                        new SKColor(102, 187, 106), // Grün (optimal)
-                        new SKColor(66, 165, 245),  // Blau (nass)
-                        new SKColor(66, 165, 245)
-                    },
-                    new[] { 0f, 0.25f, 0.5f, 0.75f, 1f });
-
-                gaugePaint.Shader = shader;
-
-                canvas.DrawArc(arcRect, startAngle, sweepAngle, false, gaugePaint);
-
-                // Glow-Effekt wenn bewässert wird
+                // Glow-Effekt wenn bewässert wird (gecachter MaskFilter)
                 if (_isWatering)
                 {
-                    using var blurFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
-                    using var glowPaint = new SKPaint
-                    {
-                        Style = SKPaintStyle.Stroke,
-                        StrokeWidth = strokeWidth + 6,
-                        Color = new SKColor(66, 165, 245, 60),
-                        IsAntialias = true,
-                        StrokeCap = SKStrokeCap.Round,
-                        MaskFilter = blurFilter
-                    };
-                    canvas.DrawArc(arcRect, startAngle, sweepAngle, false, glowPaint);
+                    _glowPaint.StrokeWidth = strokeWidth + 6;
+                    _glowPaint.Color = new SKColor(66, 165, 245, 60);
+                    _glowPaint.MaskFilter = _glowBlurFilter;
+                    canvas.DrawArc(arcRect, startAngle, sweepAngle, false, _glowPaint);
+                    _glowPaint.MaskFilter = null;
                 }
             }
 
-            // Schwellenwert-Markierung (gelber Strich)
+            // Schwellenwert-Markierung (gelber Strich) - gecachter _markerPaint
             var thresholdAngle = startAngle + (_threshold / 100f * totalSweep);
             var thresholdRad = thresholdAngle * MathF.PI / 180f;
             var markerInner = radius - strokeWidth;
             var markerOuter = radius + strokeWidth;
-
-            using var markerPaint = new SKPaint
-            {
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 2.5f,
-                Color = new SKColor(255, 167, 38), // Orange
-                IsAntialias = true,
-                StrokeCap = SKStrokeCap.Round
-            };
 
             canvas.DrawLine(
                 centerX + MathF.Cos(thresholdRad) * markerInner,
                 centerY + MathF.Sin(thresholdRad) * markerInner,
                 centerX + MathF.Cos(thresholdRad) * markerOuter,
                 centerY + MathF.Sin(thresholdRad) * markerOuter,
-                markerPaint);
+                _markerPaint);
 
-            // Prozentwert in der Mitte
+            // Prozentwert in der Mitte - gecachter _textPaint
             var percentText = $"{_moisture:F0}";
-            using var textPaint = new SKPaint
-            {
-                Color = SKColors.White,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Center,
-                TextSize = size * 0.22f,
-                Typeface = InterBold
-            };
-            canvas.DrawText(percentText, centerX, centerY + textPaint.TextSize * 0.1f, textPaint);
+            _textPaint.TextSize = size * 0.22f;
+            canvas.DrawText(percentText, centerX, centerY + _textPaint.TextSize * 0.1f, _textPaint);
 
-            // %-Zeichen kleiner
-            using var unitPaint = new SKPaint
-            {
-                Color = new SKColor(138, 164, 188),
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Left,
-                TextSize = size * 0.09f,
-                Typeface = InterSemiBold
-            };
-            var percentWidth = textPaint.MeasureText(percentText);
-            canvas.DrawText("%", centerX + percentWidth / 2f + 2, centerY - textPaint.TextSize * 0.15f, unitPaint);
+            // %-Zeichen kleiner - gecachter _unitPaint
+            _unitPaint.TextSize = size * 0.09f;
+            var percentWidth = _textPaint.MeasureText(percentText);
+            canvas.DrawText("%", centerX + percentWidth / 2f + 2, centerY - _textPaint.TextSize * 0.15f, _unitPaint);
 
-            // Zone-Name unter dem Wert
+            // Zone-Name unter dem Wert - gecachter _namePaint
             if (!string.IsNullOrEmpty(_zoneName))
             {
-                using var namePaint = new SKPaint
-                {
-                    Color = new SKColor(138, 164, 188),
-                    IsAntialias = true,
-                    TextAlign = SKTextAlign.Center,
-                    TextSize = size * 0.08f,
-                    Typeface = InterSemiBold
-                };
-                canvas.DrawText(_zoneName.ToUpper(), centerX, centerY + size * 0.18f, namePaint);
+                _namePaint.TextSize = size * 0.08f;
+                canvas.DrawText(_zoneName.ToUpper(), centerX, centerY + size * 0.18f, _namePaint);
             }
 
-            // Status-Text am unteren Bogenrand
+            // Status-Text am unteren Bogenrand - gecachter _statusPaint
             if (!string.IsNullOrEmpty(_statusText))
             {
-                var statusColor = _isWatering
+                _statusPaint.Color = _isWatering
                     ? new SKColor(66, 165, 245) : new SKColor(102, 187, 106);
-                using var statusPaint = new SKPaint
-                {
-                    Color = statusColor,
-                    IsAntialias = true,
-                    TextAlign = SKTextAlign.Center,
-                    TextSize = size * 0.07f,
-                    Typeface = InterSemiBold
-                };
-                canvas.DrawText(_statusText, centerX, centerY + size * 0.32f, statusPaint);
+                _statusPaint.TextSize = size * 0.07f;
+                canvas.DrawText(_statusText, centerX, centerY + size * 0.32f, _statusPaint);
             }
         }
 

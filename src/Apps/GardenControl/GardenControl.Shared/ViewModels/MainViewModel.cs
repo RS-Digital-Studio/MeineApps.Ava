@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GardenControl.Core.DTOs;
 using GardenControl.Shared.Services;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 
 namespace GardenControl.Shared.ViewModels;
@@ -14,6 +15,10 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
 {
     private readonly IConnectionService _connection;
     private readonly IApiService _api;
+    private readonly BackPressHelper _backPressHelper = new();
+
+    /// <summary>Wird ausgeloest um einen Exit-Hinweis anzuzeigen (Toast "Nochmal druecken zum Beenden").</summary>
+    public event Action<string>? ExitHintRequested;
 
     // Child-ViewModels
     public DashboardViewModel Dashboard { get; }
@@ -49,6 +54,8 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         Calibration = calibration;
         History = history;
         Settings = settings;
+
+        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
         // Verbindungsstatus tracken (SignalR-Callback kommt auf Hintergrund-Thread)
         _connection.ConnectionChanged += connected =>
@@ -126,6 +133,31 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         ErrorMessage = message;
         HasError = true;
+    }
+
+    /// <summary>
+    /// Behandelt die Android-Zurueck-Taste. Gibt true zurueck wenn konsumiert (App bleibt offen),
+    /// false wenn die App geschlossen werden darf (Double-Back-to-Exit).
+    /// Reihenfolge: Error-Banner schliessen → Tab zum Dashboard zurueck → Double-Back-to-Exit.
+    /// </summary>
+    public bool HandleBackPressed()
+    {
+        // 1. Fehler-Overlay schliessen
+        if (HasError)
+        {
+            ClearError();
+            return true;
+        }
+
+        // 2. Nicht auf Dashboard → zurueck zum Dashboard
+        if (CurrentPage != "Dashboard")
+        {
+            CurrentPage = "Dashboard";
+            return true;
+        }
+
+        // 3. Auf Dashboard: Double-Back-to-Exit
+        return _backPressHelper.HandleDoubleBack("Erneut drücken zum Beenden");
     }
 
     // --- Tab-Aktiv-Properties für UI-Binding ---

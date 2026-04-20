@@ -1,10 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:vm="using:HandwerkerImperium.ViewModels.Guild"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Guild.GuildWarView"
-             x:DataType="vm:GuildViewModel"
+             x:DataType="vm:GuildWarViewModel"
              x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
@@ -24,7 +24,7 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="8"
                 MinWidth="48" MinHeight="48"
-                Command="{Binding NavigateBackCommand}">
+                Command="{Binding Guild.NavigateBackCommand}">
           <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="{DynamicResource PrimaryContrastBrush}" />
         </Button>
         <!-- Titel -->
@@ -48,14 +48,14 @@
       <StackPanel Spacing="12" Margin="16,12,16,84">
 
         <!-- Kein aktiver Krieg -->
-        <Border IsVisible="{Binding !HasActiveWar}"
+        <Border IsVisible="{Binding !Guild.HasActiveWar}"
                 Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="12" Padding="24,32">
           <StackPanel Spacing="12" HorizontalAlignment="Center">
             <icons:GameIcon Kind="SwordCross" Width="48" Height="48"
                              Foreground="{DynamicResource TextMutedBrush}"
                              HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding WarSubtitle}"
+            <TextBlock Text="{Binding Guild.WarSubtitle}"
                        FontSize="16" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" TextAlignment="Center" />
@@ -63,7 +63,7 @@
         </Border>
 
         <!-- Aktiver Krieg -->
-        <StackPanel IsVisible="{Binding HasActiveWar}" Spacing="12">
+        <StackPanel IsVisible="{Binding Guild.HasActiveWar}" Spacing="12">
 
           <!-- Versus-Karte -->
           <Border Background="{DynamicResource SurfaceBrush}"
@@ -73,7 +73,7 @@
               <!-- Gilden-Namen -->
               <Grid Grid.Row="0" ColumnDefinitions="*,Auto,*">
                 <TextBlock Grid.Column="0"
-                           Text="{Binding ActiveWar.OwnGuildName}"
+                           Text="{Binding Guild.ActiveWar.OwnGuildName}"
                            FontSize="16" FontWeight="Bold"
                            Foreground="{StaticResource CraftPrimaryLightBrush}"
                            HorizontalAlignment="Center" TextAlignment="Center" />
@@ -82,7 +82,7 @@
                            Foreground="{DynamicResource TextMutedBrush}"
                            Margin="12,0" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2"
-                           Text="{Binding ActiveWar.OpponentGuildName}"
+                           Text="{Binding Guild.ActiveWar.OpponentGuildName}"
                            FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource ErrorBrush}"
                            HorizontalAlignment="Center" TextAlignment="Center" />
@@ -101,7 +101,7 @@
                           CornerRadius="0,8,8,0" />
                 </Grid>
                 <!-- Score-Text zentriert -->
-                <TextBlock Text="{Binding WarStatusText}"
+                <TextBlock Text="{Binding Guild.WarStatusText}"
                            FontSize="14" FontWeight="Bold"
                            Foreground="{DynamicResource PrimaryContrastBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -112,7 +112,7 @@
                           HorizontalAlignment="Center">
                 <icons:GameIcon Kind="TimerOutline" Width="20" Height="20"
                                  Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Text="{Binding WarTimeRemaining}"
+                <TextBlock Text="{Binding Guild.WarTimeRemaining}"
                            FontSize="13"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
@@ -127,13 +127,13 @@
                 <TextBlock Text="{loc:Translate GuildWarYourContribution}"
                            FontSize="13"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Text="{Binding WarContributionDisplay}"
+                <TextBlock Text="{Binding Guild.WarContributionDisplay}"
                            FontSize="18" FontWeight="Bold"
                            Foreground="{StaticResource CraftGoldBrush}" />
               </StackPanel>
               <!-- Beitragen-Button -->
               <Button Grid.Column="1"
-                      Command="{Binding ContributeToWarCommand}"
+                      Command="{Binding Guild.ContributeToWarCommand}"
                       Padding="16,10" CornerRadius="10"
                       Background="{StaticResource CraftPrimaryBrush}"
                       VerticalAlignment="Center">
@@ -149,7 +149,7 @@
           </Border>
 
           <!-- Saison-Link -->
-          <Button Command="{Binding NavigateToWarSeasonCommand}"
+          <Button Command="{Binding Guild.NavigateToWarSeasonCommand}"
                   HorizontalAlignment="Stretch"
                   Padding="16,12" CornerRadius="10"
                   Background="{DynamicResource SurfaceBrush}">

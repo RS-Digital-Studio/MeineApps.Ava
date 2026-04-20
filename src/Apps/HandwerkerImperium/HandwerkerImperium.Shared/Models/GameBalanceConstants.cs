@@ -201,8 +201,12 @@ public static class GameBalanceConstants
     /// <summary>Ausstellungsraum: Täglicher Ruf-Gewinn pro Level.</summary>
     public const decimal ShowroomReputationPerLevel = 0.5m;
 
-    /// <summary>Ausbildungszentrum: Speed-Multiplikator pro Level.</summary>
-    public const decimal TrainingCenterSpeedPerLevel = 0.5m;
+    /// <summary>
+    /// Ausbildungszentrum: Speed-Multiplikator pro Level.
+    /// Balancing-Review April 2026: Von 0.5 auf 1.0 erhoeht — Late-Game-Training war zu schwach
+    /// (Max 2.5x bei Level 5 alt; Max 6.5x neu). Kompensiert langsamere Progression bei hoeheren Tier-Workern.
+    /// </summary>
+    public const decimal TrainingCenterSpeedPerLevel = 1.0m;
 
     // ═══════════════════════════════════════════════════════════════════════
     // PRESTIGE - BONUS-PP (flat, NACH Tier-Multiplikator addiert)
@@ -286,8 +290,12 @@ public static class GameBalanceConstants
     /// <summary>XP-Multiplikator für Lieferaufträge.</summary>
     public const decimal MaterialOrderXpMultiplier = 1.5m;
 
-    /// <summary>Maximale Lieferaufträge pro Tag.</summary>
-    public const int MaterialOrdersPerDay = 3;
+    /// <summary>
+    /// Maximale Lieferaufträge pro Tag.
+    /// Balancing-Review April 2026: Von 3 auf 5 erhoeht — Power-User kritisierten das Tageslimit
+    /// (einzige MiniGame-freie Content-Sekunde bei QuickJob-Dominanz).
+    /// </summary>
+    public const int MaterialOrdersPerDay = 5;
 
     /// <summary>Deadline für Lieferaufträge in Stunden.</summary>
     public const int MaterialOrderDeadlineHours = 4;

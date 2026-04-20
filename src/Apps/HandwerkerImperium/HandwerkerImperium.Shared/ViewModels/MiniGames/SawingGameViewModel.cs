@@ -238,9 +238,9 @@ public sealed partial class SawingGameViewModel : BaseMiniGameViewModel
         return Task.CompletedTask;
     }
 
-    protected override void OnGameTimerTick(object? sender, EventArgs e)
+    protected override Task OnGameTimerTickAsync(object? sender, EventArgs e)
     {
-        if (!IsPlaying) return;
+        if (!IsPlaying) return Task.CompletedTask;
 
         // TileLaying: Marker beschleunigt mit der Zeit (Zeitdruck steigt)
         double currentSpeed = SpeedMultiplier;
@@ -287,6 +287,8 @@ public sealed partial class SawingGameViewModel : BaseMiniGameViewModel
                 OkZoneStart = newOkStart;
             }
         }
+
+        return Task.CompletedTask;
     }
 
     [RelayCommand]

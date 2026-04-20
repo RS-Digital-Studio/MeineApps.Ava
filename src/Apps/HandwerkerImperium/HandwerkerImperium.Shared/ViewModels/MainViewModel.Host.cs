@@ -1,0 +1,115 @@
+using HandwerkerImperium.Helpers;
+using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services.Interfaces;
+using HandwerkerImperium.ViewModels.MiniGames;
+
+namespace HandwerkerImperium.ViewModels;
+
+// INavigationHost-Implementierung (Phase 2 — velvety-booping-peacock).
+// Explizite Implementierung: Die Services rufen MainViewModel ausschliesslich ueber
+// diesen Contract. Haelt MainViewModel public-API sauber und verhindert ungewolltes
+// Leaken von internen Details.
+public sealed partial class MainViewModel
+{
+    // ── Seiten-Zustand ───────────────────────────────────────────────
+    ActivePage INavigationHost.ActivePage
+    {
+        get => ActivePage;
+        set => ActivePage = value;
+    }
+
+    bool INavigationHost.IsWorkerProfileActive
+    {
+        get => IsWorkerProfileActive;
+        set => IsWorkerProfileActive = value;
+    }
+
+    bool INavigationHost.IsLuckySpinVisible
+    {
+        get => IsLuckySpinVisible;
+        set => IsLuckySpinVisible = value;
+    }
+
+    bool INavigationHost.IsCombinedWelcomeDialogVisible => WelcomeFlowVM.IsCombinedWelcomeDialogVisible;
+    bool INavigationHost.IsOfflineEarningsDialogVisible => WelcomeFlowVM.IsOfflineEarningsDialogVisible;
+
+    bool INavigationHost.IsDailyRewardDialogVisible
+    {
+        get => WelcomeFlowVM.IsDailyRewardDialogVisible;
+        set => WelcomeFlowVM.IsDailyRewardDialogVisible = value;
+    }
+
+    bool INavigationHost.IsQuickJobsUnlocked => IsQuickJobsUnlocked;
+
+    bool INavigationHost.IsTabLocked(int tabIndex) => IsTabLocked(tabIndex);
+
+    // ── Tab-Auswahl (ruft die RelayCommand-Impl-Methoden aus Navigation.cs) ──
+    void INavigationHost.SelectDashboardTab() => SelectDashboardTab();
+    void INavigationHost.SelectBuildingsTab() => SelectBuildingsTab();
+    void INavigationHost.SelectStatisticsTab() => SelectStatisticsTab();
+    void INavigationHost.SelectAchievementsTab() => SelectAchievementsTab();
+    void INavigationHost.SelectResearchTab() => SelectResearchTab();
+    void INavigationHost.SelectWorkerMarketTab() => SelectWorkerMarketTab();
+
+    void INavigationHost.RefreshOrders() => RefreshOrders();
+    void INavigationHost.RefreshFromState() => RefreshFromState();
+    void INavigationHost.NavigateBackStack() => NavigateBack();
+
+    void INavigationHost.ShowPrestigeConfirmationAsyncFireAndForget()
+        => ShowPrestigeConfirmationAsync().SafeFireAndForget();
+
+    // ── Child-VM-Zugriff ─────────────────────────────────────────────
+    ManagerViewModel INavigationHost.ManagerViewModel => ManagerViewModel;
+    TournamentViewModel INavigationHost.TournamentViewModel => TournamentViewModel;
+    SeasonalEventViewModel INavigationHost.SeasonalEventViewModel => SeasonalEventViewModel;
+    BattlePassViewModel INavigationHost.BattlePassViewModel => BattlePassViewModel;
+    GuildViewModel INavigationHost.GuildViewModel => GuildViewModel;
+    CraftingViewModel INavigationHost.CraftingViewModel => CraftingViewModel;
+    AscensionViewModel INavigationHost.AscensionViewModel => AscensionViewModel;
+    WorkerProfileViewModel INavigationHost.WorkerProfileViewModel => WorkerProfileViewModel;
+    WorkshopViewModel INavigationHost.WorkshopViewModel => WorkshopViewModel;
+    MissionsFeatureViewModel INavigationHost.MissionsVM => MissionsVM;
+    DialogViewModel INavigationHost.DialogVM => DialogVM;
+    MiniGameViewModels INavigationHost.MiniGames => MiniGames;
+
+    BaseMiniGameViewModel? INavigationHost.ActiveMiniGameViewModel => ActiveMiniGameViewModel;
+
+    // ── QuickJob-State ───────────────────────────────────────────────
+    QuickJob? INavigationHost.ActiveQuickJob
+    {
+        get => _activeQuickJob;
+        set => _activeQuickJob = value;
+    }
+
+    bool INavigationHost.QuickJobMiniGamePlayed
+    {
+        get => _quickJobMiniGamePlayed;
+        set => _quickJobMiniGamePlayed = value;
+    }
+
+    bool INavigationHost.IsTournamentRound
+    {
+        get => _isTournamentRound;
+        set => _isTournamentRound = value;
+    }
+
+    // ── Hints/Services ───────────────────────────────────────────────
+    void INavigationHost.HideBanner() => _adService.HideBanner();
+
+    string INavigationHost.GetLocalizedString(string key, string fallback)
+        => _localizationService.GetString(key) ?? fallback;
+
+    // ── Dialog-Dismiss-Hilfen (werden vom DialogOrchestrator benutzt) ──
+    void INavigationHost.CollectOfflineEarningsNormal() => CollectOfflineEarningsNormal();
+    void INavigationHost.DismissCombinedDialog() => DismissCombinedDialog();
+    void INavigationHost.CheckDeferredDialogs() => CheckDeferredDialogs();
+    void INavigationHost.HideLuckySpinOverlay() => HideLuckySpinOverlay();
+
+    // ── Double-Back-to-Exit ──────────────────────────────────────────
+    bool INavigationHost.HandleDoubleBackExit()
+    {
+        var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Erneut druecken zum Beenden";
+        return _backPressHelper.HandleDoubleBack(msg);
+    }
+}

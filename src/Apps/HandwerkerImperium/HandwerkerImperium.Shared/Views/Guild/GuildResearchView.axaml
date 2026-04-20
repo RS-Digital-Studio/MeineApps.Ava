@@ -1,11 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:vm="using:HandwerkerImperium.ViewModels.Guild"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.Guild.GuildResearchView"
-             x:DataType="vm:GuildViewModel"
+             x:DataType="vm:GuildResearchViewModel"
              x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,Auto,*"
@@ -22,7 +22,7 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 MinHeight="44" MinWidth="44"
-                Command="{Binding NavigateBackCommand}">
+                Command="{Binding Guild.NavigateBackCommand}">
           <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="{DynamicResource PrimaryContrastBrush}" />
         </Button>
         <!-- Titel -->
@@ -37,7 +37,7 @@
         <!-- Zusammenfassung -->
         <Border Grid.Column="2" CornerRadius="10" Padding="8,3"
                 Background="#30EA580C">
-          <TextBlock Text="{Binding GuildResearchSummary}"
+          <TextBlock Text="{Binding Guild.GuildResearchSummary}"
                      FontSize="12" FontWeight="Bold" Foreground="{StaticResource CraftPrimaryBrush}" />
         </Border>
       </Grid>
@@ -47,7 +47,7 @@
     <!-- TIMER-BANNER (Aktive Forschung)                                   -->
     <!-- ================================================================= -->
     <Border Grid.Row="1"
-            IsVisible="{Binding HasActiveResearch}"
+            IsVisible="{Binding Guild.HasActiveResearch}"
             Padding="12,8" Margin="0">
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
@@ -61,7 +61,7 @@
                          Foreground="{DynamicResource WarningBrush}" />
         <!-- Forschungsname -->
         <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-          <TextBlock Text="{Binding ActiveResearchName}"
+          <TextBlock Text="{Binding Guild.ActiveResearchName}"
                      FontSize="13" FontWeight="SemiBold"
                      Foreground="{DynamicResource WarningBrush}" />
           <TextBlock Text="{loc:Translate GuildResearchInProgress}"
@@ -71,7 +71,7 @@
         <!-- Countdown -->
         <Border Grid.Column="2" CornerRadius="8" Padding="10,4"
                 Background="#33F59E0B" VerticalAlignment="Center">
-          <TextBlock Text="{Binding ActiveResearchCountdown}"
+          <TextBlock Text="{Binding Guild.ActiveResearchCountdown}"
                      FontSize="14" FontWeight="Bold"
                      Foreground="{DynamicResource WarningBrush}" />
         </Border>
@@ -103,7 +103,7 @@
       </ScrollViewer>
 
       <!-- Forschungs-Beitrag Dialog (Overlay über Canvas) -->
-      <Border IsVisible="{Binding IsResearchContributeDialogVisible}"
+      <Border IsVisible="{Binding Guild.IsResearchContributeDialogVisible}"
               Background="{StaticResource DialogOverlayBrush}"
               HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
               PointerPressed="OnDialogBackdropPressed">
@@ -114,7 +114,7 @@
           <StackPanel Spacing="10">
             <icons:GameIcon Kind="FlaskOutline" Width="28" Height="28"
                              Foreground="{StaticResource CraftPrimaryBrush}" HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding SelectedResearchName}"
+            <TextBlock Text="{Binding Guild.SelectedResearchName}"
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        HorizontalAlignment="Center"
@@ -123,12 +123,12 @@
                        FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding ResearchContributeDisplay}"
+            <TextBlock Text="{Binding Guild.ResearchContributeDisplay}"
                        FontSize="17" FontWeight="Bold"
                        Foreground="{StaticResource CraftGoldBrush}"
                        HorizontalAlignment="Center" />
             <Slider Minimum="1" Maximum="100"
-                    Value="{Binding ResearchContributePercent}"
+                    Value="{Binding Guild.ResearchContributePercent}"
                     TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,4" />
             <Grid ColumnDefinitions="*,*">
               <TextBlock Text="1%" FontSize="10"
@@ -140,13 +140,13 @@
             <Grid ColumnDefinitions="*,12,*" Margin="0,6,0,0">
               <Button Grid.Column="0" Classes="Secondary"
                       HorizontalAlignment="Stretch"
-                      Command="{Binding CancelResearchContributeCommand}">
+                      Command="{Binding Guild.CancelResearchContributeCommand}">
                 <TextBlock Text="{loc:Translate Cancel}"
                            FontSize="13" HorizontalAlignment="Center" />
               </Button>
               <Button Grid.Column="2" Classes="Primary"
                       HorizontalAlignment="Stretch"
-                      Command="{Binding ConfirmResearchContributeCommand}">
+                      Command="{Binding Guild.ConfirmResearchContributeCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                   <icons:GameIcon Kind="HandCoin" Width="18" Height="18" />
                   <TextBlock Text="{loc:Translate GuildResearchContribute}"

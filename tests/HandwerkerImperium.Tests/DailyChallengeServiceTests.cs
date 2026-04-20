@@ -25,6 +25,15 @@ public class DailyChallengeServiceTests
         var mockWorker = Substitute.For<IWorkerService>();
         var state = GameState.CreateNew();
         mockState.State.Returns(state);
+        // Default-Interface-Member-Umleitung (Law of Demeter Properties)
+        mockState.Prestige.Returns(state.Prestige);
+        mockState.Settings.Returns(state.Settings);
+        mockState.Statistics.Returns(state.Statistics);
+        mockState.Tutorial.Returns(state.Tutorial);
+        mockState.Boosts.Returns(state.Boosts);
+        mockState.DailyProgress.Returns(state.DailyProgress);
+        mockState.Automation.Returns(state.Automation);
+        mockState.PlayerLevel.Returns(_ => state.PlayerLevel);
         mockVip.ExtraDailyChallenges.Returns(vipExtraChallenges);
 
         // Lokalisierungsservice gibt Schlüssel als Text zurück (für Tests ausreichend)

@@ -134,7 +134,7 @@ public sealed class AndroidAudioService : IAudioService
     {
         try
         {
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.S)
+            if (OperatingSystem.IsAndroidVersionAtLeast(31))
                 InitializeVibratorApi31();
             else
                 InitializeVibratorLegacy();
@@ -145,6 +145,7 @@ public sealed class AndroidAudioService : IAudioService
         }
     }
 
+    [System.Runtime.Versioning.SupportedOSPlatform("android31.0")]
     private void InitializeVibratorApi31()
     {
         var vibratorManager = (VibratorManager?)_activity.GetSystemService(Context.VibratorManagerService);
@@ -153,9 +154,9 @@ public sealed class AndroidAudioService : IAudioService
 
     private void InitializeVibratorLegacy()
     {
-#pragma warning disable CS0618 // VibratorService ist deprecated ab API 31, aber Fallback nötig
+#pragma warning disable CA1422 // VibratorService ist deprecated ab API 31, aber Fallback nötig
         _vibrator = (Vibrator?)_activity.GetSystemService(Context.VibratorService);
-#pragma warning restore CS0618
+#pragma warning restore CA1422
     }
 
     public Task PlaySoundAsync(GameSound sound)
@@ -245,7 +246,7 @@ public sealed class AndroidAudioService : IAudioService
         {
             var (pattern, amplitudes) = GetVibrationPattern(type);
 
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
             {
                 if (pattern.Length == 1)
                 {
@@ -268,9 +269,9 @@ public sealed class AndroidAudioService : IAudioService
             }
             else
             {
-#pragma warning disable CS0618 // Vibrate(long) deprecated ab API 26
+#pragma warning disable CA1422 // Vibrate(long) deprecated ab API 26 (Legacy-Pfad)
                 _vibrator.Vibrate(pattern[0]);
-#pragma warning restore CS0618
+#pragma warning restore CA1422
             }
         }
         catch

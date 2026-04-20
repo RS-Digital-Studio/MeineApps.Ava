@@ -727,6 +727,7 @@ public sealed partial class PrestigeService : IPrestigeService
         if (state.Prestige.KeptWorkers.TryGetValue(typeStr, out var baseWorker)
             && baseWorker.Tier >= startWorkerTier)
         {
+            baseWorker.AssignedWorkshop = wsType;
             ws.Workers.Add(baseWorker);
             state.Prestige.KeptWorkers.Remove(typeStr);
             addedAny = true;
@@ -740,16 +741,17 @@ public sealed partial class PrestigeService : IPrestigeService
                 && worker.Tier >= startWorkerTier
                 && ws.Workers.Count < ws.MaxWorkers)
             {
+                worker.AssignedWorkshop = wsType;
                 ws.Workers.Add(worker);
                 state.Prestige.KeptWorkers.Remove(key);
                 addedAny = true;
             }
         }
 
-        // Mindestens 1 Worker garantieren
+        // Mindestens 1 Worker garantieren (AssignedWorkshop explizit, sonst IsWorking=false → keine Fatigue)
         if (!addedAny)
         {
-            ws.Workers.Add(Worker.CreateForTier(startWorkerTier));
+            ws.Workers.Add(Worker.CreateForTier(startWorkerTier, wsType));
         }
     }
 }

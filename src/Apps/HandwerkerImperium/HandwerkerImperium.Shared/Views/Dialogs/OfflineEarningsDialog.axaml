@@ -9,7 +9,7 @@
 
   <!-- Offline Earnings Dialog -->
   <Border Background="{StaticResource DialogOverlayBrush}"
-          IsVisible="{Binding IsOfflineEarningsDialogVisible}"
+          IsVisible="{Binding WelcomeFlowVM.IsOfflineEarningsDialogVisible}"
           AutomationProperties.AutomationId="Main_Overlay_OfflineEarnings">
     <Border Background="{DynamicResource SurfaceBrush}"
             CornerRadius="16" Padding="24"
@@ -44,7 +44,7 @@
                    HorizontalAlignment="Center"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    AutomationProperties.AutomationId="Main_Txt_OfflineWhileAway" />
-        <TextBlock Text="{Binding OfflineEarningsAmountText}"
+        <TextBlock Text="{Binding WelcomeFlowVM.OfflineEarningsAmountText}"
                    FontSize="36" FontWeight="Bold"
                    HorizontalAlignment="Center"
                    Foreground="{DynamicResource SuccessBrush}"
@@ -52,7 +52,7 @@
         <!-- Neuer Rekord Badge -->
         <Border Background="#30FFD700" CornerRadius="12" Padding="12,4"
                 HorizontalAlignment="Center"
-                IsVisible="{Binding IsOfflineNewRecord}"
+                IsVisible="{Binding WelcomeFlowVM.IsOfflineNewRecord}"
                 BoxShadow="0 0 12 0 #40FFD700"
                 AutomationProperties.AutomationId="Main_Border_OfflineNewRecord">
           <TextBlock Text="{loc:Translate NewRecord}"
@@ -61,28 +61,28 @@
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Main_Txt_OfflineNewRecord" />
         </Border>
-        <TextBlock Text="{Binding OfflineEarningsDurationText}"
+        <TextBlock Text="{Binding WelcomeFlowVM.OfflineEarningsDurationText}"
                    FontSize="12"
                    HorizontalAlignment="Center"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    AutomationProperties.AutomationId="Main_Txt_OfflineDuration" />
         <!-- Effizienz-Hinweis -->
-        <TextBlock Text="{Binding OfflineEfficiencyHint}"
+        <TextBlock Text="{Binding WelcomeFlowVM.OfflineEfficiencyHint}"
                    FontSize="11" FontStyle="Italic"
                    HorizontalAlignment="Center"
                    Foreground="{DynamicResource TextMutedBrush}"
-                   IsVisible="{Binding OfflineEfficiencyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   IsVisible="{Binding WelcomeFlowVM.OfflineEfficiencyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    AutomationProperties.AutomationId="Main_Txt_OfflineEfficiency" />
         <!-- Wiedereinsteiger-Tipp: Nächstes Ziel (nur bei >48h Pause) -->
         <Border Background="#15D97706" CornerRadius="8" Padding="12,8"
-                IsVisible="{Binding OfflineGoalText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                IsVisible="{Binding WelcomeFlowVM.OfflineGoalText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                 AutomationProperties.AutomationId="Main_Border_OfflineGoal">
           <StackPanel Spacing="4">
             <TextBlock Text="{loc:Translate NextGoal}" FontSize="11" FontWeight="SemiBold"
                        Foreground="{StaticResource CraftGoldBrush}"
                        HorizontalAlignment="Center"
                        AutomationProperties.AutomationId="Main_Txt_OfflineGoalLabel" />
-            <TextBlock Text="{Binding OfflineGoalText}" FontSize="13"
+            <TextBlock Text="{Binding WelcomeFlowVM.OfflineGoalText}" FontSize="13"
                        TextWrapping="Wrap" TextAlignment="Center"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        AutomationProperties.AutomationId="Main_Txt_OfflineGoalText" />

@@ -40,6 +40,12 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     /// <summary>Wird nach Spielende mit Rating (0-3 Sterne) gefeuert.</summary>
     public event EventHandler<int>? GameCompleted;
 
+    /// <summary>
+    /// Wird gefeuert wenn das Spiel neu initialisiert wird (Task-Wechsel bei Multi-Task-Orders).
+    /// Views nutzen dies, um ihren Render-Loop neu zu starten (der bei IsResultShown=true gestoppt wurde).
+    /// </summary>
+    public event EventHandler? GameRestarted;
+
     // ═══════════════════════════════════════════════════════════════════════
     // GEMEINSAME OBSERVABLE PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -159,8 +165,29 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     /// <summary>Spiel-spezifische Initialisierung (Zones, Grid, Wires etc.).</summary>
     protected abstract void InitializeGame();
 
-    /// <summary>Timer-Tick-Handler (spiel-spezifisch).</summary>
-    protected abstract void OnGameTimerTick(object? sender, EventArgs e);
+    /// <summary>
+    /// Spiel-spezifischer Timer-Tick (async). Exceptions werden im Wrapper <see cref="HandleTimerTick"/>
+    /// gefangen und loggen — kein ungeschuetztes async void mehr (Prozess-Crash-Schutz).
+    /// </summary>
+    protected abstract Task OnGameTimerTickAsync(object? sender, EventArgs e);
+
+    /// <summary>
+    /// Dispatcher-sicherer Wrapper um <see cref="OnGameTimerTickAsync"/>. Fängt ALLE Exceptions
+    /// (Timer-Handler laufen als async void über den DispatcherTimer — eine unbehandelte Exception
+    /// würde den Prozess zerreißen). Bei Fehler wird der Timer gestoppt, damit das Spiel nicht endlos feuert.
+    /// </summary>
+    private async void HandleTimerTick(object? sender, EventArgs e)
+    {
+        try
+        {
+            await OnGameTimerTickAsync(sender, e);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] MiniGame Timer-Tick-Exception ({GetType().Name}): {ex}");
+            try { _timer?.Stop(); } catch { /* Timer-Stop Fehler ignorieren */ }
+        }
+    }
 
     /// <summary>
     /// Hook zwischen Countdown und Timer-Start.
@@ -256,6 +283,11 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         UpdateAutoCompleteStatus(gameType);
         CheckAndShowTutorial(gameType);
 
+        // View benachrichtigen (Render-Loop neu starten bei Task-Wechsel).
+        // MUSS vor StartGameAsync() gefeuert werden, damit die View ihren Timer hat,
+        // bevor das Spiel-VM den Countdown startet.
+        GameRestarted?.Invoke(this, EventArgs.Empty);
+
         if (!ShowTutorial && !CanAutoComplete)
             StartGameAsync().SafeFireAndForget();
     }
@@ -296,9 +328,9 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     /// <summary>Startet den Game-Timer mit dem konfigurierten Intervall.</summary>
     protected void StartTimer()
     {
-        if (_timer != null) { _timer.Stop(); _timer.Tick -= OnGameTimerTick; }
+        if (_timer != null) { _timer.Stop(); _timer.Tick -= HandleTimerTick; }
         _timer = new DispatcherTimer { Interval = TimerInterval };
-        _timer.Tick += OnGameTimerTick;
+        _timer.Tick += HandleTimerTick;
         _timer.Start();
     }
 
@@ -459,6 +491,14 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     [RelayCommand]
     protected void Continue()
     {
+        // Doppel-Tap-Schutz: Continue darf nur aus dem Result-Dialog heraus ausgeloest werden.
+        // Bei schnellem Doppel-Tap (z.B. <100ms) waere die Navigation sonst re-entrant:
+        // Der erste Tap ruft SetOrderId -> Countdown (Task.Delay) -> bevor der async-Countdown
+        // durchlaeuft, kann der noch sichtbare Button (Avalonia-Binding-Frame) erneut geklickt
+        // werden. Zweiter SetOrderId-Aufruf wuerde InitializeGame nochmal machen und der alte
+        // Countdown liefe auf dem neuen Spielfeld weiter (inkorrekter State).
+        if (!IsResultShown) return;
+
         var order = _gameStateService.GetActiveOrder();
         if (order == null)
         {
@@ -606,7 +646,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
 
         _timer?.Stop();
         if (_timer != null)
-            _timer.Tick -= OnGameTimerTick;
+            _timer.Tick -= HandleTimerTick;
 
         OnDispose();
 

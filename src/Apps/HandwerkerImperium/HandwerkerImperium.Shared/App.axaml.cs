@@ -18,6 +18,7 @@ using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.Services.Interfaces;
 using HandwerkerImperium.ViewModels;
+using HandwerkerImperium.ViewModels.Guild;
 using HandwerkerImperium.ViewModels.MiniGames;
 using HandwerkerImperium.Views;
 using MeineApps.UI.SkiaSharp;
@@ -134,7 +135,7 @@ public partial class App : Application
         var version = typeof(App).Assembly.GetName().Version;
         var appVersion = version != null
             ? $"v{version.Major}.{version.Minor}.{version.Build}"
-            : "v2.0.22";
+            : "v2.0.31";
 
         return new SkiaLoadingSplash
         {
@@ -184,52 +185,38 @@ public partial class App : Application
         }
     }
 
+    private static bool _servicesDisposed;
+
     /// <summary>
-    /// Disposed alle IDisposable-Singletons (GameLoopService, GameJuiceEngine, MainViewModel, FirebaseService etc.).
-    /// Wird bei Desktop-Shutdown aufgerufen, auf Android via MainActivity.OnDestroy().
+    /// Disposed alle IDisposable-Singletons.
+    /// Kritische Services (Game-Loop + GPU-Ressourcen) werden explizit zuerst disposed,
+    /// danach uebernimmt der ServiceProvider.Dispose() ALLE uebrigen IDisposable-Singletons automatisch
+    /// (verhindert Silent-Leaks bei neuen Services — keine manuelle Liste mehr noetig).
+    /// Idempotent via _servicesDisposed-Flag (OnDestroy kann mehrfach feuern).
     /// </summary>
     public static void DisposeServices()
     {
-        if (Services == null) return;
+        if (Services == null || _servicesDisposed) return;
+        _servicesDisposed = true;
 
         try
         {
-            // GameLoopService hält den 1s-Takt DispatcherTimer
+            // 1. GameLoopService MUSS zuerst stoppen — sonst tickt er noch waehrend andere Services
+            //    im ServiceProvider.Dispose()-Durchlauf bereits gecleaned sind (NRE/ODE-Gefahr).
             (Services.GetService<IGameLoopService>() as IDisposable)?.Dispose();
 
-            // GameJuiceEngine hält SKPaint/SKFont/SKPath Instanzen
+            // 2. GPU-Ressourcen (SKPaint/SKFont/SKPath) deterministisch freigeben BEVOR
+            //    der Provider die Render-subscriberenden VMs kippt.
             (Services.GetService<GameJuiceEngine>() as IDisposable)?.Dispose();
 
-            // MainViewModel hält Referenzen auf alle Child-VMs und Event-Subscriptions
-            (Services.GetService<MainViewModel>() as IDisposable)?.Dispose();
+            // 3. Gesamten DI-Container disposen: automatisch alle registrierten IDisposable-Singletons
+            //    (inkl. MainViewModel, SeasonalEventService, BattlePassService, FirebaseService,
+            //    alle Guild-Services, Achievement/Challenge/Mission-Services, ShopViewModel etc.).
+            //    Reverse-Resolution-Order — genau die richtige Dispose-Reihenfolge.
+            if (Services is IDisposable providerDisposable)
+                providerDisposable.Dispose();
 
-            // SeasonalEventService hält OrderCompleted-Subscription
-            (Services.GetService<ISeasonalEventService>() as IDisposable)?.Dispose();
-
-            // BattlePassService hält OrderCompleted/MiniGameResult/WorkshopUpgraded-Subscriptions
-            (Services.GetService<IBattlePassService>() as IDisposable)?.Dispose();
-
-            // ShopViewModel hält PremiumStatusChanged/MoneyChanged/GoldenScrewsChanged-Subscriptions
-            Services.GetService<ShopViewModel>()?.Dispose();
-
-            // FirebaseService hält HttpClient
-            (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
-
-            // Achievement/Challenge/Mission Services halten Event-Subscriptions
-            (Services.GetService<IAchievementService>() as IDisposable)?.Dispose();
-            (Services.GetService<IDailyChallengeService>() as IDisposable)?.Dispose();
-            (Services.GetService<IWeeklyMissionService>() as IDisposable)?.Dispose();
-
-            // Guild-Sub-Services halten SemaphoreSlim
-            (Services.GetService<IGuildService>() as IDisposable)?.Dispose();
-            (Services.GetService<IGuildResearchService>() as IDisposable)?.Dispose();
-            (Services.GetService<IGuildWarSeasonService>() as IDisposable)?.Dispose();
-            (Services.GetService<IGuildBossService>() as IDisposable)?.Dispose();
-            (Services.GetService<IGuildHallService>() as IDisposable)?.Dispose();
-            (Services.GetService<IGuildChatService>() as IDisposable)?.Dispose();
-            (Services.GetService<IGuildAchievementService>() as IDisposable)?.Dispose();
-
-            // Icon-System: Avalonia-Bitmap-Cache + SkiaSharp-Paints/Filter freigeben
+            // 4. Icon-System: Static Cleanup (nicht im DI-Container registriert)
             Icons.GameIcon.ClearCache();
             Icons.GameIconRenderer.Cleanup();
         }
@@ -339,11 +326,26 @@ public partial class App : Application
         services.AddSingleton<IGuildAchievementService, GuildAchievementService>();
         services.AddSingleton<IGuildTickService, GuildTickService>();
 
+        // Facade uber alle 7 Gilden-Services - reduziert GuildViewModel-Ctor von 14 auf 7 Parameter
+        services.AddSingleton<IGuildFacade, GuildFacade>();
+
+        // Phase-1-Services (MainViewModel-Zerlegung, 17.04.2026). Delegieren vorerst an MainViewModel.
+        services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton<IDialogOrchestrator, DialogOrchestrator>();
+        services.AddSingleton<IMiniGameNavigator, MiniGameNavigator>();
+
         // ViewModels (Singleton because MainViewModel holds references to child VMs)
         services.AddSingleton<MiniGameViewModels>();
         services.AddSingleton<DialogViewModel>();
         services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<DialogViewModel>());
         services.AddSingleton<MissionsFeatureViewModel>();
+
+        // Feature-VMs (Phase 3 der MainViewModel-Zerlegung, 17.04.2026)
+        services.AddSingleton<GoalBannerViewModel>();
+        services.AddSingleton<HeaderViewModel>();
+        services.AddSingleton<PrestigeBannerViewModel>();
+        services.AddSingleton<WelcomeFlowViewModel>();
+
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<AchievementsViewModel>();
         services.AddSingleton<OrderViewModel>();
@@ -373,6 +375,8 @@ public partial class App : Application
         services.AddSingleton<GuildWarSeasonViewModel>();
         services.AddSingleton<GuildBossViewModel>();
         services.AddSingleton<GuildHallViewModel>();
+        // Thin-Wrapper-Sub-VMs (Phase 4 17.04.2026) werden im GuildViewModel-Ctor manuell erstellt
+        // (zirkuläre DI vermieden: Sub-VM haelt Referenz auf Parent-GuildViewModel).
         services.AddSingleton<CraftingViewModel>();
         services.AddSingleton<LuckySpinViewModel>();
         services.AddSingleton<AscensionViewModel>();

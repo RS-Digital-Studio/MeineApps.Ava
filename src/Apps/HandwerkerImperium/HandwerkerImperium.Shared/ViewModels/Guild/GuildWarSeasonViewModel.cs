@@ -7,7 +7,7 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using HandwerkerImperium.Helpers;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.Guild;
 
 /// <summary>
 /// Sub-ViewModel für die Gilden-Krieg-Saison-Übersicht.

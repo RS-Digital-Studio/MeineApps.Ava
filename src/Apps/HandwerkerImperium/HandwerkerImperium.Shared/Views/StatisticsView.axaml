@@ -812,7 +812,7 @@
                       <TextBlock Grid.Column="2"
                                  AutomationProperties.AutomationId="Statistics_Txt_WorkshopDetailLevel"
                                  VerticalAlignment="Center">
-                        <Run Text="Lv." FontSize="10"
+                        <Run Text="{loc:Translate LevelPrefix}" FontSize="10"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                         <Run Text="{Binding Level}" FontSize="14" FontWeight="Bold" />
                       </TextBlock>

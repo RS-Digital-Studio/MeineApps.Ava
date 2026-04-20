@@ -63,6 +63,7 @@ public partial class InspectionGameView : UserControl
         if (_vm != null)
         {
             _vm.GameCompleted -= OnGameCompleted;
+            _vm.GameRestarted -= OnGameRestarted;
             _vm = null;
         }
 
@@ -82,13 +83,19 @@ public partial class InspectionGameView : UserControl
 
         // Altes ViewModel abmelden
         if (_vm != null)
+        {
             _vm.GameCompleted -= OnGameCompleted;
+            _vm.GameRestarted -= OnGameRestarted;
+        }
 
         _vm = DataContext as InspectionGameViewModel;
 
         // Neues ViewModel anmelden
         if (_vm != null)
+        {
             _vm.GameCompleted += OnGameCompleted;
+            _vm.GameRestarted += OnGameRestarted;
+        }
 
         // Canvas-Setup und Render-Loop starten
         _gameCanvas = this.FindControl<SKCanvasView>("GameCanvas");
@@ -295,5 +302,17 @@ public partial class InspectionGameView : UserControl
         {
             // Effekt-Fehler still behandelt
         }
+    }
+
+    /// <summary>
+    /// Startet den Render-Loop bei Task-Wechsel neu (Multi-Task-Orders).
+    /// Bei IsResultShown=true wurde der Timer fuer Performance gestoppt — beim
+    /// naechsten Task muss er neu aufgezogen werden, damit Canvas animiert.
+    /// </summary>
+    private void OnGameRestarted(object? sender, EventArgs e)
+    {
+        if (_disposed) return;
+        if (_gameCanvas != null && _renderTimer == null)
+            StartRenderLoop();
     }
 }

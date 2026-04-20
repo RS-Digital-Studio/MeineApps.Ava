@@ -57,6 +57,7 @@
         <!-- Info + Timer -->
         <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4" HorizontalAlignment="Right">
           <Button Classes="Text" Padding="4"
+                  MinHeight="32" MinWidth="32"
                   Command="{Binding ShowTutorialInfoCommand}"
                   IsVisible="{Binding CanShowTutorialInfo}"
                   AutomationProperties.AutomationId="RoofTiling_Btn_TutorialInfo">

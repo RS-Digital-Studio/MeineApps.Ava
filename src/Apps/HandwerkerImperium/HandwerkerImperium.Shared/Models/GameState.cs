@@ -860,10 +860,8 @@ public class GameState
         // Startwerkstatt (Schreiner) mit 2 Arbeitern für schnelleren Einstieg
         var carpenter = Workshop.Create(WorkshopType.Carpenter);
         carpenter.IsUnlocked = true;
-        var worker1 = Worker.CreateRandom();
-        worker1.AssignedWorkshop = WorkshopType.Carpenter;
-        var worker2 = Worker.CreateRandom();
-        worker2.AssignedWorkshop = WorkshopType.Carpenter;
+        var worker1 = Worker.CreateRandom(WorkshopType.Carpenter);
+        var worker2 = Worker.CreateRandom(WorkshopType.Carpenter);
         carpenter.Workers.Add(worker1);
         carpenter.Workers.Add(worker2);
         state.Workshops.Add(carpenter);

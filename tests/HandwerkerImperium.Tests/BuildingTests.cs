@@ -194,9 +194,10 @@ public class BuildingTests
     // ═══════════════════════════════════════════════════════════════════
 
     [Theory]
-    [InlineData(1, 2.0)]   // 1.0 + 1*0.5 + 0.5 = 2.0
-    [InlineData(3, 3.0)]   // 1.0 + 3*0.5 + 0.5 = 3.0
-    [InlineData(5, 4.0)]   // 1.0 + 5*0.5 + 0.5 = 4.0
+    // 17.04.2026 Balancing-Review: TrainingCenterSpeedPerLevel von 0.5 auf 1.0 erhöht (Late-Game-Buff)
+    [InlineData(1, 2.5)]   // 1.0 + 1*1.0 + 0.5 = 2.5
+    [InlineData(3, 4.5)]   // 1.0 + 3*1.0 + 0.5 = 4.5
+    [InlineData(5, 6.5)]   // 1.0 + 5*1.0 + 0.5 = 6.5
     public void TrainingSpeedMultiplier_TrainingszentraleLevel_GibtKorrekteWerte(int level, decimal erwartet)
     {
         // Vorbereitung

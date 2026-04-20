@@ -7,7 +7,6 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:MeineApps.UI.Controls"
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:dialogs="using:HandwerkerImperium.Views.Dialogs"
-             xmlns:guild="using:HandwerkerImperium.Views.Guild"
              x:Class="HandwerkerImperium.Views.MainView"
              x:DataType="vm:MainViewModel"
              x:CompileBindings="True"
@@ -156,34 +155,43 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
                       IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildActive}"
                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                       AutomationProperties.AutomationId="Main_View_Guild" />
-      <!-- Gilden-Sub-Seiten (Hub-Navigation) -->
-      <guild:GuildResearchView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildResearchActive}"
-                               DataContext="{Binding GuildViewModel}"
-                               AutomationProperties.AutomationId="Main_View_GuildResearch" />
-      <guild:GuildMembersView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildMembersActive}"
-                              DataContext="{Binding GuildViewModel}"
-                              AutomationProperties.AutomationId="Main_View_GuildMembers" />
-      <guild:GuildInviteView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildInviteActive}"
-                             DataContext="{Binding GuildViewModel}"
-                             AutomationProperties.AutomationId="Main_View_GuildInvite" />
-      <guild:GuildWarSeasonView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildWarSeasonActive}"
-                                DataContext="{Binding GuildViewModel.WarSeasonViewModel}"
-                                AutomationProperties.AutomationId="Main_View_GuildWarSeason" />
-      <guild:GuildBossView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildBossActive}"
-                           DataContext="{Binding GuildViewModel.BossViewModel}"
-                           AutomationProperties.AutomationId="Main_View_GuildBoss" />
-      <guild:GuildHallView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildHallActive}"
-                           DataContext="{Binding GuildViewModel.HallViewModel}"
-                           AutomationProperties.AutomationId="Main_View_GuildHall" />
-      <guild:GuildAchievementsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildAchievementsActive}"
-                                   DataContext="{Binding GuildViewModel}"
-                                   AutomationProperties.AutomationId="Main_View_GuildAchievements" />
-      <guild:GuildChatView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildChatActive}"
-                           DataContext="{Binding GuildViewModel}"
-                           AutomationProperties.AutomationId="Main_View_GuildChat" />
-      <guild:GuildWarView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildWarActive}"
-                          DataContext="{Binding GuildViewModel}"
-                          AutomationProperties.AutomationId="Main_View_GuildWar" />
+      <!-- Gilden-Sub-Seiten (Hub-Navigation, ViewLocator-Pattern Phase 4 17.04.2026) -->
+      <ContentControl Content="{Binding GuildViewModel.ResearchVM}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildResearchActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_GuildResearch" />
+      <ContentControl Content="{Binding GuildViewModel.MembersVM}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildMembersActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_GuildMembers" />
+      <ContentControl Content="{Binding GuildViewModel.InviteVM}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildInviteActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_GuildInvite" />
+      <ContentControl Content="{Binding GuildViewModel.WarSeasonViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildWarSeasonActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_GuildWarSeason" />
+      <ContentControl Content="{Binding GuildViewModel.BossViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildBossActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_GuildBoss" />
+      <ContentControl Content="{Binding GuildViewModel.HallViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildHallActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_GuildHall" />
+      <ContentControl Content="{Binding GuildViewModel.AchievementsVM}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildAchievementsActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_GuildAchievements" />
+      <ContentControl Content="{Binding GuildViewModel.ChatVM}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildChatActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_GuildChat" />
+      <ContentControl Content="{Binding GuildViewModel.WarVM}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildWarActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_GuildWar" />
       <ContentControl Content="{Binding CraftingViewModel}"
                       IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsCraftingActive}"
                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
@@ -250,9 +258,9 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
 
     <!-- Starter Offer Dialog (einmaliges zeitlich begrenztes Premium-Angebot) -->
     <Border Grid.RowSpan="2"
-            IsVisible="{Binding IsStarterOfferVisible}"
+            IsVisible="{Binding WelcomeFlowVM.IsStarterOfferVisible}"
             Background="{StaticResource DialogOverlayBrush}"
-            IsHitTestVisible="{Binding IsStarterOfferVisible}"
+            IsHitTestVisible="{Binding WelcomeFlowVM.IsStarterOfferVisible}"
             AutomationProperties.AutomationId="Main_Overlay_StarterOffer">
       <Border Classes="Card" MaxWidth="340" Padding="24"
               CornerRadius="16"
@@ -281,7 +289,7 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
             <Border.Background>
               <SolidColorBrush Color="Black" Opacity="0.3" />
             </Border.Background>
-            <TextBlock Text="{Binding StarterOfferCountdown}"
+            <TextBlock Text="{Binding WelcomeFlowVM.StarterOfferCountdown}"
                        FontSize="16" FontWeight="Bold"
                        Foreground="{StaticResource CraftGoldBrush}"
                        HorizontalAlignment="Center" />

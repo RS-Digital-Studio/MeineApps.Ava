@@ -155,23 +155,12 @@ public sealed partial class BlueprintGameViewModel : BaseMiniGameViewModel
         IsMemorizing = false;
     }
 
-    protected override async void OnGameTimerTick(object? sender, EventArgs e)
+    protected override async Task OnGameTimerTickAsync(object? sender, EventArgs e)
     {
-        try
-        {
-            if (!IsPlaying || _isEnding) return;
-
-            TimeRemaining--;
-
-            if (TimeRemaining <= 0)
-            {
-                await EndGameAsync();
-            }
-        }
-        catch
-        {
-            // Timer-Fehler still behandelt
-        }
+        if (!IsPlaying || _isEnding) return;
+        TimeRemaining--;
+        if (TimeRemaining <= 0)
+            await EndGameAsync();
     }
 
     private void GenerateSteps()

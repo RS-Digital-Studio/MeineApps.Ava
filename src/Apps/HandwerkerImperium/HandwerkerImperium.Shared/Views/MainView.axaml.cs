@@ -61,6 +61,7 @@ public partial class MainView : UserControl
             _vm.PageTransitionStarting -= OnPageTransitionStarting;
             _vm.CelebrationRequested -= OnCelebrationRequested;
             _vm.CeremonyRequested -= OnCeremonyRequested;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
             _vm = null;
         }
 
@@ -79,6 +80,7 @@ public partial class MainView : UserControl
             _vm.PageTransitionStarting -= OnPageTransitionStarting;
             _vm.CelebrationRequested -= OnCelebrationRequested;
             _vm.CeremonyRequested -= OnCeremonyRequested;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
         }
 
         _vm = DataContext as MainViewModel;
@@ -89,11 +91,34 @@ public partial class MainView : UserControl
             _vm.PageTransitionStarting += OnPageTransitionStarting;
             _vm.CelebrationRequested += OnCelebrationRequested;
             _vm.CeremonyRequested += OnCeremonyRequested;
+            _vm.PauseStateChanged += OnPauseStateChanged;
 
             // Tab-Labels initialisieren
             RefreshTabLabels();
 
             // Render-Timer starten (für Tab-Bar + Transition + Hans)
+            StartRenderTimer();
+        }
+    }
+
+    /// <summary>
+    /// Stoppt oder startet den Render-Timer entsprechend dem App-Pause-Status.
+    /// Gefeuert von MainViewModel.PauseGameLoop()/ResumeGameLoop() via Android-Lifecycle.
+    /// Spart Battery und Hintergrund-CPU wenn App minimiert/Screen gesperrt ist.
+    /// </summary>
+    private void OnPauseStateChanged(bool isPaused)
+    {
+        if (isPaused)
+        {
+            _renderTimer?.Stop();
+        }
+        else if (_renderTimer != null)
+        {
+            _renderTimer.Start();
+        }
+        else
+        {
+            // Falls Timer via Dispose verloren: neu starten
             StartRenderTimer();
         }
     }
@@ -232,7 +257,7 @@ public partial class MainView : UserControl
         if (_vm != null)
         {
             _tabBadgeCounts[0] = (_vm.HasPendingDelivery ? 1 : 0) + (_vm.CanActivateRush ? 1 : 0);
-            _tabBadgeCounts[1] = _vm.HasWorkerWarning ? 1 : 0;
+            _tabBadgeCounts[1] = _vm.HeaderVM.HasWorkerWarning ? 1 : 0;
             _tabBadgeCounts[2] = _vm.MissionsVM.ClaimableMissionsCount + (_vm.MissionsVM.HasFreeSpin ? 1 : 0);
             _tabBadgeCounts[3] = 0;
             _tabBadgeCounts[4] = 0;

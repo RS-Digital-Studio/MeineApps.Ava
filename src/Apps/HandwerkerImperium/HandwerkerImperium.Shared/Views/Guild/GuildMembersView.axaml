@@ -1,10 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:vm="using:HandwerkerImperium.ViewModels.Guild"
+             xmlns:vmRoot="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Guild.GuildMembersView"
-             x:DataType="vm:GuildViewModel"
+             x:DataType="vm:GuildMembersViewModel"
              x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
@@ -21,7 +22,7 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 MinHeight="44" MinWidth="44"
-                Command="{Binding NavigateBackCommand}">
+                Command="{Binding Guild.NavigateBackCommand}">
           <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="{DynamicResource PrimaryContrastBrush}" />
         </Button>
         <!-- Titel -->
@@ -29,7 +30,7 @@
                     HorizontalAlignment="Center">
           <icons:GameIcon Kind="AccountGroup" Width="28" Height="28"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
-          <TextBlock Text="{Binding MembersHeaderDisplay}"
+          <TextBlock Text="{Binding Guild.MembersHeaderDisplay}"
                      FontSize="18" FontWeight="Bold"
                      Foreground="{StaticResource CraftPrimaryLightBrush}"
                      VerticalAlignment="Center" />
@@ -37,7 +38,7 @@
         <!-- Einladen-Button -->
         <Button Grid.Column="2" Classes="Text" Padding="4"
                 MinHeight="44" MinWidth="44"
-                Command="{Binding NavigateToInviteCommand}">
+                Command="{Binding Guild.NavigateToInviteCommand}">
           <icons:GameIcon Kind="AccountPlus" Width="26" Height="26"
                            Foreground="{StaticResource CraftGoldBrush}" />
         </Button>
@@ -52,9 +53,9 @@
       <StackPanel Spacing="8" Margin="16,12,16,84">
 
         <!-- Mitglieder-Liste -->
-        <ItemsControl ItemsSource="{Binding Members}">
+        <ItemsControl ItemsSource="{Binding Guild.Members}">
           <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:GuildMemberDisplay">
+            <DataTemplate x:DataType="vmRoot:GuildMemberDisplay">
               <Border Background="{DynamicResource SurfaceBrush}"
                       CornerRadius="8" Padding="12,8" Margin="0,2">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">

@@ -48,7 +48,8 @@ public class AscensionPerk
                 DescriptionKey = "AscStartCapitalDesc",
                 Icon = "Bank",
                 MaxLevel = 3,
-                CostsPerLevel = [1, 3, 6],
+                // BAL-1 (20.04.2026): L3 6→5. Erste Ascension (~8 AP) soll einen Max-Perk ermoeglichen
+                CostsPerLevel = [1, 3, 5],
                 // +100%, +500%, +1000% Startgeld nach Prestige
                 ValuesPerLevel = [1.00m, 5.00m, 10.00m]
             },
@@ -59,7 +60,8 @@ public class AscensionPerk
                 DescriptionKey = "AscEternalToolsDesc",
                 Icon = "Wrench",
                 MaxLevel = 3,
-                CostsPerLevel = [2, 4, 8],
+                // BAL-1 (20.04.2026): L3 8→5 (teuerster Perk war 3-AP ueber typischem Erst-Ascension-Budget)
+                CostsPerLevel = [2, 4, 5],
                 // Erste 2 behalten, erste 4 behalten, alle behalten
                 ValuesPerLevel = [2m, 4m, 5m]
             },
@@ -70,7 +72,8 @@ public class AscensionPerk
                 DescriptionKey = "AscQuickStartDesc",
                 Icon = "RocketLaunch",
                 MaxLevel = 3,
-                CostsPerLevel = [1, 3, 7],
+                // BAL-1 (20.04.2026): L3 7→5
+                CostsPerLevel = [1, 3, 5],
                 // Start mit 2/4/alle Workshops freigeschaltet
                 ValuesPerLevel = [2m, 4m, 8m]
             },
@@ -92,7 +95,8 @@ public class AscensionPerk
                 DescriptionKey = "AscGoldenEraDesc",
                 Icon = "Screwdriver",
                 MaxLevel = 3,
-                CostsPerLevel = [1, 3, 6],
+                // BAL-1 (20.04.2026): L3 6→5
+                CostsPerLevel = [1, 3, 5],
                 // Goldschrauben-Verdienst +20%/+50%/+100%
                 ValuesPerLevel = [0.20m, 0.50m, 1.00m]
             },

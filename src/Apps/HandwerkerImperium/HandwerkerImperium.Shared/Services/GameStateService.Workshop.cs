@@ -159,7 +159,8 @@ public sealed partial class GameStateService
             _state.TotalMoneySpent += cost;
             moneyAfter = _state.Money;
 
-            worker = Worker.CreateRandom();
+            // AssignedWorkshop explizit auf type, damit IsWorking=true und Fatigue akkumuliert (Hire-Pfad Gotcha)
+            worker = Worker.CreateRandom(type);
             workshop.Workers.Add(worker);
             workerCount = workshop.Workers.Count;
             _state.InvalidateIncomeCache();

@@ -9,8 +9,17 @@ namespace HandwerkerImperium.Services;
 /// Handles saving and loading game state to persistent storage.
 /// Uses atomic writes (temp file + rename) and backup for crash safety.
 /// </summary>
-public sealed class SaveGameService : ISaveGameService
+public sealed class SaveGameService : ISaveGameService, IDisposable
 {
+    private bool _disposed;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _ioLock.Dispose();
+    }
+
     private const int IoLockTimeoutSeconds = 30;
 
     private readonly IGameStateService _gameStateService;
@@ -62,36 +71,7 @@ public sealed class SaveGameService : ISaveGameService
         }
         try
         {
-            var state = _gameStateService.State;
-            state.LastSavedAt = DateTime.UtcNow;
-
-            // HMAC-Signatur ueber Gilden-relevante Werte berechnen (vor Serialisierung)
-            _integrityService.ComputeSignature(state);
-
-            // Synchrone Serialisierung auf dem UI-Thread (Thread-Safety: kein Interleaving mit GameLoop-DispatcherTimer).
-            // SerializeAsync mit useAsync:true traversiert den State-Objektgraphen asynchron → Race Condition
-            // mit GameLoop der gleichzeitig Listen modifiziert (InvalidOperationException). ~5-20ms akzeptabel.
-            string json = JsonSerializer.Serialize(state, _jsonOptions);
-            await File.WriteAllTextAsync(TempFilePath, json);
-
-            if (File.Exists(SaveFilePath))
-            {
-                File.Copy(SaveFilePath, BackupFilePath, overwrite: true);
-            }
-
-            File.Move(TempFilePath, SaveFilePath, overwrite: true);
-
-            // Cloud-Save parallel (fire-and-forget, blockiert lokales Save nie)
-            if (_playGamesService?.IsSignedIn == true && state.Settings.CloudSaveEnabled)
-            {
-                // json-Variable wiederverwenden statt erneut von Datei lesen (vermeidet Race Condition + I/O)
-                var cloudJson = json;
-                _ = Task.Run(async () =>
-                {
-                    try { await _playGamesService.SaveToCloudAsync(cloudJson, $"Level {state.PlayerLevel}"); }
-                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] Cloud-Save Fehler: {ex.Message}"); }
-                });
-            }
+            await SaveInternalAsync();
         }
         catch (Exception ex)
         {
@@ -103,6 +83,52 @@ public sealed class SaveGameService : ISaveGameService
         finally
         {
             _ioLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Lock-freie Save-Implementierung. Muss vom Aufrufer unter _ioLock gehalten werden.
+    /// Wird von SaveAsync() und ImportSaveAsync() genutzt — letzteres haelt den Lock bereits fuer den
+    /// gesamten Initialize+Save-Pfad (sonst kann GameLoop zwischen Initialize und Save ticken).
+    /// </summary>
+    private async Task SaveInternalAsync()
+    {
+        var state = _gameStateService.State;
+
+        // Serialisierung auf Background-Thread unter State-Lock (Thread-Safety):
+        // - GameLoop (UI-Thread) kann kurz warten (max ~50-100ms alle 30s) bis der Lock frei ist
+        // - UI-Thread wird NICHT mehr blockiert → kein sichtbarer Mikro-Stutter alle 30s
+        // - JsonSerializer.Serialize ist sync, aber in Task.Run landet es auf ThreadPool
+        // - Der Lock verhindert Race-Condition mit parallelen State-Modifikationen
+        var (json, cloudLevel) = await Task.Run(() => _gameStateService.ExecuteWithLock(() =>
+        {
+            state.LastSavedAt = DateTime.UtcNow;
+            _integrityService.ComputeSignature(state);
+            var serialized = JsonSerializer.Serialize(state, _jsonOptions);
+            // cloudLevel unter Lock snapshotten gegen GameLoop-Level-Up-Race
+            return (json: serialized, cloudLevel: state.PlayerLevel);
+        }));
+
+        await File.WriteAllTextAsync(TempFilePath, json);
+
+        if (File.Exists(SaveFilePath))
+        {
+            File.Copy(SaveFilePath, BackupFilePath, overwrite: true);
+        }
+
+        File.Move(TempFilePath, SaveFilePath, overwrite: true);
+
+        // Cloud-Save parallel (fire-and-forget, blockiert lokales Save nie)
+        if (_playGamesService?.IsSignedIn == true && state.Settings.CloudSaveEnabled)
+        {
+            // json-Variable wiederverwenden statt erneut von Datei lesen (vermeidet Race Condition + I/O)
+            var cloudJson = json;
+            var cloudSvc = _playGamesService;
+            _ = Task.Run(async () =>
+            {
+                try { await cloudSvc.SaveToCloudAsync(cloudJson, $"Level {cloudLevel}"); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] Cloud-Save Fehler: {ex.Message}"); }
+            });
         }
     }
 
@@ -203,6 +229,13 @@ public sealed class SaveGameService : ISaveGameService
 
     public async Task<bool> ImportSaveAsync(string json)
     {
+        // Import+Save muessen atomar unter _ioLock laufen, sonst kann GameLoop zwischen
+        // Initialize(state) und SaveAsync() ticken und den importierten State ueberschreiben.
+        if (!await _ioLock.WaitAsync(TimeSpan.FromSeconds(IoLockTimeoutSeconds)))
+        {
+            System.Diagnostics.Debug.WriteLine("[HandwerkerImperium] ImportSaveAsync: IO-Lock Timeout - Import abgebrochen");
+            return false;
+        }
         try
         {
             var state = JsonSerializer.Deserialize<GameState>(json, _jsonOptions);
@@ -211,7 +244,7 @@ public sealed class SaveGameService : ISaveGameService
             state = MigrateState(state);
             SanitizeState(state);
             _gameStateService.Initialize(state);
-            await SaveAsync();
+            await SaveInternalAsync();
             return true;
         }
         catch (Exception ex)
@@ -219,6 +252,10 @@ public sealed class SaveGameService : ISaveGameService
             System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] ImportSave Fehler: {ex.Message}");
             ErrorOccurred?.Invoke("Error", "ImportErrorMessage");
             return false;
+        }
+        finally
+        {
+            _ioLock.Release();
         }
     }
 

@@ -790,8 +790,10 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
     }
 
     /// <summary>
-    /// Berechnet den Premium-Einkommensvergleich für Nicht-Premium-Spieler.
-    /// Zeigt aktuelles Netto-Einkommen und den Wert mit Premium (+50%).
+    /// Berechnet den Premium-Vergleich für Nicht-Premium-Spieler.
+    /// Zeile 1: Aktuelles Netto-Einkommen und Wert mit Premium (+50%).
+    /// Zeile 2: Goldschrauben-Verdopplung (ECON-2 20.04.2026: war im Compare unsichtbar,
+    /// ist aber der psychologisch staerkste Kaufgrund fuer Mid-Game-Spieler mit Rebirth-Ziel).
     /// </summary>
     private void UpdatePremiumIncomeComparison()
     {
@@ -806,9 +808,13 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         var currentFormatted = MoneyFormatter.FormatPerSecond(netIncome);
         var premiumFormatted = MoneyFormatter.FormatPerSecond(premiumIncome);
 
-        var template = _localizationService.GetString("PremiumIncomeCompare")
+        var incomeTemplate = _localizationService.GetString("PremiumIncomeCompare")
                        ?? "Dein Einkommen: {0} \u2192 Mit Premium: {1}";
-        PremiumIncomeComparison = string.Format(template, currentFormatted, premiumFormatted);
+        var gsBenefit = _localizationService.GetString("PremiumBenefitGoldenScrews")
+                       ?? "+100% Goldschrauben aus Mini-Games";
+
+        PremiumIncomeComparison = string.Format(incomeTemplate, currentFormatted, premiumFormatted)
+                                  + "\n" + gsBenefit;
     }
 
     private static string FormatMoney(decimal amount) => MoneyFormatter.Format(amount, 2);

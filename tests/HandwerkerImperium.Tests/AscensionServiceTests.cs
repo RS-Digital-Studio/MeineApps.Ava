@@ -24,6 +24,14 @@ public class AscensionServiceTests
 
         var state = GameState.CreateNew();
         gameStateMock.State.Returns(state);
+        // Default-Interface-Member-Umleitung: Komfort-Properties an state binden
+        gameStateMock.Prestige.Returns(state.Prestige);
+        gameStateMock.Settings.Returns(state.Settings);
+        gameStateMock.Statistics.Returns(state.Statistics);
+        gameStateMock.Tutorial.Returns(state.Tutorial);
+        gameStateMock.Boosts.Returns(state.Boosts);
+        gameStateMock.DailyProgress.Returns(state.DailyProgress);
+        gameStateMock.Automation.Returns(state.Automation);
 
         saveGameMock.SaveAsync().Returns(Task.CompletedTask);
         audioMock.PlaySoundAsync(Arg.Any<GameSound>()).Returns(Task.CompletedTask);

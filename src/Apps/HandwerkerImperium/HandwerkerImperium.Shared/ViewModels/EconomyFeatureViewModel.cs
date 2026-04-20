@@ -575,20 +575,20 @@ internal sealed class EconomyFeatureViewModel
         var state = _gameStateService.State;
 
         // Update properties
-        _host.Money = state.Money;
+        _host.HeaderVM.Money = state.Money;
         // Beim Start: sofort setzen, kein Ticken
         _host._displayedMoney = state.Money;
         _host._targetMoney = state.Money;
-        _host.MoneyDisplay = MainViewModel.FormatMoney(state.Money);
-        _host.IncomePerSecond = state.NetIncomePerSecond;
-        _host.IncomeDisplay = $"{MainViewModel.FormatMoney(state.NetIncomePerSecond)}/s";
+        _host.HeaderVM.MoneyDisplay = MainViewModel.FormatMoney(state.Money);
+        _host.HeaderVM.IncomePerSecond = state.NetIncomePerSecond;
+        _host.HeaderVM.IncomeDisplay = $"{MainViewModel.FormatMoney(state.NetIncomePerSecond)}/s";
         _host.UpdateNetIncomeHeader(state);
         _host.UpdateWorkerWarning(state);
-        _host.PlayerLevel = state.PlayerLevel;
-        _host.CurrentXp = state.CurrentXp;
-        _host.XpForNextLevel = state.XpForNextLevel;
-        _host.LevelProgress = state.LevelProgress;
-        _host.GoldenScrewsDisplay = state.GoldenScrews.ToString("N0");
+        _host.HeaderVM.PlayerLevel = state.PlayerLevel;
+        _host.HeaderVM.CurrentXp = state.CurrentXp;
+        _host.HeaderVM.XpForNextLevel = state.XpForNextLevel;
+        _host.HeaderVM.LevelProgress = state.LevelProgress;
+        _host.HeaderVM.GoldenScrewsDisplay = state.GoldenScrews.ToString("N0");
 
         // Login-Streak aktualisieren
         _host.OnPropertyChanged(nameof(MainViewModel.LoginStreak));
@@ -967,16 +967,16 @@ internal sealed class EconomyFeatureViewModel
         _lastPrestigeBannerPrestigeCount = currentPrestigeCount;
 
         var highestTier = state.Prestige.GetHighestAvailableTier(currentLevel);
-        _host.IsPrestigeAvailable = highestTier != PrestigeTier.None;
+        _host.PrestigeBannerVM.IsPrestigeAvailable = highestTier != PrestigeTier.None;
 
-        if (_host.IsPrestigeAvailable)
+        if (_host.PrestigeBannerVM.IsPrestigeAvailable)
         {
             var potentialPoints = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);
             int tierPoints = (int)(potentialPoints * highestTier.GetPointMultiplier());
             var pointsLabel = _localizationService.GetString("PrestigePoints") ?? "Prestige-Punkte";
-            _host.PrestigePointsPreview = $"+{tierPoints} {pointsLabel}";
+            _host.PrestigeBannerVM.PrestigePointsPreview = $"+{tierPoints} {pointsLabel}";
 
-            _host.PrestigePreviewTierName = _localizationService.GetString(highestTier.GetLocalizationKey()) ?? highestTier.ToString();
+            _host.PrestigeBannerVM.PrestigePreviewTierName = _localizationService.GetString(highestTier.GetLocalizationKey()) ?? highestTier.ToString();
 
             // Gewinne (wiederverwendbare Liste statt new List<string>)
             decimal permanentBonus = highestTier.GetPermanentMultiplierBonus() * 100;
@@ -995,7 +995,7 @@ internal sealed class EconomyFeatureViewModel
                 _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsManagers") ?? "Manager bleiben (Lv.1)!");
             if (highestTier.KeepsBestWorkers())
                 _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsWorkers") ?? "Beste Worker bleiben!");
-            _host.PrestigePreviewGains = string.Join("\n", _prestigeGains);
+            _host.PrestigeBannerVM.PrestigePreviewGains = string.Join("\n", _prestigeGains);
 
             // Verluste (wiederverwendbare Liste statt new List<string>)
             _prestigeLosses.Clear();
@@ -1004,49 +1004,49 @@ internal sealed class EconomyFeatureViewModel
             _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesWorkers") ?? "Worker → entlassen");
             if (!highestTier.KeepsResearch())
                 _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesResearch") ?? "Forschung → Reset");
-            _host.PrestigePreviewLosses = string.Join("\n", _prestigeLosses);
+            _host.PrestigeBannerVM.PrestigePreviewLosses = string.Join("\n", _prestigeLosses);
 
             // Geschätzter Speed-Up
             decimal currentMult = state.Prestige.PermanentMultiplier;
             decimal newMult = currentMult + highestTier.GetPermanentMultiplierBonus();
             int speedUpPercent = currentMult > 0 ? (int)((newMult / currentMult - 1m) * 100) : 100;
-            _host.PrestigePreviewSpeedUp = $"~{speedUpPercent}% {_localizationService.GetString("Faster") ?? "schneller"}";
+            _host.PrestigeBannerVM.PrestigePreviewSpeedUp = $"~{speedUpPercent}% {_localizationService.GetString("Faster") ?? "schneller"}";
         }
         else
         {
-            _host.PrestigePointsPreview = "";
-            _host.PrestigePreviewGains = "";
-            _host.PrestigePreviewLosses = "";
-            _host.PrestigePreviewSpeedUp = "";
-            _host.PrestigePreviewTierName = "";
+            _host.PrestigeBannerVM.PrestigePointsPreview = "";
+            _host.PrestigeBannerVM.PrestigePreviewGains = "";
+            _host.PrestigeBannerVM.PrestigePreviewLosses = "";
+            _host.PrestigeBannerVM.PrestigePreviewSpeedUp = "";
+            _host.PrestigeBannerVM.PrestigePreviewTierName = "";
         }
 
         // Fortschritt zum nächsten Tier (auch anzeigen wenn aktuell kein Prestige verfügbar)
         var nextTier = highestTier.GetNextTier();
         if (nextTier != PrestigeTier.None)
         {
-            _host.HasNextPrestigeTier = true;
+            _host.PrestigeBannerVM.HasNextPrestigeTier = true;
             var reqLevel = nextTier.GetRequiredLevel();
             var currentTierLevel = highestTier != PrestigeTier.None ? highestTier.GetRequiredLevel() : 0;
             var range = reqLevel - currentTierLevel;
             var progress = range > 0
                 ? Math.Clamp((double)(currentLevel - currentTierLevel) / range, 0.0, 1.0)
                 : 0.0;
-            _host.NextPrestigeTierProgress = progress;
+            _host.PrestigeBannerVM.NextPrestigeTierProgress = progress;
             var tierName = _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString();
 
             // PP-Prognose: "Bei Gold: +400 PP"
             var potentialPP = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);
             int nextTierPoints = (int)(potentialPP * nextTier.GetPointMultiplier());
-            _host.NextPrestigeTierHint = nextTierPoints > 0
+            _host.PrestigeBannerVM.NextPrestigeTierHint = nextTierPoints > 0
                 ? $"Lv. {currentLevel}/{reqLevel} \u2192 {tierName} (+{nextTierPoints} PP)"
                 : $"Lv. {currentLevel}/{reqLevel} \u2192 {tierName}";
         }
         else
         {
-            _host.HasNextPrestigeTier = false;
-            _host.NextPrestigeTierHint = "";
-            _host.NextPrestigeTierProgress = 0;
+            _host.PrestigeBannerVM.HasNextPrestigeTier = false;
+            _host.PrestigeBannerVM.NextPrestigeTierHint = "";
+            _host.PrestigeBannerVM.NextPrestigeTierProgress = 0;
         }
 
         // Tier-Auswahl wird dynamisch beim Öffnen des Prestige-Dialogs in DialogVM gesetzt
@@ -1056,7 +1056,7 @@ internal sealed class EconomyFeatureViewModel
 
         // Speedrun-Timer aktualisieren
         var runDuration = _prestigeService.GetCurrentRunDuration();
-        _host.CurrentRunDuration = runDuration.HasValue
+        _host.PrestigeBannerVM.CurrentRunDuration = runDuration.HasValue
             ? $"{(int)runDuration.Value.TotalHours}h {runDuration.Value.Minutes:D2}m"
             : "";
 
@@ -1073,21 +1073,21 @@ internal sealed class EconomyFeatureViewModel
 
         // PP-2: Challenge-Chip aktiv/inaktiv State
         var set = challenges != null ? new HashSet<PrestigeChallengeType>(challenges) : [];
-        _host.IsChallengeSpartanerActive = set.Contains(PrestigeChallengeType.Spartaner);
-        _host.IsChallengeOhneForschungActive = set.Contains(PrestigeChallengeType.OhneForschung);
-        _host.IsChallengeInflationszeitActive = set.Contains(PrestigeChallengeType.Inflationszeit);
-        _host.IsChallengeSoloMeisterActive = set.Contains(PrestigeChallengeType.SoloMeister);
-        _host.IsChallengeSprintActive = set.Contains(PrestigeChallengeType.Sprint);
-        _host.IsChallengeKeinNetzActive = set.Contains(PrestigeChallengeType.KeinNetz);
+        _host.PrestigeBannerVM.IsChallengeSpartanerActive = set.Contains(PrestigeChallengeType.Spartaner);
+        _host.PrestigeBannerVM.IsChallengeOhneForschungActive = set.Contains(PrestigeChallengeType.OhneForschung);
+        _host.PrestigeBannerVM.IsChallengeInflationszeitActive = set.Contains(PrestigeChallengeType.Inflationszeit);
+        _host.PrestigeBannerVM.IsChallengeSoloMeisterActive = set.Contains(PrestigeChallengeType.SoloMeister);
+        _host.PrestigeBannerVM.IsChallengeSprintActive = set.Contains(PrestigeChallengeType.Sprint);
+        _host.PrestigeBannerVM.IsChallengeKeinNetzActive = set.Contains(PrestigeChallengeType.KeinNetz);
 
         if (challenges == null || challenges.Count == 0)
         {
-            _host.ActiveChallengeCount = 0;
-            _host.ActiveChallengesText = "";
+            _host.PrestigeBannerVM.ActiveChallengeCount = 0;
+            _host.PrestigeBannerVM.ActiveChallengesText = "";
             return;
         }
 
-        _host.ActiveChallengeCount = challenges.Count;
+        _host.PrestigeBannerVM.ActiveChallengeCount = challenges.Count;
         var parts = new List<string>(challenges.Count);
         for (int i = 0; i < challenges.Count; i++)
         {
@@ -1095,7 +1095,7 @@ internal sealed class EconomyFeatureViewModel
             var name = _localizationService.GetString(c.GetNameKey()) ?? c.ToString();
             parts.Add($"{name} +{c.GetPpBonus() * 100:0}%");
         }
-        _host.ActiveChallengesText = string.Join(", ", parts);
+        _host.PrestigeBannerVM.ActiveChallengesText = string.Join(", ", parts);
     }
 
     /// <summary>

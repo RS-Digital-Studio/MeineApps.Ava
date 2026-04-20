@@ -399,49 +399,4 @@ public sealed partial class GameStateService
         }
     }
 
-    // ===================================================================
-    // EVENT-RAISER (für OperationServices)
-    // ===================================================================
-
-    /// <summary>
-    /// Feuert das WorkshopUpgraded-Event mit MoneyChanged.
-    /// </summary>
-    public void RaiseWorkshopUpgraded(WorkshopType type, int oldLevel, int newLevel, decimal cost, decimal moneyBefore, decimal moneyAfter)
-    {
-        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, moneyAfter));
-        WorkshopUpgraded?.Invoke(this, new WorkshopUpgradedEventArgs(type, oldLevel, newLevel, cost));
-    }
-
-    /// <summary>
-    /// Feuert das WorkerHired-Event mit MoneyChanged.
-    /// </summary>
-    public void RaiseWorkerHired(WorkshopType type, Worker worker, decimal cost, int workerCount, decimal moneyBefore, decimal moneyAfter)
-    {
-        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, moneyAfter));
-        WorkerHired?.Invoke(this, new WorkerHiredEventArgs(type, worker, cost, workerCount));
-    }
-
-    /// <summary>
-    /// Feuert das OrderCompleted-Event.
-    /// </summary>
-    public void RaiseOrderCompleted(Order order, decimal moneyReward, int xpReward, MiniGameRating avgRating)
-    {
-        OrderCompleted?.Invoke(this, new OrderCompletedEventArgs(order, moneyReward, xpReward, avgRating));
-    }
-
-    /// <summary>
-    /// Feuert das MiniGameResultRecorded-Event.
-    /// </summary>
-    public void RaiseMiniGameResultRecorded(MiniGameRating rating)
-    {
-        MiniGameResultRecorded?.Invoke(this, new MiniGameResultRecordedEventArgs(rating));
-    }
-
-    /// <summary>
-    /// Feuert das MoneyChanged-Event.
-    /// </summary>
-    public void RaiseMoneyChanged(decimal oldAmount, decimal newAmount)
-    {
-        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(oldAmount, newAmount));
-    }
 }

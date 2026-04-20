@@ -20,6 +20,14 @@ public class TournamentServiceTests
         var mock = Substitute.For<IGameStateService>();
         var state = new GameState { PlayerLevel = 10 };
         mock.State.Returns(state);
+        // Default-Interface-Member-Umleitung (Law of Demeter Properties)
+        mock.Prestige.Returns(state.Prestige);
+        mock.Settings.Returns(state.Settings);
+        mock.Statistics.Returns(state.Statistics);
+        mock.Tutorial.Returns(state.Tutorial);
+        mock.Boosts.Returns(state.Boosts);
+        mock.DailyProgress.Returns(state.DailyProgress);
+        mock.Automation.Returns(state.Automation);
 
         var playgames = Substitute.For<IPlayGamesService>();
         playgames.IsSignedIn.Returns(false);

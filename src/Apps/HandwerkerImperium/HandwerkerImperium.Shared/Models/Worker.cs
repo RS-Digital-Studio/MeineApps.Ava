@@ -390,8 +390,10 @@ public class Worker
 
     /// <summary>
     /// Creates a worker for a specific tier with random attributes.
+    /// Wenn <paramref name="assignedWorkshop"/> gesetzt ist, wird der Worker direkt dem Workshop zugewiesen
+    /// (wichtig fuer Prestige/Ascension/Hire-Pfade, damit IsWorking=true und Fatigue korrekt akkumuliert wird).
     /// </summary>
-    public static Worker CreateForTier(WorkerTier tier)
+    public static Worker CreateForTier(WorkerTier tier, WorkshopType? assignedWorkshop = null)
     {
         var random = Random.Shared;
         var personality = (WorkerPersonality)random.Next(0, 6);
@@ -450,7 +452,8 @@ public class Worker
             Efficiency = Math.Round(efficiency, 3),
             SkillLevel = 1,
             HiredAt = DateTime.UtcNow,
-            IsFemale = isFemale
+            IsFemale = isFemale,
+            AssignedWorkshop = assignedWorkshop
         };
 
         return worker;
@@ -459,9 +462,9 @@ public class Worker
     /// <summary>
     /// Legacy factory method (creates a Tier E worker).
     /// </summary>
-    public static Worker CreateRandom()
+    public static Worker CreateRandom(WorkshopType? assignedWorkshop = null)
     {
-        return CreateForTier(WorkerTier.E);
+        return CreateForTier(WorkerTier.E, assignedWorkshop);
     }
 
     /// <summary>

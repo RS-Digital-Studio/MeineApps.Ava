@@ -9,7 +9,7 @@
 
   <!-- Daily Reward Dialog -->
   <Border Background="{StaticResource DialogOverlayBrush}"
-          IsVisible="{Binding IsDailyRewardDialogVisible}"
+          IsVisible="{Binding WelcomeFlowVM.IsDailyRewardDialogVisible}"
           AutomationProperties.AutomationId="Main_Overlay_DailyReward">
     <Border Background="{DynamicResource SurfaceBrush}"
             CornerRadius="16" Padding="24"
@@ -58,17 +58,17 @@
           <Border Width="12" Height="12" CornerRadius="6"
                   BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="2" />
         </StackPanel>
-        <TextBlock Text="{Binding DailyRewardDayText}"
+        <TextBlock Text="{Binding WelcomeFlowVM.DailyRewardDayText}"
                    FontSize="16"
                    HorizontalAlignment="Center"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    AutomationProperties.AutomationId="Main_Txt_DailyRewardDay" />
-        <TextBlock Text="{Binding DailyRewardAmountText}"
+        <TextBlock Text="{Binding WelcomeFlowVM.DailyRewardAmountText}"
                    FontSize="28" FontWeight="Bold"
                    HorizontalAlignment="Center"
                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                    AutomationProperties.AutomationId="Main_Txt_DailyRewardAmount" />
-        <TextBlock Text="{Binding DailyRewardStreakText}"
+        <TextBlock Text="{Binding WelcomeFlowVM.DailyRewardStreakText}"
                    FontSize="12"
                    HorizontalAlignment="Center"
                    Foreground="{DynamicResource TextSecondaryBrush}"

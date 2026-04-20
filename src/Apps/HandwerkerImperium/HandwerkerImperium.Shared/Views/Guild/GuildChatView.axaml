@@ -1,11 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:vm="using:HandwerkerImperium.ViewModels.Guild"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:svc="using:HandwerkerImperium.Services.Interfaces"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Guild.GuildChatView"
-             x:DataType="vm:GuildViewModel"
+             x:DataType="vm:GuildChatViewModel"
              x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*,Auto"
@@ -21,7 +21,7 @@
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
         <Button Grid.Column="0" Classes="Text" Padding="8"
                 MinWidth="48" MinHeight="48"
-                Command="{Binding NavigateBackCommand}">
+                Command="{Binding Guild.NavigateBackCommand}">
           <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="{DynamicResource PrimaryContrastBrush}" />
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
@@ -44,19 +44,19 @@
       <StackPanel Margin="8,8,8,16">
 
         <!-- Leerer Zustand -->
-        <StackPanel IsVisible="{Binding !ChatMessages.Count}"
+        <StackPanel IsVisible="{Binding !Guild.ChatMessages.Count}"
                     Spacing="8" HorizontalAlignment="Center" Margin="0,48">
           <icons:GameIcon Kind="ChatBubble" Width="40" Height="40"
                            Foreground="{DynamicResource TextMutedBrush}"
                            HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding ChatSubtitle}"
+          <TextBlock Text="{Binding Guild.ChatSubtitle}"
                      FontSize="14"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      HorizontalAlignment="Center" />
         </StackPanel>
 
         <!-- Nachrichten -->
-        <ItemsControl ItemsSource="{Binding ChatMessages}">
+        <ItemsControl ItemsSource="{Binding Guild.ChatMessages}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="svc:ChatMessageDisplay">
               <Panel>
@@ -109,14 +109,14 @@
             BorderBrush="{DynamicResource BorderBrush}">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <TextBox Grid.Column="0"
-                 Text="{Binding ChatInput, Mode=TwoWay}"
+                 Text="{Binding Guild.ChatInput, Mode=TwoWay}"
                  Watermark="{loc:Translate GuildChatWatermark}"
                  MaxLength="200"
                  AcceptsReturn="False"
                  VerticalAlignment="Center" />
         <Button Grid.Column="1"
-                Command="{Binding SendChatMessageCommand}"
-                IsEnabled="{Binding CanSendChat}"
+                Command="{Binding Guild.SendChatMessageCommand}"
+                IsEnabled="{Binding Guild.CanSendChat}"
                 Padding="10,8" CornerRadius="20"
                 Background="{StaticResource CraftPrimaryBrush}">
           <icons:GameIcon Kind="Send" Width="24" Height="24" Foreground="{DynamicResource PrimaryContrastBrush}" />

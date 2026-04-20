@@ -166,6 +166,8 @@
                              AutomationProperties.AutomationId="Achievements_Txt_ItemDescription"
                              Text="{Binding Description}"
                              FontSize="12"
+                             TextWrapping="Wrap" MaxLines="2"
+                             TextTrimming="CharacterEllipsis"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
 
                   <!-- Progress Bar (if not unlocked) -->

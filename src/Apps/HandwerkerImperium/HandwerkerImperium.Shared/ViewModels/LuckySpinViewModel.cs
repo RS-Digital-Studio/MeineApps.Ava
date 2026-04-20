@@ -254,6 +254,14 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnSpinTick)} Fehler: {ex.Message}");
+            // Timer stoppen + unsubscriben, damit keine Endlos-Exception-Schleife entsteht
+            if (_spinTimer != null)
+            {
+                _spinTimer.Stop();
+                _spinTimer.Tick -= OnSpinTick;
+                _spinTimer = null;
+            }
+            IsSpinning = false;
         }
     }
 

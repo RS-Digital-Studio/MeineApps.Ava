@@ -15,7 +15,6 @@ using MeineApps.Core.Premium.Ava.Services;
 using Android.Gms.Games;
 using Xamarin.Google.Android.Play.Core.Review;
 using HandwerkerImperium.Android;
-using HandwerkerImperium.Services;
 using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium;
@@ -25,6 +24,7 @@ namespace HandwerkerImperium;
     Theme = "@style/MyTheme.NoActionBar",
     Icon = "@mipmap/appicon",
     MainLauncher = true,
+    Exported = true,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity<App>
 {
@@ -99,7 +99,7 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         // POST_NOTIFICATIONS Runtime-Permission anfordern (Android 13+ / API 33)
         // Ohne diese Permission werden Benachrichtigungen auf API 33+ still ignoriert
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu)
+        if (OperatingSystem.IsAndroidVersionAtLeast(33))
         {
             if (CheckSelfPermission(global::Android.Manifest.Permission.PostNotifications)
                 != Permission.Granted)
@@ -163,7 +163,7 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         if (Window == null) return;
 
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.R) // API 30+
+        if (OperatingSystem.IsAndroidVersionAtLeast(30)) // API 30+
         {
             Window.SetDecorFitsSystemWindows(false);
             var controller = Window.InsetsController;

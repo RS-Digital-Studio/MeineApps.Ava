@@ -216,19 +216,12 @@ public sealed partial class PaintingGameViewModel : BaseMiniGameViewModel
         return colors[Random.Shared.Next(colors.Length)];
     }
 
-    protected override async void OnGameTimerTick(object? sender, EventArgs e)
+    protected override async Task OnGameTimerTickAsync(object? sender, EventArgs e)
     {
-        try
-        {
-            if (!IsPlaying || _isEnding) return;
-            TimeRemaining--;
-            if (TimeRemaining <= 0)
-                await EndGameAsync();
-        }
-        catch
-        {
-            // Timer-Fehler still behandelt
-        }
+        if (!IsPlaying || _isEnding) return;
+        TimeRemaining--;
+        if (TimeRemaining <= 0)
+            await EndGameAsync();
     }
 
     [RelayCommand]

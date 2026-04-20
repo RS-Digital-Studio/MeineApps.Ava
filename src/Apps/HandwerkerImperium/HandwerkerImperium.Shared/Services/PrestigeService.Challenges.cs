@@ -78,6 +78,17 @@ public sealed partial class PrestigeService
             GameBalanceConstants.BonusPpExtraLevelCap);
         bonusPp += levelBonus;
 
+        // Fix 18.04.2026 Game-Audit: Tier-skalierender Bonus-PP. Vorher war der flat-Bonus
+        // (max +16) bei Legende-Runs (×9 Tier-Multi) nur +18% Uplift — unerheblich.
+        // Bei Bronze (×1.2) waren die gleichen +16 noch +133% Uplift. Design bestrafte Vielspieler.
+        // Loesung: Bonus-PP werden mit einem Tier-Faktor multipliziert, sodass die relative Wirkung
+        // erhalten bleibt. Tier-Faktor = sqrt(TierIndex+1) — sanft ansteigend, kein Inflation-Run.
+        //   None=×1.0, Bronze=×1.41, Silver=×1.73, Gold=×2.0, Platin=×2.24, Diamant=×2.45,
+        //   Meister=×2.65, Legende=×2.83 → max ~45 PP Uplift bei Legende (vs. 16 vorher).
+        int tierIndex = (int)tier;
+        double tierFactor = Math.Sqrt(tierIndex + 1);
+        bonusPp = (int)Math.Round(bonusPp * tierFactor);
+
         return bonusPp;
     }
 

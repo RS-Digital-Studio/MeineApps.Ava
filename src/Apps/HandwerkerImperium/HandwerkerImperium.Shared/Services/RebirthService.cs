@@ -21,14 +21,19 @@ public sealed class RebirthService : IRebirthService
     /// <summary>
     /// Kosten-Tabelle pro nächstem Stern: (Goldschrauben, Geld-Prozent).
     /// Stern 1 = günstig (Einstieg), Stern 5 = sehr teuer (Endgame-Ziel).
+    ///
+    /// Fix 18.04.2026 Game-Audit: Gesamt-GS halbiert von 2350 auf 1175 pro Workshop
+    /// (10 Workshops: 23.500 → 11.750 GS). Mit best-case ~110 GS/Tag F2P: 210 Tage → 107 Tage.
+    /// Damit wird der 5-Stern-Full-Complete auch fuer Completionists realistisch erreichbar,
+    /// ohne die IAP-Attraktivitaet zu untergraben (Premium-Pass halbiert zusaetzlich).
     /// </summary>
     private static readonly (int goldenScrews, decimal moneyPercent)[] RebirthCosts =
     [
-        (100, 0.10m),   // Stern 1
-        (250, 0.15m),   // Stern 2
-        (500, 0.20m),   // Stern 3
-        (500, 0.25m),   // Stern 4 (von 750 gesenkt — F2P ~5 Wochen statt ~8)
-        (1000, 0.30m),  // Stern 5 (von 1500 gesenkt — Endgame-Ziel in ~10 Wochen F2P erreichbar)
+        ( 50, 0.10m),   // Stern 1 (von 100)
+        (125, 0.15m),   // Stern 2 (von 250)
+        (250, 0.20m),   // Stern 3 (von 500)
+        (250, 0.25m),   // Stern 4 (von 500)
+        (500, 0.30m),   // Stern 5 (von 1000)
     ];
 
     public event EventHandler<WorkshopType>? RebirthCompleted;
@@ -85,15 +90,23 @@ public sealed class RebirthService : IRebirthService
 
         var cost = GetRebirthCost(type);
 
+        // Geldkosten VOR der Goldschrauben-Buchung berechnen
+        // Falls GameLoop zwischenzeitlich Money senkt, wird TrySpendMoney unten sauber ablehnen
+        decimal moneyCost = state.Money * cost.moneyPercent;
+
         // Goldschrauben prüfen und abziehen
-        if (!_gameStateService.CanAffordGoldenScrews(cost.goldenScrews))
+        if (!_gameStateService.TrySpendGoldenScrews(cost.goldenScrews))
             return false;
 
-        _gameStateService.TrySpendGoldenScrews(cost.goldenScrews);
-
-        // Geld-Prozent abziehen (Prozent des aktuellen Geldes)
-        decimal moneyCost = state.Money * cost.moneyPercent;
-        state.Money -= moneyCost;
+        // Geld atomar abziehen (gegen Race mit GameLoop-Events wie TaxAudit/WorkerStrike)
+        // Bei Fehlschlag: Goldschrauben zurueckgeben, damit Spieler nichts verliert.
+        // fromPurchase:true verhindert Premium/Prestige-GS-Boni auf den Rollback-Betrag
+        // (sonst bekaeme Premium-Spieler mit Prestige-Shop bis zu 2.5x der gezahlten GS zurueck → Exploit).
+        if (!_gameStateService.TrySpendMoney(moneyCost))
+        {
+            _gameStateService.AddGoldenScrews(cost.goldenScrews, fromPurchase: true);
+            return false;
+        }
 
         // Stern erhöhen
         int newStars = GetStars(type) + 1;

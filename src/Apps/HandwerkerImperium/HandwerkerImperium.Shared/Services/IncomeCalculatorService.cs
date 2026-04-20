@@ -153,11 +153,37 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
     {
         if (state.TotalIncomePerSecond <= 0) return grossIncome;
 
-        decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
-        if (effectiveMultiplier > SoftCapThreshold)
+        // Fix 18.04.2026 Game-Audit: Tier-skalierender Soft-Cap. Der bisherige harte 8x-Cap
+        // kollidierte bereits mit dem Legende-Tier-Multi (+800% = 9x) — alle Prestige-Shop-,
+        // Rebirth- und Premium-Upgrades waren danach komprimiert und fuehlten sich wertlos an.
+        // Jetzt skaliert die Schwelle mit dem erreichten Prestige-Tier:
+        //   Kein Prestige: 4x  (Early-Game soll nicht ueber Balance schiessen)
+        //   Bronze:        6x
+        //   Silver:        8x
+        //   Gold:         10x
+        //   Platin:       12x
+        //   Diamant:      14x
+        //   Meister:      16x
+        //   Legende:      20x  (knapp 2x ueber Tier-Multi → Late-Game-Upgrades wirken wieder)
+        var tier = state.Prestige?.CurrentTier ?? PrestigeTier.None;
+        decimal threshold = tier switch
         {
-            decimal excess = effectiveMultiplier - SoftCapThreshold;
-            decimal softened = SoftCapThreshold + (decimal)Math.Log(1.0 + (double)excess, 2.0);
+            PrestigeTier.None    => 4.0m,
+            PrestigeTier.Bronze  => 6.0m,
+            PrestigeTier.Silver  => 8.0m,
+            PrestigeTier.Gold    => 10.0m,
+            PrestigeTier.Platin  => 12.0m,
+            PrestigeTier.Diamant => 14.0m,
+            PrestigeTier.Meister => 16.0m,
+            PrestigeTier.Legende => 20.0m,
+            _ => 8.0m,
+        };
+
+        decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
+        if (effectiveMultiplier > threshold)
+        {
+            decimal excess = effectiveMultiplier - threshold;
+            decimal softened = threshold + (decimal)Math.Log(1.0 + (double)excess, 2.0);
             grossIncome = state.TotalIncomePerSecond * softened;
 
             // Soft-Cap-Info für UI-Transparenz
@@ -253,8 +279,12 @@ public sealed class IncomeCalculatorService : IIncomeCalculatorService
         if (rebirthIncomeBonus > 0)
             mult *= (1m + rebirthIncomeBonus);
 
-        // KEIN Soft-Cap, KEIN Speed/Rush → bewusst weggelassen
-        // Premium-Bonus wird jetzt zentral in CalculateGrossIncome() angewendet
+        // Premium: +50% Einkommensbonus (analog zu CalculateGrossIncome)
+        // Crafting-Verkäufe durchlaufen NICHT CalculateGrossIncome → Bonus hier anwenden
+        if (state.IsPremium)
+            mult *= 1.5m;
+
+        // KEIN Soft-Cap, KEIN Speed/Rush → bewusst weggelassen (Crafting nutzt andere Dynamik)
         return mult;
     }
 }

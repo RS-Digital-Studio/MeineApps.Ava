@@ -740,7 +740,7 @@ public partial class DashboardView : UserControl
             }
 
             // Gold-Shimmer auf Goldschrauben-Bereich (oben links)
-            if (_vm.GoldenScrewsDisplay != "0")
+            if (_vm.HeaderVM.GoldenScrewsDisplay != "0")
             {
                 var screwBounds = new SKRect(bounds.Left + 8, bounds.Top + 6, bounds.Left + 100, bounds.Top + 32);
                 SkiaShimmerEffect.DrawGoldShimmer(canvas, screwBounds, _renderTime);
@@ -786,7 +786,7 @@ public partial class DashboardView : UserControl
         if (_vm == null) return;
 
         MeineApps.UI.SkiaSharp.LinearProgressVisualization.Render(canvas, bounds,
-            (float)_vm.LevelProgress,
+            (float)_vm.HeaderVM.LevelProgress,
             new SKColor(0xF5, 0x9E, 0x0B), // Amber Start
             new SKColor(0xFF, 0xD7, 0x00), // Gold End
             showText: false, glowEnabled: true);

@@ -36,7 +36,7 @@ public sealed class AndroidNotificationService : INotificationService
 
     private void CreateNotificationChannel()
     {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.O) return;
+        if (!OperatingSystem.IsAndroidVersionAtLeast(26)) return;
 
         var channel = new NotificationChannel(ChannelId, ChannelName, NotificationImportance.Default)
         {

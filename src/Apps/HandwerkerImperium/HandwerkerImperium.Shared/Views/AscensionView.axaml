@@ -196,7 +196,7 @@
                                   HorizontalAlignment="Center">
                         <icons:GameIcon Kind="CheckCircle" Width="16" Height="16"
                                          Foreground="{DynamicResource SuccessBrush}" />
-                        <TextBlock Text="MAX" FontSize="12" FontWeight="Bold"
+                        <TextBlock Text="{loc:Translate PerkMaxLevel}" FontSize="12" FontWeight="Bold"
                                    Foreground="{DynamicResource SuccessBrush}" />
                       </StackPanel>
                     </Border>

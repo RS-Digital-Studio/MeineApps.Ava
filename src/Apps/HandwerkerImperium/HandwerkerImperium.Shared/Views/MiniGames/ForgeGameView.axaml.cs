@@ -60,6 +60,7 @@ public partial class ForgeGameView : UserControl
             _vm.GameStarted -= OnGameStarted;
             _vm.GameCompleted -= OnGameCompleted;
             _vm.ZoneHit -= OnZoneHit;
+            _vm.GameRestarted -= OnGameRestarted;
             _vm = null;
         }
 
@@ -83,6 +84,7 @@ public partial class ForgeGameView : UserControl
             _vm.GameStarted -= OnGameStarted;
             _vm.GameCompleted -= OnGameCompleted;
             _vm.ZoneHit -= OnZoneHit;
+            _vm.GameRestarted -= OnGameRestarted;
         }
 
         _vm = DataContext as ForgeGameViewModel;
@@ -93,6 +95,7 @@ public partial class ForgeGameView : UserControl
             _vm.GameStarted += OnGameStarted;
             _vm.GameCompleted += OnGameCompleted;
             _vm.ZoneHit += OnZoneHit;
+            _vm.GameRestarted += OnGameRestarted;
         }
 
         // Canvas-Setup und Render-Loop starten
@@ -283,5 +286,17 @@ public partial class ForgeGameView : UserControl
     {
         // Visuelles Feedback laeuft ueber den SkiaSharp-Renderer
         // (Funken-Partikel bei Hammerschlag, Temperatur-Aenderung)
+    }
+
+    /// <summary>
+    /// Startet den Render-Loop bei Task-Wechsel neu (Multi-Task-Orders).
+    /// Bei IsResultShown=true wurde der Timer fuer Performance gestoppt — beim
+    /// naechsten Task muss er neu aufgezogen werden, damit Canvas animiert.
+    /// </summary>
+    private void OnGameRestarted(object? sender, EventArgs e)
+    {
+        if (_disposed) return;
+        if (_gameCanvas != null && _renderTimer == null)
+            StartRenderLoop();
     }
 }

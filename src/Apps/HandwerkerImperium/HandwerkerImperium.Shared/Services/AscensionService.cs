@@ -129,7 +129,8 @@ public sealed class AscensionService : IAscensionService
         state.UnlockedWorkshopTypes.Add(WorkshopType.Carpenter);
         var carpenter = Workshop.Create(WorkshopType.Carpenter);
         carpenter.IsUnlocked = true;
-        carpenter.Workers.Add(Worker.CreateForTier(WorkerTier.E));
+        // AssignedWorkshop explizit setzen, sonst IsWorking=false → keine Fatigue/Einkommen
+        carpenter.Workers.Add(Worker.CreateForTier(WorkerTier.E, WorkshopType.Carpenter));
         state.Workshops.Add(carpenter);
 
         // Workers

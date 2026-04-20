@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:vm="using:HandwerkerImperium.ViewModels.Guild"
              xmlns:models="using:HandwerkerImperium.Models"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"

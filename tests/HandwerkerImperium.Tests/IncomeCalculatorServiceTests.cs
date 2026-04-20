@@ -512,9 +512,9 @@ public class IncomeCalculatorServiceTests
     // ═══════════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void ApplySoftCap_UnterhalberSoftCapSchwelle_KeinEinfluss()
+    public void ApplySoftCap_UnterhalbTierSchwelle_KeinEinfluss()
     {
-        // Vorbereitung: Multiplikator = 4x < 8x Schwelle → kein Soft-Cap
+        // Vorbereitung: Kein Prestige → Tier-Schwelle = 4x. Multiplikator 2x < 4x → kein Soft-Cap.
         var service = ErstelleService();
         var ws = Workshop.Create(WorkshopType.Carpenter);
         ws.Workers.Add(new Worker { Name = "Hans", Efficiency = 1.0m, Mood = 80m });
@@ -523,7 +523,7 @@ public class IncomeCalculatorServiceTests
         decimal basisEinkommen = state.TotalIncomePerSecond;
         if (basisEinkommen <= 0) return;
 
-        decimal grossIncome = basisEinkommen * 4.0m; // 4x < 8x Schwelle
+        decimal grossIncome = basisEinkommen * 2.0m; // 2x < 4x None-Tier-Schwelle
 
         // Ausführung
         decimal ergebnis = service.ApplySoftCap(state, grossIncome);
@@ -535,9 +535,10 @@ public class IncomeCalculatorServiceTests
     }
 
     [Fact]
-    public void ApplySoftCap_GenauAnSoftCapSchwelle_KeinEinfluss()
+    public void ApplySoftCap_GenauAnTierSchwelle_KeinEinfluss()
     {
-        // Vorbereitung: Multiplikator = genau 8x → kein Soft-Cap (Grenzfall)
+        // Vorbereitung: Tier-skalierender Soft-Cap seit 18.04.2026 — None=4x (nicht mehr 8x).
+        // Multiplikator = genau 4x → kein Soft-Cap (Grenzfall).
         var service = ErstelleService();
         var ws = Workshop.Create(WorkshopType.Carpenter);
         ws.Workers.Add(new Worker { Name = "Hans", Efficiency = 1.0m, Mood = 80m });
@@ -546,12 +547,12 @@ public class IncomeCalculatorServiceTests
         decimal basisEinkommen = state.TotalIncomePerSecond;
         if (basisEinkommen <= 0) return;
 
-        decimal grossIncome = basisEinkommen * 8.0m; // genau 8x
+        decimal grossIncome = basisEinkommen * 4.0m; // genau 4x (None-Tier-Schwelle)
 
         // Ausführung
         decimal ergebnis = service.ApplySoftCap(state, grossIncome);
 
-        // Prüfung: Kein Soft-Cap bei exakt 8x
+        // Prüfung: Kein Soft-Cap bei exakt 4x
         state.IsSoftCapActive.Should().BeFalse();
         ergebnis.Should().BeApproximately(grossIncome, 0.001m);
     }

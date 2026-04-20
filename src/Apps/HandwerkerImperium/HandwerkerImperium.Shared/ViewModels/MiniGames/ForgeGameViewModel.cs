@@ -185,9 +185,9 @@ public sealed partial class ForgeGameViewModel : BaseMiniGameViewModel
         return Task.CompletedTask;
     }
 
-    protected override void OnGameTimerTick(object? sender, EventArgs e)
+    protected override Task OnGameTimerTickAsync(object? sender, EventArgs e)
     {
-        if (!IsPlaying) return;
+        if (!IsPlaying) return Task.CompletedTask;
 
         _heatTime += TICK_INTERVAL_MS / 1000.0;
 
@@ -221,6 +221,7 @@ public sealed partial class ForgeGameViewModel : BaseMiniGameViewModel
         }
 
         IsHeating = _heatDirection > 0;
+        return Task.CompletedTask;
     }
 
     private void UpdateGameTypeVisuals()

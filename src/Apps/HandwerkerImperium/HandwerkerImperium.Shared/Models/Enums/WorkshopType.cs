@@ -48,7 +48,7 @@ public static class WorkshopTypeExtensions
     public static int GetUnlockLevel(this WorkshopType type) => type switch
     {
         WorkshopType.Carpenter => 1,
-        WorkshopType.Plumber => 8,
+        WorkshopType.Plumber => 5,          // 18.04.2026: Von 8 auf 5 (Day-1-Retention: erster Unlock in <15min statt 30-45min)
         WorkshopType.Electrician => 15,
         WorkshopType.Painter => 22,
         WorkshopType.Roofer => 40,          // Von 60 auf 40: Tote Zone Lv30-60 geschlossen
@@ -80,15 +80,15 @@ public static class WorkshopTypeExtensions
     public static decimal GetUnlockCost(this WorkshopType type) => type switch
     {
         WorkshopType.Carpenter => 0m,
-        WorkshopType.Plumber => 12_000m,        // Von 25K auf 12K: Erreichbar in ~2-3h statt 5h
+        WorkshopType.Plumber => 5_000m,         // 18.04.2026: Von 12K auf 5K (Day-1-Retention: passt zu Lv5-Unlock)
         WorkshopType.Electrician => 250_000m,
         WorkshopType.Painter => 2_500_000m,
         WorkshopType.Roofer => 10_000_000m,           // Von 25M auf 10M: Passt zu Lv40 (statt Lv60)
         WorkshopType.Contractor => 100_000_000m,       // Von 250M auf 100M: Passt zu Lv80 (statt Lv100)
         WorkshopType.Architect => 2_500_000_000m,
         WorkshopType.GeneralContractor => 25_000_000_000m,
-        WorkshopType.MasterSmith => 500_000_000m,              // 500M - Platin-Prestige (spürbar, aber Level 500 ist die echte Gate)
-        WorkshopType.InnovationLab => 5_000_000_000m,      // 5B - Diamant-Prestige (spürbar, aber Level 750 ist die echte Gate)
+        WorkshopType.MasterSmith => 30_000_000_000m,           // 18.04.2026: Von 500M auf 30Mrd (Rang-Monotonie: Platin-Prestige > Gold-GeneralContractor 25Mrd)
+        WorkshopType.InnovationLab => 50_000_000_000m,         // 18.04.2026: Von 5Mrd auf 50Mrd (bleibt konsistent teuerstes Endgame-Workshop)
         _ => 0m
     };
 

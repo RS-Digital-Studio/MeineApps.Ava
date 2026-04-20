@@ -205,7 +205,8 @@ public sealed class GuildHallService : IGuildHallService, IDisposable
 
             if (!_gameStateService.TrySpendMoney(cost.GuildMoney))
             {
-                _gameStateService.AddGoldenScrews(gsSpent);
+                // Rollback mit fromPurchase:true verhindert Premium/Prestige-GS-Boni auf Rueckerstattung
+                _gameStateService.AddGoldenScrews(gsSpent, fromPurchase: true);
                 gsSpent = 0;
                 return false;
             }
@@ -230,7 +231,8 @@ public sealed class GuildHallService : IGuildHallService, IDisposable
         catch
         {
             // Rollback bei JEDEM Fehler (Netzwerk, Firebase, unerwartete Exception)
-            if (gsSpent > 0) _gameStateService.AddGoldenScrews(gsSpent);
+            // fromPurchase:true verhindert Premium/Prestige-Boni auf Refund (sonst Exploit)
+            if (gsSpent > 0) _gameStateService.AddGoldenScrews(gsSpent, fromPurchase: true);
             if (moneySpent > 0) _gameStateService.AddMoney(moneySpent);
             return false;
         }

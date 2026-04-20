@@ -126,18 +126,18 @@
             <!-- Zeile 1: Geld + Goldschrauben + Daily Reward -->
             <Grid ColumnDefinitions="*,Auto" AutomationProperties.AutomationId="Dashboard_Grid_MoneyRow">
               <StackPanel Spacing="2">
-                <TextBlock x:Name="MoneyText" Text="{Binding MoneyDisplay}"
+                <TextBlock x:Name="MoneyText" Text="{Binding HeaderVM.MoneyDisplay}"
                            FontSize="32" FontWeight="Bold"
                            Foreground="{DynamicResource PrimaryContrastBrush}"
                            AutomationProperties.AutomationId="Dashboard_Txt_Money" />
-                <TextBlock Text="{Binding IncomeDisplay}"
+                <TextBlock Text="{Binding HeaderVM.IncomeDisplay}"
                            FontSize="13" Classes="IncomePulse"
                            Foreground="{DynamicResource PrimaryContrastBrush}" Opacity="0.8"
                            AutomationProperties.AutomationId="Dashboard_Txt_Income" />
-                <TextBlock Text="{Binding NetIncomeHeaderDisplay}"
+                <TextBlock Text="{Binding HeaderVM.NetIncomeHeaderDisplay}"
                            FontSize="11" Opacity="0.8"
-                           IsVisible="{Binding IsNetIncomeNegative}"
-                           Foreground="{Binding NetIncomeColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
+                           IsVisible="{Binding HeaderVM.IsNetIncomeNegative}"
+                           Foreground="{Binding HeaderVM.NetIncomeColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                            AutomationProperties.AutomationId="Dashboard_Txt_NetIncome" />
               </StackPanel>
 
@@ -157,7 +157,7 @@
                                      Foreground="{StaticResource CraftGoldBrush}"
                                      VerticalAlignment="Center"
                                      AutomationProperties.AutomationId="Dashboard_Icon_GoldenScrews" />
-                    <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="14" FontWeight="Bold"
+                    <TextBlock Text="{Binding HeaderVM.GoldenScrewsDisplay}" FontSize="14" FontWeight="Bold"
                                Foreground="{StaticResource CraftGoldBrush}"
                                VerticalAlignment="Center"
                                AutomationProperties.AutomationId="Dashboard_Txt_GoldenScrews" />
@@ -196,7 +196,7 @@
                 <TextBlock FontSize="12" FontWeight="Bold"
                            Foreground="{DynamicResource PrimaryContrastBrush}"
                            AutomationProperties.AutomationId="Dashboard_Txt_PlayerLevel">
-                  <Run Text="{loc:Translate LevelPrefix}" /><Run Text="{Binding PlayerLevel}" />
+                  <Run Text="{loc:Translate LevelPrefix}" /><Run Text="{Binding HeaderVM.PlayerLevel}" />
                 </TextBlock>
                 <!-- Prestige-Tier Badge (nur sichtbar nach erstem Prestige) -->
                 <Border IsVisible="{Binding ShowPrestigeBadge}"
@@ -310,7 +310,7 @@
                 Background="#20D97706"
                 BorderBrush="#60D97706"
                 BorderThickness="1.5"
-                IsVisible="{Binding HasCurrentGoal}">
+                IsVisible="{Binding GoalBannerVM.HasCurrentGoal}">
           <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
             <!-- Icon -->
             <icons:GameIcon Grid.Column="0" Grid.RowSpan="2"
@@ -321,12 +321,12 @@
                              VerticalAlignment="Center" />
             <!-- Beschreibung -->
             <TextBlock Grid.Column="1" Grid.Row="0"
-                       Text="{Binding CurrentGoalDescription}"
+                       Text="{Binding GoalBannerVM.CurrentGoalDescription}"
                        FontSize="14" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <!-- Belohnung -->
             <TextBlock Grid.Column="1" Grid.Row="1"
-                       Text="{Binding CurrentGoalReward}"
+                       Text="{Binding GoalBannerVM.CurrentGoalReward}"
                        FontSize="12"
                        Foreground="{StaticResource CraftGoldBrush}" />
           </Grid>
@@ -592,7 +592,8 @@
                                      Foreground="{DynamicResource SuccessBrush}" />
                         </StackPanel>
                       </StackPanel>
-                      <Button Grid.Column="1" Classes="Primary" Padding="10,4"
+                      <Button Grid.Column="1" Classes="Primary" Padding="12,8"
+                              MinHeight="44" MinWidth="44"
                               Background="{StaticResource CraftPrimaryBrush}"
                               Content="{loc:Translate Start}"
                               IsVisible="{Binding !IsCompleted}"

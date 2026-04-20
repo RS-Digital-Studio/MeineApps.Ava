@@ -179,6 +179,9 @@
     </Style>
     <Style Selector="Button.Text">
       <Setter Property="Foreground" Value="{StaticResource CraftPrimaryLightBrush}" />
+      <!-- Touch-Target: 44dp Mindestgroesse (iOS/Android HIG) fuer Cancel/Back/Info-Buttons -->
+      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="MinWidth" Value="44" />
     </Style>
 
     <!-- Mini-Game Result: Rating-Farben -->

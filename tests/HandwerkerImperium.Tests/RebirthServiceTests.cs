@@ -91,7 +91,7 @@ public class RebirthServiceTests
     // ═══════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void GetRebirthCost_ErsterStern_Kostet100Goldschrauben()
+    public void GetRebirthCost_ErsterStern_Kostet50Goldschrauben()
     {
         // Vorbereitung: 0 Sterne → nächster = Stern 1
         var (_, _, _, _, state, sut) = ErstelleService();
@@ -99,12 +99,12 @@ public class RebirthServiceTests
         // Ausführung
         var (screws, _) = sut.GetRebirthCost(WorkshopType.Carpenter);
 
-        // Prüfung: Laut RebirthCosts-Array: Stern 1 = 100 GS
-        screws.Should().Be(100);
+        // Prüfung: Laut RebirthCosts-Array (18.04.2026 halbiert): Stern 1 = 50 GS
+        screws.Should().Be(50);
     }
 
     [Fact]
-    public void GetRebirthCost_FuenfterStern_Kostet1000Goldschrauben()
+    public void GetRebirthCost_FuenfterStern_Kostet500Goldschrauben()
     {
         // Vorbereitung: 4 Sterne → nächster = Stern 5
         var (_, _, _, _, state, sut) = ErstelleService();
@@ -113,8 +113,8 @@ public class RebirthServiceTests
         // Ausführung
         var (screws, _) = sut.GetRebirthCost(WorkshopType.Carpenter);
 
-        // Prüfung: Stern 5 = 1000 GS
-        screws.Should().Be(1000);
+        // Prüfung: Stern 5 = 500 GS (18.04.2026 halbiert)
+        screws.Should().Be(500);
     }
 
     [Theory]
@@ -141,6 +141,16 @@ public class RebirthServiceTests
     // DoRebirth
     // ═══════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Seit 18.04.2026: DoRebirth nutzt TrySpendGoldenScrews + TrySpendMoney atomar.
+    /// Mocks muessen beide auf true setzen, sonst schlaegt Rebirth fehl.
+    /// </summary>
+    private static void StubErfolgreicheBuchung(IGameStateService stateMock)
+    {
+        stateMock.TrySpendGoldenScrews(Arg.Any<int>()).Returns(true);
+        stateMock.TrySpendMoney(Arg.Any<decimal>()).Returns(true);
+    }
+
     [Fact]
     public void DoRebirth_AlleVoraussetzungenErfuellt_GibtTrueZurueck()
     {
@@ -148,8 +158,7 @@ public class RebirthServiceTests
         var (stateMock, _, _, _, state, sut) = ErstelleService();
         state.Workshops.Add(ErstelleWerkstattAufMaxLevel());
         state.Money = 100_000m;
-        stateMock.CanAffordGoldenScrews(100).Returns(true);
-        stateMock.TrySpendGoldenScrews(100).Returns(true);
+        StubErfolgreicheBuchung(stateMock);
 
         // Ausführung
         bool result = sut.DoRebirth(WorkshopType.Carpenter);
@@ -166,8 +175,7 @@ public class RebirthServiceTests
         var ws = ErstelleWerkstattAufMaxLevel();
         state.Workshops.Add(ws);
         state.Money = 100_000m;
-        stateMock.CanAffordGoldenScrews(100).Returns(true);
-        stateMock.TrySpendGoldenScrews(100).Returns(true);
+        StubErfolgreicheBuchung(stateMock);
 
         // Ausführung
         sut.DoRebirth(WorkshopType.Carpenter);
@@ -183,8 +191,7 @@ public class RebirthServiceTests
         var (stateMock, _, _, _, state, sut) = ErstelleService();
         state.Workshops.Add(ErstelleWerkstattAufMaxLevel());
         state.Money = 100_000m;
-        stateMock.CanAffordGoldenScrews(100).Returns(true);
-        stateMock.TrySpendGoldenScrews(100).Returns(true);
+        StubErfolgreicheBuchung(stateMock);
 
         // Ausführung
         sut.DoRebirth(WorkshopType.Carpenter);
@@ -194,20 +201,19 @@ public class RebirthServiceTests
     }
 
     [Fact]
-    public void DoRebirth_ErfolgreicherRebirth_ZiehtGeldAb()
+    public void DoRebirth_ErfolgreicherRebirth_RuftTrySpendMoneyMitKorrektemBetragAuf()
     {
-        // Vorbereitung
+        // Vorbereitung: Stern 1 kostet 10% Geld
         var (stateMock, _, _, _, state, sut) = ErstelleService();
         state.Workshops.Add(ErstelleWerkstattAufMaxLevel());
         state.Money = 100_000m;
-        stateMock.CanAffordGoldenScrews(100).Returns(true);
-        stateMock.TrySpendGoldenScrews(100).Returns(true);
+        StubErfolgreicheBuchung(stateMock);
 
-        // Ausführung: Stern 1 kostet 10% des Geldes
+        // Ausführung
         sut.DoRebirth(WorkshopType.Carpenter);
 
-        // Prüfung: 100.000 - 10% = 90.000
-        state.Money.Should().Be(90_000m);
+        // Prüfung: TrySpendMoney muss mit 10.000 (= 10% von 100.000) aufgerufen werden
+        stateMock.Received(1).TrySpendMoney(10_000m);
     }
 
     [Fact]
@@ -216,7 +222,7 @@ public class RebirthServiceTests
         // Vorbereitung
         var (stateMock, _, _, _, state, sut) = ErstelleService();
         state.Workshops.Add(ErstelleWerkstattAufMaxLevel());
-        stateMock.CanAffordGoldenScrews(100).Returns(false);
+        stateMock.TrySpendGoldenScrews(Arg.Any<int>()).Returns(false);
 
         // Ausführung
         bool result = sut.DoRebirth(WorkshopType.Carpenter);
@@ -229,7 +235,7 @@ public class RebirthServiceTests
     public void DoRebirth_BedingungNichtErfuellt_GibtFalseZurueck()
     {
         // Vorbereitung: Level < 1000
-        var (stateMock, _, _, _, state, sut) = ErstelleService();
+        var (_, _, _, _, state, sut) = ErstelleService();
         state.Workshops.Add(new Workshop { Type = WorkshopType.Carpenter, IsUnlocked = true, Level = 500 });
 
         // Ausführung
@@ -246,8 +252,7 @@ public class RebirthServiceTests
         var (stateMock, _, _, _, state, sut) = ErstelleService();
         state.Workshops.Add(ErstelleWerkstattAufMaxLevel());
         state.Money = 100_000m;
-        stateMock.CanAffordGoldenScrews(100).Returns(true);
-        stateMock.TrySpendGoldenScrews(100).Returns(true);
+        StubErfolgreicheBuchung(stateMock);
 
         WorkshopType? gefeuertFuer = null;
         sut.RebirthCompleted += (_, type) => gefeuertFuer = type;
@@ -257,6 +262,65 @@ public class RebirthServiceTests
 
         // Prüfung
         gefeuertFuer.Should().Be(WorkshopType.Carpenter);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // DoRebirth - Atomaritaet + Rollback (Regression-Tests 18.04.2026)
+    // ═══════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void DoRebirth_TrySpendMoneyFehlgeschlagen_GibtFalseZurueck()
+    {
+        // Vorbereitung: GS-Abzug klappt, aber Money wird vorher von GameLoop weggenommen
+        // (z.B. TaxAudit-Event). TrySpendMoney soll false liefern → Rebirth bricht ab.
+        var (stateMock, _, _, _, state, sut) = ErstelleService();
+        state.Workshops.Add(ErstelleWerkstattAufMaxLevel());
+        state.Money = 100_000m;
+        stateMock.TrySpendGoldenScrews(Arg.Any<int>()).Returns(true);
+        stateMock.TrySpendMoney(Arg.Any<decimal>()).Returns(false); // Race!
+
+        // Ausführung
+        bool result = sut.DoRebirth(WorkshopType.Carpenter);
+
+        // Prüfung
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DoRebirth_TrySpendMoneyFehlgeschlagen_ErstattetGoldschraubenZurueck()
+    {
+        // Vorbereitung
+        var (stateMock, _, _, _, state, sut) = ErstelleService();
+        state.Workshops.Add(ErstelleWerkstattAufMaxLevel());
+        state.Money = 100_000m;
+        stateMock.TrySpendGoldenScrews(Arg.Any<int>()).Returns(true);
+        stateMock.TrySpendMoney(Arg.Any<decimal>()).Returns(false);
+
+        // Ausführung
+        sut.DoRebirth(WorkshopType.Carpenter);
+
+        // Prüfung: Stern 1 kostet 50 GS → genau diese muessen zurueckerstattet werden
+        // fromPurchase:true verhindert Premium/Prestige-Boni auf Rollback (sonst Exploit)
+        stateMock.Received(1).AddGoldenScrews(50, fromPurchase: true);
+    }
+
+    [Fact]
+    public void DoRebirth_TrySpendMoneyFehlgeschlagen_KeinStern_KeinLevelReset()
+    {
+        // Vorbereitung: State muss unveraendert sein bei Rollback
+        var (stateMock, _, _, _, state, sut) = ErstelleService();
+        var ws = ErstelleWerkstattAufMaxLevel();
+        state.Workshops.Add(ws);
+        state.Money = 100_000m;
+        stateMock.TrySpendGoldenScrews(Arg.Any<int>()).Returns(true);
+        stateMock.TrySpendMoney(Arg.Any<decimal>()).Returns(false);
+
+        // Ausführung
+        sut.DoRebirth(WorkshopType.Carpenter);
+
+        // Prüfung: Stern 0, Level bleibt MaxLevel, keine WorkshopStars-Eintraege
+        state.WorkshopStars.GetValueOrDefault("Carpenter", 0).Should().Be(0);
+        ws.Level.Should().Be(Workshop.MaxLevel);
     }
 
     // ═══════════════════════════════════════════════════════════════════

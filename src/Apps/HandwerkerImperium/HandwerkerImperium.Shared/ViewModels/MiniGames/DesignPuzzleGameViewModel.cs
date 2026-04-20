@@ -130,23 +130,12 @@ public sealed partial class DesignPuzzleGameViewModel : BaseMiniGameViewModel
         GeneratePuzzle(roomCount);
     }
 
-    protected override async void OnGameTimerTick(object? sender, EventArgs e)
+    protected override async Task OnGameTimerTickAsync(object? sender, EventArgs e)
     {
-        try
-        {
-            if (!IsPlaying || _isEnding) return;
-
-            TimeRemaining--;
-
-            if (TimeRemaining <= 0)
-            {
-                await EndGameAsync();
-            }
-        }
-        catch
-        {
-            // Timer-Fehler still behandelt
-        }
+        if (!IsPlaying || _isEnding) return;
+        TimeRemaining--;
+        if (TimeRemaining <= 0)
+            await EndGameAsync();
     }
 
     private void GeneratePuzzle(int roomCount)

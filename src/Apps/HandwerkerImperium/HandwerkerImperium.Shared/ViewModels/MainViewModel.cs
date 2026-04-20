@@ -29,8 +29,16 @@ namespace HandwerkerImperium.ViewModels;
 ///   MainViewModel.Init.cs       - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
 /// Dialog-Logik extrahiert nach DialogViewModel.cs (Alert, Confirm, Story, Hint, Achievement, Prestige-Dialog).
 /// </summary>
-public sealed partial class MainViewModel : ViewModelBase, IDisposable
+public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services.Interfaces.INavigationHost
 {
+    // Phase-1-Services (Refactoring 17.04.2026 — Plan velvety-booping-peacock).
+    // Delegieren vorerst zurueck an MainViewModel. Phase 2/3 zieht Logik in die Services um.
+    private readonly Services.Interfaces.INavigationService? _navigationService;
+    private readonly Services.Interfaces.IDialogOrchestrator? _dialogOrchestrator;
+    private readonly Services.Interfaces.IMiniGameNavigator? _miniGameNavigator;
+
+    // INavigationHost-Implementierung: siehe MainViewModel.Host.cs (Phase 2)
+
     private readonly IGameStateService _gameStateService;
     private readonly IGameLoopService _gameLoopService;
     private readonly IOrderGeneratorService _orderGeneratorService;
@@ -124,6 +132,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly Action _adUnavailableHandler;
     private readonly Action<string, string> _saveGameErrorHandler;
     private readonly Action<string> _luckySpinNavHandler;
+    // HeaderVM PropertyChanged-Forward fuer computed Properties (PlayerLevel → ShowCraftingResearch etc.)
+    private readonly System.ComponentModel.PropertyChangedEventHandler _headerVmPropertyChangedHandler;
 
     // Gespeicherte Delegate-Referenz fuer BuildingsVM FloatingText (Event-Leak-Fix)
     private readonly Action<string, string> _buildingsFloatingTextHandler;
@@ -158,82 +168,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // OBSERVABLE PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
 
-    [ObservableProperty]
-    private decimal _money;
+    // Header-Properties (Money/Level/XP/GoldenScrews etc.) sind in HeaderVM (Source-of-Truth).
+    // Interner Code verwendet direkt HeaderVM.X. AXAML bindet direkt an HeaderVM.X.
+    // (Phase 3 Migration 17.04.2026 - Delegate-Properties entfernt, echter Refactor.)
 
-    [ObservableProperty]
-    private string _moneyDisplay = "0 €";
-
-    [ObservableProperty]
-    private decimal _incomePerSecond;
-
-    [ObservableProperty]
-    private string _incomeDisplay = "0 €/s";
-
-    /// <summary>
-    /// Netto-Einkommen (Brutto - Kosten) formatiert für Dashboard-Anzeige.
-    /// </summary>
-    [ObservableProperty]
-    private string _netIncomeHeaderDisplay = "";
-
-    /// <summary>
-    /// True wenn Netto-Einkommen negativ ist (für rote Farbe im Dashboard-Header).
-    /// </summary>
-    [ObservableProperty]
-    private bool _isNetIncomeNegative;
-
-    /// <summary>
-    /// Farbe des Netto-Einkommens: Rot bei Verlust, halbtransparentes Weiß bei Gewinn.
-    /// </summary>
-    [ObservableProperty]
-    private string _netIncomeColor = "#FFFFFFAA";
-
-    /// <summary>
-    /// Worker-Warnungstext (erschöpfte/unzufriedene/kündigungsgefährdete Arbeiter).
-    /// </summary>
-    [ObservableProperty]
-    private string _workerWarningText = "";
-
-    /// <summary>
-    /// True wenn mindestens ein Worker erschöpft oder unzufrieden ist.
-    /// </summary>
-    [ObservableProperty]
-    private bool _hasWorkerWarning;
-
-    /// <summary>
-    /// ID des schlimmsten Workers (für Direktnavigation aus Warning-Chip).
-    /// </summary>
+    /// <summary>ID des schlimmsten Workers (fuer Direktnavigation aus Warning-Chip).</summary>
     private string _worstWorkerId = "";
-
-    /// <summary>
-    /// True wenn der Einkommens-Soft-Cap aktiv ist (Multiplikator > 8x).
-    /// </summary>
-    [ObservableProperty]
-    private bool _isSoftCapActive;
-
-    /// <summary>
-    /// Differenzierter Soft-Cap-Text fuer BannerStrip-Chip (z.B. "Einkommen -25%").
-    /// </summary>
-    [ObservableProperty]
-    private string _softCapText = "";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowCraftingResearch))]
-    [NotifyPropertyChangedFor(nameof(ShowManagerSection))]
-    [NotifyPropertyChangedFor(nameof(ShowMasterToolsSection))]
-    [NotifyPropertyChangedFor(nameof(IsQuickJobsUnlocked))]
-    [NotifyPropertyChangedFor(nameof(ShowBannerStrip))]
-    [NotifyPropertyChangedFor(nameof(QuickAccessColumns))]
-    private int _playerLevel = 1;
-
-    [ObservableProperty]
-    private int _currentXp;
-
-    [ObservableProperty]
-    private int _xpForNextLevel = 100;
-
-    [ObservableProperty]
-    private double _levelProgress;
 
     /// <summary>
     /// Zeigt pulsierenden Hint um erste Workshop-Karte (Level kleiner 3, noch kein Upgrade gemacht).
@@ -274,8 +214,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hasDailyReward;
 
-    [ObservableProperty]
-    private string _goldenScrewsDisplay = "0";
+    // GoldenScrewsDisplay: HeaderVM ist Source-of-Truth (Phase 3).
 
     // Quick Jobs + Daily Challenges → extrahiert nach MissionsFeatureViewModel
 
@@ -309,55 +248,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // PRESTIGE-BANNER (Task #14)
     // ═══════════════════════════════════════════════════════════════════════
 
-    [ObservableProperty]
-    private bool _isPrestigeAvailable;
-
-    [ObservableProperty]
-    private string _prestigePointsPreview = "";
-
-    [ObservableProperty]
-    private string _prestigePreviewGains = "";
-
-    [ObservableProperty]
-    private string _prestigePreviewLosses = "";
-
-    [ObservableProperty]
-    private string _prestigePreviewSpeedUp = "";
-
-    [ObservableProperty]
-    private string _prestigePreviewTierName = "";
-
-    /// <summary>Ob ein nächsthöherer Prestige-Tier existiert (für Fortschritts-Anzeige).</summary>
-    [ObservableProperty]
-    private bool _hasNextPrestigeTier;
-
-    /// <summary>Anzahl aktiver Challenges (für Badge-Anzeige im Prestige-Banner).</summary>
-    [ObservableProperty]
-    private int _activeChallengeCount;
-
-    /// <summary>Text-Anzeige aktiver Challenges (z.B. "Spartaner +40%, Sprint +35%").</summary>
-    [ObservableProperty]
-    private string _activeChallengesText = "";
-
-    // PP-2: Challenge-Chip aktiv/inaktiv State
-    [ObservableProperty] private bool _isChallengeSpartanerActive;
-    [ObservableProperty] private bool _isChallengeOhneForschungActive;
-    [ObservableProperty] private bool _isChallengeInflationszeitActive;
-    [ObservableProperty] private bool _isChallengeSoloMeisterActive;
-    [ObservableProperty] private bool _isChallengeSprintActive;
-    [ObservableProperty] private bool _isChallengeKeinNetzActive;
-
-    /// <summary>Aktuelle Run-Dauer als Text (für Prestige-Banner).</summary>
-    [ObservableProperty]
-    private string _currentRunDuration = "";
-
-    /// <summary>Kompakter Fortschrittstext zum nächsten Tier (z.B. "Lv. 45/100 → Silver").</summary>
-    [ObservableProperty]
-    private string _nextPrestigeTierHint = "";
-
-    /// <summary>Fortschritt zum nächsten Tier (0.0 - 1.0).</summary>
-    [ObservableProperty]
-    private double _nextPrestigeTierProgress;
+    // Prestige-Banner-Properties sind in PrestigeBannerVM (Source-of-Truth, Phase 3).
 
     // Prestige-Tier-Dialog Properties sind jetzt in DialogVM
 
@@ -365,22 +256,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // NÄCHSTES ZIEL (GoalService)
     // ═══════════════════════════════════════════════════════════════════════
 
-    [ObservableProperty]
-    private string _currentGoalDescription = "";
-
-    [ObservableProperty]
-    private string _currentGoalReward = "";
-
-    [ObservableProperty]
-    private double _currentGoalProgress;
-
-    [ObservableProperty]
-    private string _currentGoalIcon = "TrendingUp";
-
-    [ObservableProperty]
-    private bool _hasCurrentGoal;
-
-    private string? _currentGoalRoute;
+    // CurrentGoal-Properties sind nach GoalBannerViewModel umgezogen (Phase 3 Schritt 9, 17.04.2026).
+    // AXAML-Bindings in DashboardView.axaml wurden auf `GoalBannerVM.X` aktualisiert.
 
     // ═══════════════════════════════════════════════════════════════════════
     // BUILDINGS-ZUSAMMENFASSUNG (Task #5)
@@ -420,23 +297,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // KOMBINIERTER WELCOME-BACK-DIALOG (Offline + Welcome in einem)
     // ═══════════════════════════════════════════════════════════════════════
 
-    [ObservableProperty]
-    private bool _isCombinedWelcomeDialogVisible;
-
-    [ObservableProperty]
-    private string _combinedOfflineEarnings = "";
-
-    [ObservableProperty]
-    private string _combinedOfferMoney = "";
-
-    [ObservableProperty]
-    private string _combinedOfferScrews = "";
-
-    [ObservableProperty]
-    private string _combinedOfflineDuration = "";
-
-    [ObservableProperty]
-    private string _combinedOfferTimer = "";
+    // Combined-Welcome-Properties sind in WelcomeFlowVM (Source-of-Truth, Phase 3).
 
     // Lucky Spin, Streak-Rettung → extrahiert nach MissionsFeatureViewModel
 
@@ -538,53 +399,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Eigenständiges ViewModel für Alert, Confirm, Story, Achievement, LevelUp, Hint, Prestige-Dialoge.</summary>
     public DialogViewModel DialogVM { get; private set; } = null!;
 
-    [ObservableProperty]
-    private bool _isOfflineEarningsDialogVisible;
-
-    [ObservableProperty]
-    private string _offlineEarningsAmountText = "";
-
-    [ObservableProperty]
-    private string _offlineEarningsDurationText = "";
-
-    [ObservableProperty]
-    private bool _isOfflineNewRecord;
-
-    /// <summary>Prozent-Hinweis im Offline-Dialog.</summary>
-    [ObservableProperty]
-    private string _offlineEfficiencyHint = "";
-
-    /// <summary>Nächstes Ziel als Wiedereinsteiger-Tipp (nur bei >48h Offline-Pause).</summary>
-    [ObservableProperty]
-    private string _offlineGoalText = "";
-
-    [ObservableProperty]
-    private bool _isDailyRewardDialogVisible;
-
-    [ObservableProperty]
-    private string _dailyRewardDayText = "";
-
-    [ObservableProperty]
-    private string _dailyRewardStreakText = "";
-
-    [ObservableProperty]
-    private string _dailyRewardAmountText = "";
-
-    // Starter-Offer (einmaliges zeitlich begrenztes Premium-Angebot)
-    [ObservableProperty]
-    private bool _isStarterOfferVisible;
-
-    [ObservableProperty]
-    private string _starterOfferCountdown = string.Empty;
+    // Offline/DailyReward/StarterOffer sind in WelcomeFlowVM (Source-of-Truth, Phase 3).
 
     /// <summary>
     /// True wenn irgendein Overlay-Dialog sichtbar ist.
     /// Kombiniert MainViewModel-eigene Dialoge mit DialogVM.IsAnyDialogVisible.
     /// </summary>
     private bool IsAnyDialogVisible =>
-        IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible ||
-        MissionsVM.IsWelcomeOfferVisible || IsDailyRewardDialogVisible ||
-        IsStarterOfferVisible || DialogVM.IsAnyDialogVisible;
+        WelcomeFlowVM.IsOfflineEarningsDialogVisible || WelcomeFlowVM.IsCombinedWelcomeDialogVisible ||
+        MissionsVM.IsWelcomeOfferVisible || WelcomeFlowVM.IsDailyRewardDialogVisible ||
+        WelcomeFlowVM.IsStarterOfferVisible || DialogVM.IsAnyDialogVisible;
 
     /// <summary>
     /// Indicates whether ads should be shown (not premium).
@@ -604,11 +428,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // Nach dem ersten Prestige sind ALLE Features permanent freigeschaltet
     // (Spieler verliert sonst Zugang zu Gilde, Forschung etc. nach dem Reset).
     private bool HasEverPrestiged => _gameStateService.Prestige.TotalPrestigeCount > 0;
-    public bool ShowCraftingResearch => HasEverPrestiged || PlayerLevel >= LevelThresholds.CraftingResearch;
-    public bool ShowManagerSection => HasEverPrestiged || PlayerLevel >= LevelThresholds.ManagerSection;
-    public bool ShowMasterToolsSection => HasEverPrestiged || PlayerLevel >= LevelThresholds.MasterToolsSection;
-    public bool IsQuickJobsUnlocked => HasEverPrestiged || PlayerLevel >= LevelThresholds.QuickJobs;
-    public bool ShowBannerStrip => HasEverPrestiged || PlayerLevel >= LevelThresholds.BannerStrip;
+    public bool ShowCraftingResearch => HasEverPrestiged || HeaderVM.PlayerLevel >= LevelThresholds.CraftingResearch;
+    public bool ShowManagerSection => HasEverPrestiged || HeaderVM.PlayerLevel >= LevelThresholds.ManagerSection;
+    public bool ShowMasterToolsSection => HasEverPrestiged || HeaderVM.PlayerLevel >= LevelThresholds.MasterToolsSection;
+    public bool IsQuickJobsUnlocked => HasEverPrestiged || HeaderVM.PlayerLevel >= LevelThresholds.QuickJobs;
+    public bool ShowBannerStrip => HasEverPrestiged || HeaderVM.PlayerLevel >= LevelThresholds.BannerStrip;
     public int QuickAccessColumns => 1 + (ShowManagerSection ? 1 : 0) + (ShowMasterToolsSection ? 1 : 0);
 
     // FloatingText Event fuer Dashboard-Animationen
@@ -840,6 +664,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsTabBarVisible));
     }
 
+    /// <summary>
+    /// Schliesst das Worker-Profile Bottom-Sheet. Wird von Backdrop-Klick + Close-Button verwendet.
+    /// Ersetzt den Umweg ueber HandleBackPressed() (Code-Behind-Anti-Pattern).
+    /// </summary>
+    [RelayCommand]
+    private void CloseWorkerProfile() => IsWorkerProfileActive = false;
+
     [ObservableProperty]
     private bool _isLuckySpinVisible;
 
@@ -873,7 +704,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (tabIndex < 0 || tabIndex >= TabUnlockLevels.Length) return false;
         // Nach dem ersten Prestige alle Tabs permanent freigeschaltet
         if (HasEverPrestiged) return false;
-        return PlayerLevel < TabUnlockLevels[tabIndex];
+        return HeaderVM.PlayerLevel < TabUnlockLevels[tabIndex];
     }
 
     /// <summary>
@@ -885,13 +716,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     public bool[] GetLockedTabs()
     {
-        if (_cachedLockedTabs != null && _lockedTabsCacheLevel == PlayerLevel)
+        if (_cachedLockedTabs != null && _lockedTabsCacheLevel == HeaderVM.PlayerLevel)
             return _cachedLockedTabs;
 
         _cachedLockedTabs = new bool[5];
         for (int i = 0; i < 5; i++)
             _cachedLockedTabs[i] = IsTabLocked(i);
-        _lockedTabsCacheLevel = PlayerLevel;
+        _lockedTabsCacheLevel = HeaderVM.PlayerLevel;
         return _cachedLockedTabs;
     }
 
@@ -987,7 +818,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public WorkshopViewModel WorkshopViewModel { get; }
     public OrderViewModel OrderViewModel { get; }
     /// <summary>Alle 10 MiniGame-VMs als Container (Zugriff via MiniGames.Sawing etc.).</summary>
-    internal MiniGameViewModels MiniGames { get; }
+    public MiniGameViewModels MiniGames { get; }
     public WorkerMarketViewModel WorkerMarketViewModel { get; }
     public WorkerProfileViewModel WorkerProfileViewModel { get; }
     public BuildingsViewModel BuildingsViewModel { get; }
@@ -1004,6 +835,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     /// <summary>Eigenstaendiges ViewModel fuer Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin etc.</summary>
     public MissionsFeatureViewModel MissionsVM { get; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FEATURE-VMs (Phase 3 der MainViewModel-Zerlegung, 17.04.2026)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Dashboard-Header-Daten: Geld, Einkommen, Level, GoldenScrews, Prestige-Badge, Boost/Rush/Delivery.</summary>
+    public HeaderViewModel HeaderVM { get; }
+
+    /// <summary>Prestige-Banner-Daten: Tier-Verfuegbarkeit, PP-Vorschau, aktive Challenges, Speedrun-Timer.</summary>
+    public PrestigeBannerViewModel PrestigeBannerVM { get; }
+
+    /// <summary>"Naechstes Ziel"-Banner auf dem Dashboard.</summary>
+    public GoalBannerViewModel GoalBannerVM { get; }
+
+    /// <summary>Welcome-Flow: CombinedWelcome, StarterOffer, OfflineEarnings, DailyReward.</summary>
+    public WelcomeFlowViewModel WelcomeFlowVM { get; }
 
     /// <summary>
     /// Zentrale Effekt-Engine (Singleton aus DI). Wird von DashboardView direkt genutzt.
@@ -1059,6 +906,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IContextualHintService contextualHintService,
         DialogViewModel dialogViewModel,
         MissionsFeatureViewModel missionsFeatureViewModel,
+        HeaderViewModel headerViewModel,
+        PrestigeBannerViewModel prestigeBannerViewModel,
+        GoalBannerViewModel goalBannerViewModel,
+        WelcomeFlowViewModel welcomeFlowViewModel,
         ITournamentService? tournamentService = null,
         IRebirthService? rebirthService = null,
         IStoryService? storyService = null,
@@ -1066,8 +917,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IPrestigeService? prestigeService = null,
         INotificationService? notificationService = null,
         IPlayGamesService? playGamesService = null,
-        IChallengeConstraintService? challengeConstraints = null)
+        IChallengeConstraintService? challengeConstraints = null,
+        Services.Interfaces.INavigationService? navigationService = null,
+        Services.Interfaces.IDialogOrchestrator? dialogOrchestrator = null,
+        Services.Interfaces.IMiniGameNavigator? miniGameNavigator = null)
     {
+        _navigationService = navigationService;
+        _dialogOrchestrator = dialogOrchestrator;
+        _miniGameNavigator = miniGameNavigator;
+        // Host-Attach damit Services Navigation/Dialog-Kaskade an MainViewModel delegieren koennen
+        _navigationService?.AttachHost(this);
+        _dialogOrchestrator?.AttachHost(this);
+        _miniGameNavigator?.AttachHost(this);
+
         _gameStateService = gameStateService;
         _gameLoopService = gameLoopService;
         _offlineProgressService = offlineProgressService;
@@ -1130,6 +992,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         CraftingViewModel = craftingViewModel;
         AscensionViewModel = ascensionViewModel;
         LuckySpinViewModel = luckySpinViewModel;
+
+        // Feature-VMs (Phase 3 der MainViewModel-Zerlegung, 17.04.2026)
+        HeaderVM = headerViewModel;
+        PrestigeBannerVM = prestigeBannerViewModel;
+        GoalBannerVM = goalBannerViewModel;
+        WelcomeFlowVM = welcomeFlowViewModel;
+
+        // PropertyChanged-Forward: HeaderVM.PlayerLevel triggert computed Properties auf MainViewModel.
+        // Delegaten werden in Feldern gehalten (in Dispose() abmeldbar, keine Lambda-Leaks).
+        // AXAML-Bindings zeigen direkt auf `HeaderVM.X` etc. — kein Forward der VM-Properties selbst noetig.
+        _headerVmPropertyChangedHandler = OnHeaderVmPropertyChanged;
+        HeaderVM.PropertyChanged += _headerVmPropertyChangedHandler;
         // Forge + Invent sind bereits in MiniGames Container
         // Delegate-Feld zuweisen (statt anonymem Lambda). MissionsVM wird weiter unten gesetzt,
         // aber das Lambda captured `this` und liest MissionsVM erst bei Aufruf (nach dem Konstruktor).
@@ -1258,7 +1132,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private void OnMoneyChanged(object? sender, MoneyChangedEventArgs e)
     {
-        Money = e.NewAmount;
+        HeaderVM.Money = e.NewAmount;
         // Phase 9: Smooth animierter Geld-Counter
         AnimateMoneyTo(e.NewAmount);
 
@@ -1313,7 +1187,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private void OnGoldenScrewsChanged(object? sender, GoldenScrewsChangedEventArgs e)
     {
-        GoldenScrewsDisplay = e.NewAmount.ToString("N0");
+        HeaderVM.GoldenScrewsDisplay = e.NewAmount.ToString("N0");
 
         // Goldschrauben-Erklärung beim allerersten Erhalt
         if (e.OldAmount == 0 && e.NewAmount > 0)
@@ -1335,8 +1209,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private void OnLevelUp(object? sender, LevelUpEventArgs e)
     {
-        PlayerLevel = e.NewLevel;
-        OnPropertyChanged(nameof(LevelProgress));
+        HeaderVM.PlayerLevel = e.NewLevel;
+        HeaderVM.LevelProgress = _gameStateService.State.LevelProgress;
 
         RefreshWorkshops();
 
@@ -1484,10 +1358,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     private void OnXpGained(object? sender, XpGainedEventArgs e)
     {
-        CurrentXp = e.CurrentXp;
-        XpForNextLevel = e.XpForNextLevel;
+        HeaderVM.CurrentXp = e.CurrentXp;
+        HeaderVM.XpForNextLevel = e.XpForNextLevel;
         // Korrekte Formel aus GameState verwenden (berücksichtigt XP-Basis des aktuellen Levels)
-        LevelProgress = _gameStateService.State.LevelProgress;
+        HeaderVM.LevelProgress = _gameStateService.State.LevelProgress;
     }
 
     private void OnWorkshopUpgraded(object? sender, WorkshopUpgradedEventArgs e)
@@ -1767,6 +1641,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             : $"{remaining.Minutes}m {remaining.Seconds:D2}s";
     }
 
+    /// <summary>
+    /// Forwarded PropertyChanged-Events von HeaderVM an MainViewModel fuer computed Properties.
+    /// Nur fuer NotifyPropertyChangedFor-Effekte (ShowCraftingResearch etc.) bei PlayerLevel-Aenderung.
+    /// AXAML-Bindings zeigen direkt auf HeaderVM.X — kein Forward der einzelnen Properties noetig.
+    /// </summary>
+    private void OnHeaderVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(HeaderViewModel.PlayerLevel)) return;
+        OnPropertyChanged(nameof(ShowCraftingResearch));
+        OnPropertyChanged(nameof(ShowManagerSection));
+        OnPropertyChanged(nameof(ShowMasterToolsSection));
+        OnPropertyChanged(nameof(IsQuickJobsUnlocked));
+        OnPropertyChanged(nameof(ShowBannerStrip));
+        OnPropertyChanged(nameof(QuickAccessColumns));
+    }
+
     private void OnStateLoaded(object? sender, EventArgs e)
     {
         _achievementService.Reset();
@@ -1836,10 +1726,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Nur updaten wenn sich der Wert geaendert hat (vermeidet unnoetige UI-Updates)
         var state = _gameStateService.State;
         var newIncome = state.NetIncomePerSecond;
-        if (newIncome != IncomePerSecond)
+        if (newIncome != HeaderVM.IncomePerSecond)
         {
-            IncomePerSecond = newIncome;
-            IncomeDisplay = $"{FormatMoney(IncomePerSecond)}/s";
+            HeaderVM.IncomePerSecond = newIncome;
+            HeaderVM.IncomeDisplay = $"{FormatMoney(HeaderVM.IncomePerSecond)}/s";
             UpdateNetIncomeHeader(state);
         }
 
@@ -1919,22 +1809,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             if (IsDashboardActive)
             {
                 // Einmaliger Hinweis beim ersten Erreichen des Soft-Caps
-                if (state.IsSoftCapActive && !IsSoftCapActive)
+                if (state.IsSoftCapActive && !HeaderVM.IsSoftCapActive)
                 {
                     FloatingTextRequested?.Invoke(
                         _localizationService.GetString("SoftCapReached") ?? "Bonus-Decke erreicht!",
                         "warning");
                 }
 
-                IsSoftCapActive = state.IsSoftCapActive;
+                HeaderVM.IsSoftCapActive = state.IsSoftCapActive;
                 if (state.IsSoftCapActive && state.SoftCapReductionPercent > 0)
                 {
                     // GAM-6: Differenzierter Text mit "Einkommen" Prefix
                     var incomeLabel = _localizationService.GetString("SoftCapIncome") ?? "Einkommen";
-                    SoftCapText = $"{incomeLabel} -{state.SoftCapReductionPercent}%";
+                    HeaderVM.SoftCapText = $"{incomeLabel} -{state.SoftCapReductionPercent}%";
                 }
                 else if (!state.IsSoftCapActive)
-                    SoftCapText = "";
+                    HeaderVM.SoftCapText = "";
 
                 // GAM-4: Saisonaler Indikator wird in UpdateEventChips() aktualisiert (SeasonalModifierText)
             }
@@ -1960,28 +1850,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Aktualisiert das nächste Ziel-Banner auf dem Dashboard.
+    /// Aktualisiert das "Naechstes Ziel"-Banner (delegiert an <see cref="GoalBannerVM"/>).
     /// </summary>
-    private void RefreshCurrentGoal()
-    {
-        var goal = _goalService.GetCurrentGoal();
-        HasCurrentGoal = goal != null;
-        if (goal != null)
-        {
-            CurrentGoalDescription = goal.Description;
-            CurrentGoalReward = goal.RewardHint;
-            CurrentGoalProgress = goal.Progress;
-            CurrentGoalIcon = goal.IconKind;
-            _currentGoalRoute = goal.NavigationRoute;
-        }
-    }
-
-    [RelayCommand]
-    private void NavigateToGoal()
-    {
-        if (_currentGoalRoute != null)
-            OnChildNavigation(_currentGoalRoute);
-    }
+    private void RefreshCurrentGoal() => GoalBannerVM.Refresh();
 
     // ═══════════════════════════════════════════════════════════════════════
     // TAB-UNLOCK BENACHRICHTIGUNGEN
@@ -2029,11 +1900,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     internal void UpdateNetIncomeHeader(GameState state)
     {
         var netIncome = state.TotalIncomePerSecond - state.TotalCostsPerSecond;
-        IsNetIncomeNegative = netIncome < 0;
-        NetIncomeColor = netIncome < 0 ? "#FF5722" : "#FFFFFFAA";
+        HeaderVM.IsNetIncomeNegative = netIncome < 0;
+        HeaderVM.NetIncomeColor = netIncome < 0 ? "#FF5722" : "#FFFFFFAA";
 
         // Gecachter Label-Text (Invalidierung in OnLanguageChanged)
-        NetIncomeHeaderDisplay = $"{_cachedNetIncomeLabel}: {MoneyFormatter.FormatPerSecond(netIncome, 1)}";
+        HeaderVM.NetIncomeHeaderDisplay = $"{_cachedNetIncomeLabel}: {MoneyFormatter.FormatPerSecond(netIncome, 1)}";
     }
 
     /// <summary>
@@ -2069,26 +1940,26 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         _worstWorkerId = worstWorkerId;
 
-        HasWorkerWarning = tiredCount > 0 || unhappyCount > 0;
+        HeaderVM.HasWorkerWarning = tiredCount > 0 || unhappyCount > 0;
 
         // Kontext-Info: Welcher Workshop ist betroffen
         string context = worstWorkshopName != null ? $" ({worstWorkshopName})" : "";
 
         if (quitRisk > 0)
         {
-            WorkerWarningText = string.Format(
+            HeaderVM.WorkerWarningText = string.Format(
                 _localizationService.GetString("WorkerQuitRisk") ?? "{0} Arbeiter drohen zu kündigen!",
                 quitRisk) + context;
         }
         else if (unhappyCount > 0)
         {
-            WorkerWarningText = string.Format(
+            HeaderVM.WorkerWarningText = string.Format(
                 _localizationService.GetString("WorkerUnhappy") ?? "{0} Arbeiter unzufrieden",
                 unhappyCount) + context;
         }
         else if (tiredCount > 0)
         {
-            WorkerWarningText = string.Format(
+            HeaderVM.WorkerWarningText = string.Format(
                 _localizationService.GetString("WorkerTired") ?? "{0} Arbeiter erschöpft",
                 tiredCount) + context;
         }
@@ -2106,7 +1977,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (Math.Abs(_targetMoney - _displayedMoney) < 1m)
         {
             _displayedMoney = _targetMoney;
-            MoneyDisplay = FormatMoney(_displayedMoney);
+            HeaderVM.MoneyDisplay = FormatMoney(_displayedMoney);
             _moneyAnimActive = false;
             return;
         }
@@ -2127,14 +1998,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (Math.Abs(diff) < 1m)
         {
             _displayedMoney = _targetMoney;
-            MoneyDisplay = FormatMoney(_displayedMoney);
+            HeaderVM.MoneyDisplay = FormatMoney(_displayedMoney);
             _moneyAnimActive = false;
             return;
         }
 
         // Exponentielles Easing: schnell am Anfang, langsamer am Ende
         _displayedMoney += diff * MoneyAnimSpeed;
-        MoneyDisplay = FormatMoney(_displayedMoney);
+        HeaderVM.MoneyDisplay = FormatMoney(_displayedMoney);
     }
 
     internal static GameIconKind GetWorkshopIconKind(WorkshopType type, int level = 1) => type switch
@@ -2167,6 +2038,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
+    /// Wird gefeuert wenn die App pausiert/fortgesetzt wird (Android-Lifecycle).
+    /// MainView nutzt das um den Render-Timer zu stoppen (Battery-Saving).
+    /// </summary>
+    public event Action<bool>? PauseStateChanged;
+
+    /// <summary>
     /// Pauses the game loop (e.g., when app is backgrounded).
     /// </summary>
     public void PauseGameLoop()
@@ -2177,6 +2054,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Benachrichtigungen planen wenn aktiviert
         if (_gameStateService.Settings.NotificationsEnabled)
             _notificationService?.ScheduleGameNotifications(_gameStateService.State);
+
+        // Render-Timer der MainView ebenfalls pausieren (Battery-Saving)
+        PauseStateChanged?.Invoke(true);
     }
 
     /// <summary>
@@ -2189,6 +2069,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         if (!_gameLoopService.IsRunning)
             _gameLoopService.Resume();
+
+        // Render-Timer der MainView wieder starten
+        PauseStateChanged?.Invoke(false);
     }
 
     public void Dispose()
@@ -2206,6 +2089,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         foreach (var child in _navigableChildren)
             child.NavigationRequested -= OnChildNavigation;
         LuckySpinViewModel.NavigationRequested -= _luckySpinNavHandler;
+        HeaderVM.PropertyChanged -= _headerVmPropertyChangedHandler;
 
         // Child-VM Events abmelden (symmetrisch zum Konstruktor)
         WorkerProfileViewModel.FloatingTextRequested -= _workerProfileFloatingTextHandler;

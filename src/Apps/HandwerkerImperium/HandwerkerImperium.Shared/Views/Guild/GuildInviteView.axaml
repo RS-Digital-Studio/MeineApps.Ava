@@ -1,10 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:vm="using:HandwerkerImperium.ViewModels.Guild"
+             xmlns:vmRoot="using:HandwerkerImperium.ViewModels"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Guild.GuildInviteView"
-             x:DataType="vm:GuildViewModel"
+             x:DataType="vm:GuildInviteViewModel"
              x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
@@ -21,7 +22,7 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 MinHeight="44" MinWidth="44"
-                Command="{Binding NavigateBackCommand}">
+                Command="{Binding Guild.NavigateBackCommand}">
           <icons:GameIcon Kind="ArrowLeft" Width="28" Height="28" Foreground="{DynamicResource PrimaryContrastBrush}" />
         </Button>
         <!-- Titel -->
@@ -59,7 +60,7 @@
             <Border Background="{DynamicResource SurfaceBrush}"
                     CornerRadius="10" Padding="16,12"
                     HorizontalAlignment="Center">
-              <TextBlock Text="{Binding GuildInviteCode}"
+              <TextBlock Text="{Binding Guild.GuildInviteCode}"
                          FontSize="28" FontWeight="ExtraBold"
                          Foreground="{StaticResource CraftPrimaryLightBrush}"
                          LetterSpacing="6"
@@ -68,7 +69,7 @@
 
             <!-- Code teilen -->
             <Button Classes="Primary" HorizontalAlignment="Center"
-                    Command="{Binding ShareInviteCodeCommand}"
+                    Command="{Binding Guild.ShareInviteCodeCommand}"
                     Padding="20,8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <icons:GameIcon Kind="ShareVariant" Width="24" Height="24" />
@@ -92,12 +93,12 @@
 
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
               <TextBox Grid.Column="0"
-                       Text="{Binding JoinCodeInput}"
+                       Text="{Binding Guild.JoinCodeInput}"
                        Watermark="ABC123"
                        MaxLength="6"
                        HorizontalAlignment="Stretch" />
               <Button Grid.Column="1" Classes="Primary" Padding="16,8"
-                      Command="{Binding JoinByCodeCommand}">
+                      Command="{Binding Guild.JoinByCodeCommand}">
                 <TextBlock Text="{loc:Translate JoinByCode}"
                            FontSize="13" FontWeight="Bold" />
               </Button>
@@ -117,7 +118,7 @@
                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <Button Grid.Column="2" Classes="Text" Padding="4"
                       MinHeight="44" MinWidth="44"
-                      Command="{Binding LoadAvailablePlayersCommand}">
+                      Command="{Binding Guild.LoadAvailablePlayersCommand}">
                 <icons:GameIcon Kind="Refresh" Width="24" Height="24"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </Button>
@@ -125,7 +126,7 @@
 
             <!-- Leere Liste -->
             <StackPanel Spacing="6" HorizontalAlignment="Center"
-                        IsVisible="{Binding HasNoAvailablePlayers}"
+                        IsVisible="{Binding Guild.HasNoAvailablePlayers}"
                         Margin="0,8,0,0">
               <icons:GameIcon Kind="AccountOff" Width="32" Height="32"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -137,9 +138,9 @@
             </StackPanel>
 
             <!-- Spieler-Liste -->
-            <ItemsControl ItemsSource="{Binding AvailablePlayers}">
+            <ItemsControl ItemsSource="{Binding Guild.AvailablePlayers}">
               <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:AvailablePlayerDisplay">
+                <DataTemplate x:DataType="vmRoot:AvailablePlayerDisplay">
                   <Border Background="{DynamicResource SurfaceBrush}"
                           CornerRadius="8" Padding="10,8" Margin="0,2">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
@@ -166,7 +167,7 @@
                       <Button Grid.Column="2" Classes="Primary" Padding="10,6"
                               VerticalAlignment="Center"
                               IsEnabled="{Binding !IsInvited}"
-                              Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).InvitePlayerCommand}"
+                              Command="{Binding $parent[ItemsControl].((vm:GuildInviteViewModel)DataContext).Guild.InvitePlayerCommand}"
                               CommandParameter="{Binding .}">
                         <TextBlock Text="{Binding InviteButtonText}"
                                    FontSize="12" FontWeight="Bold" />

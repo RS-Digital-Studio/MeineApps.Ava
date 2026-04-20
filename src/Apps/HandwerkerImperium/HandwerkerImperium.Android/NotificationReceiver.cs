@@ -30,16 +30,19 @@ public class NotificationReceiver : BroadcastReceiver
             notificationIntent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-        var builder = new NotificationCompat.Builder(context, channelId)
-            .SetSmallIcon(Resource.Mipmap.appicon)
-            .SetContentTitle("Handwerker Imperium")
-            .SetContentText(message)
-            .SetContentIntent(pendingIntent)
-            .SetAutoCancel(true)
-            .SetPriority(NotificationCompat.PriorityDefault);
+        // Builder-Chain kann laut Android-API null zurueckliefern → schrittweise null-safe aufbauen
+        var builder = new NotificationCompat.Builder(context, channelId);
+        builder = builder?.SetSmallIcon(Resource.Mipmap.appicon);
+        builder = builder?.SetContentTitle("Handwerker Imperium");
+        builder = builder?.SetContentText(message);
+        builder = builder?.SetContentIntent(pendingIntent);
+        builder = builder?.SetAutoCancel(true);
+        builder = builder?.SetPriority(NotificationCompat.PriorityDefault);
 
         var manager = NotificationManagerCompat.From(context);
-        manager.Notify(notificationId, builder.Build());
+        var notification = builder?.Build();
+        if (manager is null || notification is null) return;
+        manager.Notify(notificationId, notification);
     }
 
     private static string GetLocalizedMessage(Context context, string messageKey)

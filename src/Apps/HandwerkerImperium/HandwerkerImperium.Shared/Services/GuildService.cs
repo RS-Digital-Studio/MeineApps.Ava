@@ -238,10 +238,17 @@ public sealed class GuildService : IGuildService, IDisposable
         var uid = _firebaseService.PlayerId;
         if (string.IsNullOrEmpty(uid) || string.IsNullOrWhiteSpace(name)) return false;
 
-        // Sicherheit: Name trimmen und auf max. 30 Zeichen begrenzen
-        name = name.Trim();
+        // Sanitisierung (Play-Store-Compliance fuer User-Generated-Content):
+        // 1. Trim + Unicode-Format/Control-Zeichen entfernen (Spoofing-Schutz)
+        // 2. ProfanityFilter.Clean (obszoene Namen maskieren, 6 Sprachen)
+        // 3. Laengen-Cap 30 Zeichen + Mindestlaenge 2
+        name = new string(name.Trim().Where(c =>
+            !char.IsControl(c) &&
+            char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format
+        ).ToArray()).Trim();
+        name = ProfanityFilter.Clean(name);
         if (name.Length > 30) name = name[..30];
-        if (string.IsNullOrWhiteSpace(name)) return false;
+        if (name.Length < 2) return false;
 
         if (!await _lock.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false))
             return false;
@@ -654,6 +661,13 @@ public sealed class GuildService : IGuildService, IDisposable
 
             var guildId = membership.GuildId;
 
+            // Keep-Alive: Eigene LastActiveAt aktualisieren BEVOR die Mitglieder-Liste gelesen wird.
+            // Ohne diesen Call wuerde der eigene Eintrag nach 30 Tagen Inaktivitaet vom
+            // IsStaleMember-Filter ausgeblendet werden (Spieler sieht sich selbst nicht mehr).
+            // Fire-and-forget: Anzeige soll nicht auf Firebase-RTT warten — der folgende
+            // Memory-Patch stellt sofortige Korrektheit fuer diesen Refresh-Zyklus sicher.
+            UpdateLastActiveAsync().SafeFireAndForget();
+
             // Gilden-Daten laden
             var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
             if (guildData == null)
@@ -680,6 +694,9 @@ public sealed class GuildService : IGuildService, IDisposable
                 // Client-seitige Filterung: Duplikate (gleicher Name) und verwaiste
                 // Mitglieder (>30 Tage inaktiv) aus der Anzeige ausblenden.
                 // Firebase-Daten bleiben unverändert (nur Leader darf Mitglieder löschen).
+                // Der eigene Spieler wird durch expliziten isSelf-Guard in beiden Filtern
+                // geschuetzt — kein DTO-Patch noetig (vermeidet stille Seiteneffekte falls
+                // FirebaseService je einen Response-Cache einfuehrt).
                 var seenNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 var duplicateIds = new HashSet<string>();
 
@@ -687,18 +704,35 @@ public sealed class GuildService : IGuildService, IDisposable
                 {
                     if (seenNames.TryGetValue(memberData.Name, out var existingUid))
                     {
-                        // Duplikat: Den mit dem älteren LastActiveAt aus der Anzeige filtern
-                        var existingActive = ParseLastActive(membersRaw[existingUid].LastActiveAt);
-                        var currentActive = ParseLastActive(memberData.LastActiveAt);
+                        // Duplikat: Den mit dem älteren LastActiveAt aus der Anzeige filtern.
+                        // ABER: Der eigene Spieler gewinnt immer (Self-Preservation gegen
+                        // Name-Kollision mit anderem Spieler oder alter Account-Leiche).
+                        bool currentIsSelf = memberUid == uid;
+                        bool existingIsSelf = existingUid == uid;
 
-                        if (currentActive > existingActive)
+                        if (currentIsSelf)
                         {
                             duplicateIds.Add(existingUid);
                             seenNames[memberData.Name] = memberUid;
                         }
-                        else
+                        else if (existingIsSelf)
                         {
                             duplicateIds.Add(memberUid);
+                        }
+                        else
+                        {
+                            var existingActive = ParseLastActive(membersRaw[existingUid].LastActiveAt);
+                            var currentActive = ParseLastActive(memberData.LastActiveAt);
+
+                            if (currentActive > existingActive)
+                            {
+                                duplicateIds.Add(existingUid);
+                                seenNames[memberData.Name] = memberUid;
+                            }
+                            else
+                            {
+                                duplicateIds.Add(memberUid);
+                            }
                         }
                     }
                     else
@@ -709,9 +743,12 @@ public sealed class GuildService : IGuildService, IDisposable
 
                 foreach (var (memberUid, memberData) in membersRaw)
                 {
-                    // Duplikate und verwaiste Mitglieder aus der Anzeige filtern
-                    if (duplicateIds.Contains(memberUid)) continue;
-                    if (IsStaleMember(memberData)) continue;
+                    // Duplikate und verwaiste Mitglieder aus der Anzeige filtern.
+                    // AUSNAHME: Der eigene Spieler wird niemals gefiltert — sonst sieht man
+                    // sich selbst nicht in der Mitgliederliste (gemeldeter Bug 2026-04-20).
+                    bool isSelf = memberUid == uid;
+                    if (!isSelf && duplicateIds.Contains(memberUid)) continue;
+                    if (!isSelf && IsStaleMember(memberData)) continue;
 
                     members.Add(new GuildMemberInfo
                     {
@@ -720,7 +757,7 @@ public sealed class GuildService : IGuildService, IDisposable
                         Role = memberData.Role,
                         Contribution = memberData.Contribution,
                         PlayerLevel = memberData.PlayerLevel,
-                        IsCurrentPlayer = memberUid == uid
+                        IsCurrentPlayer = isSelf
                     });
                 }
 
@@ -778,6 +815,9 @@ public sealed class GuildService : IGuildService, IDisposable
             !char.IsControl(c) &&
             char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format
         ).ToArray()).Trim();
+
+        // Play-Store-Compliance: Obszoene Namen maskieren (6 Sprachen via ProfanityFilter)
+        name = ProfanityFilter.Clean(name);
 
         if (name.Length > 30) name = name[..30];
         if (string.IsNullOrWhiteSpace(name)) return;

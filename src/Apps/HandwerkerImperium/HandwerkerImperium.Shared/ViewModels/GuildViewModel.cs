@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
+using HandwerkerImperium.ViewModels.Guild;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
@@ -37,15 +38,8 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 {
     private bool _disposed;
     private readonly IGameStateService _gameStateService;
-    private readonly IGuildService _guildService;
-    private readonly IGuildResearchService _researchService;
+    private readonly IGuildFacade _facade;
     private readonly ILocalizationService _localizationService;
-    private readonly IGuildChatService _chatService;
-    private readonly IGuildWarSeasonService _warSeasonService;
-    private readonly IGuildBossService _bossService;
-    private readonly IGuildHallService _hallService;
-    private readonly IGuildTipService _tipService;
-    private readonly IGuildAchievementService _achievementService;
     private readonly IDialogService _dialogService;
     private bool _isBusy;
     private DateTime _lastChatSend = DateTime.MinValue;
@@ -384,37 +378,39 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     /// <summary>Sub-ViewModel für das Gilden-Hauptquartier.</summary>
     public GuildHallViewModel HallViewModel { get; }
 
+    // Thin-Wrapper-Sub-VMs fuer ViewLocator-Mapping der 6 Sub-Seiten (Phase 4 17.04.2026)
+    public GuildResearchViewModel ResearchVM { get; private set; } = null!;
+    public GuildMembersViewModel MembersVM { get; private set; } = null!;
+    public GuildInviteViewModel InviteVM { get; private set; } = null!;
+    public GuildAchievementsViewModel AchievementsVM { get; private set; } = null!;
+    public GuildChatViewModel ChatVM { get; private set; } = null!;
+    public GuildWarViewModel WarVM { get; private set; } = null!;
+
     public GuildViewModel(
         IGameStateService gameStateService,
-        IGuildService guildService,
-        IGuildResearchService researchService,
+        IGuildFacade facade,
         ILocalizationService localizationService,
-        IGuildChatService chatService,
-        IGuildWarSeasonService warSeasonService,
-        IGuildBossService bossService,
-        IGuildHallService hallService,
-        IGuildTipService tipService,
-        IGuildAchievementService achievementService,
         IDialogService dialogService,
         GuildWarSeasonViewModel warSeasonViewModel,
         GuildBossViewModel bossViewModel,
         GuildHallViewModel hallViewModel)
     {
         _gameStateService = gameStateService;
-        _guildService = guildService;
-        _researchService = researchService;
+        _facade = facade;
         _localizationService = localizationService;
-        _chatService = chatService;
-        _warSeasonService = warSeasonService;
-        _bossService = bossService;
-        _hallService = hallService;
-        _tipService = tipService;
-        _achievementService = achievementService;
         _dialogService = dialogService;
 
         WarSeasonViewModel = warSeasonViewModel;
         BossViewModel = bossViewModel;
         HallViewModel = hallViewModel;
+
+        // Thin-Wrapper-Sub-VMs fuer ViewLocator (Phase 4 17.04.2026)
+        ResearchVM = new GuildResearchViewModel(this);
+        MembersVM = new GuildMembersViewModel(this);
+        InviteVM = new GuildInviteViewModel(this);
+        AchievementsVM = new GuildAchievementsViewModel(this);
+        ChatVM = new GuildChatViewModel(this);
+        WarVM = new GuildWarViewModel(this);
 
         // Sub-VM Navigation-Events an GuildViewModel weiterleiten (benannte Felder für Unsubscribe)
         _warSeasonNavHandler = route => NavigationRequested?.Invoke(route);
@@ -438,8 +434,8 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         HallViewModel.CelebrationRequested += _hallCelebrationHandler;
         HallViewModel.FloatingTextRequested += _hallFloatingTextHandler;
 
-        _guildService.GuildUpdated += OnGuildUpdated;
-        _achievementService.AchievementCompleted += OnGuildAchievementCompleted;
+        _facade.Guild.GuildUpdated += OnGuildUpdated;
+        _facade.Achievement.AchievementCompleted += OnGuildAchievementCompleted;
 
         UpdateLocalizedTexts();
         RefreshFromLocalState();
@@ -474,15 +470,15 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         {
             ViewState = GuildViewState.Loading;
             // Spielername prüfen
-            if (string.IsNullOrEmpty(_guildService.PlayerName))
+            if (string.IsNullOrEmpty(_facade.Guild.PlayerName))
             {
                 ViewState = GuildViewState.NameDialog;
                 return;
             }
 
-            await _guildService.InitializeAsync();
+            await _facade.Guild.InitializeAsync();
 
-            if (!_guildService.IsOnline)
+            if (!_facade.Guild.IsOnline)
             {
                 // GUILD-10: Gecachte Gilden-Boni im Offline-State anzeigen
                 UpdateCachedBonusInfo();
@@ -496,10 +492,10 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             {
                 // Effekt-Caches parallel laden (sonst 0 bis Sub-Seite geöffnet wird)
                 // SafeFireAndForget loggt Netzwerkfehler statt sie still zu verschlucken
-                _researchService.RefreshResearchCacheAsync().SafeFireAndForget();
-                _hallService.RefreshHallCacheAsync().SafeFireAndForget();
+                _facade.Research.RefreshResearchCacheAsync().SafeFireAndForget();
+                _facade.Hall.RefreshHallCacheAsync().SafeFireAndForget();
                 // War-Saison initialisieren (lädt aktive War-ID, cached War, Liga)
-                _warSeasonService.InitializeAsync().SafeFireAndForget();
+                _facade.WarSeason.InitializeAsync().SafeFireAndForget();
 
                 UpdateContributionDisplay();
                 await RefreshGuildDetailsAsync();
@@ -508,7 +504,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             else
             {
                 // Spieler als verfügbar registrieren (für Einladungs-Browser)
-                await _guildService.RegisterAsAvailableAsync();
+                await _facade.Guild.RegisterAsAvailableAsync();
 
                 // Einladungs-Inbox laden
                 await LoadReceivedInvitesAsync();
@@ -524,7 +520,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
             // Nur "Offline" zeigen wenn Firebase tatsächlich nicht erreichbar ist.
             // Bei anderen Fehlern (JSON-Parsing, Logik) → Browse-State als Fallback.
-            if (!_guildService.IsOnline)
+            if (!_facade.Guild.IsOnline)
             {
                 ViewState = GuildViewState.Offline;
             }
@@ -551,7 +547,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     {
         if (string.IsNullOrWhiteSpace(NameInput)) return;
 
-        _guildService.SetPlayerName(NameInput.Trim());
+        _facade.Guild.SetPlayerName(NameInput.Trim());
 
         // Nach Namenseingabe normal laden
         await LoadGuildDataAsync();
@@ -597,7 +593,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         try
         {
             ViewState = GuildViewState.Loading;
-            var success = await _guildService.CreateGuildAsync(CreateGuildName.Trim(), SelectedIcon, SelectedColor);
+            var success = await _facade.Guild.CreateGuildAsync(CreateGuildName.Trim(), SelectedIcon, SelectedColor);
             if (success)
             {
                 RefreshFromLocalState();
@@ -649,7 +645,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         try
         {
             ViewState = GuildViewState.Loading;
-            var success = await _guildService.JoinGuildAsync(item.Id);
+            var success = await _facade.Guild.JoinGuildAsync(item.Id);
             if (success)
             {
                 RefreshFromLocalState();
@@ -693,7 +689,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         try
         {
             ViewState = GuildViewState.Loading;
-            var success = await _guildService.LeaveGuildAsync();
+            var success = await _facade.Guild.LeaveGuildAsync();
             if (success)
             {
                 Members.Clear();
@@ -732,7 +728,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             var contribution = money * (decimal)ContributionPercent / 100m;
             if (contribution < 100m || money < contribution) return;
 
-            var success = await _guildService.ContributeAsync(contribution);
+            var success = await _facade.Guild.ContributeAsync(contribution);
             if (success)
             {
                 // Slider-Anzeige aktualisieren (Geld hat sich geändert)
@@ -796,7 +792,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             IsResearchContributeDialogVisible = false;
             ViewState = GuildViewState.Loading;
 
-            var success = await _researchService.ContributeToResearchAsync(SelectedResearchId, amount);
+            var success = await _facade.Research.ContributeToResearchAsync(SelectedResearchId, amount);
             if (success)
             {
                 MessageRequested?.Invoke(
@@ -855,7 +851,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     private void DismissTip()
     {
         HasActiveTip = false;
-        _tipService.MarkTipSeen("guild_hub");
+        _facade.Tip.MarkTipSeen("guild_hub");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -883,7 +879,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         _isBusy = true;
         try
         {
-            var success = await _guildService.JoinByInviteCodeAsync(JoinCodeInput.Trim());
+            var success = await _facade.Guild.JoinByInviteCodeAsync(JoinCodeInput.Trim());
             if (success)
             {
                 JoinCodeInput = "";
@@ -913,7 +909,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         _isBusy = true;
         try
         {
-            var players = await _guildService.BrowseAvailablePlayersAsync();
+            var players = await _facade.Guild.BrowseAvailablePlayersAsync();
             var inviteText = _localizationService.GetString("InvitePlayer") ?? "Einladen";
             var invitedText = _localizationService.GetString("InvitedBadge") ?? "Eingeladen";
             var displays = new ObservableCollection<AvailablePlayerDisplay>();
@@ -948,7 +944,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         try
         {
             // Direkte Einladung an den Spieler senden (Firebase-basiert)
-            var success = await _guildService.SendInviteAsync(player.Uid);
+            var success = await _facade.Guild.SendInviteAsync(player.Uid);
             if (success)
             {
                 player.IsInvited = true;
@@ -977,8 +973,8 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     {
         try
         {
-            var invites = await _guildService.GetReceivedInvitesAsync();
-            var maxMembers = _guildService.GetMaxMembers();
+            var invites = await _facade.Guild.GetReceivedInvitesAsync();
+            var maxMembers = _facade.Guild.GetMaxMembers();
             var displays = new ObservableCollection<GuildInvitationDisplay>();
             foreach (var (guildId, invite) in invites)
             {
@@ -1012,7 +1008,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         _isBusy = true;
         try
         {
-            var success = await _guildService.AcceptInviteAsync(invite.GuildId);
+            var success = await _facade.Guild.AcceptInviteAsync(invite.GuildId);
             if (success)
             {
                 CelebrationRequested?.Invoke();
@@ -1041,7 +1037,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         _isBusy = true;
         try
         {
-            await _guildService.DeclineInviteAsync(invite.GuildId);
+            await _facade.Guild.DeclineInviteAsync(invite.GuildId);
             ReceivedInvites.Remove(invite);
             HasReceivedInvites = ReceivedInvites.Count > 0;
             ReceivedInviteCount = ReceivedInvites.Count;
@@ -1069,7 +1065,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         CanSendChat = false;
         try
         {
-            var success = await _chatService.SendMessageAsync(membership.GuildId, ChatInput.Trim());
+            var success = await _facade.Chat.SendMessageAsync(membership.GuildId, ChatInput.Trim());
             if (success)
             {
                 ChatInput = "";
@@ -1126,7 +1122,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
         try
         {
-            var messages = await _chatService.GetRecentMessagesAsync(membership.GuildId);
+            var messages = await _facade.Chat.GetRecentMessagesAsync(membership.GuildId);
             var latest = messages.TakeLast(50).ToList();
 
             if (ChatMessages.Count == 0)
@@ -1188,7 +1184,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             // Beitrag: 10% des aktuellen Spieler-Levels als Score-Punkte
             var level = _gameStateService.PlayerLevel;
             var points = Math.Max(1, level * 10);
-            await _warSeasonService.ContributeScoreAsync(points, "manual");
+            await _facade.WarSeason.ContributeScoreAsync(points, "manual");
             await LoadWarStatusAsync();
 
             MessageRequested?.Invoke(
@@ -1210,7 +1206,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     {
         try
         {
-            var seasonData = await _warSeasonService.GetCurrentWarDataAsync();
+            var seasonData = await _facade.WarSeason.GetCurrentWarDataAsync();
             var isActive = seasonData != null && !string.IsNullOrEmpty(seasonData.WarId)
                            && !string.IsNullOrEmpty(seasonData.OpponentName);
 
@@ -1372,7 +1368,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
     private async Task RefreshGuildDetailsAsync()
     {
-        var detail = await _guildService.RefreshGuildDetailsAsync();
+        var detail = await _facade.Guild.RefreshGuildDetailsAsync();
         if (detail == null)
         {
             // Gilde existiert nicht mehr
@@ -1417,13 +1413,13 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         await LoadWarStatusAsync();
 
         // Einladungs-Code laden (für Invite-Seite)
-        var code = await _guildService.GetOrCreateInviteCodeAsync();
+        var code = await _facade.Guild.GetOrCreateInviteCodeAsync();
         GuildInviteCode = code ?? "";
     }
 
     private async Task LoadGuildResearchAsync()
     {
-        var items = await _researchService.GetGuildResearchAsync();
+        var items = await _facade.Research.GetGuildResearchAsync();
 
         // Namen und Beschreibungen lokalisieren
         foreach (var item in items)
@@ -1433,7 +1429,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         }
 
         // RemainingTime für forschende Items berechnen (für SkiaSharp-Fortschrittsring)
-        var effects = _researchService.GetCachedEffects();
+        var effects = _facade.Research.GetCachedEffects();
         foreach (var item in items.Where(r => r.IsResearching && !string.IsNullOrEmpty(r.ResearchStartedAt)))
         {
             if (DateTime.TryParse(item.ResearchStartedAt,
@@ -1472,7 +1468,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         var completed = items.Count(i => i.IsCompleted);
         GuildResearchSummary = $"{completed}/{items.Count}";
 
-        var maxMembers = _guildService.GetMaxMembers();
+        var maxMembers = _facade.Guild.GetMaxMembers();
         MaxMembersDisplay = $"Max. {maxMembers}";
     }
 
@@ -1490,7 +1486,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
         var durationHours = research.DurationHours;
         // Schnellforschung-Bonus
-        var effects = _researchService.GetCachedEffects();
+        var effects = _facade.Research.GetCachedEffects();
         if (effects.ResearchSpeedBonus > 0)
             durationHours *= (double)(1m - effects.ResearchSpeedBonus);
 
@@ -1543,7 +1539,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     {
         try
         {
-            var completed = await _researchService.CheckResearchCompletionAsync();
+            var completed = await _facade.Research.CheckResearchCompletionAsync();
             if (completed)
             {
                 CelebrationRequested?.Invoke();
@@ -1559,7 +1555,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
     private async Task LoadAvailableGuildsAsync()
     {
-        var guilds = await _guildService.BrowseGuildsAsync();
+        var guilds = await _facade.Guild.BrowseGuildsAsync();
         AvailableGuilds = new ObservableCollection<GuildListItem>(guilds);
         HasNoGuilds = AvailableGuilds.Count == 0;
     }
@@ -1574,8 +1570,8 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         if (_disposed) return;
         _disposed = true;
         StopChatPolling();
-        _guildService.GuildUpdated -= OnGuildUpdated;
-        _achievementService.AchievementCompleted -= OnGuildAchievementCompleted;
+        _facade.Guild.GuildUpdated -= OnGuildUpdated;
+        _facade.Achievement.AchievementCompleted -= OnGuildAchievementCompleted;
 
         // Navigation-Events
         WarSeasonViewModel.NavigationRequested -= _warSeasonNavHandler;
@@ -1606,7 +1602,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             BossQuickStatus = BossViewModel.GetQuickStatus();
 
             // Liga Quick-Status
-            var league = _warSeasonService.GetCurrentLeague();
+            var league = _facade.WarSeason.GetCurrentLeague();
             LeagueQuickStatus = league switch
             {
                 GuildLeague.Bronze => _localizationService.GetString("LeagueBronze") ?? "Bronze",
@@ -1617,7 +1613,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             };
 
             // Research Quick-Status
-            var research = await _researchService.GetGuildResearchAsync();
+            var research = await _facade.Research.GetGuildResearchAsync();
             var completed = research.Count(r => r.IsCompleted);
             ResearchQuickStatus = $"{completed}/{research.Count}";
 
@@ -1625,7 +1621,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             HallQuickStatus = HallViewModel.GetQuickStatus();
 
             // Tipp prüfen
-            var tip = _tipService.GetTipForContext("guild_hub");
+            var tip = _facade.Tip.GetTipForContext("guild_hub");
             HasActiveTip = tip != null;
             ActiveTipText = tip ?? "";
         }
@@ -1642,7 +1638,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     {
         try
         {
-            var achievements = await _achievementService.GetAchievementsAsync();
+            var achievements = await _facade.Achievement.GetAchievementsAsync();
             // RESX-Keys in lokalisierte Texte auflösen
             foreach (var a in achievements)
             {

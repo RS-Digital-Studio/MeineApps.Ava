@@ -105,10 +105,13 @@ public class Building
 
     /// <summary>
     /// TrainingCenter: Training speed multiplier.
-    /// Level 1-5: 2x, 2.5x, 3x, 3.5x, 4x
+    /// Level 1-5: 2.5x, 3.5x, 4.5x, 5.5x, 6.5x (nach Balancing-Review April 2026: Late-Game war zu schwach).
+    /// Formel: 1.0 + Level * TrainingCenterSpeedPerLevel + 0.5 (Basis-Bonus fuer den Bau).
     /// </summary>
     [JsonIgnore]
-    public decimal TrainingSpeedMultiplier => Type == BuildingType.TrainingCenter ? 1.0m + Level * 0.5m + 0.5m : 1.0m;
+    public decimal TrainingSpeedMultiplier => Type == BuildingType.TrainingCenter
+        ? 1.0m + Level * GameBalanceConstants.TrainingCenterSpeedPerLevel + 0.5m
+        : 1.0m;
 
     /// <summary>
     /// VehicleFleet: Order reward bonus.

@@ -132,14 +132,16 @@ public class Equipment
 
     /// <summary>
     /// Goldschrauben-Preis im Shop.
+    /// ECON-1 (20.04.2026): Alte Preise 5/15/30/60 GS waren bei F2P-GS-Einkommen (~35 GS/Tag)
+    /// tot — Epic = 2 Tage reines Farming. Rebalancing auf 3/8/18/40 macht den Shop fuer F2P nutzbar.
     /// </summary>
     [JsonIgnore]
     public int ShopPrice => Rarity switch
     {
-        EquipmentRarity.Common => 5,
-        EquipmentRarity.Uncommon => 15,
-        EquipmentRarity.Rare => 30,
-        EquipmentRarity.Epic => 60,
-        _ => 5
+        EquipmentRarity.Common => 3,
+        EquipmentRarity.Uncommon => 8,
+        EquipmentRarity.Rare => 18,
+        EquipmentRarity.Epic => 40,
+        _ => 3
     };
 }

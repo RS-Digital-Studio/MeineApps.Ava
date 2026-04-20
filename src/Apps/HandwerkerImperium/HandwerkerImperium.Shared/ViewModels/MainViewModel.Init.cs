@@ -109,7 +109,7 @@ public sealed partial class MainViewModel
         CheckCombinedWelcomeDialog();
 
         // Zählen ob ein Dialog gezeigt wurde
-        if (IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible || MissionsVM.IsWelcomeOfferVisible)
+        if (WelcomeFlowVM.IsOfflineEarningsDialogVisible || WelcomeFlowVM.IsCombinedWelcomeDialogVisible || MissionsVM.IsWelcomeOfferVisible)
             dialogsShown++;
 
         // Daily Reward: Bei brandneuem Spiel still einsammeln (kein Dialog am allerersten Start,
@@ -124,7 +124,7 @@ public sealed partial class MainViewModel
         else if (dialogsShown < 2)
         {
             CheckDailyReward();
-            if (IsDailyRewardDialogVisible)
+            if (WelcomeFlowVM.IsDailyRewardDialogVisible)
                 dialogsShown++;
         }
         else
@@ -226,14 +226,14 @@ public sealed partial class MainViewModel
         bool wasCapped = offlineDuration > maxDuration;
         var effectiveDuration = wasCapped ? maxDuration : offlineDuration;
 
-        OfflineEarningsAmountText = MoneyFormatter.FormatCompact(earnings);
+        WelcomeFlowVM.OfflineEarningsAmountText = MoneyFormatter.FormatCompact(earnings);
         var durationText = effectiveDuration.TotalHours >= 1
             ? $"{(int)effectiveDuration.TotalHours}h {effectiveDuration.Minutes}min"
             : $"{(int)effectiveDuration.TotalMinutes}min";
         // Hinweis wenn Offline-Dauer gekappt wurde
         if (wasCapped)
             durationText += $" (Max. {(int)maxDuration.TotalHours}h)";
-        OfflineEarningsDurationText = durationText;
+        WelcomeFlowVM.OfflineEarningsDurationText = durationText;
 
         // Effizienz-Hinweis: Durchschnittliche Offline-Rate basiert auf gestaffeltem System
         var avgOfflinePercent = effectiveDuration.TotalHours switch
@@ -243,24 +243,24 @@ public sealed partial class MainViewModel
             <= 8 => 35,
             _ => 20
         };
-        OfflineEfficiencyHint = string.Format(
+        WelcomeFlowVM.OfflineEfficiencyHint = string.Format(
             _localizationService.GetString("OfflineEfficiencyHint") ?? "~{0}% deiner Online-Einnahmen",
             avgOfflinePercent);
 
         // Neuer Rekord pruefen
-        IsOfflineNewRecord = earnings > _gameStateService.State.MaxOfflineEarnings;
-        if (IsOfflineNewRecord)
+        WelcomeFlowVM.IsOfflineNewRecord = earnings > _gameStateService.State.MaxOfflineEarnings;
+        if (WelcomeFlowVM.IsOfflineNewRecord)
             _gameStateService.State.MaxOfflineEarnings = earnings;
 
         // Wiedereinsteiger-Tipp: Nächstes Ziel anzeigen wenn >48h offline
         if (offlineDuration.TotalHours > 48)
         {
             var goal = _goalService.GetCurrentGoal();
-            OfflineGoalText = goal?.Description ?? "";
+            WelcomeFlowVM.OfflineGoalText = goal?.Description ?? "";
         }
         else
         {
-            OfflineGoalText = "";
+            WelcomeFlowVM.OfflineGoalText = "";
         }
 
         // Dialog wird NICHT sofort angezeigt - CheckCombinedWelcomeDialog() entscheidet
@@ -280,22 +280,22 @@ public sealed partial class MainViewModel
         if (hasOffline && hasWelcome)
         {
             // Kombinierter Dialog: Offline-Earnings + Welcome-Back in einem
-            CombinedOfflineEarnings = OfflineEarningsAmountText;
-            CombinedOfflineDuration = OfflineEarningsDurationText;
-            CombinedOfferMoney = MoneyFormatter.FormatCompact(offer!.MoneyReward);
-            CombinedOfferScrews = offer.GoldenScrewReward > 0 ? $"+{offer.GoldenScrewReward}" : "";
+            WelcomeFlowVM.CombinedOfflineEarnings = WelcomeFlowVM.OfflineEarningsAmountText;
+            WelcomeFlowVM.CombinedOfflineDuration = WelcomeFlowVM.OfflineEarningsDurationText;
+            WelcomeFlowVM.CombinedOfferMoney = MoneyFormatter.FormatCompact(offer!.MoneyReward);
+            WelcomeFlowVM.CombinedOfferScrews = offer.GoldenScrewReward > 0 ? $"+{offer.GoldenScrewReward}" : "";
 
             var remaining = offer.TimeRemaining;
-            CombinedOfferTimer = remaining.TotalHours >= 1
+            WelcomeFlowVM.CombinedOfferTimer = remaining.TotalHours >= 1
                 ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}m"
                 : $"{remaining.Minutes}m";
 
-            IsCombinedWelcomeDialogVisible = true;
+            WelcomeFlowVM.IsCombinedWelcomeDialogVisible = true;
         }
         else if (hasOffline)
         {
             // Nur Offline-Dialog
-            IsOfflineEarningsDialogVisible = true;
+            WelcomeFlowVM.IsOfflineEarningsDialogVisible = true;
         }
         else if (hasWelcome)
         {
@@ -324,7 +324,7 @@ public sealed partial class MainViewModel
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         CelebrationRequested?.Invoke();
 
-        IsCombinedWelcomeDialogVisible = false;
+        WelcomeFlowVM.IsCombinedWelcomeDialogVisible = false;
         CheckDeferredDialogs();
     }
 
@@ -345,7 +345,7 @@ public sealed partial class MainViewModel
         // Welcome-Back-Offer ablehnen
         _welcomeBackService.DismissOffer();
 
-        IsCombinedWelcomeDialogVisible = false;
+        WelcomeFlowVM.IsCombinedWelcomeDialogVisible = false;
         CheckDeferredDialogs();
     }
 
@@ -369,7 +369,7 @@ public sealed partial class MainViewModel
     private void CollectOfflineEarningsNormal()
     {
         CollectOfflineEarnings(false);
-        IsOfflineEarningsDialogVisible = false;
+        WelcomeFlowVM.IsOfflineEarningsDialogVisible = false;
         CheckDeferredDialogs();
     }
 
@@ -378,7 +378,7 @@ public sealed partial class MainViewModel
     {
         var success = await _rewardedAdService.ShowAdAsync("offline_double");
         CollectOfflineEarnings(success);
-        IsOfflineEarningsDialogVisible = false;
+        WelcomeFlowVM.IsOfflineEarningsDialogVisible = false;
         CheckDeferredDialogs();
     }
 
@@ -409,12 +409,12 @@ public sealed partial class MainViewModel
             var currentStreak = _dailyRewardService.CurrentStreak;
 
             var todaysReward = _dailyRewardService.TodaysReward;
-            DailyRewardDayText = string.Format(_localizationService.GetString("DayReward"), currentDay);
-            DailyRewardStreakText = string.Format(_localizationService.GetString("DailyStreak"), currentStreak);
-            DailyRewardAmountText = todaysReward != null
+            WelcomeFlowVM.DailyRewardDayText = string.Format(_localizationService.GetString("DayReward"), currentDay);
+            WelcomeFlowVM.DailyRewardStreakText = string.Format(_localizationService.GetString("DailyStreak"), currentStreak);
+            WelcomeFlowVM.DailyRewardAmountText = todaysReward != null
                 ? MoneyFormatter.FormatCompact(todaysReward.Money)
                 : "";
-            IsDailyRewardDialogVisible = true;
+            WelcomeFlowVM.IsDailyRewardDialogVisible = true;
         }
     }
 
@@ -447,7 +447,7 @@ public sealed partial class MainViewModel
             }
 
             HasDailyReward = false;
-            IsDailyRewardDialogVisible = false;
+            WelcomeFlowVM.IsDailyRewardDialogVisible = false;
             CheckDeferredDialogs();
         }
     }
@@ -472,7 +472,7 @@ public sealed partial class MainViewModel
         {
             _hasDeferredDailyReward = false;
             CheckDailyReward();
-            if (IsDailyRewardDialogVisible) return;
+            if (WelcomeFlowVM.IsDailyRewardDialogVisible) return;
         }
 
         // 2. Verzögerte Story
@@ -518,8 +518,10 @@ public sealed partial class MainViewModel
         // Bereits Premium oder schon angezeigt -> überspringen
         if (state.IsPremium || state.StarterOfferShown) return;
 
-        // Level-Gate: Mindestens Level 15 (hat dann Plumber + Storage + Auto-Collect, versteht Economy)
-        if (state.PlayerLevel < 15) return;
+        // Level-Gate: Mindestens Level 10 (UX-1 20.04.2026: von 15 auf 10 gesenkt, seit Plumber-Unlock
+        // von Lv8 auf Lv5 vorverlegt wurde. Sweet-Spot: Spieler hat Plumber etabliert, versteht Economy,
+        // kommt aber noch VOR dem Electrician-Schock bei Lv15 (250k EUR).
+        if (state.PlayerLevel < 10) return;
 
         // Timestamp setzen falls noch nicht gesetzt (erste Auslösung)
         if (state.StarterOfferTimestamp == null)
@@ -537,11 +539,11 @@ public sealed partial class MainViewModel
 
         // Countdown berechnen und Dialog anzeigen
         var remaining = TimeSpan.FromHours(24) - elapsed;
-        StarterOfferCountdown = remaining.TotalHours >= 1
+        WelcomeFlowVM.StarterOfferCountdown = remaining.TotalHours >= 1
             ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}m"
             : $"{remaining.Minutes}m {remaining.Seconds:D2}s";
 
-        IsStarterOfferVisible = true;
+        WelcomeFlowVM.IsStarterOfferVisible = true;
     }
 
     /// <summary>
@@ -552,7 +554,7 @@ public sealed partial class MainViewModel
     {
         var state = _gameStateService.State;
         state.StarterOfferShown = true;
-        IsStarterOfferVisible = false;
+        WelcomeFlowVM.IsStarterOfferVisible = false;
 
         // Zum Shop navigieren damit der Spieler den Premium-Kauf durchführen kann
         NavigateToShop();
@@ -565,7 +567,7 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void DismissStarterOffer()
     {
-        IsStarterOfferVisible = false;
+        WelcomeFlowVM.IsStarterOfferVisible = false;
         CheckDeferredDialogs();
     }
 }

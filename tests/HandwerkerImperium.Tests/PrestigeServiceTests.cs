@@ -24,6 +24,16 @@ public class PrestigeServiceTests
 
         var state = GameState.CreateNew();
         gameStateMock.State.Returns(state);
+        // NSubstitute ueberschreibt Default-Interface-Member — Komfort-Properties
+        // (Prestige/Settings/Tutorial/...) muessen explizit an state umgeleitet werden,
+        // sonst liefern sie null und verursachen NullReferenceException.
+        gameStateMock.Prestige.Returns(state.Prestige);
+        gameStateMock.Settings.Returns(state.Settings);
+        gameStateMock.Statistics.Returns(state.Statistics);
+        gameStateMock.Tutorial.Returns(state.Tutorial);
+        gameStateMock.Boosts.Returns(state.Boosts);
+        gameStateMock.DailyProgress.Returns(state.DailyProgress);
+        gameStateMock.Automation.Returns(state.Automation);
 
         // Standard: Keine Ascension-Boni
         ascensionMock.GetStartCapitalMultiplier().Returns(1.0m);

@@ -68,6 +68,7 @@ public partial class PaintingGameView : UserControl
         {
             _vm.ComboIncreased -= OnComboIncreased;
             _vm.GameCompleted -= OnGameCompleted;
+            _vm.GameRestarted -= OnGameRestarted;
             _vm = null;
         }
 
@@ -90,6 +91,7 @@ public partial class PaintingGameView : UserControl
         {
             _vm.ComboIncreased -= OnComboIncreased;
             _vm.GameCompleted -= OnGameCompleted;
+            _vm.GameRestarted -= OnGameRestarted;
         }
 
         _vm = DataContext as PaintingGameViewModel;
@@ -99,6 +101,7 @@ public partial class PaintingGameView : UserControl
         {
             _vm.ComboIncreased += OnComboIncreased;
             _vm.GameCompleted += OnGameCompleted;
+            _vm.GameRestarted += OnGameRestarted;
         }
 
         // Canvas-Setup: PaintSurface + Touch-Handler + Render-Loop starten
@@ -312,5 +315,17 @@ public partial class PaintingGameView : UserControl
         {
             // Effekt-Fehler still behandelt
         }
+    }
+
+    /// <summary>
+    /// Startet den Render-Loop bei Task-Wechsel neu (Multi-Task-Orders).
+    /// Bei IsResultShown=true wurde der Timer fuer Performance gestoppt — beim
+    /// naechsten Task muss er neu aufgezogen werden, damit Canvas animiert.
+    /// </summary>
+    private void OnGameRestarted(object? sender, EventArgs e)
+    {
+        if (_disposed) return;
+        if (_gameCanvas != null && _renderTimer == null)
+            StartRenderLoop();
     }
 }

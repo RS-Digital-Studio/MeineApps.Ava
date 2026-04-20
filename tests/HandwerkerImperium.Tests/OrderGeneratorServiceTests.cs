@@ -36,6 +36,14 @@ public class OrderGeneratorServiceTests
     {
         var mock = Substitute.For<IGameStateService>();
         mock.State.Returns(state);
+        // Default-Interface-Member-Umleitung (Law of Demeter Properties)
+        mock.Prestige.Returns(state.Prestige);
+        mock.Settings.Returns(state.Settings);
+        mock.Statistics.Returns(state.Statistics);
+        mock.Tutorial.Returns(state.Tutorial);
+        mock.Boosts.Returns(state.Boosts);
+        mock.DailyProgress.Returns(state.DailyProgress);
+        mock.Automation.Returns(state.Automation);
         mock.IsWorkshopUnlocked(Arg.Any<WorkshopType>()).Returns(ci =>
             state.UnlockedWorkshopTypes.Contains(ci.Arg<WorkshopType>()));
         return mock;

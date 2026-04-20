@@ -87,7 +87,7 @@
       </Border>
 
       <!-- NAV-1: Worker-Warnung-Chip als Button → navigiert direkt zum betroffenen Worker -->
-      <Button IsVisible="{Binding HasWorkerWarning}"
+      <Button IsVisible="{Binding HeaderVM.HasWorkerWarning}"
               Command="{Binding NavigateToWorkerWarningCommand}"
               Classes="Text" Padding="0" CornerRadius="22"
               AutomationProperties.AutomationId="Dashboard_Btn_WorkerWarningChip">
@@ -96,7 +96,7 @@
           <StackPanel Orientation="Horizontal" Spacing="6">
             <icons:GameIcon Kind="AlertCircleOutline" Width="20" Height="20"
                              Foreground="{DynamicResource WarningBrush}" />
-            <TextBlock Text="{Binding WorkerWarningText}" FontSize="11"
+            <TextBlock Text="{Binding HeaderVM.WorkerWarningText}" FontSize="11"
                        Foreground="{DynamicResource WarningBrush}" MaxWidth="140"
                        TextTrimming="CharacterEllipsis" />
           </StackPanel>

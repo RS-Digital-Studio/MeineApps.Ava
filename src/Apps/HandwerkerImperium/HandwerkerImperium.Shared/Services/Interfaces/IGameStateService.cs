@@ -1,24 +1,23 @@
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Models.Events;
 
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
 /// Zentraler Service fuer die Verwaltung des Spielzustands.
 /// Einzige Quelle der Wahrheit fuer alle Spieldaten.
-/// Erbt von IGameCurrencyService, IGameWorkshopService und IGameOrderService
-/// fuer granulare Abhaengigkeiten (Interface Segregation).
 /// </summary>
-public interface IGameStateService : IGameCurrencyService, IGameWorkshopService, IGameOrderService
+public interface IGameStateService
 {
-    /// <summary>
-    /// Der aktuelle Spielzustand.
-    /// </summary>
+    // ===================================================================
+    // STATE
+    // ===================================================================
+
+    /// <summary>Der aktuelle Spielzustand.</summary>
     GameState State { get; }
 
-    /// <summary>
-    /// Ob das Spiel initialisiert wurde.
-    /// </summary>
+    /// <summary>Ob das Spiel initialisiert wurde.</summary>
     bool IsInitialized { get; }
 
     // ===================================================================
@@ -35,7 +34,43 @@ public interface IGameStateService : IGameCurrencyService, IGameWorkshopService,
     bool IsAutoAssignUnlocked { get; }
 
     // ===================================================================
-    // EVENTS (nur noch State-uebergreifende Events)
+    // EVENTS — CURRENCY
+    // ===================================================================
+
+    /// <summary>Wird ausgeloest wenn sich das Geld aendert.</summary>
+    event EventHandler<MoneyChangedEventArgs>? MoneyChanged;
+
+    /// <summary>Wird ausgeloest wenn sich die Goldschrauben aendern.</summary>
+    event EventHandler<GoldenScrewsChangedEventArgs>? GoldenScrewsChanged;
+
+    /// <summary>Wird ausgeloest wenn der Spieler aufsteigt.</summary>
+    event EventHandler<LevelUpEventArgs>? LevelUp;
+
+    /// <summary>Wird ausgeloest wenn XP gewonnen werden.</summary>
+    event EventHandler<XpGainedEventArgs>? XpGained;
+
+    // ===================================================================
+    // EVENTS — WORKSHOP
+    // ===================================================================
+
+    /// <summary>Wird ausgeloest wenn eine Werkstatt aufgewertet wird.</summary>
+    event EventHandler<WorkshopUpgradedEventArgs>? WorkshopUpgraded;
+
+    /// <summary>Wird ausgeloest wenn ein Arbeiter eingestellt wird.</summary>
+    event EventHandler<WorkerHiredEventArgs>? WorkerHired;
+
+    // ===================================================================
+    // EVENTS — ORDERS
+    // ===================================================================
+
+    /// <summary>Wird ausgeloest wenn ein Auftrag abgeschlossen wird.</summary>
+    event EventHandler<OrderCompletedEventArgs>? OrderCompleted;
+
+    /// <summary>Wird ausgeloest wenn ein MiniGame-Ergebnis aufgezeichnet wird.</summary>
+    event EventHandler<MiniGameResultRecordedEventArgs>? MiniGameResultRecorded;
+
+    // ===================================================================
+    // EVENTS — STATE
     // ===================================================================
 
     /// <summary>Wird ausgeloest wenn der Spielzustand geladen wird.</summary>
@@ -48,17 +83,108 @@ public interface IGameStateService : IGameCurrencyService, IGameWorkshopService,
     event EventHandler? PrestigeShopPurchased;
 
     // ===================================================================
+    // GELD / GOLDSCHRAUBEN / XP
+    // ===================================================================
+
+    /// <summary>Fuegt Geld zum Spielerkonto hinzu.</summary>
+    void AddMoney(decimal amount);
+
+    /// <summary>Versucht Geld auszugeben. Gibt true zurueck bei Erfolg.</summary>
+    bool TrySpendMoney(decimal amount);
+
+    /// <summary>Prueft ob der Spieler sich einen Betrag leisten kann.</summary>
+    bool CanAfford(decimal amount);
+
+    /// <summary>Fuegt Goldschrauben zum Spielerkonto hinzu.</summary>
+    void AddGoldenScrews(int amount, bool fromPurchase = false);
+
+    /// <summary>Versucht Goldschrauben auszugeben. Gibt true zurueck bei Erfolg.</summary>
+    bool TrySpendGoldenScrews(int amount);
+
+    /// <summary>Prueft ob der Spieler genug Goldschrauben hat.</summary>
+    bool CanAffordGoldenScrews(int amount);
+
+    /// <summary>Fuegt dem Spieler XP hinzu. Level-Ups werden automatisch verarbeitet.</summary>
+    void AddXp(int amount);
+
+    // ===================================================================
+    // WERKSTATT-OPERATIONEN
+    // ===================================================================
+
+    /// <summary>Gibt eine Werkstatt nach Typ zurueck.</summary>
+    Workshop? GetWorkshop(WorkshopType type);
+
+    /// <summary>Versucht eine Werkstatt aufzuwerten. Gibt true zurueck bei Erfolg.</summary>
+    bool TryUpgradeWorkshop(WorkshopType type);
+
+    /// <summary>
+    /// Upgradet einen Workshop mehrfach (Bulk Buy). Gibt Anzahl Upgrades zurueck.
+    /// count=0 bedeutet Max (so viele wie bezahlbar).
+    /// </summary>
+    int TryUpgradeWorkshopBulk(WorkshopType type, int count);
+
+    /// <summary>Versucht einen Arbeiter fuer eine Werkstatt einzustellen.</summary>
+    bool TryHireWorker(WorkshopType type);
+
+    /// <summary>Prueft ob eine Werkstatt beim aktuellen Spieler-Level freigeschaltet ist.</summary>
+    bool IsWorkshopUnlocked(WorkshopType type);
+
+    /// <summary>
+    /// Kauft eine Werkstatt frei (Level-Anforderung muss erfuellt sein, Kosten werden abgezogen).
+    /// </summary>
+    bool TryPurchaseWorkshop(WorkshopType type, decimal costOverride = -1);
+
+    /// <summary>Prueft ob eine Werkstatt kaufbar ist (Level erreicht, nicht bereits freigeschaltet).</summary>
+    bool CanPurchaseWorkshop(WorkshopType type);
+
+    // ===================================================================
+    // AUFTRAGS-OPERATIONEN
+    // ===================================================================
+
+    /// <summary>Startet einen Auftrag (verschiebt ihn in den aktiven Status).</summary>
+    void StartOrder(Order order);
+
+    /// <summary>Gibt den aktuell aktiven Auftrag zurueck.</summary>
+    Order? GetActiveOrder();
+
+    /// <summary>Zeichnet ein MiniGame-Ergebnis fuer den aktiven Auftrag auf.</summary>
+    void RecordMiniGameResult(MiniGameRating rating);
+
+    /// <summary>Schliesst den aktiven Auftrag ab und vergibt Belohnungen.</summary>
+    void CompleteActiveOrder();
+
+    /// <summary>
+    /// Berechnet den kombinierten Auftrags-Belohnungsmultiplikator aus Research, Gebaeuden,
+    /// Reputation, Events und Stammkunden. Wird fuer korrekte Belohnungsanzeige in MiniGames verwendet.
+    /// </summary>
+    decimal GetOrderRewardMultiplier(Order order);
+
+    /// <summary>Bricht den aktiven Auftrag ohne Belohnungen ab.</summary>
+    void CancelActiveOrder();
+
+    /// <summary>
+    /// Schliesst einen Lieferauftrag ab: Items abziehen, Belohnung gutschreiben.
+    /// Gibt den Geld-Ertrag zurueck (0 wenn nicht moeglich).
+    /// </summary>
+    decimal CompleteMaterialOrder(Order order);
+
+    /// <summary>Zaehlt ein Perfect-Rating fuer den angegebenen MiniGame-Typ.</summary>
+    void RecordPerfectRating(MiniGameType type);
+
+    /// <summary>
+    /// Prueft ob Auto-Complete fuer diesen MiniGame-Typ verfuegbar ist.
+    /// Premium-Spieler: 25 Perfects, Free-Spieler: 50 Perfects.
+    /// </summary>
+    bool CanAutoComplete(MiniGameType type, bool isPremium);
+
+    // ===================================================================
     // ZUSTANDSVERWALTUNG
     // ===================================================================
 
-    /// <summary>
-    /// Initialisiert den Spielzustand (neues Spiel oder geladen).
-    /// </summary>
+    /// <summary>Initialisiert den Spielzustand (neues Spiel oder geladen).</summary>
     void Initialize(GameState? loadedState = null);
 
-    /// <summary>
-    /// Setzt den Spielzustand fuer ein neues Spiel zurueck.
-    /// </summary>
+    /// <summary>Setzt den Spielzustand fuer ein neues Spiel zurueck.</summary>
     void Reset();
 
     /// <summary>
@@ -79,27 +205,7 @@ public interface IGameStateService : IGameCurrencyService, IGameWorkshopService,
     T ExecuteWithLock<T>(Func<T> func);
 
     // ===================================================================
-    // EVENT-AUSLOESUNG (fuer extrahierte Services)
-    // ===================================================================
-
-    /// <summary>Loest WorkshopUpgraded + MoneyChanged Events aus.</summary>
-    void RaiseWorkshopUpgraded(WorkshopType type, int oldLevel, int newLevel, decimal cost, decimal moneyBefore, decimal moneyAfter);
-
-    /// <summary>Loest WorkerHired + MoneyChanged Events aus.</summary>
-    void RaiseWorkerHired(WorkshopType type, Worker worker, decimal cost, int workerCount, decimal moneyBefore, decimal moneyAfter);
-
-    /// <summary>Loest OrderCompleted Event aus.</summary>
-    void RaiseOrderCompleted(Order order, decimal moneyReward, int xpReward, MiniGameRating avgRating);
-
-    /// <summary>Loest MiniGameResultRecorded Event aus.</summary>
-    void RaiseMiniGameResultRecorded(MiniGameRating rating);
-
-    /// <summary>Loest MoneyChanged Event aus.</summary>
-    void RaiseMoneyChanged(decimal oldAmount, decimal newAmount);
-
-    // ===================================================================
     // KOMFORT-ZUGRIFFE (Law of Demeter)
-    // Vermeidet tiefe Zugriffsketten wie State.Prestige.TotalPrestigeCount
     // ===================================================================
 
     /// <summary>Automatisierungs-Einstellungen (Auto-Collect, Auto-Accept, etc.).</summary>

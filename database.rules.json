@@ -14,6 +14,18 @@
       ".read": "auth != null",
       "$guildId": {
         ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || !data.exists())",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 30"
+        },
+        "description": {
+          ".validate": "newData.isString() && newData.val().length <= 200"
+        },
+        "icon": {
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "color": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
         "level": {
           ".validate": "newData.isNumber() && (!data.exists() || newData.val() == data.val() || newData.val() == data.val() + 1)"
         },
@@ -70,7 +82,7 @@
       ".read": "auth != null",
       ".indexOn": ["endDate", "status"],
       "$warId": {
-        ".write": "auth != null && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).exists() && (!data.exists() || root.child('guild_members/' + root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).val() + '/' + root.child('auth_to_player/' + auth.uid).val()).exists())",
+        ".write": "auth != null && (!data.exists() ? (newData.child('guildAId').val() == root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).val()) : (root.child('guild_members/' + data.child('guildAId').val() + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || root.child('guild_members/' + data.child('guildBId').val() + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()))",
         "guildAId": {
           ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
         },
@@ -121,13 +133,13 @@
             ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
             ".validate": "newData.hasChildren(['guildName', 'leaguePoints'])",
             "leaguePoints": {
-              ".validate": "newData.isNumber() && newData.val() >= 0"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 10000))"
             },
             "wins": {
-              ".validate": "newData.isNumber() && newData.val() >= 0"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 10))"
             },
             "losses": {
-              ".validate": "newData.isNumber() && newData.val() >= 0"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 10))"
             }
           }
         },
@@ -173,33 +185,6 @@
             ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
             ".validate": "newData.isNumber() && newData.val() >= 0"
           }
-        }
-      }
-    },
-
-    "friends": {
-      "$playerId": {
-        ".read": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
-        "$friendPlayerId": {
-          ".write": "auth != null && (root.child('auth_to_player/' + auth.uid).val() == $playerId || root.child('auth_to_player/' + auth.uid).val() == $friendPlayerId)"
-        }
-      }
-    },
-
-    "friend_requests": {
-      "$playerId": {
-        ".read": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
-        "$fromPlayerId": {
-          ".write": "auth != null && (root.child('auth_to_player/' + auth.uid).val() == $fromPlayerId || root.child('auth_to_player/' + auth.uid).val() == $playerId)"
-        }
-      }
-    },
-
-    "gifts": {
-      "$playerId": {
-        ".read": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
-        "$giftId": {
-          ".write": "auth != null && (!data.exists() || root.child('auth_to_player/' + auth.uid).val() == $playerId)"
         }
       }
     },
@@ -251,7 +236,8 @@
       ".read": "auth != null",
       ".indexOn": ["lastActive"],
       "$playerId": {
-        ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
+        ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
+        ".validate": "newData.hasChildren(['playerName', 'lastActive']) && newData.child('playerName').isString() && newData.child('playerName').val().length >= 1 && newData.child('playerName').val().length <= 32 && newData.child('lastActive').isString()"
       }
     },
 
@@ -259,7 +245,22 @@
       "$guildId": {
         ".read": "auth != null",
         "$researchId": {
-          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
+          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+          "progress": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() >= data.val())"
+          },
+          "completed": {
+            ".validate": "newData.isBoolean() && (!data.exists() || data.val() == false || newData.val() == true)"
+          },
+          "completedAt": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "researchStartedAt": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     },
@@ -294,21 +295,16 @@
         ".read": "auth != null",
         ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
         "current_hp": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() <= data.val() || newData.parent().child('boss_id').val() != data.parent().child('boss_id').val())"
         },
         "max_hp": {
-          ".validate": "newData.isNumber() && newData.val() > 0 && (!data.exists() || newData.val() == data.val())"
+          ".validate": "newData.isNumber() && newData.val() > 0 && (!data.exists() || newData.val() == data.val() || newData.parent().child('boss_id').val() != data.parent().child('boss_id').val())"
         },
         "boss_id": {
-          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
+          ".validate": "newData.isString() && newData.val().length <= 40"
         },
         "boss_name": {
-          ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())"
-        },
-        "damage_log": {
-          "$playerId": {
-            ".validate": "newData.isNumber() && newData.val() >= 0 && root.child('auth_to_player/' + auth.uid).val() == $playerId"
-          }
+          ".validate": "newData.isString() && newData.val().length <= 80"
         }
       }
     },
@@ -327,7 +323,19 @@
       "$guildId": {
         ".read": "auth != null",
         "$achievementId": {
-          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
+          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+          "progress": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() >= data.val())"
+          },
+          "completed": {
+            ".validate": "newData.isBoolean() && (!data.exists() || data.val() == false || newData.val() == true)"
+          },
+          "completedAt": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     },

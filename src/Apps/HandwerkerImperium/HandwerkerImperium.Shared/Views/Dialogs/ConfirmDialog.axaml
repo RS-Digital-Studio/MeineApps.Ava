@@ -51,8 +51,8 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="models:PrestigeTierOption">
-                <Button Classes="Text" Padding="10,6" CornerRadius="20"
-                        MinWidth="0" MinHeight="0"
+                <Button Classes="Text" Padding="12,8" CornerRadius="20"
+                        MinHeight="44"
                         CommandParameter="{Binding TierKey}"
                         RenderTransform="scale(1)" RenderTransformOrigin="50%,50%"
                         AutomationProperties.AutomationId="Main_Btn_TierChip">

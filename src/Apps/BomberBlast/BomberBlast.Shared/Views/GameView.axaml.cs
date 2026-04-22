@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using BomberBlast.ViewModels;
 using SkiaSharp;
 using Avalonia.Labs.Controls;
@@ -40,6 +41,7 @@ public partial class GameView : UserControl
         // Loaded als zusätzliche Subscription-Chance (ViewLocator kann DataContext verzögert setzen)
         Loaded += OnLoaded;
     }
+
 
     private void OnDetachedFromVisualTree(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)
     {
@@ -141,7 +143,10 @@ public partial class GameView : UserControl
     {
         if (_renderTimer != null) return;
 
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        // 33ms ≈ 30fps — bei einem 2D-Bomberman-Spiel visuell gleichwertig zu 60fps,
+        // aber halbiert CPU/GPU-Last auf Android (Akku, Geräte-Erwärmung).
+        // GameEngine.Update nutzt deltaTime, reagiert also automatisch auf die neue Rate.
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
         _renderTimer.Tick += OnRenderTick;
         _renderTimer.Start();
     }
@@ -156,15 +161,21 @@ public partial class GameView : UserControl
 
     private void OnRenderTick(object? sender, EventArgs e)
     {
-        if (ViewModel?.IsGameLoopRunning == true)
-        {
-            GameCanvas.InvalidateSurface();
-        }
-        else
+        if (ViewModel?.IsGameLoopRunning != true)
         {
             // Game-Loop gestoppt → Timer stoppen
             StopRenderTimer();
+            return;
         }
+
+        // Skippen wenn Parent-Container (PageView-Border) unsichtbar ist.
+        // Beim Tab-Wechsel zum Menü bleibt GameView im Visual Tree aber der Border
+        // wird auf IsVisible=false gesetzt. Ohne diesen Check würde die GameEngine
+        // weiter bei 60fps rendern + Update laufen → Android-Gerät erwärmt sich unnötig.
+        if (!IsEffectivelyVisible)
+            return;
+
+        GameCanvas.InvalidateSurface();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

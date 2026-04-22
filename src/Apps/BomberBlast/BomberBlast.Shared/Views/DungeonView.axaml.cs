@@ -152,17 +152,8 @@ public partial class DungeonView : UserControl
         if (MapCanvas == null) return;
 
         var point = e.GetPosition(MapCanvas);
-
-        // DPI-Skalierung: Proportionale Umrechnung (Control-Bounds → Render-Bounds)
-        float scaleX = (float)(MapCanvas.Bounds.Width > 0
-            ? MapCanvas.Bounds.Width / MapCanvas.Bounds.Width
-            : 1.0);
-        float scaleY = (float)(MapCanvas.Bounds.Height > 0
-            ? MapCanvas.Bounds.Height / MapCanvas.Bounds.Height
-            : 1.0);
-
-        float tapX = (float)point.X * scaleX;
-        float tapY = (float)point.Y * scaleY;
+        float tapX = (float)point.X;
+        float tapY = (float)point.Y;
 
         // Hit-Test: Welcher Node wurde getippt?
         var hitNode = DungeonMapRenderer.HitTestNode(

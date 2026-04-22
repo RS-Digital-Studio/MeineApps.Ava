@@ -18,7 +18,12 @@ public class FloatingJoystick : IInputHandler, IDisposable
     // Joystick-Zustand
     private bool _isPressed;
     private float _baseX, _baseY;      // Mittelpunkt des Joysticks
-    private float _stickX, _stickY;    // Aktuelle Stick-Position (= Finger-Position, geclampt)
+    private float _stickX, _stickY;    // Logische Stick-Position (= Finger-Position, geclampt — für Richtungs-Logik)
+    private float _stickDrawX, _stickDrawY; // Gerenderte Stick-Position (smoothed, vermeidet sichtbare Sprünge zwischen Touch-Events)
+
+    // Smoothing-Rate: exponentielles Ease-Out. rate=25 fühlt sich flüssig an ohne träge zu wirken
+    // (bei 60fps erreicht der Draw-Punkt nach ~1 Frame ca. 34% der Distanz, nach 4 Frames ~87%)
+    private const float STICK_SMOOTHING_RATE = 25f;
 
     // Bomb-Button Zustand
     private bool _bombPressed;
@@ -104,6 +109,17 @@ public class FloatingJoystick : IInputHandler, IDisposable
         }
     }
 
+    /// <summary>
+    /// Draw-Position auf Ziel-Position snappen (ohne Smoothing).
+    /// Wird bei Touch-Start und Touch-End verwendet, damit der Stick nicht aus der
+    /// vorherigen Position heraus nachzieht.
+    /// </summary>
+    private void SnapStickDraw()
+    {
+        _stickDrawX = _stickX;
+        _stickDrawY = _stickY;
+    }
+
     public void OnTouchStart(float x, float y, float screenWidth, float screenHeight, long pointerId = 0)
     {
         UpdateBombButtonPosition(screenWidth, screenHeight);
@@ -149,6 +165,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
                 _stickX = x;
                 _stickY = y;
                 ClampAndFollow();
+                SnapStickDraw(); // Anfangs-Position sofort übernehmen, kein Nachziehen vom letzten Release
                 UpdateDirection();
             }
         }
@@ -163,6 +180,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
                 _baseY = y;
                 _stickX = x;
                 _stickY = y;
+                SnapStickDraw();
                 _currentDirection = Direction.None;
             }
         }
@@ -178,6 +196,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
         _stickY = y;
         ClampAndFollow();
         UpdateDirection();
+        // _stickDrawX/Y werden in Update(deltaTime) per Frame zur Ziel-Position geglättet
     }
 
     /// <summary>
@@ -215,6 +234,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
             _isPressed = false;
             _stickX = _baseX;
             _stickY = _baseY;
+            SnapStickDraw(); // Kein weiches Zurück-Gleiten beim Loslassen, sonst wirkt der Joystick "schlaff"
             _currentDirection = Direction.None;
             _joystickPointerId = -1;
         }
@@ -230,6 +250,17 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
     public void Update(float deltaTime)
     {
+        // Stick-Draw-Position zur Ziel-Position smoothen.
+        // Touch-Events kommen auf Android mit variabler Rate (~30-120Hz), Rendering läuft bei 60fps.
+        // Ohne Smoothing springt der gezeichnete Stick sichtbar zwischen den Sample-Positionen.
+        // Exponentielles Ease-Out: alpha = 1 - exp(-rate * dt) — framerate-unabhängig, kein Overshoot.
+        if (deltaTime > 0f)
+        {
+            float alpha = 1f - MathF.Exp(-STICK_SMOOTHING_RATE * deltaTime);
+            _stickDrawX += (_stickX - _stickDrawX) * alpha;
+            _stickDrawY += (_stickY - _stickDrawY) * alpha;
+        }
+
         // Bomb-Press nach Frame konsumieren
         if (_bombConsumed)
             _bombPressed = false;
@@ -247,6 +278,9 @@ public class FloatingJoystick : IInputHandler, IDisposable
     {
         _isPressed = false;
         _currentDirection = Direction.None;
+        _stickX = _baseX;
+        _stickY = _baseY;
+        SnapStickDraw();
         _bombPressed = false;
         _bombConsumed = false;
         _bombButtonPressed = false;
@@ -345,10 +379,10 @@ public class FloatingJoystick : IInputHandler, IDisposable
             _borderPaint.Color = new SKColor(255, 255, 255, (byte)(alpha * 0.6f));
             canvas.DrawCircle(_baseX, _baseY, _joystickRadius, _borderPaint);
 
-            // Stick (zeigt Auslenkung wenn gedrückt)
+            // Stick (zeigt Auslenkung wenn gedrückt) — nutzt smoothed Draw-Position
             byte stickAlpha = _isPressed ? alpha : (byte)(alpha * 0.7f);
             _stickPaint.Color = new SKColor(255, 255, 255, stickAlpha);
-            canvas.DrawCircle(_stickX, _stickY, _joystickRadius * 0.4f, _stickPaint);
+            canvas.DrawCircle(_stickDrawX, _stickDrawY, _joystickRadius * 0.4f, _stickPaint);
         }
         else
         {
@@ -362,7 +396,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
                 canvas.DrawCircle(_baseX, _baseY, _joystickRadius, _borderPaint);
 
                 _stickPaint.Color = new SKColor(255, 255, 255, alpha);
-                canvas.DrawCircle(_stickX, _stickY, _joystickRadius * 0.4f, _stickPaint);
+                canvas.DrawCircle(_stickDrawX, _stickDrawY, _joystickRadius * 0.4f, _stickPaint);
             }
         }
 

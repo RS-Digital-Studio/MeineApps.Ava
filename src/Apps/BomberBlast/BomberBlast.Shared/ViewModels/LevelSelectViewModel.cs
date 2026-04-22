@@ -378,10 +378,10 @@ public class WorldGroup
     // Level-Items (10 pro Welt)
     public ObservableCollection<LevelDisplayItem> Levels { get; set; } = [];
 
-    // Abgeleitete Properties fuer die View
+    // Abgeleitete Properties fuer die View (Color statt Brush — MVVM-konform, View konvertiert)
     public double SectionOpacity => IsLocked ? 0.4 : 1.0;
-    public IBrush HeaderTextBrush => IsLocked ? Brushes.Gray : new SolidColorBrush(AccentColor);
-    public IBrush HeaderBackgroundBrush => new SolidColorBrush(DarkColor);
+    public Color HeaderTextColor => IsLocked ? Colors.Gray : AccentColor;
+    public Color HeaderBackgroundColor => DarkColor;
     public GameIconKind LockIcon => IsLocked ? GameIconKind.Lock : WorldIcon;
     public string ProgressText => $"\u2605 {StarsEarned}/{MaxStars}";
 }
@@ -457,6 +457,6 @@ public class LevelDisplayItem
         }
     }
 
-    public IBrush TextBrush =>
-        !IsUnlocked || IsWorldLocked ? Brushes.Gray : Brushes.White;
+    public Color TextColor =>
+        !IsUnlocked || IsWorldLocked ? Colors.Gray : Colors.White;
 }

@@ -104,13 +104,13 @@ public class ScoreDisplayItem
     public string WaveText { get; set; } = "";
     public int Score { get; set; }
 
-    /// <summary>Brush color for the rank display based on position.</summary>
-    public IBrush RankBrush => RankIndex switch
+    /// <summary>Farbe für die Rang-Anzeige basierend auf Position. View konvertiert zu Brush.</summary>
+    public Color RankColor => RankIndex switch
     {
-        0 => Brushes.Gold,
-        1 => Brushes.Silver,
-        2 => new SolidColorBrush(Color.Parse("#CD7F32")), // Bronze
-        _ => Brushes.White
+        0 => Colors.Gold,
+        1 => Colors.Silver,
+        2 => Color.Parse("#CD7F32"), // Bronze
+        _ => Colors.White
     };
 
     /// <summary>Medaillen-Sichtbarkeit für Top 3</summary>

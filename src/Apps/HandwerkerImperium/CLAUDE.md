@@ -6,7 +6,7 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Aufträge oder spiele Mini-Games.
 
-**Version:** 2.0.32 (VersionCode 40) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
+**Version:** 2.0.34 (VersionCode 42) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
 
 ## Icon-System (Bitmap-Icons, AI + Programmatisch)
 
@@ -69,6 +69,9 @@ Kein Material.Icons.Avalonia. Alle 224 Icons sind WebP-Bitmaps (128x128) in `Ass
 - **Challenge-Abbruch** (Aufgeben-Button bei aktiven Prestige-Challenges, gibt 50% Basis-PP ohne Challenge-Bonus, Challenges werden deaktiviert)
 - **Prestige-Freischaltung** (Nach erstem Prestige alle Tabs, Features und Automatisierungen permanent freigeschaltet — Spieler verliert nie Zugang zu Gilde/Forschung/etc.)
 - **Ascension-System** (Meta-Prestige nach 3x Legende, 6 permanente Perks je MaxLevel 3 (61 AP gesamt), +2 AP/Ascension Skalierung, AscensionViewModel + Route "ascension" als Imperium-Sub-View)
+- **Firebase-Telemetrie** (v2.0.33, REST via FirebaseService): IAnalyticsService mit Queue-Batching (30s-Flush, 500-Event-Cap), IRemoteConfigService (balancing/features-Overrides via `remote_config/`-Pfad mit Preferences-Cache), Events in `analytics_events/{YYYY-MM-DD}/$pushId` mit playerId-Validierung. Event-Katalog: `Models/AnalyticsEvents.cs` (38 Event-Typen), `Models/RemoteConfigKeys.cs` (12 Keys).
+- **DSGVO-Consent** (v2.0.33): Opt-In-Dialog beim allerersten Start (AnalyticsConsentShown + AnalyticsEnabled in SettingsData). User kann in Settings → Datenschutz jederzeit aendern. Bei OFF: Keine Events, Queue wird geleert.
+- **Firebase-Cloud-Save** (v2.0.33): Plattformuebergreifend via REST (ersetzt den nicht-funktionalen Play-Games-v2-Snapshots-Stub). Pfad `cloud_saves/{playerId}/{metadata|data}`. Auto-Upload beim lokalen Save (Rate-Limit 2min), Konflikt-Dialog beim Start wenn Cloud neuer (Toleranz 5s Clock-Skew). Settings: Cloud-Save-Toggle jetzt sichtbar sobald Firebase ODER Play Games verfuegbar (CanUseCloudSave = IsCloudSaveOnline || IsPlayGamesSignedIn).
 
 ### Prestige-System (Details)
 
@@ -645,6 +648,196 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | Research-Labor | ResearchLabRenderer: Werkstatt-Szene, Zahnraeder, Dampf, Glühbirne |
 | Research-Baum | 2D Top-Heroes-Style, Branch-Farben, Flow-Partikel, Branch-Banner, Celebration-Confetti |
 | Forschungs-Hintergrund | ResearchBackgroundRenderer: Nussholz, Holzmaserung, Zahnrad-Wasserzeichen, Vignette |
+
+## FPS-Profile + Gilde-UX (24.04.2026, v2.0.34)
+
+### FPS-Profile (`Graphics/FpsProfile.cs`) — plattformadaptives Rendering
+
+Bis v2.0.33 war der `GraphicsQuality`-Enum nur ein Wetter/Shimmer-Schalter. Alle Render-Timer waren hartcoded auf 30fps. `FpsProfile.cs` liefert jetzt pro Grafikqualitaet eigene Intervalle:
+
+| View                       | Low          | Medium       | High         |
+|----------------------------|--------------|--------------|--------------|
+| MiniGame (10 Views)        | 24fps (42ms) | 30fps (33ms) | 30fps (33ms) |
+| Research / Workshop /      | 15fps (66ms) | 20fps (50ms) | 24fps (42ms) |
+|   GuildResearch            |              |              |              |
+| Dashboard Idle             | 5fps (200ms) | 10fps (100ms)| 10fps (100ms)|
+| Dashboard bei Effekten     | 15fps (66ms) | 24fps (42ms) | 30fps (33ms) |
+| WorkerAvatar shared        | 5fps (200ms) | 8fps (125ms) | 10fps (100ms)|
+| MainView (BG + TabBar)     | 10fps (100ms)| 15fps (66ms) | 15fps (66ms) |
+
+Integrationspunkte:
+- `App.axaml.Initialize`: Plattform-Default setzen (Android=Medium, Desktop=High)
+- `MainViewModel.InitializeAsync`: Nach State-Load `FpsProfile.SetCurrent(state.Settings.GraphicsQuality)`
+- `SettingsViewModel.OnSelectedGraphicsQualityChanged`: `FpsProfile.SetCurrent(...)` bei Slider-Aenderung
+- `FpsProfile.CurrentChanged`-Event: `WorkerAvatarControl` abonniert den Event und aktualisiert seinen Shared-Timer sofort
+- Alle anderen Views lesen das Intervall beim naechsten `StartRenderLoop()` (Tab-Wechsel/IsVisible-Toggle) neu
+
+Selbst bei `High` wurden Werte konservativ gesenkt (Research/Workshop 30→24fps, WorkerAvatar 20→10fps). Visuell nicht unterscheidbar (24fps = Kino-Standard), durchgaengig weniger Battery.
+
+**Verifiziert: Performance-Analyse vom 24.04.2026 ergab, dass alle 10 MiniGames bereits korrekt bei `IsResultShown=true` ihren 30fps-Timer stoppen (via `OnPaintSurface`-Guard). Der Performance-Agent hatte sich geirrt — kein Fix noetig.**
+
+### Gilde-UX-Refactor — 5 Tabs statt 7er-Scroll-Liste
+
+`Views/GuildView.axaml` (950 Zeilen) hatte im `IsInGuildState`-Container:
+- Banner + Wochenziel + Contribute-Slider
+- Redundantes 2x2 Quick-Status-Grid (Krieg/Boss/Hall/Forschung — zeigte dasselbe wie Nav-Karten darunter)
+- Kontextueller Tipp permanent sichtbar
+- **9 Nav-Karten vertikal** (Krieg, Boss, Hall, Erfolge, Chat, Krieg-Detail [!], Forschung, Mitglieder, Einladen)
+- **Doppelte War-Navigation**: `NavigateToWarSeason` + `NavigateToWar` als separate Buttons
+
+Ergebnis: 3-4 Bildschirme Scroll-Strecke um alle Features zu sehen. Keine Prioritaets-Signale, gleichwertig aussehende Karten.
+
+**Neue Struktur:**
+- Banner (bleibt, kompakt)
+- **5-Tab-Leiste** (`UniformGrid Columns=5`, `Classes.Active`-Style fuer aktiven Tab mit `CraftPrimaryLightBrush`-Hintergrund)
+  - Uebersicht (Home-Icon): Wochenziel + Contribute + kontextueller Tipp (nur hier sichtbar)
+  - Kampf (Sword): War-Saison + Boss + (optional) aktueller War-Detail wenn `HasActiveWar`
+  - Forschung (FlaskOutline): Nav-Karte zu GuildResearchView
+  - Chat (ChatBubble): Nav-Karte zu GuildChatView
+  - Mitglieder (AccountGroup): Members + Hall + Erfolge + Einladen
+- "Gilde verlassen" bleibt immer sichtbar am Ende
+
+**Entfernt:**
+- 2x2 Quick-Status-Grid (redundant)
+- Doppelter War-Navigations-Button (konsolidiert auf War-Season mit optionalem Detail-Button bei aktivem Krieg)
+
+**Neu in `GuildViewModel.cs`:**
+- Enum `GuildSubTab` (Overview/Combat/Research/Chat/Members)
+- `ActiveSubTab` Observable-Property mit `[NotifyPropertyChangedFor]` fuer 5 `IsXxxTabActive`-Properties
+- `SelectSubTabCommand(string tabName)` — tab-parameter als String (XAML-freundlich)
+
+**Neue RESX-Keys (v2.0.34):** `GuildTabOverview`, `GuildTabCombat`, `GuildTabResearch`, `GuildTabChat`, `GuildTabMembers`, `GuildWarDetailTitle` — in 7 Dateien (neutral + 6 Sprachen).
+
+### Geaenderte / neue Dateien (v2.0.34)
+
+**Neu:**
+- `Graphics/FpsProfile.cs` — zentrale FPS-Tabelle mit 6 Method-Gruppen (MiniGame/ScrollView/DashboardIdle/DashboardActive/WorkerAvatar/MainView)
+
+**Erweitert:**
+- `App.axaml.cs` (Plattform-Default in `Initialize`)
+- `ViewModels/MainViewModel.Init.cs` (`FpsProfile.SetCurrent` nach State-Load)
+- `ViewModels/SettingsViewModel.cs` (`FpsProfile.SetCurrent` bei Graphics-Quality-Change)
+- `ViewModels/GuildViewModel.cs` (`GuildSubTab` enum + `ActiveSubTab` + `SelectSubTabCommand`)
+- `Views/MainView.axaml.cs` (`FpsProfile.MainView()`)
+- `Views/DashboardView.axaml.cs` (`FpsProfile.DashboardIdle()`/`DashboardActive()`)
+- `Views/WorkshopView.axaml.cs` (`FpsProfile.ScrollView()`)
+- `Views/ResearchView.axaml.cs` (`FpsProfile.ScrollView()`)
+- `Views/Guild/GuildResearchView.axaml.cs` (`FpsProfile.ScrollView()`)
+- `Controls/WorkerAvatarControl.cs` (`FpsProfile.WorkerAvatar()` + `CurrentChanged`-Event-Subscribe fuer Live-Update)
+- 10 `Views/MiniGames/*.axaml.cs` (`FpsProfile.MiniGame()` statt hartcoded `TimeSpan.FromMilliseconds(33)`)
+- `Views/GuildView.axaml` (Tab-Leiste + Content-Gruppierung + `UserControl.Styles`-Block fuer `Button.Active`)
+- 7 RESX-Dateien (6 neue Keys je Sprache)
+
+---
+
+## System-Erweiterung (24.04.2026, v2.0.33 — Analytics + Cloud-Save + Saison-Visuals)
+
+Vollstaendige Umsetzung der strategischen Optimierungs-Roadmap (6 Teilaufgaben):
+
+### P1a — Firebase Analytics + Remote Config (Fundament fuer Daten-getriebene Optimierung)
+
+**Warum:** Ohne Telemetrie ist jede Balance-Entscheidung Bauchgefuehl. Ohne Remote-Config erfordert jede Balancing-Aenderung einen Store-Release (Tage).
+
+**Umsetzung:**
+- `Services/Interfaces/IAnalyticsService.cs` + `Services/AnalyticsService.cs`: Queue-basiertes Batching (30s-Intervall, 500-Event-Cap), DSGVO-IsEnabled-Gate, Events → `analytics_events/{YYYY-MM-DD}/$pushId` (Firebase REST). Auto-Flush bei Dispose (max 2s Shutdown-Blockierung).
+- `Services/Interfaces/IRemoteConfigService.cs` + `Services/RemoteConfigService.cs`: Lokaler Preferences-Cache (offline-tolerant), JSON-Dot-Notation (z.B. `balancing.starter_offer_min_level`). Lade-Timeout 5s in Loading-Pipeline — blockiert App-Start nicht.
+- `Models/AnalyticsEvents.cs`: 38 Event-Konstanten (Session, Tutorial, Progression, Monetisierung, Gilden, Fehler).
+- `Models/AnalyticsUserProperties.cs`: 8 User-Properties (language, premium, prestige_tier, etc.).
+- `Models/RemoteConfigKeys.cs`: 12 vorbereitete Keys (Balancing-Overrides, Feature-Flags, Promo).
+
+**Instrumentierung (wichtigste Events):**
+- `PrestigeService.DoPrestige` → `prestige_done` mit {tier, points_earned, bonus_pp, tier_count_after, run_minutes, challenges_active, prestige_pass}
+- `AscensionService.PerformAscension` → `ascension_done` mit {ascension_level, ap_gained, total_ap}
+- `RebirthService.DoRebirth` → `rebirth_done` mit {workshop, star_level}
+- `AchievementService.Unlock` → `achievement_unlocked` mit {id, category, xp_reward, screw_reward}
+- `EconomyFeatureViewModel.TryPurchaseWorkshopAndNotify` → `workshop_unlocked` mit {type, player_level, total_earned}
+- `ShopViewModel.PurchaseItemAsync` → `iap_item_viewed` (beim Antippen) + `iap_purchase_started/success/failed` (im Flow)
+- `SettingsViewModel.BuyPremiumAsync` → `iap_purchase_started/success/failed`
+- `MainViewModel.CheckCloudSaveAsync` → `cloud_save_downloaded`
+
+### P1b — DSGVO-Consent-Dialog (Play-Store-Compliance)
+
+- `SettingsData.AnalyticsEnabled` + `AnalyticsConsentShown` (beide default false, Opt-In)
+- `MainViewModel.ShowAnalyticsConsentIfNeededAsync()`: Nicht-blockierender Dialog (fire-and-forget nach 1.5s Delay + 2.5s bei Dialog-Konflikt). Nutzt bestehenden `ShowConfirmDialog` — keine neue View noetig.
+- Settings-Toggle in "Datenschutz"-Card unter Cloud-Save (6 Sprachen: `AnalyticsLabel`, `AnalyticsDesc`).
+- Bei Opt-Out: Queue wird sofort geleert, Flush-Timer gestoppt. Bei Opt-In: InitializeAsync + session_start-Event.
+
+### P2 — Firebase-Cloud-Save (ersetzt nicht-funktionalen Play-Games-Stub)
+
+**Warum:** Spieler mit 50h Spielzeit verlieren bei Geraetewechsel/Reinstall ihren Stand. Retention-killer. Play Games v2 unterstuetzt keine Snapshots. Firebase war bereits fuer Gilden integriert.
+
+**Umsetzung:**
+- `Services/Interfaces/ICloudSaveService.cs` + `Services/CloudSaveService.cs`: REST via bestehenden FirebaseService. Struktur `cloud_saves/{playerId}/{metadata|data}`.
+- `Models/CloudSaveMetadata.cs`: Header-only (Level, Money, GoldenScrews, PrestigePoints, AscensionLevel, SavedAtIso, StateVersion, AppVersion) — vermeidet unnoetigen Traffic bei Konflikt-Check.
+- HMAC-Neusignierung beim Download: Der IntegrityService-Key ist geraetegebunden — CloudSaveService signiert den State fuer das aktuelle Geraet neu. Cloud-Save schuetzt gegen Geraeteverlust, nicht gegen Save-Editing (das bleibt lokal via HMAC wirksam).
+- `SaveGameService`: Auto-Cloud-Upload beim lokalen Save, Rate-Limit 2min (Firebase-Kosten-Kontrolle).
+- `MainViewModel.CheckCloudSaveAsync`: Lokaler Stand gegen Cloud-Metadaten (Toleranz 5s Clock-Skew). Bei neuerem Cloud-Stand → Konflikt-Dialog mit Level+Money beider Staende.
+- `database.rules.json`: `cloud_saves/{playerId}` — read+write nur fuer eigenen playerId via auth_to_player-Mapping, Metadaten mit Schema-Validation (Level max 10000, State-Blob max 1 MB).
+
+### P3 — DashboardView-Refactor (Hit-Tester-Extraktion)
+
+- `Helpers/WorkshopCardHitTester.cs` (statische Klasse): Koordinaten-Konvertierung (Avalonia → Skia), Grid-Berechnung (2 Spalten, dynamische Zeilen), Upgrade-Button-Hit-Test. Plus statische Check-Helfer: `IsScrollDistance`, `HasScrollViewerMoved`, `IsTapDuration`. Konstanten zentralisiert (TapDistanceThreshold, TapMaxDurationMs, ScrollOffsetThreshold).
+- `DashboardView.axaml.cs` wird schlanker (~60 Zeilen Logik in die statische Hilfsklasse verschoben). State-Machine (_workshopPressedTarget etc.) bleibt in der View — sie ist eng an Avalonia-PointerEventArgs gebunden.
+
+### P4 — Saison-Events visuell differenzieren (Game Juice)
+
+**Warum:** 4 Saisons/Jahr hatten gleiche Optik (nur Monat-basiertes Wetter). Aktives SeasonalEvent war visuell unsichtbar.
+
+**Umsetzung in `CityWeatherSystem.cs`:**
+- Neuer WeatherType `Blossoms` (Kirschblueten — 4-Farben-Palette in `s_blossomColors`, rosa-weisse Palette, rotierte Ovals mit heller Randlinie fuer 3D-Look).
+- `Refresh(SeasonalEvent? activeEvent)` ersetzt `SetWeatherByMonth`: Bei aktivem Event wird Wetter aus `activeEvent.Season` abgeleitet (Spring → Blossoms, Summer → Sunshine, Autumn → Leaves, Winter → Snow) + `IntensityMultiplier = 2.0f` (doppelte Partikel-Dichte). Ohne Event fallback auf Monat-Wetter.
+- `MaxParticles` von 80 auf 160 erhoeht (fuer Intensified-Modus).
+- `CityRenderer.Render`: 5s-Refresh-Timer der `weather.Refresh(state.CurrentSeasonalEvent)` periodisch aufruft (Event-Start/-Ende + Mitternachts-Monatswechsel setzen sich durch).
+
+### P5 — AAB-Groesse (Analyse)
+
+**Ergebnis:** Assets sind nur 3.4 MB (Icons 1.9 MB, Rest City/Worker/Splash/Minigames). Die 65 MB AAB-Groesse kommt zu >90% aus .NET-Runtime + SkiaSharp native + Android-Bindings (Xamarin-Libraries).
+
+**Blockiert:** Die wirkungsvollen Hebel (Trimming, R8/Proguard, Profiled-AOT) sind durch bekannte Crash-Bugs deaktiviert (siehe Haupt-CLAUDE.md Troubleshooting: "Release-Build crasht / OOM beim Start").
+
+**Realitaet:** Play-Store-User-Download durch ABI-Split-AAB nur ~25-30 MB (nicht 65 MB — das ist die Bundle-Groesse fuer alle Architekturen kombiniert).
+
+**Empfehlung:** Bei naechstem .NET-Upgrade erneut pruefen ob AOT+Trimming stabil ist. Kein Risiko-Eingriff ohne Stabilitaets-Garantie.
+
+### Geaenderte / neue Dateien (v2.0.33)
+
+**Neu:**
+- `Services/Interfaces/IAnalyticsService.cs`
+- `Services/Interfaces/IRemoteConfigService.cs`
+- `Services/Interfaces/ICloudSaveService.cs`
+- `Services/AnalyticsService.cs`
+- `Services/RemoteConfigService.cs`
+- `Services/CloudSaveService.cs`
+- `Models/AnalyticsEvents.cs`
+- `Models/RemoteConfigKeys.cs`
+- `Models/CloudSaveMetadata.cs`
+- `Helpers/WorkshopCardHitTester.cs`
+
+**Erweitert:**
+- `App.axaml.cs` (DI-Registrierung fuer 3 neue Services)
+- `Models/SettingsData.cs` (AnalyticsEnabled + AnalyticsConsentShown)
+- `Services/SaveGameService.cs` (Cloud-Save via ICloudSaveService statt IPlayGamesService)
+- `ViewModels/MainViewModel.cs` (Ctor + Felder)
+- `ViewModels/MainViewModel.Init.cs` (CheckCloudSaveAsync auf Firebase + ShowAnalyticsConsentIfNeededAsync)
+- `ViewModels/MainViewModel.Economy.cs` (Analytics an EconomyVM weiterreichen)
+- `ViewModels/EconomyFeatureViewModel.cs` (Workshop-Unlock-Tracking)
+- `ViewModels/SettingsViewModel.cs` (AnalyticsEnabled + CanUseCloudSave + IAP-Events)
+- `ViewModels/ShopViewModel.cs` (IAP-Funnel-Events)
+- `Services/PrestigeService.cs` / `AscensionService.cs` / `RebirthService.cs` / `AchievementService.cs` (optionaler IAnalyticsService-Parameter + TrackEvent)
+- `Views/SettingsView.axaml` (Datenschutz-Card + CanUseCloudSave-Binding)
+- `Graphics/CityWeatherSystem.cs` (WeatherType.Blossoms + Refresh + IntensityMultiplier)
+- `Graphics/CityRenderer.cs` (5s-Refresh-Timer fuer Event-Wetter)
+- `Loading/HandwerkerImperiumLoadingPipeline.cs` (RemoteConfig-Step)
+- `Views/DashboardView.axaml.cs` (Hit-Testing an Helper delegiert)
+- `database.rules.json` (cloud_saves + remote_config + analytics_events Pfade)
+- 7 RESX-Dateien (Privacy, Analytics*, CloudSave*, SplashStep_Config — 10 Keys je 6 Sprachen + neutral)
+
+### Firebase-Rules-Deployment noetig
+
+Vor dem Release muss `database.rules.json` deployt werden:
+```
+npx firebase-tools deploy --only database --project handwerkerimperium-487917
+```
 
 ## Review-Fixes (20.04.2026, Multi-Agent-Review + Bug-Session)
 

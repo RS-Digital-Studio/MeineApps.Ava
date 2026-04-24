@@ -244,7 +244,7 @@ public partial class ResearchView : UserControl
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
+        _renderTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.ScrollView() }; // 15/20/24fps je nach Quality
         _renderTimer.Tick += OnRenderTick;
         _renderTimer.Start();
     }

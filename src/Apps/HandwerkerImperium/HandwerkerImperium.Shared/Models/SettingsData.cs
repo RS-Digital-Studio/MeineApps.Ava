@@ -32,4 +32,18 @@ public sealed class SettingsData
 
     [JsonPropertyName("language")]
     public string Language { get; set; } = "";
+
+    /// <summary>
+    /// DSGVO-Consent fuer Analytics-Events. Default false (Opt-In).
+    /// Wird beim allerersten Start durch den Consent-Dialog gesetzt.
+    /// </summary>
+    [JsonPropertyName("analyticsEnabled")]
+    public bool AnalyticsEnabled { get; set; }
+
+    /// <summary>
+    /// Ob der DSGVO-Consent-Dialog bereits einmal angezeigt wurde.
+    /// Verhindert dass der Dialog bei jedem Start aufploppt.
+    /// </summary>
+    [JsonPropertyName("analyticsConsentShown")]
+    public bool AnalyticsConsentShown { get; set; }
 }

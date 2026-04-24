@@ -18,16 +18,20 @@ public sealed class AchievementService : IAchievementService, IDisposable
 
     public event EventHandler<Achievement>? AchievementUnlocked;
 
+    private readonly IAnalyticsService? _analyticsService;
+
     public AchievementService(
         IGameStateService gameStateService,
         IPrestigeService prestigeService,
         IAscensionService ascensionService,
-        IRebirthService rebirthService)
+        IRebirthService rebirthService,
+        IAnalyticsService? analyticsService = null)
     {
         _gameStateService = gameStateService;
         _prestigeService = prestigeService;
         _ascensionService = ascensionService;
         _rebirthService = rebirthService;
+        _analyticsService = analyticsService;
         _achievements = Achievements.GetAll();
 
         // Load unlocked status from game state
@@ -392,6 +396,15 @@ public sealed class AchievementService : IAchievementService, IDisposable
 
         // Notify listeners
         AchievementUnlocked?.Invoke(this, achievement);
+
+        // Telemetrie: Achievement-Unlocks sind starke Retention-Indikatoren
+        _analyticsService?.TrackEvent(AnalyticsEvents.AchievementUnlocked, new Dictionary<string, object?>
+        {
+            ["id"] = achievement.Id,
+            ["category"] = achievement.Category.ToString(),
+            ["xp_reward"] = achievement.XpReward,
+            ["screw_reward"] = achievement.GoldenScrewReward
+        });
     }
 
     // Event handlers for automatic tracking

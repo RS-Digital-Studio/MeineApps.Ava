@@ -116,7 +116,7 @@ public partial class InventGameView : UserControl
     {
         // NUR Timer stoppen, NICHT StopRenderLoop() aufrufen (das nullt _gameCanvas)
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
+        _renderTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.MiniGame() }; // 24/30fps je nach Quality
         _renderTimer.Tick += (_, _) =>
         {
             _gameCanvas?.InvalidateSurface();

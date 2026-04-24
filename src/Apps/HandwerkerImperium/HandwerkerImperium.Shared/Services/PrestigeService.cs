@@ -14,6 +14,8 @@ public sealed partial class PrestigeService : IPrestigeService
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
     private readonly IAscensionService _ascensionService;
+    // Telemetrie: optional, damit das Spiel auch ohne Firebase-Verbindung funktioniert.
+    private readonly IAnalyticsService? _analyticsService;
 
     // Gecachte Prestige-Shop-Effekte (invalidiert bei Shop-Kauf und State-Load)
     private bool _effectCacheDirty = true;
@@ -26,11 +28,13 @@ public sealed partial class PrestigeService : IPrestigeService
     public PrestigeService(
         IGameStateService gameStateService,
         ISaveGameService saveGameService,
-        IAscensionService ascensionService)
+        IAscensionService ascensionService,
+        IAnalyticsService? analyticsService = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
         _ascensionService = ascensionService;
+        _analyticsService = analyticsService;
 
         // Bei State-Wechsel (Load/Import/Reset/Prestige) Cache invalidieren
         _gameStateService.StateLoaded += (_, _) => _effectCacheDirty = true;
@@ -194,6 +198,30 @@ public sealed partial class PrestigeService : IPrestigeService
         await _saveGameService.SaveAsync();
 
         PrestigeCompleted?.Invoke(this, EventArgs.Empty);
+
+        // Telemetrie: Prestige ist einer der wichtigsten Retention-Events.
+        // Enthaelt Dauer + Tier + aktive Challenges fuer Balance-Analyse.
+        _analyticsService?.TrackEvent(AnalyticsEvents.PrestigeDone, new Dictionary<string, object?>
+        {
+            ["tier"] = tier.ToString(),
+            ["points_earned"] = tierPoints,
+            ["bonus_pp"] = bonusPp,
+            ["total_pp"] = prestige.TotalPrestigePoints,
+            ["tier_count_after"] = tier switch
+            {
+                PrestigeTier.Bronze => prestige.BronzeCount,
+                PrestigeTier.Silver => prestige.SilverCount,
+                PrestigeTier.Gold => prestige.GoldCount,
+                PrestigeTier.Platin => prestige.PlatinCount,
+                PrestigeTier.Diamant => prestige.DiamantCount,
+                PrestigeTier.Meister => prestige.MeisterCount,
+                PrestigeTier.Legende => prestige.LegendeCount,
+                _ => 0
+            },
+            ["run_minutes"] = (int)runDuration.TotalMinutes,
+            ["challenges_active"] = prestige.ActiveChallenges.Count,
+            ["prestige_pass"] = state.IsPrestigePassActive
+        });
 
         // Meilensteine NACH dem Event prüfen (damit UI den Prestige-Erfolg zuerst zeigt)
         CheckAndAwardMilestones();

@@ -8,6 +8,21 @@
              x:DataType="vm:GuildViewModel"
              x:CompileBindings="True">
 
+  <UserControl.Styles>
+    <!-- Tab-Bar aktiver Tab: Hintergrund + Primary-Accent (v2.0.34 Gilde-UX-Refactor) -->
+    <Style Selector="Button.Active">
+      <Setter Property="Background" Value="{StaticResource CraftPrimaryLightBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+    </Style>
+    <Style Selector="Button.Active icons|GameIcon">
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+    </Style>
+    <Style Selector="Button.Active TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="Guild_Grid_Root">
 
@@ -529,8 +544,91 @@
             </StackPanel>
           </Border>
 
-          <!-- Wochen-Ziel Fortschritt -->
+          <!-- ═══════════════════════════════════════════════════ -->
+          <!-- TAB-LEISTE (v2.0.34: 5 Tabs statt 7er Scroll-Liste) -->
+          <!-- ═══════════════════════════════════════════════════ -->
+          <Border Classes="Card" Padding="4" Margin="0,4,0,4"
+                  AutomationProperties.AutomationId="Guild_Border_TabBar">
+            <UniformGrid Columns="5" HorizontalAlignment="Stretch">
+              <!-- Tab: Übersicht -->
+              <Button Classes="Text" Padding="4,8" CornerRadius="8" MinHeight="56"
+                      HorizontalAlignment="Stretch" BorderThickness="0"
+                      Command="{Binding SelectSubTabCommand}" CommandParameter="Overview"
+                      Classes.Active="{Binding IsOverviewTabActive}"
+                      AutomationProperties.AutomationId="Guild_Btn_TabOverview">
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <icons:GameIcon Kind="Home" Width="22" Height="22"
+                                   HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate GuildTabOverview}"
+                             FontSize="9" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- Tab: Kampf (War + Boss zusammengefasst) -->
+              <Button Classes="Text" Padding="4,8" CornerRadius="8" MinHeight="56"
+                      HorizontalAlignment="Stretch" BorderThickness="0"
+                      Command="{Binding SelectSubTabCommand}" CommandParameter="Combat"
+                      Classes.Active="{Binding IsCombatTabActive}"
+                      AutomationProperties.AutomationId="Guild_Btn_TabCombat">
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <icons:GameIcon Kind="Sword" Width="22" Height="22"
+                                   HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate GuildTabCombat}"
+                             FontSize="9" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- Tab: Forschung -->
+              <Button Classes="Text" Padding="4,8" CornerRadius="8" MinHeight="56"
+                      HorizontalAlignment="Stretch" BorderThickness="0"
+                      Command="{Binding SelectSubTabCommand}" CommandParameter="Research"
+                      Classes.Active="{Binding IsResearchTabActive}"
+                      AutomationProperties.AutomationId="Guild_Btn_TabResearch">
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <icons:GameIcon Kind="FlaskOutline" Width="22" Height="22"
+                                   HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate GuildTabResearch}"
+                             FontSize="9" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- Tab: Chat -->
+              <Button Classes="Text" Padding="4,8" CornerRadius="8" MinHeight="56"
+                      HorizontalAlignment="Stretch" BorderThickness="0"
+                      Command="{Binding SelectSubTabCommand}" CommandParameter="Chat"
+                      Classes.Active="{Binding IsChatTabActive}"
+                      AutomationProperties.AutomationId="Guild_Btn_TabChat">
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <icons:GameIcon Kind="ChatBubble" Width="22" Height="22"
+                                   HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate GuildTabChat}"
+                             FontSize="9" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <!-- Tab: Mitglieder (inkl. Hauptquartier + Erfolge + Einladen) -->
+              <Button Classes="Text" Padding="4,8" CornerRadius="8" MinHeight="56"
+                      HorizontalAlignment="Stretch" BorderThickness="0"
+                      Command="{Binding SelectSubTabCommand}" CommandParameter="Members"
+                      Classes.Active="{Binding IsMembersTabActive}"
+                      AutomationProperties.AutomationId="Guild_Btn_TabMembers">
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <icons:GameIcon Kind="AccountGroup" Width="22" Height="22"
+                                   HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate GuildTabMembers}"
+                             FontSize="9" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </UniformGrid>
+          </Border>
+
+          <!-- ═══════════════════════════════════════════════════ -->
+          <!-- TAB: Übersicht (Wochen-Ziel + Tipp + Leave)         -->
+          <!-- ═══════════════════════════════════════════════════ -->
+
+          <!-- Wochen-Ziel Fortschritt (nur im Overview-Tab) -->
           <Border Classes="Card StatsCard"
+                  IsVisible="{Binding IsOverviewTabActive}"
                   AutomationProperties.AutomationId="Guild_Border_WeeklyGoal">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
@@ -579,63 +677,14 @@
             </StackPanel>
           </Border>
 
-          <!-- ═══════════════════════════════════════════════════ -->
-          <!-- Quick-Status Übersicht                              -->
-          <!-- ═══════════════════════════════════════════════════ -->
-          <UniformGrid Columns="2" Margin="0,0,0,4">
-            <!-- Krieg -->
-            <Border Classes="Card" Padding="8" Margin="0,0,4,8">
-              <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <icons:GameIcon Kind="Sword" Width="20" Height="20"
-                                 Foreground="{DynamicResource ErrorBrush}"
-                                 HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding WarQuickStatus}"
-                           FontSize="10" TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           HorizontalAlignment="Center" />
-              </StackPanel>
-            </Border>
-            <!-- Boss -->
-            <Border Classes="Card" Padding="8" Margin="4,0,0,8">
-              <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <icons:GameIcon Kind="Skull" Width="20" Height="20"
-                                 Foreground="{StaticResource CraftBossAccentBrush}"
-                                 HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding BossQuickStatus}"
-                           FontSize="10" TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           HorizontalAlignment="Center" />
-              </StackPanel>
-            </Border>
-            <!-- Hauptquartier -->
-            <Border Classes="Card" Padding="8" Margin="0,0,4,0">
-              <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <icons:GameIcon Kind="OfficeBuildingCog" Width="20" Height="20"
-                                 Foreground="{StaticResource CraftPrimaryBrush}"
-                                 HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding HallQuickStatus}"
-                           FontSize="10" TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           HorizontalAlignment="Center" />
-              </StackPanel>
-            </Border>
-            <!-- Forschung -->
-            <Border Classes="Card" Padding="8" Margin="4,0,0,0">
-              <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <icons:GameIcon Kind="FlaskOutline" Width="20" Height="20"
-                                 Foreground="{StaticResource CraftResearchAccentBrush}"
-                                 HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding ResearchQuickStatus}"
-                           FontSize="10" TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           HorizontalAlignment="Center" />
-              </StackPanel>
-            </Border>
-          </UniformGrid>
-
-          <!-- Kontextueller Tipp -->
-          <Border Classes="Card" Padding="12" Margin="0,0,0,4"
-                  IsVisible="{Binding HasActiveTip}">
+          <!-- Kontextueller Tipp (nur im Overview-Tab UND wenn Tipp aktiv) -->
+          <Border Classes="Card" Padding="12" Margin="0,0,0,4">
+            <Border.IsVisible>
+              <MultiBinding Converter="{x:Static BoolConverters.And}">
+                <Binding Path="IsOverviewTabActive" />
+                <Binding Path="HasActiveTip" />
+              </MultiBinding>
+            </Border.IsVisible>
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
               <icons:GameIcon Kind="LightbulbOnOutline" Width="24" Height="24"
                                Foreground="{StaticResource CraftGoldBrush}" />
@@ -653,192 +702,109 @@
           </Border>
 
           <!-- ═══════════════════════════════════════════════════ -->
-          <!-- Navigations-Karten (Sub-Seiten)                    -->
+          <!-- TAB: KAMPF (Krieg + Boss)                           -->
           <!-- ═══════════════════════════════════════════════════ -->
+          <StackPanel Spacing="12" IsVisible="{Binding IsCombatTabActive}">
 
-          <!-- Gilden-Krieg -->
+            <!-- Gilden-Krieg (Saison-Einstieg) -->
+            <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding NavigateToWarSeasonCommand}">
+              <Border Classes="Card StatsCard" MinHeight="56">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="40" Height="40" CornerRadius="10"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="#DC2626" Opacity="0.15" />
+                    </Border.Background>
+                    <icons:GameIcon Kind="Sword" Width="26" Height="26"
+                                     Foreground="{DynamicResource ErrorBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{loc:Translate GuildWarTitle}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding WarQuickStatus}"
+                               FontSize="11" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Button>
+
+            <!-- Gilden-Boss -->
+            <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding NavigateToBossCommand}">
+              <Border Classes="Card StatsCard" MinHeight="56">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="40" Height="40" CornerRadius="10"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="#7C3AED" Opacity="0.15" />
+                    </Border.Background>
+                    <icons:GameIcon Kind="Skull" Width="26" Height="26"
+                                     Foreground="{StaticResource CraftBossAccentBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{loc:Translate GuildBossTitle}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding BossQuickStatus}"
+                               FontSize="11" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Button>
+
+            <!-- Aktueller Krieg-Detail (nur wenn im War — ersetzt die fruehere doppelte Nav-Karte) -->
+            <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding NavigateToWarCommand}"
+                    IsVisible="{Binding HasActiveWar}">
+              <Border Classes="Card StatsCard" MinHeight="56">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="40" Height="40" CornerRadius="10"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="#7F1D1D" Opacity="0.15" />
+                    </Border.Background>
+                    <icons:GameIcon Kind="SwordCross" Width="26" Height="26"
+                                     Foreground="{DynamicResource ErrorBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{loc:Translate GuildWarDetailTitle}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding WarSubtitle}"
+                               FontSize="11" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Button>
+
+          </StackPanel>
+
+          <!-- ═══════════════════════════════════════════════════ -->
+          <!-- TAB: FORSCHUNG                                      -->
+          <!-- ═══════════════════════════════════════════════════ -->
           <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToWarSeasonCommand}">
-            <Border Classes="Card StatsCard" MinHeight="56">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                <Border Width="40" Height="40" CornerRadius="10"
-                        VerticalAlignment="Center">
-                  <Border.Background>
-                    <SolidColorBrush Color="#DC2626" Opacity="0.15" />
-                  </Border.Background>
-                  <icons:GameIcon Kind="Sword" Width="26" Height="26"
-                                   Foreground="{DynamicResource ErrorBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                  <TextBlock Text="{loc:Translate GuildWarTitle}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Text="{Binding WarQuickStatus}"
-                             FontSize="11" TextTrimming="CharacterEllipsis"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                </StackPanel>
-                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
-              </Grid>
-            </Border>
-          </Button>
-
-          <!-- Gilden-Boss -->
-          <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToBossCommand}">
-            <Border Classes="Card StatsCard" MinHeight="56">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                <Border Width="40" Height="40" CornerRadius="10"
-                        VerticalAlignment="Center">
-                  <Border.Background>
-                    <SolidColorBrush Color="#7C3AED" Opacity="0.15" />
-                  </Border.Background>
-                  <icons:GameIcon Kind="Skull" Width="26" Height="26"
-                                   Foreground="{StaticResource CraftBossAccentBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                  <TextBlock Text="{loc:Translate GuildBossTitle}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Text="{Binding BossQuickStatus}"
-                             FontSize="11" TextTrimming="CharacterEllipsis"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                </StackPanel>
-                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
-              </Grid>
-            </Border>
-          </Button>
-
-          <!-- Hauptquartier -->
-          <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToHallCommand}">
-            <Border Classes="Card StatsCard" MinHeight="56">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                <Border Width="40" Height="40" CornerRadius="10"
-                        VerticalAlignment="Center">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource PrimaryColor}" Opacity="0.15" />
-                  </Border.Background>
-                  <icons:GameIcon Kind="OfficeBuildingCog" Width="26" Height="26"
-                                   Foreground="{StaticResource CraftPrimaryBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                  <TextBlock Text="{loc:Translate GuildHallTitle}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Text="{Binding HallQuickStatus}"
-                             FontSize="11" TextTrimming="CharacterEllipsis"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                </StackPanel>
-                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
-              </Grid>
-            </Border>
-          </Button>
-
-          <!-- Gilden-Erfolge -->
-          <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToAchievementsCommand}">
-            <Border Classes="Card StatsCard" MinHeight="56">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                <Border Width="40" Height="40" CornerRadius="10"
-                        VerticalAlignment="Center">
-                  <Border.Background>
-                    <SolidColorBrush Color="{StaticResource CraftGoldColor}" Opacity="0.15" />
-                  </Border.Background>
-                  <icons:GameIcon Kind="TrophyOutline" Width="26" Height="26"
-                                   Foreground="{StaticResource CraftGoldBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                  <TextBlock Text="{loc:Translate GuildAchievementsTitle}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Text="{loc:Translate GuildAchievementsSubtitle}"
-                             FontSize="11" TextTrimming="CharacterEllipsis"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                </StackPanel>
-                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
-              </Grid>
-            </Border>
-          </Button>
-
-          <!-- Gilden-Chat -->
-          <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToChatCommand}">
-            <Border Classes="Card StatsCard" MinHeight="56">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                <Border Width="40" Height="40" CornerRadius="10"
-                        VerticalAlignment="Center">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource SecondaryColor}" Opacity="0.15" />
-                  </Border.Background>
-                  <icons:GameIcon Kind="ChatBubble" Width="26" Height="26"
-                                   Foreground="{StaticResource CraftChatAccentBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                  <TextBlock Text="{loc:Translate GuildChatTitle}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Text="{Binding ChatSubtitle}"
-                             FontSize="11" TextTrimming="CharacterEllipsis"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                </StackPanel>
-                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
-              </Grid>
-            </Border>
-          </Button>
-
-          <!-- Gildenkrieg-Detail -->
-          <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToWarCommand}">
-            <Border Classes="Card StatsCard" MinHeight="56">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                <Border Width="40" Height="40" CornerRadius="10"
-                        VerticalAlignment="Center">
-                  <Border.Background>
-                    <SolidColorBrush Color="#7F1D1D" Opacity="0.15" />
-                  </Border.Background>
-                  <icons:GameIcon Kind="SwordCross" Width="26" Height="26"
-                                   Foreground="{DynamicResource ErrorBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                  <TextBlock Text="{loc:Translate GuildWarTitle}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Text="{Binding WarSubtitle}"
-                             FontSize="11" TextTrimming="CharacterEllipsis"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                </StackPanel>
-                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
-              </Grid>
-            </Border>
-          </Button>
-
-          <!-- Forschung -->
-          <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                  IsVisible="{Binding IsResearchTabActive}"
                   Command="{Binding NavigateToResearchCommand}">
             <Border Classes="Card StatsCard" MinHeight="56">
               <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
@@ -866,26 +832,29 @@
             </Border>
           </Button>
 
-          <!-- Mitglieder -->
+          <!-- ═══════════════════════════════════════════════════ -->
+          <!-- TAB: CHAT                                           -->
+          <!-- ═══════════════════════════════════════════════════ -->
           <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToMembersCommand}">
+                  IsVisible="{Binding IsChatTabActive}"
+                  Command="{Binding NavigateToChatCommand}">
             <Border Classes="Card StatsCard" MinHeight="56">
               <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                 <Border Width="40" Height="40" CornerRadius="10"
                         VerticalAlignment="Center">
                   <Border.Background>
-                    <SolidColorBrush Color="{StaticResource CraftPrimaryLightColor}" Opacity="0.15" />
+                    <SolidColorBrush Color="{DynamicResource SecondaryColor}" Opacity="0.15" />
                   </Border.Background>
-                  <icons:GameIcon Kind="AccountGroup" Width="26" Height="26"
-                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                  <icons:GameIcon Kind="ChatBubble" Width="26" Height="26"
+                                   Foreground="{StaticResource CraftChatAccentBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                  <TextBlock Text="{Binding MembersHeaderDisplay}"
+                  <TextBlock Text="{loc:Translate GuildChatTitle}"
                              FontSize="14" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Text="{Binding MaxMembersDisplay}"
+                  <TextBlock Text="{Binding ChatSubtitle}"
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
@@ -896,37 +865,134 @@
             </Border>
           </Button>
 
-          <!-- Einladen -->
-          <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToInviteCommand}">
-            <Border Classes="Card StatsCard" MinHeight="56">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                <Border Width="40" Height="40" CornerRadius="10"
-                        VerticalAlignment="Center">
-                  <Border.Background>
-                    <SolidColorBrush Color="{StaticResource CraftGoldColor}" Opacity="0.15" />
-                  </Border.Background>
-                  <icons:GameIcon Kind="EmailPlusOutline" Width="26" Height="26"
-                                   Foreground="{StaticResource CraftGoldBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                  <TextBlock Text="{loc:Translate GuildInviteTitle}"
-                             FontSize="14" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Text="{loc:Translate InviteCode}"
-                             FontSize="11" TextTrimming="CharacterEllipsis"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                </StackPanel>
-                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
-              </Grid>
-            </Border>
-          </Button>
+          <!-- ═══════════════════════════════════════════════════ -->
+          <!-- TAB: MITGLIEDER (inkl. Hall + Erfolge + Einladen)   -->
+          <!-- ═══════════════════════════════════════════════════ -->
+          <StackPanel Spacing="12" IsVisible="{Binding IsMembersTabActive}">
 
-          <!-- Gilde verlassen -->
+            <!-- Mitglieder -->
+            <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding NavigateToMembersCommand}">
+              <Border Classes="Card StatsCard" MinHeight="56">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="40" Height="40" CornerRadius="10"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="{StaticResource CraftPrimaryLightColor}" Opacity="0.15" />
+                    </Border.Background>
+                    <icons:GameIcon Kind="AccountGroup" Width="26" Height="26"
+                                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding MembersHeaderDisplay}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding MaxMembersDisplay}"
+                               FontSize="11" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Button>
+
+            <!-- Hauptquartier -->
+            <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding NavigateToHallCommand}">
+              <Border Classes="Card StatsCard" MinHeight="56">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="40" Height="40" CornerRadius="10"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="{DynamicResource PrimaryColor}" Opacity="0.15" />
+                    </Border.Background>
+                    <icons:GameIcon Kind="OfficeBuildingCog" Width="26" Height="26"
+                                     Foreground="{StaticResource CraftPrimaryBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{loc:Translate GuildHallTitle}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding HallQuickStatus}"
+                               FontSize="11" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Button>
+
+            <!-- Gilden-Erfolge -->
+            <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding NavigateToAchievementsCommand}">
+              <Border Classes="Card StatsCard" MinHeight="56">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="40" Height="40" CornerRadius="10"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="{StaticResource CraftGoldColor}" Opacity="0.15" />
+                    </Border.Background>
+                    <icons:GameIcon Kind="TrophyOutline" Width="26" Height="26"
+                                     Foreground="{StaticResource CraftGoldBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{loc:Translate GuildAchievementsTitle}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{loc:Translate GuildAchievementsSubtitle}"
+                               FontSize="11" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Button>
+
+            <!-- Einladen -->
+            <Button Classes="Text" Padding="0" BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding NavigateToInviteCommand}">
+              <Border Classes="Card StatsCard" MinHeight="56">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="40" Height="40" CornerRadius="10"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="{StaticResource CraftGoldColor}" Opacity="0.15" />
+                    </Border.Background>
+                    <icons:GameIcon Kind="EmailPlusOutline" Width="26" Height="26"
+                                     Foreground="{StaticResource CraftGoldBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{loc:Translate GuildInviteTitle}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{loc:Translate InviteCode}"
+                               FontSize="11" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                  <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="24" Height="24"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Button>
+
+          </StackPanel>
+
+          <!-- Gilde verlassen (immer sichtbar im InGuild-State) -->
           <Button Classes="Secondary"
                   AutomationProperties.AutomationId="Guild_Btn_Leave"
                   HorizontalAlignment="Center"

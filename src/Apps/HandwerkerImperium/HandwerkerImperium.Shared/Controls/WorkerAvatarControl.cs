@@ -226,9 +226,19 @@ public class WorkerAvatarControl : Control
     private static void EnsureSharedTimerRunning()
     {
         if (s_sharedTimer != null) return;
-        s_sharedTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        // 5/8/10fps je nach Grafikqualitaet (WorkerAvatar-Animation ist Atem+Blinzel — langsam)
+        s_sharedTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.WorkerAvatar() };
         s_sharedTimer.Tick += OnSharedTimerTick;
         s_sharedTimer.Start();
+
+        // Bei Quality-Wechsel: Neuer Timer mit neuem Intervall — alter wird entsorgt
+        Graphics.FpsProfile.CurrentChanged += OnQualityChanged;
+    }
+
+    private static void OnQualityChanged(Models.Enums.GraphicsQuality _)
+    {
+        if (s_sharedTimer == null) return;
+        s_sharedTimer.Interval = Graphics.FpsProfile.WorkerAvatar();
     }
 
     private static void OnSharedTimerTick(object? sender, EventArgs e)

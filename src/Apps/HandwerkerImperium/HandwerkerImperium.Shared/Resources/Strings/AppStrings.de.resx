@@ -6402,4 +6402,42 @@
   <data name="NextAscensionFormat" xml:space="preserve">
     <value>N&#228;chster Aufstieg: +{0} AP</value>
   </data>
+  <!-- Analytics / Privacy / Cloud-Save (v2.0.33) -->
+  <data name="Privacy" xml:space="preserve">
+    <value>Datenschutz</value>
+  </data>
+  <data name="AnalyticsLabel" xml:space="preserve">
+    <value>Anonyme Telemetrie</value>
+  </data>
+  <data name="AnalyticsDesc" xml:space="preserve">
+    <value>Anonyme Nutzungsstatistiken helfen uns, das Spiel zu verbessern. Keine pers&#246;nlichen Daten.</value>
+  </data>
+  <data name="AnalyticsConsentTitle" xml:space="preserve">
+    <value>Hilfst du uns mit?</value>
+  </data>
+  <data name="AnalyticsConsentMessage" xml:space="preserve">
+    <value>Anonyme Nutzungsdaten helfen uns, das Spiel zu verbessern. Keine pers&#246;nlichen Daten, kein Tracking durch Dritte. Du kannst das jederzeit in den Einstellungen &#228;ndern.</value>
+  </data>
+  <data name="AnalyticsConsentAccept" xml:space="preserve">
+    <value>Ja, helfen</value>
+  </data>
+  <data name="AnalyticsConsentDecline" xml:space="preserve">
+    <value>Nein, danke</value>
+  </data>
+  <data name="CloudSaveLocalSummary" xml:space="preserve">
+    <value>Lokal: Level {0} ({1})</value>
+  </data>
+  <data name="CloudSaveCloudSummary" xml:space="preserve">
+    <value>Cloud: Level {0} ({1})</value>
+  </data>
+  <data name="SplashStep_Config" xml:space="preserve">
+    <value>Konfiguration laden...</value>
+  </data>
+  <!-- Gilde Tab-Navigation (v2.0.34) -->
+  <data name="GuildTabOverview" xml:space="preserve"><value>&#220;bersicht</value></data>
+  <data name="GuildTabCombat" xml:space="preserve"><value>Kampf</value></data>
+  <data name="GuildTabResearch" xml:space="preserve"><value>Forschung</value></data>
+  <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
+  <data name="GuildTabMembers" xml:space="preserve"><value>Mitglieder</value></data>
+  <data name="GuildWarDetailTitle" xml:space="preserve"><value>Aktueller Krieg</value></data>
 </root>

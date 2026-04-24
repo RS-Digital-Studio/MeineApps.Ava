@@ -6174,4 +6174,22 @@
   <data name="AvailablePointsFormat" xml:space="preserve"><value>{0} PA disponibles</value></data>
   <data name="TotalPointsFormat" xml:space="preserve"><value>Total: {0}</value></data>
   <data name="NextAscensionFormat" xml:space="preserve"><value>Pr&#243;ximo ascenso: +{0} PA</value></data>
+  <!-- Analytics / Privacy / Cloud-Save (v2.0.33) -->
+  <data name="Privacy" xml:space="preserve"><value>Privacidad</value></data>
+  <data name="AnalyticsLabel" xml:space="preserve"><value>Telemetr&#237;a an&#243;nima</value></data>
+  <data name="AnalyticsDesc" xml:space="preserve"><value>Las estad&#237;sticas an&#243;nimas nos ayudan a mejorar el juego. Sin datos personales.</value></data>
+  <data name="AnalyticsConsentTitle" xml:space="preserve"><value>&#191;Nos ayudas a mejorar?</value></data>
+  <data name="AnalyticsConsentMessage" xml:space="preserve"><value>Los datos de uso an&#243;nimos nos ayudan a mejorar el juego. Sin datos personales, sin seguimiento de terceros. Puedes cambiar esto en cualquier momento en los ajustes.</value></data>
+  <data name="AnalyticsConsentAccept" xml:space="preserve"><value>S&#237;, ayudar</value></data>
+  <data name="AnalyticsConsentDecline" xml:space="preserve"><value>No, gracias</value></data>
+  <data name="CloudSaveLocalSummary" xml:space="preserve"><value>Local: Nivel {0} ({1})</value></data>
+  <data name="CloudSaveCloudSummary" xml:space="preserve"><value>Nube: Nivel {0} ({1})</value></data>
+  <data name="SplashStep_Config" xml:space="preserve"><value>Cargando configuraci&#243;n...</value></data>
+  <!-- Gilde Tab-Navigation (v2.0.34) -->
+  <data name="GuildTabOverview" xml:space="preserve"><value>Resumen</value></data>
+  <data name="GuildTabCombat" xml:space="preserve"><value>Combate</value></data>
+  <data name="GuildTabResearch" xml:space="preserve"><value>Investigaci&#243;n</value></data>
+  <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
+  <data name="GuildTabMembers" xml:space="preserve"><value>Miembros</value></data>
+  <data name="GuildWarDetailTitle" xml:space="preserve"><value>Guerra actual</value></data>
 </root>

@@ -43,6 +43,10 @@ public sealed partial class MainViewModel
         // Cloud-Save prüfen (wenn Play Games angemeldet)
         await CheckCloudSaveAsync();
 
+        // FpsProfile an die vom Spieler gewaehlte Grafikqualitaet binden. Aktualisiert laufende
+        // Render-Timer (WorkerAvatar via Event, andere Views lesen neu bei Tab-Wechsel).
+        Graphics.FpsProfile.SetCurrent(_gameStateService.Settings.GraphicsQuality);
+
         // Sprache synchronisieren: gespeicherte Sprache laden oder Gerätesprache übernehmen
         var savedLang = _gameStateService.Settings.Language;
         if (!string.IsNullOrEmpty(savedLang))
@@ -143,6 +147,20 @@ public sealed partial class MainViewModel
 
         // Start the game loop for idle earnings
         _gameLoopService.Start();
+
+        // Telemetrie: Analytics + Session-Start (nur wenn Consent gegeben oder noch nie gefragt).
+        // ShowAnalyticsConsentIfNeededAsync laeuft nicht-blockierend — der Spieler kann schon spielen.
+        if (_analyticsService != null)
+        {
+            if (_gameStateService.Settings.AnalyticsConsentShown && _gameStateService.Settings.AnalyticsEnabled)
+            {
+                await _analyticsService.InitializeAsync();
+            }
+            else if (!_gameStateService.Settings.AnalyticsConsentShown)
+            {
+                ShowAnalyticsConsentIfNeededAsync().SafeFireAndForget();
+            }
+        }
         }
         catch (Exception ex)
         {
@@ -166,44 +184,100 @@ public sealed partial class MainViewModel
 
     /// <summary>
     /// Vergleicht Cloud-Spielstand mit lokalem und fragt Benutzer bei neuerem Cloud-Save.
+    /// Nutzt <see cref="ICloudSaveService"/> (Firebase-REST), ersetzt den nicht-funktionalen Play-Games-Stub.
     /// </summary>
     private async Task CheckCloudSaveAsync()
     {
-        if (_playGamesService?.IsSignedIn != true || !_gameStateService.Settings.CloudSaveEnabled)
+        if (_cloudSaveService?.IsAvailable != true || !_gameStateService.Settings.CloudSaveEnabled)
             return;
 
         try
         {
-            var cloudJson = await _playGamesService.LoadCloudSaveAsync();
-            if (string.IsNullOrEmpty(cloudJson)) return;
+            var metadata = await _cloudSaveService.GetMetadataAsync();
+            if (metadata == null) return;
 
-            var cloudState = System.Text.Json.JsonSerializer.Deserialize<GameState>(cloudJson);
+            // Cloud neuer als lokal? Toleranz 5s gegen Clock-Skew.
+            var localSavedAt = _gameStateService.State.LastSavedAt;
+            var cloudSavedAt = metadata.SavedAtUtc;
+            if (cloudSavedAt <= localSavedAt.AddSeconds(5))
+                return;
+
+            // Konflikt-Dialog: zeigt Level + Money beider Stände
+            var title = _localizationService.GetString("CloudSaveNewer") ?? "Cloud-Spielstand gefunden";
+            var localLbl = string.Format(
+                _localizationService.GetString("CloudSaveLocalSummary") ?? "Lokal: Level {0} ({1})",
+                _gameStateService.State.PlayerLevel,
+                Helpers.MoneyFormatter.FormatCompact(_gameStateService.State.Money));
+            var cloudLbl = string.Format(
+                _localizationService.GetString("CloudSaveCloudSummary") ?? "Cloud: Level {0} ({1})",
+                metadata.PlayerLevel,
+                Helpers.MoneyFormatter.FormatCompact(metadata.Money));
+            var message = $"{localLbl}\n{cloudLbl}";
+
+            var useCloud = _localizationService.GetString("UseCloudSave") ?? "Cloud laden";
+            var useLocal = _localizationService.GetString("UseLocalSave") ?? "Lokal behalten";
+
+            var confirmed = await ShowConfirmDialog(title, message, useCloud, useLocal);
+            if (!confirmed) return;
+
+            var cloudState = await _cloudSaveService.DownloadAsync();
             if (cloudState == null) return;
 
-            // Cloud neuer als lokal?
-            if (cloudState.LastSavedAt > _gameStateService.State.LastSavedAt)
+            // Cloud-State via ImportSaveAsync einspielen (ruft SanitizeState + SaveInternalAsync)
+            var cloudJson = System.Text.Json.JsonSerializer.Serialize(cloudState);
+            await _saveGameService.ImportSaveAsync(cloudJson);
+            RefreshFromState();
+
+            _analyticsService?.TrackEvent(AnalyticsEvents.CloudSaveDownloaded, new Dictionary<string, object?>
             {
-                var title = _localizationService.GetString("CloudSaveNewer") ?? "Cloud Save Found";
-                var message = string.Format(
-                    "{0} (Level {1})",
-                    title, cloudState.PlayerLevel);
-                var useCloud = _localizationService.GetString("UseCloudSave") ?? "Use Cloud";
-                var useLocal = _localizationService.GetString("UseLocalSave") ?? "Use Local";
-
-                var confirmed = await ShowConfirmDialog(
-                    title, message, useCloud, useLocal);
-
-                if (confirmed)
-                {
-                    await _saveGameService.ImportSaveAsync(cloudJson);
-                    RefreshFromState();
-                }
-            }
+                ["level"] = cloudState.PlayerLevel,
+                ["money"] = (double)cloudState.Money
+            });
         }
-        catch
+        catch (Exception ex)
         {
             // Cloud-Sync-Fehler still ignorieren (lokaler Save funktioniert)
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] CheckCloudSaveAsync: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Zeigt den DSGVO-Consent-Dialog fuer Analytics, wenn er noch nie gezeigt wurde.
+    /// Wird nicht-blockierend aufgerufen (fire-and-forget) damit der Spielstart nicht wartet.
+    /// </summary>
+    private async Task ShowAnalyticsConsentIfNeededAsync()
+    {
+        if (_analyticsService == null) return;
+        if (_gameStateService.Settings.AnalyticsConsentShown) return;
+
+        // Kleines Delay, damit der Consent-Dialog nicht mit Offline-Earnings/Welcome-Dialog kollidiert
+        await Task.Delay(1500);
+        if (WelcomeFlowVM.IsOfflineEarningsDialogVisible ||
+            WelcomeFlowVM.IsCombinedWelcomeDialogVisible ||
+            WelcomeFlowVM.IsDailyRewardDialogVisible)
+        {
+            // Warten bis der erste Dialog geschlossen ist
+            await Task.Delay(2500);
+        }
+
+        var title = _localizationService.GetString("AnalyticsConsentTitle") ?? "Hilfst du uns mit?";
+        var message = _localizationService.GetString("AnalyticsConsentMessage")
+                      ?? "Anonyme Nutzungsdaten helfen uns, das Spiel zu verbessern. Keine persoenlichen Daten, kein Tracking durch Dritte. Du kannst das jederzeit in den Einstellungen aendern.";
+        var accept = _localizationService.GetString("AnalyticsConsentAccept") ?? "Ja, helfen";
+        var decline = _localizationService.GetString("AnalyticsConsentDecline") ?? "Nein, danke";
+
+        var consent = await ShowConfirmDialog(title, message, accept, decline);
+
+        _gameStateService.Settings.AnalyticsConsentShown = true;
+        _analyticsService.IsEnabled = consent;
+
+        if (consent)
+        {
+            await _analyticsService.InitializeAsync();
+        }
+
+        // Settings speichern damit der Dialog nicht nochmal auftaucht
+        await _saveGameService.SaveAsync();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

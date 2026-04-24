@@ -145,10 +145,10 @@
                             OnContent="" OffContent="" />
             </Grid>
 
-            <!-- Cloud Save Toggle (nur sichtbar wenn Play Games angemeldet) -->
+            <!-- Cloud Save Toggle (sichtbar wenn Firebase online ODER Play Games angemeldet) -->
             <Grid ColumnDefinitions="Auto,*,Auto"
                   AutomationProperties.AutomationId="Settings_Grid_CloudSaveRow"
-                  IsVisible="{Binding IsPlayGamesSignedIn}">
+                  IsVisible="{Binding CanUseCloudSave}">
               <icons:GameIcon Kind="CloudSync" Width="28" Height="28"
                                AutomationProperties.AutomationId="Settings_Icon_CloudSave"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
@@ -234,7 +234,7 @@
             </Grid>
 
             <!-- Cloud Save / Restore Buttons -->
-            <StackPanel Spacing="8" IsEnabled="{Binding IsPlayGamesSignedIn}">
+            <StackPanel Spacing="8" IsEnabled="{Binding CanUseCloudSave}">
               <Button Classes="Primary" HorizontalAlignment="Stretch"
                       AutomationProperties.AutomationId="Settings_Btn_SaveToCloud"
                       Command="{Binding SaveToCloudCommand}"
@@ -263,7 +263,52 @@
                          IsVisible="{Binding HasLastCloudSave}"
                          FontSize="11" HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextMutedBrush}" />
+
+              <!-- Temporaerer Action-Status (Upload/Download-Feedback) -->
+              <TextBlock Text="{Binding CloudSaveActionStatus}"
+                         AutomationProperties.AutomationId="Settings_Txt_CloudSaveAction"
+                         IsVisible="{Binding CloudSaveActionStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         FontSize="11" HorizontalAlignment="Center"
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- PRIVATSPHAERE / ANALYTICS -->
+        <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_PrivacyCard">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <icons:GameIcon Kind="ShieldCheck" Width="24" Height="24"
+                               AutomationProperties.AutomationId="Settings_Icon_PrivacyHeader"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <TextBlock Text="{loc:Translate Privacy}"
+                         AutomationProperties.AutomationId="Settings_Txt_PrivacyTitle"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_AnalyticsRow">
+              <icons:GameIcon Kind="ChartBar" Width="28" Height="28"
+                               AutomationProperties.AutomationId="Settings_Icon_Analytics"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Translate AnalyticsLabel}"
+                           AutomationProperties.AutomationId="Settings_Txt_AnalyticsLabel"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate AnalyticsDesc}"
+                           AutomationProperties.AutomationId="Settings_Txt_AnalyticsDesc"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="2"
+                            AutomationProperties.AutomationId="Settings_Toggle_Analytics"
+                            IsChecked="{Binding AnalyticsEnabled}"
+                            OnContent="" OffContent="" />
+            </Grid>
           </StackPanel>
         </Border>
 

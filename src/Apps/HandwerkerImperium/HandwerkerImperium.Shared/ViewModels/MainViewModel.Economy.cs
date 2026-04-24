@@ -31,7 +31,8 @@ public sealed partial class MainViewModel
             _dailyChallengeService,
             _weeklyMissionService,
             _eventService,
-            DialogVM);
+            DialogVM,
+            _analyticsService);
 
         // Events verdrahten (benannte Delegates fuer Dispose-Unsubscribe)
         _economyFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);

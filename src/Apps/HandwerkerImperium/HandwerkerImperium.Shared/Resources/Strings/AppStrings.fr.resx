@@ -6175,4 +6175,22 @@
   <data name="AvailablePointsFormat" xml:space="preserve"><value>{0} PA disponibles</value></data>
   <data name="TotalPointsFormat" xml:space="preserve"><value>Total : {0}</value></data>
   <data name="NextAscensionFormat" xml:space="preserve"><value>Prochaine ascension : +{0} PA</value></data>
+  <!-- Analytics / Privacy / Cloud-Save (v2.0.33) -->
+  <data name="Privacy" xml:space="preserve"><value>Confidentialit&#233;</value></data>
+  <data name="AnalyticsLabel" xml:space="preserve"><value>T&#233;l&#233;m&#233;trie anonyme</value></data>
+  <data name="AnalyticsDesc" xml:space="preserve"><value>Les statistiques anonymes nous aident &#224; am&#233;liorer le jeu. Aucune donn&#233;e personnelle.</value></data>
+  <data name="AnalyticsConsentTitle" xml:space="preserve"><value>Vous voulez nous aider ?</value></data>
+  <data name="AnalyticsConsentMessage" xml:space="preserve"><value>Les donn&#233;es d'utilisation anonymes nous aident &#224; am&#233;liorer le jeu. Aucune donn&#233;e personnelle, aucun suivi tiers. Vous pouvez changer cela &#224; tout moment dans les param&#232;tres.</value></data>
+  <data name="AnalyticsConsentAccept" xml:space="preserve"><value>Oui, aider</value></data>
+  <data name="AnalyticsConsentDecline" xml:space="preserve"><value>Non, merci</value></data>
+  <data name="CloudSaveLocalSummary" xml:space="preserve"><value>Local : Niveau {0} ({1})</value></data>
+  <data name="CloudSaveCloudSummary" xml:space="preserve"><value>Cloud : Niveau {0} ({1})</value></data>
+  <data name="SplashStep_Config" xml:space="preserve"><value>Chargement de la configuration...</value></data>
+  <!-- Navigation Guilde (v2.0.34) -->
+  <data name="GuildTabOverview" xml:space="preserve"><value>Aper&#231;u</value></data>
+  <data name="GuildTabCombat" xml:space="preserve"><value>Combat</value></data>
+  <data name="GuildTabResearch" xml:space="preserve"><value>Recherche</value></data>
+  <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
+  <data name="GuildTabMembers" xml:space="preserve"><value>Membres</value></data>
+  <data name="GuildWarDetailTitle" xml:space="preserve"><value>Guerre en cours</value></data>
 </root>

@@ -21,6 +21,7 @@ public sealed class CityRenderer : IDisposable
     // Wetter-System (saisonale Effekte über der City-Szene)
     private readonly CityWeatherSystem _weatherSystem = new();
     private bool _weatherInitialized;
+    private float _refreshTimer;
 
     public void Initialize(IGameAssetService assetService)
     {
@@ -36,10 +37,14 @@ public sealed class CityRenderer : IDisposable
         var gfxQuality = state.Settings.GraphicsQuality;
         if (gfxQuality >= GraphicsQuality.Medium)
         {
-            if (!_weatherInitialized)
+            // Alle 5s den Wetter-Zustand gegen das aktive Event abgleichen
+            // (Monat-Wechsel um Mitternacht und Event-Start/Ende muessen sich durchsetzen).
+            _refreshTimer += deltaTime;
+            if (!_weatherInitialized || _refreshTimer >= 5f)
             {
-                _weatherSystem.SetWeatherByMonth();
+                _weatherSystem.Refresh(state.CurrentSeasonalEvent);
                 _weatherInitialized = true;
+                _refreshTimer = 0f;
             }
             _weatherSystem.Update(deltaTime);
         }

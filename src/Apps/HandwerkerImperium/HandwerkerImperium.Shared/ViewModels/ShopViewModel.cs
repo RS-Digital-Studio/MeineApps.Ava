@@ -86,6 +86,8 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
+    private readonly IAnalyticsService? _analyticsService;
+
     public ShopViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
@@ -95,7 +97,8 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         ILocalizationService localizationService,
         IEquipmentService equipmentService,
         IVipService vipService,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        IAnalyticsService? analyticsService = null)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
@@ -106,6 +109,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         _equipmentService = equipmentService;
         _vipService = vipService;
         _dialogService = dialogService;
+        _analyticsService = analyticsService;
 
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
@@ -447,6 +451,14 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         {
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
+        // Telemetrie: Shop-Item angetippt (Conversion-Funnel-Einstieg).
+        _analyticsService?.TrackEvent(Models.AnalyticsEvents.IapItemViewed, new Dictionary<string, object?>
+        {
+            ["item_id"] = item.Id,
+            ["is_premium_item"] = item.IsPremiumItem,
+            ["is_ad_reward"] = item.IsAdReward
+        });
+
         if (item.IsPurchased)
         {
             ShowAlert(
@@ -541,6 +553,11 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
 
             if (confirm)
             {
+                _analyticsService?.TrackEvent(Models.AnalyticsEvents.IapPurchaseStarted, new Dictionary<string, object?>
+                {
+                    ["item_id"] = item.Id
+                });
+
                 bool success = false;
 
                 if (item.Id == "premium")
@@ -618,7 +635,20 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
 
                 // VIP-System: Echtgeld-Kauf registrieren
                 if (success)
+                {
                     RecordVipPurchase(item.Id);
+                    _analyticsService?.TrackEvent(Models.AnalyticsEvents.IapPurchaseSuccess, new Dictionary<string, object?>
+                    {
+                        ["item_id"] = item.Id
+                    });
+                }
+                else
+                {
+                    _analyticsService?.TrackEvent(Models.AnalyticsEvents.IapPurchaseFailed, new Dictionary<string, object?>
+                    {
+                        ["item_id"] = item.Id
+                    });
+                }
             }
         }
         }

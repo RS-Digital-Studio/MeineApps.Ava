@@ -68,6 +68,7 @@ public partial class DashboardView : UserControl
     private int _holdUpgradeCount;
 
     // Tap vs. Scroll Erkennung (Workshop-Karten im ScrollViewer)
+    // Tap-vs-Scroll-State (reine Gesture-Logik ausgelagert in WorkshopCardHitTester)
     private Point _workshopPressPos;
     private bool _workshopIsScrolling;
     private WorkshopDisplayModel? _workshopPressedTarget;
@@ -75,9 +76,6 @@ public partial class DashboardView : UserControl
     private float _workshopPressSkiaX, _workshopPressSkiaY;
     private DateTime _workshopPressTime;
     private double _scrollOffsetAtPress;
-    private const double TapDistanceThreshold = 15.0;
-    private const double TapMaxDurationMs = 400.0; // Tap muss innerhalb 400ms abgeschlossen sein
-    private const double ScrollOffsetThreshold = 2.0; // ScrollViewer hat sich bewegt → kein Tap
 
     // Performance: Alle Canvases während Scroll pausieren
     private bool _isScrolling;
@@ -340,8 +338,6 @@ public partial class DashboardView : UserControl
     {
         if (_vm?.Workshops == null || sender is not Avalonia.Labs.Controls.SKCanvasView canvasView) return;
 
-        var pos = e.GetPosition(canvasView);
-
         // Scroll-Tracking zurücksetzen
         _workshopPressPos = e.GetPosition(this);
         _workshopPressTime = DateTime.UtcNow;
@@ -350,60 +346,32 @@ public partial class DashboardView : UserControl
         _workshopPressedTarget = null;
         _workshopPressedIsUpgrade = false;
 
-        // Avalonia → SkiaSharp Koordinaten (DPI-Skalierung)
-        float scaleX = _lastWorkshopCardsBounds.Width / (float)canvasView.Bounds.Width;
-        float scaleY = _lastWorkshopCardsBounds.Height / (float)canvasView.Bounds.Height;
-        float skiaX = (float)pos.X * scaleX;
-        float skiaY = (float)pos.Y * scaleY;
+        // Hit-Test via Helper — kapselt Koordinaten-Konvertierung + Grid-Berechnung
+        var hit = WorkshopCardHitTester.HitTest(
+            e.GetPosition(canvasView),
+            canvasView.Bounds.Width,
+            canvasView.Bounds.Height,
+            _lastWorkshopCardsBounds,
+            _vm.Workshops.Count);
 
-        // Grid-Layout berechnen
-        int cols = 2;
-        float gap = 8f;
-        float cardW = (_lastWorkshopCardsBounds.Width - (cols - 1) * gap) / cols;
-        int rows = (int)Math.Ceiling(_vm.Workshops.Count / (double)cols);
-        float cardH = (_lastWorkshopCardsBounds.Height - (rows - 1) * gap) / rows;
+        if (hit.WorkshopIndex < 0) return;
 
-        // Welche Karte wurde getroffen?
-        int hitCol = (int)(skiaX / (cardW + gap));
-        int hitRow = (int)(skiaY / (cardH + gap));
+        var workshop = _vm.Workshops[hit.WorkshopIndex];
+        _workshopPressSkiaX = hit.SkiaX;
+        _workshopPressSkiaY = hit.SkiaY;
 
-        if (hitCol < 0 || hitCol >= cols || hitRow < 0 || hitRow >= rows) return;
-
-        int index = hitRow * cols + hitCol;
-        if (index >= _vm.Workshops.Count) return;
-
-        // Prüfen ob der Tap innerhalb der Karte liegt (nicht im Gap)
-        float cardX = hitCol * (cardW + gap);
-        float cardY = hitRow * (cardH + gap);
-        var cardBounds = new SKRect(cardX, cardY, cardX + cardW, cardY + cardH);
-        if (!cardBounds.Contains(skiaX, skiaY)) return;
-
-        var workshop = _vm.Workshops[index];
-        _workshopPressSkiaX = skiaX;
-        _workshopPressSkiaY = skiaY;
-
-        // Prüfen ob der Tap auf dem Upgrade-Button liegt
-        if (workshop.IsUnlocked && !workshop.IsMaxLevel)
+        // Upgrade-Button getroffen + Karte aufgewertet? → Hold-to-Upgrade starten
+        if (hit.IsUpgradeButton && workshop.IsUnlocked && !workshop.IsMaxLevel)
         {
-            var upgradeBounds = WorkshopGameCardRenderer.GetUpgradeButtonBounds(cardBounds);
-            if (upgradeBounds.Contains(skiaX, skiaY))
-            {
-                _workshopPressedTarget = workshop;
-                _workshopPressedIsUpgrade = true;
-
-                // Hold-to-Upgrade Timer starten (wird bei Scroll abgebrochen)
-                StartHoldUpgrade(workshop.Type);
-
-                // e.Handled NICHT setzen - ScrollViewer darf entscheiden
-                return;
-            }
+            _workshopPressedTarget = workshop;
+            _workshopPressedIsUpgrade = true;
+            StartHoldUpgrade(workshop.Type);
+            return;
         }
 
-        // Karten-Body: Nur merken, Ausführung bei PointerReleased
+        // Karten-Body: Nur merken, Ausfuehrung bei PointerReleased.
         _workshopPressedTarget = workshop;
         _workshopPressedIsUpgrade = false;
-
-        // e.Handled NICHT setzen - ScrollViewer darf scrollen
     }
 
     /// <summary>
@@ -428,13 +396,12 @@ public partial class DashboardView : UserControl
         // Wenn gescrollt wurde → keine Aktion
         if (wasScrolling || target == null || _vm == null) return;
 
-        // Zusätzliche Scroll-Erkennung: ScrollViewer-Offset hat sich verändert
+        // Zusaetzliche Scroll-Erkennung: ScrollViewer-Offset hat sich veraendert
         var currentScrollOffset = _dashboardScrollViewer?.Offset.Y ?? 0;
-        if (Math.Abs(currentScrollOffset - _scrollOffsetAtPress) > ScrollOffsetThreshold) return;
+        if (WorkshopCardHitTester.HasScrollViewerMoved(_scrollOffsetAtPress, currentScrollOffset)) return;
 
-        // Zeitbasierte Erkennung: Tap muss schnell sein (nicht für Hold-Upgrade)
-        var elapsed = (DateTime.UtcNow - _workshopPressTime).TotalMilliseconds;
-        if (!isUpgrade && elapsed > TapMaxDurationMs) return;
+        // Zeitbasierte Erkennung: Tap muss schnell sein (nicht fuer Hold-Upgrade)
+        if (!isUpgrade && !WorkshopCardHitTester.IsTapDuration(_workshopPressTime)) return;
 
         if (isUpgrade)
         {
@@ -463,17 +430,10 @@ public partial class DashboardView : UserControl
     private void OnWorkshopCardsPointerMoved(object? sender, PointerEventArgs e)
     {
         if (_workshopPressedTarget == null || _workshopIsScrolling) return;
+        if (!WorkshopCardHitTester.IsScrollDistance(_workshopPressPos, e.GetPosition(this))) return;
 
-        var current = e.GetPosition(this);
-        var dx = current.X - _workshopPressPos.X;
-        var dy = current.Y - _workshopPressPos.Y;
-        var distance = Math.Sqrt(dx * dx + dy * dy);
-
-        if (distance > TapDistanceThreshold)
-        {
-            _workshopIsScrolling = true;
-            CancelHoldUpgradeOnScroll();
-        }
+        _workshopIsScrolling = true;
+        CancelHoldUpgradeOnScroll();
     }
 
     /// <summary>
@@ -482,19 +442,11 @@ public partial class DashboardView : UserControl
     /// </summary>
     private void OnTunnelPointerMoved(object? sender, PointerEventArgs e)
     {
-        // Nur relevant wenn wir ein Workshop-Ziel haben
         if (_workshopPressedTarget == null || _workshopIsScrolling) return;
+        if (!WorkshopCardHitTester.IsScrollDistance(_workshopPressPos, e.GetPosition(this))) return;
 
-        var current = e.GetPosition(this);
-        var dx = current.X - _workshopPressPos.X;
-        var dy = current.Y - _workshopPressPos.Y;
-        var distance = Math.Sqrt(dx * dx + dy * dy);
-
-        if (distance > TapDistanceThreshold)
-        {
-            _workshopIsScrolling = true;
-            CancelHoldUpgradeOnScroll();
-        }
+        _workshopIsScrolling = true;
+        CancelHoldUpgradeOnScroll();
     }
 
     /// <summary>
@@ -644,7 +596,7 @@ public partial class DashboardView : UserControl
         if (_renderTimer is { IsEnabled: true }) return;
 
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) }; // 10fps Basis
+        _renderTimer = new DispatcherTimer { Interval = Graphics.FpsProfile.DashboardIdle() }; // 5/10fps je nach Quality
         _renderTimer.Tick += OnCityRenderTick;
         _renderTimer.Start();
     }
@@ -670,7 +622,7 @@ public partial class DashboardView : UserControl
         if (effectsActive != _hasActiveEffects)
         {
             _hasActiveEffects = effectsActive;
-            _renderTimer!.Interval = TimeSpan.FromMilliseconds(effectsActive ? 33 : 100);
+            _renderTimer!.Interval = effectsActive ? Graphics.FpsProfile.DashboardActive() : Graphics.FpsProfile.DashboardIdle();
         }
 
         _cityCanvas?.InvalidateSurface();

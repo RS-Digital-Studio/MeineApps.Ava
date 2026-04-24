@@ -31,6 +31,24 @@ public enum GuildViewState
 }
 
 /// <summary>
+/// Sub-Tabs innerhalb des InGuild-States. Ersetzt die 7er-Scroll-Liste durch
+/// eine Bottom-Tab-Leiste (v2.0.34, UX-Refactor).
+/// </summary>
+public enum GuildSubTab
+{
+    /// <summary>Wochen-Ziel, Contribute, aktive Tipps, Quick-Info.</summary>
+    Overview,
+    /// <summary>Krieg und Boss (beide PvP-Elemente zusammengefasst).</summary>
+    Combat,
+    /// <summary>Gilden-Forschung.</summary>
+    Research,
+    /// <summary>Gilden-Chat.</summary>
+    Chat,
+    /// <summary>Mitglieder-Liste + Hauptquartier + Erfolge.</summary>
+    Members
+}
+
+/// <summary>
 /// ViewModel für das Multiplayer-Gildensystem via Firebase.
 /// Sechs UI-Zustände via GuildViewState Enum (flache Panels, keine verschachtelte IsVisible-Logik).
 /// </summary>
@@ -113,6 +131,38 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
     /// <summary>Achievements-Ansicht sichtbar.</summary>
     public bool IsAchievementsState => ViewState == GuildViewState.Achievements;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROPERTIES - Sub-Tab im InGuild-State (v2.0.34 UX-Refactor)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Aktiver Sub-Tab innerhalb des InGuild-States.
+    /// Ersetzt die 7er-Scroll-Liste durch 5 horizontale Tabs (Overview/Combat/Research/Chat/Members).
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOverviewTabActive))]
+    [NotifyPropertyChangedFor(nameof(IsCombatTabActive))]
+    [NotifyPropertyChangedFor(nameof(IsResearchTabActive))]
+    [NotifyPropertyChangedFor(nameof(IsChatTabActive))]
+    [NotifyPropertyChangedFor(nameof(IsMembersTabActive))]
+    private GuildSubTab _activeSubTab = GuildSubTab.Overview;
+
+    public bool IsOverviewTabActive => ActiveSubTab == GuildSubTab.Overview;
+    public bool IsCombatTabActive => ActiveSubTab == GuildSubTab.Combat;
+    public bool IsResearchTabActive => ActiveSubTab == GuildSubTab.Research;
+    public bool IsChatTabActive => ActiveSubTab == GuildSubTab.Chat;
+    public bool IsMembersTabActive => ActiveSubTab == GuildSubTab.Members;
+
+    /// <summary>
+    /// Selektiert einen Sub-Tab (Parameter: "Overview", "Combat", "Research", "Chat", "Members").
+    /// </summary>
+    [RelayCommand]
+    private void SelectSubTab(string tabName)
+    {
+        if (Enum.TryParse<GuildSubTab>(tabName, ignoreCase: true, out var tab))
+            ActiveSubTab = tab;
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES - Spielername-Dialog

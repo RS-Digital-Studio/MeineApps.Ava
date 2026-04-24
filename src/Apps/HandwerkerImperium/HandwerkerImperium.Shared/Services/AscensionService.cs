@@ -14,6 +14,7 @@ public sealed class AscensionService : IAscensionService
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
     private readonly IAudioService _audioService;
+    private readonly IAnalyticsService? _analyticsService;
 
     /// <summary>Gecachte Perk-Definitionen (statisch, ändert sich nicht zur Laufzeit).</summary>
     private static readonly List<AscensionPerk> AllPerks = AscensionPerk.GetAll();
@@ -24,11 +25,13 @@ public sealed class AscensionService : IAscensionService
     public AscensionService(
         IGameStateService gameStateService,
         ISaveGameService saveGameService,
-        IAudioService audioService)
+        IAudioService audioService,
+        IAnalyticsService? analyticsService = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
         _audioService = audioService;
+        _analyticsService = analyticsService;
     }
 
     // ===================================================================
@@ -290,6 +293,14 @@ public sealed class AscensionService : IAscensionService
         _ = _audioService.PlaySoundAsync(GameSound.LevelUp);
         _audioService.Vibrate(VibrationType.Success);
         AscensionCompleted?.Invoke(this, EventArgs.Empty);
+
+        // Telemetrie: Ascension ist das seltenste Top-Level-Event im Spiel.
+        _analyticsService?.TrackEvent(AnalyticsEvents.AscensionDone, new Dictionary<string, object?>
+        {
+            ["ascension_level"] = state.Ascension.AscensionLevel,
+            ["ap_gained"] = state.Ascension.AscensionPoints,
+            ["total_ap"] = state.Ascension.TotalAscensionPoints
+        });
 
         return true;
     }

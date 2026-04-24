@@ -61,6 +61,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly IChallengeConstraintService? _challengeConstraints;
     private readonly INotificationService? _notificationService;
     private readonly IPlayGamesService? _playGamesService;
+    // Telemetrie (REST via FirebaseService, keine nativen SDKs noetig)
+    private readonly IAnalyticsService? _analyticsService;
+    private readonly ICloudSaveService? _cloudSaveService;
+    private readonly IRemoteConfigService? _remoteConfigService;
     private readonly IWeeklyMissionService _weeklyMissionService;
     private readonly IWelcomeBackService _welcomeBackService;
     private readonly ILuckySpinService _luckySpinService;
@@ -920,11 +924,17 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         IChallengeConstraintService? challengeConstraints = null,
         Services.Interfaces.INavigationService? navigationService = null,
         Services.Interfaces.IDialogOrchestrator? dialogOrchestrator = null,
-        Services.Interfaces.IMiniGameNavigator? miniGameNavigator = null)
+        Services.Interfaces.IMiniGameNavigator? miniGameNavigator = null,
+        IAnalyticsService? analyticsService = null,
+        ICloudSaveService? cloudSaveService = null,
+        IRemoteConfigService? remoteConfigService = null)
     {
         _navigationService = navigationService;
         _dialogOrchestrator = dialogOrchestrator;
         _miniGameNavigator = miniGameNavigator;
+        _analyticsService = analyticsService;
+        _cloudSaveService = cloudSaveService;
+        _remoteConfigService = remoteConfigService;
         // Host-Attach damit Services Navigation/Dialog-Kaskade an MainViewModel delegieren koennen
         _navigationService?.AttachHost(this);
         _dialogOrchestrator?.AttachHost(this);

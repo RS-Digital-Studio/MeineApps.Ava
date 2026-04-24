@@ -5,6 +5,7 @@ using MeineApps.UI.SkiaSharp.Shaders;
 using Microsoft.Extensions.DependencyInjection;
 using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Services;
+using HandwerkerImperium.Services.Interfaces;
 using HandwerkerImperium.ViewModels;
 
 namespace HandwerkerImperium.Loading;
@@ -44,7 +45,7 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
         {
             Name = "GameInit",
             DisplayName = loc.GetString("SplashStep_Workshops") ?? "Werkstätten einrichten...",
-            Weight = 40,
+            Weight = 35,
             ExecuteAsync = async () =>
             {
                 var mainVm = services.GetRequiredService<MainViewModel>();
@@ -52,6 +53,25 @@ public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
                 // Käufe NACH InitializeAsync abgleichen (SanitizeState setzt Premium=false,
                 // danach stellt RestorePurchases den echten Status via Google Play wieder her)
                 await services.GetRequiredService<IPurchaseService>().InitializeAsync();
+            }
+        });
+
+        // Schritt 3: Remote-Config laden (nicht-blockierend). Default-Werte bleiben nutzbar wenn Download fehlschlaegt.
+        AddStep(new LoadingStep
+        {
+            Name = "RemoteConfig",
+            DisplayName = loc.GetString("SplashStep_Config") ?? "Konfiguration laden...",
+            Weight = 5,
+            ExecuteAsync = async () =>
+            {
+                var remoteConfig = services.GetService<IRemoteConfigService>();
+                if (remoteConfig != null)
+                {
+                    // Max. 5 Sekunden warten — wenn Firebase offline ist, darf der App-Start nicht blockieren.
+                    var fetchTask = remoteConfig.InitializeAsync();
+                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(5));
+                    await Task.WhenAny(fetchTask, timeoutTask);
+                }
             }
         });
     }

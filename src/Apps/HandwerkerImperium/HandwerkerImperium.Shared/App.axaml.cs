@@ -64,6 +64,12 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
         RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+
+        // Plattform-Default fuer FpsProfile: Android startet auf Medium (Battery-schonender Standard),
+        // Desktop auf High. Wird bei geladenem SaveGame durch SettingsData.GraphicsQuality ueberschrieben.
+        Graphics.FpsProfile.Current = OperatingSystem.IsAndroid()
+            ? Models.Enums.GraphicsQuality.Medium
+            : Models.Enums.GraphicsQuality.High;
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -303,6 +309,12 @@ public partial class App : Application
         services.AddSingleton<IBattlePassService, BattlePassService>();
         services.AddSingleton<ILogService, LogService>();
         services.AddSingleton<IFirebaseService, FirebaseService>();
+
+        // Telemetrie-Infrastruktur (REST via FirebaseService — plattformuebergreifend, keine nativen SDKs).
+        services.AddSingleton<IAnalyticsService, AnalyticsService>();
+        services.AddSingleton<IRemoteConfigService, RemoteConfigService>();
+        services.AddSingleton<ICloudSaveService, CloudSaveService>();
+
         services.AddSingleton<IGuildService, GuildService>();
         services.AddSingleton<ICraftingService, CraftingService>();
         services.AddSingleton<IAutoProductionService, AutoProductionService>();

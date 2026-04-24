@@ -340,6 +340,42 @@
           ".write": "auth != null && (root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists() || root.child('auth_to_player/' + auth.uid).val() == $playerId)"
         }
       }
+    },
+
+    "cloud_saves": {
+      "$playerId": {
+        ".read":  "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
+        ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
+        "metadata": {
+          ".validate": "newData.hasChildren(['level', 'savedAt']) && newData.child('level').isNumber() && newData.child('savedAt').isString() && newData.child('savedAt').val().length <= 40",
+          "level": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"},
+          "money": {".validate": "newData.isNumber()"},
+          "goldenScrews": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"},
+          "prestigePoints": {".validate": "newData.isNumber() && newData.val() >= 0"},
+          "ascensionLevel": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"},
+          "savedAt": {".validate": "newData.isString()"},
+          "version": {".validate": "newData.isNumber()"},
+          "appVersion": {".validate": "newData.isString() && newData.val().length <= 20"}
+        },
+        "data": {
+          ".validate": "newData.isString() && newData.val().length <= 1048576"
+        }
+      }
+    },
+
+    "remote_config": {
+      ".read": "auth != null",
+      ".write": false
+    },
+
+    "analytics_events": {
+      "$dateKey": {
+        ".read": false,
+        "$pushId": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.hasChildren(['eventName', 'timestamp', 'playerId']) && newData.child('eventName').isString() && newData.child('eventName').val().length <= 64 && newData.child('playerId').val() == root.child('auth_to_player/' + auth.uid).val() && newData.child('timestamp').isString()"
+        }
+      }
     }
   }
 }

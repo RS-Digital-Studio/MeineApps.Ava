@@ -31,6 +31,7 @@ internal sealed class EconomyFeatureViewModel
     private readonly IWeeklyMissionService _weeklyMissionService;
     private readonly IEventService _eventService;
     private readonly IDialogService _dialogService;
+    private readonly IAnalyticsService? _analyticsService;
 
     /// <summary>FloatingText im Dashboard anzeigen.</summary>
     internal event Action<string, string>? FloatingTextRequested;
@@ -52,7 +53,8 @@ internal sealed class EconomyFeatureViewModel
         IDailyChallengeService dailyChallengeService,
         IWeeklyMissionService weeklyMissionService,
         IEventService eventService,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        IAnalyticsService? analyticsService = null)
     {
         _host = host;
         _gameStateService = gameStateService;
@@ -68,6 +70,7 @@ internal sealed class EconomyFeatureViewModel
         _weeklyMissionService = weeklyMissionService;
         _eventService = eventService;
         _dialogService = dialogService;
+        _analyticsService = analyticsService;
     }
 
     private bool ShowAds => !_purchaseService.IsPremium;
@@ -172,6 +175,15 @@ internal sealed class EconomyFeatureViewModel
                 _localizationService.GetString(type.GetLocalizationKey()),
                 _localizationService.GetString("OK"));
             CelebrationRequested?.Invoke();
+
+            // Telemetrie: Workshop-Unlocks sind ein zentraler Fortschritts-Marker.
+            // Wichtig fuer Funnel-Analyse (wie viele Spieler erreichen Workshop X?).
+            _analyticsService?.TrackEvent(Models.AnalyticsEvents.WorkshopUnlocked, new Dictionary<string, object?>
+            {
+                ["type"] = type.ToString(),
+                ["player_level"] = _gameStateService.State.PlayerLevel,
+                ["total_earned"] = (double)_gameStateService.State.TotalMoneyEarned
+            });
         }
         else
         {

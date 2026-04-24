@@ -6221,4 +6221,42 @@
   <data name="StatisticsTitle" xml:space="preserve">
     <value>Statistics</value>
   </data>
+  <!-- Analytics / Privacy / Cloud-Save (v2.0.33) -->
+  <data name="Privacy" xml:space="preserve">
+    <value>Privacy</value>
+  </data>
+  <data name="AnalyticsLabel" xml:space="preserve">
+    <value>Anonymous Telemetry</value>
+  </data>
+  <data name="AnalyticsDesc" xml:space="preserve">
+    <value>Anonymous usage stats help us improve the game. No personal data.</value>
+  </data>
+  <data name="AnalyticsConsentTitle" xml:space="preserve">
+    <value>Help us improve?</value>
+  </data>
+  <data name="AnalyticsConsentMessage" xml:space="preserve">
+    <value>Anonymous usage data helps us improve the game. No personal data, no third-party tracking. You can change this anytime in settings.</value>
+  </data>
+  <data name="AnalyticsConsentAccept" xml:space="preserve">
+    <value>Yes, help</value>
+  </data>
+  <data name="AnalyticsConsentDecline" xml:space="preserve">
+    <value>No, thanks</value>
+  </data>
+  <data name="CloudSaveLocalSummary" xml:space="preserve">
+    <value>Local: Level {0} ({1})</value>
+  </data>
+  <data name="CloudSaveCloudSummary" xml:space="preserve">
+    <value>Cloud: Level {0} ({1})</value>
+  </data>
+  <data name="SplashStep_Config" xml:space="preserve">
+    <value>Loading configuration...</value>
+  </data>
+  <!-- Guild Tab Navigation (v2.0.34) -->
+  <data name="GuildTabOverview" xml:space="preserve"><value>Overview</value></data>
+  <data name="GuildTabCombat" xml:space="preserve"><value>Combat</value></data>
+  <data name="GuildTabResearch" xml:space="preserve"><value>Research</value></data>
+  <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
+  <data name="GuildTabMembers" xml:space="preserve"><value>Members</value></data>
+  <data name="GuildWarDetailTitle" xml:space="preserve"><value>Current War</value></data>
 </root>

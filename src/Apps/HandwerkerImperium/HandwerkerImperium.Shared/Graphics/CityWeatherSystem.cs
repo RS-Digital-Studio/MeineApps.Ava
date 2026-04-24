@@ -1,4 +1,5 @@
 using SkiaSharp;
+using HandwerkerImperium.Models;
 
 namespace HandwerkerImperium.Graphics;
 
@@ -12,12 +13,18 @@ public sealed class CityWeatherSystem : IDisposable
 {
     private bool _disposed;
     // Wetter-Typ
-    public enum WeatherType { Clear, Rain, Snow, Leaves, Sunshine }
+    public enum WeatherType { Clear, Rain, Snow, Leaves, Sunshine, Blossoms }
 
     // Partikel-Pool (GC-frei)
-    private const int MaxParticles = 80;
+    private const int MaxParticles = 160; // Vorher 80 — doppelt so viele fuer "intensified" Events
     private readonly WeatherParticle[] _particles = new WeatherParticle[MaxParticles];
     private int _activeCount;
+
+    /// <summary>
+    /// Intensitaets-Faktor (1.0 = normal, 2.0 = saisonales Event aktiv).
+    /// Verdoppelt Partikel-Spawn-Rate und Partikel-Groesse fuer staerkeren Effekt.
+    /// </summary>
+    public float IntensityMultiplier { get; set; } = 1.0f;
 
     // Gecachte Paints
     private readonly SKPaint _particlePaint = new() { IsAntialias = true };
@@ -63,6 +70,32 @@ public sealed class CityWeatherSystem : IDisposable
             9 or 10 or 11 => WeatherType.Leaves,    // Herbst: Fallende Blätter
             _ => WeatherType.Snow                    // Winter: Schnee
         };
+        IntensityMultiplier = 1.0f;
+    }
+
+    /// <summary>
+    /// Aktualisiert das Wetter basierend auf Monat UND einem optional aktiven SeasonalEvent.
+    /// Bei aktivem Event wird die Intensitaet verdoppelt und ein saison-spezifisches Wetter
+    /// gewaehlt (Fruehling → Kirschblueten statt Regen).
+    /// </summary>
+    public void Refresh(SeasonalEvent? activeEvent)
+    {
+        if (activeEvent != null && activeEvent.IsActive)
+        {
+            _currentWeather = activeEvent.Season switch
+            {
+                Season.Spring => WeatherType.Blossoms,
+                Season.Summer => WeatherType.Sunshine,
+                Season.Autumn => WeatherType.Leaves,
+                Season.Winter => WeatherType.Snow,
+                _ => WeatherType.Clear
+            };
+            IntensityMultiplier = 2.0f;
+        }
+        else
+        {
+            SetWeatherByMonth();
+        }
     }
 
     /// <summary>
@@ -72,15 +105,17 @@ public sealed class CityWeatherSystem : IDisposable
     {
         _time += deltaTime;
 
-        // Partikel spawnen wenn nötig
-        int targetCount = _currentWeather switch
+        // Partikel spawnen wenn nötig — Intensitaet beeinflusst die Anzahl
+        int baseCount = _currentWeather switch
         {
             WeatherType.Rain => 60,
             WeatherType.Snow => 50,
             WeatherType.Leaves => 20,
+            WeatherType.Blossoms => 30,
             WeatherType.Sunshine => 0, // Sonnenstrahlen sind keine Partikel
             _ => 0
         };
+        int targetCount = Math.Min(MaxParticles, (int)(baseCount * IntensityMultiplier));
 
         // Neue Partikel hinzufügen
         while (_activeCount < targetCount)
@@ -134,6 +169,9 @@ public sealed class CityWeatherSystem : IDisposable
                 break;
             case WeatherType.Sunshine:
                 RenderSunshine(canvas, bounds);
+                break;
+            case WeatherType.Blossoms:
+                RenderBlossoms(canvas, bounds);
                 break;
         }
 
@@ -343,6 +381,55 @@ public sealed class CityWeatherSystem : IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // KIRSCHBLUETEN (Saisonales Fruehlingsevent)
+    // ═══════════════════════════════════════════════════════════════
+
+    private static readonly SKColor[] s_blossomColors =
+    [
+        new(0xFF, 0xB7, 0xC5), // Sakura Rosa
+        new(0xFF, 0xC8, 0xD1), // Blass-Pink
+        new(0xFF, 0xDD, 0xE4), // Weissrosa
+        new(0xFF, 0xA3, 0xB5)  // Kraeftiges Rosa
+    ];
+
+    private void RenderBlossoms(SKCanvas canvas, SKRect bounds)
+    {
+        _particlePaint.Style = SKPaintStyle.Fill;
+
+        for (int i = 0; i < _activeCount; i++)
+        {
+            ref var p = ref _particles[i];
+
+            // Taumelnder Sinus-Drift (Bluetenblatt wiegt im Wind)
+            float sinDrift = MathF.Sin(_time * 0.6f + p.Phase) * 28f;
+            float x = ((p.X + sinDrift + _time * p.SpeedX) % bounds.Width + bounds.Width) % bounds.Width + bounds.Left;
+            float y = ((p.Y + _time * p.SpeedY) % bounds.Height) + bounds.Top;
+
+            var color = s_blossomColors[i % s_blossomColors.Length];
+            byte alpha = (byte)(140 + p.Size * 80);
+            _particlePaint.Color = color.WithAlpha(alpha);
+
+            // Bluetenblatt = rotiertes Oval mit leichter Asymmetrie
+            float rotation = _time * (25f + i * 10f) + p.Phase * 90f;
+            float petalW = 3f + p.Size * 3.5f;
+            float petalH = petalW * 0.55f;
+
+            canvas.Save();
+            canvas.Translate(x, y);
+            canvas.RotateDegrees(rotation);
+            canvas.DrawOval(0, 0, petalW, petalH, _particlePaint);
+
+            // Heller Rand fuer 3D-Look
+            _particlePaint.Color = new SKColor(255, 255, 255, (byte)(alpha * 0.5f));
+            _particlePaint.StrokeWidth = 0.4f;
+            _particlePaint.Style = SKPaintStyle.Stroke;
+            canvas.DrawOval(0, 0, petalW, petalH, _particlePaint);
+            _particlePaint.Style = SKPaintStyle.Fill;
+            canvas.Restore();
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // PARTIKEL-SPAWNING
     // ═══════════════════════════════════════════════════════════════
 
@@ -377,6 +464,10 @@ public sealed class CityWeatherSystem : IDisposable
             case WeatherType.Leaves:
                 p.SpeedX = 5f + (hash % 100) / 100f * 10f;      // 5-15 (seitlich treiben)
                 p.SpeedY = 8f + (hash % 100) / 100f * 12f;      // 8-20 (langsam fallen)
+                break;
+            case WeatherType.Blossoms:
+                p.SpeedX = ((hash % 100) / 100f - 0.3f) * 8f;   // -2.4 bis 5.6 (meist seitlich treiben)
+                p.SpeedY = 10f + (hash % 100) / 100f * 14f;     // 10-24 (sehr langsam fallen)
                 break;
             default:
                 p.SpeedX = 0;

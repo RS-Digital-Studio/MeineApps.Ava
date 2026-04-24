@@ -24,6 +24,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     private readonly IPlayGamesService _playGamesService;
     private readonly IContextualHintService _contextualHintService;
     private readonly IDialogService _dialogService;
+    // Telemetrie + Cloud-Save (Firebase-REST, plattformuebergreifend)
+    private readonly IAnalyticsService? _analyticsService;
+    private readonly ICloudSaveService? _cloudSaveService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -54,6 +57,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     private bool _cloudSaveEnabled = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanUseCloudSave))]
     private bool _isPlayGamesSignedIn;
 
     [ObservableProperty]
@@ -68,6 +72,23 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
 
     [ObservableProperty]
     private bool _hasLastCloudSave;
+
+    /// <summary>DSGVO-Consent fuer anonyme Telemetrie. Gespeichert in SettingsData.AnalyticsEnabled.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanUseCloudSave))]
+    private bool _analyticsEnabled;
+
+    /// <summary>Gibt an ob Firebase online erreichbar ist (Cloud-Save-Upload-Button deaktivieren wenn offline).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanUseCloudSave))]
+    private bool _isCloudSaveOnline;
+
+    /// <summary>True wenn Cloud-Save per Firebase oder Play Games nutzbar ist.</summary>
+    public bool CanUseCloudSave => IsCloudSaveOnline || IsPlayGamesSignedIn;
+
+    /// <summary>Lokalisierter Status-Text fuer letzte Cloud-Save-Aktion (Upload/Download).</summary>
+    [ObservableProperty]
+    private string _cloudSaveActionStatus = "";
 
     // Grafik-Qualität
     [ObservableProperty]
@@ -126,7 +147,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         IPurchaseService purchaseService,
         IPlayGamesService playGamesService,
         IContextualHintService contextualHintService,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        IAnalyticsService? analyticsService = null,
+        ICloudSaveService? cloudSaveService = null)
     {
         _audioService = audioService;
         _localizationService = localizationService;
@@ -136,6 +159,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _playGamesService = playGamesService;
         _contextualHintService = contextualHintService;
         _dialogService = dialogService;
+        _analyticsService = analyticsService;
+        _cloudSaveService = cloudSaveService;
 
         // Grafik-Qualitäts-Optionen lokalisiert befüllen
         GraphicsQualities.Add(new(localizationService.GetString("GraphicsLow") ?? "Low", GraphicsQuality.Low));
@@ -164,6 +189,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
             VibrationEnabled = state.Settings.HapticsEnabled;
             NotificationsEnabled = state.Settings.NotificationsEnabled;
             CloudSaveEnabled = state.Settings.CloudSaveEnabled;
+            AnalyticsEnabled = state.Settings.AnalyticsEnabled;
+            IsCloudSaveOnline = _cloudSaveService?.IsAvailable ?? false;
 
             // Grafik-Qualitaet laden
             SelectedGraphicsQuality = GraphicsQualities.FirstOrDefault(q => q.Quality == state.Settings.GraphicsQuality)
@@ -274,11 +301,26 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _saveGameService.SaveAsync().FireAndForget();
     }
 
+    partial void OnAnalyticsEnabledChanged(bool value)
+    {
+        if (_isInitializing) return;
+        if (_analyticsService != null)
+        {
+            _analyticsService.IsEnabled = value; // persistiert in Settings + startet/stoppt Flush
+            if (value) _ = _analyticsService.InitializeAsync();
+        }
+        _saveGameService.SaveAsync().FireAndForget();
+    }
+
     partial void OnSelectedGraphicsQualityChanged(GraphicsQualityOption? value)
     {
         if (_isInitializing || value == null) return;
 
         _gameStateService.Settings.GraphicsQuality = value.Quality;
+        // FpsProfile sofort aktualisieren — bereits laufende Render-Timer lesen den
+        // neuen Wert beim naechsten Neustart (Tab-Wechsel, IsVisible-Toggle),
+        // der WorkerAvatar-Shared-Timer reagiert sofort via CurrentChanged-Event.
+        Graphics.FpsProfile.SetCurrent(value.Quality);
         _saveGameService.SaveAsync().FireAndForget();
     }
 
@@ -329,6 +371,10 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         NavigationRequested?.Invoke("..");
     }
 
+    // Manuelle Upload/Download-Commands sind bewusst nicht nochmal angelegt — die bestehenden
+    // SaveToCloudCommand / RestoreFromCloudCommand nutzen jetzt intern den ICloudSaveService
+    // (Firebase-REST) und fallen nur bei fehlender Firebase-Verbindung auf Play Games zurueck.
+
     [RelayCommand]
     private void NavigateToStatistics()
     {
@@ -344,6 +390,11 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         {
             await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
+            _analyticsService?.TrackEvent(Models.AnalyticsEvents.IapPurchaseStarted, new Dictionary<string, object?>
+            {
+                ["item"] = "remove_ads_premium"
+            });
+
             var success = await _purchaseService.PurchaseRemoveAdsAsync();
             IsPremium = _purchaseService.IsPremium;
 
@@ -352,6 +403,19 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
                 _gameStateService.State.IsPremium = true;
                 _gameStateService.State.InvalidateMaxOfflineHoursCache();
                 await _saveGameService.SaveAsync();
+
+                _analyticsService?.TrackEvent(Models.AnalyticsEvents.IapPurchaseSuccess, new Dictionary<string, object?>
+                {
+                    ["item"] = "remove_ads_premium"
+                });
+                _analyticsService?.SetUserProperty(Models.AnalyticsUserProperties.Premium, "true");
+            }
+            else
+            {
+                _analyticsService?.TrackEvent(Models.AnalyticsEvents.IapPurchaseFailed, new Dictionary<string, object?>
+                {
+                    ["item"] = "remove_ads_premium"
+                });
             }
         }
         finally
@@ -420,6 +484,33 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         {
             await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
+            // Bevorzugt Firebase-Cloud-Save (plattformuebergreifend, REST).
+            // Fallback auf Play-Games-Snapshots wenn Firebase offline und Play Games verfuegbar.
+            if (_cloudSaveService != null && _cloudSaveService.IsAvailable)
+            {
+                await _saveGameService.SaveAsync(); // Lokal erst sichern
+                var ok = await _cloudSaveService.UploadAsync(_gameStateService.State);
+                if (ok)
+                {
+                    _gameStateService.Settings.LastCloudSaveTime = DateTime.UtcNow;
+                    await _saveGameService.SaveAsync();
+                    RefreshPlayGamesStatus();
+                    _analyticsService?.TrackEvent(Models.AnalyticsEvents.CloudSaveUploaded, null);
+                    ShowAlert(
+                        _localizationService.GetString("CloudSave"),
+                        _localizationService.GetString("CloudSaveSuccess"),
+                        _localizationService.GetString("OK"));
+                }
+                else
+                {
+                    ShowAlert(
+                        _localizationService.GetString("Error"),
+                        _localizationService.GetString("CloudSaveFailed"),
+                        _localizationService.GetString("OK"));
+                }
+                return;
+            }
+
             if (!_playGamesService.IsSignedIn || !_playGamesService.SupportsCloudSave)
             {
                 ShowAlert(
@@ -429,7 +520,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
                 return;
             }
 
-            // Aktuellen Spielstand exportieren
+            // Legacy-Fallback: Play-Games-Snapshots (aktuell Stub, tritt nur bei Desktop/Offline Firebase auf)
             var json = await _saveGameService.ExportSaveAsync();
             if (string.IsNullOrEmpty(json))
             {
@@ -448,7 +539,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
                 _gameStateService.Settings.LastCloudSaveTime = DateTime.UtcNow;
                 await _saveGameService.SaveAsync();
                 RefreshPlayGamesStatus();
-
                 ShowAlert(
                     _localizationService.GetString("CloudSave"),
                     _localizationService.GetString("CloudSaveSuccess"),
@@ -477,6 +567,47 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         {
             await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
+            // Bestaetigungsdialog: Lokaler Spielstand wird ueberschrieben
+            var confirmed = await _dialogService.ShowConfirmDialog(
+                _localizationService.GetString("RestoreFromCloud"),
+                _localizationService.GetString("RestoreFromCloudConfirmation"),
+                _localizationService.GetString("YesRestore"),
+                _localizationService.GetString("Cancel"));
+            if (!confirmed) return;
+
+            // Bevorzugt Firebase-Cloud-Save
+            if (_cloudSaveService != null && _cloudSaveService.IsAvailable)
+            {
+                var cloudState = await _cloudSaveService.DownloadAsync();
+                if (cloudState == null)
+                {
+                    ShowAlert(
+                        _localizationService.GetString("Error"),
+                        _localizationService.GetString("CloudRestoreFailed"),
+                        _localizationService.GetString("OK"));
+                    return;
+                }
+                var cloudJson = System.Text.Json.JsonSerializer.Serialize(cloudState);
+                var okImport = await _saveGameService.ImportSaveAsync(cloudJson);
+                if (okImport)
+                {
+                    _analyticsService?.TrackEvent(Models.AnalyticsEvents.CloudSaveDownloaded, null);
+                    ShowAlert(
+                        _localizationService.GetString("CloudSave"),
+                        _localizationService.GetString("CloudRestoreSuccess"),
+                        _localizationService.GetString("OK"));
+                    NavigationRequested?.Invoke("//main");
+                }
+                else
+                {
+                    ShowAlert(
+                        _localizationService.GetString("Error"),
+                        _localizationService.GetString("CloudRestoreFailed"),
+                        _localizationService.GetString("OK"));
+                }
+                return;
+            }
+
             if (!_playGamesService.IsSignedIn || !_playGamesService.SupportsCloudSave)
             {
                 ShowAlert(
@@ -485,14 +616,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
                     _localizationService.GetString("OK"));
                 return;
             }
-
-            // Bestaetigungsdialog: Lokaler Spielstand wird ueberschrieben
-            var confirmed = await _dialogService.ShowConfirmDialog(
-                _localizationService.GetString("RestoreFromCloud"),
-                _localizationService.GetString("RestoreFromCloudConfirmation"),
-                _localizationService.GetString("YesRestore"),
-                _localizationService.GetString("Cancel"));
-            if (!confirmed) return;
 
             var json = await _playGamesService.LoadCloudSaveAsync();
             if (string.IsNullOrEmpty(json))
@@ -511,8 +634,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
                     _localizationService.GetString("CloudSave"),
                     _localizationService.GetString("CloudRestoreSuccess"),
                     _localizationService.GetString("OK"));
-
-                // Navigation zum Hauptmenü um neuen State zu laden
                 NavigationRequested?.Invoke("//main");
             }
             else

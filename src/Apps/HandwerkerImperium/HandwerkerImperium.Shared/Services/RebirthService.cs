@@ -38,16 +38,20 @@ public sealed class RebirthService : IRebirthService
 
     public event EventHandler<WorkshopType>? RebirthCompleted;
 
+    private readonly IAnalyticsService? _analyticsService;
+
     public RebirthService(
         IGameStateService gameStateService,
         IAudioService audioService,
         IPrestigeService prestigeService,
-        IAscensionService ascensionService)
+        IAscensionService ascensionService,
+        IAnalyticsService? analyticsService = null)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
         _prestigeService = prestigeService;
         _ascensionService = ascensionService;
+        _analyticsService = analyticsService;
 
         // Nach State-Load Sterne auf Workshop-Instanzen übertragen
         _gameStateService.StateLoaded += (_, _) => ApplyStarsToWorkshops();
@@ -127,6 +131,12 @@ public sealed class RebirthService : IRebirthService
         _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
 
         RebirthCompleted?.Invoke(this, type);
+
+        _analyticsService?.TrackEvent(AnalyticsEvents.RebirthDone, new Dictionary<string, object?>
+        {
+            ["workshop"] = type.ToString(),
+            ["star_level"] = GetStars(type)
+        });
 
         return true;
     }

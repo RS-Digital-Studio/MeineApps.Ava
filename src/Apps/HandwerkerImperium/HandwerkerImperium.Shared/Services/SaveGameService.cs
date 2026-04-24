@@ -25,6 +25,10 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     private readonly IGameStateService _gameStateService;
     private readonly IGameIntegrityService _integrityService;
     private readonly IPlayGamesService? _playGamesService;
+    // Firebase-basierter Cloud-Save — ersetzt den nicht-funktionalen Play-Games-Snapshots-Stub.
+    private readonly ICloudSaveService? _cloudSaveService;
+    private DateTime _lastCloudUploadAttempt = DateTime.MinValue;
+    private static readonly TimeSpan CloudUploadMinInterval = TimeSpan.FromMinutes(2);
     private readonly SemaphoreSlim _ioLock = new(1, 1);
 
     public event Action<string, string>? ErrorOccurred;
@@ -49,11 +53,16 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
     private string TempFilePath => SaveFilePath + ".tmp";
     public bool SaveExists => File.Exists(SaveFilePath);
 
-    public SaveGameService(IGameStateService gameStateService, IGameIntegrityService integrityService, IPlayGamesService? playGamesService = null)
+    public SaveGameService(
+        IGameStateService gameStateService,
+        IGameIntegrityService integrityService,
+        IPlayGamesService? playGamesService = null,
+        ICloudSaveService? cloudSaveService = null)
     {
         _gameStateService = gameStateService;
         _integrityService = integrityService;
         _playGamesService = playGamesService;
+        _cloudSaveService = cloudSaveService;
 
         _jsonOptions = new JsonSerializerOptions
         {
@@ -118,17 +127,30 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
 
         File.Move(TempFilePath, SaveFilePath, overwrite: true);
 
-        // Cloud-Save parallel (fire-and-forget, blockiert lokales Save nie)
-        if (_playGamesService?.IsSignedIn == true && state.Settings.CloudSaveEnabled)
+        // Cloud-Save (Firebase-REST) parallel (fire-and-forget, blockiert lokales Save nie).
+        // Rate-Limit: Max. alle 2 Minuten uploaden damit Firebase-Kosten kontrolliert bleiben.
+        // Der Save ist lokal immer konsistent — Cloud ist nur Backup.
+        if (_cloudSaveService?.IsAvailable == true && state.Settings.CloudSaveEnabled)
         {
-            // json-Variable wiederverwenden statt erneut von Datei lesen (vermeidet Race Condition + I/O)
-            var cloudJson = json;
-            var cloudSvc = _playGamesService;
-            _ = Task.Run(async () =>
+            var now = DateTime.UtcNow;
+            if (now - _lastCloudUploadAttempt >= CloudUploadMinInterval)
             {
-                try { await cloudSvc.SaveToCloudAsync(cloudJson, $"Level {cloudLevel}"); }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] Cloud-Save Fehler: {ex.Message}"); }
-            });
+                _lastCloudUploadAttempt = now;
+                var cloudSvc = _cloudSaveService;
+                var stateSnapshot = state; // Gleiche Referenz — wird beim Upload serialisiert
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var ok = await cloudSvc.UploadAsync(stateSnapshot);
+                        if (ok) stateSnapshot.Settings.LastCloudSaveTime = DateTime.UtcNow;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] Cloud-Save Fehler: {ex.Message}");
+                    }
+                });
+            }
         }
     }
 

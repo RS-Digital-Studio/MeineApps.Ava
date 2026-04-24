@@ -133,7 +133,8 @@ public partial class MainView : UserControl
 
         _renderTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromMilliseconds(66) // 15fps (Tab-Bar braucht keine 25fps)
+            // Render-Intervall aus aktiver Grafikqualitaet (Low=10fps, Medium/High=15fps)
+            Interval = Graphics.FpsProfile.MainView()
         };
         _renderTimer.Tick += OnRenderTimerTick;
         _renderTimer.Start();

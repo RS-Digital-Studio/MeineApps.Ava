@@ -6182,4 +6182,22 @@
   <data name="AvailablePointsFormat" xml:space="preserve"><value>{0} PA disponibili</value></data>
   <data name="TotalPointsFormat" xml:space="preserve"><value>Totale: {0}</value></data>
   <data name="NextAscensionFormat" xml:space="preserve"><value>Prossima ascensione: +{0} PA</value></data>
+  <!-- Analytics / Privacy / Cloud-Save (v2.0.33) -->
+  <data name="Privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="AnalyticsLabel" xml:space="preserve"><value>Telemetria anonima</value></data>
+  <data name="AnalyticsDesc" xml:space="preserve"><value>Le statistiche anonime ci aiutano a migliorare il gioco. Nessun dato personale.</value></data>
+  <data name="AnalyticsConsentTitle" xml:space="preserve"><value>Ci aiuti a migliorare?</value></data>
+  <data name="AnalyticsConsentMessage" xml:space="preserve"><value>I dati di utilizzo anonimi ci aiutano a migliorare il gioco. Nessun dato personale, nessun tracciamento di terze parti. Puoi cambiare questo in qualsiasi momento nelle impostazioni.</value></data>
+  <data name="AnalyticsConsentAccept" xml:space="preserve"><value>S&#236;, aiutare</value></data>
+  <data name="AnalyticsConsentDecline" xml:space="preserve"><value>No, grazie</value></data>
+  <data name="CloudSaveLocalSummary" xml:space="preserve"><value>Locale: Livello {0} ({1})</value></data>
+  <data name="CloudSaveCloudSummary" xml:space="preserve"><value>Cloud: Livello {0} ({1})</value></data>
+  <data name="SplashStep_Config" xml:space="preserve"><value>Caricamento configurazione...</value></data>
+  <!-- Gilde Tab-Navigation (v2.0.34) -->
+  <data name="GuildTabOverview" xml:space="preserve"><value>Panoramica</value></data>
+  <data name="GuildTabCombat" xml:space="preserve"><value>Combattimento</value></data>
+  <data name="GuildTabResearch" xml:space="preserve"><value>Ricerca</value></data>
+  <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
+  <data name="GuildTabMembers" xml:space="preserve"><value>Membri</value></data>
+  <data name="GuildWarDetailTitle" xml:space="preserve"><value>Guerra corrente</value></data>
 </root>

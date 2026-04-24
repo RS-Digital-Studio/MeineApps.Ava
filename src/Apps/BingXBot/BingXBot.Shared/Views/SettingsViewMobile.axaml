@@ -237,6 +237,25 @@
         </StackPanel>
       </Border>
 
+      <!-- ═════ Darstellung ═════ -->
+      <Border Classes="SectionCard">
+        <StackPanel Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="ThemeLightDark" Width="16" Height="16"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Darstellung" FontSize="13" FontWeight="Bold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Spacing="4">
+            <TextBlock Text="Theme" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <ComboBox ItemsSource="{Binding AvailableThemes}"
+                      SelectedItem="{Binding Theme, Mode=TwoWay}"
+                      HorizontalAlignment="Stretch" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
       <!-- ═════ Logging ═════ -->
       <Border Classes="SectionCard">
         <StackPanel Spacing="10">

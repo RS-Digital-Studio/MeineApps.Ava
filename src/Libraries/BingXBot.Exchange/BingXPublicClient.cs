@@ -17,7 +17,7 @@ public class BingXPublicClient : IPublicMarketDataClient
 {
     private const string BaseUrl = "https://open-api.bingx.com";
     private readonly HttpClient _httpClient;
-    private readonly RateLimiter _rateLimiter;
+    private readonly IRateLimiter _rateLimiter;
     private readonly ILogger<BingXPublicClient> _logger;
 
     /// <summary>Timeout für einzelne HTTP-Requests (30s statt Endlos-Default).</summary>
@@ -26,7 +26,7 @@ public class BingXPublicClient : IPublicMarketDataClient
     /// <summary>Maximale Retry-Versuche bei transienten Fehlern (HTTP 429, 5xx, Timeout).</summary>
     private const int MaxRetries = 3;
 
-    public BingXPublicClient(HttpClient httpClient, RateLimiter rateLimiter, ILogger<BingXPublicClient> logger)
+    public BingXPublicClient(HttpClient httpClient, IRateLimiter rateLimiter, ILogger<BingXPublicClient> logger)
     {
         _httpClient = httpClient;
         _rateLimiter = rateLimiter;

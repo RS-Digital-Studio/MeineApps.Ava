@@ -63,6 +63,19 @@ public partial class SettingsViewModel : ViewModelBase
     // Wird in der View als IsEnabled-Binding am "Code bestätigen"-Button genutzt.
     [ObservableProperty] private bool _isCompletingPairing;
 
+    /// <summary>Verfuegbare Theme-Optionen fuer den Picker in der View.</summary>
+    public static IReadOnlyList<ThemePreference> AvailableThemes { get; } =
+        new[] { ThemePreference.Dark, ThemePreference.Light, ThemePreference.System };
+
+    [ObservableProperty] private ThemePreference _theme = ThemePreference.Dark;
+
+    partial void OnThemeChanged(ThemePreference value)
+    {
+        _botSettings.ThemePreference = value;
+        App.ApplyTheme(value);
+        _ = _settingsPersistence.SaveAllAsync();
+    }
+
     private readonly IAccountService? _accountService;
 
     public SettingsViewModel(
@@ -83,6 +96,7 @@ public partial class SettingsViewModel : ViewModelBase
         _pairingClient = pairingClient;
         _accountService = accountService;
         _settingsPersistence = settingsPersistence;
+        _theme = botSettings.ThemePreference;
 
         // Gespeicherte Credentials laden
         _ = LoadCredentialsAsync();
@@ -125,26 +139,58 @@ public partial class SettingsViewModel : ViewModelBase
         PairingCode = "";
 
         PairingStatus = "Pruefe Server-Erreichbarkeit...";
+
+        // Progressives Feedback bei Tailscale-Cold-Start (3-8 s Handshake) damit User nicht denkt
+        // das UI haengt. Timer wird bei jedem erfolgreichen Schritt abgebrochen.
+        using var progressCts = new CancellationTokenSource();
+        var progressTask = RunPairingProgressHintAsync(
+            afterSeconds: 5,
+            hint: "Server antwortet langsam — Tailscale braucht bei Cold-Start oft 5-10 s, bitte warten...",
+            ct: progressCts.Token);
+
         try
         {
             if (!await _pairingClient.PingHealthAsync(ServerUrl))
             {
+                progressCts.Cancel();
                 PairingStatus = "Server nicht erreichbar (Health-Check fehlgeschlagen). Server-URL pruefen (z.B. http://raspberrypi.local:5050 oder http://192.168.178.28:5050).";
                 return;
             }
 
             var response = await _pairingClient.InitiateAsync(ServerUrl, PairedDeviceName);
+            progressCts.Cancel();
             _pendingPairingId = response.PairingId;
             PairingInProgress = true;  // Erst nach erfolgreichem Init — jetzt ist Schritt 2 (Code-Eingabe) sinnvoll
             PairingStatus = $"Code vom Pi ablesen (gueltig {response.ExpiresInSeconds}s) und unten eingeben";
         }
         catch (Exception ex)
         {
+            progressCts.Cancel();
             // Sauber zurueck in Schritt 1 — Buttons verhalten sich sonst wie "stuck" (CompleteButton sichtbar ohne PairingId).
             _pendingPairingId = null;
             PairingInProgress = false;
             PairingStatus = $"Fehler: {ex.Message}";
         }
+        finally
+        {
+            // Task-Finalisierung (bei erfolgreichem Cancel wirft die Task OperationCanceledException — schlucken)
+            try { await progressTask; } catch (OperationCanceledException) { }
+        }
+    }
+
+    /// <summary>
+    /// Zeigt nach <paramref name="afterSeconds"/> einen zusaetzlichen Hint im PairingStatus-Text,
+    /// wenn der laufende Pairing-Call noch nicht abgeschlossen ist. Wird durch Cancellation abgebrochen.
+    /// </summary>
+    private async Task RunPairingProgressHintAsync(int afterSeconds, string hint, CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(afterSeconds), ct).ConfigureAwait(false);
+            if (!ct.IsCancellationRequested)
+                PairingStatus = hint;
+        }
+        catch (OperationCanceledException) { /* normal beim erfolgreichen Pairing */ }
     }
 
     /// <summary>

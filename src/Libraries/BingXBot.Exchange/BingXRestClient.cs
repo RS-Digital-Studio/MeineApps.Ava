@@ -21,7 +21,7 @@ public class BingXRestClient : IExchangeClient
     private readonly string _apiKey;
     private readonly string _apiSecret;
     private readonly HttpClient _httpClient;
-    private readonly RateLimiter _rateLimiter;
+    private readonly IRateLimiter _rateLimiter;
     private readonly ILogger<BingXRestClient> _logger;
 
     // Position-Modus: true = Hedge-Mode (LONG/SHORT), false = One-Way (BOTH)
@@ -46,7 +46,7 @@ public class BingXRestClient : IExchangeClient
         string apiKey,
         string apiSecret,
         HttpClient httpClient,
-        RateLimiter rateLimiter,
+        IRateLimiter rateLimiter,
         ILogger<BingXRestClient> logger,
         SymbolInfoCache? symbolInfoCache = null)
     {

@@ -39,6 +39,7 @@ public static class ApiRoutes
 
     // Trades & Logs
     public const string Trades = ApiPrefix + "/trades";
+    public const string TradesSummary = ApiPrefix + "/trades/summary";
     public const string Logs = ApiPrefix + "/logs";
     public const string ScannerResults = ApiPrefix + "/scanner/results";
 

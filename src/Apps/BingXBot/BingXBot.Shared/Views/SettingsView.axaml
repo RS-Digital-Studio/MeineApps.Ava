@@ -284,6 +284,35 @@
       </Border>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Darstellung                                             -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="ThemeLightDark" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Darstellung" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="Theme" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <ComboBox ItemsSource="{Binding AvailableThemes}"
+                      SelectedItem="{Binding Theme, Mode=TwoWay}"
+                      Background="{DynamicResource CardBrush}"
+                      Foreground="{DynamicResource AppTextBrush}"
+                      BorderBrush="{DynamicResource AppBorderBrush}"
+                      BorderThickness="1" CornerRadius="6"
+                      Padding="12,8" FontSize="13"
+                      MinWidth="200" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
       <!-- Sektion: Logging                                                 -->
       <!-- ═══════════════════════════════════════════════════════════════ -->
       <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"

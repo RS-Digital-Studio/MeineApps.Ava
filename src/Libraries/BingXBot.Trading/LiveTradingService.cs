@@ -17,7 +17,7 @@ namespace BingXBot.Trading;
 /// Nutzt BingXRestClient für Orders und IPublicMarketDataClient für Marktdaten.
 /// WARNUNG: Echtes Geld! Nur mit ausreichendem Paper-Testing verwenden.
 /// </summary>
-public class LiveTradingService : TradingServiceBase
+public partial class LiveTradingService : TradingServiceBase
 {
     // IExchangeClient (nicht BingXRestClient) damit Reconcile/Order-Flows unit-getestet werden koennen
     // (FakeExchangeClient in Tests). Umgestellt 24.04.2026 (P0-2 Audit).
@@ -524,14 +524,10 @@ public class LiveTradingService : TradingServiceBase
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
                 $"LIVE: {pos.Symbol}: {reason} ({pos.Side})", pos.Symbol));
 
-            // CompletedTrade erstellen für TradeHistory
-            var entryFee = pos.Quantity * pos.EntryPrice * _takerFeeRate;
-            var exitFee = pos.Quantity * price * _takerFeeRate;
-            var totalFee = entryFee + exitFee;
-            var rawPnl = pos.Side == Side.Buy
-                ? (price - pos.EntryPrice) * pos.Quantity
-                : (pos.EntryPrice - price) * pos.Quantity;
-            var pnl = rawPnl - totalFee;
+            // CompletedTrade erstellen für TradeHistory — zentrale Formel aus FeeCalculator
+            // (gleiche Berechnung wie Paper/Backtest, verhindert PnL-Drift zwischen Pfaden).
+            var totalFee = BingXBot.Core.Services.FeeCalculator.CalculateTotalFee(pos.EntryPrice, price, pos.Quantity, _takerFeeRate);
+            var pnl = BingXBot.Core.Services.FeeCalculator.CalculateNetPnl(pos.Side, pos.EntryPrice, price, pos.Quantity, _takerFeeRate);
             var entryTime = _positionOpenTimes.GetValueOrDefault(key, pos.OpenTime);
             var navTf = GetNavigatorTimeframeForKey(key);
             var trade = new CompletedTrade(pos.Symbol, pos.Side, pos.EntryPrice, price,
@@ -1438,161 +1434,8 @@ public class LiveTradingService : TradingServiceBase
     // WebSocket Ticker-Stream (Echtzeit-Preise für SL/TP)
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Startet den WebSocket-Ticker-Stream für Echtzeit-Preise.
-    /// Erlaubt schnellere SL/TP-Reaktion als 5s REST-Polling.
-    /// </summary>
-    private async Task StartTickerStreamAsync()
-    {
-        if (_wsClient == null) return;
-        try
-        {
-            _tickerPriceHandler = (symbol, price) => _wsTickerPrices[symbol] = price;
-            _wsClient.TickerPriceReceived += _tickerPriceHandler;
-            await _wsClient.SubscribeAllTickersAsync().ConfigureAwait(false);
-            IsWsTickerActive = true;
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "WebSocket",
-                "Echtzeit-Ticker-Stream aktiv (sub-100ms Latenz)"));
-        }
-        catch (Exception ex)
-        {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "WebSocket",
-                $"Ticker-Stream nicht verfügbar: {ex.Message}. Fallback auf 5s REST-Polling."));
-        }
-    }
-
-    /// <summary>Gibt den WebSocket-Preis für ein Symbol zurück, falls verfügbar.</summary>
-    public decimal? GetWebSocketPrice(string symbol) =>
-        _wsTickerPrices.TryGetValue(symbol, out var price) ? price : null;
-
-    // ═══════════════════════════════════════════════════════════════
-    // WebSocket User-Data-Stream (Live-spezifisch)
-    // ═══════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Startet den User-Data-Stream für Echtzeit-Account/Position-Updates.
-    /// ListenKey wird alle 30 Minuten erneuert.
-    /// </summary>
-    private async Task StartUserDataStreamAsync(CancellationToken ct)
-    {
-        try
-        {
-            _listenKey = await _restClient.CreateListenKeyAsync().ConfigureAwait(false);
-            await _wsClient!.ConnectUserDataStreamAsync(_listenKey, ct).ConfigureAwait(false);
-
-            _wsClient.UserDataReceived += OnUserDataReceived;
-
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
-                "User-Data-Stream verbunden (Echtzeit-Updates aktiv)"));
-
-            // ListenKey alle 30 Minuten erneuern, bei 2+ Fehlern Reconnect
-            var renewFailures = 0;
-            _listenKeyRenewTimer = new PeriodicTimer(TimeSpan.FromMinutes(30));
-            while (await _listenKeyRenewTimer.WaitForNextTickAsync(ct))
-            {
-                try
-                {
-                    await _restClient.RenewListenKeyAsync(_listenKey).ConfigureAwait(false);
-                    renewFailures = 0;
-                }
-                catch (Exception ex)
-                {
-                    renewFailures++;
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
-                        $"ListenKey-Erneuerung fehlgeschlagen ({renewFailures}x): {ex.Message}"));
-
-                    // Bei 2+ Fehlern: Neuen ListenKey erstellen und WS-Verbindung neu aufbauen
-                    if (renewFailures >= 2)
-                    {
-                        try
-                        {
-                            if (_wsClient.IsUserDataConnected)
-                                await _wsClient.DisconnectUserDataStreamAsync().ConfigureAwait(false);
-
-                            _listenKey = await _restClient.CreateListenKeyAsync().ConfigureAwait(false);
-                            await _wsClient.ConnectUserDataStreamAsync(_listenKey, ct).ConfigureAwait(false);
-                            renewFailures = 0;
-
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
-                                "User-Data-Stream neu verbunden (ListenKey erneuert)"));
-                        }
-                        catch (Exception reconnectEx)
-                        {
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
-                                $"User-Data-Stream Reconnect fehlgeschlagen: {reconnectEx.Message}. Fallback: REST-Polling."));
-                        }
-                    }
-                }
-            }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
-                $"User-Data-Stream konnte nicht gestartet werden: {ex.Message} (Fallback: REST-Polling)"));
-        }
-    }
-
-    /// <summary>Verarbeitet User-Data-Stream Events (ACCOUNT_UPDATE, ORDER_TRADE_UPDATE).</summary>
-    private void OnUserDataReceived(object? sender, string message)
-    {
-        try
-        {
-            using var doc = System.Text.Json.JsonDocument.Parse(message);
-            var root = doc.RootElement;
-
-            var eventType = root.TryGetProperty("e", out var eProp) ? eProp.GetString() : null;
-
-            switch (eventType)
-            {
-                case "ACCOUNT_UPDATE":
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "WebSocket",
-                        "Account-Update empfangen (Balance/Position geändert)"));
-                    break;
-
-                case "ORDER_TRADE_UPDATE":
-                    if (root.TryGetProperty("o", out var orderData))
-                    {
-                        var symbol = orderData.TryGetProperty("s", out var sProp) ? sProp.GetString() : "?";
-                        var status = orderData.TryGetProperty("X", out var xProp) ? xProp.GetString() : "?";
-                        var oSide = orderData.TryGetProperty("S", out var sideProp) ? sideProp.GetString() : "?";
-                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "WebSocket",
-                            $"Order-Update: {symbol} {oSide} → {status}", symbol));
-                    }
-                    break;
-            }
-        }
-        catch
-        {
-            // Parse-Fehler ignorieren - User-Data ist optional
-        }
-    }
-
-    /// <summary>
-    /// Räumt den User-Data-Stream sauber auf: Event-Handler abmelden, Timer stoppen,
-    /// ListenKey löschen, WebSocket trennen.
-    /// </summary>
-    private async Task CleanupUserDataStreamAsync()
-    {
-        _listenKeyRenewTimer?.Dispose();
-        _listenKeyRenewTimer = null;
-
-        if (_wsClient != null)
-            _wsClient.UserDataReceived -= OnUserDataReceived;
-
-        if (_wsClient != null && _wsClient.IsUserDataConnected)
-        {
-            try { await _wsClient.DisconnectUserDataStreamAsync().ConfigureAwait(false); }
-            catch { /* Best-effort beim Cleanup */ }
-        }
-
-        if (_listenKey != null)
-        {
-            try { await _restClient.DeleteListenKeyAsync(_listenKey).ConfigureAwait(false); }
-            catch { /* Best-effort */ }
-            _listenKey = null;
-        }
-    }
+    // WebSocket-Stream-Methoden extrahiert in LiveTradingService.WebSocket.cs
+    // (Partial-Class-Split, 24.04.2026, P1-1).
 
     protected override void DisposeAdditional()
     {
@@ -1674,89 +1517,7 @@ public class LiveTradingService : TradingServiceBase
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // Reconcile-Loop: Bot-State gegen Exchange-Realitaet abgleichen (P0-1, 24.04.2026)
-    // ═══════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Reconcile-Intervall (60 s). Schneller als Drift-Szenarien normalerweise eskalieren,
-    /// langsamer als Rate-Limits vertragen.
-    /// </summary>
-    private const int ReconcileIntervalSeconds = 60;
-
-    private async Task ReconcileLoopAsync(CancellationToken ct)
-    {
-        // Initial-Delay: 30 s, damit nach Engine-Start genug Zeit fuer erste Scans+Position-Opens ist.
-        try { await Task.Delay(30_000, ct).ConfigureAwait(false); }
-        catch (OperationCanceledException) { return; }
-
-        while (!ct.IsCancellationRequested)
-        {
-            try
-            {
-                if (!_isPaused)
-                    await ReconcilePositionsAsync(ct).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) { break; }
-            catch (Exception ex)
-            {
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
-                    $"Reconcile-Loop-Fehler: {ex.Message} — naechster Versuch in {ReconcileIntervalSeconds}s"));
-            }
-
-            try { await Task.Delay(ReconcileIntervalSeconds * 1000, ct).ConfigureAwait(false); }
-            catch (OperationCanceledException) { break; }
-        }
-    }
-
-    /// <summary>
-    /// Einmaliger Reconcile-Durchlauf:
-    /// 1) Exchange-Positionen abrufen,
-    /// 2) Drift gegen <see cref="TradingServiceBase._positionSignals"/> analysieren,
-    /// 3) Orphan-Signale bereinigen, Unmanaged-Positionen loggen.
-    /// Internal fuer Testbarkeit (InternalsVisibleTo=BingXBot.Tests).
-    /// </summary>
-    internal async Task ReconcilePositionsAsync(CancellationToken ct)
-    {
-        var positions = await _restClient.GetPositionsAsync(ct).ConfigureAwait(false);
-
-        // Snapshot der Bot-Keys (ConcurrentDictionary.Keys ist konsistent, nicht blockierend).
-        var botKeys = _positionSignals.Keys.ToArray();
-
-        // Pending-Symbol/Side — wenn Limit-Entry noch nicht gefuellt ist, ist "keine Position" OK.
-        var pendingSymbolSides = _pendingLimitOrders.Values
-            .Select(v => (v.Symbol, v.IsLong ? Side.Buy : Side.Sell))
-            .ToHashSet();
-
-        var actions = PositionDriftAnalyzer.Analyze(
-            positions,
-            botKeys,
-            pendingSymbolSides,
-            graceWindow: TimeSpan.FromSeconds(90),
-            signalCreatedAt: _signalCreatedAt);
-
-        if (actions.Count == 0) return;
-
-        foreach (var action in actions)
-        {
-            var key = $"{action.Symbol}_{action.Side}";
-            switch (action.Kind)
-            {
-                case PositionDriftAnalyzer.DriftKind.OrphanSignalRemove:
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
-                        $"{LogPrefix}{action.Symbol} {action.Side}: Orphan-Signal entfernt — {action.Reason}",
-                        action.Symbol));
-                    RemoveSignalByKey(key);
-                    break;
-
-                case PositionDriftAnalyzer.DriftKind.UnmanagedPositionWarning:
-                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
-                        $"{LogPrefix}{action.Symbol} {action.Side}: {action.Reason}",
-                        action.Symbol));
-                    break;
-            }
-        }
-    }
+    // Reconcile-Loop extrahiert in LiveTradingService.Reconcile.cs (Partial-Class-Split, 24.04.2026).
 
     private async Task CancelNativeSlTpOrdersAsync(string symbol)
     {

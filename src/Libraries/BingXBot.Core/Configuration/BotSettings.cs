@@ -42,4 +42,18 @@ public class BotSettings
     /// gleiche Schutz-Logik wie LastMode). Sonst kippt jeder Client-Save den Auto-Resume-Wunsch zurueck auf Default false.
     /// </summary>
     public bool WasRunningOnShutdown { get; set; }
+
+    /// <summary>
+    /// UI-Theme-Vorliebe (Dark/Light/System). System folgt dem Betriebssystem-Theme.
+    /// Default Dark — passt zu Trading-Terminal-UI und ist seit v1.0 der Standard.
+    /// </summary>
+    public ThemePreference ThemePreference { get; set; } = ThemePreference.Dark;
+}
+
+/// <summary>UI-Theme-Optionen fuer die BingXBot-Clients (Desktop + Mobile).</summary>
+public enum ThemePreference
+{
+    Dark = 0,
+    Light = 1,
+    System = 2
 }

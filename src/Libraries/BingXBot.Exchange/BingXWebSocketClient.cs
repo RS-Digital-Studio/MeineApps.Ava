@@ -32,6 +32,12 @@ public class BingXWebSocketClient : IAsyncDisposable
     // Send-Lock: ClientWebSocket.SendAsync ist NICHT thread-safe.
     // Subscribe, Unsubscribe und Pong (ReceiveLoop) können gleichzeitig senden.
     private readonly SemaphoreSlim _sendLock = new(1, 1);
+
+    // Heartbeat-Drift-Tracking (P3-1, 24.04.2026): BingX sendet alle ~20 s einen "Ping".
+    // Wenn >35 s ohne Ping vergehen, deutet das auf Netz-Lag oder verschluckten Frame hin.
+    // Nur info/debug — keine Verhaltens-Aenderung, Auto-Reconnect deckt echte Disconnects.
+    private DateTime _lastPingUtc = DateTime.MinValue;
+    private const int PingDriftWarnThresholdSeconds = 35;
     private readonly SemaphoreSlim _userSendLock = new(1, 1);
 
     // User-Data-Stream: Separater WebSocket für Echtzeit-Account-Updates
@@ -228,6 +234,19 @@ public class BingXWebSocketClient : IAsyncDisposable
                 // Ping/Pong Handling - BingX sendet "Ping", erwartet "Pong"
                 if (message == "Ping" || message.Contains("\"ping\""))
                 {
+                    // Heartbeat-Drift: Wenn der Abstand zum letzten Ping ungewoehnlich gross ist,
+                    // als Warning loggen (Netz-Lag / Frame-Loss Indikator). Erster Ping nach
+                    // Connect hat noch keine Referenz — deshalb MinValue-Guard.
+                    var now = DateTime.UtcNow;
+                    if (_lastPingUtc != DateTime.MinValue)
+                    {
+                        var drift = (now - _lastPingUtc).TotalSeconds;
+                        if (drift > PingDriftWarnThresholdSeconds)
+                            _logger.LogWarning("WS-Heartbeat-Drift: {Drift:F1}s seit letztem Ping (Schwelle {Threshold}s)",
+                                drift, PingDriftWarnThresholdSeconds);
+                    }
+                    _lastPingUtc = now;
+
                     await _sendLock.WaitAsync(ct).ConfigureAwait(false);
                     try { await _ws.SendAsync(pongBytes, WebSocketMessageType.Text, true, ct); }
                     finally { _sendLock.Release(); }

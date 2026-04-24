@@ -73,6 +73,24 @@ public static class StatusEndpoints
             store.Register(dto);
             return Results.NoContent();
         });
+
+        // Debug: IndicatorCache-Statistik (Hit-Rate fuer Performance-Diagnose).
+        app.MapGet("/api/v1/debug/indicator-cache", () =>
+        {
+            var stats = BingXBot.Engine.Indicators.IndicatorHelper.GetCacheStats();
+            return Results.Ok(new
+            {
+                indicatorHits = stats.IndicatorHits,
+                indicatorMisses = stats.IndicatorMisses,
+                indicatorHitRate = stats.IndicatorHitRate,
+                quotesHits = stats.QuotesHits,
+                quotesMisses = stats.QuotesMisses,
+                quotesHitRate = stats.QuotesHitRate,
+                indicatorCacheSize = stats.IndicatorCacheSize,
+                quotesCacheSize = stats.QuotesCacheSize,
+                scanGeneration = stats.ScanGeneration
+            });
+        });
     }
 
     private static string? ExtractCurrentToken(HttpContext ctx)

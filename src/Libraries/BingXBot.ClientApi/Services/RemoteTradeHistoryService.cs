@@ -36,6 +36,12 @@ public sealed class RemoteTradeHistoryService : ITradeHistoryService
         var list = await _connection.HttpClient.GetJsonAsync<List<ScannerResultDto>>(ApiRoutes.ScannerResults, ct).ConfigureAwait(false);
         return list;
     }
+
+    public Task<TradeSummaryDto> GetSummaryAsync(Core.Enums.TradingMode? mode, CancellationToken ct = default)
+    {
+        var path = ApiRoutes.TradesSummary + (mode.HasValue ? $"?mode={mode}" : "");
+        return _connection.HttpClient.GetJsonAsync<TradeSummaryDto>(path, ct);
+    }
 }
 
 public sealed class RemoteBacktestService : IBacktestControlService

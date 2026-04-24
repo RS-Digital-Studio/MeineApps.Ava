@@ -120,6 +120,10 @@ services.AddHostedService<BingXBot.Server.Services.ServerHealthWatchdog>();
 // Schuetzt vor Pi-SD-Karten-Korruption — ohne Backup = Total-Wissensverlust bei SD-Ausfall.
 services.AddHostedService<BingXBot.Server.Services.DbBackupService>();
 
+// Stale-Engine-Detector: FCM-Push wenn Bot "Running" sagt aber seit 6h kein Scanner/Trade.
+// Deckt das "stiller-Bot"-Szenario das UI-Watchdog nur lokal sieht — jetzt push-aktiv.
+services.AddHostedService<BingXBot.Server.Services.StaleEngineDetector>();
+
 // SignalR
 services.AddSignalR(opts =>
 {

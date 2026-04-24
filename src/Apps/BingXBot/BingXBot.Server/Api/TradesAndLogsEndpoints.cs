@@ -37,6 +37,17 @@ public static class TradesAndLogsEndpoints
             return Results.Ok(results);
         });
 
+        // Aggregate-Summary — spart Client Bandbreite bei 1000+ Trades
+        app.MapGet(ApiRoutes.TradesSummary, async (
+            ITradeHistoryService history, string? mode, CancellationToken ct) =>
+        {
+            TradingMode? modeFilter = null;
+            if (!string.IsNullOrWhiteSpace(mode) && Enum.TryParse<TradingMode>(mode, true, out var m))
+                modeFilter = m;
+            var summary = await history.GetSummaryAsync(modeFilter, ct);
+            return Results.Ok(summary);
+        });
+
         // Logs-Query aus Server-seitigem Ringpuffer (default 1000 Eintraege, Capacity via
         // Server:LogBufferCapacity). Client nutzt das nach Reconnect oder App-Neustart, um
         // die Log-Historie wiederherzustellen — ohne wuerde LogView leer bleiben bis neue

@@ -45,7 +45,23 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        // Initial Dark — wird nach Settings-Load in OnFrameworkInitializationCompleted ggf. ueberschrieben.
         RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+    }
+
+    /// <summary>
+    /// Setzt das Theme zur Laufzeit basierend auf User-Vorliebe. System = folgt OS.
+    /// Wird sowohl beim Startup (nach Settings-Load) als auch bei UI-Switch aufgerufen.
+    /// </summary>
+    public static void ApplyTheme(BingXBot.Core.Configuration.ThemePreference pref)
+    {
+        if (Current is null) return;
+        Current.RequestedThemeVariant = pref switch
+        {
+            BingXBot.Core.Configuration.ThemePreference.Light => Avalonia.Styling.ThemeVariant.Light,
+            BingXBot.Core.Configuration.ThemePreference.System => Avalonia.Styling.ThemeVariant.Default,
+            _ => Avalonia.Styling.ThemeVariant.Dark
+        };
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -125,7 +141,11 @@ public partial class App : Application
                 var saved = await db.LoadSettingsAsync().ConfigureAwait(false);
                 // RestoreSettingsFromDb greift auf DI-Singletons zu — zurück auf UI-Thread marshalen
                 // ist nicht zwingend (POCO-Setter), aber wir machen es sicherheitshalber.
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => RestoreSettingsFromDb(saved));
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    RestoreSettingsFromDb(saved);
+                    ApplyTheme(saved.ThemePreference);
+                });
             }
             catch (Exception ex)
             {

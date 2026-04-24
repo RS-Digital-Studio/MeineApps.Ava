@@ -48,6 +48,38 @@ public sealed class LocalTradeHistoryService : ITradeHistoryService
         return new PagedResult<TradeDto>(items, totalCount, page, pageSize);
     }
 
+    public async Task<TradeSummaryDto> GetSummaryAsync(TradingMode? mode, CancellationToken ct = default)
+    {
+        if (_db == null)
+            return new TradeSummaryDto(0, 0, 0, 0m, 0m, 0m, 0m, 0m, 0m, mode);
+
+        var all = await _db.GetTradesAsync(modeFilter: mode, limit: int.MaxValue).ConfigureAwait(false);
+        var list = all.ToList();
+        if (list.Count == 0)
+            return new TradeSummaryDto(0, 0, 0, 0m, 0m, 0m, 0m, 0m, 0m, mode);
+
+        var wins = list.Count(t => t.Pnl > 0);
+        var losses = list.Count(t => t.Pnl < 0);
+        var total = list.Sum(t => t.Pnl);
+        var fees = list.Sum(t => t.Fee);
+        var best = list.Max(t => t.Pnl);
+        var worst = list.Min(t => t.Pnl);
+        var avg = total / list.Count;
+        var wr = (wins + losses) == 0 ? 0m : (decimal)wins / (wins + losses);
+
+        return new TradeSummaryDto(
+            TotalTrades: list.Count,
+            WinCount: wins,
+            LossCount: losses,
+            WinRate: wr,
+            TotalPnl: total,
+            AveragePnl: avg,
+            BestPnl: best,
+            WorstPnl: worst,
+            TotalFees: fees,
+            Mode: mode);
+    }
+
     public Task<IReadOnlyList<ScannerResultDto>> GetScannerResultsAsync(CancellationToken ct = default) =>
         Task.FromResult(_scannerCache.GetAll());
 }

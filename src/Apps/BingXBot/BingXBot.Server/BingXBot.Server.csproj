@@ -5,9 +5,9 @@
     <UserSecretsId>bingxbot-server</UserSecretsId>
     <RootNamespace>BingXBot.Server</RootNamespace>
     <AssemblyName>BingXBot.Server</AssemblyName>
-    <Version>1.3.3</Version>
-    <AssemblyVersion>1.3.3.0</AssemblyVersion>
-    <FileVersion>1.3.3.0</FileVersion>
+    <Version>1.3.4</Version>
+    <AssemblyVersion>1.3.4.0</AssemblyVersion>
+    <FileVersion>1.3.4.0</FileVersion>
     <!-- Kein Avalonia-Init im Server-Prozess: headless -->
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <!-- Publish: selfcontained dotnet, single-file -->

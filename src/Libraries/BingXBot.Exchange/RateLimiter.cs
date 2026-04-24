@@ -7,7 +7,7 @@ namespace BingXBot.Exchange;
 /// "orders" = 10 Requests/Sekunde, "queries" = 20 Requests/Sekunde, Default = 20/s.
 /// Zugriff auf Queue{DateTime} ist durch SemaphoreSlim pro Kategorie geschützt.
 /// </summary>
-public class RateLimiter : IDisposable
+public class RateLimiter : IRateLimiter, IDisposable
 {
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _semaphores = new();
     private readonly ConcurrentDictionary<string, Queue<DateTime>> _timestamps = new();

@@ -32,6 +32,19 @@ public record TradeQueryDto(
     DateTime? FromUtc = null,
     DateTime? ToUtc = null);
 
+/// <summary>Aggregierte Trade-Statistik fuer den /trades/summary-Endpoint.</summary>
+public record TradeSummaryDto(
+    int TotalTrades,
+    int WinCount,
+    int LossCount,
+    decimal WinRate,
+    decimal TotalPnl,
+    decimal AveragePnl,
+    decimal BestPnl,
+    decimal WorstPnl,
+    decimal TotalFees,
+    TradingMode? Mode);
+
 /// <summary>Scanner-Result pro Symbol (Letzter Scan, nach Score sortiert).</summary>
 public record ScannerSymbolDto(
     string Symbol,

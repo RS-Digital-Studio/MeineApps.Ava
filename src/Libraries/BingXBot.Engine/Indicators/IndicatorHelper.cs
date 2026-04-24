@@ -76,6 +76,14 @@ public static class IndicatorHelper
     private static readonly ConcurrentDictionary<IndicatorCacheKey, object> _cache = new();
     private static long _scanGeneration;
 
+    // Cache-Statistiken (P3-3, 24.04.2026): Hit/Miss-Counter fuer Performance-Diagnose.
+    // Atomische Zaehler via Interlocked, kein Lock-Overhead. Werden bei ClearCache() NICHT resettet —
+    // geben Lifetime-Verhalten zurueck. Via GetCacheStats() als Snapshot abfragbar.
+    private static long _cacheHits;
+    private static long _cacheMisses;
+    private static long _quotesHits;
+    private static long _quotesMisses;
+
     // Quotes-Cache: Vermeidet wiederholte Konvertierung derselben Candle-Liste.
     // Key = (CandleCount, LastClose, LastOpenTimeTicks, FirstOpenTimeTicks), Value = List<Quote>
     // M-9 Fix: FirstOpenTimeTicks einbeziehen um Kollisionen bei gleicher Länge+letztem Close zu vermeiden
@@ -89,6 +97,53 @@ public static class IndicatorHelper
         _quotesCache.Clear();
     }
 
+    /// <summary>Snapshot der Cache-Statistiken fuer Debug/Monitoring-Endpoints.</summary>
+    public readonly record struct CacheStats(
+        long IndicatorHits,
+        long IndicatorMisses,
+        long QuotesHits,
+        long QuotesMisses,
+        int IndicatorCacheSize,
+        int QuotesCacheSize,
+        long ScanGeneration)
+    {
+        public double IndicatorHitRate => IndicatorHits + IndicatorMisses == 0
+            ? 0.0
+            : (double)IndicatorHits / (IndicatorHits + IndicatorMisses);
+
+        public double QuotesHitRate => QuotesHits + QuotesMisses == 0
+            ? 0.0
+            : (double)QuotesHits / (QuotesHits + QuotesMisses);
+    }
+
+    /// <summary>Liefert Snapshot der Cache-Performance fuer Debug-Endpoint.</summary>
+    public static CacheStats GetCacheStats() => new(
+        IndicatorHits: Interlocked.Read(ref _cacheHits),
+        IndicatorMisses: Interlocked.Read(ref _cacheMisses),
+        QuotesHits: Interlocked.Read(ref _quotesHits),
+        QuotesMisses: Interlocked.Read(ref _quotesMisses),
+        IndicatorCacheSize: _cache.Count,
+        QuotesCacheSize: _quotesCache.Count,
+        ScanGeneration: Interlocked.Read(ref _scanGeneration));
+
+    /// <summary>
+    /// Wrapper um <c>_cache.TryGetValue</c> mit Hit/Miss-Statistik.
+    /// Signatur kompatibel zu <see cref="ConcurrentDictionary{TKey,TValue}.TryGetValue"/>, damit die
+    /// Aufrufstellen minimal-invasiv umgestellt werden koennen (nur Funktions-Name austauschen).
+    /// </summary>
+    private static bool TryCacheGet(IndicatorCacheKey key, out object cached)
+    {
+        if (_cache.TryGetValue(key, out var hit))
+        {
+            Interlocked.Increment(ref _cacheHits);
+            cached = hit;
+            return true;
+        }
+        Interlocked.Increment(ref _cacheMisses);
+        cached = null!;
+        return false;
+    }
+
     /// <summary>Candles zu Quotes konvertieren (gecacht pro Candle-Set).</summary>
     public static List<Quote> ToQuotes(IReadOnlyList<Candle> candles)
     {
@@ -99,7 +154,11 @@ public static class IndicatorHelper
         var key = (candles.Count, last.Close, last.OpenTime.Ticks, first.OpenTime.Ticks);
 
         if (_quotesCache.TryGetValue(key, out var cached))
+        {
+            Interlocked.Increment(ref _quotesHits);
             return cached;
+        }
+        Interlocked.Increment(ref _quotesMisses);
 
         var quotes = new List<Quote>(candles.Count);
         for (int i = 0; i < candles.Count; i++)
@@ -124,7 +183,7 @@ public static class IndicatorHelper
     public static IReadOnlyList<decimal?> CalculateEma(IReadOnlyList<Candle> candles, int period)
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.EMA, period);
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
         var result = (IReadOnlyList<decimal?>)ToQuotes(candles).GetEma(period)
@@ -138,7 +197,7 @@ public static class IndicatorHelper
     public static IReadOnlyList<decimal?> CalculateSma(IReadOnlyList<Candle> candles, int period)
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.SMA, period);
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
         var result = (IReadOnlyList<decimal?>)ToQuotes(candles).GetSma(period)
@@ -152,7 +211,7 @@ public static class IndicatorHelper
     public static IReadOnlyList<decimal?> CalculateRsi(IReadOnlyList<Candle> candles, int period = 14)
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.RSI, period);
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
         var result = (IReadOnlyList<decimal?>)ToQuotes(candles).GetRsi(period)
@@ -167,7 +226,7 @@ public static class IndicatorHelper
         CalculateMacd(IReadOnlyList<Candle> candles, int fastPeriod = 12, int slowPeriod = 26, int signalPeriod = 9)
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.MACD, fastPeriod, slowPeriod, signalPeriod);
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
 
         var results = ToQuotes(candles).GetMacd(fastPeriod, slowPeriod, signalPeriod).ToList();
@@ -186,7 +245,7 @@ public static class IndicatorHelper
     {
         // stdDev (z.B. 2.0m) wird als int*1000 gespeichert (2000), da Struct nur ints hat
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.BollingerBands, period, (int)(stdDev * 1000));
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
 
         var results = ToQuotes(candles).GetBollingerBands(period, (double)stdDev).ToList();
@@ -203,7 +262,7 @@ public static class IndicatorHelper
     public static IReadOnlyList<decimal?> CalculateAtr(IReadOnlyList<Candle> candles, int period = 14)
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.ATR, period);
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
         var result = (IReadOnlyList<decimal?>)ToQuotes(candles).GetAtr(period)
@@ -217,7 +276,7 @@ public static class IndicatorHelper
     public static IReadOnlyList<decimal?> CalculateAdx(IReadOnlyList<Candle> candles, int period = 14)
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.ADX, period);
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
         var result = (IReadOnlyList<decimal?>)ToQuotes(candles).GetAdx(period)
@@ -260,7 +319,7 @@ public static class IndicatorHelper
             return [];
 
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.SMA, period, 1); // Param2=1 unterscheidet von Close-SMA
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return (IReadOnlyList<decimal?>)cached;
 
         // Manueller SMA auf Volume-Werte (Skender bietet keine Feld-Auswahl)
@@ -291,7 +350,7 @@ public static class IndicatorHelper
         if (candles.Count < 10) return [];
 
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.ZigZag, (int)(percentChange * 10));
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return (List<SwingPoint>)cached;
 
         var quotes = ToQuotes(candles);
@@ -317,7 +376,7 @@ public static class IndicatorHelper
         IReadOnlyList<Candle> candles, int lookbackPeriods = 14, int signalPeriods = 3, int smoothPeriods = 3)
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.Stochastic, lookbackPeriods, signalPeriods, smoothPeriods);
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
 
         var results = ToQuotes(candles).GetStoch(lookbackPeriods, signalPeriods, smoothPeriods).ToList();
@@ -339,7 +398,7 @@ public static class IndicatorHelper
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles,
             IndicatorType.Supertrend, lookbackPeriods, (int)(multiplier * 100));
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return ((IReadOnlyList<decimal?>, IReadOnlyList<bool?>))cached;
 
         var results = ToQuotes(candles).GetSuperTrend(lookbackPeriods, (double)multiplier).ToList();
@@ -387,7 +446,7 @@ public static class IndicatorHelper
     public static FibonacciLevels? CalculateFibonacciLevels(IReadOnlyList<Candle> candles, int swingStrength = 5)
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.Fibonacci, swingStrength);
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return cached == _fibNullSentinel ? null : (FibonacciLevels?)cached;
 
         var result = CalculateFibonacciInternal(candles, swingStrength);
@@ -518,7 +577,7 @@ public static class IndicatorHelper
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles,
             IndicatorType.ADX, period, 1); // Param2=1 unterscheidet von Standard-ADX
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
 
         var results = ToQuotes(candles).GetAdx(period).ToList();
@@ -542,7 +601,7 @@ public static class IndicatorHelper
         CalculateDonchian(IReadOnlyList<Candle> candles, int period = 20)
     {
         var key = new IndicatorCacheKey(Interlocked.Read(ref _scanGeneration), candles, IndicatorType.Donchian, period);
-        if (_cache.TryGetValue(key, out var cached))
+        if (TryCacheGet(key, out var cached))
             return ((IReadOnlyList<decimal?>, IReadOnlyList<decimal?>, IReadOnlyList<decimal?>))cached;
 
         var upper = new List<decimal?>(candles.Count);

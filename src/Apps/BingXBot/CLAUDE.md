@@ -230,6 +230,32 @@ Keine neuen Felder in `PositionExitState`/`SignalResult` nötig — der 2x-SL-Tr
 
 ---
 
+## Polish-Runde P1/P2/P3 (v1.3.4, 24.04.2026)
+
+Nach dem P0-Hardening alle offenen Audit-Punkte abgearbeitet:
+
+### P2 (3)
+- **P2-1 StaleEngineDetector**: HostedService `src/Apps/BingXBot/BingXBot.Server/Services/StaleEngineDetector.cs`. Warnt per FCM-Stub wenn Bot "Running" sagt, aber seit >6 h weder `ScannerResult` noch `TradeOpened` gefeuert wurde (10 min Check-Intervall, 12 h Push-Cooldown). Deckt das "stiller Bot"-Szenario push-aktiv.
+- **P2-2 Pairing Loading-Feedback**: `SettingsViewModel.InitiatePairingAsync` zeigt nach 5 s Timeout "Tailscale-Cold-Start ..." Hint. Kein UI-Hang mehr bei 5-8 s Handshake.
+- **P2-3 Trade-Summary**: Neuer Endpoint `GET /api/v1/trades/summary?mode=...` liefert `TradeSummaryDto` (Win-Rate, Total-/Avg-/Best-/Worst-PnL, Total-Fees). Pagination existierte bereits via `TradeQueryDto.Page/PageSize`. Client-Stub in `RemoteTradeHistoryService`.
+
+### P3 (4)
+- **P3-1 WS-Heartbeat-Drift-Logging**: `BingXWebSocketClient` loggt Warning wenn >35 s zwischen BingX-Pings vergehen (normal ~20 s). Nur Diagnose, kein Verhaltens-Change.
+- **P3-2 IRateLimiter**: Interface extrahiert, `RateLimiter` implementiert. `BingXRestClient` + `BingXPublicClient` akzeptieren jetzt `IRateLimiter` — Fake-Impl fuer Tests moeglich.
+- **P3-3 IndicatorHelper Cache-Stats**: Hit/Miss-Counter via `Interlocked`, exposed per `GetCacheStats()` + neuer Debug-Endpoint `GET /api/v1/debug/indicator-cache`. Hilft bei Performance-Diagnose.
+- **P3-4 Theme-Switch Dark/Light**: Neue `ThemePreference` enum (Dark/Light/System), persistiert in `BotSettings`. Picker in beiden Settings-Views (Desktop + Mobile). `App.ApplyTheme()` setzt `RequestedThemeVariant` live.
+
+### P1 (2)
+- **P1-2 FeeCalculator**: Zentrale Fee-/Net-PnL-Berechnung in `BingXBot.Core.Services.FeeCalculator`. `LiveTradingService` nutzt jetzt `CalculateTotalFee` + `CalculateNetPnl` statt inline-Formel. Basis für konsistente PnL zwischen Live + Paper + Backtest (9 neue Tests).
+- **P1-1 LiveTradingService Split (partial)**: Partial-Class-Split in 3 Dateien — Haupt-`LiveTradingService.cs` (1542 Z., vorher 1777), `.Reconcile.cs` (95 Z.), `.WebSocket.cs` (170 Z.). Weitere Extraktionen (PendingLimitOrders, OrderPlacement) sind moeglich, aber als Iterationsschritt ausreichend.
+
+### Tests + Verifikation
+- 464/464 grün (+ 9 FeeCalculatorTests)
+- 0 Fehler / 0 Warnungen im Solution-Build
+- Deploy v1.3.4 auf Pi
+
+---
+
 ## System-Hardening P0 (v1.3.3, 24.04.2026)
 
 Nach dem Audit-Report wurden drei P0-Baustellen auf einmal geschlossen — Fundament fuer sichereren Live-Betrieb.

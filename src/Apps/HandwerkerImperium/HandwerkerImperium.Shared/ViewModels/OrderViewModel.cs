@@ -171,6 +171,13 @@ public sealed partial class OrderViewModel : ViewModelBase, INavigable
     [RelayCommand]
     private void GoBack()
     {
+        // v2.0.35 Feature A: Back aus OrderDetail pausiert den aktuellen Vordergrund-Auftrag.
+        // Der Auftrag bleibt in ParallelOrdersByWorkshop erhalten — Spieler kann spaeter
+        // via Workshop-Card oder Banner zurueckkehren ("Plate-Spinning").
+        if (_gameStateService.GetActiveOrder() != null)
+        {
+            _gameStateService.PauseActiveOrder();
+        }
         NavigationRequested?.Invoke("..");
     }
 

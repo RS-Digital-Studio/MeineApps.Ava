@@ -378,6 +378,8 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         state.Buildings ??= [];
         state.Researches ??= [];
         state.AvailableOrders ??= [];
+        // v2.0.35 Feature A: Multi-Order-System — null-safe init
+        state.ParallelOrdersByWorkshop ??= new Dictionary<WorkshopType, Order>();
 
         // Research-Tree aus Template synchronisieren (fehlende Nodes ergänzen, DurationTicks/Effect aktualisieren)
         SyncResearchTree(state);
@@ -541,6 +543,19 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
             state.DailyProgress ??= new DailyProgressData();
             state.Cosmetics ??= new CosmeticData();
             state.Version = 5;
+        }
+
+        // V5 → V6 (v2.0.35): Multi-Order-System. Bei alten Saves mit ActiveOrder
+        // wird dieser in das neue ParallelOrdersByWorkshop-Dictionary migriert.
+        if (state.Version < 6)
+        {
+            state.ParallelOrdersByWorkshop ??= new Dictionary<WorkshopType, Order>();
+            if (state.ActiveOrder != null
+                && !state.ParallelOrdersByWorkshop.ContainsKey(state.ActiveOrder.WorkshopType))
+            {
+                state.ParallelOrdersByWorkshop[state.ActiveOrder.WorkshopType] = state.ActiveOrder;
+            }
+            state.Version = 6;
         }
 
         return state;

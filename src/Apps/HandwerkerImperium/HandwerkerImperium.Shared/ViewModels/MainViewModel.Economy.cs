@@ -60,6 +60,17 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private Task StartOrderAsync(Order order) => EconomyVM.StartOrderAsync(order);
 
+    /// <summary>
+    /// Setzt einen parallelen Auftrag fort (v2.0.35 Feature A). Parameter ist der Workshop-Typ
+    /// als String (XAML-Kompatibilitaet, vgl. Prestige-Tier-CommandParameter).
+    /// </summary>
+    [RelayCommand]
+    private async Task ResumeParallelOrderAsync(string workshopTypeName)
+    {
+        if (!Enum.TryParse<Models.Enums.WorkshopType>(workshopTypeName, out var type)) return;
+        await EconomyVM.ResumeParallelOrderAsync(type);
+    }
+
     [RelayCommand]
     private Task RefreshOrdersAsync() => EconomyVM.RefreshOrdersAsync();
 

@@ -206,6 +206,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     [ObservableProperty]
     private ObservableCollection<Order> _availableOrders = [];
 
+    /// <summary>
+    /// Aktuell parallel laufende Auftraege (v2.0.35 Feature A) — pro Werkstatt max einer,
+    /// insgesamt max <see cref="GameBalanceConstants.MaxParallelOrders"/>.
+    /// UI zeigt daraus ein Fortsetzen-Panel im Dashboard.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasParallelOrders))]
+    private ObservableCollection<Order> _parallelOrders = [];
+
+    /// <summary>True wenn mindestens ein paralleler Auftrag aktiv ist (Fortsetzen-Panel sichtbar).</summary>
+    public bool HasParallelOrders => ParallelOrders.Count > 0;
+
     [ObservableProperty]
     private bool _hasActiveOrder;
 

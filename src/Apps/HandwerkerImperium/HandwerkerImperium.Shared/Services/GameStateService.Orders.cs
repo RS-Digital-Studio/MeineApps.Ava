@@ -21,6 +21,9 @@ public sealed partial class GameStateService
         {
             _state.AvailableOrders.Remove(order);
             _state.ActiveOrder = order;
+            // v2.0.35 Feature A: Multi-Order-System — Auftrag in ParallelOrdersByWorkshop spiegeln.
+            // Ein Workshop hat gleichzeitig max. einen aktiven Auftrag.
+            _state.ParallelOrdersByWorkshop[order.WorkshopType] = order;
         }
     }
 
@@ -28,6 +31,53 @@ public sealed partial class GameStateService
     {
         return _state.ActiveOrder;
     }
+
+    /// <summary>
+    /// Liefert den parallelen (laufenden) Auftrag fuer den gegebenen Workshop-Typ,
+    /// unabhaengig davon ob er gerade im Vordergrund bearbeitet wird (v2.0.35).
+    /// </summary>
+    public Order? GetParallelOrder(WorkshopType workshopType)
+    {
+        lock (_stateLock)
+        {
+            return _state.ParallelOrdersByWorkshop.GetValueOrDefault(workshopType);
+        }
+    }
+
+    /// <summary>
+    /// Setzt einen parallelen Auftrag als aktiv (vordergruendig) — der Spieler
+    /// waehlt einen pausierten/wartenden Auftrag aus und startet/fortsetzt dessen
+    /// MiniGame-Flow.
+    /// </summary>
+    public void ResumeParallelOrder(WorkshopType workshopType)
+    {
+        lock (_stateLock)
+        {
+            if (_state.ParallelOrdersByWorkshop.TryGetValue(workshopType, out var order))
+            {
+                _state.ActiveOrder = order;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Prueft ob ein neuer paralleler Auftrag gestartet werden kann.
+    /// True wenn unter <see cref="GameBalanceConstants.MaxParallelOrders"/> und der Workshop
+    /// noch keinen laufenden Auftrag hat.
+    /// </summary>
+    public bool CanStartParallelOrder(WorkshopType workshopType)
+    {
+        lock (_stateLock)
+        {
+            if (_state.ParallelOrdersByWorkshop.ContainsKey(workshopType)) return false;
+            return _state.ParallelOrdersByWorkshop.Count < GameBalanceConstants.MaxParallelOrders;
+        }
+    }
+
+    /// <summary>
+    /// Liefert die Anzahl paralleler Auftraege (ohne Lock — fuer UI-Bindings).
+    /// </summary>
+    public int ParallelOrderCount => _state.ParallelOrdersByWorkshop.Count;
 
     public void RecordMiniGameResult(MiniGameRating rating)
     {
@@ -256,6 +306,8 @@ public sealed partial class GameStateService
             }
 
             _state.ActiveOrder = null;
+            // v2.0.35 Feature A: Auftrag aus Parallel-Slot entfernen — Workshop wieder frei.
+            _state.ParallelOrdersByWorkshop.Remove(order.WorkshopType);
         }
 
         // Grant rewards (these have their own locks)
@@ -310,6 +362,23 @@ public sealed partial class GameStateService
             order.TaskResults.Clear();
 
             _state.AvailableOrders.Add(order);
+            _state.ActiveOrder = null;
+            // v2.0.35 Feature A: Workshop auch aus Parallel-Slot entfernen.
+            _state.ParallelOrdersByWorkshop.Remove(order.WorkshopType);
+        }
+    }
+
+    /// <summary>
+    /// Pausiert den aktuellen Auftrag (v2.0.35 Feature A): setzt ActiveOrder zurueck,
+    /// aber der Auftrag bleibt als paralleler Auftrag gespeichert. Spieler kann spaeter
+    /// via <see cref="ResumeParallelOrder"/> zurueckkehren.
+    /// </summary>
+    public void PauseActiveOrder()
+    {
+        lock (_stateLock)
+        {
+            if (_state.ActiveOrder == null) return;
+            // ActiveOrder bleibt in ParallelOrdersByWorkshop — nur Vordergrund wird aufgehoben
             _state.ActiveOrder = null;
         }
     }

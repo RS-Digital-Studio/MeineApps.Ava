@@ -424,6 +424,56 @@
                 </TextBlock>
               </StackPanel>
             </Border>
+            <!-- Parallele Auftraege: Fortsetzen-Banner (v2.0.35 Feature A) -->
+            <Border Classes="Card" Padding="12,10"
+                    IsVisible="{Binding HasParallelOrders}"
+                    HorizontalAlignment="Stretch"
+                    Margin="0,0,0,8"
+                    Background="{StaticResource CraftHeaderGradientBrush}"
+                    AutomationProperties.AutomationId="Dashboard_Border_ParallelOrders">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <icons:GameIcon Kind="PlayCircle" Width="20" Height="20"
+                                   Foreground="{DynamicResource PrimaryContrastBrush}" />
+                  <TextBlock Text="{loc:Translate ParallelOrdersTitle}"
+                             FontSize="13" FontWeight="Bold"
+                             Foreground="{DynamicResource PrimaryContrastBrush}"
+                             VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding ParallelOrders.Count}"
+                             FontSize="12" FontWeight="SemiBold"
+                             Foreground="{StaticResource CraftGoldBrush}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding ParallelOrders}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Button Classes="Text" Padding="6,4" CornerRadius="6"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              Margin="0,2,0,0" MinHeight="40"
+                              Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).ResumeParallelOrderCommand}"
+                              CommandParameter="{Binding WorkshopType}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                          <StackPanel VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="{Binding DisplayTitle}"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryContrastBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding DisplayWorkshopName}"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource PrimaryContrastBrush}"
+                                       Opacity="0.8" />
+                          </StackPanel>
+                          <icons:GameIcon Grid.Column="1" Kind="ChevronRight" Width="18" Height="18"
+                                           Foreground="{DynamicResource PrimaryContrastBrush}"
+                                           VerticalAlignment="Center" />
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+
             <!-- Empty State -->
             <Border Classes="Card" Padding="24"
                     IsVisible="{Binding HasNoOrders}"

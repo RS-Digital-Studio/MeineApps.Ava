@@ -111,6 +111,15 @@ public static class GameBalanceConstants
     /// </summary>
     public const int SpecializationRespecCostGoldenScrews = 20;
 
+    /// <summary>
+    /// Maximale Anzahl parallel laufender Auftraege (v2.0.35 Feature A).
+    /// Jeder Auftrag ist an genau eine Werkstatt gebunden — Spieler kann bis zu
+    /// N Werkstaetten gleichzeitig beschaeftigen. Unter diesem Cap ist "Plate-Spinning"
+    /// moeglich, der Spieler wechselt zwischen Aufträgen.
+    /// Start: 3 parallele, spaeter ueber Building/Research erweiterbar.
+    /// </summary>
+    public const int MaxParallelOrders = 3;
+
     // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOP - REBIRTH
     // ═══════════════════════════════════════════════════════════════════════

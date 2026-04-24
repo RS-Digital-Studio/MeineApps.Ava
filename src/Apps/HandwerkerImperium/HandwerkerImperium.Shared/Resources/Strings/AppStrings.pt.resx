@@ -6207,4 +6207,8 @@
   <!-- Live-Order-Stream (v2.0.35) -->
   <data name="OrderLiveBadge" xml:space="preserve"><value>AO VIVO</value></data>
   <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>
+  <!-- Parallel-Orders (v2.0.35 Feature A) -->
+  <data name="ParallelOrdersTitle" xml:space="preserve"><value>Em andamento</value></data>
+  <data name="ParallelOrderLimitTitle" xml:space="preserve"><value>Limite atingido</value></data>
+  <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>Esta oficina j&#225; tem um pedido em andamento ou o limite global foi atingido.</value></data>
 </root>

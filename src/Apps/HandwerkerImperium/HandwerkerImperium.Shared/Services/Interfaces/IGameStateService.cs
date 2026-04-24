@@ -163,6 +163,32 @@ public interface IGameStateService
     void CancelActiveOrder();
 
     /// <summary>
+    /// Pausiert den aktuellen Auftrag (v2.0.35 Feature A): ActiveOrder wird null,
+    /// aber der Auftrag bleibt als paralleler Auftrag gespeichert.
+    /// </summary>
+    void PauseActiveOrder();
+
+    /// <summary>
+    /// Liefert den parallelen Auftrag fuer den gegebenen Workshop-Typ (v2.0.35 Feature A).
+    /// Null wenn der Workshop keinen laufenden Auftrag hat.
+    /// </summary>
+    Order? GetParallelOrder(WorkshopType workshopType);
+
+    /// <summary>
+    /// Setzt einen parallelen Auftrag als aktiv (vordergruendig, v2.0.35 Feature A).
+    /// Der Spieler kehrt zu einem pausierten Auftrag zurueck und kann das naechste MiniGame starten.
+    /// </summary>
+    void ResumeParallelOrder(WorkshopType workshopType);
+
+    /// <summary>
+    /// Prueft ob ein neuer paralleler Auftrag gestartet werden kann (v2.0.35 Feature A).
+    /// </summary>
+    bool CanStartParallelOrder(WorkshopType workshopType);
+
+    /// <summary>Anzahl aktuell parallel laufender Auftraege (v2.0.35 Feature A).</summary>
+    int ParallelOrderCount { get; }
+
+    /// <summary>
     /// Schliesst einen Lieferauftrag ab: Items abziehen, Belohnung gutschreiben.
     /// Gibt den Geld-Ertrag zurueck (0 wenn nicht moeglich).
     /// </summary>

@@ -322,13 +322,33 @@ internal sealed class EconomyFeatureViewModel
 
     internal async Task StartOrderAsync(Order order)
     {
-        if (_host.HasActiveOrder) return;
-
         // Lieferaufträge: Items direkt abgeben, kein MiniGame
         if (order.OrderType == OrderType.MaterialOrder)
         {
             await CompleteMaterialOrderAsync(order);
             return;
+        }
+
+        // v2.0.35 Feature A: Multi-Order-System.
+        // Wenn der Workshop bereits einen laufenden Auftrag hat, koennen keine
+        // weiteren angenommen werden — die parallelen Slots sind pro-Workshop 1.
+        if (!_gameStateService.CanStartParallelOrder(order.WorkshopType))
+        {
+            ShowAlertDialog(
+                _localizationService.GetString("ParallelOrderLimitTitle") ?? "Limit erreicht",
+                _localizationService.GetString("ParallelOrderLimitMessage")
+                    ?? "Diese Werkstatt hat bereits einen laufenden Auftrag oder das globale Parallel-Limit ist erreicht.",
+                _localizationService.GetString("OK") ?? "OK");
+            return;
+        }
+
+        // Bestehenden Vordergrund-Auftrag pausieren (falls vorhanden) statt zu blockieren.
+        // Der vorherige Auftrag bleibt in ParallelOrdersByWorkshop erhalten.
+        if (_host.HasActiveOrder)
+        {
+            _gameStateService.PauseActiveOrder();
+            _host.HasActiveOrder = false;
+            _host.ActiveOrder = null;
         }
 
         _gameStateService.StartOrder(order);
@@ -340,6 +360,30 @@ internal sealed class EconomyFeatureViewModel
         _contextualHintService.TryShowHint(ContextualHints.FirstOrder);
 
         // Auftragsdetail anzeigen
+        _host.OrderViewModel.SetOrder(order);
+        _host.ActivePage = ActivePage.OrderDetail;
+    }
+
+    /// <summary>
+    /// Setzt einen parallelen Auftrag als aktiv und oeffnet den OrderDetail-Screen
+    /// zum Fortsetzen (v2.0.35 Feature A).
+    /// </summary>
+    internal async Task ResumeParallelOrderAsync(WorkshopType workshopType)
+    {
+        var order = _gameStateService.GetParallelOrder(workshopType);
+        if (order == null) return;
+
+        // Bestehenden Vordergrund-Auftrag pausieren (falls vorhanden)
+        if (_host.HasActiveOrder && _host.ActiveOrder?.WorkshopType != workshopType)
+        {
+            _gameStateService.PauseActiveOrder();
+        }
+
+        _gameStateService.ResumeParallelOrder(workshopType);
+        _host.HasActiveOrder = true;
+        _host.ActiveOrder = order;
+        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
         _host.OrderViewModel.SetOrder(order);
         _host.ActivePage = ActivePage.OrderDetail;
     }
@@ -1327,6 +1371,9 @@ internal sealed class EconomyFeatureViewModel
         // Empty State (Task #8)
         _host.HasNoOrders = _host.AvailableOrders.Count == 0;
 
+        // v2.0.35 Feature A: ParallelOrders-Collection ebenfalls refreshen (Fortsetzen-Banner).
+        RefreshParallelOrders();
+
         // ONB-1: Auftragstypen-Hint bei erstem non-Standard-Auftrag
         for (int i = 0; i < newOrders.Count; i++)
         {
@@ -1336,5 +1383,27 @@ internal sealed class EconomyFeatureViewModel
                 break;
             }
         }
+    }
+
+    /// <summary>
+    /// Aktualisiert die sichtbare Liste paralleler Auftraege fuer das Fortsetzen-Banner (v2.0.35).
+    /// Wird nach StartOrder/CompleteActiveOrder/CancelActiveOrder aufgerufen.
+    /// </summary>
+    internal void RefreshParallelOrders()
+    {
+        var state = _gameStateService.State;
+        var newList = new ObservableCollection<Order>();
+
+        foreach (var kvp in state.ParallelOrdersByWorkshop)
+        {
+            var order = kvp.Value;
+            // Lokalisierte Display-Felder befuellen (analog zu RefreshOrders)
+            var localizedTitle = _localizationService.GetString(order.TitleKey);
+            order.DisplayTitle = string.IsNullOrEmpty(localizedTitle) ? order.TitleFallback : localizedTitle;
+            order.DisplayWorkshopName = _localizationService.GetString(order.WorkshopType.GetLocalizationKey());
+            newList.Add(order);
+        }
+
+        _host.ParallelOrders = newList;
     }
 }

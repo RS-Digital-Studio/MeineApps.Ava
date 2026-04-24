@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Models;
 public class GameState
 {
     [JsonPropertyName("version")]
-    public int Version { get; set; } = 5;
+    public int Version { get; set; } = 6;
 
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -126,8 +126,24 @@ public class GameState
     [JsonPropertyName("availableOrders")]
     public List<Order> AvailableOrders { get; set; } = [];
 
+    /// <summary>
+    /// Aktuell bearbeiteter Auftrag (waehrend MiniGame laeuft). Ab v2.0.35 ist
+    /// dieser Slot nur noch der "Vordergrund"-Auftrag — parallele Auftraege in
+    /// anderen Werkstaetten laufen ueber <see cref="ParallelOrdersByWorkshop"/>.
+    /// </summary>
     [JsonPropertyName("activeOrder")]
     public Order? ActiveOrder { get; set; }
+
+    /// <summary>
+    /// Parallele Auftraege pro Werkstatt (v2.0.35 Feature A).
+    /// Bis zu N Werkstaetten koennen gleichzeitig Auftraege "in Arbeit" haben
+    /// (N = <see cref="GameBalanceConstants.MaxParallelOrders"/>).
+    /// Schluessel: WorkshopType, Wert: Order (mit CurrentTaskIndex, Tasks, etc.).
+    /// Der Spieler startet aktive MiniGames ueber diese Werkstaetten einzeln —
+    /// der aktuell im MiniGame bearbeitete wird in <see cref="ActiveOrder"/> gespiegelt.
+    /// </summary>
+    [JsonPropertyName("parallelOrdersByWorkshop")]
+    public Dictionary<WorkshopType, Order> ParallelOrdersByWorkshop { get; set; } = new();
 
     /// <summary>
     /// Temporär gesetzter QuickJob während MiniGame läuft (nicht persistiert).

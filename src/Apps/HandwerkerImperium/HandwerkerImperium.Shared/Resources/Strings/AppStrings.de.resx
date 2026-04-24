@@ -6454,4 +6454,8 @@
   <!-- Live-Order-Stream (v2.0.35) -->
   <data name="OrderLiveBadge" xml:space="preserve"><value>LIVE</value></data>
   <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>
+  <!-- Parallel-Orders (v2.0.35 Feature A) -->
+  <data name="ParallelOrdersTitle" xml:space="preserve"><value>In Arbeit</value></data>
+  <data name="ParallelOrderLimitTitle" xml:space="preserve"><value>Limit erreicht</value></data>
+  <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>Diese Werkstatt hat bereits einen laufenden Auftrag oder das globale Parallel-Limit ist erreicht.</value></data>
 </root>

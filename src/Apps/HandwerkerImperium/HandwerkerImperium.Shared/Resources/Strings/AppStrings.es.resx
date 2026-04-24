@@ -6206,4 +6206,8 @@
   <!-- Live-Order-Stream (v2.0.35) -->
   <data name="OrderLiveBadge" xml:space="preserve"><value>EN VIVO</value></data>
   <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>
+  <!-- Parallel-Orders (v2.0.35 Feature A) -->
+  <data name="ParallelOrdersTitle" xml:space="preserve"><value>En curso</value></data>
+  <data name="ParallelOrderLimitTitle" xml:space="preserve"><value>L&#237;mite alcanzado</value></data>
+  <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>Este taller ya tiene un pedido en curso, o se alcanz&#243; el l&#237;mite global.</value></data>
 </root>

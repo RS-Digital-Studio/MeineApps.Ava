@@ -1,0 +1,261 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.SettingsViewMobile"
+             x:DataType="vm:SettingsViewModel"
+             x:CompileBindings="True"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBox.MobileInput">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="Button.PrimaryAction">
+      <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="0,12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.SecondaryAction">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="0,12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.DangerAction">
+      <Setter Property="Background" Value="{DynamicResource ErrorBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="0,12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.SectionCard">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="14" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="12" Margin="12,10,12,16">
+
+      <!-- Titel -->
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <mi:MaterialIcon Kind="Cog" Width="20" Height="20"
+                         Foreground="{DynamicResource AppPrimaryBrush}" />
+        <TextBlock Text="Einstellungen" FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <!-- ═════ Remote-Server (Raspberry Pi) — Haupt-Sektion für Mobile ═════ -->
+      <Border Classes="SectionCard">
+        <StackPanel Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="RaspberryPi" Width="16" Height="16"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Pi-Server" FontSize="13" FontWeight="Bold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <TextBlock FontSize="12" Foreground="{DynamicResource AppTextSecondaryBrush}"
+                     TextWrapping="Wrap"
+                     Text="Verbindet zum 24/7-Bot auf dem Pi. Pairing-Code aus dem Pi-Terminal ablesen (`journalctl -u bingxbot`)." />
+
+          <!-- Status-Anzeige -->
+          <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="12,10">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                <Ellipse.Fill>
+                  <SolidColorBrush Color="{DynamicResource SuccessColor}" />
+                </Ellipse.Fill>
+              </Ellipse>
+              <TextBlock Text="{Binding PairingStatus}" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Server-URL" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="MobileInput" Text="{Binding ServerUrl}"
+                     Watermark="http://bingxbot.local:5050"
+                     IsEnabled="{Binding !ServerPaired}" />
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Geräte-Name (optional)" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="MobileInput" Text="{Binding PairedDeviceName}"
+                     Watermark="z.B. Handy-Robert"
+                     IsEnabled="{Binding !ServerPaired}" />
+          </StackPanel>
+
+          <!-- Pairing Schritt 1 -->
+          <Button Classes="PrimaryAction"
+                  Command="{Binding InitiatePairingCommand}"
+                  IsVisible="{Binding !ServerPaired}"
+                  IsEnabled="{Binding !PairingInProgress}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Connection" Width="18" Height="18" />
+              <TextBlock Text="1. Pairing starten" FontSize="14" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- Pairing Schritt 2 -->
+          <StackPanel Spacing="8" IsVisible="{Binding PairingInProgress}">
+            <TextBlock Text="Pairing-Code (vom Pi ablesen)" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="MobileInput" Text="{Binding PairingCode}"
+                     Watermark="6-stelliger Code"
+                     MaxLength="6"
+                     FontSize="22" FontWeight="Bold"
+                     HorizontalContentAlignment="Center"
+                     Padding="12,14" />
+            <Grid ColumnDefinitions="*,8,*">
+              <Button Grid.Column="0" Classes="PrimaryAction"
+                      Command="{Binding CompletePairingCommand}"
+                      IsEnabled="{Binding !IsCompletingPairing}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <!-- Loading-Icon während POST läuft — verhindert dass User doppelt tippt -->
+                  <mi:MaterialIcon Kind="Loading" Width="18" Height="18"
+                                   IsVisible="{Binding IsCompletingPairing}"
+                                   Foreground="{DynamicResource PrimaryContrastBrush}" />
+                  <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
+                                   IsVisible="{Binding !IsCompletingPairing}" />
+                  <TextBlock Text="2. Bestätigen" FontSize="14" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="2" Classes="SecondaryAction"
+                      Command="{Binding CancelPairingCommand}"
+                      IsEnabled="{Binding !IsCompletingPairing}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Close" Width="18" Height="18" />
+                  <TextBlock Text="Abbrechen" FontSize="14" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+
+          <!-- Trennen -->
+          <Button Classes="DangerAction"
+                  Command="{Binding DisconnectServerCommand}"
+                  IsVisible="{Binding ServerPaired}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="LinkOff" Width="18" Height="18" />
+              <TextBlock Text="Verbindung trennen" FontSize="14" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- ═════ API-Konfiguration (Standalone-Modus) ═════ -->
+      <Border Classes="SectionCard">
+        <StackPanel Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Key" Width="16" Height="16"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="API-Konfiguration" FontSize="13" FontWeight="Bold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}"
+                     TextWrapping="Wrap"
+                     Text="Nur nötig wenn die App ohne Pi direkt mit BingX handeln soll (Standalone-Modus)." />
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="API-Key" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="MobileInput" Text="{Binding ApiKey}"
+                     Watermark="BingX API-Key eingeben..." />
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="API-Secret" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="MobileInput" Text="{Binding ApiSecret}"
+                     PasswordChar="*"
+                     Watermark="BingX API-Secret (verschlüsselt)" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,8,*">
+            <Button Grid.Column="0" Classes="PrimaryAction"
+                    Command="{Binding SaveCredentialsCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />
+                <TextBlock Text="Speichern" FontSize="14" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="2" Classes="DangerAction"
+                    Command="{Binding DeleteCredentialsCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                <TextBlock Text="Löschen" FontSize="14" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <!-- Verbindungstest -->
+          <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="12,10">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                <Ellipse.Fill>
+                  <SolidColorBrush Color="{DynamicResource WarningColor}" />
+                </Ellipse.Fill>
+              </Ellipse>
+              <TextBlock Text="{Binding ConnectionStatus}" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <Button Classes="SecondaryAction"
+                  Command="{Binding TestConnectionCommand}"
+                  IsEnabled="{Binding !IsConnecting}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="LanCheck" Width="18" Height="18" />
+              <TextBlock Text="Verbindung testen" FontSize="14" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- ═════ Logging ═════ -->
+      <Border Classes="SectionCard">
+        <StackPanel Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Console" Width="16" Height="16"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Logging" FontSize="13" FontWeight="Bold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Spacing="4">
+            <TextBlock Text="Log-Level" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <ComboBox ItemsSource="{Binding LogLevels}"
+                      SelectedItem="{Binding SelectedLogLevel}"
+                      HorizontalAlignment="Stretch" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

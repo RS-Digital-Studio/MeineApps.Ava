@@ -1,14 +1,12 @@
 using Avalonia.Controls;
-using BingXBot.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace BingXBot.Views;
 
+/// <summary>Backtest-View. DataContext via ViewLocator.</summary>
 public partial class BacktestView : UserControl
 {
     public BacktestView()
     {
         InitializeComponent();
-        DataContext = App.Services.GetRequiredService<BacktestViewModel>();
     }
 }

@@ -7,7 +7,7 @@ using BingXBot.Core.Models;
 using BingXBot.Backtest.Simulation;
 using BingXBot.Engine.Risk;
 using BingXBot.Engine.Strategies;
-using BingXBot.Services;
+using BingXBot.Trading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
@@ -25,6 +25,7 @@ namespace BingXBot.ViewModels;
 public partial class BacktestViewModel : ViewModelBase, IDisposable
 {
     private readonly RiskSettings _riskSettings;
+    private readonly ScannerSettings _scannerSettings;
     private readonly IPublicMarketDataClient? _publicClient;
     private readonly BotEventBus _eventBus;
     private readonly BotDatabaseService? _dbService;
@@ -41,6 +42,14 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _isLoadingSymbols;
     [ObservableProperty] private int _progress;
     [ObservableProperty] private string _statusText = "Wähle ein Symbol und eine Strategie, dann starte den Backtest";
+
+    // Multi-TF Standalone: Backtest pro TF sequenziell
+    [ObservableProperty] private bool _backtestAllTimeframes;
+    [ObservableProperty] private bool _tfD1InBacktest = true;
+    [ObservableProperty] private bool _tfH4InBacktest = true;
+    [ObservableProperty] private bool _tfH1InBacktest = true;
+    [ObservableProperty] private bool _tfM15InBacktest = false;
+    [ObservableProperty] private string _perTfSummary = "";
 
     // Ergebnis-Werte
     [ObservableProperty] private bool _hasResult;
@@ -94,9 +103,15 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
     /// </summary>
     public ObservableCollection<string> AvailableSymbols { get; } = new();
 
-    public BacktestViewModel(RiskSettings riskSettings, BotEventBus eventBus, IPublicMarketDataClient? publicClient = null, BotDatabaseService? dbService = null)
+    public BacktestViewModel(RiskSettings riskSettings, ScannerSettings scannerSettings, BotEventBus eventBus,
+        IPublicMarketDataClient? publicClient = null, BotDatabaseService? dbService = null)
     {
+        // WICHTIG: scannerSettings bewusst als NICHT-optionaler Parameter.
+        // Microsoft.Extensions.DependencyInjection füllt optionale Parameter mit Default-Wert
+        // NICHT aus dem Container — der Default (null) gewinnt. Als required-Parameter wird
+        // die Singleton-Instanz aus App.axaml.cs (Z.327) garantiert injiziert.
         _riskSettings = riskSettings;
+        _scannerSettings = scannerSettings;
         _eventBus = eventBus;
         _publicClient = publicClient;
         _dbService = dbService;
@@ -140,15 +155,148 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Erstellt die passende IStrategy-Instanz und wendet den aktiven Trading-Modus-Preset an.
+    /// Erstellt die passende IStrategy-Instanz (Multi-TF Standalone: kein Preset nötig).
     /// </summary>
-    private IStrategy CreateStrategy()
+    private IStrategy CreateStrategy() => StrategyFactory.Create(SelectedStrategy);
+
+    /// <summary>
+    /// Multi-TF Standalone: Backtest pro ausgewählter Navigator-TF sequenziell durchführen.
+    /// Aggregiert die Ergebnisse + speichert eine Per-TF-Zusammenfassung in <see cref="PerTfSummary"/>.
+    /// </summary>
+    private async Task RunBacktestMultiTfAsync()
     {
-        var strategy = StrategyFactory.Create(SelectedStrategy);
-        if (strategy is SequenzKonzeptStrategy sk)
-            sk.ApplyPreset(TradingModePreset.Swing);
-        return strategy;
+        var tfsToTest = new List<TimeFrame>();
+        if (TfD1InBacktest) tfsToTest.Add(TimeFrame.D1);
+        if (TfH4InBacktest) tfsToTest.Add(TimeFrame.H4);
+        if (TfH1InBacktest) tfsToTest.Add(TimeFrame.H1);
+        if (TfM15InBacktest) tfsToTest.Add(TimeFrame.M15);
+
+        if (tfsToTest.Count == 0)
+        {
+            StatusText = "Multi-TF-Test: Mindestens eine TF muss ausgewählt sein";
+            IsRunning = false;
+            return;
+        }
+
+        var allTrades = new List<CompletedTrade>();
+        decimal totalPnl = 0;
+        int totalTrades = 0;
+        var perTfLines = new List<string>();
+
+        var from = StartDate?.UtcDateTime ?? DateTime.UtcNow.AddDays(-30);
+        var to = EndDate?.UtcDateTime ?? DateTime.UtcNow;
+
+        // W1/D1 einmal vor der TF-Schleife laden — in den nachfolgenden RunAsync-Aufrufen
+        // als preloaded*-Parameter durchgereicht (spart n × identische Kline-Requests).
+        List<Candle>? preloadedWeekly = null;
+        List<Candle>? preloadedDaily = null;
+        if (_publicClient != null && tfsToTest.Count > 1)
+        {
+            var preloadEngine = new BacktestEngine(_publicClient, NullLogger<BacktestEngine>.Instance);
+            try
+            {
+                preloadedWeekly = await preloadEngine.LoadCandlesAsync(Symbol, TimeFrame.W1, from.AddDays(-365), to).ConfigureAwait(false);
+            }
+            catch { /* W1-Preload optional */ }
+            try
+            {
+                preloadedDaily = await preloadEngine.LoadCandlesAsync(Symbol, TimeFrame.D1, from.AddDays(-120), to).ConfigureAwait(false);
+            }
+            catch { /* D1-Preload optional */ }
+        }
+
+        for (int i = 0; i < tfsToTest.Count; i++)
+        {
+            var tf = tfsToTest[i];
+            if (_backtestCts?.Token.IsCancellationRequested ?? true) break;
+
+            StatusText = $"Teste {tf} ({i + 1}/{tfsToTest.Count})...";
+            var strategy = CreateStrategy();
+            var riskSettings = BuildRiskSettings();
+            var riskManager = new RiskManager(riskSettings, NullLogger<RiskManager>.Instance);
+            var backtestSettings = new BacktestSettings
+            {
+                InitialBalance = InitialBalance,
+                Tp1CloseRatio = _riskSettings.Tp1CloseRatio,
+                Tp2CloseRatio = _riskSettings.Tp2CloseRatio,
+                MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
+                HtfTimeFrame = Engine.Strategies.SequenzKonzeptStrategy.GetFilterTimeframe(tf),
+            };
+
+            BacktestEngine engine = _publicClient != null
+                ? new BacktestEngine(_publicClient, NullLogger<BacktestEngine>.Instance)
+                : new BacktestEngine(new SimulatedExchange(backtestSettings), NullLogger<BacktestEngine>.Instance);
+
+            // Bei D1-Navigator kein Preload-D1 durchreichen (Strategy lädt eigenes D1 nicht — wäre Rekursion)
+            // Bei W1-Navigator analog kein Preload-W1.
+            var wForTf = tf == TimeFrame.W1 ? null : preloadedWeekly;
+            var dForTf = tf == TimeFrame.D1 ? null : preloadedDaily;
+
+            var report = await engine.RunAsync(
+                strategy, riskManager, Symbol, tf, from, to, backtestSettings,
+                new Progress<int>(p => Progress = (i * 100 + p) / tfsToTest.Count),
+                _backtestCts.Token,
+                scannerSettings: _scannerSettings,
+                riskSettings: riskSettings,
+                preloadedWeekly: wForTf,
+                preloadedDaily: dForTf).ConfigureAwait(false);
+
+            // Trades mit TF-Tag versehen
+            foreach (var trade in report.Trades)
+                allTrades.Add(trade with { NavigatorTimeframe = tf });
+            totalPnl += report.TotalPnl;
+            totalTrades += report.TotalTrades;
+            perTfLines.Add($"{tf}: {report.TotalTrades} Trades, PnL {report.TotalPnl:+0.00;-0.00} USDT, WinRate {report.WinRate:P0}");
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Backtest",
+                $"{tf}: {report.TotalTrades} Trades, Gesamt-PnL {report.TotalPnl:+0.00;-0.00} USDT"));
+        }
+
+        // Aggregierte Metriken ins UI
+        TotalPnl = totalPnl;
+        TotalTrades = totalTrades;
+        WinRate = totalTrades > 0
+            ? (decimal)allTrades.Count(t => t.Pnl > 0) / totalTrades * 100m
+            : 0m;
+        PerTfSummary = string.Join("\n", perTfLines);
+
+        // Trades in UI-Collection (neueste zuerst)
+        Trades.Clear();
+        foreach (var trade in allTrades.OrderByDescending(t => t.ExitTime).Take(500))
+            Trades.Add(new BacktestTradeItem(
+                trade.Symbol,
+                trade.Side.ToString(),
+                trade.EntryPrice,
+                trade.ExitPrice,
+                trade.Pnl,
+                trade.Pnl > 0));
+
+        HasResult = true;
+        StatusText = $"Multi-TF-Test abgeschlossen: {totalTrades} Trades über {tfsToTest.Count} TFs";
+        IsRunning = false;
+
+        _eventBus.PublishBacktestCompleted(new BacktestCompletedArgs
+        {
+            Trades = allTrades,
+            StrategyName = SelectedStrategy,
+            Symbol = Symbol,
+        });
     }
+
+    private RiskSettings BuildRiskSettings() => new()
+    {
+        MaxDailyDrawdownPercent = _riskSettings.MaxDailyDrawdownPercent,
+        MaxTotalDrawdownPercent = _riskSettings.MaxTotalDrawdownPercent,
+        MaxOpenPositions = _riskSettings.MaxOpenPositions,
+        MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol,
+        MaxLeverage = Leverage,
+        MaxPositionSizePercent = _riskSettings.MaxPositionSizePercent,
+        MaxMarginPerTradePercent = _riskSettings.MaxMarginPerTradePercent,
+        Tp1CloseRatio = _riskSettings.Tp1CloseRatio,
+        Tp2CloseRatio = _riskSettings.Tp2CloseRatio,
+        MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
+        PipScalingByTf = _riskSettings.PipScalingByTf,
+    };
 
     /// <summary>
     /// Parsed den TimeFrame-String in das entsprechende Enum.
@@ -182,22 +330,20 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
 
         try
         {
+            // Multi-TF Standalone: Wenn BacktestAllTimeframes aktiv → Schleife über alle ausgewählten TFs
+            if (BacktestAllTimeframes)
+            {
+                await RunBacktestMultiTfAsync().ConfigureAwait(false);
+                return;
+            }
+
             // Timeframe zuerst parsen (wird für Preset + HTF-Konfiguration gebraucht)
             var timeFrame = ParseTimeFrame(SelectedTimeFrame);
 
             // Echte Strategie erstellen
             var strategy = CreateStrategy();
 
-            // Preset-spezifische RiskSettings: Alle Felder übernehmen damit Backtest
-            // das gleiche Verhalten zeigt wie Paper/Live-Trading
-            var preset = SelectedTimeFrame switch
-            {
-                "M5" or "M15" => TradingModePreset.Scalping,
-                "M30" or "H1" => TradingModePreset.DayTrading,
-                _ => TradingModePreset.Swing
-            };
-            var riskPreset = Core.Configuration.TradingModeDefaults.GetRiskPreset(preset);
-
+            // Multi-TF Standalone: RiskSettings direkt aus dem globalen Settings-Snapshot verwenden.
             var riskSettings = new RiskSettings
             {
                 MaxDailyDrawdownPercent = _riskSettings.MaxDailyDrawdownPercent,
@@ -205,16 +351,12 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
                 MaxOpenPositions = _riskSettings.MaxOpenPositions,
                 MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol,
                 MaxLeverage = Leverage,
-                CheckCorrelation = _riskSettings.CheckCorrelation,
-                MaxCorrelation = _riskSettings.MaxCorrelation,
-                MinLiquidationDistancePercent = _riskSettings.MinLiquidationDistancePercent,
-                MaxPositionSizePercent = riskPreset.MaxPositionSizePercent,
-                MaxMarginPerTradePercent = riskPreset.MaxMarginPerTradePercent,
-                CooldownHours = riskPreset.CooldownHours,
-                MaxHoldHours = riskPreset.MaxHoldHours,
-                Tp1CloseRatio = riskPreset.Tp1CloseRatio,
-                Tp2CloseRatio = riskPreset.Tp2CloseRatio,
-                MinRiskRewardRatio = riskPreset.MinRiskRewardRatio,
+                MaxPositionSizePercent = _riskSettings.MaxPositionSizePercent,
+                MaxMarginPerTradePercent = _riskSettings.MaxMarginPerTradePercent,
+                Tp1CloseRatio = _riskSettings.Tp1CloseRatio,
+                Tp2CloseRatio = _riskSettings.Tp2CloseRatio,
+                MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
+                PipScalingByTf = _riskSettings.PipScalingByTf,
             };
 
             var riskManager = new RiskManager(riskSettings, NullLogger<RiskManager>.Instance);
@@ -222,11 +364,12 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
             var backtestSettings = new BacktestSettings
             {
                 InitialBalance = InitialBalance,
-                Tp1CloseRatio = riskPreset.Tp1CloseRatio,
-                Tp2CloseRatio = riskPreset.Tp2CloseRatio,
-                MaxHoldHoursInitial = riskPreset.MaxHoldHours,
-                MinRiskRewardRatio = riskPreset.MinRiskRewardRatio,
-                HtfTimeFrame = timeFrame != Core.Enums.TimeFrame.H1 ? Core.Enums.TimeFrame.H1 : null,
+                Tp1CloseRatio = _riskSettings.Tp1CloseRatio,
+                Tp2CloseRatio = _riskSettings.Tp2CloseRatio,
+                MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
+                // Filter-TF gemäß Live-Mapping: D1→H4, H4→H1, H1→M15, M15→M5.
+                // BacktestEngine lädt diese als FilterTimeframeCandles (= dasselbe wie Live).
+                HtfTimeFrame = Engine.Strategies.SequenzKonzeptStrategy.GetFilterTimeframe(timeFrame),
             };
 
             // BacktestEngine: Echte Marktdaten wenn Public Client verfügbar, sonst Demo
@@ -262,7 +405,9 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
                 to,
                 backtestSettings,
                 progress,
-                _backtestCts.Token);
+                _backtestCts.Token,
+                scannerSettings: _scannerSettings,
+                riskSettings: riskSettings);
 
             // Report-Ergebnisse in Properties übertragen
             TotalPnl = report.TotalPnl;

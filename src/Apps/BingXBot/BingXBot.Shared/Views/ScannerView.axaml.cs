@@ -1,14 +1,12 @@
 using Avalonia.Controls;
-using BingXBot.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace BingXBot.Views;
 
+/// <summary>Scanner-View. DataContext via ViewLocator.</summary>
 public partial class ScannerView : UserControl
 {
     public ScannerView()
     {
         InitializeComponent();
-        DataContext = App.Services.GetRequiredService<ScannerViewModel>();
     }
 }

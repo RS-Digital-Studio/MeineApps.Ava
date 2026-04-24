@@ -1,0 +1,192 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.LogViewMobile"
+             x:DataType="vm:LogViewModel"
+             x:CompileBindings="True"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <UserControl.Styles>
+    <!-- Filter-Chips als ToggleButtons -->
+    <Style Selector="ToggleButton.FilterChip">
+      <Setter Property="Padding" Value="14,7" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppTextSecondaryBrush}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ToggleButton.FilterChip:checked /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.FilterChip:checked">
+      <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppPrimaryBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <!-- Kopfzeile: Zähler + Clear -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="12,10,12,6">
+      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <mi:MaterialIcon Kind="Console" Width="20" Height="20"
+                         Foreground="{DynamicResource AppPrimaryBrush}" />
+        <TextBlock Text="Bot-Log" FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+        <Border Background="{DynamicResource CardBrush}" CornerRadius="10" Padding="8,3" Margin="6,0,0,0">
+          <TextBlock Text="{Binding EntryCount}" FontSize="11" FontWeight="SemiBold"
+                     Foreground="{DynamicResource AppTextBrush}" />
+        </Border>
+      </StackPanel>
+
+      <Button Grid.Column="2"
+              Command="{Binding ClearCommand}"
+              Background="{DynamicResource ErrorBackgroundBrush}"
+              Foreground="{DynamicResource ErrorBrush}"
+              CornerRadius="10" Padding="12,8"
+              BorderThickness="0">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <mi:MaterialIcon Kind="DeleteOutline" Width="18" Height="18" />
+          <TextBlock Text="Leeren" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <!-- Filter: Level-Chips (horizontal scroll) + Kategorie-ComboBox -->
+    <StackPanel Grid.Row="1" Spacing="8" Margin="12,4,12,8">
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <ToggleButton Classes="FilterChip" IsChecked="{Binding ShowDebug}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Ellipse Width="8" Height="8" Fill="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="Debug" VerticalAlignment="Center" />
+            </StackPanel>
+          </ToggleButton>
+          <ToggleButton Classes="FilterChip" IsChecked="{Binding ShowInfo}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Ellipse Width="8" Height="8" Fill="{DynamicResource AppPrimaryBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="Info" VerticalAlignment="Center" />
+            </StackPanel>
+          </ToggleButton>
+          <ToggleButton Classes="FilterChip" IsChecked="{Binding ShowTrade}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Ellipse Width="8" Height="8" Fill="{DynamicResource SuccessBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="Trade" VerticalAlignment="Center" />
+            </StackPanel>
+          </ToggleButton>
+          <ToggleButton Classes="FilterChip" IsChecked="{Binding ShowWarning}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Ellipse Width="8" Height="8" Fill="{DynamicResource WarningBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="Warning" VerticalAlignment="Center" />
+            </StackPanel>
+          </ToggleButton>
+          <ToggleButton Classes="FilterChip" IsChecked="{Binding ShowError}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Ellipse Width="8" Height="8" Fill="{DynamicResource ErrorBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="Error" VerticalAlignment="Center" />
+            </StackPanel>
+          </ToggleButton>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Grid ColumnDefinitions="Auto,*">
+        <TextBlock Grid.Column="0" Text="Kategorie" FontSize="12"
+                   Foreground="{DynamicResource AppTextSecondaryBrush}"
+                   VerticalAlignment="Center" Margin="2,0,10,0" />
+        <ComboBox Grid.Column="1"
+                  ItemsSource="{Binding Categories}"
+                  SelectedItem="{Binding SelectedCategory}"
+                  HorizontalAlignment="Stretch" />
+      </Grid>
+    </StackPanel>
+
+    <!-- Log-Einträge -->
+    <Border Grid.Row="2"
+            Background="{DynamicResource CardBrush}"
+            CornerRadius="12"
+            Margin="12,0,12,12"
+            ClipToBounds="True">
+      <Panel>
+        <!-- Empty-State -->
+        <StackPanel IsVisible="{Binding !EntryCount}"
+                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Spacing="10" Margin="24">
+          <mi:MaterialIcon Kind="TextBoxOutline" Width="56" Height="56"
+                           Foreground="{DynamicResource TextMutedBrush}" Opacity="0.35"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding EmptyStateText}" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <!-- Log-Einträge (virtualisiert) -->
+        <ListBox ItemsSource="{Binding LogEntries}"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 IsVisible="{Binding EntryCount}">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="MinHeight" Value="0" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:LogDisplayItem">
+              <Border Padding="12,10"
+                      BorderBrush="{DynamicResource BorderSubtleBrush}"
+                      BorderThickness="0,0,0,1">
+                <StackPanel Spacing="4">
+                  <!-- Zeile 1: Zeit | Level-Chip | Kategorie -->
+                  <Grid ColumnDefinitions="Auto,Auto,*">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding TimeText}"
+                               FontSize="11"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
+                    <Border Grid.Column="1"
+                            CornerRadius="4" Padding="6,1"
+                            Margin="8,0,8,0"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource SurfaceBrush}">
+                      <TextBlock Text="{Binding Level}"
+                                 FontSize="10" FontWeight="Bold"
+                                 Foreground="{Binding LevelColor}" />
+                    </Border>
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Category}"
+                               FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+                  </Grid>
+                  <!-- Zeile 2: Nachricht mit Wrap -->
+                  <TextBlock Text="{Binding Message}"
+                             FontSize="13"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Panel>
+    </Border>
+
+  </Grid>
+</UserControl>

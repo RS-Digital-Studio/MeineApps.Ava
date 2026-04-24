@@ -228,7 +228,7 @@
                         Padding="12,10"
                         BorderBrush="{DynamicResource BorderSubtleBrush}"
                         BorderThickness="0,0,0,1">
-                  <Grid ColumnDefinitions="*,60,90,90,70,80,50,80,60,90">
+                  <Grid ColumnDefinitions="*,60,40,90,90,70,80,50,80,60,90">
                     <!-- Symbol -->
                     <TextBlock Grid.Column="0" Text="{Binding Symbol}"
                                FontSize="12" FontWeight="SemiBold"
@@ -241,8 +241,17 @@
                                Foreground="{Binding SideColor}"
                                VerticalAlignment="Center" />
 
+                    <!-- TF-Badge (Multi-TF Standalone) -->
+                    <Border Grid.Column="2" Background="{DynamicResource AppAccentBrush}"
+                            CornerRadius="3" Padding="3,1" Margin="0,0,6,0"
+                            VerticalAlignment="Center" HorizontalAlignment="Left"
+                            IsVisible="{Binding TimeframeBadge, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                      <TextBlock Text="{Binding TimeframeBadge}" FontSize="10" FontWeight="Bold"
+                                 Foreground="{DynamicResource PrimaryContrastBrush}" />
+                    </Border>
+
                     <!-- Entry -->
-                    <TextBlock Grid.Column="2"
+                    <TextBlock Grid.Column="3"
                                Text="{Binding EntryPrice, StringFormat={}{0:N2}}"
                                FontSize="12"
                                FontFamily="Consolas, Courier New, monospace"
@@ -250,7 +259,7 @@
                                VerticalAlignment="Center" />
 
                     <!-- Exit -->
-                    <TextBlock Grid.Column="3"
+                    <TextBlock Grid.Column="4"
                                Text="{Binding ExitPrice, StringFormat={}{0:N2}}"
                                FontSize="12"
                                FontFamily="Consolas, Courier New, monospace"
@@ -258,7 +267,7 @@
                                VerticalAlignment="Center" />
 
                     <!-- Qty -->
-                    <TextBlock Grid.Column="4"
+                    <TextBlock Grid.Column="5"
                                Text="{Binding Quantity, StringFormat={}{0:G}}"
                                FontSize="12"
                                FontFamily="Consolas, Courier New, monospace"
@@ -266,7 +275,7 @@
                                VerticalAlignment="Center" />
 
                     <!-- P&L (farbcodiert: Grün=Profit, Rot=Verlust) -->
-                    <TextBlock Grid.Column="5"
+                    <TextBlock Grid.Column="6"
                                Text="{Binding Pnl, StringFormat={}{0:+0.00;-0.00;0.00}}"
                                FontSize="12" FontWeight="SemiBold"
                                FontFamily="Consolas, Courier New, monospace"
@@ -274,7 +283,7 @@
                                VerticalAlignment="Center" />
 
                     <!-- Fee -->
-                    <TextBlock Grid.Column="6"
+                    <TextBlock Grid.Column="7"
                                Text="{Binding Fee, StringFormat={}{0:N1}}"
                                FontSize="12"
                                FontFamily="Consolas, Courier New, monospace"
@@ -282,19 +291,19 @@
                                VerticalAlignment="Center" />
 
                     <!-- Strategie -->
-                    <TextBlock Grid.Column="7" Text="{Binding Strategy}"
+                    <TextBlock Grid.Column="8" Text="{Binding Strategy}"
                                FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center" />
 
                     <!-- Modus -->
-                    <TextBlock Grid.Column="8" Text="{Binding Mode}"
+                    <TextBlock Grid.Column="9" Text="{Binding Mode}"
                                FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}"
                                VerticalAlignment="Center" />
 
                     <!-- Zeit -->
-                    <TextBlock Grid.Column="9"
+                    <TextBlock Grid.Column="10"
                                Text="{Binding Time, StringFormat={}{0:dd.MM HH:mm}}"
                                FontSize="11"
                                Foreground="{DynamicResource TextMutedBrush}"

@@ -190,20 +190,15 @@
                           MinWidth="180" FontSize="12" />
               </StackPanel>
 
-              <!-- Trading-Modus: Dropdown für CTP, fester Hinweis für SK -->
-              <StackPanel Spacing="2" IsVisible="{Binding !IsSkSystem}">
-                <TextBlock Text="Modus" FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-                <ComboBox ItemsSource="{Binding AvailableTradingModes}"
-                          SelectedItem="{Binding SelectedTradingMode}"
-                          IsEnabled="{Binding !IsRunning}"
-                          MinWidth="120" FontSize="12"
-                          ToolTip.Tip="Scalping (M15): Schnelle Trades, enge SL/TP&#10;Day-Trading (H1): Intraday&#10;Swing (H4): Mehrtägig" />
-              </StackPanel>
-              <StackPanel Spacing="2" IsVisible="{Binding IsSkSystem}">
-                <TextBlock Text="Modus" FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
-                <TextBlock Text="4H / 1H / 15m" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{DynamicResource AppAccentBrush}"
-                           ToolTip.Tip="SK-System (Buch): W1/D1/H4/H1/M30 Multi-Timeframe" />
+              <!-- Multi-TF Standalone: TF-Checkboxen (D1/H4/H1/M15) -->
+              <StackPanel Spacing="4">
+                <TextBlock Text="Aktive TFs" FontSize="11" Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <CheckBox Content="1D" IsChecked="{Binding TfD1Active}" IsEnabled="{Binding !IsRunning}" FontSize="11" />
+                  <CheckBox Content="4H" IsChecked="{Binding TfH4Active}" IsEnabled="{Binding !IsRunning}" FontSize="11" />
+                  <CheckBox Content="1H" IsChecked="{Binding TfH1Active}" IsEnabled="{Binding !IsRunning}" FontSize="11" />
+                  <CheckBox Content="15m" IsChecked="{Binding TfM15Active}" IsEnabled="{Binding !IsRunning}" FontSize="11" />
+                </StackPanel>
               </StackPanel>
 
               <!-- Buttons -->
@@ -256,6 +251,49 @@
             <TextBlock Text="{Binding StrategyDescription}" FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}"
                        TextWrapping="Wrap" MaxWidth="500" />
+
+            <!-- Watchdog-Banner (24.04.2026): Erscheint wenn Bot gestoppt ODER Engine still ist. -->
+            <Border IsVisible="{Binding IsAmpelStale}"
+                    Background="{DynamicResource WarningBrush}"
+                    CornerRadius="6" Padding="10,8" Margin="0,8,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="AlertOutline" Width="16" Height="16"
+                                 Foreground="{DynamicResource PrimaryContrastBrush}"
+                                 VerticalAlignment="Center" />
+                <TextBlock Text="{Binding IdleHintText}" FontSize="11"
+                           Foreground="{DynamicResource PrimaryContrastBrush}"
+                           TextWrapping="Wrap" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- Multi-TF Standalone: SK-Ampel pro Navigator-TF -->
+            <Border Background="{DynamicResource AppBackgroundAltBrush}" CornerRadius="6"
+                    Padding="10,8" Margin="0,8,0,0"
+                    IsVisible="{Binding SkAmpelRows.Count}"
+                    Opacity="{Binding IsAmpelStale, Converter={x:Static conv:StaleOpacityConverter.Instance}}">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Sequence-Ampel (pro Timeframe)" FontSize="10" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                <ItemsControl ItemsSource="{Binding SkAmpelRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="40,*" Margin="0,2">
+                        <Border Grid.Column="0" Background="{DynamicResource AppAccentBrush}"
+                                CornerRadius="3" Padding="4,1" HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Timeframe}" FontSize="10" FontWeight="Bold"
+                                     Foreground="{DynamicResource PrimaryContrastBrush}" />
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="{Binding Status}" FontSize="11"
+                                   Foreground="{DynamicResource AppTextBrush}"
+                                   VerticalAlignment="Center" Margin="8,0,0,0"
+                                   TextTrimming="CharacterEllipsis" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Border>
 
@@ -350,7 +388,8 @@
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <TextBlock Text="{Binding}" FontSize="12" FontWeight="SemiBold"
                                Foreground="White" VerticalAlignment="Center" />
-                    <Button Tag="{Binding}" Click="OnRemoveWatchlistSymbol"
+                    <Button Command="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).RemoveFromWatchlistCommand}"
+                            CommandParameter="{Binding}"
                             Padding="2" Background="Transparent" BorderThickness="0"
                             Cursor="Hand" CornerRadius="10" VerticalAlignment="Center">
                       <mi:MaterialIcon Kind="CloseCircle" Width="14" Height="14" Foreground="White" Opacity="0.7" />
@@ -691,6 +730,13 @@
                         <TextBlock Text="{Binding StrategyName}" FontSize="9" FontWeight="Bold"
                                    Foreground="{DynamicResource AppWarningBrush}" />
                       </Border>
+                      <!-- TF-Badge (Multi-TF Standalone) -->
+                      <Border Background="{DynamicResource AppAccentBrush}" CornerRadius="3" Padding="4,1"
+                              VerticalAlignment="Center" IsVisible="{Binding TimeframeBadge, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                              ToolTip.Tip="Navigator-Timeframe des auslösenden Signals">
+                        <TextBlock Text="{Binding TimeframeBadge}" FontSize="9" FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryContrastBrush}" />
+                      </Border>
                     </StackPanel>
 
                     <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6">
@@ -741,14 +787,6 @@
                                    Foreground="{DynamicResource AppWarningBrush}">
                           <Run Text="C:" /><Run Text="{Binding ConfluenceScore}" />
                         </TextBlock>
-                      </Border>
-                      <!-- Charakter-Pattern Badge -->
-                      <Border CornerRadius="3" Padding="4,1"
-                              Background="{DynamicResource SurfaceBrush}"
-                              IsVisible="{Binding CharacterPattern, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <TextBlock Text="{Binding CharacterPattern}" FontSize="9" FontWeight="Bold"
-                                   FontFamily="Consolas, Courier New, monospace"
-                                   Foreground="{DynamicResource AppTextBrush}" />
                       </Border>
                       <!-- Haltezeit -->
                       <TextBlock Text="{Binding HoldTimeText}" FontSize="9"

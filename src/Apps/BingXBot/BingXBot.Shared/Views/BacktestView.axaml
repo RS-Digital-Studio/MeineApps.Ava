@@ -217,6 +217,27 @@
                             HorizontalAlignment="Stretch" />
             </StackPanel>
 
+            <!-- Multi-TF Standalone: Backtest pro TF sequenziell -->
+            <StackPanel Spacing="6">
+              <CheckBox Content="Alle TFs testen (sequenziell)"
+                        IsChecked="{Binding BacktestAllTimeframes}"
+                        IsEnabled="{Binding !IsRunning}"
+                        Foreground="{DynamicResource TextPrimaryBrush}" />
+              <StackPanel Orientation="Horizontal" Spacing="10"
+                          IsVisible="{Binding BacktestAllTimeframes}"
+                          Margin="24,0,0,0">
+                <CheckBox Content="1D" IsChecked="{Binding TfD1InBacktest}" IsEnabled="{Binding !IsRunning}" />
+                <CheckBox Content="4H" IsChecked="{Binding TfH4InBacktest}" IsEnabled="{Binding !IsRunning}" />
+                <CheckBox Content="1H" IsChecked="{Binding TfH1InBacktest}" IsEnabled="{Binding !IsRunning}" />
+                <CheckBox Content="15m" IsChecked="{Binding TfM15InBacktest}" IsEnabled="{Binding !IsRunning}" />
+              </StackPanel>
+              <TextBlock Text="{Binding PerTfSummary}" FontSize="10"
+                         FontFamily="Consolas, Courier New, monospace"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding PerTfSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
             <!-- Start-Button -->
             <Button Command="{Binding RunBacktestCommand}"
                     IsEnabled="{Binding !IsRunning}"

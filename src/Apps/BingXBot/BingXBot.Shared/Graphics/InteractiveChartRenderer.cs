@@ -397,23 +397,23 @@ public class InteractiveChartRenderer
             canvas.DrawRect(area.Left, Math.Max(buyTop, area.Top), area.Width,
                 Math.Min(buyBot, area.Bottom) - Math.Max(buyTop, area.Top), BuyZonePaint);
 
-        // 3. Fibonacci-Retracement-Linien mit Labels
-        DrawFibLine(canvas, area, min, max, seq.Ret382, "38.2%");
+        // 3. Fibonacci-Retracement-Linien (Buch-Tabelle: 50/55.9/61.8/66.7/71/78.6)
         DrawFibLine(canvas, area, min, max, seq.Ret500, "50%");
         DrawFibLine(canvas, area, min, max, seq.Ret559, "55.9%");
         DrawFibLine(canvas, area, min, max, seq.Ret618, "61.8%");
         DrawFibLine(canvas, area, min, max, seq.Ret667, "66.7%");
+        DrawFibLine(canvas, area, min, max, seq.Ret71,  "71%");
         DrawFibLine(canvas, area, min, max, seq.Ret786, "78.6%");
 
-        // 4. Extension-Linien (Zielzonen)
-        DrawExtLine(canvas, area, min, max, seq.Ext100, "100%");
-        DrawExtLine(canvas, area, min, max, seq.Ext1272, "127.2%");
+        // 4. Extension-Linien (Buch-Tabelle: TP1 161.8%, TP2 200%, Runner 261.8%, Max 423.6%)
         using var tp1ExtPaint = new SKPaint { Color = TpColor.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
         using var tp1ExtLabel = new SKPaint { Color = TpColor.WithAlpha(200), IsAntialias = true };
         DrawHLine(canvas, area, min, max, seq.Ext1618, tp1ExtPaint, "TP1 161.8%", tp1ExtLabel);
         using var tp2ExtPaint = new SKPaint { Color = Tp2Color.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
         using var tp2ExtLabel = new SKPaint { Color = Tp2Color.WithAlpha(200), IsAntialias = true };
         DrawHLine(canvas, area, min, max, seq.Ext200, tp2ExtPaint, "TP2 200%", tp2ExtLabel);
+        DrawExtLine(canvas, area, min, max, seq.Ext2618, "261.8%");
+        DrawExtLine(canvas, area, min, max, seq.Ext4236, "423.6%");
 
         // 5. 0-A-B Punkt-Marker (SK-Nomenklatur)
         DrawPointMarker(canvas, area, min, max, seq.Point0, "0", Point0Color);
@@ -437,8 +437,8 @@ public class InteractiveChartRenderer
                 canvas.DrawLine(aX, aY, bX, bY, SeqLinePaint);
         }
 
-        // 7. Charakter-Badge oben links
-        var badge = $"SK {seq.CharacterPattern} | {seq.SequenceType}";
+        // 7. Richtungs-Badge oben links (Buch-konform: Long/Short, keine Wellen-/Typ-Klassifikation)
+        var badge = $"SK {(seq.IsLong ? "Long" : "Short")}";
         using var badgeBg = new SKPaint { Color = SKColor.Parse("#1E1E2E").WithAlpha(200), Style = SKPaintStyle.Fill };
         using var badgeText = new SKPaint { Color = FibColor, IsAntialias = true };
         var badgeRect = new SKRect(area.Left + 5, area.Top + 5, area.Left + 5 + badge.Length * 7f + 10, area.Top + 22);

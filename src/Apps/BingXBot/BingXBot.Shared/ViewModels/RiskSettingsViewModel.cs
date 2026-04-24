@@ -1,7 +1,8 @@
+using BingXBot.Contracts.Services;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Models;
-using BingXBot.Services;
+using BingXBot.Trading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
@@ -18,6 +19,7 @@ public partial class RiskSettingsViewModel : ViewModelBase
     private readonly RiskSettings _riskSettings;
     private readonly BotEventBus _eventBus;
     private readonly BotDatabaseService? _dbService;
+    private readonly ISettingsPersistenceService _settingsPersistence;
 
     [ObservableProperty] private decimal _maxPositionSizePercent;
     [ObservableProperty] private decimal _maxMarginPerTradePercent;
@@ -26,12 +28,6 @@ public partial class RiskSettingsViewModel : ViewModelBase
     [ObservableProperty] private int _maxOpenPositions;
     [ObservableProperty] private int _maxOpenPositionsPerSymbol;
     [ObservableProperty] private decimal _maxLeverage;
-    [ObservableProperty] private bool _checkCorrelation;
-    [ObservableProperty] private decimal _maxCorrelation;
-    [ObservableProperty] private decimal _minLiquidationDistancePercent;
-    [ObservableProperty] private int _cooldownHours;
-    [ObservableProperty] private int _maxTradesPerDay;
-    [ObservableProperty] private int _maxHoldHours;
     [ObservableProperty] private decimal _tp1CloseRatio;
     [ObservableProperty] private decimal _tp2CloseRatio;
     [ObservableProperty] private decimal _minRiskRewardRatio;
@@ -78,12 +74,14 @@ public partial class RiskSettingsViewModel : ViewModelBase
 
     public RiskSettingsViewModel(RiskSettings riskSettings, BotEventBus eventBus,
         BotSettings botSettings, ScannerSettings scannerSettings,
+        ISettingsPersistenceService settingsPersistence,
         BotDatabaseService? dbService = null)
     {
         _riskSettings = riskSettings;
         _eventBus = eventBus;
         _botSettings = botSettings;
         _scannerSettings = scannerSettings;
+        _settingsPersistence = settingsPersistence;
         _dbService = dbService;
         LoadFromSettings();
     }
@@ -97,12 +95,6 @@ public partial class RiskSettingsViewModel : ViewModelBase
         MaxOpenPositions = _riskSettings.MaxOpenPositions;
         MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol;
         MaxLeverage = _riskSettings.MaxLeverage;
-        CheckCorrelation = _riskSettings.CheckCorrelation;
-        MaxCorrelation = _riskSettings.MaxCorrelation;
-        MinLiquidationDistancePercent = _riskSettings.MinLiquidationDistancePercent;
-        CooldownHours = _riskSettings.CooldownHours;
-        MaxTradesPerDay = _riskSettings.MaxTradesPerDay;
-        MaxHoldHours = _riskSettings.MaxHoldHours;
         Tp1CloseRatio = _riskSettings.Tp1CloseRatio;
         Tp2CloseRatio = _riskSettings.Tp2CloseRatio;
         MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio;
@@ -118,19 +110,13 @@ public partial class RiskSettingsViewModel : ViewModelBase
         _riskSettings.MaxOpenPositions = MaxOpenPositions;
         _riskSettings.MaxOpenPositionsPerSymbol = MaxOpenPositionsPerSymbol;
         _riskSettings.MaxLeverage = MaxLeverage;
-        _riskSettings.CheckCorrelation = CheckCorrelation;
-        _riskSettings.MaxCorrelation = MaxCorrelation;
-        _riskSettings.MinLiquidationDistancePercent = MinLiquidationDistancePercent;
-        _riskSettings.CooldownHours = CooldownHours;
-        _riskSettings.MaxTradesPerDay = MaxTradesPerDay;
-        _riskSettings.MaxHoldHours = MaxHoldHours;
         _riskSettings.Tp1CloseRatio = Tp1CloseRatio;
         _riskSettings.Tp2CloseRatio = Tp2CloseRatio;
         _riskSettings.MinRiskRewardRatio = MinRiskRewardRatio;
 
         SaveStatus = "Gespeichert";
         HasUnsavedChanges = false;
-        _ = App.SaveAllSettingsAsync();
+        _ = _settingsPersistence.SaveAllAsync();
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Risk",
             $"Risiko-Einstellungen gespeichert: MaxPos={MaxPositionSizePercent}%, MaxDD={MaxTotalDrawdownPercent}%, Hebel={MaxLeverage}x"));
@@ -148,12 +134,6 @@ public partial class RiskSettingsViewModel : ViewModelBase
         MaxOpenPositions = defaults.MaxOpenPositions;
         MaxOpenPositionsPerSymbol = defaults.MaxOpenPositionsPerSymbol;
         MaxLeverage = defaults.MaxLeverage;
-        CheckCorrelation = defaults.CheckCorrelation;
-        MaxCorrelation = defaults.MaxCorrelation;
-        MinLiquidationDistancePercent = defaults.MinLiquidationDistancePercent;
-        CooldownHours = defaults.CooldownHours;
-        MaxTradesPerDay = defaults.MaxTradesPerDay;
-        MaxHoldHours = defaults.MaxHoldHours;
         Tp1CloseRatio = defaults.Tp1CloseRatio;
         Tp2CloseRatio = defaults.Tp2CloseRatio;
         MinRiskRewardRatio = defaults.MinRiskRewardRatio;
@@ -174,12 +154,6 @@ public partial class RiskSettingsViewModel : ViewModelBase
     partial void OnMaxOpenPositionsChanged(int value) => MarkDirty();
     partial void OnMaxOpenPositionsPerSymbolChanged(int value) => MarkDirty();
     partial void OnMaxLeverageChanged(decimal value) => MarkDirty();
-    partial void OnCheckCorrelationChanged(bool value) => MarkDirty();
-    partial void OnMaxCorrelationChanged(decimal value) => MarkDirty();
-    partial void OnMinLiquidationDistancePercentChanged(decimal value) => MarkDirty();
-    partial void OnCooldownHoursChanged(int value) => MarkDirty();
-    partial void OnMaxTradesPerDayChanged(int value) => MarkDirty();
-    partial void OnMaxHoldHoursChanged(int value) => MarkDirty();
     partial void OnTp1CloseRatioChanged(decimal value) => MarkDirty();
     partial void OnTp2CloseRatioChanged(decimal value) => MarkDirty();
     partial void OnMinRiskRewardRatioChanged(decimal value) => MarkDirty();

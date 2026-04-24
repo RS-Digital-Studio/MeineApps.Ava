@@ -1,0 +1,62 @@
+<Styles xmlns="https://github.com/avaloniaui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- BingXBot Mobile Styles (nur auf Android geladen)                        -->
+  <!-- Erzwingt touch-freundliche Mindest-Größen über alle Views.              -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Alle Buttons haben mindestens 44dp Höhe (Android Touch-Target) -->
+  <Style Selector="Button">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+
+  <!-- ToggleButton / ToggleSwitch analog -->
+  <Style Selector="ToggleButton">
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="ToggleSwitch">
+    <Setter Property="MinHeight" Value="40" />
+  </Style>
+
+  <!-- ComboBox / TextBox / NumericUpDown → touch-freundlich -->
+  <Style Selector="ComboBox">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Padding" Value="12,10" />
+  </Style>
+  <Style Selector="TextBox">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+  <Style Selector="NumericUpDown">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+
+  <!-- CalendarDatePicker -->
+  <Style Selector="CalendarDatePicker">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+
+  <!-- ListBoxItem: Mindesthöhe für Touch-Scroll + Tap auf Inhalte -->
+  <Style Selector="ListBox">
+    <Setter Property="Padding" Value="0" />
+  </Style>
+
+  <!-- ScrollViewer: Padding unten 8 damit letzter Eintrag nicht am Bottom-Nav klebt -->
+  <Style Selector="ScrollViewer">
+    <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+  </Style>
+
+  <!-- Expander: Header + Content Padding erhöht -->
+  <Style Selector="Expander /template/ ToggleButton">
+    <Setter Property="MinHeight" Value="48" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Padding" Value="14,12" />
+  </Style>
+
+</Styles>

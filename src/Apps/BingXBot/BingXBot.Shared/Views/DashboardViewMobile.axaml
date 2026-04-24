@@ -1,0 +1,493 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.DashboardViewMobile"
+             x:DataType="vm:DashboardViewModel"
+             x:CompileBindings="True"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="Border.SectionCard">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="14" />
+    </Style>
+    <Style Selector="Button.ActionBtn">
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="0,12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.StartBtn">
+      <Setter Property="Background" Value="{DynamicResource SuccessBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+    </Style>
+    <Style Selector="Button.PauseBtn">
+      <Setter Property="Background" Value="{DynamicResource WarningBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+    </Style>
+    <Style Selector="Button.StopBtn">
+      <Setter Property="Background" Value="{DynamicResource StopSurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+    </Style>
+    <Style Selector="Button.EmergencyBtn">
+      <Setter Property="Background" Value="{DynamicResource ErrorBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="Button.ModePill">
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="0,10" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppTextSecondaryBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.ModePill.Active">
+      <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppPrimaryBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12" Margin="12,10,12,16">
+
+        <!-- ═════ Welcome Hint (ausblendbar) ═════ -->
+        <Border Background="{DynamicResource InfoBackgroundBrush}" CornerRadius="10"
+                Padding="12" IsVisible="{Binding ShowWelcomeHint}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <mi:MaterialIcon Grid.Column="0" Kind="InformationOutline" Width="18" Height="18"
+                             Foreground="{DynamicResource InfoBrush}" VerticalAlignment="Top"
+                             Margin="0,2,10,0" />
+            <TextBlock Grid.Column="1" Text="{Binding WelcomeHintText}"
+                       FontSize="12" TextWrapping="Wrap"
+                       Foreground="{DynamicResource AppTextBrush}" />
+            <Button Grid.Column="2" Command="{Binding DismissWelcomeHintCommand}"
+                    Background="Transparent" BorderThickness="0" Padding="4"
+                    VerticalAlignment="Top">
+              <mi:MaterialIcon Kind="Close" Width="16" Height="16"
+                               Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- ═════ Balance-Karte (großer Fokus) ═════ -->
+        <Border Classes="SectionCard">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="Balance" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}"
+                         VerticalAlignment="Center" />
+              <Border Grid.Column="1" CornerRadius="8" Padding="8,3"
+                      Background="{DynamicResource SurfaceBrush}"
+                      VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <Ellipse Width="7" Height="7" Fill="{Binding StatusDotColor}"
+                           VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding BotStatusText}" FontSize="10" FontWeight="SemiBold"
+                             Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                </StackPanel>
+              </Border>
+            </Grid>
+            <TextBlock Text="{Binding Balance, StringFormat={}{0:N2} USDT}"
+                       FontSize="28" FontWeight="Bold"
+                       FontFamily="Consolas, Courier New, monospace"
+                       Foreground="{DynamicResource AppTextBrush}"
+                       IsVisible="{Binding HasAccountData}" />
+            <TextBlock Text="— USDT" FontSize="28" FontWeight="Bold"
+                       FontFamily="Consolas, Courier New, monospace"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       IsVisible="{Binding !HasAccountData}" />
+
+            <Grid ColumnDefinitions="*,*,*">
+              <StackPanel Grid.Column="0" Spacing="1">
+                <TextBlock Text="Verfügbar" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock Text="{Binding AvailableBalance, StringFormat={}{0:N2}}"
+                           FontSize="13" FontWeight="SemiBold"
+                           FontFamily="Consolas, Courier New, monospace"
+                           Foreground="{DynamicResource AppTextBrush}" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="1">
+                <TextBlock Text="Unreal. P&amp;L" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock Text="{Binding UnrealizedPnl, StringFormat={}{0:+0.00;-0.00}}"
+                           FontSize="13" FontWeight="SemiBold"
+                           FontFamily="Consolas, Courier New, monospace"
+                           Foreground="{DynamicResource SuccessBrush}"
+                           IsVisible="{Binding IsUnrealizedPnlPositive}" />
+                <TextBlock Text="{Binding UnrealizedPnl, StringFormat={}{0:+0.00;-0.00}}"
+                           FontSize="13" FontWeight="SemiBold"
+                           FontFamily="Consolas, Courier New, monospace"
+                           Foreground="{DynamicResource ErrorBrush}"
+                           IsVisible="{Binding !IsUnrealizedPnlPositive}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="1">
+                <TextBlock Text="Gesamt P&amp;L" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock Text="{Binding TotalPnl, StringFormat={}{0:+0.00;-0.00}}"
+                           FontSize="13" FontWeight="SemiBold"
+                           FontFamily="Consolas, Courier New, monospace"
+                           Foreground="{DynamicResource SuccessBrush}"
+                           IsVisible="{Binding IsTotalPnlPositive}" />
+                <TextBlock Text="{Binding TotalPnl, StringFormat={}{0:+0.00;-0.00}}"
+                           FontSize="13" FontWeight="SemiBold"
+                           FontFamily="Consolas, Courier New, monospace"
+                           Foreground="{DynamicResource ErrorBrush}"
+                           IsVisible="{Binding !IsTotalPnlPositive}" />
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- ═════ Modus-Umschalter (Paper/Live Pills) ═════ -->
+        <Border Classes="SectionCard">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="SwapHorizontal" Width="16" Height="16"
+                               Foreground="{DynamicResource AppPrimaryBrush}" />
+              <TextBlock Text="Handels-Modus" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+            <Grid ColumnDefinitions="*,8,*">
+              <Button Grid.Column="0" Classes="ModePill"
+                      Classes.Active="{Binding IsPaperMode}"
+                      Command="{Binding ToggleModeCommand}"
+                      IsEnabled="{Binding !IsRunning}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="FlaskOutline" Width="16" Height="16" />
+                  <TextBlock Text="Paper" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="2" Classes="ModePill"
+                      Classes.Active="{Binding !IsPaperMode}"
+                      Command="{Binding ToggleModeCommand}"
+                      IsEnabled="{Binding !IsRunning}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="CurrencyUsd" Width="16" Height="16" />
+                  <TextBlock Text="Live" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Grid>
+            <TextBlock Text="{Binding ModeDescription}" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       TextWrapping="Wrap" />
+            <TextBlock Text="{Binding LiveStatusText}" FontSize="11"
+                       Foreground="{DynamicResource AppWarningBrush}"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding !IsPaperMode}" />
+          </StackPanel>
+        </Border>
+
+        <!-- ═════ Strategie + Trading-Mode ═════ -->
+        <Border Classes="SectionCard">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="ChartLine" Width="16" Height="16"
+                               Foreground="{DynamicResource AppPrimaryBrush}" />
+              <TextBlock Text="Strategie" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+            <ComboBox ItemsSource="{Binding AvailableStrategies}"
+                      SelectedItem="{Binding SelectedStrategy}"
+                      IsEnabled="{Binding !IsRunning}"
+                      HorizontalAlignment="Stretch" />
+            <TextBlock Text="{Binding StrategyDescription}" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       TextWrapping="Wrap" />
+
+            <StackPanel Spacing="6">
+              <TextBlock Text="Aktive Timeframes" FontSize="11"
+                         Foreground="{DynamicResource AppTextSecondaryBrush}" />
+              <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Stretch">
+                <CheckBox Content="1D" IsChecked="{Binding TfD1Active}" IsEnabled="{Binding !IsRunning}" />
+                <CheckBox Content="4H" IsChecked="{Binding TfH4Active}" IsEnabled="{Binding !IsRunning}" />
+                <CheckBox Content="1H" IsChecked="{Binding TfH1Active}" IsEnabled="{Binding !IsRunning}" />
+                <CheckBox Content="15m" IsChecked="{Binding TfM15Active}" IsEnabled="{Binding !IsRunning}" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- ═════ Bot-Steuerung ═════ -->
+        <Border Classes="SectionCard">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="RobotOutline" Width="16" Height="16"
+                               Foreground="{DynamicResource AppPrimaryBrush}" />
+              <TextBlock Text="Bot-Steuerung" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,8,*">
+              <Button Grid.Column="0" Classes="ActionBtn StartBtn"
+                      Command="{Binding StartBotCommand}"
+                      IsEnabled="{Binding CanStart}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Play" Width="18" Height="18" />
+                  <TextBlock Text="Starten" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="2" Classes="ActionBtn PauseBtn"
+                      Command="{Binding PauseBotCommand}"
+                      IsEnabled="{Binding IsRunning}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Pause" Width="18" Height="18" />
+                  <TextBlock Text="Pause" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,8,*">
+              <Button Grid.Column="0" Classes="ActionBtn StopBtn"
+                      Command="{Binding StopBotCommand}"
+                      IsEnabled="{Binding IsRunning}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
+                  <TextBlock Text="Stoppen" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="2" Classes="ActionBtn EmergencyBtn"
+                      Command="{Binding EmergencyStopCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="AlertOctagon" Width="18" Height="18" />
+                  <TextBlock Text="Notfall-Stop" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- ═════ Offene Positionen ═════ -->
+        <Border Classes="SectionCard">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="FormatListBulletedSquare" Width="16" Height="16"
+                                 Foreground="{DynamicResource AppPrimaryBrush}" />
+                <TextBlock Text="Offene Positionen" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="6,2"
+                        Margin="4,0,0,0">
+                  <TextBlock Text="{Binding OpenPositions.Count}" FontSize="10" FontWeight="Bold"
+                             Foreground="{DynamicResource AppTextBrush}" />
+                </Border>
+              </StackPanel>
+              <Button Grid.Column="1" Command="{Binding CloseAllPositionsCommand}"
+                      IsVisible="{Binding HasOpenPositions}"
+                      Background="{DynamicResource ErrorBackgroundBrush}"
+                      Foreground="{DynamicResource ErrorBrush}"
+                      CornerRadius="8" Padding="10,6"
+                      BorderThickness="0" FontSize="11" FontWeight="SemiBold">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <mi:MaterialIcon Kind="CloseCircleOutline" Width="13" Height="13" />
+                  <TextBlock Text="Alle schließen" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <TextBlock Text="{Binding PositionsStatusText}" FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       IsVisible="{Binding !HasOpenPositions}" />
+
+            <ItemsControl ItemsSource="{Binding OpenPositions}"
+                          IsVisible="{Binding HasOpenPositions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:PositionDisplayItem">
+                  <Border Background="{DynamicResource SurfaceBrush}"
+                          CornerRadius="10" Padding="12,10" Margin="0,0,0,6">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                      <StackPanel Grid.Row="0" Grid.Column="0"
+                                  Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Symbol}" FontSize="15" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <Border CornerRadius="4" Padding="6,2" Background="{DynamicResource CardBrush}"
+                                VerticalAlignment="Center">
+                          <TextBlock Text="{Binding SideText}" FontSize="10" FontWeight="Bold"
+                                     Foreground="{Binding SideColor}" />
+                        </Border>
+                        <TextBlock Text="{Binding Leverage, StringFormat={}{0}x}" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   VerticalAlignment="Center" />
+                      </StackPanel>
+                      <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding PnlText}" FontSize="15" FontWeight="Bold"
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{Binding PnlColor}" HorizontalAlignment="Right" />
+                        <TextBlock Text="{Binding PnlPercentText}" FontSize="10"
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{Binding PnlColor}" HorizontalAlignment="Right" />
+                      </StackPanel>
+
+                      <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*" Margin="0,6,0,0">
+                        <StackPanel Grid.Column="0" Spacing="1">
+                          <TextBlock Text="Entry" FontSize="10"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text="{Binding EntryPrice, StringFormat={}{0:N4}}" FontSize="11"
+                                     FontFamily="Consolas, Courier New, monospace"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="1">
+                          <TextBlock Text="Mark" FontSize="10"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text="{Binding MarkPrice, StringFormat={}{0:N4}}" FontSize="11"
+                                     FontFamily="Consolas, Courier New, monospace"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="1">
+                          <TextBlock Text="Qty" FontSize="10"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                          <TextBlock Text="{Binding Quantity, StringFormat={}{0:G}}" FontSize="11"
+                                     FontFamily="Consolas, Courier New, monospace"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                      </Grid>
+
+                      <Button Grid.Row="2" Grid.ColumnSpan="2"
+                              Command="{Binding RequestCloseCommand}"
+                              Background="{DynamicResource ErrorBackgroundBrush}"
+                              Foreground="{DynamicResource ErrorBrush}"
+                              CornerRadius="8" Padding="0,8"
+                              Margin="0,8,0,0"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                              BorderThickness="0" FontSize="12" FontWeight="SemiBold">
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                          <mi:MaterialIcon Kind="CloseCircleOutline" Width="14" Height="14" />
+                          <TextBlock Text="Schließen" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- ═════ Activity-Feed ═════ -->
+        <Border Classes="SectionCard">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Pulse" Width="16" Height="16"
+                                 Foreground="{DynamicResource AppPrimaryBrush}" />
+                <TextBlock Text="Aktivität" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+              </StackPanel>
+              <Button Grid.Column="1" Command="{Binding ToggleActivityExpandedCommand}"
+                      Background="Transparent" BorderThickness="0" Padding="6">
+                <Panel>
+                  <mi:MaterialIcon Kind="ChevronUp" Width="18" Height="18"
+                                   Foreground="{DynamicResource AppTextSecondaryBrush}"
+                                   IsVisible="{Binding IsActivityExpanded}" />
+                  <mi:MaterialIcon Kind="ChevronDown" Width="18" Height="18"
+                                   Foreground="{DynamicResource AppTextSecondaryBrush}"
+                                   IsVisible="{Binding !IsActivityExpanded}" />
+                </Panel>
+              </Button>
+            </Grid>
+
+            <Border MaxHeight="280" ClipToBounds="True"
+                    IsVisible="{Binding IsActivityExpanded}">
+              <ListBox ItemsSource="{Binding Activity.RecentActivity}"
+                       Background="Transparent" BorderThickness="0"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.Styles>
+                  <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="MinHeight" Value="0" />
+                  </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ActivityItem">
+                    <Border Padding="10,8"
+                            BorderBrush="{DynamicResource BorderSubtleBrush}"
+                            BorderThickness="0,0,0,1">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Ellipse Grid.Column="0" Width="7" Height="7"
+                                 Fill="{Binding LevelColor}" VerticalAlignment="Top"
+                                 Margin="0,5,10,0" />
+                        <StackPanel Grid.Column="1" Spacing="1">
+                          <TextBlock Text="{Binding Message}" FontSize="12"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     TextWrapping="Wrap" />
+                          <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="{Binding Category}" FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                            <TextBlock Text="·" FontSize="10"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       IsVisible="{Binding Symbol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Text="{Binding Symbol}" FontSize="10"
+                                       Foreground="{DynamicResource AppPrimaryBrush}"
+                                       IsVisible="{Binding Symbol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                          </StackPanel>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding TimeText}" FontSize="10"
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   VerticalAlignment="Top" Margin="8,3,0,0" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Border>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ═════ Bestätigungs-Dialog (Modal Overlay) ═════ -->
+    <Border Background="{DynamicResource OverlayBrush}"
+            IsVisible="{Binding ShowConfirmDialog}">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="14" Padding="18"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              MinWidth="280" MaxWidth="360"
+              BoxShadow="{DynamicResource ModalShadow}">
+        <StackPanel Spacing="14">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="HelpCircleOutline" Width="22" Height="22"
+                             Foreground="{DynamicResource AppWarningBrush}" />
+            <TextBlock Text="{Binding ConfirmDialogTitle}" FontSize="15" FontWeight="Bold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{Binding ConfirmDialogMessage}" FontSize="13"
+                     Foreground="{DynamicResource AppTextSecondaryBrush}"
+                     TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,8,*">
+            <Button Grid.Column="0" Command="{Binding ConfirmDialogCancelCommand}"
+                    Background="{DynamicResource CardBrush}"
+                    Foreground="{DynamicResource AppTextBrush}"
+                    CornerRadius="10" Padding="0,12"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}"
+                    FontWeight="SemiBold">
+              Abbrechen
+            </Button>
+            <Button Grid.Column="2" Command="{Binding ConfirmDialogYesCommand}"
+                    Background="{DynamicResource AppPrimaryBrush}"
+                    Foreground="{DynamicResource PrimaryContrastBrush}"
+                    CornerRadius="10" Padding="0,12"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    BorderThickness="0" FontWeight="SemiBold">
+              Ja, fortfahren
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+  </Grid>
+</UserControl>

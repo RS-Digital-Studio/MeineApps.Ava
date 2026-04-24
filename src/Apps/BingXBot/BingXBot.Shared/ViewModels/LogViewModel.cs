@@ -1,5 +1,5 @@
-using BingXBot.Core.Models;
-using BingXBot.Services;
+using BingXBot.Contracts.Dto;
+using BingXBot.Contracts.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
@@ -9,12 +9,15 @@ namespace BingXBot.ViewModels;
 
 /// <summary>
 /// ViewModel für die Log-Ansicht (Bot-Aktivitäten, Fehler, Trade-Signale).
-/// Empfängt echte Log-Einträge über den BotEventBus.
+/// Empfängt Log-Einträge über IBotEventStream (Local: BotEventBus-Adapter; Remote: SignalR).
 /// </summary>
 public partial class LogViewModel : ViewModelBase
 {
-    private readonly BotEventBus _eventBus;
-    private readonly List<LogDisplayItem> _allLogs = new();
+    private readonly IBotEventStream _eventStream;
+    // Queue statt List: Dequeue ist O(1), RemoveAt(0) auf List ist O(N)
+    // Bei 5-20 Events/s und 1000 Eintraegen sonst spuerbarer UI-Stutter.
+    private readonly Queue<LogDisplayItem> _allLogs = new();
+    private const int MaxLogEntries = 1000;
 
     // Filter
     [ObservableProperty] private bool _showDebug;
@@ -31,29 +34,29 @@ public partial class LogViewModel : ViewModelBase
 
     public ObservableCollection<LogDisplayItem> LogEntries { get; } = new();
 
-    public LogViewModel(BotEventBus eventBus)
+    public LogViewModel(IBotEventStream eventStream)
     {
-        _eventBus = eventBus;
-        _eventBus.LogEmitted += OnLogEmitted;
+        _eventStream = eventStream;
+        _eventStream.LogEmitted += OnLogEmitted;
     }
 
-    private void OnLogEmitted(object? sender, LogEntry entry)
+    private void OnLogEmitted(LogEntryDto entry)
     {
-        var item = new LogDisplayItem(entry.Timestamp, entry.Level.ToString(), entry.Category, entry.Message);
+        var item = new LogDisplayItem(entry.TimestampUtc, entry.Level.ToString(), entry.Category, entry.Message);
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            _allLogs.Add(item);
+            _allLogs.Enqueue(item);
 
-            // Ringpuffer: max 1000 Einträge
-            if (_allLogs.Count > 1000)
-                _allLogs.RemoveAt(0);
+            // Ringpuffer: max 1000 Eintraege, Dequeue in O(1)
+            if (_allLogs.Count > MaxLogEntries)
+                _allLogs.Dequeue();
 
             // Nur anzeigen wenn Filter passt
             if (PassesFilter(item))
             {
                 LogEntries.Add(item);
-                if (LogEntries.Count > 1000)
+                if (LogEntries.Count > MaxLogEntries)
                     LogEntries.RemoveAt(0);
             }
 

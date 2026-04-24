@@ -1,8 +1,10 @@
+using Avalonia.Threading;
+using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine;
 using BingXBot.Engine.Strategies;
-using BingXBot.Services;
+using BingXBot.Trading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
@@ -15,18 +17,45 @@ namespace BingXBot.ViewModels;
 /// Verbunden mit StrategyManager für echte Strategie-Aktivierung.
 /// Publiziert Aktivierung/Deaktivierung über den BotEventBus.
 /// </summary>
-public partial class StrategyViewModel : ViewModelBase
+public partial class StrategyViewModel : ViewModelBase, IDisposable
 {
+    private bool _disposed;
+
+    /// <summary>
+    /// Watchdog-Schwelle (24.04.2026): Wenn länger als 5 min kein SK-Ampel-Update kommt
+    /// ODER der Bot nicht im Running-State ist → Ampel als veraltet markieren.
+    /// Hintergrund: Live-Bug am 24.04. — UI zeigte "sucheB" obwohl die Engine seit 3 Tagen tot war.
+    /// </summary>
+    private static readonly TimeSpan AmpelStaleThreshold = TimeSpan.FromMinutes(5);
+
     private readonly StrategyManager _strategyManager;
     private readonly BotEventBus _eventBus;
+    private readonly Core.Configuration.ScannerSettings _scannerSettings;
+    private DispatcherTimer? _watchdogTimer;
+
+    private DateTime _lastAmpelUpdateUtc = DateTime.MinValue;
+    private BotState _lastBotState = BotState.Stopped;
 
     [ObservableProperty] private string _selectedStrategy = "SK-System";
-    [ObservableProperty] private string _strategyDescription = "Buch-konformes Stefan-Kassing System (W1/D1/H4/H1/M30, Pip-SL, 3-4 Bestätigungen)";
+    [ObservableProperty] private string _strategyDescription = "Buch-konformes Stefan-Kassing System (Multi-TF Standalone: D1/H4/H1/M15, Pip-SL, 3-5 Bestätigungen)";
     [ObservableProperty] private bool _isActive;
     [ObservableProperty] private string _statusText = "Inaktiv";
     [ObservableProperty] private string _toggleButtonText = "Aktivieren";
 
+    /// <summary>Multi-TF Standalone: Aktuell visualisierte Navigator-TF (für Chart-Overlay).</summary>
+    [ObservableProperty] private string _selectedVisualTimeframe = "4H";
+
+    /// <summary>Letzter SK-Status pro TF (vom TradingServiceBase aktualisiert).</summary>
+    [ObservableProperty] private string _visualizedAmpelStatus = "—";
+
+    /// <summary>True wenn der Bot nicht läuft ODER seit ≥ 5 min kein Engine-Update kam.</summary>
+    [ObservableProperty] private bool _isAmpelStale = true;
+
+    /// <summary>Erklärt dem User warum die Ampel veraltet ist (lokalisiert in Deutsch).</summary>
+    [ObservableProperty] private string _idleHintText = "Bot läuft nicht — Status oben in Dashboard prüfen und ggf. Start drücken.";
+
     public string[] AvailableStrategies => StrategyFactory.AvailableStrategies;
+    public string[] AvailableVisualTimeframes => new[] { "1D", "4H", "1H", "15m" };
 
     /// <summary>
     /// Dynamische Parameter je nach gewählter Strategie.
@@ -34,11 +63,87 @@ public partial class StrategyViewModel : ViewModelBase
     /// </summary>
     public ObservableCollection<StrategyParameterItem> Parameters { get; } = new();
 
-    public StrategyViewModel(StrategyManager strategyManager, BotEventBus eventBus)
+    // Cache des letzten SK-Ampel-Snapshots pro TF (vom BotEventBus)
+    private readonly Dictionary<Core.Enums.TimeFrame, string> _ampelCache = new();
+
+    public StrategyViewModel(StrategyManager strategyManager, BotEventBus eventBus,
+        Core.Configuration.ScannerSettings scannerSettings)
     {
         _strategyManager = strategyManager;
         _eventBus = eventBus;
+        _scannerSettings = scannerSettings;
+        _eventBus.SkAmpelUpdated += OnSkAmpelUpdated;
+        _eventBus.BotStateChanged += OnBotStateChanged;
         LoadParametersFromStrategy();
+
+        // Watchdog: Re-Evaluiere Stale-Status alle 30 s. Reicht weil Threshold = 5 min.
+        _watchdogTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        _watchdogTimer.Tick += (_, _) => EvaluateStaleness();
+        _watchdogTimer.Start();
+    }
+
+    partial void OnSelectedVisualTimeframeChanged(string value) => UpdateVisualizedStatus();
+
+    private void OnSkAmpelUpdated(object? sender, Dictionary<Core.Enums.TimeFrame, string> ampel)
+    {
+        foreach (var kv in ampel) _ampelCache[kv.Key] = kv.Value;
+        _lastAmpelUpdateUtc = DateTime.UtcNow;
+        Dispatcher.UIThread.Post(() =>
+        {
+            UpdateVisualizedStatus();
+            EvaluateStaleness();
+        });
+    }
+
+    private void OnBotStateChanged(object? sender, BotState state)
+    {
+        _lastBotState = state;
+        Dispatcher.UIThread.Post(EvaluateStaleness);
+    }
+
+    /// <summary>
+    /// Setzt <see cref="IsAmpelStale"/> und <see cref="IdleHintText"/> basierend auf:
+    /// 1. BotState (nicht Running → stale)
+    /// 2. Alter des letzten SkAmpelUpdated-Events (≥ 5 min → stale)
+    /// </summary>
+    private void EvaluateStaleness()
+    {
+        var ageOk = _lastAmpelUpdateUtc != DateTime.MinValue
+                    && (DateTime.UtcNow - _lastAmpelUpdateUtc) <= AmpelStaleThreshold;
+        var botRunning = _lastBotState == BotState.Running;
+        var stale = !botRunning || !ageOk;
+
+        if (stale)
+        {
+            if (!botRunning)
+            {
+                IdleHintText = "Bot läuft nicht — angezeigter Status ist veraltet. Im Dashboard auf Start drücken.";
+            }
+            else
+            {
+                var ageMin = _lastAmpelUpdateUtc == DateTime.MinValue
+                    ? 0
+                    : (int)(DateTime.UtcNow - _lastAmpelUpdateUtc).TotalMinutes;
+                IdleHintText = ageMin <= 0
+                    ? "Bot läuft, aber noch keine Engine-Updates empfangen. Bitte einen Moment warten."
+                    : $"Letztes Engine-Update vor {ageMin} min — Engine prüft aktuell nichts. Logs prüfen.";
+            }
+        }
+
+        IsAmpelStale = stale;
+    }
+
+    private void UpdateVisualizedStatus()
+    {
+        var tf = SelectedVisualTimeframe switch
+        {
+            "1D" => Core.Enums.TimeFrame.D1,
+            "4H" => Core.Enums.TimeFrame.H4,
+            "1H" => Core.Enums.TimeFrame.H1,
+            "15m" => Core.Enums.TimeFrame.M15,
+            _ => Core.Enums.TimeFrame.H4,
+        };
+        VisualizedAmpelStatus = _ampelCache.TryGetValue(tf, out var s) ? s : "—";
     }
 
     partial void OnSelectedStrategyChanged(string value)
@@ -205,6 +310,24 @@ public partial class StrategyViewModel : ViewModelBase
         }
 
         return value;
+    }
+
+    /// <summary>
+    /// Räumt Watchdog-Timer + EventBus-Subscriptions auf.
+    /// Singleton-Lifetime: wird beim App-Shutdown vom DI-Container aufgerufen.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        if (_watchdogTimer != null)
+        {
+            _watchdogTimer.Stop();
+            _watchdogTimer = null;
+        }
+        _eventBus.SkAmpelUpdated -= OnSkAmpelUpdated;
+        _eventBus.BotStateChanged -= OnBotStateChanged;
     }
 
     [RelayCommand]

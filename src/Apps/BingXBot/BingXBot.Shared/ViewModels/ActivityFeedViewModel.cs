@@ -1,5 +1,6 @@
-using BingXBot.Core.Models;
-using BingXBot.Services;
+using BingXBot.Contracts.Dto;
+using BingXBot.Contracts.Services;
+using BingXBot.Core.Enums;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
@@ -8,37 +9,34 @@ namespace BingXBot.ViewModels;
 
 /// <summary>
 /// ViewModel für den Activity-Feed im Dashboard.
-/// Empfängt Log-Einträge vom BotEventBus und zeigt die letzten 20 relevanten Einträge an.
+/// Empfängt Activity-Einträge über IBotEventStream (vorgefiltertes Subset der Logs).
 /// </summary>
 public partial class ActivityFeedViewModel : ViewModelBase, IDisposable
 {
-    private readonly BotEventBus _eventBus;
+    private readonly IBotEventStream _eventStream;
 
     /// <summary>Letzte 50 Aktionen des Bots (kein Debug-Spam).</summary>
     public ObservableCollection<ActivityItem> RecentActivity { get; } = new();
 
-    public ActivityFeedViewModel(BotEventBus eventBus)
+    public ActivityFeedViewModel(IBotEventStream eventStream)
     {
-        _eventBus = eventBus;
-        _eventBus.LogEmitted += OnLogEmitted;
+        _eventStream = eventStream;
+        _eventStream.ActivityFeed += OnActivity;
     }
 
-    /// <summary>Empfängt Log-Einträge vom EventBus und fügt relevante in den Activity-Feed ein.</summary>
-    private void OnLogEmitted(object? sender, LogEntry entry)
+    private void OnActivity(ActivityFeedDto entry)
     {
-        // Nur relevante Kategorien anzeigen (kein Debug-Spam)
-        if (entry.Level == Core.Enums.LogLevel.Debug) return;
+        if (entry.Level == LogLevel.Debug) return;
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             RecentActivity.Insert(0, new ActivityItem(
-                entry.Timestamp,
+                entry.TimestampUtc,
                 entry.Category,
                 entry.Message,
                 entry.Level,
                 entry.Symbol));
 
-            // Max 50 Einträge
             while (RecentActivity.Count > 50)
                 RecentActivity.RemoveAt(RecentActivity.Count - 1);
         });
@@ -46,6 +44,6 @@ public partial class ActivityFeedViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        _eventBus.LogEmitted -= OnLogEmitted;
+        _eventStream.ActivityFeed -= OnActivity;
     }
 }

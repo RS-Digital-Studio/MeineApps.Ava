@@ -172,6 +172,118 @@
       </Border>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- Sektion: Remote-Server (Raspberry Pi)                           -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="RaspberryPi" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Remote-Server (Pi)" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <TextBlock FontSize="12" Foreground="{DynamicResource AppTextSecondaryBrush}"
+                     TextWrapping="Wrap"
+                     Text="Verbinde zu einem 24/7-laufenden BingXBot-Server auf einem Raspberry Pi. Beim ersten Pairing erzeugt der Pi einen 6-stelligen Code (im Terminal/SSH mit 'journalctl -u bingxbot' sichtbar oder unter /var/lib/bingxbot/pairing-code.txt)." />
+
+          <!-- Status-Anzeige -->
+          <Border Background="{DynamicResource CardBrush}" CornerRadius="6" Padding="12,10">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                <Ellipse.Fill>
+                  <SolidColorBrush Color="{DynamicResource SuccessColor}" />
+                </Ellipse.Fill>
+              </Ellipse>
+              <TextBlock Text="{Binding PairingStatus}" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <!-- Server-URL -->
+          <StackPanel Spacing="6">
+            <TextBlock Text="Server-URL" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="SettingsInput" Text="{Binding ServerUrl}"
+                     Watermark="http://bingxbot.local:5050"
+                     IsEnabled="{Binding !ServerPaired}"
+                     ToolTip.Tip="mDNS-Name oder Tailscale/LAN-IP + Port des Pi-Servers" />
+          </StackPanel>
+
+          <!-- Device-Name (optional, wird dem Server als Label gemeldet) -->
+          <StackPanel Spacing="6">
+            <TextBlock Text="Geräte-Name (für Server-Log)" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="SettingsInput" Text="{Binding PairedDeviceName}"
+                     Watermark="z.B. Desktop-Robert"
+                     IsEnabled="{Binding !ServerPaired}" />
+          </StackPanel>
+
+          <!-- Pairing: Schritt 1 (Code anfordern) -->
+          <Button Classes="SettingsButton Primary"
+                  Command="{Binding InitiatePairingCommand}"
+                  IsVisible="{Binding !ServerPaired}"
+                  IsEnabled="{Binding !PairingInProgress}"
+                  ToolTip.Tip="Server bittet um 6-stelligen Code. Den Code danach vom Pi ablesen.">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="Connection" Width="16" Height="16" />
+              <TextBlock Text="1. Pairing starten" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- Pairing: Schritt 2 (Code eingeben) -->
+          <StackPanel Spacing="6" IsVisible="{Binding PairingInProgress}">
+            <TextBlock Text="Pairing-Code (vom Pi ablesen)" FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondaryBrush}" />
+            <TextBox Classes="SettingsInput" Text="{Binding PairingCode}"
+                     Watermark="6-stelliger Code"
+                     MaxLength="6"
+                     FontSize="18" FontWeight="Bold"
+                     HorizontalContentAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+              <Button Classes="SettingsButton Primary"
+                      Command="{Binding CompletePairingCommand}"
+                      IsEnabled="{Binding !IsCompletingPairing}"
+                      ToolTip.Tip="Code zum Server senden. Bei Tippfehler einfach Code im Feld korrigieren und erneut klicken.">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <!-- Loading-Icon während POST läuft — verhindert dass User doppelt klickt -->
+                  <mi:MaterialIcon Kind="Loading" Width="16" Height="16"
+                                   IsVisible="{Binding IsCompletingPairing}"
+                                   Foreground="{DynamicResource PrimaryContrastBrush}" />
+                  <mi:MaterialIcon Kind="CheckCircle" Width="16" Height="16"
+                                   IsVisible="{Binding !IsCompletingPairing}" />
+                  <TextBlock Text="2. Code bestätigen" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Classes="SettingsButton Secondary"
+                      Command="{Binding CancelPairingCommand}"
+                      IsEnabled="{Binding !IsCompletingPairing}"
+                      ToolTip.Tip="Pairing-Vorgang am Server und Client abbrechen">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+                  <TextBlock Text="Abbrechen" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Trennen (nur wenn gepairt) -->
+          <Button Classes="SettingsButton Danger"
+                  Command="{Binding DisconnectServerCommand}"
+                  IsVisible="{Binding ServerPaired}"
+                  ToolTip.Tip="Token löschen, Standalone-Modus nach Neustart">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="LinkOff" Width="16" Height="16" />
+              <TextBlock Text="Verbindung trennen" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
       <!-- Sektion: Logging                                                 -->
       <!-- ═══════════════════════════════════════════════════════════════ -->
       <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"

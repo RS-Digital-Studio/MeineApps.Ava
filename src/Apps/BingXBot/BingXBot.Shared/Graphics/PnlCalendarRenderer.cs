@@ -42,8 +42,12 @@ public static class PnlCalendarRenderer
         var maxAbsPnl = dailyPnl.Values.Select(Math.Abs).DefaultIfEmpty(1m).Max();
         if (maxAbsPnl == 0) maxAbsPnl = 1m;
 
-        // Heute bis weeksToShow Wochen zurück
-        var today = DateTime.Today;
+        // 24.04.2026 Phase-4-Audit m7: UTC statt lokal — die `dailyPnl`-Keys kommen aus
+        // `trade.ExitTime.Date` (UTC, siehe DashboardViewModel.BuildDailyPnlSnapshot).
+        // Vorher `DateTime.Today` (lokal) führte um Mitternacht in Europa/Berlin (UTC+1/+2)
+        // zu einem Tages-Offset: ein Trade um 0:30 lokal (UTC 23:30 Vortag) landete im
+        // Kalender auf dem falschen Tag. UTC-Konsistenz fixt das.
+        var today = DateTime.UtcNow.Date;
         var startDate = today.AddDays(-(weeksToShow * 7 - 1));
         // Auf Montag zurückrunden
         startDate = startDate.AddDays(-(int)startDate.DayOfWeek + 1);

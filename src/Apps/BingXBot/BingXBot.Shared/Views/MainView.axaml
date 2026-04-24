@@ -249,47 +249,9 @@
     <Border Grid.Column="1" Grid.Row="0"
             Background="{DynamicResource AppBackgroundBrush}"
             Padding="24">
-      <Grid>
-        <!-- Dashboard -->
-        <Border Classes="TabContent" Classes.Active="{Binding IsDashboardActive}">
-          <views:DashboardView />
-        </Border>
-
-        <!-- Scanner -->
-        <Border Classes="TabContent" Classes.Active="{Binding IsScannerActive}">
-          <views:ScannerView />
-        </Border>
-
-        <!-- Strategie -->
-        <Border Classes="TabContent" Classes.Active="{Binding IsStrategyActive}">
-          <views:StrategyView />
-        </Border>
-
-        <!-- Backtest -->
-        <Border Classes="TabContent" Classes.Active="{Binding IsBacktestActive}">
-          <views:BacktestView />
-        </Border>
-
-        <!-- Trade-History -->
-        <Border Classes="TabContent" Classes.Active="{Binding IsTradeHistoryActive}">
-          <views:TradeHistoryView />
-        </Border>
-
-        <!-- Risk-Settings -->
-        <Border Classes="TabContent" Classes.Active="{Binding IsRiskSettingsActive}">
-          <views:RiskSettingsView />
-        </Border>
-
-        <!-- Log -->
-        <Border Classes="TabContent" Classes.Active="{Binding IsLogActive}">
-          <views:LogView />
-        </Border>
-
-        <!-- Settings -->
-        <Border Classes="TabContent" Classes.Active="{Binding IsSettingsActive}">
-          <views:SettingsView />
-        </Border>
-      </Grid>
+      <!-- ViewLocator rendert CurrentPageViewModel in die passende View.
+           Nur EIN Sub-ViewModel aktiv gleichzeitig — kein Parallel-Instantiation. -->
+      <ContentControl Content="{Binding CurrentPageViewModel}" />
     </Border>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->

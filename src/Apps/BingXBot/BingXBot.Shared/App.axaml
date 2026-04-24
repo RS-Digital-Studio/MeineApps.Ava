@@ -1,7 +1,15 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:BingXBot"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              x:Class="BingXBot.App">
+
+  <!-- ViewLocator bindet ViewModels an Views per Konvention.
+       Alle ContentControl/Window.Content mit einem ViewModelBase werden automatisch in die
+       passende View gerendert — kein manueller DataContext-Zuweis mehr in den Views. -->
+  <Application.DataTemplates>
+    <local:ViewLocator />
+  </Application.DataTemplates>
 
   <Application.Styles>
     <!-- Avalonia Fluent Theme (Dark-Mode wird in App.axaml.cs via RequestedThemeVariant gesetzt) -->

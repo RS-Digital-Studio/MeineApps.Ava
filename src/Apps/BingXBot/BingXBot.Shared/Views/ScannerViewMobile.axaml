@@ -1,0 +1,237 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.ScannerViewMobile"
+             x:DataType="vm:ScannerViewModel"
+             x:CompileBindings="True"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="Expander">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Expander /template/ ToggleButton">
+      <Setter Property="Padding" Value="14,12" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- Kopfbereich: Titel + Scan-Button + Progressbar -->
+    <StackPanel Grid.Row="0" Spacing="10" Margin="12,10,12,6">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <mi:MaterialIcon Kind="Radar" Width="20" Height="20"
+                           Foreground="{DynamicResource AppPrimaryBrush}" />
+          <TextBlock Text="Scanner" FontSize="16" FontWeight="Bold"
+                     Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="1"
+                Command="{Binding ScanCommand}"
+                IsEnabled="{Binding !IsScanning}"
+                Background="{DynamicResource AppPrimaryBrush}"
+                Foreground="{DynamicResource PrimaryContrastBrush}"
+                CornerRadius="10" Padding="16,10"
+                BorderThickness="0" FontWeight="SemiBold">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" />
+            <TextBlock Text="Scannen" FontSize="13" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <ProgressBar IsIndeterminate="True"
+                   IsVisible="{Binding IsScanning}"
+                   Foreground="{DynamicResource AppPrimaryBrush}"
+                   Background="{DynamicResource CardBrush}"
+                   Height="3" CornerRadius="2" />
+
+      <TextBlock Text="{Binding ScanStatus}" FontSize="12"
+                 Foreground="{DynamicResource AppTextSecondaryBrush}"
+                 TextWrapping="Wrap" />
+
+      <!-- Filter-Expander (eingeklappt by default) -->
+      <Expander Header="Filter &amp; Optionen">
+        <StackPanel Spacing="12" Margin="14,6,14,14">
+          <!-- Min. Volumen -->
+          <StackPanel Spacing="4">
+            <TextBlock Text="Min. Volumen 24h ($)" FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <NumericUpDown Value="{Binding MinVolume, Mode=TwoWay}"
+                          Minimum="0" Maximum="100000000" Increment="100000"
+                          FormatString="N0" FontSize="13" HorizontalAlignment="Stretch" />
+          </StackPanel>
+
+          <!-- Min. Preisänderung -->
+          <StackPanel Spacing="4">
+            <TextBlock Text="Min. Preisänderung (%)" FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <NumericUpDown Value="{Binding MinPriceChange, Mode=TwoWay}"
+                          Minimum="0" Maximum="100" Increment="0.5"
+                          FormatString="F1" FontSize="13" HorizontalAlignment="Stretch" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,8,*">
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="Zeitrahmen" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <ComboBox ItemsSource="{Binding TimeFrames}"
+                        SelectedItem="{Binding SelectedTimeFrame}"
+                        HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4">
+              <TextBlock Text="Max. Ergebnisse" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <NumericUpDown Value="{Binding MaxResults, Mode=TwoWay}"
+                            Minimum="1" Maximum="100" Increment="5"
+                            FormatString="0" FontSize="13" HorizontalAlignment="Stretch" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Scan-Modus -->
+          <StackPanel Spacing="4">
+            <TextBlock Text="Scan-Modus" FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <ComboBox ItemsSource="{Binding ScanModes}"
+                      SelectedItem="{Binding SelectedScanMode}"
+                      HorizontalAlignment="Stretch" />
+            <TextBlock Text="{Binding ScanModeDescription}"
+                       FontSize="11" FontStyle="Italic"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="0,4" />
+
+          <!-- Whitelist -->
+          <StackPanel Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                               Foreground="{DynamicResource SuccessBrush}" />
+              <TextBlock Text="Whitelist (kommagetrennt)" FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBox Text="{Binding WhitelistText, Mode=TwoWay}" Watermark="z.B. BTC,ETH,SOL"
+                     FontSize="13" />
+          </StackPanel>
+
+          <!-- Blacklist -->
+          <StackPanel Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="Cancel" Width="14" Height="14"
+                               Foreground="{DynamicResource ErrorBrush}" />
+              <TextBlock Text="Blacklist (kommagetrennt)" FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBox Text="{Binding BlacklistText, Mode=TwoWay}" Watermark="z.B. SHIB,DOGE"
+                     FontSize="13" />
+          </StackPanel>
+        </StackPanel>
+      </Expander>
+    </StackPanel>
+
+    <!-- Ergebnisse als Karten -->
+    <Border Grid.Row="1"
+            Background="{DynamicResource CardBrush}"
+            CornerRadius="12"
+            Margin="12,6,12,12"
+            ClipToBounds="True">
+      <Panel>
+        <!-- Leerer Zustand -->
+        <StackPanel IsVisible="{Binding !Results.Count}"
+                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Spacing="10" Margin="24">
+          <mi:MaterialIcon Kind="DatabaseSearchOutline" Width="56" Height="56"
+                           Foreground="{DynamicResource TextMutedBrush}" Opacity="0.35"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="Tippe 'Scannen' um den Markt zu durchsuchen"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+          <TextBlock Text="Filtert nach Volumen, Preisbewegung und Scan-Modus"
+                     FontSize="11"
+                     Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7"
+                     HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <ListBox ItemsSource="{Binding Results}"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 IsVisible="{Binding Results.Count}">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="MinHeight" Value="0" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ScanResultItem">
+              <Border Padding="14,12"
+                      BorderBrush="{DynamicResource BorderSubtleBrush}"
+                      BorderThickness="0,0,0,1">
+                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                  <!-- Zeile 1: Symbol + Score -->
+                  <StackPanel Grid.Row="0" Grid.Column="0"
+                              Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Symbol}"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Border Background="{DynamicResource InfoBackgroundBrush}"
+                            CornerRadius="6" Padding="6,2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding SetupType}" FontSize="10"
+                                 Foreground="{DynamicResource InfoBrush}"
+                                 FontWeight="SemiBold" />
+                    </Border>
+                  </StackPanel>
+                  <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right">
+                    <TextBlock Text="Score" FontSize="10"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               HorizontalAlignment="Right" />
+                    <TextBlock Text="{Binding Score, StringFormat={}{0:F1}}"
+                               FontSize="16" FontWeight="Bold"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource SuccessBrush}"
+                               HorizontalAlignment="Right" />
+                  </StackPanel>
+
+                  <!-- Zeile 2: Volumen + Change -->
+                  <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                      <mi:MaterialIcon Kind="ChartBar" Width="13" Height="13"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Volume24h, StringFormat={}{0:N0} $}"
+                                 FontSize="11"
+                                 FontFamily="Consolas, Courier New, monospace"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding PriceChangeText}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{Binding PriceChangeColor}"
+                               VerticalAlignment="Center" />
+                  </Grid>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Panel>
+    </Border>
+
+  </Grid>
+</UserControl>

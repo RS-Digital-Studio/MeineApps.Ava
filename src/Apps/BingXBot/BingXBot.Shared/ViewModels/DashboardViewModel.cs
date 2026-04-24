@@ -1,16 +1,21 @@
+using BingXBot.Contracts.Services;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Engine;
 using BingXBot.Engine.Strategies;
-using BingXBot.Services;
+using BingXBot.Trading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
+using System.Net.Http;
 
 namespace BingXBot.ViewModels;
+
+/// <summary>Multi-TF Standalone: Eine Zeile der SK-Ampel-Tabelle (pro Navigator-TF).</summary>
+public record SkAmpelRow(string Timeframe, string Status);
 
 /// <summary>
 /// Anzeige-Modell fuer einen einzelnen Activity-Feed-Eintrag.
@@ -52,9 +57,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
     // === Live-Trading (delegiert an LiveTradingManager) ===
     private readonly LiveTradingManager _liveManager;
-    // === Multi-Mode Orchestrator (alle 3 Modi gleichzeitig) ===
-    private readonly MultiModeOrchestrator _orchestrator;
-    private bool _isMultiMode;
     // CancellationToken für Account-Update-Timer (wird bei Stop gecancelled)
     private CancellationTokenSource? _accountUpdateCts;
     // Task-Referenz: Verhindert parallele Timer-Loops bei schnellem Start/Stop
@@ -87,14 +89,36 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _isRunning;
     [ObservableProperty] private bool _canStart = true;
 
-    // === Strategie-Auswahl + Trading-Modus (direkt im Dashboard) ===
+    // === Strategie-Auswahl + aktive Timeframes (Multi-TF Standalone) ===
     [ObservableProperty] private string _selectedStrategy = "SK-System";
     [ObservableProperty] private string _strategyDescription = "";
-    [ObservableProperty] private string _selectedTradingMode = "Swing";
-    /// <summary>True wenn SK-System aktiv — Trading-Mode-Auswahl wird ausgeblendet (SK hat feste W1/D1/H4/H1/M30 TFs).</summary>
-    [ObservableProperty] private bool _isSkSystem;
+    /// <summary>True wenn SK-System aktiv (Multi-TF Standalone hat immer SK-System).</summary>
+    [ObservableProperty] private bool _isSkSystem = true;
     public string[] AvailableStrategies => StrategyFactory.AvailableStrategies;
-    public string[] AvailableTradingModes => ["Scalping", "Day-Trading", "Swing", "Alle Modi"];
+
+    // TF-Checkboxen für Multi-TF Standalone
+    [ObservableProperty] private bool _tfD1Active = true;
+    [ObservableProperty] private bool _tfH4Active = true;
+    [ObservableProperty] private bool _tfH1Active = true;
+    [ObservableProperty] private bool _tfM15Active = true;
+
+    /// <summary>Multi-TF Standalone: Sequence-Ampel pro Navigator-TF (eine Zeile pro aktiver TF).</summary>
+    public ObservableCollection<SkAmpelRow> SkAmpelRows { get; } = new();
+
+    // === Watchdog (24.04.2026) ===
+    /// <summary>
+    /// Schwelle ab wann ein SK-Ampel-Update als "veraltet" gilt.
+    /// Reaction auf Bug 24.04.2026: Engine war 3 Tage idle und UI zeigte "sucheB" als ob es live waere.
+    /// </summary>
+    private static readonly TimeSpan AmpelStaleThreshold = TimeSpan.FromMinutes(5);
+    private DateTime _lastAmpelUpdateUtc = DateTime.MinValue;
+    private Avalonia.Threading.DispatcherTimer? _watchdogTimer;
+
+    /// <summary>True wenn der Bot nicht im Running-State ist ODER seit ≥ 5 min kein Engine-Update kam.</summary>
+    [ObservableProperty] private bool _isAmpelStale = true;
+
+    /// <summary>Erklaert dem User warum die Ampel veraltet ist (deutsch, in-VM lokalisiert).</summary>
+    [ObservableProperty] private string _idleHintText = "Bot läuft nicht — Status veraltet. Auf Start drücken.";
 
     // === Account (nur anzeigen wenn Daten vorhanden) ===
     [ObservableProperty] private bool _hasAccountData;
@@ -123,7 +147,12 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
     partial void OnUnrealizedPnlChanged(decimal value) => OnPropertyChanged(nameof(IsUnrealizedPnlPositive));
     partial void OnTotalPnlChanged(decimal value) => OnPropertyChanged(nameof(IsTotalPnlPositive));
-    partial void OnBotStatusStateChanged(BotState value) => OnPropertyChanged(nameof(StatusDotColor));
+    partial void OnBotStatusStateChanged(BotState value)
+    {
+        OnPropertyChanged(nameof(StatusDotColor));
+        // Watchdog: State-Wechsel triggert sofortige Re-Evaluation (z.B. Stop -> stale=true sofort).
+        EvaluateAmpelStaleness();
+    }
 
     // Markt-Kategorie-Änderungen an ScannerSettings weiterleiten
     partial void OnIsCommodityEnabledChanged(bool value) => UpdateEnabledCategories();
@@ -144,7 +173,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         if (IsIndexEnabled) _scannerSettings.EnabledCategories.Add(MarketCategory.Index);
         if (IsForexEnabled) _scannerSettings.EnabledCategories.Add(MarketCategory.Forex);
         if (IsStockEnabled) _scannerSettings.EnabledCategories.Add(MarketCategory.Stock);
-        _ = App.SaveAllSettingsAsync();
+        _ = _settingsPersistence.SaveAllAsync();
     }
 
     // === Offene Positionen ===
@@ -212,34 +241,68 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         "MANA-USDT", "AXS-USDT", "ENS-USDT", "ALTCOIN-USDT"
     ];
 
+    private readonly IBotEventStream _eventStream;
+    private readonly IBotControlService _botControl;
+    private readonly ISettingsService _settingsService;
+    private readonly IAccountService _accountService;
+    // Remote-Mode Polling-Loop — liest alle 5s AccountSnapshot vom Server
+    private CancellationTokenSource? _remoteAccountPollCts;
+
+    /// <summary>
+    /// Zentrale Helper-Property für den Remote/Local-Mode-Check.
+    /// Eine einzige Stelle die <c>BotSettings.UseRemoteMode</c> abfragt — verhindert Drift
+    /// und macht klar wo die Mode-Entscheidung herkommt. Ersetzt 7× verstreute Direkt-Zugriffe
+    /// (Code-Review-Hinweis #10: God-ViewModel).
+    /// </summary>
+    private bool IsRemoteMode => _botSettings.UseRemoteMode;
+
+    private readonly ISettingsPersistenceService _settingsPersistence;
+
     public DashboardViewModel(
         BotEventBus eventBus,
+        IBotEventStream eventStream,
+        IBotControlService botControl,
+        ISettingsService settingsService,
+        IAccountService accountService,
         StrategyManager strategyManager,
         PaperTradingService paperService,
         RiskSettings riskSettings,
         ScannerSettings scannerSettings,
         BotSettings botSettings,
         LiveTradingManager liveManager,
-        MultiModeOrchestrator orchestrator,
+        ISettingsPersistenceService settingsPersistence,
         IPublicMarketDataClient? publicClient = null,
         BotDatabaseService? dbService = null,
         ISecureStorageService? secureStorage = null)
     {
         _eventBus = eventBus;
+        _eventStream = eventStream;
+        _botControl = botControl;
+        _settingsService = settingsService;
+        _accountService = accountService;
         _strategyManager = strategyManager;
         _paperService = paperService;
         _riskSettings = riskSettings;
         _scannerSettings = scannerSettings;
         _botSettings = botSettings;
         _liveManager = liveManager;
-        _orchestrator = orchestrator;
+        _settingsPersistence = settingsPersistence;
         _publicClient = publicClient;
         _dbService = dbService;
         _secureStorage = secureStorage;
 
         // Sub-ViewModels erstellen
         BtcTicker = new BtcTickerViewModel(publicClient, eventBus);
-        Activity = new ActivityFeedViewModel(eventBus);
+        Activity = new ActivityFeedViewModel(eventStream);
+
+        // Remote-Modus: Account/Positionen vom Server beziehen (Polling + Push-Events).
+        if (IsRemoteMode)
+        {
+            _eventStream.PositionUpdated += OnRemotePositionUpdated;
+            _eventStream.EquityUpdate += OnRemoteEquityUpdate;
+            _botControl.StatusChanged += OnRemoteStatusChanged;
+            _ = StartRemoteAccountPollingAsync();
+        }
 
         // Keine Fake-Daten! Zeige ehrlichen Zustand.
         HasAccountData = false;
@@ -250,9 +313,17 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         if (HasApiKeys)
             LiveStatusText = "API-Keys vorhanden";
 
+        // Trading-Modus aus persistierten Settings übernehmen (Paper vs Live).
+        // Ohne das Load war der User nach App-Neustart immer wieder im Paper-Mode, obwohl zuletzt Live lief.
+        IsPaperMode = _botSettings.LastMode != TradingMode.Live;
+        ModeText = IsPaperMode ? "Paper-Modus" : "Live-Modus";
+        ModeDescription = IsPaperMode
+            ? "Simuliertes Trading ohne echtes Geld"
+            : (HasApiKeys ? "Echtes Trading mit BingX - Handelt automatisch!" : "API-Keys erforderlich! Gehe zu Einstellungen.");
+
         // Letzte Strategie + Trading-Modus aus persistierten Settings laden.
         // Nach Buch-Refactoring (12.04.2026) ist SK-System die einzige Strategie —
-        // persistierte Alt-Namen (z.B. "CryptoTrendPro") auf SK-System mappen.
+        // unbekannte persistierte Alt-Namen werden auf SK-System gemappt.
         if (!string.IsNullOrEmpty(_botSettings.LastStrategyName)
             && StrategyFactory.AvailableStrategies.Contains(_botSettings.LastStrategyName))
         {
@@ -265,13 +336,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         }
         OnSelectedStrategyChanged(SelectedStrategy);
 
-        SelectedTradingMode = _botSettings.LastTradingModePreset switch
-        {
-            Core.Enums.TradingModePreset.Scalping => "Scalping",
-            Core.Enums.TradingModePreset.DayTrading => "Day-Trading",
-            Core.Enums.TradingModePreset.Custom => "Alle Modi",
-            _ => "Swing"
-        };
+        // Multi-TF Standalone: Checkboxen aus ScannerSettings.ActiveTimeframes ableiten
+        TfD1Active = _scannerSettings.ActiveTimeframes.Contains(TimeFrame.D1);
+        TfH4Active = _scannerSettings.ActiveTimeframes.Contains(TimeFrame.H4);
+        TfH1Active = _scannerSettings.ActiveTimeframes.Contains(TimeFrame.H1);
+        TfM15Active = _scannerSettings.ActiveTimeframes.Contains(TimeFrame.M15);
 
         // Initiale Watchlist aus ScannerSettings laden (falls vorher gesetzt)
         foreach (var sym in _scannerSettings.Whitelist)
@@ -285,6 +354,18 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
         // Trade-Markers + Metriken-Refresh bei jedem Trade-Abschluss
         _eventBus.TradeCompleted += OnTradeCompletedForMarkers;
+
+        // Multi-TF Standalone: SK-Ampel pro TF empfangen + in UI-Collection pflegen
+        _eventBus.SkAmpelUpdated += OnSkAmpelUpdated;
+
+        // Initialen Trading-Modus an MainViewModel melden (Statusleiste)
+        _eventBus.PublishTradingMode(IsPaperMode);
+
+        // Watchdog (24.04.2026): Re-Evaluiere Stale-Status alle 30 s.
+        _watchdogTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        _watchdogTimer.Tick += (_, _) => EvaluateAmpelStaleness();
+        _watchdogTimer.Start();
+        EvaluateAmpelStaleness();
 
         _isInitializing = false; // Ab jetzt überschreiben Modus-Wechsel die Settings
     }
@@ -300,7 +381,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             // SK-System: Buch hat feste W1/D1/H4/H1/M30 Hierarchie → Trading-Mode irrelevant
             IsSkSystem = value == "SK-System";
 
-            _ = App.SaveAllSettingsAsync();
+            _ = _settingsPersistence.SaveAllAsync();
         }
         catch
         {
@@ -308,73 +389,93 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         }
     }
 
-    partial void OnSelectedTradingModeChanged(string value)
+    // Multi-TF Standalone: TF-Checkboxen updaten ScannerSettings.ActiveTimeframes
+    partial void OnTfD1ActiveChanged(bool value) => SyncActiveTimeframes();
+    partial void OnTfH4ActiveChanged(bool value) => SyncActiveTimeframes();
+    partial void OnTfH1ActiveChanged(bool value) => SyncActiveTimeframes();
+    partial void OnTfM15ActiveChanged(bool value) => SyncActiveTimeframes();
+
+    private void SyncActiveTimeframes()
     {
-        var preset = value switch
+        if (_isInitializing) return;
+        var tfs = new List<TimeFrame>();
+        if (TfD1Active) tfs.Add(TimeFrame.D1);
+        if (TfH4Active) tfs.Add(TimeFrame.H4);
+        if (TfH1Active) tfs.Add(TimeFrame.H1);
+        if (TfM15Active) tfs.Add(TimeFrame.M15);
+        // Mindestens eine TF muss aktiv sein — Fallback auf H4
+        if (tfs.Count == 0)
         {
-            "Scalping" => Core.Enums.TradingModePreset.Scalping,
-            "Day-Trading" => Core.Enums.TradingModePreset.DayTrading,
-            "Alle Modi" => Core.Enums.TradingModePreset.Custom, // Custom = alle 3 Modi parallel
-            _ => Core.Enums.TradingModePreset.Swing
-        };
-
-        _botSettings.LastTradingModePreset = preset;
-
-        // Scanner-Settings IMMER aus dem Preset setzen (Timeframe MUSS zum Modus passen)
-        var scannerPresetInit = Core.Configuration.TradingModeDefaults.GetScannerPreset(preset);
-        _scannerSettings.ScanTimeFrame = scannerPresetInit.ScanTimeFrame;
-
-        // Beim App-Start: Risk-Settings (Leverage, PositionSize) NICHT überschreiben
-        // (die wurden aus der DB geladen und enthalten User-Anpassungen)
-        if (_isInitializing)
-        {
-            _ = App.SaveAllSettingsAsync();
-            return;
+            TfH4Active = true;
+            tfs.Add(TimeFrame.H4);
         }
-
-        // Bei manuellem Modus-Wechsel im UI: ALLE Settings aus Preset anwenden
-        var riskPreset = Core.Configuration.TradingModeDefaults.GetRiskPreset(preset);
-        _riskSettings.MaxPositionSizePercent = riskPreset.MaxPositionSizePercent;
-        _riskSettings.MaxMarginPerTradePercent = riskPreset.MaxMarginPerTradePercent;
-        _riskSettings.MaxLeverage = riskPreset.MaxLeverage;
-        _riskSettings.CooldownHours = riskPreset.CooldownHours;
-        _riskSettings.MaxHoldHours = riskPreset.MaxHoldHours;
-        _riskSettings.Tp1CloseRatio = riskPreset.Tp1CloseRatio;
-        _riskSettings.Tp2CloseRatio = riskPreset.Tp2CloseRatio;
-        _riskSettings.MinRiskRewardRatio = riskPreset.MinRiskRewardRatio;
-
-        var scannerPreset = Core.Configuration.TradingModeDefaults.GetScannerPreset(preset);
-        _scannerSettings.ScanTimeFrame = scannerPreset.ScanTimeFrame;
-        _scannerSettings.MinVolume24h = scannerPreset.MinVolume24h;
-        _scannerSettings.MinPriceChange = scannerPreset.MinPriceChange;
-        _scannerSettings.MaxResults = scannerPreset.MaxResults;
-        _scannerSettings.OnlyTopByVolume = scannerPreset.OnlyTopByVolume;
-        _scannerSettings.TopCoinsCount = scannerPreset.TopCoinsCount;
-        // SK-VERIFY: OFFEN #1 — ScanMode aus Preset übernehmen. Null = Momentum (Scalping/DayTrading)
-        _scannerSettings.Mode = scannerPreset.Mode ?? Core.Enums.ScanMode.Momentum;
-
-        _botSettings.LastTradingModePreset = preset;
-
+        _scannerSettings.ActiveTimeframes = tfs;
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-            $"Trading-Modus gewechselt: {value} ({scannerPreset.ScanTimeFrame}, Risiko {riskPreset.MaxPositionSizePercent}%, Hebel {riskPreset.MaxLeverage}x)"));
-
-        _ = App.SaveAllSettingsAsync();
+            $"Aktive Timeframes: {string.Join(", ", tfs)}"));
+        _ = _settingsPersistence.SaveAllAsync();
     }
 
     [RelayCommand]
     private async Task StartBot()
     {
+        // Remote-Modus: Engine laeuft auf dem Pi — Start per HTTP delegieren
+        if (IsRemoteMode)
+        {
+            if (!IsPaperMode)
+            {
+                ConfirmDialogTitle = "Live-Trading auf Server starten?";
+                ConfirmDialogMessage = "Der Pi-Server wird mit ECHTEM GELD handeln.\n\nStelle sicher, dass dein Risikomanagement korrekt konfiguriert ist.";
+                _confirmDialogAction = StartRemoteAsync;
+                ShowConfirmDialog = true;
+                return;
+            }
+            await StartRemoteAsync();
+            return;
+        }
+
         if (IsPaperMode)
         {
             await StartPaperTradingAsync();
         }
         else
         {
-            // Live-Trading erfordert explizite Bestätigung
             ConfirmDialogTitle = "Live-Trading starten?";
             ConfirmDialogMessage = "Du bist dabei, den Bot mit ECHTEM GELD zu starten.\n\nDer Bot wird automatisch Trades auf BingX eröffnen und schließen. Stelle sicher, dass dein Risikomanagement korrekt konfiguriert ist.";
             _confirmDialogAction = StartLiveTradingAsync;
             ShowConfirmDialog = true;
+        }
+    }
+
+    /// <summary>Remote-Start (Server uebernimmt die komplette Orchestrierung).</summary>
+    private async Task StartRemoteAsync()
+    {
+        try
+        {
+            BotStatusText = "Sende Start-Request an Pi...";
+            BotStatusState = BotState.Starting;
+            CanStart = false;
+
+            var mode = IsPaperMode ? Core.Enums.TradingMode.Paper : Core.Enums.TradingMode.Live;
+            var req = new BingXBot.Contracts.Dto.BotStartRequest(
+                Mode: mode,
+                InitialBalance: IsPaperMode ? _botSettings.PaperInitialBalance : null,
+                ActiveTimeframes: _scannerSettings.ActiveTimeframes.ToList());
+
+            var status = await _botControl.StartAsync(req);
+            IsRunning = true;
+            CanStart = false;
+            BotStatusState = status.State;
+            BotStatusText = status.State == BotState.Running
+                ? (IsPaperMode ? "Paper (Remote)" : "LIVE (Remote) - Handelt aktiv!")
+                : status.State.ToString();
+            ShowWelcomeHint = false;
+            if (!IsPaperMode) { LiveStatusText = "Handelt aktiv (Remote)"; IsLiveActive = true; }
+        }
+        catch (Exception ex)
+        {
+            BotStatusText = $"Start fehlgeschlagen: {ex.Message}";
+            BotStatusState = BotState.Error;
+            CanStart = true;
         }
     }
 
@@ -383,38 +484,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     /// </summary>
     private async Task StartPaperTradingAsync()
     {
-        // "Alle Modi": 3 Services parallel über den Orchestrator starten
-        if (_botSettings.LastTradingModePreset == Core.Enums.TradingModePreset.Custom)
-        {
-            _isMultiMode = true;
-
-            _orchestrator.StartPaper(_botSettings.PaperInitialBalance);
-            BotStatusText = "Paper (Alle Modi)";
-            BotStatusState = BotState.Running;
-            IsRunning = true;
-            CanStart = false;
-            ShowWelcomeHint = false;
-            HasAccountData = true;
-            Balance = _botSettings.PaperInitialBalance;
-            AvailableBalance = _botSettings.PaperInitialBalance;
-            UnrealizedPnl = 0m;
-            TotalPnl = 0m;
-            _eventBus.PublishBotState(BotState.Running);
-            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
-                "Alle 3 Modi gestartet: Scalping (M15/90s) + Day-Trading (H1/3min) + Swing (H4/5min)"));
-            _ = StartEquitySnapshotTimerAsync();
-            _accountUpdateTask = StartAccountUpdateAsync();
-            return;
-        }
-
-        _isMultiMode = false;
-        // Strategie aktivieren + Trading-Modus-Preset anwenden
+        // Strategie aktivieren (Multi-TF Standalone: kein Preset)
         var strategy = StrategyFactory.Create(SelectedStrategy);
-        if (strategy is SequenzKonzeptStrategy sk)
-        {
-            var preset = _botSettings.LastTradingModePreset;
-            sk.ApplyPreset(preset);
-        }
         _strategyManager.SetStrategy(strategy);
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
@@ -448,8 +519,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Startet den Live-Trading-Modus. Bei Custom-Preset (Alle Modi) werden 3 parallele
-    /// LiveTradingServices über den Orchestrator gestartet, sonst ein einzelner über den LiveTradingManager.
+    /// Startet den Live-Trading-Modus über den LiveTradingManager (Multi-TF Standalone seit 15.04.2026 —
+    /// ein Service scannt alle aktiven Navigator-Timeframes D1/H4/H1/M15 parallel pro Symbol).
     /// </summary>
     private async Task StartLiveTradingAsync()
     {
@@ -475,26 +546,12 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
                 UpdatePositionsStatus();
             });
 
-            // Multi-Mode Live: 3 parallele LiveTradingServices (Scalping + DayTrading + Swing)
-            if (_botSettings.LastTradingModePreset == Core.Enums.TradingModePreset.Custom)
-            {
-                _isMultiMode = true;
-                await _orchestrator.StartLiveAsync(_liveManager.RestClient!); // Inkl. Position-Recovery
+            await _liveManager.StartAsync(SelectedStrategy);
 
-                BotStatusText = "LIVE (Alle Modi) - Handelt aktiv!";
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Engine",
-                    "LIVE MULTI-MODE: Scalping (M15/90s) + Day-Trading (H1/3min) + Swing (H4/5min) - Echtes Geld!"));
-            }
-            else
-            {
-                _isMultiMode = false;
-                await _liveManager.StartAsync(SelectedStrategy);
+            if (result.Positions.Count > 0)
+                await _liveManager.RestorePositionSignalsAsync(result.Positions);
 
-                if (result.Positions.Count > 0)
-                    await _liveManager.RestorePositionSignalsAsync(result.Positions);
-
-                BotStatusText = "LIVE - Handelt aktiv!";
-            }
+            BotStatusText = "LIVE - Handelt aktiv!";
 
             IsRunning = true;
             CanStart = false;
@@ -511,7 +568,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             BotStatusText = ex.Message.Contains("API-Keys") ? ex.Message : "Verbindung fehlgeschlagen";
             BotStatusState = BotState.Error;
             CanStart = true;
-            _isMultiMode = false;
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Engine",
                 $"Live-Trading fehlgeschlagen: {ex.Message}"));
@@ -521,30 +577,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void PauseBot()
     {
-        // Multi-Mode: Alle Services pausieren/fortsetzen
-        if (_isMultiMode)
-        {
-            if (_orchestrator.IsAnyPaused)
-            {
-                _orchestrator.ResumeAll();
-                BotStatusText = IsPaperMode ? "Paper (Alle Modi)" : "LIVE (Alle Modi) - Handelt aktiv!";
-                BotStatusState = BotState.Running;
-                _accountUpdateTask = StartAccountUpdateAsync();
-            }
-            else
-            {
-                _orchestrator.PauseAll();
-                _accountUpdateTimer?.Dispose();
-                _accountUpdateTimer = null;
-                BotStatusText = IsPaperMode ? "Pausiert (Alle Modi)" : "LIVE (Alle Modi) - Pausiert";
-                BotStatusState = BotState.Paused;
-            }
-            return;
-        }
-
         if (!IsPaperMode && _liveManager.Service != null)
         {
-            // Live Single-Modus: Pause/Resume über LiveTradingService
+            // Live-Modus: Pause/Resume über LiveTradingService (Multi-TF Standalone)
             if (_liveManager.Service!.IsPaused)
             {
                 _liveManager.Service!.Resume();
@@ -587,17 +622,22 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _accountUpdateTimer = null;
         StopEquitySnapshotTimer();
 
-        if (_isMultiMode)
+        // Remote-Modus: Stop per HTTP delegieren
+        if (IsRemoteMode)
         {
-            await _orchestrator.StopAllAsync();
-            _isMultiMode = false;
-            if (!IsPaperMode)
-            {
-                LiveStatusText = "Getrennt";
-                IsLiveActive = false;
-            }
+            try { await _botControl.StopAsync(); }
+            catch (Exception ex) { BotStatusText = $"Stop fehlgeschlagen: {ex.Message}"; return; }
+            IsRunning = false;
+            CanStart = true;
+            BotStatusText = "Gestoppt (Remote)";
+            BotStatusState = BotState.Stopped;
+            PositionsStatusText = "Keine offenen Positionen";
+            LiveStatusText = "Getrennt";
+            IsLiveActive = false;
+            return;
         }
-        else if (IsPaperMode)
+
+        if (IsPaperMode)
         {
             await _paperService.StopAsync();
         }
@@ -639,21 +679,24 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _accountUpdateTimer = null;
         StopEquitySnapshotTimer();
 
-        if (_isMultiMode && !IsPaperMode)
+        // Remote-Modus: EmergencyStop per HTTP delegieren (Server schliesst ALLE Positionen serverseitig)
+        if (IsRemoteMode)
         {
-            // Live Multi-Mode: Alle 3 Services Emergency-Stop
-            await _orchestrator.EmergencyStopAllAsync();
-            _isMultiMode = false;
+            try { await _botControl.EmergencyStopAsync(); }
+            catch (Exception ex) { BotStatusText = $"Notfall-Stop fehlgeschlagen: {ex.Message}"; return; }
+            IsRunning = false;
+            CanStart = true;
+            BotStatusText = "Notfall-Stop (Remote)";
+            BotStatusState = BotState.EmergencyStop;
             LiveStatusText = "Notfall-Stop";
             IsLiveActive = false;
+            OpenPositions.Clear();
+            HasOpenPositions = false;
+            PositionsStatusText = "Alle Positionen geschlossen";
+            return;
         }
-        else if (_isMultiMode)
-        {
-            // Paper Multi-Mode
-            await _orchestrator.EmergencyStopAllAsync();
-            _isMultiMode = false;
-        }
-        else if (IsPaperMode)
+
+        if (IsPaperMode)
         {
             await _paperService.EmergencyStopAsync();
         }
@@ -709,6 +752,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         TotalPnl = 0;
         IsLiveActive = false;
 
+        // MainViewModel über Modus-Wechsel informieren (Statusleiste unten rechts)
+        _eventBus.PublishTradingMode(IsPaperMode);
+
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Engine",
             $"Modus gewechselt zu: {ModeText}"));
     }
@@ -752,23 +798,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
         try
         {
-            if (IsPaperMode && _isMultiMode)
-            {
-                // Paper Multi-Mode: Position in allen Services suchen und schließen
-                foreach (var service in _orchestrator.ActiveServices.Values.OfType<PaperTradingService>())
-                {
-                    if (service.Exchange == null) continue;
-                    var pos = (await service.Exchange.GetPositionsAsync()).FirstOrDefault(p => p.Symbol == position.Symbol && p.Side == side);
-                    if (pos != null)
-                    {
-                        service.Exchange.SetCurrentPrice(position.Symbol, position.MarkPrice);
-                        await service.Exchange.ClosePositionAsync(position.Symbol, side);
-                        service.RemovePositionSignal(position.Symbol, side);
-                        break;
-                    }
-                }
-            }
-            else if (IsPaperMode && _paperService.Exchange != null)
+            if (IsPaperMode && _paperService.Exchange != null)
             {
                 _paperService.Exchange.SetCurrentPrice(position.Symbol, position.MarkPrice);
                 await _paperService.Exchange.ClosePositionAsync(position.Symbol, side);
@@ -783,13 +813,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
                 await _liveManager.RestClient!.ClosePositionAsync(position.Symbol, side);
 
-                // Signal entfernen: Im Multi-Mode den richtigen Service finden
-                if (_isMultiMode)
-                {
-                    var owningService = _orchestrator.FindServiceForPosition(position.Symbol, side);
-                    owningService?.RemovePositionSignal(position.Symbol, side);
-                }
-                else
+                // Signal entfernen (Multi-TF Standalone: ein Service reicht)
                 {
                     _liveManager.Service?.RemovePositionSignal(position.Symbol, side);
                 }
@@ -947,20 +971,16 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Scanner", msg));
 
         // Watchlist dauerhaft speichern
-        _ = App.SaveAllSettingsAsync();
+        _ = _settingsPersistence.SaveAllAsync();
     }
 
     /// <summary>
-    /// Sucht das Signal für eine Position über alle aktiven Service-Modi
-    /// (Multi-Mode Orchestrator, Paper-Service, Live-Service).
+    /// Sucht das Signal für eine Position im aktiven Service-Modus
+    /// (Paper-Service oder Live-Service — Multi-TF Standalone seit 15.04.2026,
+    /// MultiModeOrchestrator ist entfernt).
     /// </summary>
     private SignalResult? FindPositionSignal(string symbol, Side side)
     {
-        if (_isMultiMode)
-        {
-            var service = _orchestrator.FindServiceForPosition(symbol, side);
-            return service?.GetPositionSignal(symbol, side);
-        }
         if (IsPaperMode)
             return _paperService.GetPositionSignal(symbol, side);
         return _liveManager.Service?.GetPositionSignal(symbol, side);
@@ -968,11 +988,6 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
     private DateTime? FindEntryTime(string symbol, Side side)
     {
-        if (_isMultiMode)
-        {
-            var service = _orchestrator.FindServiceForPosition(symbol, side);
-            return service?.GetEntryTime(symbol, side);
-        }
         if (IsPaperMode)
             return _paperService.GetEntryTime(symbol, side);
         return _liveManager.Service?.GetEntryTime(symbol, side);
@@ -1052,13 +1067,86 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
         return new SequenceOverlay(
             seq.Point0.Price, seq.PointA.Price, seq.PointB?.Price,
-            seq.Retracement382, seq.Retracement500, seq.Retracement559,
-            seq.Retracement618, seq.Retracement667, seq.Retracement786,
-            seq.Extension100, seq.Extension1272, seq.Extension1618, seq.Extension200,
-            seq.IsLong, seq.CharacterPattern, seq.Type.ToString());
+            seq.Retracement500, seq.Retracement559, seq.Retracement618,
+            seq.Retracement667, seq.Retracement71, seq.Retracement786,
+            seq.Extension1618, seq.Extension200,
+            seq.Extension2618, seq.Extension4236,
+            seq.IsLong);
     }
 
     /// <summary>
+    /// <summary>Multi-TF Standalone: Aktualisiert die SK-Ampel-Tabelle im UI (1 Zeile pro TF).</summary>
+    private void OnSkAmpelUpdated(object? sender, Dictionary<Core.Enums.TimeFrame, string> ampel)
+    {
+        // Watchdog: Engine-Lebenszeichen registrieren (auch fuer EvaluateAmpelStaleness).
+        _lastAmpelUpdateUtc = DateTime.UtcNow;
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            // Reihenfolge: absteigend (D1 → H4 → H1 → M15)
+            var ordered = ampel.OrderByDescending(kv =>
+                kv.Key switch
+                {
+                    Core.Enums.TimeFrame.W1 => 7,
+                    Core.Enums.TimeFrame.D1 => 6,
+                    Core.Enums.TimeFrame.H4 => 5,
+                    Core.Enums.TimeFrame.H1 => 4,
+                    Core.Enums.TimeFrame.M30 => 3,
+                    Core.Enums.TimeFrame.M15 => 2,
+                    Core.Enums.TimeFrame.M5 => 1,
+                    _ => 0
+                }).ToList();
+
+            SkAmpelRows.Clear();
+            foreach (var kv in ordered)
+            {
+                var label = kv.Key switch
+                {
+                    Core.Enums.TimeFrame.D1 => "1D",
+                    Core.Enums.TimeFrame.H4 => "4H",
+                    Core.Enums.TimeFrame.H1 => "1H",
+                    Core.Enums.TimeFrame.M15 => "15m",
+                    Core.Enums.TimeFrame.M5 => "5m",
+                    _ => kv.Key.ToString()
+                };
+                SkAmpelRows.Add(new SkAmpelRow(label, kv.Value));
+            }
+
+            EvaluateAmpelStaleness();
+        });
+    }
+
+    /// <summary>
+    /// Watchdog-Logik (24.04.2026): Setzt <see cref="IsAmpelStale"/> + <see cref="IdleHintText"/>
+    /// abhaengig vom Bot-State und Alter des letzten SK-Ampel-Events.
+    /// </summary>
+    private void EvaluateAmpelStaleness()
+    {
+        var ageOk = _lastAmpelUpdateUtc != DateTime.MinValue
+                    && (DateTime.UtcNow - _lastAmpelUpdateUtc) <= AmpelStaleThreshold;
+        var botRunning = BotStatusState == BotState.Running;
+        var stale = !botRunning || !ageOk;
+
+        if (stale)
+        {
+            if (!botRunning)
+            {
+                IdleHintText = "Bot läuft nicht — angezeigte Ampel-Werte sind veraltet. Auf Start drücken.";
+            }
+            else
+            {
+                var ageMin = _lastAmpelUpdateUtc == DateTime.MinValue
+                    ? 0
+                    : (int)(DateTime.UtcNow - _lastAmpelUpdateUtc).TotalMinutes;
+                IdleHintText = ageMin <= 0
+                    ? "Bot läuft, aber noch keine Engine-Updates. Bitte einen Moment warten."
+                    : $"Letztes Engine-Update vor {ageMin} min — Engine prüft nichts. Logs prüfen.";
+            }
+        }
+
+        IsAmpelStale = stale;
+    }
+
     /// Erstellt ein PositionDisplayItem mit CloseRequested-Verdrahtung und SL/TP aus dem Service.
     /// </summary>
     private PositionDisplayItem CreatePositionItem(Position p)
@@ -1087,11 +1175,22 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             item.TakeProfit = signal.TakeProfit;
             item.ConfluenceScore = signal.ConfluenceScore;
             item.StrategyName = signal.DisableSmartBreakeven ? "SK" : "CTP";
-            item.CharacterPattern = signal.Reason.Contains("(IK)") ? "IK"
-                : signal.Reason.Contains("(KI)") ? "KI"
-                : signal.Reason.Contains("(KK)") ? "KK"
-                : signal.Reason.Contains("(II)") ? "II" : "";
         }
+
+        // Multi-TF Standalone: Navigator-TF aus ExitState → Badge
+        var navTf = IsPaperMode
+            ? _paperService.GetExitStatesSnapshot().GetValueOrDefault($"{p.Symbol}_{p.Side}")?.NavigatorTimeframe
+            : _liveManager.Service?.GetExitStatesSnapshot().GetValueOrDefault($"{p.Symbol}_{p.Side}")?.NavigatorTimeframe;
+        item.TimeframeBadge = navTf switch
+        {
+            Core.Enums.TimeFrame.D1 => "1D",
+            Core.Enums.TimeFrame.H4 => "4H",
+            Core.Enums.TimeFrame.H1 => "1H",
+            Core.Enums.TimeFrame.M5 => "5m",
+            Core.Enums.TimeFrame.M15 => "15m",
+            Core.Enums.TimeFrame.M30 => "30m",
+            _ => ""
+        };
 
         suppressSlTpEvents = false;
 
@@ -1104,12 +1203,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             if (!OpenPositions.Contains(item)) return;
 
             var side = item.Side;
-            if (_isMultiMode)
-            {
-                var owningService = _orchestrator.FindServiceForPosition(item.Symbol, side);
-                owningService?.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
-            }
-            else if (IsPaperMode)
+            if (IsPaperMode)
             {
                 _paperService.UpdatePositionSignal(item.Symbol, side, item.StopLoss, item.TakeProfit);
             }
@@ -1214,8 +1308,26 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         if (_disposed) return;
         _disposed = true;
 
+        // Remote-Mode: Event-Handler + Polling abmelden
+        _remoteAccountPollCts?.Cancel();
+        _remoteAccountPollCts?.Dispose();
+        if (IsRemoteMode)
+        {
+            _eventStream.PositionUpdated -= OnRemotePositionUpdated;
+            _eventStream.EquityUpdate -= OnRemoteEquityUpdate;
+            _botControl.StatusChanged -= OnRemoteStatusChanged;
+        }
+
         // EventBus-Handler sauber abmelden (verhindert Zugriff auf disposed-te Objekte)
         _eventBus.TradeCompleted -= OnTradeCompletedForMarkers;
+        _eventBus.SkAmpelUpdated -= OnSkAmpelUpdated;
+
+        // Watchdog-Timer (24.04.2026) sauber stoppen — sonst feuert er nach Dispose weiter.
+        if (_watchdogTimer != null)
+        {
+            _watchdogTimer.Stop();
+            _watchdogTimer = null;
+        }
 
         _accountUpdateCts?.Cancel();
         _accountUpdateCts?.Dispose();
@@ -1233,6 +1345,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     /// </summary>
     private async Task StartAccountUpdateAsync()
     {
+        // Im Remote-Modus laeuft die Engine server-seitig — Account-Updates kommen via SignalR-Push.
+        // Ein lokaler Polling-Timer hat nichts zu tun und wuerde nur Paper/Live-Services-Pfade
+        // triggern, die keine Daten haben.
+        if (IsRemoteMode) return;
+
         _accountUpdateCts?.Cancel();
         _accountUpdateCts?.Dispose();
         _accountUpdateCts = new CancellationTokenSource();
@@ -1254,19 +1371,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
                     if (!IsPaperMode && _liveManager.RestClient != null)
                     {
-                        // Live-Modus (Single + Multi): Echte Daten von BingX
+                        // Live-Modus: Echte Daten von BingX
                         account = await _liveManager.RestClient!.GetAccountInfoAsync();
                         positions = await _liveManager.RestClient!.GetPositionsAsync();
-                    }
-                    else if (IsPaperMode && _isMultiMode)
-                    {
-                        // Paper Multi-Mode: Aggregierte Daten aus allen 3 Services
-                        var result = await _orchestrator.GetAggregatedPaperAccountAsync();
-                        if (result != null)
-                        {
-                            account = result.Value.Account;
-                            positions = result.Value.Positions;
-                        }
                     }
                     else if (IsPaperMode && _paperService.Exchange != null)
                     {
@@ -1324,6 +1431,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     /// </summary>
     private async Task StartEquitySnapshotTimerAsync()
     {
+        // Im Remote-Modus wird Equity serverseitig getrackt — kein lokaler Timer noetig.
+        if (IsRemoteMode) return;
         if (_dbService == null) return;
 
         StopEquitySnapshotTimer();
@@ -1344,7 +1453,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
     /// <summary>
     /// Speichert einen einzelnen Equity-Snapshot in der DB.
-    /// Wird alle 5 Minuten aufgerufen (Paper + Live).
+    /// Wird alle 5 Minuten aufgerufen (Paper + Live). Läuft nur im Desktop-Standalone-/Local-Mode
+    /// (Server hat kein DashboardViewModel). `EventBus.PublishEquity` bleibt bewusst bei
+    /// `PaperTradingService.PublishNewTrades` — doppeltes Publishing vom Dashboard aus wäre
+    /// im Standalone-Modus nur lokaler Lärm ohne Abnehmer und im Server-Modus läuft der Code
+    /// ohnehin nicht. Remote-Equity-Kurve erfordert einen HostedService-basierten Tracker.
     /// </summary>
     private async Task SaveEquitySnapshotAsync()
     {
@@ -1375,14 +1488,9 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     /// <summary>Aktualisiert Rolling-Metriken + Widget-Daten aus dem aktiven Trading-Service.</summary>
     private void UpdateRollingMetrics()
     {
-        // RiskManager des aktiven Modus verwenden (Multi-Mode, Paper Single, Live)
+        // RiskManager des aktiven Services (Multi-TF Standalone: ein Service)
         Engine.Risk.RiskManager? rm;
-        if (_isMultiMode)
-        {
-            // Multi-Mode: Orchestrator hat geteilten RiskManager (erster aktiver Service)
-            rm = _orchestrator.ActiveServices.Values.FirstOrDefault()?.RiskManager;
-        }
-        else if (IsPaperMode)
+        if (IsPaperMode)
             rm = _paperService.RiskManager;
         else
             rm = _liveManager.Service?.RiskManager;
@@ -1445,94 +1553,166 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     {
         HasOpenPositions = OpenPositions.Count > 0;
         PositionsStatusText = HasOpenPositions
-            ? $"{OpenPositions.Count} offene Position(en)"
+            ? $"{OpenPositions.Count} offene Position{(OpenPositions.Count > 1 ? "en" : "")}"
             : "Keine offenen Positionen";
-        UpdateChartOverlay();
-    }
-}
-
-/// <summary>
-/// Anzeige-Modell fuer eine offene Position im Dashboard.
-/// ObservableObject damit editierbare SL/TP-Felder korrekt binden.
-/// </summary>
-public partial class PositionDisplayItem : ObservableObject
-{
-    // Basis-Daten (werden bei jedem Account-Update gesetzt)
-    [ObservableProperty] private string _symbol = "";
-    [ObservableProperty] private Side _side;
-    [ObservableProperty] private decimal _entryPrice;
-    [ObservableProperty] private decimal _markPrice;
-    [ObservableProperty] private decimal _quantity;
-    [ObservableProperty] private decimal _pnl;
-    [ObservableProperty] private decimal _leverage;
-
-    // SL/TP (editierbar vom User)
-    [ObservableProperty] private decimal? _stopLoss;
-    [ObservableProperty] private decimal? _takeProfit;
-
-    // Erweiterte Infos (SK-System + Risiko)
-    [ObservableProperty] private int _confluenceScore;
-    [ObservableProperty] private string _strategyName = "";
-    [ObservableProperty] private string _characterPattern = "";
-    [ObservableProperty] private string _holdTimeText = "";
-    [ObservableProperty] private decimal _liquidationPrice;
-    [ObservableProperty] private bool _isSelected;
-
-    // SK-Sequenz-Daten für Chart-Overlay (null bei Nicht-SK-Trades)
-    public SequenceOverlay? SequenceOverlay { get; set; }
-
-    // Berechnete Properties
-    public bool IsProfit => Pnl > 0;
-    public string PnlColor => Pnl >= 0 ? "#10B981" : "#EF4444";
-    public string SideText => Side.ToString();
-    public string SideColor => Side == Side.Buy ? "#10B981" : "#EF4444";
-    public string PnlText => $"{Pnl:+0.00;-0.00}";
-    public decimal PnlPercent => EntryPrice > 0 && Quantity > 0
-        ? (MarkPrice - EntryPrice) / EntryPrice * 100m * (Side == Side.Buy ? 1 : -1)
-        : 0m;
-    public string PnlPercentText => $"{PnlPercent:+0.00;-0.00}%";
-
-    // Fuer den Key im PaperTradingService/LiveTradingService
-    public string PositionKey => $"{Symbol}_{Side}";
-
-    // Close-Action: Wird vom DashboardViewModel gesetzt
-    public Func<PositionDisplayItem, Task>? CloseRequested { get; set; }
-
-    [RelayCommand]
-    private async Task RequestClose()
-    {
-        if (CloseRequested != null)
-            await CloseRequested(this);
     }
 
-    // Benachrichtigt berechnete Properties bei Pnl/Side/Price-Aenderungen
-    partial void OnPnlChanged(decimal value)
+    // ═══════════════════════════════════════════════════════════════
+    // Remote-Mode Event-Handler (Client/Server-Architektur)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>Remote: Position wurde updated (SignalR-Push vom Server).</summary>
+    private void OnRemotePositionUpdated(BingXBot.Contracts.Dto.PositionDto pos)
     {
-        OnPropertyChanged(nameof(IsProfit));
-        OnPropertyChanged(nameof(PnlColor));
-        OnPropertyChanged(nameof(PnlText));
-        OnPropertyChanged(nameof(PnlPercent));
-        OnPropertyChanged(nameof(PnlPercentText));
+        // SignalR-Callback kann auf beliebigem Thread feuern → UI-Operationen MÜSSEN marshalled werden.
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(OpenPositions));
+        });
     }
 
-    partial void OnSideChanged(Side value)
+    /// <summary>Remote: Equity-Snapshot vom Server (SignalR-Push).</summary>
+    private void OnRemoteEquityUpdate(BingXBot.Contracts.Dto.EquityPointDto pt)
     {
-        OnPropertyChanged(nameof(SideText));
-        OnPropertyChanged(nameof(SideColor));
-        OnPropertyChanged(nameof(PositionKey));
-        OnPropertyChanged(nameof(PnlPercent));
-        OnPropertyChanged(nameof(PnlPercentText));
+        // SignalR-Callback → UI-Thread-Marshalling für Property-Setter mit Bindings.
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            Balance = pt.Equity;
+        });
     }
 
-    partial void OnMarkPriceChanged(decimal value)
+    /// <summary>Remote: Bot-Status-Change (Started/Stopped/Paused). Übernimmt auch Paper/Live-Modus vom Pi.</summary>
+    private void OnRemoteStatusChanged(BingXBot.Contracts.Dto.BotStatusDto status)
     {
-        OnPropertyChanged(nameof(PnlPercent));
-        OnPropertyChanged(nameof(PnlPercentText));
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var running = status.State == BotState.Running;
+            IsRunning = running;
+            CanStart = !running;  // Start-Button deaktivieren wenn Bot auf Pi bereits läuft
+            BotStatusText = running
+                ? (status.Mode == Core.Enums.TradingMode.Paper ? "Paper (Remote)" : "LIVE (Remote) - Handelt aktiv!")
+                : status.State.ToString();
+            BotStatusState = status.State;
+
+            // BotEventBus feuern — damit MainViewModel.TradingMode + Statusleiste synchron bleiben
+            _eventBus.PublishBotState(status.State);
+
+            // Modus vom Server übernehmen (Paper/Live) — Statusleiste + interne Flags konsistent halten
+            var isPaper = status.Mode == Core.Enums.TradingMode.Paper;
+            if (IsPaperMode != isPaper)
+            {
+                IsPaperMode = isPaper;
+                ModeText = isPaper ? "Paper-Modus" : "Live-Modus";
+            }
+            // Fix 17.04.2026: Client-lokalen BotSettings.LastMode auf Server-Authority syncen,
+            // damit SettingsPersistenceService.SaveAllAsync den aktuellen Mode mitsendet und
+            // nicht versehentlich den Default (Paper) ueberschreibt.
+            _botSettings.LastMode = status.Mode;
+            IsLiveActive = !isPaper && running;
+            _eventBus.PublishTradingMode(isPaper);
+
+            // Welcome-Hint ausblenden wenn Bot aktiv
+            if (running) ShowWelcomeHint = false;
+        });
     }
 
-    partial void OnEntryPriceChanged(decimal value)
+    /// <summary>Remote: Polling-Loop für Account-Snapshot + Status (alle 5s).</summary>
+    private async Task StartRemoteAccountPollingAsync()
     {
-        OnPropertyChanged(nameof(PnlPercent));
-        OnPropertyChanged(nameof(PnlPercentText));
+        _remoteAccountPollCts = new CancellationTokenSource();
+        var ct = _remoteAccountPollCts.Token;
+
+        // Initialen Status sofort holen (nicht auf ersten SignalR-Push warten)
+        try
+        {
+            var initialStatus = await _botControl.GetStatusAsync(ct).ConfigureAwait(false);
+            if (initialStatus != null) OnRemoteStatusChanged(initialStatus);
+        }
+        catch (OperationCanceledException) { return; }
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutException)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Debug, "Remote",
+                $"Initialer Status-Call fehlgeschlagen (Retry im Poll): {ex.Message}"));
+        }
+
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try
+                {
+                    var snap = await _accountService.GetSnapshotAsync(ct).ConfigureAwait(false);
+                    if (snap != null)
+                    {
+                        Balance = snap.Balance;
+                        AvailableBalance = snap.Available;
+                        UnrealizedPnl = snap.UnrealizedPnl;
+                        TotalPnl = snap.RealizedPnlToday;  // heute realisierter PnL
+                        // "Bot starten um Account-Daten zu sehen"-Hinweis ausblenden sobald echte Daten da sind
+                        if (Balance > 0 || AvailableBalance > 0) HasAccountData = true;
+                    }
+
+                    // Status ebenfalls im Poll-Zyklus nachziehen (deckt verpasste SignalR-Pushes ab)
+                    var status = await _botControl.GetStatusAsync(ct).ConfigureAwait(false);
+                    if (status != null) OnRemoteStatusChanged(status);
+
+                    // Offene Positionen holen — SignalR pusht nur bei Änderung, beim App-Start sind sonst keine da
+                    var positions = await _accountService.GetPositionsAsync(ct).ConfigureAwait(false);
+                    if (positions != null)
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            // Nur neu aufbauen wenn Anzahl oder Keys unterschiedlich sind (verhindert Flackern)
+                            var newKeys = positions.Select(p => $"{p.Symbol}_{p.Side}").OrderBy(k => k).ToList();
+                            var oldKeys = OpenPositions.Select(p => $"{p.Symbol}_{p.Side}").OrderBy(k => k).ToList();
+                            if (!newKeys.SequenceEqual(oldKeys))
+                            {
+                                OpenPositions.Clear();
+                                foreach (var p in positions)
+                                {
+                                    OpenPositions.Add(new PositionDisplayItem
+                                    {
+                                        Symbol = p.Symbol,
+                                        Side = p.Side,
+                                        EntryPrice = p.EntryPrice,
+                                        MarkPrice = p.MarkPrice,
+                                        Quantity = p.Quantity,
+                                        Pnl = p.UnrealizedPnl,
+                                        Leverage = p.Leverage,
+                                        StopLoss = p.StopLoss,
+                                        TakeProfit = p.TakeProfit,
+                                        LiquidationPrice = p.LiquidationPrice ?? 0m
+                                    });
+                                }
+                                HasOpenPositions = OpenPositions.Count > 0;
+                            }
+                            else
+                            {
+                                // Gleiche Keys — nur Preise/PnL aktualisieren (keine Clear/Add)
+                                foreach (var p in positions)
+                                {
+                                    var item = OpenPositions.FirstOrDefault(x => x.Symbol == p.Symbol && x.Side == p.Side);
+                                    if (item == null) continue;
+                                    item.MarkPrice = p.MarkPrice;
+                                    item.Pnl = p.UnrealizedPnl;
+                                    item.StopLoss = p.StopLoss;
+                                    item.TakeProfit = p.TakeProfit;
+                                }
+                            }
+                        });
+                    }
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex) when (ex is HttpRequestException or TimeoutException or TaskCanceledException)
+                {
+                    // Nur Netzwerk-Fehler schlucken — echte Bugs sollen durchschlagen
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Debug, "Remote",
+                        $"Poll-Fehler, Retry in 5s: {ex.Message}"));
+                }
+
+                await Task.Delay(5000, ct).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) { /* Stopp */ }
     }
 }

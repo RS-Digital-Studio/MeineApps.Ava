@@ -5,12 +5,15 @@ using Avalonia.Labs.Controls;
 using Avalonia.Media;
 using BingXBot.Graphics;
 using BingXBot.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 using System.ComponentModel;
 
 namespace BingXBot.Views;
 
+/// <summary>
+/// Dashboard-View. DataContext wird vom ViewLocator gesetzt (ContentControl-Binding an MainViewModel.Dashboard).
+/// Alle VM-Subscriptions erfolgen über DataContextChanged — so bleibt die View unabhängig vom DI-Container.
+/// </summary>
 public partial class DashboardView : UserControl
 {
     private DashboardViewModel? _vm;
@@ -29,9 +32,14 @@ public partial class DashboardView : UserControl
     public DashboardView()
     {
         InitializeComponent();
-
-        DataContext = App.Services.GetRequiredService<DashboardViewModel>();
+        DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += OnDetached;
+    }
+
+    private void OnDataContextChanged(object? sender, System.EventArgs e)
+    {
+        // Alte Subscriptions sauber abmelden (bei VM-Wechsel)
+        UnsubscribeFromVm();
 
         if (DataContext is DashboardViewModel dashVm)
         {
@@ -254,12 +262,6 @@ public partial class DashboardView : UserControl
         canvas.InvalidateSurface();
     }
 
-    private void OnRemoveWatchlistSymbol(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (_vm == null || sender is not Button btn || btn.Tag is not string symbol) return;
-        _vm.RemoveFromWatchlistCommand.Execute(symbol);
-    }
-
     /// <summary>Klick auf Position-Card → Chart wechselt zum Symbol + SK-Overlay.</summary>
     private void PositionCard_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
@@ -269,6 +271,11 @@ public partial class DashboardView : UserControl
 
     private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)
     {
+        UnsubscribeFromVm();
+    }
+
+    private void UnsubscribeFromVm()
+    {
         if (_vm != null)
         {
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
@@ -277,6 +284,7 @@ public partial class DashboardView : UserControl
             _vm.BtcTicker.BtcCandles.CollectionChanged -= OnBtcCandlesChanged;
             _vm.BtcTicker.TradeMarkers.CollectionChanged -= OnTradeMarkersChanged;
             _vm.EquityData.CollectionChanged -= OnEquityDataChanged;
+            _vm = null;
         }
     }
 }

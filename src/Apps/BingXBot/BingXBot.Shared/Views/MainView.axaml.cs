@@ -1,50 +1,13 @@
 using Avalonia.Controls;
-using Avalonia.Controls.Shapes;
-using Avalonia.Media;
-using BingXBot.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
-using System.ComponentModel;
 
 namespace BingXBot.Views;
 
+/// <summary>
+/// Desktop-MainView (Sidebar + Content). DataContext wird vom ViewLocator gesetzt.
+/// Kein Code-Behind-State: Connection-Dot, Status-Texte und Farben werden vollstaendig
+/// via Compiled Bindings gegen MainViewModel-Properties aktualisiert.
+/// </summary>
 public partial class MainView : UserControl
 {
-    private static readonly SolidColorBrush ConnectedBrush = new(Color.Parse("#10B981"));
-    private static readonly SolidColorBrush DisconnectedBrush = new(Color.Parse("#EF4444"));
-
-    private MainViewModel? _vm;
-
-    public MainView()
-    {
-        InitializeComponent();
-
-        DataContext = App.Services.GetRequiredService<MainViewModel>();
-
-        if (DataContext is MainViewModel vm)
-        {
-            _vm = vm;
-            vm.PropertyChanged += OnViewModelPropertyChanged;
-            UpdateConnectionDot();
-        }
-
-        // Handler abmelden wenn View entladen wird (verhindert Memory-Leak bei Singleton-VM)
-        DetachedFromVisualTree += (_, _) =>
-        {
-            if (_vm != null) _vm.PropertyChanged -= OnViewModelPropertyChanged;
-        };
-    }
-
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(MainViewModel.IsConnected))
-            UpdateConnectionDot();
-    }
-
-    private void UpdateConnectionDot()
-    {
-        if (_vm == null) return;
-        var dot = this.FindControl<Ellipse>("ConnectionDot");
-        if (dot != null)
-            dot.Fill = _vm.IsConnected ? ConnectedBrush : DisconnectedBrush;
-    }
+    public MainView() => InitializeComponent();
 }

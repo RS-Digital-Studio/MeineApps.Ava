@@ -1,0 +1,199 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.TradeHistoryViewMobile"
+             x:DataType="vm:TradeHistoryViewModel"
+             x:CompileBindings="True"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*">
+
+    <!-- Titel -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="12,10,12,8">
+      <mi:MaterialIcon Kind="FormatListBulleted" Width="20" Height="20"
+                       Foreground="{DynamicResource AppPrimaryBrush}" />
+      <TextBlock Text="Trade-Historie" FontSize="16" FontWeight="Bold"
+                 Foreground="{DynamicResource AppTextBrush}"
+                 VerticalAlignment="Center" />
+    </StackPanel>
+
+    <!-- KPIs: 3 Kacheln -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" Margin="12,0,12,8">
+      <Border Grid.Column="0" Background="{DynamicResource CardBrush}"
+              CornerRadius="10" Padding="12,10" Margin="0,0,6,0">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Trades" FontSize="10"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding TradeCount}" FontSize="20" FontWeight="Bold"
+                     FontFamily="Consolas, Courier New, monospace"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="1" Background="{DynamicResource CardBrush}"
+              CornerRadius="10" Padding="12,10" Margin="3,0">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Gesamt P&amp;L" FontSize="10"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding TotalPnl, StringFormat={}{0:+0.00;-0.00;0.00}}"
+                     FontSize="16" FontWeight="Bold"
+                     FontFamily="Consolas, Courier New, monospace"
+                     Foreground="{Binding TotalPnlColor}"
+                     TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="2" Background="{DynamicResource CardBrush}"
+              CornerRadius="10" Padding="12,10" Margin="6,0,0,0">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Win-Rate" FontSize="10"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding WinRate, StringFormat={}{0:F1}%}"
+                     FontSize="20" FontWeight="Bold"
+                     FontFamily="Consolas, Courier New, monospace"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Filter (kompakt: Modus + Zeitraum + Symbol) -->
+    <StackPanel Grid.Row="2" Spacing="8" Margin="12,0,12,8">
+      <Grid ColumnDefinitions="*,8,*">
+        <ComboBox Grid.Column="0"
+                  ItemsSource="{Binding Modes}"
+                  SelectedItem="{Binding SelectedMode}"
+                  HorizontalAlignment="Stretch"
+                  PlaceholderText="Modus" />
+        <ComboBox Grid.Column="2"
+                  ItemsSource="{Binding Periods}"
+                  SelectedItem="{Binding SelectedPeriod}"
+                  HorizontalAlignment="Stretch"
+                  PlaceholderText="Zeitraum" />
+      </Grid>
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox Grid.Column="0" Text="{Binding SymbolFilter}"
+                 Watermark="Symbol filtern (z.B. BTC-USDT)" FontSize="13" />
+        <Button Grid.Column="1"
+                Command="{Binding ClearFilterCommand}"
+                Background="{DynamicResource SurfaceBrush}"
+                Foreground="{DynamicResource TextSecondaryBrush}"
+                CornerRadius="8" Padding="12,10" Margin="8,0,0,0"
+                BorderThickness="0"
+                ToolTip.Tip="Filter zurücksetzen">
+          <mi:MaterialIcon Kind="FilterRemoveOutline" Width="18" Height="18" />
+        </Button>
+      </Grid>
+    </StackPanel>
+
+    <!-- Trade-Karten -->
+    <Border Grid.Row="3"
+            Background="{DynamicResource CardBrush}"
+            CornerRadius="12"
+            Margin="12,0,12,12"
+            ClipToBounds="True">
+      <Panel>
+        <StackPanel IsVisible="{Binding !TradeCount}"
+                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Spacing="10" Margin="24">
+          <mi:MaterialIcon Kind="SwapHorizontalCircleOutline" Width="56" Height="56"
+                           Foreground="{DynamicResource TextMutedBrush}" Opacity="0.35"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding EmptyStateText}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <ListBox ItemsSource="{Binding Trades}"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 IsVisible="{Binding TradeCount}">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="MinHeight" Value="0" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:TradeHistoryItem">
+              <Border Padding="14,12"
+                      BorderBrush="{DynamicResource BorderSubtleBrush}"
+                      BorderThickness="0,0,0,1">
+                <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+                  <!-- Zeile 1: Symbol + Side | PnL -->
+                  <StackPanel Grid.Row="0" Grid.Column="0"
+                              Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Symbol}"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Border CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                            Background="{DynamicResource SurfaceBrush}">
+                      <TextBlock Text="{Binding Side}" FontSize="10" FontWeight="Bold"
+                                 Foreground="{Binding SideColor}" />
+                    </Border>
+                  </StackPanel>
+                  <TextBlock Grid.Row="0" Grid.Column="1"
+                             Text="{Binding Pnl, StringFormat={}{0:+0.00;-0.00;0.00}}"
+                             FontSize="16" FontWeight="Bold"
+                             FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{Binding PnlColor}"
+                             VerticalAlignment="Center" />
+
+                  <!-- Zeile 2: Entry → Exit | Qty -->
+                  <StackPanel Grid.Row="1" Grid.Column="0"
+                              Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                    <TextBlock Text="{Binding EntryPrice, StringFormat={}{0:N4}}"
+                               FontSize="12"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="→" FontSize="12"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                    <TextBlock Text="{Binding ExitPrice, StringFormat={}{0:N4}}"
+                               FontSize="12"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                  </StackPanel>
+                  <TextBlock Grid.Row="1" Grid.Column="1"
+                             Text="{Binding Quantity, StringFormat=Qty {0:G}}"
+                             FontSize="11"
+                             FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             Margin="0,4,0,0" />
+
+                  <!-- Zeile 3: Strategie · Modus | Zeit -->
+                  <StackPanel Grid.Row="2" Grid.Column="0"
+                              Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                    <TextBlock Text="{Binding Strategy}"
+                               FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AppPrimaryBrush}" />
+                    <TextBlock Text="·" FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                    <TextBlock Text="{Binding Mode}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                    <TextBlock Text="·" FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                    <TextBlock Text="{Binding Fee, StringFormat=Fee {0:N2}}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                  </StackPanel>
+                  <TextBlock Grid.Row="2" Grid.Column="1"
+                             Text="{Binding Time, StringFormat={}{0:dd.MM HH:mm}}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             Margin="0,4,0,0" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Panel>
+    </Border>
+
+  </Grid>
+</UserControl>

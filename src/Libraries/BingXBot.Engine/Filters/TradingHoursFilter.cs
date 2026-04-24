@@ -19,32 +19,35 @@ public static class TradingHoursFilter
         if (!SymbolClassifier.IsTradFi(symbol)) return true;
         if (SymbolClassifier.Is24x7(symbol)) return true;
 
-        var category = SymbolClassifier.Classify(symbol);
+        // User-Vorgabe 13.04.2026: Wochentags IMMER offen. Wochenende blocken — mit Ausnahme:
+        // Forex öffnet Sonntag 22:00 UTC (Sydney-Open), nicht erst Montag 00:00 UTC.
+        // Grund: BingX schaltet Kontrakte auch ausserhalb Original-Boersenzeiten liquide
+        // (z.B. SPX500-Perp hat 24/5-Liquiditaet, unabhaengig von NYSE-Oeffnung).
+        // Der frueher feingranulare Zeit-Check filterte Commodity/Index/Stock abends in EU
+        // raus und lieferte fast nur Forex im Scanner-Ergebnis.
         var day = utcNow.DayOfWeek;
-        var timeOfDay = utcNow.Hour * 60 + utcNow.Minute; // Minuten seit Mitternacht UTC
+        var category = SymbolClassifier.Classify(symbol);
 
-        // Wochenende: Alle TradFi-Märkte geschlossen
-        if (day is DayOfWeek.Saturday or DayOfWeek.Sunday)
+        if (day == DayOfWeek.Saturday)
             return false;
 
-        return category switch
+        if (day == DayOfWeek.Sunday)
         {
-            // Forex: Mo 00:00 - Fr 22:00 UTC (24/5, schließt Fr 22:00 UTC / 17:00 ET)
-            MarketCategory.Forex => !(day == DayOfWeek.Friday && timeOfDay > 1320),
+            // Forex öffnet Sonntag 22:00 UTC mit Sydney-Open (BingX folgt Standard-FX-Cycle).
+            // Andere TradFi-Kategorien bleiben sonntags geschlossen (US-Indices/Stocks/Commodities ab Montag).
+            if (category == MarketCategory.Forex && utcNow.Hour >= 22)
+                return true;
+            return false;
+        }
 
-            // Commodities: Fast 24/5, 1h Pause 22:00-23:00 UTC (CME Globex Maintenance)
-            // 23:00 UTC (18:00 ET) bis nächsten Tag 22:00 UTC (17:00 ET)
-            MarketCategory.Commodity => !(timeOfDay >= 1320 && timeOfDay < 1380),
+        // Forex schliesst Freitag 22:00 UTC (BingX-Dokumentation, tatsaechlicher Cutover).
+        if (category == MarketCategory.Forex)
+        {
+            var timeOfDay = utcNow.Hour * 60 + utcNow.Minute;
+            if (day == DayOfWeek.Friday && timeOfDay > 1320) return false;
+        }
 
-            // Stocks: Mo-Fr 08:00-24:00 UTC (BingX Extended: Pre-Market 04:00 ET = 08:00 UTC,
-            // After-Hours bis 20:00 ET = 00:00 UTC/Mitternacht)
-            MarketCategory.Stock => timeOfDay >= 480,
-
-            // Indices: Fast 24/5, 1h Pause 22:00-23:00 UTC (CME E-mini Maintenance)
-            MarketCategory.Index => !(timeOfDay >= 1320 && timeOfDay < 1380),
-
-            _ => true
-        };
+        return true;
     }
 
     /// <summary>Gibt die nächste Marktöffnungszeit zurück (für Logging).</summary>

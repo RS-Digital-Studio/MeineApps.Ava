@@ -21,6 +21,8 @@ public class TradeEntity
     public DateTime ExitTime { get; set; }
     public string Reason { get; set; } = "";
     public int Mode { get; set; }
+    /// <summary>Multi-TF Standalone: Navigator-TF als Int (TimeFrame-Enum-Wert). -1 = nicht gesetzt (Alt-Trade).</summary>
+    public int NavigatorTimeframe { get; set; } = -1;
 
     public CompletedTrade ToRecord() => new(
         Symbol,
@@ -33,7 +35,8 @@ public class TradeEntity
         EntryTime,
         ExitTime,
         Reason,
-        (TradingMode)Mode);
+        (TradingMode)Mode,
+        NavigatorTimeframe >= 0 ? (TimeFrame)NavigatorTimeframe : TimeFrame.H4);
 
     public static TradeEntity FromRecord(CompletedTrade t) => new()
     {
@@ -47,6 +50,7 @@ public class TradeEntity
         EntryTime = t.EntryTime,
         ExitTime = t.ExitTime,
         Reason = t.Reason,
-        Mode = (int)t.Mode
+        Mode = (int)t.Mode,
+        NavigatorTimeframe = (int)t.NavigatorTimeframe,
     };
 }

@@ -18,5 +18,8 @@
     <ProjectReference Include="..\..\src\Libraries\BingXBot.Exchange\BingXBot.Exchange.csproj" />
     <ProjectReference Include="..\..\src\Libraries\BingXBot.Engine\BingXBot.Engine.csproj" />
     <ProjectReference Include="..\..\src\Libraries\BingXBot.Backtest\BingXBot.Backtest.csproj" />
+    <ProjectReference Include="..\..\src\Libraries\BingXBot.Contracts\BingXBot.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Libraries\BingXBot.Trading\BingXBot.Trading.csproj" />
+    <ProjectReference Include="..\..\src\Apps\BingXBot\BingXBot.Server\BingXBot.Server.csproj" />
   </ItemGroup>
 </Project>

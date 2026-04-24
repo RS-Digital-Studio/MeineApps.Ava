@@ -1,0 +1,386 @@
+
+
+
+
+
+
+
+
+Algorithmische Erkennung der Strukturpunkte (0, A, B, C)
+
+
+
+
+
+Damit eine KI oder ein Trading-Skript die Ankerpunkte des SK-Systems nicht mit normalem Marktrauschen (Noise) verwechselt, müssen strenge Identifikations-Algorithmen implementiert werden. Es reicht nicht zu sagen "Suche das höchste Hoch". Man muss definieren, wann ein Hoch signifikant ist.
+
+
+
+
+
+Hier sind die Bausteine, die kombiniert werden müssen, damit der Code die Punkte fehlerfrei und profitabel erkennt.
+
+
+
+
+
+
+
+1. Methode: Pivot Highs & Pivot Lows (Der Lookback/Lookforward-Filter)
+
+
+
+
+
+Dies ist die Standardmethode, um lokale Extrema (Spitzen und Täler) zu finden. Ein Punkt im Chart wird erst dann als potenzieller Punkt 0 oder A markiert, wenn er von tieferen (bzw. höheren) Kerzen "umzingelt" ist.
+
+
+
+
+
+Die Logik für den Code:
+
+
+
+
+
+Definiere zwei Parameter: Left_Bars (Kerzen links) und Right_Bars (Kerzen rechts).
+
+
+
+
+
+Ein Pivot Low (Potenzieller Punkt 0 bei Long) entsteht, wenn das Tief einer Kerze tiefer ist als die Tiefs der X Kerzen davor UND tiefer als die Tiefs der X Kerzen danach.
+
+
+
+
+
+Ein Pivot High (Potenzieller Punkt A bei Long) entsteht, wenn das Hoch einer Kerze höher ist als die Hochs der X Kerzen davor UND höher als die Hochs der X Kerzen danach.
+
+
+
+
+
+Empfohlene Settings: Left_Bars = 5 bis 10, Right_Bars = 3 bis 5.
+
+
+
+
+
+(Tipp für Claude: In Pine Script nutzt man dafür die Funktion ta.pivothigh() und ta.pivotlow() oder baut eine For-Schleife).
+
+
+
+
+
+
+
+2. Methode: Der Volatilitäts-Filter (ATR - Average True Range)
+
+
+
+
+
+Selbst wenn ein Pivot-Punkt erkannt wird, könnte es sich nur um eine winzige Bewegung in einem toten Markt (Seitwärtsphase) handeln. Das SK-System verlangt aber nach einem echten Impuls (Strecke 0 -> A).
+
+
+
+
+
+Die Logik für den Code:
+
+
+
+
+
+Berechne die ATR der letzten 14 Kerzen (ATR_14). Die ATR misst die durchschnittliche Größe einer Kerze.
+
+
+
+
+
+Bevor die Strecke von 0 nach A als "gültiger Impuls" akzeptiert wird, muss die Distanz in Punkten (Pips/Ticks) gemessen werden.
+
+
+
+
+
+Die Regel: IF (Point_A_Price - Point_0_Price) < (ATR_14 * 3): INVALIDATE SEQUENCE.
+
+
+
+
+
+Bedeutung: Die Impuls-Bewegung muss mindestens dreimal so groß sein wie eine durchschnittliche Kerze. Ist sie kleiner, ignoriert der Bot diese Punkte, da es sich nicht um institutionelles Volumen, sondern um Grundrauschen handelt.
+
+
+
+
+
+
+
+3. Methode: Marktstruktur-Bruch (BOS - Break of Structure)
+
+
+
+
+
+Das ist der Filter, der Anfänger-Bots von Profi-Algorithmen unterscheidet. Ein Punkt A darf erst dann ein Punkt A sein, wenn die Welle dorthin ein vorheriges wichtiges Hoch durchbrochen hat.
+
+
+
+
+
+Die Logik für den Code (Beispiel Aufwärtstrend):
+
+
+
+
+
+Der Bot speichert das letzte markante Pivot High (nennen wir es Last_Swing_High).
+
+
+
+
+
+Der Preis fällt und bildet ein neues Pivot Low (Potenzieller Point_0).
+
+
+
+
+
+Der Preis steigt wieder.
+
+
+
+
+
+Die Regel: Der neue Hochpunkt wird erst dann als validierter Point_A akzeptiert, wenn der Preis über das Last_Swing_High steigt und dort schließt.
+
+
+
+
+
+Erst durch diesen Strukturbruch (BOS) beweist der Markt, dass die Käufer wirklich die Kontrolle haben. Ohne BOS keine SK-System-Messung!
+
+
+
+
+
+
+
+4. Die ultimative State-Machine (Ablauf für den Code)
+
+
+
+
+
+Um diese Filter zu vereinen, muss der Code einer strikten Status-Maschine (State Machine) folgen. So findet der Bot die Punkte 0, A, B und C im Live-Markt:
+
+
+
+
+
+
+
+Phase 1: Suche nach Punkt 0 und Punkt A (Der Impuls)
+
+
+
+
+
+Finde Punkt 0: Identifiziere ein validiertes Pivot Low.
+
+
+
+
+
+Bestätige Impuls: Warte, bis der Preis steigt und das letzte strukturelle Hoch bricht (BOS).
+
+
+
+
+
+Finde Punkt A: Sobald der Preis nach dem BOS ein neues Pivot High bildet, lockt der Code dieses Hoch als Point_A ein.
+
+
+
+
+
+Prüfe ATR: Ist die Distanz zwischen 0 und A groß genug? (Ja -> Gehe zu Phase 2).
+
+
+
+
+
+
+
+Phase 2: Suche nach Punkt B (Die Korrektur)
+
+
+
+
+
+Jetzt sind Point_0 und Point_A fixiert. Der Code berechnet die Fibo-Level FIB_050 bis FIB_0667.
+
+
+
+
+
+Der Code wartet. Es gibt noch keinen "Punkt B", es gibt nur die "Point B Zone".
+
+
+
+
+
+Point B wird markiert, wenn: Der Preis taucht in die Zone ein UND bildet dort ein neues Pivot Low (oder eine Umkehrkerze), woraufhin der Preis die Zone wieder nach oben verlässt.
+
+
+
+
+
+Wichtig: Fällt der Preis unter Point_0, wird die komplette State-Machine sofort auf null gesetzt (Invalidation).
+
+
+
+
+
+
+
+Phase 3: Suche nach Punkt C (Das Ziel)
+
+
+
+
+
+Der Code ist Long eingestiegen (im Bereich B).
+
+
+
+
+
+Die Fibonacci-Extensions (EXT_1618 und EXT_2000) basierend auf der Strecke 0->A werden als Take-Profit-Linien in den Chart gezeichnet.
+
+
+
+
+
+Point C wird markiert, wenn: Der Preis diese Zielzone erreicht. Sobald EXT_1618 berührt wird, registriert der Code: "Sequenz erfolgreich beendet".
+
+
+
+
+
+
+
+5. Profi-Erweiterungen (Für 100% Perfektion im Code)
+
+
+
+
+
+Um aus einem sehr guten Bot einen herausragenden, institutionellen Algorithmus zu machen, der auch in extremen Marktphasen (News, Crashs, Fakeouts) überlebt, müssen diese drei dynamischen Logik-Filter ergänzt werden:
+
+
+
+
+
+
+
+A. Der Volumen-Anomaly-Filter (Ist der Impuls echt?)
+
+
+
+
+
+Ein Strukturbruch (BOS) von 0 nach A kann auch durch einen illiquiden Markt (z.B. nachts) passieren. Echte Sequenzen werden von "Smart Money" getrieben – und das hinterlässt Volumenspuren.
+
+
+
+
+
+Code-Logik: Vergleiche das Volumen der Kerzen, die den BOS (Break of Structure) verursachen, mit dem gleitenden Durchschnitt des Volumens (z.B. SMA(Volume, 20)).
+
+
+
+
+
+Die Regel: IF Breakout_Candle_Volume < SMA_Volume * 1.5 THEN Ignore_Sequence. Der Impuls MUSS überdurchschnittliches Volumen aufweisen, sonst ist es ein "Fakeout".
+
+
+
+
+
+
+
+B. Dynamische Pivot-Längen (Adaptive Filterung)
+
+
+
+
+
+Statische Pivot-Zahlen (z.B. "suche immer 5 Kerzen links") versagen, wenn die Marktvolatilität extrem ansteigt oder fällt.
+
+
+
+
+
+Code-Logik: Mache die Left_Bars und Right_Bars variabel und kopple sie an die aktuelle ATR.
+
+
+
+
+
+Die Regel: Wenn die Vola hoch ist (hohe ATR), benötigt der Bot mehr Kerzen (z.B. 10 links/rechts), um einen echten Wendepunkt zu identifizieren. Ist der Markt langsam (niedrige ATR), reichen z.B. 3 Kerzen. So passt sich die "Sichtweite" der KI automatisch dem Rhythmus des Marktes an.
+
+
+
+
+
+
+
+C. Der Wick-Rejection-Filter (Sicherer Einstieg in der B-Zone)
+
+
+
+
+
+Das gefährlichste im SK-System ist, dass der Preis einfach wie ein Stein durch die 50-66% Box durchfällt, bis Punkt 0 gebrochen ist. Der Bot darf nicht einfach "kaufen, sobald die Box berührt wird". Er muss auf Ablehnung (Rejection) warten.
+
+
+
+
+
+Code-Logik in der B-Box (für Long-Trades): Wenn der Preis in der Box ist, analysiere die Anatomie der einzelnen Kerzen. Berechne die Länge des unteren Dochtes (Lower Wick = Min(Open, Close) - Low). Berechne die Länge des Kerzenkörpers (Body = abs(Open - Close)).
+
+
+
+
+
+Die Regel: Erzeuge erst ein Kaufsignal, wenn Lower_Wick > (Body * 2) UND die Kerze innerhalb oder oberhalb der Fibonacci-Box schließt.
+
+
+
+
+
+Bedeutung: Der Code erkennt mathematisch eine "Pinbar" oder "Hammer-Kerze". Der lange untere Docht beweist, dass Verkäufer den Preis zwar nach unten drücken wollten, aber massiv von Käufern absorbiert wurden. Das ist das perfekte, hochsichere "Punkt B"-Signal.
+
+
+
+
+
+
+
+Zusammenfassung für den KI-Entwickler:
+
+
+
+
+
+Verwende niemals eine statische Zick-Zack-Linie. Nutze die Kombination aus Pivot-High/Low, ATR-Multiplikatoren, Break of Structure (BOS) und Volumen-Bestätigung. Wenn der Bot dann in der B-Box noch auf eine mathematische Docht-Ablehnung (Wick Rejection) wartet, hast du einen nahezu perfekten, extrem robusten SK-System-Algorithmus gebaut.
+
+
+
+
+

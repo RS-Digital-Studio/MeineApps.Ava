@@ -38,27 +38,31 @@ public class TradingHoursFilterTests
     }
 
     [Fact]
-    public void Commodity_AußerhalbHandelszeitenGeschlossen()
+    public void Commodity_Wochentags24hOffen()
     {
-        // Mittwoch 22:30 UTC — Commodities geschlossen (CME Maintenance 22:00-23:00)
+        // User-Vorgabe 13.04.2026: Wochentags IMMER offen, keine CME-Pause-Filter mehr.
+        // BingX liefert durchgehend Liquiditaet auf den Commodity-Perps.
         var wednesday2230 = new DateTime(2026, 4, 8, 22, 30, 0, DateTimeKind.Utc);
-        TradingHoursFilter.IsMarketOpen("NCCOGOLD2USD-USDT", wednesday2230).Should().BeFalse();
+        TradingHoursFilter.IsMarketOpen("NCCOGOLD2USD-USDT", wednesday2230).Should().BeTrue();
+
+        var wednesday0030 = new DateTime(2026, 4, 8, 0, 30, 0, DateTimeKind.Utc);
+        TradingHoursFilter.IsMarketOpen("NCCOGOLD2USD-USDT", wednesday0030).Should().BeTrue();
     }
 
     [Fact]
-    public void Stock_NurWährendUSMarktzeiten()
+    public void Stock_WochentagsImmerOffen()
     {
-        // Mittwoch 15:00 UTC — US-Markt offen (08:00-24:00 mit Pre/After-Market)
+        // User-Vorgabe 13.04.2026: Stocks wochentags IMMER offen (BingX-Perps sind 24/5 liquide,
+        // unabhaengig von NYSE-Pre/Regular/After-Market-Zeiten).
         var wednesday3pm = new DateTime(2026, 4, 8, 15, 0, 0, DateTimeKind.Utc);
         TradingHoursFilter.IsMarketOpen("NCSKTSLA2USD-USDT", wednesday3pm).Should().BeTrue();
 
-        // Mittwoch 08:00 UTC — Pre-Market offen (ab 08:00 UTC = 04:00 ET)
         var wednesday8am = new DateTime(2026, 4, 8, 8, 0, 0, DateTimeKind.Utc);
         TradingHoursFilter.IsMarketOpen("NCSKTSLA2USD-USDT", wednesday8am).Should().BeTrue();
 
-        // Mittwoch 07:00 UTC — zu früh für US-Aktien (<08:00)
+        // Frueher Mittwoch 07:00 UTC — jetzt AUCH offen (war frueher false).
         var wednesday7am = new DateTime(2026, 4, 8, 7, 0, 0, DateTimeKind.Utc);
-        TradingHoursFilter.IsMarketOpen("NCSKTSLA2USD-USDT", wednesday7am).Should().BeFalse();
+        TradingHoursFilter.IsMarketOpen("NCSKTSLA2USD-USDT", wednesday7am).Should().BeTrue();
     }
 
     [Fact]

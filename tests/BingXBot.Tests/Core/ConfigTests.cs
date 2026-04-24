@@ -21,9 +21,6 @@ public class ConfigTests
         s.Tp1CloseRatio.Should().Be(0.5m);                  // Buch: 50% bei TP1
         s.Tp2CloseRatio.Should().Be(0.5m);                  // Buch: 50% Rest bei TP2
         s.MinRiskRewardRatio.Should().Be(0m);               // Strategy hat eigenen 1:1-Check
-        s.MaxHoldHours.Should().Be(0);                      // Unbegrenzt (SL/TP managed Exit)
-        s.CooldownHours.Should().Be(0);                     // Deaktiviert (Symbol-Cooldown direkt 4h)
-        s.MaxTradesPerDay.Should().Be(0);                   // Unbegrenzt
     }
 
     [Fact]
@@ -55,5 +52,61 @@ public class ConfigTests
         s.ScanIntervalSeconds.Should().Be(60);              // H4 nutzt 60s für schnelle M30-Reaktion
         s.Mode.Should().Be(ScanMode.Reversal);              // SK = Mean-Reversion
         s.EnableTradFi.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ScannerSettings_MigrateLegacyM5_ShouldReplaceM5InActiveTimeframes()
+    {
+        // Simuliert persistierte Settings vor 19.04.2026 mit M5 als Navigator.
+        var s = new ScannerSettings
+        {
+            ActiveTimeframes = new List<TimeFrame> { TimeFrame.D1, TimeFrame.H4, TimeFrame.H1, TimeFrame.M5 }
+        };
+
+        s.MigrateLegacyM5();
+
+        s.ActiveTimeframes.Should().NotContain(TimeFrame.M5);
+        s.ActiveTimeframes.Should().Contain(TimeFrame.M15);
+        s.ActiveTimeframes.Should().HaveCount(4);
+    }
+
+    [Fact]
+    public void ScannerSettings_MigrateLegacyM5_ShouldPreserveM15IfAlreadyPresent()
+    {
+        // Edge-Case: ActiveTimeframes enthält sowohl M5 als auch M15 (sollte nicht vorkommen, aber defensiv).
+        var s = new ScannerSettings
+        {
+            ActiveTimeframes = new List<TimeFrame> { TimeFrame.H4, TimeFrame.M5, TimeFrame.M15 }
+        };
+
+        s.MigrateLegacyM5();
+
+        s.ActiveTimeframes.Should().NotContain(TimeFrame.M5);
+        s.ActiveTimeframes.Should().Contain(TimeFrame.M15);
+        s.ActiveTimeframes.Should().HaveCount(2);  // Duplikat via Distinct() bereinigt
+    }
+
+    [Fact]
+    public void ScannerSettings_MigrateLegacyM5_ShouldRemoveM5DictionaryKeys()
+    {
+        // Alte DB-Snapshots haben evtl. M5-Keys in den persistierten per-TF-Dictionaries.
+        var s = new ScannerSettings();
+        s.MinVolume24hByTf[TimeFrame.M5] = 50_000_000m;
+
+        s.MigrateLegacyM5();
+
+        s.MinVolume24hByTf.Should().NotContainKey(TimeFrame.M5);
+    }
+
+    [Fact]
+    public void RiskSettings_MigrateLegacyM5_ShouldRemoveM5FromPipScaling()
+    {
+        var s = new RiskSettings();
+        s.PipScalingByTf[TimeFrame.M5] = 0.5m;
+
+        s.MigrateLegacyM5();
+
+        s.PipScalingByTf.Should().NotContainKey(TimeFrame.M5);
+        s.PipScalingByTf[TimeFrame.M15].Should().Be(0.75m);
     }
 }

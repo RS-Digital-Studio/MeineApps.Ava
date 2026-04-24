@@ -135,7 +135,7 @@ public static class MarketFilter
     /// Funding-Settlement (00:00, 08:00, 16:00 UTC): 5min Pause für ALLE Perpetuals
     /// (Krypto UND TradFi auf BingX haben Funding-Settlements).
     /// </summary>
-    public static SessionFilterResult CheckSession(DateTime utcNow, TradingModePreset mode = TradingModePreset.Swing)
+    public static SessionFilterResult CheckSession(DateTime utcNow)
     {
         var hour = utcNow.Hour;
 
@@ -175,7 +175,7 @@ public static class MarketFilter
 
     /// <summary>
     /// Prüft ob die maximale Anzahl Trades pro Tag erreicht ist.
-    /// Default: 3 Trades/Tag für CryptoTrendPro.
+    /// Default: 3 Trades/Tag (SK-System Standard-Limit).
     /// </summary>
     public static bool IsMaxDailyTradesReached(int tradesToday, int maxTradesPerDay = 3)
     {

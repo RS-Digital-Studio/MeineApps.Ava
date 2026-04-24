@@ -13,4 +13,6 @@ public record CompletedTrade(
     DateTime EntryTime,
     DateTime ExitTime,
     string Reason,
-    TradingMode Mode);
+    TradingMode Mode,
+    /// <summary>Multi-TF Standalone: Navigator-TF des auslösenden Signals (für TF-Badge im Trade-Log).</summary>
+    TimeFrame NavigatorTimeframe = TimeFrame.H4);

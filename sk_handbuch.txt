@@ -1,0 +1,696 @@
+
+
+
+
+
+
+
+
+Das SK-System: Die ultimative und vollständige Masterclass
+
+
+
+
+
+Wenn man das Basis-Setup (0-A-B-C) verstanden hat, geht man vom reinen Theorieverständnis in die praktische und oft komplexe Anwendung über. Im SK-System "tradet man Boxen" (Korrekturlevel oder Zielbereiche). Das bedeutet: Man kauft oder verkauft nicht einfach blind aufgrund eines Gefühls oder eines Indikators, sondern sucht nach spezifischen, mathematisch definierten Zonen, in denen der Markt statistisch gesehen am ehesten dreht.
+
+
+
+
+
+Dieses System basiert auf der Prämisse, dass Märkte nicht chaotisch, sondern geometrisch und fraktal funktionieren. Preisbewegungen werden durch Algorithmen und das Verhalten großer Marktteilnehmer ("Smart Money") gesteuert, die ihre Orders an genau berechneten Liquiditätspunkten platzieren. Das SK-System macht genau diese Zonen sichtbar.
+
+
+
+
+
+Hier sind die zentralen Bausteine und Level, die getradet werden, sortiert nach ihrer Wichtigkeit, Häufigkeit und strategischen Bedeutung im Chart.
+
+
+
+
+
+
+
+1. Das Primäre Korrekturlevel (Das B-Level)
+
+
+
+
+
+Das B-Level ist der erste systematische Einstieg aus der anfänglichen, großen Welle. Es repräsentiert das "Durchatmen" des Marktes nach einem ersten Schock oder Richtungswechsel.
+
+
+
+
+
+Wie man es misst: Fibonacci-Retracement vom absoluten Startpunkt 0 nach A (dem ersten markanten Hoch/Tief).
+
+
+
+
+
+Die Zone: Das Rechteck zwischen dem 50% und dem 66.7% Retracement der Strecke 0-A. (Tiefe Korrekturen können bis 78.6% gehen, sind aber oft ein Zeichen nachlassenden Momentums).
+
+
+
+
+
+Was man tradet: Man spekuliert darauf, dass die erste Bewegung (0-A) kein Zufall war, sondern der Startschuss eines neuen Trends (oft initiiert durch fundamentale News oder große Marktteilnehmer). Man kauft die Korrektur (Punkt B), um die Bewegung bis zum Punkt C (Zielbereich) mitzunehmen.
+
+
+
+
+
+Die Psychologie dahinter: Wenn der Preis von 0 nach A schießt, entsteht bei ungeduldigen Tradern (Retail) oft FOMO (Fear of Missing Out). Sie kaufen am Hochpunkt A. Wenn der Markt dann korrigiert (Richtung 50-66%), geraten diese späten Käufer in Panik und verkaufen mit Verlust. Genau in dieser Zone (B) saugt das Smart Money diese Liquidität günstig auf, um den Preis dann in die eigentliche Zielrichtung (C) zu treiben. Das B-Level ist somit ein Einstieg zu "Großhandelspreisen".
+
+
+
+
+
+
+
+2. Die BC-Korrektur (Der Trend-Folge-Einstieg)
+
+
+
+
+
+Sobald der Markt am Punkt B gedreht hat und impulsiv in Richtung Punkt C läuft, entsteht eine neue Impulswelle (die Strecke von B nach C). Auch diese Welle bewegt sich fast nie in einer ununterbrochenen geraden Linie. Die C-Welle ist oft die längste und stärkste Welle einer Sequenz.
+
+
+
+
+
+Das Prinzip: Die Strecke B-C ist für sich genommen wieder ein eigenständiger Impuls, der korrigiert werden darf und muss.
+
+
+
+
+
+Wie man es misst: Fibonacci-Retracement vom Punkt B zum aktuell höchsten Punkt der beginnenden C-Welle.
+
+
+
+
+
+Was man tradet: Wenn man den initialen Einstieg am Punkt B verpasst hat (oder man seine Position vergrößern möchte – "Pyramidisieren"), bietet die BC-Korrektur eine hervorragende zweite Chance. Man wartet, bis der Markt auf dem Weg zu seinem Endziel C wieder ein Stück zurücksetzt (in das 50% - 66.7% Level der isolierten B-C Strecke) und steigt dort aggressiv in Trendrichtung ein.
+
+
+
+
+
+Wichtige Nuance: BC-Korrekturen sollten im Idealfall flacher ausfallen und schnell wieder gekauft werden. Wenn eine BC-Korrektur zu tief in das ursprüngliche B-Level eindringt, kann das ein Warnsignal für mangelnde Trendstärke sein.
+
+
+
+
+
+
+
+3. Das GKL (Gesamtkorrekturlevel) – Die Master-Zone
+
+
+
+
+
+Das Gesamtkorrekturlevel (GKL) ist die unangefochtene "Königsdisziplin" im SK-System. Es ist oft das mächtigste, stabilste und am stärksten verteidigte Level im gesamten Chartbild. Es tritt auf, wenn eine komplette Sequenz (0-A-B-C) erfolgreich abgearbeitet wurde oder der Markt nach einem extrem langen Makro-Trend tief durchatmen muss.
+
+
+
+
+
+Das Prinzip: Der Markt hat seine Zielzone (Punkt C) erreicht. Die ursprüngliche Motivation der ersten Welle ist erschöpft. Nun ist die gesamte Sequenz von 0 bis C reif für eine makroökonomische Korrektur.
+
+
+
+
+
+Wie man es misst: Fibonacci-Retracement vom absoluten Tiefpunkt (Punkt 0) bis zum absoluten Hochpunkt (Punkt C oder sogar noch höher, falls der Markt im Überschwang über C hinausgeschossen ist).
+
+
+
+
+
+Was man tradet: Das GKL (wieder die 50% - 66.7% Zone der gigantischen Gesamtbewegung) ist der Bereich, in dem das "große Geld" (Institutionen, Banken, Hedgefonds) oft wieder massiv in den übergeordneten Trend einsteigt. Ein Setup aus einem GKL hat eine extrem hohe Trefferquote, weil es den übergeordneten Trend (Higher Timeframe, z.B. Tages- oder Wochenchart) respektiert.
+
+
+
+
+
+Die Marktdynamik: Während der Retail-Trader am Punkt C oft euphorisch Ausbrüche in Trendrichtung kauft, nehmen Institutionen dort bereits Gewinne mit, was den Preis nach unten drückt. Erst im GKL – also mit einem "Discount" von 50% oder mehr auf die gesamte Bewegung – greifen die Algorithmen wieder zu. Wer im GKL kauft, schwimmt mit dem absoluten Strom des Marktes.
+
+
+
+
+
+
+
+4. Zielbereiche (ZB) als Wendepunkte und Profit-Zonen
+
+
+
+
+
+Die Zielbereiche (161.8% bis 200% Extension der ursprünglichen 0-A Strecke) sind primär dazu da, um Gewinne sicher und objektiv mitzunehmen (Take Profit), anstatt zu hoffen, dass ein Trend ewig weitergeht. Aber in den Händen erfahrener Trader können sie auch aktiv gehandelt werden:
+
+
+
+
+
+Das mathematische Ziel: Das 161.8% Level basiert auf dem Goldenen Schnitt. Nahezu alle algorithmischen Handelssysteme der Welt haben an diesem Level automatische Gewinnmitnahmen (Sell-Limit-Orders in einem Aufwärtstrend) programmiert. Dies führt fast unweigerlich zu Reaktionen.
+
+
+
+
+
+Gegen den Trend (Antizyklisch): Erreicht der Markt das Ziellevel C, prallt er dort fast immer zumindest kurzfristig ab. Viele Trader nutzen den Zielbereich für kleine, schnelle Trades gegen den Haupttrend, da der Markt hier eine Korrektur (z.B. das übergeordnete GKL) einleitet.
+
+
+
+
+
+Gefahrenhinweis: Counter-Trend-Trading (gegen den Trend) an einem Zielbereich ist hochriskant. Eine Bewegung kann sich auch in eine Überschießung (Extension bis 261.8% oder mehr) verwandeln. Solche Trades sollten niemals blind platziert werden, sondern erfordern Bestätigung auf kleineren Zeiteinheiten (z.B. eine frische, gegensätzliche 0-A-B-C Sequenz, die im Zielbereich startet).
+
+
+
+
+
+
+
+5. Das konkrete Trade-Management (Einstieg, SL, BE, TPs)
+
+
+
+
+
+Die Theorie der Boxen ist nutzlos ohne knallharte Ausführungsregeln. Hier ist der exakte mechanische Fahrplan für einen Trade im SK-System:
+
+
+
+
+
+
+
+Der exakte Einstieg (Entry)
+
+
+
+
+
+Der Einstieg erfolgt immer in der Korrektur-Box (50% bis 66.7%). Es gibt zwei bewährte Ansätze:
+
+
+
+
+
+Aggressiv (Limit-Order): Du legst eine Limit-Order (z.B. Buy Limit) direkt auf das 50% oder 55.9% Retracement. Vorteil: Du verpasst den Trade nie. Nachteil: Wenn der Markt in einen Crash übergeht, fängst du ein "fallendes Messer".
+
+
+
+
+
+Konservativ (Reaktion abwarten): Du wartest, bis der Preis in die 50-66% Box eintaucht. Erst wenn sich auf einer kleineren Zeiteinheit (z.B. 15-Minuten-Chart, während dein GKL aus dem 4-Stunden-Chart stammt) eine eigene kleine 0-A-B-C Umkehrsequenz bildet oder eine starke Umkehrkerze (Pinbar/Engulfing) auftritt, steigst du manuell ein.
+
+
+
+
+
+
+
+Der Stop-Loss (SL)
+
+
+
+
+
+Der Stop-Loss ist absolut heilig und wird niemals ausgeweitet. Bricht der Preis das Level, ist die Geometrie der Sequenz zerstört und du willst nicht mehr in diesem Trade sein.
+
+
+
+
+
+Wo genau? Der SL kommt immer etwas unter den Ursprung der gemessenen Bewegung.
+
+
+
+
+
+Bei einer primären Korrektur (B-Level) oder einem GKL: Knapp unter Punkt 0 (in einem Aufwärtstrend).
+
+
+
+
+
+Bei einer BC-Korrektur: Knapp unter Punkt B.
+
+
+
+
+
+Wichtig (Buffer): Gib dem SL immer ein wenig Luft für den Broker-Spread und Liquiditätsabgriffe (Spikes/Wicks). Setze ihn z.B. 5-15 Pips (je nach Zeiteinheit) unter das absolute Tief von Punkt 0.
+
+
+
+
+
+
+
+Das Break-Even-Level (BE)
+
+
+
+
+
+Wann ziehst du den Stop-Loss auf deinen Einstiegspreis nach, um das Risiko auf null zu reduzieren?
+
+
+
+
+
+Die "Bruch von A"-Regel: Sobald der Preis aus deiner Korrekturbox herausläuft und das Level A (den vorherigen Hochpunkt) signifikant durchbricht, ziehst du den Stop-Loss auf Break Even (deinen Einstiegskurs + Spread).
+
+
+
+
+
+Warum dort? Weil mit dem Durchbrechen von Punkt A die Sequenz in Richtung Zielbereich mathematisch endgültig aktiviert und bestätigt ist. Ein Zurückfallen unter deinen Einstieg wäre ab hier extrem untypisch und würde auf eine Strukturverletzung hindeuten.
+
+
+
+
+
+
+
+Die Take-Profits (TP1 und TP2)
+
+
+
+
+
+Wir arbeiten mit Teilgewinnnahmen, um systematisch Kapital zu sichern und den psychologischen Druck zu minimieren.
+
+
+
+
+
+Take Profit 1 (TP1) – 161.8% Extension: Dies ist das absolute Kernziel der Bewegung. Hier prallt der Markt extrem oft ab. Regel: Schließe hier 50% bis 80% deiner Position ab.
+
+
+
+
+
+Take Profit 2 (TP2) – 200.0% Extension: Dies ist das Endziel der Standard-Sequenz. Wenn der Markt nach TP1 noch Momentum hat und weiterläuft, schließt du exakt am 200% Level den kompletten Rest (die restlichen 20-50%) deiner Position.
+
+
+
+
+
+Pro-Tipp ("Runner"): Wenn der Trade extrem gut läuft, lassen manche Trader am 200%-Level noch 5-10% als "Runner" für mögliche Überschießungen (261.8% oder 423.6%) laufen und trailen den Stop-Loss aggressiv nach.
+
+
+
+
+
+
+
+6. Praxis-Regeln & Rahmenbedingungen für den Live-Handel
+
+
+
+
+
+Erfolgreiches Trading mit dem SK-System hängt nicht nur von den gezeichneten Boxen ab, sondern vom Kontext, in dem diese Boxen entstehen. Bevor ein Trade platziert wird, müssen folgende Parameter stimmen:
+
+
+
+
+
+
+
+Multi-Timeframe-Alignment (MTA)
+
+
+
+
+
+Du darfst niemals blind gegen den großen Trend handeln. Die höhere Zeiteinheit ist dein "Boss".
+
+
+
+
+
+Beispiel: Wenn der Tageschart in einem gigantischen Abwärtstrend ist und sich dem Zielbereich nähert, solltest du im 15-Minuten-Chart extrem vorsichtig mit Kaufsignalen (Long-Setups) sein.
+
+
+
+
+
+Regel: Traded am besten immer in Richtung der nächstgrößeren Sequenz. Ein Long-Einstieg im 1H-Chart ist massiv stärker, wenn auch der 4H-Chart und der Daily-Chart aufwärts gerichtet sind.
+
+
+
+
+
+
+
+Dynamisches Positionsgrößen-Management
+
+
+
+
+
+Ein häufiger Anfängerfehler ist es, jeden Trade mit "1 Lot" zu handeln. Da die Boxen (B-Level vs. GKL) unterschiedlich groß sind, variiert dein Stop-Loss-Abstand enorm.
+
+
+
+
+
+Die 1% Regel: Du solltest pro Trade immer denselben prozentualen Betrag deines Kontos riskieren (z.B. 1% oder 2%).
+
+
+
+
+
+Auswirkung: Wenn dein Stop-Loss im GKL 100 Pips entfernt ist, musst du eine viel kleinere Positionsgröße (Lot-Size) wählen als bei einer BC-Korrektur, bei der dein Stop-Loss nur 20 Pips entfernt ist. Nutze immer einen Positionsgrößenrechner.
+
+
+
+
+
+
+
+News & Fundamentaldaten
+
+
+
+
+
+Vorsicht vor roten News: Vor extrem wichtigen Ereignissen (US-Leitzinsentscheide, NFP-Arbeitsmarktdaten, CPI) solltest du keine Limit-Orders offen in Korrekturboxen liegen haben.
+
+
+
+
+
+Warum? Bei starken News ziehen Banken ihre Liquidität ab. Das führt zu gigantischen Spikes (Dornen), die deinen Stop-Loss abholen (Stop-Hunting), selbst wenn die Richtung danach stimmt. Lass die News ausbrechen und trade das darauf folgende Setup.
+
+
+
+
+
+
+
+7. Der "Heilige Gral": Überschneidungen (Confluence)
+
+
+
+
+
+Das eigentliche Geheimnis und der größte Vorteil des SK-Systems ist nicht das isolierte Betrachten eines einzelnen Levels, sondern die Kombination. Man sucht nach Überschneidungsbereichen (Clustern).
+
+
+
+
+
+Der Markt ist fraktal, was bedeutet, dass sich kleinere Bewegungen innerhalb größerer Bewegungen abspielen. Die stärksten Trades entstehen genau dann, wenn verschiedene Fibonacci-Level aus völlig unterschiedlichen Zügen exakt übereinanderliegen und eine kompakte, massive "Box" im Chart bilden.
+
+
+
+
+
+Beispiele für High-Probability Setups (Überschneidungen):
+
+
+
+
+
+GKL trifft auf Zielbereich: Der Zielbereich (C) einer kleinen Abwärts-Sequenz liegt exakt im GKL einer großen Aufwärts-Sequenz. Sobald das kleine Ziel erreicht ist, greift das große GKL, und der Markt dreht massiv nach oben.
+
+
+
+
+
+GKL trifft auf BC-Korrektur: Das GKL einer großen Bewegung fällt exakt mit der BC-Korrektur einer kleineren, dynamischen Sequenz innerhalb desselben Trends zusammen.
+
+
+
+
+
+
+
+8. Die Masterclass: Feinheiten, die Profis von Anfängern trennen
+
+
+
+
+
+Hier entscheidet sich, wer langfristig profitabel ist und wer nur bunte Linien zeichnet.
+
+
+
+
+
+
+
+Docht vs. Körper (Wie wird gemessen?)
+
+
+
+
+
+Immer an den extremen Enden messen: Das SK-System zieht die Fibonacci-Punkte (0, A, B, C) immer exakt an den Spitzen der Kerzendochte (Wicks/Spikes) an, nicht an den Kerzenkörpern. Das Smart Money operiert an den absoluten Extrempunkten der Liquidität.
+
+
+
+
+
+Kerzen im Korrekturbereich: Es ist völlig normal (und oft ein gutes Zeichen), wenn eine Kerze mit ihrem Docht tief in die Korrekturbox einsticht oder sogar kurzfristig durch sie hindurch piekst. Wichtig ist der Schlusskurs: Solange der Kerzenkörper innerhalb oder oberhalb der Box schließt, ist das Setup valide. Schließt eine starke Kerze weit unterhalb (im Aufwärtstrend) der Box, ist Vorsicht geboten.
+
+
+
+
+
+
+
+Kaputte Sequenzen & Strukturbrüche (Was bedeutet der Stop-Loss?)
+
+
+
+
+
+Ein getroffener Stop-Loss am Punkt 0 ist nicht einfach nur ein verlorener Trade. Es ist die wichtigste Information, die dir der Markt geben kann!
+
+
+
+
+
+Die Invalidierung: Wenn der Preis den Punkt 0 unterschreitet (ein tieferes Tief macht), ist die laufende 0-A-B-C Sequenz sofort und unwiderruflich zerstört. Die Boxen dieser Sequenz haben ab sofort keine Bedeutung mehr.
+
+
+
+
+
+Der Trendwechsel (Shift in Market Structure): Ein gebrochener Punkt 0 einer Aufwärtssequenz markiert sehr oft den Punkt A einer neuen, frischen Abwärtssequenz. Der Markt signalisiert dir: "Die Käufer haben versagt, die Verkäufer übernehmen jetzt."
+
+
+
+
+
+Wie man reagiert: Anstatt frustriert zu sein, drehen professionelle SK-Trader hier oft ihre Bias (Blickrichtung). Wenn eine bullische Sequenz am Punkt 0 bricht, messen sie sofort die neue bärische Bewegung von oben nach unten (neue 0 nach A) und warten auf das nächste B-Level in Abwärtsrichtung, um sich dem neuen Trend anzuschließen.
+
+
+
+
+
+
+
+Das Verhalten bei Extremtrends (Überschießungen)
+
+
+
+
+
+Manchmal explodiert ein Markt nach oben (z.B. bei Krypto oder starken Aktien). Der Markt rennt durch die Zielbereiche 161.8% und 200% hindurch.
+
+
+
+
+
+Das 261.8% und 423.6% Level: In solchen extremen Momentum-Phasen wird die Sequenz einfach erweitert. Das nächste logische Ziel und Widerstandslevel liegt am 261.8% Fibonacci-Level, gefolgt vom 423.6% Level. Erst dort sollte man dann nach einem sehr großen GKL Ausschau halten.
+
+
+
+
+
+
+
+9. Zusammenfassung: Die professionelle Checkliste für den Trade
+
+
+
+
+
+Wenn ein erfahrener SK-Trader den Chart öffnet, zeichnet er nicht wild Linien, sondern folgt einer strikten, methodischen Checkliste:
+
+
+
+
+
+Wirtschaftskalender checken: Stehen große News an?
+
+
+
+
+
+Top-Down-Analyse (GKL einzeichnen): Wo befindet sich die ultimative 50-66% Box des Makrotrends? (Gemessen von Docht zu Docht!)
+
+
+
+
+
+Sequenz-Mapping: Welche kleineren 0-A-B-C Strukturen laufen gerade? Laufen sie mit dem großen Trend oder gegen ihn?
+
+
+
+
+
+Confluence-Zonen markieren: Wo treffen Zielbereiche (C) kleiner Bewegungen auf Korrekturlevel (B, BC, GKL) der großen Bewegungen?
+
+
+
+
+
+Einstieg definieren: Aggressiv ans 50/55.9%-Level oder konservativ auf eine Reaktion warten (Schlusskurse beachten!).
+
+
+
+
+
+Lot-Size berechnen: Das Risiko auf 1-2% vom Konto fixieren.
+
+
+
+
+
+Stop-Loss setzen: Unverrückbar unter Punkt 0 (inklusive Spread-Buffer).
+
+
+
+
+
+Ziele setzen: TP1 (161.8%), TP2 (200.0%).
+
+
+
+
+
+Risiko rausnehmen: Stop-Loss auf Break-Even setzen, sobald der Kurs Level A durchbricht.
+
+
+
+
+
+
+
+Anhang: Die exakten Einstellungen für das Fibonacci-Retracement-Tool
+
+
+
+
+
+Um das SK-System in Plattformen wie TradingView oder MetaTrader abzubilden, musst du die Standard-Fibonacci-Level anpassen. Hier sind die exakten Werte (aktiviere nur diese):
+
+
+
+
+
+Für die Struktur und Korrektur (Retracements):
+
+
+
+
+
+0.00 (Punkt A)
+
+
+
+
+
+1.00 (Punkt 0 / Startpunkt)
+
+
+
+
+
+0.50 (50% - Start Korrekturbox)
+
+
+
+
+
+0.559 (55.9% - Kernlevel)
+
+
+
+
+
+0.618 (61.8% - Goldener Schnitt)
+
+
+
+
+
+0.667 (66.7% - Ende Korrekturbox)
+
+
+
+
+
+0.71 (71% - Erweiterte Korrektur)
+
+
+
+
+
+0.786 (78.6% - Maximales tieferes Korrekturlevel)
+
+
+
+
+
+Für die Zielbereiche (Extensions):
+
+
+
+
+
+-0.618 (Bedeutet 161.8% in TradingView - Start Zielbereich / TP1)
+
+
+
+
+
+-1.000 (Bedeutet 200.0% in TradingView - Ende Zielbereich / TP2)
+
+
+
+
+
+-1.618 (Bedeutet 261.8% - Überschießung / Extremer Zielbereich)
+
+
+
+
+
+-3.236 (Bedeutet 423.6% - Absolute Maximalausdehnung)
+
+
+
+
+
+(Hinweis: In TradingView werden Extensions nach oben oft mit einem Minus vor dem Wert eingegeben, wenn man das Tool von 0 nach A zieht. Alternativ kann man das Trend-Based Fib-Extension Tool nutzen, um direkt von 0 über A zu B zu messen).
+
+
+
+
+

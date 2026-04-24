@@ -28,4 +28,28 @@ public class PendingLimitOrderState
 
     /// <summary>SK-Buch: SL NICHT in den Gewinn verschieben (B-C Korrektionen stoppen aus).</summary>
     public bool DisableSmartBreakeven { get; set; }
+
+    /// <summary>
+    /// Geplanter Limit-Entry-Preis (aus SignalResult.EntryPrice). Nach Fill steht der echte
+    /// Fill-Preis bei BingX. Seit 17.04.2026 persistiert.
+    /// </summary>
+    public decimal EntryPrice { get; set; }
+
+    /// <summary>
+    /// Symbol (z.B. "BTC-USDT"). Ab v1.1.5 Pflicht, da Dictionary-Key jetzt
+    /// Level-Suffix enthält (Symbol#SequenceId). Bei Legacy-Einträgen (v1.1.4)
+    /// wird das Symbol beim Laden aus dem Key extrahiert.
+    /// </summary>
+    public string Symbol { get; set; } = "";
+
+    /// <summary>
+    /// SK Triple-Entry (15.04.2026): SequenceId der platzierenden Sequenz,
+    /// enthält _L500/_L618/_L667 Suffix. Wird für Cancel-by-SequenceRoot
+    /// benötigt, wenn die Sequenz invalidiert wird bevor der Preis den
+    /// Invalidation-Level erreicht.
+    /// Kann null sein bei Nicht-SK-Strategien.
+    /// </summary>
+    public string? SequenceId { get; set; }
+
+    // BUCH-ONLY: OverExtensionLevel (138.2%) entfernt — kein Buch-Konzept.
 }

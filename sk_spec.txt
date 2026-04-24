@@ -1,0 +1,514 @@
+
+
+
+
+
+
+
+
+Technische Spezifikation: SK-System Trading-Algorithmus
+
+
+
+
+
+Kontext für den KI-Agenten / Claude Code: Dieses Dokument enthält die exakte Logik, Systemarchitektur und die mathematischen Regeln zur Implementierung des "SK-Systems". Das System basiert auf fraktaler Marktgeometrie, Fibonacci-Retracements und -Extensions. Ziel ist es, einen Algorithmus (z.B. in Pine Script, Python, MQL) zu programmieren, der Sequenzen (0-A-B-C) erkennt, Einstiegszonen berechnet und das Trade-Management vollautomatisiert oder als Indikator visualisiert.
+
+
+
+
+
+
+
+1. Konstanten & Fibonacci-Parameter
+
+
+
+
+
+Implementiere ein Modul zur Berechnung der Fibonacci-Level. Alle Messungen erfolgen zwingend an den extremsten Dochten (Wicks: High und Low), nicht an den Kerzenkörpern (Close/Open).
+
+
+
+
+
+Retracement-Level (Korrektur-Zonen):
+
+
+
+
+
+FIB_0 = 0.000 (Ende des Impulses / Punkt A)
+
+
+
+
+
+FIB_1 = 1.000 (Start des Impulses / Punkt 0)
+
+
+
+
+
+FIB_050 = 0.500 (Start der primären Korrektur-Box)
+
+
+
+
+
+FIB_0559 = 0.559 (Kernlevel)
+
+
+
+
+
+FIB_0618 = 0.618 (Goldener Schnitt)
+
+
+
+
+
+FIB_0667 = 0.667 (Ende der primären Korrektur-Box)
+
+
+
+
+
+FIB_0786 = 0.786 (Maximales gültiges Korrekturlevel)
+
+
+
+
+
+Extension-Level (Ziel-Zonen / Take Profit):
+
+
+
+
+
+EXT_1618 = 1.618 (Take Profit 1 - Kernziel)
+
+
+
+
+
+EXT_2000 = 2.000 (Take Profit 2 - Endziel)
+
+
+
+
+
+EXT_2618 = 2.618 (Überschießung / Ziel für "Runner")
+
+
+
+
+
+
+
+2. Datenstruktur & Zustand (State Machine)
+
+
+
+
+
+Der Algorithmus muss den Zustand einer "Sequenz" tracken. Eine Sequenz besteht aus vier Punkten.
+
+
+
+
+
+Variablen für eine Long-Sequenz (Aufwärtstrend) - Short verhält sich invers:
+
+
+
+
+
+Point_0: Lokales Minimum (Startpunkt).
+
+
+
+
+
+Point_A: Darauffolgendes lokales Maximum (Ende des Impulses).
+
+
+
+
+
+Impulse_Distance: Point_A - Point_0.
+
+
+
+
+
+Correction_Zone_Upper: Point_A - (Impulse_Distance * FIB_050).
+
+
+
+
+
+Correction_Zone_Lower: Point_A - (Impulse_Distance * FIB_0667).
+
+
+
+
+
+Invalidation_Level: Point_0.
+
+
+
+
+
+
+
+3. Typen von Setups (Mess-Logik)
+
+
+
+
+
+Der Code muss zwischen drei Arten von Messungen (Boxen) unterscheiden können:
+
+
+
+
+
+
+
+A. Das Primäre B-Level (Standard-Einstieg)
+
+
+
+
+
+Auslöser: Ein neuer Impuls 0 -> A wird identifiziert.
+
+
+
+
+
+Aktion: Berechne die Korrekturzone Point_B_Zone zwischen FIB_050 und FIB_0667 der Strecke 0 -> A.
+
+
+
+
+
+
+
+B. Die BC-Korrektur (Trendfolge)
+
+
+
+
+
+Auslöser: Der Preis hat am Punkt B gedreht und läuft Richtung Punkt C (Preis ist höher als B, aber hat 1.618 noch nicht erreicht).
+
+
+
+
+
+Aktion: Messe vom bestätigten Point_B zum aktuellen Hoch der laufenden Bewegung. Berechne hierfür eine neue, kleinere 50-66% Korrekturzone.
+
+
+
+
+
+
+
+C. Das GKL (Gesamtkorrekturlevel) - Höchste Priorität!
+
+
+
+
+
+Auslöser: Der Preis hat das Ziellevel (EXT_1618 oder EXT_2000) erreicht oder eine komplette Sequenz abgeschlossen.
+
+
+
+
+
+Aktion: Messe vom absoluten Startpunkt der gesamten Bewegung (übergeordneter Point_0) bis zum absoluten Hochpunkt (übergeordneter Point_C). Berechne die 50-66% Zone für diese Makro-Strecke.
+
+
+
+
+
+
+
+4. Signal- & Einstiegslogik (Entry)
+
+
+
+
+
+Definiere zwei auswählbare Modi für den Entry:
+
+
+
+
+
+Modus 1: Aggressiv (Limit Order)
+
+
+
+
+
+IF Preis erreicht Correction_Zone_Upper (z.B. FIB_050):
+
+
+
+
+
+Führe Buy/Sell Limit Order aus.
+
+
+
+
+
+Modus 2: Konservativ (Confirmation Mode - Empfohlen)
+
+
+
+
+
+IF Preis befindet sich im Bereich [Correction_Zone_Upper, Correction_Zone_Lower]:
+
+
+
+
+
+Wechsle auf einen tieferen Timeframe (z.B. Setup auf H1 -> Trigger auf M15).
+
+
+
+
+
+WAIT FOR: Bullisches Reversal Pattern (z.B. Engulfing Candle, Pinbar, oder eine kleine 0-A-B-C Sequenz in Trendrichtung).
+
+
+
+
+
+EXECUTE: Market Order bei Schließen der Trigger-Kerze, vorausgesetzt der Kerzenkörper schließt innerhalb oder oberhalb der Box (Docht darf nach unten rausstehen).
+
+
+
+
+
+
+
+5. Risikomanagement & Positionsgröße
+
+
+
+
+
+Die Lot-Size / Positionsgröße muss dynamisch berechnet werden, basierend auf dem Risiko.
+
+
+
+
+
+Risk_Per_Trade_Percent = z.B. 1% des Kontostands.
+
+
+
+
+
+Stop_Loss_Price:
+
+
+
+
+
+IF Setup == B-Level ODER GKL: Stop_Loss_Price = Point_0 - Spread_Buffer.
+
+
+
+
+
+IF Setup == BC-Korrektur: Stop_Loss_Price = Point_B - Spread_Buffer.
+
+
+
+
+
+Stop_Loss_Distance = abs(Entry_Price - Stop_Loss_Price).
+
+
+
+
+
+Position_Size = (Account_Balance * Risk_Per_Trade_Percent) / Stop_Loss_Distance.
+
+
+
+
+
+
+
+6. Trade-Management Logik (SL-Trailing & TPs)
+
+
+
+
+
+Sobald ein Trade aktiv ist, greift folgender State-Machine-Ablauf:
+
+
+
+
+
+Event 1: Invalidation (Stop Loss Hit)
+
+
+
+
+
+IF Preis <= Stop_Loss_Price (bei Long):
+
+
+
+
+
+Schließe Position.
+
+
+
+
+
+Lösche aktuelle 0-A-B-C Sequenz aus dem Speicher.
+
+
+
+
+
+Trigger für Trendwechsel: Wenn Point_0 bricht, starte Suche nach gegenläufiger Sequenz (aus altem Point_A wird neuer Point_0 für Abwärtsmessung).
+
+
+
+
+
+Event 2: Break Even Trigger
+
+
+
+
+
+IF Preis > Point_A (bei Long):
+
+
+
+
+
+Setze Stop_Loss_Price = Entry_Price + Spread (Risikofrei).
+
+
+
+
+
+Event 3: Take Profit 1 (TP1)
+
+
+
+
+
+IF Preis >= Point_0 + (Impulse_Distance * 1.618):
+
+
+
+
+
+Schließe 50% bis 80% der Position.
+
+
+
+
+
+Event 4: Take Profit 2 (TP2)
+
+
+
+
+
+IF Preis >= Point_0 + (Impulse_Distance * 2.000):
+
+
+
+
+
+Schließe restliche 100% der Position.
+
+
+
+
+
+(Optional bei Modus "Runner": Schließe nur weitere 10%, traile SL unter jedes neue Swing-Low und ziele auf 2.618).
+
+
+
+
+
+
+
+7. Confluence-Filter & Makro-Regeln (High Probability Setups)
+
+
+
+
+
+Für einen vollautomatisierten Bot implementiere folgende Filter-Regeln:
+
+
+
+
+
+Multi-Timeframe-Alignment (MTA):
+
+
+
+
+
+Führe Long-Trades auf dem Lower Timeframe (LTF) nur aus, wenn sich der Preis nicht in der Zielzone (EXT_1618-EXT_2000) des Higher Timeframes (HTF) befindet.
+
+
+
+
+
+Der "Heilige Gral" (Confluence Engine):
+
+
+
+
+
+Durchsuche den Chart nach Überlappungen von Boxen.
+
+
+
+
+
+IF (HTF_GKL_Zone overlaps with LTF_BC_Zone) OR (HTF_GKL_Zone overlaps with LTF_Target_Zone_EXT_1618 der Gegenrichtung):
+
+
+
+
+
+Markiere diese Zone als HIGH_PROBABILITY_ZONE. Erhöhe ggf. die Positionsgröße oder fokussiere den Scanner exklusiv auf diese Bereiche.
+
+
+
+
+
+News Filter (API Integration):
+
+
+
+
+
+Pausiere Limit-Orders X Minuten vor und nach "High Impact News" (z.B. CPI, NFP, Leitzins), um Stop-Hunting durch Volatilitäts-Spikes zu vermeiden.
+
+
+
+
+

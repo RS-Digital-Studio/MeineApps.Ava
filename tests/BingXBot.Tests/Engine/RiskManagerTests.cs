@@ -18,8 +18,6 @@ public class RiskManagerTests
     {
         var settings = new RiskSettings
         {
-            // Neue Checks relaxieren (Tests die diese Features testen, setzen eigene Werte)
-            MinLiquidationDistancePercent = 0m, // Deaktiviert
             MaxLeverage = 3m,                    // Fix für Tests (Default geändert auf 25)
             MaxDailyDrawdownPercent = 5m         // Fix für Tests (Default geändert auf 0)
         };
@@ -69,6 +67,39 @@ public class RiskManagerTests
         var result = risk.ValidateTrade(signal, CreateContext());
         result.IsAllowed.Should().BeTrue();
         result.AdjustedPositionSize.Should().BeGreaterThan(0m);
+    }
+
+    [Fact]
+    public void ValidateTrade_PositionScaleOverride_MultipliziertPosSize()
+    {
+        // Task 4.10 Counter-Trend-Scalp (0.5) + Spec §7 B19 HighProbability (>1.0) nutzen den Override.
+        // Der RiskManager muss den Multiplikator VOR dem MaxRisk-Cap anwenden, damit die Risiko-Obergrenzen
+        // auf die skalierte Position greifen.
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxPositionSizePercent = 2m;
+            s.MaxLeverage = 10m;
+            s.MaxRiskPercentPerTrade = 100m; // Cap aushebeln, damit der Multiplikator durchschlägt
+            s.MaxOpenPositions = 5;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+
+        var baseSignal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var scaledSignal = baseSignal with { PositionScaleOverride = 0.5m };
+        var boostedSignal = baseSignal with { PositionScaleOverride = 1.5m };
+
+        var baseRes = risk.ValidateTrade(baseSignal, CreateContext());
+        var scaledRes = risk.ValidateTrade(scaledSignal, CreateContext());
+        var boostedRes = risk.ValidateTrade(boostedSignal, CreateContext());
+
+        baseRes.IsAllowed.Should().BeTrue();
+        scaledRes.IsAllowed.Should().BeTrue();
+        boostedRes.IsAllowed.Should().BeTrue();
+
+        // 0.5× skaliert vs. baseline
+        scaledRes.AdjustedPositionSize.Should().BeApproximately(baseRes.AdjustedPositionSize * 0.5m, 1e-8m);
+        // 1.5× skaliert vs. baseline
+        boostedRes.AdjustedPositionSize.Should().BeApproximately(baseRes.AdjustedPositionSize * 1.5m, 1e-8m);
     }
 
     [Fact]
@@ -336,15 +367,5 @@ public class RiskManagerTests
         exposure.Should().Be(8m);
     }
 
-    [Fact]
-    public void ValidateTrade_LiquidationTooClose_ShouldReject()
-    {
-        // 10x Leverage → Liquidation ~9.6% entfernt. MinLiquidationDistance=15% → blockiert
-        var settings = CreateTestSettings(s => { s.MinLiquidationDistancePercent = 15m; s.MaxLeverage = 10m; });
-        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
-        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
-        var result = risk.ValidateTrade(signal, CreateContext(balance: 10000m));
-        result.IsAllowed.Should().BeFalse();
-        result.RejectionReason.Should().Contain("Liquidation");
-    }
+    // BUCH-ONLY: Liquidations-Distanz-Check entfernt (nicht im Buch).
 }

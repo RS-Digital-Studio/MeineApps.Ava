@@ -33,8 +33,6 @@ public class BacktestSettings
     public decimal Tp1CloseRatio { get; set; } = 0.5m;
     /// <summary>Anteil der Position bei TP2 (200% + Buffer) geschlossen. SK: 50% Rest.</summary>
     public decimal Tp2CloseRatio { get; set; } = 0.5m;
-    /// <summary>Max Stunden bevor Time-Exit greift (0 = unbegrenzt, Buch-konform).</summary>
-    public int MaxHoldHoursInitial { get; set; } = 0;
 
     // === Minimum Risk-Reward-Ratio ===
     /// <summary>Minimales Risiko-Ertrags-Verhältnis. SK-Buch: min 1:1.</summary>

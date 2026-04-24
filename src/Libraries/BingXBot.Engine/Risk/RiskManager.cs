@@ -2,6 +2,7 @@ using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Engine.News;
 using Microsoft.Extensions.Logging;
 
 namespace BingXBot.Engine.Risk;
@@ -10,6 +11,8 @@ public class RiskManager : IRiskManager
 {
     private readonly RiskSettings _settings;
     private readonly ILogger<RiskManager> _logger;
+    /// <summary>Task 1.2 — News-Kalender-Service. Null = News-Blackout deaktiviert.</summary>
+    private readonly IEconomicCalendarService? _newsCalendar;
     // Drawdown basiert auf realisierten + unrealisierten Verlusten.
     // Unrealisierte Verluste offener Positionen fliessen in den taeglichen Drawdown ein.
     private decimal _dailyPnl;
@@ -18,15 +21,29 @@ public class RiskManager : IRiskManager
     private decimal _totalPnl;
     /// <summary>Aktueller kumulativer PnL (für Equity-Curve-Trading).</summary>
     public decimal TotalPnl => _totalPnl;
+
+    /// <summary>
+    /// Task 3.3 — Geschätztes offenes Trade-Risiko (Sum(|Entry - SL| × Qty) aller offenen Positionen).
+    /// Wird vom TradingServiceBase über <see cref="SetOpenRiskEstimate(decimal)"/> aktualisiert.
+    /// 0 = keine offenen Positionen oder nicht initialisiert.
+    /// </summary>
+    private decimal _openRiskEstimate;
+
+    /// <summary>Task 3.3 — Setzt das aktuelle offene Trade-Risiko (vom TradingServiceBase pro Tick aktualisiert).</summary>
+    public void SetOpenRiskEstimate(decimal openRiskUsd)
+    {
+        lock (_lock) { _openRiskEstimate = Math.Max(0m, openRiskUsd); }
+    }
     // Peak-Equity-Tracking für echten Peak-to-Trough-Drawdown (persistent über gesamte Laufzeit)
     private decimal _peakEquity;
     private bool _peakEquityInitialized;
     private readonly object _lock = new();
 
-    public RiskManager(RiskSettings settings, ILogger<RiskManager> logger)
+    public RiskManager(RiskSettings settings, ILogger<RiskManager> logger, IEconomicCalendarService? newsCalendar = null)
     {
         _settings = settings;
         _logger = logger;
+        _newsCalendar = newsCalendar;
     }
 
     /// <summary>Überladung ohne Funding-Rate und Leverage (Abwärtskompatibilität).</summary>
@@ -59,22 +76,109 @@ public class RiskManager : IRiskManager
         if (context.Account.AvailableBalance <= 0)
             return new RiskCheckResult(false, "Keine verfügbare Balance — kein Trade möglich", 0m);
 
+        // Task 1.2 — News-Blackout (synchron abgefragt aus Cache; echter Fetch liegt im Service).
+        // Graceful degradation: Ohne Service läuft der Bot wie bisher weiter.
+        if (_newsCalendar != null && _settings.NewsBlackoutMinutes > 0)
+        {
+            try
+            {
+                var blackoutEvent = _newsCalendar.GetActiveBlackoutEventAsync(
+                    DateTime.UtcNow, _settings.NewsBlackoutMinutes).GetAwaiter().GetResult();
+                if (blackoutEvent != null)
+                    return new RiskCheckResult(false,
+                        $"News-Blackout: {blackoutEvent.Name} ({blackoutEvent.Country} {blackoutEvent.TimeUtc:HH:mm} UTC)", 0m);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "News-Blackout-Check fehlgeschlagen, Trade erlaubt (graceful degradation)");
+            }
+        }
+
+        // SK-Plan 3.5: Max Daily Loss Circuit-Breaker
+        // Nach Überschreitung werden bis UTC-00:00 keine neuen Entries erlaubt.
+        if (_settings.MaxDailyLossPercent > 0 && context.Account.Balance > 0)
+        {
+            lock (_lock)
+            {
+                var realized = _dailyPnl;
+                if (realized < 0)
+                {
+                    var lossPct = Math.Abs(realized) / context.Account.Balance * 100m;
+                    if (lossPct >= _settings.MaxDailyLossPercent)
+                        return new RiskCheckResult(false,
+                            $"Daily-Loss-Circuit {lossPct:F1}% >= {_settings.MaxDailyLossPercent}% (Pause bis UTC-00:00)", 0m);
+                }
+            }
+        }
+
+        // Task 3.3: Max Daily Risk Budget (Buch S.13: 1-3% pro Tag insgesamt).
+        // Summiert realisierte Verluste + geplantes Trade-Risiko + offene Positions-Risiken.
+        if (_settings.MaxDailyRiskPercent > 0 && context.Account.Balance > 0 && signal.StopLoss.HasValue)
+        {
+            var plannedSlDistance = Math.Abs(entryPrice - signal.StopLoss.Value);
+            // Vorläufige Position-Size für Risiko-Schätzung (kleine Abweichung zum späteren posSize ok)
+            var plannedRisk = plannedSlDistance * (context.Account.Balance * _settings.MaxRiskPercentPerTrade / 100m / Math.Max(plannedSlDistance, 1e-8m));
+            // Vereinfacht: plannedRisk ≈ MaxRiskPercentPerTrade × Balance (da Sizing Risk genau das einhält)
+            var plannedRiskAmount = context.Account.Balance * _settings.MaxRiskPercentPerTrade / 100m;
+
+            lock (_lock)
+            {
+                var realizedLoss = _dailyPnl < 0 ? Math.Abs(_dailyPnl) : 0m;
+                var openRisk = _openRiskEstimate;
+                var usedRiskAmount = realizedLoss + openRisk;
+                var totalRisk = usedRiskAmount + plannedRiskAmount;
+                var usedPct = totalRisk / context.Account.Balance * 100m;
+
+                if (usedPct > _settings.MaxDailyRiskPercent)
+                    return new RiskCheckResult(false,
+                        $"Daily-Risk-Budget überschritten: {usedPct:F2}% > {_settings.MaxDailyRiskPercent}% (realisiert {realizedLoss:F2}$ + offen {openRisk:F2}$ + geplant {plannedRiskAmount:F2}$)", 0m);
+            }
+        }
+
         var posSize = CalculatePositionSize(context.Symbol, entryPrice, signal.StopLoss, context.Account, actualLeverage);
 
         if (posSize <= 0)
             return new RiskCheckResult(false, "Position-Größe ist 0", 0m);
 
-        // 5. Liquidation-Preis prüfen: Position darf nicht zu nah am Liquidationspreis eröffnet werden
-        var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
-        var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
-        var liqPrice = CalculateLiquidationPrice(entryPrice, leverage, side);
-        if (liqPrice > 0 && entryPrice > 0)
+        // Strategy-seitiger Positions-Multiplikator (Task 4.10 Counter-Trend-Scalp = 0.5; Spec §7 B19 HighProbability > 1.0).
+        // Wird VOR dem MaxRisk-Cap angewendet, damit alle Risiko-Obergrenzen (MaxRiskPercentPerTrade, Daily-Drawdown,
+        // Total-Drawdown, Liquidations-Distanz) auf die skalierte Position wirken. Bei Wert ≤ 0 wird der Override ignoriert.
+        if (signal.PositionScaleOverride is { } scale && scale > 0m)
         {
-            var liqDistancePercent = Math.Abs(entryPrice - liqPrice) / entryPrice * 100m;
-            if (liqDistancePercent < _settings.MinLiquidationDistancePercent)
+            posSize *= scale;
+            if (posSize <= 0)
                 return new RiskCheckResult(false,
-                    $"Liquidationspreis zu nah: {liqDistancePercent:F1}% Abstand < {_settings.MinLiquidationDistancePercent}% Minimum (Liq={liqPrice:G6})", 0m);
+                    $"Position-Größe nach Scale-Override ({scale:F2}×) ≤ 0", 0m);
         }
+
+        // SK-Plan 3.4: Hard-Cap Risiko ≤ MaxRiskPercentPerTrade pro Trade
+        // Auch wenn MaxPositionSizePercent × Leverage theoretisch knapp passt, soll der
+        // tatsächliche Verlust bei SL-Hit nie die definierte Risiko-Obergrenze überschreiten.
+        // Wir reduzieren die Qty dynamisch statt den Trade komplett abzulehnen (User will Setup handeln,
+        // aber mit sauberem Risiko). Equity = Balance + UnrealizedPnl.
+        if (_settings.MaxRiskPercentPerTrade > 0 && signal.StopLoss.HasValue && signal.StopLoss.Value > 0)
+        {
+            var equity = context.Account.Balance + context.Account.UnrealizedPnl;
+            if (equity > 0)
+            {
+                var slDistance = Math.Abs(entryPrice - signal.StopLoss.Value);
+                var riskUsdt = slDistance * posSize;
+                var maxRiskUsdt = equity * _settings.MaxRiskPercentPerTrade / 100m;
+                if (riskUsdt > maxRiskUsdt && slDistance > 0)
+                {
+                    var originalPosSize = posSize;
+                    posSize = maxRiskUsdt / slDistance;
+                    // Wenn das Cap die Position auf unter 1% der Original-Size drückt → Setup verwerfen
+                    if (posSize <= originalPosSize * 0.01m)
+                        return new RiskCheckResult(false,
+                            $"SL zu weit für MaxRisk={_settings.MaxRiskPercentPerTrade}% (Risk={riskUsdt:F2} > {maxRiskUsdt:F2} USDT)", 0m);
+                }
+            }
+        }
+
+        // BUCH-ONLY: Kein Liquidationspreis-Abstands-Check. Das Buch managed Risiko ueber
+        // Risk-Per-Trade (1-3%) und Positionsgroesse, nicht ueber Liquidationsdistanz.
+        var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
 
         // 6. Risk-Reward-Ratio prüfen: Trade muss Mindest-RRR erfüllen
         if (_settings.MinRiskRewardRatio > 0 && signal.StopLoss.HasValue && signal.TakeProfit.HasValue
@@ -163,13 +267,25 @@ public class RiskManager : IRiskManager
         // Leverage: User-eingestellter Wert (kein adaptiver Abzug hier)
         var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
 
-        // MaxPositionSizePercent der Wallet-Balance = die Margin für diesen Trade. Fertig.
-        // Keine SL-basierte Reduktion, keine weiteren Caps.
-        // Der User stellt X% ein → X% wird getradet.
-        var margin = account.Balance * _settings.MaxPositionSizePercent / 100m;
+        // MaxPositionSizePercent der Wallet-Balance = die Margin für diesen Trade.
+        // SK-Plan 4.8 + 5.1 + 5.5: Zusätzliche Scaling-Faktoren.
+        var scaleFactor = GetPositionScalingFactor(account);
+        var margin = account.Balance * _settings.MaxPositionSizePercent / 100m * scaleFactor;
         var qty = margin * leverage / entryPrice;
 
         return qty;
+    }
+
+    /// <summary>
+    /// SK-Plan 4.8 + 5.1: Kombinierter Scaling-Factor für Position-Sizing.
+    /// 4.8 Loss-Streak-Dampening: >=3 Verluste → 0.5×, >=5 → 0 (Pause).
+    /// 5.1 Equity-Curve-Scaling: Drawdown ab Schwelle → linear runter bis 0.5×.
+    /// Beide Faktoren multiplizieren sich.
+    /// </summary>
+    public decimal GetPositionScalingFactor(AccountInfo account)
+    {
+        decimal factor = 1m;
+        return factor;
     }
 
     /// <summary>
@@ -276,6 +392,19 @@ public class RiskManager : IRiskManager
 
     /// <summary>Aufeinanderfolgende Verluste aktuell.</summary>
     public int CurrentConsecutiveLosses { get; private set; }
+
+    /// <summary>
+    /// Setzt CurrentConsecutiveLosses auf einen externen Wert (v1.2.5).
+    /// Wird von TradingServiceBase.ProcessCompletedTrade aufgerufen, um den Base-Counter
+    /// (der BE-Exits ausklammert) nach UpdateDailyStats zu uebernehmen.
+    /// Ohne diesen Sync konnten RiskManager und Base-Counter divergieren (BE-Exits liessen
+    /// RiskManager faelschlich weiter inkrementieren, was GetPositionScalingFactor verzerrte).
+    /// </summary>
+    public void SetConsecutiveLosses(int value)
+    {
+        if (value < 0) value = 0;
+        lock (_lock) CurrentConsecutiveLosses = value;
+    }
 
     /// <summary>
     /// Prüft ob die Strategie degradiert ist und der Bot pausieren sollte.

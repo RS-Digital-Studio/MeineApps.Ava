@@ -1,3 +1,5 @@
+using BingXBot.Core.Enums;
+
 namespace BingXBot.Core.Models;
 
 /// <summary>
@@ -13,19 +15,34 @@ public record SwingPoint(
 /// <summary>
 /// Eine A-B-C Sequenz im SK-System (Sequenz-Konzept).
 /// Grundeinheit des Systems: Impuls (A→B) → Korrektur (B→C) → Zielbewegung (C→Extension).
+///
+/// BUCH-REGEL DOCHT-MESSUNG (Task 4.1, Masterclass): Fibonacci-Punkte (Point0, PointA, PointB)
+/// werden IMMER an den Kerzendochten (Wicks/Spikes) gemessen, NIE an den Kerzenkörpern oder Closes.
+/// Buch-Zitat: "Das SK-System zieht die Fibonacci-Punkte (0, A, B, C) immer exakt an den
+/// Spitzen der Kerzendochte (Wicks/Spikes) an, nicht an den Kerzenkörpern. Das Smart Money
+/// operiert an den absoluten Extrempunkten der Liquidität."
 /// </summary>
 public class Sequence
 {
     // SK-VERIFY: Abweichung #4 — SK-Nomenklatur
-    /// <summary>Punkt 0: Startpunkt der Sequenz (Swing-Low bei Long, Swing-High bei Short).</summary>
+    /// <summary>
+    /// Punkt 0: Startpunkt der Sequenz (Swing-Low bei Long, Swing-High bei Short).
+    /// Task 4.1: Immer am Kerzendocht gemessen (candle.Low bei Long, candle.High bei Short).
+    /// </summary>
     public required SwingPoint Point0 { get; init; }
 
     // SK-VERIFY: Abweichung #4 — SK-Nomenklatur
-    /// <summary>Punkt A: Ende des Impulses (Swing-High bei Long, Swing-Low bei Short).</summary>
+    /// <summary>
+    /// Punkt A: Ende des Impulses (Swing-High bei Long, Swing-Low bei Short).
+    /// Task 4.1: Immer am Kerzendocht gemessen (candle.High bei Long, candle.Low bei Short).
+    /// </summary>
     public required SwingPoint PointA { get; init; }
 
     // SK-VERIFY: Abweichung #4 — SK-Nomenklatur
-    /// <summary>Punkt B: Ende der Korrektur im Fibonacci-Retracement. Null wenn noch nicht gebildet.</summary>
+    /// <summary>
+    /// Punkt B: Ende der Korrektur im Fibonacci-Retracement. Null wenn noch nicht gebildet.
+    /// Task 4.1: Immer am Kerzendocht gemessen (candle.Low bei Long, candle.High bei Short).
+    /// </summary>
     public SwingPoint? PointB { get; init; }
 
     /// <summary>True = Aufwärts-Sequenz (A=Low→B=High→C=Low), False = Abwärts (A=High→B=Low→C=High).</summary>
@@ -35,63 +52,73 @@ public class Sequence
     public SequenceState State { get; set; }
 
     // === Fibonacci-Level (berechnet aus A-B Bewegung) ===
+    // Buch-konforme Retracement-Tabelle: 50 / 55.9 / 61.8 / 66.7 / 71 / 78.6.
 
-    /// <summary>38.2% Retracement von A→B. Obere Grenze der erweiterten Kaufzone.</summary>
-    public decimal Retracement382 { get; init; }
     /// <summary>50% Retracement. Obere Grenze der idealen Kaufzone.</summary>
     public decimal Retracement500 { get; init; }
-    /// <summary>55.9% Retracement. SK-spezifisches GKL-Level (untere ideale Zone).</summary>
+    /// <summary>55.9% Retracement. SK-spezifisches Kernlevel (Buch-Tabelle "Kernlevel").</summary>
     public decimal Retracement559 { get; init; }
     /// <summary>61.8% Retracement. Goldener Schnitt — stärkstes Fib-Level.</summary>
     public decimal Retracement618 { get; init; }
-    /// <summary>66.7% Retracement. SK-spezifisches GKL-Level (untere Grenze).</summary>
+    /// <summary>66.7% Retracement. Untere Grenze der Korrekturbox.</summary>
     public decimal Retracement667 { get; init; }
-    /// <summary>78.6% Retracement. Äußerste Grenze — danach droht Invalidierung.</summary>
+    /// <summary>70.2% Retracement. Intern für SL-Buffer-Projektionen (nicht im Buch).</summary>
+    public decimal Retracement702 { get; init; }
+    /// <summary>71.0% Retracement. Buch-Anhang: "Erweiterte Korrektur" zwischen 66.7% und 78.6%.</summary>
+    public decimal Retracement71 { get; init; }
+    /// <summary>78.6% Retracement. Maximales gültiges Korrekturlevel laut Buch-Anhang.</summary>
     public decimal Retracement786 { get; init; }
 
-    /// <summary>100% Extension (= Punkt B Höhe ab Punkt C). Konservatives erstes Ziel.</summary>
+    // Buch-konforme Extension-Tabelle: 161.8 / 200 / 261.8 / 423.6 (+ 100% als Intern-Hilfslevel).
+
+    /// <summary>100% Extension (= Punkt B Höhe ab Punkt C). Intern als Retracement-Basis für BCKL.</summary>
     public decimal Extension100 { get; init; }
-    /// <summary>127.2% Extension — zwischen 100% und 161.8%.</summary>
-    public decimal Extension1272 { get; init; }
-    /// <summary>161.8% Extension von A-B (projiziert von C) — primäres Take-Profit.</summary>
+    /// <summary>161.8% Extension von A-B (projiziert von C) — TP1 laut Buch.</summary>
     public decimal Extension1618 { get; init; }
-    /// <summary>200% Extension — aggressives Ziel (doppelte A-B Bewegung ab C).</summary>
+    /// <summary>200% Extension — TP2 laut Buch.</summary>
     public decimal Extension200 { get; init; }
-    /// <summary>261.8% Extension — sekundäres Take-Profit (starke Trends).</summary>
+    /// <summary>261.8% Extension (Buch-Anhang: "Überschießung / Extremer Zielbereich"). Runner-Ziel.</summary>
     public decimal Extension2618 { get; init; }
+    /// <summary>423.6% Extension (Buch-Anhang: "Absolute Maximalausdehnung"). Hard-Cap für Runner.</summary>
+    public decimal Extension4236 { get; init; }
 
-    // === Hierarchie ===
+    /// <summary>
+    /// SK-Plan 3.3: Candle-Index zur Zeit der Point0-Entstehung.
+    /// Wird für Max-Age-Filter verwendet: Alte Sequenzen (&gt; Max-Age seit Point0) werden verworfen.
+    /// 0 = unbekannt (z.B. bei Sequenzen die ohne Index-Tracking gebaut wurden).
+    /// </summary>
+    public int CreatedAtCandleIndex { get; init; }
 
-    /// <summary>Übergeordnete Sequenz (für verschachtelte Analyse). Null bei Top-Level.</summary>
-    public Sequence? ParentSequence { get; init; }
-    /// <summary>True wenn dies eine interne Korrektur-Sequenz (IKI) innerhalb einer größeren ist.</summary>
-    public bool IsIKI { get; init; }
+    /// <summary>
+    /// SK-Plan 4.2: Impuls/Korrektur-Ratio = |Point0→PointA| / |PointA→PointB|.
+    /// Goldene Ratio ≥ 1.618 → hochwertige Sequenz, &lt; 0.8 → überkorrigierend (schwach).
+    /// Null wenn PointB noch nicht gesetzt ist.
+    /// </summary>
+    public decimal ImpulseCorrectionRatio
+    {
+        get
+        {
+            if (PointB == null) return 0m;
+            var impulseRange = Math.Abs(PointA.Price - Point0.Price);
+            var correctionRange = Math.Abs(PointA.Price - PointB.Price);
+            return correctionRange > 0 ? impulseRange / correctionRange : 0m;
+        }
+    }
 
-    /// <summary>Hierarchie der Sequenz im Multi-TF-Kontext.</summary>
-    public SequenceHierarchy Hierarchy { get; set; } = SequenceHierarchy.Primary;
-
-    /// <summary>Sequenztyp: Normal (handelbar), Überextendiert oder Langgezogen (nur Analyse).</summary>
-    public SequenceType Type { get; set; }
-
-    /// <summary>True wenn dieser Sequenztyp für Entries geeignet ist (nur Typ 1 = Normal).</summary>
-    public bool IsTradeableType => Type == SequenceType.Normal;
-
-    /// <summary>Charakter der A→B Welle (initialer Impuls). Impulsiv = gut.</summary>
-    public WaveCharacter WaveAB { get; set; }
-    /// <summary>Charakter der B→C Welle (Korrektur). Korrektiv = gut.</summary>
-    public WaveCharacter WaveBC { get; set; }
-
-    /// <summary>Gesamtcharakter der Sequenz: IKI (ideal), IKK, KIK, etc.</summary>
-    public string CharacterPattern => $"{(WaveAB == WaveCharacter.Impulsive ? 'I' : 'K')}" +
-                                       $"{(WaveBC == WaveCharacter.Corrective ? 'K' : 'I')}";
-
-    /// <summary>True wenn der Sequenzcharakter gut ist (IK = impulsiver Impuls + korrektive Korrektur).</summary>
-    public bool HasGoodCharacter => WaveAB == WaveCharacter.Impulsive && WaveBC == WaveCharacter.Corrective;
+    /// <summary>
+    /// SK-VERIFY: [BC-Zone-Guard] True wenn die BC-Zone als Re-Entry unbrauchbar ist
+    /// (Preis hat mindestens einmal die 138.2% Extension erreicht seit Aktivierung).
+    /// Wird von der State Machine gesetzt und durch ToSequence() propagiert. Persistenter
+    /// Flag (Hysterese): Sobald 138.2% erreicht, bleibt BC-Zone invalid auch wenn Preis zurückkommt.
+    /// </summary>
+    public bool IsBcZoneInvalid { get; set; }
 
     // === Berechnete Properties ===
 
     /// <summary>Range der A→B Bewegung in Preis-Einheiten.</summary>
     public decimal Range => Math.Abs(PointA.Price - Point0.Price);
+
+    // BUCH-ONLY: Extension1382 (138.2% Over-Extension-Guard) entfernt — kein Buch-Level.
 
     // SK-VERIFY: [Abweichung #1] Kaufzone = 50-66.7% (SK Golden Pocket), NICHT 50-61.8%
     /// <summary>Ideale Kaufzone: 50-66.7% Retracement (SK Golden Pocket).</summary>
@@ -128,10 +155,33 @@ public class Sequence
     /// Prüft ob der Preis die Extension-Zielzone (161.8%) erreicht hat — erste TP-Zone.
     /// Buch Workflow 6.5: "Zielbereich gilt als abgearbeitet bei 5 Pips Toleranz vor dem 161.8er."
     /// Toleranz = 0.03% des Preises (Krypto: ≈ 5 "Pips" bei 1 Pip = 1/10000).
+    /// Task 2.4: Overload mit MarketCategory bietet asset-klassen-spezifische Toleranzen.
     /// </summary>
     public bool HasReachedTarget(decimal price)
     {
         var tolerance = Math.Abs(Extension1618) * 0.0003m;  // Buch-Regel: 5 Pips ≈ 0.03%
+        return IsLong
+            ? price >= Extension1618 - tolerance
+            : price <= Extension1618 + tolerance;
+    }
+
+    /// <summary>
+    /// Task 2.4 — Asset-klassen-spezifische TP-Toleranz. Buch nennt 5 Pips als Beispiel,
+    /// was bei Forex (0.01% Pip) 0.05%, bei Stocks aber 0.10%+ sein kann.
+    /// Toleranzen: Krypto 0.03%, Forex 0.05%, Commodity 0.05%, Index/Stock 0.10%.
+    /// </summary>
+    public bool HasReachedTarget(decimal price, MarketCategory category)
+    {
+        var tolerancePercent = category switch
+        {
+            MarketCategory.Crypto => 0.0003m,       // 0.03% — Krypto-Standard
+            MarketCategory.Forex => 0.0005m,        // 0.05% — Forex-Standard
+            MarketCategory.Commodity => 0.0005m,    // 0.05% — Gold/Silber/Öl
+            MarketCategory.Index => 0.001m,         // 0.10% — Indices sind großzügiger
+            MarketCategory.Stock => 0.001m,         // 0.10% — Einzelaktien-Spread
+            _ => 0.0003m
+        };
+        var tolerance = Math.Abs(Extension1618) * tolerancePercent;
         return IsLong
             ? price >= Extension1618 - tolerance
             : price <= Extension1618 + tolerance;
@@ -142,7 +192,11 @@ public class Sequence
         ? price >= Extension200
         : price <= Extension200;
 
-    /// <summary>Prüft ob die Sequenz invalidiert ist (Preis unter/über Punkt A).</summary>
+    /// <summary>
+    /// Prüft ob die Sequenz invalidiert ist (Preis unter/über Punkt 0).
+    /// SK-Buch: Point0-Bruch = Sequenz sofort ungültig, keine Toleranz.
+    /// Long: invalidiert wenn price &lt; Point0. Short: price &gt; Point0.
+    /// </summary>
     public bool IsInvalidated(decimal price) => IsLong
         ? price < Point0.Price
         : price > Point0.Price;
@@ -175,47 +229,9 @@ public enum SequenceState
     Invalidated
 }
 
-/// <summary>
-/// Wellencharakter im SK-System: Impulsiv (schnell, gerichtet) oder Korrektiv (langsam, seitwärts).
-/// Ideal: A→B impulsiv (starker Impuls), B→C korrektiv (ordentliche Korrektur).
-/// </summary>
-public enum WaveCharacter
-{
-    /// <summary>Noch nicht klassifiziert.</summary>
-    Unknown,
-    /// <summary>Impulsiv: Schnelle, gerichtete Bewegung mit großen Kerzen-Bodies. Gut für Impulswelle (A→B).</summary>
-    Impulsive,
-    /// <summary>Korrektiv: Langsame, seitwärts-gerichtete Bewegung mit kleinen Kerzen. Gut für Korrekturwelle (B→C).</summary>
-    Corrective
-}
-
-/// <summary>
-/// Sequenztyp nach SK-System (Stefan Kassing).
-/// Typ 1 = handelbar, Typ 2+3 = nur für übergeordnete Analyse.
-/// </summary>
-public enum SequenceType
-{
-    /// <summary>Normale Sequenz: B im 50-66.7% Retracement. Valid für Entry UND Analyse.</summary>
-    Normal,
-    /// <summary>Überextendiert: B-C Bewegung war stark impulsiv/zielstrebig. NUR Analyse, KEIN Entry.</summary>
-    Overextended,
-    /// <summary>Langgezogen: B-C Bewegung durch anhaltenden Druck verlängert. NUR Analyse, KEIN Entry.</summary>
-    Elongated
-}
-
-/// <summary>
-/// Hierarchie einer Sequenz im Multi-Timeframe-Kontext.
-/// Primary = Haupt-Sequenz, Secondary = untergeordnet in übergeordneter Zone, Breakout = nach Invalidierung.
-/// </summary>
-public enum SequenceHierarchy
-{
-    /// <summary>Haupt-Sequenz (direkt auf dem TF erkannt).</summary>
-    Primary,
-    /// <summary>Sekundäre Sequenz: 1H-Sequenz innerhalb einer 4H-Zone.</summary>
-    Secondary,
-    /// <summary>Breakout-Sequenz: Gegensequenz wurde invalidiert → Ausbruch in Hauptrichtung.</summary>
-    Breakout
-}
+// BUCH-ONLY: WaveCharacter, SequenceType und SequenceHierarchy waren Zusatz-Heuristiken
+// (CWS-Workflow / SK-System-Typ-1-2-3). Das SK-Buch kennt nur die erkannte 0-A-B-C-Sequenz —
+// ohne Wellen-Klassifikation, ohne Typ-Unterscheidung und ohne Multi-TF-Hierarchie.
 
 /// <summary>
 /// Candlestick-Bestätigung am Entry-Punkt (SK-System: "Stabilisierung bei Punkt C").
@@ -242,12 +258,6 @@ public record StructureBreak(
     SwingPoint BrokenPoint,   // Der durchbrochene Swing-Punkt
     bool IsBullish,           // True = bullischer Break (höheres High), False = bärisch
     DateTime Time);           // Zeitpunkt des Breaks
-
-/// <summary>Change of Character — Trendwechsel erkannt (erster Lower-Low nach Uptrend oder umgekehrt).</summary>
-public record CharacterChange(
-    bool FromBullishToBearish,  // True = Wechsel von bullisch zu bärisch
-    SwingPoint TriggerPoint,    // Der Swing-Punkt der den Wechsel ausgelöst hat
-    DateTime Time);
 
 /// <summary>Eine erkannte Liquiditätszone (Stop-Loss-Cluster / Volume-Node).</summary>
 public record LiquidityZone(

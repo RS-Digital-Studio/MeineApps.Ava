@@ -1,15 +1,17 @@
 using System.Collections.Concurrent;
+using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 
 namespace BingXBot.Engine;
 
 /// <summary>
-/// Verwaltet Strategie-Instanzen pro Symbol (Thread-safe).
-/// Klont die Template-Strategie für jedes Symbol, damit jede Instanz
-/// ihren eigenen Zustand (z.B. Warmup) hat.
+/// Verwaltet Strategie-Instanzen pro (Symbol, Navigator-TF) — Thread-safe.
+/// Multi-TF Standalone (15.04.2026): Jede Navigator-TF hat eigenen Klon pro Symbol,
+/// damit State (Signal-Cooldown, Triple-Entry-Flags, Ampel) TF-getrennt ist.
 /// </summary>
 public class StrategyManager
 {
+    // Key = "{symbol}|{tf}" — TF-getrennte Klone (eine Sequenz pro TF pro Symbol)
     private readonly ConcurrentDictionary<string, IStrategy> _symbolStrategies = new();
     private readonly object _templateLock = new();
     private IStrategy? _templateStrategy;
@@ -30,23 +32,35 @@ public class StrategyManager
         }
     }
 
-    /// <summary>Gibt die Strategie-Instanz für ein Symbol zurück (klont beim ersten Aufruf)</summary>
-    public IStrategy GetOrCreateForSymbol(string symbol)
+    /// <summary>Gibt die Strategie-Instanz für (Symbol, TF) zurück. Klont beim ersten Aufruf.</summary>
+    public IStrategy GetOrCreateForSymbol(string symbol, TimeFrame tf)
     {
-        // Lock hält Template-Lesen und GetOrAdd atomar, damit SetStrategy().Clear()
-        // nicht zwischen Lesen und Einfügen eine veraltete Instanz hinterlässt
         lock (_templateLock)
         {
             if (_templateStrategy == null)
                 throw new InvalidOperationException("Keine Strategie gesetzt");
 
-            return _symbolStrategies.GetOrAdd(symbol, _ => _templateStrategy.Clone());
+            var key = BuildKey(symbol, tf);
+            return _symbolStrategies.GetOrAdd(key, _ => _templateStrategy.Clone());
         }
     }
 
-    /// <summary>Entfernt die Strategie-Instanz für ein Symbol</summary>
-    public void RemoveSymbol(string symbol) => _symbolStrategies.TryRemove(symbol, out _);
+    /// <summary>Legacy-Overload für Backtest (nutzt H4 als Default-TF).</summary>
+    public IStrategy GetOrCreateForSymbol(string symbol) => GetOrCreateForSymbol(symbol, TimeFrame.H4);
+
+    /// <summary>Entfernt alle Strategie-Instanzen für ein Symbol (alle TFs)</summary>
+    public void RemoveSymbol(string symbol)
+    {
+        var prefix = symbol + "|";
+        foreach (var k in _symbolStrategies.Keys)
+        {
+            if (k.StartsWith(prefix, StringComparison.Ordinal))
+                _symbolStrategies.TryRemove(k, out _);
+        }
+    }
 
     /// <summary>Entfernt alle Symbol-Instanzen</summary>
     public void Reset() => _symbolStrategies.Clear();
+
+    private static string BuildKey(string symbol, TimeFrame tf) => symbol + "|" + tf;
 }

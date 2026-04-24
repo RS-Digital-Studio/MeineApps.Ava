@@ -3,7 +3,7 @@ using BingXBot.Core.Models;
 namespace BingXBot.Engine.Indicators;
 
 /// <summary>
-/// SK-System Sequenz-Erkennung: Identifiziert A-B-C Muster, BOS, ChoCH, GKL und IKI.
+/// SK-System Sequenz-Erkennung: Identifiziert A-B-C Muster, BOS und GKL.
 /// Basiert auf Fractal-Swing-Erkennung und Fibonacci-Level-Validierung.
 /// </summary>
 public static class SequenceDetector
@@ -17,24 +17,45 @@ public static class SequenceDetector
     /// Ein Swing-High ist ein High das höher ist als die N Candles links UND rechts.
     /// </summary>
     public static List<SwingPoint> FindSwingPoints(IReadOnlyList<Candle> candles, int strength = 5)
+        => FindSwingPoints(candles, strength, strength);
+
+    /// <summary>
+    /// Strukturpunkte-Doku §1: Findet Pivot Highs/Lows mit asymmetrischem Fenster.
+    /// Doku-Zitat: "Left_Bars = 5 bis 10, Right_Bars = 3 bis 5. Ein Pivot Low entsteht, wenn das Tief einer Kerze
+    /// tiefer ist als die Tiefs der X Kerzen davor UND tiefer als die Tiefs der X Kerzen danach."
+    /// Asymmetrie ist sinnvoll, weil mehr linke Kerzen die Signifikanz ("wie weit war der Move") und weniger rechte
+    /// Kerzen die Reaktionszeit (frühere Erkennung) bestimmen. Doku-Defaults: left=5, right=3.
+    /// </summary>
+    public static List<SwingPoint> FindSwingPoints(IReadOnlyList<Candle> candles, int leftBars, int rightBars)
     {
         var swings = new List<SwingPoint>();
-        if (candles.Count < strength * 2 + 1) return swings;
+        if (leftBars < 1) leftBars = 1;
+        if (rightBars < 1) rightBars = 1;
+        if (candles.Count < leftBars + rightBars + 1) return swings;
 
-        for (int i = strength; i < candles.Count - strength; i++)
+        for (int i = leftBars; i < candles.Count - rightBars; i++)
         {
             var isHigh = true;
             var isLow = true;
             var high = candles[i].High;
             var low = candles[i].Low;
 
-            for (int j = 1; j <= strength; j++)
+            // Linke Bars prüfen (leftBars Kerzen davor)
+            for (int j = 1; j <= leftBars; j++)
             {
-                if (candles[i - j].High >= high || candles[i + j].High >= high)
-                    isHigh = false;
-                if (candles[i - j].Low <= low || candles[i + j].Low <= low)
-                    isLow = false;
+                if (candles[i - j].High >= high) isHigh = false;
+                if (candles[i - j].Low <= low) isLow = false;
                 if (!isHigh && !isLow) break;
+            }
+            // Rechte Bars prüfen (rightBars Kerzen danach)
+            if (isHigh || isLow)
+            {
+                for (int j = 1; j <= rightBars; j++)
+                {
+                    if (candles[i + j].High >= high) isHigh = false;
+                    if (candles[i + j].Low <= low) isLow = false;
+                    if (!isHigh && !isLow) break;
+                }
             }
 
             if (isHigh)
@@ -175,59 +196,12 @@ public static class SequenceDetector
         return sequences;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // IKI — Interne Korrektur-Sequenz
-    // ═══════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Sucht interne Korrektur-Sequenzen (IKI) innerhalb der B→C Korrektur einer größeren Sequenz.
-    /// Kleinere Swing-Stärke (3 statt 5) um feinere Muster zu erkennen.
-    /// </summary>
-    public static List<Sequence> DetectIKI(
-        IReadOnlyList<Candle> candles,
-        Sequence parentSequence,
-        int innerSwingStrength = 3)
-    {
-        if (parentSequence.PointB == null) return new();
-
-        // Nur den Bereich B→C der übergeordneten Sequenz analysieren
-        var startIdx = parentSequence.PointA.CandleIndex;
-        var endIdx = parentSequence.PointB.CandleIndex;
-        if (endIdx <= startIdx || endIdx >= candles.Count) return new();
-
-        var subCandles = candles.Skip(startIdx).Take(endIdx - startIdx + 1).ToList();
-        if (subCandles.Count < innerSwingStrength * 2 + 3) return new();
-
-        var ikiSequences = DetectAllSequences(subCandles, innerSwingStrength, 0.2m);
-
-        // IKI-Flag setzen, Parent-Referenz, und State mit AKTUELLEM Preis neu berechnen
-        // (Sub-Candle-State basiert auf altem Preis am PointB-Index — kann veraltet sein)
-        var currentPrice = candles[^1].Close;
-        return ikiSequences.Select(s =>
-        {
-            var mapped = new Sequence
-            {
-                Point0 = s.Point0 with { CandleIndex = s.Point0.CandleIndex + startIdx },
-                PointA = s.PointA with { CandleIndex = s.PointA.CandleIndex + startIdx },
-                PointB = s.PointB != null ? s.PointB with { CandleIndex = s.PointB.CandleIndex + startIdx } : null,
-                IsLong = s.IsLong, State = s.State, Type = s.Type,
-                WaveAB = s.WaveAB, WaveBC = s.WaveBC,
-                Retracement382 = s.Retracement382, Retracement500 = s.Retracement500,
-                Retracement559 = s.Retracement559, Retracement618 = s.Retracement618,
-                Retracement667 = s.Retracement667, Retracement786 = s.Retracement786,
-                Extension100 = s.Extension100, Extension1272 = s.Extension1272,
-                Extension1618 = s.Extension1618, Extension200 = s.Extension200, Extension2618 = s.Extension2618,
-                ParentSequence = parentSequence,
-                IsIKI = true
-            };
-            // State mit aktuellem Preis aktualisieren (nicht dem alten Sub-Candle-Preis)
-            mapped.State = UpdateState(mapped, currentPrice, currentPrice, true);
-            return mapped;
-        }).ToList();
-    }
+    // BUCH-ONLY: IKI (Interne Korrektur-Sequenz) ist kein Buch-Konzept. Die Buch-Masterclass
+    // beschreibt nur B-Level, BC-Korrektur und GKL — keine sub-sequentielle Verschachtelung innerhalb
+    // der B-C-Zone.
 
     // ═══════════════════════════════════════════════════════════════
-    // BOS (Break of Structure) + ChoCH (Change of Character)
+    // BOS (Break of Structure) — Strukturbruch zur Aktivierung einer Sequenz
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
@@ -263,47 +237,9 @@ public static class SequenceDetector
         return null;
     }
 
-    /// <summary>
-    /// Change of Character: Erkennt Trendwechsel.
-    /// Bullisch→Bärisch: Erster Lower-Low nach einer Serie von Higher-Lows.
-    /// Bärisch→Bullisch: Erstes Higher-High nach einer Serie von Lower-Highs.
-    /// </summary>
-    public static CharacterChange? DetectChoCH(List<SwingPoint> swings)
-    {
-        if (swings.Count < 4) return null;
-
-        // Separate Listen für Highs und Lows
-        var highs = swings.Where(s => s.IsHigh).TakeLast(5).ToList();
-        var lows = swings.Where(s => !s.IsHigh).TakeLast(5).ToList();
-
-        // Prüfe ob letzte 3+ Lows steigend waren (Uptrend) und das neueste fällt (ChoCH)
-        if (lows.Count >= 3)
-        {
-            var isRising = true;
-            for (int i = 1; i < lows.Count - 1; i++)
-            {
-                if (lows[i].Price <= lows[i - 1].Price) { isRising = false; break; }
-            }
-            // Letzes Low ist niedriger als vorletztes → ChoCH (Bullish→Bearish)
-            if (isRising && lows[^1].Price < lows[^2].Price)
-                return new CharacterChange(true, lows[^1], lows[^1].Time);
-        }
-
-        // Prüfe ob letzte 3+ Highs fallend waren (Downtrend) und das neueste steigt
-        if (highs.Count >= 3)
-        {
-            var isFalling = true;
-            for (int i = 1; i < highs.Count - 1; i++)
-            {
-                if (highs[i].Price >= highs[i - 1].Price) { isFalling = false; break; }
-            }
-            // Letztes High ist höher als vorletztes → ChoCH (Bearish→Bullish)
-            if (isFalling && highs[^1].Price > highs[^2].Price)
-                return new CharacterChange(false, highs[^1], highs[^1].Time);
-        }
-
-        return null;
-    }
+    // BUCH-ONLY: ChoCH (Change of Character) ist ein SMC-Konzept und nicht Teil des SK-Buchs.
+    // Die Trend-Umkehr-Erkennung erfolgt im SK-System ausschliesslich durch das Brechen von Punkt 0
+    // einer aktiven Sequenz (Invalidation + Bias-Flip in der StateMachine).
 
     // ═══════════════════════════════════════════════════════════════
     // SK-Buch H1 Filter: Korrektur-Ende Erkennung
@@ -543,145 +479,9 @@ public static class SequenceDetector
             return currentClose > zoneMax; // Short: Preis steigt über die Zone
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // Sequenztyp-Klassifikation (SK-System)
-    // ═══════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Klassifiziert eine Sequenz nach SK-System:
-    /// Typ 1 (Normal): C im 50-66.7% Retracement, B-C nicht impulsiv → handelbar
-    /// Typ 2 (Überextendiert): B-C Bewegung war stark impulsiv/zielstrebig → NUR Analyse
-    /// Typ 3 (Langgezogen): B-C Bewegung durch anhaltenden Druck verlängert → NUR Analyse
-    /// </summary>
-    private static SequenceType ClassifySequenceType(
-        SwingPoint a, SwingPoint b, SwingPoint? c, bool isLong,
-        IReadOnlyList<Candle>? candles)
-    {
-        if (c == null) return SequenceType.Normal; // Kein C → noch nicht klassifizierbar
-
-        var abRange = Math.Abs(b.Price - a.Price);
-        if (abRange == 0) return SequenceType.Normal;
-
-        // Retracement-Tiefe von C
-        var retLevel = GetRetracementLevel(a.Price, b.Price, c.Price, isLong);
-
-        // Typ 3: Langgezogen — C nur knapp bei 38.2% (minimalste gültige Korrektur)
-        // und B-C dauert unverhältnismäßig lang relativ zu A-B
-        if (retLevel < 0.45m && candles != null)
-        {
-            var abDuration = b.CandleIndex - a.CandleIndex;
-            var bcDuration = c.CandleIndex - b.CandleIndex;
-            // B-C dauert > 3x so lang wie A-B → langgezogen durch stetigen Druck
-            if (abDuration > 0 && bcDuration > abDuration * 3)
-                return SequenceType.Elongated;
-        }
-
-        // Typ 2: Überextendiert — B-C war sehr impulsiv (wenige Kerzen, kaum Korrektur-Pausen)
-        if (candles != null && c.CandleIndex > b.CandleIndex && c.CandleIndex < candles.Count)
-        {
-            var bcDuration = c.CandleIndex - b.CandleIndex;
-            var abDuration = b.CandleIndex - a.CandleIndex;
-
-            if (bcDuration > 0 && abDuration > 0)
-            {
-                // B-C passiert in < 30% der A-B Zeit → impulsiv/zielstrebig
-                var timeRatio = (decimal)bcDuration / abDuration;
-
-                // Prüfe ob B-C überwiegend in eine Richtung läuft (wenig Gegenbewegung)
-                var bcCandles = new List<Candle>();
-                for (int i = b.CandleIndex; i <= c.CandleIndex && i < candles.Count; i++)
-                    bcCandles.Add(candles[i]);
-
-                if (bcCandles.Count >= 2)
-                {
-                    var directionCount = 0;
-                    for (int i = 1; i < bcCandles.Count; i++)
-                    {
-                        var closes = bcCandles[i].Close > bcCandles[i - 1].Close;
-                        // Bei Long-Sequenz ist B-C eine Abwärtsbewegung (Close fällt)
-                        if (isLong ? !closes : closes) directionCount++;
-                    }
-                    var directionalRatio = (decimal)directionCount / (bcCandles.Count - 1);
-
-                    // >80% der Kerzen in eine Richtung UND schnell → überextendiert
-                    if (directionalRatio > 0.80m && timeRatio < 0.40m)
-                        return SequenceType.Overextended;
-                }
-            }
-        }
-
-        // Typ 1: Normal — C im idealen Bereich, B-C nicht auffällig
-        return SequenceType.Normal;
-    }
-
-    /// <summary>
-    /// Klassifiziert den Charakter einer Welle als impulsiv oder korrektiv.
-    /// Impulsiv: Schnell, gerichtet, große Bodies, wenig Gegenbewegung.
-    /// Korrektiv: Langsam, seitwärts, kleine Bodies, viel Hin-und-Her.
-    /// </summary>
-    private static WaveCharacter ClassifyWaveCharacter(
-        IReadOnlyList<Candle> candles, int startIdx, int endIdx, bool expectedDirection)
-    {
-        if (candles == null || endIdx <= startIdx || endIdx >= candles.Count)
-            return WaveCharacter.Unknown;
-
-        var waveCandles = new List<Candle>();
-        for (int i = startIdx; i <= endIdx && i < candles.Count; i++)
-            waveCandles.Add(candles[i]);
-
-        if (waveCandles.Count < 2) return WaveCharacter.Unknown;
-
-        // Metrik 1: Richtungskonsistenz — wie viele Kerzen laufen in die erwartete Richtung?
-        var directionCount = 0;
-        for (int i = 1; i < waveCandles.Count; i++)
-        {
-            var up = waveCandles[i].Close > waveCandles[i - 1].Close;
-            if (expectedDirection ? up : !up) directionCount++;
-        }
-        var directionalRatio = (decimal)directionCount / (waveCandles.Count - 1);
-
-        // Metrik 2: Body-zu-Range-Verhältnis — große Bodies = impulsiv, kleine = korrektiv
-        var totalBody = 0m;
-        var totalRange = 0m;
-        foreach (var c in waveCandles)
-        {
-            totalBody += Math.Abs(c.Close - c.Open);
-            totalRange += c.High - c.Low;
-        }
-        var bodyRatio = totalRange > 0 ? totalBody / totalRange : 0.5m;
-
-        // Metrik 3: Effizienz — wie direkt war die Bewegung? (Strecke vs. Gesamt-Range)
-        var totalDistance = Math.Abs(waveCandles[^1].Close - waveCandles[0].Open);
-        var sumAbsMoves = 0m;
-        for (int i = 1; i < waveCandles.Count; i++)
-            sumAbsMoves += Math.Abs(waveCandles[i].Close - waveCandles[i - 1].Close);
-        var efficiency = sumAbsMoves > 0 ? totalDistance / sumAbsMoves : 0.5m;
-
-        // Gewichteter Score: 0 = korrektiv, 1 = impulsiv
-        var score = directionalRatio * 0.4m + bodyRatio * 0.3m + efficiency * 0.3m;
-
-        return score >= 0.55m ? WaveCharacter.Impulsive : WaveCharacter.Corrective;
-    }
-
-    /// <summary>Klassifiziert beide Wellen (A→B und B→C) einer Sequenz.</summary>
-    public static (WaveCharacter WaveAB, WaveCharacter WaveBC) ClassifySequenceCharacter(
-        Sequence seq, IReadOnlyList<Candle>? candles)
-    {
-        if (candles == null || candles.Count == 0)
-            return (WaveCharacter.Unknown, WaveCharacter.Unknown);
-
-        // A→B: Initialer Impuls — sollte impulsiv sein (expectedDirection = Sequenz-Richtung)
-        var waveAB = ClassifyWaveCharacter(candles,
-            seq.Point0.CandleIndex, seq.PointA.CandleIndex, seq.IsLong);
-
-        // B→C: Korrektur — sollte korrektiv sein (expectedDirection = gegen Sequenz-Richtung)
-        var waveBC = seq.PointB != null
-            ? ClassifyWaveCharacter(candles,
-                seq.PointA.CandleIndex, seq.PointB.CandleIndex, !seq.IsLong)
-            : WaveCharacter.Unknown;
-
-        return (waveAB, waveBC);
-    }
+    // BUCH-ONLY: SequenceType- und WaveCharacter-Klassifikation sind Eigen-Erweiterungen und
+    // nicht Teil des SK-Buchs. Das Buch bewertet jede erkannte 0-A-B-C-Sequenz gleichwertig —
+    // die Unterscheidung Normal/Überextendiert/Langgezogen war eine Zusatzheuristik.
 
     // ═══════════════════════════════════════════════════════════════
     // Private Hilfsmethoden
@@ -766,42 +566,45 @@ public static class SequenceDetector
         var range = Math.Abs(b.Price - a.Price);
         if (range == 0) return null;
 
-        // Fibonacci-Level berechnen (Retracement + 5 Extension-Level)
-        decimal r382, r500, r559, r618, r667, r786;
-        decimal ext100, ext1272, ext1618, ext200, ext2618;
+        // Buch-konforme Fibonacci-Level: 50/55.9/61.8/66.7/71/78.6 Retracement + 161.8/200/261.8/423.6 Extension.
+        // Extension100 (100%) + Retracement702 (70.2%) bleiben als Intern-Hilfslevel fuer SL-Buffer-Projektionen.
+        decimal r500, r559, r618, r667, r702, r71, r786;
+        decimal ext100, ext1618, ext200, ext2618, ext4236;
 
         if (isLong)
         {
             // Long: A=Low, B=High → Retracement geht runter, Extension geht hoch
-            r382 = b.Price - range * 0.382m;
             r500 = b.Price - range * 0.500m;
             r559 = b.Price - range * 0.559m;
             r618 = b.Price - range * 0.618m;
             r667 = b.Price - range * 0.667m;
+            r702 = b.Price - range * 0.702m;
+            r71 = b.Price - range * 0.71m;
             r786 = b.Price - range * 0.786m;
             // Extensions projiziert von C (oder 50%-Retracement als Fallback)
             var cPrice = c?.Price ?? r500;
             ext100 = cPrice + range * 1.0m;
-            ext1272 = cPrice + range * 1.272m;
             ext1618 = cPrice + range * 1.618m;
             ext200 = cPrice + range * 2.0m;
             ext2618 = cPrice + range * 2.618m;
+            ext4236 = cPrice + range * 4.236m;
         }
         else
         {
             // Short: A=High, B=Low → Retracement geht hoch, Extension geht runter
-            r382 = b.Price + range * 0.382m;
             r500 = b.Price + range * 0.500m;
             r559 = b.Price + range * 0.559m;
             r618 = b.Price + range * 0.618m;
             r667 = b.Price + range * 0.667m;
+            r702 = b.Price + range * 0.702m;
+            r71 = b.Price + range * 0.71m;
             r786 = b.Price + range * 0.786m;
             var cPrice = c?.Price ?? r500;
             ext100 = cPrice - range * 1.0m;
-            ext1272 = cPrice - range * 1.272m;
             ext1618 = cPrice - range * 1.618m;
             ext200 = cPrice - range * 2.0m;
             ext2618 = cPrice - range * 2.618m;
+            ext4236 = cPrice - range * 4.236m;
         }
 
         // State wird NICHT in BuildSequence bestimmt — nur in UpdateState().
@@ -814,28 +617,16 @@ public static class SequenceDetector
         if (c != null && (isLong ? currentPrice < a.Price : currentPrice > a.Price))
             state = SequenceState.Invalidated;
 
-        // Sequenztyp klassifizieren (SK-System: Typ 1/2/3)
-        var sequenceType = ClassifySequenceType(a, b, c, isLong, candles);
-
-        var seq = new Sequence
+        return new Sequence
         {
             Point0 = a, PointA = b, PointB = c, IsLong = isLong, State = state,
-            Retracement382 = r382, Retracement500 = r500, Retracement559 = r559,
-            Retracement618 = r618, Retracement667 = r667, Retracement786 = r786,
-            Extension100 = ext100, Extension1272 = ext1272,
-            Extension1618 = ext1618, Extension200 = ext200, Extension2618 = ext2618,
-            Type = sequenceType
+            Retracement500 = r500, Retracement559 = r559,
+            Retracement618 = r618, Retracement667 = r667, Retracement702 = r702,
+            Retracement71 = r71, Retracement786 = r786,
+            Extension100 = ext100,
+            Extension1618 = ext1618, Extension200 = ext200,
+            Extension2618 = ext2618, Extension4236 = ext4236,
         };
-
-        // Sequenzcharakter klassifizieren (SK: IKI = ideal, KIK = schlecht)
-        if (candles != null)
-        {
-            var (waveAB, waveBC) = ClassifySequenceCharacter(seq, candles);
-            seq.WaveAB = waveAB;
-            seq.WaveBC = waveBC;
-        }
-
-        return seq;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -915,4 +706,7 @@ public static class SequenceDetector
 
         return CandleConfirmation.None;
     }
+
+    // BUCH-ONLY: SequenceHierarchy (Primary/Secondary/Breakout) stammt aus dem CWS-Workflow,
+    // nicht aus dem SK-Buch. Das Buch kennt B-Level, BC-Korrektur und GKL — alles direkt.
 }

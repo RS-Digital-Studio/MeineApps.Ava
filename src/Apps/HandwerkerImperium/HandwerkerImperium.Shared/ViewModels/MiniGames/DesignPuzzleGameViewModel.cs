@@ -119,6 +119,9 @@ public sealed partial class DesignPuzzleGameViewModel : BaseMiniGameViewModel
             _ => (6, 45)
         };
 
+        // Strategy-Einfluss (v2.0.35): Safe +30% Zeit, Risk -30% Zeit
+        MaxTime = Math.Max(15, (int)Math.Round(MaxTime * CurrentStrategy.GetTimeMultiplier()));
+
         // Tool-Bonus: Zirkel gibt Extra-Sekunden
         var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Compass);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);

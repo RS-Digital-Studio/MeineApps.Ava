@@ -56,6 +56,15 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     [ObservableProperty]
     private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
+    /// <summary>
+    /// Vom Spieler gewaehlte Strategie (v2.0.35) — Safe/Standard/Risk.
+    /// Abgeleitete MiniGames nutzen <c>CurrentStrategy.GetToleranceMultiplier()</c>,
+    /// <c>.GetSpeedMultiplier()</c>, <c>.GetTimeMultiplier()</c> in ihrer Initialisierung.
+    /// Default Standard bis Order.Strategy im SetOrderId uebernommen wird.
+    /// </summary>
+    [ObservableProperty]
+    private OrderStrategy _currentStrategy = OrderStrategy.Standard;
+
     [ObservableProperty]
     private bool _isPlaying;
 
@@ -254,6 +263,7 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         if (activeOrder != null)
         {
             Difficulty = activeOrder.Difficulty;
+            CurrentStrategy = activeOrder.Strategy;
 
             int totalTasks = activeOrder.Tasks.Count;
             int currentTaskNum = activeOrder.CurrentTaskIndex + 1;
@@ -357,6 +367,22 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     protected async Task ShowResultAsync(MiniGameRating rating)
     {
         Result = rating;
+
+        // Risk-Strategie Hard-Fail: Miss = Auftrag komplett verloren + Reputation-Hit (v2.0.35)
+        if (rating == MiniGameRating.Miss && CurrentStrategy.HasHardFail())
+        {
+            var failedOrder = _gameStateService.GetActiveOrder();
+            if (failedOrder != null)
+            {
+                failedOrder.HasHardFailed = true;
+                int penalty = CurrentStrategy.GetReputationPenaltyOnMiss();
+                if (penalty < 0)
+                {
+                    var rep = _gameStateService.State.Reputation;
+                    rep.ReputationScore = Math.Max(0, rep.ReputationScore + penalty);
+                }
+            }
+        }
 
         // Ergebnis aufzeichnen
         _gameStateService.RecordMiniGameResult(rating);

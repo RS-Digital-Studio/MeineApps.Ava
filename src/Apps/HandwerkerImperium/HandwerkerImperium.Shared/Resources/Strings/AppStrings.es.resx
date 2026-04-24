@@ -6192,4 +6192,15 @@
   <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
   <data name="GuildTabMembers" xml:space="preserve"><value>Miembros</value></data>
   <data name="GuildWarDetailTitle" xml:space="preserve"><value>Guerra actual</value></data>
+  <!-- Order Strategy (v2.0.35 Risk/Reward) -->
+  <data name="OrderStrategyPrompt" xml:space="preserve"><value>Elige tu estrategia</value></data>
+  <data name="OrderStrategySafe" xml:space="preserve"><value>Seguro</value></data>
+  <data name="OrderStrategySafeDesc" xml:space="preserve"><value>Minijuego m&#225;s f&#225;cil, menor recompensa (0,75x)</value></data>
+  <data name="OrderStrategyStandard" xml:space="preserve"><value>Est&#225;ndar</value></data>
+  <data name="OrderStrategyStandardDesc" xml:space="preserve"><value>Equilibrado — el desaf&#237;o habitual</value></data>
+  <data name="OrderStrategyRisk" xml:space="preserve"><value>Riesgo</value></data>
+  <data name="OrderStrategyRiskDesc" xml:space="preserve"><value>Minijuego duro, 2x recompensa — fallo = sin recompensa + p&#233;rdida de reputaci&#243;n</value></data>
+  <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>&#191;Seguro que quieres arriesgar?</value></data>
+  <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Un fallo significa cero recompensa y p&#233;rdida de reputaci&#243;n. &#191;Continuar?</value></data>
+  <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>S&#237;, arriesgar</value></data>
 </root>

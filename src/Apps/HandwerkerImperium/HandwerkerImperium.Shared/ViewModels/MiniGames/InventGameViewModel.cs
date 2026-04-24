@@ -117,6 +117,9 @@ public sealed partial class InventGameViewModel : BaseMiniGameViewModel
             _ => (7, 3, 36, 2)
         };
 
+        // Strategy-Einfluss (v2.0.35): Safe +30% Zeit, Risk -30% Zeit
+        MaxTime = Math.Max(10, (int)Math.Round(MaxTime * CurrentStrategy.GetTimeMultiplier()));
+
         // Tool-Bonus: Kompass gibt Extra-Sekunden
         var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Compass);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);

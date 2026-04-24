@@ -89,6 +89,9 @@ public sealed partial class PipePuzzleViewModel : BaseMiniGameViewModel
             _ => (6, 5, 55)
         };
 
+        // Strategy-Einfluss (v2.0.35): Safe +30% Zeit, Risk -30% Zeit
+        MaxTime = Math.Max(10, (int)Math.Round(MaxTime * CurrentStrategy.GetTimeMultiplier()));
+
         // Tool-Bonus: Rohrzange gibt Extra-Sekunden
         var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.PipeWrench);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);

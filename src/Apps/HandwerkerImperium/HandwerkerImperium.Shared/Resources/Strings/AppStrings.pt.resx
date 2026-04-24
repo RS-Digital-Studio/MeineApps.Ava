@@ -6193,4 +6193,15 @@
   <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
   <data name="GuildTabMembers" xml:space="preserve"><value>Membros</value></data>
   <data name="GuildWarDetailTitle" xml:space="preserve"><value>Guerra atual</value></data>
+  <!-- Order Strategy (v2.0.35 Risk/Reward) -->
+  <data name="OrderStrategyPrompt" xml:space="preserve"><value>Escolha sua estrat&#233;gia</value></data>
+  <data name="OrderStrategySafe" xml:space="preserve"><value>Seguro</value></data>
+  <data name="OrderStrategySafeDesc" xml:space="preserve"><value>Minijogo mais f&#225;cil, recompensa menor (0,75x)</value></data>
+  <data name="OrderStrategyStandard" xml:space="preserve"><value>Padr&#227;o</value></data>
+  <data name="OrderStrategyStandardDesc" xml:space="preserve"><value>Equilibrado — desafio habitual</value></data>
+  <data name="OrderStrategyRisk" xml:space="preserve"><value>Risco</value></data>
+  <data name="OrderStrategyRiskDesc" xml:space="preserve"><value>Minijogo dif&#237;cil, 2x recompensa — falha = sem recompensa + perda de reputa&#231;&#227;o</value></data>
+  <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>Realmente arriscar?</value></data>
+  <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Uma falha significa zero recompensa e perda de reputa&#231;&#227;o. Continuar?</value></data>
+  <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>Sim, arriscar</value></data>
 </root>

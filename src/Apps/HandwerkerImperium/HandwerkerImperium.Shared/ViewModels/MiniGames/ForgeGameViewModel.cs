@@ -236,8 +236,8 @@ public sealed partial class ForgeGameViewModel : BaseMiniGameViewModel
 
     private void InitializeZones()
     {
-        // Zielzonen basierend auf Schwierigkeit
-        double perfectSize = Difficulty.GetPerfectZoneSize();
+        // Zielzonen basierend auf Schwierigkeit + Strategy (v2.0.35 Safe=breiter, Risk=schmaler)
+        double perfectSize = Difficulty.GetPerfectZoneSize() * CurrentStrategy.GetToleranceMultiplier();
 
         // Tool-Bonus: Hammer vergroessert die Zielzone
         var hammerTool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Hammer);
@@ -260,8 +260,8 @@ public sealed partial class ForgeGameViewModel : BaseMiniGameViewModel
         OkTemperatureWidth = okSize;
         OkTemperatureStart = targetCenter - (okSize / 2);
 
-        // Geschwindigkeit basierend auf Schwierigkeit
-        SpeedMultiplier = Difficulty.GetSpeedMultiplier();
+        // Geschwindigkeit basierend auf Schwierigkeit + Strategy (v2.0.35)
+        SpeedMultiplier = Difficulty.GetSpeedMultiplier() * CurrentStrategy.GetSpeedMultiplier();
 
         // Benoetigte Schlaege basierend auf Schwierigkeit
         HitsRequired = Difficulty switch

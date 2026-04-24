@@ -113,6 +113,9 @@ public sealed partial class BlueprintGameViewModel : BaseMiniGameViewModel
             _ => (9, 3, 35)
         };
 
+        // Strategy-Einfluss (v2.0.35): Safe +30% Zeit, Risk -30% Zeit
+        MaxTime = Math.Max(10, (int)Math.Round(MaxTime * CurrentStrategy.GetTimeMultiplier()));
+
         // Tool-Bonus: Wasserwaage gibt Extra-Sekunden
         var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.SpiritLevel);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);

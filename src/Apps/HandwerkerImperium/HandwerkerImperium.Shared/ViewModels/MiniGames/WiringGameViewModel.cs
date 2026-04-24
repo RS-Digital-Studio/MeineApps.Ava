@@ -73,6 +73,9 @@ public sealed partial class WiringGameViewModel : BaseMiniGameViewModel
             _ => (4, 15)
         };
 
+        // Strategy-Einfluss (v2.0.35): Safe +30% Zeit, Risk -30% Zeit
+        MaxTime = Math.Max(8, (int)Math.Round(MaxTime * CurrentStrategy.GetTimeMultiplier()));
+
         // Tool-Bonus: Schraubendreher gibt Extra-Sekunden
         var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Screwdriver);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);

@@ -178,14 +178,14 @@ public sealed partial class SawingGameViewModel : BaseMiniGameViewModel
         _measuringZoneDrift = 0;
         _measuringDriftDirection = 1;
 
-        // Zonen-Größen basierend auf Schwierigkeit
-        double perfectSize = Difficulty.GetPerfectZoneSize();
+        // Zonen-Größen basierend auf Schwierigkeit + Strategy (v2.0.35)
+        double perfectSize = Difficulty.GetPerfectZoneSize() * CurrentStrategy.GetToleranceMultiplier();
         // Tool-Bonus: Säge vergrößert die Zielzone
         var sawTool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Saw);
         if (sawTool != null) perfectSize += perfectSize * sawTool.ZoneBonus;
 
         // Sub-Typ-Modifikationen auf Gameplay-Parameter
-        double speedMultiplier = Difficulty.GetSpeedMultiplier();
+        double speedMultiplier = Difficulty.GetSpeedMultiplier() * CurrentStrategy.GetSpeedMultiplier();
         switch (GameType)
         {
             case MiniGameType.Planing:

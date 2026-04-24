@@ -30,6 +30,21 @@ public class Order
     [JsonPropertyName("orderType")]
     public OrderType OrderType { get; set; } = OrderType.Standard;
 
+    /// <summary>
+    /// Spieler-gewaehlte Strategie (Safe/Standard/Risk, v2.0.35).
+    /// Wirkt auf MiniGame-Schwierigkeit + Reward-Multiplikator + Miss-Handling.
+    /// Default Standard bis der Spieler im Strategy-Dialog waehlt.
+    /// </summary>
+    [JsonPropertyName("strategy")]
+    public OrderStrategy Strategy { get; set; } = OrderStrategy.Standard;
+
+    /// <summary>
+    /// Ob der Auftrag durch einen Miss unter <see cref="OrderStrategy.Risk"/> komplett gescheitert ist.
+    /// Wenn true: <see cref="FinalReward"/> = 0, Reputation-Penalty wurde angewendet.
+    /// </summary>
+    [JsonPropertyName("hasHardFailed")]
+    public bool HasHardFailed { get; set; }
+
     [JsonPropertyName("tasks")]
     public List<OrderTask> Tasks { get; set; } = [];
 
@@ -168,9 +183,10 @@ public class Order
     {
         get
         {
+            if (HasHardFailed) return 0;        // Risk-Strategy Hard-Fail: 0 Reward
             if (TaskResults.Count == 0) return 0;
             decimal avgPercentage = TaskResults.Average(r => r.GetRewardPercentage());
-            return BaseReward * avgPercentage * Difficulty.GetRewardMultiplier() * OrderType.GetRewardMultiplier();
+            return BaseReward * avgPercentage * Difficulty.GetRewardMultiplier() * OrderType.GetRewardMultiplier() * Strategy.GetRewardMultiplier();
         }
     }
 
@@ -179,9 +195,10 @@ public class Order
     {
         get
         {
+            if (HasHardFailed) return 0;        // Risk-Strategy Hard-Fail: 0 XP
             if (TaskResults.Count == 0) return 0;
             decimal avgPercentage = TaskResults.Average(r => r.GetXpPercentage());
-            return (int)(BaseXp * avgPercentage * Difficulty.GetXpMultiplier() * OrderType.GetXpMultiplier());
+            return (int)(BaseXp * avgPercentage * Difficulty.GetXpMultiplier() * OrderType.GetXpMultiplier() * Strategy.GetXpMultiplier());
         }
     }
 
@@ -191,7 +208,7 @@ public class Order
     /// </summary>
     public decimal CalculateEstimatedReward()
     {
-        return BaseReward * Difficulty.GetRewardMultiplier() * OrderType.GetRewardMultiplier();
+        return BaseReward * Difficulty.GetRewardMultiplier() * OrderType.GetRewardMultiplier() * Strategy.GetRewardMultiplier();
     }
 
     /// <summary>
@@ -200,7 +217,7 @@ public class Order
     /// </summary>
     public int CalculateEstimatedXp()
     {
-        return (int)(BaseXp * Difficulty.GetXpMultiplier() * OrderType.GetXpMultiplier());
+        return (int)(BaseXp * Difficulty.GetXpMultiplier() * OrderType.GetXpMultiplier() * Strategy.GetXpMultiplier());
     }
 
     /// <summary>

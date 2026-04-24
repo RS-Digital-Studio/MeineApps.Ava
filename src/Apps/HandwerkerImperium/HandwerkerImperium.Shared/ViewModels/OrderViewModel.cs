@@ -177,15 +177,39 @@ public sealed partial class OrderViewModel : ViewModelBase, INavigable
     [RelayCommand]
     private async Task StartOrderAsync()
     {
-        if (Order == null) return;
+        // Legacy: Standard-Strategy verwenden wenn kein Strategy-Button geklickt wurde.
+        await StartWithStrategyAsync(OrderStrategy.Standard.ToString());
+    }
 
+    /// <summary>
+    /// Startet den Auftrag mit einer vom Spieler gewaehlten Strategie (v2.0.35).
+    /// Safe/Standard/Risk wirken auf MiniGame-Schwierigkeit und Reward-Multiplikator.
+    /// Risk-Wahl loest einen Bestaetigungs-Dialog aus wegen Hard-Fail-Risiko.
+    /// </summary>
+    [RelayCommand]
+    private async Task StartWithStrategyAsync(string strategyName)
+    {
+        if (Order == null) return;
+        if (!Enum.TryParse<OrderStrategy>(strategyName, ignoreCase: true, out var strat)) return;
+
+        // Risk-Strategie: Bestaetigungs-Dialog wegen Hard-Fail-Gefahr
+        if (strat == OrderStrategy.Risk)
+        {
+            var confirmed = await _dialogService.ShowConfirmDialog(
+                _localizationService.GetString("OrderStrategyRiskConfirmTitle") ?? "Risiko wirklich waehlen?",
+                _localizationService.GetString("OrderStrategyRiskConfirmMessage")
+                    ?? "Miss = kein Reward + Reputation-Verlust. Trotzdem riskieren?",
+                _localizationService.GetString("OrderStrategyRiskConfirmYes") ?? "Ja, riskieren",
+                _localizationService.GetString("Cancel") ?? "Abbrechen");
+            if (!confirmed) return;
+        }
+
+        Order.Strategy = strat;
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
-        // Order is already marked active by MainViewModel.StartOrderAsync
         IsInProgress = true;
         CanStart = false;
 
-        // Navigate to the appropriate mini-game
         NavigateToMiniGame();
     }
 

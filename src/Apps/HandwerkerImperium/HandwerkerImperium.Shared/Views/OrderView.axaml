@@ -232,14 +232,97 @@
         <!-- ACTIONS -->
         <StackPanel Spacing="12"
                     AutomationProperties.AutomationId="Order_Panel_Actions">
-          <!-- Start Button (when not started) -->
-          <Button Content="{loc:Translate StartOrder}"
-                  AutomationProperties.AutomationId="Order_Btn_Start"
-                  Classes="Primary"
-                  Command="{Binding StartOrderCommand}"
-                  IsVisible="{Binding CanStart}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center" />
+          <!-- Strategy-Auswahl (v2.0.35): 3 Buttons statt einem — Safe/Standard/Risk -->
+          <StackPanel Spacing="10" IsVisible="{Binding CanStart}"
+                      AutomationProperties.AutomationId="Order_Panel_Strategy">
+            <TextBlock Text="{loc:Translate OrderStrategyPrompt}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       AutomationProperties.AutomationId="Order_Txt_StrategyPrompt" />
+
+            <!-- Sicher: kleiner Reward, leichter -->
+            <Button Classes="Secondary"
+                    AutomationProperties.AutomationId="Order_Btn_StrategySafe"
+                    Command="{Binding StartWithStrategyCommand}"
+                    CommandParameter="Safe"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    MinHeight="52" Padding="12,8">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <icons:GameIcon Kind="ShieldCheck" Width="26" Height="26"
+                                 Foreground="{DynamicResource SuccessBrush}"
+                                 VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                  <TextBlock Text="{loc:Translate OrderStrategySafe}"
+                             FontSize="14" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{loc:Translate OrderStrategySafeDesc}"
+                             FontSize="11" TextWrapping="Wrap"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="0,75x"
+                           FontSize="13" FontWeight="Bold"
+                           Foreground="{DynamicResource SuccessBrush}"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+
+            <!-- Standard: Baseline -->
+            <Button Classes="Primary"
+                    AutomationProperties.AutomationId="Order_Btn_StrategyStandard"
+                    Command="{Binding StartWithStrategyCommand}"
+                    CommandParameter="Standard"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    MinHeight="52" Padding="12,8">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <icons:GameIcon Kind="Hammer" Width="26" Height="26"
+                                 Foreground="{DynamicResource PrimaryContrastBrush}"
+                                 VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                  <TextBlock Text="{loc:Translate OrderStrategyStandard}"
+                             FontSize="14" FontWeight="Bold"
+                             Foreground="{DynamicResource PrimaryContrastBrush}" />
+                  <TextBlock Text="{loc:Translate OrderStrategyStandardDesc}"
+                             FontSize="11" TextWrapping="Wrap"
+                             Foreground="{DynamicResource PrimaryContrastBrush}"
+                             Opacity="0.85" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="1,0x"
+                           FontSize="13" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryContrastBrush}"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+
+            <!-- Risiko: 2x Reward, hart, 0 bei Miss -->
+            <Button Classes="Secondary"
+                    AutomationProperties.AutomationId="Order_Btn_StrategyRisk"
+                    Command="{Binding StartWithStrategyCommand}"
+                    CommandParameter="Risk"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    MinHeight="52" Padding="12,8">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <icons:GameIcon Kind="Fire" Width="26" Height="26"
+                                 Foreground="{DynamicResource ErrorBrush}"
+                                 VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                  <TextBlock Text="{loc:Translate OrderStrategyRisk}"
+                             FontSize="14" FontWeight="Bold"
+                             Foreground="{DynamicResource ErrorBrush}" />
+                  <TextBlock Text="{loc:Translate OrderStrategyRiskDesc}"
+                             FontSize="11" TextWrapping="Wrap"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="2,0x"
+                           FontSize="13" FontWeight="Bold"
+                           Foreground="{DynamicResource ErrorBrush}"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+          </StackPanel>
 
           <!-- Continue Button (when in progress) -->
           <Button Content="{loc:Translate ContinuePlaying}"

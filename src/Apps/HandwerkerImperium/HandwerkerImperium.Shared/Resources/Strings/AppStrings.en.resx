@@ -6259,4 +6259,15 @@
   <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
   <data name="GuildTabMembers" xml:space="preserve"><value>Members</value></data>
   <data name="GuildWarDetailTitle" xml:space="preserve"><value>Current War</value></data>
+  <!-- Order Strategy (v2.0.35 Risk/Reward) -->
+  <data name="OrderStrategyPrompt" xml:space="preserve"><value>Choose your strategy</value></data>
+  <data name="OrderStrategySafe" xml:space="preserve"><value>Safe</value></data>
+  <data name="OrderStrategySafeDesc" xml:space="preserve"><value>Easier mini-game, less reward (0.75x)</value></data>
+  <data name="OrderStrategyStandard" xml:space="preserve"><value>Standard</value></data>
+  <data name="OrderStrategyStandardDesc" xml:space="preserve"><value>Balanced — the usual challenge</value></data>
+  <data name="OrderStrategyRisk" xml:space="preserve"><value>Risk</value></data>
+  <data name="OrderStrategyRiskDesc" xml:space="preserve"><value>Hard mini-game, 2x reward — miss = no reward + reputation loss</value></data>
+  <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>Really take the risk?</value></data>
+  <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Miss means no reward and a reputation hit. Continue?</value></data>
+  <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>Yes, risk it</value></data>
 </root>

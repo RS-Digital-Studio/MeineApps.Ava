@@ -6193,4 +6193,15 @@
   <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
   <data name="GuildTabMembers" xml:space="preserve"><value>Membres</value></data>
   <data name="GuildWarDetailTitle" xml:space="preserve"><value>Guerre en cours</value></data>
+  <!-- Order Strategy (v2.0.35 Risk/Reward) -->
+  <data name="OrderStrategyPrompt" xml:space="preserve"><value>Choisis ta strat&#233;gie</value></data>
+  <data name="OrderStrategySafe" xml:space="preserve"><value>S&#251;r</value></data>
+  <data name="OrderStrategySafeDesc" xml:space="preserve"><value>Mini-jeu plus facile, moins de r&#233;compense (0,75x)</value></data>
+  <data name="OrderStrategyStandard" xml:space="preserve"><value>Standard</value></data>
+  <data name="OrderStrategyStandardDesc" xml:space="preserve"><value>&#201;quilibr&#233; — d&#233;fi habituel</value></data>
+  <data name="OrderStrategyRisk" xml:space="preserve"><value>Risque</value></data>
+  <data name="OrderStrategyRiskDesc" xml:space="preserve"><value>Mini-jeu dur, r&#233;compense x2 — &#233;chec = aucune r&#233;compense + perte de r&#233;putation</value></data>
+  <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>Vraiment prendre le risque ?</value></data>
+  <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Un &#233;chec signifie aucune r&#233;compense et une perte de r&#233;putation. Continuer ?</value></data>
+  <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>Oui, risquer</value></data>
 </root>

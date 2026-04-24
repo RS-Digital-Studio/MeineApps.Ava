@@ -127,6 +127,9 @@ public sealed partial class PaintingGameViewModel : BaseMiniGameViewModel
             _ => (5, 28)
         };
 
+        // Strategy-Einfluss (v2.0.35): Safe +30% Zeit, Risk -30% Zeit
+        MaxTime = Math.Max(10, (int)Math.Round(MaxTime * CurrentStrategy.GetTimeMultiplier()));
+
         // Tool-Bonus: Pinsel gibt Extra-Sekunden
         var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Paintbrush);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);

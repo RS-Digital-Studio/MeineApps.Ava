@@ -6440,4 +6440,15 @@
   <data name="GuildTabChat" xml:space="preserve"><value>Chat</value></data>
   <data name="GuildTabMembers" xml:space="preserve"><value>Mitglieder</value></data>
   <data name="GuildWarDetailTitle" xml:space="preserve"><value>Aktueller Krieg</value></data>
+  <!-- Order Strategy (v2.0.35 Risk/Reward) -->
+  <data name="OrderStrategyPrompt" xml:space="preserve"><value>W&#228;hle deine Strategie</value></data>
+  <data name="OrderStrategySafe" xml:space="preserve"><value>Sicher</value></data>
+  <data name="OrderStrategySafeDesc" xml:space="preserve"><value>Leichteres Minispiel, weniger Belohnung (0,75x)</value></data>
+  <data name="OrderStrategyStandard" xml:space="preserve"><value>Standard</value></data>
+  <data name="OrderStrategyStandardDesc" xml:space="preserve"><value>Ausgewogen — gewohnte Herausforderung</value></data>
+  <data name="OrderStrategyRisk" xml:space="preserve"><value>Risiko</value></data>
+  <data name="OrderStrategyRiskDesc" xml:space="preserve"><value>Hartes Minispiel, 2x Reward — Miss = 0 Reward + Ruf-Verlust</value></data>
+  <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>Risiko wirklich w&#228;hlen?</value></data>
+  <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Miss bedeutet 0 Belohnung und Ruf-Verlust. Trotzdem?</value></data>
+  <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>Ja, riskieren</value></data>
 </root>

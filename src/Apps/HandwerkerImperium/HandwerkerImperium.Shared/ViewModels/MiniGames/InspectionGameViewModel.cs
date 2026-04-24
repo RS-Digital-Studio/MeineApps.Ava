@@ -106,6 +106,9 @@ public sealed partial class InspectionGameViewModel : BaseMiniGameViewModel
             _ => (5, 4, 35, 5)
         };
 
+        // Strategy-Einfluss (v2.0.35): Safe +30% Zeit, Risk -30% Zeit
+        MaxTime = Math.Max(10, (int)Math.Round(MaxTime * CurrentStrategy.GetTimeMultiplier()));
+
         OnPropertyChanged(nameof(GridWidth));
 
         // Tool-Bonus: Lupe gibt Extra-Sekunden

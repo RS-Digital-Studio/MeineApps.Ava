@@ -366,6 +366,8 @@ FodyWeavers.xsd
 
 # Claude Code Worktrees
 .claude/worktrees/
+# Claude Code Scheduled-Tasks Lock (Session-ID + PID, aendert sich bei jeder Session)
+.claude/scheduled_tasks.lock
 
 # Website (eigenes Git-Repo)
 website/

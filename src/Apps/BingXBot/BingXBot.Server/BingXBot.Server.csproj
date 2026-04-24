@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifiers>linux-arm64;linux-x64;win-x64</RuntimeIdentifiers>
+    <UserSecretsId>bingxbot-server</UserSecretsId>
+    <RootNamespace>BingXBot.Server</RootNamespace>
+    <AssemblyName>BingXBot.Server</AssemblyName>
+    <Version>1.3.0</Version>
+    <AssemblyVersion>1.3.0.0</AssemblyVersion>
+    <FileVersion>1.3.0.0</FileVersion>
+    <!-- Kein Avalonia-Init im Server-Prozess: headless -->
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Publish: selfcontained dotnet, single-file -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Server referenziert NICHT Shared/Desktop — kein Avalonia-Ballast auf dem Pi.
+         BingXBot.Trading kapselt alle Trading-Services (Engine-Wrapper + Local-Impls). -->
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Core\BingXBot.Core.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Contracts\BingXBot.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Exchange\BingXBot.Exchange.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Engine\BingXBot.Engine.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Backtest\BingXBot.Backtest.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\BingXBot.Trading\BingXBot.Trading.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="sqlite-net-pcl" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" />
+    <!-- SignalR Server kommt im Microsoft.AspNetCore.App Framework mit, kein separates Package noetig -->
+  </ItemGroup>
+</Project>

@@ -1,0 +1,63 @@
+[Unit]
+Description=BingXBot Trading Server (BingX Perpetual Futures)
+Documentation=https://github.com/rs-digital/bingxbot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+WorkingDirectory=/opt/bingxbot
+ExecStart=/opt/bingxbot/BingXBot.Server --urls http://0.0.0.0:5050
+Restart=on-failure
+RestartSec=5
+User=bingxbot
+Group=bingxbot
+Environment=DOTNET_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5050
+
+# Datenverzeichnis: bot.db + credentials.bin + tokens.json + pairing-code.txt
+ReadWritePaths=/var/lib/bingxbot /opt/bingxbot
+
+# Haerterung (systemd-analyze security bingxbot.service — aktuell ~1.5/10, moeglich)
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectClock=true
+ProtectProc=invisible
+ProcSubset=pid
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+MemoryDenyWriteExecute=false
+
+# CapabilityBoundingSet leer — Server braucht keine Kernel-Capabilities
+CapabilityBoundingSet=
+AmbientCapabilities=
+# SystemCall-Filter: Standard-Service-Aufrufe. @resources nicht blockieren
+# — .NET 10 ThreadPool/GC nutzen setpriority/sched_setaffinity/setrlimit.
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+SystemCallArchitectures=native
+
+# Umask fuer neu angelegte Dateien (tokens.json, fcm-devices.json, etc.) — 600/700
+UMask=0077
+
+# Ressourcen-Limits
+LimitNOFILE=4096
+LimitNPROC=512
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bingxbot
+
+[Install]
+WantedBy=multi-user.target

@@ -11,15 +11,61 @@
           "$uid": {
             ".read": "auth != null",
             ".write": "auth != null && auth.uid == $uid",
-            ".validate": "newData.hasChildren(['name', 'points', 'updatedUtc'])",
+            ".validate": "newData.hasChildren(['name', 'points', 'updatedMs'])",
             "name": {
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
             },
             "points": {
               ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999 && (data.val() == null || newData.val() >= data.val())"
             },
-            "updatedUtc": {
-              ".validate": "newData.isString() && newData.val().length <= 30 && newData.val() != data.val() && newData.val() <= now"
+            "updatedMs": {
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now && (!data.exists() || newData.val() >= data.val() + 60000)"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+
+    "reports": {
+      "$reportedUid": {
+        ".read": false,
+        "$reporterUid": {
+          ".write": "auth != null && auth.uid == $reporterUid && auth.uid != $reportedUid && (!data.exists() || newData.child('reportedAt').val() >= data.child('reportedAt').val() + 86400000)",
+          ".validate": "newData.hasChildren(['reason', 'reportedAt'])",
+          "reason": {
+            ".validate": "newData.isString() && (newData.val() == 'offensive_name' || newData.val() == 'cheating' || newData.val() == 'other')"
+          },
+          "reportedAt": {
+            ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+
+    "analytics": {
+      "deck": {
+        "$uid": {
+          ".read": false,
+          ".write": "auth != null && auth.uid == $uid",
+          "$bombType": {
+            ".validate": "newData.hasChildren(['used', 'plays', 'wins'])",
+            "used": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "plays": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "wins": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "$other": {
+              ".validate": false
             }
           }
         }

@@ -6277,4 +6277,6 @@
   <data name="ParallelOrdersTitle" xml:space="preserve"><value>In Progress</value></data>
   <data name="ParallelOrderLimitTitle" xml:space="preserve"><value>Limit reached</value></data>
   <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>This workshop already has a running order, or the global parallel limit has been reached.</value></data>
+  <data name="LiveOrderSpawnedToast" xml:space="preserve"><value>New live order available!</value></data>
+  <data name="LiveOrderSpawnedPremiumToast" xml:space="preserve"><value>VIP order incoming!</value></data>
 </root>

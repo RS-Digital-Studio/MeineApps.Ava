@@ -65,12 +65,40 @@ public sealed partial class GameLoopService
         {
             _quickJobService?.RotateIfNeeded();
             _dailyChallengeService?.CheckAndResetIfNewDay();
-            state.AvailableOrders.RemoveAll(o => o.IsExpired);
-            if (state.ActiveOrder?.IsExpired == true)
+
+            // v2.0.35: Nur Nicht-Live-Auftraege via Deadline entfernen. Live-Auftraege laufen
+            // ueber ExpireOldLiveOrders (alle 3 Ticks). Wuerde hier die doppelte Pruefung
+            // laufen und einen IsLive-Auftrag mitten im MiniGame raus-reissen, da IsExpired
+            // jetzt auch ExpiresAt beruecksichtigt.
+            state.AvailableOrders.RemoveAll(o => !o.IsLive && o.IsExpired);
+
+            // ActiveOrder-Expiry ausloesen — schuetzt aber laufende MiniGame-Sessions:
+            // Sobald mindestens ein Task angefangen/abgeschlossen wurde (CurrentTaskIndex > 0
+            // oder TaskResults.Count > 0), ist der Spieler klar im MiniGame und darf nicht
+            // mittendrin abgeschnitten werden.
+            if (state.ActiveOrder?.IsExpired == true
+                && state.ActiveOrder.CurrentTaskIndex == 0
+                && state.ActiveOrder.TaskResults.Count == 0)
             {
-                state.ActiveOrder.CurrentTaskIndex = 0;
-                state.ActiveOrder.TaskResults.Clear();
+                var expiredOrder = state.ActiveOrder;
+                expiredOrder.CurrentTaskIndex = 0;
+                expiredOrder.TaskResults.Clear();
                 state.ActiveOrder = null;
+                state.ParallelOrdersByWorkshop.Remove(expiredOrder.WorkshopType);
+                OrderExpired?.Invoke(this, EventArgs.Empty);
+            }
+
+            // Parallele Orders auf Expiry pruefen — dedizierte Aufraeum-Logik (v2.0.35 Feature A).
+            // Laufende MiniGame-Session bleibt geschuetzt durch den ActiveOrder-Guard oben.
+            var expiredParallel = new List<WorkshopType>();
+            foreach (var kv in state.ParallelOrdersByWorkshop)
+            {
+                if (kv.Value.IsExpired && kv.Value != state.ActiveOrder)
+                    expiredParallel.Add(kv.Key);
+            }
+            foreach (var wsType in expiredParallel)
+            {
+                state.ParallelOrdersByWorkshop.Remove(wsType);
                 OrderExpired?.Invoke(this, EventArgs.Empty);
             }
         }

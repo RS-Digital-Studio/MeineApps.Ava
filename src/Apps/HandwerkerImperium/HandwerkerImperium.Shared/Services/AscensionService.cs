@@ -144,6 +144,7 @@ public sealed class AscensionService : IAscensionService
         // Orders
         state.AvailableOrders.Clear();
         state.ActiveOrder = null;
+        state.ParallelOrdersByWorkshop.Clear();     // v2.0.35: Parallele Auftraege ebenfalls leeren
         state.Statistics.TotalOrdersCompleted = 0;
         state.Statistics.OrdersCompletedToday = 0;
         state.Statistics.OrdersCompletedThisWeek = 0;

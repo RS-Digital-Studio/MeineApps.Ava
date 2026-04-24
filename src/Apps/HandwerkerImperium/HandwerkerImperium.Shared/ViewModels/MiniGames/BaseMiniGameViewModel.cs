@@ -368,7 +368,10 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     {
         Result = rating;
 
-        // Risk-Strategie Hard-Fail: Miss = Auftrag komplett verloren + Reputation-Hit (v2.0.35)
+        // Risk-Strategie Hard-Fail: Miss = Auftrag komplett verloren + Reputation-Hit (v2.0.35).
+        // Zusaetzlich: Alle restlichen Tasks werden uebersprungen (CurrentTaskIndex auf Ende
+        // gesetzt) — der Spieler muss nicht weiterspielen, wenn ohnehin kein Reward mehr kommt.
+        // IsLastTask wird damit true → GameCompleted-Event feuert → Ende-Flow.
         if (rating == MiniGameRating.Miss && CurrentStrategy.HasHardFail())
         {
             var failedOrder = _gameStateService.GetActiveOrder();
@@ -381,6 +384,8 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
                     var rep = _gameStateService.State.Reputation;
                     rep.ReputationScore = Math.Max(0, rep.ReputationScore + penalty);
                 }
+                // Restliche Tasks ueberspringen — Continue geht direkt zum Ende.
+                IsLastTask = true;
             }
         }
 

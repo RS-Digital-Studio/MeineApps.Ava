@@ -6218,4 +6218,6 @@
   <data name="ParallelOrdersTitle" xml:space="preserve"><value>In corso</value></data>
   <data name="ParallelOrderLimitTitle" xml:space="preserve"><value>Limite raggiunto</value></data>
   <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>Questa officina ha gi&#224; un ordine in corso o il limite globale &#232; stato raggiunto.</value></data>
+  <data name="LiveOrderSpawnedToast" xml:space="preserve"><value>Nuovo ordine live!</value></data>
+  <data name="LiveOrderSpawnedPremiumToast" xml:space="preserve"><value>Ordine VIP disponibile!</value></data>
 </root>

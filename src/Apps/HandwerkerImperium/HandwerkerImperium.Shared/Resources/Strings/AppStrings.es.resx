@@ -6210,4 +6210,6 @@
   <data name="ParallelOrdersTitle" xml:space="preserve"><value>En curso</value></data>
   <data name="ParallelOrderLimitTitle" xml:space="preserve"><value>L&#237;mite alcanzado</value></data>
   <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>Este taller ya tiene un pedido en curso, o se alcanz&#243; el l&#237;mite global.</value></data>
+  <data name="LiveOrderSpawnedToast" xml:space="preserve"><value>&#161;Nuevo pedido en vivo!</value></data>
+  <data name="LiveOrderSpawnedPremiumToast" xml:space="preserve"><value>&#161;Pedido VIP disponible!</value></data>
 </root>

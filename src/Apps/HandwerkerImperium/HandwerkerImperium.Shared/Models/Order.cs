@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using HandwerkerImperium.Models.Enums;
 
@@ -6,9 +8,28 @@ namespace HandwerkerImperium.Models;
 /// <summary>
 /// Represents a contract/order that players can complete for rewards.
 /// Orders have types, optional deadlines, and can come from regular customers.
+/// Implementiert <see cref="INotifyPropertyChanged"/> fuer den Live-Countdown
+/// (<see cref="LiveCountdownText"/>) — eine externe Komponente (Dashboard-Timer)
+/// ruft <see cref="RaiseLiveCountdownChanged"/> 1x/Sekunde fuer aktive Live-Auftraege auf.
 /// </summary>
-public class Order
+public class Order : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    /// <summary>
+    /// Feuert PropertyChanged fuer LiveCountdownText und LiveCountdownSeconds.
+    /// Wird von einem externen 1Hz-Timer (DashboardView) pro sichtbarem Live-Auftrag aufgerufen.
+    /// Kein interner Timer — Ressourcen-Ersparnis bei N Orders.
+    /// </summary>
+    public void RaiseLiveCountdownChanged()
+    {
+        OnPropertyChanged(nameof(LiveCountdownText));
+        OnPropertyChanged(nameof(LiveCountdownSeconds));
+    }
+
     [JsonPropertyName("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();
 

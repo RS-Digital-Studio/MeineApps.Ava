@@ -6211,4 +6211,6 @@
   <data name="ParallelOrdersTitle" xml:space="preserve"><value>Em andamento</value></data>
   <data name="ParallelOrderLimitTitle" xml:space="preserve"><value>Limite atingido</value></data>
   <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>Esta oficina j&#225; tem um pedido em andamento ou o limite global foi atingido.</value></data>
+  <data name="LiveOrderSpawnedToast" xml:space="preserve"><value>Novo pedido ao vivo!</value></data>
+  <data name="LiveOrderSpawnedPremiumToast" xml:space="preserve"><value>Pedido VIP dispon&#237;vel!</value></data>
 </root>

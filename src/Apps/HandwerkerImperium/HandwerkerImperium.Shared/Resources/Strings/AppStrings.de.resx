@@ -6458,4 +6458,6 @@
   <data name="ParallelOrdersTitle" xml:space="preserve"><value>In Arbeit</value></data>
   <data name="ParallelOrderLimitTitle" xml:space="preserve"><value>Limit erreicht</value></data>
   <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>Diese Werkstatt hat bereits einen laufenden Auftrag oder das globale Parallel-Limit ist erreicht.</value></data>
+  <data name="LiveOrderSpawnedToast" xml:space="preserve"><value>Neuer Live-Auftrag!</value></data>
+  <data name="LiveOrderSpawnedPremiumToast" xml:space="preserve"><value>VIP-Auftrag verf&#252;gbar!</value></data>
 </root>

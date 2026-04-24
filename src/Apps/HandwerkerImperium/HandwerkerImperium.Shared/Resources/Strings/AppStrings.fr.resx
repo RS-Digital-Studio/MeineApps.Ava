@@ -6211,4 +6211,6 @@
   <data name="ParallelOrdersTitle" xml:space="preserve"><value>En cours</value></data>
   <data name="ParallelOrderLimitTitle" xml:space="preserve"><value>Limite atteinte</value></data>
   <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>Cet atelier a d&#233;j&#224; une commande en cours ou la limite globale est atteinte.</value></data>
+  <data name="LiveOrderSpawnedToast" xml:space="preserve"><value>Nouvelle commande en direct !</value></data>
+  <data name="LiveOrderSpawnedPremiumToast" xml:space="preserve"><value>Commande VIP disponible !</value></data>
 </root>

@@ -378,8 +378,30 @@ public sealed class SaveGameService : ISaveGameService, IDisposable
         state.Buildings ??= [];
         state.Researches ??= [];
         state.AvailableOrders ??= [];
-        // v2.0.35 Feature A: Multi-Order-System — null-safe init
+        // v2.0.35 Feature A: Multi-Order-System — null-safe init + Konsistenz-Checks.
         state.ParallelOrdersByWorkshop ??= new Dictionary<WorkshopType, Order>();
+        // Verwaiste Eintraege entfernen: Key ≠ Value.WorkshopType (Save-Editor-Schutz),
+        // abgelaufene Auftraege, oder nicht-freigeschaltete Workshops.
+        var invalidParallelKeys = new List<WorkshopType>();
+        foreach (var kv in state.ParallelOrdersByWorkshop)
+        {
+            var order = kv.Value;
+            if (order == null
+                || order.WorkshopType != kv.Key
+                || order.IsExpired
+                || !state.UnlockedWorkshopTypes.Contains(kv.Key))
+            {
+                invalidParallelKeys.Add(kv.Key);
+            }
+        }
+        foreach (var k in invalidParallelKeys)
+            state.ParallelOrdersByWorkshop.Remove(k);
+        // Exploit-Schutz gegen manipulierte Saves: hartes Cap auf MaxParallelOrders.
+        while (state.ParallelOrdersByWorkshop.Count > GameBalanceConstants.MaxParallelOrders)
+        {
+            var firstKey = state.ParallelOrdersByWorkshop.Keys.First();
+            state.ParallelOrdersByWorkshop.Remove(firstKey);
+        }
 
         // Research-Tree aus Template synchronisieren (fehlende Nodes ergänzen, DurationTicks/Effect aktualisieren)
         SyncResearchTree(state);

@@ -103,6 +103,32 @@ public partial class DashboardView : UserControl
         // Tunnel-Events feuern auch wenn der ScrollViewer den Pointer captured
         AddHandler(PointerMovedEvent, OnTunnelPointerMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         AddHandler(PointerReleasedEvent, OnTunnelPointerReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+
+        // v2.0.35 Feature D: 1Hz-Timer fuer Live-Countdown-Aktualisierung auf sichtbaren Orders.
+        // Orders sind POCOs mit INPC — der Timer feuert pro sichtbarem Live-Auftrag die
+        // Countdown-PropertyChanged-Events, damit der rote LIVE-Badge seinen Text synchron haelt.
+        _liveCountdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _liveCountdownTimer.Tick += OnLiveCountdownTick;
+        _liveCountdownTimer.Start();
+    }
+
+    private DispatcherTimer? _liveCountdownTimer;
+
+    private void OnLiveCountdownTick(object? sender, EventArgs e)
+    {
+        if (_vm == null) return;
+        // Fuer alle sichtbaren Orders (AvailableOrders + ParallelOrders) die Live-sind:
+        // Countdown-Binding aktualisieren.
+        for (int i = 0; i < _vm.AvailableOrders.Count; i++)
+        {
+            if (_vm.AvailableOrders[i].IsLive)
+                _vm.AvailableOrders[i].RaiseLiveCountdownChanged();
+        }
+        for (int i = 0; i < _vm.ParallelOrders.Count; i++)
+        {
+            if (_vm.ParallelOrders[i].IsLive)
+                _vm.ParallelOrders[i].RaiseLiveCountdownChanged();
+        }
     }
 
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -111,6 +137,12 @@ public partial class DashboardView : UserControl
         _renderTimer = null;
         _holdTimer?.Stop();
         _holdTimer = null;
+        if (_liveCountdownTimer != null)
+        {
+            _liveCountdownTimer.Stop();
+            _liveCountdownTimer.Tick -= OnLiveCountdownTick;
+            _liveCountdownTimer = null;
+        }
 
         if (_vm != null)
         {

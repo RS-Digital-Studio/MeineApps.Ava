@@ -956,6 +956,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _gameLoopService = gameLoopService;
         _offlineProgressService = offlineProgressService;
         _orderGeneratorService = orderGeneratorService;
+
+        // v2.0.35 Feature D: Toast/FloatingText bei neuem Live-Auftrag (OrderSpawned).
+        // Premium-Auftraege (IsPremium=true) bekommen den "gold"-Stil (sichtbarer), Standard-Live
+        // den neutralen "info"-Stil.
+        _orderGeneratorService.OrderSpawned += OnLiveOrderSpawned;
         _audioService = audioService;
         _localizationService = localizationService;
         _cachedNetIncomeLabel = _localizationService.GetString("NetIncome") ?? "Netto";
@@ -2096,6 +2101,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         PauseStateChanged?.Invoke(false);
     }
 
+    /// <summary>
+    /// v2.0.35 Feature D: Neuer Live-Auftrag gespawnt — Toast/FloatingText fuer Sichtbarkeit.
+    /// </summary>
+    private void OnLiveOrderSpawned(Order order)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var text = order.IsPremium
+                ? _localizationService.GetString("LiveOrderSpawnedPremiumToast") ?? "VIP-Auftrag verfuegbar!"
+                : _localizationService.GetString("LiveOrderSpawnedToast") ?? "Neuer Live-Auftrag!";
+            FloatingTextRequested?.Invoke(text, order.IsPremium ? "premium" : "info");
+            // Nach Spawn neu rendern, damit der Auftrag direkt sichtbar ist
+            EconomyVM.RefreshOrders();
+        });
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -2103,6 +2124,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         // Phase 9: Money-Animation Flag zurücksetzen
         _moneyAnimActive = false;
         _levelPulseTimer?.Stop();
+
+        // v2.0.35 Feature D: OrderSpawned-Subscribe abmelden
+        _orderGeneratorService.OrderSpawned -= OnLiveOrderSpawned;
 
         // Stop the game loop and save
         _gameLoopService.Stop();

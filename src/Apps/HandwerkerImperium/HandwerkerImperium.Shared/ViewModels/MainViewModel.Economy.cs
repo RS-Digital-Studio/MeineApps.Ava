@@ -61,13 +61,30 @@ public sealed partial class MainViewModel
     private Task StartOrderAsync(Order order) => EconomyVM.StartOrderAsync(order);
 
     /// <summary>
-    /// Setzt einen parallelen Auftrag fort (v2.0.35 Feature A). Parameter ist der Workshop-Typ
-    /// als String (XAML-Kompatibilitaet, vgl. Prestige-Tier-CommandParameter).
+    /// Setzt einen parallelen Auftrag fort (v2.0.35 Feature A).
+    /// Parameter ist der Workshop-Typ als object — akzeptiert sowohl Enum-Wert direkt
+    /// (XAML-Binding auf WorkshopType-Property) als auch String ("Carpenter" etc.).
+    /// Vgl. CLAUDE.md Gotcha "XAML CommandParameter ist IMMER string" — wir muessen
+    /// hier object akzeptieren, weil der Data-Binding-Fall Enum liefert.
     /// </summary>
     [RelayCommand]
-    private async Task ResumeParallelOrderAsync(string workshopTypeName)
+    private async Task ResumeParallelOrderAsync(object? workshopTypeParam)
     {
-        if (!Enum.TryParse<Models.Enums.WorkshopType>(workshopTypeName, out var type)) return;
+        if (workshopTypeParam is null) return;
+
+        Models.Enums.WorkshopType type;
+        switch (workshopTypeParam)
+        {
+            case Models.Enums.WorkshopType direct:
+                type = direct;
+                break;
+            case string s when Enum.TryParse<Models.Enums.WorkshopType>(s, out var parsed):
+                type = parsed;
+                break;
+            default:
+                return;
+        }
+
         await EconomyVM.ResumeParallelOrderAsync(type);
     }
 

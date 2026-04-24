@@ -24,6 +24,14 @@ public sealed partial class GameStateService
             // v2.0.35 Feature A: Multi-Order-System — Auftrag in ParallelOrdersByWorkshop spiegeln.
             // Ein Workshop hat gleichzeitig max. einen aktiven Auftrag.
             _state.ParallelOrdersByWorkshop[order.WorkshopType] = order;
+
+            // v2.0.35 Feature D: Live-Auftraege verlieren ihre "Annahme-Deadline" beim Start.
+            // ExpiresAt bedeutete "Zeit zum Akzeptieren" — sobald der Spieler den Auftrag
+            // startet, laeuft er normal (nur Deadline/Weekly kann noch greifen).
+            if (order.IsLive)
+            {
+                order.ExpiresAt = null;
+            }
         }
     }
 

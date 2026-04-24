@@ -6,7 +6,7 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Aufträge oder spiele Mini-Games.
 
-**Version:** 2.0.34 (VersionCode 42) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
+**Version:** 2.0.35 (VersionCode 43) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
 
 ## Icon-System (Bitmap-Icons, AI + Programmatisch)
 
@@ -648,6 +648,119 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | Research-Labor | ResearchLabRenderer: Werkstatt-Szene, Zahnraeder, Dampf, Glühbirne |
 | Research-Baum | 2D Top-Heroes-Style, Branch-Farben, Flow-Partikel, Branch-Banner, Celebration-Confetti |
 | Forschungs-Hintergrund | ResearchBackgroundRenderer: Nussholz, Holzmaserung, Zahnrad-Wasserzeichen, Vignette |
+
+## Gameplay-Suchtfaktor-Mechaniken (24.04.2026, v2.0.35 — Gameplay-Struktur-Wandel)
+
+Vier fundamentale Mechaniken die den Flow veraendern — nicht "mehr Einkommen", sondern **echte Spieler-Entscheidungen**:
+
+### Feature B: Risk/Reward-Strategie pro Auftrag
+
+Vor jedem MiniGame-Start waehlt der Spieler eine von drei Strategien:
+
+| Strategie | Reward | MiniGame | Miss-Handling |
+|-----------|--------|----------|---------------|
+| **Safe**     | 0,75x | +50% breitere Zonen, +30% Zeit | Normales Rating |
+| **Standard** | 1,0x  | Baseline | Normales Rating |
+| **Risk**     | 2,0x  | -50% Zonen, +30% Tempo, -30% Zeit | **0 Reward + −10 Reputation** |
+
+Orthogonal zu `OrderDifficulty` (die am Auftrag fest ist). Risk-Wahl triggert Bestaetigungs-Dialog.
+`Order.Strategy` (persistiert), `Order.HasHardFailed` (bool, bei Risk+Miss=true).
+`BaseMiniGameViewModel.CurrentStrategy` wird in `SetOrderId` aus Order gelesen.
+
+Alle 10 MiniGames integriert:
+- SawingGame/ForgeGame: Zone * ToleranceMultiplier, Speed * SpeedMultiplier
+- 7 Time-basierte (Pipe/Wiring/Painting/RoofTiling/Inspection/Blueprint/DesignPuzzle/InventGame):
+  MaxTime * TimeMultiplier (mit Math.Max-Lower-Bound)
+
+UI: `Views/OrderView.axaml` ersetzt "Starten"-Button durch 3 Strategy-Buttons mit Icon +
+Multi-Zeilen-Beschreibung + Multiplikator-Anzeige. Risk-Button ist rot.
+
+### Feature D: Live-Auftrags-Stream mit Deadlines
+
+Auftraege landen nicht mehr als statische Liste im Pool — sie kommen live rein:
+- `GameLoopService` spawnt alle 25s mit 50% Chance einen neuen Live-Auftrag
+- Cap 5 Live-Auftraege gleichzeitig (neben regulaeren/Material-Orders)
+- `ExpiresAt` 45-180s (Standard) bzw. 45-90s (Premium/VIP)
+- Alle 3 Ticks: `ExpireOldLiveOrders` entfernt abgelaufene ohne Penalty
+
+Premium/VIP (5% Spawn-Chance):
+- 3x BaseReward, 2.5x BaseXp, kuerzere Deadline
+- Lila VIP-Badge im Dashboard + Crown-Icon
+
+`Order.IsLive`, `Order.IsPremium`, `Order.ExpiresAt`, `LiveCountdownSeconds/Text` (computed).
+UI: Roter LIVE-Badge + Countdown-Text, lila VIP-Badge auf Order-Cards.
+
+### Feature C: Workshop-Spezialisierungs-Pfade
+
+Das System war bereits implementiert (Efficiency/Quality/Economy-Pfade mit Income/Cost/Efficiency/
+Worker-Capacity-Modifiers in `WorkshopSpecialization.cs`). Balance-Update:
+- **Unlock-Level 100 → 50** (Mid-Game-Build-Entscheidung statt Late-Game-Luxus)
+- **Re-Spec-Kosten 20 Goldschrauben** (erste Wahl kostenlos, Wechsel kostet, Entfernen kostenlos)
+
+Workshop bekommt damit eine Identitaet — Spezialisierung auf Efficiency (+30% Einkommen, -1 Worker-Slot)
+vs Quality (+20% Worker-Effizienz, +15% Kosten) vs Economy (-25% Kosten, -5% Einkommen) ist eine
+echte Build-Entscheidung bei Lv50.
+
+### Feature A: Parallele Werkstaetten (Multi-Order)
+
+Kernarchitektur-Umbau — der Spieler kann bis zu **3 Auftraege gleichzeitig** in unterschiedlichen
+Werkstaetten laufen lassen.
+
+**Architektur:**
+- `GameState.ParallelOrdersByWorkshop` (Dictionary<WorkshopType, Order>) — pro Workshop max 1
+- `GameState.ActiveOrder` bleibt als Vordergrund-Slot (aktuell im MiniGame bearbeiteter Auftrag)
+- Max 3 parallel via `GameBalanceConstants.MaxParallelOrders`
+- SaveGame Version 5→6 mit automatischer Migration (alter `ActiveOrder` landet im Dictionary)
+
+**GameStateService-API:**
+- `StartOrder(Order)`: Order landet in ParallelOrdersByWorkshop UND in ActiveOrder
+- `GetParallelOrder(WorkshopType)`: liefert wartenden Auftrag pro Werkstatt
+- `ResumeParallelOrder(WorkshopType)`: setzt pausierten Auftrag wieder als ActiveOrder
+- `PauseActiveOrder()`: ActiveOrder=null, Auftrag bleibt im Dictionary
+- `CanStartParallelOrder(WorkshopType)`: prueft Workshop-Slot + globales Cap
+
+**Flow:**
+- Spieler akzeptiert Auftrag A in Workshop X → StartOrder → A ist Vordergrund + in Dict[X]
+- Spieler klickt Back im OrderDetail → PauseActiveOrder → A bleibt in Dict[X], Vordergrund leer
+- Spieler akzeptiert Auftrag B in Workshop Y → A bleibt in Dict[X], B wird neuer Vordergrund in Dict[Y]
+- Spieler klickt auf A im Fortsetzen-Banner → ResumeParallelOrder(X) → B wird pausiert, A ist Vordergrund
+- MiniGame fertig fuer A → CompleteActiveOrder → A raus aus Dict[X], Vordergrund leer
+- Cancel Order A → CancelActiveOrder → A raus aus Dict[X], zurueck in AvailableOrders
+
+**UI (DashboardView.axaml):**
+- Neues **Fortsetzen-Banner** oben im Auftrags-Bereich (nur sichtbar wenn HasParallelOrders=true)
+- Gradient-Hintergrund, Zaehler, ItemsControl mit Tap-to-Resume-Button pro Order
+- Alter "Nur ein Auftrag gleichzeitig"-Block weg: Spieler kann waehrend laufendem Auftrag neue annehmen
+
+**Neue MainViewModel-Properties:**
+- `ParallelOrders` (ObservableCollection<Order>) + `HasParallelOrders` (bool)
+- `ResumeParallelOrderCommand(string workshopTypeName)` (XAML-kompatibel)
+
+### Geaenderte / neue Dateien (v2.0.35)
+
+**Neu:**
+- `Models/Enums/OrderStrategy.cs` + Extension-Methoden
+
+**Erweitert:**
+- `Models/Order.cs` (Strategy, HasHardFailed, IsLive, IsPremium, LiveCountdownSeconds/Text, ExpiresAt in IsExpired)
+- `Models/GameState.cs` (ParallelOrdersByWorkshop, Version 5→6)
+- `Models/GameBalanceConstants.cs` (SpecializationUnlockLevel 100→50, RespecCost=20 GS, MaxParallelOrders=3)
+- `Services/Interfaces/IGameStateService.cs` + `IOrderGeneratorService.cs` (neue Methoden)
+- `Services/GameStateService.Orders.cs` (Multi-Order-API)
+- `Services/OrderGeneratorService.cs` (GenerateLiveOrder, ExpireOldLiveOrders, Event OrderSpawned)
+- `Services/GameLoopService.cs` + `.PeriodicChecks.cs` (IOrderGeneratorService injiziert, Live-Tick-Checks)
+- `Services/SaveGameService.cs` (V5→V6 Migration, Sanitize ParallelOrdersByWorkshop)
+- `ViewModels/OrderViewModel.cs` (3 Strategy-Buttons via StartWithStrategyCommand, Back=Pause)
+- `ViewModels/MiniGames/BaseMiniGameViewModel.cs` (CurrentStrategy + Hard-Fail-Handling)
+- Alle 10 MiniGame-VMs (Strategy-Modifier in InitializeGame)
+- `ViewModels/EconomyFeatureViewModel.cs` (CanStartParallelOrder + PauseActiveOrder + ResumeParallelOrderAsync + RefreshParallelOrders)
+- `ViewModels/MainViewModel.cs` + `.Economy.cs` (ParallelOrders, HasParallelOrders, ResumeParallelOrderCommand)
+- `ViewModels/WorkshopViewModel.cs` (Re-Spec-Kosten via TrySpendGoldenScrews)
+- `Views/OrderView.axaml` (3 Strategy-Buttons)
+- `Views/DashboardView.axaml` (LIVE/VIP-Badges auf Orders + Fortsetzen-Banner ueber AvailableOrders)
+- 7 RESX-Dateien (ca. 21 neue Keys: 10 fuer Strategy, 2 fuer Live/VIP, 3 fuer Parallel, 6 fuer Confirm-Dialoge)
+
+---
 
 ## FPS-Profile + Gilde-UX (24.04.2026, v2.0.34)
 

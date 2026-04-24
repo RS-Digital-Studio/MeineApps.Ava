@@ -11,6 +11,7 @@ using BingXBot.ClientApi.Pairing;
 using BingXBot.ClientApi.Services;
 using BingXBot.ClientApi.SignalR;
 using BingXBot.Contracts.Services;
+using BingXBot.Services;
 using BingXBot.Trading;
 using BingXBot.Trading.Local;
 using BingXBot.ViewModels;
@@ -146,6 +147,13 @@ public partial class App : Application
                 {
                     stream.SettingsChanged += rs.RaiseChanged;
                 }
+
+                // Auto-Sync aktivieren: Ctor subscribed ConnectionChanged, damit bei jedem
+                // Re-Connect die Server-Settings erneut in die DI-Singletons gespielt werden.
+                // Eager-Resolve VOR StartAsync garantiert, dass das erste Connected-Event
+                // den Handler trifft (auch wenn der Debounce den initialen Refresh-Call schluckt,
+                // weil der App-Start-Refresh zwei Zeilen drueber schon lief).
+                _ = Services.GetRequiredService<RemoteSettingsAutoSync>();
 
                 await stream.StartAsync().ConfigureAwait(false);
             }
@@ -317,8 +325,11 @@ public partial class App : Application
     /// Holt den kompletten Settings-Snapshot vom Server (Bot/Risk/Scanner/Backtest) und
     /// synct die lokalen DI-Singletons fuer Binding-Kontinuitaet. Der Server ist im Remote-Mode
     /// die Authority fuer alle vier Blocks — nicht nur Bot.
+    ///
+    /// Wird beim App-Start einmal aufgerufen und danach vom <see cref="RemoteSettingsAutoSync"/>
+    /// bei jedem Re-Connect — deshalb internal statt private (Zugriff fuer den Service).
     /// </summary>
-    private static async Task RefreshRemoteSettingsAsync()
+    internal static async Task RefreshRemoteSettingsAsync()
     {
         try
         {
@@ -430,6 +441,14 @@ public partial class App : Application
             services.AddSingleton<IBacktestControlService, RemoteBacktestService>();
             // Strategy-Katalog kann lokal bleiben (kein Netz-Call noetig).
             services.AddSingleton<IStrategyCatalog, LocalStrategyCatalog>();
+
+            // Auto-Sync: Bei jedem (Re-)Connect die Server-Settings neu in die Client-DI-
+            // Singletons spielen (Risk/Scanner/Bot/Backtest). Vermeidet den "Client haelt
+            // alten Stand und ueberschreibt Server-Werte beim naechsten Save"-Fall.
+            // Delegate-Wrapper auf die static RefreshRemoteSettingsAsync — der Service ist
+            // generisch und kennt App.axaml.cs nicht direkt.
+            services.AddSingleton<RemoteSettingsAutoSync>(sp =>
+                new RemoteSettingsAutoSync(sp.GetRequiredService<IBotEventStream>(), RefreshRemoteSettingsAsync));
         }
         else
         {

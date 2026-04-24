@@ -4,7 +4,9 @@ using System.Text;
 using System.Text.Json;
 using BingXBot.Core.Interfaces;
 
-namespace BingXBot.Services;
+namespace BingXBot.Trading;
+
+// IAppPaths wird via Konstruktor injiziert — plattformübergreifende Pfadauflösung.
 
 public class SecureStorageService : ISecureStorageService
 {
@@ -13,15 +15,22 @@ public class SecureStorageService : ISecureStorageService
 
     public bool HasCredentials => _hasCredentials;
 
-    public SecureStorageService()
+    public SecureStorageService(IAppPaths paths)
     {
-        var folder = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BingXBot")
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "BingXBot");
+        _credentialsPath = paths.CredentialsPath;
 
-        Directory.CreateDirectory(folder);
-        _credentialsPath = Path.Combine(folder, "credentials.dat");
-        _hasCredentials = File.Exists(_credentialsPath);
+        // Pfad-Verfügbarkeit prüfen, ohne die App bei Crash mitzureißen.
+        // Auf Android kann Directory.CreateDirectory scheitern wenn Sandbox-Pfade nicht erreichbar sind.
+        try
+        {
+            Directory.CreateDirectory(paths.AppDataFolder);
+            _hasCredentials = File.Exists(_credentialsPath);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"SecureStorageService: AppDataFolder nicht verfuegbar ({ex.Message}) — keine Persistenz moeglich");
+            _hasCredentials = false;
+        }
     }
 
     public async Task SaveCredentialsAsync(string apiKey, string apiSecret)

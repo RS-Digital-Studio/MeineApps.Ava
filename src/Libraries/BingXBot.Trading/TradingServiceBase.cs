@@ -1,0 +1,1400 @@
+using BingXBot.Contracts.Dto;
+using BingXBot.Core.Configuration;
+using BingXBot.Core.Enums;
+using BingXBot.Core.Helpers;
+using BingXBot.Core.Interfaces;
+using BingXBot.Core.Models;
+using BingXBot.Engine;
+using BingXBot.Engine.Filters;
+using BingXBot.Engine.Indicators;
+using BingXBot.Engine.Risk;
+using BingXBot.Engine.Strategies;
+using BingXBot.Trading.Local;
+using System.Collections.Concurrent;
+
+namespace BingXBot.Trading;
+
+/// <summary>
+/// Abstrakte Basisklasse für Paper- und Live-Trading-Services.
+/// Enthält die gesamte gemeinsame Logik: Scan-Loop (30s), PriceTicker-Loop (5s),
+/// SL/TP-Prüfung, SK-Buch-BE-Regel, Korrelations-Check, Risk-Management,
+/// Margin-Monitoring, Desktop-Notifications.
+/// Subklassen implementieren nur die exchange-spezifischen Operationen.
+/// </summary>
+public abstract class TradingServiceBase : IDisposable
+{
+    protected readonly IPublicMarketDataClient _publicClient;
+    protected readonly StrategyManager _strategyManager;
+    protected readonly RiskSettings _riskSettings;
+    protected readonly ScannerSettings _scannerSettings;
+    protected readonly BotEventBus _eventBus;
+
+    protected RiskManager? _riskManager;
+    /// <summary>RiskManager-Instanz (für Rolling-Metriken im UI).</summary>
+    public RiskManager? RiskManager => _riskManager;
+    /// <summary>Geteilter RiskManager vom MultiModeOrchestrator. Wenn gesetzt, wird dieser statt des eigenen verwendet.</summary>
+    public RiskManager? RiskManagerOverride { get; set; }
+    protected CancellationTokenSource? _cts;
+    protected volatile bool _isRunning;
+    protected volatile bool _isPaused;
+    protected bool _disposed;
+    protected DateTime _lastDailyResetDate = DateTime.UtcNow.Date;
+
+    // Funding-Rates pro Symbol (wird von Subklassen aktualisiert, z.B. aus BingX API)
+    protected readonly ConcurrentDictionary<string, decimal> _fundingRates = new();
+    // Margin-Monitoring: Bereits gewarnte Positionen (nicht bei jedem Tick erneut warnen)
+    private readonly ConcurrentDictionary<string, DateTime> _marginWarningsIssued = new();
+
+    // SL/TP-Tracking: Speichert das Original-Signal pro offener Position (Symbol_Side → SignalResult)
+    // ConcurrentDictionary weil PriceTickerLoop und ScanAndTradeAsync parallel darauf zugreifen
+    protected readonly ConcurrentDictionary<string, SignalResult> _positionSignals = new();
+    // SK-System: Letzter Status für Scan-Summary (wird auf Symbol-Klonen evaluiert, nicht auf dem Template)
+    private string _lastSkStatus = "";
+    // Multi-TF Standalone: Letzter nicht-blockierter SK-Status pro TF (für Ampel-UI)
+    private readonly Dictionary<TimeFrame, string> _lastSkStatusByTf = new();
+    // Wiederverwendbares Dictionary für Ticker-Preise (ConcurrentDictionary für Thread-Safety
+    // da PriceTickerLoop und RunLoopAsync parallel laufen)
+    private readonly ConcurrentDictionary<string, decimal> _tickerPriceMap = new();
+
+    // Positions-Zustand (SL/TP-Tracking, BE-Status)
+    protected readonly ConcurrentDictionary<string, PositionExitState> _exitStates = new();
+    // Verlust-Tracking
+    protected volatile int _consecutiveLosses;
+    // Täglicher Trade-Counter (wird bei Tageswechsel zurückgesetzt)
+    protected volatile int _tradesToday;
+
+    // Semaphore fuer paralleles Klines-Laden.
+    //
+    // BingX-Rate-Limit: ~100 Requests pro 10s PRO IP (nicht pro Connection). Bei Reconnect
+    // nach WebSocket-Drop laufen parallel: Ticker-Poll, Kline-Load, RecoverMissingTpOrdersAsync,
+    // ReconcilePendingLimitOrdersAsync → mehrere Flows teilen sich das IP-Budget.
+    //
+    // 10 parallel ist der sichere Wert: Selbst mit allen Recovery-Flows gleichzeitig bleibt
+    // der Burst-Request-Count unter 100/10s. Hoehere Semaphore-Werte riskieren IP-Ban (5min).
+    // Scanner-Rotation + MaxScanSymbols limitieren die Gesamt-Calls pro Scan-Zyklus — nicht
+    // die Semaphore.
+    private readonly SemaphoreSlim _klineSemaphore = new(10);
+
+    // Bot-Einstellungen (für Notifications etc.)
+    protected readonly BotSettings _botSettings;
+
+    // Optional: Multi-TF Standalone — Scanner-Cache für /api/v1/scanner/results
+    protected ScannerResultsCache? _scannerCache;
+
+    /// <summary>Setzt den Scanner-Cache nachträglich (Desktop/Server registrieren ihn per DI).</summary>
+    public void SetScannerResultsCache(ScannerResultsCache? cache) => _scannerCache = cache;
+
+    /// <summary>Multi-TF Standalone: Navigator-TF einer offenen Position aus ExitState (Fallback H4).</summary>
+    protected TimeFrame GetNavigatorTimeframeForKey(string key)
+        => _exitStates.TryGetValue(key, out var s) ? s.NavigatorTimeframe : TimeFrame.H4;
+
+    /// <summary>Ob der Service gerade läuft.</summary>
+    public bool IsRunning => _isRunning;
+
+    /// <summary>Ob der Service pausiert ist.</summary>
+    public bool IsPaused => _isPaused;
+
+    /// <summary>
+    /// Wenn true, werden BotState-Events in StopBase() unterdrückt.
+    /// Wird vom Orchestrator gesetzt, damit nicht mehrfach BotState.Stopped gefeuert wird.
+    /// </summary>
+    public bool SuppressBotStateEvents { get; set; }
+
+    /// <summary>Log-Präfix ("" für Paper, "LIVE: " für Live).</summary>
+    protected abstract string LogPrefix { get; }
+
+    /// <summary>Modus-Name für Log-Texte ("Paper-Trading" vs "Live-Trading").</summary>
+    protected abstract string ModeName { get; }
+
+    protected TradingServiceBase(
+        IPublicMarketDataClient publicClient,
+        StrategyManager strategyManager,
+        RiskSettings riskSettings,
+        ScannerSettings scannerSettings,
+        BotEventBus eventBus,
+        BotSettings botSettings)
+    {
+        _publicClient = publicClient;
+        _strategyManager = strategyManager;
+        _riskSettings = riskSettings;
+        _scannerSettings = scannerSettings;
+        _eventBus = eventBus;
+        _botSettings = botSettings;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Gemeinsame öffentliche Methoden
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>Pausiert den Trading-Service (Loop läuft weiter, überspringt aber Scans).</summary>
+    public void Pause()
+    {
+        if (!_isRunning || _isPaused) return;
+        _isPaused = true;
+
+        // Im Multi-Mode unterdrückt der Orchestrator individuelle BotState-Events (wie bei Stop)
+        if (!SuppressBotStateEvents)
+            _eventBus.PublishBotState(BotState.Paused);
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
+            $"{ModeName} pausiert"));
+    }
+
+    /// <summary>Setzt den Trading-Service nach Pause fort.</summary>
+    public void Resume()
+    {
+        if (!_isRunning || !_isPaused) return;
+        _isPaused = false;
+
+        if (!SuppressBotStateEvents)
+            _eventBus.PublishBotState(BotState.Running);
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
+            $"{ModeName} fortgesetzt"));
+    }
+
+    /// <summary>Gibt das gespeicherte Signal (SL/TP) für eine offene Position zurück.</summary>
+    public SignalResult? GetPositionSignal(string symbol, Side side)
+    {
+        _positionSignals.TryGetValue($"{symbol}_{side}", out var signal);
+        return signal;
+    }
+
+    /// <summary>Gibt die Entry-Zeit einer Position zurück (aus ExitState). Null wenn nicht bekannt.</summary>
+    public DateTime? GetEntryTime(string symbol, Side side)
+    {
+        _exitStates.TryGetValue($"{symbol}_{side}", out var state);
+        return state?.EntryTime;
+    }
+
+    /// <summary>Stellt ein Signal für eine offene Position wieder her (z.B. nach App-Neustart aus BingX-Orders).</summary>
+    public void RestorePositionSignal(string symbol, Side side, SignalResult signal)
+    {
+        var key = $"{symbol}_{side}";
+
+        // Wenn ExitState bereits aus DB geladen wurde, SK-kritische Felder vom Original-Signal übernehmen.
+        // BingX liefert nur SL/TP aus Conditional-Orders (STOP_MARKET/TAKE_PROFIT_MARKET) — SK-System nutzt
+        // aber LIMIT Reduce-Only für TPs, die nicht als TP-Typ erkannt werden. Ohne Fallback auf das
+        // Original-Signal gehen TakeProfit, TakeProfit2, DisableSmartBreakeven (SK-BE Workflow 4.2 "A-Bruch")
+        // und IsAdditionalEntry verloren.
+        if (_exitStates.TryGetValue(key, out var existingState) && existingState.Signal != null)
+        {
+            signal = signal with
+            {
+                TakeProfit = signal.TakeProfit ?? existingState.Signal.TakeProfit,
+                TakeProfit2 = signal.TakeProfit2 ?? existingState.Signal.TakeProfit2,
+                DisableSmartBreakeven = existingState.Signal.DisableSmartBreakeven,
+                IsAdditionalEntry = existingState.Signal.IsAdditionalEntry
+            };
+        }
+
+        _positionSignals[key] = signal;
+        var entry = signal.EntryPrice ?? 0m;
+        if (!_exitStates.ContainsKey(key))
+        {
+            // BreakevenSet nur true wenn der SL bereits auf/über Entry liegt (= BE war schon gesetzt)
+            var slAlreadyAtBe = signal.StopLoss.HasValue && entry > 0 && (
+                (side == Side.Buy && signal.StopLoss.Value >= entry) ||
+                (side == Side.Sell && signal.StopLoss.Value <= entry));
+
+            _exitStates[key] = new PositionExitState
+            {
+                Signal = signal, Symbol = symbol, Side = side,
+                EntryPrice = entry,
+                BreakevenSet = slAlreadyAtBe,
+                IsRecovered = true
+            };
+        }
+        else
+        {
+            // ExitState existiert: Signal-Referenz aktualisieren damit neue SL/TP-Werte greifen
+            existingState!.Signal = signal;
+        }
+    }
+
+    /// <summary>
+    /// Entfernt das gespeicherte Signal für eine Position (z.B. bei manuellem Close über Dashboard).
+    /// Verhindert, dass PriceTickerLoop eine bereits geschlossene Position erneut zu schließen versucht.
+    /// </summary>
+    public void RemovePositionSignal(string symbol, Side side) =>
+        RemoveSignalByKey($"{symbol}_{side}");
+
+    /// <summary>Entfernt Signal und ExitState und ruft OnSignalRemoved auf.</summary>
+    protected void RemoveSignalByKey(string key)
+    {
+        _positionSignals.TryRemove(key, out _);
+        _exitStates.TryRemove(key, out _);
+        OnSignalRemoved(key);
+    }
+
+    /// <summary>
+    /// Registriert ein SL/TP-Signal für eine bestehende Position (z.B. nach App-Neustart).
+    /// Erstellt einen neuen Eintrag in _positionSignals wenn keiner existiert.
+    /// </summary>
+    public void RegisterPositionSignal(string symbol, Side side, SignalResult signal, decimal currentPrice)
+    {
+        var key = $"{symbol}_{side}";
+        _positionSignals[key] = signal;
+        OnSignalCreated(key);
+    }
+
+    /// <summary>Aktualisiert SL/TP für eine offene Position (z.B. wenn der User im Dashboard editiert).</summary>
+    public void UpdatePositionSignal(string symbol, Side side, decimal? newSl, decimal? newTp)
+    {
+        var key = $"{symbol}_{side}";
+        if (_positionSignals.TryGetValue(key, out var existing))
+        {
+            _positionSignals[key] = existing with { StopLoss = newSl, TakeProfit = newTp };
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Gemeinsame Start-Infrastruktur
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>Initialisiert RiskManager, CancellationToken und startet die Loops.</summary>
+    protected void StartBase(RiskManager riskManager)
+    {
+        _riskManager = RiskManagerOverride ?? riskManager;
+        // K-5 Fix: Cancel VOR Dispose — sonst laufen alte Loops weiter (ObjectDisposedException
+        // wird nicht von catch(OperationCanceledException) gefangen)
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
+        _isRunning = true;
+        _isPaused = false;
+        _lastDailyResetDate = DateTime.UtcNow.Date;
+
+        // Scan-Loops starten (MarketCap-Cache wird im ersten Scan geladen)
+        _ = RunLoopAsync(_cts.Token);
+        _ = PriceTickerLoopAsync(_cts.Token);
+    }
+
+    /// <summary>Gemeinsames Stop-Cleanup: CTS canceln, Signale leeren, State zurücksetzen.</summary>
+    // SK-VERIFY: [6.1] ExitState-Persistenz: Subklassen können ExitStates VOR dem Clear speichern
+    /// <summary>Gibt alle aktuellen ExitStates als Dictionary zurück (für DB-Persistenz).</summary>
+    public Dictionary<string, PositionExitState> GetExitStatesSnapshot()
+        => new(_exitStates);
+
+    /// <summary>Gibt Runtime-State zurück (TradesToday, ConsecutiveLosses).</summary>
+    public (int TradesToday, int ConsecutiveLosses) GetRuntimeStateSnapshot()
+        => (_tradesToday, _consecutiveLosses);
+
+    /// <summary>Stellt ExitStates aus DB-Persistenz wieder her.</summary>
+    public void RestoreExitStates(Dictionary<string, PositionExitState> states)
+    {
+        foreach (var kvp in states)
+            _exitStates.TryAdd(kvp.Key, kvp.Value);
+    }
+
+    /// <summary>Stellt Runtime-State aus DB-Persistenz wieder her.</summary>
+    public void RestoreRuntimeState(int tradesToday, int consecutiveLosses)
+    {
+        Interlocked.Exchange(ref _tradesToday, tradesToday);
+        Interlocked.Exchange(ref _consecutiveLosses, consecutiveLosses);
+    }
+
+    protected void StopBase(BotState endState, string logMessage)
+    {
+        _isRunning = false;
+        _isPaused = false;
+
+        _positionSignals.Clear();
+        _exitStates.Clear();
+        _marginWarningsIssued.Clear();
+        Interlocked.Exchange(ref _tradesToday, 0);
+        OnSignalsClearedAll();
+
+        // N-4 Fix: Cancel vor Dispose damit laufende Tasks sauber beendet werden
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+
+        // Im Multi-Mode unterdrückt der Orchestrator individuelle BotState-Events
+        if (!SuppressBotStateEvents)
+            _eventBus.PublishBotState(endState);
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine", logMessage));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Hauptschleife: Alle 30 Sekunden scannen und handeln
+    // ═══════════════════════════════════════════════════════════════
+
+    private async Task RunLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                // Tageswechsel: Daily-Drawdown + Consecutive-Losses zurücksetzen
+                var today = DateTime.UtcNow.Date;
+                if (today != _lastDailyResetDate)
+                {
+                    _riskManager?.ResetDailyStats();
+                    _lastDailyResetDate = today;
+                    Interlocked.Exchange(ref _tradesToday, 0);
+                    Interlocked.Exchange(ref _consecutiveLosses, 0);
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                        $"{LogPrefix}Tages-Drawdown + Trade-Counter + Verlustserie zurückgesetzt (neuer Tag)"));
+                }
+
+                // Bei Pause: Loop läuft weiter, überspringt aber den Scan
+                if (!_isPaused)
+                    await ScanAndTradeAsync(ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Engine",
+                    $"Fehler in der {ModeName}-Loop: {ex.Message}"));
+
+                // Subklasse kann zusätzliche Wartezeit definieren (z.B. 60s bei API-Fehler)
+                try { await OnScanErrorAsync(ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+                continue;
+            }
+
+            // 30 Sekunden warten bis zum nächsten Scan
+            // Scan-Intervall dynamisch basierend auf Timeframe (H4=15min, H1=5min, etc.)
+            try { await Task.Delay(_scannerSettings.ScanIntervalSeconds * 1000, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { break; }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PriceTicker-Loop: Alle 5 Sekunden SL/TP prüfen + BE-Regel (Workflow 4.2 "A-Bruch").
+    // ═══════════════════════════════════════════════════════════════
+
+    private async Task PriceTickerLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { await Task.Delay(5_000, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { break; }
+
+            if (_isPaused) continue;
+
+            try
+            {
+                // Offene Positionen holen
+                var positions = await GetPositionsForTickerAsync().ConfigureAwait(false);
+
+                // Subklasse kann hier z.B. verwaiste Signale bereinigen (Positionen werden übergeben)
+                await OnBeforePriceTickerIteration(positions).ConfigureAwait(false);
+                if (positions.Count == 0) continue;
+
+                // Aktuelle Ticker holen (ein API-Call für alle Symbole)
+                var tickers = await _publicClient.GetAllTickersAsync(ct).ConfigureAwait(false);
+                if (tickers.Count == 0) continue;
+
+                // Ticker-Preise aktualisieren (ConcurrentDictionary, Thread-safe)
+                foreach (var t in tickers)
+                    _tickerPriceMap[t.Symbol] = t.LastPrice;
+
+                // v1.3.0 K1: BTC-USDT-Ticker als separates Event fuer Dashboard-Ticker.
+                // Einmal pro PriceTickerLoop-Iteration (alle 5 s) — ueber Hub-Throttle ist das
+                // ausreichend glatt ohne Client zu spammen.
+                var btc = tickers.FirstOrDefault(t => t.Symbol == "BTC-USDT");
+                if (btc != null) _eventBus.PublishBtcPrice(btc);
+
+                foreach (var pos in positions)
+                {
+                    if (!_tickerPriceMap.TryGetValue(pos.Symbol, out var price)) continue;
+
+                    // Preis auf Exchange setzen (nur für Paper relevant)
+                    SetCurrentPriceIfNeeded(pos.Symbol, price);
+
+                    // BUCH-ONLY: Kein Liquidationspreis-Abstands-Monitoring. Risiko-Gate erfolgt
+                    // ausschliesslich ueber Risk-Per-Trade + Positionsgroesse beim Entry.
+
+                    var key = $"{pos.Symbol}_{pos.Side}";
+
+                    // v1.3.0 K1 Remote-Events: Pro Position + pro Ticker-Loop-Iteration (alle 5 s)
+                    // publishen. Der BotHubEventForwarder drosselt Ticker auf 1/s/Symbol — hier kein
+                    // eigenes Throttling noetig. SL/TP/BE kommen aus dem aktuellen Signal/ExitState.
+                    _eventBus.PublishTicker(new Ticker(
+                        Symbol: pos.Symbol,
+                        LastPrice: price,
+                        BidPrice: 0m,
+                        AskPrice: 0m,
+                        Volume24h: 0m,
+                        PriceChangePercent24h: 0m,
+                        Timestamp: DateTime.UtcNow));
+                    _positionSignals.TryGetValue(key, out var sigForSnapshot);
+                    _exitStates.TryGetValue(key, out var exitStateForSnapshot);
+                    _eventBus.PublishPositionUpdated(new PositionSnapshotArgs(
+                        Position: pos,
+                        StopLoss: sigForSnapshot?.StopLoss,
+                        TakeProfit: sigForSnapshot?.TakeProfit ?? sigForSnapshot?.TakeProfit2,
+                        LiquidationPrice: null,
+                        IsSmartBreakevenArmed: exitStateForSnapshot?.BreakevenSet ?? false,
+                        StrategyName: _botSettings.LastStrategyName));
+
+                    // TradFi bei geschlossenem Markt: Nur Margin-Monitoring, kein SL/TP-Trigger
+                    // (Preise sind stale, SL/TP-Trigger auf letztem Kurs wäre falsch)
+                    if (!TradingHoursFilter.IsMarketOpen(pos.Symbol, DateTime.UtcNow))
+                        continue;
+
+                    if (!_positionSignals.TryGetValue(key, out var signal)) continue;
+
+                    var hit = false;
+                    var isStopLoss = false;
+                    string reason = "";
+
+                    // ═══ SK-Buch-BE-Regel (Cheat 53, Workflow 4.2, S.18) ═══
+                    // SK-Buch Masterclass: BE-Trigger = ausschliesslich "Bruch von A".
+                    // Workflow 4.1 (SL-Halbierung) wurde im Strip Phase 2 (21.04.2026) entfernt —
+                    // Buch: "SL ist heilig, wird niemals ausgeweitet".
+                    // Zitat: "Sobald der Preis aus deiner Korrekturbox herausläuft und das Level A
+                    // signifikant durchbricht, ziehst du den Stop-Loss auf Break Even. [...] Weil
+                    // mit dem Durchbrechen von Punkt A die Sequenz in Richtung Zielbereich
+                    // mathematisch endgültig aktiviert und bestätigt ist."
+                    // Buch S.18: BE = Entry + Spread (0.15%-Buffer als Krypto-Spread-Proxy).
+                    // KEIN Zwischen-SL-Halbieren und KEIN 2x-SL-OR-Trigger — Buch: "SL ist heilig".
+                    if (signal.DisableSmartBreakeven && signal.StopLoss.HasValue
+                        && _exitStates.TryGetValue(key, out var skState) && skState.EntryPrice > 0
+                        && !skState.BreakevenSet
+                        && skState.NavPointA > 0)
+                    {
+                        var aBreak = pos.Side == Side.Buy
+                            ? price >= skState.NavPointA
+                            : price <= skState.NavPointA;
+
+                        if (aBreak)
+                        {
+                            var beSl = pos.Side == Side.Buy
+                                ? skState.EntryPrice * 1.0015m
+                                : skState.EntryPrice * 0.9985m;
+                            _positionSignals[key] = signal with { StopLoss = beSl };
+                            skState.BreakevenSet = true;
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                $"{LogPrefix}{pos.Symbol}: SK Breakeven ({beSl:F8}) — A-Bruch (A={skState.NavPointA:F8})",
+                                pos.Symbol));
+                            await OnStopLossAdjustedAsync(pos.Symbol, pos.Side, beSl).ConfigureAwait(false);
+                        }
+                        // Buch Workflow 4.3: KEIN weiteres Nachziehen nach BE — Trade läuft ins Ziel oder wird BE-ausgestoppt.
+                    }
+
+                    // ═══ Multi-Stage Exit: TP1 (50%) bei 161.8%, TP2 (Rest) bei 200%+Buffer ═══
+                    // Buch S.16 Zielbereich 161.8-200% — Partial Close 50/50 entspricht diesem Range
+                    if (_exitStates.TryGetValue(key, out var exitState))
+                    {
+                        // Phase Initial: TP1 Partial Close (50% bei 161.8% Extension)
+                        if (exitState.Phase == ExitPhase.Initial && signal.TakeProfit.HasValue && !exitState.PartialClosed
+                            && _riskSettings.Tp1CloseRatio > 0 && _riskSettings.Tp1CloseRatio < 1m)
+                        {
+                            var tp1Hit = pos.Side == Side.Buy
+                                ? price >= signal.TakeProfit.Value
+                                : price <= signal.TakeProfit.Value;
+
+                            if (tp1Hit)
+                            {
+                                if (!exitState.Tp2.HasValue)
+                                {
+                                    reason = $"Take-Profit bei {signal.TakeProfit.Value:F8} (TP2 nicht definiert, Full-Close)";
+                                    hit = true;
+                                }
+                                else
+                                {
+                                    // SK-Buch S.16: Partial Close 50% bei 161.8%, Rest zu 200%+Buffer.
+                                    // Buch Workflow 4.3: SL wird NICHT nachgezogen nach TP1.
+                                    var closeQty = pos.Quantity * _riskSettings.Tp1CloseRatio;
+                                    await OnPartialCloseAsync(pos, price, closeQty).ConfigureAwait(false);
+                                    exitState.PartialClosed = true;
+
+                                    _positionSignals[key] = signal with { TakeProfit = exitState.Tp2 };
+                                    exitState.Signal = _positionSignals[key];
+                                    exitState.Phase = ExitPhase.Tp1Hit;
+
+                                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                        $"{LogPrefix}{pos.Symbol}: TP1 (161.8%) erreicht → {_riskSettings.Tp1CloseRatio:P0} geschlossen, Rest läuft bis 200%+Buffer",
+                                        pos.Symbol));
+                                    continue;
+                                }
+                            }
+                        }
+
+                        // BUCH-ONLY: Kein Time-Exit. Das Buch managed Exits ausschliesslich ueber SL/TP/BE.
+                    }
+
+                    // ═══ Buch Workflow 6.1+6.2: Verlust-Ausgleichs-TP (Task 2.5) ═══
+                    // "Wenn x Trades in SL und Möglichkeit besteht mit einem Trade die Verluste auszugleichen → TP!"
+                    // Task 2.5: Nur nach TP1-Hit aktivieren — Trend muss bestätigt sein.
+                    // Ohne diesen Gate würde ein frisch geöffneter Trade bei zufällig erreichter
+                    // Tagesverlust-Schwelle sofort geschlossen, bevor die eigentliche Bewegung läuft.
+                    if (!hit && _riskManager != null && pos.EntryPrice > 0
+                        && _exitStates.TryGetValue(key, out var xsForRecovery)
+                        && xsForRecovery.Phase == ExitPhase.Tp1Hit)
+                    {
+                        var dailyLoss = _riskManager.DailyPnl < 0 ? Math.Abs(_riskManager.DailyPnl) : 0m;
+                        if (dailyLoss > 0)
+                        {
+                            // Unrealized PnL (grob, ohne Fees — reicht für Entscheidung)
+                            var unrealizedPnl = pos.Side == Side.Buy
+                                ? (price - pos.EntryPrice) * pos.Quantity
+                                : (pos.EntryPrice - price) * pos.Quantity;
+
+                            if (unrealizedPnl >= dailyLoss)
+                            {
+                                reason = $"Verlust-Ausgleich aktiv (post-TP1): Gewinn {unrealizedPnl:F2}$ ≥ Tagesverluste {dailyLoss:F2}$";
+                                hit = true;
+                                isStopLoss = false;
+                            }
+                        }
+                    }
+
+                    // ═══ Task 4.7 — Runner-TP mit Trailing-ATR ═══
+                    // Wenn RunnerActive: trail SL mit (bestPrice - ATR × Multiplier),
+                    // Exit bei Trail-Hit oder RunnerHardCap (423.6%) erreicht.
+                    if (!hit && _exitStates.TryGetValue(key, out var runnerState) && runnerState.RunnerActive)
+                    {
+                        // Anchor aktualisieren (bestPrice seit Runner-Aktivierung)
+                        if (pos.Side == Side.Buy)
+                        {
+                            if (price > runnerState.RunnerTrailAnchor) runnerState.RunnerTrailAnchor = price;
+                        }
+                        else
+                        {
+                            if (runnerState.RunnerTrailAnchor <= 0 || price < runnerState.RunnerTrailAnchor)
+                                runnerState.RunnerTrailAnchor = price;
+                        }
+
+                        // Trailing-Distance: ATR-basiert (Fallback 1% vom Preis wenn kein ATR)
+                        var trailMul = _riskSettings.RunnerTrailingAtrMultiplier;
+                        var trailDistance = runnerState.RunnerAtrBase > 0
+                            ? runnerState.RunnerAtrBase * trailMul
+                            : price * 0.01m * trailMul;
+                        var trailSl = pos.Side == Side.Buy
+                            ? runnerState.RunnerTrailAnchor - trailDistance
+                            : runnerState.RunnerTrailAnchor + trailDistance;
+
+                        // v1.2.7 Fix — Trail-SL an die Exchange pushen, damit App-Crash den nachgezogenen
+                        // SL nicht verliert. Ohne diesen Push würde der Runner-Gewinn nur im Memory leben;
+                        // bei Crash wäre der BingX-SL noch der initiale (ungünstige) SL.
+                        // Throttle: nur pushen wenn (erster Push nach Runner-Aktivierung) ODER
+                        // (Preis-Delta ≥ 0.15% UND letzter Push ≥ 10s her) — schont API-Rate-Limit.
+                        var needsInitialPush = runnerState.RunnerLastPushedSl == 0m;
+                        var pushThreshold = price * 0.0015m; // 0.15% = Fee-Floor-Konsistenz
+                        var slDelta = Math.Abs(trailSl - runnerState.RunnerLastPushedSl);
+                        var timeSinceLastPush = DateTime.UtcNow - runnerState.RunnerLastPushUtc;
+                        if (needsInitialPush
+                            || (slDelta >= pushThreshold && timeSinceLastPush >= TimeSpan.FromSeconds(10)))
+                        {
+                            try
+                            {
+                                await OnStopLossAdjustedAsync(pos.Symbol, pos.Side, trailSl).ConfigureAwait(false);
+                                runnerState.RunnerLastPushedSl = trailSl;
+                                runnerState.RunnerLastPushUtc = DateTime.UtcNow;
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Exit",
+                                    $"{LogPrefix}{pos.Symbol}: Runner-Trail-SL auf {trailSl:F8} gepusht (Anchor {runnerState.RunnerTrailAnchor:F8})",
+                                    pos.Symbol));
+                            }
+                            catch (Exception pushEx)
+                            {
+                                // Push-Fehler nicht eskalieren — nächster Tick versucht es erneut.
+                                // trailSl bleibt im Memory, Trail-Exit-Check feuert trotzdem korrekt.
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Exit",
+                                    $"{LogPrefix}{pos.Symbol}: Runner-SL-Push fehlgeschlagen ({pushEx.Message}) — bleibt bei {runnerState.RunnerLastPushedSl:F8}",
+                                    pos.Symbol));
+                            }
+                        }
+
+                        var trailHit = pos.Side == Side.Buy ? price <= trailSl : price >= trailSl;
+                        var capHit = runnerState.RunnerHardCap > 0 &&
+                            (pos.Side == Side.Buy
+                                ? price >= runnerState.RunnerHardCap
+                                : price <= runnerState.RunnerHardCap);
+
+                        if (trailHit || capHit)
+                        {
+                            reason = capHit
+                                ? $"Runner-Exit: Hard-Cap (423.6%) @ {price:F8}"
+                                : $"Runner-Exit: Trailing-SL bei {trailSl:F8} (Anchor {runnerState.RunnerTrailAnchor:F8}, ATR×{trailMul})";
+                            hit = true;
+                            isStopLoss = false;
+                        }
+                    }
+
+                    // ═══ Standard SL/TP-Check (auch für Multi-Stage Phase) ═══
+                    if (!hit)
+                    {
+                        if (pos.Side == Side.Buy)
+                        {
+                            if (signal.StopLoss.HasValue && price <= signal.StopLoss.Value)
+                            { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:F8}"; }
+                            else if (signal.TakeProfit.HasValue && price >= signal.TakeProfit.Value)
+                            { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:F8}"; }
+                        }
+                        else
+                        {
+                            if (signal.StopLoss.HasValue && price >= signal.StopLoss.Value)
+                            { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:F8}"; }
+                            else if (signal.TakeProfit.HasValue && price <= signal.TakeProfit.Value)
+                            { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:F8}"; }
+                        }
+
+                        // Task 4.7 — Wenn TP2 getroffen wurde UND EnableRunner: Partial-Close statt Full-Close
+                        if (hit && !isStopLoss
+                            && _exitStates.TryGetValue(key, out var tp2State)
+                            && tp2State.Phase == ExitPhase.Tp1Hit
+                            && !tp2State.RunnerActive
+                            && _riskSettings.EnableRunner
+                            && _riskSettings.RunnerPercent > 0m && _riskSettings.RunnerPercent < 1m
+                            && tp2State.OriginalQuantity > 0)
+                        {
+                            // TP2 ist erreicht: Schließe (1-RunnerPercent) der OriginalQuantity, Rest läuft als Runner
+                            var runnerKeep = tp2State.OriginalQuantity * _riskSettings.RunnerPercent;
+                            var tp2CloseQty = Math.Max(0m, pos.Quantity - runnerKeep);
+                            if (tp2CloseQty > 0m && runnerKeep > 0m)
+                            {
+                                await OnPartialCloseAsync(pos, price, tp2CloseQty).ConfigureAwait(false);
+                                tp2State.RunnerActive = true;
+                                tp2State.RunnerTrailAnchor = price;
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
+                                    $"{LogPrefix}{pos.Symbol}: TP2 (200%) erreicht → Runner aktiv ({_riskSettings.RunnerPercent:P0} weiterlaufen, Trail ATR×{_riskSettings.RunnerTrailingAtrMultiplier})",
+                                    pos.Symbol));
+                                // Standard-TP-Hit überspringen, Runner übernimmt
+                                hit = false;
+                                reason = "";
+                            }
+                        }
+                    }
+
+                    // Buch Workflow 4.3: SL wird NICHT nachgezogen (außer auf BE).
+                    // Kein Nachziehen des SL. Trade läuft auf BE oder ins Ziel.
+
+                    if (hit)
+                    {
+                        await OnSlTpHitAsync(pos, price, key, reason, isStopLoss).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "PriceTicker",
+                    $"{LogPrefix}PriceTicker Fehler: {ex.Message}"));
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Scan-Zyklus: Ticker laden, filtern, Strategie evaluieren, handeln
+    // ═══════════════════════════════════════════════════════════════
+
+    private async Task ScanAndTradeAsync(CancellationToken ct)
+    {
+        if (_riskManager == null) return;
+        if (_strategyManager.CurrentTemplate == null)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                "Keine Strategie ausgewählt"));
+            return;
+        }
+
+        var scanStart = DateTime.UtcNow;
+        var nextScanTime = scanStart.AddSeconds(_scannerSettings.ScanIntervalSeconds).ToLocalTime();
+        var nextScanText = $"Nächster Scan: {nextScanTime:HH:mm:ss}";
+
+        // 0. Market-Cap-Cache aktualisieren (CoinGecko, max 1x pro Stunde)
+        // MUSS vor dem ersten Scan geladen sein, sonst kommen Meme-Coins durch
+        if (!Core.Helpers.MarketCapCache.IsLoaded)
+        {
+            try
+            {
+                await Core.Helpers.MarketCapCache.RefreshIfNeededAsync().ConfigureAwait(false);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Market",
+                    Core.Helpers.MarketCapCache.IsLoaded
+                        ? $"MarketCap-Cache geladen: {Core.Helpers.MarketCapCache.CachedCount} Coins von CoinGecko"
+                        : "MarketCap-Cache: CoinGecko gab leere Antwort — Volume-Fallback aktiv"));
+            }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Market",
+                    $"CoinGecko nicht erreichbar: {ex.Message} — Volume-Fallback aktiv (Meme-Coins möglich!)"));
+            }
+        }
+        else
+        {
+            // Cache ist geladen — nur stündlich refreshen (still, kein Log)
+            try { await Core.Helpers.MarketCapCache.RefreshIfNeededAsync().ConfigureAwait(false); }
+            catch { /* Stündlicher Refresh optional */ }
+        }
+
+        // 1. Alle Ticker holen und filtern
+        var tickers = await _publicClient.GetAllTickersAsync(ct).ConfigureAwait(false);
+        if (tickers.Count == 0)
+        {
+            PublishScanSummary("Keine Ticker verfügbar", nextScanText);
+            return;
+        }
+
+        // Multi-TF Standalone: Aktive TFs bestimmen + Kandidaten PRO TF filtern (per-TF-Volumen/Change).
+        // Krypto nutzt MinVolume24hByTf, TradFi separat MinVolume24hTradFiByTf (niedriger).
+        var activeTfsEarly = (_scannerSettings.ActiveTimeframes?.Count > 0
+            ? _scannerSettings.ActiveTimeframes
+            : new List<TimeFrame> { TimeFrame.D1, TimeFrame.H4, TimeFrame.H1, TimeFrame.M15 })
+            .Distinct()
+            .OrderByDescending(tf => TimeFrameHelper.ToDuration(tf))
+            .ToList();
+
+        var candidatesByTf = new Dictionary<TimeFrame, List<Ticker>>();
+        foreach (var tf in activeTfsEarly)
+            candidatesByTf[tf] = ScanHelper.FilterCandidatesForTimeframe(tickers, _scannerSettings, tf);
+
+        // Superset: Union aller TF-Kandidaten (Kerzen nur einmal pro Symbol fetchen)
+        var candidates = candidatesByTf.Values
+            .SelectMany(x => x)
+            .GroupBy(t => t.Symbol)
+            .Select(g => g.First())
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            PublishScanSummary("Keine Kandidaten in einer aktiven TF (Volumen-/Momentum-Filter)", nextScanText);
+            return;
+        }
+
+        if (_eventBus.HasLogSubscribers)
+        {
+            var tradFiCount = candidates.Count(t => SymbolClassifier.IsTradFi(t.Symbol));
+            var cryptoCount = candidates.Count - tradFiCount;
+            var perTfCounts = string.Join(" | ",
+                candidatesByTf.Select(kv => $"{kv.Key}={kv.Value.Count}"));
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Scanner",
+                $"{LogPrefix}{candidates.Count} Symbole total ({cryptoCount}Cr + {tradFiCount}TradFi) | per-TF: {perTfCounts} | Hedge={_scannerSettings.IsHedgeModeActive}"));
+        }
+
+        // v1.3.0 K1: Scanner-Kandidaten als Remote-Event publishen — pro Navigator-TF eine
+        // Sweep-Nachricht mit Top-N-Tickern. Score/SuggestedSide sind hier noch 0/null, weil
+        // die SK-Evaluation erst weiter unten (pro Symbol+TF) laeuft. Client zeigt damit die
+        // Vor-Filter-Liste im Dashboard an — reicht fuer "sieht-was-gerade-passiert"-UX.
+        foreach (var kvp in candidatesByTf)
+        {
+            if (kvp.Value.Count == 0) continue;
+            var sweepCandidates = kvp.Value
+                .Select(t => new ScannerCandidate(
+                    Symbol: t.Symbol,
+                    Price: t.LastPrice,
+                    Volume24h: t.Volume24h,
+                    PriceChangePercent: t.PriceChangePercent24h,
+                    Score: 0,
+                    SuggestedSide: null,
+                    Reason: null))
+                .ToList();
+            _eventBus.PublishScannerSweep(new ScannerSweepArgs(kvp.Key, sweepCandidates));
+        }
+
+        // 2. Globale MarketFilter prüfen (VOR dem teuren Klines-Loading)
+        // Funding-Settlement blockiert ALLE BingX-Perpetuals (Krypto + TradFi haben Funding).
+        var sessionFilter = MarketFilter.CheckSession(DateTime.UtcNow);
+        if (!sessionFilter.IsAllowed)
+        {
+            PublishScanSummary($"Session-Filter: {sessionFilter.SessionInfo}", nextScanText);
+            IndicatorHelper.ClearCache();
+            return;
+        }
+
+        // BUCH-ONLY: Keine Max-Trades/Tag-Obergrenze. Das Buch kennt kein Trade-Limit pro Tag.
+
+        // TradFi-Kandidaten mit geschlossenem Markt VOR dem teuren Klines-Loading entfernen.
+        // Spart ~5 API-Calls pro geschlossenem TradFi-Symbol (H4+H1+M30+D1+W1).
+        var nowPreFilter = DateTime.UtcNow;
+        var openCandidates = candidates.Where(t => TradingHoursFilter.IsMarketOpen(t.Symbol, nowPreFilter)).ToList();
+        if (openCandidates.Count < candidates.Count && _eventBus.HasLogSubscribers)
+        {
+            var skipped = candidates.Count - openCandidates.Count;
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Scanner",
+                $"{LogPrefix}{skipped} TradFi-Kandidaten übersprungen (Markt geschlossen)"));
+        }
+        candidates = openCandidates;
+
+        // 3. Account + Positionen holen
+        var account = await GetAccountAsync().ConfigureAwait(false);
+        var positions = await GetPositionsForScanAsync().ConfigureAwait(false);
+
+        // 4. Multi-TF Standalone: Klines pro Navigator-TF × Symbol laden.
+        //    W1 + D1 einmal pro Symbol (shared über alle Navigator-TF-Evaluierungen).
+        //    Pro Navigator-TF wird zusätzlich die Filter-TF (H4/H1/M15/M5) geladen.
+        var now = DateTime.UtcNow;
+        var activeTfs = activeTfsEarly;
+
+        // Lookup-Set pro TF für schnelles "ist Symbol in dieser TF-Kandidatenliste?"
+        var candidateSetByTf = candidatesByTf.ToDictionary(
+            kv => kv.Key,
+            kv => kv.Value.Select(t => t.Symbol).ToHashSet(StringComparer.OrdinalIgnoreCase));
+
+        // Shared D1/W1 pro Symbol
+        var dailyResults = new ConcurrentDictionary<string, List<Candle>?>();
+        var weeklyResults = new ConcurrentDictionary<string, List<Candle>?>();
+        // Nav + Filter pro (Symbol, TF)
+        var navResults = new ConcurrentDictionary<(string Symbol, TimeFrame Nav), List<Candle>>();
+        var filterResults = new ConcurrentDictionary<(string Symbol, TimeFrame Nav), List<Candle>?>();
+
+        var fetchTasks = candidates.SelectMany(ticker =>
+        {
+            var tasks = new List<Task>();
+            // W1/D1 shared
+            tasks.Add(FetchCandlesAsync(ticker.Symbol, TimeFrame.W1, 730, ct)
+                .ContinueWith(t => weeklyResults[ticker.Symbol] = t.IsCompletedSuccessfully ? t.Result : null,
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+            tasks.Add(FetchCandlesAsync(ticker.Symbol, TimeFrame.D1, 365, ct)
+                .ContinueWith(t => dailyResults[ticker.Symbol] = t.IsCompletedSuccessfully ? t.Result : null,
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+
+            foreach (var tf in activeTfs)
+            {
+                // Nav-Kerzen TF-abhängige Tiefe (siehe Plan)
+                var daysBack = GetNavigatorLookbackDays(tf);
+                tasks.Add(FetchCandlesAsync(ticker.Symbol, tf, daysBack, ct)
+                    .ContinueWith(t =>
+                    {
+                        if (t.IsCompletedSuccessfully && t.Result != null)
+                            navResults[(ticker.Symbol, tf)] = t.Result;
+                    }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+
+                var filterTf = Engine.Strategies.SequenzKonzeptStrategy.GetFilterTimeframe(tf);
+                if (filterTf.HasValue && filterTf.Value != TimeFrame.D1 && filterTf.Value != TimeFrame.W1)
+                {
+                    var fDays = GetFilterLookbackDays(filterTf.Value);
+                    tasks.Add(FetchCandlesAsync(ticker.Symbol, filterTf.Value, fDays, ct)
+                        .ContinueWith(t => filterResults[(ticker.Symbol, tf)] =
+                            t.IsCompletedSuccessfully ? t.Result : null,
+                            CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+                }
+            }
+            return tasks;
+        });
+
+        await Task.WhenAll(fetchTasks).ConfigureAwait(false);
+
+        // 4b. BTC-Health einmalig pro Scan berechnen (v1.2.5) — wird als PositionScale-Faktor
+        // fuer Crypto-Trades genutzt + harter Block bei AllowLong/AllowShort=false.
+        // Vor v1.2.5 nur fuer Dokumentation da, aber nie im Sizing angewendet.
+        BtcHealthResult? btcHealth = null;
+        var btcSymbol = tickers.FirstOrDefault(t => t.Symbol.StartsWith("BTC", StringComparison.OrdinalIgnoreCase))?.Symbol;
+        if (btcSymbol != null)
+        {
+            dailyResults.TryGetValue(btcSymbol, out var btcD1);
+            var btcH4Available = navResults.TryGetValue((btcSymbol, TimeFrame.H4), out var btcH4)
+                                  ? btcH4 : null;
+            var btcFundingForHealth = _fundingRates.GetValueOrDefault(btcSymbol, 0m);
+            if (btcD1 is { Count: > 55 } && btcH4Available is { Count: > 20 })
+            {
+                btcHealth = MarketFilter.CalculateBtcHealth(btcD1, btcH4Available, btcFundingForHealth);
+                if (_eventBus.HasLogSubscribers)
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Market",
+                        $"{LogPrefix}BTC-Health: Score={btcHealth.Score}, Scale={btcHealth.PositionScale:F2}, L/S={btcHealth.AllowLong}/{btcHealth.AllowShort} | {btcHealth.Reasons}"));
+            }
+        }
+
+        // 4c. Scan-Prefetch-Hook (v1.2.5): Subklassen koennen hier zusaetzliche Daten laden,
+        // die pro Scan einmalig sind (z.B. Funding-Rates fuer Kandidaten ohne Cache). Damit
+        // sehen neue Signale im SkConfluenceScorer/MarketFilter korrekte Funding-Werte statt 0.
+        try { await PreloadScanDataAsync(candidates, ct).ConfigureAwait(false); }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Scanner",
+                $"{LogPrefix}PreloadScanData fehlgeschlagen: {ex.Message}"));
+        }
+
+        // 5. Evaluierung: pro Symbol × aktive TF — sequenziell (Order-Platzierung muss sequenziell sein)
+        var orderPlaced = false;
+
+        // Multi-TF Standalone: Scanner-Result pro TF sammeln für /api/v1/scanner/results
+        var scanSymbolsByTf = activeTfs.ToDictionary(
+            tf => tf,
+            _ => new List<ScannerSymbolDto>());
+
+        foreach (var ticker in candidates)
+        {
+            if (ct.IsCancellationRequested) break;
+
+            if (!TradingHoursFilter.IsMarketOpen(ticker.Symbol, DateTime.UtcNow))
+                continue;
+
+            var category = SymbolClassifier.Classify(ticker.Symbol);
+            weeklyResults.TryGetValue(ticker.Symbol, out var weeklyCandles);
+            dailyResults.TryGetValue(ticker.Symbol, out var dailyCandles);
+
+            foreach (var navTf in activeTfs)
+            {
+                if (ct.IsCancellationRequested) break;
+
+                // Per-TF-Kandidaten-Filter: Symbol muss in dieser TF die Volume/PriceChange-Schwellen passieren.
+                if (!candidateSetByTf.TryGetValue(navTf, out var tfSet) || !tfSet.Contains(ticker.Symbol))
+                    continue;
+
+                if (!navResults.TryGetValue((ticker.Symbol, navTf), out var navCandles) || navCandles.Count < 50)
+                    continue;
+
+                // D1 ist zugleich Fahrplan — wenn navTf=D1 nehmen wir die gleichen Kerzen als Fahrplan-Daily.
+                // (DetermineFahrplanBias nutzt separate D1-Candles, aber hier ist es Nav.)
+                var dailyForContext = navTf == TimeFrame.D1 ? navCandles : dailyCandles;
+                filterResults.TryGetValue((ticker.Symbol, navTf), out var filterCandles);
+
+                try
+                {
+                    SetCurrentPriceIfNeeded(ticker.Symbol, ticker.LastPrice);
+
+                    var strategy = _strategyManager.GetOrCreateForSymbol(ticker.Symbol, navTf);
+
+                    var fundingForStrategy = _fundingRates.GetValueOrDefault(ticker.Symbol, 0m);
+
+                    var context = new MarketContext(
+                        ticker.Symbol, navCandles, ticker, positions, account,
+                        FilterTimeframeCandles: filterCandles,
+                        Category: category,
+                        DailyCandles: dailyForContext,
+                        WeeklyCandles: weeklyCandles,
+                        NavigatorTimeframe: navTf,
+                        ScannerSettings: _scannerSettings,
+                        RiskSettings: _riskSettings,
+                        FundingRatePercent: fundingForStrategy);
+                    var signal = strategy.Evaluate(context);
+
+                    if (strategy is Engine.Strategies.SequenzKonzeptStrategy skInst
+                        && !string.IsNullOrEmpty(skInst.LastStatus) && !skInst.LastStatus.Contains("—"))
+                    {
+                        _lastSkStatus = $"{ticker.Symbol} [{navTf}]: {skInst.LastStatus}";
+                        _lastSkStatusByTf[navTf] = $"{ticker.Symbol}: {skInst.LastStatus}";
+                    }
+
+                    // Scanner-Ergebnis pro TF sammeln (auch für Signal.None — zeigt Status im UI)
+                    var symbolDto = new ScannerSymbolDto(
+                        Symbol: ticker.Symbol,
+                        Price: ticker.LastPrice,
+                        Volume24h: ticker.Volume24h,
+                        PriceChangePercent: ticker.PriceChangePercent24h,
+                        Score: signal.ConfluenceScore,
+                        SuggestedSide: signal.Signal is Signal.Long ? "Long"
+                                     : signal.Signal is Signal.Short ? "Short"
+                                     : null,
+                        Reason: signal.Reason);
+                    if (scanSymbolsByTf.TryGetValue(navTf, out var listForTf))
+                        listForTf.Add(symbolDto);
+
+                    if (signal.Signal == Signal.None)
+                    {
+                        if (_eventBus.HasLogSubscribers && strategy is Engine.Strategies.SequenzKonzeptStrategy)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "SK",
+                                $"{LogPrefix}{ticker.Symbol} [{navTf}]: {signal.Reason}", ticker.Symbol));
+                        }
+                        continue;
+                    }
+
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Scanner",
+                        $"{LogPrefix}{ticker.Symbol} [{navTf}]: {signal.Signal} Signal (Confidence: {signal.Confidence:P0}) - {signal.Reason}",
+                        ticker.Symbol));
+
+                    // Close-Signale verarbeiten, dann re-evaluieren für Entry in Gegenrichtung
+                    if (signal.Signal is Signal.CloseLong or Signal.CloseShort)
+                    {
+                        var closeSide = signal.Signal == Signal.CloseLong ? Side.Buy : Side.Sell;
+                        if (positions.Any(p => p.Symbol == ticker.Symbol && p.Side == closeSide))
+                        {
+                            await ClosePositionAndPublishAsync(ticker.Symbol, closeSide).ConfigureAwait(false);
+                            positions = await GetPositionsForScanAsync().ConfigureAwait(false);
+                            account = await GetAccountAsync().ConfigureAwait(false);
+                        }
+                        var reContext = context with { OpenPositions = positions, Account = account };
+                        signal = strategy.Evaluate(reContext);
+                        if (signal.Signal is not (Signal.Long or Signal.Short))
+                            continue;
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Scanner",
+                            $"{LogPrefix}{ticker.Symbol} [{navTf}]: Re-Eval nach Close → {signal.Signal} ({signal.Reason})", ticker.Symbol));
+                    }
+
+                    var candles = navCandles; // Alias für den Rest der Order-Logik
+
+                    // BUCH-ONLY: Kein Korrelations-Check zwischen offenen Positionen (nicht im Buch).
+
+                    // Leverage: Marktspezifisches Maximum
+                    var catSettingsStd = _riskSettings.GetCategorySettings(category);
+                    var adaptLevStd = (int)catSettingsStd.MaxLeverage;
+
+                    var fundingRateStd = _fundingRates.GetValueOrDefault(ticker.Symbol, 0m);
+                    var riskCheck = _riskManager!.ValidateTrade(signal, context, fundingRateStd, adaptLevStd);
+                    if (!riskCheck.IsAllowed)
+                    {
+                        if (_eventBus.HasLogSubscribers)
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                                $"{LogPrefix}{ticker.Symbol} [{navTf}]: Trade abgelehnt - {riskCheck.RejectionReason}", ticker.Symbol));
+                        continue;
+                    }
+
+                    var positionSizeStd = riskCheck.AdjustedPositionSize;
+
+                    // BTC-Health-Filter (v1.2.5) — nur fuer Crypto relevant (TradFi ist von BTC entkoppelt).
+                    // AllowLong/AllowShort aus BtcHealthResult sind harte Blocker bei extremem BTC-Score.
+                    // PositionScale (0.65..1.0) skaliert die Positionsgroesse linear nach BTC-Zustand.
+                    var signalIsLong = signal.Signal == Signal.Long;
+                    if (btcHealth != null && category == MarketCategory.Crypto)
+                    {
+                        var btcAllows = signalIsLong ? btcHealth.AllowLong : btcHealth.AllowShort;
+                        if (!btcAllows)
+                        {
+                            if (_eventBus.HasLogSubscribers)
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                                    $"{LogPrefix}{ticker.Symbol} [{navTf}]: BTC-Health blockiert {(signalIsLong ? "Long" : "Short")} (Score={btcHealth.Score}, {btcHealth.Reasons})", ticker.Symbol));
+                            continue;
+                        }
+                        if (btcHealth.PositionScale > 0m && btcHealth.PositionScale < 1m)
+                        {
+                            positionSizeStd *= btcHealth.PositionScale;
+                            if (_eventBus.HasLogSubscribers)
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Risk",
+                                    $"{LogPrefix}{ticker.Symbol} [{navTf}]: BTC-PositionScale={btcHealth.PositionScale:F2} (Score={btcHealth.Score})", ticker.Symbol));
+                        }
+                    }
+
+                    // SK-Score Position-Sizing (v1.2.5) — Confluence-basierte Skalierung:
+                    //   < 5  → 75%  (Setup marginal ueber Min-Confluence)
+                    //   5-9  → 100% (Basis-SK-Setup, Buch-konform)
+                    //   ≥10  → 125% (Mehrfach-Confluence, hohe Gewinn-Wahrscheinlichkeit)
+                    // Diese Schwellen stehen in CLAUDE.md dokumentiert, Code hat es bisher nicht umgesetzt.
+                    if (signal.ConfluenceScore > 0)
+                    {
+                        var skScale = signal.ConfluenceScore switch
+                        {
+                            >= 10 => 1.25m,
+                            >= 5  => 1.00m,
+                            _     => 0.75m,
+                        };
+                        if (skScale != 1m)
+                        {
+                            positionSizeStd *= skScale;
+                            if (_eventBus.HasLogSubscribers)
+                                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Risk",
+                                    $"{LogPrefix}{ticker.Symbol} [{navTf}]: SK-Score-Scale={skScale:F2} (Score={signal.ConfluenceScore})", ticker.Symbol));
+                        }
+                    }
+
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                        $"{LogPrefix}{ticker.Symbol} [{navTf}]: Sizing: Qty={positionSizeStd:G6} | Lev={adaptLevStd}x | estMargin={positionSizeStd * ticker.LastPrice / adaptLevStd:F2} USDT"));
+
+                    var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
+
+                    // Dedup pro (Symbol, NavTF, Side) — aber eine Position auf BingX je (Symbol, Side).
+                    // Wenn bereits ein anderes TF-Signal offen ist, skippen wir (BingX würde sonst die Position nur vergrößern).
+                    var slTpKey = $"{ticker.Symbol}_{side}";
+                    if (_positionSignals.ContainsKey(slTpKey))
+                    {
+                        if (_eventBus.HasLogSubscribers)
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Risk",
+                                $"{LogPrefix}{ticker.Symbol} [{navTf}]: Übersprungen — Signal bereits aktiv für {side}", ticker.Symbol));
+                        continue;
+                    }
+
+                    // Order platzieren
+                    var placed = await PlaceOrderOnExchangeAsync(ticker, side, positionSizeStd, signal, adaptLevStd).ConfigureAwait(false);
+                    if (!placed) continue;
+
+                    _positionSignals[slTpKey] = signal;
+
+                    _exitStates[slTpKey] = new PositionExitState
+                    {
+                        Signal = signal, Symbol = ticker.Symbol, Side = side,
+                        EntryPrice = ticker.LastPrice, OriginalQuantity = positionSizeStd,
+                        Tp2 = signal.TakeProfit2,
+                        SequenceId = signal.SequenceId,
+                        NavigatorTimeframe = navTf,
+                        NavPointA = signal.NavPointA ?? 0m,       // A-Bruch-BE-Trigger (Buch-Masterclass)
+                        RunnerAtrBase = signal.EntryAtr ?? 0m,    // Task 4.7: Trailing-ATR-Basis
+                        RunnerHardCap = signal.RunnerHardCap ?? 0m, // Task 4.7: 423.6% Hard-Cap
+                    };
+                    Interlocked.Increment(ref _tradesToday);
+                    OnSignalCreated(slTpKey);
+
+                    // v1.3.0 K1: TradeOpened-Event fuer Remote-Clients — konstruierte Position,
+                    // weil die echte Exchange-Position erst im naechsten PriceTickerLoop auftaucht.
+                    // UnrealizedPnl=0, MarginType=Isolated (unser Default), Werte werden im naechsten
+                    // PositionUpdated-Event (5 s spaeter) korrigiert.
+                    _eventBus.PublishTradeOpened(new Position(
+                        Symbol: ticker.Symbol,
+                        Side: side,
+                        EntryPrice: ticker.LastPrice,
+                        MarkPrice: ticker.LastPrice,
+                        Quantity: positionSizeStd,
+                        UnrealizedPnl: 0m,
+                        Leverage: adaptLevStd,
+                        MarginType: MarginType.Isolated,
+                        OpenTime: DateTime.UtcNow), navTf);
+
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
+                        $"{LogPrefix}{ticker.Symbol} [{navTf}]: {side} {positionSizeStd:F4} @ {ticker.LastPrice:F8} | Lev={adaptLevStd}x | SL={signal.StopLoss:F8} | TP1={signal.TakeProfit:F8} | TP2={signal.TakeProfit2:F8}",
+                        ticker.Symbol));
+
+                    await OnOrderPlacedAsync(ticker, side, riskCheck.AdjustedPositionSize).ConfigureAwait(false);
+                    orderPlaced = true;
+
+                    if (orderPlaced)
+                    {
+                        account = await GetAccountAsync().ConfigureAwait(false);
+                        positions = await GetPositionsForScanAsync().ConfigureAwait(false);
+                        orderPlaced = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Engine",
+                        $"{LogPrefix}{ticker.Symbol} [{navTf}]: Fehler - {ex.Message}", ticker.Symbol));
+                }
+            }
+        }
+
+        // SK-Ampel pro TF publizieren (UI zeigt Status-Tabelle pro Navigator-TF)
+        if (_lastSkStatusByTf.Count > 0)
+        {
+            var ampelSnapshot = new Dictionary<TimeFrame, string>(_lastSkStatusByTf);
+            // Fehlende aktive TFs mit "—" auffüllen, damit die UI alle 4 Zeilen zeigt
+            foreach (var tf in activeTfs)
+                if (!ampelSnapshot.ContainsKey(tf))
+                    ampelSnapshot[tf] = "—";
+            _eventBus.PublishSkAmpel(ampelSnapshot);
+        }
+
+        // Scanner-Cache pro TF aktualisieren (für /api/v1/scanner/results)
+        if (_scannerCache != null)
+        {
+            foreach (var (tf, symbolList) in scanSymbolsByTf)
+            {
+                var ordered = symbolList
+                    .OrderByDescending(s => s.Score)
+                    .ThenByDescending(s => s.Volume24h)
+                    .Take(50)
+                    .ToList();
+                _scannerCache.Update(new ScannerResultDto(
+                    NavigatorTimeframe: tf,
+                    TimestampUtc: DateTime.UtcNow,
+                    Symbols: ordered));
+            }
+        }
+
+        // Strategy-Health-Check: Warnung bei Performance-Degradation
+        if (_riskManager != null)
+        {
+            var healthWarning = _riskManager.CheckStrategyHealth();
+            if (healthWarning != null)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Health",
+                    $"{LogPrefix}Strategy-Health-Warnung: {healthWarning}"));
+
+                if (_botSettings.EnableDesktopNotifications)
+                    _eventBus.PublishNotification("Strategy Health", healthWarning);
+            }
+        }
+
+        // Scan-Zusammenfassung: Kompakte Info-Zeile mit Kandidaten, Ergebnis
+        var elapsed = (DateTime.UtcNow - scanStart).TotalSeconds;
+        var nextScanFinal = DateTime.UtcNow.AddSeconds(_scannerSettings.ScanIntervalSeconds).ToLocalTime();
+        var strategyInfo = _strategyManager.CurrentTemplate?.Name ?? "n/a";
+        var posCount = positions.Count;
+
+        // SK-System: Detaillierten Status des zuletzt evaluierten Symbols anzeigen
+        var skStatus = "";
+        if (!string.IsNullOrEmpty(_lastSkStatus))
+        {
+            skStatus = $" | SK: {_lastSkStatus}";
+        }
+
+        var scanSummary = $"{candidates.Count} Kandidaten | {strategyInfo} | " +
+            $"Positionen: {posCount}/{_riskSettings.MaxOpenPositions} | " +
+            $"{elapsed:F1}s | Nächster: {nextScanFinal:HH:mm:ss}{skStatus}";
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Scanner", $"{LogPrefix}{scanSummary}"));
+
+        // Indikator-Cache nach Scan-Durchlauf leeren (Daten sind beim nächsten Scan veraltet)
+        IndicatorHelper.ClearCache();
+    }
+
+    /// <summary>Publiziert eine kompakte Scan-Zusammenfassung (Info-Level) bei Early-Returns.</summary>
+    private void PublishScanSummary(string reason, string nextScanText)
+    {
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Scanner",
+            $"{LogPrefix}{reason} | {nextScanText}"));
+    }
+
+    /// <summary>
+    /// Multi-TF Standalone: Lädt Kerzen für ein Symbol/TF innerhalb des Scan-Loops (Rate-Limit-gethrottelt).
+    /// Gibt bei Exception eine leere Liste zurück (ruft ConfigureAwait(false) intern).
+    /// </summary>
+    private async Task<List<Candle>> FetchCandlesAsync(string symbol, TimeFrame tf, int daysBack, CancellationToken ct)
+    {
+        await _klineSemaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var now = DateTime.UtcNow;
+            return await _publicClient.GetKlinesAsync(
+                symbol, tf, now.AddDays(-daysBack), now, ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch
+        {
+            return new List<Candle>();
+        }
+        finally { _klineSemaphore.Release(); }
+    }
+
+    /// <summary>Lookback-Tage für Navigator-TF (Plan Abschnitt 2).</summary>
+    private static int GetNavigatorLookbackDays(TimeFrame tf) => tf switch
+    {
+        TimeFrame.D1 => 365,                           // ~365 Kerzen
+        TimeFrame.H4 => 60,                            // ~360 Kerzen (60 Tage × 6)
+        TimeFrame.H1 => 20,                            // ~480 Kerzen (20 Tage × 24)
+        TimeFrame.M5 => 2,                             // ~576 Kerzen (2 Tage × 288)
+        TimeFrame.M15 => 5,                            // ~480 Kerzen
+        TimeFrame.M30 => 10,
+        TimeFrame.W1 => 730,
+        _ => 30,
+    };
+
+    /// <summary>Lookback-Tage für Filter-TF (~200 Kerzen Ziel).</summary>
+    private static int GetFilterLookbackDays(TimeFrame tf) => tf switch
+    {
+        TimeFrame.H4 => 35,
+        TimeFrame.H1 => 10,
+        TimeFrame.M15 => 3,
+        TimeFrame.M5 => 1,
+        TimeFrame.M1 => 1,
+        _ => 14,
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // Abstrakte Methoden (müssen von Subklassen implementiert werden)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>Account-Info von der Exchange abrufen.</summary>
+    protected abstract Task<AccountInfo> GetAccountAsync();
+
+    /// <summary>Offene Positionen für den Scan-Zyklus abrufen.</summary>
+    protected abstract Task<IReadOnlyList<Position>> GetPositionsForScanAsync();
+
+    /// <summary>Offene Positionen für den PriceTicker-Loop abrufen.</summary>
+    protected abstract Task<IReadOnlyList<Position>> GetPositionsForTickerAsync();
+
+    /// <summary>Preis auf der Exchange setzen (nur für SimulatedExchange relevant, Live ignoriert).</summary>
+    protected abstract void SetCurrentPriceIfNeeded(string symbol, decimal price);
+
+    /// <summary>Order auf der Exchange platzieren. Gibt true zurück bei Erfolg. Signal optional für native SL/TP. adaptiveLeverage überschreibt MaxLeverage wenn > 0.</summary>
+    protected abstract Task<bool> PlaceOrderOnExchangeAsync(Ticker ticker, Side side, decimal quantity, SignalResult? signal = null, int adaptiveLeverage = 0);
+
+    /// <summary>Position schließen und CompletedTrade publizieren.</summary>
+    protected abstract Task ClosePositionAndPublishAsync(string symbol, Side side);
+
+    /// <summary>Wird aufgerufen wenn SL/TP getroffen wurde. isStopLoss=true für SL, false für TP.</summary>
+    protected abstract Task OnSlTpHitAsync(Position pos, decimal price, string key, string reason, bool isStopLoss);
+
+    /// <summary>Partial Close: Schließt einen Teil der Position (Multi-Stage TP1). Menge in Basiswährung.</summary>
+    protected abstract Task OnPartialCloseAsync(Position pos, decimal price, decimal quantityToClose);
+
+    // ═══════════════════════════════════════════════════════════════
+    // Virtuelle Hooks (optional überschreibbar)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>Hook: Wird aufgerufen wenn ein Signal entfernt wird (z.B. für _signalCreatedAt in Live).</summary>
+    protected virtual void OnSignalRemoved(string key) { }
+
+    /// <summary>Hook: Wird aufgerufen wenn alle Signale geleert werden (Stop/Emergency).</summary>
+    protected virtual void OnSignalsClearedAll() { }
+
+    /// <summary>Hook: Wird aufgerufen wenn ein neues Signal erstellt wird (z.B. für _signalCreatedAt in Live).</summary>
+    protected virtual void OnSignalCreated(string key) { }
+
+    /// <summary>Hook: Zusätzliche Wartezeit bei Scan-Fehlern (Standard: keine, Live: 60s).</summary>
+    protected virtual Task OnScanErrorAsync(CancellationToken ct) => Task.CompletedTask;
+
+    /// <summary>
+    /// Hook: Wird einmal pro Scan-Zyklus aufgerufen, NACH Klines-Load und VOR der Symbol-Evaluation.
+    /// Subklassen koennen hier Daten laden die pro Scan einmalig sind (Funding-Rates etc.).
+    /// Standard: no-op. Live: Funding-Rate-Prefetch fuer Kandidaten ohne Cache.
+    /// </summary>
+    protected virtual Task PreloadScanDataAsync(IReadOnlyList<Ticker> candidates, CancellationToken ct) => Task.CompletedTask;
+
+    /// <summary>Hook: Wird vor jeder PriceTicker-Iteration aufgerufen (z.B. verwaiste Signale bereinigen). Positionen werden übergeben.</summary>
+    protected virtual Task OnBeforePriceTickerIteration(IReadOnlyList<Position> positions) => Task.CompletedTask;
+
+    /// <summary>Hook: Zusätzliche Aktionen nach erfolgreicher Order-Platzierung.</summary>
+    protected virtual Task OnOrderPlacedAsync(Ticker ticker, Side side, decimal quantity) => Task.CompletedTask;
+
+    /// <summary>
+    /// Verarbeitet einen abgeschlossenen Trade: Risiko-Update + Symbol-Cooldown + Desktop-Notification.
+    /// Subklassen sollten diese Methode aufrufen statt _riskManager.UpdateDailyStats direkt.
+    /// </summary>
+    protected void ProcessCompletedTrade(CompletedTrade trade)
+    {
+        _riskManager?.UpdateDailyStats(trade);
+
+        // Buch Workflow 6.8: BE-Ausstoppung → sofortiger Re-Entry (kein Cooldown)
+        // Erkennen: Trade-PnL nahe 0 (±0.2% von Entry×Quantity) = BE-Exit
+        var isBreakEvenExit = trade.EntryPrice > 0
+                             && Math.Abs(trade.Pnl) < Math.Abs(trade.EntryPrice * trade.Quantity) * 0.002m;
+
+        if (trade.Pnl < 0 && !isBreakEvenExit)
+        {
+            Interlocked.Increment(ref _consecutiveLosses);
+        }
+        else if (isBreakEvenExit)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                $"{LogPrefix}{trade.Symbol}: BE-Exit (Buch 6.8: sofort Re-Entry erlaubt)", trade.Symbol));
+            Interlocked.Exchange(ref _consecutiveLosses, 0);
+        }
+        else
+        {
+            Interlocked.Exchange(ref _consecutiveLosses, 0);
+        }
+
+        // Sync RiskManager.CurrentConsecutiveLosses mit Base-Counter (v1.2.5).
+        // RiskManager.UpdateDailyStats erhoeht bei Pnl<0 unabhaengig von BE-Detection.
+        // Base-Counter kennt die BE-Exit-Regel — ohne Sync waere GetPositionScalingFactor
+        // (nutzt RiskManager.CurrentConsecutiveLosses) zu aggressiv nach BE-Exits.
+        _riskManager?.SetConsecutiveLosses(_consecutiveLosses);
+
+        // Desktop-Notification senden
+        if (_botSettings.EnableDesktopNotifications)
+        {
+            var direction = trade.Pnl >= 0 ? "Gewinn" : "Verlust";
+            _eventBus.PublishNotification(
+                $"{LogPrefix}{trade.Symbol} geschlossen",
+                $"{direction}: {trade.Pnl:F2} USDT ({trade.Side}, {trade.EntryPrice:F4} → {trade.ExitPrice:F4})");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Dispose
+    // ═══════════════════════════════════════════════════════════════
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        _klineSemaphore.Dispose();
+        DisposeAdditional();
+    }
+
+    /// <summary>Stoppt den Service. Kann von Subklassen überschrieben werden.</summary>
+    public virtual Task StopAsync()
+    {
+        StopBase(BotState.Stopped, $"{ModeName} gestoppt");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Notfall-Stop: Alle Positionen schließen. Kann von Subklassen überschrieben werden.</summary>
+    public virtual Task EmergencyStopAsync()
+    {
+        StopBase(BotState.EmergencyStop, $"{ModeName} Notfall-Stop");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Hook: SL wurde auf Break-Even gesetzt (Workflow 4.2 "A-Bruch").
+    /// LiveTradingService überschreibt dies und aktualisiert den nativen SL auf BingX.
+    /// </summary>
+    protected virtual Task OnStopLossAdjustedAsync(string symbol, Side side, decimal newStopLoss) => Task.CompletedTask;
+
+
+    /// <summary>Hook: Zusätzliche Dispose-Logik für Subklassen (z.B. WebSocket-Cleanup).</summary>
+    protected virtual void DisposeAdditional() { }
+}

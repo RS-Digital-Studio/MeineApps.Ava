@@ -7,7 +7,7 @@ using BingXBot.Engine.Strategies;
 using BingXBot.Exchange;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace BingXBot.Services;
+namespace BingXBot.Trading;
 
 /// <summary>
 /// Verwaltet die Live-Trading-Infrastruktur: Client-Erstellung, Verbindung,
@@ -35,6 +35,12 @@ public class LiveTradingManager : IDisposable
     /// <summary>Aktueller REST-Client (null wenn nicht verbunden).</summary>
     public BingXRestClient? RestClient => _restClient;
 
+    /// <summary>
+    /// True wenn ein SecureStorage hinterlegt ist und BingX-Credentials dort persistiert sind.
+    /// Vermeidet Reflection-Zugriffe auf das private Feld in Consumern (z.B. LocalBotControlService).
+    /// </summary>
+    public bool HasCredentials => _secureStorage?.HasCredentials ?? false;
+
     /// <summary>Echte Taker-Fee-Rate vom BingX Account (geladen bei Connect). Fallback 0.05%.</summary>
     public decimal CommissionTakerRate { get; private set; } = 0.0005m;
     /// <summary>Echte Maker-Fee-Rate vom BingX Account (geladen bei Connect). Fallback 0.02%.</summary>
@@ -57,7 +63,8 @@ public class LiveTradingManager : IDisposable
         ScannerSettings scannerSettings,
         BotEventBus eventBus,
         BotSettings botSettings,
-        BotDatabaseService? dbService = null)
+        BotDatabaseService? dbService = null,
+        Local.ScannerResultsCache? scannerCache = null)
     {
         _secureStorage = secureStorage;
         _publicClient = publicClient;
@@ -67,7 +74,10 @@ public class LiveTradingManager : IDisposable
         _eventBus = eventBus;
         _botSettings = botSettings;
         _dbService = dbService;
+        _scannerCache = scannerCache;
     }
+
+    private readonly Local.ScannerResultsCache? _scannerCache;
 
     /// <summary>
     /// Verbindet sich mit BingX, testet die Verbindung und gibt Account-Info + offene Positionen zurück.
@@ -103,17 +113,27 @@ public class LiveTradingManager : IDisposable
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Account",
                 $"Fees geladen: Taker={taker:P3}, Maker={maker:P3}"));
         }
-        catch { /* Fallback auf Standard-Raten */ }
+        catch (Exception feeEx)
+        {
+            // Wichtig: NICHT stillschweigend schlucken. Bei VIP-Account (reduzierte Fees) wuerden
+            // PnL-Berechnungen sonst dauerhaft mit falschen Standard-Raten (Taker 0.05% / Maker 0.02%)
+            // laufen. Log ermoeglicht es dem User die Diskrepanz nach dem ersten Trade zu erkennen.
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Warning, "Account",
+                $"Commission-Rates konnten nicht geladen werden ({feeEx.Message}) — Fallback auf Standard "
+                + $"Taker={CommissionTakerRate:P3} / Maker={CommissionMakerRate:P3}. PnL koennte bei VIP-Account abweichen."));
+        }
 
         // Verbindung testen
         var account = await _restClient.GetAccountInfoAsync();
         var positions = await _restClient.GetPositionsAsync();
 
-        // Hedge-Modus erkennen + automatisch umschalten für TradFi
+        // Hedge-Modus erkennen + automatisch umschalten für TradFi.
+        // Scanner-Flag wird an den tatsächlich durchgesetzten Hedge-Status gekoppelt: Bei One-Way
+        // würde TradFi zwar scannen, aber jede Order würde von BingX rejected werden (Log-Spam +
+        // verschwendete API-Calls). Nur bei echtem Hedge-Modus TradFi scannen.
         var isHedge = await _restClient.IsHedgeModeAsync();
-        if (_scannerSettings.EnableTradFi && !isHedge)
+        if (!isHedge)
         {
-            // Automatisch auf Hedge umschalten (nur möglich wenn keine Positionen offen)
             if (positions.Count == 0)
             {
                 var switched = await _restClient.SetHedgeModeAsync(true);
@@ -126,13 +146,13 @@ public class LiveTradingManager : IDisposable
                 else
                 {
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
-                        "Hedge-Modus konnte nicht aktiviert werden. TradFi-Trading nicht möglich."));
+                        "Hedge-Modus konnte nicht aktiviert werden (BingX-API-Fehler). TradFi bleibt für diese Session deaktiviert."));
                 }
             }
             else
             {
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
-                    $"TradFi deaktiviert: Hedge-Modus erfordert 0 offene Positionen (aktuell: {positions.Count}). Schließe alle Positionen und starte den Bot neu."));
+                    $"BingX steht auf One-Way und kann nicht umgeschaltet werden ({positions.Count} offene Position(en)). Schließe alle Positionen und starte den Bot neu — TradFi bleibt für diese Session deaktiviert."));
             }
         }
         _scannerSettings.IsHedgeModeActive = isHedge;
@@ -171,17 +191,13 @@ public class LiveTradingManager : IDisposable
             _eventBus,
             _botSettings,
             dbService: _dbService);
+        _service.SetScannerResultsCache(_scannerCache);
 
         // Echte Fee-Rates vom Account setzen (statt hardcoded)
         _service.SetCommissionRates(CommissionTakerRate, CommissionMakerRate);
 
-        // Strategie aktivieren + Trading-Modus-Preset anwenden
+        // Strategie aktivieren (Multi-TF Standalone: kein Preset mehr)
         var strategy = StrategyFactory.Create(strategyName);
-        if (strategy is SequenzKonzeptStrategy sk)
-        {
-            var preset = _botSettings.LastTradingModePreset;
-            sk.ApplyPreset(preset);
-        }
         _strategyManager.SetStrategy(strategy);
 
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
@@ -265,19 +281,12 @@ public class LiveTradingManager : IDisposable
 
             // Alle offenen Orders EINMAL laden (statt pro Position → weniger API-Calls)
             var allOpenOrders = await _restClient.GetOpenOrdersAsync();
-
-            // TP-Orders pro Symbol zählen (LIMIT Reduce-Only = TP1/TP2)
-            var tpOrdersBySymbol = new Dictionary<string, int>();
-            foreach (var order in allOpenOrders)
-            {
-                if (order.Type is OrderType.TakeProfitMarket or OrderType.TakeProfitLimit
-                    || (order.Type == OrderType.Limit && order.StopPrice is null or 0))
-                {
-                    // Zähle Limit-Orders die TP sein könnten (Reduce-Only Limits haben keinen StopPrice)
-                    tpOrdersBySymbol.TryGetValue(order.Symbol, out var count);
-                    tpOrdersBySymbol[order.Symbol] = count + 1;
-                }
-            }
+            // 24.04.2026 (bingxbot-Audit): Frueher hier `tpOrdersBySymbol`-Dictionary das jede LIMIT-Order
+            // ohne StopPrice als TP zaehlte — dabei aber nicht zwischen Entry-Limits und TP-Limits
+            // unterschied. Bei Triple-Entry-Restbestaenden (mehrere offene Long-Buy-Limits) waere die
+            // Zaehlung ueberhoeht. Zugleich war das Dictionary an `RecoverMissingTpOrdersAsync` uebergeben,
+            // dort aber NIE GELESEN — der Bug hatte keine Wirkung. Entfernt: kein toter Code mehr,
+            // RecoverMissingTpOrdersAsync nutzt seine eigene side-aware Heuristik (`isTpForLong/Short`).
 
             foreach (var pos in positions)
             {
@@ -370,7 +379,7 @@ public class LiveTradingManager : IDisposable
                     // TP-Recovery: Position hat ExitState mit TP-Werten aber keine TP-Orders auf BingX.
                     // Passiert wenn App zwischen Limit-Order-Platzierung und Fill neugestartet wurde
                     // und die Limit-Order inzwischen gefüllt wurde (TP wurde nie als Reduce-Only platziert).
-                    await RecoverMissingTpOrdersAsync(pos, tpOrdersBySymbol, allOpenOrders);
+                    await RecoverMissingTpOrdersAsync(pos, allOpenOrders);
                 }
                 catch { /* Best-effort */ }
             }
@@ -394,8 +403,7 @@ public class LiveTradingManager : IDisposable
     /// Wird aufgerufen wenn eine Position existiert aber keine TP-Orders auf BingX gefunden werden.
     /// TP-Werte kommen aus dem wiederhergestellten ExitState (enthält das Original-Signal mit TP1/TP2).
     /// </summary>
-    private async Task RecoverMissingTpOrdersAsync(Position pos,
-        Dictionary<string, int> tpOrdersBySymbol, IReadOnlyList<Order> allOpenOrders)
+    private async Task RecoverMissingTpOrdersAsync(Position pos, IReadOnlyList<Order> allOpenOrders)
     {
         if (_service == null) return;
 
@@ -676,7 +684,15 @@ public class LiveTradingManager : IDisposable
                 {
                     var atrValue = atr[^1]!.Value;
                     var atrPercentile = Engine.Indicators.IndicatorHelper.CalculateAtrPercentile(candles);
-                    var slMult = TradingModeDefaults.GetRecoverySlMultiplier(atrPercentile);
+                    // Multi-TF Standalone: Einheitlicher SL-Multiplikator (2× ATR als pragmatischer Notfall-SL).
+                    // Höher bei extremer Vola, niedriger bei ruhigem Markt.
+                    var slMult = atrPercentile switch
+                    {
+                        < 20 => 1.5m,
+                        < 50 => 1.8m,
+                        < 75 => 2.0m,
+                        _ => 2.5m,
+                    };
 
                     var sl = pos.Side == Side.Buy
                         ? pos.EntryPrice - atrValue * slMult
@@ -700,21 +716,9 @@ public class LiveTradingManager : IDisposable
             : pos.EntryPrice * (1m + fallbackPercent);
     }
 
-    /// <summary>Berechnet ATR-Wert für ein Symbol (für BE-Puffer bei Recovery).</summary>
-    private async Task<decimal> CalculateRecoveryAtrAsync(Position pos)
-    {
-        if (_publicClient == null) return 0m;
-        var candles = await _publicClient.GetKlinesAsync(
-            pos.Symbol, _scannerSettings.ScanTimeFrame,
-            DateTime.UtcNow.AddHours(-100), DateTime.UtcNow).ConfigureAwait(false);
-        if (candles.Count >= 20)
-        {
-            var atr = Engine.Indicators.IndicatorHelper.CalculateAtr(candles);
-            if (atr.Count > 0 && atr[^1].HasValue && atr[^1]!.Value > 0)
-                return atr[^1]!.Value;
-        }
-        return 0m;
-    }
+    // 24.04.2026 Phase-4-Audit m3: CalculateRecoveryAtrAsync entfernt — Dead-Code, nirgends aufgerufen.
+    // Die einzige BE-Recovery (RecoverOpenPositionsAsync Zeilen 304-339) nutzt direkt den BingX-SL als
+    // Distanz-Basis, kein ATR-Recompute mehr noetig.
 
     public void Dispose()
     {

@@ -8,7 +8,7 @@ using BingXBot.Engine.Indicators;
 using BingXBot.Engine.Risk;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace BingXBot.Services;
+namespace BingXBot.Trading;
 
 /// <summary>
 /// Paper-Trading-Service: Echtzeit-Simulation mit REST-Polling.
@@ -116,8 +116,31 @@ public class PaperTradingService : TradingServiceBase
         // Dynamische Slippage: ATR/Volume aus gecachten Klines berechnen
         UpdateMarketConditionsForSymbol(ticker.Symbol, ticker.LastPrice);
 
+        // Limit-Order-Simulation (18.04.2026 v1.2.4): Paper-Mode nutzt den vom Signal geplanten
+        // Limit-Preis (SignalResult.EntryPrice) statt des aktuellen Tickers als Fill-Preis.
+        // Vollstaendige Pending-Queue-Simulation (Wait-for-Retrace + Invalidation-Cancel) ist
+        // Live-only — Paper approximiert den Fill-Preis korrekt, unterschlaegt aber den
+        // Invalidation-Cancel vor dem Fill (optimistischer Bias fuer Pre-Fill-Invalidierungen).
+        // Live-Discrepancy: Wenn im Live die Sequenz vor dem Retrace invalidiert, wird kein Trade
+        // ausgeloest — Paper zeigt diesen Trade trotzdem. Backtests sind dadurch pessimistischer als noetig.
+        var isLimit = signal?.PreferLimitOrder == true
+                      && signal.EntryPrice.HasValue && signal.EntryPrice.Value > 0;
+        if (isLimit)
+        {
+            _exchange.SetCurrentPrice(ticker.Symbol, signal!.EntryPrice!.Value);
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
+                $"{ModePrefix}{ticker.Symbol}: Paper simuliert Limit-Fill @ {signal.EntryPrice:F8} " +
+                $"(Ticker={ticker.LastPrice:F8}) — Invalidation vor Fill wird nicht simuliert",
+                ticker.Symbol));
+        }
+
         var order = await _exchange.PlaceOrderAsync(new OrderRequest(
             ticker.Symbol, side, OrderType.Market, quantity));
+
+        // Nach dem Fill den Ticker-Preis zuruecksetzen, damit nachfolgende Positionen/Scans den
+        // tatsaechlichen Marktpreis sehen, nicht den artifiziellen Limit-Level.
+        if (isLimit)
+            _exchange.SetCurrentPrice(ticker.Symbol, ticker.LastPrice);
 
         if (order.Status == OrderStatus.Rejected)
         {
@@ -193,7 +216,7 @@ public class PaperTradingService : TradingServiceBase
         _exchange.SetMarketConditions(symbol, estimatedAtr, 1.0m);
     }
 
-    /// <summary>Publiziert alle neuen CompletedTrades seit prevCount.</summary>
+    /// <summary>Publiziert alle neuen CompletedTrades seit prevCount + neuen Equity-Punkt fuer Remote-UI.</summary>
     private void PublishNewTrades(int prevCount)
     {
         var allTrades = _exchange!.GetCompletedTrades();
@@ -202,6 +225,13 @@ public class PaperTradingService : TradingServiceBase
             // Trade-Outcome ZUERST verarbeiten, DANN EventBus → Dashboard-Snapshot sieht aktuelle Counter
             ProcessCompletedTrade(allTrades[i]);
             _eventBus.PublishTrade(allTrades[i]);
+        }
+
+        // v1.3.0 K1: Nach Trade-Close neuen Equity-Punkt fuer Live-Chart publishen.
+        // Paper: Balance = initial + realized PnL aller abgeschlossenen Trades (Exchange rechnet das).
+        if (allTrades.Count > prevCount)
+        {
+            _eventBus.PublishEquity(new EquityPoint(DateTime.UtcNow, _exchange.Balance));
         }
     }
 

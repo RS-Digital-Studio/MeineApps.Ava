@@ -7,7 +7,7 @@ using BingXBot.Engine;
 using BingXBot.Engine.Indicators;
 using BingXBot.Engine.Risk;
 
-namespace BingXBot.Services;
+namespace BingXBot.Trading;
 
 /// <summary>
 /// Gemeinsame Scan-Logik für Paper- und Live-Trading.
@@ -22,7 +22,44 @@ public static class ScanHelper
     /// </summary>
     [ThreadStatic] private static Random? _rng;
 
+    /// <summary>
+    /// Multi-TF Standalone (15.04.2026): Filtert Kandidaten für eine bestimmte Navigator-TF.
+    /// Krypto nutzt <see cref="ScannerSettings.MinVolume24hByTf"/>, TradFi nutzt separat
+    /// <see cref="ScannerSettings.MinVolume24hTradFiByTf"/> (deutlich niedriger — TradFi-Liquidität).
+    /// MaxResults wird aus <see cref="ScannerSettings.MaxResultsByTf"/> gezogen.
+    /// </summary>
+    public static List<Ticker> FilterCandidatesForTimeframe(
+        IReadOnlyList<Ticker> tickers, ScannerSettings settings, TimeFrame navigatorTf)
+    {
+        var minVolCrypto = settings.MinVolume24hByTf.TryGetValue(navigatorTf, out var vc) && vc > 0
+            ? vc : settings.MinVolume24h;
+        var minVolTradFi = settings.MinVolume24hTradFiByTf.TryGetValue(navigatorTf, out var vt) && vt > 0
+            ? vt : settings.MinVolume24hTradFi;
+        var minChgCrypto = settings.MinPriceChangeByTf.TryGetValue(navigatorTf, out var pc) && pc >= 0
+            ? pc : settings.MinPriceChange;
+        var minChgTradFi = settings.MinPriceChangeTradFiByTf.TryGetValue(navigatorTf, out var pt) && pt >= 0
+            ? pt : settings.MinPriceChangeTradFi;
+        var maxResults = settings.MaxResultsByTf.TryGetValue(navigatorTf, out var mr) && mr > 0
+            ? mr : settings.MaxResults;
+
+        return FilterCandidatesCore(tickers, settings,
+            minVolCrypto, minVolTradFi, minChgCrypto, minChgTradFi, maxResults);
+    }
+
+    /// <summary>Legacy-Overload: Nutzt die globalen Settings-Werte (für Backtest + Single-TF-UI).</summary>
     public static List<Ticker> FilterCandidates(IReadOnlyList<Ticker> tickers, ScannerSettings settings)
+    {
+        return FilterCandidatesCore(tickers, settings,
+            settings.MinVolume24h, settings.MinVolume24hTradFi,
+            settings.MinPriceChange, settings.MinPriceChangeTradFi,
+            settings.MaxResults > 0 ? settings.MaxResults : 100);
+    }
+
+    private static List<Ticker> FilterCandidatesCore(
+        IReadOnlyList<Ticker> tickers, ScannerSettings settings,
+        decimal minVolCrypto, decimal minVolTradFi,
+        decimal minChgCrypto, decimal minChgTradFi,
+        int maxResults)
     {
         // Whitelist hat Priorität: Wenn gesetzt, NUR diese Symbole scannen
         if (settings.Whitelist.Count > 0)
@@ -36,10 +73,18 @@ public static class ScanHelper
         // Krypto und TradFi trennen (TradFi = NC-Prefix)
         // WICHTIG: TradFi braucht Hedge-Modus auf BingX (Error 101414 bei One-Way-Mode)
         var cryptoTickers = tickers.Where(t => !SymbolClassifier.IsTradFi(t.Symbol)).ToList();
+
+        // User-Vorgabe 13.04.2026: ALLE 4 TradFi-Kategorien immer aktiv. Kein EnabledCategories-Filter mehr.
+        // EnabledCategories wird nur noch fuer Anzeige/Log verwendet — immer alle 5 drin gehalten.
+        settings.EnabledCategories.Add(MarketCategory.Crypto);
+        settings.EnabledCategories.Add(MarketCategory.Commodity);
+        settings.EnabledCategories.Add(MarketCategory.Index);
+        settings.EnabledCategories.Add(MarketCategory.Forex);
+        settings.EnabledCategories.Add(MarketCategory.Stock);
+
         var tradfiTickers = settings.EnableTradFi && settings.IsHedgeModeActive
             ? tickers.Where(t => SymbolClassifier.IsTradFi(t.Symbol)
-                              && SymbolClassifier.IsApiTradeable(t.Symbol)
-                              && settings.EnabledCategories.Contains(SymbolClassifier.Classify(t.Symbol))).ToList()
+                              && SymbolClassifier.IsApiTradeable(t.Symbol)).ToList()
             : new List<Ticker>();
 
         // Top-100 Krypto nach MARKET CAP (CoinGecko-Cache, stündlich aktualisiert).
@@ -61,24 +106,25 @@ public static class ScanHelper
             }
         }
 
-        // Krypto: Nur Volume-Filter (PriceChange-Filter entfernt — reduzierte den Pool
-        // bei ruhigem Markt auf ~15-20 Coins, sodass Rotation wirkungslos war)
+        // Krypto: Volume-Filter (per-TF wenn vorhanden, sonst global).
+        // PriceChange optional — wenn >0 gesetzt wird er angewendet.
         var filteredCrypto = cryptoTickers
-            .Where(t => t.Volume24h >= settings.MinVolume24h)
+            .Where(t => t.Volume24h >= minVolCrypto)
+            .Where(t => minChgCrypto <= 0m || Math.Abs(t.PriceChangePercent24h) >= minChgCrypto)
             .Where(t => settings.Blacklist.Count == 0 || !settings.Blacklist.Contains(t.Symbol))
             .ToList();
 
-        // TradFi: Eigener Volume- und PriceChange-Filter (niedrigere Schwellen als Krypto)
+        // TradFi: Volume-Filter deutlich niedriger (siehe MinVolume24hTradFiByTf).
+        // Sanity-Check auf 100k als Minimum — darunter sind nur inaktive Symbole.
         var filteredTradFi = tradfiTickers
-            .Where(t => t.Volume24h >= settings.MinVolume24hTradFi)
-            .Where(t => Math.Abs(t.PriceChangePercent24h) >= settings.MinPriceChangeTradFi)
+            .Where(t => t.Volume24h >= Math.Max(100_000m, minVolTradFi))
+            .Where(t => minChgTradFi <= 0m || Math.Abs(t.PriceChangePercent24h) >= minChgTradFi)
             .Where(t => settings.Blacklist.Count == 0 || !settings.Blacklist.Contains(t.Symbol))
             .ToList();
 
         // 60/40 Aufteilung: 60% Krypto, 40% TradFi (User-Vorgabe 13.04.2026)
         // Ungenutzte Slots einer Seite werden an die andere Seite weitergegeben,
         // damit das Scan-Volumen erhalten bleibt wenn ein Pool kleiner ist.
-        var maxResults = settings.MaxResults > 0 ? settings.MaxResults : 100;
         var tradFiTargetSlots = (int)Math.Round(maxResults * 0.4);   // 40 bei 100
         var cryptoTargetSlots = maxResults - tradFiTargetSlots;       // 60 bei 100
 
@@ -146,44 +192,7 @@ public static class ScanHelper
         return result;
     }
 
-    /// <summary>
-    /// Prüft Korrelation mit offenen Positionen. Gibt true zurück wenn Trade blockiert werden soll.
-    /// </summary>
-    public static async Task<bool> CheckCorrelationAsync(
-        string symbol,
-        IReadOnlyList<Position> positions,
-        RiskSettings riskSettings,
-        IPublicMarketDataClient publicClient,
-        IReadOnlyList<Candle> candles,
-        BotEventBus eventBus,
-        string logPrefix,
-        CancellationToken ct)
-    {
-        if (!riskSettings.CheckCorrelation || positions.Count == 0)
-            return false;
-
-        try
-        {
-            var isCorrelated = await CorrelationChecker.IsCorrelatedAsync(
-                symbol, positions, riskSettings.MaxCorrelation, publicClient, ct,
-                preloadedNewSymbolKlines: candles).ConfigureAwait(false);
-
-            if (isCorrelated)
-            {
-                eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
-                    $"{logPrefix}{symbol}: Abgelehnt - zu hohe Korrelation mit offener Position (>{riskSettings.MaxCorrelation:P0})",
-                    symbol));
-                return true;
-            }
-        }
-        catch (Exception ex)
-        {
-            eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Risk",
-                $"{logPrefix}{symbol}: Korrelations-Check fehlgeschlagen: {ex.Message}", symbol));
-        }
-
-        return false;
-    }
+    // BUCH-ONLY: CheckCorrelationAsync entfernt. Das Buch kennt keine Pearson-Korrelation als Gate.
 
     /// <summary>
     /// Prüft Risk-Management. Gibt null zurück wenn Trade erlaubt, sonst den Ablehnungsgrund.

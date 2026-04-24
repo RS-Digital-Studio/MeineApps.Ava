@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext NUR fuer private/LAN/Tailscale-Adressen erlaubt.
+  Oeffentliche Ziele und alle anderen Domains nutzen weiterhin HTTPS (Default).
+
+  Erlaubt:
+    - 10.0.0.0/8           RFC1918 private
+    - 172.16.0.0/12        RFC1918 private
+    - 192.168.0.0/16       RFC1918 private (Heimnetz)
+    - 100.64.0.0/10        CGNAT / Tailscale Standard-Range
+    - localhost            lokaler Testserver
+    - *.local              mDNS / zeroconf (bingxbot.local)
+    - *.ts.net             Tailscale MagicDNS
+
+  Alles andere: default HTTPS erzwungen (cleartextTrafficPermitted=false)
+-->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+
+  <domain-config cleartextTrafficPermitted="true">
+    <!-- RFC1918 private Class-A -->
+    <domain includeSubdomains="true">10.0.0.0</domain>
+    <domain includeSubdomains="true">10.0.0.1</domain>
+    <!-- RFC1918 private Class-B -->
+    <domain includeSubdomains="true">172.16.0.0</domain>
+    <!-- RFC1918 private Class-C (Heimnetz) -->
+    <domain includeSubdomains="true">192.168.0.0</domain>
+    <domain includeSubdomains="true">192.168.1.1</domain>
+    <domain includeSubdomains="true">192.168.178.1</domain>
+    <!-- Tailscale CGNAT Range (nicht strikt per Prefix matchbar, Tailscale MagicDNS stattdessen) -->
+    <domain includeSubdomains="true">ts.net</domain>
+    <!-- mDNS / zeroconf -->
+    <domain includeSubdomains="true">local</domain>
+    <domain includeSubdomains="true">bingxbot.local</domain>
+    <!-- Lokaler Host -->
+    <domain includeSubdomains="true">localhost</domain>
+    <domain includeSubdomains="true">127.0.0.1</domain>
+  </domain-config>
+</network-security-config>

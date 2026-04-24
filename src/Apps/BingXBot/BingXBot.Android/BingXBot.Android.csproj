@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>BingXBot</RootNamespace>
+    <AssemblyName>BingXBot</AssemblyName>
+    <ApplicationId>com.rsdigital.bingxbot</ApplicationId>
+    <ApplicationVersion>14</ApplicationVersion>
+    <ApplicationDisplayVersion>1.3.0</ApplicationDisplayVersion>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>embedded</DebugType>
+    <!-- 24.04.2026: Mono AOT-Compiler crasht auf .NET 10 mit "corlib not met"-Assertion beim
+         Precompilen grosser Shared-Library-Graphen (BingXBot.Trading.dll + MeineApps.Core.Ava.dll).
+         Bekannter Bug analog zum "AOT+PGAOT Compiler Bug"-Eintrag in der Haupt-CLAUDE.md Troubleshooting-
+         Tabelle. Workaround: AOT komplett aus, Interpreter laeuft.
+         Kein Performance-Kompromiss hier: BingXBot.Android ist reiner Remote-Client (REST + SignalR),
+         keine Game-Engine — Interpreter-Throughput reicht voellig. -->
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidEnableProguard>false</AndroidEnableProguard>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BingXBot.Shared\BingXBot.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

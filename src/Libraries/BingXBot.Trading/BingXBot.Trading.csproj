@@ -25,4 +25,9 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Fuer Unit-Tests auf internal Helper (BuildPendingKey, ExtractSymbolFromPendingKey) -->
+    <InternalsVisibleTo Include="BingXBot.Tests" />
+  </ItemGroup>
+
 </Project>

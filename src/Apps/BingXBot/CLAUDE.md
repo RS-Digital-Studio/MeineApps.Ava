@@ -173,6 +173,34 @@ Nach dem ersten Hardening-Round wurden noch tiefere strukturelle Probleme entdec
 
 ---
 
+## TP-Orders-nach-Limit-Fill Bugfix (24.04.2026)
+
+**Symptom:** Limit-Entry-Orders wurden platziert und gefüllt, aber TP1/TP2-LIMIT-Reduce-Only-Orders wurden nie auf BingX angelegt. Positionen liefen nur mit nativem SL bis zur 48h-Hard-Expiry oder User-Close.
+
+**Root-Cause:** Seit Commit `6c49e61` (Client/Server-Architektur-Split) indiziert `LiveTradingService._pendingLimitOrders` mit zusammengesetztem Key (`BuildPendingKey`):
+```csharp
+private static string BuildPendingKey(string symbol, string? sequenceId) =>
+    $"{symbol}#{sequenceId ?? "_"}";
+// z.B. "BTC-USDT#A12345_Prim"
+```
+Der Key-Wechsel war nötig, damit Triple-Sibling-Entries (Primary `_Prim` + Additional `_Add`) für dasselbe Symbol gleichzeitig pending sein können. Der Reconcile-Loop (`RunLoop` → `_pendingLimitOrders`-Iteration, Z.957-1216) wurde aber nicht mitgezogen: 20+ Stellen verglichen `p.Symbol == kvp.Key` — was niemals matcht, da `p.Symbol="BTC-USDT"` aber `kvp.Key="BTC-USDT#A12345_Prim"`.
+
+Konsequenz: `filledPos` war immer `null` → `if (filledPos != null && ...)` Block wurde nie betreten → `PlaceTpLimitOrdersAfterFillAsync(symbol, side, qty, sig)` niemals aufgerufen.
+
+**Fix:** Lokale Variable `var sym = kvp.Value.Symbol` direkt am Schleifenanfang, alle Symbol-Usages (Position-/Ticker-Lookups, REST-API-Calls `ClosePositionAsync`/`CancelOrderAsync`/`SetPositionSlTpAsync`/`CancelNativeSlTpOrdersAsync`/`PlaceTpLimitOrdersAfterFillAsync`, `PositionExitState.Symbol`, `_wsTickerPrices`-Lookup, `posKey`-Bildung für `_positionSignals`/`_exitStates`, Log-Messages inkl. 3. Parameter für Symbol-Filter) auf `sym` umgestellt. Die 4 legitimen `_pendingLimitOrders.TryRemove(kvp.Key, out _)` bleiben unverändert — das ist der echte Dictionary-Key. Datei: `src/Libraries/BingXBot.Trading/LiveTradingService.cs` Z.970-1213.
+
+**Warum hat das kein Test gefangen:** Kein Unit-Test deckt `RunLoop`/`ReconcilePendingLimitOrders` ab — das komplette Pending-Reconcile-Feld ist untestabgedeckt (BingXRestClient ist konkret, nicht Interface; RunLoop private). Ein Integration-Test hier würde Refactoring erfordern.
+
+**Regression-Guard (hinzugefügt 24.04.2026):** `tests/BingXBot.Tests/Trading/PendingOrderKeyTests.cs` — 10 Tests auf den beiden Helpern `BuildPendingKey` + `ExtractSymbolFromPendingKey` (jetzt `internal static`, `InternalsVisibleTo="BingXBot.Tests"` in `BingXBot.Trading.csproj`). Sichert das Key-Format ab (`"{symbol}#{sequenceId}"`) und den Roundtrip Build→Extract. Wenn jemand den Separator oder das Format ändert, schlagen diese Tests an — dann müssen die Reconcile-Stellen in `LiveTradingService.cs` ebenfalls angepasst werden.
+
+**Wichtige Lehre für zukünftige Änderungen:** Wenn ein Dictionary-Key-Format geändert wird, IMMER grep über alle `kvp.Key`-Usages im selben File laufen und trennen zwischen:
+1. Dictionary-Operationen (`TryGetValue`/`TryRemove`/`ContainsKey`) → Key muss bleiben
+2. Symbol-Vergleiche / REST-API-Parameter / Log-Filter → müssen `kvp.Value.Symbol` (bzw. Extract-Helper) verwenden
+
+**Verifikation:** 0 Fehler / 0 Warnungen auf `BingXBot.Trading` + `BingXBot.Server` + `BingXBot.Desktop`. Tests: 434/434 grün (424 + 10 neue).
+
+---
+
 ## Buch-Only Strip Phase 2 (v1.2.9, 21.04.2026)
 
 **User-Direktive:** "Wir wollen alles genau nach diesen 3 Dateien, keine weiteren Features."

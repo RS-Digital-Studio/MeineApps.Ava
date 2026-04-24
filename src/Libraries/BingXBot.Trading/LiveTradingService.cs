@@ -69,14 +69,16 @@ public class LiveTradingService : TradingServiceBase
     /// <summary>
     /// Bildet den Dictionary-Key aus Symbol und SequenceId.
     /// Symbol kann NICHT "#" enthalten (BingX-Format: "BTC-USDT"), daher ist "#" ein sicherer Separator.
+    /// Internal fuer Testbarkeit (BuildPendingKey/ExtractSymbolFromPendingKey-Roundtrip-Tests).
     /// </summary>
-    private static string BuildPendingKey(string symbol, string? sequenceId) =>
+    internal static string BuildPendingKey(string symbol, string? sequenceId) =>
         $"{symbol}#{sequenceId ?? "_"}";
 
     /// <summary>
     /// Extrahiert das Symbol aus einem Pending-Key. Legacy-Keys ohne "#" werden als reines Symbol interpretiert.
+    /// Internal fuer Testbarkeit.
     /// </summary>
-    private static string ExtractSymbolFromPendingKey(string key)
+    internal static string ExtractSymbolFromPendingKey(string key)
     {
         var idx = key.IndexOf('#');
         return idx < 0 ? key : key.Substring(0, idx);
@@ -968,11 +970,15 @@ public class LiveTradingService : TradingServiceBase
                 }
                 // Side direkt aus pending-Order (verhindert Race mit _positionSignals-Initialisierung)
                 var expectedSide = kvp.Value.IsLong ? Side.Buy : Side.Sell;
-                var filledPos = positions.FirstOrDefault(p => p.Symbol == kvp.Key && p.Side == expectedSide);
+                // BUGFIX 24.04.2026: kvp.Key ist "{symbol}#{sequenceId}" (BuildPendingKey), aber Positions,
+                // REST-APIs und Log-Filter erwarten das reine BingX-Symbol (z.B. "BTC-USDT"). Ohne diese
+                // Trennung matchte kein p.Symbol den Key → filledPos immer null → TPs wurden nie gesetzt.
+                var sym = kvp.Value.Symbol;
+                var filledPos = positions.FirstOrDefault(p => p.Symbol == sym && p.Side == expectedSide);
 
                 if (filledPos != null && filledPos.Quantity > 0)
                 {
-                    var posKey = $"{kvp.Key}_{filledPos.Side}";
+                    var posKey = $"{sym}_{filledPos.Side}";
 
                     // Race-Schutz Fill+Invalidation (18.04.2026 v1.2.4): Wenn der Fill-Preis bereits
                     // jenseits des Invalidation-Levels liegt (Preis ist im selben Tick gefuellt UND
@@ -986,18 +992,18 @@ public class LiveTradingService : TradingServiceBase
                     {
                         var raceReason = $"EntryPrice {filledPos.EntryPrice:F8} bereits jenseits Invalidation-Level {kvp.Value.InvalidationLevel:F8}";
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"LIVE: {kvp.Key} Race-Condition Fill+Invalidation — sofortiges Close ({raceReason})",
-                            kvp.Key));
+                            $"LIVE: {sym} Race-Condition Fill+Invalidation — sofortiges Close ({raceReason})",
+                            sym));
                         try
                         {
-                            await _restClient.ClosePositionAsync(kvp.Key, filledPos.Side).ConfigureAwait(false);
-                            await CancelNativeSlTpOrdersAsync(kvp.Key).ConfigureAwait(false);
+                            await _restClient.ClosePositionAsync(sym, filledPos.Side).ConfigureAwait(false);
+                            await CancelNativeSlTpOrdersAsync(sym).ConfigureAwait(false);
                         }
                         catch (Exception raceEx)
                         {
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
-                                $"LIVE: {kvp.Key} Race-Close fehlgeschlagen: {raceEx.Message} — Position evtl. noch offen!",
-                                kvp.Key));
+                                $"LIVE: {sym} Race-Close fehlgeschlagen: {raceEx.Message} — Position evtl. noch offen!",
+                                sym));
                         }
                         _pendingLimitOrders.TryRemove(kvp.Key, out _);
                         RemoveSignalByKey(posKey);
@@ -1024,7 +1030,7 @@ public class LiveTradingService : TradingServiceBase
                         if (pendingAge < 30)
                         {
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
-                                $"LIVE: {kvp.Key} Limit gefüllt @ {filledPos.EntryPrice:F8}, aber Signal noch nicht registriert — retry nächster Tick", kvp.Key));
+                                $"LIVE: {sym} Limit gefüllt @ {filledPos.EntryPrice:F8}, aber Signal noch nicht registriert — retry nächster Tick", sym));
                             continue; // _pendingLimitOrders NICHT entfernen
                         }
 
@@ -1038,7 +1044,7 @@ public class LiveTradingService : TradingServiceBase
                             ? $"TP1={recoveredTp:F8}" + (recoveredTp2.HasValue ? $" TP2={recoveredTp2:F8}" : "")
                             : "TP unbekannt (Legacy-Eintrag ohne TP-Persist)";
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"LIVE: {kvp.Key} Signal nach {pendingAge:F0}s nicht registriert — rekonstruiere aus Pending-State (SL={kvp.Value.InvalidationLevel:F8}, {tpLogText})", kvp.Key));
+                            $"LIVE: {sym} Signal nach {pendingAge:F0}s nicht registriert — rekonstruiere aus Pending-State (SL={kvp.Value.InvalidationLevel:F8}, {tpLogText})", sym));
 
                         var reconstructedSignal = new SignalResult(
                             kvp.Value.IsLong ? Signal.Long : Signal.Short,
@@ -1059,14 +1065,14 @@ public class LiveTradingService : TradingServiceBase
                         // uebernimmt das als Reduce-Only-LIMIT (SK-TP1/TP2-Staffelung).
                         try
                         {
-                            await _restClient.SetPositionSlTpAsync(kvp.Key, filledPos.Side, kvp.Value.InvalidationLevel, null).ConfigureAwait(false);
+                            await _restClient.SetPositionSlTpAsync(sym, filledPos.Side, kvp.Value.InvalidationLevel, null).ConfigureAwait(false);
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
-                                $"LIVE: {kvp.Key} Nativer SL gesetzt: {kvp.Value.InvalidationLevel:F8}", kvp.Key));
+                                $"LIVE: {sym} Nativer SL gesetzt: {kvp.Value.InvalidationLevel:F8}", sym));
                         }
                         catch (Exception slEx)
                         {
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Trade",
-                                $"LIVE: {kvp.Key} SL-Recovery fehlgeschlagen: {slEx.Message} — Position UNGESCHÜTZT!", kvp.Key));
+                                $"LIVE: {sym} SL-Recovery fehlgeschlagen: {slEx.Message} — Position UNGESCHÜTZT!", sym));
                         }
 
                         sig = reconstructedSignal;
@@ -1099,7 +1105,7 @@ public class LiveTradingService : TradingServiceBase
                         _exitStates[posKey] = new PositionExitState
                         {
                             Signal = sig,
-                            Symbol = kvp.Key,
+                            Symbol = sym,
                             Side = filledPos.Side,
                             EntryPrice = filledPos.EntryPrice,
                             OriginalQuantity = filledPos.Quantity,
@@ -1113,13 +1119,13 @@ public class LiveTradingService : TradingServiceBase
                     if (sig.TakeProfit.HasValue && sig.TakeProfit.Value > 0)
                     {
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
-                            $"LIVE: {kvp.Key} Limit-Entry @ {filledPos.EntryPrice:F8} gefüllt → TP-Limit-Orders werden platziert", kvp.Key));
-                        await PlaceTpLimitOrdersAfterFillAsync(kvp.Key, filledPos.Side, filledPos.Quantity, sig).ConfigureAwait(false);
+                            $"LIVE: {sym} Limit-Entry @ {filledPos.EntryPrice:F8} gefüllt → TP-Limit-Orders werden platziert", sym));
+                        await PlaceTpLimitOrdersAfterFillAsync(sym, filledPos.Side, filledPos.Quantity, sig).ConfigureAwait(false);
                     }
                     else
                     {
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"LIVE: {kvp.Key} Limit-Entry gefüllt, aber Signal hat kein TakeProfit — nur PriceTickerLoop-Fallback aktiv", kvp.Key));
+                            $"LIVE: {sym} Limit-Entry gefüllt, aber Signal hat kein TakeProfit — nur PriceTickerLoop-Fallback aktiv", sym));
                     }
                     continue; // Nächste pending Order
                 }
@@ -1127,13 +1133,13 @@ public class LiveTradingService : TradingServiceBase
                 // SK-Buch Workflow 5.3+6.9: Limit-Order läuft bis Sequenz invalid wird.
                 // Invalidation = Preis hat den StopLoss-Level erreicht (= ≈Point0, 78.6er).
                 // Preis-Quelle: WS-Ticker (live, <1s Lag) → Mark-Price aus Positions → Tickers-Snapshot
-                var currentPx = _wsTickerPrices.TryGetValue(kvp.Key, out var wsP) && wsP > 0
+                var currentPx = _wsTickerPrices.TryGetValue(sym, out var wsP) && wsP > 0
                     ? wsP
-                    : positions.FirstOrDefault(p => p.Symbol == kvp.Key)?.MarkPrice ?? 0m;
+                    : positions.FirstOrDefault(p => p.Symbol == sym)?.MarkPrice ?? 0m;
                 if (currentPx <= 0)
                 {
                     tickers ??= await _publicClient.GetAllTickersAsync().ConfigureAwait(false);
-                    currentPx = tickers.FirstOrDefault(t => t.Symbol == kvp.Key)?.LastPrice ?? 0m;
+                    currentPx = tickers.FirstOrDefault(t => t.Symbol == sym)?.LastPrice ?? 0m;
                 }
 
                 var invalidated = currentPx > 0 && (kvp.Value.IsLong
@@ -1147,12 +1153,12 @@ public class LiveTradingService : TradingServiceBase
                 {
                     try
                     {
-                        await _restClient.CancelOrderAsync(kvp.Value.OrderId, kvp.Key).ConfigureAwait(false);
+                        await _restClient.CancelOrderAsync(kvp.Value.OrderId, sym).ConfigureAwait(false);
                         var reason = invalidated
                             ? $"Sequenz invalid (Preis {currentPx:F8} erreichte Invalidation-Level {kvp.Value.InvalidationLevel:F8})"
                             : $"Hard-Expiry nach {LimitOrderHardExpiryHours}h";
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"{kvp.Key}: Limit-Order gecancellt — {reason}", kvp.Key));
+                            $"{sym}: Limit-Order gecancellt — {reason}", sym));
                     }
                     catch { /* Order möglicherweise bereits gefüllt/gecancellt */ }
                     _pendingLimitOrders.TryRemove(kvp.Key, out _);
@@ -1171,13 +1177,13 @@ public class LiveTradingService : TradingServiceBase
                     // Prüfe ob Position trotzdem teilweise gefüllt wurde
                     try
                     {
-                        var currentPos = positions.FirstOrDefault(p => p.Symbol == kvp.Key);
+                        var currentPos = positions.FirstOrDefault(p => p.Symbol == sym);
                         if (currentPos != null && currentPos.Quantity > 0)
                         {
                             // Teilweise gefüllt: TP-Limit-Orders auf BingX canceln (falsche Qty)
                             // und Signal/ExitState mit korrekter Quantity + Fill-Preis aktualisieren
-                            await CancelNativeSlTpOrdersAsync(kvp.Key).ConfigureAwait(false);
-                            var posKey = $"{kvp.Key}_{currentPos.Side}";
+                            await CancelNativeSlTpOrdersAsync(sym).ConfigureAwait(false);
+                            var posKey = $"{sym}_{currentPos.Side}";
                             if (_exitStates.TryGetValue(posKey, out var es))
                             {
                                 es.OriginalQuantity = currentPos.Quantity;
@@ -1185,8 +1191,8 @@ public class LiveTradingService : TradingServiceBase
                             }
 
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                                $"{kvp.Key}: Partial-Fill erkannt ({currentPos.Quantity:F4}), TP-Orders gecancellt, PriceTickerLoop übernimmt",
-                                kvp.Key));
+                                $"{sym}: Partial-Fill erkannt ({currentPos.Quantity:F4}), TP-Orders gecancellt, PriceTickerLoop übernimmt",
+                                sym));
                         }
                         else
                         {
@@ -1194,14 +1200,14 @@ public class LiveTradingService : TradingServiceBase
                             // Suche passenden Key (Symbol_Buy oder Symbol_Sell)
                             foreach (var side in new[] { Side.Buy, Side.Sell })
                             {
-                                var posKey = $"{kvp.Key}_{side}";
+                                var posKey = $"{sym}_{side}";
                                 if (_positionSignals.ContainsKey(posKey))
                                 {
                                     RemoveSignalByKey(posKey);
-                                    try { await CancelNativeSlTpOrdersAsync(kvp.Key).ConfigureAwait(false); }
+                                    try { await CancelNativeSlTpOrdersAsync(sym).ConfigureAwait(false); }
                                     catch { /* Best-effort */ }
                                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
-                                        $"{kvp.Key}: Nicht gefüllt, Signal + TP-Orders aufgeräumt", kvp.Key));
+                                        $"{sym}: Nicht gefüllt, Signal + TP-Orders aufgeräumt", sym));
                                     break;
                                 }
                             }
@@ -1210,7 +1216,7 @@ public class LiveTradingService : TradingServiceBase
                     catch (Exception cleanupEx)
                     {
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                            $"{kvp.Key}: Cleanup nach Limit-Cancel fehlgeschlagen: {cleanupEx.Message}", kvp.Key));
+                            $"{sym}: Cleanup nach Limit-Cancel fehlgeschlagen: {cleanupEx.Message}", sym));
                     }
                 }
             }

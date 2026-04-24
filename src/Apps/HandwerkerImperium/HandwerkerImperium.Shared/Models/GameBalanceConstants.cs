@@ -98,8 +98,18 @@ public static class GameBalanceConstants
     /// <summary>Maximum Ad-Bonus Worker-Slots pro Workshop.</summary>
     public const int MaxAdBonusWorkerSlots = 3;
 
-    /// <summary>Workshop-Level ab dem die Spezialisierung verfügbar ist.</summary>
-    public const int SpecializationUnlockLevel = 100;
+    /// <summary>
+    /// Workshop-Level ab dem die Spezialisierung verfügbar ist.
+    /// v2.0.35: Von 100 auf 50 gesenkt — Mid-Game-Build-Entscheidung
+    /// (Spieler hat typischerweise 2-4 Workshops mit Level 50+ nach 6-10h).
+    /// </summary>
+    public const int SpecializationUnlockLevel = 50;
+
+    /// <summary>
+    /// Kosten (Goldschrauben) fuer das Wechseln einer bestehenden Spezialisierung (v2.0.35).
+    /// Erste Wahl ist kostenlos — nur Wechsel kostet. Entfernen ist ebenfalls kostenlos.
+    /// </summary>
+    public const int SpecializationRespecCostGoldenScrews = 20;
 
     // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOP - REBIRTH

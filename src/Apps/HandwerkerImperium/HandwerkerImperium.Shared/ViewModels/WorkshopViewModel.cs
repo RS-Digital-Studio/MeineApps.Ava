@@ -492,6 +492,21 @@ public sealed partial class WorkshopViewModel : ViewModelBase, INavigable, IDisp
         var workshop = _gameStateService.State.GetOrCreateWorkshop(WorkshopType);
         if (workshop.Level < GameBalanceConstants.SpecializationUnlockLevel) return;
 
+        // Re-Spec-Kosten (v2.0.35): Nur beim Wechsel einer existierenden Spezialisierung.
+        // Gleiche Spezialisierung waehlen (No-Op) kostet nichts. Erste Wahl kostet nichts.
+        bool isRespec = workshop.WorkshopSpecialization != null
+                        && workshop.WorkshopSpecialization.Type != specType;
+        if (isRespec)
+        {
+            int cost = GameBalanceConstants.SpecializationRespecCostGoldenScrews;
+            if (_gameStateService.State.GoldenScrews < cost)
+            {
+                // Keine Aenderung wenn nicht genug Goldschrauben — UI zeigt Kosten-Hinweis.
+                return;
+            }
+            if (!_gameStateService.TrySpendGoldenScrews(cost)) return;
+        }
+
         workshop.WorkshopSpecialization = new WorkshopSpecialization { Type = specType };
         _gameStateService.State.InvalidateIncomeCache();
         LoadWorkshop();

@@ -66,7 +66,14 @@ public class NeonJoystick : IInputHandler, IDisposable
     // Joystick-Position
     private bool _isPressed;
     private float _baseX, _baseY;
-    private float _stickX, _stickY;
+    private float _stickX, _stickY;            // Logische Position (Finger, geclampt) - fuer Richtungs-Logik
+    private float _stickDrawX, _stickDrawY;    // Gerenderte Position (smoothed) - vermeidet sichtbare Spruenge zwischen Touch-Events
+
+    // Touch-Events kommen auf Android mit variabler Rate (~30-120Hz), Rendering laeuft bei 30fps.
+    // Ohne Smoothing springt der gezeichnete Stick sichtbar zwischen den Sample-Positionen.
+    // rate=25 fuehlt sich fluessig an ohne traege zu wirken (bei 30fps erreicht der Draw-Punkt nach
+    // ~1 Frame ca. 57% der Distanz, nach 2 Frames ~81%).
+    private const float STICK_SMOOTHING_RATE = 25f;
 
     // Bomb-Button
     private bool _bombPressed;
@@ -248,6 +255,7 @@ public class NeonJoystick : IInputHandler, IDisposable
                 _stickX = x;
                 _stickY = y;
                 ClampAndFollow();
+                SnapStickDraw(); // Anfangs-Position sofort uebernehmen, kein Nachziehen vom letzten Release
                 UpdateDirection();
                 _launchFlash = 1f;
             }
@@ -263,6 +271,7 @@ public class NeonJoystick : IInputHandler, IDisposable
                 _baseY = y;
                 _stickX = x;
                 _stickY = y;
+                SnapStickDraw();
                 _currentDirection = Direction.None;
                 _launchFlash = 1f;
             }
@@ -278,6 +287,7 @@ public class NeonJoystick : IInputHandler, IDisposable
         _stickY = y;
         ClampAndFollow();
         UpdateDirection();
+        // _stickDrawX/Y werden in Update(deltaTime) per Frame zur Ziel-Position geglaettet
     }
 
     public void OnTouchEnd(long pointerId = 0)
@@ -288,6 +298,7 @@ public class NeonJoystick : IInputHandler, IDisposable
             _isPressed = false;
             _stickX = _baseX;
             _stickY = _baseY;
+            SnapStickDraw(); // Kein weiches Zurueck-Gleiten beim Loslassen, sonst wirkt der Joystick "schlaff"
             _currentDirection = Direction.None;
             _joystickPointerId = -1;
         }
@@ -319,6 +330,15 @@ public class NeonJoystick : IInputHandler, IDisposable
     {
         _animTime += deltaTime;
         _frameCounter++;
+
+        // Stick-Draw-Position zur Ziel-Position smoothen.
+        // Exponentielles Ease-Out: alpha = 1 - exp(-rate * dt) -- framerate-unabhaengig, kein Overshoot.
+        if (deltaTime > 0f)
+        {
+            float alpha = 1f - MathF.Exp(-STICK_SMOOTHING_RATE * deltaTime);
+            _stickDrawX += (_stickX - _stickDrawX) * alpha;
+            _stickDrawY += (_stickY - _stickDrawY) * alpha;
+        }
 
         // Glow-Werte smooth lerpen
         float activeTarget = _isPressed ? 1f : 0f;
@@ -360,6 +380,9 @@ public class NeonJoystick : IInputHandler, IDisposable
     {
         _isPressed = false;
         _currentDirection = Direction.None;
+        _stickX = _baseX;
+        _stickY = _baseY;
+        SnapStickDraw();
         _bombPressed = false;
         _bombConsumed = false;
         _bombButtonPressed = false;
@@ -377,6 +400,17 @@ public class NeonJoystick : IInputHandler, IDisposable
             _trail[i].Age = 999f;
     }
 
+    /// <summary>
+    /// Draw-Position sofort auf Ziel-Position setzen (kein Smoothing).
+    /// Wird bei Touch-Start und Touch-End/Reset verwendet, damit der Stick nicht aus der
+    /// vorherigen Position heraus nachzieht bzw. nach Release nicht "schlaff" zurueckgleitet.
+    /// </summary>
+    private void SnapStickDraw()
+    {
+        _stickDrawX = _stickX;
+        _stickDrawY = _stickY;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // LAYOUT & BEWEGUNGS-LOGIK
     // ═══════════════════════════════════════════════════════════════════════
@@ -389,6 +423,7 @@ public class NeonJoystick : IInputHandler, IDisposable
         {
             _stickX = _baseX;
             _stickY = _baseY;
+            SnapStickDraw(); // Layout-Position hat sich evtl. geaendert (Rotation) -> sofort uebernehmen
         }
     }
 
@@ -607,15 +642,15 @@ public class NeonJoystick : IInputHandler, IDisposable
         // Stick-Farbe: lerpt zwischen PrimaryOrange (idle) und PrimaryBright (active)
         SKColor stickBodyCol = LerpColor(PrimaryOrange, PrimaryBright, _activeGlow);
 
-        // Outer Glow
+        // Outer Glow -- nutzt smoothed Draw-Position
         _stickCorePaint.MaskFilter = MediumGlow;
         _stickCorePaint.Color = stickBodyCol.WithAlpha((byte)(alpha * 0.65f));
-        BuildOctagon(_stickOctagonPath, _stickX, _stickY, sr * 1.15f);
+        BuildOctagon(_stickOctagonPath, _stickDrawX, _stickDrawY, sr * 1.15f);
         canvas.DrawPath(_stickOctagonPath, _stickCorePaint);
         _stickCorePaint.MaskFilter = null;
 
         // Body-Oktagon
-        BuildOctagon(_stickOctagonPath, _stickX, _stickY, sr);
+        BuildOctagon(_stickOctagonPath, _stickDrawX, _stickDrawY, sr);
         _stickBodyPaint.Color = stickBodyCol.WithAlpha(alpha);
         canvas.DrawPath(_stickOctagonPath, _stickBodyPaint);
 
@@ -625,7 +660,7 @@ public class NeonJoystick : IInputHandler, IDisposable
 
         // Zentraler weisser Core-Dot
         _stickCorePaint.Color = White.WithAlpha(alpha);
-        canvas.DrawCircle(_stickX, _stickY, sr * 0.32f, _stickCorePaint);
+        canvas.DrawCircle(_stickDrawX, _stickDrawY, sr * 0.32f, _stickCorePaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

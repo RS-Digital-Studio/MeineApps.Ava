@@ -80,7 +80,7 @@
                 <Border CornerRadius="10"
                         Padding="6,4,6,6"
                         Opacity="{Binding SectionOpacity}"
-                        Background="{Binding HeaderBackgroundBrush}">
+                        Background="{Binding HeaderBackgroundColor, Converter={StaticResource ColorToBrush}}">
                   <StackPanel Spacing="4">
 
                     <!-- Welt-Header mit subtiler Trennung -->
@@ -91,10 +91,10 @@
                                   VerticalAlignment="Center">
                         <icons:GameIcon Kind="{Binding LockIcon}"
                                          Width="20" Height="20"
-                                         Foreground="{Binding HeaderTextBrush}" />
+                                         Foreground="{Binding HeaderTextColor, Converter={StaticResource ColorToBrush}}" />
                         <TextBlock Text="{Binding WorldLockText}"
                                    FontSize="16" FontWeight="SemiBold"
-                                   Foreground="{Binding HeaderTextBrush}" />
+                                   Foreground="{Binding HeaderTextColor, Converter={StaticResource ColorToBrush}}" />
                       </StackPanel>
 
                       <!-- Sterne-Fortschritt (rechts) -->
@@ -116,7 +116,7 @@
                         <DataTemplate x:DataType="vm:LevelDisplayItem">
                           <!-- Border stretcht automatisch auf volle UniformGrid-Zelle -->
                           <Border Margin="1" CornerRadius="8"
-                                  Background="{Binding BackgroundColor}"
+                                  Background="{Binding BackgroundColor, Converter={StaticResource ColorToBrush}}"
                                   BorderBrush="#40FFFFFF"
                                   BorderThickness="1"
                                   MinHeight="56"
@@ -135,7 +135,7 @@
                                            Text="{Binding LevelNumber}"
                                            FontSize="20"
                                            FontWeight="Bold"
-                                           Foreground="{Binding TextBrush}"
+                                           Foreground="{Binding TextColor, Converter={StaticResource ColorToBrush}}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
 

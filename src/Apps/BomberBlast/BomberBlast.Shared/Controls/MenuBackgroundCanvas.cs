@@ -60,7 +60,9 @@ public class MenuBackgroundCanvas : UserControl
 
     /// <summary>
     /// Reagiert auf IsVisible- und Theme-Änderungen.
-    /// Timer nur starten wenn sichtbar. Bei Theme-Wechsel: Re-Initialisierung erzwingen.
+    /// Im Timer-Tick wird zusätzlich IsEffectivelyVisible geprüft — das stoppt die
+    /// Rendering-Arbeit auch wenn ein Parent-Container (z.B. PageView-Border in MainView)
+    /// unsichtbar gesetzt wird. Sonst würden alle ~20 Menü-Canvases parallel Frames rendern.
     /// </summary>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
@@ -77,7 +79,7 @@ public class MenuBackgroundCanvas : UserControl
         {
             // Theme geändert → Renderer neu initialisieren
             _initialized = false;
-            if (IsVisible && this.GetVisualRoot() != null)
+            if (IsEffectivelyVisible && this.GetVisualRoot() != null)
             {
                 MenuBackgroundRenderer.Initialize(42, BackgroundTheme);
                 _initialized = true;
@@ -86,10 +88,10 @@ public class MenuBackgroundCanvas : UserControl
         }
     }
 
-    /// <summary>Startet nur wenn sichtbar und im Visual Tree.</summary>
+    /// <summary>Startet nur wenn effektiv sichtbar (inkl. Parent-Visibility) und im Visual Tree.</summary>
     private void StartIfVisible()
     {
-        if (IsVisible && this.GetVisualRoot() != null)
+        if (IsEffectivelyVisible && this.GetVisualRoot() != null)
             Start();
     }
 
@@ -99,7 +101,7 @@ public class MenuBackgroundCanvas : UserControl
     /// </summary>
     public void Start()
     {
-        if (this.GetVisualRoot() == null || !IsVisible)
+        if (this.GetVisualRoot() == null || !IsEffectivelyVisible)
             return;
 
         // Renderer einmalig initialisieren (mit aktuellem Theme)
@@ -113,7 +115,14 @@ public class MenuBackgroundCanvas : UserControl
         _timer?.Stop();
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
-        _timer.Tick += (_, _) => _canvas?.InvalidateSurface();
+        _timer.Tick += (_, _) =>
+        {
+            // Skippen wenn Parent-Container (PageView-Border) unsichtbar ist.
+            // Sonst würden ~20 Menü-Canvases in inaktiven Tabs parallel Frames rendern
+            // und Android-CPU/GPU belasten → Akku, Heat, ruckelige aktive View.
+            if (IsEffectivelyVisible)
+                _canvas?.InvalidateSurface();
+        };
         _timer.Start();
         _stopwatch.Restart();
     }

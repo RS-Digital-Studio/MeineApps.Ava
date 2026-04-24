@@ -189,7 +189,7 @@
                         <Panel VerticalAlignment="Center" Width="36" Height="36">
                           <TextBlock Text="{Binding Rank}"
                                      FontSize="24" FontWeight="Bold"
-                                     Foreground="{Binding RankBrush}"
+                                     Foreground="{Binding RankColor, Converter={StaticResource ColorToBrush}}"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center" />
                         </Panel>

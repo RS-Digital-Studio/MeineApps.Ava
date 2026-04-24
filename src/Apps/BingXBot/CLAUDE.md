@@ -256,7 +256,57 @@ Nach dem P0-Hardening alle offenen Audit-Punkte abgearbeitet:
 
 ---
 
-## System-Hardening P0 (v1.3.3, 24.04.2026)
+## Finaler Polish (v1.3.5, 24.04.2026)
+
+Die beiden offenen Punkte aus v1.3.4 — Vollstaendiger LiveTradingService-Split und FakeExchangeClient-basierte Integration-Tests — sind abgearbeitet.
+
+### Vollstaendiger Partial-Class-Split
+
+`LiveTradingService.cs` ist von **1777 → 981 Zeilen** geschrumpft (−45 %), aufgeteilt in thematische Partial-Class-Dateien:
+
+| Datei | Zeilen | Inhalt |
+|---|---|---|
+| `LiveTradingService.cs` | 981 | Core-Lifecycle: Start/Stop/Emergency, ClosePositionAndPublishAsync, OnSlTpHitAsync, OnPartialCloseAsync, PriceTicker-Hooks, OnBeforePriceTickerIteration (Pending-Reconcile), DisposeAdditional |
+| `.OrderPlacement.cs` | 313 | PlaceOrderOnExchangeAsync, PlaceTpLimitOrdersAfterFillAsync, PlaceTpWithRetryAsync, OnOrderPlacedAsync |
+| `.PendingLimitOrders.cs` | 239 | Persist/Snapshot/Restore, CancelAllPendingForSequenceAsync, CancelStaleSequencePendingAsync, RecoverTpOrdersAsync |
+| `.WebSocket.cs` | 170 | Ticker-Stream + User-Data-Stream + ListenKey-Lifecycle |
+| `.Reconcile.cs` | 95 | ReconcileLoopAsync + ReconcilePositionsAsync (P0-1) |
+| `.SlTpManager.cs` | 74 | CancelNativeSlTpOrdersAsync + OnStopLossAdjustedAsync |
+
+**Kein Verhaltensunterschied:** Partial Classes erzeugen dieselbe IL-Ausgabe wie die monolithische Datei. Reines File-Organization-Refactoring. Alle bestehenden Tests laufen unveraendert durch.
+
+### FakeExchangeClient + Reconcile-Integration-Tests
+
+`tests/BingXBot.Tests/Trading/FakeExchangeClient.cs` (~250 Zeilen) implementiert `IExchangeClient` mit:
+- Konfigurierbarem In-Memory-State (`WithPosition`, `WithOpenOrder`) — fluent builder fuer Test-Setup
+- Call-Recorder: `CallLog` + typisierte Listen (`ClosePositionCalls`, `SetSlTpCalls`, `PlaceTpCalls`, `CancelOrderCalls`) fuer Assertions
+- Thread-safe (lock), weil LiveTradingService aus mehreren Loops zugreift
+- Write-Operationen modifizieren den State (`ClosePositionAsync` entfernt aus Liste, `PlaceOrderAsync` fuegt Order hinzu)
+
+`ReconcilePositionsIntegrationTests.cs` (6 Tests) gegen echten `LiveTradingService` + `FakeExchangeClient`:
+- Orphan-Signal → Signal wird entfernt
+- Grace-Window → Frisches Signal bleibt
+- Pending-Entry-Ausnahme → Signal bleibt (Limit noch nicht gefuellt)
+- Unmanaged-Position → nur Warning, keine State-Aenderung, kein Close
+- Alles konsistent → keine Aenderung
+- Mehrere Drift-Befunde gleichzeitig → jeder korrekt behandelt
+
+### Testbarkeit-Vorbereitung
+
+`TradingServiceBase._positionSignals` ist jetzt `protected internal` (Subklassen + Test-Assembly, weil `InternalsVisibleTo="BingXBot.Tests"` in `BingXBot.Trading.csproj`). `LiveTradingService._pendingLimitOrders` + `_signalCreatedAt` ebenfalls `internal`. Ermoeglicht Integration-Tests ohne Reflection.
+
+### Tests + Verifikation
+- **470/470 grün** (+6 ReconcilePositionsIntegrationTests)
+- 0 Fehler / 0 Warnungen
+- Deploy v1.3.5
+
+### Alle Audit-Punkte geschlossen
+
+Der System-Audit vom 24.04.2026 ist vollstaendig abgearbeitet — P0 + P1 + P2 + P3. Von 9 Punkten im Audit-Report sind 8 vollstaendig erledigt, 1 bewusst verworfen (P1-3 Hedge-Mode-Key-Collision: war bereits durch `{Symbol}_{Side}`-Key-Format gedeckt).
+
+---
+
+## Polish-Runde P1/P2/P3 (v1.3.4, 24.04.2026)
 
 Nach dem Audit-Report wurden drei P0-Baustellen auf einmal geschlossen — Fundament fuer sichereren Live-Betrieb.
 

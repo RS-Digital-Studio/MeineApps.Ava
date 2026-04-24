@@ -48,7 +48,9 @@ public abstract class TradingServiceBase : IDisposable
 
     // SL/TP-Tracking: Speichert das Original-Signal pro offener Position (Symbol_Side → SignalResult)
     // ConcurrentDictionary weil PriceTickerLoop und ScanAndTradeAsync parallel darauf zugreifen
-    protected readonly ConcurrentDictionary<string, SignalResult> _positionSignals = new();
+    // protected internal: protected fuer Subklassen (Live/Paper), internal fuer BingXBot.Tests
+    // (InternalsVisibleTo in BingXBot.Trading.csproj). Erlaubt Integration-Tests des Reconcile-Flows.
+    protected internal readonly ConcurrentDictionary<string, SignalResult> _positionSignals = new();
     // SK-System: Letzter Status für Scan-Summary (wird auf Symbol-Klonen evaluiert, nicht auf dem Template)
     private string _lastSkStatus = "";
     // Multi-TF Standalone: Letzter nicht-blockierter SK-Status pro TF (für Ampel-UI)

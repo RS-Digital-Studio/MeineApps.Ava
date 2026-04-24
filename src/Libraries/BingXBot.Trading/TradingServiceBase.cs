@@ -4,6 +4,7 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Core.Services;
 using BingXBot.Engine;
 using BingXBot.Engine.Filters;
 using BingXBot.Engine.Indicators;
@@ -439,38 +440,32 @@ public abstract class TradingServiceBase : IDisposable
                     var isStopLoss = false;
                     string reason = "";
 
-                    // ═══ SK-Buch-BE-Regel (Cheat 53, Workflow 4.2, S.18) ═══
-                    // SK-Buch Masterclass: BE-Trigger = ausschliesslich "Bruch von A".
-                    // Workflow 4.1 (SL-Halbierung) wurde im Strip Phase 2 (21.04.2026) entfernt —
-                    // Buch: "SL ist heilig, wird niemals ausgeweitet".
-                    // Zitat: "Sobald der Preis aus deiner Korrekturbox herausläuft und das Level A
-                    // signifikant durchbricht, ziehst du den Stop-Loss auf Break Even. [...] Weil
-                    // mit dem Durchbrechen von Punkt A die Sequenz in Richtung Zielbereich
-                    // mathematisch endgültig aktiviert und bestätigt ist."
-                    // Buch S.18: BE = Entry + Spread (0.15%-Buffer als Krypto-Spread-Proxy).
-                    // KEIN Zwischen-SL-Halbieren und KEIN 2x-SL-OR-Trigger — Buch: "SL ist heilig".
+                    // ═══ SK-BE-Regel (Cheat 53, Workflow 4.2, S.18) + User-Ausnahme 2x-SL (24.04.2026) ═══
+                    // Zwei Trigger OR-verknuepft (siehe BreakevenCalculator):
+                    //   1) A-Bruch (Buch Masterclass): Preis erreicht NavPointA → SL = Entry ± 0,5 %.
+                    //      Buch-Zitat: "Sobald der Preis [...] das Level A signifikant durchbricht,
+                    //      ziehst du den Stop-Loss auf Break Even."
+                    //   2) 2x SL-Distanz (User-Ausnahme, nicht Buch): Preis hat doppelten SL-Abstand
+                    //      in Profit-Richtung erreicht → SL = Entry ± 0,2 %. Greift wenn A-Bruch
+                    //      (noch) nicht oder gar nicht kommt (z.B. NavPointA=0 bei Legacy-Signalen).
+                    // Einmal pro Position (BreakevenSet-Flag), Buch 4.3: KEIN weiteres Nachziehen.
                     if (signal.DisableSmartBreakeven && signal.StopLoss.HasValue
                         && _exitStates.TryGetValue(key, out var skState) && skState.EntryPrice > 0
-                        && !skState.BreakevenSet
-                        && skState.NavPointA > 0)
+                        && !skState.BreakevenSet)
                     {
-                        var aBreak = pos.Side == Side.Buy
-                            ? price >= skState.NavPointA
-                            : price <= skState.NavPointA;
+                        var decision = BreakevenCalculator.Evaluate(
+                            pos.Side, price, skState.EntryPrice,
+                            signal.StopLoss.Value, skState.NavPointA);
 
-                        if (aBreak)
+                        if (decision.HasValue)
                         {
-                            var beSl = pos.Side == Side.Buy
-                                ? skState.EntryPrice * 1.0015m
-                                : skState.EntryPrice * 0.9985m;
-                            _positionSignals[key] = signal with { StopLoss = beSl };
+                            _positionSignals[key] = signal with { StopLoss = decision.Value.NewStopLoss };
                             skState.BreakevenSet = true;
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Exit",
-                                $"{LogPrefix}{pos.Symbol}: SK Breakeven ({beSl:F8}) — A-Bruch (A={skState.NavPointA:F8})",
+                                $"{LogPrefix}{pos.Symbol}: SK Breakeven ({decision.Value.NewStopLoss:F8}) — {decision.Value.TriggerName}",
                                 pos.Symbol));
-                            await OnStopLossAdjustedAsync(pos.Symbol, pos.Side, beSl).ConfigureAwait(false);
+                            await OnStopLossAdjustedAsync(pos.Symbol, pos.Side, decision.Value.NewStopLoss).ConfigureAwait(false);
                         }
-                        // Buch Workflow 4.3: KEIN weiteres Nachziehen nach BE — Trade läuft ins Ziel oder wird BE-ausgestoppt.
                     }
 
                     // ═══ Multi-Stage Exit: TP1 (50%) bei 161.8%, TP2 (Rest) bei 200%+Buffer ═══

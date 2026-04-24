@@ -201,6 +201,35 @@ Konsequenz: `filledPos` war immer `null` → `if (filledPos != null && ...)` Blo
 
 ---
 
+## Break-Even-Trigger Erweiterung (v1.3.2, 24.04.2026)
+
+**User-Entscheidung:** 2x-SL-Distanz-Trigger als ODER-Alternative zum A-Bruch wieder eingebaut — nicht Buch-konform, bewusste Ausnahme.
+
+### Trigger-Logik
+Zentral in `src/Libraries/BingXBot.Core/Services/BreakevenCalculator.cs`:
+
+| Trigger | Bedingung | Neuer SL | Buch? |
+|---------|-----------|----------|-------|
+| A-Bruch (Prio 1) | Preis erreicht `NavPointA` | Entry ± **0,5 %** | Ja (Workflow 4.2) |
+| 2x SL-Distanz (Prio 2) | Preis erreicht `Entry ± 2 × \|Entry − SL\|` | Entry ± **0,2 %** | Nein (User-Ausnahme) |
+
+A-Bruch hat Priorität — wenn beide im selben Tick feuern, gewinnt der buchtreuere 0,5 %-Puffer. Der 2x-SL-Trigger greift insbesondere wenn kein valider `NavPointA` gesetzt ist (Legacy-Signale, rekonstruierte Signale aus Pending-Recovery).
+
+**Warum 2x-SL wieder drin:** Ohne diesen Fallback läuft ein Trade ohne `NavPointA` bis zum TP oder SL ohne jemals BE-geschützt zu sein, obwohl der Preis schon doppelt so weit gelaufen ist. Der A-Bruch ist semantisch korrekter (Bestätigung der Sequenz), aber als alleiniger Trigger brüchig bei Signal-Rekonstruktion.
+
+### Code-Stellen
+- **Zentraler Helper:** `src/Libraries/BingXBot.Core/Services/BreakevenCalculator.cs` (`public static Evaluate(side, price, entry, origSl, navPointA)` → `BreakevenDecision?`)
+- **Live:** `TradingServiceBase.cs:442-469` ruft Calculator pro Tick in `PriceTickerLoop`.
+- **Backtest:** `BacktestEngine.cs:434-453` ruft Calculator pro Candle mit `High/Low` als Preis-Proxy.
+- **Tests:** `tests/BingXBot.Tests/Core/BreakevenCalculatorTests.cs` (12 Tests: beide Trigger für Long+Short, Prio-Regel, Edge Cases, Puffer-Konstanten).
+
+### Migration / Backward-Compat
+Keine neuen Felder in `PositionExitState`/`SignalResult` nötig — der 2x-SL-Trigger rechnet on-the-fly aus `ExitState.EntryPrice` + `signal.StopLoss.Value`. `BreakevenSet`-Flag bleibt der einzige Lock (einmal pro Position, idempotent).
+
+**Verifikation:** 0 Fehler / 0 Warnungen. Tests: 446/446 grün (434 + 12 neue).
+
+---
+
 ## Buch-Only Strip Phase 2 (v1.2.9, 21.04.2026)
 
 **User-Direktive:** "Wir wollen alles genau nach diesen 3 Dateien, keine weiteren Features."

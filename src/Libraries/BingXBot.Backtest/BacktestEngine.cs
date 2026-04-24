@@ -3,6 +3,7 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Core.Services;
 using BingXBot.Backtest.Simulation;
 using BingXBot.Backtest.Reports;
 using BingXBot.Engine.Indicators;
@@ -431,23 +432,23 @@ public class BacktestEngine
                 if (!positionSignals.TryGetValue(key, out var origSignal))
                     continue;
 
-                // --- SK-Buch Multi-Stage Exit: TP1 Partial Close (161.8%), TP2 Rest (200%+Buffer) ---
-                // SK-Buch Masterclass: BE-Trigger = ausschliesslich "Bruch von A" — SL ist ansonsten heilig (4.3).
+                // --- SK Multi-Stage Exit: TP1 Partial Close (161.8%), TP2 Rest (200%+Buffer) ---
+                // BE-Trigger via zentralem BreakevenCalculator (identisch zu LiveTradingService):
+                //   1) A-Bruch (Buch, 0,5 % Puffer) 2) 2x SL-Distanz (User-Ausnahme, 0,2 % Puffer).
+                // Candle-Extreme (High bei Long, Low bei Short) sind der Preis-Proxy pro Candle —
+                // so feuert der Trigger beim ersten Wick-Touch, konsistent zum Live-Tick-Verhalten.
                 if (exitTracking.TryGetValue(key, out var exitState))
                 {
-                    if (!exitState.BreakevenSet && exitState.NavPointA > 0)
+                    if (!exitState.BreakevenSet && origSignal.StopLoss.HasValue)
                     {
                         var currentPrice = pos.Side == Side.Buy ? currentCandle.High : currentCandle.Low;
-                        var aBreak = pos.Side == Side.Buy
-                            ? currentPrice >= exitState.NavPointA
-                            : currentPrice <= exitState.NavPointA;
+                        var decision = BreakevenCalculator.Evaluate(
+                            pos.Side, currentPrice, exitState.EntryPrice,
+                            origSignal.StopLoss.Value, exitState.NavPointA);
 
-                        if (aBreak)
+                        if (decision.HasValue)
                         {
-                            var beSl = pos.Side == Side.Buy
-                                ? exitState.EntryPrice * 1.0015m
-                                : exitState.EntryPrice * 0.9985m;
-                            positionSignals[key] = positionSignals[key] with { StopLoss = beSl };
+                            positionSignals[key] = positionSignals[key] with { StopLoss = decision.Value.NewStopLoss };
                             exitState.BreakevenSet = true;
                         }
                     }

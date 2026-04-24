@@ -1,0 +1,2 @@
+- [SK-Spec-Compliance-2026-04-21](sk_spec_compliance_2026_04_21.md) — Gap-Report gegen struktur.txt + sk_spec.txt (20/20 Punkte), 2 kritische Luecken (BOS + adaptive Pivot), mehrere Abweichungen
+- [SK-0AB-Punkte-Audit-2026-04-22](sk_0ab_detection_2026_04_22.md) — Fokus 0/A/B je TF: 3 Spec-Abweichungen (Pivot-left, RequireBosOnActivation, Point-B-Trigger), 8 Zusatzlogik-Stellen, Strip-Kandidaten-Queue

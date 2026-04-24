@@ -37,6 +37,9 @@ services.AddSingleton<BacktestSettings>();
 services.AddSingleton<BotDatabaseService>();
 services.AddSingleton<BotEventBus>();
 services.AddSingleton<BingXBot.Exchange.RateLimiter>();
+// IRateLimiter-Binding (P3-2, v1.3.4): BingXRestClient + BingXPublicClient nehmen das Interface.
+// Gleiche Instanz wie die konkrete Klasse, sonst verdoppeln wir das Request-Budget.
+services.AddSingleton<BingXBot.Exchange.IRateLimiter>(sp => sp.GetRequiredService<BingXBot.Exchange.RateLimiter>());
 
 // Getrennte HttpClient-Instanzen pro Konsument — verhindert Cross-Contamination von
 // DefaultRequestHeaders/Timeouts zwischen BingX-Public-API und News-API. Ein gemeinsamer

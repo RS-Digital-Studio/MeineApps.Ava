@@ -398,6 +398,9 @@ public partial class App : Application
         // Öffentlicher BingX-Client (kein API-Key nötig)
         services.AddSingleton<HttpClient>();
         services.AddSingleton<RateLimiter>();
+        // IRateLimiter binden: BingXRestClient/BingXPublicClient nehmen jetzt das Interface (P3-2).
+        // Gleiche Instanz wie die konkrete Klasse — sonst zwei Limiter = doppeltes Request-Budget.
+        services.AddSingleton<IRateLimiter>(sp => sp.GetRequiredService<RateLimiter>());
         services.AddSingleton<BingXPublicClient>();
         services.AddSingleton<IPublicMarketDataClient>(sp => sp.GetRequiredService<BingXPublicClient>());
 

@@ -34,7 +34,7 @@ EIN Detektor (SequenceStateMachine) für ALLE TFs — buchtreu im Kern, aber 3 S
 ### Toter Code (Strip-Kandidaten)
 - `SequenceDetector.DetectSequence/DetectAllSequences/DetectBOS` — State-Machine übernahm, nur noch in Tests.
 - `_minConfluence` Field in Strategy — wird nirgends als Gate gelesen.
-- `Step4_ConfluenceMarking(0)` → No-Op-Pipeline-Step.
+- ~~`Step4_ConfluenceMarking(0)` → No-Op-Pipeline-Step.~~ ✔ Obsolet — die gesamte Pipeline wurde am 24.04.2026 entfernt (Step4 existiert nicht mehr).
 
 ### GKL-Berechnung dupliziert an 3 Stellen
 - `SequenceDetector.CalculateGKL` (lastHigh/lastLow-Pivot-basiert)

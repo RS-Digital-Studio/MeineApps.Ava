@@ -7,8 +7,6 @@ using BingXBot.Engine.Indicators;
 using BingXBot.Engine.News;
 using BingXBot.Engine.Risk;
 using BingXBot.Engine.Strategies.Confluence;
-using BingXBot.Engine.Strategies.Pipeline;
-using BingXBot.Engine.Strategies.Pipeline.Steps;
 
 namespace BingXBot.Engine.Strategies;
 
@@ -140,6 +138,29 @@ public class SequenzKonzeptStrategy : IStrategy
 
         if (navCandles.Count < _swingStrength * 2 + 20)
             return Blocked(navTf, $"Zu wenig {navTf}-Daten");
+
+        // ───────────────────────────────────────────────────────────
+        // News-Blackout (Buch S.7: "Wirtschaftskalender checken — stehen große News an?")
+        // Early-Gate: Wenn ein High-Impact-Event im Blackout-Fenster liegt, sparen wir die
+        // kompletten SK-Berechnungen (Fahrplan/Sequenz/Confluence). Delegat kommt aus
+        // RiskManager.BuildMarketContext — null = News-Filter inaktiv (graceful pass).
+        // ───────────────────────────────────────────────────────────
+        var newsBlackoutMinutes = context.RiskSettings?.NewsBlackoutMinutes ?? 30;
+        if (context.NewsBlackoutCheck != null && newsBlackoutMinutes > 0)
+        {
+            try
+            {
+                var nowForNews = context.NowUtc ?? DateTime.UtcNow;
+                var blackoutEvent = context.NewsBlackoutCheck(nowForNews, newsBlackoutMinutes, CancellationToken.None)
+                    .GetAwaiter().GetResult();
+                if (!string.IsNullOrEmpty(blackoutEvent))
+                    return Blocked(navTf, $"News-Blackout: {blackoutEvent}");
+            }
+            catch
+            {
+                // Graceful degradation: Netz-/Parse-Fehler im News-Service dürfen keine Trades blockieren.
+            }
+        }
 
         var currentPrice = context.CurrentTicker.LastPrice;
 
@@ -491,8 +512,8 @@ public class SequenzKonzeptStrategy : IStrategy
         // BUCH-ONLY (21.04.2026): Der Confluence-Score wird weiterhin berechnet (Info/Log/Confidence),
         // aber es existiert KEIN Hard-Threshold. Die Spec-Docs kennen Confluence nur qualitativ
         // ("Heiliger Gral = Überlappung HTF_GKL_Zone mit LTF_BC_Zone"). Diese qualitative Erkennung
-        // passiert bereits in Step4_ConfluenceMarking / SkConfluenceScorer. Ein numerischer Mindest-
-        // Score als Hard-Block ist Implementation-Extra und fliegt raus.
+        // erledigt der `SkConfluenceScorer` oben (gklHit/bcklData/overlap-Counter). Ein numerischer
+        // Mindest-Score als Hard-Block ist Implementation-Extra und fliegt raus.
         var minScore = 0;
 
         // ───────────────────────────────────────────────────────────
@@ -592,14 +613,23 @@ public class SequenzKonzeptStrategy : IStrategy
             return Blocked(navTf, $"RRR zu klein ({rrr:F1}:1 < {minRrr:F1}:1) — TP2 zu nah am Entry");
 
         // ───────────────────────────────────────────────────────────
-        // Task 4.12 — Masterclass-Pipeline (9-Schritte-Checkliste final validieren)
-        // Buch: "Wenn ein erfahrener SK-Trader den Chart öffnet, folgt er einer strikten Checkliste."
-        // Alle vorherigen Berechnungen landen im Data-Dictionary, die Pipeline prüft Konsistenz.
-        // ───────────────────────────────────────────────────────────
-        var pipelineResult = RunMasterclassPipeline(context, navSeq, scorer, entry, sl, tp1, tp2,
-            tradeIsLong, minScore, ltfReversal);
-        if (!pipelineResult.success)
-            return Blocked(navTf, pipelineResult.reason);
+        // Buch-Checkliste (9 Schritte) — alle Punkte sind jetzt inline in Evaluate umgesetzt:
+        //   1. News-Check       → Early-Gate ganz oben in Evaluate (siehe dort)
+        //   2. Top-Down-GKL     → gklHit via MultiTfGklDetector (siehe oben)
+        //   3. Sequenz-Mapping  → navMachine.ToSequence + State-Gate (navMachine.State != Aktiviert)
+        //   4. Confluence-Check → scorer + minScore-Vergleich (siehe oben)
+        //   5. Einstieg         → entry/isAdditionalEntry, Conservative-Mode erzwingt LTF-Reversal
+        //   6. Lot-Size         → RiskManager (nicht Strategy-Verantwortung; Risk-Cap in RiskSettings)
+        //   7. Stop-Loss        → sl unter Point0 + Buffer, Seitenprüfung implizit durch RRR-Check
+        //   8. Ziele            → tp1 (1.618) + tp2 (2.000 + Buffer), Sanity tp1<tp2 oben erzwungen
+        //   9. Breakeven-Arm    → NavPointA im SignalResult (ProtectTrade nutzt das beim A-Bruch)
+        //
+        // HISTORIE: Die frühere Masterclass-Pipeline (`SkMasterclassPipeline` + 9 Step-Klassen) war
+        // ein nachgelagerter Validator, der nur die inline bereits geprüften Werte noch einmal
+        // durch ein Dictionary reichte. Sie wurde am 24.04.2026 entfernt — der Orchestrator hatte
+        // einen Bug (`Run()` ignorierte das vorbefüllte Data-Dict → Step3 scheiterte immer an
+        // "Keine Navigator-Sequenz gemappt"). Die 9 Schritte sind durch die Inline-Checks
+        // vollständig abgedeckt und brauchen keinen redundanten Layer.
 
         // ───────────────────────────────────────────────────────────
         // Signal erstellen
@@ -1013,46 +1043,6 @@ public class SequenzKonzeptStrategy : IStrategy
             TimeFrame.M5 => 0.5m,
             _ => 1.0m,
         };
-    }
-
-    /// <summary>
-    /// Task 4.12 — Orchestriert die Masterclass-Pipeline (9 Buch-Schritte) als abschließende Validation.
-    /// Alle vorher berechneten Werte (entry/sl/tp/scorer) werden in ein Data-Dictionary gepackt,
-    /// das die Steps prüfen. Diese Pipeline ist der strikte Buch-Checklisten-Layer.
-    /// </summary>
-    private (bool success, string reason) RunMasterclassPipeline(
-        MarketContext context, Sequence navSeq, SkConfluenceScorer scorer,
-        decimal entry, decimal sl, decimal tp1, decimal tp2,
-        bool tradeIsLong, int minConfluence, LtfReversalHit? ltfReversal)
-    {
-        var steps = new IPipelineStep[]
-        {
-            new Step1_NewsCheck(context.RiskSettings?.NewsBlackoutMinutes ?? 30),
-            new Step2_TopDownGkl(),
-            new Step3_SequenceMapping(),
-            new Step4_ConfluenceMarking(minConfluence),
-            new Step5_EntryDefinition(),
-            new Step6_LotSizing(),
-            new Step7_StopLossSetting(),
-            new Step8_TargetSetting(),
-            new Step9_BreakevenArm(),
-        };
-        var pipeline = new SkMasterclassPipeline(steps);
-        var data = new Dictionary<string, object>
-        {
-            ["tradeIsLong"] = tradeIsLong,
-            ["navSeq"] = navSeq,
-            ["scorer"] = scorer,
-            ["entry"] = entry,
-            ["sl"] = sl,
-            ["tp1"] = tp1,
-            ["tp2"] = tp2,
-            ["navPointA"] = navSeq.PointA.Price,
-        };
-        if (ltfReversal != null) data["ltfReversal"] = ltfReversal;
-
-        var (success, _, stepName, reason, _) = pipeline.Run(context);
-        return (success, success ? "Pipeline ok" : $"Pipeline Step {stepName}: {reason}");
     }
 
     /// <summary>

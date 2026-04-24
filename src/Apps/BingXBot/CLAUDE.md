@@ -302,7 +302,7 @@ Das SK-System wurde komplett neu auf Basis der vollständigen Masterclass-Beschr
 - Task 4.9 Bias-Flip (InitAsBiasFlip + FromCandlesBoth-Hook, 3-Kerzen-Cooldown)
 - Task 4.10 CounterTrendScalper (Detector, opt-in, LTF-Gegensequenz in TP-Zone)
 - Task 4.11 BcDepthMonitor (flach +1, tief -1, >78.6% Block)
-- Task 4.12 SkMasterclassPipeline-Gerüst (IPipelineStep + Orchestrator)
+- Task 4.12 SkMasterclassPipeline-Gerüst (IPipelineStep + Orchestrator) — am 24.04.2026 entfernt, siehe unten
 
 **Phase 5 — Tests:**
 - SkMasterclassTests.cs (20 neue Tests). Test-Suite: 314/314 grün (294 alt + 20 neu).
@@ -318,7 +318,6 @@ Das SK-System wurde komplett neu auf Basis der vollständigen Masterclass-Beschr
 - `Indicators.CandlePatternDetector` (Pinbar/Engulfing)
 - `Indicators.LtfReversalDetector` + `LtfReversalHit` + `LtfReversalType` Enum
 - `Strategies.CounterTrendScalper` + `CounterTrendHit` Record
-- `Strategies.Pipeline.SkMasterclassPipeline` + `IPipelineStep` + `PipelineStepResult`
 - `News.EconomicEvent` + `EconomicEventImpact` Enum + `IEconomicCalendarService` + `StubEconomicCalendarService`
 
 **Neue Settings:**
@@ -364,13 +363,14 @@ Das SK-System wurde komplett neu auf Basis der vollständigen Masterclass-Beschr
 - `BcDepthMonitorTests.cs`, `BcklReEntryTests.cs`, `BiasFlipTests.cs`, `BreakevenTriggersTests.cs`
 - `ConfluenceScoringTests.cs`, `CorrectionBoxExitTests.cs`, `CounterTrendScalpTests.cs`
 - `DailyRiskTrackerTests.cs`, `GklDetectionTests.cs`, `HexEntryTests.cs`, `LtfReversalTests.cs`
-- `MasterclassPipelineTests.cs`, `NewsBlackoutTests.cs`, `QuadEntryTests.cs`, `RunnerTpTests.cs`
+- `NewsBlackoutTests.cs`, `QuadEntryTests.cs`, `RunnerTpTests.cs`
 - `SlBufferPipsTests.cs`, `Tp1CloseRatioTests.cs`, `WickBasedFibMeasurementTests.cs`
 
-**Task 4.12 Pipeline vollständig:**
-- 9 Step-Klassen (`Strategies/Pipeline/Steps/`): NewsCheck, TopDownGkl, SequenceMapping, ConfluenceMarking, EntryDefinition, LotSizing, StopLossSetting, TargetSetting, BreakevenArm
-- Integration in `SequenzKonzeptStrategy.Evaluate` via `RunMasterclassPipeline`-Helper: Nach allen Berechnungen validiert die Pipeline die 9 Buch-Schritte formal
-- Bei Pipeline-Fail wird `Blocked(navTf, "Pipeline Step {Name}: {Reason}")` geliefert
+**Task 4.12 Pipeline — am 24.04.2026 ersatzlos entfernt:**
+- Ehemals: `SkMasterclassPipeline` + `IPipelineStep` + 9 Step-Klassen (`Strategies/Pipeline/Steps/`) + `MasterclassPipelineTests.cs`
+- **Grund der Entfernung:** Der Orchestrator (`SkMasterclassPipeline.Run`) ignorierte das vom Aufrufer vorbefüllte Data-Dictionary und startete jeden Run mit leerem Dict → Step3 (`SequenceMapping`) scheiterte deterministisch an `"Keine Navigator-Sequenz gemappt"`, sobald die Strategy überhaupt bis zur Pipeline kam. Der Bug war lange nicht aufgefallen, weil die meisten Evaluates schon vorher mit `State < Aktiviert` blockieren — bei State=Aktiviert blockierte die Pipeline aber 100% der Signale.
+- **Ersatz:** Alle 9 Buch-Schritte sind inline in `SequenzKonzeptStrategy.Evaluate` umgesetzt (News-Gate ganz oben, GKL/Sequenz/Confluence/Entry/SL/TP inline, Breakeven-Arm im `SignalResult.NavPointA`). Der Pipeline-Layer war nur ein nachgelagerter Validator, der Inline-Checks redundant doppelte.
+- **Struktur-Nutzen verloren? Nein** — die 9 Buch-Schritte sind als Kommentarblock am Ende von Evaluate (vor der Signal-Erstellung) dokumentiert, plus jeweils inline am zugehörigen Code-Abschnitt.
 
 **Task 4.10 Counter-Trend-Strategy-Integration:**
 - Counter-Trend-Scalp läuft inline in `Evaluate` wenn `ScannerSettings.EnableCounterTrendScalp=true`
@@ -393,7 +393,7 @@ Das SK-System wurde komplett neu auf Basis der vollständigen Masterclass-Beschr
 
 | Regel | Buch | Projekt |
 |-------|------|---------|
-| Risiko pro Trade | 1-2% | **5%** (hard-cap, Pipeline Step 6 validiert) |
+| Risiko pro Trade | 1-2% | **5%** (hard-cap, im RiskManager validiert) |
 | Counter-Trend-Scalper | "manche Trader" (hochriskant) | Default `false`, opt-in |
 | Runner-TP (5-10% über 200%) | "manche Trader" | Default `false`, opt-in |
 | TP-Toleranz Krypto | 5 Pips (~0.005%) | 0.03% (weiter) |
@@ -847,7 +847,7 @@ dotnet test tests/BingXBot.Tests
 - Signal-Verlust-Bug (Limit-Order lange pending): Pending-Orders vom Verwaist-Cleanup ausnehmen, bei Fill ohne Signal rekonstruieren (SL auf Invalidation-Level, nativer SL setzen)
 - **Forex-Pip MUSS prozentual sein** (v1.2.7): `entryPrice * 0.0001m` statt fixer 0.0001. NCFX-Perps skalieren anders als Spot-FX → fixer Pip gab 8 % WinRate auf EUR/USD + GBP/USD über 5 Monate. JPY-Sonderfall entfällt — prozentual skaliert automatisch.
 - **Runner-Trail-SL MUSS an die Exchange gepusht werden** (v1.2.7): Sonst lebt der nachgezogene SL nur im Memory, App-Crash verliert den Runner-Gewinn. `PositionExitState.RunnerLastPushedSl` + `RunnerLastPushUtc` steuern den Throttle (0.15 % Preis-Delta UND 10 s seit letztem Push). Initialer Push passiert sofort bei Runner-Aktivierung (LastPushedSl=0).
-- **News-Filter DI-Pflicht** (v1.2.7): `IEconomicCalendarService` MUSS explizit registriert werden (`BingXBot.Server/Program.cs`, `BingXBot.Shared/App.axaml.cs`). Ohne Registrierung ist `_newsCalendar` im RiskManager null → Pipeline Step 1 läuft auf "graceful degradation" und passt durch. HTTP-Variante nur aktiv wenn `News:Endpoint` in appsettings gesetzt ist — sonst Stub.
+- **News-Filter DI-Pflicht** (v1.2.7): `IEconomicCalendarService` MUSS explizit registriert werden (`BingXBot.Server/Program.cs`, `BingXBot.Shared/App.axaml.cs`). Ohne Registrierung ist `_newsCalendar` im RiskManager null → `MarketContext.NewsBlackoutCheck`-Delegate bleibt null → der inline News-Gate am Anfang von `Evaluate` läuft auf "graceful degradation" und passt durch. HTTP-Variante nur aktiv wenn `News:Endpoint` in appsettings gesetzt ist — sonst Stub.
 
 ### Android-Spezifika
 

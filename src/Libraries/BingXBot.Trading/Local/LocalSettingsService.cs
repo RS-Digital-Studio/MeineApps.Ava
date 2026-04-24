@@ -63,17 +63,13 @@ public sealed class LocalSettingsService : ISettingsService, IDisposable
         await _persistLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            // Fix 17.04.2026: Runtime-Zustand (LastMode) NICHT durch Client-Snapshot ueberschreiben lassen.
-            // Der Client sendet bei jeder Settings-Aenderung seinen lokalen BotSettings-Snapshot —
-            // dort steht aber LastMode=Paper (Default), weil der Client den Server-Wert nie synced.
-            // Ohne diesen Schutz sprang der Server-Mode bei jedem Client-Save zurueck auf Paper.
-            // Fix 24.04.2026: WasRunningOnShutdown analog schuetzen — Flag wird vom Server beim Start/Stop
-            // gesetzt, der Client kennt keinen aktuellen Wert und wuerde ihn auf false zuruecksetzen.
-            var preservedLastMode = _botSettings.LastMode;
-            var preservedWasRunningOnShutdown = _botSettings.WasRunningOnShutdown;
+            // LastMode + WasRunningOnShutdown sind Server-Authority-Properties (gesetzt von
+            // StartAsync / PersistResumeFlagAsync). CopyPoco ueberspringt sie, damit ein
+            // Client-Snapshot sie nicht zurueckrollen kann — auch nicht in einem Race wo
+            // preservedLastMode VOR StartAsync.Set gelesen wird und RestoreWrite NACH dem Set
+            // den neuen Wert ueberschreibt (Bug 24.04.2026 Abend: Live-Start lief, LastMode
+            // blieb Paper, beim naechsten AutoResume waere Paper statt Live gestartet).
             CopyPoco(settings, _botSettings);
-            _botSettings.LastMode = preservedLastMode;
-            _botSettings.WasRunningOnShutdown = preservedWasRunningOnShutdown;
             _botSettings.Risk = _riskSettings;
             _botSettings.Scanner = _scannerSettings;
             _botSettings.Backtest = _backtestSettings;
@@ -128,14 +124,9 @@ public sealed class LocalSettingsService : ISettingsService, IDisposable
         await _persistLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            // Fix 17.04.2026: LastMode = Server-Authority, nicht durch Client-Snapshot ueberschreiben
-            // (siehe SaveBotAsync — gleicher Grund, gleicher Fix).
-            // Fix 24.04.2026: WasRunningOnShutdown ebenfalls Server-Authority (Auto-Resume-Flag).
-            var preservedLastMode = _botSettings.LastMode;
-            var preservedWasRunningOnShutdown = _botSettings.WasRunningOnShutdown;
+            // LastMode + WasRunningOnShutdown sind Server-Authority — siehe SaveBotAsync.
+            // CopyPoco filtert sie raus, kein Race mit parallelem StartAsync mehr moeglich.
             CopyPoco(snapshot.Bot, _botSettings);
-            _botSettings.LastMode = preservedLastMode;
-            _botSettings.WasRunningOnShutdown = preservedWasRunningOnShutdown;
             CopyPoco(snapshot.Risk, _riskSettings);
             CopyPoco(snapshot.Scanner, _scannerSettings);
             CopyPoco(snapshot.Backtest, _backtestSettings);
@@ -188,10 +179,22 @@ public sealed class LocalSettingsService : ISettingsService, IDisposable
         typeof(BacktestSettings)
     };
 
+    // Server-Authority-Properties: auch bei CopyPoco IMMER ueberspringen, damit ein Client-Snapshot
+    // (mit z.B. LastMode=Paper-Default) den aktuellen Server-Runtime-State nicht kippt. Die setzende
+    // Instanz ist ausschliesslich LocalBotControlService.StartAsync / PersistResumeFlagAsync +
+    // Program.cs-Initial-Load aus der DB. Race-Sicher, weil CopyPoco die Felder komplett ignoriert.
+    private static readonly HashSet<string> ServerAuthorityProperties = new(StringComparer.Ordinal)
+    {
+        nameof(BotSettings.LastMode),
+        nameof(BotSettings.WasRunningOnShutdown)
+    };
+
     private static void CopyPoco<T>(T src, T dst) where T : class
     {
         var props = typeof(T).GetProperties()
-            .Where(p => p.CanRead && p.CanWrite && !NavigationTypesToSkip.Contains(p.PropertyType));
+            .Where(p => p.CanRead && p.CanWrite
+                && !NavigationTypesToSkip.Contains(p.PropertyType)
+                && !ServerAuthorityProperties.Contains(p.Name));
         foreach (var p in props)
         {
             var value = p.GetValue(src);

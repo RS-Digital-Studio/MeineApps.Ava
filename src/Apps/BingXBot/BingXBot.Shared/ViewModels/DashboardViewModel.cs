@@ -455,13 +455,33 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             BotStatusState = BotState.Starting;
             CanStart = false;
 
-            var mode = IsPaperMode ? Core.Enums.TradingMode.Paper : Core.Enums.TradingMode.Live;
+            var requestedMode = IsPaperMode ? Core.Enums.TradingMode.Paper : Core.Enums.TradingMode.Live;
             var req = new BingXBot.Contracts.Dto.BotStartRequest(
-                Mode: mode,
+                Mode: requestedMode,
                 InitialBalance: IsPaperMode ? _botSettings.PaperInitialBalance : null,
                 ActiveTimeframes: _scannerSettings.ActiveTimeframes.ToList());
 
             var status = await _botControl.StartAsync(req);
+
+            // Server kann den Start ablehnen wenn Engine bereits in anderem Mode laeuft — dann ist
+            // LastError gesetzt und status.Mode bleibt auf dem alten Wert. In dem Fall das UI NICHT
+            // optimistisch als Running + requestedMode anzeigen, sondern den echten Zustand + Fehler.
+            if (!string.IsNullOrEmpty(status.LastError))
+            {
+                BotStatusText = $"Start abgelehnt: {status.LastError}";
+                BotStatusState = status.State;
+                CanStart = status.State != BotState.Running;
+                // IsPaperMode dem Server-Ist-Zustand angleichen — sonst zeigt die UI weiter Live an
+                // obwohl der Server in Paper festhaengt.
+                IsPaperMode = status.Mode != Core.Enums.TradingMode.Live;
+                return;
+            }
+
+            // Erfolgreicher Start: Server-Response ist die Wahrheit, nicht der Client-Toggle.
+            // Wenn User Paper angefordert hat und Server hat Paper gestartet -> alles gut.
+            // Wenn User Live angefordert hat und Server meldet Paper (abgelehnt ohne LastError?) -> UI syncen.
+            var serverMode = status.Mode;
+            IsPaperMode = serverMode != Core.Enums.TradingMode.Live;
             IsRunning = true;
             CanStart = false;
             BotStatusState = status.State;

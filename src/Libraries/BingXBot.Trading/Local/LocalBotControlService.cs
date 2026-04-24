@@ -98,12 +98,29 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
         await _lifecycleLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            // Idempotenz: Wenn die Engine schon laeuft, einfach Status zurueckgeben — kein zweiter Start.
-            // Wichtig fuer den Race "Auto-Resume + manueller User-Click in den 15s Initial-Delay".
-            if (_paperService.IsRunning || _liveManager.IsRunning)
+            // Engine-Running-Handling:
+            // (A) Gleicher Mode wie angefordert -> echte Idempotenz, stummer Status-Return
+            //     (Race-Fall "Auto-Resume + User-Klick in den 15 s Initial-Delay").
+            // (B) Anderer Mode angefordert -> klar ablehnen mit LastError-Message, damit der
+            //     Client das im UI als Fehler zeigen kann. Stummes Ignorieren fuehrte vorher
+            //     zu "Dashboard sagt Live, Pi laeuft Paper" — der User merkt es nicht und
+            //     denkt der Start hat geklappt.
+            var runningMode = _paperService.IsRunning ? TradingMode.Paper
+                              : _liveManager.IsRunning ? TradingMode.Live
+                              : (TradingMode?)null;
+
+            if (runningMode.HasValue)
             {
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
-                    "Start ignoriert: Engine laeuft bereits."));
+                if (runningMode.Value == request.Mode)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Engine",
+                        $"Start ignoriert: Engine laeuft bereits in {runningMode.Value}-Modus."));
+                    return GetStatus();
+                }
+
+                _lastError = $"Bot laeuft bereits als {runningMode.Value}. Bitte zuerst Stop klicken, dann Mode wechseln.";
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                    $"Mode-Wechsel {runningMode.Value} -> {request.Mode} abgelehnt: Engine laeuft bereits. User muss erst stoppen."));
                 return GetStatus();
             }
 

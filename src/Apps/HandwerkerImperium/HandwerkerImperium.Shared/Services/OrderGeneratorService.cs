@@ -240,27 +240,10 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
             }
         }
 
-        // Basis-Belohnung skaliert mit aktuellem Einkommen (wie QuickJobs)
-        var netIncomePerSecond = Math.Max(0m, state.NetIncomePerSecond);
+        // Basis-Belohnung + XP via zentraler Formel (v2.0.35: De-Duplikation — RecalculateAvailableOrderRewards
+        // nutzt dieselbe Methode, damit Orders bei Income-Aenderungen synchron bleiben).
         int taskCount = tasks.Count;
-        // Pro Aufgabe ~5 Minuten Einkommen (300s), Mindestens Level*100 pro Aufgabe
-        var perTaskReward = Math.Max(100m + playerLevel * 100m, netIncomePerSecond * 300m);
-        // Aufgaben-Anzahl als Multiplikator (mit Bonus: mehr Tasks = überproportional mehr)
-        decimal taskMultiplier = taskCount * (1.0m + (taskCount - 1) * 0.15m);
-        decimal baseReward = perTaskReward * taskMultiplier * workshopType.GetBaseIncomeMultiplier();
-
-        // Gilden-Forschung: Auftragsbelohnungen-Bonus (+30%)
-        var guildRewardBonus = state.GuildMembership?.ResearchRewardBonus ?? 0m;
-        if (guildRewardBonus > 0)
-            baseReward *= (1m + guildRewardBonus);
-
-        // Calculate base XP (skaliert mit Aufgaben-Anzahl)
-        int baseXp = 25 * workshopLevel * taskCount;
-
-        // Gilden-Forschung: XP-Bonus (+10%)
-        var guildXpBonus = state.GuildMembership?.ResearchXpBonus ?? 0m;
-        if (guildXpBonus > 0)
-            baseXp = (int)(baseXp * (1m + guildXpBonus));
+        var (baseReward, baseXp) = ComputeBaseRewardAndXp(state, workshopType, workshopLevel, playerLevel, taskCount);
 
         // Kundennamen generieren
         int nameSeed = (int)(DateTime.UtcNow.Ticks % int.MaxValue) ^ Random.Shared.Next();
@@ -321,6 +304,90 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
         }
 
         return order;
+    }
+
+    /// <summary>
+    /// Zentrale Formel fuer BaseReward + BaseXp (v2.0.35 De-Duplikation).
+    /// Wird sowohl in <see cref="GenerateOrder"/> als auch in <see cref="RecalculateAvailableOrderRewards"/>
+    /// verwendet, damit Orders bei Income-Aenderungen aktuelle Werte zeigen.
+    /// Formel: perTaskReward = max(100 + level*100, netIncome*300),
+    ///         baseReward = perTaskReward * taskMultiplier * workshopMultiplier * guildBonus
+    ///         baseXp = 25 * workshopLevel * taskCount * guildXpBonus
+    /// </summary>
+    private static (decimal baseReward, int baseXp) ComputeBaseRewardAndXp(
+        GameState state, WorkshopType workshopType, int workshopLevel, int playerLevel, int taskCount)
+    {
+        var netIncomePerSecond = Math.Max(0m, state.NetIncomePerSecond);
+        var perTaskReward = Math.Max(100m + playerLevel * 100m, netIncomePerSecond * 300m);
+        decimal taskMultiplier = taskCount * (1.0m + (taskCount - 1) * 0.15m);
+        decimal baseReward = perTaskReward * taskMultiplier * workshopType.GetBaseIncomeMultiplier();
+
+        var guildRewardBonus = state.GuildMembership?.ResearchRewardBonus ?? 0m;
+        if (guildRewardBonus > 0)
+            baseReward *= (1m + guildRewardBonus);
+
+        int baseXp = 25 * workshopLevel * taskCount;
+        var guildXpBonus = state.GuildMembership?.ResearchXpBonus ?? 0m;
+        if (guildXpBonus > 0)
+            baseXp = (int)(baseXp * (1m + guildXpBonus));
+
+        return (baseReward, baseXp);
+    }
+
+    /// <summary>
+    /// Aktualisiert BaseReward + BaseXp aller wartenden <see cref="GameState.AvailableOrders"/>
+    /// auf Basis des aktuellen <see cref="GameState.NetIncomePerSecond"/> (v2.0.35 Bugfix).
+    ///
+    /// Hintergrund: BaseReward wurde zum Zeitpunkt der Auftrags-Generation eingefroren.
+    /// Nach Workshop-Upgrades oder Prestige-Wechseln haben alte Orders "veraltete" Werte,
+    /// was Spieler als unfair wahrnehmen (Refresh-Button liefert viel mehr Geld als die
+    /// bestehenden Orders). Diese Methode recomputet die Werte damit die Anzeige immer
+    /// den aktuellen Spielstand widerspiegelt.
+    ///
+    /// Ausgenommen: <see cref="Order.IsCompleted"/> (keine Wirkung), MaterialOrders
+    /// (eigene Reward-Logik), und Orders mit <see cref="Order.TaskResults"/>.Count &gt; 0
+    /// (bereits gestartet — FinalReward wurde zum Zeitpunkt der Annahme eingefroren).
+    ///
+    /// Premium/VIP-Orders behalten ihren 3x-Reward-Multiplikator (wird auf neu berechneten
+    /// Wert angewendet). Safe/Risk-Strategy greift erst bei FinalReward, nicht BaseReward.
+    /// </summary>
+    public void RecalculateAvailableOrderRewards()
+    {
+        var state = _gameStateService.State;
+        int playerLevel = state.PlayerLevel;
+
+        for (int i = 0; i < state.AvailableOrders.Count; i++)
+        {
+            var order = state.AvailableOrders[i];
+
+            // Skip: angefangene Orders (obwohl in AvailableOrders meist nicht der Fall),
+            // MaterialOrders (eigene Formel), Cooperation wird dennoch berechnet.
+            if (order.TaskResults.Count > 0) continue;
+            if (order.OrderType == OrderType.MaterialOrder) continue;
+
+            // Workshop-Level aus State holen (Workshop existiert wenn Order generiert wurde).
+            int workshopLevel = 1;
+            for (int w = 0; w < state.Workshops.Count; w++)
+            {
+                if (state.Workshops[w].Type == order.WorkshopType)
+                {
+                    workshopLevel = state.Workshops[w].Level;
+                    break;
+                }
+            }
+            var (newBaseReward, newBaseXp) = ComputeBaseRewardAndXp(
+                state, order.WorkshopType, workshopLevel, playerLevel, order.Tasks.Count);
+
+            // Premium/VIP-Multiplikator (v2.0.35 Feature D): 3x Reward, 2.5x XP beibehalten.
+            if (order.IsPremium)
+            {
+                newBaseReward *= 3m;
+                newBaseXp = (int)(newBaseXp * 2.5m);
+            }
+
+            order.BaseReward = Math.Round(newBaseReward);
+            order.BaseXp = newBaseXp;
+        }
     }
 
     public List<Order> GenerateAvailableOrders(int count = 3)

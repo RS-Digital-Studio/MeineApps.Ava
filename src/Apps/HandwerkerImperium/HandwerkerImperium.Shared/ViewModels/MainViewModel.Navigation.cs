@@ -34,6 +34,12 @@ public sealed partial class MainViewModel
             _orderGeneratorService.RefreshOrders();
             RefreshOrders();
         }
+        else if (_gameStateService.IsInitialized)
+        {
+            // v2.0.35 Bugfix: Auch wenn Orders schon existieren, Werte neu berechnen.
+            // Sonst zeigen alte Orders veraltete Rewards (vor Workshop-Upgrade/Prestige).
+            RefreshOrders();
+        }
     }
 
     [RelayCommand]

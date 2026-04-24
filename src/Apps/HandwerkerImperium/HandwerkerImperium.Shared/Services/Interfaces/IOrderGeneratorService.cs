@@ -45,6 +45,14 @@ public interface IOrderGeneratorService
     int ExpireOldLiveOrders();
 
     /// <summary>
+    /// Aktualisiert BaseReward + BaseXp aller wartenden AvailableOrders auf Basis des
+    /// aktuellen NetIncomePerSecond (v2.0.35 Bugfix). Verhindert dass alte Orders
+    /// "veraltete" Rewards zeigen wenn das Einkommen zwischenzeitlich gestiegen ist.
+    /// Premium-Multiplikator (3x) bleibt erhalten.
+    /// </summary>
+    void RecalculateAvailableOrderRewards();
+
+    /// <summary>
     /// Wird gefeuert, wenn ein Live-Auftrag spawnt — UI zeigt Toast/Banner.
     /// </summary>
     event Action<Order>? OrderSpawned;

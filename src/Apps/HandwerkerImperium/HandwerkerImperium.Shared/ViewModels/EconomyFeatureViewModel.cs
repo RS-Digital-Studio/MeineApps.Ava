@@ -1324,6 +1324,13 @@ internal sealed class EconomyFeatureViewModel
     internal void RefreshOrders()
     {
         var state = _gameStateService.State;
+
+        // v2.0.35 Bugfix: Alte Orders haben BaseReward vom Zeitpunkt ihrer Generation.
+        // Nach Workshop-Upgrades/Prestige steigt NetIncomePerSecond — die Orders zeigen
+        // aber alte Werte. Rekalkulieren bei jedem Dashboard-Render damit der Spieler
+        // immer aktuelle Rewards sieht (konsistent mit dem Refresh-Button-Verhalten).
+        _orderGeneratorService.RecalculateAvailableOrderRewards();
+
         // Collection-Referenz ersetzen statt Clear()+Add() → 1 statt N+1 Change-Notifications
         var newOrders = new ObservableCollection<Order>();
 

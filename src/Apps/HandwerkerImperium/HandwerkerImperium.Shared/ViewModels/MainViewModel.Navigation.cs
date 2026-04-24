@@ -163,6 +163,28 @@ public sealed partial class MainViewModel
     /// <summary>Stack-basierte Rueck-Navigation. Fallback: Dashboard.</summary>
     internal void NavigateBack()
     {
+        // v2.0.35 Bugfix: Beim Back aus MiniGame oder OrderDetail pausieren wir den aktiven
+        // Auftrag (bleibt im ParallelOrdersByWorkshop → Fortsetzen-Banner) und springen
+        // direkt zum Dashboard. Stack-Pop wuerde auf OrderDetail fuer einen gerade pausierten
+        // Auftrag landen — der OrderDetail-Screen haette dann keinen Order mehr (Dead-End).
+        bool fromActiveOrderScreen = (ActivePage == ActivePage.OrderDetail
+                                       || s_miniGamePages.Contains(ActivePage))
+                                      && _gameStateService.GetActiveOrder() != null;
+
+        if (fromActiveOrderScreen)
+        {
+            _gameStateService.PauseActiveOrder();
+            HasActiveOrder = false;
+            ActiveOrder = null;
+
+            _navigationStack.Clear();
+            _isNavigatingBack = true;
+            try { ActivePage = ActivePage.Dashboard; }
+            finally { _isNavigatingBack = false; }
+            RefreshFromState();
+            return;
+        }
+
         _isNavigatingBack = true;
         try
         {
@@ -182,6 +204,17 @@ public sealed partial class MainViewModel
         }
         RefreshFromState();
     }
+
+    /// <summary>
+    /// Set der MiniGame-Seiten fuer schnellen Contains-Check in NavigateBack.
+    /// </summary>
+    private static readonly HashSet<ActivePage> s_miniGamePages = new()
+    {
+        ActivePage.SawingGame, ActivePage.PipePuzzle, ActivePage.WiringGame,
+        ActivePage.PaintingGame, ActivePage.RoofTilingGame, ActivePage.BlueprintGame,
+        ActivePage.DesignPuzzleGame, ActivePage.InspectionGame,
+        ActivePage.ForgeGame, ActivePage.InventGame
+    };
 
     /// <summary>
     /// Behandelt die Zurueck-Taste. Reihenfolge:

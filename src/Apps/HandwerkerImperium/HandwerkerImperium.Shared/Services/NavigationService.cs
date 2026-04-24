@@ -47,6 +47,11 @@ public sealed class NavigationService : INavigationService
     public void SelectDashboardTab()
     {
         if (_host == null) return;
+        // v2.0.35 Bugfix: Stack vor Dashboard-Sprung leeren. Sorgt dafuer dass der Spieler
+        // nach Order-Completion (Continue navigiert via "dashboard") mit Back-Button nicht
+        // zurueck zum (fertigen) MiniGame/OrderDetail landet — Stack fuer einen frischen
+        // Dashboard-Kontext ist ohnehin sauberer UX.
+        _host.ClearNavigationStack();
         _host.ActivePage = ActivePage.Dashboard;
         // QuickJobs-Sub-Tab nach Prestige ggf. zuruecksetzen
         if (!_host.IsQuickJobsUnlocked)

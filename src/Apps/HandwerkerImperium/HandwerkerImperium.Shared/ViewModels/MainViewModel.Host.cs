@@ -55,6 +55,7 @@ public sealed partial class MainViewModel
     void INavigationHost.RefreshOrders() => RefreshOrders();
     void INavigationHost.RefreshFromState() => RefreshFromState();
     void INavigationHost.NavigateBackStack() => NavigateBack();
+    void INavigationHost.ClearNavigationStack() => _navigationStack.Clear();
 
     void INavigationHost.ShowPrestigeConfirmationAsyncFireAndForget()
         => ShowPrestigeConfirmationAsync().SafeFireAndForget();

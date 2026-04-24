@@ -259,6 +259,13 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         IsResultShown = false;
         IntermediateAverage = "";
 
+        // v2.0.35 Bugfix: Sterne-Opacity zurueck auf 0 setzen, damit bei Spielbeginn
+        // keine Rest-Sterne vom letzten Spiel sichtbar sind. Die View-Animation in
+        // OnGameCompleted setzt sie dann am Ende des MiniGames sauber auf starCount.
+        Star1Opacity = 0;
+        Star2Opacity = 0;
+        Star3Opacity = 0;
+
         var activeOrder = _gameStateService.GetActiveOrder();
         if (activeOrder != null)
         {
@@ -450,13 +457,11 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
                 starCount = Math.Clamp(starCount, 0, 3);
             }
 
-            // Sterne staggered einblenden
-            Star1Opacity = 0; Star2Opacity = 0; Star3Opacity = 0;
-            if (starCount >= 1) { await Task.Delay(200); Star1Opacity = 1.0; }
-            if (starCount >= 2) { await Task.Delay(200); Star2Opacity = 1.0; }
-            if (starCount >= 3) { await Task.Delay(200); Star3Opacity = 1.0; }
-
-            // Visuelles Event für Result-Polish in der View
+            // v2.0.35 Bugfix: Sterne werden NUR von der View via MiniGameEffectHelper.
+            // ShowStarsStaggeredAsync animiert (Bounce-Effekt). Vorher gab es ZWEI parallele
+            // Animationen (ViewModel-Property-Staggered + View-Control-Animation) die
+            // gegeneinander kaempften und die "Sterne doppelt sehen"-Optik produzierten.
+            // GameCompleted-Event triggert die einzige Animation.
             GameCompleted?.Invoke(this, starCount);
         }
         else
@@ -533,6 +538,8 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         var order = _gameStateService.GetActiveOrder();
         if (order == null)
         {
+            // QuickJob-Flow: "../.." gibt die Kontrolle an NavigationService.HandleBackRoute
+            // zurueck, der die QuickJob-Belohnung sauber auszahlt und zurueck zum Sender geht.
             NavigationRequested?.Invoke("../..");
             return;
         }
@@ -540,7 +547,11 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         if (order.IsCompleted)
         {
             _gameStateService.CompleteActiveOrder();
-            NavigationRequested?.Invoke("../..");
+            // v2.0.35 Bugfix: Direkt zum Dashboard navigieren statt "../.." (Stack-Pop).
+            // Der Stack-Pop wuerde den Spieler auf OrderDetail zuruecksetzen, wo der
+            // fertige Auftrag nicht mehr existiert — Dead-End-UX. Direktsprung ist
+            // der saubere Flow nach Auftragsabschluss.
+            NavigationRequested?.Invoke("dashboard");
         }
         else
         {
@@ -574,8 +585,16 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         _timer?.Stop();
         IsPlaying = false;
 
+        // QuickJob-Flow: kein Order — "../.." triggert NavigationService.HandleBackRoute
+        // fuer sauberes QuickJob-Cleanup. Bei Orders direkt zum Dashboard (vermeidet
+        // OrderDetail-Stack-Fallback auf gecancelltem Auftrag).
+        var order = _gameStateService.GetActiveOrder();
         _gameStateService.CancelActiveOrder();
-        NavigationRequested?.Invoke("../..");
+
+        if (order != null)
+            NavigationRequested?.Invoke("dashboard");
+        else
+            NavigationRequested?.Invoke("../..");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -609,11 +628,9 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
         IsLastTask = true;
         IsResultShown = true;
 
+        // v2.0.35 Bugfix: Keine manuelle Star-Opacity-Setzung. Die View-Animation
+        // (OnGameCompleted → ShowStarsStaggeredAsync) macht das sauber.
         // Perfect = 3 Sterne (verdiente Mastery-Belohnung)
-        Star1Opacity = 1.0;
-        Star2Opacity = 1.0;
-        Star3Opacity = 1.0;
-
         GameCompleted?.Invoke(this, 3);
 
         AdWatched = false;

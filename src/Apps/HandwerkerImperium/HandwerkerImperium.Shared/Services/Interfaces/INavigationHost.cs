@@ -40,6 +40,13 @@ public interface INavigationHost
     // Back-Stack (Ownership bleibt MainViewModel wegen ActivePage-Seiteneffekten)
     void NavigateBackStack();
 
+    /// <summary>
+    /// Leert den Navigation-Back-Stack (v2.0.35).
+    /// Wird nach Order-Completion aufgerufen damit der Spieler nach Dashboard-Sprung
+    /// nicht versehentlich zum (fertigen) Auftrag zurueck-navigiert.
+    /// </summary>
+    void ClearNavigationStack();
+
     // Prestige-Kaskade (wird von Route "prestige" ausgeloest)
     void ShowPrestigeConfirmationAsyncFireAndForget();
 

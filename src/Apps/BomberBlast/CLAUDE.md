@@ -7,7 +7,7 @@
 Bomberman-Klon mit SkiaSharp Rendering, AI Pathfinding und mehreren Input-Methoden.
 Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/Cyberpunk.
 
-**Version:** 2.0.32 (VersionCode 42) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
+**Version:** 2.0.33 (VersionCode 43) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Produktion
 
 ## Icon-System (Eigene Neon Arcade Icons)
 

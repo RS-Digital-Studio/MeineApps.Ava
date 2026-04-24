@@ -5,6 +5,7 @@ using BingXBot.Core.Models;
 using BingXBot.Engine;
 using BingXBot.Engine.Risk;
 using BingXBot.Exchange;
+using BingXBot.Trading.Reconciliation;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
 
@@ -18,7 +19,9 @@ namespace BingXBot.Trading;
 /// </summary>
 public class LiveTradingService : TradingServiceBase
 {
-    private readonly BingXRestClient _restClient;
+    // IExchangeClient (nicht BingXRestClient) damit Reconcile/Order-Flows unit-getestet werden koennen
+    // (FakeExchangeClient in Tests). Umgestellt 24.04.2026 (P0-2 Audit).
+    private readonly IExchangeClient _restClient;
     private readonly BingXWebSocketClient? _wsClient;
     private readonly BotDatabaseService? _dbService;
 
@@ -145,7 +148,7 @@ public class LiveTradingService : TradingServiceBase
     public string ModePrefix { get; set; } = "";
 
     public LiveTradingService(
-        BingXRestClient restClient,
+        IExchangeClient restClient,
         IPublicMarketDataClient publicClient,
         StrategyManager strategyManager,
         RiskSettings riskSettings,
@@ -179,6 +182,11 @@ public class LiveTradingService : TradingServiceBase
             _ = SafeStartAsync("User-Data-Stream", () => StartUserDataStreamAsync(_cts!.Token));
             _ = SafeStartAsync("Ticker-Stream", StartTickerStreamAsync);
         }
+
+        // Reconcile-Loop (P0-1, 24.04.2026): alle 60 s Bot-State gegen BingX-Realitaet diffen.
+        // Schuetzt gegen verschluckte WS-Events, Pi-Crashes waehrend Operation, User-Eingriffe im
+        // BingX-UI. Siehe PositionDriftAnalyzer + ReconcilePositionsAsync.
+        _ = SafeStartAsync("Reconcile-Loop", () => ReconcileLoopAsync(_cts!.Token));
     }
 
     /// <summary>
@@ -1663,6 +1671,90 @@ public class LiveTradingService : TradingServiceBase
         {
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "WebSocket",
                 $"{name} fehlgeschlagen: {ex.Message}"));
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Reconcile-Loop: Bot-State gegen Exchange-Realitaet abgleichen (P0-1, 24.04.2026)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Reconcile-Intervall (60 s). Schneller als Drift-Szenarien normalerweise eskalieren,
+    /// langsamer als Rate-Limits vertragen.
+    /// </summary>
+    private const int ReconcileIntervalSeconds = 60;
+
+    private async Task ReconcileLoopAsync(CancellationToken ct)
+    {
+        // Initial-Delay: 30 s, damit nach Engine-Start genug Zeit fuer erste Scans+Position-Opens ist.
+        try { await Task.Delay(30_000, ct).ConfigureAwait(false); }
+        catch (OperationCanceledException) { return; }
+
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                if (!_isPaused)
+                    await ReconcilePositionsAsync(ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                    $"Reconcile-Loop-Fehler: {ex.Message} — naechster Versuch in {ReconcileIntervalSeconds}s"));
+            }
+
+            try { await Task.Delay(ReconcileIntervalSeconds * 1000, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { break; }
+        }
+    }
+
+    /// <summary>
+    /// Einmaliger Reconcile-Durchlauf:
+    /// 1) Exchange-Positionen abrufen,
+    /// 2) Drift gegen <see cref="TradingServiceBase._positionSignals"/> analysieren,
+    /// 3) Orphan-Signale bereinigen, Unmanaged-Positionen loggen.
+    /// Internal fuer Testbarkeit (InternalsVisibleTo=BingXBot.Tests).
+    /// </summary>
+    internal async Task ReconcilePositionsAsync(CancellationToken ct)
+    {
+        var positions = await _restClient.GetPositionsAsync(ct).ConfigureAwait(false);
+
+        // Snapshot der Bot-Keys (ConcurrentDictionary.Keys ist konsistent, nicht blockierend).
+        var botKeys = _positionSignals.Keys.ToArray();
+
+        // Pending-Symbol/Side — wenn Limit-Entry noch nicht gefuellt ist, ist "keine Position" OK.
+        var pendingSymbolSides = _pendingLimitOrders.Values
+            .Select(v => (v.Symbol, v.IsLong ? Side.Buy : Side.Sell))
+            .ToHashSet();
+
+        var actions = PositionDriftAnalyzer.Analyze(
+            positions,
+            botKeys,
+            pendingSymbolSides,
+            graceWindow: TimeSpan.FromSeconds(90),
+            signalCreatedAt: _signalCreatedAt);
+
+        if (actions.Count == 0) return;
+
+        foreach (var action in actions)
+        {
+            var key = $"{action.Symbol}_{action.Side}";
+            switch (action.Kind)
+            {
+                case PositionDriftAnalyzer.DriftKind.OrphanSignalRemove:
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                        $"{LogPrefix}{action.Symbol} {action.Side}: Orphan-Signal entfernt — {action.Reason}",
+                        action.Symbol));
+                    RemoveSignalByKey(key);
+                    break;
+
+                case PositionDriftAnalyzer.DriftKind.UnmanagedPositionWarning:
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                        $"{LogPrefix}{action.Symbol} {action.Side}: {action.Reason}",
+                        action.Symbol));
+                    break;
+            }
         }
     }
 

@@ -116,6 +116,10 @@ services.AddSingleton<BingXBot.Server.Services.LogBufferService>();
 // aendert. Edge-Transition-basiert — kein Spam bei stabilem Zustand.
 services.AddHostedService<BingXBot.Server.Services.ServerHealthWatchdog>();
 
+// DB-Backup-Service: Taegliches Backup der bot.db (03:00 UTC, 7 Tage rotierend).
+// Schuetzt vor Pi-SD-Karten-Korruption — ohne Backup = Total-Wissensverlust bei SD-Ausfall.
+services.AddHostedService<BingXBot.Server.Services.DbBackupService>();
+
 // SignalR
 services.AddSignalR(opts =>
 {
@@ -216,6 +220,22 @@ using (var scope = app.Services.CreateScope())
     db.DatabasePathOverride = Path.Combine(dataDir, "bot.db");
 
     await db.InitializeAsync();
+
+    // DB-Integrity-Check direkt nach Init: Bei stiller SQLite-Korruption (z.B. Pi-SD-Ausfall, unerwarteter
+    // Reboot waehrend Write) NICHT mit kaputter DB weitermachen — sonst werden Trades/Settings auf einer
+    // kaputten Basis geschrieben und beim naechsten Lesen gehen Daten verloren. Bei Fehler: Exception,
+    // systemd restart-Loop stoppt beim ersten Fail, Robert sieht das im journalctl.
+    var integrity = await db.RunIntegrityCheckAsync();
+    if (!integrity.Ok)
+    {
+        var errorMsg = $"DB-Integrity-Check FEHLGESCHLAGEN: {integrity.Details}. " +
+                       "Server wird NICHT gestartet, um keine weiteren Writes auf kaputte DB zu machen. " +
+                       "Manuell pruefen: /var/lib/bingxbot/bot.db oder aus Backup (bot-YYYY-MM-DD.db) restaurieren.";
+        app.Logger.LogCritical(errorMsg);
+        throw new InvalidOperationException(errorMsg);
+    }
+    app.Logger.LogInformation("DB-Integrity-Check: ok");
+
     var saved = await db.LoadSettingsAsync();
     // Auto-Resume-Flag seit 24.04.2026 separater DB-Key (statt Teil von BotSettings-JSON).
     // Der Bot-Singleton haelt den Flag in-memory, aber die Quelle der Wahrheit ist `AutoResumeFlag`.

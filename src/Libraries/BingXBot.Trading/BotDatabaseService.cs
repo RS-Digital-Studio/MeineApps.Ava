@@ -51,6 +51,66 @@ public class BotDatabaseService
         _paths = paths;
     }
 
+    /// <summary>
+    /// Liefert den tatsaechlich verwendeten DB-Pfad (Override oder IAppPaths-Default).
+    /// Wird vom DbBackupService genutzt, um die Datei zu kopieren.
+    /// </summary>
+    public string ResolveDatabasePath() => DatabasePathOverride ?? _paths.DatabasePath;
+
+    /// <summary>
+    /// SQLite-Integrity-Check (PRAGMA integrity_check). Prueft die Konsistenz der DB-Datei.
+    /// Liefert ("ok", "") wenn alles in Ordnung ist, sonst ("fail", Details).
+    /// Sollte beim Startup aufgerufen werden — bei Fehler darf die Engine NICHT starten,
+    /// sonst arbeitet sie auf korrupter DB und verliert Trade-History/Signale.
+    /// </summary>
+    public async Task<(bool Ok, string Details)> RunIntegrityCheckAsync()
+    {
+        if (_db == null)
+            throw new InvalidOperationException("BotDatabaseService nicht initialisiert. InitializeAsync() zuerst aufrufen.");
+
+        try
+        {
+            // PRAGMA integrity_check gibt eine Zeile "ok" bei sauberer DB zurueck,
+            // sonst mehrere Zeilen mit konkreten Fehlern.
+            var result = await _db.ExecuteScalarAsync<string>("PRAGMA integrity_check");
+            var ok = string.Equals(result?.Trim(), "ok", StringComparison.OrdinalIgnoreCase);
+            return (ok, ok ? "" : result ?? "unknown");
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Erzeugt ein konsistentes Backup der DB nach <paramref name="targetPath"/>.
+    /// Fuehrt vor dem Copy einen WAL-Checkpoint aus, damit offene WAL-Transaktionen in die
+    /// Haupt-DB gemerged werden — sonst waere das Backup evtl. unvollstaendig.
+    /// </summary>
+    public async Task BackupAsync(string targetPath)
+    {
+        if (_db == null)
+            throw new InvalidOperationException("BotDatabaseService nicht initialisiert. InitializeAsync() zuerst aufrufen.");
+
+        var sourcePath = ResolveDatabasePath();
+        if (!File.Exists(sourcePath))
+            throw new FileNotFoundException($"DB-Datei nicht gefunden: {sourcePath}");
+
+        var targetDir = Path.GetDirectoryName(targetPath);
+        if (!string.IsNullOrEmpty(targetDir))
+            Directory.CreateDirectory(targetDir);
+
+        // WAL-Checkpoint: mergt ausstehende WAL-Writes in die Haupt-DB (FULL = wartet auf Writer).
+        // ExecuteScalarAsync<string> weil PRAGMA-Returns in sqlite-net-pcl als Fehler interpretiert werden
+        // wenn man ExecuteAsync nutzt (historischer Quirk — siehe CurrentSchemaVersion-Kommentar).
+        try { await _db.ExecuteScalarAsync<string>("PRAGMA wal_checkpoint(FULL)"); }
+        catch { /* best-effort — ein fehlgeschlagener Checkpoint heisst nicht dass die DB kaputt ist */ }
+
+        // File.Copy ist thread-safe gegenueber sqlite-net-pcl-Zugriffen, weil SQLite im WAL-Modus
+        // die Haupt-DB nur anhaengt (nie in-place umschreibt). Haupt-DB-Snapshot nach Checkpoint = konsistent.
+        File.Copy(sourcePath, targetPath, overwrite: true);
+    }
+
     public async Task InitializeAsync()
     {
         var dbPath = DatabasePathOverride ?? _paths.DatabasePath;

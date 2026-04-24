@@ -542,6 +542,84 @@ public class SimulatedExchange : IExchangeClient, IDisposable
         return Task.FromResult(empty);
     }
 
+    // ─────────── IExchangeClient — No-Op-Impls fuer Paper/Backtest ───────────
+    // Diese Methoden sind in Paper/Backtest irrelevant (keine echte Exchange dahinter),
+    // erfuellen aber das Interface. Simulation hat keinen Hedge-Mode-Zustand, keine
+    // Listen-Keys, kein Kill-Switch, kein Income-History. SetPositionSlTp/TP-Platzierung
+    // werden vom Backtest-/PaperTradingService inline ueber State-Mutation abgewickelt.
+
+    public Task<(decimal TakerRate, decimal MakerRate)> GetCommissionRateAsync() =>
+        Task.FromResult((_settings.TakerFee, _settings.MakerFee));
+
+    public Task<IReadOnlyList<Position>> GetPositionsAsync(CancellationToken ct) => GetPositionsAsync();
+
+    public Task CloseAllPositionsAsync(CancellationToken ct) => CloseAllPositionsAsync();
+
+    public Task<bool> IsHedgeModeAsync() => Task.FromResult(true);
+
+    public Task<bool> SetHedgeModeAsync(bool enableHedge) => Task.FromResult(enableHedge);
+
+    public Task SyncServerTimeAsync() => Task.CompletedTask;
+
+    public Task InitializeSymbolInfoAsync() => Task.CompletedTask;
+
+    public Task ClosePartialAsync(string symbol, Side originalSide, decimal quantity) =>
+        ReducePositionAsync(symbol, originalSide, quantity);
+
+    public Task<Order> AmendOrderAsync(string orderId, string symbol, decimal? newPrice = null, decimal? newStopPrice = null, decimal? newQuantity = null)
+    {
+        // Backtest nutzt keine Order-Amendments (Signal-Regeneration statt Preis-Anpassung).
+        _rwLock.EnterReadLock();
+        try
+        {
+            var existing = _openOrders.FirstOrDefault(o => o.OrderId == orderId);
+            return Task.FromResult(existing ?? throw new InvalidOperationException($"Order {orderId} nicht gefunden"));
+        }
+        finally { _rwLock.ExitReadLock(); }
+    }
+
+    public Task SetPositionSlTpAsync(string symbol, Side positionSide, decimal? stopLoss, decimal? takeProfit) => Task.CompletedTask;
+
+    public Task<Order> PlaceTpLimitOrderAsync(string symbol, Side positionSide, decimal quantity, decimal triggerPrice) =>
+        Task.FromResult(new Order(
+            OrderId: $"sim-tp-lim-{Interlocked.Increment(ref _orderCounter)}",
+            Symbol: symbol,
+            Side: positionSide == Side.Buy ? Side.Sell : Side.Buy,
+            Type: OrderType.Limit,
+            Price: triggerPrice,
+            Quantity: quantity,
+            StopPrice: null,
+            CreateTime: DateTime.UtcNow,
+            Status: OrderStatus.New));
+
+    public Task<Order> PlaceTpMarketOrderAsync(string symbol, Side positionSide, decimal quantity, decimal triggerPrice) =>
+        Task.FromResult(new Order(
+            OrderId: $"sim-tp-mkt-{Interlocked.Increment(ref _orderCounter)}",
+            Symbol: symbol,
+            Side: positionSide == Side.Buy ? Side.Sell : Side.Buy,
+            Type: OrderType.Market,
+            Price: 0m,
+            Quantity: quantity,
+            StopPrice: triggerPrice,
+            CreateTime: DateTime.UtcNow,
+            Status: OrderStatus.New));
+
+    public Task<Order> PlaceTpReduceOnlyLimitAsync(string symbol, Side positionSide, decimal quantity, decimal limitPrice) =>
+        PlaceTpLimitOrderAsync(symbol, positionSide, quantity, limitPrice);
+
+    public Task ActivateKillSwitchAsync(int timeoutMs = 120_000) => Task.CompletedTask;
+
+    public Task DeactivateKillSwitchAsync() => Task.CompletedTask;
+
+    public Task<string> CreateListenKeyAsync() => Task.FromResult($"sim-listen-{Guid.NewGuid():N}");
+
+    public Task RenewListenKeyAsync(string listenKey) => Task.CompletedTask;
+
+    public Task DeleteListenKeyAsync(string listenKey) => Task.CompletedTask;
+
+    public Task<List<IncomeRecord>> GetIncomeHistoryAsync(string? symbol = null, string? incomeType = null, DateTime? startTime = null, DateTime? endTime = null, int limit = 100) =>
+        Task.FromResult(new List<IncomeRecord>());
+
     /// <summary>
     /// Gibt alle abgeschlossenen Trades zurück (für Backtest-Auswertung).
     /// </summary>

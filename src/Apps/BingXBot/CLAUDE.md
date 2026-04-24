@@ -230,6 +230,61 @@ Keine neuen Felder in `PositionExitState`/`SignalResult` nötig — der 2x-SL-Tr
 
 ---
 
+## System-Hardening P0 (v1.3.3, 24.04.2026)
+
+Nach dem Audit-Report wurden drei P0-Baustellen auf einmal geschlossen — Fundament fuer sichereren Live-Betrieb.
+
+### P0-2 · IExchangeClient vollstaendig abstrahiert
+
+**Vorher:** `LiveTradingService._restClient` war konkret `BingXRestClient` → 0 Unit-Tests fuer Order-Placement / SL-TP / BE / Reconcile. Jede Aenderung am Order-Handling war blind.
+
+**Nachher:** `IExchangeClient` (in `src/Libraries/BingXBot.Core/Interfaces/IExchangeClient.cs`) um alle 30+ Methoden erweitert, die `LiveTradingService` + `LiveTradingManager` nutzen (SetPositionSlTp, PlaceTp*LimitOrder, CancelOrder, AmendOrder, Hedge-Mode, Kill-Switch, Listen-Key etc.). `BingXRestClient` implementiert das Interface vollstaendig, `SimulatedExchange` (Paper/Backtest) ebenfalls mit No-Op-Defaults fuer Exchange-fremde Operationen (Kill-Switch, Listen-Key).
+
+`LiveTradingService`-Constructor akzeptiert jetzt `IExchangeClient` statt `BingXRestClient`. DI-Graph unveraendert (LiveTradingManager baut den Client, upcast zum Interface ist automatisch).
+
+**Testbarkeit:** Jetzt koennen `FakeExchangeClient`-basierte Integration-Tests geschrieben werden — erste Anwendung ist der `PositionDriftAnalyzer` (Drift-Logik als reine Funktion, 9 Tests).
+
+### P0-1 · Reconcile-Loop (Bot-State ↔ Exchange)
+
+**Problem:** `_positionSignals` war In-Memory-Wahrheit. WS-Reconnect-Luecken, Pi-Crashes, manuelle Eingriffe auf BingX → doppelte Positionen beim naechsten Entry oder Positionen ohne SL.
+
+**Loesung:**
+- **`PositionDriftAnalyzer`** (`src/Libraries/BingXBot.Trading/Reconciliation/`) — pure Funktion, liefert Liste von `DriftAction`. Zwei Drift-Kategorien:
+  - `OrphanSignalRemove`: Signal im Bot, aber keine Position auf Exchange (wird entfernt)
+  - `UnmanagedPositionWarning`: Position auf Exchange, aber kein Signal (nur Warnung, nicht auto-close)
+- **Schutz vor False-Positives:**
+  - Pending-Limit-Entries werden ausgeschlossen (Fill steht noch aus)
+  - Grace-Window 90 s fuer frisch angelegte Signale (Race zwischen `OpenSignal` und naechstem `GetPositions`)
+- **`ReconcileLoopAsync`** in `LiveTradingService` (internal fuer Tests): 60 s Intervall, 30 s Initial-Delay nach Engine-Start. Startet zusammen mit User-Data-/Ticker-Stream via `SafeStartAsync`.
+- **Log-Kategorie `"Reconcile"`** macht Drift-Events in den Logs erkennbar.
+
+**Tests:** `PositionDriftAnalyzerTests.cs` (9 Tests): Baseline, Orphan, Unmanaged, Pending-Ausnahme, Grace-Window, Mehrfach-Drift, Bindestrich-Symbol-Parsing, Qty=0-Filter.
+
+### P0-3 · DB-Integrity-Check + tägliche Backups
+
+**Problem:** `bot.db` auf Pi-SD-Karte ohne Backup. SQLite-WAL + SD = bekannte Korruptions-Kombo → Total-Wissensverlust moeglich.
+
+**Loesung:**
+- **`BotDatabaseService.RunIntegrityCheckAsync()`** — PRAGMA integrity_check nach Init. Bei `!ok` wirft Program.cs `InvalidOperationException` → Server startet NICHT, systemd-Restart-Loop stoppt beim ersten Fail, journalctl zeigt den Fehler. Verhindert Writes auf kaputte DB.
+- **`BotDatabaseService.BackupAsync(targetPath)`** — fuehrt `PRAGMA wal_checkpoint(FULL)` aus (mergt WAL → Haupt-DB), dann `File.Copy`. Konsistenz garantiert.
+- **`DbBackupService`** (neuer HostedService in `BingXBot.Server/Services/`) — taeglich 03:00 UTC, Retention 7 Tage (konfigurierbar via `Server:BackupRetentionDays`), rotierend nach `bot-YYYY-MM-DD.db` in `{DataDirectory}/backups/`. Best-Effort — Fehlschlag loggt, Server laeuft weiter.
+
+**Restore (manuell):** `sudo systemctl stop bingxbot && cp /var/lib/bingxbot/backups/bot-2026-04-23.db /var/lib/bingxbot/bot.db && sudo systemctl start bingxbot`.
+
+### Verifikation
+
+- Solution-Build: 0 Fehler / 0 Warnungen
+- Tests: **455/455 grün** (446 + 9 neue `PositionDriftAnalyzerTests`)
+- Deploy v1.3.3 auf Pi: aktiv, Auto-Resume greift, Reconcile-Log erscheint alle 60 s in `journalctl`
+
+### Offen / spaeter
+
+- **FakeExchangeClient** + Integration-Test fuer `ReconcilePositionsAsync` selbst (nicht nur den Analyzer). P0-2 hat die Tuer geoeffnet — wird in einem Folge-PR nachgezogen wenn erste Drift-Events in der Praxis auftreten.
+- **Missing-StopLoss-Detektion** (Position auf Exchange, aber keine SL-Order): erfordert BingX-Order-Type-Klassifikation (`StopMarket` vs `TakeProfit*`) — separater Schritt nach erster Reconcile-Laufzeit.
+- **Hedge-Mode Key-Collision** (P1-3): `_positionSignals` Key ist `{Symbol}_{Side}` — das ist bereits Hedge-Safe fuer die zwei Haupt-Kombinationen `Symbol_Buy` + `Symbol_Sell`. Keine Aktion noetig.
+
+---
+
 ## Buch-Only Strip Phase 2 (v1.2.9, 21.04.2026)
 
 **User-Direktive:** "Wir wollen alles genau nach diesen 3 Dateien, keine weiteren Features."

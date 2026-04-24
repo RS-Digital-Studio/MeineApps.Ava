@@ -24,14 +24,16 @@ public partial class MainViewModel : ViewModelBase
     public GardenPlanViewModel GardenPlanVm { get; }
     public MapViewModel MapVm { get; }
     public ProjectsViewModel ProjectsVm { get; }
+    public StakeoutViewModel StakeoutVm { get; }
     public SettingsViewModel SettingsVm { get; }
 
-    // Navigation (6 Haupttabs + Verbindung als Overlay/Sub)
+    // Navigation (7 Haupttabs + Verbindung als Overlay/Sub)
     [ObservableProperty] private bool _isSurveyActive = true;
     [ObservableProperty] private bool _isTerrainActive;
     [ObservableProperty] private bool _isGardenActive;
     [ObservableProperty] private bool _isMapActive;
     [ObservableProperty] private bool _isProjectsActive;
+    [ObservableProperty] private bool _isStakeoutActive;
     [ObservableProperty] private bool _isConnectActive;
     [ObservableProperty] private bool _isSettingsActive;
 
@@ -42,6 +44,11 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] private string _fixStatusText = "KEIN FIX";
     [ObservableProperty] private int _satelliteCount;
     [ObservableProperty] private float _horizontalAccuracy;
+
+    // Export-Share-Banner: Nach erfolgreichem Export sichtbar, bietet Teilen/Öffnen an
+    [ObservableProperty] private string? _lastExportPath;
+    [ObservableProperty] private string _lastExportFileName = string.Empty;
+    [ObservableProperty] private bool _isExportBannerVisible;
 
     /// <summary>Double-Back-to-Exit Hinweis</summary>
     public event Action<string>? ExitHintRequested;
@@ -66,6 +73,7 @@ public partial class MainViewModel : ViewModelBase
         GardenPlanViewModel gardenPlanVm,
         MapViewModel mapVm,
         ProjectsViewModel projectsVm,
+        StakeoutViewModel stakeoutVm,
         SettingsViewModel settingsVm)
     {
         _bleService = bleService;
@@ -78,6 +86,7 @@ public partial class MainViewModel : ViewModelBase
         GardenPlanVm = gardenPlanVm;
         MapVm = mapVm;
         ProjectsVm = projectsVm;
+        StakeoutVm = stakeoutVm;
         SettingsVm = settingsVm;
 
         // BLE-Status Events (kommen vom Background-Thread, daher Dispatcher)
@@ -99,6 +108,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 ProjectsVm.SelectedProject = project;
                 GardenPlanVm.CurrentProjectId = project.Id;
+                StakeoutVm.CurrentProjectId = project.Id;
 
                 // Punkte in MeasurementService laden für TerrainView/MapView/GardenPlanView.
                 // ReplacePoints feuert nur EIN PointsReset-Event — TerrainViewModel rechnet
@@ -108,6 +118,7 @@ public partial class MainViewModel : ViewModelBase
                 {
                     _measurementService.ReplacePoints(full.Points);
                     await GardenPlanVm.LoadElementsFromProjectAsync(project.Id);
+                    await StakeoutVm.LoadTargetsAsync();
                 }
 
                 Navigate("Survey");
@@ -118,9 +129,14 @@ public partial class MainViewModel : ViewModelBase
             }
         };
 
-        // Export-Events: Dateipfad dem User mitteilen
+        // Export-Events: Banner einblenden mit Teilen/Öffnen-Optionen
         ProjectsVm.FileExportReady += path =>
-            MessageRequested?.Invoke("Export erstellt", path);
+        {
+            LastExportPath = path;
+            LastExportFileName = System.IO.Path.GetFileName(path);
+            IsExportBannerVisible = true;
+            MessageRequested?.Invoke("Export erstellt", LastExportFileName);
+        };
 
         ProjectsVm.ExportFailed += reason =>
             MessageRequested?.Invoke("Export fehlgeschlagen", reason);
@@ -128,6 +144,10 @@ public partial class MainViewModel : ViewModelBase
         // BLE-Fehler/Status aus ConnectView als Toast anzeigen
         ConnectVm.MessageRequested += msg =>
             MessageRequested?.Invoke("Verbindung", msg);
+
+        // GardenPlan-Fehler (z.B. Zeichnung ohne Referenz verworfen)
+        GardenPlanVm.MessageRequested += msg =>
+            MessageRequested?.Invoke("Gartenplan", msg);
 
         // AR-Capture → Terrain-Transfer
         SurveyVm.ArCaptureCompleted += async result =>
@@ -172,6 +192,7 @@ public partial class MainViewModel : ViewModelBase
         IsGardenActive = page == "Garden";
         IsMapActive = page == "Map";
         IsProjectsActive = page == "Projects";
+        IsStakeoutActive = page == "Stakeout";
         IsConnectActive = page == "Connect";
         IsSettingsActive = page == "Settings";
     }
@@ -201,5 +222,51 @@ public partial class MainViewModel : ViewModelBase
         // Android blockiert den BLE-Stream im Doze-Mode ohne FG-Service.
         if (wasConnected != state.IsConnected)
             ForegroundServiceRequested?.Invoke(state.IsConnected);
+    }
+
+    /// <summary>Letzten Export teilen (Share-Sheet via UriLauncher).</summary>
+    [RelayCommand]
+    private void ShareLastExport()
+    {
+        if (string.IsNullOrWhiteSpace(LastExportPath)) return;
+        var mime = GetMimeTypeFromPath(LastExportPath);
+        MeineApps.Core.Ava.Services.UriLauncher.ShareFile(LastExportPath, mime,
+            $"SmartMeasure Export: {LastExportFileName}");
+    }
+
+    /// <summary>Letzten Export mit Standard-App öffnen (PDF-Reader, Google Earth für KMZ, etc.).</summary>
+    [RelayCommand]
+    private void OpenLastExport()
+    {
+        if (string.IsNullOrWhiteSpace(LastExportPath)) return;
+        var mime = GetMimeTypeFromPath(LastExportPath);
+        MeineApps.Core.Ava.Services.UriLauncher.OpenFile(LastExportPath, mime);
+    }
+
+    [RelayCommand]
+    private void DismissExportBanner()
+    {
+        IsExportBannerVisible = false;
+    }
+
+    /// <summary>MIME-Type aus Dateiendung ableiten — wichtig damit Android die richtigen
+    /// Share-Ziele anbietet (z.B. KMZ → Google Earth, DXF → CAD-Apps).</summary>
+    private static string GetMimeTypeFromPath(string path)
+    {
+        var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf" => "application/pdf",
+            ".csv" => "text/csv",
+            ".geojson" => "application/geo+json",
+            ".json" => "application/json",
+            ".kmz" => "application/vnd.google-earth.kmz",
+            ".kml" => "application/vnd.google-earth.kml+xml",
+            ".dxf" => "application/dxf",
+            ".obj" => "model/obj",
+            ".mtl" => "model/mtl",
+            ".zip" => "application/zip",
+            _ => "application/octet-stream"
+        };
     }
 }

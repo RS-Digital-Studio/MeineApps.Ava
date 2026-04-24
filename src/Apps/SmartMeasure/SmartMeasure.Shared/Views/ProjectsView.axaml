@@ -116,6 +116,22 @@
                                     </Button>
                                     <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
+                                            Foreground="{DynamicResource PrimaryBrush}"
+                                            Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportDxfCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="AutoCAD/Allplan/Revit-kompatibel">
+                                        <TextBlock Text="DXF" />
+                                    </Button>
+                                    <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
+                                            Background="{DynamicResource BgElevatedBrush}"
+                                            Foreground="{DynamicResource AccentBrush}"
+                                            Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportKmzCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="Google Earth / Google Maps">
+                                        <TextBlock Text="KMZ" />
+                                    </Button>
+                                    <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
+                                            Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource DangerBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportPdfCommand}"
                                             CommandParameter="{Binding}">

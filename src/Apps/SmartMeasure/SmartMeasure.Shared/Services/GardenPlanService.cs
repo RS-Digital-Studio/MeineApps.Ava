@@ -24,13 +24,17 @@ public class GardenPlanService : IGardenPlanService
 
         foreach (var element in elements)
         {
-            var points = ParsePoints(element.PointsJson);
-            if (points.Count < 2) continue;
+            // Längen/Flächen bei Finish-Draw bereits gespeichert.
+            // Falls 0 (z.B. altes Element ohne gespeicherte Metriken), aus LocalPoints nachrechnen.
+            var points = element.LocalPoints ?? ParsePoints(element.PointsJson);
+            if (points.Count < 2 && element.AreaSquareMeters <= 0 && element.LengthMeters <= 0) continue;
 
             switch (element.ElementType)
             {
                 case GardenElementType.Weg:
-                    var wegLength = CalculatePolylineLength(points);
+                    var wegLength = element.LengthMeters > 0
+                        ? element.LengthMeters
+                        : CalculatePolylineLength(points);
                     var wegArea = wegLength * element.Width;
                     var wegThickness = element.LayerThicknessCm > 0
                         ? element.LayerThicknessCm
@@ -53,7 +57,9 @@ public class GardenPlanService : IGardenPlanService
 
                 case GardenElementType.Beet:
                 case GardenElementType.Rasen:
-                    var beetArea = CalculatePolygonArea(points);
+                    var beetArea = element.AreaSquareMeters > 0
+                        ? element.AreaSquareMeters
+                        : CalculatePolygonArea(points);
                     var beetMaterial = element.ElementType == GardenElementType.Rasen ? "Rasen" : "Erde";
                     estimates.Add(new MaterialEstimate
                     {
@@ -78,7 +84,9 @@ public class GardenPlanService : IGardenPlanService
 
                 case GardenElementType.Mauer:
                 case GardenElementType.Zaun:
-                    var mauerLength = CalculatePolylineLength(points);
+                    var mauerLength = element.LengthMeters > 0
+                        ? element.LengthMeters
+                        : CalculatePolylineLength(points);
                     estimates.Add(new MaterialEstimate
                     {
                         Material = $"{element.Material} {element.ElementType}",
@@ -99,7 +107,9 @@ public class GardenPlanService : IGardenPlanService
                     break;
 
                 case GardenElementType.Terrasse:
-                    var terrasseArea = CalculatePolygonArea(points);
+                    var terrasseArea = element.AreaSquareMeters > 0
+                        ? element.AreaSquareMeters
+                        : CalculatePolygonArea(points);
                     var terraDicke = element.LayerThicknessCm > 0
                         ? element.LayerThicknessCm : GetDefaultThickness(element.Material);
                     estimates.Add(new MaterialEstimate
@@ -134,29 +144,16 @@ public class GardenPlanService : IGardenPlanService
     }
 
     /// <summary>
-    /// Shoelace-Fläche. Erwartet metrische Koordinaten (UTM-Meter).
-    /// Liefert 0 wenn die Werte wie Lat/Lon aussehen (|x|&lt;180 und |y|&lt;90) —
-    /// das passiert sonst mit astronomisch falschen Ergebnissen (Grad² ≠ m²).
+    /// Shoelace-Fläche in m². Erwartet LOKALE metrische Koordinaten relativ zu einem
+    /// Referenzpunkt (z.B. `CoordinateService.LatLonToLocal`-Output oder Canvas-Tap-Koords).
+    ///
+    /// WICHTIG: Niemals direkt mit WGS84 Lat/Lon-Werten aufrufen — das Ergebnis wäre Grad² ·
+    /// ~12 Mrd m² pro Einheit und damit komplett falsch. v2-PointsJson wird via
+    /// `GetLocalPoints(..., coordService)` konvertiert bevor diese Methode ruft.
     /// </summary>
     public double CalculatePolygonArea(List<(double x, double y)> points)
     {
         if (points.Count < 3) return 0;
-
-        // Plausibilitäts-Check: Sind das UTM-Meter oder WGS84-Grade?
-        // UTM-Easting liegt üblich bei 500000, UTM-Northing bei Millionen.
-        // Bei Werten < 1 für beide Koordinaten in Range [-180, 180] ist es wahrscheinlich
-        // Grad-Input — dann Shoelace-Ergebnis ist nicht in m², sondern Grad² × 12 Mrd m².
-        var suspicious = points.All(p =>
-            Math.Abs(p.x) <= 180.0 && Math.Abs(p.y) <= 90.0 &&
-            !(Math.Abs(p.x) > 1.0 || Math.Abs(p.y) > 1.0));
-
-        if (suspicious)
-        {
-            System.Diagnostics.Debug.WriteLine(
-                "GardenPlanService.CalculatePolygonArea: Punkte sehen nach Lat/Lon aus — " +
-                "Caller muss vorher in UTM-Meter konvertieren. 0 zurückgegeben.");
-            return 0;
-        }
 
         double area = 0;
         for (int i = 0; i < points.Count; i++)
@@ -182,6 +179,12 @@ public class GardenPlanService : IGardenPlanService
 
     public List<(double x, double y)> ParsePoints(string json)
     {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+
+        // v2 erkennt am Object-Root: {"v":2,...} — dann kein v1-Array. Leer zurückgeben.
+        var trimmed = json.TrimStart();
+        if (trimmed.Length > 0 && trimmed[0] == '{') return [];
+
         try
         {
             var arrays = JsonSerializer.Deserialize<double[][]>(json);
@@ -198,6 +201,88 @@ public class GardenPlanService : IGardenPlanService
     {
         var arrays = points.Select(p => new[] { p.x, p.y }).ToArray();
         return JsonSerializer.Serialize(arrays);
+    }
+
+    public List<(double latitude, double longitude)>? ParsePointsWgs84(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+
+        var trimmed = json.TrimStart();
+        // v2 muss Object-Root haben
+        if (trimmed.Length == 0 || trimmed[0] != '{') return null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("v", out var version)) return null;
+            if (version.ValueKind != JsonValueKind.Number || version.GetInt32() != 2) return null;
+
+            if (!root.TryGetProperty("points", out var pointsArray)) return null;
+            if (pointsArray.ValueKind != JsonValueKind.Array) return null;
+
+            var result = new List<(double lat, double lon)>(pointsArray.GetArrayLength());
+            foreach (var pair in pointsArray.EnumerateArray())
+            {
+                if (pair.ValueKind != JsonValueKind.Array || pair.GetArrayLength() < 2) continue;
+                var lat = pair[0].GetDouble();
+                var lon = pair[1].GetDouble();
+                result.Add((lat, lon));
+            }
+            return result;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public string SerializePointsWgs84(List<(double latitude, double longitude)> points)
+    {
+        // Format: {"v":2,"points":[[lat,lon],...]}
+        var arrays = points.Select(p => new[] { p.latitude, p.longitude }).ToArray();
+        var envelope = new { v = 2, points = arrays };
+        return JsonSerializer.Serialize(envelope);
+    }
+
+    public List<(double x, double y)> GetLocalPoints(
+        GardenElement element, double refLatitude, double refLongitude,
+        ICoordinateService coordinateService)
+    {
+        // v2 bevorzugen: absolute Lat/Lon → via UTM zu lokalen Metern projizieren
+        var wgs = ParsePointsWgs84(element.PointsJson);
+        if (wgs != null)
+        {
+            var result = new List<(double x, double y)>(wgs.Count);
+            foreach (var (lat, lon) in wgs)
+            {
+                var (x, y, _) = coordinateService.LatLonToLocal(lat, lon, 0,
+                    refLatitude, refLongitude, 0);
+                result.Add((x, y));
+            }
+            return result;
+        }
+
+        // Legacy v1: Punkte sind bereits lokale Meter (relativ zum damaligen Schwerpunkt).
+        // Annahme: aktueller Schwerpunkt ≈ damaliger Schwerpunkt. Drift möglich — User sollte
+        // das Element neu zeichnen. Aber pragmatisch: besser rendern als nichts zeigen.
+        return ParsePoints(element.PointsJson);
+    }
+
+    public List<(double latitude, double longitude)> LocalToWgs84(
+        IReadOnlyList<(double x, double y)> localPoints,
+        double refLatitude, double refLongitude,
+        ICoordinateService coordinateService)
+    {
+        var result = new List<(double lat, double lon)>(localPoints.Count);
+        foreach (var (x, y) in localPoints)
+        {
+            var (lat, lon, _) = coordinateService.LocalToLatLon(x, y, 0,
+                refLatitude, refLongitude, 0);
+            result.Add((lat, lon));
+        }
+        return result;
     }
 
     private static float GetDefaultThickness(string material)

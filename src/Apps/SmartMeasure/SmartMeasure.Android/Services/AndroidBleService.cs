@@ -39,9 +39,13 @@ public sealed class AndroidBleService : IBleService, IDisposable
     private const int MaxReconnectAttempts = 5;
 
     private readonly Activity _activity;
+    private readonly IGeoidService _geoidService;
     private readonly object _stateLock = new();
     private readonly SemaphoreSlim _writeSemaphore = new(1, 1);
     private readonly ConcurrentQueue<string> _pendingWrites = new();
+
+    /// <summary>Stablänge in Metern — wird für Tilt-Korrektur verwendet.</summary>
+    public float StabHeightMeters { get; set; } = 1.5f;
 
     private BluetoothAdapter? _adapter;
     private BluetoothGatt? _gatt;
@@ -75,9 +79,10 @@ public sealed class AndroidBleService : IBleService, IDisposable
     public event Action<int>? FixQualityChanged;
     public event Action<float, float>? AccuracyUpdated;
 
-    public AndroidBleService(Activity activity)
+    public AndroidBleService(Activity activity, IGeoidService geoidService)
     {
         _activity = activity;
+        _geoidService = geoidService;
         var manager = activity.GetSystemService(Context.BluetoothService) as BluetoothManager;
         _adapter = manager?.Adapter;
     }
@@ -163,7 +168,12 @@ public sealed class AndroidBleService : IBleService, IDisposable
     }
 
     public Task SetStabHeightAsync(float meters)
-        => EnqueueConfigWriteAsync($"STAB_HEIGHT:{meters:F2}");
+    {
+        // Lokal halten für App-seitige Tilt-Korrektur. Firmware bekommt die Länge auch,
+        // damit sie sie z.B. für Settling-Validation nutzen kann.
+        StabHeightMeters = meters;
+        return EnqueueConfigWriteAsync($"STAB_HEIGHT:{meters:F2}");
+    }
 
     public Task ConfigureNtripAsync(NtripConfig config)
         => EnqueueConfigWriteAsync(
@@ -369,7 +379,8 @@ public sealed class AndroidBleService : IBleService, IDisposable
         _writeAckTcs?.TrySetResult(status == GattStatus.Success);
     }
 
-    /// <summary>Position-Paket parsen (24 Bytes: lat/lon/alt als double, little-endian)</summary>
+    /// <summary>Position-Paket parsen (24 Bytes: lat/lon/alt als double, little-endian).
+    /// Altitude wird als WGS84-Ellipsoid-Höhe interpretiert und via IGeoidService zu NN korrigiert.</summary>
     private void ParsePositionData(byte[] data)
     {
         if (data.Length < 24) return;
@@ -378,41 +389,99 @@ public sealed class AndroidBleService : IBleService, IDisposable
         var span = data.AsSpan();
         var lat = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(0, 8));
         var lon = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(8, 8));
-        var alt = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(16, 8));
-        PositionUpdated?.Invoke(lat, lon, alt);
+        var altEllipsoid = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(16, 8));
+
+        // Ellipsoid → NN (MSL). Wenn Firmware bereits MSL sendet: _geoidService.IsClientCorrectionEnabled=false
+        var altMsl = _geoidService.EllipsoidToGeoid(lat, lon, altEllipsoid);
+        PositionUpdated?.Invoke(lat, lon, altMsl);
     }
 
     /// <summary>
     /// Punkt-Paket parsen.
     /// Byte-Layout (little-endian):
-    ///   [ 0.. 7] Latitude   (double)
-    ///   [ 8..15] Longitude  (double)
-    ///   [16..23] Altitude   (double)
+    ///   [ 0.. 7] Latitude   (double)   — Antennen-Position WGS84
+    ///   [ 8..15] Longitude  (double)   — Antennen-Position WGS84
+    ///   [16..23] Altitude   (double)   — Antennen-Höhe WGS84-Ellipsoid
     ///   [24..27] HorizontalAccuracy (float)
     ///   [28..31] VerticalAccuracy   (float)
-    ///   [32..35] TiltAngle          (float)
-    ///   [36..39] TiltAzimuth        (float)
+    ///   [32..35] TiltAngle          (float) — Grad von Vertikal (0 = Stab senkrecht)
+    ///   [36..39] TiltAzimuth        (float) — True-Heading der Neigungsrichtung in Grad
     ///   [40]     FixQuality         (byte)
     ///   [41]     SatelliteCount     (byte)
-    ///   [42]     MagAccuracy        (byte)
+    ///   [42]     MagAccuracy        (byte) — 0 = unkalibriert, 3 = optimal
     ///   [43..47] Padding / Reserved (5 Bytes, z.B. für zukünftige Flags)
+    ///
+    /// Transformation Antenne → Bodenpunkt (Stabspitze):
+    /// 1. Tilt-Korrektur (wenn MagAccuracy ≥ 2): horizontaler Versatz der Spitze relativ zur Antenne.
+    ///    Bei 1.8m Stab + 5° Neigung: ≈16cm Versatz — sabotiert ±2cm RTK ohne Korrektur.
+    /// 2. Höhen-Korrektur: Höhe der Spitze = Antennen-Höhe − stabHeight · cos(tilt).
+    /// 3. Ellipsoid → Geoid (NN) über <see cref="IGeoidService"/>.
     /// </summary>
     private void ParsePointData(byte[] data)
     {
         if (data.Length < 43) return;
         var span = data.AsSpan();
+
+        var antLat = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(0, 8));
+        var antLon = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(8, 8));
+        var antAltEllipsoid = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(16, 8));
+        var hAccuracy = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(24, 4));
+        var vAccuracy = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(28, 4));
+        var tiltAngleDeg = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(32, 4));
+        var tiltAzimuthDeg = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(36, 4));
+        var fixQuality = data[40];
+        var satCount = data[41];
+        var magAccuracy = data[42];
+
+        // Antenne → Stabspitze (Tilt-Korrektur).
+        // Vertikal (cos) ist immer gültig, horizontal (sin · Azimuth) nur bei kalibriertem Kompass.
+        var tiltRad = tiltAngleDeg * Math.PI / 180.0;
+        var cosT = Math.Cos(tiltRad);
+        var sinT = Math.Sin(tiltRad);
+
+        var tipAltEllipsoid = antAltEllipsoid - StabHeightMeters * cosT;
+        var tipLat = antLat;
+        var tipLon = antLon;
+
+        if (magAccuracy >= 2 && sinT > 1e-6)
+        {
+            // Konvention: TiltAzimuth = True-Heading der Antenne relativ zur Spitze.
+            // Die Spitze steht am Boden fest, die Antenne bewegt sich beim Kippen in
+            // diese Richtung (z.B. Azimuth=0° → Antenne kippt nach Norden, Spitze
+            // bleibt auf der gleichen Bodenposition).
+            //
+            // Daraus folgt: die Antennen-Position ist um den Offset nach Azimuth
+            // gegenüber der Spitze versetzt. Für die Spitze müssen wir also:
+            //     tip = antenne - offset(azimuth)
+            // Annahme: TiltAzimuth ist True-Heading (Firmware korrigiert Magnetic-Deklination).
+            var azRad = tiltAzimuthDeg * Math.PI / 180.0;
+            var horizontalOffset = StabHeightMeters * sinT;
+            var deltaNorth = horizontalOffset * Math.Cos(azRad);
+            var deltaEast = horizontalOffset * Math.Sin(azRad);
+
+            // Meter → Grad (UTM wäre präziser, aber bei <10cm Offset ist 111320-Approx akzeptabel).
+            const double metersPerDegLat = 111320.0;
+            var metersPerDegLon = 111320.0 * Math.Cos(antLat * Math.PI / 180.0);
+
+            tipLat = antLat - deltaNorth / metersPerDegLat;
+            tipLon = antLon - deltaEast / metersPerDegLon;
+        }
+
+        // Ellipsoid → NN
+        var tipAltMsl = _geoidService.EllipsoidToGeoid(tipLat, tipLon, tipAltEllipsoid);
+
         var point = new SurveyPoint
         {
-            Latitude = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(0, 8)),
-            Longitude = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(8, 8)),
-            Altitude = BinaryPrimitives.ReadDoubleLittleEndian(span.Slice(16, 8)),
-            HorizontalAccuracy = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(24, 4)),
-            VerticalAccuracy = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(28, 4)),
-            TiltAngle = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(32, 4)),
-            TiltAzimuth = BinaryPrimitives.ReadSingleLittleEndian(span.Slice(36, 4)),
-            FixQuality = data[40],
-            SatelliteCount = data[41],
-            MagAccuracy = data[42],
+            Latitude = tipLat,
+            Longitude = tipLon,
+            Altitude = tipAltMsl,
+            HorizontalAccuracy = hAccuracy,
+            VerticalAccuracy = vAccuracy,
+            TiltAngle = tiltAngleDeg,
+            TiltAzimuth = tiltAzimuthDeg,
+            FixQuality = fixQuality,
+            SatelliteCount = satCount,
+            MagAccuracy = magAccuracy,
             Timestamp = DateTime.UtcNow,
         };
         PointReceived?.Invoke(point);

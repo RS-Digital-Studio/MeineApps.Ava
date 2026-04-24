@@ -14,8 +14,21 @@ public class GardenElement
     /// <summary>Typ: Weg, Beet, Rasen, Mauer, Zaun, Terrasse</summary>
     public GardenElementType ElementType { get; set; }
 
-    /// <summary>Polygon/Linie als JSON-String (List von (x,y) in UTM-Meter)</summary>
+    /// <summary>
+    /// Polygon/Linie persistiert als JSON. Zwei Formate:
+    /// - v2 (neu, aktuell): {"v":2,"points":[[lat,lon],...]} — absolute WGS84 Lat/Lon.
+    ///   Robust gegen Schwerpunkt-Drift wenn sich Messpunkte ändern.
+    /// - v1 (legacy): [[x,y],...] — lokale UTM-Meter relativ zum damaligen Schwerpunkt.
+    ///   Beim Laden wird versucht, sie als v1 mit aktuellem Schwerpunkt zu interpretieren
+    ///   (Drift-Risiko). Nicht mehr für neue Elemente verwendet.
+    /// </summary>
     public string PointsJson { get; set; } = "[]";
+
+    /// <summary>Transient: Lokale Meter-Koordinaten relativ zum aktuellen Projekt-Schwerpunkt.
+    /// Wird vom GardenPlanViewModel bei Projekt-Load oder Messpunkt-Änderung neu berechnet.
+    /// Renderer und Export nutzen diese Cache statt PointsJson zu parsen.</summary>
+    [Ignore]
+    public List<(double x, double y)>? LocalPoints { get; set; }
 
     /// <summary>Breite in Metern (fuer Wege)</summary>
     public float Width { get; set; }

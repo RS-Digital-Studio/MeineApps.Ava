@@ -13,11 +13,31 @@ public class CoordinateService : ICoordinateService
     private const double FalseEasting = 500000.0;
     private const double EarthRadius = 6371000.0;
 
-    public (double easting, double northing, int zone, char band) ToUtm(double latitude, double longitude)
+    /// <summary>Schwelle für Zonen-Abweichungs-Warnung in Grad Longitude</summary>
+    private const double ZoneDeviationWarnThresholdDeg = 3.0;
+
+    public int GetUtmZone(double longitude)
     {
         var zone = (int)Math.Floor((longitude + 180.0) / 6.0) + 1;
+        if (zone < 1) zone = 1;
+        if (zone > 60) zone = 60;
+        return zone;
+    }
+
+    public (double easting, double northing, int zone, char band) ToUtm(double latitude, double longitude)
+    {
+        var zone = GetUtmZone(longitude);
         var band = GetUtmBand(latitude);
-        var lonOrigin = (zone - 1) * 6.0 - 180.0 + 3.0; // Zentralmeridian
+        var (easting, northing) = ToUtmFixedZone(latitude, longitude, zone);
+        // Südhalbkugel: False Northing 10.000.000
+        if (latitude < 0)
+            northing += 10000000.0;
+        return (easting, northing, zone, band);
+    }
+
+    public (double easting, double northing) ToUtmFixedZone(double latitude, double longitude, int zone)
+    {
+        var lonOrigin = (zone - 1) * 6.0 - 180.0 + 3.0; // Zentralmeridian der Ziel-Zone
 
         var latRad = latitude * Math.PI / 180.0;
         var lonRad = longitude * Math.PI / 180.0;
@@ -55,11 +75,7 @@ public class CoordinateService : ICoordinateService
                 + (61 - 58 * t + t * t + 600 * c - 330 * Eccentricity2Prime)
                     * a2 * a2 * a2 * a2 * a2 * a2 / 720));
 
-        // Suedhalbkugel: False Northing 10.000.000
-        if (latitude < 0)
-            northing += 10000000.0;
-
-        return (easting, northing, zone, band);
+        return (easting, northing);
     }
 
     public (double latitude, double longitude) FromUtm(double easting, double northing, int zone, char band)
@@ -119,8 +135,23 @@ public class CoordinateService : ICoordinateService
         var centerLon = longitudes.Average();
         var centerAlt = altitudes.Average();
 
-        var metersPerDegreeLat = 111320.0;
-        var metersPerDegreeLon = 111320.0 * Math.Cos(centerLat * Math.PI / 180.0);
+        // Feste UTM-Zone aus Schwerpunkt — konsistent auch über Zonen-Grenzen
+        var refZone = GetUtmZone(centerLon);
+        var (refEasting, refNorthing) = ToUtmFixedZone(centerLat, centerLon, refZone);
+
+        // Zonen-Abweichungs-Warnung (Grundstücke bis ca. 30km sind unkritisch)
+        var maxLonDeviation = 0.0;
+        for (int i = 0; i < longitudes.Length; i++)
+        {
+            var d = Math.Abs(longitudes[i] - centerLon);
+            if (d > maxLonDeviation) maxLonDeviation = d;
+        }
+        if (maxLonDeviation > ZoneDeviationWarnThresholdDeg)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"CoordinateService.ToLocalMetric: Punkte spannen {maxLonDeviation:F2}° Longitude " +
+                $"— UTM-Präzision sinkt bei >{ZoneDeviationWarnThresholdDeg}° Distanz vom Zentralmeridian.");
+        }
 
         var x = new double[latitudes.Length];
         var y = new double[latitudes.Length];
@@ -128,12 +159,41 @@ public class CoordinateService : ICoordinateService
 
         for (int i = 0; i < latitudes.Length; i++)
         {
-            x[i] = (longitudes[i] - centerLon) * metersPerDegreeLon;
-            y[i] = (latitudes[i] - centerLat) * metersPerDegreeLat;
+            var (e, n) = ToUtmFixedZone(latitudes[i], longitudes[i], refZone);
+            x[i] = e - refEasting;
+            y[i] = n - refNorthing;
             z[i] = altitudes[i] - centerAlt;
         }
 
         return (x, y, z);
+    }
+
+    public (double x, double y, double z) LatLonToLocal(
+        double latitude, double longitude, double altitude,
+        double refLatitude, double refLongitude, double refAltitude)
+    {
+        var refZone = GetUtmZone(refLongitude);
+        var (refEasting, refNorthing) = ToUtmFixedZone(refLatitude, refLongitude, refZone);
+        var (e, n) = ToUtmFixedZone(latitude, longitude, refZone);
+        return (e - refEasting, n - refNorthing, altitude - refAltitude);
+    }
+
+    public (double latitude, double longitude, double altitude) LocalToLatLon(
+        double x, double y, double z,
+        double refLatitude, double refLongitude, double refAltitude)
+    {
+        var refZone = GetUtmZone(refLongitude);
+        var refBand = GetUtmBand(refLatitude);
+        var (refEasting, refNorthing) = ToUtmFixedZone(refLatitude, refLongitude, refZone);
+
+        // Delta in absolute UTM-Koords zurückrechnen
+        var absE = refEasting + x;
+        var absN = refNorthing + y;
+
+        // Südhalbkugel-False-Northing rückgängig-sicher via ToUtm/FromUtm Konvention
+        var utmNorthing = refLatitude < 0 ? absN + 10000000.0 : absN;
+        var (lat, lon) = FromUtm(absE, utmNorthing, refZone, refBand);
+        return (lat, lon, refAltitude + z);
     }
 
     public double HaversineDistance(double lat1, double lon1, double lat2, double lon2)

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using PdfSharpCore.Drawing;
@@ -8,9 +9,18 @@ using SmartMeasure.Shared.Models;
 
 namespace SmartMeasure.Shared.Services;
 
-/// <summary>CSV + GeoJSON + PDF Export</summary>
+/// <summary>CSV + GeoJSON + DXF + KMZ + PDF Export</summary>
 public class ExportService : IExportService
 {
+    private readonly ICoordinateService _coordinateService;
+    private readonly IGardenPlanService _gardenPlanService;
+
+    public ExportService(ICoordinateService coordinateService, IGardenPlanService gardenPlanService)
+    {
+        _coordinateService = coordinateService;
+        _gardenPlanService = gardenPlanService;
+    }
+
     // PDF-Fonts werden lazy initialisiert (PdfSharpCore braucht registrierten FontResolver,
     // der auf Android nicht automatisch verfuegbar ist → static-Init wuerde crashen)
     private static XFont? _titleFont;
@@ -606,4 +616,334 @@ public class ExportService : IExportService
         }
         return sanitized.ToString();
     }
+
+    #region DXF Export
+
+    /// <summary>
+    /// AutoCAD DXF R12 ASCII-Format. Kein NuGet, ~200 Zeilen direktes Schreiben.
+    /// Koordinaten: UTM-Easting/Northing in Metern, relativ zum Projekt-Schwerpunkt
+    /// (sonst hätten Koordinaten 7-stellige Werte, die meisten CAD-Tools
+    /// nicht gut visualisieren). Layer-Prefixes: P_ (Punkte), G_ (Gartenelemente).
+    /// </summary>
+    public string ExportToDxf(SurveyProject project)
+    {
+        var sb = new StringBuilder();
+        var inv = CultureInfo.InvariantCulture;
+
+        // Referenz-Schwerpunkt aus Messpunkten — fixiert die UTM-Zone + bringt Koords
+        // in kleine Zahlen (lokaler Nullpunkt).
+        var points = project.Points;
+        var elements = project.GardenElements;
+        var (refLat, refLon) = ComputeReference(points, elements);
+
+        // Layer-Typen sammeln für TABLES-Section
+        var elementLayers = elements.Select(e => e.ElementType).Distinct().ToList();
+
+        // HEADER
+        sb.AppendLine("0");
+        sb.AppendLine("SECTION");
+        sb.AppendLine("2");
+        sb.AppendLine("HEADER");
+        sb.AppendLine("9");
+        sb.AppendLine("$ACADVER");
+        sb.AppendLine("1");
+        sb.AppendLine("AC1009"); // AutoCAD R12 — breitester Kompatibilitätsgrad
+        sb.AppendLine("9");
+        sb.AppendLine("$INSUNITS");
+        sb.AppendLine("70");
+        sb.AppendLine("6"); // 6 = Meter
+        sb.AppendLine("0");
+        sb.AppendLine("ENDSEC");
+
+        // TABLES - Layer-Definitionen
+        sb.AppendLine("0");
+        sb.AppendLine("SECTION");
+        sb.AppendLine("2");
+        sb.AppendLine("TABLES");
+        sb.AppendLine("0");
+        sb.AppendLine("TABLE");
+        sb.AppendLine("2");
+        sb.AppendLine("LAYER");
+
+        WriteLayerDefinition(sb, "P_Messpunkte", 1);  // Rot
+        WriteLayerDefinition(sb, "P_Labels", 7);       // Weiß
+        var colorMap = new Dictionary<GardenElementType, int>
+        {
+            [GardenElementType.Weg] = 8,        // Grau
+            [GardenElementType.Beet] = 42,       // Braun
+            [GardenElementType.Rasen] = 3,       // Grün
+            [GardenElementType.Mauer] = 5,       // Blau
+            [GardenElementType.Zaun] = 6,        // Magenta
+            [GardenElementType.Terrasse] = 2,    // Gelb
+            [GardenElementType.Grenze] = 1,      // Rot
+            [GardenElementType.Gebaeude] = 9,    // Hellgrau
+            [GardenElementType.Wasser] = 4,      // Cyan
+            [GardenElementType.Kante] = 7,       // Weiß
+        };
+        foreach (var layer in elementLayers)
+            WriteLayerDefinition(sb, $"G_{layer}", colorMap.GetValueOrDefault(layer, 7));
+
+        sb.AppendLine("0");
+        sb.AppendLine("ENDTAB");
+        sb.AppendLine("0");
+        sb.AppendLine("ENDSEC");
+
+        // ENTITIES
+        sb.AppendLine("0");
+        sb.AppendLine("SECTION");
+        sb.AppendLine("2");
+        sb.AppendLine("ENTITIES");
+
+        // Messpunkte als POINT + optional TEXT-Label
+        foreach (var p in points)
+        {
+            var (x, y, _) = _coordinateService.LatLonToLocal(p.Latitude, p.Longitude, p.Altitude,
+                refLat, refLon, 0);
+            WriteDxfPoint(sb, inv, "P_Messpunkte", x, y, p.Altitude);
+            if (!string.IsNullOrWhiteSpace(p.Label))
+                WriteDxfText(sb, inv, "P_Labels", x + 0.2, y + 0.2, 0.3, p.Label);
+        }
+
+        // Gartenelemente als LWPOLYLINE (geschlossen für Flächen, offen für Linien)
+        foreach (var el in elements)
+        {
+            var localPoints = _gardenPlanService.GetLocalPoints(el, refLat, refLon, _coordinateService);
+            if (localPoints.Count < 2) continue;
+
+            var closed = el.ElementType is GardenElementType.Beet or GardenElementType.Rasen
+                or GardenElementType.Terrasse or GardenElementType.Gebaeude or GardenElementType.Wasser;
+
+            WriteDxfPolyline(sb, inv, $"G_{el.ElementType}", localPoints, closed);
+        }
+
+        sb.AppendLine("0");
+        sb.AppendLine("ENDSEC");
+        sb.AppendLine("0");
+        sb.AppendLine("EOF");
+
+        return sb.ToString();
+    }
+
+    private static void WriteLayerDefinition(StringBuilder sb, string name, int color)
+    {
+        sb.AppendLine("0");
+        sb.AppendLine("LAYER");
+        sb.AppendLine("2");
+        sb.AppendLine(name);
+        sb.AppendLine("70");
+        sb.AppendLine("0"); // Flags: sichtbar, nicht gesperrt
+        sb.AppendLine("62");
+        sb.AppendLine(color.ToString(CultureInfo.InvariantCulture));
+        sb.AppendLine("6");
+        sb.AppendLine("CONTINUOUS");
+    }
+
+    private static void WriteDxfPoint(StringBuilder sb, CultureInfo inv, string layer,
+        double x, double y, double z)
+    {
+        sb.AppendLine("0");
+        sb.AppendLine("POINT");
+        sb.AppendLine("8"); sb.AppendLine(layer);
+        sb.AppendLine("10"); sb.AppendLine(x.ToString("F4", inv));
+        sb.AppendLine("20"); sb.AppendLine(y.ToString("F4", inv));
+        sb.AppendLine("30"); sb.AppendLine(z.ToString("F4", inv));
+    }
+
+    private static void WriteDxfText(StringBuilder sb, CultureInfo inv, string layer,
+        double x, double y, double height, string text)
+    {
+        sb.AppendLine("0");
+        sb.AppendLine("TEXT");
+        sb.AppendLine("8"); sb.AppendLine(layer);
+        sb.AppendLine("10"); sb.AppendLine(x.ToString("F4", inv));
+        sb.AppendLine("20"); sb.AppendLine(y.ToString("F4", inv));
+        sb.AppendLine("30"); sb.AppendLine("0.0000");
+        sb.AppendLine("40"); sb.AppendLine(height.ToString("F4", inv));
+        sb.AppendLine("1"); sb.AppendLine(text);
+    }
+
+    private static void WriteDxfPolyline(StringBuilder sb, CultureInfo inv, string layer,
+        List<(double x, double y)> pts, bool closed)
+    {
+        sb.AppendLine("0");
+        sb.AppendLine("LWPOLYLINE");
+        sb.AppendLine("8"); sb.AppendLine(layer);
+        sb.AppendLine("90"); sb.AppendLine(pts.Count.ToString(CultureInfo.InvariantCulture)); // Vertex-Count
+        sb.AppendLine("70"); sb.AppendLine(closed ? "1" : "0"); // Closed-Flag
+        foreach (var (x, y) in pts)
+        {
+            sb.AppendLine("10"); sb.AppendLine(x.ToString("F4", inv));
+            sb.AppendLine("20"); sb.AppendLine(y.ToString("F4", inv));
+        }
+    }
+
+    #endregion
+
+    #region KMZ Export
+
+    /// <summary>
+    /// KMZ = ZIP-Archiv mit einer doc.kml-Datei drin. Google Earth / Maps kompatibel.
+    /// Placemarks für Punkte mit Labels + LineString für Polygon-Umrandung des Grundstücks.
+    /// Koordinaten direkt WGS84 (Longitude, Latitude, Altitude) — KML-Standard.
+    /// </summary>
+    public async Task<string> ExportToKmzAsync(SurveyProject project, string outputDir)
+    {
+        Directory.CreateDirectory(outputDir);
+        var sanitized = SanitizeFileName(project.Name);
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var kmzPath = Path.Combine(outputDir, $"{sanitized}_{timestamp}.kmz");
+
+        var kml = BuildKmlContent(project);
+
+        // ZIP schreiben (synchrones I/O in Task gekapselt — Android-Storage kann langsam sein)
+        await Task.Run(() =>
+        {
+            using var fs = File.Create(kmzPath);
+            using var archive = new ZipArchive(fs, ZipArchiveMode.Create);
+            var entry = archive.CreateEntry("doc.kml", CompressionLevel.Optimal);
+            using var writer = new StreamWriter(entry.Open(), Encoding.UTF8);
+            writer.Write(kml);
+        });
+
+        return kmzPath;
+    }
+
+    private string BuildKmlContent(SurveyProject project)
+    {
+        var sb = new StringBuilder();
+        var inv = CultureInfo.InvariantCulture;
+
+        sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        sb.AppendLine("<kml xmlns=\"http://www.opengis.net/kml/2.2\">");
+        sb.AppendLine("<Document>");
+        sb.AppendLine($"  <name>{EscapeXml(project.Name)}</name>");
+        sb.AppendLine($"  <description>SmartMeasure Export — {project.PointCount} Punkte, " +
+                      $"{project.AreaSquareMeters.ToString("F1", inv)} m²</description>");
+
+        // Style für Messpunkte (orange Icon)
+        sb.AppendLine("  <Style id=\"measurePoint\">");
+        sb.AppendLine("    <IconStyle><color>ff006bff</color><scale>1.0</scale>" +
+                      "<Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>" +
+                      "</IconStyle>");
+        sb.AppendLine("  </Style>");
+        sb.AppendLine("  <Style id=\"boundary\">");
+        sb.AppendLine("    <LineStyle><color>ff00ffff</color><width>2</width></LineStyle>");
+        sb.AppendLine("    <PolyStyle><color>3300ffff</color><fill>1</fill></PolyStyle>");
+        sb.AppendLine("  </Style>");
+
+        // Placemarks für jeden Messpunkt
+        foreach (var p in project.Points)
+        {
+            sb.AppendLine("  <Placemark>");
+            sb.AppendLine($"    <name>{EscapeXml(p.Label ?? "Punkt")}</name>");
+            sb.AppendLine($"    <description>NN: {p.Altitude.ToString("F2", inv)}m | " +
+                          $"±{p.HorizontalAccuracy.ToString("F1", inv)}cm | " +
+                          $"{StickState.GetFixStatusText(p.FixQuality)}</description>");
+            sb.AppendLine("    <styleUrl>#measurePoint</styleUrl>");
+            sb.AppendLine("    <Point>");
+            sb.AppendLine("      <altitudeMode>absolute</altitudeMode>");
+            sb.AppendLine($"      <coordinates>{p.Longitude.ToString("F8", inv)}," +
+                          $"{p.Latitude.ToString("F8", inv)}," +
+                          $"{p.Altitude.ToString("F2", inv)}</coordinates>");
+            sb.AppendLine("    </Point>");
+            sb.AppendLine("  </Placemark>");
+        }
+
+        // Polygon als LinearRing wenn >= 3 Punkte
+        if (project.Points.Count >= 3)
+        {
+            sb.AppendLine("  <Placemark>");
+            sb.AppendLine("    <name>Grundstück-Umriss</name>");
+            sb.AppendLine("    <styleUrl>#boundary</styleUrl>");
+            sb.AppendLine("    <Polygon>");
+            sb.AppendLine("      <altitudeMode>clampToGround</altitudeMode>");
+            sb.AppendLine("      <outerBoundaryIs><LinearRing><coordinates>");
+            foreach (var p in project.Points)
+                sb.AppendLine($"        {p.Longitude.ToString("F8", inv)}," +
+                              $"{p.Latitude.ToString("F8", inv)},0");
+            // Polygon schließen
+            var first = project.Points[0];
+            sb.AppendLine($"        {first.Longitude.ToString("F8", inv)}," +
+                          $"{first.Latitude.ToString("F8", inv)},0");
+            sb.AppendLine("      </coordinates></LinearRing></outerBoundaryIs>");
+            sb.AppendLine("    </Polygon>");
+            sb.AppendLine("  </Placemark>");
+        }
+
+        // Gartenelemente als LineString/Polygon
+        foreach (var el in project.GardenElements)
+        {
+            var wgs = _gardenPlanService.ParsePointsWgs84(el.PointsJson);
+            if (wgs == null || wgs.Count < 2) continue;
+
+            var isPolygon = el.ElementType is GardenElementType.Beet or GardenElementType.Rasen
+                or GardenElementType.Terrasse or GardenElementType.Gebaeude or GardenElementType.Wasser;
+
+            sb.AppendLine("  <Placemark>");
+            sb.AppendLine($"    <name>{EscapeXml(el.ElementType.ToString())}</name>");
+            if (!string.IsNullOrWhiteSpace(el.Notes))
+                sb.AppendLine($"    <description>{EscapeXml(el.Notes)}</description>");
+
+            if (isPolygon)
+            {
+                sb.AppendLine("    <Polygon>");
+                sb.AppendLine("      <altitudeMode>clampToGround</altitudeMode>");
+                sb.AppendLine("      <outerBoundaryIs><LinearRing><coordinates>");
+                foreach (var (lat, lon) in wgs)
+                    sb.AppendLine($"        {lon.ToString("F8", inv)},{lat.ToString("F8", inv)},0");
+                // Polygon schließen
+                sb.AppendLine($"        {wgs[0].longitude.ToString("F8", inv)}," +
+                              $"{wgs[0].latitude.ToString("F8", inv)},0");
+                sb.AppendLine("      </coordinates></LinearRing></outerBoundaryIs>");
+                sb.AppendLine("    </Polygon>");
+            }
+            else
+            {
+                sb.AppendLine("    <LineString>");
+                sb.AppendLine("      <altitudeMode>clampToGround</altitudeMode>");
+                sb.AppendLine("      <coordinates>");
+                foreach (var (lat, lon) in wgs)
+                    sb.AppendLine($"        {lon.ToString("F8", inv)},{lat.ToString("F8", inv)},0");
+                sb.AppendLine("      </coordinates>");
+                sb.AppendLine("    </LineString>");
+            }
+            sb.AppendLine("  </Placemark>");
+        }
+
+        sb.AppendLine("</Document>");
+        sb.AppendLine("</kml>");
+        return sb.ToString();
+    }
+
+    private static string EscapeXml(string text)
+    {
+        return text
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&apos;");
+    }
+
+    /// <summary>Referenz-Schwerpunkt für DXF-Projektion. Messpunkte bevorzugt,
+    /// Fallback auf Gartenelemente (z.B. bei reinem AR-Projekt).</summary>
+    private (double refLat, double refLon) ComputeReference(
+        List<SurveyPoint> points, List<GardenElement> elements)
+    {
+        if (points.Count > 0)
+            return (points.Average(p => p.Latitude), points.Average(p => p.Longitude));
+
+        var allWgs = new List<(double lat, double lon)>();
+        foreach (var el in elements)
+        {
+            var wgs = _gardenPlanService.ParsePointsWgs84(el.PointsJson);
+            if (wgs != null) allWgs.AddRange(wgs);
+        }
+        if (allWgs.Count > 0)
+            return (allWgs.Average(w => w.lat), allWgs.Average(w => w.lon));
+
+        return (0, 0); // Fallback — DXF wird leer sein
+    }
+
+    #endregion
 }

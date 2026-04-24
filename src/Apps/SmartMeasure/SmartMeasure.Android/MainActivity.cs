@@ -7,12 +7,15 @@ using AndroidX.Core.App;
 using AndroidX.Core.Content;
 using Avalonia;
 using Avalonia.Android;
+using MeineApps.Core.Ava.Services;
+using Microsoft.Extensions.DependencyInjection;
 using SmartMeasure.Android.Ar;
 using SmartMeasure.Android.Services;
 using SmartMeasure.Shared;
 using SmartMeasure.Shared.Services;
 using SmartMeasure.Shared.ViewModels;
 using AndroidBleService = SmartMeasure.Android.Services.AndroidBleService;
+using AndroidUri = global::Android.Net.Uri;
 
 namespace SmartMeasure.Android;
 
@@ -38,8 +41,13 @@ public class MainActivity : AvaloniaMainActivity<App>
         // Context.FilesDir garantiert sandbox-sicheren Pfad auf allen Android-ROMs.
         App.AppPathsFactory = () => new AndroidAppPaths(this);
 
-        // BLE-Service für Verbindung zum Vermessungsstab
-        App.BleServiceFactory = _ => new AndroidBleService(this);
+        // BLE-Service für Verbindung zum Vermessungsstab.
+        // IGeoidService wird nach DI-Build aufgelöst — rechnet Ellipsoid → Geoid-Höhe (NN).
+        App.BleServiceFactory = sp => new AndroidBleService(this, sp.GetRequiredService<IGeoidService>());
+
+        // Share-Sheet + Öffnen via FileProvider (Authority: ${applicationId}.fileprovider)
+        UriLauncher.PlatformShareFile = ShareFileViaIntent;
+        UriLauncher.PlatformOpenFile = OpenFileViaIntent;
 
         // AR-Capture-Service (ARCore)
         _arCaptureService = new AndroidArCaptureService(this);
@@ -144,5 +152,71 @@ public class MainActivity : AvaloniaMainActivity<App>
         // FG-Service stoppen wenn Activity stirbt — sonst läuft er weiter ohne UI
         MeasurementForegroundService.Stop(this);
         base.OnDestroy();
+    }
+
+    /// <summary>Share-Sheet mit Intent.ActionSend. Braucht FileProvider + grantUriPermissions.</summary>
+    private void ShareFileViaIntent(string filePath, string mimeType, string? title)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(filePath))
+            {
+                RunOnUiThread(() => Toast.MakeText(this, $"Datei nicht gefunden: {filePath}",
+                    ToastLength.Short)?.Show());
+                return;
+            }
+
+            var file = new Java.IO.File(filePath);
+            var uri = AndroidX.Core.Content.FileProvider.GetUriForFile(
+                this, PackageName + ".fileprovider", file);
+
+            var intent = new Intent(Intent.ActionSend);
+            intent.SetType(mimeType);
+            intent.PutExtra(Intent.ExtraStream, uri);
+            if (!string.IsNullOrEmpty(title))
+                intent.PutExtra(Intent.ExtraSubject, title);
+            intent.AddFlags(ActivityFlags.GrantReadUriPermission);
+
+            StartActivity(Intent.CreateChooser(intent, title ?? "Teilen"));
+        }
+        catch (Exception ex)
+        {
+            RunOnUiThread(() => Toast.MakeText(this, $"Share fehlgeschlagen: {ex.Message}",
+                ToastLength.Long)?.Show());
+        }
+    }
+
+    /// <summary>Datei mit Standard-Handler öffnen (z.B. PDF-Reader für .pdf).</summary>
+    private void OpenFileViaIntent(string filePath, string mimeType)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(filePath))
+            {
+                RunOnUiThread(() => Toast.MakeText(this, $"Datei nicht gefunden: {filePath}",
+                    ToastLength.Short)?.Show());
+                return;
+            }
+
+            var file = new Java.IO.File(filePath);
+            var uri = AndroidX.Core.Content.FileProvider.GetUriForFile(
+                this, PackageName + ".fileprovider", file);
+
+            var intent = new Intent(Intent.ActionView);
+            intent.SetDataAndType(uri, mimeType);
+            intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.NewTask);
+
+            StartActivity(intent);
+        }
+        catch (global::Android.Content.ActivityNotFoundException)
+        {
+            RunOnUiThread(() => Toast.MakeText(this,
+                "Keine App zum Öffnen dieses Dateityps installiert", ToastLength.Long)?.Show());
+        }
+        catch (Exception ex)
+        {
+            RunOnUiThread(() => Toast.MakeText(this, $"Öffnen fehlgeschlagen: {ex.Message}",
+                ToastLength.Long)?.Show());
+        }
     }
 }

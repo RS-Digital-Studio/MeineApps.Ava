@@ -16,6 +16,7 @@ public partial class ProjectsViewModel : ViewModelBase
     private readonly IBlenderExportService _blenderExportService;
     private readonly ITerrainService _terrainService;
     private readonly ICoordinateService _coordinateService;
+    private readonly IGardenPlanService _gardenPlanService;
     private readonly IAppPaths _appPaths;
 
     public ObservableCollection<SurveyProject> Projects { get; } = [];
@@ -38,14 +39,27 @@ public partial class ProjectsViewModel : ViewModelBase
 
     public ProjectsViewModel(IProjectService projectService, IExportService exportService,
         IBlenderExportService blenderExportService, ITerrainService terrainService,
-        ICoordinateService coordinateService, IAppPaths appPaths)
+        ICoordinateService coordinateService, IGardenPlanService gardenPlanService,
+        IAppPaths appPaths)
     {
         _projectService = projectService;
         _exportService = exportService;
         _blenderExportService = blenderExportService;
         _terrainService = terrainService;
         _coordinateService = coordinateService;
+        _gardenPlanService = gardenPlanService;
         _appPaths = appPaths;
+    }
+
+    /// <summary>GardenElements mit LocalPoints befüllen, basierend auf Messpunkt-Schwerpunkt.
+    /// Stellt sicher, dass Export-Koordinaten im gleichen System wie das Terrain-Mesh liegen.</summary>
+    private void PopulateLocalPoints(List<GardenElement> elements, List<SurveyPoint> points)
+    {
+        if (elements.Count == 0 || points.Count == 0) return;
+        var refLat = points.Average(p => p.Latitude);
+        var refLon = points.Average(p => p.Longitude);
+        foreach (var el in elements)
+            el.LocalPoints = _gardenPlanService.GetLocalPoints(el, refLat, refLon, _coordinateService);
     }
 
     /// <summary>Sanitized Dateiname aus Projekt-Name.</summary>
@@ -201,6 +215,55 @@ public partial class ProjectsViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Projekt als DXF exportieren (AutoCAD/Allplan/Revit-kompatibel).</summary>
+    [RelayCommand]
+    private async Task ExportDxfAsync(SurveyProject? project)
+    {
+        if (project == null) return;
+
+        try
+        {
+            var full = await _projectService.GetProjectAsync(project.Id);
+            if (full == null)
+            {
+                ExportFailed?.Invoke("Projekt konnte nicht geladen werden");
+                return;
+            }
+
+            var dxf = _exportService.ExportToDxf(full);
+            var path = await WriteExportFileAsync(project.Name, "dxf", dxf);
+            FileExportReady?.Invoke(path);
+        }
+        catch (Exception ex)
+        {
+            ExportFailed?.Invoke($"DXF-Export fehlgeschlagen: {ex.Message}");
+        }
+    }
+
+    /// <summary>Projekt als KMZ exportieren (Google Earth/Maps).</summary>
+    [RelayCommand]
+    private async Task ExportKmzAsync(SurveyProject? project)
+    {
+        if (project == null) return;
+
+        try
+        {
+            var full = await _projectService.GetProjectAsync(project.Id);
+            if (full == null)
+            {
+                ExportFailed?.Invoke("Projekt konnte nicht geladen werden");
+                return;
+            }
+
+            var path = await _exportService.ExportToKmzAsync(full, _appPaths.ExportFolder);
+            FileExportReady?.Invoke(path);
+        }
+        catch (Exception ex)
+        {
+            ExportFailed?.Invoke($"KMZ-Export fehlgeschlagen: {ex.Message}");
+        }
+    }
+
     /// <summary>Projekt als OBJ+MTL für Blender exportieren (Terrain + Gartenelemente).</summary>
     [RelayCommand]
     private async Task ExportBlenderAsync(SurveyProject? project)
@@ -222,6 +285,9 @@ public partial class ProjectsViewModel : ViewModelBase
             var elements = full.GardenElements;
             var sanitizedName = SanitizeFileName(project.Name);
             var outputDir = _appPaths.ExportFolder;
+
+            // GardenElements in Mesh-Koordinatensystem mappen (gleicher Schwerpunkt wie Mesh)
+            PopulateLocalPoints(elements, points);
 
             var objPath = await Task.Run(async () =>
             {

@@ -160,6 +160,35 @@
                 </StackPanel>
             </Border>
 
+            <!-- Debug-Panel (nur im Mock-Modus) -->
+            <Border IsVisible="{Binding IsMockMode}"
+                    Background="#22FF6B00"
+                    BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1"
+                    CornerRadius="{DynamicResource SmallRadius}"
+                    Padding="10,6">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Debug-Simulation" FontSize="11" FontWeight="Bold"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+                    <WrapPanel>
+                        <Button Content="Fix ↓" Margin="2" Padding="8,6" FontSize="11"
+                                Command="{Binding DebugCycleFixCommand}"
+                                ToolTip.Tip="Fix-Quality zyklisch degradieren (RTK → Float → DGPS → NoFix)" />
+                        <Button Content="Paket-Loss" Margin="2" Padding="8,6" FontSize="11"
+                                Command="{Binding DebugPacketLossCommand}"
+                                ToolTip.Tip="Position-Updates 5s aussetzen" />
+                        <Button Content="Batterie" Margin="2" Padding="8,6" FontSize="11"
+                                Command="{Binding DebugBatteryDrainCommand}"
+                                ToolTip.Tip="Battery drain bis 15%" />
+                        <Button Content="Kompass" Margin="2" Padding="8,6" FontSize="11"
+                                Command="{Binding DebugMagLossCommand}"
+                                ToolTip.Tip="MagAccuracy auf 0 setzen (triggert Warning)" />
+                        <Button Content="Disconnect" Margin="2" Padding="8,6" FontSize="11"
+                                Command="{Binding DebugSpuriousDisconnectCommand}"
+                                ToolTip.Tip="Unerwarteten Disconnect simulieren" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Letzte Punkte -->
             <Border Background="{DynamicResource BgCardBrush}"
                     CornerRadius="{DynamicResource CardRadius}"

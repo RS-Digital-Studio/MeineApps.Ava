@@ -9,6 +9,7 @@ public class ArTransferService : IArTransferService
     private readonly IProjectService _projectService;
     private readonly ICoordinateService _coordinateService;
     private readonly IMeasurementService _measurementService;
+    private readonly IGeoidService _geoidService;
 
     /// <summary>Meter pro Breitengrad (WGS84 Naeherung)</summary>
     private const double MetersPerDegreeLat = 111320.0;
@@ -39,11 +40,13 @@ public class ArTransferService : IArTransferService
     public ArTransferService(
         IProjectService projectService,
         ICoordinateService coordinateService,
-        IMeasurementService measurementService)
+        IMeasurementService measurementService,
+        IGeoidService geoidService)
     {
         _projectService = projectService;
         _coordinateService = coordinateService;
         _measurementService = measurementService;
+        _geoidService = geoidService;
     }
 
     public async Task<int> TransferToProjectAsync(ArCaptureResult result, int projectId)
@@ -119,7 +122,7 @@ public class ArTransferService : IArTransferService
 
         foreach (var arPoint in result.Points)
         {
-            double finalLat, finalLon, finalAlt;
+            double finalLat, finalLon, finalAltEllipsoid;
             float finalAccuracyCm;
 
             // Priorität 1: Geospatial-Koords pro Punkt (±1-3m via VPS, höchste Präzision)
@@ -127,7 +130,7 @@ public class ArTransferService : IArTransferService
             {
                 finalLat = arPoint.GeoLatitude.Value;
                 finalLon = arPoint.GeoLongitude.Value;
-                finalAlt = arPoint.GeoAltitude ?? (gpsAlt + arPoint.Y);
+                finalAltEllipsoid = arPoint.GeoAltitude ?? (gpsAlt + arPoint.Y);
                 // Geo-Accuracy in Metern → cm umrechnen
                 finalAccuracyCm = arPoint.GeoHorizontalAccuracy.HasValue
                     ? arPoint.GeoHorizontalAccuracy.Value * 100f
@@ -140,9 +143,13 @@ public class ArTransferService : IArTransferService
                     arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, metersPerDegreeLon);
                 finalLat = newLat;
                 finalLon = newLon;
-                finalAlt = gpsAlt + arPoint.Y;
+                finalAltEllipsoid = gpsAlt + arPoint.Y;
                 finalAccuracyCm = fallbackAccuracyCm;
             }
+
+            // Android Location.Altitude / ARCore-Geospatial-Altitude sind WGS84-Ellipsoid.
+            // Korrektur nach NN analog BLE-Pfad (in DE ~48m Differenz).
+            var finalAlt = _geoidService.EllipsoidToGeoid(finalLat, finalLon, finalAltEllipsoid);
 
             points.Add(new SurveyPoint
             {
@@ -204,17 +211,11 @@ public class ArTransferService : IArTransferService
                 }
             }
 
-            // WGS84 → lokale UTM-Meter fuer PointsJson
-            var lats = wgsPoints.Select(p => p.lat).ToArray();
-            var lons = wgsPoints.Select(p => p.lon).ToArray();
-            var alts = new double[wgsPoints.Count]; // Hoehe 0 fuer 2D-Gartenelemente
-            var (xs, ys, _) = _coordinateService.ToLocalMetric(lats, lons, alts);
-
-            // Punkte als JSON serialisieren (Format: [[x,y], [x,y], ...])
-            var pointArrays = new double[xs.Length][];
-            for (var j = 0; j < xs.Length; j++)
-                pointArrays[j] = [xs[j], ys[j]];
-            var pointsJson = JsonSerializer.Serialize(pointArrays);
+            // v2-Format: absolute WGS84 Lat/Lon direkt persistieren (drift-resistent)
+            // Format: {"v":2,"points":[[lat,lon],...]}
+            var pointArrays = wgsPoints.Select(p => new[] { p.lat, p.lon }).ToArray();
+            var envelope = new { v = 2, points = pointArrays };
+            var pointsJson = JsonSerializer.Serialize(envelope);
 
             // ArContourType → GardenElementType (unbekannte Typen → Beet als Fallback)
             var elementType = ContourTypeMapping.GetValueOrDefault(contour.ContourType, GardenElementType.Beet);
@@ -228,11 +229,21 @@ public class ArTransferService : IArTransferService
                 SortOrder = i,
             };
 
-            // Flaeche/Laenge berechnen
-            var utmPoints = pointArrays.Select(a => (a[0], a[1])).ToList();
+            // Flaeche/Laenge: Via Kontur-Schwerpunkt als temporäre lokale Referenz berechnen.
+            // Area/Length sind translation-invariant — Referenz-Wahl egal, solange konsistent.
+            var contourRefLat = wgsPoints.Average(p => p.lat);
+            var contourRefLon = wgsPoints.Average(p => p.lon);
+            var localPoints = new List<(double x, double y)>(wgsPoints.Count);
+            foreach (var (lat, lon) in wgsPoints)
+            {
+                var (lx, ly, _) = _coordinateService.LatLonToLocal(lat, lon, 0,
+                    contourRefLat, contourRefLon, 0);
+                localPoints.Add((lx, ly));
+            }
+
             if (contour.IsClosed && contour.Points.Count >= 3)
-                element.AreaSquareMeters = CalculatePolygonArea(utmPoints);
-            element.LengthMeters = CalculatePolylineLength(utmPoints);
+                element.AreaSquareMeters = CalculatePolygonArea(localPoints);
+            element.LengthMeters = CalculatePolylineLength(localPoints);
 
             elements.Add(element);
         }

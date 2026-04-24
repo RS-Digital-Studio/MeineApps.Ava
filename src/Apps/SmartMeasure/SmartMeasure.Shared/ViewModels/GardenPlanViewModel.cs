@@ -17,11 +17,16 @@ public partial class GardenPlanViewModel : ViewModelBase
 
     public GardenPlanRenderer Renderer { get; }
 
-    // Aktuelle metrische Koordinaten
+    // Aktuelle metrische Koordinaten der Messpunkte
     private double[] _x = [];
     private double[] _y = [];
     private double[] _z = [];
     private string[]? _labels;
+
+    // Referenz-Schwerpunkt für WGS84 ↔ lokale Meter (aus Messpunkten oder Gartenelementen)
+    private double _refLatitude;
+    private double _refLongitude;
+    private bool _hasReference;
 
     public double[] X => _x;
     public double[] Y => _y;
@@ -62,6 +67,10 @@ public partial class GardenPlanViewModel : ViewModelBase
     /// <summary>Canvas muss neu gezeichnet werden</summary>
     public event Action? InvalidateRequested;
 
+    /// <summary>Fehler-/Hinweis-Nachricht (z.B. bei Zeichnungs-Abbruch ohne Referenz).
+    /// MainViewModel verdrahtet das als Toast.</summary>
+    public event Action<string>? MessageRequested;
+
     private readonly IProjectService _projectService;
 
     public GardenPlanViewModel(
@@ -90,6 +99,9 @@ public partial class GardenPlanViewModel : ViewModelBase
             foreach (var elem in dbElements)
                 Elements.Add(elem);
 
+            // Referenz aus Messpunkten ODER Gartenelementen bestimmen,
+            // dann LocalPoints für alle Elemente berechnen.
+            UpdateReferenceAndLocalPoints();
             RecalculateMaterials();
             InvalidateRequested?.Invoke();
         });
@@ -105,6 +117,8 @@ public partial class GardenPlanViewModel : ViewModelBase
             _y = [];
             _z = [];
             _labels = null;
+            // Referenz ggf. aus Gartenelementen beziehen, sonst keine
+            UpdateReferenceAndLocalPoints();
             InvalidateRequested?.Invoke();
             return;
         }
@@ -116,7 +130,66 @@ public partial class GardenPlanViewModel : ViewModelBase
         (_x, _y, _z) = _coordinateService.ToLocalMetric(lats, lons, alts);
         _labels = points.Select(p => p.Label ?? string.Empty).ToArray();
 
+        _refLatitude = lats.Average();
+        _refLongitude = lons.Average();
+        _hasReference = true;
+
+        // Gartenelemente auf neue Referenz neu mappen
+        RefreshElementLocalPoints();
+
         InvalidateRequested?.Invoke();
+    }
+
+    /// <summary>Referenz-Lat/Lon aus verfügbaren Quellen (Messpunkte > Gartenelemente) bestimmen
+    /// und LocalPoints aller Gartenelemente neu berechnen.</summary>
+    private void UpdateReferenceAndLocalPoints()
+    {
+        var points = _measurementService.CurrentPoints;
+        if (points.Count > 0)
+        {
+            _refLatitude = points.Average(p => p.Latitude);
+            _refLongitude = points.Average(p => p.Longitude);
+            _hasReference = true;
+        }
+        else
+        {
+            // Fallback: Schwerpunkt aus Gartenelementen (v2-Format)
+            var allWgs = new List<(double lat, double lon)>();
+            foreach (var el in Elements)
+            {
+                var wgs = _gardenPlanService.ParsePointsWgs84(el.PointsJson);
+                if (wgs != null) allWgs.AddRange(wgs);
+            }
+            if (allWgs.Count > 0)
+            {
+                _refLatitude = allWgs.Average(w => w.lat);
+                _refLongitude = allWgs.Average(w => w.lon);
+                _hasReference = true;
+            }
+            else
+            {
+                _hasReference = false;
+            }
+        }
+
+        RefreshElementLocalPoints();
+    }
+
+    /// <summary>LocalPoints aller Elemente mit aktueller Referenz neu berechnen.</summary>
+    private void RefreshElementLocalPoints()
+    {
+        if (!_hasReference)
+        {
+            foreach (var el in Elements)
+                el.LocalPoints = null;
+            return;
+        }
+
+        foreach (var el in Elements)
+        {
+            el.LocalPoints = _gardenPlanService.GetLocalPoints(
+                el, _refLatitude, _refLongitude, _coordinateService);
+        }
     }
 
     /// <summary>Werkzeug wechseln (wird von Toolbar-Buttons aufgerufen)</summary>
@@ -201,10 +274,27 @@ public partial class GardenPlanViewModel : ViewModelBase
             return;
         }
 
+        if (!_hasReference)
+        {
+            // Ohne Referenz können wir nicht in WGS84 persistieren —
+            // User sieht sonst schweigend verschwundene Zeichnung.
+            MessageRequested?.Invoke(
+                "Zuerst einen Messpunkt setzen — ohne Referenz kann das Element nicht gespeichert werden");
+            _currentDrawingPoints.Clear();
+            IsDrawing = false;
+            DrawingPointCount = 0;
+            return;
+        }
+
+        // Lokale Meter → WGS84 Lat/Lon für Persistenz (v2-Format, drift-resistent)
+        var wgsPoints = _gardenPlanService.LocalToWgs84(
+            _currentDrawingPoints, _refLatitude, _refLongitude, _coordinateService);
+
         var element = new GardenElement
         {
             ElementType = SelectedTool,
-            PointsJson = _gardenPlanService.SerializePoints(_currentDrawingPoints),
+            PointsJson = _gardenPlanService.SerializePointsWgs84(wgsPoints),
+            LocalPoints = [.. _currentDrawingPoints], // Snapshot für sofortiges Rendering
             Width = SelectedWidth,
             Height = SelectedHeight,
             Material = SelectedMaterial,
@@ -213,7 +303,7 @@ public partial class GardenPlanViewModel : ViewModelBase
             SortOrder = Elements.Count
         };
 
-        // Masse berechnen
+        // Masse berechnen (lokale Meter — direkt aus Zeichnungspunkten)
         switch (SelectedTool)
         {
             case GardenElementType.Weg:

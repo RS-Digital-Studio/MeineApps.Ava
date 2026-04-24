@@ -119,18 +119,70 @@
             <Border Classes="TabContent" Classes.Active="{Binding IsProjectsActive}">
                 <views:ProjectsView DataContext="{Binding ProjectsVm}" />
             </Border>
+            <Border Classes="TabContent" Classes.Active="{Binding IsStakeoutActive}">
+                <views:StakeoutView DataContext="{Binding StakeoutVm}" />
+            </Border>
             <Border Classes="TabContent" Classes.Active="{Binding IsConnectActive}">
                 <views:ConnectView DataContext="{Binding ConnectVm}" />
             </Border>
             <Border Classes="TabContent" Classes.Active="{Binding IsSettingsActive}">
                 <views:SettingsView DataContext="{Binding SettingsVm}" />
             </Border>
+
+            <!-- Export-Banner: Schwebt unten rechts über dem Content -->
+            <Border IsVisible="{Binding IsExportBannerVisible}"
+                    VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+                    Margin="12,0,12,12"
+                    Background="{DynamicResource BgCardBrush}"
+                    BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1"
+                    CornerRadius="{DynamicResource CardRadius}"
+                    Padding="12,10" Opacity="0.97">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+                    <mi:MaterialIcon Grid.Column="0" Kind="FileDownloadOutline" Width="22" Height="22"
+                                     VerticalAlignment="Center"
+                                     Foreground="{DynamicResource PrimaryBrush}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Export erstellt" FontSize="11" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding LastExportFileName}" FontSize="10"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Padding="10,8" MinHeight="36"
+                            CornerRadius="6" FontSize="11"
+                            Command="{Binding OpenLastExportCommand}"
+                            Background="{DynamicResource BgElevatedBrush}"
+                            Foreground="{DynamicResource AccentBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="OpenInNew" Width="14" Height="14" />
+                            <TextBlock Text="Öffnen" />
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="3" Padding="10,8" MinHeight="36"
+                            CornerRadius="6" FontSize="11"
+                            Command="{Binding ShareLastExportCommand}"
+                            Background="{DynamicResource PrimaryBrush}"
+                            Foreground="White">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="ShareVariant" Width="14" Height="14" />
+                            <TextBlock Text="Teilen" />
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="4" Padding="8" MinHeight="36" MinWidth="36"
+                            CornerRadius="6"
+                            Command="{Binding DismissExportBannerCommand}"
+                            Background="Transparent"
+                            Foreground="{DynamicResource TextMutedBrush}">
+                        <mi:MaterialIcon Kind="Close" Width="14" Height="14" />
+                    </Button>
+                </Grid>
+            </Border>
         </Panel>
 
-        <!-- Tab-Bar unten (5 Haupttabs + Verbinden/Optionen im Overflow) -->
+        <!-- Tab-Bar unten (8 Tabs: 5 Haupt + Absteckung + Verbinden + Optionen) -->
         <Border Grid.Row="2" Background="{DynamicResource TabBarGradientBrush}"
                 BorderBrush="{DynamicResource BgCardBrush}" BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="*,*,*,*,*,*,*" Height="56">
+            <Grid ColumnDefinitions="*,*,*,*,*,*,*,*" Height="56">
                 <!-- Messung -->
                 <Button Grid.Column="0" Classes="TabBtn" Classes.Active="{Binding IsSurveyActive}"
                         Command="{Binding NavigateCommand}" CommandParameter="Survey">
@@ -176,8 +228,17 @@
                         <Ellipse Classes="TabDot" Classes.Active="{Binding IsProjectsActive}" />
                     </StackPanel>
                 </Button>
+                <!-- Absteckung -->
+                <Button Grid.Column="5" Classes="TabBtn" Classes.Active="{Binding IsStakeoutActive}"
+                        Command="{Binding NavigateCommand}" CommandParameter="Stakeout">
+                    <StackPanel Spacing="1" HorizontalAlignment="Center">
+                        <mi:MaterialIcon Kind="TargetVariant" Width="22" Height="22" />
+                        <TextBlock Text="Abstecken" FontSize="9" HorizontalAlignment="Center" />
+                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsStakeoutActive}" />
+                    </StackPanel>
+                </Button>
                 <!-- Verbinden -->
-                <Button Grid.Column="5" Classes="TabBtn" Classes.Active="{Binding IsConnectActive}"
+                <Button Grid.Column="6" Classes="TabBtn" Classes.Active="{Binding IsConnectActive}"
                         Command="{Binding NavigateCommand}" CommandParameter="Connect">
                     <StackPanel Spacing="1" HorizontalAlignment="Center">
                         <mi:MaterialIcon Kind="BluetoothConnect" Width="22" Height="22" />
@@ -186,7 +247,7 @@
                     </StackPanel>
                 </Button>
                 <!-- Optionen -->
-                <Button Grid.Column="6" Classes="TabBtn" Classes.Active="{Binding IsSettingsActive}"
+                <Button Grid.Column="7" Classes="TabBtn" Classes.Active="{Binding IsSettingsActive}"
                         Command="{Binding NavigateCommand}" CommandParameter="Settings">
                     <StackPanel Spacing="1" HorizontalAlignment="Center">
                         <mi:MaterialIcon Kind="Cog" Width="22" Height="22" />

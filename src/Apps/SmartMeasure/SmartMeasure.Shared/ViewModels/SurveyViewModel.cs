@@ -187,6 +187,39 @@ public partial class SurveyViewModel : ViewModelBase
         DistanceToLast = "—";
     }
 
+    // ===== Debug-Commands (nur im Mock-Modus sichtbar) =====
+    // Simulieren Edge-Cases die sonst nur im echten Feld auftreten.
+
+    [RelayCommand]
+    private void DebugCycleFix()
+    {
+        if (_bleService is MockBleService mock) mock.CycleFixDegradation();
+    }
+
+    [RelayCommand]
+    private void DebugPacketLoss()
+    {
+        if (_bleService is MockBleService mock) mock.SimulatePacketLoss(5);
+    }
+
+    [RelayCommand]
+    private void DebugBatteryDrain()
+    {
+        if (_bleService is MockBleService mock) mock.SimulateBatteryDrain();
+    }
+
+    [RelayCommand]
+    private void DebugMagLoss()
+    {
+        if (_bleService is MockBleService mock) mock.SimulateMagLoss();
+    }
+
+    [RelayCommand]
+    private void DebugSpuriousDisconnect()
+    {
+        if (_bleService is MockBleService mock) mock.SimulateSpuriousDisconnect();
+    }
+
     private void OnPointReceived(SurveyPoint point)
     {
         // Label zuweisen wenn gesetzt

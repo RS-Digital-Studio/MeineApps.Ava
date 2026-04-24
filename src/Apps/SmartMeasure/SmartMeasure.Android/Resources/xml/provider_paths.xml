@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pfade die vom FileProvider exposed werden dürfen.
+     AndroidAppPaths.ExportFolder = context.GetExternalFilesDir("Exports") →
+     /storage/emulated/0/Android/data/{pkg}/files/Exports/
+     Android-FS ist case-sensitive, daher MUSS der path-Attribut exakt "Exports/" sein. -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-files-path name="external_exports" path="Exports/" />
+    <external-files-path name="screenshots" path="Screenshots/" />
+    <external-files-path name="recordings" path="Recordings/" />
+    <files-path name="internal" path="." />
+</paths>

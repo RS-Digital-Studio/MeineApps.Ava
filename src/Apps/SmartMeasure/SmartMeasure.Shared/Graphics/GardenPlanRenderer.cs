@@ -133,7 +133,9 @@ public sealed class GardenPlanRenderer : IDisposable
         {
             foreach (var element in elements)
             {
-                var pts = _gardenPlanService.ParsePoints(element.PointsJson);
+                // LocalPoints wird vom ViewModel auf die aktuelle Referenz gemappt.
+                // Fallback auf ParsePoints (v1-Legacy) wenn der Cache noch nicht gefüllt ist.
+                var pts = element.LocalPoints ?? _gardenPlanService.ParsePoints(element.PointsJson);
                 if (pts.Count < 2) continue;
 
                 var color = ElementColors.GetValueOrDefault(element.ElementType, new SKColor(128, 128, 128));

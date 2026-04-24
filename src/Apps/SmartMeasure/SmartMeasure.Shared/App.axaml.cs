@@ -94,6 +94,7 @@ public class App : Application
         // Services
         services.AddSingleton<IMeasurementService, MeasurementService>();
         services.AddSingleton<ICoordinateService, CoordinateService>();
+        services.AddSingleton<IGeoidService, Egm96GeoidService>();
         services.AddSingleton<ITerrainService, TerrainService>();
         services.AddSingleton<IGardenPlanService, GardenPlanService>();
         services.AddSingleton<IProjectService, ProjectService>();
@@ -109,6 +110,7 @@ public class App : Application
         services.AddSingleton<GardenPlanViewModel>();
         services.AddSingleton<MapViewModel>();
         services.AddSingleton<ProjectsViewModel>();
+        services.AddSingleton<StakeoutViewModel>();
         services.AddSingleton<SettingsViewModel>();
     }
 }

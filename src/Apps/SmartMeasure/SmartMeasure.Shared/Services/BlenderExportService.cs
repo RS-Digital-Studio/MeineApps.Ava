@@ -71,7 +71,9 @@ public class BlenderExportService : IBlenderExportService
         var elementCounts = new Dictionary<GardenElementType, int>();
         foreach (var element in elements)
         {
-            var points = ParsePoints(element.PointsJson);
+            // LocalPoints müssen vom Caller befüllt sein (gleiche Referenz wie Mesh).
+            // Fallback auf Legacy v1 ParsePoints wenn kein Cache.
+            var points = element.LocalPoints ?? ParsePoints(element.PointsJson);
             if (points.Count < 2) continue;
 
             elementCounts.TryGetValue(element.ElementType, out var count);
@@ -547,8 +549,14 @@ public class BlenderExportService : IBlenderExportService
             c1.b + (c2.b - c1.b) * frac);
     }
 
+    /// <summary>LEGACY v1: Parst [[x,y],...] als lokale Meter-Koords.
+    /// Liefert leere Liste für v2-Format — dort muss der Caller LocalPoints befüllt haben.</summary>
     private static List<(double x, double y)> ParsePoints(string json)
     {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        var trimmed = json.TrimStart();
+        if (trimmed.Length > 0 && trimmed[0] == '{') return [];
+
         try
         {
             var arrays = JsonSerializer.Deserialize<double[][]>(json);

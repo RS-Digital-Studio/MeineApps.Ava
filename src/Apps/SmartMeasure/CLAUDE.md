@@ -6,7 +6,8 @@ Privates Projekt. Zwei Erfassungsmodi:
 
 Man geht durch den Garten, setzt Punkte und zeichnet Konturen.
 Daraus entsteht ein 3D-Geländemodell für Gartenplanung (Wege, Beete, Mauern, Terrassen).
-Export nach Blender (OBJ+MTL) und GeoJSON.
+Export nach Blender (OBJ+MTL), GeoJSON, DXF (AutoCAD/Allplan/Revit), KMZ (Google Earth), CSV, PDF.
+Absteckungs-Modus: geplante Punkte im Feld wiederfinden (Live-Kompass + Restmeter).
 
 ## Projekte
 
@@ -54,29 +55,31 @@ Modus 2: AR-Kamera (±5-50cm, Schnell-Scan)
 |---------|---------|
 | IAppPaths | Plattform-abstrahierte App-Pfade (Android: Context.FilesDir, Desktop: ApplicationData) |
 | IBleService | BLE-Kommunikation zum Stab (plattform-spezifisch) |
-| MockBleService | Simuliert RTK-Daten für Desktop-Entwicklung (IDisposable, thread-safe via Random.Shared) |
+| MockBleService | Simuliert RTK-Daten + Edge-Cases (FixDegradation, PacketLoss, BatteryDrain, MagLoss, Disconnect) — für Desktop-Entwicklung |
 | IArCaptureService | AR-Kamera-Erfassung (Android: ARCore, Desktop: Mock) |
 | MockArCaptureService | Simuliert AR-Capture für Desktop (12x8m Grundstück) |
-| IArTransferService | AR-Punkte → SurveyPoints (GPS-Fusion, Heading-Rotation, WGS84) |
-| IMeasurementService | Punkt-Verwaltung, Abstände, Flächen (Haversine, Shoelace) |
-| ICoordinateService | WGS84 ↔ UTM Konvertierung (Transverse-Mercator) |
+| IArTransferService | AR-Punkte → SurveyPoints (GPS-Fusion, Heading-Rotation, Geoid-Korrektur) |
+| IMeasurementService | Punkt-Verwaltung, Abstände, Flächen (Haversine, Shoelace auf Convex-Hull) |
+| ICoordinateService | WGS84 ↔ UTM Konvertierung (Transverse-Mercator). ToLocalMetric nutzt feste UTM-Zone des Schwerpunkts (konsistent über Zonengrenzen) |
+| IGeoidService | EGM96 Ellipsoid → Geoid-Höhe (NN). Hardcoded 2°-Grid für Deutschland, ±0.5-1m Genauigkeit. Client-Korrektur togglebar falls Firmware bereits MSL sendet |
 | ITerrainService | Delaunay (Bowyer-Watson mit CCW-Winding + Dedup), Konturlinien, Interpolation, Volumen, Convex Hull für Flächen |
-| IGardenPlanService | Gartenelemente CRUD, Flächenberechnung, Materialliste |
+| IGardenPlanService | Gartenelemente CRUD, Flächenberechnung, Materialliste. PointsJson v2-Format (absolute WGS84) mit v1-Legacy-Fallback |
 | IProjectService | SQLite Persistenz (Projekte, Punkte, Elemente) — DeleteProject atomar in Transaktion |
-| IExportService | CSV + GeoJSON Export |
+| IExportService | CSV + GeoJSON + DXF + KMZ + PDF Export |
 | IBlenderExportService | OBJ + MTL Export für Blender (Terrain + Gartenelemente) |
 
 ## ViewModels
 
 | ViewModel | Tab | Features |
 |-----------|-----|----------|
-| MainViewModel | - | Navigation (7 Tabs), Status-Bar, Back-Button, MessageRequested + ForegroundServiceRequested |
-| ConnectViewModel | BLE | BLE Scan, NTRIP-Config, WiFi-Config, Stablänge |
-| SurveyViewModel | Messen | Live-Position, Punkt setzen, Labels, Disconnect-UX, IsMockMode, MagWarning |
+| MainViewModel | - | Navigation (8 Tabs), Status-Bar, Back-Button, MessageRequested + ForegroundServiceRequested, Export-Banner (Teilen/Öffnen) |
+| ConnectViewModel | BLE | BLE Scan, NTRIP-Config + Validation + Persistenz, WiFi-Config, Stablänge |
+| SurveyViewModel | Messen | Live-Position, Punkt setzen, Labels, Disconnect-UX, IsMockMode (Debug-Panel mit FixDegradation/PacketLoss/Battery/Mag/Disconnect), MagWarning |
 | TerrainViewModel | 3D | 3D-Geländemodell, Rotation/Zoom/Pan, Überhöhung, Konturlinien |
-| GardenPlanViewModel | Garten | 2D-Draufsicht, Zeichenwerkzeuge, Materialliste, Undo |
+| GardenPlanViewModel | Garten | 2D-Draufsicht, Zeichenwerkzeuge, Materialliste, Undo. PointsJson v2 (WGS84 absolut) — LocalPoints transient berechnet bei Schwerpunkt-Änderung |
 | MapViewModel | Karte | OpenStreetMap (Mapsui), Punkte, Polygon, Fläche/Umfang |
-| ProjectsViewModel | Projekte | Projekt-CRUD, Duplizieren, CSV/GeoJSON Export |
+| ProjectsViewModel | Projekte | Projekt-CRUD, Duplizieren, CSV/GeoJSON/DXF/KMZ/Blender/PDF Export |
+| StakeoutViewModel | Abstecken | Ziele aus Projekt (Messpunkte + Gartenelement-Knoten), Live-Pfeil + Distanz + Bearing + Höhen-Delta, Haptic bei <10cm |
 | SettingsViewModel | Optionen | Einheiten, Stablänge, Fix-Quality |
 
 ## SkiaSharp Graphics
@@ -84,8 +87,9 @@ Modus 2: AR-Kamera (±5-50cm, Schnell-Scan)
 | Renderer | Beschreibung |
 |----------|-------------|
 | TerrainRenderer | 3D-Geländemodell: gecachte Arrays (screenX/Y/Z), Painter's Algorithm auf Kamera-Z, vorberechnete Face-Normalen aus Mesh, rotierte Lichtrichtung, Nordpfeil-Path gecacht, Höhen-Legende als LinearGradient-Shader (statt 400 DrawLines) |
-| GardenPlanRenderer | 2D-Draufsicht: Min/Max in 1-Pass (statt 6x LINQ), gecachte Preview-Path + SKPoint-Array, SKFont-API |
+| GardenPlanRenderer | 2D-Draufsicht: Min/Max in 1-Pass (statt 6x LINQ), gecachte Preview-Path + SKPoint-Array, nutzt `element.LocalPoints` statt PointsJson zu parsen, SKFont-API |
 | SurveyLiveRenderer | Live-Kompass mit Genauigkeits-Ring: Nordpfeil-Path gecacht, Shader-Caching für Fix-Glow, SKFont-API |
+| StakeoutRenderer | Kompass-Pfeil zum Absteckziel: distanz-farbcodiert (grün <10cm, gelb <1m, orange <5m, rot >5m), Pfeil-Länge wächst mit Distanz bis max. 80% Radius, Rotation relativ zum Bewegungs-Heading |
 | ProjectThumbnailRenderer | Mini-Vorschau für Projekt-Liste: statisch mit gecachten Paints, SKFont-API |
 
 ## IAppPaths-Pattern (Android-Sandbox-Fix)
@@ -585,6 +589,52 @@ Bowyer-Watson Delaunay + abhängige Algorithmen wurden für RTK-Genauigkeit (±2
 - `IProjectService` in `MainViewModel` per Constructor-Injection (vorher Service-Locator im Lambda)
 - Alle BLE-Events via `Dispatcher.UIThread.Post` auf UI-Thread marshalled
 
+## Präzisions-Pipeline (24.04.2026)
+
+Nach dem großen Koordinaten-Refactor läuft die Präzisions-Kette konsistent:
+
+### Koordinaten-Pipeline (CoordinateService)
+- `ToLocalMetric` nutzt jetzt UTM-Projektion (statt 111320-Approximation). Auf 100m spart das ~8cm Fehler.
+- `ToUtmFixedZone(lat, lon, zone)` — projiziert in erzwungene Zone, konsistent über UTM-Zonengrenzen.
+- `LatLonToLocal(lat, lon, alt, refLat, refLon, refAlt)` — einzelner Punkt relativ zur Referenz.
+- `LocalToLatLon` — invers, für Persistenz von gezeichneten Gartenelementen.
+- Zonen-Abweichungs-Warnung bei >3° Longitude-Distanz vom Schwerpunkt.
+
+### PointsJson Format v2 (GardenElement)
+- NEU: `{"v":2,"points":[[lat,lon],...]}` — absolute WGS84.
+- LEGACY v1: `[[x,y],...]` — lokale UTM-Meter (wird gelesen mit Drift-Risiko).
+- `GardenPlanService.GetLocalPoints(element, refLat, refLon, coord)` — konvertiert v2 → lokale Meter für Rendering.
+- `GardenElement.LocalPoints` ist `[SQLite.Ignore]` transient Cache, wird vom VM bei Projekt-Load oder Messpunkt-Änderung neu berechnet.
+- ArTransferService persistiert direkt v2 (kein UTM-Zwischenschritt mehr).
+
+### Geoid-Korrektur (Egm96GeoidService)
+- `EllipsoidToGeoid(lat, lon, altEllipsoid)` — für DE ~-48m Offset.
+- Hardcoded 2°-Grid 46-56°N, 4-16°E (Mitteleuropa) mit bilinearer Interpolation.
+- Fallback auf 48m Pauschal außerhalb des Grids (Debug-Warnung).
+- `IsClientCorrectionEnabled=false` wenn Firmware bereits heightMSL sendet.
+- Angewendet in: `AndroidBleService.ParsePointData` + `ParsePositionData` + `ArTransferService.ConvertToSurveyPoints`.
+
+### Tilt-Korrektur (Stabspitze statt Antenne)
+- In `AndroidBleService.ParsePointData`: BLE-Paket liefert Antennen-Position + TiltAngle + TiltAzimuth.
+- Vertikale Korrektur (immer): `tipAlt = antAlt - stabHeight * cos(tilt)`.
+- Horizontale Korrektur (nur bei MagAccuracy ≥ 2): Offset in Azimuth-Richtung = `stabHeight * sin(tilt)`.
+- Bei 1.8m Stab + 5° Neigung: 15.7cm horizontaler Versatz korrigiert.
+- `AndroidBleService.StabHeightMeters` wird über `SetStabHeightAsync` gesetzt.
+
+### Stakeout (Absteckung)
+- Neuer 8. Tab "Abstecken" mit Kompass-Pfeil + Restmeter.
+- Ziele: Messpunkte + Garten-Kontur-Knoten (aus PointsJson v2 parsen).
+- Bearing via Initial-Bearing-Formel auf Kugel.
+- Heading aus Bewegungsrichtung (nur wenn Δ > 30cm, um GPS-Noise zu filtern).
+- Haptic-Feedback bei <10cm (Hysterese bis 20cm für Retrigger).
+- `StakeoutRenderer` farbcodiert die Pfeilfarbe nach Distanz.
+
+### Export-Formate
+- DXF (R12 ASCII, Layer pro Element-Typ, LWPOLYLINE + POINT + TEXT-Labels)
+- KMZ (ZIP + doc.kml, Placemarks + Polygon für Grundstück-Umriss + LineStrings für Kontur-Elemente)
+- Share-Banner nach Export: "Teilen" → Intent.ActionSend via FileProvider, "Öffnen" → Intent.ActionView mit MIME-Type.
+- FileProvider Authority: `${applicationId}.fileprovider`, `Resources/xml/provider_paths.xml`.
+
 ## Bekannte Gotchas
 
 | Problem | Fix |
@@ -616,6 +666,16 @@ Bowyer-Watson Delaunay + abhängige Algorithmen wurden für RTK-Genauigkeit (±2
 | SettingsViewModel.UseMetric etc. nicht persistiert | IPreferencesService DI + partial OnXxxChanged-Setter speichert automatisch |
 | AndroidArCaptureService null-Result bei Abbruch | `LastError`-Property + TCS-Lock-Pattern — User bekommt Grund via MessageRequested |
 | BLE-Fehler in ConnectViewModel still verschluckt | try/catch um alle Commands + MessageRequested-Event → Toast über MainViewModel |
+| `ToLocalMetric` mit 111320-Approximation | Jetzt via UTM (`ToUtmFixedZone` mit Ref-Zone des Schwerpunkts) — konsistent über Zonengrenzen, ±cm-präzise |
+| GardenElement-Konturen driften wenn Messpunkte sich ändern | PointsJson v2 speichert absolute WGS84 Lat/Lon. `element.LocalPoints` (transient) wird beim Projekt-Load oder bei Messpunkt-Änderung neu aus Schwerpunkt projiziert |
+| RTK-Höhe hat ~48m Offset zu NN in Deutschland | `IGeoidService` (EGM96, 2°-Grid) korrigiert Ellipsoid → NN in `AndroidBleService.ParsePointData` + `ArTransferService` |
+| Stab-Neigung sabotiert ±2cm Präzision | App-seitige Tilt-Korrektur (vertikal immer, horizontal nur bei MagAccuracy ≥ 2) — 5° Neigung bei 1.8m Stab = 15.7cm Offset korrigiert |
+| NTRIP-Mountpoint mit ':' zerstört ESP32-Protokoll | `CanSendNtripConfig` Validation: Server nicht leer, Port ∈ [1, 65535], kein ':' im Mountpoint |
+| NTRIP-Credentials weg nach App-Neustart | `partial void OnNtripXxxChanged` persistiert via `IPreferencesService` (Keys `ntrip.server` etc.) |
+| Mock testet nur Happy-Path | Debug-Panel in SurveyView (nur bei `IsMockMode`): FixDegradation/PacketLoss/BatteryDrain/MagLoss/Disconnect |
+| Export-Datei nach Toast nicht weiterverwendbar | Export-Banner in MainView bietet Teilen/Öffnen. MIME-Type-basiert (KMZ → Google Earth, DXF → CAD, etc.) |
+| FileProvider fehlt für Share-Intents | `<provider>` im Manifest + `Resources/xml/provider_paths.xml` (files-path + external-files-path) |
+| Geplanter Punkt im Feld nicht wiederfindbar | Stakeout-Tab: Ziel wählen → Live-Pfeil + Restmeter + Höhen-Delta. Bearing via Initial-Bearing-Formel, Heading aus Bewegungsrichtung (>30cm Δ) |
 
 ## Integration-Datenfluss (Referenz)
 

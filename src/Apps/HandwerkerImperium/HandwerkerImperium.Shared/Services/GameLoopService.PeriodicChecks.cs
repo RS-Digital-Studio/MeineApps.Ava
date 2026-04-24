@@ -49,6 +49,17 @@ public sealed partial class GameLoopService
         if (_tickCount % DeliveryCheckIntervalTicks == 0)
             CheckAndGenerateDelivery(state, now);
 
+        // Alle 3 Ticks: Abgelaufene Live-Auftraege entfernen (v2.0.35 Feature D)
+        if (_orderGeneratorService != null && _tickCount % OrderLiveExpireCheckTicks == 0)
+            _orderGeneratorService.ExpireOldLiveOrders();
+
+        // Alle 25 Ticks: Chance fuer neuen Live-Auftrag (v2.0.35 Feature D)
+        if (_orderGeneratorService != null && _tickCount % OrderLiveSpawnCheckTicks == 17)
+        {
+            if (Random.Shared.NextDouble() < OrderLiveSpawnProbability)
+                _orderGeneratorService.GenerateLiveOrder();
+        }
+
         // Alle 60 Ticks (1 Min): Jobs, Orders, Weekly, AutoAssign, MasterSmith
         if (_tickCount % QuickJobCheckIntervalTicks == 0)
         {

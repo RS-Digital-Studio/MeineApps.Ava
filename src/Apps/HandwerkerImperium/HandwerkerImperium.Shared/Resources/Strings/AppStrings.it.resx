@@ -6211,4 +6211,7 @@
   <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>Davvero rischiare?</value></data>
   <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Un fallimento significa zero ricompensa e perdita di reputazione. Continuare?</value></data>
   <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>S&#236;, rischiare</value></data>
+  <!-- Live-Order-Stream (v2.0.35) -->
+  <data name="OrderLiveBadge" xml:space="preserve"><value>LIVE</value></data>
+  <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>
 </root>

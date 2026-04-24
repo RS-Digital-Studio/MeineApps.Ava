@@ -40,6 +40,7 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
     private readonly IAscensionService? _ascensionService;
     private readonly IIncomeCalculatorService? _incomeCalculator;
     private readonly IAutoProductionService? _autoProductionService;
+    private readonly IOrderGeneratorService? _orderGeneratorService;
     private readonly IChallengeConstraintService? _challengeConstraints;
     private DispatcherTimer? _timer;
     private DateTime _sessionStart;
@@ -73,6 +74,10 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
     private const int AutomationCheckIntervalTicks = 5; // Automation alle 5 Ticks
     private const int AutoAssignIntervalTicks = 60; // AutoAssign alle 60 Ticks
     private const int QuickJobCheckIntervalTicks = 60; // QuickJob Rotation + Deadline-Check alle 60 Ticks
+    private const int OrderLiveExpireCheckTicks = 3;     // v2.0.35: Abgelaufene Live-Auftraege alle 3s pruefen
+    private const int OrderLiveSpawnCheckTicks = 25;     // v2.0.35: Live-Spawn-Versuch alle 25s (im Schnitt 1-2 neue/Min bei 50% Chance)
+    /// <summary>Spawn-Wahrscheinlichkeit pro Check-Intervall (v2.0.35).</summary>
+    private const double OrderLiveSpawnProbability = 0.5;
 
     public bool IsRunning => _timer?.IsEnabled ?? false;
     public TimeSpan SessionDuration => DateTime.UtcNow - _sessionStart;
@@ -126,7 +131,8 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         IAscensionService? ascensionService = null,
         IIncomeCalculatorService? incomeCalculator = null,
         IAutoProductionService? autoProductionService = null,
-        IChallengeConstraintService? challengeConstraints = null)
+        IChallengeConstraintService? challengeConstraints = null,
+        IOrderGeneratorService? orderGeneratorService = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
@@ -149,6 +155,7 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         _incomeCalculator = incomeCalculator;
         _autoProductionService = autoProductionService;
         _challengeConstraints = challengeConstraints;
+        _orderGeneratorService = orderGeneratorService;
 
         // Bei State-Wechsel (Load/Import/Reset/Prestige) alle Caches invalidieren
         _stateLoadedHandler = (_, _) => ResetAllCaches();

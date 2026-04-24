@@ -6203,4 +6203,7 @@
   <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>&#191;Seguro que quieres arriesgar?</value></data>
   <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Un fallo significa cero recompensa y p&#233;rdida de reputaci&#243;n. &#191;Continuar?</value></data>
   <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>S&#237;, arriesgar</value></data>
+  <!-- Live-Order-Stream (v2.0.35) -->
+  <data name="OrderLiveBadge" xml:space="preserve"><value>EN VIVO</value></data>
+  <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>
 </root>

@@ -6204,4 +6204,7 @@
   <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>Vraiment prendre le risque ?</value></data>
   <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Un &#233;chec signifie aucune r&#233;compense et une perte de r&#233;putation. Continuer ?</value></data>
   <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>Oui, risquer</value></data>
+  <!-- Live-Order-Stream (v2.0.35) -->
+  <data name="OrderLiveBadge" xml:space="preserve"><value>LIVE</value></data>
+  <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>
 </root>

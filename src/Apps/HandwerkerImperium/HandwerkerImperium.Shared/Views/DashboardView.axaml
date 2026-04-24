@@ -477,6 +477,33 @@
                         <TextBlock Text="{Binding DisplayTitle}"
                                    FontSize="14" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <!-- LIVE-Badge (v2.0.35) -->
+                        <Border Background="#E53935" CornerRadius="4" Padding="5,1"
+                                IsVisible="{Binding IsLive}"
+                                VerticalAlignment="Center">
+                          <StackPanel Orientation="Horizontal" Spacing="3">
+                            <icons:GameIcon Kind="Flash" Width="12" Height="12"
+                                             Foreground="{DynamicResource PrimaryContrastBrush}" />
+                            <TextBlock Text="{loc:Translate OrderLiveBadge}"
+                                       FontSize="10" FontWeight="Bold"
+                                       Foreground="{DynamicResource PrimaryContrastBrush}" />
+                            <TextBlock Text="{Binding LiveCountdownText}"
+                                       FontSize="10" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryContrastBrush}" />
+                          </StackPanel>
+                        </Border>
+                        <!-- PREMIUM-Badge (v2.0.35, nur bei Premium-Live-Orders) -->
+                        <Border Background="#7C3AED" CornerRadius="4" Padding="5,1"
+                                IsVisible="{Binding IsPremium}"
+                                VerticalAlignment="Center">
+                          <StackPanel Orientation="Horizontal" Spacing="3">
+                            <icons:GameIcon Kind="Crown" Width="12" Height="12"
+                                             Foreground="{DynamicResource PrimaryContrastBrush}" />
+                            <TextBlock Text="{loc:Translate OrderPremiumBadge}"
+                                       FontSize="10" FontWeight="Bold"
+                                       Foreground="{DynamicResource PrimaryContrastBrush}" />
+                          </StackPanel>
+                        </Border>
                         <Border Background="#20FFD700" CornerRadius="4" Padding="4,1"
                                 IsVisible="{Binding IsRegularCustomerOrder}"
                                 VerticalAlignment="Center">

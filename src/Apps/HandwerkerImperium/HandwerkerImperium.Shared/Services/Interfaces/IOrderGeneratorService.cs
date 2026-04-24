@@ -28,4 +28,24 @@ public interface IOrderGeneratorService
     /// Gibt null zurück wenn keine Workshops für Auto-Produktion qualifiziert sind.
     /// </summary>
     Order? GenerateMaterialOrder();
+
+    /// <summary>
+    /// Generiert einen Live-Auftrag (v2.0.35): zufaelliger Auftragstyp mit Ablaufzeit 45-180s
+    /// (45-90s bei Premium). 5% Chance Premium mit 3x Reward.
+    /// Fuegt den Auftrag direkt zu AvailableOrders hinzu und feuert <see cref="OrderSpawned"/>.
+    /// Gibt null zurueck wenn die Cap erreicht ist oder keine Workshops freigeschaltet sind.
+    /// </summary>
+    Order? GenerateLiveOrder();
+
+    /// <summary>
+    /// Entfernt abgelaufene Live-Auftraege aus AvailableOrders.
+    /// Fuegt keine Reputation-Penalty hinzu — Abgelaufene sind einfach weg.
+    /// </summary>
+    /// <returns>Anzahl entfernter Auftraege.</returns>
+    int ExpireOldLiveOrders();
+
+    /// <summary>
+    /// Wird gefeuert, wenn ein Live-Auftrag spawnt — UI zeigt Toast/Banner.
+    /// </summary>
+    event Action<Order>? OrderSpawned;
 }

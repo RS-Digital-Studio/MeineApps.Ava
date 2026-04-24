@@ -401,6 +401,101 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
 
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // LIVE-AUFTRAGS-STREAM (v2.0.35 Feature D)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Maximale Anzahl verfuegbarer Live-Auftraege gleichzeitig.</summary>
+    private const int MaxLiveOrdersCap = 5;
+
+    /// <summary>Premium-Spawn-Chance bei jeder Live-Generation (5%).</summary>
+    private const double PremiumSpawnChance = 0.05;
+
+    /// <summary>Minimale ExpiresAt-Dauer in Sekunden (Standard-Live-Auftraege).</summary>
+    private const int LiveExpiryMinSeconds = 45;
+
+    /// <summary>Maximale ExpiresAt-Dauer in Sekunden (Standard-Live-Auftraege).</summary>
+    private const int LiveExpiryMaxSeconds = 180;
+
+    /// <summary>Premium-Auftraege: kuerzere ExpiresAt (45-90s) fuer mehr Zeitdruck.</summary>
+    private const int PremiumExpiryMinSeconds = 45;
+    private const int PremiumExpiryMaxSeconds = 90;
+
+    public event Action<Order>? OrderSpawned;
+
+    /// <inheritdoc />
+    public Order? GenerateLiveOrder()
+    {
+        var state = _gameStateService.State;
+
+        // Cap pruefen — nicht mehr als MaxLiveOrdersCap gleichzeitig
+        int currentLiveCount = 0;
+        for (int i = 0; i < state.AvailableOrders.Count; i++)
+            if (state.AvailableOrders[i].IsLive) currentLiveCount++;
+        if (currentLiveCount >= MaxLiveOrdersCap) return null;
+
+        // Freigeschaltete Workshops zaehlen
+        int unlockedCount = 0;
+        for (int i = 0; i < state.Workshops.Count; i++)
+            if (state.IsWorkshopUnlocked(state.Workshops[i].Type)) unlockedCount++;
+        if (unlockedCount == 0) return null;
+
+        // Zufaelligen freigeschalteten Workshop waehlen
+        int pick = Random.Shared.Next(unlockedCount);
+        int seen = 0;
+        Workshop? picked = null;
+        for (int j = 0; j < state.Workshops.Count; j++)
+        {
+            if (state.IsWorkshopUnlocked(state.Workshops[j].Type))
+            {
+                if (seen == pick) { picked = state.Workshops[j]; break; }
+                seen++;
+            }
+        }
+        if (picked == null) return null;
+
+        var order = GenerateOrder(picked.Type, picked.Level);
+        order.IsLive = true;
+
+        // Premium-Rolle (5%): x3 Reward, kuerzere Deadline, hoeherer Schwierigkeitsgrad
+        bool isPremium = Random.Shared.NextDouble() < PremiumSpawnChance;
+        if (isPremium)
+        {
+            order.IsPremium = true;
+            order.BaseReward *= 3m;
+            order.BaseXp = (int)(order.BaseXp * 2.5);
+            order.ExpiresAt = DateTime.UtcNow.AddSeconds(
+                Random.Shared.Next(PremiumExpiryMinSeconds, PremiumExpiryMaxSeconds + 1));
+        }
+        else
+        {
+            order.ExpiresAt = DateTime.UtcNow.AddSeconds(
+                Random.Shared.Next(LiveExpiryMinSeconds, LiveExpiryMaxSeconds + 1));
+        }
+
+        state.AvailableOrders.Add(order);
+        OrderSpawned?.Invoke(order);
+        return order;
+    }
+
+    /// <inheritdoc />
+    public int ExpireOldLiveOrders()
+    {
+        var state = _gameStateService.State;
+        var now = DateTime.UtcNow;
+        int removed = 0;
+        for (int i = state.AvailableOrders.Count - 1; i >= 0; i--)
+        {
+            var order = state.AvailableOrders[i];
+            if (order.IsLive && order.ExpiresAt.HasValue && order.ExpiresAt.Value <= now)
+            {
+                state.AvailableOrders.RemoveAt(i);
+                removed++;
+            }
+        }
+        return removed;
+    }
+
     public Order? GenerateMaterialOrder()
     {
         if (_autoProductionService == null) return null;

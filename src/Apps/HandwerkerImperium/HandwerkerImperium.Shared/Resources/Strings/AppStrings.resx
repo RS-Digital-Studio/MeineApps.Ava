@@ -6451,4 +6451,7 @@
   <data name="OrderStrategyRiskConfirmTitle" xml:space="preserve"><value>Really take the risk?</value></data>
   <data name="OrderStrategyRiskConfirmMessage" xml:space="preserve"><value>Miss means no reward and a reputation hit. Continue?</value></data>
   <data name="OrderStrategyRiskConfirmYes" xml:space="preserve"><value>Yes, risk it</value></data>
+  <!-- Live-Order-Stream (v2.0.35) -->
+  <data name="OrderLiveBadge" xml:space="preserve"><value>LIVE</value></data>
+  <data name="OrderPremiumBadge" xml:space="preserve"><value>VIP</value></data>
 </root>

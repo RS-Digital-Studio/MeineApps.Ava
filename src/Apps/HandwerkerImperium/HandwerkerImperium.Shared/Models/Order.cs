@@ -45,6 +45,22 @@ public class Order
     [JsonPropertyName("hasHardFailed")]
     public bool HasHardFailed { get; set; }
 
+    /// <summary>
+    /// Ob dieser Auftrag live ueber den OrderLive-Stream generiert wurde (v2.0.35).
+    /// Live-Auftraege haben <see cref="ExpiresAt"/> gesetzt und verschwinden wenn abgelaufen.
+    /// UI zeigt Countdown + "LIVE"-Badge.
+    /// </summary>
+    [JsonPropertyName("isLive")]
+    public bool IsLive { get; set; }
+
+    /// <summary>
+    /// Ob dieser Auftrag ein seltener Premium/VIP-Auftrag ist (v2.0.35).
+    /// Premium-Auftraege haben 3x Reward und kuerzere Deadlines (45-90s).
+    /// Spawn-Chance ~5% bei Live-Generation.
+    /// </summary>
+    [JsonPropertyName("isPremium")]
+    public bool IsPremium { get; set; }
+
     [JsonPropertyName("tasks")]
     public List<OrderTask> Tasks { get; set; } = [];
 
@@ -168,9 +184,41 @@ public class Order
 
     /// <summary>
     /// Whether this order has a deadline and it has passed.
+    /// Beruecksichtigt auch <see cref="ExpiresAt"/> (Live-Orders, v2.0.35).
     /// </summary>
     [JsonIgnore]
-    public bool IsExpired => Deadline != null && DateTime.UtcNow > Deadline;
+    public bool IsExpired =>
+        (Deadline != null && DateTime.UtcNow > Deadline) ||
+        (ExpiresAt != null && DateTime.UtcNow > ExpiresAt);
+
+    /// <summary>Verbleibende Sekunden bis <see cref="ExpiresAt"/>. Null wenn kein Live-Auftrag (v2.0.35).</summary>
+    [JsonIgnore]
+    public double? LiveCountdownSeconds
+    {
+        get
+        {
+            if (!IsLive || !ExpiresAt.HasValue) return null;
+            var remaining = (ExpiresAt.Value - DateTime.UtcNow).TotalSeconds;
+            return remaining < 0 ? 0 : remaining;
+        }
+    }
+
+    /// <summary>Formatierter Countdown-String ("1m 45s", "30s") fuer Live-Auftrags-Karten (v2.0.35).</summary>
+    [JsonIgnore]
+    public string LiveCountdownText
+    {
+        get
+        {
+            if (LiveCountdownSeconds is not { } sec) return "";
+            if (sec >= 60)
+            {
+                int minutes = (int)(sec / 60);
+                int seconds = (int)(sec % 60);
+                return $"{minutes}m {seconds:00}s";
+            }
+            return $"{(int)sec}s";
+        }
+    }
 
     /// <summary>
     /// Whether this is from a regular customer.

@@ -43,4 +43,9 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- DI-Container-Validation-Tests brauchen Zugriff auf internal ConfigureServices -->
+    <InternalsVisibleTo Include="BingXBot.Tests" />
+  </ItemGroup>
+
 </Project>

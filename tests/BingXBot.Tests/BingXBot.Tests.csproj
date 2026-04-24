@@ -21,5 +21,8 @@
     <ProjectReference Include="..\..\src\Libraries\BingXBot.Contracts\BingXBot.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Libraries\BingXBot.Trading\BingXBot.Trading.csproj" />
     <ProjectReference Include="..\..\src\Apps\BingXBot\BingXBot.Server\BingXBot.Server.csproj" />
+    <!-- Fuer DI-Container-Validation-Tests gegen die echte Client-App-Registrierung. -->
+    <ProjectReference Include="..\..\src\Apps\BingXBot\BingXBot.Shared\BingXBot.Shared.csproj" />
+    <ProjectReference Include="..\..\src\Libraries\BingXBot.ClientApi\BingXBot.ClientApi.csproj" />
   </ItemGroup>
 </Project>

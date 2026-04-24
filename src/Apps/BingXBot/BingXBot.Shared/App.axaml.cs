@@ -66,10 +66,17 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // DI-Container synchron aufbauen
+        // DI-Container synchron aufbauen. ValidateOnBuild=true prueft beim Bootstrap, dass ALLE
+        // registrierten Services konstruierbar sind — wenn ein Konstruktor-Param nicht resolvbar
+        // ist (wie v1.3.5 IRateLimiter), crasht der App-Start hier mit klarer Fehlermeldung,
+        // statt erst beim ersten tatsaechlichen Resolve. Fehler im Dev-Run statt beim User.
         var services = new ServiceCollection();
         ConfigureServices(services);
-        Services = services.BuildServiceProvider();
+        Services = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
 
         // Flag setzen (kein Service-Zugriff der werfen könnte)
         try
@@ -372,7 +379,10 @@ public partial class App : Application
         }
     }
 
-    private static void ConfigureServices(IServiceCollection services)
+    // Internal fuer DI-Container-Validation-Tests (InternalsVisibleTo=BingXBot.Tests).
+    // WICHTIG: Bei Aenderungen am Konstruktor-Vertrag eines Services (Interface-Extract etc.)
+    // IMMER auch die Registrierung hier nachziehen. ValidateOnBuild=true im Startup faengt das.
+    internal static void ConfigureServices(IServiceCollection services)
     {
         // Logging
         services.AddLogging(builder => builder

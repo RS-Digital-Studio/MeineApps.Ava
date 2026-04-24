@@ -15,6 +15,16 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// DI-Validation: ValidateOnBuild prueft beim Bootstrap, dass alle registrierten Services
+// konstruierbar sind. Bei fehlender Interface-Registrierung (siehe v1.3.5 IRateLimiter-Bug)
+// crasht der Server beim Start mit klarer Fehlermeldung, statt erst beim ersten Resolve.
+// ValidateScopes: verhindert dass Singletons versehentlich Scoped-Services halten.
+builder.Host.UseDefaultServiceProvider((ctx, opts) =>
+{
+    opts.ValidateOnBuild = true;
+    opts.ValidateScopes = true;
+});
+
 // ============ DI-Container ============
 var services = builder.Services;
 

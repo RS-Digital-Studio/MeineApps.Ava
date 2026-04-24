@@ -16,6 +16,19 @@ public class BacktestEngine
     private readonly IPublicMarketDataClient? _publicClient; // Öffentliche Marktdaten (kein API-Key nötig)
     private readonly ILogger<BacktestEngine> _logger;
 
+    /// <summary>
+    /// Optionaler Bar-Progress (current, total). Wird ueber <see cref="SetBarProgress"/> gesetzt
+    /// damit der bestehende RunAsync-Parameter-Signature nicht breakt.
+    /// </summary>
+    private IProgress<(int Current, int Total)>? _barProgress;
+
+    /// <summary>
+    /// Setzt den (current, total) Bar-Progress-Callback. Wird vom <c>LocalBacktestService</c>
+    /// genutzt um Client-UI mit Bar-Zaehlern zu versorgen (BacktestStatusDto.CurrentBar/TotalBars).
+    /// Thread-safe weil RunAsync single-threaded pro BacktestEngine-Instanz ist.
+    /// </summary>
+    public void SetBarProgress(IProgress<(int Current, int Total)>? barProgress) => _barProgress = barProgress;
+
 
     /// <summary>
     /// Konstruktor für echte Marktdaten über öffentlichen Client (kein API-Key nötig).
@@ -44,8 +57,17 @@ public class BacktestEngine
         DateTime to,
         BacktestSettings settings,
         IProgress<int>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        ScannerSettings? scannerSettings = null,
+        RiskSettings? riskSettings = null,
+        List<Candle>? preloadedWeekly = null,
+        List<Candle>? preloadedDaily = null)
     {
+        // Hinweis wenn der Backtest ohne Settings läuft — per-TF-Scoring-Schwellen + ATR-Multiplikatoren fehlen dann.
+        if (scannerSettings == null)
+            _logger.LogWarning("Backtest ohne ScannerSettings gestartet — per-TF-Scoring und ATR-Multiplikatoren nutzen Fallbacks. " +
+                               "Ergebnisse weichen ggf. von Live-Verhalten ab.");
+
         // 1. Historische Daten laden
         var allCandles = await LoadHistoricalDataAsync(symbol, timeFrame, from, to).ConfigureAwait(false);
 
@@ -84,13 +106,45 @@ public class BacktestEngine
             }
         }
 
-        // 1c. Entry-TF-Candles laden (SK-System: M15 als Trigger bei H4-Primary)
+        // 1b-SK. Weekly- und Daily-Candles laden (SK-Workflow Phase 1: Kontext / BLASH / Fahrplan)
+        // Live-Bot reicht weeklyCandles + dailyCandles separat durch — Backtest muss das gleiche tun,
+        // sonst arbeitet DetermineFahrplanBias / MarketContextAnalyzer auf leeren bzw. falschen Daten.
+        // Multi-TF-Backtest (Caller ruft für D1/H4/H1/M15 nacheinander auf) kann die Kerzen per
+        // preloadedWeekly/preloadedDaily durchreichen — spart N × identische Kline-Requests.
+        List<Candle>? weeklyCandles = preloadedWeekly;
+        List<Candle>? dailyCandles = preloadedDaily;
+        if (weeklyCandles == null && timeFrame != TimeFrame.W1)
+        {
+            try
+            {
+                // Weekly braucht mehr Historie (min 20 Kerzen für Sequenz-Detection = 5 Monate)
+                weeklyCandles = await LoadHistoricalDataAsync(symbol, TimeFrame.W1, from.AddDays(-365), to).ConfigureAwait(false);
+                if (weeklyCandles.Count > 0)
+                    _logger.LogInformation("W1-Fahrplan-Candles geladen: {Count}", weeklyCandles.Count);
+            }
+            catch { /* W1 optional — Fahrplan-Bias fällt zurück auf D1 */ }
+        }
+        if (dailyCandles == null && timeFrame != TimeFrame.D1)
+        {
+            try
+            {
+                // Daily braucht min 60 Kerzen für BLASH-Berechnung (60d-Range) + Puffer
+                dailyCandles = await LoadHistoricalDataAsync(symbol, TimeFrame.D1, from.AddDays(-120), to).ConfigureAwait(false);
+                if (dailyCandles.Count > 0)
+                    _logger.LogInformation("D1-Fahrplan-Candles geladen: {Count}", dailyCandles.Count);
+            }
+            catch { /* D1 optional — Kontext-Gate arbeitet dann nur mit W1 */ }
+        }
+
+        // 1c. Entry-TF-Candles laden (SK-System: Sub-Iteration für präzise Intra-Candle-Trigger).
+        // Multi-TF Standalone: Nur für H4/H1 relevant (Legacy SK-Buch M30-Trigger bei H4-Primary).
+        // M15-Navigator + kleiner: keine Sub-Iteration — Navigator-Close ist Trigger (1:1 zum Live-Bot).
+        // Der pre-Multi-TF M5-Navigator lief ebenfalls ohne Sub-Iteration; Konsistenz gewahrt.
         List<Candle>? entryTfCandles = null;
         var entryTf = settings.EntryTimeFrame ?? timeFrame switch
         {
             TimeFrame.H4 => TimeFrame.M30,  // SK-Buch: M30 als Entry-Chart bei H4-Primary
             TimeFrame.H1 => TimeFrame.M15,
-            TimeFrame.M15 => TimeFrame.M5,
             _ => (TimeFrame?)null
         };
         if (entryTf.HasValue && entryTf.Value != timeFrame)
@@ -157,18 +211,40 @@ public class BacktestEngine
             };
         }
 
+        // D1- und W1-Indizes: ebenfalls inkrementell, damit der Hot-Path innerhalb der
+        // Sub-Iteration keine Binary-Search (DailySliceUpTo) braucht. Initialisierung:
+        // letzte D1/W1-Kerze, die vor Warmup-Ende geschlossen hat.
+        int InitIdx(List<Candle>? src)
+        {
+            if (src is null || src.Count == 0) return -1;
+            var firstAfter = src.FindIndex(c => c.CloseTime > allCandles[warmupSize].CloseTime);
+            return firstAfter switch
+            {
+                -1 => src.Count - 1,
+                0 => -1,
+                _ => firstAfter - 1,
+            };
+        }
+        var dailyIdx = InitIdx(dailyCandles);
+        var weeklyIdx = InitIdx(weeklyCandles);
+
         var iterationCount = allCandles.Count - warmupSize;
         for (int i = warmupSize; i < allCandles.Count; i++)
         {
             ct.ThrowIfCancellationRequested();
 
-            // Fortschritt melden
+            // Fortschritt melden — sowohl Prozent-Progress als auch (current, total)-Callback
+            // (letzteres fuellt BacktestStatusDto.CurrentBar/TotalBars fuer Remote-UI).
             var progressPercent = (int)((double)(i - warmupSize) / iterationCount * 100);
             progress?.Report(progressPercent);
+            _barProgress?.Report((i - warmupSize, iterationCount));
 
             // Aktuellen Preis setzen
             var currentCandle = allCandles[i];
             simExchange.SetCurrentPrice(symbol, currentCandle.Close);
+            // Backtest-Zeit pro Candle setzen damit CompletedTrade-EntryTime/ExitTime die echten
+            // Candle-Timestamps bekommen (nicht DateTime.UtcNow zum Test-Ausfuehrungs-Zeitpunkt).
+            simExchange.SetCurrentBacktestTime(currentCandle.CloseTime);
 
             // Dynamische Slippage: ATR und Volume-Ratio an SimulatedExchange übergeben
             if (settings.UseDynamicSlippage && i >= 15)
@@ -232,6 +308,22 @@ public class BacktestEngine
                 htfContext = new CandleSlice(htfCandles, htfStart, htfIdx + 1 - htfStart);
             }
 
+            // D1/W1-Indizes pro Primary-Iteration fortschreiben (innerhalb einer Primary-Kerze
+            // schließt i.d.R. keine D1/W1, daher reicht ein Advance pro Primary-Takt).
+            // Sub-Iteration trimmt nochmal lokal, falls Primary bereits in der Zukunft liegt.
+            while (dailyCandles is { Count: > 0 } && dailyIdx < dailyCandles.Count - 1
+                && dailyCandles[dailyIdx + 1].CloseTime <= currentCandle.CloseTime)
+                dailyIdx++;
+            while (weeklyCandles is { Count: > 0 } && weeklyIdx < weeklyCandles.Count - 1
+                && weeklyCandles[weeklyIdx + 1].CloseTime <= currentCandle.CloseTime)
+                weeklyIdx++;
+
+            // Zero-Copy Prefix-Slices für Primary-Context (Fallback + RiskContext).
+            IReadOnlyList<Candle>? dailyPrefix = dailyIdx >= 0 && dailyCandles is not null
+                ? new CandleSlice(dailyCandles, 0, dailyIdx + 1) : null;
+            IReadOnlyList<Candle>? weeklyPrefix = weeklyIdx >= 0 && weeklyCandles is not null
+                ? new CandleSlice(weeklyCandles, 0, weeklyIdx + 1) : null;
+
             // Entry-TF Sub-Iteration: SK-Signale entstehen auf M15-Takt, nicht H4-Takt.
             // Innerhalb jeder H4-Kerze alle zugehörigen M15-Kerzen durchiterieren und
             // die Strategie bei jeder M15-Kerze evaluieren. Ohne das werden 15/16 M15-Signale verpasst.
@@ -245,10 +337,8 @@ public class BacktestEngine
                     entryTfIdx++;
                     if (entryTfIdx < 20) continue;
 
-                    // Entry-TF-Kontext bis zur aktuellen Sub-Kerze
+                    // Entry-TF-Kontext bis zur aktuellen Sub-Kerze (nur für Trigger, nicht für FilterTimeframeCandles)
                     var entryCandle = entryTfCandles[entryTfIdx];
-                    var entryStart = Math.Max(0, entryTfIdx + 1 - 200);
-                    IReadOnlyList<Candle> entryTfContext = new CandleSlice(entryTfCandles, entryStart, entryTfIdx + 1 - entryStart);
 
                     // Ticker mit dem Preis der Entry-TF-Kerze (nicht der H4-Kerze)
                     var subHalfSpread = entryCandle.Close * settings.SpreadPercent / 100m / 2m;
@@ -256,7 +346,56 @@ public class BacktestEngine
                         entryCandle.Close - subHalfSpread, entryCandle.Close + subHalfSpread,
                         entryCandle.Volume, 0m, entryCandle.CloseTime);
 
-                    var subContext = new MarketContext(symbol, contextCandles, subTicker, positions, account, htfContext, category, entryTfContext);
+                    // Filter-TF-Slice zum aktuellen Sub-Kerzen-Zeitpunkt (Live-Mapping: GetFilterTimeframe).
+                    // htfCandles sind hier die Filter-TF-Kerzen (BacktestViewModel setzt HtfTimeFrame = GetFilterTimeframe(tf)).
+                    IReadOnlyList<Candle>? subFilterTf = null;
+                    if (htfCandles is { Count: > 0 })
+                    {
+                        // htfIdx steht bereits auf Primary-Close. In der Sub-Iteration kann die Filter-TF
+                        // aber bereits weiter sein (M30-Sub bei H1-Filter → 1 Schritt, H1-Sub bei H4-Filter → 0).
+                        // Für Korrektheit (auch M15-Backtest mit M5-Filter = viele Filter-Kerzen pro Sub):
+                        // Lokaler Index der auf entryCandle.CloseTime trimmt.
+                        var localHtfIdx = htfIdx;
+                        while (localHtfIdx < htfCandles.Count - 1 && htfCandles[localHtfIdx + 1].CloseTime <= entryCandle.CloseTime)
+                            localHtfIdx++;
+                        // Rückwärts trimmen falls htfIdx bereits in die Zukunft zeigt (Primary-Close > Sub-Close)
+                        while (localHtfIdx >= 0 && htfCandles[localHtfIdx].CloseTime > entryCandle.CloseTime)
+                            localHtfIdx--;
+                        if (localHtfIdx >= 0)
+                        {
+                            var htfStart = Math.Max(0, localHtfIdx + 1 - 100);
+                            subFilterTf = new CandleSlice(htfCandles, htfStart, localHtfIdx + 1 - htfStart);
+                        }
+                    }
+
+                    // D1/W1 konservativ auf entryCandle.CloseTime trimmen — innerhalb einer Primary-Kerze
+                    // schließt keine D1/W1 (außer bei D1=24h, die mit Primary synchron schließt, dann ist der
+                    // Primary-Index korrekt). Rückwärts trimmen falls Primary bereits schloss.
+                    IReadOnlyList<Candle>? subDaily = null;
+                    if (dailyIdx >= 0 && dailyCandles is { Count: > 0 })
+                    {
+                        var localD = dailyIdx;
+                        while (localD >= 0 && dailyCandles[localD].CloseTime > entryCandle.CloseTime) localD--;
+                        if (localD >= 0) subDaily = new CandleSlice(dailyCandles, 0, localD + 1);
+                    }
+                    IReadOnlyList<Candle>? subWeekly = null;
+                    if (weeklyIdx >= 0 && weeklyCandles is { Count: > 0 })
+                    {
+                        var localW = weeklyIdx;
+                        while (localW >= 0 && weeklyCandles[localW].CloseTime > entryCandle.CloseTime) localW--;
+                        if (localW >= 0) subWeekly = new CandleSlice(weeklyCandles, 0, localW + 1);
+                    }
+
+                    var subContext = new MarketContext(
+                        symbol, contextCandles, subTicker, positions, account,
+                        FilterTimeframeCandles: subFilterTf,
+                        Category: category,
+                        DailyCandles: subDaily,
+                        WeeklyCandles: subWeekly,
+                        NavigatorTimeframe: timeFrame,
+                        ScannerSettings: scannerSettings,
+                        RiskSettings: riskSettings,
+                        NowUtc: entryCandle.CloseTime);
                     signal = strategy.Evaluate(subContext);
 
                     // Bei Signal sofort raus aus der Sub-Iteration (Trade platzieren)
@@ -269,8 +408,18 @@ public class BacktestEngine
             }
             else
             {
-                // Kein Entry-TF: Standard-Evaluation auf Primary-TF (wie bisher)
-                var context = new MarketContext(symbol, contextCandles, ticker, positions, account, htfContext, category, null);
+                // Kein Entry-TF (Navigator-TF ist selbst Entry-Chart): Filter-TF = htfContext-Slot.
+                // htfContext ist hier die Filter-TF (BacktestSettings.HtfTimeFrame = GetFilterTimeframe(tf)).
+                var context = new MarketContext(
+                    symbol, contextCandles, ticker, positions, account,
+                    FilterTimeframeCandles: htfContext,
+                    Category: category,
+                    DailyCandles: dailyPrefix,
+                    WeeklyCandles: weeklyPrefix,
+                    NavigatorTimeframe: timeFrame,
+                    ScannerSettings: scannerSettings,
+                    RiskSettings: riskSettings,
+                    NowUtc: currentCandle.CloseTime);
                 signal = strategy.Evaluate(context);
             }
 
@@ -283,30 +432,17 @@ public class BacktestEngine
                     continue;
 
                 // --- SK-Buch Multi-Stage Exit: TP1 Partial Close (161.8%), TP2 Rest (200%+Buffer) ---
-                // Buch Workflow 4.1/4.2: SL halbieren bei 1× Gewinn, BE einmal bei 2× Gewinn — KEIN Trailing (4.3)
+                // SK-Buch Masterclass: BE-Trigger = ausschliesslich "Bruch von A" — SL ist ansonsten heilig (4.3).
                 if (exitTracking.TryGetValue(key, out var exitState))
                 {
-                    // SK-BE-Regel (Workflow 4.1 + 4.2) — identisch zu TradingServiceBase
-                    if (origSignal.StopLoss.HasValue)
+                    if (!exitState.BreakevenSet && exitState.NavPointA > 0)
                     {
-                        var slDist = Math.Abs(exitState.EntryPrice - origSignal.StopLoss.Value);
                         var currentPrice = pos.Side == Side.Buy ? currentCandle.High : currentCandle.Low;
-                        var currentProfit = pos.Side == Side.Buy
-                            ? currentPrice - exitState.EntryPrice
-                            : exitState.EntryPrice - currentPrice;
+                        var aBreak = pos.Side == Side.Buy
+                            ? currentPrice >= exitState.NavPointA
+                            : currentPrice <= exitState.NavPointA;
 
-                        // Workflow 4.1: SL halbieren bei 1× SL-Distanz Gewinn (nur einmal, via SlHalved-Flag)
-                        if (slDist > 0 && currentProfit >= slDist * 1m && currentProfit < slDist * 2m
-                            && !exitState.BreakevenSet && !exitState.SlHalved)
-                        {
-                            var halvedSl = pos.Side == Side.Buy
-                                ? exitState.EntryPrice - slDist * 0.5m
-                                : exitState.EntryPrice + slDist * 0.5m;
-                            positionSignals[key] = positionSignals[key] with { StopLoss = halvedSl };
-                            exitState.SlHalved = true;
-                        }
-                        // Workflow 4.2: BE einmal bei 2× SL-Distanz (danach nicht mehr nachziehen — 4.3)
-                        else if (slDist > 0 && currentProfit >= slDist * 2m && !exitState.BreakevenSet)
+                        if (aBreak)
                         {
                             var beSl = pos.Side == Side.Buy
                                 ? exitState.EntryPrice * 1.0015m
@@ -341,24 +477,7 @@ public class BacktestEngine
                         continue;
                     }
 
-                    // Time-Exit: Max Haltezeit überschritten (nur wenn konfiguriert)
-                    if (exitState.MaxHoldHours > 0)
-                    {
-                        var holdHours = (currentCandle.CloseTime - exitState.EntryTime).TotalHours;
-                        if (holdHours >= exitState.MaxHoldHours)
-                        {
-                            var inProfit = pos.Side == Side.Buy
-                                ? currentCandle.Close > exitState.EntryPrice
-                                : currentCandle.Close < exitState.EntryPrice;
-                            if (exitState.PartialClosed || !inProfit)
-                            {
-                                await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
-                                positionSignals.Remove(key);
-                                exitTracking.Remove(key);
-                                continue;
-                            }
-                        }
-                    }
+                    // BUCH-ONLY: Kein Time-Exit.
                 }
 
                 // --- Standard SL/TP-Check (Fallback und finale Prüfung) ---
@@ -422,8 +541,17 @@ public class BacktestEngine
             // Trade ausführen wenn Signal (SK-Buch: keine Regime-Filter, SK hat eigene Workflow-Regeln)
             if (signal.Signal is Signal.Long or Signal.Short)
             {
-                // MarketContext für RiskManager: Aktuellen State verwenden
-                var riskContext = new MarketContext(symbol, contextCandles, ticker, positions, account, htfContext, category, null);
+                // MarketContext für RiskManager: gleiche Zuordnung wie bei der Strategy.
+                var riskContext = new MarketContext(
+                    symbol, contextCandles, ticker, positions, account,
+                    FilterTimeframeCandles: htfContext,
+                    Category: category,
+                    DailyCandles: dailyPrefix,
+                    WeeklyCandles: weeklyPrefix,
+                    NavigatorTimeframe: timeFrame,
+                    ScannerSettings: scannerSettings,
+                    RiskSettings: riskSettings,
+                    NowUtc: currentCandle.CloseTime);
                 var riskCheck = riskManager.ValidateTrade(signal, riskContext);
                 if (riskCheck.IsAllowed && riskCheck.AdjustedPositionSize > 0)
                 {
@@ -439,14 +567,14 @@ public class BacktestEngine
                             var key = $"{symbol}_{side}";
                             positionSignals[key] = signal;
 
-                            // Exit State erstellen (SK-Buch: Partial Close 50/50 + Time-Exit)
+                            // Exit State erstellen (SK-Buch: Partial Close 50/50 + A-Bruch-BE + Time-Exit)
                             exitTracking[key] = new BacktestExitState
                             {
                                 EntryPrice = order.Price,
                                 OriginalQuantity = riskCheck.AdjustedPositionSize,
                                 EntryTime = currentCandle.CloseTime,
                                 Tp2 = signal.TakeProfit2,
-                                MaxHoldHours = settings.MaxHoldHoursInitial,
+                                NavPointA = signal.NavPointA ?? 0m,
                             };
                         }
                     }
@@ -512,6 +640,14 @@ public class BacktestEngine
 
         return report;
     }
+
+    /// <summary>
+    /// Öffentlicher Zugang zum historischen Daten-Loader — Caller (z. B. BacktestViewModel)
+    /// kann damit W1/D1 einmalig vorladen und über die <c>preloadedWeekly/preloadedDaily</c>-
+    /// Parameter an mehrere <see cref="RunAsync"/>-Aufrufe weiterreichen.
+    /// </summary>
+    public Task<List<Candle>> LoadCandlesAsync(string symbol, TimeFrame timeFrame, DateTime from, DateTime to)
+        => LoadHistoricalDataAsync(symbol, timeFrame, from, to);
 
     /// <summary>
     /// Lädt historische Candle-Daten. Versucht zuerst den Public Client (echte BingX-Daten),
@@ -649,6 +785,28 @@ public class BacktestEngine
         return candles;
     }
 
+    /// <summary>
+    /// Schneidet eine Kerzen-Liste auf das Prefix zu, das spätestens zum angegebenen Zeitpunkt
+    /// geschlossen hat — verhindert Look-Ahead von D1/W1-Kerzen in laufenden Backtest-Iterationen.
+    /// Wird aktuell nicht mehr im Hot-Path genutzt (dailyIdx/weeklyIdx inkrementell),
+    /// bleibt als Fallback-Helper für künftige Backtest-Varianten.
+    /// </summary>
+    private static IReadOnlyList<Candle>? DailySliceUpToBs(List<Candle>? source, DateTime upToClose)
+    {
+        if (source is null or { Count: 0 }) return null;
+
+        // Binary-Search: letzte Kerze mit CloseTime <= upToClose
+        int lo = 0, hi = source.Count - 1, lastFit = -1;
+        while (lo <= hi)
+        {
+            int mid = (lo + hi) >> 1;
+            if (source[mid].CloseTime <= upToClose) { lastFit = mid; lo = mid + 1; }
+            else hi = mid - 1;
+        }
+        if (lastFit < 0) return null;
+        return new CandleSlice(source, 0, lastFit + 1);
+    }
+
     /// <summary>Zero-Copy Slice über eine Candle-Liste (vermeidet GetRange-Allokation pro Candle im Backtest).</summary>
     private sealed class CandleSlice : IReadOnlyList<Candle>
     {
@@ -687,11 +845,13 @@ public class BacktestEngine
         public decimal? Tp2 { get; set; }
         /// <summary>Ob TP1 bereits erreicht und Partial Close ausgeführt wurde.</summary>
         public bool PartialClosed { get; set; }
-        /// <summary>SK-Buch Workflow 4.1: SL bereits halbiert (einmal bei 1× SL-Distanz Gewinn).</summary>
-        public bool SlHalved { get; set; }
-        /// <summary>SK-Buch Workflow 4.2: BE bereits gesetzt (einmal bei 2× SL-Distanz Gewinn).</summary>
+        /// <summary>SK-Buch Masterclass: BE bereits gesetzt (ausgelöst durch A-Bruch).</summary>
         public bool BreakevenSet { get; set; }
-        /// <summary>Maximale Haltezeit in Stunden.</summary>
-        public int MaxHoldHours { get; set; }
+        /// <summary>Navigator-PointA für den A-Bruch-BE-Trigger. 0 = unbekannt (kein BE möglich).</summary>
+        public decimal NavPointA { get; init; }
+        /// <summary>SK-Plan 4.6: Anchor fuer Trailing-Stop (hoechstes High/tiefstes Low seit TP1-Hit).</summary>
+        public decimal TrailingAnchor { get; set; }
+        /// <summary>SK-Plan 4.6: Aktueller Trailing-SL-Preis (0 = Trailing inaktiv).</summary>
+        public decimal TrailingStopPrice { get; set; }
     }
 }

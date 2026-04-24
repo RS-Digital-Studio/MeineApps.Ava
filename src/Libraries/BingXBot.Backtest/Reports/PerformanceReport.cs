@@ -120,7 +120,11 @@ public class PerformanceReport
         // Sharpe Ratio (annualisiert) mit Running Balance.
         // Returns werden relativ zur aktuellen Balance berechnet, nicht zur initialen.
         // Verhindert Verzerrung bei wachsendem/schrumpfendem Account.
-        if (trades.Count > 1 && initialBalance > 0)
+        //
+        // Mindest-Sample-Size 10 Trades: Unter 10 Trades ist die sqrt(Trades/Jahr)-Annualisierung
+        // hochgradig instabil (extreme Werte wie +300000/-400000 bei 2-3 Trades ueber 150 Tage).
+        // Lieber 0 als Datenmuell.
+        if (trades.Count >= 10 && initialBalance > 0)
         {
             var returns = new List<double>();
             var runningBalance = (double)initialBalance;

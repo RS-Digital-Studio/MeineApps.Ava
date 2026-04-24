@@ -34,10 +34,32 @@ public class SimulatedExchange : IExchangeClient, IDisposable
     private readonly ConcurrentDictionary<string, decimal> _currentVolumeRatio = new();
     private readonly Random _rng = new(42); // Deterministisch für reproduzierbare Backtests
 
+    // Backtest-Zeit: Wird von BacktestEngine pro Candle via SetCurrentTime gesetzt.
+    // Verhindert dass CompletedTrade-Zeitstempel DateTime.UtcNow nutzen (Bug der 0h-Haltezeiten,
+    // kollabierende Sharpe-Annualisierung und falsche EntryTime/ExitTime-Werte verursacht hat).
+    private DateTime _currentBacktestTime = DateTime.UtcNow;
+
     public SimulatedExchange(BacktestSettings settings)
     {
         _settings = settings;
         _balance = settings.InitialBalance;
+    }
+
+    /// <summary>
+    /// Aktuelle Balance (realized PnL + initial). Public-Readonly fuer Remote-Event-Publisher
+    /// — Live-Equity-Chart braucht einen sync Zugriff ohne GetAccountInfoAsync-Roundtrip.
+    /// </summary>
+    public decimal Balance => _balance;
+
+    /// <summary>
+    /// Setzt die aktuelle Backtest-Zeit. Muss vom BacktestEngine pro Candle aufgerufen werden
+    /// VOR jedem Trade-Close-Call, damit CompletedTrade.ExitTime die Candle-Zeit widerspiegelt
+    /// und nicht die reale Welt-Zeit des Test-Ausfuehrens.
+    /// Fuer Paper-Trading (Live-Marktdaten) bleibt der Fallback DateTime.UtcNow korrekt.
+    /// </summary>
+    public void SetCurrentBacktestTime(DateTime time)
+    {
+        _currentBacktestTime = time;
     }
 
     /// <summary>
@@ -123,7 +145,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
         {
             // Neue Position eröffnen
             _positions.Add(new Position(symbol, side, fillPrice, fillPrice, quantity,
-                0m, leverage, MarginType.Isolated, DateTime.UtcNow));
+                0m, leverage, MarginType.Isolated, _currentBacktestTime));
         }
         _positionsDirty = true;
     }
@@ -162,7 +184,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                 {
                     // Nicht genug Margin verfuegbar - Order ablehnen
                     var rejectedOrder = new Order(orderId, request.Symbol, request.Side, request.Type,
-                        fillPrice, request.Quantity, request.StopPrice, DateTime.UtcNow, OrderStatus.Rejected);
+                        fillPrice, request.Quantity, request.StopPrice, _currentBacktestTime, OrderStatus.Rejected);
                     return Task.FromResult(rejectedOrder);
                 }
 
@@ -204,12 +226,12 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                         0m,
                         effectiveLeverage,
                         MarginType.Isolated,
-                        DateTime.UtcNow));
+                        _currentBacktestTime));
                 }
 
                 _positionsDirty = true;
                 var filledOrder = new Order(orderId, request.Symbol, request.Side, request.Type,
-                    fillPrice, request.Quantity, request.StopPrice, DateTime.UtcNow, OrderStatus.Filled);
+                    fillPrice, request.Quantity, request.StopPrice, _currentBacktestTime, OrderStatus.Filled);
 
                 return Task.FromResult(filledOrder);
             }
@@ -217,7 +239,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
             // Limit/Stop-Orders als offene Orders speichern
             var pendingOrder = new Order(orderId, request.Symbol, request.Side, request.Type,
                 request.Price ?? GetPriceLocked(request.Symbol), request.Quantity,
-                request.StopPrice, DateTime.UtcNow, OrderStatus.New);
+                request.StopPrice, _currentBacktestTime, OrderStatus.New);
 
             _openOrders.Add(pendingOrder);
             return Task.FromResult(pendingOrder);
@@ -322,7 +344,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                 netPnl,
                 totalFee,
                 pos.OpenTime,
-                DateTime.UtcNow,
+                _currentBacktestTime,
                 "Manuell geschlossen",
                 TradingMode.Paper));
 
@@ -376,7 +398,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                 var fullNetPnl = fullPnl - fullTotalFee;
                 _completedTrades.Add(new CompletedTrade(
                     pos.Symbol, pos.Side, pos.EntryPrice, fullExitSlippage,
-                    pos.Quantity, fullNetPnl, fullTotalFee, pos.OpenTime, DateTime.UtcNow,
+                    pos.Quantity, fullNetPnl, fullTotalFee, pos.OpenTime, _currentBacktestTime,
                     "Manuell geschlossen", TradingMode.Paper));
                 _positions.RemoveAt(index);
                 _positionsDirty = true;
@@ -404,7 +426,7 @@ public class SimulatedExchange : IExchangeClient, IDisposable
             _completedTrades.Add(new CompletedTrade(
                 pos.Symbol, pos.Side, pos.EntryPrice, exitPriceWithSlippage,
                 quantityToClose, netPnl, totalFee,
-                pos.OpenTime, DateTime.UtcNow,
+                pos.OpenTime, _currentBacktestTime,
                 "Partial Close (TP1)", TradingMode.Paper));
 
             // Position verkleinern (Rest bleibt offen)

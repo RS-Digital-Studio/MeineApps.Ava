@@ -52,18 +52,16 @@ public sealed class NavigationService : INavigationService
         // zurueck zum (fertigen) MiniGame/OrderDetail landet — Stack fuer einen frischen
         // Dashboard-Kontext ist ohnehin sauberer UX.
         _host.ClearNavigationStack();
-        _host.ActivePage = ActivePage.Dashboard;
+
         // QuickJobs-Sub-Tab nach Prestige ggf. zuruecksetzen
         if (!_host.IsQuickJobsUnlocked)
             _host.MissionsVM?.RefreshQuickJobs(); // no-op wenn null
 
-        // Aufträge sicherstellen (falls leer z.B. nach Spielabbruch)
-        if (_gameStateService.IsInitialized && _gameStateService.State.AvailableOrders.Count == 0)
-        {
-            _orderGeneratorService.RefreshOrders();
-            _host.RefreshOrders();
-        }
-        _host.SelectDashboardTab(); // Host-Hook (Side-Effects wie Ordners/Sub-Tabs)
+        // Host-Hook delegiert an MainViewModel.SelectDashboardTab RelayCommand, der setzt
+        // ActivePage=Dashboard und ruft intern RefreshOrders (leere Liste generiert neu,
+        // sonst nur Recalc). v2.0.35 Hotfix-3: Vorheriger duplizierter RefreshOrders-Aufruf
+        // hier entfernt — war doppelt mit Host-Seite.
+        _host.SelectDashboardTab();
     }
 
     public void SelectStatisticsTab()

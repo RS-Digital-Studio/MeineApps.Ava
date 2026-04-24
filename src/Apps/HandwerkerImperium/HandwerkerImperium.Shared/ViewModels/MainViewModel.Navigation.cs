@@ -179,6 +179,12 @@ public sealed partial class MainViewModel
 
         if (fromActiveOrderScreen)
         {
+            // v2.0.35 Hotfix-2: MiniGame-Timer explizit stoppen BEVOR pausiert wird.
+            // Ohne StopCurrent laeuft der VM-interne DispatcherTimer (IsPlaying=true)
+            // nach dem Navigationswechsel weiter → pseudo-Miss nach Timeout auf dem
+            // Dashboard (Sound + Stat-Inkrement + PerfectStreak-Reset).
+            _miniGameNavigator?.StopCurrent();
+
             _gameStateService.PauseActiveOrder();
             HasActiveOrder = false;
             ActiveOrder = null;

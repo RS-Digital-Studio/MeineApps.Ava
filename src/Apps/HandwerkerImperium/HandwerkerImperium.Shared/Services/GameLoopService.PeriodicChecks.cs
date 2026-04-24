@@ -66,41 +66,50 @@ public sealed partial class GameLoopService
             _quickJobService?.RotateIfNeeded();
             _dailyChallengeService?.CheckAndResetIfNewDay();
 
-            // v2.0.35: Nur Nicht-Live-Auftraege via Deadline entfernen. Live-Auftraege laufen
-            // ueber ExpireOldLiveOrders (alle 3 Ticks). Wuerde hier die doppelte Pruefung
-            // laufen und einen IsLive-Auftrag mitten im MiniGame raus-reissen, da IsExpired
-            // jetzt auch ExpiresAt beruecksichtigt.
-            state.AvailableOrders.RemoveAll(o => !o.IsLive && o.IsExpired);
-
-            // ActiveOrder-Expiry ausloesen — schuetzt aber laufende MiniGame-Sessions:
-            // Sobald mindestens ein Task angefangen/abgeschlossen wurde (CurrentTaskIndex > 0
-            // oder TaskResults.Count > 0), ist der Spieler klar im MiniGame und darf nicht
-            // mittendrin abgeschnitten werden.
-            if (state.ActiveOrder?.IsExpired == true
-                && state.ActiveOrder.CurrentTaskIndex == 0
-                && state.ActiveOrder.TaskResults.Count == 0)
-            {
-                var expiredOrder = state.ActiveOrder;
-                expiredOrder.CurrentTaskIndex = 0;
-                expiredOrder.TaskResults.Clear();
-                state.ActiveOrder = null;
-                state.ParallelOrdersByWorkshop.Remove(expiredOrder.WorkshopType);
-                OrderExpired?.Invoke(this, EventArgs.Empty);
-            }
-
-            // Parallele Orders auf Expiry pruefen — dedizierte Aufraeum-Logik (v2.0.35 Feature A).
-            // Laufende MiniGame-Session bleibt geschuetzt durch den ActiveOrder-Guard oben.
+            // v2.0.35 Hotfix-2: Order-Expiry unter State-Lock, schuetzt AvailableOrders +
+            // ParallelOrdersByWorkshop vor Race mit SaveAsync-Serializer auf ThreadPool.
+            bool activeExpired = false;
             var expiredParallel = new List<WorkshopType>();
-            foreach (var kv in state.ParallelOrdersByWorkshop)
+            _gameStateService.ExecuteWithLock(() =>
             {
-                if (kv.Value.IsExpired && kv.Value != state.ActiveOrder)
-                    expiredParallel.Add(kv.Key);
-            }
-            foreach (var wsType in expiredParallel)
-            {
-                state.ParallelOrdersByWorkshop.Remove(wsType);
+                // Nicht-Live-Auftraege via Deadline entfernen. Live-Auftraege laufen ueber
+                // ExpireOldLiveOrders (alle 3 Ticks). Wuerde hier die doppelte Pruefung
+                // laufen und einen IsLive-Auftrag mitten im MiniGame raus-reissen, da IsExpired
+                // jetzt auch ExpiresAt beruecksichtigt.
+                state.AvailableOrders.RemoveAll(o => !o.IsLive && o.IsExpired);
+
+                // ActiveOrder-Expiry ausloesen — schuetzt aber laufende MiniGame-Sessions:
+                // Sobald mindestens ein Task angefangen/abgeschlossen wurde (CurrentTaskIndex > 0
+                // oder TaskResults.Count > 0), ist der Spieler klar im MiniGame und darf nicht
+                // mittendrin abgeschnitten werden.
+                if (state.ActiveOrder?.IsExpired == true
+                    && state.ActiveOrder.CurrentTaskIndex == 0
+                    && state.ActiveOrder.TaskResults.Count == 0)
+                {
+                    var expiredOrder = state.ActiveOrder;
+                    expiredOrder.CurrentTaskIndex = 0;
+                    expiredOrder.TaskResults.Clear();
+                    state.ActiveOrder = null;
+                    state.ParallelOrdersByWorkshop.Remove(expiredOrder.WorkshopType);
+                    activeExpired = true;
+                }
+
+                // Parallele Orders auf Expiry pruefen — dedizierte Aufraeum-Logik (v2.0.35 Feature A).
+                foreach (var kv in state.ParallelOrdersByWorkshop)
+                {
+                    if (kv.Value.IsExpired && kv.Value != state.ActiveOrder)
+                        expiredParallel.Add(kv.Key);
+                }
+                foreach (var wsType in expiredParallel)
+                    state.ParallelOrdersByWorkshop.Remove(wsType);
+            });
+
+            // Events AUSSERHALB des Locks feuern — Subscriber duerfen State-Methoden
+            // aufrufen ohne Re-Entrant-Lock-Problem.
+            if (activeExpired)
                 OrderExpired?.Invoke(this, EventArgs.Empty);
-            }
+            for (int i = 0; i < expiredParallel.Count; i++)
+                OrderExpired?.Invoke(this, EventArgs.Empty);
         }
         if (_tickCount % WeeklyMissionCheckIntervalTicks == 15)
             _weeklyMissionService?.CheckAndResetIfNewWeek();

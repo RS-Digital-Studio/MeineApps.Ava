@@ -350,44 +350,55 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     ///
     /// Premium/VIP-Orders behalten ihren 3x-Reward-Multiplikator (wird auf neu berechneten
     /// Wert angewendet). Safe/Risk-Strategy greift erst bei FinalReward, nicht BaseReward.
+    ///
+    /// <b>WICHTIG fuer UI-Konsumenten:</b> <see cref="Order"/> implementiert INPC nur fuer
+    /// <see cref="Order.LiveCountdownText"/> — BaseReward/EstimatedReward feuern kein
+    /// PropertyChanged. Damit die Anzeige aktualisiert wird, muss der Caller die
+    /// umgebende ObservableCollection ersetzen (siehe EconomyFeatureViewModel.RefreshOrders,
+    /// Zeile ~1334: `_host.AvailableOrders = newOrders`). Ein direktes Property-Update
+    /// ohne Collection-Replacement wuerde die UI NICHT aktualisieren.
     /// </summary>
     public void RecalculateAvailableOrderRewards()
     {
-        var state = _gameStateService.State;
-        int playerLevel = state.PlayerLevel;
-
-        for (int i = 0; i < state.AvailableOrders.Count; i++)
+        // v2.0.35 Hotfix-2: Unter State-Lock, sonst Race mit SaveAsync-Serializer (Task.Run auf ThreadPool).
+        _gameStateService.ExecuteWithLock(() =>
         {
-            var order = state.AvailableOrders[i];
+            var state = _gameStateService.State;
+            int playerLevel = state.PlayerLevel;
 
-            // Skip: angefangene Orders (obwohl in AvailableOrders meist nicht der Fall),
-            // MaterialOrders (eigene Formel), Cooperation wird dennoch berechnet.
-            if (order.TaskResults.Count > 0) continue;
-            if (order.OrderType == OrderType.MaterialOrder) continue;
-
-            // Workshop-Level aus State holen (Workshop existiert wenn Order generiert wurde).
-            int workshopLevel = 1;
-            for (int w = 0; w < state.Workshops.Count; w++)
+            for (int i = 0; i < state.AvailableOrders.Count; i++)
             {
-                if (state.Workshops[w].Type == order.WorkshopType)
+                var order = state.AvailableOrders[i];
+
+                // Skip: angefangene Orders (obwohl in AvailableOrders meist nicht der Fall),
+                // MaterialOrders (eigene Formel), Cooperation wird dennoch berechnet.
+                if (order.TaskResults.Count > 0) continue;
+                if (order.OrderType == OrderType.MaterialOrder) continue;
+
+                // Workshop-Level aus State holen (Workshop existiert wenn Order generiert wurde).
+                int workshopLevel = 1;
+                for (int w = 0; w < state.Workshops.Count; w++)
                 {
-                    workshopLevel = state.Workshops[w].Level;
-                    break;
+                    if (state.Workshops[w].Type == order.WorkshopType)
+                    {
+                        workshopLevel = state.Workshops[w].Level;
+                        break;
+                    }
                 }
-            }
-            var (newBaseReward, newBaseXp) = ComputeBaseRewardAndXp(
-                state, order.WorkshopType, workshopLevel, playerLevel, order.Tasks.Count);
+                var (newBaseReward, newBaseXp) = ComputeBaseRewardAndXp(
+                    state, order.WorkshopType, workshopLevel, playerLevel, order.Tasks.Count);
 
-            // Premium/VIP-Multiplikator (v2.0.35 Feature D): 3x Reward, 2.5x XP beibehalten.
-            if (order.IsPremium)
-            {
-                newBaseReward *= 3m;
-                newBaseXp = (int)(newBaseXp * 2.5m);
-            }
+                // Premium/VIP-Multiplikator (v2.0.35 Feature D): 3x Reward, 2.5x XP beibehalten.
+                if (order.IsPremium)
+                {
+                    newBaseReward *= 3m;
+                    newBaseXp = (int)(newBaseXp * 2.5m);
+                }
 
-            order.BaseReward = Math.Round(newBaseReward);
-            order.BaseXp = newBaseXp;
-        }
+                order.BaseReward = Math.Round(newBaseReward);
+                order.BaseXp = newBaseXp;
+            }
+        });
     }
 
     public List<Order> GenerateAvailableOrders(int count = 3)
@@ -493,73 +504,90 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     /// <inheritdoc />
     public Order? GenerateLiveOrder()
     {
-        var state = _gameStateService.State;
+        // v2.0.35 Hotfix-2: Lock schuetzt AvailableOrders vor Race mit SaveAsync-Serializer.
+        // GenerateOrder + OrderSpawned-Event werden AUSSERHALB des Locks ausgefuehrt — sie
+        // lesen zwar State, mutieren aber nicht die Collection (GenerateOrder erstellt nur
+        // eine neue Order-Instanz; der eigentliche Add passiert unter Lock).
+        Order? order = null;
+        bool shouldAdd = false;
 
-        // Cap pruefen — nicht mehr als MaxLiveOrdersCap gleichzeitig
-        int currentLiveCount = 0;
-        for (int i = 0; i < state.AvailableOrders.Count; i++)
-            if (state.AvailableOrders[i].IsLive) currentLiveCount++;
-        if (currentLiveCount >= MaxLiveOrdersCap) return null;
-
-        // Freigeschaltete Workshops zaehlen
-        int unlockedCount = 0;
-        for (int i = 0; i < state.Workshops.Count; i++)
-            if (state.IsWorkshopUnlocked(state.Workshops[i].Type)) unlockedCount++;
-        if (unlockedCount == 0) return null;
-
-        // Zufaelligen freigeschalteten Workshop waehlen
-        int pick = Random.Shared.Next(unlockedCount);
-        int seen = 0;
-        Workshop? picked = null;
-        for (int j = 0; j < state.Workshops.Count; j++)
+        _gameStateService.ExecuteWithLock(() =>
         {
-            if (state.IsWorkshopUnlocked(state.Workshops[j].Type))
+            var state = _gameStateService.State;
+
+            // Cap pruefen — nicht mehr als MaxLiveOrdersCap gleichzeitig
+            int currentLiveCount = 0;
+            for (int i = 0; i < state.AvailableOrders.Count; i++)
+                if (state.AvailableOrders[i].IsLive) currentLiveCount++;
+            if (currentLiveCount >= MaxLiveOrdersCap) return;
+
+            // Freigeschaltete Workshops zaehlen
+            int unlockedCount = 0;
+            for (int i = 0; i < state.Workshops.Count; i++)
+                if (state.IsWorkshopUnlocked(state.Workshops[i].Type)) unlockedCount++;
+            if (unlockedCount == 0) return;
+
+            // Zufaelligen freigeschalteten Workshop waehlen
+            int pick = Random.Shared.Next(unlockedCount);
+            int seen = 0;
+            Workshop? picked = null;
+            for (int j = 0; j < state.Workshops.Count; j++)
             {
-                if (seen == pick) { picked = state.Workshops[j]; break; }
-                seen++;
+                if (state.IsWorkshopUnlocked(state.Workshops[j].Type))
+                {
+                    if (seen == pick) { picked = state.Workshops[j]; break; }
+                    seen++;
+                }
             }
-        }
-        if (picked == null) return null;
+            if (picked == null) return;
 
-        var order = GenerateOrder(picked.Type, picked.Level);
-        order.IsLive = true;
+            order = GenerateOrder(picked.Type, picked.Level);
+            order.IsLive = true;
 
-        // Premium-Rolle (5%): x3 Reward, kuerzere Deadline, hoeherer Schwierigkeitsgrad
-        bool isPremium = Random.Shared.NextDouble() < PremiumSpawnChance;
-        if (isPremium)
-        {
-            order.IsPremium = true;
-            order.BaseReward *= 3m;
-            order.BaseXp = (int)(order.BaseXp * 2.5);
-            order.ExpiresAt = DateTime.UtcNow.AddSeconds(
-                Random.Shared.Next(PremiumExpiryMinSeconds, PremiumExpiryMaxSeconds + 1));
-        }
-        else
-        {
-            order.ExpiresAt = DateTime.UtcNow.AddSeconds(
-                Random.Shared.Next(LiveExpiryMinSeconds, LiveExpiryMaxSeconds + 1));
-        }
+            // Premium-Rolle (5%): x3 Reward, kuerzere Deadline, hoeherer Schwierigkeitsgrad
+            bool isPremium = Random.Shared.NextDouble() < PremiumSpawnChance;
+            if (isPremium)
+            {
+                order.IsPremium = true;
+                order.BaseReward *= 3m;
+                order.BaseXp = (int)(order.BaseXp * 2.5);
+                order.ExpiresAt = DateTime.UtcNow.AddSeconds(
+                    Random.Shared.Next(PremiumExpiryMinSeconds, PremiumExpiryMaxSeconds + 1));
+            }
+            else
+            {
+                order.ExpiresAt = DateTime.UtcNow.AddSeconds(
+                    Random.Shared.Next(LiveExpiryMinSeconds, LiveExpiryMaxSeconds + 1));
+            }
 
-        state.AvailableOrders.Add(order);
-        OrderSpawned?.Invoke(order);
+            state.AvailableOrders.Add(order);
+            shouldAdd = true;
+        });
+
+        if (shouldAdd && order != null)
+            OrderSpawned?.Invoke(order);
         return order;
     }
 
     /// <inheritdoc />
     public int ExpireOldLiveOrders()
     {
-        var state = _gameStateService.State;
-        var now = DateTime.UtcNow;
+        // v2.0.35 Hotfix-2: Lock schuetzt RemoveAt gegen SaveAsync-Serializer-Iteration.
         int removed = 0;
-        for (int i = state.AvailableOrders.Count - 1; i >= 0; i--)
+        _gameStateService.ExecuteWithLock(() =>
         {
-            var order = state.AvailableOrders[i];
-            if (order.IsLive && order.ExpiresAt.HasValue && order.ExpiresAt.Value <= now)
+            var state = _gameStateService.State;
+            var now = DateTime.UtcNow;
+            for (int i = state.AvailableOrders.Count - 1; i >= 0; i--)
             {
-                state.AvailableOrders.RemoveAt(i);
-                removed++;
+                var order = state.AvailableOrders[i];
+                if (order.IsLive && order.ExpiresAt.HasValue && order.ExpiresAt.Value <= now)
+                {
+                    state.AvailableOrders.RemoveAt(i);
+                    removed++;
+                }
             }
-        }
+        });
         return removed;
     }
 

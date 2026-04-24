@@ -1224,7 +1224,8 @@ public class BingXRestClient : IExchangeClient
                     ParseDecimal(detail.LastPrice),
                     ParseDecimal(detail.BidPrice),
                     ParseDecimal(detail.AskPrice),
-                    ParseDecimal(detail.Volume),
+                    // quoteVolume (USDT) statt volume (Basis-Einheiten). Fallback wenn leer.
+                    ParseDecimal(string.IsNullOrEmpty(detail.QuoteVolume) ? detail.Volume : detail.QuoteVolume),
                     ParseDecimal(detail.PriceChangePercent),
                     DateTime.UtcNow));
             }

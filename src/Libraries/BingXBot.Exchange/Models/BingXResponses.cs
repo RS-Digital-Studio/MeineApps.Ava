@@ -102,7 +102,10 @@ public class BingXTickerDetail
     [JsonPropertyName("lastPrice")] public string LastPrice { get; set; } = "";
     [JsonPropertyName("bidPrice")] public string BidPrice { get; set; } = "";
     [JsonPropertyName("askPrice")] public string AskPrice { get; set; } = "";
+    /// <summary>Basis-Einheiten (z.B. BTC-Kontrakte, Gold-Unzen, TSLA-Aktien). NICHT fuer Filter nutzen.</summary>
     [JsonPropertyName("volume")] public string Volume { get; set; } = "";
+    /// <summary>24h-Handelsvolumen in USDT — universell vergleichbar ueber alle Kategorien.</summary>
+    [JsonPropertyName("quoteVolume")] public string QuoteVolume { get; set; } = "";
     [JsonPropertyName("priceChangePercent")] public string PriceChangePercent { get; set; } = "";
 }
 

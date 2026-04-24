@@ -59,9 +59,21 @@ public class BingXPublicClient : IPublicMarketDataClient
             try
             {
                 var response = await _httpClient.GetStringAsync(url, ct).ConfigureAwait(false);
-                var result = JsonSerializer.Deserialize<BingXResponse<List<BingXKlineDetail>>>(response);
 
-                if (result?.Code != 0 || result.Data == null || result.Data.Count == 0)
+                // BingX liefert bei einigen Symbolen (v.a. geschlossene TradFi-Märkte,
+                // z.B. NCSIEWJ während Börsenpause) `data` als Nicht-Array zurück (null/string/object).
+                // Typed Deserialize würde werfen — stattdessen erst JsonDocument-Vorprüfung.
+                using var doc = JsonDocument.Parse(response);
+                if (!doc.RootElement.TryGetProperty("code", out var codeEl) ||
+                    !codeEl.TryGetInt32(out var code) || code != 0)
+                    break;
+                if (!doc.RootElement.TryGetProperty("data", out var dataEl) ||
+                    dataEl.ValueKind != JsonValueKind.Array ||
+                    dataEl.GetArrayLength() == 0)
+                    break;
+
+                var result = JsonSerializer.Deserialize<BingXResponse<List<BingXKlineDetail>>>(response);
+                if (result?.Data == null || result.Data.Count == 0)
                     break;
 
                 foreach (var k in result.Data)
@@ -137,7 +149,11 @@ public class BingXPublicClient : IPublicMarketDataClient
                 ParseDecimal(t.LastPrice),
                 ParseDecimal(t.BidPrice),
                 ParseDecimal(t.AskPrice),
-                ParseDecimal(t.Volume),
+                // quoteVolume (USDT-Wert) statt volume (Basis-Einheiten).
+                // Kategorien sind sonst nicht vergleichbar: Forex hat 12M+ Basis-Einheiten pro Tag,
+                // Indices/Stocks nur Tausende Kontrakte — MinVolume24h filterte alles ausser Forex raus.
+                // Fallback auf volume wenn quoteVolume leer (aeltere BingX-Endpoints).
+                ParseDecimal(string.IsNullOrEmpty(t.QuoteVolume) ? t.Volume : t.QuoteVolume),
                 ParseDecimal(t.PriceChangePercent),
                 DateTime.UtcNow
             )).ToList();

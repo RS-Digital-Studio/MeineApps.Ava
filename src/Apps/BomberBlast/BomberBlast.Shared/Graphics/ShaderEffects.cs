@@ -37,6 +37,19 @@ public sealed class ShaderEffects : IDisposable
     private const float DamageFlashDuration = 0.25f;
 
     // --- Water Ripples ---
+    // Statischer Shader-Cache: Wird einmalig beim Splash via Preload() kompiliert und
+    // von allen ShaderEffects-Instanzen wiederverwendet. Spart 50-200ms beim ersten
+    // Ocean-Level-Frame (SkSL-Kompilierung ist auf Android teuer).
+    private static SKRuntimeEffect? _sharedWaterRippleEffect;
+    // volatile: Fast-Path-Read in Preload() (ohne Lock) muss auf ARM-Android
+    // die aktuellste Zuweisung aus dem Second-Check sehen. Ohne volatile würde
+    // der Thread-Cache auf weak-memory-model-CPUs eine veraltete false lesen
+    // und doppelt in den Lock-Block springen — Second-Check würde die Doppel-
+    // Kompilierung zwar verhindern, aber der Fast-Path wäre keiner mehr.
+    private static volatile bool _sharedWaterRippleTried;
+    private static string? _sharedWaterRippleErrors;
+    private static readonly object _sharedWaterRippleLock = new();
+
     private SKRuntimeEffect? _waterRippleEffect;
     private bool _gpuRipplesAvailable;
     private float _playerScreenX, _playerScreenY;
@@ -89,15 +102,50 @@ half4 main(float2 coord) {
         TryInitGPUShaders();
     }
 
+    /// <summary>
+    /// Kompiliert den Water-Ripple-SkSL-Shader vorab (statisch, instanz-übergreifend).
+    /// Wird während des Splashs aufgerufen, damit der erste Ocean-Frame (Welt 6)
+    /// nicht durch SkSL-Kompilierung (50-200ms auf Android) blockiert wird.
+    /// Thread-safe durch Double-Check-Lock: Fast-Path ohne Lock (volatile Read auf _tried
+    /// via Pre-Check), Slow-Path mit Lock damit parallele Calls nicht doppelt kompilieren.
+    /// </summary>
+    public static void Preload()
+    {
+        if (_sharedWaterRippleTried) return;
+        lock (_sharedWaterRippleLock)
+        {
+            if (_sharedWaterRippleTried) return;
+            try
+            {
+                _sharedWaterRippleEffect = SKRuntimeEffect.CreateShader(WaterRippleSkSL, out var errors);
+                _sharedWaterRippleErrors = errors;
+            }
+            catch (Exception ex)
+            {
+                _sharedWaterRippleErrors = ex.Message;
+                _sharedWaterRippleEffect = null;
+            }
+            finally
+            {
+                _sharedWaterRippleTried = true;
+            }
+        }
+    }
+
     private void TryInitGPUShaders()
     {
         try
         {
-            // SkiaSharp 3.x: CreateShader statt Create
-            _waterRippleEffect = SKRuntimeEffect.CreateShader(WaterRippleSkSL, out var errors);
+            // Falls nicht preloaded, jetzt kompilieren (Fallback für Tests/Desktop-Szenarien
+            // in denen der Splash nicht durchlief). Normaler Pfad: _sharedWaterRippleEffect
+            // ist bereits durch LoadingPipeline→ShaderEffects.Preload() gesetzt.
+            if (!_sharedWaterRippleTried)
+                Preload();
+
+            _waterRippleEffect = _sharedWaterRippleEffect;
             _gpuRipplesAvailable = _waterRippleEffect != null;
             if (!_gpuRipplesAvailable)
-                Logger?.LogWarning($"SkSL Kompilierung fehlgeschlagen: {errors}");
+                Logger?.LogWarning($"SkSL Kompilierung fehlgeschlagen: {_sharedWaterRippleErrors}");
 
             // Uniforms eager initialisieren (statt lazy in RenderWaterRipples).
             // Vermeidet einmaligen Kaltstart-Jitter beim ersten Ocean-Frame, wenn der
@@ -402,7 +450,9 @@ half4 main(float2 coord) {
 
         _cachedRippleShader?.Dispose();
         _cachedRippleShader = null;
-        _waterRippleEffect?.Dispose();
+        // _waterRippleEffect ist nur eine Referenz auf den statischen _sharedWaterRippleEffect —
+        // nicht disposen, damit weitere Instanzen oder App-Restarts den Shader wiederverwenden.
+        _waterRippleEffect = null;
         // SKRuntimeEffectUniforms haelt einen nativen SkData-Handle pro Uniform-Slot.
         // Ohne explizites Dispose lebt das Objekt bis der Finalizer greift.
         _cachedUniforms?.Dispose();
@@ -410,5 +460,20 @@ half4 main(float2 coord) {
         _overlayPaint.Dispose();
         _ripplePaint.Dispose();
         _shimmerPaint.Dispose();
+    }
+
+    /// <summary>
+    /// Gibt den statisch gecachten Water-Ripple-Shader frei (App-Shutdown).
+    /// Thread-safe durch Lock damit parallele Dispose/Preload nicht konfligieren.
+    /// </summary>
+    public static void DisposeSharedResources()
+    {
+        lock (_sharedWaterRippleLock)
+        {
+            _sharedWaterRippleEffect?.Dispose();
+            _sharedWaterRippleEffect = null;
+            _sharedWaterRippleTried = false;
+            _sharedWaterRippleErrors = null;
+        }
     }
 }

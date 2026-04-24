@@ -23,6 +23,12 @@ public sealed class EnemyAI
     private readonly HashSet<(int, int)> _processedBombs = new();
     private readonly List<Direction> _validDirections = new(4);
 
+    // Pathfinding-Budget pro Frame: Absicherung gegen gleichzeitig planende Gegner-Wellen
+    // (z.B. Survival-Mass-Spawn, Explosion invalidiert 8 Pfade simultan).
+    // Spawn-Jitter (Enemy-Ctor) glättet den Normalfall; dieses Budget glättet den Extremfall.
+    private const int AStarBudgetPerFrame = 5;
+    private int _aStarInvocationsThisFrame;
+
     public EnemyAI(GameGrid grid)
     {
         _grid = grid;
@@ -30,11 +36,27 @@ public sealed class EnemyAI
     }
 
     /// <summary>
-    /// Gefahrenzone einmal pro Frame vorberechnen (statt pro Gegner → Performance)
+    /// Gefahrenzone einmal pro Frame vorberechnen (statt pro Gegner → Performance).
+    /// Setzt auch das Pathfinding-Budget zurück (5 A*-Calls pro Frame).
     /// </summary>
     public void PreCalculateDangerZone(IEnumerable<Bomb> bombs)
     {
         CalculateDangerZone(bombs);
+        _aStarInvocationsThisFrame = 0;
+    }
+
+    /// <summary>
+    /// Prüft ob noch A*-Budget für diesen Frame vorhanden ist. Wenn ja, reserviert
+    /// einen Slot (Counter++). Verwendet von <see cref="UpdateNormalIntelligence"/>
+    /// und <see cref="UpdateHighIntelligence"/> bevor <see cref="AStar.FindPath"/>.
+    /// Wenn false, fällt der Gegner auf Cached-Path / Random-Movement zurück.
+    /// </summary>
+    private bool TryAcquireAStarSlot()
+    {
+        if (_aStarInvocationsThisFrame >= AStarBudgetPerFrame)
+            return false;
+        _aStarInvocationsThisFrame++;
+        return true;
     }
 
     /// <summary>
@@ -155,6 +177,15 @@ public sealed class EnemyAI
             if (TryFollowCachedPath(enemy, dangerZone))
                 return;
 
+            // Budget-Check: Wenn bereits 5 A*-Aufrufe in diesem Frame, zum Random-Fallback wechseln.
+            // Im nächsten Frame kommt der Gegner wieder dran (Decision-Timer läuft normal).
+            if (!TryAcquireAStarSlot())
+            {
+                if (enemy.MovementDirection == Direction.None || _random.NextDouble() < 0.2)
+                    enemy.MovementDirection = GetRandomValidDirection(enemy);
+                return;
+            }
+
             // Pfad berechnen (Ergebnis in _pathfinder.ResultPath, keine Queue-Allokation)
             int pathLen = _pathfinder.FindPath(
                 enemy.GridX, enemy.GridY,
@@ -202,6 +233,15 @@ public sealed class EnemyAI
             // Use cached path if valid and safe
             if (TryFollowCachedPath(enemy, dangerZone))
                 return;
+
+            // Budget-Check: Wenn bereits 5 A*-Aufrufe in diesem Frame, Random-Fallback.
+            // High-Intelligence-Gegner kommen im nächsten Frame wieder dran.
+            if (!TryAcquireAStarSlot())
+            {
+                if (enemy.MovementDirection == Direction.None || _random.NextDouble() < 0.15)
+                    enemy.MovementDirection = GetRandomSafeDirection(enemy, dangerZone);
+                return;
+            }
 
             // Pfad berechnen (Ergebnis in _pathfinder.ResultPath, keine Queue-Allokation)
             int pathLen = _pathfinder.FindPath(

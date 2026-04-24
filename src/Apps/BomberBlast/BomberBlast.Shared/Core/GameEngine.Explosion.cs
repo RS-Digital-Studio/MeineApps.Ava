@@ -49,6 +49,11 @@ public sealed partial class GameEngine
             // Tracking: Spezial-Bombe (Achievement + Missionen)
             _tracking.OnSpecialBombUsed();
 
+            // Deck-Balancing-Telemetrie: Used++ pro Platzierung (Plays/Wins werden bei
+            // CompleteLevel/GameOver aus _specialBombTypesUsedInLevel gebündelt gemeldet).
+            _deckTelemetry.RecordBombPlaced(bomb.Type);
+            _specialBombTypesUsedInLevel.Add(bomb.Type);
+
             // Wenn keine Uses mehr → automatisch auf Normal zurückschalten
             if (!activeCard.HasUsesLeft)
             {

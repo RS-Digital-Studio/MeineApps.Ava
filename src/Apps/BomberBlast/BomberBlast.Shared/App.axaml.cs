@@ -124,7 +124,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "BomberBlast",
-            AppVersion = "v2.0.33",
+            AppVersion = "v2.0.35",
             Renderer = new BomberBlastSplashRenderer()
         };
     }
@@ -189,6 +189,13 @@ public partial class App : Application
             (Services.GetService<IGameAssetService>() as IDisposable)?.Dispose();
             // InputManager haelt NeonJoystick (20 SKPaint + 5 SKPath) - muss auch disposed werden
             (Services.GetService<Input.InputManager>() as IDisposable)?.Dispose();
+            // v2.0.35: Services mit CloudStateLoaded-Subscription + pending Debounced-Writes
+            // DeckTelemetryService-Dispose flusht letzten pending Save (vermeidet Datenverlust bei Shutdown)
+            Services.GetService<IDeckTelemetryService>()?.Dispose();
+            Services.GetService<IMasterModeService>()?.Dispose();
+            Services.GetService<ICloudSaveService>()?.Dispose();
+            // Statisch gecachten WaterRipple-SkSL-Shader freigeben (wurde im Splash preloaded)
+            ShaderEffects.DisposeSharedResources();
         }
         catch
         {
@@ -267,6 +274,8 @@ public partial class App : Application
 
         services.AddSingleton<IStarterPackService, StarterPackService>();
         services.AddSingleton<IRotatingDealsService, RotatingDealsService>();
+        services.AddSingleton<IDeckTelemetryService, DeckTelemetryService>();
+        services.AddSingleton<IMasterModeService, MasterModeService>();
 
         // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
         if (VibrationServiceFactory != null)

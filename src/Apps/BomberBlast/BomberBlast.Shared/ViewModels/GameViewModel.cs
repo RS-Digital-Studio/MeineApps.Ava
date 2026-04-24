@@ -25,7 +25,10 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     private readonly IAdService _adService;
     private readonly IProgressService _progressService;
     private readonly IReviewService _reviewService;
+    private readonly IGameAssetService _assetService;
     private readonly IAppLogger _logger;
+    // Vermeidet doppelte Preload-Triggerings pro Welt (fire-and-forget Task schmeisst sonst Warnings)
+    private int _lastPreloadedWorldIndex = -1;
     private readonly Stopwatch _frameStopwatch = new();
     private CancellationTokenSource _gameEventCts = new();
     private bool _isInitialized;
@@ -39,6 +42,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     private string _boostType = "";
     private int _dungeonFloor;
     private int _dungeonSeed;
+    private bool _masterMode;
     private int _lastCoinsEarned;
     private bool _lastIsLevelComplete;
 
@@ -109,6 +113,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         IAdService adService,
         IProgressService progressService,
         IReviewService reviewService,
+        IGameAssetService assetService,
         IAppLogger logger)
     {
         _gameEngine = gameEngine;
@@ -117,6 +122,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _adService = adService;
         _progressService = progressService;
         _reviewService = reviewService;
+        _assetService = assetService;
         _logger = logger;
     }
 
@@ -128,7 +134,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
     /// Spielmodus und Level-Parameter setzen vor dem Start.
     /// Setzt das Initialisierungs-Flag zurueck, damit die Engine beim naechsten OnAppearingAsync neu initialisiert.
     /// </summary>
-    public void SetParameters(string mode, int level, bool continueMode = false, string boostType = "", int difficulty = 5, int dungeonFloor = 0, int dungeonSeed = 0)
+    public void SetParameters(string mode, int level, bool continueMode = false, string boostType = "", int difficulty = 5, int dungeonFloor = 0, int dungeonSeed = 0, bool masterMode = false)
     {
         _mode = mode;
         _level = level;
@@ -137,7 +143,25 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
         _boostType = boostType;
         _dungeonFloor = dungeonFloor;
         _dungeonSeed = dungeonSeed;
+        _masterMode = masterMode;
         _isInitialized = false;
+
+        // Welt-Hintergrund fire-and-forget preloaden (Countdown läuft ~3s,
+        // WebP-Decode < 100ms auf Mid-Tier). Welt 1 ist bereits im Splash preloaded —
+        // nur Welt 2-10 nachladen um erste-Frame-Fallback zu vermeiden.
+        if (mode == "story" && level > 0)
+        {
+            int worldIndex = _progressService.GetWorldForLevel(level) - 1; // 1-basiert → 0-basiert
+            if (worldIndex > 0 && worldIndex != _lastPreloadedWorldIndex)
+            {
+                _lastPreloadedWorldIndex = worldIndex;
+                _ = Task.Run(async () =>
+                {
+                    try { await _assetService.PreloadAsync(GameAssetPaths.GetWorldPreloadAssets(worldIndex)); }
+                    catch (Exception ex) { _logger?.LogWarning($"Welt-Preload fehlgeschlagen (World {worldIndex}): {ex.Message}"); }
+                });
+            }
+        }
     }
 
     /// <summary>
@@ -237,7 +261,7 @@ public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposab
 
             case "story":
             default:
-                await _gameEngine.StartStoryModeAsync(_level);
+                await _gameEngine.StartStoryModeAsync(_level, _masterMode);
                 break;
         }
 

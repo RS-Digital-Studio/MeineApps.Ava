@@ -86,6 +86,13 @@ public static class AdConfig
         public const string RewardedGemBonus = "ca-app-pub-2588160251469436/1171181949";
         public const string RewardedLuckySpin = "ca-app-pub-2588160251469436/8778881674";
         public const string RewardedDungeonRun = "ca-app-pub-2588160251469436/1574490715";
+        // v2.0.34 — double_daily_reward ist komplett implementiert (MainMenuViewModel).
+        // bonus_card_drop + battle_pass_xp_boost sind als Infra vorbereitet, aber noch nicht
+        // an einen Trigger-Punkt in der App angebunden — siehe CLAUDE.md v2.0.34 Rewarded-Sektion.
+        // TODO v2.0.36+: Eigene Ad-Unit-IDs im AdMob-Dashboard erstellen + Call-Sites einbauen.
+        public const string RewardedDoubleDailyReward = RewardedGemBonus;      // aktiv in v2.0.34
+        public const string RewardedBonusCardDrop = RewardedCoinMultiplier;    // WIP — kein Call-Site
+        public const string RewardedBattlePassXpBoost = RewardedScoreDouble;   // WIP — kein Call-Site
     }
 
     public static class HandwerkerImperium
@@ -169,6 +176,9 @@ public static class AdConfig
             ("BomberBlast", "gem_bonus") => BomberBlast.RewardedGemBonus,
             ("BomberBlast", "lucky_spin") => BomberBlast.RewardedLuckySpin,
             ("BomberBlast", "dungeon_run") => BomberBlast.RewardedDungeonRun,
+            ("BomberBlast", "double_daily_reward") => BomberBlast.RewardedDoubleDailyReward,
+            ("BomberBlast", "bonus_card_drop") => BomberBlast.RewardedBonusCardDrop,
+            ("BomberBlast", "battle_pass_xp_boost") => BomberBlast.RewardedBattlePassXpBoost,
             ("BomberBlast", _) => BomberBlast.RewardedContinue,
 
             // FinanzRechner

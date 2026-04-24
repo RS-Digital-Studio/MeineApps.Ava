@@ -74,8 +74,20 @@ public sealed class CloudSaveService : ICloudSaveService
         // Entdeckungen & Einstellungen
         "DiscoveredItems",
         "visual_style",
-        "TutorialCompleted"
+        "TutorialCompleted",
+
+        // v2.0.35: Master Mode + Deck-Balancing-Telemetrie
+        "master_mode_status_v1",   // Per-Level Master-Sterne
+        "master_mode_active",       // User-Toggle
+        "deck_telemetry_v1"         // Used/Plays/Wins pro BombType
     ];
+
+    /// <summary>
+    /// Wird nach erfolgreichem Cloud-Pull gefeuert (wenn ApplyCloudData Preferences aktualisiert hat).
+    /// Services mit internem Cache (MasterModeService, DeckTelemetryService etc.) müssen ihren
+    /// Cache invalidieren, da Preferences-Keys jetzt neue Werte haben können.
+    /// </summary>
+    public event EventHandler? CloudStateLoaded;
 
     private readonly IPreferencesService _preferences;
     private readonly IPlayGamesService _playGames;
@@ -329,10 +341,14 @@ public sealed class CloudSaveService : ICloudSaveService
             _preferences.Set(kvp.Key, kvp.Value);
         }
 
-        // Hinweis: Services müssen ihre Daten beim nächsten Zugriff neu laden.
-        // Da alle Services im Konstruktor aus IPreferencesService laden und
-        // Singleton sind, brauchen wir einen App-Neustart für volle Konsistenz.
-        // Alternative: DataRefreshed-Event auf allen Services (wird bei Bedarf ergänzt).
+        // Services mit internem Cache (MasterModeService, DeckTelemetryService, ...)
+        // abonnieren dieses Event und rufen ihren Load() auf, damit Cache nicht stale bleibt.
+        // Services ohne Cache (lesen direkt aus Preferences) ignorieren das Event.
+        //
+        // Dispatcher.UIThread.Post: ApplyCloudData läuft typischerweise auf einer
+        // Task-Continuation nach dem Cloud-Pull — Subscriber (z.B. ViewModel-Updates)
+        // erwarten aber UI-Thread. Marshal hier einmal zentral statt in jedem Handler.
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => CloudStateLoaded?.Invoke(this, EventArgs.Empty));
     }
 
     // ═══════════════════════════════════════════════════════════════════════

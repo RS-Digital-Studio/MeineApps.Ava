@@ -20,6 +20,8 @@ public sealed class GameTrackingService : IGameTrackingService
     private readonly IGemService _gems;
     private readonly ICoinService _coins;
     private readonly IPreferencesService _preferences;
+    private readonly IMasterModeService _masterMode;
+    private readonly ICustomizationService _customization;
 
     // Survival-Meilensteine: Schwelle in Sekunden → (Coins, Gems)
     private static readonly (int Seconds, int Coins, int Gems)[] SurvivalMilestones =
@@ -48,7 +50,9 @@ public sealed class GameTrackingService : IGameTrackingService
         ICardService cards,
         IGemService gems,
         ICoinService coins,
-        IPreferencesService preferences)
+        IPreferencesService preferences,
+        IMasterModeService masterMode,
+        ICustomizationService customization)
     {
         _achievements = achievements;
         _weekly = weekly;
@@ -58,6 +62,8 @@ public sealed class GameTrackingService : IGameTrackingService
         _battlePass = battlePass;
         Cards = cards;
         _gems = gems;
+        _masterMode = masterMode;
+        _customization = customization;
         _coins = coins;
         _preferences = preferences;
     }
@@ -137,13 +143,33 @@ public sealed class GameTrackingService : IGameTrackingService
 
     public void OnStoryLevelCompleted(int level, int score, int stars, int bombsUsed,
         float timeRemaining, float timeUsed, bool noDamage, int totalStars,
-        bool isDailyChallenge)
+        bool isDailyChallenge, bool isMutatorLevel = false)
     {
         _achievements.OnLevelCompleted(level, score, stars, bombsUsed, timeRemaining, timeUsed, noDamage);
         _achievements.OnStarsUpdated(totalStars);
 
         _weekly.TrackProgress(WeeklyMissionType.CompleteLevels);
         _daily.TrackProgress(WeeklyMissionType.CompleteLevels);
+
+        // v2.0.34: Skill-basierte Missions-Tracking
+        if (stars == 3)
+        {
+            _weekly.TrackProgress(WeeklyMissionType.CompleteThreeStar);
+            _daily.TrackProgress(WeeklyMissionType.CompleteThreeStar);
+        }
+        if (noDamage)
+        {
+            _weekly.TrackProgress(WeeklyMissionType.NoDamageLevel);
+            _daily.TrackProgress(WeeklyMissionType.NoDamageLevel);
+        }
+        // Mutator-Level Fortschritt: Nur wenn das Level WIRKLICH einen Mutator hat
+        // (Level.Mutator != None). Vorher: level > 50 — das traf auch Nicht-Mutator-Levels
+        // in Welt 6-10 und gab falschen Missions-Fortschritt.
+        if (isMutatorLevel)
+        {
+            _weekly.TrackProgress(WeeklyMissionType.CompleteMutatorLevel);
+            _daily.TrackProgress(WeeklyMissionType.CompleteMutatorLevel);
+        }
 
         // Liga-Punkte: Basis + Welt-Bonus + Boss-Bonus
         int leaguePoints = 10 + level / 10;
@@ -162,6 +188,40 @@ public sealed class GameTrackingService : IGameTrackingService
         {
             _battlePass.AddXp(200, "daily_challenge");
             _league.AddPoints(20);
+        }
+    }
+
+    public void OnMasterLevelCompleted(int level, int score, int stars, bool noDamage)
+    {
+        // Record-and-Reward: MasterModeService entscheidet ob Erstmalig/Verbesserung.
+        bool improved = _masterMode.RecordLevelCompleted(level, stars);
+        if (!improved) return;
+
+        // Gem-Reward: +1 Gem bei erstmaligem 3-Sterne-Master-Clear (100 Levels × 1G = 100G Endgame).
+        // improved==true + stars==3 garantiert dass dies der erste 3-Sterne-Clear für diesen Level ist
+        // (RecordLevelCompleted returnt false bei gleichem/schlechterem Stern-Stand).
+        if (stars == 3)
+        {
+            _gems.AddGems(1);
+        }
+
+        // Battle-Pass-XP-Bonus für Master-Clears (höher als Normal, weil schwerer)
+        _battlePass.AddXp(150, "master_level_complete");
+        if (stars == 3) _battlePass.AddXp(100, "master_three_stars");
+        if (noDamage) _battlePass.AddXp(75, "master_no_damage");
+
+        // Liga-Punkte: Gleiche Basis wie Normal, aber mit Master-Bonus
+        int leaguePoints = 15 + level / 10;
+        if (level % 10 == 0) leaguePoints += 25; // Master-Boss-Bonus
+        _league.AddPoints(leaguePoints);
+
+        // Master-Achievements (master_first, master_25, master_100) + deren Coin-Rewards
+        _achievements.OnMasterLevelCompleted(_masterMode.TotalMasterClears, _masterMode.TotalMaster3Stars);
+
+        // Champion-Skin: 100 Master-3-Sterne-Clears schalten master_champion frei
+        if (_masterMode.TotalMaster3Stars >= 100 && !_customization.IsPlayerSkinOwned("master_champion"))
+        {
+            _customization.GrantPlayerSkin("master_champion");
         }
     }
 

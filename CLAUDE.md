@@ -95,8 +95,8 @@ F:\Meine_Apps_Ava\
 | FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
 | WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
-| HandwerkerImperium | v2.0.32 | Banner + Rewarded | 4,99 Premium | Produktion |
-| BomberBlast | v2.0.33 | Banner + Rewarded | 1,99 remove_ads | Produktion |
+| HandwerkerImperium | v2.0.35 | Banner + Rewarded | 4,99 Premium | Produktion |
+| BomberBlast | v2.0.35 | Rewarded (Landscape, kein Banner) | 1,99 remove_ads | Produktion |
 | RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
 | BingXBot | v1.3.0 | Nein | Nein | Entwicklung (Pi-Server + Desktop + Android Remote, Multi-TF Standalone seit 15.04.2026, Buch-Only Strip Phase 2 21.04.2026 — 13 Non-Book-Features entfernt, DailyRisk+EntryMode.Both als User-Ausnahmen behalten) |
 | GardenControl | v1.0.0 | Nein | Nein | Entwicklung (Pi + Desktop + Android) |
@@ -458,6 +458,8 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel | `PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium` Key fehlt | `IPurchaseService.InitializeAsync()` in Loading-Pipeline aufrufen (parallel zum ersten Schritt). Stellt Käufe + Abos via Google Play Billing wieder her |
 | SKCanvasView Game-Loop startet nicht (Countdown stuck) | ContentControl+ViewLocator setzt DataContext verzögert → `InvalidateCanvasRequested` hat beim `StartGameLoop()` keinen Subscriber → Render-Timer startet nie | 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded als Backup, (3) OnPaintSurface Safety-Net startet Timer nach. `TrySubscribeToViewModel()` als zentrale idempotente Methode |
 | Bildschirm flimmert bei Tab-/View-Wechsel | `FadeInContentPanel()` setzt `Opacity=0` NACH Binding-Update → neuer View kurz sichtbar bei voller Opacity → schwarzer Blitz | `PageTransitionStarting` Event via `OnActivePageChanging()` — feuert VOR dem Wert-Wechsel. View setzt `Opacity=0` bevor Bindings die neue View einblenden |
+| Startup langsam bei vielen Child-ViewModels | MainViewModel mit N Child-VMs als Singletons löst beim ersten `GetRequiredService<MainViewModel>()` alle Services+VMs transitiv auf — 200-500ms auf Mid-Tier-Android wenn N>15 | Spät-unlocked VMs als `Lazy<T>` injizieren, in `EnsureXxxVm()`-Methode beim ersten Navigations-Ziel instanziieren + verdrahten. Public Property `XxxViewModel?` ist nullable → `[ObservableProperty]` feuert OnPropertyChanged bei Ensure → XAML ContentControl bindet dann ein. `AddLazyResolution()` Extension registriert `Lazy<T>` im DI-Container. LanguageChanged-Handler nur `Xxx?.UpdateLocalizedTexts()` (null-safe). Pattern in BomberBlast v2.0.34 eingeführt |
+| Firebase ServerValue.TIMESTAMP für Anti-Spoofing | Client-gesetzte Zeitstempel (`DateTime.UtcNow.ToString("O")`) sind manipulierbar → Leaderboards können gefälschte "Letzte Aktivität"-Werte bekommen | Firebase-Sentinel `{".sv":"timestamp"}` als Payload-Wert verwenden: `private static readonly Dictionary<string,string> FirebaseServerTimestamp = new() { [".sv"] = "timestamp" };`. Firebase löst das serverseitig in ms-Timestamp auf. Security-Rules können darauf Rate-Limits setzen. Keine client-seitige Logik darauf verlassen — nur als Anzeige/Rate-Limit |
 
 ---
 

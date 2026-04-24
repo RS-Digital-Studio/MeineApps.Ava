@@ -41,6 +41,9 @@ public sealed partial class GameEngine
 
             foreach (var cell in explosion.AffectedCells)
             {
+                // Block-Hit-Zellen fügen keinen Schaden zu — der Block absorbiert die Explosion.
+                if (cell.IsBlockHit) continue;
+
                 if (_player.GridX == cell.X && _player.GridY == cell.Y)
                 {
                     if (!_player.HasFlamepass && !_player.IsInvincible && !_player.HasSpawnProtection)
@@ -246,6 +249,13 @@ public sealed partial class GameEngine
 
             foreach (var cell in explosion.AffectedCells)
             {
+                // Block-Hit-Zellen fügen keinen Schaden zu — der Block absorbiert die Explosion
+                // auch wenn er während der Explosion-Dauer zerfällt (Block-Destroy = 0.3s,
+                // Explosion-Duration = 0.9s → Zelle wird vorzeitig frei, aber Gegner die
+                // dort einlaufen sollen NICHT sterben — sonst wirkt es als hätte die
+                // Explosion "durch den Block durchgeschossen").
+                if (cell.IsBlockHit) continue;
+
                 if (!_enemyPositionIndex.TryGetAt(cell.X, cell.Y, out var enemiesAtCell))
                     continue;
 

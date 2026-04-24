@@ -36,8 +36,11 @@ public sealed partial class MainViewModel : ViewModelBase
     public event Action<string>? ExitHintRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // CHILD VIEWMODELS
+    // CHILD VIEWMODELS (Eager)
     // ═══════════════════════════════════════════════════════════════════════
+    // Diese VMs werden direkt beim Start gebraucht (Menü, erste Level, Pause,
+    // GameOver, Settings). Sie bleiben Konstruktor-Parameter und werden sofort
+    // verdrahtet.
 
     public MainMenuViewModel MenuVm { get; }
     public GameViewModel GameVm { get; }
@@ -47,21 +50,34 @@ public sealed partial class MainViewModel : ViewModelBase
     public GameOverViewModel GameOverVm { get; }
     public PauseViewModel PauseVm { get; }
     public HelpViewModel HelpVm { get; }
-    public ShopViewModel ShopVm { get; }
-    public AchievementsViewModel AchievementsVm { get; }
-    public DailyChallengeViewModel DailyChallengeVm { get; }
     public VictoryViewModel VictoryVm { get; }
-    public LuckySpinViewModel LuckySpinVm { get; }
-    public WeeklyChallengeViewModel WeeklyChallengeVm { get; }
-    public StatisticsViewModel StatisticsVm { get; }
-    public QuickPlayViewModel QuickPlayVm { get; }
-    public DeckViewModel DeckVm { get; }
-    public DungeonViewModel DungeonVm { get; }
-    public BattlePassViewModel BattlePassVm { get; }
-    public CollectionViewModel CollectionVm { get; }
-    public LeagueViewModel LeagueVm { get; }
-    public ProfileViewModel ProfileVm { get; }
-    public GemShopViewModel GemShopVm { get; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CHILD VIEWMODELS (Lazy - spät unlocked)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Diese VMs werden erst bei progressivem Feature-Unlock (Level 3-30) gebraucht.
+    // Sie werden über Lazy<T> injiziert und erst beim ersten Navigations-Ziel
+    // instanziiert + verdrahtet (siehe EnsureXxxVm()-Methoden). Public Properties
+    // sind nullable und feuern OnPropertyChanged bei erstem Zugriff → XAML
+    // ContentControl bindet den VM erst dann ein.
+    //
+    // Startup-Ersparnis: ShopViewModel (~900 Zeilen), BattlePass, League,
+    // Collection, Dungeon und ihre Services werden nicht beim App-Start geladen.
+
+    [ObservableProperty] private ShopViewModel? _shopVm;
+    [ObservableProperty] private AchievementsViewModel? _achievementsVm;
+    [ObservableProperty] private DailyChallengeViewModel? _dailyChallengeVm;
+    [ObservableProperty] private LuckySpinViewModel? _luckySpinVm;
+    [ObservableProperty] private WeeklyChallengeViewModel? _weeklyChallengeVm;
+    [ObservableProperty] private StatisticsViewModel? _statisticsVm;
+    [ObservableProperty] private QuickPlayViewModel? _quickPlayVm;
+    [ObservableProperty] private DeckViewModel? _deckVm;
+    [ObservableProperty] private DungeonViewModel? _dungeonVm;
+    [ObservableProperty] private BattlePassViewModel? _battlePassVm;
+    [ObservableProperty] private CollectionViewModel? _collectionVm;
+    [ObservableProperty] private LeagueViewModel? _leagueVm;
+    [ObservableProperty] private ProfileViewModel? _profileVm;
+    [ObservableProperty] private GemShopViewModel? _gemShopVm;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -202,6 +218,22 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly SoundManager _soundManager;
     private readonly IAppLogger _logger;
 
+    // Lazy-VM-Factories (werden beim ersten EnsureXxxVm() resolved)
+    private readonly Lazy<ShopViewModel> _shopVmLazy;
+    private readonly Lazy<AchievementsViewModel> _achievementsVmLazy;
+    private readonly Lazy<DailyChallengeViewModel> _dailyChallengeVmLazy;
+    private readonly Lazy<LuckySpinViewModel> _luckySpinVmLazy;
+    private readonly Lazy<WeeklyChallengeViewModel> _weeklyChallengeVmLazy;
+    private readonly Lazy<StatisticsViewModel> _statisticsVmLazy;
+    private readonly Lazy<QuickPlayViewModel> _quickPlayVmLazy;
+    private readonly Lazy<DeckViewModel> _deckVmLazy;
+    private readonly Lazy<DungeonViewModel> _dungeonVmLazy;
+    private readonly Lazy<BattlePassViewModel> _battlePassVmLazy;
+    private readonly Lazy<CollectionViewModel> _collectionVmLazy;
+    private readonly Lazy<LeagueViewModel> _leagueVmLazy;
+    private readonly Lazy<ProfileViewModel> _profileVmLazy;
+    private readonly Lazy<GemShopViewModel> _gemShopVmLazy;
+
     /// <summary>
     /// Task für Cloud-Save-Initialisierung (kein Fire-and-Forget, vermeidet Race Conditions)
     /// </summary>
@@ -219,6 +251,7 @@ public sealed partial class MainViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     public MainViewModel(
+        // Eager VMs (sofort gebraucht)
         MainMenuViewModel menuVm,
         GameViewModel gameVm,
         LevelSelectViewModel levelSelectVm,
@@ -227,21 +260,23 @@ public sealed partial class MainViewModel : ViewModelBase
         GameOverViewModel gameOverVm,
         PauseViewModel pauseVm,
         HelpViewModel helpVm,
-        ShopViewModel shopVm,
-        AchievementsViewModel achievementsVm,
-        DailyChallengeViewModel dailyChallengeVm,
         VictoryViewModel victoryVm,
-        LuckySpinViewModel luckySpinVm,
-        WeeklyChallengeViewModel weeklyChallengeVm,
-        StatisticsViewModel statisticsVm,
-        QuickPlayViewModel quickPlayVm,
-        DeckViewModel deckVm,
-        DungeonViewModel dungeonVm,
-        BattlePassViewModel battlePassVm,
-        CollectionViewModel collectionVm,
-        LeagueViewModel leagueVm,
-        ProfileViewModel profileVm,
-        GemShopViewModel gemShopVm,
+        // Lazy VMs (erst bei progressivem Unlock gebraucht)
+        Lazy<ShopViewModel> shopVmLazy,
+        Lazy<AchievementsViewModel> achievementsVmLazy,
+        Lazy<DailyChallengeViewModel> dailyChallengeVmLazy,
+        Lazy<LuckySpinViewModel> luckySpinVmLazy,
+        Lazy<WeeklyChallengeViewModel> weeklyChallengeVmLazy,
+        Lazy<StatisticsViewModel> statisticsVmLazy,
+        Lazy<QuickPlayViewModel> quickPlayVmLazy,
+        Lazy<DeckViewModel> deckVmLazy,
+        Lazy<DungeonViewModel> dungeonVmLazy,
+        Lazy<BattlePassViewModel> battlePassVmLazy,
+        Lazy<CollectionViewModel> collectionVmLazy,
+        Lazy<LeagueViewModel> leagueVmLazy,
+        Lazy<ProfileViewModel> profileVmLazy,
+        Lazy<GemShopViewModel> gemShopVmLazy,
+        // Services
         ILocalizationService localization,
         IAdService adService,
         IPurchaseService purchaseService,
@@ -260,21 +295,23 @@ public sealed partial class MainViewModel : ViewModelBase
         GameOverVm = gameOverVm;
         PauseVm = pauseVm;
         HelpVm = helpVm;
-        ShopVm = shopVm;
-        AchievementsVm = achievementsVm;
-        DailyChallengeVm = dailyChallengeVm;
         VictoryVm = victoryVm;
-        LuckySpinVm = luckySpinVm;
-        WeeklyChallengeVm = weeklyChallengeVm;
-        StatisticsVm = statisticsVm;
-        QuickPlayVm = quickPlayVm;
-        DeckVm = deckVm;
-        DungeonVm = dungeonVm;
-        BattlePassVm = battlePassVm;
-        CollectionVm = collectionVm;
-        LeagueVm = leagueVm;
-        ProfileVm = profileVm;
-        GemShopVm = gemShopVm;
+
+        _shopVmLazy = shopVmLazy;
+        _achievementsVmLazy = achievementsVmLazy;
+        _dailyChallengeVmLazy = dailyChallengeVmLazy;
+        _luckySpinVmLazy = luckySpinVmLazy;
+        _weeklyChallengeVmLazy = weeklyChallengeVmLazy;
+        _statisticsVmLazy = statisticsVmLazy;
+        _quickPlayVmLazy = quickPlayVmLazy;
+        _deckVmLazy = deckVmLazy;
+        _dungeonVmLazy = dungeonVmLazy;
+        _battlePassVmLazy = battlePassVmLazy;
+        _collectionVmLazy = collectionVmLazy;
+        _leagueVmLazy = leagueVmLazy;
+        _profileVmLazy = profileVmLazy;
+        _gemShopVmLazy = gemShopVmLazy;
+
         _localizationService = localization;
         _adService = adService;
         _purchaseService = purchaseService;
@@ -284,6 +321,19 @@ public sealed partial class MainViewModel : ViewModelBase
         _cloudSaveService = cloudSaveService;
         _soundManager = soundManager;
         _logger = logger;
+
+        // ───────────────────────────────────────────────────────────────────
+        // Eager-VMs verdrahten (Navigation + Game-Juice)
+        // ───────────────────────────────────────────────────────────────────
+        WireCommon(menuVm);
+        WireCommon(gameVm);
+        WireCommon(levelSelectVm);
+        WireCommon(settingsVm);
+        WireCommon(highScoresVm);
+        WireCommon(gameOverVm);
+        WireCommon(pauseVm);
+        WireCommon(helpVm);
+        WireCommon(victoryVm);
 
         // GameOverVm-spezifische Events (Confirmation Dialog)
         GameOverVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
@@ -296,18 +346,6 @@ public sealed partial class MainViewModel : ViewModelBase
                 ? $"Achievement: {name}! +{achievement.CoinReward} Coins"
                 : $"Achievement: {name}!";
             FloatingTextRequested?.Invoke(text, "gold");
-        };
-
-        // Shop: Kauf-Feedback
-        ShopVm.PurchaseSucceeded += name =>
-        {
-            FloatingTextRequested?.Invoke(name, "success");
-            CelebrationRequested?.Invoke();
-        };
-        ShopVm.InsufficientFunds += () =>
-        {
-            var msg = localization.GetString("ShopNotEnoughCoins") ?? "Not enough coins!";
-            FloatingTextRequested?.Invoke(msg, "error");
         };
 
         // Ad-Banner: In BomberBlast (Landscape) kein Banner - nur Rewarded Ads
@@ -325,71 +363,27 @@ public sealed partial class MainViewModel : ViewModelBase
         pauseVm.ResumeRequested += () => gameVm.ResumeCommand.Execute(null);
         pauseVm.RestartRequested += () => gameVm.RestartCommand.Execute(null);
 
-        // Navigation + Game Juice Events per Interface verdrahten (kein Reflection)
-        INavigable[] allVms = [menuVm, gameVm, levelSelectVm, settingsVm, highScoresVm, gameOverVm,
-            pauseVm, helpVm, shopVm, achievementsVm, dailyChallengeVm, victoryVm, luckySpinVm,
-            weeklyChallengeVm, statisticsVm, quickPlayVm, deckVm, dungeonVm, battlePassVm,
-            collectionVm, leagueVm, profileVm, gemShopVm];
-        foreach (var vm in allVms)
-        {
-            vm.NavigationRequested += request => NavigateTo(request);
-            if (vm is IGameJuiceEmitter emitter)
-            {
-                emitter.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
-                emitter.CelebrationRequested += () => CelebrationRequested?.Invoke();
-            }
-        }
-
-        // Battle Pass Premium-Kauf anfordern
-        BattlePassVm.PremiumPurchaseRequested += async () =>
-        {
-            var success = await _purchaseService.PurchaseConsumableAsync("battle_pass_premium");
-            if (success)
-                BattlePassVm.OnPremiumPurchaseConfirmed();
-        };
-
-        // Dungeon Ad-Run: Rewarded Ad zeigen und bei Erfolg melden (Cooldown beachten)
-        DungeonVm.AdRunRequested += async () =>
-        {
-            var result = await _rewardedAdService.ShowAdAsync("dungeon_run");
-            if (result)
-            {
-                RewardedAdCooldownTracker.RecordAdShown();
-                DungeonVm.OnAdRunRewarded();
-            }
-        };
-
-        // Dungeon Master Pass: IAP-Kauf (permanenter 2x DungeonCoin-Boost)
-        DungeonVm.DungeonMasterPassRequested += async () =>
-        {
-            var success = await _purchaseService.PurchaseConsumableAsync("dungeon_master_pass");
-            if (success)
-                DungeonVm.OnDungeonMasterPassPurchased();
-        };
-
-        // Dialog-Events von SettingsVM + ShopVM verdrahten
+        // Dialog-Events von SettingsVM verdrahten (SettingsVm ist eager)
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
         settingsVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
-        shopVm.MessageRequested += (t, m) => ShowAlertDialog(t, m, "OK");
-        shopVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
-        gemShopVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
 
+        // LanguageChanged: Nur bereits instanziierte (lazy) VMs neu lokalisieren.
+        // Eager MenuVm + nicht-instanziierte VMs werden beim ersten OnAppearing() frisch geladen.
         localization.LanguageChanged += (_, _) =>
         {
-            // Child VMs lesen lokalisierte Texte beim nächsten OnAppearing neu
             MenuVm.OnAppearing();
-            ShopVm.UpdateLocalizedTexts();
-            QuickPlayVm.UpdateLocalizedTexts();
-            DeckVm.UpdateLocalizedTexts();
-            DungeonVm.UpdateLocalizedTexts();
-            BattlePassVm.UpdateLocalizedTexts();
-            CollectionVm.UpdateLocalizedTexts();
-            LeagueVm.UpdateLocalizedTexts();
-            ProfileVm.UpdateLocalizedTexts();
-            GemShopVm.UpdateLocalizedTexts();
-            StatisticsVm.UpdateLocalizedTexts();
-            DailyChallengeVm.UpdateLocalizedTexts();
-            WeeklyChallengeVm.UpdateLocalizedTexts();
+            ShopVm?.UpdateLocalizedTexts();
+            QuickPlayVm?.UpdateLocalizedTexts();
+            DeckVm?.UpdateLocalizedTexts();
+            DungeonVm?.UpdateLocalizedTexts();
+            BattlePassVm?.UpdateLocalizedTexts();
+            CollectionVm?.UpdateLocalizedTexts();
+            LeagueVm?.UpdateLocalizedTexts();
+            ProfileVm?.UpdateLocalizedTexts();
+            GemShopVm?.UpdateLocalizedTexts();
+            StatisticsVm?.UpdateLocalizedTexts();
+            DailyChallengeVm?.UpdateLocalizedTexts();
+            WeeklyChallengeVm?.UpdateLocalizedTexts();
         };
 
         // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget)
@@ -401,6 +395,191 @@ public sealed partial class MainViewModel : ViewModelBase
 
         // Menü initialisieren
         menuVm.OnAppearing();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LAZY-VM-ENSURE-METHODEN
+    // ═══════════════════════════════════════════════════════════════════════
+    // Jede EnsureXxxVm() löst Lazy<T>.Value auf (instanziiert den VM), verdrahtet
+    // Navigation + Game-Juice-Events sowie VM-spezifische Dialog/IAP-Events,
+    // setzt anschliessend die ObservableProperty (feuert OnPropertyChanged →
+    // XAML ContentControl bindet den VM dann ein). Idempotent: Mehrfach-Aufrufe
+    // liefern dieselbe Instanz.
+
+    /// <summary>
+    /// Gemeinsame Verdrahtung (Navigation + Game-Juice) für alle VMs.
+    /// </summary>
+    private void WireCommon(INavigable vm)
+    {
+        vm.NavigationRequested += NavigateTo;
+        if (vm is IGameJuiceEmitter emitter)
+        {
+            emitter.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
+            emitter.CelebrationRequested += () => CelebrationRequested?.Invoke();
+        }
+    }
+
+    private ShopViewModel EnsureShopVm()
+    {
+        if (ShopVm is { } existing) return existing;
+        var vm = _shopVmLazy.Value;
+        WireCommon(vm);
+        vm.PurchaseSucceeded += name =>
+        {
+            FloatingTextRequested?.Invoke(name, "success");
+            CelebrationRequested?.Invoke();
+        };
+        vm.InsufficientFunds += () =>
+        {
+            var msg = _localizationService.GetString("ShopNotEnoughCoins") ?? "Not enough coins!";
+            FloatingTextRequested?.Invoke(msg, "error");
+        };
+        vm.MessageRequested += (t, m) => ShowAlertDialog(t, m, "OK");
+        vm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
+        ShopVm = vm;
+        return vm;
+    }
+
+    private AchievementsViewModel EnsureAchievementsVm()
+    {
+        if (AchievementsVm is { } existing) return existing;
+        var vm = _achievementsVmLazy.Value;
+        WireCommon(vm);
+        AchievementsVm = vm;
+        return vm;
+    }
+
+    private DailyChallengeViewModel EnsureDailyChallengeVm()
+    {
+        if (DailyChallengeVm is { } existing) return existing;
+        var vm = _dailyChallengeVmLazy.Value;
+        WireCommon(vm);
+        DailyChallengeVm = vm;
+        return vm;
+    }
+
+    private LuckySpinViewModel EnsureLuckySpinVm()
+    {
+        if (LuckySpinVm is { } existing) return existing;
+        var vm = _luckySpinVmLazy.Value;
+        WireCommon(vm);
+        LuckySpinVm = vm;
+        return vm;
+    }
+
+    private WeeklyChallengeViewModel EnsureWeeklyChallengeVm()
+    {
+        if (WeeklyChallengeVm is { } existing) return existing;
+        var vm = _weeklyChallengeVmLazy.Value;
+        WireCommon(vm);
+        WeeklyChallengeVm = vm;
+        return vm;
+    }
+
+    private StatisticsViewModel EnsureStatisticsVm()
+    {
+        if (StatisticsVm is { } existing) return existing;
+        var vm = _statisticsVmLazy.Value;
+        WireCommon(vm);
+        StatisticsVm = vm;
+        return vm;
+    }
+
+    private QuickPlayViewModel EnsureQuickPlayVm()
+    {
+        if (QuickPlayVm is { } existing) return existing;
+        var vm = _quickPlayVmLazy.Value;
+        WireCommon(vm);
+        QuickPlayVm = vm;
+        return vm;
+    }
+
+    private DeckViewModel EnsureDeckVm()
+    {
+        if (DeckVm is { } existing) return existing;
+        var vm = _deckVmLazy.Value;
+        WireCommon(vm);
+        DeckVm = vm;
+        return vm;
+    }
+
+    private DungeonViewModel EnsureDungeonVm()
+    {
+        if (DungeonVm is { } existing) return existing;
+        var vm = _dungeonVmLazy.Value;
+        WireCommon(vm);
+        // Dungeon Ad-Run: Rewarded Ad zeigen und bei Erfolg melden (Cooldown beachten)
+        vm.AdRunRequested += async () =>
+        {
+            var result = await _rewardedAdService.ShowAdAsync("dungeon_run");
+            if (result)
+            {
+                RewardedAdCooldownTracker.RecordAdShown();
+                vm.OnAdRunRewarded();
+            }
+        };
+        // Dungeon Master Pass: IAP-Kauf (permanenter 2x DungeonCoin-Boost)
+        vm.DungeonMasterPassRequested += async () =>
+        {
+            var success = await _purchaseService.PurchaseConsumableAsync("dungeon_master_pass");
+            if (success)
+                vm.OnDungeonMasterPassPurchased();
+        };
+        DungeonVm = vm;
+        return vm;
+    }
+
+    private BattlePassViewModel EnsureBattlePassVm()
+    {
+        if (BattlePassVm is { } existing) return existing;
+        var vm = _battlePassVmLazy.Value;
+        WireCommon(vm);
+        // Battle Pass Premium-Kauf anfordern
+        vm.PremiumPurchaseRequested += async () =>
+        {
+            var success = await _purchaseService.PurchaseConsumableAsync("battle_pass_premium");
+            if (success)
+                vm.OnPremiumPurchaseConfirmed();
+        };
+        BattlePassVm = vm;
+        return vm;
+    }
+
+    private CollectionViewModel EnsureCollectionVm()
+    {
+        if (CollectionVm is { } existing) return existing;
+        var vm = _collectionVmLazy.Value;
+        WireCommon(vm);
+        CollectionVm = vm;
+        return vm;
+    }
+
+    private LeagueViewModel EnsureLeagueVm()
+    {
+        if (LeagueVm is { } existing) return existing;
+        var vm = _leagueVmLazy.Value;
+        WireCommon(vm);
+        LeagueVm = vm;
+        return vm;
+    }
+
+    private ProfileViewModel EnsureProfileVm()
+    {
+        if (ProfileVm is { } existing) return existing;
+        var vm = _profileVmLazy.Value;
+        WireCommon(vm);
+        ProfileVm = vm;
+        return vm;
+    }
+
+    private GemShopViewModel EnsureGemShopVm()
+    {
+        if (GemShopVm is { } existing) return existing;
+        var vm = _gemShopVmLazy.Value;
+        WireCommon(vm);
+        vm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
+        GemShopVm = vm;
+        return vm;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -435,7 +614,7 @@ public sealed partial class MainViewModel : ViewModelBase
             GoLeague => "League",
             GoGemShop => "GemShop",
             GoBack => "..",
-            GoGame g => $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}",
+            GoGame g => $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}&master={g.MasterMode}",
             GoGameOver go => $"GameOver?score={go.Score}&level={go.Level}&highscore={go.IsHighScore}&mode={go.Mode}&coins={go.Coins}&levelcomplete={go.LevelComplete}&cancontinue={go.CanContinue}&enemypts={go.EnemyPoints}&timebonus={go.TimeBonus}&effbonus={go.EfficiencyBonus}&multiplier={go.Multiplier.ToString(System.Globalization.CultureInfo.InvariantCulture)}&kills={go.Kills}&survivaltime={go.SurvivalTime.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
             GoVictory v => $"Victory?score={v.Score}&coins={v.Coins}",
             GoResetThen r => $"//MainMenu/{NavigationRequestToRoute(r.Then)}",
@@ -449,13 +628,20 @@ public sealed partial class MainViewModel : ViewModelBase
     /// </summary>
     private string NavigationRequestToRoute(NavigationRequest request)
     {
-        // Rekursiv: gleiche Logik wie NavigateTo, aber gibt String zurück
-        return request switch
+        // Rekursiv: gleiche Logik wie NavigateTo, aber gibt String zurück.
+        // Aktuell wird GoResetThen nur mit GoGame/GoMainMenu aufgerufen.
+        // Bei Erweiterung um neue Inner-Requests muss diese Methode mit-erweitert werden
+        // — Logging fängt silent-fallbacks ab.
+        switch (request)
         {
-            GoGame g => $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}",
-            GoMainMenu => "MainMenu",
-            _ => "MainMenu"
-        };
+            case GoGame g:
+                return $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}&master={g.MasterMode}";
+            case GoMainMenu:
+                return "MainMenu";
+            default:
+                _logger.LogWarning($"NavigationRequestToRoute: Unsupported inner request {request.GetType().Name} → fallback MainMenu");
+                return "MainMenu";
+        }
     }
 
     /// <summary>
@@ -519,6 +705,7 @@ public sealed partial class MainViewModel : ViewModelBase
                     var boost = "";
                     var floor = 0;
                     var seed = 0;
+                    var master = false;
                     foreach (var param in query.Split('&'))
                     {
                         var parts = param.Split('=');
@@ -531,9 +718,10 @@ public sealed partial class MainViewModel : ViewModelBase
                             if (parts[0] == "boost") boost = parts[1];
                             if (parts[0] == "floor") int.TryParse(parts[1], out floor);
                             if (parts[0] == "seed") int.TryParse(parts[1], out seed);
+                            if (parts[0] == "master") bool.TryParse(parts[1], out master);
                         }
                     }
-                    GameVm.SetParameters(mode, level, continueMode, boost, difficulty, floor, seed);
+                    GameVm.SetParameters(mode, level, continueMode, boost, difficulty, floor, seed, master);
                 }
                 // Spiel starten (Engine initialisieren + 60fps Loop starten)
                 await GameVm.OnAppearingAsync();
@@ -608,12 +796,12 @@ public sealed partial class MainViewModel : ViewModelBase
 
                     // Quick-Play Score an QuickPlayVM für Challenge-Sharing weiterreichen
                     if (mode == "quick" && score > 0)
-                        QuickPlayVm.SetLastScore(score);
+                        EnsureQuickPlayVm().SetLastScore(score);
 
                     // Daily Challenge: Score melden + Streak-Bonus vergeben
                     if (mode == "daily" && score > 0)
                     {
-                        DailyChallengeVm.SubmitScore(score);
+                        EnsureDailyChallengeVm().SubmitScore(score);
                     }
 
                     // Level Complete → Confetti + Floating Text
@@ -631,26 +819,26 @@ public sealed partial class MainViewModel : ViewModelBase
             case "Shop":
                 IsShopActive = true;
                 IsShopSpinTab = false;
-                ShopVm.OnAppearing();
+                EnsureShopVm().OnAppearing();
                 break;
 
             case "LuckySpin":
                 IsShopActive = true;
                 IsShopSpinTab = true;
-                LuckySpinVm.OnAppearing();
+                EnsureLuckySpinVm().OnAppearing();
                 break;
 
             // Profil (kombiniert mit Erfolge)
             case "Profile":
                 IsProfileActive = true;
                 IsProfileAchievementsTab = false;
-                ProfileVm.OnAppearing();
+                EnsureProfileVm().OnAppearing();
                 break;
 
             case "Achievements":
                 IsProfileActive = true;
                 IsProfileAchievementsTab = true;
-                AchievementsVm.OnAppearing();
+                EnsureAchievementsVm().OnAppearing();
                 break;
 
             // Einstellungen (kombiniert mit Hilfe)
@@ -671,13 +859,13 @@ public sealed partial class MainViewModel : ViewModelBase
             case "Deck":
                 IsCardsActive = true;
                 IsCardsCollectionTab = false;
-                DeckVm.OnAppearing();
+                EnsureDeckVm().OnAppearing();
                 break;
 
             case "Collection":
                 IsCardsActive = true;
                 IsCardsCollectionTab = true;
-                CollectionVm.OnAppearing();
+                EnsureCollectionVm().OnAppearing();
                 break;
 
             // Herausforderungen (Daily + Missions kombiniert)
@@ -685,43 +873,43 @@ public sealed partial class MainViewModel : ViewModelBase
             case "DailyChallenge":
                 IsChallengesActive = true;
                 IsChallengesMissionsTab = false;
-                DailyChallengeVm.OnAppearing();
+                EnsureDailyChallengeVm().OnAppearing();
                 break;
 
             case "WeeklyChallenge":
                 IsChallengesActive = true;
                 IsChallengesMissionsTab = true;
-                WeeklyChallengeVm.OnAppearing();
+                EnsureWeeklyChallengeVm().OnAppearing();
                 break;
 
             case "Statistics":
                 IsStatisticsActive = true;
-                StatisticsVm.OnAppearing();
+                EnsureStatisticsVm().OnAppearing();
                 break;
 
             case "QuickPlay":
                 IsQuickPlayActive = true;
-                QuickPlayVm.OnAppearing();
+                EnsureQuickPlayVm().OnAppearing();
                 break;
 
             case "Dungeon":
                 IsDungeonActive = true;
-                DungeonVm.OnAppearing();
+                EnsureDungeonVm().OnAppearing();
                 break;
 
             case "BattlePass":
                 IsBattlePassActive = true;
-                BattlePassVm.OnAppearing();
+                EnsureBattlePassVm().OnAppearing();
                 break;
 
             case "League":
                 IsLeagueActive = true;
-                LeagueVm.OnAppearing();
+                EnsureLeagueVm().OnAppearing();
                 break;
 
             case "GemShop":
                 IsGemShopActive = true;
-                GemShopVm.OnAppearing();
+                EnsureGemShopVm().OnAppearing();
                 break;
 
             case "Victory":
@@ -821,16 +1009,16 @@ public sealed partial class MainViewModel : ViewModelBase
     // ═══════════════════════════════════════════════════════════════════════
 
     [RelayCommand]
-    private void SwitchToShopTab() { IsShopSpinTab = false; ShopVm.OnAppearing(); }
+    private void SwitchToShopTab() { IsShopSpinTab = false; EnsureShopVm().OnAppearing(); }
 
     [RelayCommand]
-    private void SwitchToSpinTab() { IsShopSpinTab = true; LuckySpinVm.OnAppearing(); }
+    private void SwitchToSpinTab() { IsShopSpinTab = true; EnsureLuckySpinVm().OnAppearing(); }
 
     [RelayCommand]
-    private void SwitchToProfileTab() { IsProfileAchievementsTab = false; ProfileVm.OnAppearing(); }
+    private void SwitchToProfileTab() { IsProfileAchievementsTab = false; EnsureProfileVm().OnAppearing(); }
 
     [RelayCommand]
-    private void SwitchToAchievementsTab() { IsProfileAchievementsTab = true; AchievementsVm.OnAppearing(); }
+    private void SwitchToAchievementsTab() { IsProfileAchievementsTab = true; EnsureAchievementsVm().OnAppearing(); }
 
     [RelayCommand]
     private void SwitchToSettingsTab() { IsSettingsHelpTab = false; SettingsVm.OnAppearing(); }
@@ -839,16 +1027,16 @@ public sealed partial class MainViewModel : ViewModelBase
     private void SwitchToHelpTab() { IsSettingsHelpTab = true; }
 
     [RelayCommand]
-    private void SwitchToDeckTab() { IsCardsCollectionTab = false; DeckVm.OnAppearing(); }
+    private void SwitchToDeckTab() { IsCardsCollectionTab = false; EnsureDeckVm().OnAppearing(); }
 
     [RelayCommand]
-    private void SwitchToCollectionTab() { IsCardsCollectionTab = true; CollectionVm.OnAppearing(); }
+    private void SwitchToCollectionTab() { IsCardsCollectionTab = true; EnsureCollectionVm().OnAppearing(); }
 
     [RelayCommand]
-    private void SwitchToDailyChallengeTab() { IsChallengesMissionsTab = false; DailyChallengeVm.OnAppearing(); }
+    private void SwitchToDailyChallengeTab() { IsChallengesMissionsTab = false; EnsureDailyChallengeVm().OnAppearing(); }
 
     [RelayCommand]
-    private void SwitchToMissionsTab() { IsChallengesMissionsTab = true; WeeklyChallengeVm.OnAppearing(); }
+    private void SwitchToMissionsTab() { IsChallengesMissionsTab = true; EnsureWeeklyChallengeVm().OnAppearing(); }
 
     // ═══════════════════════════════════════════════════════════════════════
     // BACK-NAVIGATION (Android Hardware-Zurücktaste)

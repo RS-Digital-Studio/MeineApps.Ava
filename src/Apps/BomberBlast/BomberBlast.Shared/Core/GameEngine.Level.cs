@@ -17,14 +17,27 @@ namespace BomberBlast.Core;
 public sealed partial class GameEngine
 {
     /// <summary>
-    /// Story-Modus starten
+    /// Story-Modus starten. Bei masterMode=true werden Gegner 50% schneller und
+    /// Low/Normal-Typen zu High-Typen aufgewertet (siehe ApplyMasterModeEnemyUpgrade).
+    /// Master-Mode-Parameter wird gegen <see cref="IMasterModeService.IsUnlocked"/>
+    /// validiert — falscher Navigation-Parameter (z.B. durch Deep-Link) wird auf
+    /// normalen Story-Modus zurückgesetzt.
     /// </summary>
-    public async Task StartStoryModeAsync(int levelNumber)
+    public async Task StartStoryModeAsync(int levelNumber, bool masterMode = false)
     {
         _isDailyChallenge = false;
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
+        // Defense-in-Depth: Master-Mode nur wenn wirklich unlocked.
+        // Downgrade auf Normal-Mode wird geloggt — hilft beim Debuggen falls Navigation
+        // einen unerwarteten masterMode=true liefert (z.B. durch veraltete Preference).
+        _isMasterMode = masterMode && _masterModeService.IsUnlocked;
+        if (masterMode && !_isMasterMode)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[GameEngine] Master-Mode für L{levelNumber} angefordert aber !IsUnlocked → Normal-Mode-Fallback");
+        }
         _currentLevelNumber = levelNumber;
         _currentLevel = LevelGenerator.GenerateLevel(levelNumber, _progressService.HighestCompletedLevel);
         _activeMutator = _currentLevel.Mutator;
@@ -34,6 +47,7 @@ public sealed partial class GameEngine
         ApplyUpgrades();
         BomberBlast.Core.LevelGeneration.MutatorEffects.Apply(_player, _activeMutator);
         await LoadLevelAsync();
+        if (_isMasterMode) ApplyMasterModeEnemyUpgrade();
 
         // Welt-spezifische Musik (Boss-Track hat Priorität, sonst Welt-Track mit Gameplay-Fallback)
         int world = (_currentLevelNumber - 1) / 10 + 1;
@@ -73,6 +87,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
+        _isMasterMode = false;
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 99;
         _currentLevel = LevelGenerator.GenerateDailyChallengeLevel(seed);
@@ -97,6 +112,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = true;
         _isDungeonRun = false;
+        _isMasterMode = false;
         _activeMutator = LevelMutator.None;
         _quickPlayDifficulty = difficulty;
         _currentLevelNumber = difficulty * 10; // Für Welt-Palette
@@ -124,6 +140,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = true;
         _isQuickPlayMode = false;
         _isDungeonRun = false;
+        _isMasterMode = false;
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 1;
         _currentLevel = LevelGenerator.GenerateSurvivalLevel();
@@ -154,6 +171,7 @@ public sealed partial class GameEngine
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
         _isDungeonRun = true;
+        _isMasterMode = false;
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = Math.Min(floor * 10, 100); // Floor → Schwierigkeit (World-Mapping)
 
@@ -399,6 +417,9 @@ public sealed partial class GameEngine
         _scoreAtLevelStart = _player.Score;
         _playerDamagedThisLevel = false;
 
+        // Deck-Telemetrie: Counter für dieses Level zurücksetzen
+        _specialBombTypesUsedInLevel.Clear();
+
         // Entities leeren
         _enemies.Clear();
         _enemiesRemainingDirty = true;
@@ -486,6 +507,22 @@ public sealed partial class GameEngine
 
         // Nebel aktivieren fuer Schattenwelt (Welt 10)
         _renderer.SetFogEnabled(_currentLevel.Mechanic == WorldMechanic.Fog);
+
+        // Fog-of-War (v2.0.35): Ab L50 Normal-Modus ODER Master-Modus ab L1.
+        // Welt 10 nutzt das simplere FogOverlay (oben) — FoW nur für L50-90.
+        // Sichtradius schrumpft mit Schwierigkeit: L50-59 → 5, L60-89 → 4, Master → 4.
+        bool isStoryMode = !_isDailyChallenge && !_isSurvivalMode && !_isQuickPlayMode && !_isDungeonRun;
+        bool fowActive = isStoryMode
+            && (_isMasterMode || (_currentLevelNumber >= 50 && _currentLevel.Mechanic != WorldMechanic.Fog));
+        if (fowActive)
+        {
+            int radius = (_currentLevelNumber >= 60 || _isMasterMode) ? 4 : 5;
+            _renderer.FogOfWar.Enable(_grid.Width, _grid.Height, radius);
+        }
+        else
+        {
+            _renderer.FogOfWar.Disable();
+        }
 
         // Timer zurücksetzen
         _timer.Reset(_currentLevel.TimeLimit);
@@ -675,6 +712,45 @@ public sealed partial class GameEngine
         }
     }
 
+    /// <summary>
+    /// Master Mode Enemy-Upgrade: Ersetzt Low/Normal-Intelligence Gegner durch
+    /// stärkere Varianten. Behält Position + IsMiniSplitter-Flag. Wird EINMAL nach
+    /// LoadLevelAsync aufgerufen (Bosse + Spezial-Gegner bleiben unverändert).
+    /// </summary>
+    /// <remarks>
+    /// Upgrade-Tabelle:
+    /// Ballom → Minvo, Onil → Pass, Doll → Pontan,
+    /// Minvo → Pass, Kondoria → Pontan, Ovapi → Pontan.
+    /// Pass/Pontan (bereits Max-Intel) und Spezial-Typen
+    /// (Tanker/Ghost/Splitter/Mimic) bleiben unverändert.
+    /// </remarks>
+    private void ApplyMasterModeEnemyUpgrade()
+    {
+        for (int i = 0; i < _enemies.Count; i++)
+        {
+            var enemy = _enemies[i];
+            if (enemy is BossEnemy) continue;
+            if (enemy.IsMiniSplitter) continue; // Splits bleiben Splitter
+
+            var upgraded = enemy.Type switch
+            {
+                EnemyType.Ballom => EnemyType.Minvo,
+                EnemyType.Onil => EnemyType.Pass,
+                EnemyType.Doll => EnemyType.Pontan,
+                EnemyType.Minvo => EnemyType.Pass,
+                EnemyType.Kondoria => EnemyType.Pontan,
+                EnemyType.Ovapi => EnemyType.Pontan,
+                _ => enemy.Type // Pass, Pontan, Tanker, Ghost, Splitter, Mimic bleiben
+            };
+
+            if (upgraded != enemy.Type)
+            {
+                var replacement = Enemy.CreateAtGrid(enemy.GridX, enemy.GridY, upgraded);
+                _enemies[i] = replacement;
+            }
+        }
+    }
+
     private void UpdateEnemies(float deltaTime)
     {
         // Gefahrenzone EINMAL pro Frame vorberechnen (nicht pro Gegner → P-R6-1)
@@ -706,8 +782,8 @@ public sealed partial class GameEngine
                 if (boss.IsActive && !boss.IsDying)
                 {
                     // Verlangsamung: Frost (50%), TimeWarp (50%), BlackHole (70%) - kumulativ
-                    // DoubleSpeed-Mutator: Gegner 50% schneller
-                    float bossDt = _activeMutator == LevelMutator.DoubleSpeed ? deltaTime * 1.5f : deltaTime;
+                    // DoubleSpeed-Mutator + Master Mode: Gegner 50% schneller (nicht kombinierbar, max 1.5x)
+                    float bossDt = (_activeMutator == LevelMutator.DoubleSpeed || _isMasterMode) ? deltaTime * 1.5f : deltaTime;
                     var bossCell = _grid.TryGetCell(boss.GridX, boss.GridY);
                     if (bossCell != null)
                     {
@@ -731,8 +807,8 @@ public sealed partial class GameEngine
             if (enemy.IsActive && !enemy.IsDying)
             {
                 // Verlangsamung: Frost (50%), TimeWarp (50%), BlackHole (70%) - kumulativ
-                // DoubleSpeed-Mutator: Gegner 50% schneller
-                float enemyDt = _activeMutator == LevelMutator.DoubleSpeed ? deltaTime * 1.5f : deltaTime;
+                // DoubleSpeed-Mutator + Master Mode: Gegner 50% schneller (nicht kombinierbar, max 1.5x)
+                float enemyDt = (_activeMutator == LevelMutator.DoubleSpeed || _isMasterMode) ? deltaTime * 1.5f : deltaTime;
                 var enemyCell = _grid.TryGetCell(enemy.GridX, enemy.GridY);
                 if (enemyCell != null)
                 {
@@ -906,6 +982,13 @@ public sealed partial class GameEngine
         _timer.Pause();
         _vibration.VibratePattern();
 
+        // Deck-Balancing-Telemetrie: Level-Erfolg mit allen eingesetzten Spezial-Bomben melden
+        if (_specialBombTypesUsedInLevel.Count > 0)
+        {
+            _deckTelemetry.RecordLevelStartedWithBombs(_specialBombTypesUsedInLevel);
+            _deckTelemetry.RecordLevelCompletedWithBombs(_specialBombTypesUsedInLevel);
+        }
+
         // Enemy-Kill-Punkte merken (nur Level-Score, nicht kumulierter Gesamtscore)
         LastEnemyKillPoints = _player.Score - _scoreAtLevelStart;
 
@@ -1035,6 +1118,28 @@ public sealed partial class GameEngine
         }
 
         // Achievements prüfen (G-R6-1)
+        // Master Mode: Separater Pfad, kein Normal-Progress-Update (damit Story-Sterne
+        // unverändert bleiben und Master-Clears isoliert getrackt werden).
+        if (_isMasterMode && !_isQuickPlayMode)
+        {
+            int baseScore = _progressService.GetBaseScoreForLevel(_currentLevelNumber);
+            int masterLevelScore = _player.Score - _scoreAtLevelStart + timeBonus + efficiencyBonus;
+            int masterStars = masterLevelScore switch
+            {
+                _ when masterLevelScore >= baseScore * 3 => 3,
+                _ when masterLevelScore >= baseScore * 2 => 2,
+                _ when masterLevelScore >= baseScore => 1,
+                _ => 0
+            };
+            _levelCompleteStars = masterStars;
+
+            _tracking.OnMasterLevelCompleted(
+                _currentLevelNumber, _player.Score, masterStars, !_playerDamagedThisLevel);
+
+            _tracking.FlushIfDirty();
+            return; // Kein weiteres Normal-Mode-Tracking
+        }
+
         // Score + BestScore ZUERST speichern, damit GetLevelStars/GetTotalStars korrekt sind
         // Quick-Play: Kein Progress/Sterne/Achievements speichern (Spaß-Modus ohne Fortschritt)
         if (!_isQuickPlayMode)
@@ -1068,10 +1173,11 @@ public sealed partial class GameEngine
             float timeUsed = _currentLevel!.TimeLimit - _timer.RemainingTime;
 
             // Tracking: Level-Complete (Achievement + Liga + BattlePass + Missionen)
+            bool isMutatorLevel = _currentLevel != null && _currentLevel.Mutator != LevelMutator.None;
             _tracking.OnStoryLevelCompleted(
                 _currentLevelNumber, _player.Score, stars, _bombsUsed,
                 _timer.RemainingTime, timeUsed, !_playerDamagedThisLevel,
-                _progressService.GetTotalStars(), _isDailyChallenge);
+                _progressService.GetTotalStars(), _isDailyChallenge, isMutatorLevel);
 
             // Achievement: Prüfe ob die Welt jetzt perfekt ist (alle 30 Sterne)
             int currentWorld = (_currentLevelNumber - 1) / 10 + 1;

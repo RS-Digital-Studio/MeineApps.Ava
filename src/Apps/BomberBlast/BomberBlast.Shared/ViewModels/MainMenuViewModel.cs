@@ -31,6 +31,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     private readonly ILeagueService _leagueService;
     private readonly IStarterPackService _starterPackService;
     private readonly IPreferencesService _preferencesService;
+    private readonly IRewardedAdService _rewardedAdService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -91,6 +92,8 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     [ObservableProperty] private bool _isLuckySpinUnlocked;
     [ObservableProperty] private bool _isStatisticsUnlocked;
     [ObservableProperty] private bool _isDeckUnlocked;
+    [ObservableProperty] private bool _isDailyMissionsUnlocked;   // L17 (neu v2.0.34 — schließt Dead-Zone L15→L20)
+    [ObservableProperty] private bool _isCustomizationUnlocked;   // L18 (neu v2.0.34 — Skins/Trails/Victories)
     [ObservableProperty] private bool _isDungeonUnlocked;
     [ObservableProperty] private bool _isBattlePassUnlocked;
     [ObservableProperty] private bool _isCollectionUnlocked;
@@ -108,6 +111,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     [ObservableProperty] private bool _isDeckNew;
     [ObservableProperty] private bool _isDailyMissionsNew;
     [ObservableProperty] private bool _isWeeklyMissionsNew;
+    [ObservableProperty] private bool _isCustomizationNew;
     [ObservableProperty] private bool _isDungeonNew;
     [ObservableProperty] private bool _isLeagueNew;
     [ObservableProperty] private bool _isBattlePassNew;
@@ -141,7 +145,8 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         IReviewService reviewService, IDailyChallengeService dailyChallengeService,
         IWeeklyChallengeService weeklyChallengeService, IDailyMissionService dailyMissionService,
         IBattlePassService battlePassService, ILeagueService leagueService,
-        IStarterPackService starterPackService, IPreferencesService preferencesService)
+        IStarterPackService starterPackService, IPreferencesService preferencesService,
+        IRewardedAdService rewardedAdService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
@@ -157,6 +162,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         _leagueService = leagueService;
         _starterPackService = starterPackService;
         _preferencesService = preferencesService;
+        _rewardedAdService = rewardedAdService;
 
         // Live-Update bei Coin-/Gem-Änderungen (z.B. aus Shop, Rewarded Ads)
         _coinService.BalanceChanged += OnBalanceChanged;
@@ -280,6 +286,7 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
             case "deck": IsDeckNew = false; break;
             case "daily_missions": IsDailyMissionsNew = false; break;
             case "weekly_missions": IsWeeklyMissionsNew = false; break;
+            case "customization": IsCustomizationNew = false; break;
             case "dungeon": IsDungeonNew = false; break;
             case "league": IsLeagueNew = false; break;
             case "battle_pass": IsBattlePassNew = false; break;
@@ -293,7 +300,10 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     /// Level 5-7: + Survival, QuickPlay
     /// Level 8-9: + DailyChallenge, LuckySpin
     /// Level 10-14: + Achievements, Statistics, Collection (1. Boss besiegt)
-    /// Level 15-19: + Deck, DailyMissions, WeeklyMissions
+    /// Level 15-16: + Deck, WeeklyMissions
+    /// Level 17: + DailyMissions (eigener Meilenstein, v2.0.34 — schließt Dead-Zone L15→L20)
+    /// Level 18: + Customization (Player-Skins, Trails, Victory-Emotes, v2.0.34)
+    /// Level 19: (kein neuer Unlock — Hype-Build vor Dungeon)
     /// Level 20-29: + Dungeon
     /// Level 30+: + League, BattlePass
     /// </summary>
@@ -328,12 +338,19 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         IsStatisticsNew = IsStatisticsUnlocked && !HasSeenFeature("statistics");
         IsCollectionNew = IsCollectionUnlocked && !HasSeenFeature("collection");
 
-        // Level 15+: Deck, DailyMissions, WeeklyMissions
+        // Level 15+: Deck + WeeklyMissions
         IsDeckUnlocked = level >= 15;
         IsWeeklyChallengeUnlocked = level >= 15;
         IsDeckNew = IsDeckUnlocked && !HasSeenFeature("deck");
-        IsDailyMissionsNew = level >= 15 && !HasSeenFeature("daily_missions");
         IsWeeklyMissionsNew = IsWeeklyChallengeUnlocked && !HasSeenFeature("weekly_missions");
+
+        // Level 17+: DailyMissions (eigener Meilenstein, schliesst Dead-Zone L15→L20)
+        IsDailyMissionsUnlocked = level >= 17;
+        IsDailyMissionsNew = IsDailyMissionsUnlocked && !HasSeenFeature("daily_missions");
+
+        // Level 18+: Customization (Player-Skins, Trails, Victory-Emotes)
+        IsCustomizationUnlocked = level >= 18;
+        IsCustomizationNew = IsCustomizationUnlocked && !HasSeenFeature("customization");
 
         // Level 20+: Dungeon
         IsDungeonUnlocked = level >= 20;
@@ -360,9 +377,12 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         // Feature-Schwellen mit zugehörigem Feature-Namen (höchste Priorität zuerst)
         (int threshold, string featureName)[] featureThresholds =
         [
+            (100, "Master Mode"),          // Endgame-Unlock (v2.0.35) — New Game+
             (30, "League + Battle Pass"),
             (20, "Dungeon"),
-            (15, "Deck + Missions"),
+            (18, "Customization"),        // Player-Skins, Trails, Victory-Emotes (v2.0.34)
+            (17, "Daily Missions"),        // Eigener Meilenstein (v2.0.34 — Dead-Zone L15→L20)
+            (15, "Deck + Weekly Missions"),
             (10, "Achievements + Collection"),
             (8, "Daily Challenge + Lucky Spin"),
             (5, "Survival + Quick Play"),
@@ -419,44 +439,87 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     [RelayCommand]
     private void ClaimDailyReward()
     {
-        var reward = _dailyRewardService.ClaimReward();
-        if (reward != null)
+        ApplyDailyReward(multiplier: 1);
+        IsRewardPopupVisible = false;
+    }
+
+    /// <summary>
+    /// Rewarded-Ad für 2x Daily-Reward (v2.0.34). Premium-User sehen keine Ad und kriegen
+    /// trotzdem 2x automatisch (als Premium-Bonus). RewardedAdCooldownTracker wird beachtet.
+    /// </summary>
+    [RelayCommand]
+    private async Task ClaimDailyRewardDoubledAsync()
+    {
+        // Premium-User: Direkter 2x-Claim ohne Ad
+        if (_purchaseService.IsPremium)
         {
-            _coinService.AddCoins(reward.Coins);
-
-            // Gem-Bonus vergeben (Tag 7: +10 Gems)
-            if (reward.Gems > 0)
-            {
-                _gemService.AddGems(reward.Gems);
-            }
-
-            // Battle Pass XP + Liga-Punkte für täglichen Login
-            _battlePassService.AddXp(BattlePassXpSources.DailyLogin, "daily_login");
-            _leagueService.AddPoints(5);
-
-            var dayText = string.Format(
-                _localizationService.GetString("DailyRewardDay") ?? "Day {0}",
-                reward.Day);
-            var coinsLabel = _localizationService.GetString("Coins") ?? "Coins";
-            var bonusText = $"{dayText}: +{reward.Coins:N0} {coinsLabel}!";
-
-            if (reward.Gems > 0)
-            {
-                var gemsLabel = _localizationService.GetString("Gems") ?? "Gems";
-                bonusText += $" +{reward.Gems} {gemsLabel}!";
-            }
-
-            if (reward.ExtraLives > 0)
-            {
-                bonusText += $" +{reward.ExtraLives} " +
-                    (_localizationService.GetString("DailyRewardExtraLife") ?? "Extra Life");
-            }
-
-            FloatingTextRequested?.Invoke(bonusText, "gold");
-            CelebrationRequested?.Invoke();
+            ApplyDailyReward(multiplier: 2);
+            IsRewardPopupVisible = false;
+            return;
         }
 
+        // Cooldown: 60s zwischen allen Rewarded-Placements
+        if (!RewardedAdCooldownTracker.CanShowAd)
+        {
+            var cooldownMsg = _localizationService.GetString("AdCooldownActive") ?? "Please wait before watching another ad.";
+            FloatingTextRequested?.Invoke(cooldownMsg, "error");
+            return;
+        }
+
+        var adSuccess = await _rewardedAdService.ShowAdAsync("double_daily_reward");
+        if (adSuccess)
+        {
+            RewardedAdCooldownTracker.RecordAdShown();
+            ApplyDailyReward(multiplier: 2);
+        }
+        else
+        {
+            // Ad fehlgeschlagen → normaler 1x Claim (Spieler nicht bestrafen)
+            ApplyDailyReward(multiplier: 1);
+        }
         IsRewardPopupVisible = false;
+    }
+
+    /// <summary>
+    /// Gemeinsame Claim-Logik für 1x und 2x Daily-Reward.
+    /// </summary>
+    private void ApplyDailyReward(int multiplier)
+    {
+        var reward = _dailyRewardService.ClaimReward();
+        if (reward == null) return;
+
+        int coins = reward.Coins * multiplier;
+        int gems = reward.Gems * multiplier;
+        int extraLives = reward.ExtraLives * multiplier;
+
+        _coinService.AddCoins(coins);
+        if (gems > 0) _gemService.AddGems(gems);
+
+        // Battle Pass XP + Liga-Punkte für täglichen Login (immer 1x, kein Farming)
+        _battlePassService.AddXp(BattlePassXpSources.DailyLogin, "daily_login");
+        _leagueService.AddPoints(5);
+
+        var dayText = string.Format(
+            _localizationService.GetString("DailyRewardDay") ?? "Day {0}",
+            reward.Day);
+        var coinsLabel = _localizationService.GetString("Coins") ?? "Coins";
+        var bonusText = $"{dayText}: +{coins:N0} {coinsLabel}!";
+        if (gems > 0)
+        {
+            var gemsLabel = _localizationService.GetString("Gems") ?? "Gems";
+            bonusText += $" +{gems} {gemsLabel}!";
+        }
+        if (extraLives > 0)
+        {
+            bonusText += $" +{extraLives} " +
+                (_localizationService.GetString("DailyRewardExtraLife") ?? "Extra Life");
+        }
+
+        var prefix = multiplier > 1
+            ? (_localizationService.GetString("DailyRewardDoubled") ?? "DOUBLED! ")
+            : "";
+        FloatingTextRequested?.Invoke(prefix + bonusText, "gold");
+        CelebrationRequested?.Invoke();
 
         // Coin-/Gem-Anzeige aktualisieren
         CoinBalance = _coinService.Balance;
@@ -567,6 +630,30 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     [RelayCommand]
     private void Profile()
     {
+        NavigationRequested?.Invoke(new GoProfile());
+    }
+
+    /// <summary>
+    /// Tägliche + wöchentliche Missionen (ab Level 17). Navigiert direkt zum
+    /// Missions-Tab im Challenges-View, damit Spieler nicht erst über DailyChallenge
+    /// und dann Tab-Switch kommen müssen.
+    /// </summary>
+    [RelayCommand]
+    private void Missions()
+    {
+        MarkFeatureSeen("daily_missions");
+        MarkFeatureSeen("weekly_missions");
+        NavigationRequested?.Invoke(new GoWeeklyChallenge());
+    }
+
+    /// <summary>
+    /// Player-Customization (ab Level 18). Navigiert zum Profile-View, wo Skins,
+    /// Trails und Victory-Emotes ausgewählt werden können.
+    /// </summary>
+    [RelayCommand]
+    private void Customize()
+    {
+        MarkFeatureSeen("customization");
         NavigationRequested?.Invoke(new GoProfile());
     }
 

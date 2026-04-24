@@ -386,6 +386,7 @@ public sealed class LeagueService : ILeagueService
                     bool isPlayer = entryUid == uid;
                     _cachedOnlineEntries.Add(new LeagueLeaderboardEntry
                     {
+                        Uid = entryUid,
                         Name = entry.Name,
                         Points = entry.Points,
                         IsPlayer = isPlayer,
@@ -406,6 +407,42 @@ public sealed class LeagueService : ILeagueService
         }
     }
 
+    /// <summary>
+    /// Meldet einen Spieler wegen anstössigem Namen / Cheating. Schreibt nach
+    /// <c>reports/{reportedUid}/{reporterUid}</c> mit Reason + Server-Timestamp.
+    /// Security-Rules sollten Rate-Limiting durchsetzen (1 Report pro Paar/24h).
+    /// </summary>
+    public async Task<bool> ReportPlayerAsync(string reportedUid, string reason)
+    {
+        if (string.IsNullOrEmpty(reportedUid)) return false;
+        if (string.IsNullOrEmpty(reason)) reason = "other";
+
+        // Reason auf bekannte Werte begrenzen (Security: keine Code-Injection in den Report)
+        if (reason != "offensive_name" && reason != "cheating" && reason != "other")
+            reason = "other";
+
+        try
+        {
+            await _firebase.EnsureAuthenticatedAsync();
+            var reporterUid = _firebase.Uid;
+            if (string.IsNullOrEmpty(reporterUid)) return false;
+            if (reporterUid == reportedUid) return false; // Self-Report blockieren
+
+            var path = $"reports/{reportedUid}/{reporterUid}";
+            var payload = new Dictionary<string, object>
+            {
+                ["reason"] = reason,
+                ["reportedAt"] = FirebaseServerTimestamp  // Server-Timestamp-Sentinel
+            };
+            await _firebase.UpdateAsync(path, payload);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     /// <summary>Eigenen Score nach Firebase pushen.</summary>
     private async Task PushScoreToFirebaseAsync()
     {
@@ -418,9 +455,8 @@ public sealed class LeagueService : ILeagueService
             {
                 Name = PlayerName,
                 Points = _data.Points,
-                UpdatedUtc = DateTime.UtcNow.ToString("O"),
                 // Server-Timestamp-Sentinel: Firebase löst das beim Write zur Server-Zeit in ms auf.
-                // Wird von Security-Rules für Rate-Limit verwendet (min. 60s zwischen Writes pro UID).
+                // Einzige Zeitstempel-Quelle — nicht client-spoofbar (v2.0.34).
                 UpdatedMs = FirebaseServerTimestamp
             };
 

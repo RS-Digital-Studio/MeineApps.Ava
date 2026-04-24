@@ -93,9 +93,6 @@ public class NeonJoystick : IInputHandler, IDisposable
     private long _bombButtonPointerId = -1;
     private long _detonatorPointerId = -1;
 
-    // Frame-Zaehler fuer Glow-Skipping (Bomb/Detonator Soft-Blur alle 2 Frames)
-    private int _frameCounter;
-
     // Konfiguration
     private float _joystickRadius = 75f;
     private float _bombButtonRadius = 52f;
@@ -329,7 +326,6 @@ public class NeonJoystick : IInputHandler, IDisposable
     public void Update(float deltaTime)
     {
         _animTime += deltaTime;
-        _frameCounter++;
 
         // Stick-Draw-Position zur Ziel-Position smoothen.
         // Exponentielles Ease-Out: alpha = 1 - exp(-rate * dt) -- framerate-unabhaengig, kein Overshoot.
@@ -673,21 +669,20 @@ public class NeonJoystick : IInputHandler, IDisposable
         float cx = _bombButtonX;
         float cy = _bombButtonY;
 
-        float idle = 0.9f + MathF.Sin(_animTime * 2.5f) * 0.1f;
+        // Ruhiger Breath-Effekt: 1.5 Hz (vorher 2.5) und nur ±5% (vorher ±10%).
+        // Reduziert sichtbares Pulsieren auf ein dezentes "Atmen".
+        float idle = 0.95f + MathF.Sin(_animTime * 1.5f) * 0.05f;
         byte ringA = (byte)(alpha * (0.75f + _bombGlow * 0.25f) * idle);
 
-        // Layer 1: Rot-Glow-Aura (SoftGlow ist teuer: alle 2 Frames skippen
-        // wenn idle, bei Press immer zeichnen damit Flash sofort sichtbar)
-        bool drawHalo = (_frameCounter & 1) == 0 || _bombButtonPressed || _bombGlow > 0.05f;
-        if (drawHalo)
-        {
-            byte glowA = (byte)(alpha * (0.45f + _bombGlow * 0.4f) * idle);
-            _bombGlowPaint.MaskFilter = SoftGlow;
-            _bombGlowPaint.Color = CombatRed.WithAlpha(glowA);
-            BuildOctagon(_octagonPath, cx, cy, r * 1.15f);
-            canvas.DrawPath(_octagonPath, _bombGlowPaint);
-            _bombGlowPaint.MaskFilter = null;
-        }
+        // Layer 1: Rot-Glow-Aura — JEDEN Frame mit halbem Alpha zeichnen statt alle
+        // 2 Frames An/Aus. Gleiche GPU-Kosten, kein 15-Hz-Flackern mehr.
+        // Bei Press volle Intensität für Feedback-Flash.
+        byte glowA = (byte)(alpha * (0.22f + _bombGlow * 0.4f) * idle);
+        _bombGlowPaint.MaskFilter = SoftGlow;
+        _bombGlowPaint.Color = CombatRed.WithAlpha(glowA);
+        BuildOctagon(_octagonPath, cx, cy, r * 1.15f);
+        canvas.DrawPath(_octagonPath, _bombGlowPaint);
+        _bombGlowPaint.MaskFilter = null;
 
         // Layer 2: Dunkles Body-Oktagon
         BuildOctagon(_octagonPath, cx, cy, r);
@@ -725,10 +720,11 @@ public class NeonJoystick : IInputHandler, IDisposable
         _fusePath.QuadTo(cx + bs * 0.3f, by - bs - 10f, cx + bs * 0.55f, by - bs - 4f);
         canvas.DrawPath(_fusePath, _fusePaint);
 
-        // Cyan-Funke am Lunten-Ende (pulsiert schnell)
+        // Cyan-Funke am Lunten-Ende (gedämpftes Pulsieren: 6 Hz statt 14 Hz,
+        // ±15% statt ±30% — wirkt "glühend" statt "flackernd")
         float sparkX = cx + bs * 0.55f;
         float sparkY = by - bs - 4f;
-        float sparkPulse = 0.7f + MathF.Sin(_animTime * 14f) * 0.3f;
+        float sparkPulse = 0.85f + MathF.Sin(_animTime * 6f) * 0.15f;
 
         _sparkPaint.MaskFilter = HardGlow;
         _sparkPaint.Color = AccentCyan.WithAlpha((byte)(alpha * 0.85f * sparkPulse));
@@ -749,21 +745,18 @@ public class NeonJoystick : IInputHandler, IDisposable
         float cx = _detonatorButtonX;
         float cy = _detonatorButtonY;
 
-        float idle = 0.9f + MathF.Sin(_animTime * 2.5f + 1f) * 0.1f;
+        // Ruhiger Breath-Effekt: 1.5 Hz und ±5% (konsistent mit Bomb-Button).
+        // Phasenversatz +1f damit Bomb und Detonator nicht synchron pulsen.
+        float idle = 0.95f + MathF.Sin(_animTime * 1.5f + 1f) * 0.05f;
         byte ringA = (byte)(alpha * (0.75f + _detonatorGlow * 0.25f) * idle);
 
-        // Cyan-Glow-Aura (SoftGlow alle 2 Frames skippen, bei Press sofort)
-        // Phasenversetzt zum Bomb-Glow (XOR), damit beide nie im gleichen Frame passieren
-        bool drawHalo = (_frameCounter & 1) == 1 || _detonatorButtonPressed || _detonatorGlow > 0.05f;
-        if (drawHalo)
-        {
-            byte glowA = (byte)(alpha * (0.45f + _detonatorGlow * 0.4f) * idle);
-            _detoGlowPaint.MaskFilter = SoftGlow;
-            _detoGlowPaint.Color = AccentCyan.WithAlpha(glowA);
-            BuildOctagon(_octagonPath, cx, cy, r * 1.15f);
-            canvas.DrawPath(_octagonPath, _detoGlowPaint);
-            _detoGlowPaint.MaskFilter = null;
-        }
+        // Cyan-Glow-Aura — JEDEN Frame mit halbem Alpha statt 15-Hz-Flackern.
+        byte glowA = (byte)(alpha * (0.22f + _detonatorGlow * 0.4f) * idle);
+        _detoGlowPaint.MaskFilter = SoftGlow;
+        _detoGlowPaint.Color = AccentCyan.WithAlpha(glowA);
+        BuildOctagon(_octagonPath, cx, cy, r * 1.15f);
+        canvas.DrawPath(_octagonPath, _detoGlowPaint);
+        _detoGlowPaint.MaskFilter = null;
 
         // Body
         BuildOctagon(_octagonPath, cx, cy, r);

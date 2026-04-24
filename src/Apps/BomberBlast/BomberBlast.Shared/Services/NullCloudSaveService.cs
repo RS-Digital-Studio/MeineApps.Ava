@@ -9,8 +9,9 @@ public sealed class NullCloudSaveService : ICloudSaveService
     public bool IsSyncing => false;
     public string? LastSyncTimeUtc => null;
 
-#pragma warning disable CS0067 // Event wird im Null-Service nie gefeuert
+#pragma warning disable CS0067 // Events werden im Null-Service nie gefeuert
     public event EventHandler? SyncStatusChanged;
+    public event EventHandler? CloudStateLoaded;
 #pragma warning restore CS0067
 
     public Task<bool> TryLoadFromCloudAsync() => Task.FromResult(false);

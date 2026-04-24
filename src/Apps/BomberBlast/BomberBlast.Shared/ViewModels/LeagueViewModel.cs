@@ -249,6 +249,7 @@ public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJu
         {
             LeaderboardEntries.Add(new LeagueDisplayEntry
             {
+                Uid = entry.Uid,
                 Rank = entry.Rank,
                 Name = entry.Name,
                 Points = entry.Points,
@@ -260,6 +261,25 @@ public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJu
                 BackgroundOpacity = entry.IsPlayer ? 0.2 : entry.IsRealPlayer ? 0.1 : 0.05
             });
         }
+    }
+
+    /// <summary>
+    /// Meldet einen Leaderboard-Eintrag wegen anstössigem Namen / Cheating.
+    /// Zeigt einen Bestätigungs-Dialog (aktuell: vereinfachter FloatingText-Flow, kein Multi-Choice).
+    /// Bei Erfolg wird Firebase-Node <c>reports/{uid}/{reporterUid}</c> geschrieben.
+    /// </summary>
+    [RelayCommand]
+    private async Task ReportPlayerAsync(LeagueDisplayEntry entry)
+    {
+        if (entry == null || !entry.CanReport) return;
+
+        // Report-Reason: Aktuell "offensive_name" als Default (UI-Expansion mit Multi-Choice-Dialog
+        // als Follow-up geplant — z.B. Action-Sheet mit 3 Optionen).
+        var success = await _leagueService.ReportPlayerAsync(entry.Uid, "offensive_name");
+
+        var msgKey = success ? "ReportSubmitted" : "ReportFailed";
+        var msg = _localization.GetString(msgKey) ?? (success ? "Report submitted" : "Report failed");
+        FloatingTextRequested?.Invoke(msg, success ? "success" : "error");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -334,6 +354,9 @@ public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJu
 /// <summary>Display-Item für einen Leaderboard-Eintrag.</summary>
 public class LeagueDisplayEntry
 {
+    /// <summary>Firebase-UID (leer bei NPCs). Für Report-Funktion.</summary>
+    public string Uid { get; set; } = "";
+
     public int Rank { get; set; }
     public string Name { get; set; } = "";
     public int Points { get; set; }
@@ -343,4 +366,7 @@ public class LeagueDisplayEntry
     public string PointsText { get; set; } = "";
     public string NameColor { get; set; } = "#FFFFFF";
     public double BackgroundOpacity { get; set; } = 0.05;
+
+    /// <summary>Ob der Report-Button angezeigt werden soll (echte Spieler ausser man selbst).</summary>
+    public bool CanReport => IsRealPlayer && !IsPlayer && !string.IsNullOrEmpty(Uid);
 }

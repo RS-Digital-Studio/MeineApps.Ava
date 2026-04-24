@@ -4,6 +4,7 @@
              xmlns:icons="using:BomberBlast.Icons"
              xmlns:conv="using:BomberBlast.Converters"
              xmlns:controls="using:BomberBlast.Controls"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="BomberBlast.Views.LeagueView"
              x:DataType="vm:LeagueViewModel"
              x:CompileBindings="True"
@@ -213,7 +214,7 @@
                   <Border.Background>
                     <SolidColorBrush Color="#FFFFFF" Opacity="{Binding BackgroundOpacity}" />
                   </Border.Background>
-                  <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                     <!-- Rang -->
                     <TextBlock Grid.Column="0"
                                Text="{Binding RankText}"
@@ -247,6 +248,19 @@
                                FontSize="13" FontWeight="Bold"
                                VerticalAlignment="Center"
                                Foreground="{DynamicResource AccentBrush}" />
+
+                    <!-- Report-Button (nur für andere echte Spieler, v2.0.34) -->
+                    <Button Grid.Column="3"
+                            Command="{Binding $parent[ItemsControl].((vm:LeagueViewModel)DataContext).ReportPlayerCommand}"
+                            CommandParameter="{Binding}"
+                            IsVisible="{Binding CanReport}"
+                            Background="Transparent" Padding="6,2"
+                            Margin="6,0,0,0"
+                            ToolTip.Tip="{loc:Translate ReportPlayer}"
+                            AutomationProperties.AutomationId="League_BtnReport">
+                      <icons:GameIcon Kind="AlertCircle" Width="14" Height="14"
+                                       Foreground="#FF4D4D" />
+                    </Button>
                   </Grid>
                 </Border>
               </DataTemplate>

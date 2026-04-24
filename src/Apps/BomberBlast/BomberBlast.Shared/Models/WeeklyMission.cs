@@ -20,7 +20,15 @@ public enum WeeklyMissionType
     EarnGems,
     PlayQuickPlay,
     SpinLuckyWheel,
-    UpgradeCards
+    UpgradeCards,
+
+    // v2.0.34: Skill-basierte Mission-Typen gegen Wiederholungs-Gefühl
+    /// <summary>X Level mit 3 Sternen abschließen (Skill-Gate)</summary>
+    CompleteThreeStar,
+    /// <summary>X Level ohne Schaden abschließen (Perfection-Gate)</summary>
+    NoDamageLevel,
+    /// <summary>X Mutator-Level (Welt 6+) abschließen (Endgame-Gate)</summary>
+    CompleteMutatorLevel
 }
 
 /// <summary>

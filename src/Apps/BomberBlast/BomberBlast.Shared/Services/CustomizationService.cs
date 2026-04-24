@@ -120,6 +120,8 @@ public sealed class CustomizationService : ICustomizationService
     public bool IsPlayerSkinOwned(string skinId)
     {
         var skin = FindPlayerSkin(skinId);
+        // UnlockOnly-Skins (z.B. master_champion) sind nur via GrantPlayerSkin erhältlich
+        if (skin.UnlockOnly) return _ownedPlayerSkins.Contains(skinId);
         // Premium-Only Skins ohne Preis = nur für Premium-Nutzer freigeschaltet
         if (skin.IsPremiumOnly && skin.CoinPrice <= 0) return _purchaseService.IsPremium;
         // Kostenlose Skins (CoinPrice=0, nicht premium) = immer owned
@@ -150,6 +152,19 @@ public sealed class CustomizationService : ICustomizationService
         if (skin.GemPrice <= 0) return false;
 
         if (!_gemService.Value.TrySpendGems(skin.GemPrice)) return false;
+
+        _ownedPlayerSkins.Add(skinId);
+        SaveOwnedPlayerSkins();
+        return true;
+    }
+
+    /// <summary>
+    /// Spieler-Skin durch Meilenstein freischalten (ohne Kosten). Idempotent.
+    /// </summary>
+    public bool GrantPlayerSkin(string skinId)
+    {
+        if (string.IsNullOrEmpty(skinId)) return false;
+        if (_ownedPlayerSkins.Contains(skinId)) return false;
 
         _ownedPlayerSkins.Add(skinId);
         SaveOwnedPlayerSkins();

@@ -37,7 +37,8 @@ public record GoGame(
     bool Continue = false,
     string Boost = "",
     int Floor = 0,
-    int Seed = 0
+    int Seed = 0,
+    bool MasterMode = false
 ) : NavigationRequest;
 
 // ── GameOver (11+ Parameter) ──

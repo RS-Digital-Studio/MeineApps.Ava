@@ -24,6 +24,15 @@ public interface ICloudSaveService : IDisposable
     event EventHandler? SyncStatusChanged;
 
     /// <summary>
+    /// Wird nach erfolgreichem Cloud-Pull gefeuert (wenn Preferences durch Cloud-Daten
+    /// überschrieben wurden). Services mit internem Cache müssen hier Load() aufrufen,
+    /// damit ihr Cache nicht stale bleibt (v2.0.35).
+    /// <para><b>Thread-Kontext:</b> Handler laufen garantiert auf dem UI-Thread
+    /// (Dispatcher.UIThread.Post). Kein manuelles Marshaling nötig.</para>
+    /// </summary>
+    event EventHandler? CloudStateLoaded;
+
+    /// <summary>
     /// Cloud-Stand laden und mit lokalem Stand vergleichen.
     /// Besserer Stand wird angewendet.
     /// Aufgerufen bei App-Start.

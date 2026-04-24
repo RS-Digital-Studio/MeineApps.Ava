@@ -29,6 +29,10 @@ public sealed partial class GameRenderer : IDisposable
     private readonly AmbientParticleSystem _ambientParticles = new();
     private readonly ShaderEffects _shaderEffects = new();
     private readonly TrailSystem _trailSystem = new();
+    private readonly FogOfWarSystem _fogOfWar = new();
+
+    /// <summary>Zugriff auf das FoW-System für GameEngine (Enable/Update-Aufrufe).</summary>
+    public FogOfWarSystem FogOfWar => _fogOfWar;
 
     // HUD constants
     private const float HUD_LOGICAL_WIDTH = 120f;
@@ -67,8 +71,30 @@ public sealed partial class GameRenderer : IDisposable
     /// </summary>
     public float BannerTopOffset { get; set; }
 
-    // ReducedEffects: Atmosphärische Systeme deaktivieren (Performance-Modus)
+    // ReducedEffects: Atmosphärische Systeme manuell deaktivieren (Performance-Modus, User-Toggle)
     public bool ReducedEffects { get; set; }
+
+    // Adaptive Frame-Skipping: Ring-Buffer der letzten N Frame-Zeiten.
+    // Wenn Durchschnitt > 40ms (< 25 FPS), werden atmosphärische Systeme für
+    // SkipHoldMs ms ausgesetzt, damit Gameplay (Input, Collision, AI) vollen
+    // Frame-Budget bekommt. Verhindert Death-Spiral bei GC-Pausen oder CPU-Spikes.
+    private const int FrameTimeBufferSize = 5;
+    private readonly float[] _frameTimeBuffer = new float[FrameTimeBufferSize];
+    private int _frameTimeIndex;
+    private int _frameTimeCount;
+    private const float SkipThresholdSeconds = 0.040f;   // Avg > 40ms → skip
+    private const float SkipReleaseSeconds = 0.028f;     // Avg < 28ms → release (Hysterese gegen Flackern)
+    private const float SkipHoldMinSeconds = 0.5f;       // Minimum-Hold-Zeit: 500ms
+    private float _skipHoldRemaining;
+    private bool _adaptiveSkipActive;
+
+    /// <summary>
+    /// Ob atmosphärische Systeme (WeatherSystem, AmbientParticleSystem, TrailSystem,
+    /// Background-Elements) für diesen Frame ausgesetzt werden sollen. Kombiniert
+    /// manuellen User-Toggle (<see cref="ReducedEffects"/>) mit adaptiver
+    /// Frame-Skipping-Logik.
+    /// </summary>
+    public bool SkipAtmosphere => ReducedEffects || _adaptiveSkipActive;
 
     // Animations-Timing
     private float _globalTimer;
@@ -660,18 +686,66 @@ public sealed partial class GameRenderer : IDisposable
     }
 
     /// <summary>
-    /// Animations-Timer aktualisieren
+    /// Animations-Timer aktualisieren.
+    /// Adaptive Frame-Skipping: Bei anhaltenden Frame-Spikes (Avg > 40ms, &lt;25 FPS)
+    /// werden atmosphärische Systeme ausgesetzt, damit Gameplay-Kritische Pfade
+    /// (AI, Collision, Input) vollen Frame-Budget bekommen. Hysterese gegen Flackern.
     /// </summary>
     public void Update(float deltaTime)
     {
         _globalTimer += deltaTime;
         _lastDeltaTime = deltaTime;
+        UpdateAdaptiveSkipping(deltaTime);
 
-        if (!ReducedEffects)
+        if (!SkipAtmosphere)
         {
             _weatherSystem.Update(deltaTime, _globalTimer);
             _ambientParticles.Update(deltaTime, _globalTimer);
             _shaderEffects.Update(deltaTime);
+        }
+    }
+
+    /// <summary>
+    /// Aktualisiert den Ring-Buffer der Frame-Zeiten und entscheidet ob atmosphärische
+    /// Systeme ausgesetzt werden. Hysterese: Enter-Threshold 40ms, Exit-Threshold 28ms,
+    /// Minimum-Hold 500ms (verhindert schnelles On/Off-Flackern bei Grenzwerten).
+    /// </summary>
+    private void UpdateAdaptiveSkipping(float deltaTime)
+    {
+        // Ring-Buffer füllen
+        _frameTimeBuffer[_frameTimeIndex] = deltaTime;
+        _frameTimeIndex = (_frameTimeIndex + 1) % FrameTimeBufferSize;
+        if (_frameTimeCount < FrameTimeBufferSize) _frameTimeCount++;
+
+        // Minimum-Hold-Zeit respektieren (nach Skip-Activation mindestens 500ms im Skip-Modus)
+        if (_skipHoldRemaining > 0)
+        {
+            _skipHoldRemaining -= deltaTime;
+            return;
+        }
+
+        // Durchschnitt berechnen (nur wenn Buffer voll, sonst keine stabile Bewertung)
+        if (_frameTimeCount < FrameTimeBufferSize) return;
+
+        float sum = 0f;
+        for (int i = 0; i < FrameTimeBufferSize; i++)
+            sum += _frameTimeBuffer[i];
+        float avg = sum / FrameTimeBufferSize;
+
+        if (_adaptiveSkipActive)
+        {
+            // Skip aktiv → nur deaktivieren wenn Frame-Zeit stabil unter Exit-Threshold
+            if (avg < SkipReleaseSeconds)
+                _adaptiveSkipActive = false;
+        }
+        else
+        {
+            // Skip inaktiv → aktivieren wenn Frame-Zeit über Enter-Threshold
+            if (avg > SkipThresholdSeconds)
+            {
+                _adaptiveSkipActive = true;
+                _skipHoldRemaining = SkipHoldMinSeconds;
+            }
         }
     }
 
@@ -705,11 +779,11 @@ public sealed partial class GameRenderer : IDisposable
         RenderBackground(canvas, _screenWidth, _screenHeight);
 
         // Hintergrund-Elemente (Bäume, Zahnräder, Stalaktiten etc. am Rand)
-        if (!ReducedEffects)
+        if (!SkipAtmosphere)
             RenderBackgroundElements(canvas, _screenWidth, _screenHeight);
 
         // Ambient-Partikel (unter dem Grid, über dem Hintergrund)
-        if (!ReducedEffects)
+        if (!SkipAtmosphere)
         {
             canvas.Save();
             canvas.Translate(_offsetX, _offsetY);
@@ -730,7 +804,7 @@ public sealed partial class GameRenderer : IDisposable
         RenderExit(canvas, grid, exitCell);
 
         // Trail-System: Fußabdrücke, Geister-Spuren, Feuer-Trails, Kosmetik-Trails (auf dem Boden, unter Entities)
-        if (!ReducedEffects)
+        if (!SkipAtmosphere)
         {
             _trailSystem.ActiveCosmeticTrail = _customizationService.ActiveTrail;
             _trailSystem.Update(_lastDeltaTime, player, enemies, _globalTimer);
@@ -773,7 +847,7 @@ public sealed partial class GameRenderer : IDisposable
             RenderPlayer(canvas, player);
 
         // Dynamische Beleuchtung (Lichtquellen aus Bomben, Explosionen, Lava etc.)
-        if (!ReducedEffects)
+        if (!SkipAtmosphere)
         {
             _dynamicLighting.Clear();
             CollectLightSources(canvas, grid, bombs, explosions, enemies, powerUps, player, exitCell, specialEffectCells);
@@ -781,19 +855,28 @@ public sealed partial class GameRenderer : IDisposable
         }
 
         // Wetter-Partikel (über dem Grid, unter HUD)
-        if (!ReducedEffects)
+        if (!SkipAtmosphere)
             _weatherSystem.Render(canvas);
 
-        // Nebel-Overlay (Welt 10: Schattenwelt - eingeschränkte Sicht)
+        // Nebel-Overlay (Welt 10: Schattenwelt - einfacher Sichtkreis ohne Memory)
         if (_fogEnabled && player != null)
         {
             RenderFogOverlay(canvas, grid, player.X, player.Y);
         }
 
+        // Fog-of-War-Overlay (v2.0.35: L50+ Normal / ab L1 Master — mit Explored-Memory)
+        // Gerendert VOR canvas.Restore() damit Grid-Koordinaten aktiv sind.
+        if (_fogOfWar.IsEnabled && player != null)
+        {
+            _fogOfWar.Render(canvas, player.X, player.Y, _fillPaint);
+        }
+
         canvas.Restore();
 
-        // Post-Processing: Color Grading, Water Ripples, Heat Shimmer, Damage Flash, Chromatic Aberration
-        if (!ReducedEffects)
+        // Post-Processing: Color Grading, Water Ripples, Heat Shimmer, Damage Flash, Chromatic Aberration.
+        // Damage-Flash und Chromatic Aberration sind Gameplay-Feedback, aber bei Stutter
+        // ist der Frame-Gewinn wichtiger als das kurze Flash-Feedback (im SkipAtmosphere-Modus).
+        if (!SkipAtmosphere)
         {
             if (player != null)
             {
@@ -870,6 +953,7 @@ public sealed partial class GameRenderer : IDisposable
         _ambientParticles.Dispose();
         _shaderEffects.Dispose();
         _trailSystem.Dispose();
+        _fogOfWar.Dispose();
         _floorCacheBitmap?.Dispose();
         _bgShader?.Dispose();
         _vignetteShader?.Dispose();

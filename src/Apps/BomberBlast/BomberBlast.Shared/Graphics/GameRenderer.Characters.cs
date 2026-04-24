@@ -175,6 +175,12 @@ public sealed partial class GameRenderer
         _fillPaint.Color = new SKColor(255, 255, 255, 50);
         canvas.DrawCircle(player.X - helmR * 0.3f, by - helmR * 0.1f, helmR * 0.25f, _fillPaint);
 
+        // --- Master Champion Crown (v2.0.35): 3-Zacken-Krone auf dem Helm ---
+        if (skin.Id == "master_champion")
+        {
+            RenderChampionCrown(canvas, player.X, by, helmR);
+        }
+
         // --- Gesicht ---
         float eyeY = player.Y - bodyH * 0.12f + walkBob;
         float eyeSpacing = bodyW * 0.2f;
@@ -226,6 +232,70 @@ public sealed partial class GameRenderer
         _fusePath.MoveTo(player.X - 2.5f, mouthY);
         _fusePath.QuadTo(player.X, mouthY + 2, player.X + 2.5f, mouthY);
         canvas.DrawPath(_fusePath, _strokePaint);
+    }
+
+    /// <summary>
+    /// Rendert die 3-Zacken-Goldkrone für den Master-Champion-Skin (v2.0.35).
+    /// Freischaltet nach 100 Master-3-Sterne-Clears. Position: direkt über dem Helm.
+    /// SKPath-basiert (kein Asset), gecachte Paints, sanfter Gold-Glow.
+    /// </summary>
+    private void RenderChampionCrown(SKCanvas canvas, float centerX, float helmTopY, float helmR)
+    {
+        // Krone oberhalb des Helms platzieren (Helm-Top etwas über by)
+        float crownBaseY = helmTopY - helmR * 0.55f;
+        float crownWidth = helmR * 1.1f;
+        float crownHeight = helmR * 0.55f;
+        float crownLeft = centerX - crownWidth / 2f;
+        float crownRight = centerX + crownWidth / 2f;
+
+        // Krone-Silhouette: 3 Zacken (Mitte hoch, links+rechts niedriger)
+        _fusePath.Reset();
+        _fusePath.MoveTo(crownLeft, crownBaseY + crownHeight);                    // Unten links
+        _fusePath.LineTo(crownLeft, crownBaseY + crownHeight * 0.35f);            // Links hoch
+        _fusePath.LineTo(crownLeft + crownWidth * 0.15f, crownBaseY + crownHeight * 0.55f); // Tal 1
+        _fusePath.LineTo(crownLeft + crownWidth * 0.28f, crownBaseY);             // Linker Zacken
+        _fusePath.LineTo(crownLeft + crownWidth * 0.4f, crownBaseY + crownHeight * 0.45f);  // Tal 2
+        _fusePath.LineTo(centerX, crownBaseY - crownHeight * 0.1f);               // Mittlerer Zacken (höchster)
+        _fusePath.LineTo(crownRight - crownWidth * 0.4f, crownBaseY + crownHeight * 0.45f); // Tal 3
+        _fusePath.LineTo(crownRight - crownWidth * 0.28f, crownBaseY);            // Rechter Zacken
+        _fusePath.LineTo(crownRight - crownWidth * 0.15f, crownBaseY + crownHeight * 0.55f);// Tal 4
+        _fusePath.LineTo(crownRight, crownBaseY + crownHeight * 0.35f);           // Rechts hoch
+        _fusePath.LineTo(crownRight, crownBaseY + crownHeight);                   // Unten rechts
+        _fusePath.Close();
+
+        // Gold-Glow als Hintergrund (pulsierend)
+        float pulseScale = 0.85f + MathF.Sin(_globalTimer * 2.5f) * 0.15f;
+        _glowPaint.Color = new SKColor(255, 215, 0, (byte)(110 * pulseScale));
+        _glowPaint.MaskFilter = _mediumGlow;
+        canvas.DrawPath(_fusePath, _glowPaint);
+        _glowPaint.MaskFilter = null;
+
+        // Gold-Fülle (Hauptfarbe)
+        _fillPaint.MaskFilter = null;
+        _fillPaint.Color = new SKColor(255, 200, 40);
+        canvas.DrawPath(_fusePath, _fillPaint);
+
+        // Dunkler Gold-Rand für Definition
+        _strokePaint.MaskFilter = null;
+        _strokePaint.Color = new SKColor(140, 100, 20);
+        _strokePaint.StrokeWidth = 0.8f;
+        _strokePaint.Style = SKPaintStyle.Stroke;
+        canvas.DrawPath(_fusePath, _strokePaint);
+        _strokePaint.Style = SKPaintStyle.Fill;
+
+        // Edelstein in der Mitte (Mittlerer Zacken-Basis)
+        float gemCenterY = crownBaseY + crownHeight * 0.55f;
+        _fillPaint.Color = new SKColor(200, 50, 80); // Rubinrot
+        canvas.DrawCircle(centerX, gemCenterY, crownHeight * 0.12f, _fillPaint);
+        // Gem-Highlight
+        _fillPaint.Color = new SKColor(255, 180, 200, 200);
+        canvas.DrawCircle(centerX - crownHeight * 0.04f, gemCenterY - crownHeight * 0.04f, crownHeight * 0.04f, _fillPaint);
+
+        // Perlen-Spitzen auf den Zacken (kleine Gold-Kugeln)
+        _fillPaint.Color = new SKColor(255, 230, 100);
+        canvas.DrawCircle(crownLeft + crownWidth * 0.28f, crownBaseY, crownHeight * 0.08f, _fillPaint);
+        canvas.DrawCircle(centerX, crownBaseY - crownHeight * 0.1f, crownHeight * 0.1f, _fillPaint);
+        canvas.DrawCircle(crownRight - crownWidth * 0.28f, crownBaseY, crownHeight * 0.08f, _fillPaint);
     }
 
     private void RenderPlayerDeath(SKCanvas canvas, Player player, float cs)

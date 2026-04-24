@@ -53,6 +53,16 @@ public interface ILeagueService : IDisposable
     /// <summary>Initialen Firebase-Sync durchführen (Auth + Daten laden).</summary>
     Task InitializeOnlineAsync();
 
+    /// <summary>
+    /// Meldet einen Leaderboard-Eintrag wegen anstössigem Namen / Cheating (UGC-Moderation).
+    /// Schreibt nach Firebase: <c>reports/{reportedUid}/{reporterUid}</c> mit Timestamp + Reason.
+    /// Security-Rules erlauben max. 1 Report pro Reporter/Reported-Kombi pro 24h.
+    /// </summary>
+    /// <param name="reportedUid">Firebase-UID des gemeldeten Spielers.</param>
+    /// <param name="reason">Grund: "offensive_name", "cheating", "other".</param>
+    /// <returns>true bei Erfolg, false wenn offline oder Rate-Limit.</returns>
+    Task<bool> ReportPlayerAsync(string reportedUid, string reason);
+
     event EventHandler? PointsChanged;
     event EventHandler? SeasonEnded;
     event EventHandler? LeaderboardUpdated;
@@ -62,6 +72,9 @@ public interface ILeagueService : IDisposable
 /// <summary>Einzelner Eintrag in der Liga-Rangliste.</summary>
 public class LeagueLeaderboardEntry
 {
+    /// <summary>Firebase-UID des Spielers (leer bei NPCs). Für Report-Funktion.</summary>
+    public string Uid { get; set; } = "";
+
     public string Name { get; set; } = "";
     public int Points { get; set; }
     public int Rank { get; set; }

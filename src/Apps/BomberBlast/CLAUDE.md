@@ -7,7 +7,9 @@
 Bomberman-Klon mit SkiaSharp Rendering, AI Pathfinding und mehreren Input-Methoden.
 Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/Cyberpunk.
 
-**Version:** 2.0.33 (VersionCode 43) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Produktion
+**Version:** 2.0.35 (VersionCode 45) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Produktion
+
+v2.0.35 enthält alle Inhalte von v2.0.34 (Lazy-VM, Shader-Precompile, Asset-Preload, L17/L18-Unlocks, Deck-Telemetrie, Mission-Pool +3, Deal-Pool +5, double_daily_reward, Server-Timestamp, Report-Button) plus v2.0.35-Features: A\*-Budget + Spawn-Jitter, Adaptive Frame-Skipping, Master Mode / New Game+, Fog of War, Champion-Skin-Rendering. 30 Review-Findings (3 Passes) + 4 Gameplay-Fixes systematisch behoben.
 
 ## Icon-System (Eigene Neon Arcade Icons)
 
@@ -641,7 +643,218 @@ Gesamt-Review (7 Agents: game-audit / code-review / performance / skiasharp / se
 
 **Offene Optimierungen (bewusste Deferrals):**
 
-- **Lazy-VM-Umbau (PERF-High)** — MainViewModel instanziiert beim ersten Resolve alle 23 Child-VMs (ShopVM ~900 Zeilen, BattlePass, League, Collection, Dungeon). Schaetzung: 200-500ms Startup-Kosten auf Mid-Tier-Android. Fix waere Constructor-Injection via `Lazy<T>` fuer spaet-unlocked VMs (Battle Pass, League, Collection, Dungeon, Deck, Statistics, DailyChallenge, WeeklyChallenge). Risiko: Verdrahtungslogik (LanguageChanged, NavigationRequested, IGameJuiceEmitter-Loop) muss lazy-init-safe werden. Umfang ~200 LOC Refactor, Pre-Release kritisch.
-- **Feature-Unlock-Luecke L17/L18** — Zwischen L15 (Deck, WeeklyChallenge) und L20 (Dungeon) gibt es keinen weiteren Unlock. Dead-Zone fuer Progression-Feel. Idee: DailyMissions als expliziten Unlock bei L17 hervorheben oder neuen Cosmetic-Slot bei L18 freischalten.
-- **updatedUtc spoofable (SEC-Low)** — Client setzt `UpdatedUtc` selbst (manipulierbar). Kein Ranking-Impact (Leaderboard sortiert nach `points`). Nur Anzeige-Feld. Optional: Feld entfernen, komplett auf `updatedMs` (Server-Timestamp) umstellen.
-- **Report-Button im Leaderboard (SEC-Low)** — UGC-Moderation fuer Play-Store-Policy-Vorsorge. Firebase-Node `reports/{uid}` mit Moderations-Queue.
+Alle vier bewussten Deferrals aus v2.0.31 wurden in v2.0.34 umgesetzt (siehe "Updates v2.0.34" unten). Aktuell keine offenen PERF/SEC-Deferrals.
+
+## Updates v2.0.34 (24.04.2026)
+
+### Performance & Startup
+
+- **Lazy-VM-Umbau (PERF-High)** — 14 spät-unlocked Child-VMs (ShopVM, AchievementsVM, DailyChallengeVM, LuckySpinVM, WeeklyChallengeVM, StatisticsVM, QuickPlayVM, DeckVM, DungeonVM, BattlePassVM, CollectionVM, LeagueVM, ProfileVM, GemShopVM) werden jetzt per `Lazy<T>` injiziert und erst beim ersten Navigations-Ziel instanziiert. Eager bleiben 9 VMs für frühe Interaktion (MainMenu, Game, LevelSelect, Settings, Help, HighScores, GameOver, Pause, Victory). Verdrahtung erfolgt in `EnsureXxxVm()`-Methoden mit idempotentem Guard. Geschätzte Startup-Ersparnis 200-500ms auf Mid-Tier-Android (ShopVM allein ist ~900 Zeilen und zieht mehrere Services nach).
+- **Shader-Precompile** — `ShaderEffects.WaterRippleSkSL` wird jetzt statisch im Splash via `ShaderEffects.Preload()` kompiliert und von allen Instanzen wiederverwendet. Spart 50-200ms Kaltstart-Jitter beim ersten Ocean-Level-Frame (Welt 6). Dispose nicht mehr per Instanz (Referenz statt Besitz), sondern via `ShaderEffects.DisposeSharedResources()` beim App-Shutdown.
+- **Asset-Preload-Strategie** — Neue `GameAssetPaths`-Helper-Klasse. LoadingPipeline preloaded jetzt 12 PowerUp-Icons + 12 Enemy-Icons + Welt-1-Hintergrund zusätzlich zu Splash/Menu-BG/Bosse. GameViewModel.SetParameters() triggert bei Level-Eingang fire-and-forget den welt-spezifischen Preload (Welt 2-10), damit der erste Frame nach Countdown volle Visuals hat. `_lastPreloadedWorldIndex` verhindert Doppeltriggering.
+
+### Progression & Retention
+
+- **Feature-Unlock bei L17/L18** — Schließt Dead-Zone L15→L20. L17: Expliziter `Missions`-Button im MainMenu (navigiert direkt zum Missions-Tab der Challenges-View, ohne Tab-Switch). L18: Neuer `Customize`-Button in der unteren Utility-Leiste (Shop/Profile/Customize/Settings, navigiert zu Profile für Skin/Trail/Victory-Wahl). Beide Unlocks haben Feature-Celebrations (FloatingText + Confetti) und NEU!-Badges via `IPreferencesService`.
+- **Daily/Weekly-Mission-Pool** — 3 neue Skill-basierte Mission-Typen gegen Wiederholungs-Gefühl: `CompleteThreeStar` (3-Sterne-Abschluss), `NoDamageLevel` (Perfect-Run), `CompleteMutatorLevel` (Welt 6+). Höhere Coin-Rewards als Standard (Daily 300-350, Weekly 650-750). Tracking-Hooks in `GameTrackingService.OnStoryLevelCompleted()` basierend auf stars/noDamage/level-Parametern. 6 RESX-Keys (Name+Desc) × 6 Sprachen = 72 neue Lokalisierungs-Einträge.
+- **Rotating Deals Pool-Erweiterung** — Daily: 4 → 7 Typen (neu: `EpicCardPack`, `GemCoinCombo`, `PowerUpLuckDeal`). Weekly: 4 → 6 Typen (neu: `LegendaryCardDrop`, `MasterBundle`). Reicht für 6-Wochen-Rotation ohne Wiederholung. 5 neue Title-Keys × 6 Sprachen.
+
+### Monetarisierung
+
+- **Rewarded-Placements (3 neue)** — `double_daily_reward` komplett implementiert: DailyReward-Popup hat jetzt zweiten Button "Watch Ad: 2x" (grün), der bei Premium-Usern automatisch 2x claimt ohne Ad, bei Free-Usern via Rewarded Ad + 60s Cooldown. Ad-Fail gibt normalen 1x Claim (kein Bestrafen). `bonus_card_drop` + `battle_pass_xp_boost` als Infrastruktur (AdConfig Switch-Cases + platzhalter Ad-Unit-IDs), VM-Hooks folgen nach Design-Entscheidung für Trigger-Punkte. TODO: Eigene Ad-Unit-IDs im AdMob-Dashboard erstellen (aktuell teilen sich die neuen IDs mit Gem-Bonus/CoinMultiplier/ScoreDouble).
+- **Deck-Balancing-Telemetrie** — Neuer `IDeckTelemetryService` trackt `Used`/`Plays`/`Wins` pro BombType (13 Spezial-Typen). Hooks: GameEngine.PlaceBomb → `RecordBombPlaced`; GameEngine.CompleteLevel → `RecordLevelCompletedWithBombs` + `RecordLevelStartedWithBombs`; GameEngine.GameOver → `RecordLevelStartedWithBombs` (nur). Persistenz via Preferences-JSON. Optionale `FlushToRemoteAsync()` schreibt an Firebase `analytics/deck/{uid}`. Balance-Targets: keine Karte <5% Usage, keine >40%.
+
+### Security & UGC-Moderation
+
+- **Leaderboard Server-Timestamp** — `FirebaseLeagueEntry.UpdatedUtc` (client-gesetzt, spoofbar) entfernt. `UpdatedMs` ist jetzt die einzige Zeitstempel-Quelle — Firebase `ServerValue.TIMESTAMP` server-authoritativ, nicht client-manipulierbar. Security-Rules sollten Rate-Limit via UpdatedMs durchsetzen (min. 60s zwischen Writes pro UID).
+- **Report-Button im Leaderboard** — Play-Store-Policy-Vorsorge für UGC (Player-Names). `ILeagueService.ReportPlayerAsync(reportedUid, reason)` schreibt an Firebase-Node `reports/{reportedUid}/{reporterUid}` mit Server-Timestamp + Reason. Reason wird auf whitelist begrenzt ("offensive_name"/"cheating"/"other") gegen Code-Injection. Self-Report blockiert. `LeagueDisplayEntry.CanReport` (IsRealPlayer && !IsPlayer && Uid!=leer) steuert Button-Sichtbarkeit. UI: kleiner AlertCircle-Button (#FF4D4D) rechts pro Leaderboard-Row. Empfohlene Firebase-Security-Rules: Rate-Limit 1 Report pro Reporter/Reported-Paar pro 24h, Moderations-Queue im Admin-Dashboard.
+
+## Pass-3-Polish v2.0.35 (24.04.2026)
+
+Dritter und finaler Review-Pass — 5 Findings, 0 Critical, commit-ready.
+
+- **TutorialOverlay.WrapText Kerning-Fix** (HIGH): Vorher akkumulierte die Methode `MeasureText(" " + word)` inkrementell, was durch Kerning über 8-10 Worte um 5-10px driftete → falsche Bubble-Höhe. Jetzt wird nach jedem Wort-Append `MeasureText(currentLine.ToString())` als authoritative Breite gemessen. Rollback über StringBuilder-Length-Snapshot bei Overflow. Minimal-Overhead (1 Messung/Wort).
+- **Hitbox-Semantik-Doku** (MEDIUM): XML-Kommentare in `Entity.HitboxScale` / `Entity.GetHitbox` erklären warum Width/Height statt BoundingBox als Shrink-Basis dient (konsistente 0.6× Kollisions-Radius bei allen Entities). `Player.BoundingBox` + `Enemy.BoundingBox`-Overrides bekommen Hinweis dass sie nicht mehr für CollidesWith relevant sind (nur noch Sprite-Referenz + Boss-Boss-Kollision in GameEngine.Level).
+- **DeckTelemetryService `_isDisposed`-Guard** (LOW): `volatile bool _isDisposed` wird in `Dispose()` zuerst gesetzt. Alle Record*-Methoden haben einen frühen `if (_isDisposed) return;`-Guard. Verhindert dass nach `Dispose.SaveImmediate` noch ein weiterer Task spawnt (falls ein anderer Thread parallel RecordBombPlaced aufruft).
+
+## Gameplay-Fixes v2.0.35 (Spieler-Feedback nach Testing)
+
+### Tutorial-Text-Rahmen dynamisch
+`TutorialOverlay.Render` hatte feste `bubbleWidth = 55% × 360` + `bubbleHeight = 54`. Lange DE/FR-Übersetzungen wurden abgeschnitten. Fix: `WrapText()` splittet Text in Zeilen basierend auf gemessener Font-Breite. Bubble-Höhe skaliert mit Zeilenzahl. Max-Width auf 80%/480 erhöht.
+
+### Explosion tötet nicht mehr Gegner HINTER zerstörbarem Block
+`Explosion.CalculateSpread` markiert die Block-End-Zelle jetzt als `IsBlockHit = true`. Kollisionscheck in `CheckCollisions` überspringt `IsBlockHit`-Zellen für Player- UND Enemy-Schaden. Verhindert Bug: Block zerfällt während Explosion noch aktiv ist (0.3s Destroy vs 0.9s Explosion), Gegner läuft in die freiwerdende Zelle → vorher getötet durch scheinbar "durchgeschossene" Explosion.
+
+### Spieler-Enemy-Kollision mit Toleranz (statt Grid-Feld-Trigger)
+`Entity.CollidesWith` nutzt jetzt verschrumpfte Hitbox via neue `HitboxScale`-Property (default 0.6 = 60% der Cell-Größe). Vorher: BoundingBox == CELL_SIZE → Spieler starb bereits bei großem Pixel-Abstand sobald er dasselbe Grid-Feld betrat. Jetzt: Echte visuelle Berührung erforderlich. `BossEnemy.HitboxScale = 1.0` override damit Boss-Hitbox nicht doppelt geschrumpft wird (Boss hat bereits custom 0.4x BoundingBox).
+
+## Post-Review-Fixes v2.0.35 (24.04.2026)
+
+Zwei Review-Passes ergaben 16 + 9 Findings (alle systematisch behoben):
+
+### Pass 2 (Verifikation nach Pass-1-Fixes)
+
+**Thread-Safety:**
+- `DeckTelemetryService.ScheduleSave` fängt jetzt auch `ObjectDisposedException` (falls CTS parallel disposed wird). CTS wird NICHT mehr explizit disposed (GC-freigabe statt Race-Potential).
+- `MasterModeService`: Neues `_sync`-Lock-Objekt. Alle `_levelStars`-Zugriffe (Get/Record/Totals/Reset/Load/Save/OnCloudStateLoaded) innerhalb des Locks. MasterLevelCleared-Event außerhalb des Locks gefeuert (Reentrance-Schutz).
+- `CloudSaveService.CloudStateLoaded` wird via `Dispatcher.UIThread.Post` marshaled → Handler garantiert auf UI-Thread. Interface-Kontrakt entsprechend dokumentiert.
+- `ShaderEffects._sharedWaterRippleTried` als `volatile` (ARM-Safety). Kommentar erklärt warum der Fast-Path-Read ohne Lock trotzdem korrekt ist.
+
+**Lifecycle:**
+- `IMasterModeService` + `IDeckTelemetryService` erben jetzt `IDisposable` (Interface-Contract).
+- `App.DisposeServices` disposed `IDeckTelemetryService`, `IMasterModeService`, `ICloudSaveService`. Flusht pending DeckTelemetry-Save beim Shutdown (kein Datenverlust).
+
+**Code-Hygiene:**
+- `NeonJoystick._frameCounter`-Feld + Increment entfernt (war toter Code nach Flicker-Fix).
+- `GameEngine.StartStoryModeAsync` loggt via `Debug.WriteLine` wenn Master-Mode-Downgrade passiert (Deep-Link-Debugging).
+
+### Pass 1 (Ursprünglicher Review):
+
+**Critical (Datenverlust-Risiko):**
+- `CloudSaveService.SyncKeys` um `master_mode_status_v1`, `master_mode_active`, `deck_telemetry_v1` erweitert → Master-Mode-Progress + Champion-Skin + Deck-Telemetrie bleiben bei Geräte-Wechsel erhalten
+- Neues `ICloudSaveService.CloudStateLoaded`-Event → `MasterModeService` + `DeckTelemetryService` abonnieren und invalidieren ihren internen Cache nach Cloud-Pull (sonst stale UI)
+
+**High (Feature-Bugs):**
+- `RotatingDealsService.ClaimDeal` Card-Case nutzt jetzt Pool-Rarity basierend auf `TitleKey` (`DealLegendaryCardDrop` → Legendary, `DealEpicCardPack` → Epic, sonst Rare) und respektiert `RewardAmount` (Bundle-Deals droppen mehrere Karten)
+- `ShaderEffects.Preload`/`DisposeSharedResources` haben jetzt echten `lock (_sharedWaterRippleLock)` mit Double-Check-Pattern (vorher kein Lock)
+- `Enemy._staggerRandom` ersetzt durch `Random.Shared` (explizit thread-safe ab .NET 6+)
+- `MasterModeService.IsActive`-Getter prüft jetzt `IsUnlocked` (Corruption-Schutz)
+- `GameEngine.StartStoryModeAsync` setzt `_isMasterMode = masterMode && _masterModeService.IsUnlocked` (Defense-in-Depth gegen Deep-Link-Manipulation)
+
+**Medium (Polish):**
+- `LevelSelectViewModel.ToggleMasterMode` setzt Service-State ZUERST, dann VM-Property (Source-of-Truth-Prinzip)
+- `MainViewModel.NavigationRequestToRoute` loggt Fallback statt silent-return für unbekannte inner-Requests
+- `FogOfWarSystem.Render` resettet `fillPaint.Color/StrokeWidth/Style` am Ende (Paint-Contract)
+- `DeckTelemetryService` umgestellt auf 1s Save-Debounce (vorher blockierte jeder Bomb-Placement 1-5ms den UI-Thread)
+- `MasterModeService.IsActive`-Setter loggt Warnung bei silent-fail
+
+**Low (Code-Cleanup):**
+- `GameTrackingService.OnMasterLevelCompleted` Gem-Reward-Check vereinfacht (redundanter `GetMasterStars==3`-Check entfernt)
+- `GameTrackingService.OnStoryLevelCompleted` bekommt `isMutatorLevel`-Parameter → `CompleteMutatorLevel`-Mission trackt jetzt echte Mutator-Levels statt nur `level>50`
+- Totes `_levelStartReportedToTelemetry`-Feld in `GameEngine` entfernt
+- `AdConfig.cs` kommentiert klar welche Placements WIP sind (bonus_card_drop, battle_pass_xp_boost haben keine Call-Sites)
+
+**Bonus-Fix: Bomb-Button-Flackern**
+- `NeonJoystick.RenderBombButton`/`RenderDetonatorButton`: Glow-Layer wurde alle 2 Frames getoggelt → 15-Hz-Flicker. Jetzt durchgehend mit halbem Alpha (gleiche GPU-Kosten, keine sichtbare Toggle-Frequenz)
+- Cyan-Funke-Pulse: 14 Hz → 6 Hz, ±30% → ±15% Amplitude
+- Idle-Breath: 2.5 Hz → 1.5 Hz, ±10% → ±5% Amplitude
+- Resultat: Button "glüht ruhig" statt "flackert nervös"
+
+## Updates v2.0.35 (24.04.2026) — Performance + Master Mode + Fog of War
+
+### Master-Champion-Skin Crown-Rendering
+
+`GameRenderer.Characters.RenderChampionCrown()` zeichnet bei aktivem `master_champion`-Skin eine prozedurale Gold-Krone auf den Helm: 3 Zacken (Mitte höchster), pulsierender Gold-Glow (2.5 Hz), Rubinroter Edelstein zentriert, Perlen-Highlights auf den Zacken-Spitzen. SKPath-basiert, keine Assets nötig. Aufruf zwischen Helm-Glanzlicht und Gesicht-Block damit Krone korrekt überlagert.
+
+### Fog of War System (L50+ / Master)
+
+`FogOfWarSystem` (Graphics/FogOfWarSystem.cs) implementiert klassisches 3-Zustand-Memory-System:
+
+| Zustand | Alpha-Overlay | Bedeutung |
+|---------|---------------|-----------|
+| Unknown | 235 | Zelle nie gesehen |
+| Explored | 140 | Zelle gesehen, aktuell nicht im Sichtfeld |
+| Visible | 0 | Zelle aktuell im Sichtfeld |
+
+**Aktivierungs-Matrix:**
+
+| Modus | Level | FoW? | Radius |
+|-------|-------|------|--------|
+| Story | 1-49 | nein | — |
+| Story | 50-59 | ja | 5 Zellen |
+| Story | 60-99 | ja | 4 Zellen |
+| Story | 100 (Welt 10) | bereits `FogOverlay` (einfacher Sichtkreis, kein Memory) | — |
+| Master Mode | 1-100 | ja | 4 Zellen |
+| Dungeon / Survival / Quick-Play / Daily | alle | nein | — |
+
+**Algorithmus:** Manhattan-Radius mit leichter Ecken-Abrundung (`dx*dx + dy*dy <= r*r + r`). Kein echtes Line-of-Sight (Blöcke blockieren nicht — passt zur Bomberman-Vogelperspektive). Update 1× pro Frame in `GameEngine.Update`.
+
+**Rendering:** Per-Cell Rechtecke mit Visibility-basiertem Alpha + radialer Soft-Edge-Ring um den Spieler (zwei konzentrische Kreise mit Stroke, progressiver Alpha). Nutzt gepoolte `_fillPaint` von GameRenderer. Explored-Memory bleibt über Death/Respawn erhalten (Reset nur bei Level-Wechsel via `Enable()`).
+
+**Architektur:**
+- `FogOfWarSystem.Enable(width, height, revealRadius)` in `LoadLevelAsync` (oder `Disable()`)
+- `Update(playerGridX, playerGridY)` in `GameEngine.Update` pro Frame (kostet <1ms für 15×10 Grid)
+- `Render(canvas, playerX, playerY, fillPaint)` in `GameRenderer.Render` VOR canvas.Restore
+- Dispose in GameRenderer-Dispose-Chain
+
+### Performance / Stutter-Reduktion
+
+### Performance / Stutter-Reduktion
+
+- **A\*-Pathfinding Spawn-Jitter + Frame-Budget** — Enemy-Ctor setzt `AIDecisionTimer` jetzt auf `Random * AIDecisionInterval` (0-1.5s je nach Intelligence). Verteilt die ersten Pfadsuchen bei Mass-Spawn (Level-Start, Survival-Wellen, Mini-Splitter) statt alle im selben Frame zu rechnen. Zusätzlich EnemyAI.`AStarBudgetPerFrame = 5` als Absicherung bei Extremfällen: Wenn Budget erschöpft, fällt der Gegner für einen Frame auf Random-Movement zurück, kommt im nächsten Frame wieder dran (natürliches Auffalten durch Decision-Jitter 0.8-1.2×). Threading wurde bewusst NICHT gewählt, weil der A\*-Code intern-gepoolt ist (SKPaint, PriorityQueue, HashSets) und der Grid-State sich jeden Frame durch Bombs/brechende Blöcke ändert — Thread-Safety hätte Grid-Snapshots erfordert, was 400+ LOC neue Risiken bedeutet hätte.
+
+- **Adaptive Frame-Skipping** — GameRenderer führt einen 5-Frame-Ring-Buffer der Frame-Zeiten. Wenn Durchschnitt > 40ms (unter 25 FPS, Stutter-Indikator), werden atmosphärische Systeme automatisch für mindestens 500ms ausgesetzt: WeatherSystem, AmbientParticleSystem, TrailSystem, Background-Elements, DynamicLighting, Post-Processing (Color Grading, Water Ripples, Damage Flash). Gameplay (Input, Collision, AI, Bomb-Explosion-Feedback) läuft voll weiter. Hysterese-Exit bei Avg < 28ms gegen Flackern. Neue Property `SkipAtmosphere` kombiniert manuellen `ReducedEffects`-Toggle mit der adaptiven Entscheidung.
+
+### Master Mode (Endgame / New Game+)
+
+**Unlock:** Nach L100-Abschluss im Normal-Modus wird Master Mode freigeschaltet (Feature-Celebration bei Level 100). Toggle im LevelSelect-Header (Krone-Icon wird aktiv, Header-Text ändert sich zu "Master Mode").
+
+**Gameplay-Änderungen im Master-Modus:**
+- Gegner-Geschwindigkeit × 1.5 (gleiche Formel wie DoubleSpeed-Mutator, nicht kombinierbar → max 1.5×)
+- Gegner-Typ-Upgrade: Ballom→Minvo, Onil→Pass, Doll→Pontan, Minvo→Pass, Kondoria→Pontan, Ovapi→Pontan. Pass/Pontan sind schon Maximum. Spezialtypen (Tanker/Ghost/Splitter/Mimic) bleiben unverändert.
+- Nutzt existing 100 Story-Level — kein neuer Content-Scope, reines Skalierungs-Feature.
+
+**Persistenz (separater Pfad, kein Normal-Score-Update):**
+- `IMasterModeService.RecordLevelCompleted(level, stars)` speichert pro Level die höchste Stern-Anzahl in Preferences-JSON
+- Normal-Mode Stars bleiben unberührt — Master-Mode ist parallel
+- Star-Berechnung lokal via `IProgressService.GetBaseScoreForLevel` (gleiche Thresholds 1×/2×/3× wie Normal)
+
+**Rewards:**
+- +1 Gem pro erstmaligem 3-Sterne-Master-Clear (100 Levels × 1G = 100G Endgame-Gems)
+- Battle-Pass-XP: +150 pro Clear, +100 für 3 Sterne, +75 für No-Damage (höher als Normal wegen Schwierigkeit)
+- Liga-Punkte: +15 + level/10 (+25 bei Boss-Levels alle 10)
+- "master_champion"-Skin Unlock nach 100 Master-3-Sterne-Clears (UnlockOnly-Flag, nicht kaufbar)
+- 3 neue Achievements (Mastery-Category): master_first (1 Clear, 500 Coins), master_25 (25 Clears, 2000 Coins), master_100 (100 3-Sterne, 10000 Coins)
+
+**UI:**
+- LevelSelect-Header: Toggle-Button mit Krone-Icon + Master-Status-Text "Master: X/100 (Y★)"
+- Level-Thumbnails: Kleine gelbe Krone oben rechts wenn `HasMasterClear` (unabhängig vom aktiven Toggle)
+- Achievement-View: Master-Achievements in Mastery-Category neben den stars_*-Achievements
+- RESX-Keys: MasterModeTitle, MasterStatusFormat, MasterModeToggleTooltip, AchMasterFirst*, AchMaster25*, AchMaster100*, SkinMasterChampion × 6 Sprachen
+
+**Architektur:**
+- Neuer `IMasterModeService` (Singleton) — Status pro Level, Gesamt-Zähler, IsActive-Toggle
+- `GoGame`-Navigation-Record bekommt `MasterMode`-Bool-Parameter (default false)
+- `GameEngine._isMasterMode`-Flag wird in `StartStoryModeAsync(level, masterMode)` gesetzt, in allen anderen Start*-Methoden auf false zurückgesetzt
+- `GameEngine.ApplyMasterModeEnemyUpgrade()` wird EINMAL nach `LoadLevelAsync()` aufgerufen und ersetzt upgradebare Gegner-Typen im `_enemies`-List
+- `GameTrackingService.OnMasterLevelCompleted` orchestriert Reward/Achievement/Skin-Unlock — GameEngine.CompleteLevel ruft nur diesen einen Entry-Point auf, Rest bleibt in GameTrackingService
+
+## Endgame-Design-Empfehlung (Feature-Proposal für v2.0.36+: Ascension Mode)
+
+Master Mode ist Phase 1 des Endgame-Hybrids. Phase 2 "Ascension Mode" kann auf Master aufbauen:
+
+Story endet mit L100 — Long-Term-Retention-Risk. Zwei Optionen skizziert, Game-Design-Entscheidung ausstehend:
+
+### Option A: Endless Ascent (Ascension-Mode)
+
+Neuer Mode="endless" im GameEngine, Unlock nach L100-Abschluss. Spielt zufällig generierte Level (QuickPlay-Engine) mit progressiv steigendem Difficulty-Skalar basierend auf `AscensionLevel` (0-50). Jeder Level-Clear: AscensionLevel+1, alle 10 AscensionLevel: +2 Gems Reward. GameOver: Ascension-Highscore persistiert, zurück zum MainMenu.
+
+**Infrastruktur nötig:** `IEndlessService` (AscensionLevel, BestAscension, Gems-Total), `StartEndlessAsync(ascension)` in GameEngine, EnemyCount/Speed/HP-Skalierung in LevelGenerator, `EndlessViewModel` + `EndlessView` (Leaderboard + Start-Button), MainMenu-Button ab L100, NavigationRequest `GoEndless`, RESX (~15 Keys × 6 Sprachen).
+
+**Vorteil:** Klassisches Arcade-"Endless"-Feel, wenig Story-Dependency, Leaderboard-tauglich.
+
+### Option B: Master Mode (New Game+)
+
+Ab L100 erscheint im LevelSelect ein "Master Mode"-Toggle. Spieler kann L1-100 mit +50% Enemy-Speed + höherwertigen Gegner-Auswahl (Ballom→Minvo, Doll→Pass etc.) erneut spielen. Jedes Master-3-Sterne-Level: +1 Gem + Master-Marker im Thumbnail. Freischaltet einen "Master-Champion"-Skin nach 100 Master-3-Sterne-Clears.
+
+**Infrastruktur nötig:** `IMasterModeService` (per-Level-Status), `masterMode`-Bool in GameEngine-Parameter + LevelGenerator, EnemyAI-Skalierung, UI-Toggle im LevelSelect, Thumbnail-Badge-Renderer-Anpassung, Achievement-Integration.
+
+**Vorteil:** Reused existing 100 Level-Content, direkter Transfer der Deck/Shop-Progression, kein neuer Game-Mode nötig, native "Prestige"-Loop.
+
+**Empfehlung:** Option B (Master Mode) für minimal-invasiven Scope und maximale Wiederverwendung. Option A als Follow-up für Leaderboard-fokussierte Spieler.
+
+## IAP-Mix-Erweiterung (Feature-Proposal für v2.0.35+)
+
+Aktueller IAP-Mix: `remove_ads` (1.99, non-consumable), `gem_pack_*` (4 Tiers, consumable), `battle_pass_premium` (saisonal, consumable), `dungeon_master_pass` (consumable, permanenter 2x-Buff). Fehlt: Progression-Bundles + Comeback-Angebote.
+
+### Geplante neue Produkte
+
+| Product-ID | Preis | Trigger | Reward |
+|-----------|-------|---------|--------|
+| `progression_bundle_l20` | 7.99 EUR | Einmalig nach L20-Abschluss, Offer-Popup | 10.000 Coins + 50 Gems + 3 Rare-Karten |
+| `comeback_pack` | 4.99 EUR | >14 Tage inaktiv (DailyRewardService Hook) | 5.000 Coins + 25 Gems + 2 Epic-Karten |
+| `elite_pass_season` | 4.99 EUR | Saisonal bei Saisonstart | +30% BattlePass-XP gesamte Season + Extra-Track mit 5 Legendary-Karten |
+
+**Infrastruktur nötig:** `IPromoOfferService` (Eligibility + Purchase + Gewährung), Offer-Popup-UI (ähnlich StarterPack), PurchaseService-Product-IDs registrieren, saisonaler Elite-Pass-Tracker (Parallel zu BattlePass), Comeback-Eligibility in `IDailyRewardService`.
+
+**Empfehlung:** Progression Bundle zuerst (höchste erwartete Take-Rate bei klarem "I want to skip the grind"-Moment), Comeback Pack zweites (Retention-Werkzeug), Elite Pass als Season-Feature.

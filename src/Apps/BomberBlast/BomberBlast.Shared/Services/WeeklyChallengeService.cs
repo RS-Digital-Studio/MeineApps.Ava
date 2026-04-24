@@ -32,6 +32,11 @@ public sealed class WeeklyChallengeService : TimedMissionServiceBase, IWeeklyCha
         (WeeklyMissionType.PlayQuickPlay, "WeeklyPlayQuickPlay", "WeeklyPlayQuickPlayDesc", 3, 7, 400),
         (WeeklyMissionType.SpinLuckyWheel, "WeeklySpinWheel", "WeeklySpinWheelDesc", 3, 7, 350),
         (WeeklyMissionType.UpgradeCards, "WeeklyUpgradeCards", "WeeklyUpgradeCardsDesc", 1, 3, 600),
+
+        // v2.0.34: Skill-basierte Missionstypen (höhere Rewards, Anti-Wiederholung)
+        (WeeklyMissionType.CompleteThreeStar, "WeeklyThreeStar", "WeeklyThreeStarDesc", 3, 8, 700),
+        (WeeklyMissionType.NoDamageLevel, "WeeklyNoDamage", "WeeklyNoDamageDesc", 2, 5, 750),
+        (WeeklyMissionType.CompleteMutatorLevel, "WeeklyMutatorLevel", "WeeklyMutatorLevelDesc", 3, 6, 650),
     ];
 
     public WeeklyChallengeService(IPreferencesService preferences, IBattlePassService battlePassService, ILeagueService leagueService, IGemService gemService)

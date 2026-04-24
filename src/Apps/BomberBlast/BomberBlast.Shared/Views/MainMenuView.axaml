@@ -307,46 +307,76 @@
             </Panel>
           </Grid>
 
-          <!-- Herausforderungen (volle Breite) -->
-          <Panel IsVisible="{Binding IsDailyChallengeUnlocked}" MinHeight="48">
-              <controls:GameButtonCanvas ButtonColor="#FF6B00" DamageLevel="0.5" ButtonSeed="23" />
+          <!-- Herausforderungen + Missionen (2 Spalten ab L17, sonst volle Breite) -->
+          <Grid ColumnDefinitions="*,*">
+            <!-- Daily Challenge (links) -->
+            <Panel Grid.Column="0" Margin="0,0,2,0" IsVisible="{Binding IsDailyChallengeUnlocked}" MinHeight="48">
+                <controls:GameButtonCanvas ButtonColor="#FF6B00" DamageLevel="0.5" ButtonSeed="23" />
+                <Button Classes="Primary GameButton"
+                        Background="Transparent"
+                        Command="{Binding DailyChallengeCommand}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        AutomationProperties.AutomationId="MainMenu_BtnChallenges">
+                  <StackPanel Orientation="Horizontal" Spacing="4">
+                    <icons:GameIcon Kind="Sword" Width="14" Height="14"
+                                     Foreground="White" />
+                    <TextBlock Text="{loc:Translate DailyChallengeTitle}"
+                               Foreground="White"
+                               FontSize="13" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Button>
+              <!-- "!" Badge wenn Herausforderung offen -->
+              <Border IsVisible="{Binding IsDailyChallengeNew}"
+                      Background="#FF2020"
+                      CornerRadius="6"
+                      Padding="4,1"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Top"
+                      Margin="0,-3,0,0"
+                      AutomationProperties.AutomationId="MainMenu_BadgeChallengesNew">
+                <TextBlock Text="{loc:Translate DailyChallengeNew}"
+                           FontSize="9" FontWeight="Bold"
+                           Foreground="White" />
+              </Border>
+            </Panel>
+
+            <!-- Missions (rechts, ab Level 17) -->
+            <Panel Grid.Column="1" Margin="2,0,0,0" IsVisible="{Binding IsDailyMissionsUnlocked}" MinHeight="48">
+              <controls:GameButtonCanvas ButtonColor="#E65100" DamageLevel="0.5" ButtonSeed="24" />
               <Button Classes="Primary GameButton"
                       Background="Transparent"
-                      Command="{Binding DailyChallengeCommand}"
+                      Command="{Binding MissionsCommand}"
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Center"
                       VerticalContentAlignment="Center"
-                      AutomationProperties.AutomationId="MainMenu_BtnChallenges">
+                      AutomationProperties.AutomationId="MainMenu_BtnMissions">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <icons:GameIcon Kind="Sword" Width="14" Height="14"
+                  <icons:GameIcon Kind="CalendarCheck" Width="14" Height="14"
                                    Foreground="White" />
-                  <TextBlock Text="{loc:Translate DailyChallengeTitle}"
+                  <TextBlock Text="{loc:Translate MissionsButton}"
                              Foreground="White"
-                             FontSize="14" />
+                             FontSize="13" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
               </Button>
-            <!-- "!" Badge wenn Herausforderungen/Missionen offen -->
-            <Border IsVisible="{Binding IsDailyChallengeNew}"
-                    Background="#FF2020"
-                    CornerRadius="6"
-                    Padding="4,1"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Top"
-                    Margin="0,-3,0,0"
-                    AutomationProperties.AutomationId="MainMenu_BadgeChallengesNew">
-              <TextBlock Text="{loc:Translate DailyChallengeNew}"
-                         FontSize="9" FontWeight="Bold"
-                         Foreground="White" />
-            </Border>
-          </Panel>
+              <!-- NEU Badge für Missions (L17 Unlock) -->
+              <Border IsVisible="{Binding IsDailyMissionsNew}"
+                      Background="#FF2020" CornerRadius="6" Padding="4,1"
+                      HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-3,-3,0"
+                      IsHitTestVisible="False">
+                <TextBlock Text="{loc:Translate New}" FontSize="8" FontWeight="Bold" Foreground="White" />
+              </Border>
+            </Panel>
+          </Grid>
 
         </StackPanel>
 
       </Grid>
 
-      <!-- ═══ UNTERE LEISTE: 3 Utility-Buttons ═══ -->
+      <!-- ═══ UNTERE LEISTE: 3-4 Utility-Buttons (Customize ab L18) ═══ -->
       <Grid Grid.Row="1"
-            ColumnDefinitions="*,*,*"
+            ColumnDefinitions="*,*,*,*"
             Margin="0,6,0,0">
 
         <!-- Shop -->
@@ -365,7 +395,7 @@
                                Foreground="White" />
               <TextBlock Text="{loc:Translate ShopTitle}"
                          Foreground="White"
-                         FontSize="14" />
+                         FontSize="13" TextTrimming="CharacterEllipsis" />
             </StackPanel>
           </Button>
           <!-- NEU Badge -->
@@ -392,14 +422,42 @@
               <icons:GameIcon Kind="AccountCircle" Width="16" Height="16"
                                Foreground="White" />
               <TextBlock Text="{loc:Translate ProfileTitle}"
-                         FontSize="14"
+                         FontSize="13" TextTrimming="CharacterEllipsis"
                          Foreground="White" />
             </StackPanel>
           </Button>
         </Panel>
 
+        <!-- Customize (ab Level 18) -->
+        <Panel Grid.Column="2" Margin="2,0,2,0" Height="48"
+               IsVisible="{Binding IsCustomizationUnlocked}">
+          <controls:GameButtonCanvas ButtonColor="#AB47BC" DamageLevel="0.3" ButtonSeed="33" />
+          <Button Classes="Secondary GameButton"
+                  Background="Transparent"
+                  Command="{Binding CustomizeCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  AutomationProperties.AutomationId="MainMenu_BtnCustomize">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <icons:GameIcon Kind="Palette" Width="16" Height="16"
+                               Foreground="White" />
+              <TextBlock Text="{loc:Translate CustomizeButton}"
+                         Foreground="White"
+                         FontSize="13" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Button>
+          <!-- NEU Badge (L18 Unlock) -->
+          <Border IsVisible="{Binding IsCustomizationNew}"
+                  Background="#FF2020" CornerRadius="6" Padding="4,1"
+                  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-3,4,0"
+                  IsHitTestVisible="False">
+            <TextBlock Text="{loc:Translate New}" FontSize="8" FontWeight="Bold" Foreground="White" />
+          </Border>
+        </Panel>
+
         <!-- Einstellungen -->
-        <Panel Grid.Column="2" Margin="2,0,0,0" Height="48">
+        <Panel Grid.Column="3" Margin="2,0,0,0" Height="48">
           <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="32" />
           <Button Classes="Secondary GameButton"
                   Background="Transparent"
@@ -412,8 +470,7 @@
               <icons:GameIcon Kind="Cog" Width="16" Height="16"
                                Foreground="White" />
               <TextBlock Text="{loc:Translate Settings}"
-                         FontSize="14"
-                         TextTrimming="CharacterEllipsis"
+                         FontSize="13" TextTrimming="CharacterEllipsis"
                          Foreground="White" />
             </StackPanel>
           </Button>
@@ -514,19 +571,35 @@
           </ScrollViewer>
 
           <!-- Buttons -->
-          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12"
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8"
                       HorizontalAlignment="Center" Margin="0,12,0,0">
-            <!-- Abholen-Button mit TornMetal-Hintergrund -->
-            <Panel Height="44" MinWidth="140">
+            <!-- Abholen-Button (1x) mit TornMetal-Hintergrund -->
+            <Panel Height="44" MinWidth="120">
               <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.5" ButtonSeed="33" />
               <Button Command="{Binding ClaimDailyRewardCommand}"
                       Classes="Primary GameButton"
-                      Height="44" MinWidth="140"
+                      Height="44" MinWidth="120"
                       HorizontalContentAlignment="Center"
                       AutomationProperties.AutomationId="MainMenu_BtnClaimReward">
                 <TextBlock Text="{Binding RewardClaimText}"
-                           FontSize="16" FontWeight="Bold"
+                           FontSize="15" FontWeight="Bold"
                            Foreground="White" />
+              </Button>
+            </Panel>
+            <!-- Double-via-Ad-Button (2x, v2.0.34) - grün-gold für Rewarded Ad -->
+            <Panel Height="44" MinWidth="120">
+              <controls:GameButtonCanvas ButtonColor="#10B981" DamageLevel="0.4" ButtonSeed="35" />
+              <Button Command="{Binding ClaimDailyRewardDoubledCommand}"
+                      Classes="Primary GameButton"
+                      Height="44" MinWidth="120"
+                      HorizontalContentAlignment="Center"
+                      AutomationProperties.AutomationId="MainMenu_BtnClaimRewardDoubled">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <icons:GameIcon Kind="Video" Width="16" Height="16" Foreground="White" />
+                  <TextBlock Text="{loc:Translate DailyRewardDoubleViaAd}"
+                             FontSize="13" FontWeight="Bold"
+                             Foreground="White" VerticalAlignment="Center" />
+                </StackPanel>
               </Button>
             </Panel>
             <!-- Schließen-Button mit TornMetal-Hintergrund -->

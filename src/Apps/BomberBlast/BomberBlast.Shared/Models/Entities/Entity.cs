@@ -87,20 +87,54 @@ public abstract class Entity
     protected virtual int GetAnimationFrameCount() => 4;
 
     /// <summary>
-    /// Check collision with another entity
+    /// Check collision with another entity.
+    /// <para>v2.0.35: Nutzt verschrumpfte Hitboxes (60% der Zellgröße) damit
+    /// Kollision nur bei echter visueller Berührung triggert. Vorher: Volle
+    /// CELL_SIZE-Bounding-Box → Spieler "starb" wenn er auf dem gleichen Grid-Feld
+    /// war obwohl pixel-distanz noch &gt;50% der Zellgröße. Neu: Shrink-Faktor 0.6
+    /// lässt Spieler/Gegner bis ~60% physisch überlappen bevor Kollision zählt.
+    /// Shrink kann pro Entity via <see cref="HitboxScale"/> überschrieben werden
+    /// (Boss-Klassen nutzen ihre eigene multi-cell BoundingBox ohne Shrink).</para>
     /// </summary>
     public bool CollidesWith(Entity other)
     {
         if (!IsActive || !other.IsActive)
             return false;
 
-        var a = BoundingBox;
-        var b = other.BoundingBox;
+        var a = GetHitbox();
+        var b = other.GetHitbox();
 
         return a.left < b.right &&
                a.right > b.left &&
                a.top < b.bottom &&
                a.bottom > b.top;
+    }
+
+    /// <summary>
+    /// Shrink-Faktor der Hitbox. Default 0.6 = 60% der CELL_SIZE (NICHT der
+    /// BoundingBox-Größe). Gilt nur für <see cref="CollidesWith"/>. Boss-Klassen
+    /// überschreiben auf 1.0, weil ihre BoundingBox bereits custom verkleinert ist.
+    /// <para><b>Warum Width/Height statt BoundingBox?</b> Player/Enemy haben
+    /// BoundingBox-Overrides (0.4×/0.35× CELL_SIZE). Würde GetHitbox diese
+    /// zusätzlich × 0.6 verkleinern, wäre die Hitbox 0.24×/0.21× — viel zu klein.
+    /// Stattdessen basiert der Shrink auf der unskalierten Entity-Größe (Width/Height
+    /// = CELL_SIZE) für konsistent 0.6× Kollisions-Radius bei allen Entities.</para>
+    /// </summary>
+    protected virtual float HitboxScale => 0.6f;
+
+    /// <summary>
+    /// Innere Hitbox für Kollisionen. Nutzt bewusst Width/Height (CELL_SIZE) statt
+    /// BoundingBox, damit alle Entities eine konsistente Shrink-Basis haben
+    /// unabhängig von ihrer visuellen Darstellungs-Größe. Bei HitboxScale >= 1.0
+    /// wird die BoundingBox direkt verwendet (Boss-Fall).
+    /// </summary>
+    private (float left, float top, float right, float bottom) GetHitbox()
+    {
+        float scale = HitboxScale;
+        if (scale >= 1f) return BoundingBox;
+        float halfW = (Width * scale) / 2f;
+        float halfH = (Height * scale) / 2f;
+        return (X - halfW, Y - halfH, X + halfW, Y + halfH);
     }
 
     /// <summary>

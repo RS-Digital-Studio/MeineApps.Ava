@@ -23,6 +23,7 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
     private readonly ICoinService _coinService;
     private readonly ILocalizationService _localizationService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IMasterModeService _masterModeService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -106,16 +107,46 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
         IPurchaseService purchaseService,
         ICoinService coinService,
         ILocalizationService localizationService,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService,
+        IMasterModeService masterModeService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
         _coinService = coinService;
         _localizationService = localizationService;
         _rewardedAdService = rewardedAdService;
+        _masterModeService = masterModeService;
 
         // Coin-Anzeige bei Balance-Aenderung aktualisieren (z.B. nach Kauf im Shop)
         _coinService.BalanceChanged += OnBalanceChanged;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MASTER MODE (v2.0.35)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Ob Master Mode freigeschaltet ist (L100 Normal-Modus abgeschlossen).</summary>
+    public bool IsMasterModeUnlocked => _masterModeService.IsUnlocked;
+
+    /// <summary>Ob aktuell der Master-Mode-Toggle aktiviert ist (persistiert in Preferences).</summary>
+    [ObservableProperty]
+    private bool _isMasterModeActive;
+
+    /// <summary>Text für den Master-Mode-Header-Indikator (zeigt Gesamt-Stern-Stand im Master).</summary>
+    [ObservableProperty]
+    private string _masterModeStatusText = "";
+
+    [RelayCommand]
+    private void ToggleMasterMode()
+    {
+        if (!IsMasterModeUnlocked) return;
+        // Service-State ZUERST setzen (Source of Truth), dann VM-Property nachziehen.
+        // Verhindert transienten Inkonsistenz-State falls Listener auf PropertyChanged
+        // während des Toggle den Service abfragen.
+        _masterModeService.IsActive = !_masterModeService.IsActive;
+        IsMasterModeActive = _masterModeService.IsActive;
+        // Level-Liste neu laden damit Thumbnails Master-Sterne zeigen
+        OnAppearing();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -124,8 +155,26 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
 
     public void OnAppearing()
     {
+        // Master-Mode State aus Service lesen (kann zwischen Sessions persistieren)
+        IsMasterModeActive = _masterModeService.IsActive;
+        OnPropertyChanged(nameof(IsMasterModeUnlocked));
+        UpdateMasterModeStatus();
+
         BuildWorldGroups();
         UpdateProgressInfo();
+    }
+
+    private void UpdateMasterModeStatus()
+    {
+        if (!IsMasterModeUnlocked)
+        {
+            MasterModeStatusText = "";
+            return;
+        }
+        var format = _localizationService.GetString("MasterStatusFormat") ?? "Master: {0}/100 ({1}★)";
+        MasterModeStatusText = string.Format(format,
+            _masterModeService.TotalMasterClears,
+            _masterModeService.TotalMaster3Stars);
     }
 
     private void BuildWorldGroups()
@@ -180,12 +229,18 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
             int worldStars = 0;
             for (int i = firstLevel; i < firstLevel + 10 && i <= _progressService.TotalLevels; i++)
             {
-                int stars = _progressService.GetLevelStars(i);
+                // Im Master-Modus: Master-Sterne anzeigen. Unlocked bleibt an Normal-Progress
+                // gekoppelt (Master ist nur sinnvoll wenn Level normal freigeschaltet).
+                int stars = IsMasterModeActive
+                    ? _masterModeService.GetMasterStars(i)
+                    : _progressService.GetLevelStars(i);
                 worldStars += stars;
 
                 bool isUnlocked = !isWorldLocked && _progressService.IsLevelUnlocked(i);
                 int bestScore = _progressService.GetLevelBestScore(i);
-                bool isCompleted = bestScore > 0;
+                bool isCompleted = IsMasterModeActive
+                    ? _masterModeService.GetMasterStars(i) > 0
+                    : bestScore > 0;
 
                 var item = new LevelDisplayItem
                 {
@@ -201,6 +256,8 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
                     BestScoreText = bestScore > 0 ? bestScore.ToString("N0") : "",
                     IsWorldLocked = isWorldLocked,
                     WorldNumber = w,
+                    IsMasterMode = IsMasterModeActive,
+                    MasterStars = _masterModeService.GetMasterStars(i),
                 };
                 item.SelectCommand = new RelayCommand(() => SelectLevel(item));
                 group.Levels.Add(item);
@@ -272,7 +329,7 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
             return;
         }
 
-        NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: level.LevelNumber));
+        NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: level.LevelNumber, MasterMode: IsMasterModeActive));
     }
 
     private void PickRandomBoost()
@@ -312,7 +369,7 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
         // Premium: Boost kostenlos (kein Ad nötig)
         if (_purchaseService.IsPremium)
         {
-            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, Boost: _pendingBoostType));
+            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, Boost: _pendingBoostType, MasterMode: IsMasterModeActive));
             return;
         }
 
@@ -321,12 +378,12 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
         if (success)
         {
             RewardedAdCooldownTracker.RecordAdShown();
-            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, Boost: _pendingBoostType));
+            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, Boost: _pendingBoostType, MasterMode: IsMasterModeActive));
         }
         else
         {
             // Ad fehlgeschlagen, normal starten
-            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel));
+            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, MasterMode: IsMasterModeActive));
         }
     }
 
@@ -334,7 +391,7 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
     private void DeclineBoost()
     {
         ShowBoostOverlay = false;
-        NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel));
+        NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, MasterMode: IsMasterModeActive));
     }
 
     [RelayCommand]
@@ -404,6 +461,15 @@ public class LevelDisplayItem
     public int BestScore { get; set; }
     public int WorldNumber { get; set; }
     public bool IsWorldLocked { get; set; }
+
+    /// <summary>v2.0.35: Ob dieses Thumbnail im Master-Modus gerendert wird (Krone-Badge).</summary>
+    public bool IsMasterMode { get; set; }
+
+    /// <summary>v2.0.35: Anzahl Master-Sterne (0-3), unabhängig vom Master-Toggle.</summary>
+    public int MasterStars { get; set; }
+
+    /// <summary>Visibility-Flag für Master-Crown-Badge (nur anzeigen wenn Level Master-Clear hat).</summary>
+    public bool HasMasterClear => MasterStars > 0;
 
     public string BestScoreText { get; set; } = "";
 

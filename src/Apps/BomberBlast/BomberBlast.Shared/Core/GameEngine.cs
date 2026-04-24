@@ -46,7 +46,17 @@ public sealed partial class GameEngine : IDisposable
     private readonly IDungeonService _dungeonService;
     private readonly IDungeonUpgradeService _dungeonUpgradeService;
     private readonly IGameTrackingService _tracking;
+    private readonly IDeckTelemetryService _deckTelemetry;
+    private readonly IMasterModeService _masterModeService;
     private readonly IVibrationService _vibration;
+
+    /// <summary>
+    /// Während eines Levels eingesetzte Spezial-Bombentypen. Wird bei
+    /// Level-Load geleert und bei CompleteLevel an den IDeckTelemetryService
+    /// gemeldet. HashSet, damit jeder Typ maximal 1x pro Level zählt
+    /// (verhindert Doppelzählung bei mehreren Einsätzen der gleichen Karte).
+    /// </summary>
+    private readonly HashSet<BombType> _specialBombTypesUsedInLevel = new();
 
     // Discovery-Hints (Erstentdeckung von PowerUps/Mechaniken)
     private readonly DiscoveryOverlay _discoveryOverlay;
@@ -88,6 +98,10 @@ public sealed partial class GameEngine : IDisposable
     private bool _isQuickPlayMode;
     private int _quickPlayDifficulty;
     private bool _isDungeonRun;
+    private bool _isMasterMode;
+
+    /// <summary>Ob der aktuelle Lauf im Master Mode ist (New Game+ ab L100-Clear).</summary>
+    public bool IsMasterMode => _isMasterMode;
     private LevelMutator _activeMutator = LevelMutator.None;
     private bool _levelCompleteHandled;
     private bool _continueUsed;
@@ -500,6 +514,8 @@ public sealed partial class GameEngine : IDisposable
         IDungeonService dungeonService,
         IDungeonUpgradeService dungeonUpgradeService,
         IGameTrackingService tracking,
+        IDeckTelemetryService deckTelemetry,
+        IMasterModeService masterModeService,
         IVibrationService vibrationService)
     {
         _soundManager = soundManager;
@@ -518,6 +534,8 @@ public sealed partial class GameEngine : IDisposable
         _dungeonService = dungeonService;
         _dungeonUpgradeService = dungeonUpgradeService;
         _tracking = tracking;
+        _deckTelemetry = deckTelemetry;
+        _masterModeService = masterModeService;
         _vibration = vibrationService;
         _tutorialOverlay = new TutorialOverlay(localizationService);
         _discoveryOverlay = new DiscoveryOverlay(localizationService);
@@ -673,6 +691,11 @@ public sealed partial class GameEngine : IDisposable
     public void Update(float deltaTime)
     {
         _renderer.Update(deltaTime);
+
+        // Fog-of-War: Sichtbarkeit basierend auf aktueller Spieler-Position (v2.0.35).
+        // Update nur wenn FoW aktiv (kostet sonst 0 — interne Enabled-Prüfung).
+        if (_renderer.FogOfWar.IsEnabled && _player != null)
+            _renderer.FogOfWar.Update(_player.GridX, _player.GridY);
 
         // ReducedEffects: ScreenShake, Partikel und atmosphärische Effekte deaktivieren
         bool reducedFx = _inputManager.ReducedEffects;
@@ -1021,6 +1044,10 @@ public sealed partial class GameEngine : IDisposable
                 {
                     CoinsEarned?.Invoke(coins, _player.Score, false);
                 }
+
+                // Deck-Balancing-Telemetrie: Plays++ für alle eingesetzten Bomben (auch bei GameOver)
+                if (_specialBombTypesUsedInLevel.Count > 0)
+                    _deckTelemetry.RecordLevelStartedWithBombs(_specialBombTypesUsedInLevel);
 
                 // Survival-Runde beendet (Achievement + BattlePass)
                 if (_isSurvivalMode)

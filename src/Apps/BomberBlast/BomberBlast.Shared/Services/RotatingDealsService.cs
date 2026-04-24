@@ -111,12 +111,23 @@ public sealed class RotatingDealsService : IRotatingDealsService
                 _gemService.AddGems(deal.RewardAmount);
                 break;
             case "Card":
-                // Zufällige Rare-Karte
-                var rareCards = GetRareCardTypes();
-                if (rareCards.Count > 0)
+                // Pool abhängig vom Deal-Typ: Legendary bei DealLegendaryCardDrop,
+                // Epic bei DealEpicCardPack, sonst Rare. RewardAmount bestimmt Anzahl
+                // der Karten-Drops (DealRareCardBundle = 3).
+                var cardPool = deal.TitleKey switch
+                {
+                    "DealLegendaryCardDrop" => GetCardTypesByRarity(Rarity.Legendary),
+                    "DealEpicCardPack" => GetCardTypesByRarity(Rarity.Epic),
+                    _ => GetCardTypesByRarity(Rarity.Rare)
+                };
+                if (cardPool.Count > 0)
                 {
                     var rng = new Random(dealId.GetHashCode());
-                    _cardService.AddCard(rareCards[rng.Next(rareCards.Count)]);
+                    int drops = Math.Max(1, deal.RewardAmount);
+                    for (int i = 0; i < drops; i++)
+                    {
+                        _cardService.AddCard(cardPool[rng.Next(cardPool.Count)]);
+                    }
                 }
                 break;
             case "Upgrade":
@@ -141,7 +152,13 @@ public sealed class RotatingDealsService : IRotatingDealsService
     private RotatingDeal GenerateDailyDeal(Random rng, int dayId, int index, HashSet<string> usedTypes)
     {
         // Deal-Typ auswählen (ohne Wiederholung am selben Tag)
-        string[] dealTypes = ["CoinPack", "LargeCoinPack", "CardPack", "UpgradeDiscount"];
+        // v2.0.34: Pool von 4 auf 7 Typen erweitert, damit eine 3-Tages-Rotation
+        // sinnvoll möglich ist (3 Deals pro Tag × 3 Tage = 9 Slots, 7 unique Typen).
+        string[] dealTypes =
+        [
+            "CoinPack", "LargeCoinPack", "CardPack", "UpgradeDiscount",
+            "EpicCardPack", "GemCoinCombo", "PowerUpLuckDeal"
+        ];
         string selectedType;
         do
         {
@@ -187,6 +204,43 @@ public sealed class RotatingDealsService : IRotatingDealsService
                 RewardAmount = 1
             },
             "UpgradeDiscount" => GenerateUpgradeDiscount(rng, dealId),
+
+            // v2.0.34: Drei neue Daily-Deal-Typen
+            "EpicCardPack" => new RotatingDeal
+            {
+                Id = dealId,
+                TitleKey = "DealEpicCardPack",
+                OriginalPrice = 50,
+                DiscountedPrice = 35,
+                DiscountPercent = 30,
+                Currency = "Gems",
+                RewardType = "Card",
+                RewardAmount = 1  // Rare-Card-Pool (siehe GetRareCardTypes)
+            },
+            "GemCoinCombo" => new RotatingDeal
+            {
+                Id = dealId,
+                TitleKey = "DealGemCoinCombo",
+                OriginalPrice = 3000,
+                DiscountedPrice = 2000,
+                DiscountPercent = 33,
+                Currency = "Coins",
+                RewardType = "Gems",
+                RewardAmount = 12
+            },
+            "PowerUpLuckDeal" => new RotatingDeal
+            {
+                Id = dealId,
+                TitleKey = "DealPowerUpLuck",
+                DescriptionKey = "UpgradePowerUpLuck",
+                OriginalPrice = 7500,
+                DiscountedPrice = 4500,
+                DiscountPercent = 40,
+                Currency = "Coins",
+                RewardType = "Upgrade",
+                RewardAmount = 4500  // Coins-Äquivalent als Guthaben
+            },
+
             _ => new RotatingDeal
             {
                 Id = dealId,
@@ -241,7 +295,8 @@ public sealed class RotatingDealsService : IRotatingDealsService
         var dealId = $"weekly_{weekId}";
 
         // Wochendeal-Typen: größere Packs mit besserem Rabatt
-        int dealType = rng.Next(4);
+        // v2.0.34: Pool von 4 auf 6 erweitert für 6-Wochen-Rotation ohne Wiederholung
+        int dealType = rng.Next(6);
         return dealType switch
         {
             0 => new RotatingDeal
@@ -277,7 +332,7 @@ public sealed class RotatingDealsService : IRotatingDealsService
                 RewardType = "Card",
                 RewardAmount = 3 // 3 Karten-Drops
             },
-            _ => new RotatingDeal
+            3 => new RotatingDeal
             {
                 Id = dealId,
                 TitleKey = "DealPremiumBundle",
@@ -287,6 +342,30 @@ public sealed class RotatingDealsService : IRotatingDealsService
                 Currency = "Gems",
                 RewardType = "Coins",
                 RewardAmount = 5000
+            },
+
+            // v2.0.34: Zwei neue Weekly-Deal-Typen
+            4 => new RotatingDeal
+            {
+                Id = dealId,
+                TitleKey = "DealLegendaryCardDrop",
+                OriginalPrice = 400,
+                DiscountedPrice = 250,
+                DiscountPercent = 38,
+                Currency = "Gems",
+                RewardType = "Card",
+                RewardAmount = 1  // Wird in Claim-Logik auf Legendary-Pool begrenzt (via DealId-Marker)
+            },
+            _ => new RotatingDeal
+            {
+                Id = dealId,
+                TitleKey = "DealMasterBundle",
+                OriginalPrice = 60,
+                DiscountedPrice = 35,
+                DiscountPercent = 42,
+                Currency = "Gems",
+                RewardType = "Coins",
+                RewardAmount = 10000
             }
         };
     }
@@ -295,16 +374,19 @@ public sealed class RotatingDealsService : IRotatingDealsService
     // HELFER
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>Gibt alle Rare-Karten-BombTypes zurück</summary>
-    private static List<BombType> GetRareCardTypes()
+    /// <summary>Gibt alle Rare-Karten-BombTypes zurück (Legacy-Alias für GetCardTypesByRarity(Rare)).</summary>
+    private static List<BombType> GetRareCardTypes() => GetCardTypesByRarity(Rarity.Rare);
+
+    /// <summary>Gibt alle BombTypes einer Rarität zurück (für Deal-Rewards v2.0.35).</summary>
+    private static List<BombType> GetCardTypesByRarity(Rarity rarity)
     {
-        var rareTypes = new List<BombType>();
+        var types = new List<BombType>();
         foreach (var card in CardCatalog.All)
         {
-            if (card.Rarity == Rarity.Rare)
-                rareTypes.Add(card.BombType);
+            if (card.Rarity == rarity)
+                types.Add(card.BombType);
         }
-        return rareTypes;
+        return types;
     }
 
     /// <summary>Bereinigt abgelaufene beanspruchte Deals (älter als gestern)</summary>

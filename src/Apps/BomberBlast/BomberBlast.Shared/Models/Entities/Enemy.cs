@@ -104,7 +104,11 @@ public class Enemy : Entity
     public bool IsSpawning => SpawnTimer > 0;
     private const float SPAWN_ANIMATION_DURATION = 0.5f;
 
-    // Collision box is slightly smaller for forgiving gameplay
+    // HINWEIS (v2.0.35): Seit der Einführung von Entity.HitboxScale wird CollidesWith
+    // nicht mehr gegen diese BoundingBox-Property ausgewertet. Der Override bleibt
+    // als Sprite-Referenz erhalten (Debug-Overlay, Boss-Boss-Kollision in
+    // GameEngine.Level nutzt direkt BoundingBox). Spieler-Enemy-Kollision nutzt
+    // Entity.GetHitbox() mit HitboxScale=0.6 auf Width/Height.
     public override (float left, float top, float right, float bottom) BoundingBox
     {
         get
@@ -123,6 +127,13 @@ public class Enemy : Entity
         Points = type.GetPoints();
         HitPoints = type.GetHitPoints();
         LastGridPosition = (GridX, GridY);
+
+        // Decision-Timer-Jitter: Wenn mehrere Gegner gleichzeitig spawnen, würde ein
+        // initialer Timer von 0 alle Gegner im selben Frame A* rechnen lassen → Stutter.
+        // Initialer zufälliger Offset im Intervall [0, AIDecisionInterval] verteilt die
+        // ersten Decisions über die ersten 0.5-1.5s (je nach Intelligence) gleichmässig.
+        // Random.Shared ist .NET 6+ thread-safe (intern ThreadStatic).
+        AIDecisionTimer = Random.Shared.NextSingle() * AIDecisionInterval;
 
         // Mimic startet getarnt
         if (type.CanDisguise())

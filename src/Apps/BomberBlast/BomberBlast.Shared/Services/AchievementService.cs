@@ -439,6 +439,20 @@ public sealed class AchievementService : IAchievementService
         return newUnlock;
     }
 
+    public Achievement? OnMasterLevelCompleted(int totalMasterClears, int totalMaster3Stars)
+    {
+        // Progress-Anzeige im Achievement-View aktualisieren (für Balken)
+        UpdateProgress("master_first", Math.Min(totalMasterClears, 1));
+        UpdateProgress("master_25", totalMasterClears);
+        UpdateProgress("master_100", totalMaster3Stars);
+
+        Achievement? newUnlock = null;
+        if (totalMasterClears >= 1) newUnlock ??= TryUnlock("master_first");
+        if (totalMasterClears >= 25) newUnlock ??= TryUnlock("master_25");
+        if (totalMaster3Stars >= 100) newUnlock ??= TryUnlock("master_100");
+        return newUnlock;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // PRIVATE
     // ═══════════════════════════════════════════════════════════════════════
@@ -570,10 +584,13 @@ public sealed class AchievementService : IAchievementService
             new() { Id = "world9", NameKey = "AchWorld9", DescriptionKey = "AchWorld9Desc", Category = AchievementCategory.Progress, Target = 1, IconName = "Star", CoinReward = 4000 },
             new() { Id = "world10", NameKey = "AchWorld10", DescriptionKey = "AchWorld10Desc", Category = AchievementCategory.Progress, Target = 1, IconName = "Crown", CoinReward = 5000 },
 
-            // Meisterschaft (3)
+            // Meisterschaft (3 + 3 Master-Mode v2.0.35)
             new() { Id = "stars_50", NameKey = "AchStars50", DescriptionKey = "AchStars50Desc", Category = AchievementCategory.Mastery, Target = 50, IconName = "StarCircle", CoinReward = 1000 },
             new() { Id = "stars_100", NameKey = "AchStars100", DescriptionKey = "AchStars100Desc", Category = AchievementCategory.Mastery, Target = 100, IconName = "StarCircle", CoinReward = 2000 },
             new() { Id = "stars_150", NameKey = "AchStars150", DescriptionKey = "AchStars150Desc", Category = AchievementCategory.Mastery, Target = 150, IconName = "StarShooting", CoinReward = 5000 },
+            new() { Id = "master_first", NameKey = "AchMasterFirst", DescriptionKey = "AchMasterFirstDesc", Category = AchievementCategory.Mastery, Target = 1, IconName = "Crown", CoinReward = 500 },
+            new() { Id = "master_25", NameKey = "AchMaster25", DescriptionKey = "AchMaster25Desc", Category = AchievementCategory.Mastery, Target = 25, IconName = "Crown", CoinReward = 2000 },
+            new() { Id = "master_100", NameKey = "AchMaster100", DescriptionKey = "AchMaster100Desc", Category = AchievementCategory.Mastery, Target = 100, IconName = "Trophy", CoinReward = 10000 },
 
             // Kampf (3)
             new() { Id = "kills_100", NameKey = "AchKills100", DescriptionKey = "AchKills100Desc", Category = AchievementCategory.Combat, Target = 100, IconName = "Sword", CoinReward = 500 },

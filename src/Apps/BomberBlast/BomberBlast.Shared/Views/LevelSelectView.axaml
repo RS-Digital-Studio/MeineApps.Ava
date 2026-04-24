@@ -27,17 +27,47 @@
             <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 
-          <!-- Titel -->
+          <!-- Titel + Master-Mode-Toggle (ab L100 Unlock) -->
           <StackPanel Grid.Column="1"
                       Orientation="Horizontal"
                       HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
                       Spacing="8">
             <icons:GameIcon Kind="ViewGrid" Width="24" Height="24"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             IsVisible="{Binding !IsMasterModeActive}" />
+            <icons:GameIcon Kind="Crown" Width="24" Height="24"
+                             Foreground="#FFD700"
+                             IsVisible="{Binding IsMasterModeActive}" />
             <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtTitle"
                        Text="{loc:Translate SelectLevel}"
                        FontSize="22" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       IsVisible="{Binding !IsMasterModeActive}" />
+            <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtMasterTitle"
+                       Text="{loc:Translate MasterModeTitle}"
+                       FontSize="22" FontWeight="Bold"
+                       VerticalAlignment="Center"
+                       Foreground="#FFD700"
+                       IsVisible="{Binding IsMasterModeActive}" />
+            <!-- Master-Mode-Toggle (nur sichtbar nach L100-Unlock) -->
+            <Button Classes="Text"
+                    Command="{Binding ToggleMasterModeCommand}"
+                    IsVisible="{Binding IsMasterModeUnlocked}"
+                    Padding="8,4"
+                    Margin="8,0,0,0"
+                    ToolTip.Tip="{loc:Translate MasterModeToggleTooltip}"
+                    AutomationProperties.AutomationId="LevelSelect_BtnToggleMaster">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <icons:GameIcon Kind="SwapHorizontal" Width="14" Height="14"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding MasterModeStatusText}"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </Button>
           </StackPanel>
 
           <!-- Coin-Badge mit goldenem Rand -->
@@ -121,49 +151,61 @@
                                   BorderThickness="1"
                                   MinHeight="56"
                                   MinWidth="48">
-                            <Button Command="{Binding SelectCommand}"
-                                    Classes="GameButton"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    HorizontalContentAlignment="Stretch"
-                                    VerticalContentAlignment="Stretch">
-                              <Grid RowDefinitions="*,Auto,Auto">
-                                <!-- Level-Nummer (größer für bessere Lesbarkeit) -->
-                                <TextBlock Grid.Row="0"
-                                           Text="{Binding LevelNumber}"
-                                           FontSize="20"
-                                           FontWeight="Bold"
-                                           Foreground="{Binding TextColor, Converter={StaticResource ColorToBrush}}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center" />
+                            <Panel>
+                              <Button Command="{Binding SelectCommand}"
+                                      Classes="GameButton"
+                                      Padding="0"
+                                      Background="Transparent"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch"
+                                      HorizontalContentAlignment="Stretch"
+                                      VerticalContentAlignment="Stretch">
+                                <Grid RowDefinitions="*,Auto,Auto">
+                                  <!-- Level-Nummer (größer für bessere Lesbarkeit) -->
+                                  <TextBlock Grid.Row="0"
+                                             Text="{Binding LevelNumber}"
+                                             FontSize="20"
+                                             FontWeight="Bold"
+                                             Foreground="{Binding TextColor, Converter={StaticResource ColorToBrush}}"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center" />
 
-                                <!-- Sterne oder Schloss -->
-                                <TextBlock Grid.Row="1"
-                                           Text="{Binding StarsDisplay}"
-                                           FontSize="10"
-                                           Foreground="Gold"
-                                           HorizontalAlignment="Center"
-                                           IsVisible="{Binding IsCompleted}" />
+                                  <!-- Sterne oder Schloss -->
+                                  <TextBlock Grid.Row="1"
+                                             Text="{Binding StarsDisplay}"
+                                             FontSize="10"
+                                             Foreground="Gold"
+                                             HorizontalAlignment="Center"
+                                             IsVisible="{Binding IsCompleted}" />
 
-                                <icons:GameIcon Grid.Row="1"
-                                                 Kind="Lock"
-                                                 Width="12" Height="12"
-                                                 Foreground="{DynamicResource TextMutedBrush}"
-                                                 HorizontalAlignment="Center"
-                                                 IsVisible="{Binding IsLocked}" />
+                                  <icons:GameIcon Grid.Row="1"
+                                                   Kind="Lock"
+                                                   Width="12" Height="12"
+                                                   Foreground="{DynamicResource TextMutedBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   IsVisible="{Binding IsLocked}" />
 
-                                <!-- Best Score (klein, unter den Sternen) -->
-                                <TextBlock Grid.Row="2"
-                                           Text="{Binding BestScoreText}"
-                                           FontSize="10"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"
-                                           HorizontalAlignment="Center"
-                                           Margin="0,0,0,1"
-                                           IsVisible="{Binding IsCompleted}" />
-                              </Grid>
-                            </Button>
+                                  <!-- Best Score (klein, unter den Sternen) -->
+                                  <TextBlock Grid.Row="2"
+                                             Text="{Binding BestScoreText}"
+                                             FontSize="10"
+                                             Foreground="{DynamicResource TextSecondaryBrush}"
+                                             HorizontalAlignment="Center"
+                                             Margin="0,0,0,1"
+                                             IsVisible="{Binding IsCompleted}" />
+                                </Grid>
+                              </Button>
+                              <!-- Master-Crown-Badge oben rechts (v2.0.35) — wenn dieses Level
+                                   im Master-Modus geclear wurde, unabhängig vom aktiven Toggle -->
+                              <icons:GameIcon Kind="Crown"
+                                               Width="11" Height="11"
+                                               Foreground="#FFD700"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Top"
+                                               Margin="0,2,2,0"
+                                               IsHitTestVisible="False"
+                                               IsVisible="{Binding HasMasterClear}" />
+                            </Panel>
                           </Border>
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>

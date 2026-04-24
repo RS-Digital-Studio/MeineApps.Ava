@@ -90,6 +90,12 @@ public class BossEnemy : Enemy
     }
 
     /// <summary>
+    /// Bosse haben bereits eine custom verkleinerte BoundingBox (0.4x BossSize).
+    /// Kein zusätzlicher Shrink — sonst wäre die Hitbox zu klein um den Spieler zu treffen.
+    /// </summary>
+    protected override float HitboxScale => 1.0f;
+
+    /// <summary>
     /// Prüft ob eine Grid-Zelle vom Boss belegt wird (für Multi-Cell Kollision)
     /// </summary>
     public bool OccupiesCell(int cellX, int cellY)

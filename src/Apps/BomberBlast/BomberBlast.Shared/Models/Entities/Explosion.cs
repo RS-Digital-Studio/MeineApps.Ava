@@ -83,10 +83,12 @@ public class Explosion : Entity
             if (cell.Type == CellType.Wall)
                 break;
 
-            // Blocks stop explosions but get destroyed
+            // Blocks stop explosions but get destroyed. Die Zelle wird als "BlockHit"
+            // markiert (kein Schaden an Entities hinter dem Block, auch nicht wenn
+            // ein Gegner die freiwerdende Zelle während der Explosion-Dauer betritt).
             if (cell.Type == CellType.Block)
             {
-                AddCell(x, y, endType, grid);
+                AddCell(x, y, endType, grid, isBlockHit: true);
                 break;
             }
 
@@ -96,7 +98,7 @@ public class Explosion : Entity
         }
     }
 
-    private void AddCell(int x, int y, ExplosionCellType type, GameGrid grid)
+    private void AddCell(int x, int y, ExplosionCellType type, GameGrid grid, bool isBlockHit = false)
     {
         var gridCell = grid.TryGetCell(x, y);
         if (gridCell == null)
@@ -107,7 +109,8 @@ public class Explosion : Entity
             X = x,
             Y = y,
             Type = type,
-            Progress = 0
+            Progress = 0,
+            IsBlockHit = isBlockHit
         });
 
         // Mark grid cell as exploding
@@ -157,6 +160,13 @@ public struct ExplosionCell
     public int Y;
     public ExplosionCellType Type;
     public float Progress;
+    /// <summary>
+    /// True wenn diese Zelle ein zerstörbarer Block ist, der gerade zerstört wird.
+    /// Entities (Spieler/Gegner) sollen hier KEINEN Schaden bekommen —
+    /// der Block blockiert den Explosions-Radius, auch wenn er zerfällt.
+    /// Verhindert den Bug: "Gegner läuft während der Block zerfällt in die Zelle rein und stirbt".
+    /// </summary>
+    public bool IsBlockHit;
 }
 
 /// <summary>

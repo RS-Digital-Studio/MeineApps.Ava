@@ -41,6 +41,14 @@ public interface ICustomizationService
     /// <summary>Spieler-Skin mit Gems kaufen (für Gem-exklusive Skins)</summary>
     bool TryPurchasePlayerSkinWithGems(string skinId);
 
+    /// <summary>
+    /// Spieler-Skin durch Meilenstein freischalten (ohne Kosten). Für
+    /// Achievement-/Master-Mode-Belohnungen, z.B. "master_champion" nach
+    /// 100 Master-3-Sterne-Clears. Idempotent: Erneuter Aufruf tut nichts.
+    /// </summary>
+    /// <returns>true wenn Erst-Unlock, false wenn bereits owned.</returns>
+    bool GrantPlayerSkin(string skinId);
+
     /// <summary>Gegner-Skin-Set setzen</summary>
     void SetEnemySkinSet(string setId);
 

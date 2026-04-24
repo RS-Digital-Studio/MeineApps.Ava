@@ -29,8 +29,9 @@ public sealed class BomberBlastLoadingPipeline : LoadingPipelineBase
             {
                 var shaderTask = Task.Run(() =>
                 {
-                    ShaderPreloader.PreloadAll();
-                    ExplosionShaders.Preload();
+                    ShaderPreloader.PreloadAll();   // 12 generische SkSL-Shader
+                    ExplosionShaders.Preload();     // Explosion Noise-LUT + Paint-Cache
+                    ShaderEffects.Preload();        // WaterRipple SkSL (Ocean-Welt)
                 });
                 var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
                 var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
@@ -46,8 +47,9 @@ public sealed class BomberBlastLoadingPipeline : LoadingPipelineBase
 
     /// <summary>
     /// Kritische Assets die beim Start geladen werden sollen.
-    /// Menü-Hintergründe + Bosse (sofort sichtbar oder im Spiel benötigt).
-    /// Weitere Assets werden lazy per GetBitmap()/LoadBitmapAsync() nachgeladen.
+    /// Menü-Hintergründe + Bosse (sofort sichtbar oder im Spiel benötigt) +
+    /// 12 PowerUps + 12 Enemies + Welt-1-Hintergrund (erster Level-Eintritt).
+    /// Welt 2-10 wird lazy beim LevelSelect/GameViewModel.SetParameters preloaded.
     /// </summary>
     private static IEnumerable<string> GetCriticalAssets()
     {
@@ -67,5 +69,16 @@ public sealed class BomberBlastLoadingPipeline : LoadingPipelineBase
         yield return "bosses/boss_fire_demon.webp";
         yield return "bosses/boss_shadow_master.webp";
         yield return "bosses/boss_final.webp";
+
+        // PowerUps (universal, welt-übergreifend — 12 Icons, ~480KB total)
+        foreach (var path in GameAssetPaths.GetAllPowerUpAssets())
+            yield return path;
+
+        // Gegner-Typen (universal, 12 Typen — vermeidet Jank beim ersten Spawn)
+        foreach (var path in GameAssetPaths.GetAllEnemyAssets())
+            yield return path;
+
+        // Welt 1 Hintergrund (erste Story-Welt, fast garantierter erster Level-Eintritt)
+        yield return GameAssetPaths.GetWorldAssetPath(0);
     }
 }

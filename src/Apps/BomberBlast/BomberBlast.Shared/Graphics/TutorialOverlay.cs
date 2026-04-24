@@ -103,10 +103,31 @@ public sealed class TutorialOverlay : IDisposable
             highlightRect.Width + 8, highlightRect.Height + 8,
             10, 10, _highlightPaint);
 
-        // Text-Blase Position: Intelligent platzieren (nicht ueber dem Highlight)
+        // Text-Blase: Dynamisches Wrapping + Size (v2.0.35 Fix)
+        // Vorher: Fixed bubbleWidth 55% + bubbleHeight 54 → bei langen DE/FR-Texten abgeschnitten.
+        // Jetzt: Textbreite messen → mehrzeilig wrappen → Höhe dynamisch.
         string text = _localizationService.GetString(step.TextKey) ?? step.TextKey;
-        float bubbleWidth = Math.Min(screenWidth * 0.55f, 360);
-        float bubbleHeight = 54;
+
+        const float bubblePaddingX = 20f;
+        const float bubblePaddingY = 14f;
+        const float lineSpacing = 6f;
+        float maxBubbleWidth = Math.Min(screenWidth * 0.8f, 480);   // war 0.55f/360 — jetzt generöser
+        float maxTextWidth = maxBubbleWidth - bubblePaddingX * 2f;
+
+        // Text in Zeilen aufteilen (word-wrap)
+        var lines = WrapText(text, maxTextWidth);
+        float lineHeight = _textFont.Size + lineSpacing;
+
+        // Tatsächliche Text-Breite messen für enge Bubbles (kurze Strings)
+        float actualTextWidth = 0f;
+        foreach (var line in lines)
+        {
+            float lw = _textFont.MeasureText(line);
+            if (lw > actualTextWidth) actualTextWidth = lw;
+        }
+
+        float bubbleWidth = Math.Min(maxBubbleWidth, actualTextWidth + bubblePaddingX * 2f);
+        float bubbleHeight = lines.Count * lineHeight + bubblePaddingY * 2f - lineSpacing;
         float bubbleX = screenWidth / 2 - bubbleWidth / 2;
 
         // Blase oben wenn Highlight unten, sonst unten
@@ -122,9 +143,14 @@ public sealed class TutorialOverlay : IDisposable
         canvas.DrawRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 14, 14, _bubblePaint);
         canvas.DrawRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 14, 14, _bubbleBorderPaint);
 
-        // Text in Blase
-        canvas.DrawText(text, bubbleX + bubbleWidth / 2, bubbleY + bubbleHeight / 2 + 6,
-            SKTextAlign.Center, _textFont, _textPaint);
+        // Mehrzeiliger Text (zentriert, Baseline-Offset pro Zeile)
+        float textStartY = bubbleY + bubblePaddingY + _textFont.Size;
+        float textCenterX = bubbleX + bubbleWidth / 2;
+        for (int i = 0; i < lines.Count; i++)
+        {
+            canvas.DrawText(lines[i], textCenterX, textStartY + i * lineHeight,
+                SKTextAlign.Center, _textFont, _textPaint);
+        }
 
         // Pfeil von Blase zum Highlight
         float arrowFromY = highlightIsInUpperHalf ? bubbleY : bubbleY + bubbleHeight;
@@ -175,6 +201,48 @@ public sealed class TutorialOverlay : IDisposable
             toY - arrowSize * MathF.Sin(angle + arrowAngle));
 
         canvas.DrawPath(_arrowPath, _highlightPaint);
+    }
+
+    /// <summary>
+    /// Word-Wrap: Teilt den Text in Zeilen auf, sodass keine Zeile breiter als
+    /// <paramref name="maxWidth"/> ist. Wenn ein einzelnes Wort länger als maxWidth
+    /// ist, wird es trotzdem auf eine eigene Zeile gepackt (kein Character-Split).
+    /// </summary>
+    private List<string> WrapText(string text, float maxWidth)
+    {
+        var lines = new List<string>();
+        if (string.IsNullOrEmpty(text)) return lines;
+
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0) return lines;
+
+        // Authoritative per-line MeasureText statt inkrementeller Akkumulation:
+        // _textFont.MeasureText(" word") != MeasureText(" ") + MeasureText("word") wegen Kerning.
+        // Inkrementelle Addition driftet über 8-10 Worte um 5-10px → Bubble-Höhe kann
+        // um 1 lineHeight falsch berechnet sein. Kosten: 1 Messung pro Wort (vernachlässigbar).
+        var currentLine = new System.Text.StringBuilder(words[0]);
+
+        for (int i = 1; i < words.Length; i++)
+        {
+            // Kandidat = aktuelle Zeile + Leerzeichen + neues Wort (echte Darstellung)
+            int snapshotLength = currentLine.Length;
+            currentLine.Append(' ').Append(words[i]);
+            float candidateWidth = _textFont.MeasureText(currentLine.ToString());
+
+            if (candidateWidth > maxWidth)
+            {
+                // Rollback: Wort würde Zeile überschreiten → neue Zeile starten
+                currentLine.Length = snapshotLength;
+                lines.Add(currentLine.ToString());
+                currentLine.Clear();
+                currentLine.Append(words[i]);
+            }
+            // else: Wort passt — currentLine bereits korrekt erweitert
+        }
+        if (currentLine.Length > 0)
+            lines.Add(currentLine.ToString());
+
+        return lines;
     }
 
     private static SKRect GetHighlightRect(TutorialHighlight highlight,

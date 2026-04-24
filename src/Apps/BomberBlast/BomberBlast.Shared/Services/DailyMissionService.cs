@@ -32,6 +32,11 @@ public sealed class DailyMissionService : TimedMissionServiceBase, IDailyMission
         (WeeklyMissionType.PlayQuickPlay, "DailyPlayQuickPlay", "DailyPlayQuickPlayDesc", 1, 2, 150),
         (WeeklyMissionType.SpinLuckyWheel, "DailySpinWheel", "DailySpinWheelDesc", 1, 1, 100),
         (WeeklyMissionType.UpgradeCards, "DailyUpgradeCards", "DailyUpgradeCardsDesc", 1, 1, 250),
+
+        // v2.0.34: Skill-basierte Missionstypen (höhere Rewards, Anti-Wiederholung)
+        (WeeklyMissionType.CompleteThreeStar, "DailyThreeStar", "DailyThreeStarDesc", 1, 2, 300),
+        (WeeklyMissionType.NoDamageLevel, "DailyNoDamage", "DailyNoDamageDesc", 1, 1, 350),
+        (WeeklyMissionType.CompleteMutatorLevel, "DailyMutatorLevel", "DailyMutatorLevelDesc", 1, 2, 300),
     ];
 
     public DailyMissionService(

@@ -125,6 +125,13 @@ public interface IAchievementService
     /// <summary>Sammlungs-Fortschritt aktualisiert - prüft Sammler-Achievements</summary>
     Achievement? OnCollectionProgressUpdated(int progressPercent);
 
+    /// <summary>
+    /// Master-Mode Level-Abschluss (v2.0.35). Called von GameTrackingService mit den
+    /// aktuellen Gesamt-Zählerständen aus IMasterModeService. Unlockt
+    /// master_first (1), master_25 (25 Clears), master_100 (100 3-Sterne).
+    /// </summary>
+    Achievement? OnMasterLevelCompleted(int totalMasterClears, int totalMaster3Stars);
+
     /// <summary>Erzwingt Speichern aller gepufferten Änderungen (Debounce-Flush)</summary>
     void FlushIfDirty();
 }

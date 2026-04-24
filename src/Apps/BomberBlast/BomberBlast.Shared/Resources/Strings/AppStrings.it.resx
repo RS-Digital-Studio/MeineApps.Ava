@@ -836,6 +836,36 @@
   <data name="AchStars150Desc" xml:space="preserve">
     <value>Ottieni tutte le 150 stelle</value>
   </data>
+  <data name="AchMasterFirst" xml:space="preserve">
+    <value>Iniziato Maestro</value>
+  </data>
+  <data name="AchMasterFirstDesc" xml:space="preserve">
+    <value>Completa il tuo primo livello in Modalità Maestro</value>
+  </data>
+  <data name="AchMaster25" xml:space="preserve">
+    <value>Adepto Maestro</value>
+  </data>
+  <data name="AchMaster25Desc" xml:space="preserve">
+    <value>Completa 25 livelli in Modalità Maestro</value>
+  </data>
+  <data name="AchMaster100" xml:space="preserve">
+    <value>Campione Maestro</value>
+  </data>
+  <data name="AchMaster100Desc" xml:space="preserve">
+    <value>Ottieni 3 stelle in tutti i 100 livelli in Modalità Maestro</value>
+  </data>
+  <data name="MasterModeTitle" xml:space="preserve">
+    <value>Modalità Maestro</value>
+  </data>
+  <data name="MasterStatusFormat" xml:space="preserve">
+    <value>Maestro: {0}/100 ({1}★)</value>
+  </data>
+  <data name="MasterModeToggleTooltip" xml:space="preserve">
+    <value>Alterna tra Modalità Normale e Maestro. Maestro: +50% velocità nemici, nemici potenziati, +1 gemma per 3 stelle.</value>
+  </data>
+  <data name="SkinMasterChampion" xml:space="preserve">
+    <value>Campione Maestro</value>
+  </data>
   <data name="AchKills100" xml:space="preserve">
     <value>Cacciatore</value>
   </data>
@@ -885,6 +915,15 @@
   </data>
   <data name="DailyRewardCollect" xml:space="preserve">
     <value>Raccogliere</value>
+  </data>
+  <data name="DailyRewardDoubleViaAd" xml:space="preserve">
+    <value>Guarda pub: 2x</value>
+  </data>
+  <data name="DailyRewardDoubled" xml:space="preserve">
+    <value>RADDOPPIATO! </value>
+  </data>
+  <data name="AdCooldownActive" xml:space="preserve">
+    <value>Attendi un momento prima di guardare un altro annuncio.</value>
   </data>
   <data name="DailyRewardStreak" xml:space="preserve">
     <value>Serie: {0} giorni</value>
@@ -2042,6 +2081,9 @@
   <data name="DeckButton" xml:space="preserve">
     <value>Mazzo</value>
   </data>
+  <data name="CustomizeButton" xml:space="preserve">
+    <value>Personalizza</value>
+  </data>
   <data name="CardDropTitle" xml:space="preserve">
     <value>Nuova carta!</value>
   </data>
@@ -2867,6 +2909,42 @@
   <data name="DailyUpgradeCardsDesc" xml:space="preserve">
     <value>Migliora {0} carte</value>
   </data>
+  <data name="DailyThreeStar" xml:space="preserve">
+    <value>Triplo Stella</value>
+  </data>
+  <data name="DailyThreeStarDesc" xml:space="preserve">
+    <value>Completa {0} livelli con 3 stelle</value>
+  </data>
+  <data name="DailyNoDamage" xml:space="preserve">
+    <value>Impeccabile</value>
+  </data>
+  <data name="DailyNoDamageDesc" xml:space="preserve">
+    <value>Completa {0} livelli senza subire danni</value>
+  </data>
+  <data name="DailyMutatorLevel" xml:space="preserve">
+    <value>Maestro Mutatore</value>
+  </data>
+  <data name="DailyMutatorLevelDesc" xml:space="preserve">
+    <value>Completa {0} livelli mutatore (Mondo 6+)</value>
+  </data>
+  <data name="WeeklyThreeStar" xml:space="preserve">
+    <value>Campione Triplo Stella</value>
+  </data>
+  <data name="WeeklyThreeStarDesc" xml:space="preserve">
+    <value>Completa {0} livelli con 3 stelle</value>
+  </data>
+  <data name="WeeklyNoDamage" xml:space="preserve">
+    <value>Serie Impeccabile</value>
+  </data>
+  <data name="WeeklyNoDamageDesc" xml:space="preserve">
+    <value>Completa {0} livelli senza subire danni</value>
+  </data>
+  <data name="WeeklyMutatorLevel" xml:space="preserve">
+    <value>Conquistatore Mutatore</value>
+  </data>
+  <data name="WeeklyMutatorLevelDesc" xml:space="preserve">
+    <value>Completa {0} livelli mutatore (Mondo 6+)</value>
+  </data>
   <data name="DeckLabel" xml:space="preserve">
     <value>Mazzo</value>
   </data>
@@ -3077,6 +3155,15 @@
   <data name="LeagueLoading" xml:space="preserve">
     <value>Caricamento classifica...</value>
   </data>
+  <data name="ReportPlayer" xml:space="preserve">
+    <value>Segnala giocatore</value>
+  </data>
+  <data name="ReportSubmitted" xml:space="preserve">
+    <value>Segnalazione inviata. Grazie per tenere la community sicura.</value>
+  </data>
+  <data name="ReportFailed" xml:space="preserve">
+    <value>Segnalazione fallita. Controlla la connessione.</value>
+  </data>
   <data name="LeagueSeasonFormat" xml:space="preserve">
     <value>Stagione {0}</value>
   </data>
@@ -3156,6 +3243,21 @@
   </data>
   <data name="DealPremiumBundle" xml:space="preserve">
     <value>Bundle premium</value>
+  </data>
+  <data name="DealEpicCardPack" xml:space="preserve">
+    <value>Pacchetto Epico</value>
+  </data>
+  <data name="DealGemCoinCombo" xml:space="preserve">
+    <value>Combo Gemme e Monete</value>
+  </data>
+  <data name="DealPowerUpLuck" xml:space="preserve">
+    <value>Offerta Fortuna Power-Up</value>
+  </data>
+  <data name="DealLegendaryCardDrop" xml:space="preserve">
+    <value>Carta Leggendaria</value>
+  </data>
+  <data name="DealMasterBundle" xml:space="preserve">
+    <value>Pack Maestro</value>
   </data>
   <data name="GemSkinsTitle" xml:space="preserve">
     <value>Skin esclusivi</value>

@@ -104,12 +104,17 @@ public class Player : Entity
     // Score
     public int Score { get; set; }
 
-    // Collision box is slightly smaller than sprite for forgiving gameplay
+    // HINWEIS (v2.0.35): Seit der Einführung von Entity.HitboxScale wird CollidesWith
+    // nicht mehr gegen diese BoundingBox-Property ausgewertet. Der CollidesWith-Pfad
+    // nutzt Entity.GetHitbox() mit HitboxScale=0.6 auf Width/Height (=CELL_SIZE).
+    // Diese Override bleibt als dokumentierte Sprite-Referenz und für etwaige
+    // Debug-Overlay-Bedürfnisse erhalten — Laufzeit-Kollisions-Verhalten ist davon
+    // nicht mehr abhängig.
     public override (float left, float top, float right, float bottom) BoundingBox
     {
         get
         {
-            // Use smaller hitbox (80% of cell size) centered on sprite
+            // Sprite-Referenz: 80% der Cell-Size zentriert
             float size = GameGrid.CELL_SIZE * 0.4f;
             return (X - size, Y - size, X + size, Y + size);
         }

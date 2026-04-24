@@ -33,6 +33,13 @@ public class SkinDefinition
 
     /// <summary>Glow/Effekt-Farbe (null = kein Glow)</summary>
     public SKColor? GlowColor { get; init; }
+
+    /// <summary>
+    /// Ob dieser Skin nur per Meilenstein-Freischaltung erhältlich ist (kein Coin/Gem-Kauf).
+    /// Verwendet für Achievement-Belohnungen wie master_champion (100 Master-3-Stars).
+    /// Wenn true: IsPlayerSkinOwned prüft nur das HashSet, nicht CoinPrice.
+    /// </summary>
+    public bool UnlockOnly { get; init; }
 }
 
 /// <summary>
@@ -289,12 +296,28 @@ public static class PlayerSkins
         GlowColor = new SKColor(255, 160, 0, 90)
     };
 
+    /// <summary>
+    /// Master Champion Skin (v2.0.35) — nur über Master-Mode erreichbar:
+    /// 100 Master-3-Sterne-Clears schalten diesen Skin frei. Kein Coin/Gem-Kauf möglich.
+    /// Rendering: Gold-Crown-Overlay + Platinum-Highlight.
+    /// </summary>
+    public static readonly SkinDefinition MasterChampion = new()
+    {
+        Id = "master_champion",
+        NameKey = "SkinMasterChampion",
+        Rarity = Rarity.Legendary,
+        UnlockOnly = true, // Nur via GrantPlayerSkin nach 100 Master-3-Sternen-Clears
+        PrimaryColor = new SKColor(230, 230, 245), // Platinum-Weiß
+        SecondaryColor = new SKColor(218, 165, 32), // Krone-Gold
+        GlowColor = new SKColor(255, 215, 0, 120)   // Goldener Glow
+    };
+
     public static readonly SkinDefinition[] All =
         [Default, Crimson, Arctic, Stealth,
          Toxic, Ocean, Sunset, Cherry, Emerald, Ninja, Pirate,
          Galaxy, Neon, Cyber, Retro, Robot, PixelRetro,
          Gold, Inferno, Dragon,
-         Crystal, Shadow, Phoenix];
+         Crystal, Shadow, Phoenix, MasterChampion];
 }
 
 /// <summary>

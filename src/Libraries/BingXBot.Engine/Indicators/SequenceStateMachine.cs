@@ -276,10 +276,17 @@ public class SequenceStateMachine
     /// <param name="lastSwingLowBeforeP0">Letztes Pivot-Low vor Point0 als Short-BOS-Anker (0 = unbekannt → graceful pass).</param>
     /// <param name="bosRequireCloseBreak">True = Body-Close über Anker, False = Docht reicht (Default: true, Doku-Default).</param>
     /// <param name="bosAnchorSwingStrength">
-    /// Strukturpunkte-Doku §3: Pivot-Stärke für die dynamische BOS-Anker-Suche. Wenn &gt; 0, berechnet FromCandlesBoth
-    /// die Pivot-Punkte einmalig pro Aufruf und aktualisiert pro Iteration den Anker der jeweiligen Machine
-    /// (Long: letztes Pivot-High vor Point0; Short: letztes Pivot-Low vor Point0). 0 (Default) = kein dynamisches Update —
-    /// es werden nur die optional mitgegebenen Start-Anker aus <paramref name="lastSwingHighBeforeP0"/>/<paramref name="lastSwingLowBeforeP0"/> verwendet.
+    /// Strukturpunkte-Doku §3: Pivot-Stärke für die dynamische BOS-Anker-Suche (symmetrisch — left=right).
+    /// Wenn &gt; 0 und <paramref name="bosAnchorLeftBars"/>/<paramref name="bosAnchorRightBars"/> beide ≤ 0,
+    /// wird mit symmetrischem Fenster gesucht. 0 (Default) = kein dynamisches Update.
+    /// </param>
+    /// <param name="bosAnchorLeftBars">
+    /// Strukturpunkte-Doku §1+§3 (25.04.2026): Asymmetrische BOS-Anker-Pivot-Bars links (Default 0 = inaktiv).
+    /// Wenn beide (Left+Right) &gt; 0, hat das asymmetrische Paar Vorrang vor <paramref name="bosAnchorSwingStrength"/>.
+    /// </param>
+    /// <param name="bosAnchorRightBars">
+    /// Strukturpunkte-Doku §1+§3: Asymmetrische BOS-Anker-Pivot-Bars rechts (Default 0).
+    /// Steuert auch den Look-Ahead-Schutz in <see cref="RefreshBosAnchor"/>.
     /// </param>
     public static (SequenceStateMachine? primary, SequenceStateMachine longMachine, SequenceStateMachine shortMachine)
         FromCandlesBoth(IReadOnlyList<Candle> candles,
@@ -290,7 +297,9 @@ public class SequenceStateMachine
             decimal lastSwingHighBeforeP0 = 0m,
             decimal lastSwingLowBeforeP0 = 0m,
             bool bosRequireCloseBreak = true,
-            int bosAnchorSwingStrength = 0)
+            int bosAnchorSwingStrength = 0,
+            int bosAnchorLeftBars = 0,
+            int bosAnchorRightBars = 0)
     {
         var longMachine = new SequenceStateMachine(minImpulsePercent, correctionThreshold, minBRetracement, maxBRetracement, minPoint0Candles)
         {
@@ -314,9 +323,19 @@ public class SequenceStateMachine
 
         // Strukturpunkte-Doku §3: Pre-Pass für dynamische BOS-Anker-Auflösung (BOS-Gate ist immer aktiv).
         // Berechnung einmalig pro Aufruf (O(n × strength)) — Lookup bleibt O(log n) via binary search nach CandleIndex.
+        // 25.04.2026: Asymmetrisches Pivot-Fenster (Doku §1+§3) hat Vorrang, wenn beide Werte gesetzt sind.
         List<SwingPoint>? bosSwings = null;
-        if (bosAnchorSwingStrength > 0)
+        int bosLookAheadRightBars = 0;
+        if (bosAnchorLeftBars > 0 && bosAnchorRightBars > 0)
+        {
+            bosSwings = SequenceDetector.FindSwingPoints(candles, bosAnchorLeftBars, bosAnchorRightBars);
+            bosLookAheadRightBars = bosAnchorRightBars;
+        }
+        else if (bosAnchorSwingStrength > 0)
+        {
             bosSwings = SequenceDetector.FindSwingPoints(candles, bosAnchorSwingStrength);
+            bosLookAheadRightBars = bosAnchorSwingStrength;
+        }
 
         bool longActivated = false, shortActivated = false;
         int longActivatedAt = -1, shortActivatedAt = -1;
@@ -329,8 +348,8 @@ public class SequenceStateMachine
             // Signal für uns, aus bosSwings einen neuen Anker zu ermitteln.
             if (bosSwings is { Count: > 0 })
             {
-                RefreshBosAnchor(longMachine, bosSwings, i, bosAnchorSwingStrength);
-                RefreshBosAnchor(shortMachine, bosSwings, i, bosAnchorSwingStrength);
+                RefreshBosAnchor(longMachine, bosSwings, i, bosLookAheadRightBars);
+                RefreshBosAnchor(shortMachine, bosSwings, i, bosLookAheadRightBars);
             }
 
             if (longMachine.ProcessCandle(candles[i], i))

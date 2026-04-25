@@ -80,10 +80,28 @@ public class ScannerSettings
 
     /// <summary>
     /// Strukturpunkte-Doku §3: Pivot-Stärke für BOS-Anker-Suche (Last_Swing_High/Low VOR Point0).
-    /// BOS-Gate ist per Buch-Regel IMMER aktiv ("Ohne BOS keine SK-System-Messung"). Der Wert steuert nur
-    /// die Pivot-Erkennungs-Stärke für den Anker. Default: 5 (Doku-Mittel der 3-10-Spanne).
+    /// BOS-Gate ist per Buch-Regel IMMER aktiv ("Ohne BOS keine SK-System-Messung").
+    /// <para>
+    /// Backward-Compat-Fallback: Wird nur ausgewertet, wenn <see cref="BosAnchorLeftBars"/> oder
+    /// <see cref="BosAnchorRightBars"/> ≤ 0 sind. Bei beiden &gt; 0 zieht das asymmetrische Paar.
+    /// </para>
+    /// Default: 5 (Doku-Mittel der 3-10-Spanne).
     /// </summary>
     public int BosAnchorSwingStrength { get; set; } = 5;
+
+    /// <summary>
+    /// Strukturpunkte-Doku §1+§3 (25.04.2026): Asymmetrische BOS-Anker-Pivots.
+    /// Linke Bars = wie weit zurück die Bestätigung reicht (Default 5; Spanne 5-10). Wenn beide
+    /// (Left+Right) &gt; 0, wird der BOS-Anker mit asymmetrischem Pivot-Fenster gesucht — sonst
+    /// fällt der Code auf <see cref="BosAnchorSwingStrength"/> (symmetrisch) zurück.
+    /// </summary>
+    public int BosAnchorLeftBars { get; set; } = 5;
+
+    /// <summary>
+    /// Strukturpunkte-Doku §1+§3 (25.04.2026): Rechte BOS-Anker-Pivot-Bars (Default 3; Spanne 3-5).
+    /// Weniger als links → schnellere Erkennung bei gleicher Signifikanz. 0 = symmetrisch fallback.
+    /// </summary>
+    public int BosAnchorRightBars { get; set; } = 3;
 
     /// <summary>
     /// Strukturpunkte-Doku §3: Bei true muss der BODY-Close die Last-Swing-Grenze überschreiten (striktes BOS).

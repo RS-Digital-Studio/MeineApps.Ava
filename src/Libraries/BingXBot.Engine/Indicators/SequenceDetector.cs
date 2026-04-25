@@ -652,26 +652,29 @@ public static class SequenceDetector
         var closesInZone = last3.Count(c => c.Close >= gklMin && c.Close <= gklMax);
         if (closesInZone >= 2) return CandleConfirmation.StableInZone;
 
-        // Hammer/Pin-Bar: Langer Docht in Sequenz-Richtung, kleiner Körper
+        // Hammer/Pin-Bar: Langer Docht in Sequenz-Richtung, kleiner Körper.
+        // Algorithmus-Dok §5C (25.04.2026): "Erzeuge erst ein Kaufsignal, wenn Lower_Wick > (Body * 2)."
+        // Buch-Formel ersetzt vorherige Heuristik (bodyRatio<0.35 + wick>0.5*range) — strenger bei großem
+        // Body, identisches Verhalten bei sehr kleinem Body. Doji-Edge-Case (body≈0) wird durch >2*body
+        // automatisch erfüllt → bleibt valid wenn Wick existiert.
         var lastCandle = candles[^1];
         var candleRange = lastCandle.High - lastCandle.Low;
         if (candleRange > 0)
         {
             var bodySize = Math.Abs(lastCandle.Close - lastCandle.Open);
-            var bodyRatio = bodySize / candleRange;
 
             if (seq.IsLong)
             {
                 // Long: Langer unterer Docht (Käufer wehren sich) = Hammer
                 var lowerWick = Math.Min(lastCandle.Open, lastCandle.Close) - lastCandle.Low;
-                if (bodyRatio < 0.35m && lowerWick / candleRange > 0.5m)
+                if (lowerWick > 2m * bodySize)
                     return CandleConfirmation.HammerOrPin;
             }
             else
             {
                 // Short: Langer oberer Docht (Verkäufer wehren sich) = Inverted Hammer
                 var upperWick = lastCandle.High - Math.Max(lastCandle.Open, lastCandle.Close);
-                if (bodyRatio < 0.35m && upperWick / candleRange > 0.5m)
+                if (upperWick > 2m * bodySize)
                     return CandleConfirmation.HammerOrPin;
             }
 

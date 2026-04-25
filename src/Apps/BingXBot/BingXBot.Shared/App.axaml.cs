@@ -263,6 +263,8 @@ public partial class App : Application
         scanner.BosVolumeMultiplier = saved.Scanner.BosVolumeMultiplier;
         scanner.RequireBosCloseBreak = saved.Scanner.RequireBosCloseBreak;
         scanner.BosAnchorSwingStrength = saved.Scanner.BosAnchorSwingStrength;
+        scanner.BosAnchorLeftBars = saved.Scanner.BosAnchorLeftBars;
+        scanner.BosAnchorRightBars = saved.Scanner.BosAnchorRightBars;
         scanner.AdaptiveSwingStrength = saved.Scanner.AdaptiveSwingStrength;
         scanner.SwingStrengthMin = saved.Scanner.SwingStrengthMin;
         scanner.SwingStrengthMax = saved.Scanner.SwingStrengthMax;

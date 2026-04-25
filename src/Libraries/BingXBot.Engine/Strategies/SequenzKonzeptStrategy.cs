@@ -196,8 +196,11 @@ public class SequenzKonzeptStrategy : IStrategy
         // Strukturpunkte-Doku §3: BOS-Filter IMMER aktiv ("Ohne Strukturbruch keine SK-Messung").
         // FromCandlesBoth pflegt den Anker selbst via RefreshBosAnchor pro Iteration — ein pauschal aus der
         // Gesamthistorie vorausgewählter Anker wäre oft das falsche Pivot (liegt ggf. nach Point0). Initial-Anker = 0.
+        // 25.04.2026: Asymmetrisches Pivot-Fenster (5/3 Default) hat Vorrang vor symmetrischem Strength-Fallback.
         var bosRequireCloseBreak = scannerSettings?.RequireBosCloseBreak ?? true;
         var bosAnchorSwingStrength = Math.Max(2, scannerSettings?.BosAnchorSwingStrength ?? 5);
+        var bosAnchorLeftBars = scannerSettings?.BosAnchorLeftBars ?? 0;
+        var bosAnchorRightBars = scannerSettings?.BosAnchorRightBars ?? 0;
 
         var enableBiasFlip = scannerSettings?.EnableBiasFlip ?? true;
         var (navMachine, navLongMachine, navShortMachine) =
@@ -205,7 +208,9 @@ public class SequenzKonzeptStrategy : IStrategy
                 minPoint0Candles: navMinPoint0Candles, enableBiasFlip: enableBiasFlip,
                 minImpulseDistance: navMinImpulseDistance,
                 bosRequireCloseBreak: bosRequireCloseBreak,
-                bosAnchorSwingStrength: bosAnchorSwingStrength);
+                bosAnchorSwingStrength: bosAnchorSwingStrength,
+                bosAnchorLeftBars: bosAnchorLeftBars,
+                bosAnchorRightBars: bosAnchorRightBars);
 
         // Fahrplan-Alignment (Buch: MTA — Multi-Timeframe-Alignment): Wenn primary gegen Fahrplan
         // läuft UND eine aligned Sequenz in SucheB/Aktiviert existiert, bevorzuge die aligned.
@@ -854,15 +859,19 @@ public class SequenzKonzeptStrategy : IStrategy
         var impulseMul = GetAtrMultiplier(scannerSettings, navTf, impulse: true, fallback: 1.0m);
         var corrMul = GetAtrMultiplier(scannerSettings, navTf, impulse: false, fallback: 1.5m);
         var minPoint0 = GetMinPoint0Candles(scannerSettings, navTf);
-        // Strukturpunkte §3: BOS-Anker + Close/Docht-Break-Setting identisch zum Nav-Call durchreichen,
+        // Strukturpunkte §1+§3: BOS-Anker + Close/Docht-Break-Setting identisch zum Nav-Call durchreichen,
         // damit das HTF-Gate weder asymmetrisch strenger noch loser als der Navigator läuft.
         var htfBosAnchor = Math.Max(2, scannerSettings?.BosAnchorSwingStrength ?? 5);
         var htfBosCloseBreak = scannerSettings?.RequireBosCloseBreak ?? true;
+        var htfBosLeft = scannerSettings?.BosAnchorLeftBars ?? 0;
+        var htfBosRight = scannerSettings?.BosAnchorRightBars ?? 0;
 
         var (htfPrimary, _, _) = SequenceStateMachine.FromCandlesBoth(
             htfCandles, atrPercent * impulseMul, atrPercent * corrMul, 0.382m, 0.786m, minPoint0,
             bosRequireCloseBreak: htfBosCloseBreak,
-            bosAnchorSwingStrength: htfBosAnchor);
+            bosAnchorSwingStrength: htfBosAnchor,
+            bosAnchorLeftBars: htfBosLeft,
+            bosAnchorRightBars: htfBosRight);
         if (htfPrimary == null) return false;
         return htfPrimary.State >= SmState.Aktiviert && htfPrimary.IsLong == tradeIsLong;
     }
@@ -908,15 +917,19 @@ public class SequenzKonzeptStrategy : IStrategy
         var impulseMul = GetAtrMultiplier(scannerSettings, navTf, impulse: true, fallback: 1.0m);
         var corrMul = GetAtrMultiplier(scannerSettings, navTf, impulse: false, fallback: 1.5m);
         var minPoint0 = GetMinPoint0Candles(scannerSettings, navTf);
-        // Strukturpunkte §3: BOS-Anker + Close/Docht-Break-Setting identisch zum Nav-Call durchreichen,
+        // Strukturpunkte §1+§3: BOS-Anker + Close/Docht-Break-Setting identisch zum Nav-Call durchreichen,
         // damit der MTA-Zielzonen-Guard zur selben Strukturbruch-Definition kommt.
         var htfBosAnchor = Math.Max(2, scannerSettings?.BosAnchorSwingStrength ?? 5);
         var htfBosCloseBreak = scannerSettings?.RequireBosCloseBreak ?? true;
+        var htfBosLeft = scannerSettings?.BosAnchorLeftBars ?? 0;
+        var htfBosRight = scannerSettings?.BosAnchorRightBars ?? 0;
 
         var (htfPrimary, _, _) = SequenceStateMachine.FromCandlesBoth(
             htfCandles, atrPercent * impulseMul, atrPercent * corrMul, 0.382m, 0.786m, minPoint0,
             bosRequireCloseBreak: htfBosCloseBreak,
-            bosAnchorSwingStrength: htfBosAnchor);
+            bosAnchorSwingStrength: htfBosAnchor,
+            bosAnchorLeftBars: htfBosLeft,
+            bosAnchorRightBars: htfBosRight);
         if (htfPrimary == null) return false;
         if (htfPrimary.State < SmState.Aktiviert) return false;
         if (htfPrimary.IsLong != tradeIsLong) return false; // Gegenrichtung ist separater Guard — nicht unsere Sache.

@@ -81,13 +81,12 @@ public class RiskSettings
     /// Strukturpunkte-Doku §5C: Wenn true wird auch in Modus <see cref="EntryMode.Both"/> und
     /// <see cref="EntryMode.Aggressive"/> eine Pinbar- ODER Engulfing-Bestätigung in der B-Zone erzwungen
     /// und Micro-Sequence als Reversal-Trigger verworfen.
-    /// Default: false (Buch §7 Konservativer Einstieg erlaubt ausdrücklich Pinbar ODER Engulfing ODER
-    /// eine kleine 0-A-B-C-Umkehrsequenz — alle drei sind gleichwertig). Der frühere True-Default hat den
-    /// dritten Trigger stumm rausgeschnitten. Wer ausschließlich Docht-Rejection akzeptieren will, dreht das hoch.
-    /// Doku-Zitat Algorithmus-Dok §5C: "Erzeuge erst ein Kaufsignal, wenn Lower_Wick > (Body * 2)." —
-    /// explizit als Profi-Erweiterung beschrieben, nicht als Basis-Regel.
+    /// Default: true (25.04.2026 — Buch-strikter Schutz vor "Falling Knife" beim 50%-Limit-Entry).
+    /// Algorithmus-Dok §5C: "Erzeuge erst ein Kaufsignal, wenn Lower_Wick > (Body * 2)." Wer Micro-Sequence
+    /// als dritten Reversal-Trigger zulassen will (Buch §7 konservativer Einstieg, drei gleichwertige Wege),
+    /// schaltet das ab — der Default schützt aber den Default-EntryMode.Both vor Kauf in fallendes Messer.
     /// </summary>
-    public bool RequireWickRejectionInBZone { get; set; } = false;
+    public bool RequireWickRejectionInBZone { get; set; } = true;
 
     /// <summary>
     /// Spec §4 Confirmation-Mode: Die Trigger-Kerze muss mit dem Body INNERHALB oder ÜBER der Korrekturbox

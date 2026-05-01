@@ -18,18 +18,20 @@ public partial class MainWindow : Window
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
-        if (DataContext is MainViewModel mainVm && mainVm.IsGameActive)
+        // GameVm ist seit v2.0.36 nullable (Lazy-Resolution). Bei IsGameActive=true ist es garantiert da,
+        // null-conditional als zusaetzliche Sicherung gegen Race wenn IsGameActive vor GameVm-Init feuert.
+        if (DataContext is MainViewModel mainVm && mainVm.IsGameActive && mainVm.GameVm is { } gameVm)
         {
-            mainVm.GameVm.OnKeyDown(e.Key);
+            gameVm.OnKeyDown(e.Key);
             e.Handled = true;
         }
     }
 
     private void OnWindowKeyUp(object? sender, KeyEventArgs e)
     {
-        if (DataContext is MainViewModel mainVm && mainVm.IsGameActive)
+        if (DataContext is MainViewModel mainVm && mainVm.IsGameActive && mainVm.GameVm is { } gameVm)
         {
-            mainVm.GameVm.OnKeyUp(e.Key);
+            gameVm.OnKeyUp(e.Key);
             e.Handled = true;
         }
     }

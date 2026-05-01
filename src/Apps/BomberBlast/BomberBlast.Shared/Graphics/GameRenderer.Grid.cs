@@ -21,6 +21,13 @@ public sealed partial class GameRenderer
     // Vermeidet ~50-100 native SKPath-Allokationen pro Frame
     private readonly SKPath _tilePath = new();
 
+    // Block-Destroy-Animation Phase-2: Konstante Multiplikatoren fuer die 4 Fragmente
+    // (oben-links, oben-rechts, unten-links, unten-rechts). Werden mit spread/p2
+    // zur Laufzeit multipliziert, statt pro Frame neue float[]-Arrays zu allozieren.
+    private static readonly float[] BlockFragSpreadMulX = { -1f, 1f, -0.8f, 0.8f };
+    private static readonly float[] BlockFragSpreadMulY = { -1f, -0.7f, 0.6f, 1f };
+    private static readonly float[] BlockFragRotMul = { -25f, 20f, 15f, -30f };
+
     /// <summary>
     /// Boden-Cache invalidieren (bei Welt- oder Style-Wechsel).
     /// Wird automatisch in SetWorldTheme() aufgerufen.
@@ -84,7 +91,7 @@ public sealed partial class GameRenderer
         _fillPaint.Color = new SKColor(0, 0, 0, 200);
         _fillPaint.MaskFilter = null;
 
-        _bgPath.Reset(); // Reset statt Rewind - FillType muss auf EvenOdd gesetzt werden und soll nicht in Atmosphere-Nutzung leaken
+        _bgPath.Rewind();
         _bgPath.AddRect(new SKRect(0, 0, grid.PixelWidth, grid.PixelHeight));
         _bgPath.AddCircle(playerX, playerY, fogRadius);
         _bgPath.FillType = SKPathFillType.EvenOdd;
@@ -92,6 +99,11 @@ public sealed partial class GameRenderer
         canvas.ClipPath(_bgPath);
         canvas.DrawRect(0, 0, grid.PixelWidth, grid.PixelHeight, _fillPaint);
         canvas.Restore();
+
+        // FillType nach EvenOdd-Nutzung auf Default zuruecksetzen, damit
+        // Atmosphere-Rendering im naechsten Frame mit Winding-FillType arbeitet.
+        // Rewind() behaelt FillType bei, deshalb explizit reset noetig.
+        _bgPath.FillType = SKPathFillType.Winding;
 
         // Weicher Rand am Sichtkreis: 2-Ring-Approximation statt RadialGradient + SKPaint-Allokation
         _fillPaint.Shader = null;
@@ -1687,18 +1699,15 @@ public sealed partial class GameRenderer
             float halfCs = cs * 0.5f;
             float fragSize = halfCs * (1f - p2 * 0.3f);
 
-            // 4 Fragmente (oben-links, oben-rechts, unten-links, unten-rechts)
-            float[] dx = { -spread, spread, -spread * 0.8f, spread * 0.8f };
-            float[] dy = { -spread, -spread * 0.7f, spread * 0.6f, spread };
-            float[] rot = { -p2 * 25f, p2 * 20f, p2 * 15f, -p2 * 30f };
-
+            // 4 Fragmente (oben-links, oben-rechts, unten-links, unten-rechts).
+            // Multiplikatoren sind static readonly (BlockFragSpreadMulX/Y, BlockFragRotMul).
             for (int i = 0; i < 4; i++)
             {
                 canvas.Save();
-                float fx = cx + dx[i];
-                float fy = cy + dy[i];
+                float fx = cx + BlockFragSpreadMulX[i] * spread;
+                float fy = cy + BlockFragSpreadMulY[i] * spread;
                 canvas.Translate(fx, fy);
-                canvas.RotateDegrees(rot[i]);
+                canvas.RotateDegrees(BlockFragRotMul[i] * p2);
 
                 _fillPaint.Color = _palette.BlockBase.WithAlpha(alpha);
                 canvas.DrawRect(-fragSize * 0.5f, -fragSize * 0.5f, fragSize, fragSize, _fillPaint);
@@ -1929,13 +1938,13 @@ public sealed partial class GameRenderer
         var arcRect = new SKRect(-r, -r, r, r);
 
         // 3 Arcs für rotierenden Portal-Ring (wiederverwendeter _fusePath)
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.AddArc(arcRect, 0, 80);
         canvas.DrawPath(_fusePath, _strokePaint);
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.AddArc(arcRect, 120, 80);
         canvas.DrawPath(_fusePath, _strokePaint);
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.AddArc(arcRect, 240, 80);
         canvas.DrawPath(_fusePath, _strokePaint);
         _strokePaint.MaskFilter = null;
@@ -1975,7 +1984,7 @@ public sealed partial class GameRenderer
         _strokePaint.MaskFilter = isActive && isNeon ? _smallGlow : null;
 
         // Zickzack-Riss
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(px + cs * 0.2f, py + 2);
         _fusePath.LineTo(px + cs * 0.45f, py + cs * 0.35f);
         _fusePath.LineTo(px + cs * 0.3f, py + cs * 0.5f);
@@ -1984,7 +1993,7 @@ public sealed partial class GameRenderer
         canvas.DrawPath(_fusePath, _strokePaint);
 
         // Zweiter kleinerer Riss
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(px + cs * 0.7f, py + 4);
         _fusePath.LineTo(px + cs * 0.55f, py + cs * 0.4f);
         _fusePath.LineTo(px + cs * 0.8f, py + cs * 0.7f);

@@ -5,7 +5,6 @@ using Android.Views;
 using Android.Widget;
 using Avalonia;
 using Avalonia.Android;
-using BomberBlast.Core;
 using BomberBlast.Droid;
 using BomberBlast.Input;
 using BomberBlast.Services;
@@ -30,7 +29,11 @@ public class MainActivity : AvaloniaMainActivity<App>
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
     private MainViewModel? _mainVm;
-    private GameViewModel? _gameVm;
+    // GameViewModel NICHT als Field cachen — MainViewModel.GameVm ist seit v2.0.36 lazy-resolved.
+    // Direkter App.Services.GetService&lt;GameViewModel&gt;() in OnCreate wuerde den Lazy-Refactor
+    // (PERF-6, ~100-200ms Startup-Ersparnis) komplett aushebeln. Stattdessen `_mainVm?.GameVm`
+    // bei Bedarf in DispatchKeyEvent/DispatchGenericMotionEvent abfragen — null wenn Spiel
+    // noch nie gestartet wurde, da werden Gamepad-Events sowieso nicht gebraucht.
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
@@ -54,6 +57,11 @@ public class MainActivity : AvaloniaMainActivity<App>
         // Sound Service Factory: Android-SoundPool/MediaPlayer statt NullSoundService
         App.SoundServiceFactory = _ => new AndroidSoundService(this);
 
+        // Vibration Service Factory: Android Vibrator-API statt NullVibrationService.
+        // Wichtig: GameEngine kann jetzt selbst _vibration.VibrateTick() bei Joystick-Richtungswechsel
+        // aufrufen (siehe GameEngine.cs:558) — keine MainActivity-Event-Subscription mehr noetig.
+        App.VibrationServiceFactory = _ => new AndroidVibrationService(this);
+
         // Google Play Games Services Factory
         App.PlayGamesServiceFactory = sp =>
             new MeineApps.Core.Premium.Ava.Droid.AndroidPlayGamesService(
@@ -71,38 +79,16 @@ public class MainActivity : AvaloniaMainActivity<App>
         // Fullscreen/Immersive Mode (Landscape-Spiel, System-Bars komplett ausblenden)
         EnableImmersiveMode();
 
-        // Back-Navigation: ViewModel holen + Toast-Event verdrahten
+        // Back-Navigation: ViewModel holen + Toast-Event verdrahten.
+        // Wichtig: NUR MainViewModel hier eager aus DI ziehen — GameViewModel + GameEngine bleiben
+        // lazy (siehe Field-Kommentar oben). Vibration wird seit v2.0.36 in GameEngine.cs:560 selbst
+        // via IVibrationService.VibrateTick() ausgeloest.
         _mainVm = App.Services.GetService<MainViewModel>();
-        _gameVm = App.Services.GetService<GameViewModel>();
         if (_mainVm != null)
         {
             _mainVm.ExitHintRequested += msg =>
                 RunOnUiThread(() =>
                     Toast.MakeText(this, msg, ToastLength.Short)?.Show());
-        }
-
-        // Haptisches Feedback bei Joystick-Richtungswechsel (15ms Tick)
-        var gameEngine = App.Services.GetService<GameEngine>();
-        if (gameEngine != null)
-        {
-#pragma warning disable CA1422 // VibratorService deprecated ab API 31 — funktioniert aber bis heute und ist mit VIBRATE-Permission kompatibel
-            var vibrator = (Vibrator?)GetSystemService(VibratorService);
-#pragma warning restore CA1422
-            if (vibrator != null)
-            {
-                gameEngine.DirectionChanged += () =>
-                {
-                    try
-                    {
-                        if (OperatingSystem.IsAndroidVersionAtLeast(26))
-                            vibrator.Vibrate(VibrationEffect.CreateOneShot(15, VibrationEffect.DefaultAmplitude));
-                    }
-                    catch (Java.Lang.SecurityException)
-                    {
-                        // VIBRATE-Permission fehlt oder entzogen → still ignorieren
-                    }
-                };
-            }
         }
 
         // Google Play Games Services initialisieren + Auto-Sign-In
@@ -215,15 +201,16 @@ public class MainActivity : AvaloniaMainActivity<App>
     /// </summary>
     public override bool DispatchKeyEvent(KeyEvent? e)
     {
-        if (e != null && _mainVm?.IsGameActive == true && _gameVm != null)
+        // GameVm ist seit v2.0.36 lazy — bei IsGameActive=true ist er garantiert initialisiert.
+        if (e != null && _mainVm is { IsGameActive: true, GameVm: { } gameVm })
         {
             var gamepadButton = MapKeyCodeToGamepadButton(e.KeyCode);
             if (gamepadButton.HasValue)
             {
                 if (e.Action == KeyEventActions.Down)
-                    _gameVm.OnGamepadButtonDown(gamepadButton.Value);
+                    gameVm.OnGamepadButtonDown(gamepadButton.Value);
                 else if (e.Action == KeyEventActions.Up)
-                    _gameVm.OnGamepadButtonUp(gamepadButton.Value);
+                    gameVm.OnGamepadButtonUp(gamepadButton.Value);
                 return true; // Konsumiert, nicht an Avalonia weiterleiten
             }
         }
@@ -236,13 +223,13 @@ public class MainActivity : AvaloniaMainActivity<App>
     /// </summary>
     public override bool DispatchGenericMotionEvent(MotionEvent? e)
     {
-        if (e != null && _mainVm?.IsGameActive == true && _gameVm != null &&
+        if (e != null && _mainVm is { IsGameActive: true, GameVm: { } gameVm } &&
             e.Action == MotionEventActions.Move &&
             (e.Source & InputSourceType.Joystick) == InputSourceType.Joystick)
         {
             float x = e.GetAxisValue(Axis.X);
             float y = e.GetAxisValue(Axis.Y);
-            _gameVm.SetAnalogStick(x, y);
+            gameVm.SetAnalogStick(x, y);
             return true;
         }
 

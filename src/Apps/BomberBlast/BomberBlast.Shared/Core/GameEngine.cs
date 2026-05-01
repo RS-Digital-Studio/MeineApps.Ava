@@ -1,4 +1,5 @@
 using BomberBlast.AI;
+using BomberBlast.Core.LevelGeneration;
 using BomberBlast.Graphics;
 using BomberBlast.Input;
 using BomberBlast.Models;
@@ -38,7 +39,7 @@ public sealed partial class GameEngine : IDisposable
     private readonly IGameStyleService _gameStyleService;
     private readonly IShopService _shopService;
     private readonly IPurchaseService _purchaseService;
-    private readonly BomberBlast.Core.LevelGeneration.ILevelGenerator _levelGenerator;
+    private readonly ILevelGenerator _levelGenerator;
     private readonly GameRenderer _renderer;
     private readonly ITutorialService _tutorialService;
     private readonly TutorialOverlay _tutorialOverlay;
@@ -49,6 +50,7 @@ public sealed partial class GameEngine : IDisposable
     private readonly IDeckTelemetryService _deckTelemetry;
     private readonly IMasterModeService _masterModeService;
     private readonly IVibrationService _vibration;
+    private readonly IAppLogger _logger;
 
     /// <summary>
     /// Während eines Levels eingesetzte Spezial-Bombentypen. Wird bei
@@ -170,8 +172,10 @@ public sealed partial class GameEngine : IDisposable
     private readonly SKPaint _overlayBgPaint = new();
     private readonly SKPaint _overlayTextPaint = new() { IsAntialias = true };
     private readonly SKFont _overlayFont = new() { Embolden = true };
-    private readonly SKMaskFilter _overlayGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
-    private readonly SKMaskFilter _overlayGlowFilterLarge = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
+    // SKBlurStyle.Solid: Text/Form bleibt scharf-opak, plus äußerer Glow.
+    // (Normal blurrt INNEN UND AUSSEN → Text wirkt matschig/unscharf.)
+    private readonly SKMaskFilter _overlayGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 3);
+    private readonly SKMaskFilter _overlayGlowFilterLarge = SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 4);
 
     // Victory-Timer
     private float _victoryTimer;
@@ -507,7 +511,7 @@ public sealed partial class GameEngine : IDisposable
         IGameStyleService gameStyleService,
         IShopService shopService,
         IPurchaseService purchaseService,
-        BomberBlast.Core.LevelGeneration.ILevelGenerator levelGenerator,
+        ILevelGenerator levelGenerator,
         GameRenderer renderer,
         ITutorialService tutorialService,
         IDiscoveryService discoveryService,
@@ -516,7 +520,8 @@ public sealed partial class GameEngine : IDisposable
         IGameTrackingService tracking,
         IDeckTelemetryService deckTelemetry,
         IMasterModeService masterModeService,
-        IVibrationService vibrationService)
+        IVibrationService vibrationService,
+        IAppLogger logger)
     {
         _soundManager = soundManager;
         _progressService = progressService;
@@ -537,6 +542,7 @@ public sealed partial class GameEngine : IDisposable
         _deckTelemetry = deckTelemetry;
         _masterModeService = masterModeService;
         _vibration = vibrationService;
+        _logger = logger;
         _tutorialOverlay = new TutorialOverlay(localizationService);
         _discoveryOverlay = new DiscoveryOverlay(localizationService);
         _grid = new GameGrid();
@@ -548,8 +554,14 @@ public sealed partial class GameEngine : IDisposable
         _timer.OnWarning += OnTimeWarning;
         _timer.OnExpired += OnTimeExpired;
 
-        // Haptisches Feedback bei Richtungswechsel weiterleiten
-        _directionChangedHandler = () => DirectionChanged?.Invoke();
+        // Haptisches Feedback bei Richtungswechsel direkt via IVibrationService
+        // (vorher Event-Subscription in MainActivity → das hat den PERF-6 Lazy-Refactor umgangen).
+        // DirectionChanged-Event bleibt fuer Tests/zukuenftige Subscriber erhalten.
+        _directionChangedHandler = () =>
+        {
+            _vibration.VibrateTick();
+            DirectionChanged?.Invoke();
+        };
         _inputManager.DirectionChanged += _directionChangedHandler;
 
         // HUD-Labels cachen und bei Sprachwechsel aktualisieren
@@ -1463,10 +1475,16 @@ public sealed partial class GameEngine : IDisposable
 
     private void CleanupEntities()
     {
-        _bombs.RemoveAll(b => b.IsMarkedForRemoval);
-        _explosions.RemoveAll(e => e.IsMarkedForRemoval);
-        _enemies.RemoveAll(e => e.IsMarkedForRemoval);
-        _powerUps.RemoveAll(p => p.IsMarkedForRemoval);
+        // Reverse-for statt RemoveAll(lambda): vermeidet Predicate-Dispatch-Overhead
+        // im 30fps-Loop (4 Listen x ~50 Items/Frame = 6000 virtuelle Calls/s gespart).
+        for (int i = _bombs.Count - 1; i >= 0; i--)
+            if (_bombs[i].IsMarkedForRemoval) _bombs.RemoveAt(i);
+        for (int i = _explosions.Count - 1; i >= 0; i--)
+            if (_explosions[i].IsMarkedForRemoval) _explosions.RemoveAt(i);
+        for (int i = _enemies.Count - 1; i >= 0; i--)
+            if (_enemies[i].IsMarkedForRemoval) _enemies.RemoveAt(i);
+        for (int i = _powerUps.Count - 1; i >= 0; i--)
+            if (_powerUps[i].IsMarkedForRemoval) _powerUps.RemoveAt(i);
     }
 
     /// <summary>

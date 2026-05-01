@@ -458,6 +458,23 @@ public sealed class EnemyAI
                 _validDirections.Add(d);
         }
 
+        if (_validDirections.Count > 0)
+            return _validDirections[_random.Next(_validDirections.Count)];
+
+        // Last-Resort Pin-Down-Escape: Wenn ALLE Cardinal-Directions durch
+        // Bomben blockiert sind (typische Korridor-Situation: Spieler legt
+        // Bombe direkt vor Gegner, Waende seitlich), darf der Gegner als
+        // Notfall auf eine Bomb-Cell laufen — sonst friert er permanent ein,
+        // weil StuckTimer + Decision-Loop weiter blockiert bleiben.
+        // Side-Effect: Gegner stirbt evtl. in der Bombe — das ist Bomberman-
+        // Mechanik (Spieler treibt Gegner gezielt in Bomben). Waende und
+        // Bloecke bleiben blockierend.
+        foreach (var d in DirectionExtensions.GetCardinalDirections())
+        {
+            if (CanMoveInDirection(enemy, d, allowBombCell: true))
+                _validDirections.Add(d);
+        }
+
         if (_validDirections.Count == 0)
             return Direction.None;
 
@@ -485,7 +502,14 @@ public sealed class EnemyAI
         return _validDirections[_random.Next(_validDirections.Count)];
     }
 
-    private bool CanMoveInDirection(Enemy enemy, Direction direction)
+    /// <summary>
+    /// Prueft ob der Gegner in die angegebene Richtung gehen kann.
+    /// </summary>
+    /// <param name="allowBombCell">Wenn true, wird der Bomb-Cell-Block ignoriert.
+    /// Wird nur als Last-Resort in <see cref="GetRandomValidDirection"/> genutzt
+    /// um Pin-Down-Lock bei Bomben in Korridoren zu vermeiden. Waende/Bloecke
+    /// bleiben in beiden Modi blockierend.</param>
+    private bool CanMoveInDirection(Enemy enemy, Direction direction, bool allowBombCell = false)
     {
         int nx = enemy.GridX + direction.GetDeltaX();
         int ny = enemy.GridY + direction.GetDeltaY();
@@ -504,7 +528,7 @@ public sealed class EnemyAI
         if (cell.Type == CellType.PlatformGap && !enemy.CanPassWalls)
             return false;
 
-        if (cell.Bomb != null)
+        if (cell.Bomb != null && !allowBombCell)
             return false;
 
         return true;

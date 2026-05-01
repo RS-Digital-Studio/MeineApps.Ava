@@ -23,6 +23,13 @@ public static class DungeonMapRenderer
     // Gecachter MaskFilter (Puls-Variation 1.0-1.15 ist visuell vernachlässigbar)
     private static readonly SKMaskFilter _nodeGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, GLOW_RADIUS * 1.07f);
 
+    // Gecachter PathEffect fuer gestrichelte Verbindungslinien (unerreichbare Pfade).
+    // Vorher wurde pro Edge ein neuer SKPathEffect alloziert + disposed - bei einer
+    // 10-Reihen-Map mit ~3 Verbindungen/Reihe sind das bis zu 30 native Allokationen
+    // pro Frame in der DungeonMap-View. Cache spart das.
+    private static readonly float[] _dashIntervals = { 6f, 4f };
+    private static readonly SKPathEffect _dashPathEffect = SKPathEffect.CreateDash(_dashIntervals, 0);
+
     // Gepoolte SKPaint-Objekte (Text-Paints haben keine TextSize/TextAlign mehr — SkiaSharp 3.x)
     private static readonly SKPaint _nodePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _nodeBorderPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
@@ -121,12 +128,11 @@ public static class DungeonMapRenderer
                     }
                     else
                     {
-                        // Unerreicht: Grau, gestrichelt
+                        // Unerreicht: Grau, gestrichelt - cached PathEffect verwenden
                         _linePaint.Color = COLOR_LINE_DASHED;
-                        _linePaint.PathEffect?.Dispose();
-                        _linePaint.PathEffect = SKPathEffect.CreateDash(new[] { 6f, 4f }, 0);
+                        _linePaint.PathEffect = _dashPathEffect;
                         canvas.DrawLine(nodeX, nodeY, targetX, targetY, _linePaint);
-                        _linePaint.PathEffect = null;
+                        _linePaint.PathEffect = null; // Niemals disposen - das ist unser Cache
                     }
                 }
             }

@@ -636,7 +636,10 @@
     <value>Welt {0}</value>
   </data>
   <data name="WorldLocked" xml:space="preserve">
-    <value>{0} ★ benötigt</value>
+    <value>Noch {0} ★</value>
+  </data>
+  <data name="WorldLockHint" xml:space="preserve">
+    <value>Tipp: Wiederhole Level {0}</value>
   </data>
   <data name="WorldForest" xml:space="preserve">
     <value>Wald</value>
@@ -1525,7 +1528,7 @@
   </data>
   <!-- Survival Mode -->
   <data name="SurvivalMode" xml:space="preserve">
-    <value>Survival</value>
+    <value>Überleben</value>
   </data>
   <data name="SurvivalKills" xml:space="preserve">
     <value>Abschüsse: {0}</value>
@@ -1651,7 +1654,7 @@
     <value>Alle-Fertig-Bonus</value>
   </data>
   <data name="DailyTimeRemaining" xml:space="preserve">
-    <value>Reset in</value>
+    <value>Neu in</value>
   </data>
   <data name="DailyCompleteLevels" xml:space="preserve">
     <value>Level abschließen</value>
@@ -3746,7 +3749,7 @@
     <value>Boss</value>
   </data>
   <data name="DungeonUpgradesTitle" xml:space="preserve">
-    <value>Upgrades</value>
+    <value>Verbesserungen</value>
   </data>
   <data name="DungeonSelectNode" xml:space="preserve">
     <value>Tippe auf einen Knoten, um deinen Pfad zu wählen</value>

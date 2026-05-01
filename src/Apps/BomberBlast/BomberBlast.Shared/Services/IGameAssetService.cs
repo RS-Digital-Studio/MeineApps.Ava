@@ -42,6 +42,13 @@ public interface IGameAssetService : IDisposable
     void ClearCache();
 
     /// <summary>
+    /// Disposed verdraengte Bitmaps die mind. 200ms in der Pending-Queue sind.
+    /// Schutz gegen Render-Race: UI-Thread kann verdraengtes Bitmap noch halten,
+    /// erst nach mehreren Frames sicher zu disposen.
+    /// </summary>
+    void DrainPendingDispose();
+
+    /// <summary>
     /// Aktueller RAM-Verbrauch des Caches in Bytes.
     /// </summary>
     long CacheSizeBytes { get; }

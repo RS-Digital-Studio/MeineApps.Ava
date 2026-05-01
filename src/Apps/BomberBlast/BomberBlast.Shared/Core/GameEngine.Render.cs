@@ -504,50 +504,76 @@ public sealed partial class GameEngine
             0xFFFFFF44, // Gelb
         };
 
-        for (int i = 0; i < count; i++)
+        if (isVictory)
         {
-            // Deterministischer Pseudo-Random pro Partikel
-            int seed = i * 7919 + 1013;
-            float px = (seed % 1000) / 1000f; // 0-1 X-Position
-            float py = ((seed * 3 + 571) % 1000) / 1000f; // 0-1 Start-Y
-            float speed = 0.3f + ((seed * 7 + 233) % 600) / 1000f; // 0.3-0.9 Fallgeschwindigkeit
-            float drift = ((seed * 13 + 97) % 1000) / 1000f - 0.5f; // -0.5 bis 0.5 Seitendrift
-            float phase = ((seed * 17 + 443) % 1000) / 1000f * MathF.PI * 2f;
-            int colorIdx = (seed * 11 + 67) % colors.Length;
-            float size = 2f + ((seed * 23 + 311) % 400) / 100f; // 2-6
-
-            // Position über Zeit berechnen
-            float x = px * sw + MathF.Sin(timer * 2f + phase) * 20f * drift;
-            float y = py * sh + timer * speed * 100f; // Fallen
-
-            // Wrap: Unten raus → oben rein
-            y = y % (sh + 20f);
-
-            // Alpha: Erscheint nach gestaffeltem Delay
-            float delay = i * 0.05f;
-            float alpha = Math.Clamp((timer - delay) * 3f, 0f, 1f);
-            if (alpha <= 0) continue;
-
-            var color = new SKColor(colors[colorIdx]);
-
-            if (isVictory)
+            // Victory: Goldener Glitzer mit Two-Pass-Rendering.
+            // Pass 0 = ohne Glow (sparkle <= 0.7f), Pass 1 = mit Glow (sparkle > 0.7f).
+            // Spart Paint-State-Wechsel von ~5-10 pro Frame auf 2 (1 pro Pass).
+            // Die deterministische Math wird zwar 2x ausgefuehrt, ist aber sehr
+            // guenstig (Modulo + Sinus pro Partikel).
+            _overlayTextPaint.Style = SKPaintStyle.Fill;
+            for (int pass = 0; pass < 2; pass++)
             {
-                // Victory: Goldener Glitzer-Effekt
-                float sparkle = MathF.Abs(MathF.Sin(timer * 8f + phase));
-                byte a = (byte)(alpha * (150 + sparkle * 105));
-                _overlayTextPaint.Color = color.WithAlpha(a);
-                _overlayTextPaint.Style = SKPaintStyle.Fill;
-                _overlayTextPaint.MaskFilter = sparkle > 0.7f ? _overlayGlowFilter : null;
-                canvas.DrawCircle(x, y, size * (0.8f + sparkle * 0.4f), _overlayTextPaint);
+                bool passUsesGlow = pass == 1;
+                _overlayTextPaint.MaskFilter = passUsesGlow ? _overlayGlowFilter : null;
+
+                for (int i = 0; i < count; i++)
+                {
+                    int seed = i * 7919 + 1013;
+                    float phase = ((seed * 17 + 443) % 1000) / 1000f * MathF.PI * 2f;
+                    float sparkle = MathF.Abs(MathF.Sin(timer * 8f + phase));
+                    bool needsGlow = sparkle > 0.7f;
+                    if (needsGlow != passUsesGlow) continue;
+
+                    float px = (seed % 1000) / 1000f;
+                    float py = ((seed * 3 + 571) % 1000) / 1000f;
+                    float speed = 0.3f + ((seed * 7 + 233) % 600) / 1000f;
+                    float drift = ((seed * 13 + 97) % 1000) / 1000f - 0.5f;
+                    int colorIdx = (seed * 11 + 67) % colors.Length;
+                    float size = 2f + ((seed * 23 + 311) % 400) / 100f;
+
+                    float x = px * sw + MathF.Sin(timer * 2f + phase) * 20f * drift;
+                    float y = py * sh + timer * speed * 100f;
+                    y = y % (sh + 20f);
+
+                    float delay = i * 0.05f;
+                    float alpha = Math.Clamp((timer - delay) * 3f, 0f, 1f);
+                    if (alpha <= 0) continue;
+
+                    byte a = (byte)(alpha * (150 + sparkle * 105));
+                    _overlayTextPaint.Color = new SKColor(colors[colorIdx]).WithAlpha(a);
+                    canvas.DrawCircle(x, y, size * (0.8f + sparkle * 0.4f), _overlayTextPaint);
+                }
             }
-            else
+        }
+        else
+        {
+            // LevelComplete: Confetti-Rechtecke mit Rotation - kein Glow-Toggle noetig
+            _overlayTextPaint.Style = SKPaintStyle.Fill;
+            _overlayTextPaint.MaskFilter = null;
+
+            for (int i = 0; i < count; i++)
             {
-                // LevelComplete: Confetti-Rechtecke mit Rotation
+                int seed = i * 7919 + 1013;
+                float px = (seed % 1000) / 1000f;
+                float py = ((seed * 3 + 571) % 1000) / 1000f;
+                float speed = 0.3f + ((seed * 7 + 233) % 600) / 1000f;
+                float drift = ((seed * 13 + 97) % 1000) / 1000f - 0.5f;
+                float phase = ((seed * 17 + 443) % 1000) / 1000f * MathF.PI * 2f;
+                int colorIdx = (seed * 11 + 67) % colors.Length;
+                float size = 2f + ((seed * 23 + 311) % 400) / 100f;
+
+                float x = px * sw + MathF.Sin(timer * 2f + phase) * 20f * drift;
+                float y = py * sh + timer * speed * 100f;
+                y = y % (sh + 20f);
+
+                float delay = i * 0.05f;
+                float alpha = Math.Clamp((timer - delay) * 3f, 0f, 1f);
+                if (alpha <= 0) continue;
+
                 float rotation = timer * (200f + i * 30f) + phase * 57.3f;
                 byte a = (byte)(alpha * 200);
-                _overlayTextPaint.Color = color.WithAlpha(a);
-                _overlayTextPaint.Style = SKPaintStyle.Fill;
-                _overlayTextPaint.MaskFilter = null;
+                _overlayTextPaint.Color = new SKColor(colors[colorIdx]).WithAlpha(a);
 
                 canvas.Save();
                 canvas.Translate(x, y);

@@ -6,8 +6,10 @@ namespace BomberBlast.Models.Levels;
 /// <summary>
 /// Generiert Level mit Welt-spezifischen Mechaniken, variablen Layouts und Boss-Leveln.
 /// 100 Story-Level in 10 Welten (je 10), Boss alle 10 Level, Bonus alle 5 Level.
+/// Liefert Level-Daten (Mutator, Layout, BossKind, Mechanik-Set) — die Inhalts-Generierung
+/// (PowerUps, Exit, Spawns) erfolgt im DI-Service <see cref="BomberBlast.Core.LevelGeneration.ILevelGenerator"/>.
 /// </summary>
-public static class LevelGenerator
+public static class LevelLayoutGenerator
 {
     // Layout-Rotation pro Welt (abwechslungsreich statt immer Classic)
     private static readonly LevelLayout[][] WorldLayouts =

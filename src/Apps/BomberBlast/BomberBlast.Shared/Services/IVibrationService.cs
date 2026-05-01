@@ -6,6 +6,9 @@ namespace BomberBlast.Services;
 /// </summary>
 public interface IVibrationService
 {
+    /// <summary>Sehr kurzes Tick-Feedback (15ms — Joystick-Richtungswechsel, Pre-Turn-Buffering)</summary>
+    void VibrateTick();
+
     /// <summary>Leichtes haptisches Feedback (PowerUp einsammeln, UI-Tap)</summary>
     void VibrateLight();
 

@@ -82,9 +82,12 @@ public sealed partial class GameRenderer : IDisposable
     private readonly float[] _frameTimeBuffer = new float[FrameTimeBufferSize];
     private int _frameTimeIndex;
     private int _frameTimeCount;
-    private const float SkipThresholdSeconds = 0.040f;   // Avg > 40ms → skip
-    private const float SkipReleaseSeconds = 0.028f;     // Avg < 28ms → release (Hysterese gegen Flackern)
-    private const float SkipHoldMinSeconds = 0.5f;       // Minimum-Hold-Zeit: 500ms
+    // Stabile Hysterese-Werte für 30fps-Target (33ms): Schwelle und Release
+    // sind über-/unter-target gewählt damit kleine GC-Spikes nicht das Flackern
+    // von atmosphärischen Effekten triggern, was als "kleine Hänger" sichtbar wird.
+    private const float SkipThresholdSeconds = 0.050f;   // Avg > 50ms (≤20 FPS) → skip
+    private const float SkipReleaseSeconds = 0.036f;     // Avg < 36ms (≥27 FPS) → release
+    private const float SkipHoldMinSeconds = 1.0f;       // Minimum-Hold-Zeit: 1.0s (verhindert schnelles Toggle)
     private float _skipHoldRemaining;
     private bool _adaptiveSkipActive;
 

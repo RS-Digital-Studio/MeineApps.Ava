@@ -228,7 +228,7 @@ public sealed partial class GameRenderer
         _strokePaint.Color = new SKColor(80, 50, 50);
         _strokePaint.StrokeWidth = 1f;
         _strokePaint.MaskFilter = null;
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(player.X - 2.5f, mouthY);
         _fusePath.QuadTo(player.X, mouthY + 2, player.X + 2.5f, mouthY);
         canvas.DrawPath(_fusePath, _strokePaint);
@@ -249,7 +249,7 @@ public sealed partial class GameRenderer
         float crownRight = centerX + crownWidth / 2f;
 
         // Krone-Silhouette: 3 Zacken (Mitte hoch, links+rechts niedriger)
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(crownLeft, crownBaseY + crownHeight);                    // Unten links
         _fusePath.LineTo(crownLeft, crownBaseY + crownHeight * 0.35f);            // Links hoch
         _fusePath.LineTo(crownLeft + crownWidth * 0.15f, crownBaseY + crownHeight * 0.55f); // Tal 1
@@ -443,7 +443,7 @@ public sealed partial class GameRenderer
         _strokePaint.StrokeWidth = 1.2f;
         _strokePaint.MaskFilter = null;
         float my = e.Y + wy - bounce + r * 0.35f;
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(e.X - 4 * sc, my);
         _fusePath.QuadTo(e.X, my + 3 * sc, e.X + 4 * sc, my);
         canvas.DrawPath(_fusePath, _strokePaint);
@@ -630,7 +630,7 @@ public sealed partial class GameRenderer
             _strokePaint.Color = new SKColor(60, 220, 220);
             _strokePaint.StrokeWidth = 2.5f * sc;
             _strokePaint.MaskFilter = null;
-            _fusePath.Reset();
+            _fusePath.Rewind();
             _fusePath.MoveTo(tx, e.Y + wy + r * 0.3f);
             _fusePath.QuadTo(tx + wave, e.Y + wy + r * 0.3f + tentLen * 0.6f,
                              tx - wave * 0.5f, e.Y + wy + r * 0.3f + tentLen);
@@ -1068,7 +1068,7 @@ public sealed partial class GameRenderer
             float armMidX = cx + MathF.Cos(armAngle + 0.5f) * portalRadius * 0.6f;
             float armMidY = cy + MathF.Sin(armAngle + 0.5f) * portalRadius * 0.6f;
 
-            _fusePath.Reset();
+            _fusePath.Rewind();
             _fusePath.MoveTo(cx, cy);
             _fusePath.QuadTo(armMidX, armMidY, armEndX, armEndY);
             canvas.DrawPath(_fusePath, _strokePaint);

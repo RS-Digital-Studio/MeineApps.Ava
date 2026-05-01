@@ -1128,6 +1128,12 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        internal static string WorldLockHint {
+            get {
+                return ResourceManager.GetString("WorldLockHint", resourceCulture);
+            }
+        }
+
         internal static string WorldForest {
             get {
                 return ResourceManager.GetString("WorldForest", resourceCulture);

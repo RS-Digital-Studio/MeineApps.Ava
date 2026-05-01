@@ -14,6 +14,14 @@ public sealed partial class GameRenderer
     // HUD (right side panel)
     // ═══════════════════════════════════════════════════════════════════════
 
+    // SkipAtmosphere-aware Glow-Filter fuer HUD-Rendering.
+    // Im Stutter-Modus (Adaptive Frame-Skipping aktiv) werden GPU-Blur-Filter
+    // weggelassen damit Frame-Time-Recovery moeglich ist. In normalen Frames
+    // identisch zum gecachten _hudTextGlow / _smallGlow / _hudComboBlur.
+    private SKMaskFilter? HudTextGlowEffective => SkipAtmosphere ? null : _hudTextGlow;
+    private SKMaskFilter? HudSmallGlowEffective => SkipAtmosphere ? null : _smallGlow;
+    private SKMaskFilter? HudComboBlurEffective => SkipAtmosphere ? null : _hudComboBlur;
+
     private void RenderHUD(SKCanvas canvas, float remainingTime, int score, int lives, Player? player)
     {
         bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
@@ -42,7 +50,7 @@ public sealed partial class GameRenderer
         // Left border line
         _strokePaint.Color = _palette.HudBorder;
         _strokePaint.StrokeWidth = isNeon ? 1.5f : 1f;
-        _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
+        _strokePaint.MaskFilter = isNeon ? HudSmallGlowEffective : null;
         canvas.DrawLine(x, y, x, y + h, _strokePaint);
         _strokePaint.MaskFilter = null;
 
@@ -59,7 +67,7 @@ public sealed partial class GameRenderer
             cy += 24;
 
             _textPaint.Color = new SKColor(255, 80, 50); // Rot für Kills
-            _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
+            _textPaint.MaskFilter = isNeon ? HudTextGlowEffective : null;
             if (SurvivalKills != _lastSurvivalKills)
             {
                 _lastSurvivalKills = SurvivalKills;
@@ -90,7 +98,7 @@ public sealed partial class GameRenderer
 
             bool timeWarning = remainingTime <= 30;
             _textPaint.Color = timeWarning ? _palette.HudTimeWarning : _palette.HudText;
-            _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
+            _textPaint.MaskFilter = isNeon ? HudTextGlowEffective : null;
             int timeInt = (int)remainingTime;
             if (timeInt != _lastTimeValue)
             {
@@ -115,7 +123,7 @@ public sealed partial class GameRenderer
         cy += 22;
 
         _textPaint.Color = _palette.HudAccent;
-        _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
+        _textPaint.MaskFilter = isNeon ? HudTextGlowEffective : null;
         if (score != _lastScoreValue)
         {
             _lastScoreValue = score;
@@ -149,7 +157,7 @@ public sealed partial class GameRenderer
                 _lastComboString = ComboCount >= 5 ? $"MEGA x{ComboCount}" : $"x{ComboCount}";
             }
             _textPaint.Color = comboColor;
-            _textPaint.MaskFilter = isNeon ? _hudTextGlow : _hudComboBlur;
+            _textPaint.MaskFilter = isNeon ? HudTextGlowEffective : HudComboBlurEffective;
             // Separater Combo-Font (vermeidet SKFont.Size-Mutation auf _hudFontMedium pro Frame)
             _hudFontCombo.Size = _hudFontMedium.Size * comboScale;
             canvas.DrawText(_lastComboString, cx, cy, SKTextAlign.Center, _hudFontCombo, _textPaint);
@@ -207,7 +215,7 @@ public sealed partial class GameRenderer
             _textPaint.Color = EnemiesRemaining <= 2
                 ? new SKColor(255, 80, 50)   // Rot: fast geschafft
                 : _palette.HudText;
-            _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
+            _textPaint.MaskFilter = isNeon ? HudTextGlowEffective : null;
             // Enemies-String gecacht
             if (EnemiesRemaining != _lastEnemiesRemaining)
             {
@@ -231,7 +239,7 @@ public sealed partial class GameRenderer
             cy += 20;
 
             _textPaint.Color = _palette.HudText;
-            _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
+            _textPaint.MaskFilter = isNeon ? HudTextGlowEffective : null;
             if (player.MaxBombs != _lastBombsValue)
             {
                 _lastBombsValue = player.MaxBombs;
@@ -319,7 +327,7 @@ public sealed partial class GameRenderer
                 foreach (var (label, color) in _activePowers)
                 {
                     _textPaint.Color = color;
-                    _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
+                    _textPaint.MaskFilter = isNeon ? HudTextGlowEffective : null;
                     canvas.DrawText(label, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
                     _textPaint.MaskFilter = null;
                     cy += 16;
@@ -352,7 +360,7 @@ public sealed partial class GameRenderer
                 canvas.DrawRoundRect(x + 4, cy, w - 8, 16, 4, 4, _fillPaint);
                 _strokePaint.Color = rtColor;
                 _strokePaint.StrokeWidth = 1f;
-                _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
+                _strokePaint.MaskFilter = isNeon ? HudSmallGlowEffective : null;
                 canvas.DrawRoundRect(x + 4, cy, w - 8, 16, 4, 4, _strokePaint);
                 _strokePaint.MaskFilter = null;
                 _textPaint.Color = rtColor;
@@ -401,7 +409,7 @@ public sealed partial class GameRenderer
         canvas.DrawCircle(cx - d * 0.5f, cy - d * 0.2f, d * 0.55f, _fillPaint);
         canvas.DrawCircle(cx + d * 0.5f, cy - d * 0.2f, d * 0.55f, _fillPaint);
 
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx - r, cy);
         _fusePath.LineTo(cx, cy + r);
         _fusePath.LineTo(cx + r, cy);
@@ -423,7 +431,7 @@ public sealed partial class GameRenderer
         // Lunte (kurze Linie nach oben)
         _strokePaint.Color = isNeon ? new SKColor(255, 160, 60) : new SKColor(160, 120, 60);
         _strokePaint.StrokeWidth = 1.5f;
-        _strokePaint.MaskFilter = isNeon ? _hudTextGlow : null;
+        _strokePaint.MaskFilter = isNeon ? HudTextGlowEffective : null;
         canvas.DrawLine(cx, cy - r, cx + r * 0.4f, cy - r * 1.6f, _strokePaint);
 
         // Funken-Punkt
@@ -436,9 +444,9 @@ public sealed partial class GameRenderer
     {
         // Aeussere Flamme (orange)
         _fillPaint.Color = isNeon ? new SKColor(255, 130, 40) : new SKColor(255, 120, 30);
-        _fillPaint.MaskFilter = isNeon ? _hudTextGlow : null;
+        _fillPaint.MaskFilter = isNeon ? HudTextGlowEffective : null;
 
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx - r * 0.7f, cy + r);
         _fusePath.QuadTo(cx - r, cy - r * 0.3f, cx, cy - r * 1.4f);
         _fusePath.QuadTo(cx + r, cy - r * 0.3f, cx + r * 0.7f, cy + r);
@@ -449,7 +457,7 @@ public sealed partial class GameRenderer
         _fillPaint.Color = isNeon ? new SKColor(255, 220, 80) : new SKColor(255, 200, 60);
         _fillPaint.MaskFilter = null;
 
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx - r * 0.35f, cy + r);
         _fusePath.QuadTo(cx - r * 0.5f, cy, cx, cy - r * 0.6f);
         _fusePath.QuadTo(cx + r * 0.5f, cy, cx + r * 0.35f, cy + r);
@@ -530,7 +538,7 @@ public sealed partial class GameRenderer
             var rarityColor = GetCardRarityColor(card.Rarity);
             _strokePaint.Color = isActive ? rarityColor : rarityColor.WithAlpha(card.HasUsesLeft ? (byte)120 : (byte)50);
             _strokePaint.StrokeWidth = isActive ? 2f : 1f;
-            _strokePaint.MaskFilter = isActive && isNeon ? _hudTextGlow : null;
+            _strokePaint.MaskFilter = isActive && isNeon ? HudTextGlowEffective : null;
             canvas.DrawRoundRect(sx, startY, CARD_SLOT_SIZE, CARD_SLOT_SIZE, 4, 4, _strokePaint);
             _strokePaint.MaskFilter = null;
 
@@ -543,7 +551,7 @@ public sealed partial class GameRenderer
             {
                 _fillPaint.Color = bombColor;
                 if (isActive && isNeon)
-                    _fillPaint.MaskFilter = _smallGlow;
+                    _fillPaint.MaskFilter = HudSmallGlowEffective;
                 canvas.DrawCircle(iconCx, iconCy, 6, _fillPaint);
                 _fillPaint.MaskFilter = null;
             }
@@ -572,7 +580,7 @@ public sealed partial class GameRenderer
                 float pulse = MathF.Sin(_globalTimer * 6f) * 0.3f + 0.7f;
                 _strokePaint.Color = rarityColor.WithAlpha((byte)(pulse * 180));
                 _strokePaint.StrokeWidth = 1.5f;
-                _strokePaint.MaskFilter = _hudComboBlur;
+                _strokePaint.MaskFilter = HudComboBlurEffective;
                 canvas.DrawRoundRect(sx - 1, startY - 1, CARD_SLOT_SIZE + 2, CARD_SLOT_SIZE + 2, 5, 5, _strokePaint);
                 _strokePaint.MaskFilter = null;
             }
@@ -664,7 +672,7 @@ public sealed partial class GameRenderer
             // Rahmen
             _strokePaint.Color = color;
             _strokePaint.StrokeWidth = 1f;
-            _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
+            _strokePaint.MaskFilter = isNeon ? HudSmallGlowEffective : null;
             canvas.DrawRoundRect(bx, by, buffSize, buffSize, 3, 3, _strokePaint);
             _strokePaint.MaskFilter = null;
 

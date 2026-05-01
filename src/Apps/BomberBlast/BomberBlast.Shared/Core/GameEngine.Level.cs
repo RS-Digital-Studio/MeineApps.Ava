@@ -3,10 +3,9 @@ using BomberBlast.Models;
 using BomberBlast.Models.Dungeon;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
+using BomberBlast.Core.LevelGeneration;
 using BomberBlast.Models.Levels;
 using BomberBlast.Services;
-// MutatorEffects ist in BomberBlast.Core.LevelGeneration — Namespace nicht per using einbinden,
-// weil es mit Models.Levels.LevelGenerator kollidiert. Stattdessen voll qualifiziert unten referenziert.
 using SkiaSharp;
 
 namespace BomberBlast.Core;
@@ -35,17 +34,19 @@ public sealed partial class GameEngine
         _isMasterMode = masterMode && _masterModeService.IsUnlocked;
         if (masterMode && !_isMasterMode)
         {
-            System.Diagnostics.Debug.WriteLine(
+            // IAppLogger statt Debug.WriteLine: Auch im Release-Build via LogCat sichtbar (Android),
+            // hilft beim Debuggen wenn ein veralteter Deep-Link masterMode=true setzt.
+            _logger.LogWarning(
                 $"[GameEngine] Master-Mode für L{levelNumber} angefordert aber !IsUnlocked → Normal-Mode-Fallback");
         }
         _currentLevelNumber = levelNumber;
-        _currentLevel = LevelGenerator.GenerateLevel(levelNumber, _progressService.HighestCompletedLevel);
+        _currentLevel = LevelLayoutGenerator.GenerateLevel(levelNumber, _progressService.HighestCompletedLevel);
         _activeMutator = _currentLevel.Mutator;
         _continueUsed = false;
 
         _player.ResetForNewGame();
         ApplyUpgrades();
-        BomberBlast.Core.LevelGeneration.MutatorEffects.Apply(_player, _activeMutator);
+        MutatorEffects.Apply(_player, _activeMutator);
         await LoadLevelAsync();
         if (_isMasterMode) ApplyMasterModeEnemyUpgrade();
 
@@ -90,7 +91,7 @@ public sealed partial class GameEngine
         _isMasterMode = false;
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 99;
-        _currentLevel = LevelGenerator.GenerateDailyChallengeLevel(seed);
+        _currentLevel = LevelLayoutGenerator.GenerateDailyChallengeLevel(seed);
         _continueUsed = false;
 
         _player.ResetForNewGame();
@@ -116,7 +117,7 @@ public sealed partial class GameEngine
         _activeMutator = LevelMutator.None;
         _quickPlayDifficulty = difficulty;
         _currentLevelNumber = difficulty * 10; // Für Welt-Palette
-        _currentLevel = LevelGenerator.GenerateQuickPlayLevel(seed, difficulty);
+        _currentLevel = LevelLayoutGenerator.GenerateQuickPlayLevel(seed, difficulty);
         _continueUsed = true; // Kein Continue im Quick-Play
 
         _player.ResetForNewGame();
@@ -143,7 +144,7 @@ public sealed partial class GameEngine
         _isMasterMode = false;
         _activeMutator = LevelMutator.None;
         _currentLevelNumber = 1;
-        _currentLevel = LevelGenerator.GenerateSurvivalLevel();
+        _currentLevel = LevelLayoutGenerator.GenerateSurvivalLevel();
         _continueUsed = true; // Kein Continue im Survival
 
         _survivalTimeElapsed = 0;
@@ -190,7 +191,7 @@ public sealed partial class GameEngine
             return;
         }
 
-        _currentLevel = LevelGenerator.GenerateDungeonFloor(floor, seed, roomType, challengeMode, floorModifier);
+        _currentLevel = LevelLayoutGenerator.GenerateDungeonFloor(floor, seed, roomType, challengeMode, floorModifier);
         _continueUsed = true; // Kein Continue im Dungeon
 
         if (floor == 1)
@@ -1063,11 +1064,18 @@ public sealed partial class GameEngine
         int coinDivisor = _currentLevelNumber <= 10 ? 2 : 3;
         int coins = levelScore / coinDivisor;
 
-        // CoinBonus-Upgrade: +25% / +50% extra Coins
+        // CoinBonus-Upgrade: L1 = +25%, L2 = +60% (BAL-2, 01.05.2026)
+        // L2 bekommt +35% extra (statt vorher +25%), weil 17.000 Coins L2-Preis sich
+        // sonst kaum amortisiert (vorher: 15 Welt-3-Level fuer ROI; jetzt: ~10 Level).
         int coinBonusLevel = _shopService.Upgrades.GetLevel(UpgradeType.CoinBonus);
         if (coinBonusLevel > 0)
         {
-            float coinMultiplier = 1f + coinBonusLevel * 0.25f;
+            float coinMultiplier = coinBonusLevel switch
+            {
+                1 => 1.25f,
+                >= 2 => 1.60f,
+                _ => 1.0f
+            };
             coins = (int)(coins * coinMultiplier);
         }
 
@@ -1391,7 +1399,7 @@ public sealed partial class GameEngine
             _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
             return;
         }
-        _currentLevel = LevelGenerator.GenerateLevel(_currentLevelNumber, _progressService.HighestCompletedLevel);
+        _currentLevel = LevelLayoutGenerator.GenerateLevel(_currentLevelNumber, _progressService.HighestCompletedLevel);
         _activeMutator = _currentLevel.Mutator;
 
         // Welt-/Boss-/Mutator-Ankündigung

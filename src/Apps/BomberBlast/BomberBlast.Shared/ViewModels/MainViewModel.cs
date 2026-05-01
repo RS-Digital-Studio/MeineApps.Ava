@@ -43,7 +43,6 @@ public sealed partial class MainViewModel : ViewModelBase
     // verdrahtet.
 
     public MainMenuViewModel MenuVm { get; }
-    public GameViewModel GameVm { get; }
     public LevelSelectViewModel LevelSelectVm { get; }
     public SettingsViewModel SettingsVm { get; }
     public HighScoresViewModel HighScoresVm { get; }
@@ -51,6 +50,14 @@ public sealed partial class MainViewModel : ViewModelBase
     public PauseViewModel PauseVm { get; }
     public HelpViewModel HelpVm { get; }
     public VictoryViewModel VictoryVm { get; }
+
+    /// <summary>
+    /// Game-VM ist nullable + Lazy: spart 100-200ms Startup auf Mid-Tier-Android,
+    /// weil GameEngine + GameRenderer (mit allen SkPaint/SkFont/SkMaskFilter-Allokationen)
+    /// erst beim ersten Game-Start aufgeloest werden — nicht waehrend Splash + MainMenu.
+    /// EnsureGameVm() sorgt fuer idempotente Initialisierung samt Event-Wirings.
+    /// </summary>
+    [ObservableProperty] private GameViewModel? _gameVm;
 
     // ═══════════════════════════════════════════════════════════════════════
     // CHILD VIEWMODELS (Lazy - spät unlocked)
@@ -219,6 +226,7 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly IAppLogger _logger;
 
     // Lazy-VM-Factories (werden beim ersten EnsureXxxVm() resolved)
+    private readonly Lazy<GameViewModel> _gameVmLazy;
     private readonly Lazy<ShopViewModel> _shopVmLazy;
     private readonly Lazy<AchievementsViewModel> _achievementsVmLazy;
     private readonly Lazy<DailyChallengeViewModel> _dailyChallengeVmLazy;
@@ -253,7 +261,6 @@ public sealed partial class MainViewModel : ViewModelBase
     public MainViewModel(
         // Eager VMs (sofort gebraucht)
         MainMenuViewModel menuVm,
-        GameViewModel gameVm,
         LevelSelectViewModel levelSelectVm,
         SettingsViewModel settingsVm,
         HighScoresViewModel highScoresVm,
@@ -262,6 +269,7 @@ public sealed partial class MainViewModel : ViewModelBase
         HelpViewModel helpVm,
         VictoryViewModel victoryVm,
         // Lazy VMs (erst bei progressivem Unlock gebraucht)
+        Lazy<GameViewModel> gameVmLazy,
         Lazy<ShopViewModel> shopVmLazy,
         Lazy<AchievementsViewModel> achievementsVmLazy,
         Lazy<DailyChallengeViewModel> dailyChallengeVmLazy,
@@ -288,7 +296,6 @@ public sealed partial class MainViewModel : ViewModelBase
         IAppLogger logger)
     {
         MenuVm = menuVm;
-        GameVm = gameVm;
         LevelSelectVm = levelSelectVm;
         SettingsVm = settingsVm;
         HighScoresVm = highScoresVm;
@@ -297,6 +304,7 @@ public sealed partial class MainViewModel : ViewModelBase
         HelpVm = helpVm;
         VictoryVm = victoryVm;
 
+        _gameVmLazy = gameVmLazy;
         _shopVmLazy = shopVmLazy;
         _achievementsVmLazy = achievementsVmLazy;
         _dailyChallengeVmLazy = dailyChallengeVmLazy;
@@ -324,9 +332,9 @@ public sealed partial class MainViewModel : ViewModelBase
 
         // ───────────────────────────────────────────────────────────────────
         // Eager-VMs verdrahten (Navigation + Game-Juice)
+        // GameVm wird in EnsureGameVm() verdrahtet — siehe oben.
         // ───────────────────────────────────────────────────────────────────
         WireCommon(menuVm);
-        WireCommon(gameVm);
         WireCommon(levelSelectVm);
         WireCommon(settingsVm);
         WireCommon(highScoresVm);
@@ -359,9 +367,11 @@ public sealed partial class MainViewModel : ViewModelBase
         // Back-Press Helper verdrahten
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
-        // PauseVM Resume/Restart Events mit GameVM verbinden
-        pauseVm.ResumeRequested += () => gameVm.ResumeCommand.Execute(null);
-        pauseVm.RestartRequested += () => gameVm.RestartCommand.Execute(null);
+        // PauseVM Resume/Restart Events mit GameVM verbinden.
+        // Lambda triggert Lazy-Resolution erst beim Pause-Event — zu dem Zeitpunkt
+        // ist GameVm immer schon initialisiert (User pausiert nur waehrend des Spiels).
+        pauseVm.ResumeRequested += () => GameVm?.ResumeCommand.Execute(null);
+        pauseVm.RestartRequested += () => GameVm?.RestartCommand.Execute(null);
 
         // Dialog-Events von SettingsVM verdrahten (SettingsVm ist eager)
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
@@ -417,6 +427,21 @@ public sealed partial class MainViewModel : ViewModelBase
             emitter.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
             emitter.CelebrationRequested += () => CelebrationRequested?.Invoke();
         }
+    }
+
+    /// <summary>
+    /// Loest GameViewModel lazy auf und verdrahtet Navigation + Game-Juice-Events.
+    /// Wird beim ersten Game-Start aufgerufen (NavigateToGame, OnAppearing) — spart
+    /// 100-200ms Startup-Zeit, weil GameEngine + GameRenderer (mit zahlreichen
+    /// SkPaint/SkFont/SkMaskFilter-Allokationen) erst dann erzeugt werden.
+    /// </summary>
+    private GameViewModel EnsureGameVm()
+    {
+        if (GameVm is { } existing) return existing;
+        var vm = _gameVmLazy.Value;
+        WireCommon(vm);
+        GameVm = vm;
+        return vm;
     }
 
     private ShopViewModel EnsureShopVm()
@@ -669,10 +694,11 @@ public sealed partial class MainViewModel : ViewModelBase
         // Aktuellen Zustand merken (für Zurück-Navigation)
         var wasGameActive = IsGameActive;
 
-        // Lifecycle: Game-Loop stoppen beim Verlassen der Game-View
+        // Lifecycle: Game-Loop stoppen beim Verlassen der Game-View.
+        // GameVm? — nullable wegen Lazy-Resolution; bei wasGameActive=true existiert GameVm garantiert.
         if (wasGameActive && baseRoute != "Game")
         {
-            GameVm.OnDisappearing();
+            GameVm?.OnDisappearing();
         }
 
         HideAll();
@@ -693,6 +719,10 @@ public sealed partial class MainViewModel : ViewModelBase
                 break;
 
             case "Game":
+                // EnsureGameVm zuerst laden (loest Lazy<GameViewModel> auf + setzt GameVm),
+                // erst DANACH IsGameActive=true setzen — sonst ein Frame mit IsGameActive=true + GameVm=null,
+                // ContentControl-Binding wuerde einen leeren GameBorder zeigen.
+                var gameVm = EnsureGameVm();
                 IsGameActive = true;
                 // Spiel-Parameter parsen
                 if (route.Contains('?'))
@@ -721,10 +751,10 @@ public sealed partial class MainViewModel : ViewModelBase
                             if (parts[0] == "master") bool.TryParse(parts[1], out master);
                         }
                     }
-                    GameVm.SetParameters(mode, level, continueMode, boost, difficulty, floor, seed, master);
+                    gameVm.SetParameters(mode, level, continueMode, boost, difficulty, floor, seed, master);
                 }
-                // Spiel starten (Engine initialisieren + 60fps Loop starten)
-                await GameVm.OnAppearingAsync();
+                // Spiel starten (Engine initialisieren + Render-Loop starten)
+                await gameVm.OnAppearingAsync();
                 break;
 
             case "LevelSelect":
@@ -941,13 +971,14 @@ public sealed partial class MainViewModel : ViewModelBase
                 break;
 
             case "..":
-                // Zurück-Navigation: zum Spiel zurückkehren wenn Einstellungen aus dem Spiel geöffnet wurden
+                // Zurück-Navigation: zum Spiel zurückkehren wenn Einstellungen aus dem Spiel geöffnet wurden.
+                // EnsureGameVm() statt GameVm direkt — robuster falls Lazy-Resolution noch nicht passiert ist.
                 if (_returnToGameFromSettings)
                 {
                     _returnToGameFromSettings = false;
                     IsGameActive = true;
                     IsAdBannerVisible = false;
-                    await GameVm.OnAppearingAsync();
+                    await EnsureGameVm().OnAppearingAsync();
                 }
                 else
                 {
@@ -1061,14 +1092,16 @@ public sealed partial class MainViewModel : ViewModelBase
         }
 
         // 2. Score-Double Overlay → überspringen
-        if (GameVm.ShowScoreDoubleOverlay)
+        // GameVm ist nur initialisiert wenn der User im Spiel war/ist; Score-Double
+        // erscheint ausschliesslich nach LevelComplete, also IST GameVm dann garantiert nicht null.
+        if (GameVm is { ShowScoreDoubleOverlay: true })
         {
             GameVm.SkipDoubleScoreCommand.Execute(null);
             return true;
         }
 
         // 3. Im Spiel: Pause/Resume
-        if (IsGameActive)
+        if (IsGameActive && GameVm is not null)
         {
             if (GameVm.IsPaused)
             {

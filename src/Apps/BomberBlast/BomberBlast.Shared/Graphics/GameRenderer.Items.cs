@@ -51,7 +51,7 @@ public sealed partial class GameRenderer
             byte armAlpha = (byte)(140 * pulse);
             _strokePaint.Color = _palette.ExitGlow.WithAlpha(armAlpha);
             _strokePaint.StrokeWidth = 2f;
-            _fusePath.Reset();
+            _fusePath.Rewind();
             _fusePath.MoveTo(0, 0);
             _fusePath.QuadTo(portalRadius * 0.3f, -portalRadius * 0.5f,
                              portalRadius * 0.8f, -portalRadius * 0.15f);
@@ -125,10 +125,12 @@ public sealed partial class GameRenderer
             { stretchY = 1f + stretch; stretchX = 1f - stretch * 0.5f; }
         }
 
-        // Pulsation beschleunigt sich je näher die Explosion (4→12 Hz)
+        // Pulsation beschleunigt sich je näher die Explosion (visuell ruhig am Anfang,
+        // dramatisch kurz vor der Explosion — entschärft v2.0.36).
+        // Coefficients in rad/s: 2.5→7 entspricht ca. 0.4→1.1 Hz Pulsationsfrequenz.
         float fuseProgress = 1f - (bomb.FuseTimer / Bomb.DEFAULT_FUSE_TIME);
-        float pulseSpeed = 4f + fuseProgress * 8f;
-        float pulseAmount = 0.06f + fuseProgress * 0.04f;
+        float pulseSpeed = 2.5f + fuseProgress * 4.5f;
+        float pulseAmount = 0.05f + fuseProgress * 0.05f;
         float pulse = MathF.Sin(_globalTimer * pulseSpeed) * pulseAmount + (1f - pulseAmount);
         float drawSize = cs * pulse * birthScale;
 
@@ -222,8 +224,9 @@ public sealed partial class GameRenderer
         if (bomb.Type != BombType.Normal)
             RenderBombTypeParticles(canvas, bomb, cs, drawSize);
 
-        // Glow beschleunigt und intensiviert sich
-        float glowSpeed = 3f + fuseProgress * 6f;
+        // Glow beschleunigt und intensiviert sich — entschärft v2.0.36
+        // (vorher 3→9 rad/s, fühlte sich zu hektisch an).
+        float glowSpeed = 2f + fuseProgress * 4f;
         float glowPulse = MathF.Sin(_globalTimer * glowSpeed) * 0.3f + 0.5f;
         byte glowAlpha = (byte)(80 + fuseProgress * 80);
         _glowPaint.Color = bombGlow.WithAlpha((byte)(glowAlpha * glowPulse));
@@ -264,21 +267,22 @@ public sealed partial class GameRenderer
         _strokePaint.Color = fuseColor;
         _strokePaint.StrokeWidth = 2f;
         _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(bomb.X, bomb.Y - radius);
         _fusePath.QuadTo(fuseMidX, fuseMidY, fuseEndX, fuseEndY);
         canvas.DrawPath(_fusePath, _strokePaint);
         _strokePaint.MaskFilter = null;
 
-        // Kleine Funken-Punkte entlang der Schnur (2-3 wandernde Punkte)
+        // Kleine Funken-Punkte entlang der Schnur (2-3 wandernde Punkte) — entschärft v2.0.36
+        // (Wander-Speed 3→2, Alpha-Pulsation 8→5).
         for (int i = 0; i < 3; i++)
         {
-            float t = ((_globalTimer * 3f + i * 0.33f) % 1f) * fuseLength;
+            float t = ((_globalTimer * 2f + i * 0.33f) % 1f) * fuseLength;
             // Quadratische Bezier-Position auf der Schnur
             float oneMinusT = 1f - t;
             float sparkOnFuseX = oneMinusT * oneMinusT * bomb.X + 2 * oneMinusT * t * fuseMidX + t * t * fuseEndX;
             float sparkOnFuseY = oneMinusT * oneMinusT * (bomb.Y - radius) + 2 * oneMinusT * t * fuseMidY + t * t * fuseEndY;
-            byte sparkAlpha = (byte)(100 + MathF.Sin(_globalTimer * 8f + i * 2f) * 60);
+            byte sparkAlpha = (byte)(100 + MathF.Sin(_globalTimer * 5f + i * 2f) * 60);
             _fillPaint.Color = new SKColor(255, 220, 100, sparkAlpha);
             _fillPaint.MaskFilter = null;
             canvas.DrawCircle(sparkOnFuseX, sparkOnFuseY, 1.2f, _fillPaint);
@@ -372,7 +376,7 @@ public sealed partial class GameRenderer
         canvas.Save();
         canvas.Translate(fuseEndX, fuseEndY);
         canvas.RotateDegrees(sRot);
-        _fusePath.Reset();
+        _fusePath.Rewind();
         float sOuter = starSize * starFlicker;
         float sInner = sOuter * 0.35f;
         for (int i = 0; i < 8; i++)
@@ -866,7 +870,7 @@ public sealed partial class GameRenderer
             ? (byte)(255 * Math.Clamp(powerUp.CollectTimer / PowerUp.COLLECT_DURATION, 0f, 1f))
             : (byte)255;
 
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(px, py - radius); // Oben
         _fusePath.LineTo(px + radius * 0.85f, py); // Rechts
         _fusePath.LineTo(px, py + radius); // Unten
@@ -879,7 +883,7 @@ public sealed partial class GameRenderer
 
         // Innere hellere Raute (3D-Effekt)
         float innerR = radius * 0.82f;
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(px, py - innerR);
         _fusePath.LineTo(px + innerR * 0.85f, py);
         _fusePath.LineTo(px, py + innerR);
@@ -890,7 +894,7 @@ public sealed partial class GameRenderer
 
         // Glanz-Highlight oben links (3D-Look)
         _fillPaint.Color = new SKColor(255, 255, 255, (byte)(60 * (bgAlpha / 255f)));
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(px, py - innerR * 0.9f);
         _fusePath.LineTo(px - innerR * 0.75f, py);
         _fusePath.LineTo(px - innerR * 0.3f, py - innerR * 0.15f);
@@ -902,7 +906,7 @@ public sealed partial class GameRenderer
         _strokePaint.Color = new SKColor(255, 255, 255, (byte)(80 * (bgAlpha / 255f)));
         _strokePaint.StrokeWidth = 1f;
         _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(px, py - radius);
         _fusePath.LineTo(px + radius * 0.85f, py);
         _fusePath.LineTo(px, py + radius);
@@ -962,7 +966,7 @@ public sealed partial class GameRenderer
                 _fillPaint.Color = SKColors.White;
                 // Zündschnur
                 _strokePaint.StrokeWidth = 1.5f;
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 _fusePath.MoveTo(cx, cy - size * 0.3f);
                 _fusePath.QuadTo(cx + size * 0.2f, cy - size * 0.55f, cx + size * 0.35f, cy - size * 0.45f);
                 canvas.DrawPath(_fusePath, _strokePaint);
@@ -975,7 +979,7 @@ public sealed partial class GameRenderer
 
             case PowerUpType.Fire:
                 // Detaillierte Flamme mit 3 Zungen + innerem Kern
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 _fusePath.MoveTo(cx, cy - size * 0.7f); // Hauptspitze
                 _fusePath.QuadTo(cx + size * 0.25f, cy - size * 0.2f, cx + size * 0.45f, cy + size * 0.3f);
                 _fusePath.QuadTo(cx + size * 0.15f, cy + size * 0.15f, cx + size * 0.2f, cy + size * 0.5f);
@@ -987,7 +991,7 @@ public sealed partial class GameRenderer
                 canvas.DrawPath(_fusePath, _fillPaint);
                 // Innerer gelber Kern
                 _fillPaint.Color = new SKColor(255, 220, 100);
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 _fusePath.MoveTo(cx, cy - size * 0.3f);
                 _fusePath.QuadTo(cx + size * 0.12f, cy, cx + size * 0.1f, cy + size * 0.2f);
                 _fusePath.LineTo(cx - size * 0.1f, cy + size * 0.2f);
@@ -999,7 +1003,7 @@ public sealed partial class GameRenderer
 
             case PowerUpType.Speed:
                 // Doppelpfeil (Geschwindigkeit) mit Speed-Lines
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 _fusePath.MoveTo(cx - size * 0.2f, cy - size * 0.35f);
                 _fusePath.LineTo(cx + size * 0.5f, cy);
                 _fusePath.LineTo(cx - size * 0.2f, cy + size * 0.35f);
@@ -1015,7 +1019,7 @@ public sealed partial class GameRenderer
 
             case PowerUpType.Wallpass:
                 // Geist-Form mit welligem Saum + Augen
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 float gTop = cy - size * 0.4f;
                 float gBot = cy + size * 0.45f;
                 // Kopf (Halbkreis)
@@ -1038,7 +1042,7 @@ public sealed partial class GameRenderer
 
             case PowerUpType.Detonator:
                 // Blitz mit gefülltem Zickzack
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 _fusePath.MoveTo(cx + size * 0.1f, cy - size * 0.65f);
                 _fusePath.LineTo(cx - size * 0.15f, cy - size * 0.05f);
                 _fusePath.LineTo(cx + size * 0.15f, cy - size * 0.05f);
@@ -1065,7 +1069,7 @@ public sealed partial class GameRenderer
 
             case PowerUpType.Flamepass:
                 // Detaillierter Schild mit Kreuz-Emblem
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 _fusePath.MoveTo(cx, cy - size * 0.55f);
                 _fusePath.QuadTo(cx + size * 0.45f, cy - size * 0.45f, cx + size * 0.4f, cy - size * 0.1f);
                 _fusePath.QuadTo(cx + size * 0.35f, cy + size * 0.3f, cx, cy + size * 0.6f);
@@ -1088,7 +1092,7 @@ public sealed partial class GameRenderer
 
             case PowerUpType.Kick:
                 // Schuh-Form mit Sohle + Bombe
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 _fusePath.MoveTo(cx - size * 0.5f, cy - size * 0.15f);
                 _fusePath.LineTo(cx - size * 0.5f, cy + size * 0.15f);
                 _fusePath.LineTo(cx + size * 0.3f, cy + size * 0.15f);
@@ -1130,7 +1134,7 @@ public sealed partial class GameRenderer
                 canvas.DrawCircle(cx - size * 0.12f, cy - size * 0.12f, size * 0.15f, _fillPaint);
                 _fillPaint.Color = new SKColor(255, 255, 100);
                 // 4-zackiger Stern
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 float sr = size * 0.22f;
                 float si = sr * 0.4f;
                 for (int i = 0; i < 8; i++)
@@ -1157,7 +1161,7 @@ public sealed partial class GameRenderer
                 canvas.DrawOval(cx - size * 0.16f, cy - size * 0.15f, size * 0.11f, size * 0.14f, _fillPaint);
                 canvas.DrawOval(cx + size * 0.16f, cy - size * 0.15f, size * 0.11f, size * 0.14f, _fillPaint);
                 // Nasendreieck
-                _fusePath.Reset();
+                _fusePath.Rewind();
                 _fusePath.MoveTo(cx, cy + size * 0.02f);
                 _fusePath.LineTo(cx - size * 0.06f, cy + size * 0.12f);
                 _fusePath.LineTo(cx + size * 0.06f, cy + size * 0.12f);

@@ -240,12 +240,20 @@ public sealed partial class GameEngine
             }
         }
 
-        // Gegner-Kollision mit Explosionen (Position-Index → O(1) Lookup statt O(n) pro Zelle)
-        _enemyPositionIndex.Rebuild(_enemies);
+        // Gegner-Kollision mit Explosionen (Position-Index → O(1) Lookup statt O(n) pro Zelle).
+        // Index wird LAZY gebaut: Nur wenn wir tatsaechlich auf eine aktive Explosion stossen.
+        // In ~95% der Frames ist keine Explosion aktiv → Rebuild gespart (~16-20 Dict-Ops/Frame).
+        bool indexBuilt = false;
         foreach (var explosion in _explosions)
         {
             if (!explosion.IsActive)
                 continue;
+
+            if (!indexBuilt)
+            {
+                _enemyPositionIndex.Rebuild(_enemies);
+                indexBuilt = true;
+            }
 
             foreach (var cell in explosion.AffectedCells)
             {

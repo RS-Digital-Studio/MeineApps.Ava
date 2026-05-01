@@ -636,7 +636,10 @@
     <value>Monde {0}</value>
   </data>
   <data name="WorldLocked" xml:space="preserve">
-    <value>{0} ★ requises</value>
+    <value>Encore {0} ★</value>
+  </data>
+  <data name="WorldLockHint" xml:space="preserve">
+    <value>Astuce : refais le niveau {0}</value>
   </data>
   <data name="WorldForest" xml:space="preserve">
     <value>Forêt</value>

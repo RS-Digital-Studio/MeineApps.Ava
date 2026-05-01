@@ -63,12 +63,9 @@ public sealed class BomberBlastLoadingPipeline : LoadingPipelineBase
         yield return "menu_bg/menu_victory.webp";
         yield return "menu_bg/menu_lucky_spin.webp";
 
-        // Bosse (werden im Spiel sofort gebraucht)
-        yield return "bosses/boss_stone_golem.webp";
-        yield return "bosses/boss_ice_dragon.webp";
-        yield return "bosses/boss_fire_demon.webp";
-        yield return "bosses/boss_shadow_master.webp";
-        yield return "bosses/boss_final.webp";
+        // Bosse (werden im Spiel sofort gebraucht) — Single Source of Truth in GameAssetPaths.
+        foreach (var path in GameAssetPaths.BossAssetPaths)
+            yield return path;
 
         // PowerUps (universal, welt-übergreifend — 12 Icons, ~480KB total)
         foreach (var path in GameAssetPaths.GetAllPowerUpAssets())

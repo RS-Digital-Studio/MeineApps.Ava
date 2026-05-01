@@ -27,6 +27,29 @@ public static class GameAssetPaths
     ];
 
     /// <summary>
+    /// Boss-Asset-Pfade indiziert nach <see cref="BossType"/>. Im Splash preloaded,
+    /// pro Frame via <see cref="GetBossAssetPath"/> abrufbar (kein string-Format-GC).
+    /// </summary>
+    public static readonly string[] BossAssetPaths =
+    [
+        "bosses/boss_stone_golem.webp",   // BossType.StoneGolem = 0
+        "bosses/boss_ice_dragon.webp",    // BossType.IceDragon  = 1
+        "bosses/boss_fire_demon.webp",    // BossType.FireDemon  = 2
+        "bosses/boss_shadow_master.webp", // BossType.ShadowMaster = 3
+        "bosses/boss_final.webp",         // BossType.FinalBoss  = 4
+    ];
+
+    /// <summary>
+    /// Asset-Pfad für einen Boss. Liefert leeren String bei ungültigem Index
+    /// (Renderer fallen dann auf prozedurales Rendering zurück).
+    /// </summary>
+    public static string GetBossAssetPath(BossType type)
+    {
+        int index = (int)type;
+        return (uint)index < BossAssetPaths.Length ? BossAssetPaths[index] : "";
+    }
+
+    /// <summary>
     /// Asset-Pfad für einen Welt-Hintergrund (Index 0-9).
     /// </summary>
     public static string GetWorldAssetPath(int worldIndex)

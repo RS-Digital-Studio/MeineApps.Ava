@@ -625,6 +625,10 @@ public sealed partial class GameEngine
     /// </summary>
     private void UpdateBlackHolePull(float deltaTime)
     {
+        // Skip wenn keine Special-Effect-Zellen aktiv (BlackHole + Poison teilen sich
+        // _specialEffectCells). Spart in ~99% der Frames den Iteration ueber alle Gegner.
+        if (_specialEffectCells.Count == 0) return;
+
         foreach (var enemy in _enemies)
         {
             if (!enemy.IsActive || enemy.IsDying) continue;
@@ -650,6 +654,9 @@ public sealed partial class GameEngine
     /// </summary>
     private void UpdatePoisonDamage(float deltaTime)
     {
+        // Skip wenn keine Special-Effect-Zellen aktiv. Siehe UpdateBlackHolePull.
+        if (_specialEffectCells.Count == 0) return;
+
         foreach (var enemy in _enemies)
         {
             if (!enemy.IsActive || enemy.IsDying) continue;

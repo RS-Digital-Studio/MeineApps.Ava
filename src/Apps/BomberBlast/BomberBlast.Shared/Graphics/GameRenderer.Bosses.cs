@@ -8,6 +8,33 @@ namespace BomberBlast.Graphics;
 
 public sealed partial class GameRenderer
 {
+    // FinalBoss-Farb-Arrays als static readonly statt pro Frame neu allozieren.
+    // Werte sind konstant (4 Element-Tier-Farben). Spart in FinalBoss-Frames
+    // 3 Heap-Array-Allokationen/Frame, in Welt 9/10 + Master-Mode dauerhaft.
+    private static readonly SKColor[] FinalBossElementColors =
+    {
+        new(120, 120, 120, 60),  // Stein
+        new(0, 200, 255, 60),    // Eis
+        new(255, 80, 0, 60),     // Feuer
+        new(150, 0, 230, 60),    // Schatten
+    };
+
+    private static readonly SKColor[] FinalBossGemColors =
+    {
+        new(255, 0, 0),
+        new(0, 150, 255),
+        new(100, 255, 50),
+    };
+
+    private static readonly SKColor[] FinalBossAccents =
+    {
+        new(150, 150, 150), // Stein
+        new(0, 191, 255),   // Eis
+        new(255, 60, 0),    // Feuer
+        new(160, 0, 255),   // Schatten
+    };
+    // Boss-Asset-Pfade liegen in GameAssetPaths.BossAssetPaths (Single Source of Truth).
+
     private void RenderBoss(SKCanvas canvas, BossEnemy boss)
     {
         float cs = GameGrid.CELL_SIZE;
@@ -70,18 +97,9 @@ public sealed partial class GameRenderer
     private bool TryRenderBossFromBitmap(SKCanvas canvas, BossEnemy boss, float size,
         float scale, float wobbleY, bool isNeon)
     {
-        var bossName = boss.BossKind switch
-        {
-            BossType.StoneGolem => "boss_stone_golem",
-            BossType.IceDragon => "boss_ice_dragon",
-            BossType.FireDemon => "boss_fire_demon",
-            BossType.ShadowMaster => "boss_shadow_master",
-            BossType.FinalBoss => "boss_final",
-            _ => null
-        };
-        if (bossName == null) return false;
-
-        var bitmap = GameAssetService.Current?.GetBitmap($"bosses/{bossName}.webp");
+        var assetPath = GameAssetPaths.GetBossAssetPath(boss.BossKind);
+        if (assetPath.Length == 0) return false;
+        var bitmap = GameAssetService.Current?.GetBitmap(assetPath);
         if (bitmap == null) return false;
 
         float cx = boss.X;
@@ -306,7 +324,7 @@ public sealed partial class GameRenderer
 
         _fillPaint.Color = new SKColor(0, 140, 200);
         // Linker Flügel (2-Segment)
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx - halfSize * 0.35f, cy - halfSize * 0.05f);
         _fusePath.LineTo(cx - halfSize * 0.75f, cy - halfSize * 0.4f + wingFlap);
         _fusePath.LineTo(cx - halfSize * 0.95f, cy - halfSize * 0.55f + wingFlap + wingFlapTip);
@@ -320,7 +338,7 @@ public sealed partial class GameRenderer
 
         // Rechter Flügel (gespiegelt)
         _fillPaint.Color = new SKColor(0, 140, 200);
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx + halfSize * 0.35f, cy - halfSize * 0.05f);
         _fusePath.LineTo(cx + halfSize * 0.75f, cy - halfSize * 0.4f + wingFlap);
         _fusePath.LineTo(cx + halfSize * 0.95f, cy - halfSize * 0.55f + wingFlap + wingFlapTip);
@@ -356,13 +374,13 @@ public sealed partial class GameRenderer
         canvas.DrawOval(cx, cy - halfSize * 0.35f, halfSize * 0.3f, halfSize * 0.25f, _fillPaint);
         // Hörner
         _fillPaint.Color = new SKColor(0, 120, 180);
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx - halfSize * 0.18f, cy - halfSize * 0.5f);
         _fusePath.LineTo(cx - halfSize * 0.28f, cy - halfSize * 0.7f);
         _fusePath.LineTo(cx - halfSize * 0.12f, cy - halfSize * 0.45f);
         _fusePath.Close();
         canvas.DrawPath(_fusePath, _fillPaint);
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx + halfSize * 0.18f, cy - halfSize * 0.5f);
         _fusePath.LineTo(cx + halfSize * 0.28f, cy - halfSize * 0.7f);
         _fusePath.LineTo(cx + halfSize * 0.12f, cy - halfSize * 0.45f);
@@ -481,7 +499,7 @@ public sealed partial class GameRenderer
             float fh = halfSize * 0.45f * (1f - MathF.Abs(i) * 0.1f)
                         + MathF.Sin(_globalTimer * 9f + i * 1.5f) * 3f;
             _fillPaint.Color = new SKColor(255, 100, 0, 180);
-            _fusePath.Reset();
+            _fusePath.Rewind();
             _fusePath.MoveTo(fx - halfSize * 0.06f, crownBase);
             _fusePath.LineTo(fx + MathF.Sin(_globalTimer * 7f + i) * 1.5f, crownBase - fh);
             _fusePath.LineTo(fx + halfSize * 0.06f, crownBase);
@@ -495,7 +513,7 @@ public sealed partial class GameRenderer
             float fh = halfSize * 0.3f * (1f - MathF.Abs(i) * 0.12f)
                         + MathF.Sin(_globalTimer * 10f + i * 2f) * 2f;
             _fillPaint.Color = new SKColor(255, 220, 60, 200);
-            _fusePath.Reset();
+            _fusePath.Rewind();
             _fusePath.MoveTo(fx - halfSize * 0.04f, crownBase);
             _fusePath.LineTo(fx, crownBase - fh);
             _fusePath.LineTo(fx + halfSize * 0.04f, crownBase);
@@ -521,7 +539,7 @@ public sealed partial class GameRenderer
         // Böses Grinsen mit scharfen Zähnen
         _fillPaint.Color = new SKColor(80, 0, 0);
         float mouthY = cy + halfSize * 0.15f;
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx - halfSize * 0.22f, mouthY);
         _fusePath.QuadTo(cx, mouthY + halfSize * 0.18f, cx + halfSize * 0.22f, mouthY);
         _fusePath.Close();
@@ -588,7 +606,7 @@ public sealed partial class GameRenderer
         float cloakWave = MathF.Sin(_globalTimer * 2.5f) * 2f;
         _fillPaint.Color = new SKColor(35, 0, 60);
         _fillPaint.MaskFilter = null;
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx - halfSize * 0.35f, cy - halfSize * 0.2f);
         _fusePath.LineTo(cx - halfSize * 0.6f, cy + halfSize * 0.55f);
         // Welliger Saum
@@ -609,7 +627,7 @@ public sealed partial class GameRenderer
 
         // Kapuze: Spitze Form oben
         _fillPaint.Color = new SKColor(45, 0, 80);
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(cx - halfSize * 0.35f, cy - halfSize * 0.15f);
         _fusePath.QuadTo(cx, cy - halfSize * 0.7f, cx + halfSize * 0.35f, cy - halfSize * 0.15f);
         _fusePath.Close();
@@ -659,20 +677,13 @@ public sealed partial class GameRenderer
         // Multi-Color Glow-Aura bei Enrage (intensiver, 4 Element-Ringe)
         if (boss.IsEnraged)
         {
-            SKColor[] elementColors =
-            {
-                new(120, 120, 120, 60),  // Stein
-                new(0, 200, 255, 60),    // Eis
-                new(255, 80, 0, 60),     // Feuer
-                new(150, 0, 230, 60)     // Schatten
-            };
             float rotAngle = _globalTimer * 3f;
             for (int i = 0; i < 4; i++)
             {
                 float angle = rotAngle + i * MathF.PI / 2f;
                 float auraX = cx + MathF.Cos(angle) * halfSize * 0.45f;
                 float auraY = cy + MathF.Sin(angle) * halfSize * 0.35f;
-                _glowPaint.Color = elementColors[i];
+                _glowPaint.Color = FinalBossElementColors[i];
                 _glowPaint.MaskFilter = _mediumGlow;
                 canvas.DrawOval(auraX, auraY, halfSize * 0.7f, halfSize * 0.6f, _glowPaint);
             }
@@ -688,7 +699,7 @@ public sealed partial class GameRenderer
                 float flash = MathF.Sin(_globalTimer * 8f + i * 2f);
                 if (flash > 0.7f)
                 {
-                    _strokePaint.Color = elementColors[i].WithAlpha((byte)(100 * (flash - 0.7f) / 0.3f));
+                    _strokePaint.Color = FinalBossElementColors[i].WithAlpha((byte)(100 * (flash - 0.7f) / 0.3f));
                     canvas.DrawLine(
                         cx + MathF.Cos(a1) * halfSize * 0.4f, cy + MathF.Sin(a1) * halfSize * 0.3f,
                         cx + MathF.Cos(a2) * halfSize * 0.4f, cy + MathF.Sin(a2) * halfSize * 0.3f,
@@ -741,7 +752,7 @@ public sealed partial class GameRenderer
             float fh = crownH * (1f - MathF.Abs(i) * 0.08f)
                         + MathF.Sin(_globalTimer * 3f + i * 1.2f) * 1.5f;
 
-            _fusePath.Reset();
+            _fusePath.Rewind();
             _fusePath.MoveTo(fx - halfSize * 0.065f, crownBase);
             _fusePath.LineTo(fx, crownBase - fh);
             _fusePath.LineTo(fx + halfSize * 0.065f, crownBase);
@@ -753,10 +764,9 @@ public sealed partial class GameRenderer
         _fillPaint.Color = new SKColor(255, 215, 0);
         canvas.DrawRect(cx - halfSize * 0.38f, crownBase, halfSize * 0.76f, halfSize * 0.07f, _fillPaint);
         // 3 Edelsteine auf der Krone
-        SKColor[] gemColors = { new(255, 0, 0), new(0, 150, 255), new(100, 255, 50) };
         for (int g = -1; g <= 1; g++)
         {
-            _fillPaint.Color = gemColors[g + 1];
+            _fillPaint.Color = FinalBossGemColors[g + 1];
             if (isNeon) _fillPaint.MaskFilter = _smallGlow;
             canvas.DrawCircle(cx + g * halfSize * 0.15f, crownBase + halfSize * 0.035f, 2f, _fillPaint);
         }
@@ -765,26 +775,19 @@ public sealed partial class GameRenderer
         // 4 Element-Akzent-Orbits um den Körper (größer, mit Spur)
         float accentR = 3f;
         float accentDist = halfSize * 0.52f;
-        SKColor[] accents =
-        {
-            new(150, 150, 150), // Stein
-            new(0, 191, 255),   // Eis
-            new(255, 60, 0),    // Feuer
-            new(160, 0, 255)    // Schatten
-        };
         for (int i = 0; i < 4; i++)
         {
             float angle = _globalTimer * 1.5f + i * MathF.PI / 2f;
             float ax = cx + MathF.Cos(angle) * accentDist;
             float ay = cy + MathF.Sin(angle) * accentDist * 0.8f;
             // Spur
-            _fillPaint.Color = accents[i].WithAlpha(40);
+            _fillPaint.Color = FinalBossAccents[i].WithAlpha(40);
             float trailAngle = angle - 0.3f;
             float tx = cx + MathF.Cos(trailAngle) * accentDist;
             float ty = cy + MathF.Sin(trailAngle) * accentDist * 0.8f;
             canvas.DrawCircle(tx, ty, accentR * 0.6f, _fillPaint);
             // Haupt-Orbit
-            _fillPaint.Color = accents[i];
+            _fillPaint.Color = FinalBossAccents[i];
             if (isNeon) _fillPaint.MaskFilter = _smallGlow;
             canvas.DrawCircle(ax, ay, accentR, _fillPaint);
         }

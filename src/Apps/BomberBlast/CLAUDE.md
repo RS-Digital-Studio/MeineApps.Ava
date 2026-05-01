@@ -7,9 +7,25 @@
 Bomberman-Klon mit SkiaSharp Rendering, AI Pathfinding und mehreren Input-Methoden.
 Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/Cyberpunk.
 
-**Version:** 2.0.35 (VersionCode 45) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Produktion
+**Version:** 2.0.36 (VersionCode 46) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Produktion
 
-v2.0.35 enthält alle Inhalte von v2.0.34 (Lazy-VM, Shader-Precompile, Asset-Preload, L17/L18-Unlocks, Deck-Telemetrie, Mission-Pool +3, Deal-Pool +5, double_daily_reward, Server-Timestamp, Report-Button) plus v2.0.35-Features: A\*-Budget + Spawn-Jitter, Adaptive Frame-Skipping, Master Mode / New Game+, Fog of War, Champion-Skin-Rendering. 30 Review-Findings (3 Passes) + 4 Gameplay-Fixes systematisch behoben.
+v2.0.36 enthält alle Inhalte von v2.0.35 plus Performance-Pass (10 Findings: SKPath.Rewind() statt Reset(), FoW Update-Skip + Render-RLE, EnemyPositionIndex Lazy-Rebuild, BlackHole/Poison-Skip, DungeonMap PathEffect-Cache, FinalBoss-Arrays static, Block-Destroy-Arrays static, HUD-Glow im Skip-Modus, Confetti Two-Pass) sowie Bestand-Bugfix für Enemy-Pin-Down bei Bombe vor Korridor (`GetRandomValidDirection` Last-Resort-Pass mit `allowBombCell`). Geschätzter Performance-Gewinn: 2-4 ms/Frame = 5-10 FPS Mid-Tier-Android.
+
+**v2.0.36 Polish-Pass (01.05.2026, basierend auf 8-Agent-Audit):**
+- **CRIT-1**: GameAssetService.Evict() Native-Bitmap-Leak gefixt — `_pendingDispose` als ConcurrentQueue mit Drain auf UI-Thread (`Dispatcher.UIThread.Post`) statt direktem Background-Dispose, schützt vor Render-Race (use-after-free auf Android).
+- **PERF-1**: Boss-Asset-Pfade als static readonly Array (5 Strings) statt pro Frame interpoliert. ~7 KB/s GC-Druck weniger in Boss-Levels.
+- **PERF-3**: Asset-Cache von 50 MB auf 30 MB Default — Sicherheitsmarge für 200-EUR-Mid-Tier-Android (3 GB RAM).
+- **PERF-6**: GameViewModel + GameEngine + GameRenderer als `Lazy<GameViewModel>` in MainViewModel — spart 100-200ms Time-to-Interactive auf Low-End-Android, weil schwere SkPaint/SkFont/SkMaskFilter-Allokationen erst beim ersten Game-Start passieren statt in der Splash/Loading-Pipeline. EnsureGameVm() idempotent. DisposeServices() prüft GameVm != null bevor Engine/Renderer disposed werden (sonst würde Shutdown sie erst instanziieren).
+- **BAL-2**: CoinBonus L2 von +25% auf +60% erhöht. L2-Preis 17.000 amortisiert sich jetzt nach ~10 Welt-3-Levels (vorher 15). Switch-Expression in GameEngine.Level.cs statt linearer Formel.
+- **CONV-1**: GameEngine `IAppLogger` injiziert; `Debug.WriteLine` für Master-Mode-Downgrade durch `_logger.LogWarning` ersetzt — auch im Release-Build (Android LogCat) sichtbar.
+- **ARCH-1**: `BomberBlast.Models.Levels.LevelGenerator` (statische Layout-Klasse, 960 Zeilen) zu `LevelLayoutGenerator` umbenannt. Eliminiert den dokumentierten Namespace-Konflikt mit `Core.LevelGeneration.LevelGenerator` (DI-Service). App.axaml.cs + GameEngine.cs verwenden jetzt vereinfachte Imports statt vollqualifizierter Typen.
+- **L10N**: SurvivalMode "Überleben", DailyTimeRemaining "Neu in", DungeonUpgradesTitle "Verbesserungen" (DE-EN-Copies behoben). DungeonTitle/MutatorActive bleiben als Gaming-Anglizismen.
+- **UX-2**: Welt-Gate-Hint im LevelSelect — gesperrte Welten zeigen jetzt "Noch X ★" (Differenz statt absoluter Schwellwert) plus Hint "Tipp: Wiederhole Level Y" mit niedrigstem verbesserbaren Level. Neue RESX-Key `WorldLockHint` in allen 6 Sprachen.
+
+**v2.0.36 Review-Fixes (nach code-review-Audit):**
+- **REVIEW-CRIT-1**: PERF-6 Lazy-Refactor wirkte nur auf Desktop, weil `MainActivity.OnCreate` `App.Services.GetService<GameViewModel>()` und `<GameEngine>()` direkt aufrief → sofortige Auflösung. Fix: `AndroidVibrationService` (BomberBlast.Android) + neue `IVibrationService.VibrateTick()`-Methode (15ms). GameEngine ruft `_vibration.VibrateTick()` selbst im DirectionChanged-Handler auf — keine MainActivity-Subscription mehr nötig. MainActivity-DispatchKeyEvent/DispatchGenericMotionEvent nutzen jetzt `_mainVm.GameVm`-Property statt eager DI-Auflösung. Damit wirkt Lazy auch auf Android.
+- **REVIEW-CRIT-2**: NavigateTo "Game"-Case Race — `IsGameActive=true` wurde VOR `EnsureGameVm()` gesetzt → ein Frame mit IsGameActive=true + GameVm=null möglich. Reihenfolge umgedreht: erst Ensure, dann Active.
+- **REVIEW-VERB-1**: Boss-Asset-Pfade waren dreifach dupliziert (GameRenderer.Bosses + LoadingPipeline + konzeptionell GameAssetPaths). Single Source of Truth in `GameAssetPaths.BossAssetPaths` + `GetBossAssetPath(BossType)`. Beide Verwender ziehen daraus.
 
 ## Icon-System (Eigene Neon Arcade Icons)
 
@@ -140,7 +156,7 @@ v2.0.35 enthält alle Inhalte von v2.0.34 (Lazy-VM, Shader-Precompile, Asset-Pre
 
 ### Level-Gating (ProgressService)
 - 100 Story-Level in 10 Welten (World 1-10 a 10 Level)
-- Welt-Freischaltung: 0/0/10/25/45/70/100/135/175/200/220 Sterne (v2.0.29+: Welt 9/10 von 220/240 auf 200/220 gesenkt — Endgame realistisch erreichbar)
+- Welt-Freischaltung: 0/0/10/25/45/70/100/135/155/180/200 Sterne (v2.0.29+: Welt 9/10 abgesenkt; v2.0.36: Welt 8 auf 155, Welt 9/10 leicht justiert — Endgame realistisch erreichbar)
 - Stern-System: 3 Sterne pro Level (Zeit-basiert), Fail-Counter für Level-Skip
 - **Mutator-Bonus (v2.0.29+)**: Mutator-Level (ab Welt 6) schenken 3 garantierte Sterne bei Completion. Grund: DoubleSpeed/MirrorControls/InvisibleBlocks machen 3-Sterne-Runs statistisch unwahrscheinlich → Schwierigkeit = Belohnung, nicht Strafe. Implementiert in `GameEngine.Level.cs` via `scoreToSave = Max(playerScore, baseScore*3)`
 
@@ -818,6 +834,41 @@ Zwei Review-Passes ergaben 16 + 9 Findings (alle systematisch behoben):
 - `GameEngine._isMasterMode`-Flag wird in `StartStoryModeAsync(level, masterMode)` gesetzt, in allen anderen Start*-Methoden auf false zurückgesetzt
 - `GameEngine.ApplyMasterModeEnemyUpgrade()` wird EINMAL nach `LoadLevelAsync()` aufgerufen und ersetzt upgradebare Gegner-Typen im `_enemies`-List
 - `GameTrackingService.OnMasterLevelCompleted` orchestriert Reward/Achievement/Skin-Unlock — GameEngine.CompleteLevel ruft nur diesen einen Entry-Point auf, Rest bleibt in GameTrackingService
+
+## Performance-Pass v2.0.36 (25.04.2026)
+
+Tiefenanalyse durch parallele `skiasharp` + `performance` Agents nach v2.0.35-Audit. 10 Findings (alle Low-Risk) systematisch umgesetzt — auf v2.0.31-Audit aufbauend, fokussiert auf nach v2.0.32 hinzugekommene Features (Master Mode, Fog of War, Champion-Crown). Geschätzter Gesamt-Gewinn: 2-4ms/Frame = 5-10 FPS auf Mid-Tier-Android.
+
+### Phase 1: Top-Wins
+- **`SKPath.Reset()` → `Rewind()` (42 Stellen)** in `GameRenderer.{Items,Characters,HUD,Bosses,Grid}.cs` + `BomberBlastSplashRenderer.cs`. `Reset()` gibt nativen Path-Buffer frei und re-alloziert beim nächsten `MoveTo`; `Rewind()` behält die Kapazität → keine native Reallokation. Boss-Frames mit Enrage rufen das 8-12× pro Frame auf. Spart 0.3-0.8ms/Frame, bis zu 1.5ms in Boss-Frames. `_bgPath.Reset()` in Grid.cs:87 (RenderFogOverlay) ebenfalls auf Rewind() — danach explizit `FillType = SKPathFillType.Winding` zurücksetzen, weil Atmosphere-Renderer `_bgPath` mit Default-FillType nutzen und Rewind FillType beibehält.
+- **FogOfWarSystem.Update Position-Cache** — `_lastPlayerGridX/Y` als int.MinValue-Sentinel. Wenn Grid-Position seit letztem Frame unverändert, kompletter Update-Pass übersprungen. Spielerwechselt Grid-Cells nur alle paar Frames (kontinuierliche Bewegung, diskretes Grid). Cache wird in `Enable()` invalidiert für sauberen ersten Update nach Level-Start. Spart 0.2-0.4ms/Frame in L50+ und Master-Modus.
+- **FogOfWarSystem.Render Run-Length-Encoding** — Statt 150 einzelne `DrawRect`-Calls pro Frame (15×10 Grid) werden zusammenhängende Zellen mit gleichem Alpha-Wert pro Zeile zu einem `DrawRect` gemerged. Sentinel-Iteration `x == _width` schließt den letzten Run jeder Zeile ab. Bei typischer FoW-Verteilung (Spieler in der Mitte) spart das 60-80% der DrawCalls (~150 → ~30). Spart 0.5-1.0ms/Frame in L50+ und Master.
+
+### Phase 2: Quick-Wins
+- **EnemyPositionIndex Lazy-Rebuild** in `GameEngine.Collision.cs:243` — Index wird nicht mehr unbedingt rebuilt vor jedem Frame, sondern lazy nur beim ersten aktiven Explosion-Hit (`indexBuilt`-Flag). In ~95% der Frames (keine aktive Explosion) gespart: ~16-20 Dict-Operations pro Frame.
+- **BlackHole/Poison Skip** in `GameEngine.Explosion.cs` — `UpdateBlackHolePull` + `UpdatePoisonDamage` haben Early-Return wenn `_specialEffectCells.Count == 0`. Vorher: Iteration über alle Gegner mit `TryGetCell`-Lookup pro Frame, auch ohne aktive Special-Effects. Spart 720 unnötige Lookups/s in Standard-Frames.
+- **DungeonMapRenderer SKPathEffect-Cache** — `_dashIntervals` (static readonly float[]) + `_dashPathEffect` (static readonly SKPathEffect) statt pro Edge-Iteration `SKPathEffect.CreateDash(new[] { 6f, 4f }, 0)` allozieren. Vorher: bis zu 30 native Allokationen pro Frame in der DungeonMap-View. Cache wird nicht disposed (lebt für App-Lifetime, akzeptables Pattern für statische Renderer-Klassen).
+
+### Phase 3: Polish
+- **FinalBoss SKColor[]-Arrays static** in `GameRenderer.Bosses.cs` — `FinalBossElementColors`, `FinalBossGemColors`, `FinalBossAccents` als static readonly statt pro Frame neu allozieren. Werte sind konstant. Spart 3 Heap-Array-Allokationen pro FinalBoss-Frame.
+- **Block-Destroy float[]-Arrays inline** in `GameRenderer.Grid.cs` — `BlockFragSpreadMulX/Y` und `BlockFragRotMul` als static readonly Multiplikatoren. Zur Laufzeit mit `spread`/`p2` multiplizieren statt drei `float[4]`-Arrays pro Frame allokieren. Spart Allocations bei mehreren parallelen Block-Zerstörungs-Animationen.
+- **HUD-Glow im SkipAtmosphere-Modus deaktivieren** — Properties `HudTextGlowEffective`, `HudSmallGlowEffective`, `HudComboBlurEffective` in `GameRenderer.HUD.cs` geben `null` wenn `SkipAtmosphere == true` (Adaptive Frame-Skipping aktiv). Hilft bei Stutter-Recovery damit GPU-Blur nicht weiter Frame-Time frisst. Reine Property-Indirektion ohne Field-Änderungen.
+- **Confetti Two-Pass-Rendering** in `GameEngine.Render.cs` — Bei Victory-Confetti werden alle Partikel mit `sparkle <= 0.7f` in Pass 0 (ohne Glow) und alle mit `sparkle > 0.7f` in Pass 1 (mit Glow) gerendert. Spart Paint-State-Wechsel von ~5-10 pro Frame auf 2 (1 pro Pass). Math wird 2× ausgeführt, ist aber günstig (Modulo + Sinus). LevelComplete-Confetti hat keinen Glow-Toggle und bleibt single-pass.
+
+### Geprüft ohne Befund (false positives)
+- LINQ in Hot-Path: kein Treffer
+- SKPaint/SKPath/SKShader-Allokationen pro Frame: alle gepoolt
+- `new List<>/Dictionary<>/HashSet<>` im Hot-Path: nur bei Lightning-Bombe (event-getrieben, akzeptabel)
+- String-Interpolation `$"..."` in Render-Loop: HUD-Cache greift
+- Closures/Lambdas pro Frame: keine
+- Boxing in Hot-Path: keine
+
+### Bestand-Bugfix: Enemy-Pin-Down bei Bombe vor Korridor
+Während Spieler-Tests aufgefallen, aber unabhängig von der Performance-Pass — Bug existierte seit Einführung des `cell.Bomb != null`-Blocks in `EnemyAI.CanMoveInDirection`. Symptom: Wenn Spieler eine Bombe direkt vor einen Gegner in einem Korridor (Wände seitlich) platziert, blieb der Gegner permanent stehen.
+
+**Root Cause:** `EnemyAI.cs:507-508` filtert Bomb-Cells in `CanMoveInDirection` aus. In Korridor-Situationen (Bomb-Cell in Bewegungsrichtung + Wände seitlich + Bomb-Range an verbleibender Cardinal-Direction) findet der Algorithmus keine valide Direction. `TryEvade` returnt false, `GetRandomValidDirection` returnt `Direction.None`, `Enemy.Move()` mit None bewegt nicht. `StuckTimer`-Mechanik ruft wieder `GetRandomValidDirection` auf → gleiches Resultat → permanent eingefroren.
+
+**Fix:** `CanMoveInDirection` bekommt optionalen `bool allowBombCell = false`-Parameter. `GetRandomValidDirection` macht Two-Pass: Erst normaler Pass mit Default-Verhalten (Bomb-Cells blockiert), bei `Count == 0` Last-Resort-Pass mit `allowBombCell: true`. Wände/Blöcke/PlatformGaps bleiben in beiden Pässen blockierend. Side-Effect: Gegner kann auf Bomb-Cells laufen und dort sterben — das ist Bomberman-Mechanik (Spieler treibt Gegner gezielt in Bomben). `TryEvade` ruft `CanMoveInDirection` mit Default-Parameter, bleibt unverändert (wenn TryEvade fail, fängt Intelligence-Switch-Fallback via `GetRandomValidDirection` den Pin-Down).
 
 ## Endgame-Design-Empfehlung (Feature-Proposal für v2.0.36+: Ascension Mode)
 

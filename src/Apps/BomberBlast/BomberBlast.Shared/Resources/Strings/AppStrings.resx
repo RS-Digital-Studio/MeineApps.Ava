@@ -636,7 +636,10 @@
     <value>World {0}</value>
   </data>
   <data name="WorldLocked" xml:space="preserve">
-    <value>{0} ★ required</value>
+    <value>{0} ★ to unlock</value>
+  </data>
+  <data name="WorldLockHint" xml:space="preserve">
+    <value>Tip: Replay level {0}</value>
   </data>
   <data name="WorldForest" xml:space="preserve">
     <value>Forest</value>

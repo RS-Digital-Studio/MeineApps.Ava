@@ -177,6 +177,23 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
             _masterModeService.TotalMaster3Stars);
     }
 
+    /// <summary>
+    /// Findet das niedrigste freigeschaltete Level vor der gesperrten Welt, das noch
+    /// verbesserbar ist (weniger als 3 Sterne). Liefert 0 wenn alle Levels bereits
+    /// 3-Sterne haben (Worst-Case bei sehr fortgeschrittenen Spielern, die trotzdem
+    /// kurz vor dem nächsten Welt-Gate stehen — sollte selten sein).
+    /// </summary>
+    private int FindRecommendedReplayLevel(int firstLockedLevel)
+    {
+        for (int lvl = 1; lvl < firstLockedLevel; lvl++)
+        {
+            if (!_progressService.IsLevelUnlocked(lvl)) continue;
+            int stars = _progressService.GetLevelStars(lvl);
+            if (stars < 3) return lvl;
+        }
+        return 0;
+    }
+
     private void BuildWorldGroups()
     {
         WorldGroups.Clear();
@@ -209,13 +226,26 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
             string worldName = _localizationService.GetString(config.NameKey);
             string worldTitle = $"{string.Format(_localizationService.GetString("WorldFormat"), w)} - {worldName}";
 
+            // Differenz statt absoluter Schwellwert: motiviert mit Spieler-Fortschritt mit
+            // ("Noch 25 ★" statt "155 ★ benötigt"). Differenz nie unter 1 (kann nicht 0 sein,
+            // da bei isWorldLocked=true totalStars < starsRequired).
+            int starsMissing = isWorldLocked ? Math.Max(1, starsRequired - totalStars) : 0;
+
+            // Empfehlung: niedrigstes verbesserbares Level (< 3 Sterne) vor dieser Welt.
+            // Hilft dem Spieler konkret zu wissen wo Sterne zu holen sind.
+            int recommendedLevel = isWorldLocked ? FindRecommendedReplayLevel(firstLevel) : 0;
+            string lockHint = recommendedLevel > 0
+                ? string.Format(_localizationService.GetString("WorldLockHint") ?? "Tip: Replay level {0}", recommendedLevel)
+                : "";
+
             var group = new WorldGroup
             {
                 WorldNumber = w,
                 WorldName = worldTitle,
                 WorldLockText = isWorldLocked
-                    ? string.Format(_localizationService.GetString("WorldLocked"), starsRequired)
+                    ? string.Format(_localizationService.GetString("WorldLocked"), starsMissing)
                     : worldTitle,
+                WorldLockHint = lockHint,
                 IsLocked = isWorldLocked,
                 StarsRequired = starsRequired,
                 MaxStars = 30,
@@ -419,10 +449,20 @@ public class WorldGroup
     public int WorldNumber { get; set; }
     public string WorldName { get; set; } = "";
     public string WorldLockText { get; set; } = "";
+
+    /// <summary>
+    /// Detaillierter Hinweis fuer gesperrte Welten — z.B. "Tipp: Wiederhole Level 7".
+    /// Leerer String wenn keine Empfehlung vorliegt (z.B. alle Levels schon 3-Sterne).
+    /// </summary>
+    public string WorldLockHint { get; set; } = "";
+
     public bool IsLocked { get; set; }
     public int StarsRequired { get; set; }
     public int StarsEarned { get; set; }
     public int MaxStars { get; set; } = 30;
+
+    /// <summary>True wenn ein Hint vorliegt — fuer XAML-IsVisible-Binding im Lock-Overlay.</summary>
+    public bool HasLockHint => !string.IsNullOrEmpty(WorldLockHint);
 
     // Welt-Farben
     public Color PrimaryColor { get; set; }

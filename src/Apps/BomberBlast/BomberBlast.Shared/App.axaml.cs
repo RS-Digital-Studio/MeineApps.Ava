@@ -12,6 +12,7 @@ using MeineApps.Core.Premium.Ava.Extensions;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.Controls;
 using BomberBlast.Core;
+using BomberBlast.Core.LevelGeneration;
 using BomberBlast.Extensions;
 using BomberBlast.Graphics;
 using BomberBlast.Input;
@@ -124,7 +125,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "BomberBlast",
-            AppVersion = "v2.0.35",
+            AppVersion = "v2.0.36",
             Renderer = new BomberBlastSplashRenderer()
         };
     }
@@ -180,11 +181,16 @@ public partial class App : Application
 
         try
         {
-            // GameEngine und GameRenderer halten SkiaSharp-Objekte (SKPaint, SKPath, SKBitmap etc.)
-            // die explizit freigegeben werden müssen
-            (Services.GetService<GameEngine>() as IDisposable)?.Dispose();
-            (Services.GetService<GameRenderer>() as IDisposable)?.Dispose();
-            (Services.GetService<GameViewModel>() as IDisposable)?.Dispose();
+            // GameEngine + GameRenderer + GameViewModel werden seit v2.0.36 LAZY resolved
+            // (siehe MainViewModel.EnsureGameVm). Nur disposen wenn der User mind. einmal
+            // im Spiel war — sonst wuerden wir sie hier beim Shutdown unnoetig instanziieren.
+            var mainVm = Services.GetService<MainViewModel>();
+            if (mainVm?.GameVm is { } gameVm)
+            {
+                (Services.GetService<GameEngine>() as IDisposable)?.Dispose();
+                (Services.GetService<GameRenderer>() as IDisposable)?.Dispose();
+                (gameVm as IDisposable)?.Dispose();
+            }
             (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
             (Services.GetService<IGameAssetService>() as IDisposable)?.Dispose();
             // InputManager haelt NeonJoystick (20 SKPaint + 5 SKPath) - muss auch disposed werden
@@ -247,7 +253,7 @@ public partial class App : Application
         services.AddSingleton<ICoinService, CoinService>();
         services.AddSingleton<IGemService, GemService>();
         services.AddSingleton<IShopService, ShopService>();
-        services.AddSingleton<BomberBlast.Core.LevelGeneration.ILevelGenerator, BomberBlast.Core.LevelGeneration.LevelGenerator>();
+        services.AddSingleton<ILevelGenerator, LevelGenerator>();
         services.AddSingleton<ITutorialService, TutorialService>();
         services.AddSingleton<IDailyRewardService, DailyRewardService>();
         services.AddSingleton<IDailyChallengeService, DailyChallengeService>();

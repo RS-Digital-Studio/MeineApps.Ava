@@ -2,6 +2,7 @@ namespace BomberBlast.Services;
 
 using System.Collections.Concurrent;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using SkiaSharp;
 
 /// <summary>
@@ -16,7 +17,12 @@ public sealed class GameAssetService : IGameAssetService
     private readonly long _maxCacheBytes;
     private long _currentCacheBytes;
     private bool _disposed;
-    private readonly List<SKBitmap> _pendingDispose = new();
+
+    // Pending-Dispose-Queue: Verdraengte Bitmaps werden nicht sofort disposed,
+    // weil der UI-Render-Thread sie u.U. noch in einer lokalen Variable haelt.
+    // Nach DrainAgeMs sind garantiert mehrere Frames vergangen -> sicher zu disposen.
+    private readonly ConcurrentQueue<(SKBitmap Bitmap, long EnqueuedTick)> _pendingDispose = new();
+    private const long DrainAgeMs = 200;
 
     /// <summary>
     /// Statischer Zugriff für Renderer (statische Klassen ohne DI).
@@ -38,8 +44,10 @@ public sealed class GameAssetService : IGameAssetService
         public long LastAccessTick { get; set; }
     }
 
-    public GameAssetService(long maxCacheBytes = 50 * 1024 * 1024)
+    public GameAssetService(long maxCacheBytes = 30 * 1024 * 1024)
     {
+        // 30 MB Default: Sicherheitsmarge fuer 200-EUR-Mid-Tier-Android (3 GB RAM, ~1.2 GB pro App).
+        // Native Pixel-Footprint nach WebP-Decode kann bei 1024x1024 RGBA 4 MB pro Bitmap erreichen.
         _maxCacheBytes = maxCacheBytes;
     }
 
@@ -109,10 +117,39 @@ public sealed class GameAssetService : IGameAssetService
         if (_cache.TryRemove(assetPath, out var entry))
         {
             Interlocked.Add(ref _currentCacheBytes, -entry.SizeBytes);
-            lock (_pendingDispose)
-                _pendingDispose.Add(entry.Bitmap);
+            // Bitmap nicht direkt disposen: Render-Thread (UI) koennte es noch halten.
+            // Nach DrainAgeMs sicher zu disposen.
+            _pendingDispose.Enqueue((entry.Bitmap, Environment.TickCount64));
         }
         _loadingTasks.TryRemove(assetPath, out _);
+    }
+
+    /// <summary>
+    /// Disposed alle Bitmaps in der Pending-Queue, die aelter als DrainAgeMs sind.
+    /// Wird automatisch nach jeder Eviction in LoadBitmapInternal aufgerufen.
+    /// Kann zusaetzlich vom UI-Thread (z.B. GameView.OnPaintSurface) aufgerufen werden.
+    /// </summary>
+    public void DrainPendingDispose()
+    {
+        long now = Environment.TickCount64;
+        // Snapshot-Iteration: TryDequeue + Re-Enqueue der zu jungen Eintraege
+        int initialCount = _pendingDispose.Count;
+        for (int i = 0; i < initialCount; i++)
+        {
+            if (!_pendingDispose.TryDequeue(out var item)) break;
+
+            if (now - item.EnqueuedTick >= DrainAgeMs)
+            {
+                item.Bitmap.Dispose();
+            }
+            else
+            {
+                // Noch zu jung -> wieder einreihen
+                _pendingDispose.Enqueue(item);
+                // Da Queue FIFO: wenn der hier zu jung ist, sind alle Folge-Eintraege auch zu jung
+                break;
+            }
+        }
     }
 
     public void ClearCache()
@@ -125,12 +162,9 @@ public sealed class GameAssetService : IGameAssetService
                 entry.Bitmap.Dispose();
             }
         }
-        lock (_pendingDispose)
-        {
-            foreach (var bmp in _pendingDispose)
-                bmp.Dispose();
-            _pendingDispose.Clear();
-        }
+        // Pending-Queue zwangsleeren (App-Shutdown -> kein Render mehr)
+        while (_pendingDispose.TryDequeue(out var item))
+            item.Bitmap.Dispose();
         _loadingTasks.Clear();
     }
 
@@ -164,6 +198,13 @@ public sealed class GameAssetService : IGameAssetService
             {
                 EvictOldest();
             }
+
+            // Verdraengte Bitmaps werden auf dem UI-Thread disposed:
+            // LoadBitmapInternal laeuft auf Background-Thread, ein Direkt-Dispose hier
+            // koennte mit aktivem canvas.DrawBitmap() im Render-Thread kollidieren (use-after-free).
+            // Dispatcher.UIThread.Post() serialisiert den Drain mit Render-Calls.
+            if (!_pendingDispose.IsEmpty)
+                Dispatcher.UIThread.Post(DrainPendingDispose);
 
             var entry = new CacheEntry
             {

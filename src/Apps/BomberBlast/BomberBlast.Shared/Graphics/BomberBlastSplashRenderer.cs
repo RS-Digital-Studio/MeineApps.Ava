@@ -340,7 +340,7 @@ public sealed class BomberBlastSplashRenderer : SplashRendererBase
 
         // Lunte zeichnen
         _fusePaint.Color = FuseColor;
-        _fusePath.Reset();
+        _fusePath.Rewind();
         _fusePath.MoveTo(fuseStartX, fuseStartY);
         _fusePath.QuadTo(ctrlX, ctrlY, fuseEndX, fuseEndY);
         canvas.DrawPath(_fusePath, _fusePaint);

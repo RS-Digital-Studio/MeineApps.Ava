@@ -6,6 +6,7 @@ namespace BomberBlast.Services;
 public sealed class NullVibrationService : IVibrationService
 {
     public bool IsEnabled { get; set; } = true;
+    public void VibrateTick() { }
     public void VibrateLight() { }
     public void VibrateMedium() { }
     public void VibrateHeavy() { }

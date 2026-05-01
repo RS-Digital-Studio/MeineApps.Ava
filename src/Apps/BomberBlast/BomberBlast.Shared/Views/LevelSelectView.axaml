@@ -225,9 +225,16 @@
                     <icons:GameIcon Kind="Lock" Width="28" Height="28"
                                      Foreground="#888888" />
                     <TextBlock Text="{Binding WorldLockText}"
-                               FontSize="13"
-                               Foreground="#AAAAAA"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="#FFD700"
                                HorizontalAlignment="Center" />
+                    <!-- Welt-Gate-Hint (v2.0.36): Empfehlung welches Level zu wiederholen ist -->
+                    <TextBlock Text="{Binding WorldLockHint}"
+                               IsVisible="{Binding HasLockHint}"
+                               FontSize="12"
+                               Foreground="#CCCCCC"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
               </Panel>

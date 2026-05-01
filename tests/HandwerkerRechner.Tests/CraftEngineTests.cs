@@ -564,7 +564,7 @@ public class CraftEngineTests
     {
         // Vorbereitung: 20m² Fläche, 15mm dick, Innenputz (1.0 kg/m²/mm)
         // Gesamt = 20 * 15 * 1.0 = 300kg → 10 Säcke (à 30kg)
-        var ergebnis = _sut.CalculatePlaster(20, 15, "Innen");
+        var ergebnis = _sut.CalculatePlaster(20, 15, PlasterType.Interior);
 
         ergebnis.PlasterKg.Should().BeApproximately(300, 0.001);
         ergebnis.BagsNeeded.Should().Be(10);
@@ -574,8 +574,8 @@ public class CraftEngineTests
     public void CalculatePlaster_Aussenputz_SchwerAlsInnenputz()
     {
         // Vorbereitung: Außenputz (1.2 kg/m²/mm) vs Innenputz (1.0 kg/m²/mm)
-        var innen = _sut.CalculatePlaster(10, 10, "Innen");
-        var aussen = _sut.CalculatePlaster(10, 10, "Außen");
+        var innen = _sut.CalculatePlaster(10, 10, PlasterType.Interior);
+        var aussen = _sut.CalculatePlaster(10, 10, PlasterType.Exterior);
 
         aussen.PlasterKg.Should().BeGreaterThan(innen.PlasterKg);
     }
@@ -584,8 +584,8 @@ public class CraftEngineTests
     public void CalculatePlaster_GipsputzLeichtesterTyp()
     {
         // Gipsputz (0.8) ist leichter als Kalkputz (0.9) und Innenputz (1.0)
-        var kalk = _sut.CalculatePlaster(10, 10, "Kalk");
-        var gips = _sut.CalculatePlaster(10, 10, "Gips");
+        var kalk = _sut.CalculatePlaster(10, 10, PlasterType.Lime);
+        var gips = _sut.CalculatePlaster(10, 10, PlasterType.Gypsum);
 
         gips.PlasterKg.Should().BeLessThan(kalk.PlasterKg);
     }
@@ -599,7 +599,7 @@ public class CraftEngineTests
     {
         // Vorbereitung: 20m², 5cm dick, Zementestrich (2100 kg/m³)
         // Volumen = 20 * 0.05 = 1m³, Gewicht = 2100kg → 53 Säcke à 40kg
-        var ergebnis = _sut.CalculateScreed(20, 5, "Zement");
+        var ergebnis = _sut.CalculateScreed(20, 5, ScreedType.Cement);
 
         ergebnis.VolumeM3.Should().BeApproximately(1.0, 0.001);
         ergebnis.WeightKg.Should().BeApproximately(2100, 0.001);
@@ -610,7 +610,7 @@ public class CraftEngineTests
     public void CalculateScreed_TrocknungszeitBis40mm_EinTagProMm()
     {
         // Vorbereitung: 3cm = 30mm → 30 Tage Trocknungszeit
-        var ergebnis = _sut.CalculateScreed(10, 3, "Zement");
+        var ergebnis = _sut.CalculateScreed(10, 3, ScreedType.Cement);
 
         ergebnis.DryingDays.Should().Be(30);
     }
@@ -619,7 +619,7 @@ public class CraftEngineTests
     public void CalculateScreed_TrocknungszeitUeber40mm_ZweiTageProMm()
     {
         // Vorbereitung: 5cm = 50mm → 40 + (10mm * 2) = 60 Tage
-        var ergebnis = _sut.CalculateScreed(10, 5, "Zement");
+        var ergebnis = _sut.CalculateScreed(10, 5, ScreedType.Cement);
 
         ergebnis.DryingDays.Should().Be(60);
     }
@@ -628,8 +628,8 @@ public class CraftEngineTests
     public void CalculateScreed_Anhydrit_SchwererAlsZement()
     {
         // Vorbereitung: Anhydrit (2200 kg/m³) > Zement (2100 kg/m³)
-        var zement = _sut.CalculateScreed(10, 4, "Zement");
-        var anhydrit = _sut.CalculateScreed(10, 4, "Anhydrit");
+        var zement = _sut.CalculateScreed(10, 4, ScreedType.Cement);
+        var anhydrit = _sut.CalculateScreed(10, 4, ScreedType.Anhydrite);
 
         anhydrit.WeightKg.Should().BeGreaterThan(zement.WeightKg);
     }

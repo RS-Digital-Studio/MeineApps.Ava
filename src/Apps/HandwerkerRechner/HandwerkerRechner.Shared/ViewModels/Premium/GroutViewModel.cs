@@ -110,8 +110,25 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
             _debounceTimer.Change(300, Timeout.Infinite);
     }
 
+    [ObservableProperty] private bool _isCalculating;
+
     [RelayCommand]
     private async Task Calculate()
+    {
+        // Reentrancy-Schutz: gleichzeitige Calculate-Calls (Debounce-Timer + manueller Klick) blocken
+        if (IsCalculating) return;
+        try
+        {
+            IsCalculating = true;
+            await CalculateInternalAsync();
+        }
+        finally
+        {
+            IsCalculating = false;
+        }
+    }
+
+    private async Task CalculateInternalAsync()
     {
         var result = CraftEngine.CalculateGrout(AreaSqm, TileLengthCm, TileWidthCm, GroutWidthMm, GroutDepthMm, PricePerKg);
         Result = result;
@@ -156,7 +173,7 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
                 }
             };
 
-            await _historyService.AddCalculationAsync("GroutCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("GroutCalculator", title, data);
         }
         catch (Exception ex)
         {

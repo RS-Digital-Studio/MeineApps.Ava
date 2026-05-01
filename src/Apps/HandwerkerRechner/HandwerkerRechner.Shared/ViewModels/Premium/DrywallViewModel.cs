@@ -181,7 +181,7 @@ public sealed partial class DrywallViewModel : ViewModelBase, IDisposable, ICalc
                 } : new Dictionary<string, object>()
             };
 
-            await _historyService.AddCalculationAsync("DrywallCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("DrywallCalculator", title, data);
         }
         catch (Exception ex)
         {

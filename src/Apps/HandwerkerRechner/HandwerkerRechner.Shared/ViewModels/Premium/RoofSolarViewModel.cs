@@ -351,7 +351,7 @@ public sealed partial class RoofSolarViewModel : ViewModelBase, IDisposable, ICa
                     break;
             }
 
-            await _historyService.AddCalculationAsync(calcType, title, data);
+            _historyService.ScheduleDebouncedSave(calcType, title, data);
         }
         catch (Exception ex)
         {

@@ -19,6 +19,10 @@ public partial class HourlyRateView : CalculatorViewBase
 
     protected override void OnResultPropertyChanged()
     {
+        // HasResult bleibt nach dem 1. Calculate dauerhaft true → Properties wie TotalGross
+        // ändern sich aber bei jeder Live-Calculate-Iteration. Ohne explizites InvalidateSurface
+        // würde Avalonia das Canvas nicht neu rendern. StartAnimation startet die Einschwing-Animation
+        // (~500ms EaseOut) und hält den Frame-Loop via NeedsRedraw aufrecht.
         HourlyRateVisualization.StartAnimation();
         HourlyRateCanvas.InvalidateSurface();
     }

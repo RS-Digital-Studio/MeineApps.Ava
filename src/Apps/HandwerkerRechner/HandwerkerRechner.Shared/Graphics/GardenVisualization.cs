@@ -1,3 +1,4 @@
+using MeineApps.Core.Ava.Localization;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
@@ -274,20 +275,25 @@ public static class GardenVisualization
         _borderPaint.Color = SkiaThemeHelper.TextPrimary;
         canvas.DrawRect(ox, oy, profileW, totalH, _borderPaint);
 
-        // === Schicht-Labels (rechts außen) ===
+        // === Schicht-Labels (rechts außen, lokalisiert) ===
         float labelX = ox + profileW + 8f;
+        var loc = LocalizationManager.Service;
+        string topsoilLabel = loc?.GetString("VizTopsoil") ?? "Topsoil";
+        string sandLabel = loc?.GetString("VizSand") ?? "Sand";
+        string gravelLabel = loc?.GetString("VizGravel") ?? "Gravel";
+
         _layerText.Color = _topsoilColor;
         _layerFont.Size = 8f;
 
-        canvas.DrawText("Mutterboden", labelX, oy + soilH / 2f + 3f,
+        canvas.DrawText(topsoilLabel, labelX, oy + soilH / 2f + 3f,
             SKTextAlign.Left, _layerFont, _layerText);
 
         _layerText.Color = _sandColor;
-        canvas.DrawText("Sand", labelX, sandY + sandH / 2f + 3f,
+        canvas.DrawText(sandLabel, labelX, sandY + sandH / 2f + 3f,
             SKTextAlign.Left, _layerFont, _layerText);
 
         _layerText.Color = _gravelColor;
-        canvas.DrawText("Kies", labelX, gravelY + gravelH / 2f + 3f,
+        canvas.DrawText(gravelLabel, labelX, gravelY + gravelH / 2f + 3f,
             SKTextAlign.Left, _layerFont, _layerText);
 
         // === Maßlinien ===

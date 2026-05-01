@@ -110,6 +110,9 @@
   <data name="WallLength" xml:space="preserve">
     <value>Largo de pared (m)</value>
   </data>
+  <data name="RoomPerimeter" xml:space="preserve">
+    <value>Perímetro de la habitación (m)</value>
+  </data>
   <data name="RollDimensions" xml:space="preserve">
     <value>Dimensiones del rollo</value>
   </data>
@@ -2163,5 +2166,56 @@ Valores típicos:
   </data>
   <data name="PremiumFeatures" xml:space="preserve">
     <value>Sin anuncios de vídeo • Sin banner • Historial ilimitado • Exportación directa</value>
+  </data>
+
+  <!-- Visualization Labels (SkiaSharp Renderer) -->
+  <data name="VizWaste" xml:space="preserve">
+    <value>Pérdida</value>
+  </data>
+  <data name="VizConsumption" xml:space="preserve">
+    <value>Consumo</value>
+  </data>
+  <data name="VizMaterialCost" xml:space="preserve">
+    <value>Coste material</value>
+  </data>
+  <data name="VizIncludeReserve" xml:space="preserve">
+    <value>incl. 10% reserva</value>
+  </data>
+  <data name="VizCement" xml:space="preserve">
+    <value>Cemento</value>
+  </data>
+  <data name="VizSand" xml:space="preserve">
+    <value>Arena</value>
+  </data>
+  <data name="VizGravel" xml:space="preserve">
+    <value>Grava</value>
+  </data>
+  <data name="VizTopsoil" xml:space="preserve">
+    <value>Tierra vegetal</value>
+  </data>
+
+  <!-- Material Export (CSV/PDF) -->
+  <data name="ExportType" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="ExportDate" xml:space="preserve">
+    <value>Fecha</value>
+  </data>
+  <data name="ExportParameter" xml:space="preserve">
+    <value>Parámetro</value>
+  </data>
+  <data name="ExportValue" xml:space="preserve">
+    <value>Valor</value>
+  </data>
+  <data name="ExportResult" xml:space="preserve">
+    <value>Resultado</value>
+  </data>
+
+  <!-- Material Compare Defaults -->
+  <data name="DefaultProductA" xml:space="preserve">
+    <value>Producto A</value>
+  </data>
+  <data name="DefaultProductB" xml:space="preserve">
+    <value>Producto B</value>
   </data>
 </root>

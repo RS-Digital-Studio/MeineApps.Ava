@@ -163,10 +163,8 @@ public sealed partial class ScreedViewModel : ViewModelBase, IDisposable, ICalcu
                 return;
             }
 
-            string screedType = SelectedScreedType switch
-            {
-                1 => "Flie\u00df", 2 => "Anhydrit", _ => "Zement"
-            };
+            // Enum-basiertes Mapping (typsicher, kein string-Vergleich in Engine)
+            var screedType = (ScreedType)SelectedScreedType;
 
             Result = _engine.CalculateScreed(FloorArea, ThicknessCm, screedType);
             HasResult = true;
@@ -203,7 +201,7 @@ public sealed partial class ScreedViewModel : ViewModelBase, IDisposable, ICalcu
                 } : new Dictionary<string, object>()
             };
 
-            await _historyService.AddCalculationAsync("ScreedCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("ScreedCalculator", title, data);
         }
         catch (Exception ex)
         {

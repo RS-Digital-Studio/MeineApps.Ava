@@ -1,3 +1,4 @@
+using MeineApps.Core.Ava.Localization;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
@@ -166,10 +167,11 @@ public static class TileVisualization
         _infoBoxBorder.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Error, 150);
         canvas.DrawRoundRect(boxRect, 6f, 6f, _infoBoxBorder);
 
-        // Titel "Verschnitt"
+        // Titel "Verschnitt" (lokalisiert)
         _infoTextPaint.Color = SkiaThemeHelper.Error;
         _infoTitleFont.Size = 9f;
-        canvas.DrawText("Verschnitt", boxX + boxW / 2f, boxY + 12f,
+        var wasteLabel = LocalizationManager.Service?.GetString("VizWaste") ?? "Waste";
+        canvas.DrawText(wasteLabel, boxX + boxW / 2f, boxY + 12f,
             SKTextAlign.Center, _infoTitleFont, _infoTextPaint);
 
         // Großer Prozentwert

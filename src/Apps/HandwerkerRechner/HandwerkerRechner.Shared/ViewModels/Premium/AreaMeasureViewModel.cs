@@ -144,29 +144,41 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
             _debounceTimer.Change(300, Timeout.Infinite);
     }
 
+    [ObservableProperty] private bool _isCalculating;
+
     [RelayCommand]
     private async Task Calculate()
     {
-        CurrentShapeArea = SelectedShapeIndex switch
+        // Reentrancy-Schutz
+        if (IsCalculating) return;
+        try
         {
-            0 => CalculateRectangle(),
-            1 => CalculateLShape(),
-            2 => CalculateTShape(),
-            3 => CalculateTrapezoid(),
-            4 => CalculateTriangle(),
-            5 => CalculateCircle(),
-            _ => 0
-        };
+            IsCalculating = true;
 
-        HasResult = CurrentShapeArea > 0;
-        RecalculateTotal();
+            CurrentShapeArea = SelectedShapeIndex switch
+            {
+                0 => CalculateRectangle(),
+                1 => CalculateLShape(),
+                2 => CalculateTShape(),
+                3 => CalculateTrapezoid(),
+                4 => CalculateTriangle(),
+                5 => CalculateCircle(),
+                _ => 0
+            };
 
-        if (HasResult)
-            CalculationPerformed?.Invoke();
+            HasResult = CurrentShapeArea > 0;
+            RecalculateTotal();
 
-        // In History speichern
-        if (HasResult)
-            await SaveToHistoryAsync();
+            if (HasResult)
+            {
+                CalculationPerformed?.Invoke();
+                await SaveToHistoryAsync();
+            }
+        }
+        finally
+        {
+            IsCalculating = false;
+        }
     }
 
     /// <summary>Berechnung in die History speichern</summary>
@@ -192,7 +204,7 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
                 }
             };
 
-            await _historyService.AddCalculationAsync("AreaMeasureCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("AreaMeasureCalculator", title, data);
         }
         catch (Exception ex)
         {

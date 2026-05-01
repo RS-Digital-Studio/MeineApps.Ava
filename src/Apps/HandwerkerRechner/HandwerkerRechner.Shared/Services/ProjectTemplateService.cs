@@ -32,9 +32,14 @@ public sealed class ProjectTemplateService : IProjectTemplateService
         return all;
     }
 
+    // WICHTIG: Die Default-Value-Keys MÜSSEN exakt zu den Property-Namen passen, die
+    // die jeweilige Calculator-VM in LoadProjectAsync via project.GetValue<T>("Key") erwartet.
+    // Sonst greifen die Vorlagen ins Leere und der User sieht Defaults statt Template-Werte.
     public List<ProjectTemplate> GetBuiltinTemplates() =>
     [
         // Badezimmer fliesen
+        // Tile: RoomLength, RoomWidth, TileLength (cm), TileWidth (cm), WastePercentage, GroutWidthMm
+        // Grout: AreaSqm, TileLengthCm, TileWidthCm, GroutWidthMm, GroutDepthMm
         new ProjectTemplate
         {
             Id = "builtin_bathroom",
@@ -55,7 +60,8 @@ public sealed class ProjectTemplateService : IProjectTemplateService
                         ["RoomWidth"] = "3.2",
                         ["TileLength"] = "20",
                         ["TileWidth"] = "20",
-                        ["WastePercent"] = "10"
+                        ["WastePercentage"] = "10",
+                        ["GroutWidthMm"] = "3"
                     }
                 },
                 new TemplateCalculatorEntry
@@ -64,6 +70,7 @@ public sealed class ProjectTemplateService : IProjectTemplateService
                     CalculatorType = CalculatorType.Grout,
                     DefaultValues = new()
                     {
+                        ["AreaSqm"] = "8",
                         ["TileLengthCm"] = "20",
                         ["TileWidthCm"] = "20",
                         ["GroutWidthMm"] = "3",
@@ -74,6 +81,8 @@ public sealed class ProjectTemplateService : IProjectTemplateService
         },
 
         // Wohnzimmer streichen
+        // Paint: Area, CoveragePerLiter, NumberOfCoats (int), PricePerLiter
+        // Wallpaper: WallLength (Wandumfang m), RoomHeight, RollLength, RollWidth, PatternRepeat
         new ProjectTemplate
         {
             Id = "builtin_living_room",
@@ -92,24 +101,27 @@ public sealed class ProjectTemplateService : IProjectTemplateService
                     {
                         ["Area"] = "52",
                         ["CoveragePerLiter"] = "10",
-                        ["Coats"] = "2"
+                        ["NumberOfCoats"] = "2"
                     }
                 },
                 new TemplateCalculatorEntry
                 {
                     Route = "WallpaperCalculatorPage",
                     CalculatorType = CalculatorType.Wallpaper,
+                    // 5x4m Wohnzimmer => Umfang 18m
                     DefaultValues = new()
                     {
-                        ["RoomLength"] = "5",
-                        ["RoomWidth"] = "4",
-                        ["RoomHeight"] = "2.5"
+                        ["WallLength"] = "18",
+                        ["RoomHeight"] = "2.5",
+                        ["RollLength"] = "10.05",
+                        ["RollWidth"] = "53"
                     }
                 }
             ]
         },
 
-        // Gartenpflasterung
+        // Gartenpflasterung (GardenViewModel.Paving-Sub-Calculator)
+        // Garden: SelectedCalculator (0=Paving), PavingArea, StoneLength, StoneWidth, JointWidth
         new ProjectTemplate
         {
             Id = "builtin_garden",
@@ -126,15 +138,18 @@ public sealed class ProjectTemplateService : IProjectTemplateService
                     CalculatorType = CalculatorType.Paving,
                     DefaultValues = new()
                     {
-                        ["Area"] = "40",
+                        ["SelectedCalculator"] = "0",
+                        ["PavingArea"] = "40",
                         ["StoneLength"] = "20",
-                        ["StoneWidth"] = "10"
+                        ["StoneWidth"] = "10",
+                        ["JointWidth"] = "3"
                     }
                 }
             ]
         },
 
         // Trockenbau Wand
+        // Drywall: WallLength, WallHeight, DoublePlated (bool)
         new ProjectTemplate
         {
             Id = "builtin_drywall",
@@ -153,13 +168,15 @@ public sealed class ProjectTemplateService : IProjectTemplateService
                     {
                         ["WallLength"] = "4",
                         ["WallHeight"] = "2.5",
-                        ["IsDoublePlated"] = "true"
+                        ["DoublePlated"] = "true"
                     }
                 }
             ]
         },
 
         // Bodenrenovierung
+        // Flooring: RoomLength, RoomWidth, BoardLength, BoardWidth, WastePercentage
+        // Screed: FloorArea, ThicknessCm, SelectedScreedType (int)
         new ProjectTemplate
         {
             Id = "builtin_flooring",
@@ -180,7 +197,7 @@ public sealed class ProjectTemplateService : IProjectTemplateService
                         ["RoomWidth"] = "4",
                         ["BoardLength"] = "1.2",
                         ["BoardWidth"] = "19",
-                        ["WastePercent"] = "10"
+                        ["WastePercentage"] = "10"
                     }
                 },
                 new TemplateCalculatorEntry
@@ -189,8 +206,9 @@ public sealed class ProjectTemplateService : IProjectTemplateService
                     CalculatorType = CalculatorType.Screed,
                     DefaultValues = new()
                     {
-                        ["Area"] = "20",
-                        ["ThicknessCm"] = "5"
+                        ["FloorArea"] = "20",
+                        ["ThicknessCm"] = "5",
+                        ["SelectedScreedType"] = "0"
                     }
                 }
             ]

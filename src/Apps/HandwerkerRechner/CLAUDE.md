@@ -4,9 +4,18 @@
 
 ## App-Beschreibung
 
-Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, Angebots-Generator, Vorlagen und Einheiten-Umrechnung.
+Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium-Tools), Projektverwaltung, Angebots-Generator, Vorlagen und Einheiten-Umrechnung. Premium = nur "remove_ads".
 
 **Version:** 2.0.7 | **Package-ID:** com.meineapps.handwerkerrechner | **Status:** Geschlossener Test
+
+## Wichtige Domänen-Patterns
+
+- **Plaster/Screed nutzen Enum-Routing** (`PlasterType`/`ScreedType`), nicht deutsche Strings — typsicher gegen Refactor-Falle
+- **Drehstrom-Erkennung in CableSizing/VoltageDrop**: `Voltage >= 380V` → Faktor `√3` statt `2` (DIN-konform für 400V-Drehstrom)
+- **Project-Templates** (`ProjectTemplateService`): Built-in Templates verwenden EXAKT die Property-Keys, die die Calculator-VMs in `LoadProjectAsync` via `project.GetValue<T>("Key")` erwarten. `ProjectTemplatesViewModel.ParseTemplateValue` castet String-Defaults nach `bool`/`int`/`double` damit der JSON-Roundtrip funktioniert
+- **Renderer-Lokalisierung**: 4 Visualisierungen (Tile/Grout/Garden/Concrete) holen Labels via `LocalizationManager.Service?.GetString("VizXxx")`. Hardcoded deutsche Strings sind verboten (englische User würden „Verschnitt" statt „Waste" sehen)
+- **CraftEngine.Clamp(value, max)**: Plausibilitäts-Bounds gegen `Infinity`/`NaN` aus User-Inputs. Pattern in `CalculateTiles` etabliert; weitere Methoden bei Bedarf erweitern
+- **InsulationVisualization** nutzt `_epsRandoms`/`_woodFiberRandoms` als pre-computed static Arrays (Random.Shared.NextDouble() pro Frame würde sichtbar wackeln)
 
 ## Features
 
@@ -47,23 +56,28 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 ## App-spezifische Services
 
 - **ProjectService**: JSON-Persistenz (Project Model), DateTime.UtcNow
-- **CalculationHistoryService**: MaxItemsPerCalculator 30 (5 free / 30 extended)
+- **CalculationHistoryService** (Core.Ava): MaxItemsPerCalculator 30, alle Nutzer ohne Premium-Gate
+  - Live-Calculate-Stutter-Fix: `ScheduleDebouncedSave()` statt `AddCalculationAsync()` direkt → 2s-Debounce, nur letztes Resultat pro Calculator wird geschrieben
+  - `GetAllHistoryAsync` liest 19 JSON-Files parallel via `Task.WhenAll` (~30-50ms statt 150-300ms beim History-Tab-Open)
+  - Static `JsonSerializerOptions` (kein Allocate pro Save)
 - **UnitConverterService**: Länge, Fläche, Volumen, Gewicht
-- **IMaterialExportService / MaterialExportService**: PdfSharpCore A4 Export + CSV Export (Semikolon, UTF-8-BOM)
+- **IMaterialExportService / MaterialExportService**:
+  - PdfSharpCore A4 Export + CSV Export (Semikolon, UTF-8-BOM)
+  - CSV-Header lokalisiert (ExportType/Date/Parameter/Value/Result-RESX-Keys statt deutsch hardcodiert)
+  - Formula-Injection-Schutz in `EscapeCsv()`: führendes `=`/`+`/`-`/`@` mit Apostroph präfixt
 - **IPhotoPickerService / DesktopPhotoPickerService**: Foto-Auswahl via StorageProvider, kopiert nach AppData/photos/ mit GUID-Name. Factory-Pattern in App.axaml.cs für Android-Override
-- **IPremiumAccessService / PremiumAccessService**: 30-Min temporärer Zugang zu Premium-Rechnern, 24h Extended History
+  - Path-Traversal-Schutz in `DeletePhotoAsync`: `Path.GetFullPath`-Vergleich mit erwartetem PhotoDirectory verhindert Löschung von Files außerhalb der App-Sandbox bei manipulierten projects.json
 
 ## Premium & Ads
 
 ### Ad-Placements (Rewarded)
-1. **premium_access**: 30 Minuten Zugang zu 11 Premium-Rechnern (HomeView)
-2. **extended_history**: 24h-Zugang zu 30 statt 10 History-Einträgen (HomeView)
-3. **material_pdf**: Material-Liste PDF Export (alle 16 Calculator Views)
-4. **project_export**: Projekt-Export als PDF (ProjectsView)
+1. **material_pdf**: Material-Liste PDF Export (alle 19 Calculator Views)
+2. **project_export**: Projekt-Export als PDF (ProjectsView)
 
 ### Premium-Modell
 - **Preis**: 3,99 EUR (`remove_ads`)
-- **Vorteile**: Keine Ads, permanenter Premium-Rechner-Zugang, unbegrenzte History, direkter PDF-Export
+- **Vorteile**: Keine Ads (Banner + Rewarded entfallen), direkter PDF-Export
+- Alle 19 Rechner sind ohne Premium-Gate frei zugänglich; PremiumAccessService wurde in v2.0.8 entfernt (war ungenutzt)
 
 ## SkiaSharp Visualisierungen (Graphics/)
 
@@ -123,10 +137,11 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 - Jedes Öffnen eines Rechners erzeugt eine frische VM-Instanz via `_xxxVmFactory()`
 - Func<T> Factories als Singleton registriert in `App.axaml.cs` (analog FitnessRechner)
 
-### Calculator Overlay via DataTemplates
+### Calculator Overlay via ViewLocator
 - `MainViewModel`: `CurrentPage` + `CurrentCalculatorVm` Properties
-- `MainView`: DataTemplates für automatische View-Zuordnung per VM-Typ (19 VMs)
+- `MainView`: KEINE lokalen DataTemplates — globaler `ViewLocator` (App.axaml) löst alle 19 Calculator-VMs per Konvention auf (`ViewModels.Floor.TileCalculatorViewModel` → `Views.Floor.TileCalculatorView`)
 - Tab-Wechsel: `SelectHomeTab/SelectProjectsTab/SelectHistoryTab/SelectSettingsTab` setzen `CurrentPage=null`
+- Render-Performance: BlueprintBackground-Timer pausiert wenn `CurrentPage != null` (Hintergrund verdeckt → keine GPU-Arbeit)
 
 ### History-Tab
 - `HistoryViewModel`: Lädt alle History-Einträge via `GetAllHistoryAsync()`, gruppiert nach CalculatorId
@@ -148,16 +163,17 @@ Handwerker-App mit 19 Rechnern (5 Free Floor + 14 Premium), Projektverwaltung, A
 
 ### Floor vs Premium VMs
 - Floor-VMs (5): erben von `ViewModelBase`, Namespace `HandwerkerRechner.ViewModels.Floor`
-- Premium-VMs (11): erben von `ViewModelBase`, Namespace `HandwerkerRechner.ViewModels.Premium`
-- Premium-VMs (3): HourlyRate/MaterialCompare/AreaMeasure erben von `ObservableObject`
-- CalculatorViewModelBase existiert als Abstract Base Class, wird aber NICHT verwendet
+- Premium-VMs (14): erben von `ViewModelBase`, Namespace `HandwerkerRechner.ViewModels.Premium`
+- Alle 19 VMs implementieren `ICalculatorViewModel` (Cleanup räumt Debounce-Timer + Event-Subscriptions auf)
+- Alle 19 VMs haben `[ObservableProperty] private bool _isCalculating;` als Reentrancy-Schutz in `Calculate()`
 
 ### Live-Berechnung (Debounce)
-- Alle 16 Calculator-VMs berechnen automatisch 300ms nach letzter Eingabe-Änderung
+- Alle 19 Calculator-VMs berechnen automatisch 300ms nach letzter Eingabe-Änderung
 - Pattern: `partial void OnXxxChanged() => ScheduleAutoCalculate()` + `Timer.Change()` (wiederverwendet statt Dispose/New)
 - Timer-Callback: `Dispatcher.UIThread.Post(() => _ = Calculate())` (async Task → fire-and-forget Lambda)
+- History-Save NICHT pro Live-Calculate-Iteration (10-30ms Stutter pro Tastendruck) → `ScheduleDebouncedSave` mit 2s-Debounce
 - `Reset()` disposed Timer, alle VMs implementieren `IDisposable`
-- Premium-VMs haben zusätzlich `Cleanup()` Methode für Timer-Dispose bei Navigation weg
+- Cleanup() ist API-konsistent über alle 19 VMs: räumt Event-Subscription UND Debounce-Timer ab
 - Kein manuelles "Berechnen"-Drücken mehr nötig (Button bleibt aber als Fallback)
 
 ### UI-Feedback

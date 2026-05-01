@@ -110,6 +110,9 @@
   <data name="WallLength" xml:space="preserve">
     <value>Wandlänge (m)</value>
   </data>
+  <data name="RoomPerimeter" xml:space="preserve">
+    <value>Raumumfang (m)</value>
+  </data>
   <data name="RollDimensions" xml:space="preserve">
     <value>Rollenmaße</value>
   </data>
@@ -246,13 +249,13 @@
     <value>Keine Projekte gespeichert</value>
   </data>
   <data name="SaveProjectsDescription" xml:space="preserve">
-    <value>Speichern Sie Ihre Berechnungen als Projekt, um sie später wiederzuverwenden.</value>
+    <value>Speichere deine Berechnungen als Projekt, um sie später wiederzuverwenden.</value>
   </data>
   <data name="DeleteProjectConfirm" xml:space="preserve">
     <value>Projekt löschen?</value>
   </data>
   <data name="DeleteProjectMessage" xml:space="preserve">
-    <value>Möchten Sie "{0}" wirklich löschen?</value>
+    <value>Möchtest du "{0}" wirklich löschen?</value>
   </data>
   <data name="Yes" xml:space="preserve">
     <value>Ja</value>
@@ -448,7 +451,7 @@ Werbung wurde deaktiviert.</value>
     <value>Bereits freigeschaltet</value>
   </data>
   <data name="AlreadyUnlockedMessage" xml:space="preserve">
-    <value>Sie haben bereits alle Kategorien freigeschaltet!</value>
+    <value>Du hast bereits alle Kategorien freigeschaltet!</value>
   </data>
   <data name="UnlockAllCategoriesTitle" xml:space="preserve">
     <value>Alle Kategorien freischalten</value>
@@ -622,7 +625,7 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
     <value>Verlauf löschen?</value>
   </data>
   <data name="ClearHistoryMessage" xml:space="preserve">
-    <value>Möchten Sie wirklich alle gespeicherten Berechnungen löschen?</value>
+    <value>Möchtest du wirklich alle gespeicherten Berechnungen löschen?</value>
   </data>
   <data name="LoadCalculation" xml:space="preserve">
     <value>Berechnung laden</value>
@@ -663,7 +666,7 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
     <value>€/kWh</value>
   </data>
   <data name="EnterAtLeastTwoValues" xml:space="preserve">
-    <value>Geben Sie mindestens 2 Werte ein</value>
+    <value>Gib mindestens 2 Werte ein</value>
   </data>
   <data name="VoltageU" xml:space="preserve">
     <value>Spannung U (V)</value>
@@ -2454,5 +2457,56 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   </data>
   <data name="MaxPhotosReached" xml:space="preserve">
     <value>Maximal 5 Fotos pro Projekt</value>
+  </data>
+
+  <!-- Visualization Labels (SkiaSharp Renderer) -->
+  <data name="VizWaste" xml:space="preserve">
+    <value>Verschnitt</value>
+  </data>
+  <data name="VizConsumption" xml:space="preserve">
+    <value>Verbrauch</value>
+  </data>
+  <data name="VizMaterialCost" xml:space="preserve">
+    <value>Materialkosten</value>
+  </data>
+  <data name="VizIncludeReserve" xml:space="preserve">
+    <value>inkl. 10% Reserve</value>
+  </data>
+  <data name="VizCement" xml:space="preserve">
+    <value>Zement</value>
+  </data>
+  <data name="VizSand" xml:space="preserve">
+    <value>Sand</value>
+  </data>
+  <data name="VizGravel" xml:space="preserve">
+    <value>Kies</value>
+  </data>
+  <data name="VizTopsoil" xml:space="preserve">
+    <value>Mutterboden</value>
+  </data>
+
+  <!-- Material Export (CSV/PDF) -->
+  <data name="ExportType" xml:space="preserve">
+    <value>Typ</value>
+  </data>
+  <data name="ExportDate" xml:space="preserve">
+    <value>Datum</value>
+  </data>
+  <data name="ExportParameter" xml:space="preserve">
+    <value>Parameter</value>
+  </data>
+  <data name="ExportValue" xml:space="preserve">
+    <value>Wert</value>
+  </data>
+  <data name="ExportResult" xml:space="preserve">
+    <value>Ergebnis</value>
+  </data>
+
+  <!-- Material Compare Defaults -->
+  <data name="DefaultProductA" xml:space="preserve">
+    <value>Produkt A</value>
+  </data>
+  <data name="DefaultProductB" xml:space="preserve">
+    <value>Produkt B</value>
   </data>
 </root>

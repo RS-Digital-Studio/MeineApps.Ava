@@ -1,4 +1,5 @@
 using HandwerkerRechner.Models;
+using MeineApps.Core.Ava.Localization;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
@@ -29,7 +30,8 @@ public static class GroutVisualization
     private static readonly SKPaint GroutPaint = new() { Color = new SKColor(0x78, 0x71, 0x6C), Style = SKPaintStyle.Fill, IsAntialias = true };
     private static readonly SKPaint DimensionPaint = new() { Color = new SKColor(0xEC, 0x48, 0x99), Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash(new[] { 4f, 4f }, 0) };
     private static readonly SKPaint DimTextPaint = new() { Color = new SKColor(0xEC, 0x48, 0x99), IsAntialias = true };
-    private static readonly SKPaint InfoBgPaint = new() { Color = new SKColor(0x30, 0xEC, 0x48, 0x99), Style = SKPaintStyle.Fill, IsAntialias = true };
+    // Pink Akzent (#EC4899) mit Alpha 0x30 - SKColor-Konstruktor ist (R, G, B, A), nicht (A, R, G, B)
+    private static readonly SKPaint InfoBgPaint = new() { Color = new SKColor(0xEC, 0x48, 0x99, 0x30), Style = SKPaintStyle.Fill, IsAntialias = true };
     private static readonly SKPaint InfoTextPaint = new() { Color = new SKColor(0xFF, 0xFF, 0xFF), IsAntialias = true };
     private static readonly SKPaint SubTextPaint = new() { Color = new SKColor(0xCC, 0xCC, 0xCC), IsAntialias = true };
     private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
@@ -42,6 +44,13 @@ public static class GroutVisualization
     public static void Render(SKCanvas canvas, SKRect bounds, GroutResult result)
     {
         if (result.TotalKg <= 0) return;
+
+        // Lokalisierte Labels einmalig auflösen
+        var loc = LocalizationManager.Service;
+        string reserveLabel = loc?.GetString("VizIncludeReserve") ?? "incl. 10% reserve";
+        string consumptionLabel = loc?.GetString("VizConsumption") ?? "Consumption";
+        string materialCostLabel = loc?.GetString("VizMaterialCost") ?? "Material cost";
+        string bucketsLabel = loc?.GetString("UnitBuckets") ?? "Buckets";
 
         // Animation-Update
         _animation.UpdateAnimation();
@@ -133,22 +142,22 @@ public static class GroutVisualization
 
         canvas.DrawText($"{result.TotalWithReserveKg:F1} kg", textX, textY, SKTextAlign.Left, _infoFont, InfoTextPaint);
         textY += 16;
-        canvas.DrawText("inkl. 10% Reserve", textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
+        canvas.DrawText(reserveLabel, textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
         textY += lineH + 8;
 
-        canvas.DrawText($"{result.BucketsNeeded} Eimer", textX, textY, SKTextAlign.Left, _infoFont, InfoTextPaint);
+        canvas.DrawText($"{result.BucketsNeeded}", textX, textY, SKTextAlign.Left, _infoFont, InfoTextPaint);
         textY += 16;
-        canvas.DrawText("\u00e0 5 kg", textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
+        canvas.DrawText(bucketsLabel, textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
         textY += lineH + 8;
 
         canvas.DrawText($"{result.ConsumptionPerSqm:F2} kg/m\u00b2", textX, textY, SKTextAlign.Left, _infoFont, InfoTextPaint);
         textY += 16;
-        canvas.DrawText("Verbrauch", textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
+        canvas.DrawText(consumptionLabel, textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
         textY += lineH + 8;
 
         canvas.DrawText($"{result.TotalCost:F2} \u20ac", textX, textY, SKTextAlign.Left, _infoFont, InfoTextPaint);
         textY += 16;
-        canvas.DrawText("Materialkosten", textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
+        canvas.DrawText(materialCostLabel, textX, textY, SKTextAlign.Left, _subFont, SubTextPaint);
 
         canvas.Restore();
     }

@@ -305,10 +305,41 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         TabSettingsText = _localization.GetString("TabSettings") ?? "Settings";
     }
 
+    // Alle lokalisierten Properties auf MainViewModel - bei Sprachwechsel gezielt invalidieren
+    // (statt OnPropertyChanged(string.Empty) das ALLE Bindings im Visual-Tree neu evaluiert →
+    //  50-150ms Stutter auf Mid-Tier-Android)
+    private static readonly string[] LocalizedPropertyNames =
+    {
+        nameof(AppTitle), nameof(AppDescription),
+        nameof(CategoryFloorWallLabel), nameof(CalcTilesLabel), nameof(CalcWallpaperLabel),
+        nameof(CalcPaintLabel), nameof(CalcFlooringLabel), nameof(MoreCategoriesLabel),
+        nameof(CategoryDrywallLabel), nameof(CategoryElectricalLabel), nameof(CategoryMetalLabel),
+        nameof(CategoryGardenLabel), nameof(CategoryRoofSolarLabel),
+        nameof(CalcTilesDescLabel), nameof(CalcWallpaperDescLabel), nameof(CalcPaintDescLabel),
+        nameof(CalcFlooringDescLabel), nameof(CategoryDrywallDescLabel),
+        nameof(CategoryElectricalDescLabel), nameof(CategoryMetalDescLabel),
+        nameof(CategoryGardenDescLabel), nameof(CategoryRoofSolarDescLabel),
+        nameof(CalcConcreteLabel), nameof(CalcConcreteDescLabel),
+        nameof(CalcStairsLabel), nameof(CalcStairsDescLabel),
+        nameof(CalcPlasterLabel), nameof(CalcPlasterDescLabel),
+        nameof(CalcScreedLabel), nameof(CalcScreedDescLabel),
+        nameof(CalcInsulationLabel), nameof(CalcInsulationDescLabel),
+        nameof(CalcCableSizingLabel), nameof(CalcCableSizingDescLabel),
+        nameof(CalcGroutLabel), nameof(CalcGroutDescLabel),
+        nameof(CalcHourlyRateLabel), nameof(CalcHourlyRateDescLabel),
+        nameof(CalcMaterialCompareLabel), nameof(CalcMaterialCompareDescLabel),
+        nameof(CalcAreaMeasureLabel), nameof(CalcAreaMeasureDescLabel),
+        nameof(FavoritesTitleText),
+        nameof(TemplatesLabel), nameof(QuotesLabel), nameof(SectionBusinessText),
+        nameof(SectionFloorWallText), nameof(SectionPremiumToolsText),
+        nameof(CalculatorCountText), nameof(GetPremiumText), nameof(PremiumPriceText)
+    };
+
     private void UpdateHomeTexts()
     {
-        // Alle Home-Properties auf einmal invalidieren (statt 46 einzelne Aufrufe)
-        OnPropertyChanged(string.Empty);
+        // Gezielt nur die ~51 Home-Properties invalidieren (nicht alle Bindings im Tree)
+        foreach (var name in LocalizedPropertyNames)
+            OnPropertyChanged(name);
     }
 
     private void OnLanguageChanged()

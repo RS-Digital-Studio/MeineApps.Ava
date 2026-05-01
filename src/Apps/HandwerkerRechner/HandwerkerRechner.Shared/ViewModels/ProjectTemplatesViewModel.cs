@@ -5,6 +5,7 @@ using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace HandwerkerRechner.ViewModels;
 
@@ -111,9 +112,11 @@ public sealed partial class ProjectTemplatesViewModel : ViewModelBase
             CalculatorType = firstCalc.CalculatorType
         };
 
+        // String-Defaults in passende JSON-Typen casten, damit project.GetValue<double>("Key")
+        // im Calculator-VM die Werte nicht in den Default-Fallback schickt
         var data = new Dictionary<string, object>();
         foreach (var (key, value) in firstCalc.DefaultValues)
-            data[key] = value;
+            data[key] = ParseTemplateValue(value);
 
         project.SetData(data);
         await _projectService.SaveProjectAsync(project);
@@ -167,5 +170,29 @@ public sealed partial class ProjectTemplatesViewModel : ViewModelBase
             if (!string.IsNullOrEmpty(localized)) return localized;
         }
         return "";
+    }
+
+    /// <summary>
+    /// Konvertiert einen Template-String-Default in den passenden Laufzeit-Typ
+    /// (bool / int / double / string), damit der JSON-Roundtrip in Project.GetValue&lt;T&gt;
+    /// den Wert in den vom Calculator erwarteten Typ deserialisieren kann.
+    /// Reihenfolge: bool → int (ganze Zahl) → double → string (Fallback).
+    /// </summary>
+    private static object ParseTemplateValue(string raw)
+    {
+        if (string.IsNullOrEmpty(raw)) return raw;
+
+        if (bool.TryParse(raw, out var b))
+            return b;
+
+        // Ganzzahl ohne Dezimaltrennzeichen → int (für SelectedCalculator/Workers etc.)
+        if (!raw.Contains('.') && !raw.Contains(',')
+            && int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
+            return i;
+
+        if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var d))
+            return d;
+
+        return raw;
     }
 }

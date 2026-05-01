@@ -322,7 +322,7 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
                 data["WindowHeight"] = WindowHeight;
             }
 
-            await _historyService.AddCalculationAsync("WallpaperCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("WallpaperCalculator", title, data);
         }
         catch (Exception ex)
         {
@@ -520,7 +520,7 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
             var calcType = _localization.GetString("CalcWallpaper") ?? "Wallpaper";
             var inputs = new Dictionary<string, string>
             {
-                [_localization.GetString("WallLength") ?? "Wall length"] = $"{WallLength:F1} m",
+                [_localization.GetString("RoomPerimeter") ?? "Room perimeter"] = $"{WallLength:F1} m",
                 [_localization.GetString("RoomHeight") ?? "Room height"] = $"{RoomHeight:F1} m",
                 [_localization.GetString("RollLength") ?? "Roll length"] = $"{RollLength:F2} m",
                 [_localization.GetString("RollWidth") ?? "Roll width"] = $"{RollWidth} cm",
@@ -567,7 +567,7 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
             var calcType = _localization.GetString("CalcWallpaper") ?? "Wallpaper";
             var inputs = new Dictionary<string, string>
             {
-                [_localization.GetString("WallLength") ?? "Wall length"] = $"{WallLength:F1} m",
+                [_localization.GetString("RoomPerimeter") ?? "Room perimeter"] = $"{WallLength:F1} m",
                 [_localization.GetString("RoomHeight") ?? "Room height"] = $"{RoomHeight:F1} m",
                 [_localization.GetString("RollLength") ?? "Roll length"] = $"{RollLength:F2} m",
                 [_localization.GetString("RollWidth") ?? "Roll width"] = $"{RollWidth} cm",
@@ -601,11 +601,13 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
     }
 
     /// <summary>
-    /// Cleanup when ViewModel is disposed
+    /// Cleanup wenn die VM von der View weg-navigiert. API-konsistent mit Premium-VMs.
     /// </summary>
     public void Cleanup()
     {
         _unitConverter.UnitSystemChanged -= OnUnitSystemChanged;
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 
     public void Dispose()

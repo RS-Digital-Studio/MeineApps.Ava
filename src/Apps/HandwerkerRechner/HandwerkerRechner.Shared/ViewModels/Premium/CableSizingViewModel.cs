@@ -154,9 +154,11 @@ public sealed partial class CableSizingViewModel : ViewModelBase, IDisposable, I
                 return;
             }
 
+            // SelectedVoltage 0 = 230V/1-Phasen, 1 = 400V/3-Phasen-Drehstrom
             double voltageV = SelectedVoltage == 0 ? 230 : 400;
+            bool isThreePhase = SelectedVoltage == 1;
 
-            Result = _engine.CalculateCableSize(CurrentAmps, CableLength, voltageV, SelectedMaterial, MaxDropPercent);
+            Result = _engine.CalculateCableSize(CurrentAmps, CableLength, voltageV, SelectedMaterial, MaxDropPercent, isThreePhase);
             HasResult = true;
             CalculationPerformed?.Invoke();
 
@@ -193,7 +195,7 @@ public sealed partial class CableSizingViewModel : ViewModelBase, IDisposable, I
                 } : new Dictionary<string, object>()
             };
 
-            await _historyService.AddCalculationAsync("CableSizingCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("CableSizingCalculator", title, data);
         }
         catch (Exception ex)
         {

@@ -63,7 +63,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding WallLength}"
-                       Watermark="m"
+                       Watermark="m" Classes="Outlined"
                        AutomationProperties.AutomationId="Drywall_TxtBoxWallLength" />
             </StackPanel>
 
@@ -73,7 +73,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding WallHeight}"
-                       Watermark="m"
+                       Watermark="m" Classes="Outlined"
                        AutomationProperties.AutomationId="Drywall_TxtBoxWallHeight" />
             </StackPanel>
 
@@ -95,7 +95,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PricePerSqm}"
-                       Watermark="EUR"
+                       Watermark="EUR" Classes="Outlined"
                        AutomationProperties.AutomationId="Drywall_TxtBoxPricePerSqm" />
             </StackPanel>
           </StackPanel>

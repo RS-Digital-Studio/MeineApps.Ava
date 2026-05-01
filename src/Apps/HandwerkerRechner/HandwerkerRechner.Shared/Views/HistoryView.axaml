@@ -10,18 +10,34 @@
              x:DataType="vm:HistoryViewModel"
              x:CompileBindings="True">
 
-  <Grid AutomationProperties.AutomationId="History_RootGrid" RowDefinitions="Auto,*" Margin="16">
+  <Grid AutomationProperties.AutomationId="History_RootGrid" RowDefinitions="Auto,*">
 
-    <!-- Header -->
-    <TextBlock AutomationProperties.AutomationId="History_TxtTitle"
-               Grid.Row="0"
-               Text="{Binding HeaderText}"
-               FontSize="24" FontWeight="Bold"
-               Foreground="{DynamicResource TextPrimaryBrush}"
-               Margin="0,8,0,16" />
+    <!-- Header (farbiger Gradient analog Calculator-Views: Indigo→Violett) -->
+    <Border Grid.Row="0"
+            Padding="16,12,16,20"
+            CornerRadius="0,0,24,24"
+            AutomationProperties.AutomationId="History_HeaderBorder">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#6366F1" Offset="0" />
+          <GradientStop Color="#4F46E5" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <mi:MaterialIcon Kind="ClockOutline" Width="22" Height="22"
+                           Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock AutomationProperties.AutomationId="History_TxtTitle"
+                   Text="{Binding HeaderText}"
+                   FontSize="20" FontWeight="Bold" Foreground="White"
+                   VerticalAlignment="Center" />
+      </StackPanel>
+    </Border>
 
     <!-- Content -->
-    <Panel Grid.Row="1">
+    <Panel Grid.Row="1" Margin="16,16,16,0">
 
       <!-- Leerer Zustand -->
       <controls:EmptyStateView

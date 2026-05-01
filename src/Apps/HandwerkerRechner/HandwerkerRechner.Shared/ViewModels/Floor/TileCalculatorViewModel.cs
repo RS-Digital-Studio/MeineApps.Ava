@@ -283,7 +283,7 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
                 } : new Dictionary<string, object>()
             };
 
-            await _historyService.AddCalculationAsync("TileCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("TileCalculator", title, data);
         }
         catch (Exception ex)
         {
@@ -548,11 +548,14 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Cleanup when ViewModel is disposed
+    /// Cleanup wenn die VM von der View weg-navigiert (Tab-Wechsel etc.).
+    /// API-konsistent mit den Premium-VMs: räumt Event-Subscription UND Debounce-Timer ab.
     /// </summary>
     public void Cleanup()
     {
         _unitConverter.UnitSystemChanged -= OnUnitSystemChanged;
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 
     public void Dispose()

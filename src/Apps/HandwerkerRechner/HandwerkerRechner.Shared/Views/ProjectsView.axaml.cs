@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.Views;
 
@@ -10,13 +9,6 @@ public partial class ProjectsView : UserControl
         InitializeComponent();
     }
 
-    protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-
-        if (DataContext is ProjectsViewModel vm)
-        {
-            vm.LoadProjectsCommand.Execute(null);
-        }
-    }
+    // Hinweis: Daten-Load erfolgt zentral im MainViewModel.SelectProjectsTab().
+    // Hier KEIN doppelter LoadProjectsCommand-Aufruf - sonst race-condition + flackernde Liste.
 }

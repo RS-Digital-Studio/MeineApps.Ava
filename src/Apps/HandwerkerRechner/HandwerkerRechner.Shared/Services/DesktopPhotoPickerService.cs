@@ -55,6 +55,17 @@ public sealed class DesktopPhotoPickerService : IPhotoPickerService
     {
         try
         {
+            // Path-Traversal-Schutz: Nur Dateien innerhalb von PhotoDirectory löschen.
+            // Verhindert dass manipulierte projects.json (z.B. via Backup-Restore von gerooteten Geräten)
+            // Pfade wie "../../etc/passwd" enthält und die App beliebige Files in ihrer Sandbox löscht.
+            if (!IsPathInPhotoDirectory(photoPath))
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] Foto-Pfad außerhalb PhotoDirectory abgelehnt: {photoPath}");
+#endif
+                return Task.CompletedTask;
+            }
+
             if (File.Exists(photoPath))
                 File.Delete(photoPath);
         }
@@ -65,6 +76,28 @@ public sealed class DesktopPhotoPickerService : IPhotoPickerService
 #endif
         }
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Prüft ob ein Pfad sicher innerhalb des erwarteten PhotoDirectory liegt
+    /// (canonical-form-Vergleich nach Auflösung von '..'-Segmenten und Symlinks).
+    /// </summary>
+    private static bool IsPathInPhotoDirectory(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return false;
+        try
+        {
+            var fullPath = Path.GetFullPath(path);
+            var fullDir = Path.GetFullPath(PhotoDirectory);
+            // Trailing-Separator damit "/photos2" nicht "/photos" matcht
+            if (!fullDir.EndsWith(Path.DirectorySeparatorChar))
+                fullDir += Path.DirectorySeparatorChar;
+            return fullPath.StartsWith(fullDir, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>Ermittelt das TopLevel-Fenster für den StorageProvider-Zugriff</summary>

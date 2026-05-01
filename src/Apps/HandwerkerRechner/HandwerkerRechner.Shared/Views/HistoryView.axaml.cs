@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.Views;
 
@@ -10,13 +9,6 @@ public partial class HistoryView : UserControl
         InitializeComponent();
     }
 
-    protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-
-        if (DataContext is HistoryViewModel vm)
-        {
-            vm.LoadHistoryCommand.Execute(null);
-        }
-    }
+    // Hinweis: Daten-Load erfolgt zentral im MainViewModel.SelectHistoryTab().
+    // Hier KEIN doppelter LoadHistoryCommand-Aufruf - sonst race-condition + flackernde Liste.
 }

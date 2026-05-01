@@ -107,39 +107,52 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
             _debounceTimer.Change(300, Timeout.Infinite);
     }
 
+    [ObservableProperty] private bool _isCalculating;
+
     [RelayCommand]
     private async Task Calculate()
     {
-        if (WorkHours <= 0 || HourlyRate <= 0 || Workers <= 0)
+        // Reentrancy-Schutz
+        if (IsCalculating) return;
+        try
         {
-            HasResult = false;
-            return;
+            IsCalculating = true;
+
+            if (WorkHours <= 0 || HourlyRate <= 0 || Workers <= 0)
+            {
+                HasResult = false;
+                return;
+            }
+
+            // Effektive Arbeitszeit = (Stunden - Pause) × Mitarbeiter
+            var breakHours = BreakMinutes / 60.0;
+            NetWorkHours = Math.Max(0, (WorkHours - breakHours) * Workers);
+
+            // Lohnkosten netto
+            NetLaborCost = NetWorkHours * HourlyRate;
+
+            // Aufschlag
+            OverheadAmount = NetLaborCost * OverheadPercent / 100.0;
+
+            // Gesamt netto
+            TotalNet = NetLaborCost + OverheadAmount;
+
+            // MwSt
+            VatAmount = TotalNet * VatPercent / 100.0;
+
+            // Gesamt brutto (Kundenpreis)
+            TotalGross = TotalNet + VatAmount;
+
+            HasResult = true;
+            CalculationPerformed?.Invoke();
+
+            // In History speichern
+            await SaveToHistoryAsync();
         }
-
-        // Effektive Arbeitszeit = (Stunden - Pause) × Mitarbeiter
-        var breakHours = BreakMinutes / 60.0;
-        NetWorkHours = Math.Max(0, (WorkHours - breakHours) * Workers);
-
-        // Lohnkosten netto
-        NetLaborCost = NetWorkHours * HourlyRate;
-
-        // Aufschlag
-        OverheadAmount = NetLaborCost * OverheadPercent / 100.0;
-
-        // Gesamt netto
-        TotalNet = NetLaborCost + OverheadAmount;
-
-        // MwSt
-        VatAmount = TotalNet * VatPercent / 100.0;
-
-        // Gesamt brutto (Kundenpreis)
-        TotalGross = TotalNet + VatAmount;
-
-        HasResult = true;
-        CalculationPerformed?.Invoke();
-
-        // In History speichern
-        await SaveToHistoryAsync();
+        finally
+        {
+            IsCalculating = false;
+        }
     }
 
     /// <summary>Berechnung in die History speichern</summary>
@@ -167,7 +180,7 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
                 }
             };
 
-            await _historyService.AddCalculationAsync("HourlyRateCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("HourlyRateCalculator", title, data);
         }
         catch (Exception ex)
         {
@@ -175,6 +188,19 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] History: {ex.Message}");
 #endif
         }
+    }
+
+    [RelayCommand]
+    private void Reset()
+    {
+        // Defaults wiederherstellen (Berechnung wird per ScheduleAutoCalculate ausgelöst)
+        HourlyRate = 45.0;
+        WorkHours = 8.0;
+        BreakMinutes = 30.0;
+        OverheadPercent = 20.0;
+        VatPercent = 19.0;
+        Workers = 1;
+        HasResult = false;
     }
 
     [RelayCommand]

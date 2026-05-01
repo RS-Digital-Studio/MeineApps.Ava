@@ -62,75 +62,11 @@
     </Style>
   </UserControl.Styles>
 
-  <UserControl.DataTemplates>
-    <!-- Floor Calculator VMs → Views -->
-    <DataTemplate DataType="floorVm:TileCalculatorViewModel">
-      <floorViews:TileCalculatorView />
-    </DataTemplate>
-    <DataTemplate DataType="floorVm:WallpaperCalculatorViewModel">
-      <floorViews:WallpaperCalculatorView />
-    </DataTemplate>
-    <DataTemplate DataType="floorVm:PaintCalculatorViewModel">
-      <floorViews:PaintCalculatorView />
-    </DataTemplate>
-    <DataTemplate DataType="floorVm:FlooringCalculatorViewModel">
-      <floorViews:FlooringCalculatorView />
-    </DataTemplate>
-    <DataTemplate DataType="floorVm:ConcreteCalculatorViewModel">
-      <floorViews:ConcreteCalculatorView />
-    </DataTemplate>
-    <!-- Premium Calculator VMs → Views -->
-    <DataTemplate DataType="premVm:DrywallViewModel">
-      <premViews:DrywallView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:ElectricalViewModel">
-      <premViews:ElectricalView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:MetalViewModel">
-      <premViews:MetalView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:GardenViewModel">
-      <premViews:GardenView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:RoofSolarViewModel">
-      <premViews:RoofSolarView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:StairsViewModel">
-      <premViews:StairsView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:PlasterViewModel">
-      <premViews:PlasterView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:ScreedViewModel">
-      <premViews:ScreedView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:InsulationViewModel">
-      <premViews:InsulationView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:CableSizingViewModel">
-      <premViews:CableSizingView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:GroutViewModel">
-      <premViews:GroutView />
-    </DataTemplate>
-    <!-- Profi-Werkzeuge VMs → Views -->
-    <DataTemplate DataType="premVm:HourlyRateViewModel">
-      <premViews:HourlyRateView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:MaterialCompareViewModel">
-      <premViews:MaterialCompareView />
-    </DataTemplate>
-    <DataTemplate DataType="premVm:AreaMeasureViewModel">
-      <premViews:AreaMeasureView />
-    </DataTemplate>
-    <!-- Business VMs → Views -->
-    <DataTemplate DataType="vm:ProjectTemplatesViewModel">
-      <views:ProjectTemplatesView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:QuoteViewModel">
-      <views:QuoteView />
-    </DataTemplate>
-  </UserControl.DataTemplates>
+  <!--
+    DataTemplates entfernt: Globaler ViewLocator (App.axaml) löst alle Calculator-VMs per Konvention auf
+    (HandwerkerRechner.ViewModels.Floor.TileCalculatorViewModel → HandwerkerRechner.Views.Floor.TileCalculatorView).
+    Spart Boilerplate + Wartungslast bei neuen Calculatoren.
+  -->
 
   <Panel>
   <Grid AutomationProperties.AutomationId="Main_RootGrid" RowDefinitions="*,Auto,Auto">
@@ -348,7 +284,7 @@
                           Command="{Binding NavigateToWallpaperCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="60" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="30" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -400,7 +336,7 @@
                           Command="{Binding NavigateToPaintCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="120" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="60" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -452,7 +388,7 @@
                           Command="{Binding NavigateToFlooringCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="180" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="90" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -503,7 +439,7 @@
                           Command="{Binding NavigateToConcreteCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="240" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="120" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -571,7 +507,7 @@
                           Command="{Binding NavigateToDrywallCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="300" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="150" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -603,7 +539,7 @@
                       </StackPanel>
                       <!-- Favoriten-Stern: gefüllt (Gold) wenn Favorit, Outline sonst -->
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="DrywallPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -624,7 +560,7 @@
                           Command="{Binding NavigateToElectricalCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="360" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="180" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -655,7 +591,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="ElectricalPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -676,7 +612,7 @@
                           Command="{Binding NavigateToMetalCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="420" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="210" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -707,7 +643,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="MetalPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -728,7 +664,7 @@
                           Command="{Binding NavigateToGardenCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="480" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="240" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -759,7 +695,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="GardenPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -780,7 +716,7 @@
                           Command="{Binding NavigateToRoofSolarCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="540" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="270" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -811,7 +747,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="RoofSolarPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -832,7 +768,7 @@
                           Command="{Binding NavigateToStairsCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="600" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="300" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -863,7 +799,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="StairsPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -884,7 +820,7 @@
                           Command="{Binding NavigateToPlasterCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="660" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="330" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -915,7 +851,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="PlasterPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -936,7 +872,7 @@
                           Command="{Binding NavigateToScreedCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="720" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="360" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -967,7 +903,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="ScreedPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -988,7 +924,7 @@
                           Command="{Binding NavigateToInsulationCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="780" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="390" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -1019,7 +955,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="InsulationPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -1040,7 +976,7 @@
                           Command="{Binding NavigateToCableSizingCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="840" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="420" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -1071,7 +1007,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="CableSizingPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -1092,7 +1028,7 @@
                           Command="{Binding NavigateToGroutCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="900" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="450" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -1123,7 +1059,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="GroutPage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -1143,7 +1079,7 @@
                           Command="{Binding NavigateToHourlyRateCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="960" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="480" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -1173,7 +1109,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="HourlyRatePage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -1194,7 +1130,7 @@
                           Command="{Binding NavigateToMaterialCompareCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="1020" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="510" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -1224,7 +1160,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="MaterialComparePage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -1245,7 +1181,7 @@
                           Command="{Binding NavigateToAreaMeasureCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="1080" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="540" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -1275,7 +1211,7 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
-                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-4,-4,0,0"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
                               Command="{Binding ToggleFavoriteCommand}" CommandParameter="AreaMeasurePage">
                         <Panel>
                           <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
@@ -1305,7 +1241,7 @@
                           Command="{Binding NavigateToTemplatesCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="1140" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="570" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -1335,7 +1271,7 @@
                           Command="{Binding NavigateToQuotesCommand}">
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.96"/>
-                      <behaviors:FadeInBehavior Delay="1200" Duration="250"/>
+                      <behaviors:FadeInBehavior Delay="600" Duration="250"/>
                     </i:Interaction.Behaviors>
                     <Button.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">

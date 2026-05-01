@@ -38,13 +38,25 @@ public static class InsulationVisualization
     private static readonly SKColor _mineralWoolColor = new(0xFF, 0xF9, 0xC4);  // Mineralwolle - Gelb
     private static readonly SKColor _woodFiberColor = new(0xD7, 0xCC, 0xC8);    // Holzfaser - Braun
 
+    // Pre-computed Random-Werte (statisch, deterministisch via Seed 42, keine Frame-Allokationen mehr)
+    // Layout: EPS=90 Werte (30×3), XPS=keine, MineralWool=8 Werte, WoodFiber=60 Werte (20×3)
+    private static readonly float[] _epsRandoms = PrecomputeRandoms(90);
+    private static readonly float[] _mineralWoolRandoms = PrecomputeRandoms(8);
+    private static readonly float[] _woodFiberRandoms = PrecomputeRandoms(60);
+
+    private static float[] PrecomputeRandoms(int count)
+    {
+        var rng = new Random(42);
+        var arr = new float[count];
+        for (int i = 0; i < count; i++)
+            arr[i] = (float)rng.NextDouble();
+        return arr;
+    }
+
     public static void Render(SKCanvas canvas, SKRect bounds,
         float areaSqm, float thicknessCm, int insulationType, float lambda)
     {
         if (areaSqm <= 0 || thicknessCm <= 0) return;
-
-        // Lokale Random mit festem Seed: deterministisch pro Render, kein "Wandern"
-        var _rng = new Random(42);
 
         _animation.UpdateAnimation();
         float progress = _animation.AnimationProgress;
@@ -103,7 +115,7 @@ public static class InsulationVisualization
         canvas.DrawRect(wallX + wallW, wallY, insulW, wallH, _insulationFill);
 
         // Dämmstoff-Textur je nach Typ
-        DrawInsulationTexture(canvas, wallX + wallW, wallY, insulW, wallH, insulationType, _rng);
+        DrawInsulationTexture(canvas, wallX + wallW, wallY, insulW, wallH, insulationType);
 
         // Umriss Gesamtquerschnitt
         _strokePaint.Color = SkiaThemeHelper.TextSecondary;
@@ -131,14 +143,15 @@ public static class InsulationVisualization
         canvas.Restore();
     }
 
+    // Wiederverwendeter Path - statt 8 SKPath-Allokationen pro Frame im Mineralwolle-Pfad
+    private static readonly SKPath _scratchPath = new();
+
     /// <summary>
-    /// Zeichnet Typ-spezifische Texturen in die Dämmschicht
+    /// Zeichnet Typ-spezifische Texturen in die Dämmschicht (nutzt pre-computed Random-Werte).
     /// </summary>
-    private static void DrawInsulationTexture(SKCanvas canvas, float x, float y, float w, float h, int insulationType, Random _rng)
+    private static void DrawInsulationTexture(SKCanvas canvas, float x, float y, float w, float h, int insulationType)
     {
         if (w < 4f || h < 4f) return;
-
-        // Deterministische Positionen
 
         switch (insulationType)
         {
@@ -146,9 +159,9 @@ public static class InsulationVisualization
                 _texturePaint.Color = SkiaThemeHelper.WithAlpha(new SKColor(0xDD, 0xDD, 0xDD), 100);
                 for (int i = 0; i < 30; i++)
                 {
-                    float cx = x + 2f + (float)_rng.NextDouble() * (w - 4f);
-                    float cy = y + 2f + (float)_rng.NextDouble() * (h - 4f);
-                    float r = 1.2f + (float)_rng.NextDouble() * 1.5f;
+                    float cx = x + 2f + _epsRandoms[i * 3] * (w - 4f);
+                    float cy = y + 2f + _epsRandoms[i * 3 + 1] * (h - 4f);
+                    float r = 1.2f + _epsRandoms[i * 3 + 2] * 1.5f;
                     canvas.DrawCircle(cx, cy, r, _texturePaint);
                 }
                 break;
@@ -161,22 +174,22 @@ public static class InsulationVisualization
                     float ly = y + i * lineSpacing;
                     canvas.DrawLine(x + 2f, ly, x + w - 2f, ly, _strokePaint);
                 }
-                _strokePaint.Color = SkiaThemeHelper.TextSecondary; // Zurücksetzen
+                _strokePaint.Color = SkiaThemeHelper.TextSecondary;
                 break;
 
             case 2: // Mineralwolle: Wellenlinien (Faserstruktur)
                 _strokePaint.Color = SkiaThemeHelper.WithAlpha(new SKColor(0xFF, 0xE0, 0x82), 80);
                 for (int i = 0; i < 8; i++)
                 {
-                    float wy = y + 8f + (float)_rng.NextDouble() * (h - 16f);
-                    using var path = new SKPath();
-                    path.MoveTo(x + 2f, wy);
+                    float wy = y + 8f + _mineralWoolRandoms[i] * (h - 16f);
+                    _scratchPath.Reset();
+                    _scratchPath.MoveTo(x + 2f, wy);
                     for (float wx = x + 6f; wx < x + w - 2f; wx += 8f)
                     {
                         float offset = ((int)((wx - x) / 8f) % 2 == 0) ? -2f : 2f;
-                        path.LineTo(wx, wy + offset);
+                        _scratchPath.LineTo(wx, wy + offset);
                     }
-                    canvas.DrawPath(path, _strokePaint);
+                    canvas.DrawPath(_scratchPath, _strokePaint);
                 }
                 _strokePaint.Color = SkiaThemeHelper.TextSecondary;
                 break;
@@ -185,9 +198,9 @@ public static class InsulationVisualization
                 _strokePaint.Color = SkiaThemeHelper.WithAlpha(new SKColor(0xA1, 0x88, 0x7F), 80);
                 for (int i = 0; i < 20; i++)
                 {
-                    float fx = x + 3f + (float)_rng.NextDouble() * (w - 6f);
-                    float fy = y + 3f + (float)_rng.NextDouble() * (h - 10f);
-                    float fLen = 3f + (float)_rng.NextDouble() * 5f;
+                    float fx = x + 3f + _woodFiberRandoms[i * 3] * (w - 6f);
+                    float fy = y + 3f + _woodFiberRandoms[i * 3 + 1] * (h - 10f);
+                    float fLen = 3f + _woodFiberRandoms[i * 3 + 2] * 5f;
                     canvas.DrawLine(fx, fy, fx, fy + fLen, _strokePaint);
                 }
                 _strokePaint.Color = SkiaThemeHelper.TextSecondary;

@@ -37,7 +37,8 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
 
     #region Produkt A
 
-    [ObservableProperty] private string _productAName = "Produkt A";
+    // Default wird im Konstruktor aus Localization gesetzt (sonst zeigen alle 6 Sprachen "Produkt A")
+    [ObservableProperty] private string _productAName = "";
     [ObservableProperty] private double _priceA = 25.0;
     [ObservableProperty] private double _consumptionA = 1.0;
     [ObservableProperty] private double _wasteA = 10.0;
@@ -50,7 +51,8 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
 
     #region Produkt B
 
-    [ObservableProperty] private string _productBName = "Produkt B";
+    // Default wird im Konstruktor aus Localization gesetzt
+    [ObservableProperty] private string _productBName = "";
     [ObservableProperty] private double _priceB = 35.0;
     [ObservableProperty] private double _consumptionB = 0.8;
     [ObservableProperty] private double _wasteB = 10.0;
@@ -110,6 +112,10 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
         _historyService = historyService;
         _exportService = exportService;
         _fileShareService = fileShareService;
+
+        // Defaults nach Sprache (sonst zeigen alle 6 Sprachen "Produkt A/B")
+        _productAName = _localization.GetString("DefaultProductA") ?? "Product A";
+        _productBName = _localization.GetString("DefaultProductB") ?? "Product B";
     }
 
     private void ScheduleAutoCalculate()
@@ -120,31 +126,44 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
             _debounceTimer.Change(300, Timeout.Infinite);
     }
 
+    [ObservableProperty] private bool _isCalculating;
+
     [RelayCommand]
     private async Task Calculate()
     {
-        if (Area <= 0 || PriceA <= 0 || PriceB <= 0 || ConsumptionA <= 0 || ConsumptionB <= 0)
+        // Reentrancy-Schutz
+        if (IsCalculating) return;
+        try
         {
-            HasResult = false;
-            return;
+            IsCalculating = true;
+
+            if (Area <= 0 || PriceA <= 0 || PriceB <= 0 || ConsumptionA <= 0 || ConsumptionB <= 0)
+            {
+                HasResult = false;
+                return;
+            }
+
+            // Gesamtkosten = Fläche x Verbrauch/m² x (1 + Verschnitt%) x Preis
+            TotalCostA = Area * ConsumptionA * (1 + WasteA / 100) * PriceA;
+            TotalCostB = Area * ConsumptionB * (1 + WasteB / 100) * PriceB;
+
+            SavingsAmount = Math.Abs(TotalCostA - TotalCostB);
+            var expensive = Math.Max(TotalCostA, TotalCostB);
+            SavingsPercent = expensive > 0 ? (SavingsAmount / expensive) * 100 : 0;
+
+            IsAcheaper = TotalCostA <= TotalCostB;
+            CheaperProduct = IsAcheaper ? ProductAName : ProductBName;
+
+            HasResult = true;
+            CalculationPerformed?.Invoke();
+
+            // In History speichern
+            await SaveToHistoryAsync();
         }
-
-        // Gesamtkosten = Fläche x Verbrauch/m² x (1 + Verschnitt%) x Preis
-        TotalCostA = Area * ConsumptionA * (1 + WasteA / 100) * PriceA;
-        TotalCostB = Area * ConsumptionB * (1 + WasteB / 100) * PriceB;
-
-        SavingsAmount = Math.Abs(TotalCostA - TotalCostB);
-        var expensive = Math.Max(TotalCostA, TotalCostB);
-        SavingsPercent = expensive > 0 ? (SavingsAmount / expensive) * 100 : 0;
-
-        IsAcheaper = TotalCostA <= TotalCostB;
-        CheaperProduct = IsAcheaper ? ProductAName : ProductBName;
-
-        HasResult = true;
-        CalculationPerformed?.Invoke();
-
-        // In History speichern
-        await SaveToHistoryAsync();
+        finally
+        {
+            IsCalculating = false;
+        }
     }
 
     /// <summary>Berechnung in die History speichern</summary>
@@ -174,7 +193,7 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
                 }
             };
 
-            await _historyService.AddCalculationAsync("MaterialCompareCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("MaterialCompareCalculator", title, data);
         }
         catch (Exception ex)
         {
@@ -315,12 +334,15 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
         var project = await _projectService.LoadProjectAsync(projectId);
         if (project == null) return;
 
+        var defaultA = _localization.GetString("DefaultProductA") ?? "Product A";
+        var defaultB = _localization.GetString("DefaultProductB") ?? "Product B";
+
         Area = project.GetValue<double>("Area", 20.0);
-        ProductAName = project.GetValue<string>("ProductAName", "Produkt A") ?? "Produkt A";
+        ProductAName = project.GetValue<string>("ProductAName", defaultA) ?? defaultA;
         PriceA = project.GetValue<double>("PriceA", 25.0);
         ConsumptionA = project.GetValue<double>("ConsumptionA", 1.0);
         WasteA = project.GetValue<double>("WasteA", 10.0);
-        ProductBName = project.GetValue<string>("ProductBName", "Produkt B") ?? "Produkt B";
+        ProductBName = project.GetValue<string>("ProductBName", defaultB) ?? defaultB;
         PriceB = project.GetValue<double>("PriceB", 35.0);
         ConsumptionB = project.GetValue<double>("ConsumptionB", 0.8);
         WasteB = project.GetValue<double>("WasteB", 10.0);

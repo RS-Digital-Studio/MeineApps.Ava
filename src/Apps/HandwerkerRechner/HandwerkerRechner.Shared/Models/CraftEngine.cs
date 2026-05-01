@@ -1,10 +1,39 @@
 namespace HandwerkerRechner.Models;
 
 /// <summary>
-/// Berechnungs-Engine für alle Handwerker-Rechner
+/// Berechnungs-Engine für alle Handwerker-Rechner.
+/// Schützt gegen User-Input-Extremwerte (Infinity/NaN/OverflowException) durch Plausibilitäts-Limits.
 /// </summary>
 public sealed class CraftEngine
 {
+    /// <summary>
+    /// Plausibilitäts-Limits gegen Crash-Inputs (User tippt 1e308 → Infinity → Math.Ceiling wirft).
+    /// Werte sind großzügig dimensioniert, decken alle realistischen Handwerker-Szenarien ab.
+    /// </summary>
+    private static class Limits
+    {
+        public const double MaxLengthM = 10_000;        // 10 km Wandlänge — mehr als jedes Bauwerk
+        public const double MaxAreaSqm = 1_000_000;     // 1 km² Fläche
+        public const double MaxThicknessMm = 10_000;    // 10 m Putz-/Dämmstärke
+        public const double MaxThicknessCm = 1_000;
+        public const double MaxAmps = 100_000;          // 100 kA — Großindustrie
+        public const double MaxVolts = 1_000_000;       // 1 MV — Hochspannung
+        public const double MaxWatts = 100_000_000;     // 100 MW
+        public const double MaxKg = 10_000_000;
+        public const double MaxCount = 1_000_000;       // Stück
+    }
+
+    /// <summary>
+    /// Begrenzt einen User-Input auf [minValue, maxValue]. Schützt vor Infinity/NaN-Crashes.
+    /// </summary>
+    private static double Clamp(double value, double maxValue, double minValue = 0.001)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value)) return minValue;
+        if (value < minValue) return minValue;
+        if (value > maxValue) return maxValue;
+        return value;
+    }
+
     #region Boden & Wand (FREE)
 
     /// <summary>
@@ -18,10 +47,16 @@ public sealed class CraftEngine
     /// <returns>Anzahl benötigter Fliesen</returns>
     public TileResult CalculateTiles(double roomLength, double roomWidth, double tileLength, double tileWidth, double wastePercent = 10)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        roomLength = Clamp(roomLength, Limits.MaxLengthM);
+        roomWidth = Clamp(roomWidth, Limits.MaxLengthM);
+        tileLength = Clamp(tileLength, 1000); // 10m große Fliese als oberes Plausibilitätsmaß
+        tileWidth = Clamp(tileWidth, 1000);
+        wastePercent = Clamp(wastePercent, 100, 0); // Verschnitt 0-100%
+
         var roomArea = roomLength * roomWidth;
         var tileArea = (tileLength / 100) * (tileWidth / 100);
         if (tileArea <= 0) tileArea = 0.001; // Schutz gegen Division durch 0
-        wastePercent = Math.Max(0, wastePercent); // Negativer Verschnitt nicht erlaubt
         var tilesNeeded = roomArea / tileArea;
         var tilesWithWaste = tilesNeeded * (1 + wastePercent / 100);
 
@@ -173,29 +208,32 @@ public sealed class CraftEngine
     #region Elektriker (PREMIUM)
 
     /// <summary>
-    /// Berechnet Spannungsabfall in Kabeln
+    /// Berechnet Spannungsabfall in Kabeln (1-Phasen-Wechselstrom oder 3-Phasen-Drehstrom).
     /// </summary>
-    /// <param name="voltage">Spannung in V</param>
+    /// <param name="voltage">Spannung in V (z.B. 230 für 1-Phasen, 400 für 3-Phasen)</param>
     /// <param name="current">Strom in A</param>
     /// <param name="length">Kabellänge (einfach) in m</param>
     /// <param name="crossSection">Querschnitt in mm²</param>
     /// <param name="isCopper">true = Kupfer, false = Aluminium</param>
-    /// <returns>Spannungsabfall in V und %</returns>
-    public VoltageDropResult CalculateVoltageDrop(double voltage, double current, double length, double crossSection, bool isCopper = true)
+    /// <param name="isThreePhase">true = Drehstrom (Faktor √3), false = Wechselstrom (Faktor 2 für Hin-/Rückleiter)</param>
+    public VoltageDropResult CalculateVoltageDrop(double voltage, double current, double length,
+        double crossSection, bool isCopper = true, bool isThreePhase = false)
     {
         // Spezifischer Widerstand: Kupfer = 0.0178, Aluminium = 0.0287 Ohm*mm²/m
         var resistivity = isCopper ? 0.0178 : 0.0287;
 
-        // Formel: U = 2 * I * L * rho / A (Faktor 2 für Hin- und Rückleiter)
-        if (crossSection <= 0) crossSection = 0.001; // Schutz gegen Division durch 0
-        var voltageDrop = 2 * current * length * resistivity / crossSection;
-        var percentDrop = voltage > 0 ? (voltageDrop / voltage) * 100 : 0; // Schutz gegen Division durch 0
+        // 1-Phasen: U = 2 * I * L * rho / A (Hin- + Rückleiter)
+        // 3-Phasen: U = sqrt(3) * I * L * rho / A (Drehstrom-Sternpunkt)
+        if (crossSection <= 0) crossSection = 0.001;
+        var phaseFactor = isThreePhase ? Math.Sqrt(3.0) : 2.0;
+        var voltageDrop = phaseFactor * current * length * resistivity / crossSection;
+        var percentDrop = voltage > 0 ? (voltageDrop / voltage) * 100 : 0;
 
         return new VoltageDropResult
         {
             VoltageDrop = voltageDrop,
             PercentDrop = percentDrop,
-            IsAcceptable = percentDrop <= 3, // Max 3% nach VDE
+            IsAcceptable = percentDrop <= 3, // 3% Standard-Limit (Beleuchtung); für Steckdosen sind bis 5% zulässig
             Voltage = voltage,
             Current = current,
             Length = length,
@@ -650,8 +688,8 @@ public sealed class CraftEngine
     /// </summary>
     /// <param name="areaSqm">Wandfläche in m²</param>
     /// <param name="thicknessMm">Putzdicke in mm</param>
-    /// <param name="plasterType">Putzart: Innen/Außen/Kalk/Gips</param>
-    public PlasterResult CalculatePlaster(double areaSqm, double thicknessMm, string plasterType)
+    /// <param name="plasterType">Putzart als Enum (typsicher statt string-Routing)</param>
+    public PlasterResult CalculatePlaster(double areaSqm, double thicknessMm, PlasterType plasterType)
     {
         if (areaSqm <= 0) areaSqm = 0.1;
         if (thicknessMm <= 0) thicknessMm = 1;
@@ -659,10 +697,10 @@ public sealed class CraftEngine
         // Verbrauch pro m² und mm Dicke (kg/m²/mm)
         var densityPerMmPerSqm = plasterType switch
         {
-            "Außen" => 1.2,  // Zementputz
-            "Kalk" => 0.9,   // Kalkputz
-            "Gips" => 0.8,   // Gipsputz
-            _ => 1.0          // Innenputz (Kalk-Zement)
+            PlasterType.Exterior => 1.2,  // Zementputz Außen
+            PlasterType.Lime => 0.9,      // Kalkputz
+            PlasterType.Gypsum => 0.8,    // Gipsputz
+            _ => 1.0                       // Innenputz (Kalk-Zement)
         };
 
         var totalKg = areaSqm * thicknessMm * densityPerMmPerSqm;
@@ -687,8 +725,8 @@ public sealed class CraftEngine
     /// </summary>
     /// <param name="areaSqm">Bodenfläche in m²</param>
     /// <param name="thicknessCm">Estrichdicke in cm</param>
-    /// <param name="screedType">Estrich-Typ: Zement/Fließ/Anhydrit</param>
-    public ScreedResult CalculateScreed(double areaSqm, double thicknessCm, string screedType)
+    /// <param name="screedType">Estrich-Typ als Enum (typsicher statt string-Routing)</param>
+    public ScreedResult CalculateScreed(double areaSqm, double thicknessCm, ScreedType screedType)
     {
         if (areaSqm <= 0) areaSqm = 0.1;
         if (thicknessCm <= 0) thicknessCm = 0.1;
@@ -698,9 +736,9 @@ public sealed class CraftEngine
         // Dichte je nach Estrich-Typ (kg/m³)
         var density = screedType switch
         {
-            "Fließ" => 2000.0,
-            "Anhydrit" => 2200.0,
-            _ => 2100.0  // Zement
+            ScreedType.Liquid => 2000.0,      // Fließestrich
+            ScreedType.Anhydrite => 2200.0,   // Anhydrit
+            _ => 2100.0                        // Zement
         };
 
         var weightKg = volumeM3 * density;
@@ -797,7 +835,8 @@ public sealed class CraftEngine
     /// <param name="voltageV">Nennspannung (230 oder 400V)</param>
     /// <param name="materialType">0=Kupfer, 1=Aluminium</param>
     /// <param name="maxDropPercent">Maximaler Spannungsabfall in % (Standard 3%)</param>
-    public CableSizingResult CalculateCableSize(double currentAmps, double lengthM, double voltageV, int materialType, double maxDropPercent = 3.0)
+    public CableSizingResult CalculateCableSize(double currentAmps, double lengthM, double voltageV,
+        int materialType, double maxDropPercent = 3.0, bool isThreePhase = false)
     {
         if (currentAmps <= 0) currentAmps = 0.1;
         if (lengthM <= 0) lengthM = 0.1;
@@ -811,12 +850,15 @@ public sealed class CraftEngine
             _ => 0.0178   // Kupfer
         };
 
-        // Formel: A = (2 × I × L × ρ) / (U × ΔU%/100)
-        double minCrossSection = (2 * currentAmps * lengthM * resistivity) / (voltageV * maxDropPercent / 100.0);
+        // Phasen-Faktor: 1-Phasen=2 (Hin-/Rückleiter), 3-Phasen=sqrt(3) (Drehstrom)
+        double phaseFactor = isThreePhase ? Math.Sqrt(3.0) : 2.0;
+
+        // Formel: A = (Faktor × I × L × ρ) / (U × ΔU%/100)
+        double minCrossSection = (phaseFactor * currentAmps * lengthM * resistivity) / (voltageV * maxDropPercent / 100.0);
 
         // Standardquerschnitte nach DIN VDE
         double[] standardSizes = { 1.5, 2.5, 4.0, 6.0, 10.0, 16.0, 25.0, 35.0, 50.0, 70.0, 95.0, 120.0 };
-        double recommendedSize = standardSizes[^1]; // Fallback: größter
+        double recommendedSize = standardSizes[^1];
         foreach (var size in standardSizes)
         {
             if (size >= minCrossSection)
@@ -827,10 +869,10 @@ public sealed class CraftEngine
         }
 
         // Tatsächlicher Spannungsabfall mit empfohlenem Querschnitt
-        double actualDropV = (2 * currentAmps * lengthM * resistivity) / recommendedSize;
+        double actualDropV = (phaseFactor * currentAmps * lengthM * resistivity) / recommendedSize;
         double actualDropPercent = (actualDropV / voltageV) * 100;
 
-        // VDE-konform: max 3% für Steckdosen, max 5% für Beleuchtung
+        // VDE-konform: DIN VDE 0100-520 - max 3% für Beleuchtung, max 5% für Steckdosen/Andere
         bool isVdeCompliant = actualDropPercent <= maxDropPercent;
 
         return new CableSizingResult
@@ -1074,11 +1116,33 @@ public record StairsResult
     public bool IsDinCompliant { get; init; }   // DIN 18065 konform
 }
 
+public enum PlasterType
+{
+    /// <summary>Innenputz (Kalk-Zement) — Standard</summary>
+    Interior = 0,
+    /// <summary>Außenputz (Zementputz) — höhere Dichte</summary>
+    Exterior = 1,
+    /// <summary>Kalkputz — atmungsaktiv</summary>
+    Lime = 2,
+    /// <summary>Gipsputz — Innenbereich, leicht</summary>
+    Gypsum = 3
+}
+
+public enum ScreedType
+{
+    /// <summary>Zementestrich — Standard</summary>
+    Cement = 0,
+    /// <summary>Fließestrich (selbstnivellierend)</summary>
+    Liquid = 1,
+    /// <summary>Anhydrit-Estrich (Calciumsulfat)</summary>
+    Anhydrite = 2
+}
+
 public record PlasterResult
 {
     public double Area { get; init; }
     public double ThicknessMm { get; init; }
-    public string PlasterType { get; init; } = "";
+    public PlasterType PlasterType { get; init; }
     public double PlasterKg { get; init; }
     public int BagsNeeded { get; init; }
 }
@@ -1087,7 +1151,7 @@ public record ScreedResult
 {
     public double Area { get; init; }
     public double ThicknessCm { get; init; }
-    public string ScreedType { get; init; } = "";
+    public ScreedType ScreedType { get; init; }
     public double VolumeM3 { get; init; }
     public double WeightKg { get; init; }
     public int BagsNeeded { get; init; }

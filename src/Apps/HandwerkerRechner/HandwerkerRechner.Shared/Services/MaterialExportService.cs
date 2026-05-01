@@ -167,6 +167,15 @@ public sealed class MaterialExportService : IMaterialExportService
 
     public Task<string> ExportToCsvAsync(string calculatorType, Dictionary<string, string> inputs, Dictionary<string, string> results)
     {
+        // Lokalisierte Header (vor Task.Run wegen Localization-Service-Singleton)
+        var typeLabel = _localization.GetString("ExportType") ?? "Type";
+        var dateLabel = _localization.GetString("ExportDate") ?? "Date";
+        var parameterLabel = _localization.GetString("ExportParameter") ?? "Parameter";
+        var valueLabel = _localization.GetString("ExportValue") ?? "Value";
+        var resultLabel = _localization.GetString("ExportResult") ?? "Result";
+        var inputsLabel = _localization.GetString("RoomDimensions") ?? "Inputs";
+        var resultsHeader = _localization.GetString("Result") ?? "Results";
+
         return Task.Run(() =>
         {
             var sb = new System.Text.StringBuilder();
@@ -174,24 +183,22 @@ public sealed class MaterialExportService : IMaterialExportService
             // UTF-8 BOM + Excel-Semikolon-Direktive
             sb.AppendLine("sep=;");
 
-            // Header
-            sb.AppendLine($"Typ;{calculatorType}");
-            sb.AppendLine($"Datum;{DateTime.Now:dd.MM.yyyy HH:mm}");
+            // Header (lokalisiert)
+            sb.AppendLine($"{EscapeCsv(typeLabel)};{EscapeCsv(calculatorType)}");
+            sb.AppendLine($"{EscapeCsv(dateLabel)};{DateTime.Now:yyyy-MM-dd HH:mm}");
             sb.AppendLine();
 
             // Eingaben
-            var inputsLabel = _localization.GetString("RoomDimensions") ?? "Eingaben";
-            sb.AppendLine($"{inputsLabel};;");
-            sb.AppendLine("Parameter;Wert");
+            sb.AppendLine($"{EscapeCsv(inputsLabel)};;");
+            sb.AppendLine($"{EscapeCsv(parameterLabel)};{EscapeCsv(valueLabel)}");
             foreach (var input in inputs)
                 sb.AppendLine($"{EscapeCsv(input.Key)};{EscapeCsv(input.Value)}");
 
             sb.AppendLine();
 
             // Ergebnisse
-            var resultLabel = _localization.GetString("Result") ?? "Ergebnisse";
-            sb.AppendLine($"{resultLabel};;");
-            sb.AppendLine("Ergebnis;Wert");
+            sb.AppendLine($"{EscapeCsv(resultsHeader)};;");
+            sb.AppendLine($"{EscapeCsv(resultLabel)};{EscapeCsv(valueLabel)}");
             foreach (var result in results)
                 sb.AppendLine($"{EscapeCsv(result.Key)};{EscapeCsv(result.Value)}");
 
@@ -208,10 +215,19 @@ public sealed class MaterialExportService : IMaterialExportService
         });
     }
 
-    /// <summary>Escapet CSV-Werte die Semikolons oder Anführungszeichen enthalten</summary>
+    /// <summary>
+    /// Escapet CSV-Werte gegen Semikolon-/Quote-/Newline-Injection UND
+    /// gegen Excel-Formula-Injection (Werte die mit =/+/-/@ beginnen werden mit Apostroph präfixt).
+    /// </summary>
     private static string EscapeCsv(string value)
     {
         if (string.IsNullOrEmpty(value)) return "";
+
+        // Formula-Injection-Schutz: führendes =/+/-/@ in Excel-CSV als Formel interpretiert
+        var firstChar = value[0];
+        if (firstChar == '=' || firstChar == '+' || firstChar == '-' || firstChar == '@')
+            value = "'" + value;
+
         if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
             return $"\"{value.Replace("\"", "\"\"")}\"";
         return value;

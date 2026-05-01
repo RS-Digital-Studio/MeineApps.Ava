@@ -214,7 +214,9 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
                             _localization.GetString("ValueMustBePositive"));
                         return;
                     }
-                    VoltageDropResult = _engine.CalculateVoltageDrop(Voltage, Current, CableLength, CrossSection, IsCopper);
+                    // Heuristik: ab 380V Drehstrom (3-Phasen, Faktor sqrt(3) statt 2)
+                    bool isThreePhase = Voltage >= 380;
+                    VoltageDropResult = _engine.CalculateVoltageDrop(Voltage, Current, CableLength, CrossSection, IsCopper, isThreePhase);
                     PowerCostResult = null;
                     OhmsLawResult = null;
                     break;
@@ -343,7 +345,7 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
                     break;
             }
 
-            await _historyService.AddCalculationAsync(calcType, title, data);
+            _historyService.ScheduleDebouncedSave(calcType, title, data);
         }
         catch (Exception ex)
         {

@@ -109,7 +109,7 @@
                 <TextBlock Text="{Binding ConsumptionLabel}"
                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
-                <TextBox Text="{Binding ConsumptionA}" Watermark="je m²" Classes="Outlined"
+                <TextBox Text="{Binding ConsumptionA}" Watermark="/ m²" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxConsumptionA" />
               </StackPanel>
 
@@ -159,7 +159,7 @@
                 <TextBlock Text="{Binding ConsumptionLabel}"
                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
-                <TextBox Text="{Binding ConsumptionB}" Watermark="je m²" Classes="Outlined"
+                <TextBox Text="{Binding ConsumptionB}" Watermark="/ m²" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxConsumptionB" />
               </StackPanel>
 

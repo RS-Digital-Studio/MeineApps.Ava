@@ -159,10 +159,8 @@ public sealed partial class PlasterViewModel : ViewModelBase, IDisposable, ICalc
                 return;
             }
 
-            string plasterType = SelectedPlasterType switch
-            {
-                1 => "Au\u00dfen", 2 => "Kalk", 3 => "Gips", _ => "Innen"
-            };
+            // Enum-basiertes Mapping (typsicher, kein string-Vergleich in Engine)
+            var plasterType = (PlasterType)SelectedPlasterType;
 
             Result = _engine.CalculatePlaster(WallArea, ThicknessMm, plasterType);
             HasResult = true;
@@ -198,7 +196,7 @@ public sealed partial class PlasterViewModel : ViewModelBase, IDisposable, ICalc
                 } : new Dictionary<string, object>()
             };
 
-            await _historyService.AddCalculationAsync("PlasterCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("PlasterCalculator", title, data);
         }
         catch (Exception ex)
         {

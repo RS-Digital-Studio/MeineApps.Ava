@@ -359,7 +359,7 @@ public sealed partial class GardenViewModel : ViewModelBase, IDisposable, ICalcu
                     break;
             }
 
-            await _historyService.AddCalculationAsync(calcType, title, data);
+            _historyService.ScheduleDebouncedSave(calcType, title, data);
         }
         catch (Exception ex)
         {

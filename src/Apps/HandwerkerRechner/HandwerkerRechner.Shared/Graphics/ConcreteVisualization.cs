@@ -1,3 +1,4 @@
+using MeineApps.Core.Ava.Localization;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
@@ -334,14 +335,18 @@ public static class ConcreteVisualization
         float sCx = barLeft + cW + sW / 2f;
         float gCx = barLeft + cW + sW + gW / 2f;
 
-        // Verhältnis-Text in den Segmenten (wenn breit genug)
+        // Verhältnis-Text in den Segmenten (wenn breit genug, lokalisiert)
         _mixTextPaint.Color = SKColors.White.WithAlpha(200);
+        var loc = LocalizationManager.Service;
+        string cementLabel = loc?.GetString("VizCement") ?? "Cement";
+        string sandLabel = loc?.GetString("VizSand") ?? "Sand";
+        string gravelLabel = loc?.GetString("VizGravel") ?? "Gravel";
         if (cW > 25f)
-            canvas.DrawText("Zement", cCx, barY + barH / 2f + 3f, SKTextAlign.Center, _mixFont, _mixTextPaint);
+            canvas.DrawText(cementLabel, cCx, barY + barH / 2f + 3f, SKTextAlign.Center, _mixFont, _mixTextPaint);
         if (sW > 25f)
-            canvas.DrawText("Sand", sCx, barY + barH / 2f + 3f, SKTextAlign.Center, _mixFont, _mixTextPaint);
+            canvas.DrawText(sandLabel, sCx, barY + barH / 2f + 3f, SKTextAlign.Center, _mixFont, _mixTextPaint);
         if (gW > 25f)
-            canvas.DrawText("Kies", gCx, barY + barH / 2f + 3f, SKTextAlign.Center, _mixFont, _mixTextPaint);
+            canvas.DrawText(gravelLabel, gCx, barY + barH / 2f + 3f, SKTextAlign.Center, _mixFont, _mixTextPaint);
 
         // Verhältnis-Angabe darunter
         _mixTextPaint.Color = SkiaThemeHelper.TextMuted;

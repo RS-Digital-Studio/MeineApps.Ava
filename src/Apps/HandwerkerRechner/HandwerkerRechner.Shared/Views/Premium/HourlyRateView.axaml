@@ -250,34 +250,52 @@
       </StackPanel>
     </ScrollViewer>
 
-    <!-- Zeile 2: Aktions-Buttons unten -->
+    <!-- Zeile 2: 3-Button Standard Action Bar (Reset/Calculate/Save) -->
     <Border Grid.Row="2" Padding="16,12" Background="{DynamicResource BackgroundBrush}"
             AutomationProperties.AutomationId="HourlyRate_BottomBar">
       <Grid ColumnDefinitions="*,8,*,8,*">
         <Button Grid.Column="0"
+                Command="{Binding ResetCommand}"
                 Classes="Outlined"
-                Command="{Binding CalculateCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                AutomationProperties.Name="Berechnen"
-                AutomationProperties.AutomationId="HourlyRate_BtnCalculate">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="Calculator" Width="18" Height="18"
-                             Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="{loc:Translate Calculate}" VerticalAlignment="Center" />
+                AutomationProperties.Name="{loc:Translate Reset}"
+                AutomationProperties.AutomationId="HourlyRate_BtnReset">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Translate Reset}"
+                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button Grid.Column="2"
                 Classes="Primary"
+                Command="{Binding CalculateCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                AutomationProperties.Name="{loc:Translate Calculate}"
+                AutomationProperties.AutomationId="HourlyRate_BtnCalculate">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
+            <TextBlock Text="{loc:Translate Calculate}"
+                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="4"
+                Classes="Secondary"
                 Command="{Binding OpenSaveDialogCommand}"
                 IsVisible="{Binding HasResult}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                AutomationProperties.Name="Projekt speichern"
+                AutomationProperties.Name="{loc:Translate Save}"
                 AutomationProperties.AutomationId="HourlyRate_BtnSave">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />
-            <TextBlock Text="{loc:Translate Save}" VerticalAlignment="Center" />
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
+            <TextBlock Text="{loc:Translate Save}"
+                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
           </StackPanel>
         </Button>
       </Grid>

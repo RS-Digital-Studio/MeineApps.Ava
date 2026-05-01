@@ -6,6 +6,14 @@ namespace MeineApps.Core.Ava.Services;
 public interface ICalculationHistoryService
 {
     Task AddCalculationAsync(string calculatorId, string title, Dictionary<string, object> data);
+
+    /// <summary>
+    /// Plant einen History-Eintrag debounced: erst nach delayMs ohne neuen Schedule wird tatsächlich gespeichert.
+    /// Verhindert dass jede Live-Calculate-Iteration einen File-Write triggert (typ. 10-30ms Stutter pro Tastendruck).
+    /// Schedule pro calculatorId — neue Calls vom selben calculatorId resetten den Timer.
+    /// </summary>
+    void ScheduleDebouncedSave(string calculatorId, string title, Dictionary<string, object> data, int delayMs = 2000);
+
     Task<List<CalculationHistoryItem>> GetHistoryAsync(string calculatorId, int maxItems = 10);
     Task<CalculationHistoryItem?> GetCalculationAsync(string id);
     Task DeleteCalculationAsync(string id);
@@ -14,7 +22,7 @@ public interface ICalculationHistoryService
 
     /// <summary>
     /// Lädt History-Einträge aus ALLEN Rechnern, maxItemsPerCalculator pro Rechner.
-    /// Ergebnis sortiert nach CreatedAt absteigend.
+    /// Ergebnis sortiert nach CreatedAt absteigend. Liest die JSON-Files parallel (Task.WhenAll).
     /// </summary>
     Task<List<CalculationHistoryItem>> GetAllHistoryAsync(int maxItemsPerCalculator = 10);
 }

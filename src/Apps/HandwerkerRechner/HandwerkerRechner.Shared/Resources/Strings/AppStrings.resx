@@ -110,6 +110,9 @@
   <data name="WallLength" xml:space="preserve">
     <value>Wall length (m)</value>
   </data>
+  <data name="RoomPerimeter" xml:space="preserve">
+    <value>Room perimeter (m)</value>
+  </data>
   <data name="RollDimensions" xml:space="preserve">
     <value>Roll Dimensions</value>
   </data>
@@ -2439,5 +2442,56 @@ Coverage decreases on rough surfaces!</value>
   </data>
   <data name="MaxPhotosReached" xml:space="preserve">
     <value>Maximum 5 photos per project</value>
+  </data>
+
+  <!-- Visualization Labels (SkiaSharp Renderer) -->
+  <data name="VizWaste" xml:space="preserve">
+    <value>Waste</value>
+  </data>
+  <data name="VizConsumption" xml:space="preserve">
+    <value>Consumption</value>
+  </data>
+  <data name="VizMaterialCost" xml:space="preserve">
+    <value>Material cost</value>
+  </data>
+  <data name="VizIncludeReserve" xml:space="preserve">
+    <value>incl. 10% reserve</value>
+  </data>
+  <data name="VizCement" xml:space="preserve">
+    <value>Cement</value>
+  </data>
+  <data name="VizSand" xml:space="preserve">
+    <value>Sand</value>
+  </data>
+  <data name="VizGravel" xml:space="preserve">
+    <value>Gravel</value>
+  </data>
+  <data name="VizTopsoil" xml:space="preserve">
+    <value>Topsoil</value>
+  </data>
+
+  <!-- Material Export (CSV/PDF) -->
+  <data name="ExportType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="ExportDate" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="ExportParameter" xml:space="preserve">
+    <value>Parameter</value>
+  </data>
+  <data name="ExportValue" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="ExportResult" xml:space="preserve">
+    <value>Result</value>
+  </data>
+
+  <!-- Material Compare Defaults -->
+  <data name="DefaultProductA" xml:space="preserve">
+    <value>Product A</value>
+  </data>
+  <data name="DefaultProductB" xml:space="preserve">
+    <value>Product B</value>
   </data>
 </root>

@@ -52,6 +52,7 @@ public partial class MainView : UserControl
         {
             _vm.FloatingTextRequested -= OnFloatingText;
             _vm.ClipboardRequested -= OnClipboardRequested;
+            _vm.PropertyChanged -= OnVmPropertyChanged;
             _vm = null;
         }
     }
@@ -63,6 +64,7 @@ public partial class MainView : UserControl
         {
             _vm.FloatingTextRequested -= OnFloatingText;
             _vm.ClipboardRequested -= OnClipboardRequested;
+            _vm.PropertyChanged -= OnVmPropertyChanged;
         }
 
         _vm = DataContext as MainViewModel;
@@ -75,7 +77,32 @@ public partial class MainView : UserControl
 
             // Render-Timer einmalig starten wenn VM verfuegbar
             StartRenderTimer();
+
+            // Auf CurrentPage-Wechsel reagieren: Render-Timer pausieren wenn Calculator offen
+            // (Hintergrund ist verdeckt - 5fps × 5 Layer GPU-Last sparen)
+            _vm.PropertyChanged += OnVmPropertyChanged;
         }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.CurrentPage))
+            UpdateRenderTimerState();
+    }
+
+    /// <summary>
+    /// Pausiert den Background-Render-Timer wenn ein Calculator offen ist
+    /// (vom CalculatorOverlay verdeckt → keine GPU-Arbeit nötig).
+    /// </summary>
+    private void UpdateRenderTimerState()
+    {
+        if (_renderTimer == null || _vm == null) return;
+
+        bool calculatorOpen = !string.IsNullOrEmpty(_vm.CurrentPage);
+        if (calculatorOpen && _renderTimer.IsEnabled)
+            _renderTimer.Stop();
+        else if (!calculatorOpen && !_renderTimer.IsEnabled)
+            _renderTimer.Start();
     }
 
     // =====================================================================

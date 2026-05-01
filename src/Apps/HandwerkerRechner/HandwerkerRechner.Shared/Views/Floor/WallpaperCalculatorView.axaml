@@ -54,9 +54,9 @@
                        FontSize="16" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
-            <!-- Wall Length -->
+            <!-- Raumumfang (Summe aller Wandlängen, nicht nur eine Wand) -->
             <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Translate WallLength}"
+              <TextBlock Text="{loc:Translate RoomPerimeter}"
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxWallLength" Text="{Binding WallLength}"

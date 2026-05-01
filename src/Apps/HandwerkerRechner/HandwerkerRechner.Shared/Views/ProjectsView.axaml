@@ -14,18 +14,34 @@
   <!-- Panel-Wrapper: Overlays als letzte Kinder ohne ZIndex - Android Hit-Testing funktioniert korrekt -->
   <Panel>
 
-    <Grid AutomationProperties.AutomationId="Projects_RootGrid" RowDefinitions="Auto,*" Margin="16">
+    <Grid AutomationProperties.AutomationId="Projects_RootGrid" RowDefinitions="Auto,*">
 
-    <!-- Header -->
-    <TextBlock AutomationProperties.AutomationId="Projects_TxtTitle"
-               Grid.Row="0"
-               Text="{loc:Translate MyProjects}"
-               FontSize="24" FontWeight="Bold"
-               Foreground="{DynamicResource TextPrimaryBrush}"
-               Margin="0,8,0,16" />
+    <!-- Header (farbiger Gradient analog Calculator-Views: Smaragd-Cyan) -->
+    <Border Grid.Row="0"
+            Padding="16,12,16,20"
+            CornerRadius="0,0,24,24"
+            AutomationProperties.AutomationId="Projects_HeaderBorder">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#10B981" Offset="0" />
+          <GradientStop Color="#0891B2" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <mi:MaterialIcon Kind="FolderMultiple" Width="22" Height="22"
+                           Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock AutomationProperties.AutomationId="Projects_TxtTitle"
+                   Text="{loc:Translate MyProjects}"
+                   FontSize="20" FontWeight="Bold" Foreground="White"
+                   VerticalAlignment="Center" />
+      </StackPanel>
+    </Border>
 
     <!-- Content -->
-    <Panel Grid.Row="1">
+    <Panel Grid.Row="1" Margin="16,16,16,0">
 
       <!-- Loading Indicator -->
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"

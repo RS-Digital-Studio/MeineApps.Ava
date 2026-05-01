@@ -206,7 +206,7 @@ public sealed partial class InsulationViewModel : ViewModelBase, IDisposable, IC
                 } : new Dictionary<string, object>()
             };
 
-            await _historyService.AddCalculationAsync("InsulationCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("InsulationCalculator", title, data);
         }
         catch (Exception ex)
         {

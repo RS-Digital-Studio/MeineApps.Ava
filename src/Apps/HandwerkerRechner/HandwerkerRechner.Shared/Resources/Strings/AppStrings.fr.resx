@@ -110,6 +110,9 @@
   <data name="WallLength" xml:space="preserve">
     <value>Longueur du mur (m)</value>
   </data>
+  <data name="RoomPerimeter" xml:space="preserve">
+    <value>Périmètre de la pièce (m)</value>
+  </data>
   <data name="RollDimensions" xml:space="preserve">
     <value>Dimensions du rouleau</value>
   </data>
@@ -2162,5 +2165,56 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   </data>
   <data name="PremiumFeatures" xml:space="preserve">
     <value>Sans publicité vidéo • Sans bannière • Historique illimité • Export direct</value>
+  </data>
+
+  <!-- Visualization Labels (SkiaSharp Renderer) -->
+  <data name="VizWaste" xml:space="preserve">
+    <value>Perte</value>
+  </data>
+  <data name="VizConsumption" xml:space="preserve">
+    <value>Consommation</value>
+  </data>
+  <data name="VizMaterialCost" xml:space="preserve">
+    <value>Coût matériel</value>
+  </data>
+  <data name="VizIncludeReserve" xml:space="preserve">
+    <value>incl. 10% de réserve</value>
+  </data>
+  <data name="VizCement" xml:space="preserve">
+    <value>Ciment</value>
+  </data>
+  <data name="VizSand" xml:space="preserve">
+    <value>Sable</value>
+  </data>
+  <data name="VizGravel" xml:space="preserve">
+    <value>Gravier</value>
+  </data>
+  <data name="VizTopsoil" xml:space="preserve">
+    <value>Terre végétale</value>
+  </data>
+
+  <!-- Material Export (CSV/PDF) -->
+  <data name="ExportType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="ExportDate" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="ExportParameter" xml:space="preserve">
+    <value>Paramètre</value>
+  </data>
+  <data name="ExportValue" xml:space="preserve">
+    <value>Valeur</value>
+  </data>
+  <data name="ExportResult" xml:space="preserve">
+    <value>Résultat</value>
+  </data>
+
+  <!-- Material Compare Defaults -->
+  <data name="DefaultProductA" xml:space="preserve">
+    <value>Produit A</value>
+  </data>
+  <data name="DefaultProductB" xml:space="preserve">
+    <value>Produit B</value>
   </data>
 </root>

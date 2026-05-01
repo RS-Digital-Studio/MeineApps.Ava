@@ -110,6 +110,9 @@
   <data name="WallLength" xml:space="preserve">
     <value>Lunghezza parete (m)</value>
   </data>
+  <data name="RoomPerimeter" xml:space="preserve">
+    <value>Perimetro stanza (m)</value>
+  </data>
   <data name="RollDimensions" xml:space="preserve">
     <value>Dimensioni rotolo</value>
   </data>
@@ -2162,5 +2165,56 @@ Su superfici ruvide la resa diminuisce!</value>
   </data>
   <data name="PremiumFeatures" xml:space="preserve">
     <value>Senza pubblicità video • Senza banner • Cronologia illimitata • Esportazione diretta</value>
+  </data>
+
+  <!-- Visualization Labels (SkiaSharp Renderer) -->
+  <data name="VizWaste" xml:space="preserve">
+    <value>Sfrido</value>
+  </data>
+  <data name="VizConsumption" xml:space="preserve">
+    <value>Consumo</value>
+  </data>
+  <data name="VizMaterialCost" xml:space="preserve">
+    <value>Costo materiale</value>
+  </data>
+  <data name="VizIncludeReserve" xml:space="preserve">
+    <value>incl. 10% di riserva</value>
+  </data>
+  <data name="VizCement" xml:space="preserve">
+    <value>Cemento</value>
+  </data>
+  <data name="VizSand" xml:space="preserve">
+    <value>Sabbia</value>
+  </data>
+  <data name="VizGravel" xml:space="preserve">
+    <value>Ghiaia</value>
+  </data>
+  <data name="VizTopsoil" xml:space="preserve">
+    <value>Terra vegetale</value>
+  </data>
+
+  <!-- Material Export (CSV/PDF) -->
+  <data name="ExportType" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="ExportDate" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="ExportParameter" xml:space="preserve">
+    <value>Parametro</value>
+  </data>
+  <data name="ExportValue" xml:space="preserve">
+    <value>Valore</value>
+  </data>
+  <data name="ExportResult" xml:space="preserve">
+    <value>Risultato</value>
+  </data>
+
+  <!-- Material Compare Defaults -->
+  <data name="DefaultProductA" xml:space="preserve">
+    <value>Prodotto A</value>
+  </data>
+  <data name="DefaultProductB" xml:space="preserve">
+    <value>Prodotto B</value>
   </data>
 </root>

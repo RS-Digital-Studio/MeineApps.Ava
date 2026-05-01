@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerRechner.ViewModels.Premium"
              xmlns:mi="using:Material.Icons.Avalonia"
@@ -11,104 +11,138 @@
              x:DataType="vm:GroutViewModel"
              x:CompileBindings="True">
 
-  <Grid RowDefinitions="Auto,*">
-    <!-- Header -->
-    <Border Grid.Row="0" Padding="16,12">
+  <Grid RowDefinitions="Auto,*,Auto"
+        AutomationProperties.AutomationId="Grout_RootGrid">
+
+    <!-- Header (Pink Akzent, Standard-Layout: 40x40 Back-Btn, Icon-Border, CornerRadius) -->
+    <Border Grid.Row="0"
+            Padding="16,12,16,20"
+            CornerRadius="0,0,24,24"
+            AutomationProperties.AutomationId="Grout_HeaderBorder">
       <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
           <GradientStop Color="#EC4899" Offset="0" />
           <GradientStop Color="#DB2777" Offset="1" />
         </LinearGradientBrush>
       </Border.Background>
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <Button Grid.Column="0" Command="{Binding GoBackCommand}"
-                Background="Transparent" Foreground="White" Padding="4">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+      <Grid ColumnDefinitions="Auto,*">
+        <Button Command="{Binding GoBackCommand}"
+                Background="#33FFFFFF"
+                CornerRadius="20"
+                Width="40" Height="40"
+                Padding="0"
+                AutomationProperties.Name="{loc:Translate Back}"
+                AutomationProperties.AutomationId="Grout_BtnBack">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
         </Button>
-        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0">
-          <TextBlock Text="{loc:Translate CalcGrout}" FontSize="18" FontWeight="Bold" Foreground="White" />
-          <TextBlock Text="{loc:Translate CalcGroutDesc}" FontSize="12" Foreground="#DDFFFFFF" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                    Margin="12,0,0,0" VerticalAlignment="Center">
+          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+            <mi:MaterialIcon Kind="Texture" Width="22" Height="22"
+                             Foreground="White"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{loc:Translate CalcGrout}"
+                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     VerticalAlignment="Center"
+                     AutomationProperties.AutomationId="Grout_TxtTitle" />
         </StackPanel>
-        <mi:MaterialIcon Grid.Column="2" Kind="Texture" Width="28" Height="28" Foreground="#99FFFFFF" />
       </Grid>
     </Border>
 
     <!-- Content -->
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12" Margin="16,12,16,80">
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  AutomationProperties.AutomationId="Grout_ScrollViewer">
+      <StackPanel Spacing="16" Margin="16,16,16,200">
 
         <!-- Eingabe-Karte -->
-        <Border Classes="Card" CornerRadius="12" Padding="16,12">
-          <StackPanel Spacing="10">
-            <TextBlock Text="{loc:Translate GroutInputs}" FontSize="15" FontWeight="Bold"
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Grout_CardInput">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate GroutInputs}"
+                       FontSize="16" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <!-- Fläche -->
-            <Grid ColumnDefinitions="*,120">
-              <TextBlock Text="{loc:Translate GroutArea}" VerticalAlignment="Center"
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate GroutArea}"
+                         FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Grid.Column="1" Text="{Binding AreaSqm}" Watermark="m²"
-                       HorizontalContentAlignment="Right" />
-            </Grid>
+              <TextBox Text="{Binding AreaSqm}"
+                       Watermark="m²" Classes="Outlined"
+                       AutomationProperties.AutomationId="Grout_TxtBoxArea" />
+            </StackPanel>
 
             <!-- Fliesenlänge -->
-            <Grid ColumnDefinitions="*,120">
-              <TextBlock Text="{loc:Translate GroutTileLength}" VerticalAlignment="Center"
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate GroutTileLength}"
+                         FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Grid.Column="1" Text="{Binding TileLengthCm}" Watermark="cm"
-                       HorizontalContentAlignment="Right" />
-            </Grid>
+              <TextBox Text="{Binding TileLengthCm}"
+                       Watermark="cm" Classes="Outlined"
+                       AutomationProperties.AutomationId="Grout_TxtBoxTileLength" />
+            </StackPanel>
 
             <!-- Fliesenbreite -->
-            <Grid ColumnDefinitions="*,120">
-              <TextBlock Text="{loc:Translate GroutTileWidth}" VerticalAlignment="Center"
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate GroutTileWidth}"
+                         FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Grid.Column="1" Text="{Binding TileWidthCm}" Watermark="cm"
-                       HorizontalContentAlignment="Right" />
-            </Grid>
+              <TextBox Text="{Binding TileWidthCm}"
+                       Watermark="cm" Classes="Outlined"
+                       AutomationProperties.AutomationId="Grout_TxtBoxTileWidth" />
+            </StackPanel>
 
             <!-- Fugenbreite -->
-            <Grid ColumnDefinitions="*,120">
-              <TextBlock Text="{loc:Translate GroutWidth}" VerticalAlignment="Center"
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate GroutWidth}"
+                         FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Grid.Column="1" Text="{Binding GroutWidthMm}" Watermark="mm"
-                       HorizontalContentAlignment="Right" />
-            </Grid>
+              <TextBox Text="{Binding GroutWidthMm}"
+                       Watermark="mm" Classes="Outlined"
+                       AutomationProperties.AutomationId="Grout_TxtBoxWidth" />
+            </StackPanel>
 
             <!-- Fugentiefe -->
-            <Grid ColumnDefinitions="*,120">
-              <TextBlock Text="{loc:Translate GroutDepth}" VerticalAlignment="Center"
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate GroutDepth}"
+                         FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Grid.Column="1" Text="{Binding GroutDepthMm}" Watermark="mm"
-                       HorizontalContentAlignment="Right" />
-            </Grid>
+              <TextBox Text="{Binding GroutDepthMm}"
+                       Watermark="mm" Classes="Outlined"
+                       AutomationProperties.AutomationId="Grout_TxtBoxDepth" />
+            </StackPanel>
 
             <!-- Preis pro kg -->
-            <Grid ColumnDefinitions="*,120">
-              <TextBlock Text="{loc:Translate GroutPricePerKg}" VerticalAlignment="Center"
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate GroutPricePerKg}"
+                         FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Grid.Column="1" Text="{Binding PricePerKg}" Watermark="EUR/kg"
-                       HorizontalContentAlignment="Right" />
-            </Grid>
+              <TextBox Text="{Binding PricePerKg}"
+                       Watermark="EUR/kg" Classes="Outlined"
+                       AutomationProperties.AutomationId="Grout_TxtBoxPricePerKg" />
+            </StackPanel>
           </StackPanel>
         </Border>
 
         <!-- SkiaSharp Visualisierung -->
-        <Border Classes="Card" Padding="0" Height="220" Margin="0,0,0,0"
-                IsVisible="{Binding HasResult}" ClipToBounds="True" CornerRadius="12"
+        <Border Classes="Card" Padding="0" Height="220"
+                IsVisible="{Binding HasResult}" ClipToBounds="True"
                 AutomationProperties.AutomationId="Grout_CardVisualization">
           <skia:SKCanvasView x:Name="GroutCanvas" PaintSurface="OnPaintVisualization"
                              AutomationProperties.AutomationId="Grout_Canvas" />
         </Border>
 
         <!-- Ergebnis-Karte -->
-        <Border Classes="Card" CornerRadius="12" Padding="16,12"
-                IsVisible="{Binding HasResult}">
-          <StackPanel Spacing="10">
-            <TextBlock Text="{loc:Translate Results}" FontSize="15" FontWeight="Bold"
+        <Border Classes="Card StatsCard"
+                IsVisible="{Binding HasResult}"
+                AutomationProperties.AutomationId="Grout_CardResult">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate Results}"
+                       FontSize="16" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
-            <!-- Hero Value -->
+            <!-- Hero Value (Pink Gradient) -->
             <Border CornerRadius="8" Padding="12" Margin="0,4">
               <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
@@ -123,132 +157,168 @@
                     <behaviors:CountUpBehavior TargetValue="{Binding TotalKgValue}" Format="F1" Suffix=" kg" />
                   </i:Interaction.Behaviors>
                 </TextBlock>
-                <TextBlock Text="{loc:Translate GroutTotalWithReserve}" FontSize="12" TextAlignment="Center"
+                <TextBlock Text="{loc:Translate GroutTotalWithReserve}"
+                           FontSize="12" TextAlignment="Center"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </Border>
 
             <!-- Detail-Zeilen -->
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="{loc:Translate GroutConsumption}" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Grid.Column="1" Text="{Binding ConsumptionDisplay}" FontWeight="SemiBold"
+              <TextBlock Text="{loc:Translate GroutConsumption}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding ConsumptionDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="{loc:Translate UnitBuckets}" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Grid.Column="1" Text="{Binding BucketsDisplay}" FontWeight="SemiBold"
+              <TextBlock Text="{loc:Translate UnitBuckets}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding BucketsDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="{loc:Translate ResultCost}" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Grid.Column="1" Text="{Binding CostDisplay}" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{loc:Translate ResultCost}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding CostDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource PrimaryBrush}" />
             </Grid>
 
-            <!-- Share + Export -->
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,4,0,0">
-              <Button Command="{Binding ShareResultCommand}" Background="Transparent" Padding="8,6">
+            <!-- Aktions-Buttons: Share + PDF + CSV -->
+            <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
+              <Button Grid.Column="0"
+                      Command="{Binding ShareResultCommand}"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      AutomationProperties.AutomationId="Grout_BtnShare">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="ShareVariant" Width="16" Height="16"
+                  <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{loc:Translate Share}" FontSize="12"
-                             Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ShareResult}"
+                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
-              <Button Command="{Binding ExportMaterialListCommand}" Background="Transparent" Padding="8,6"
-                      IsEnabled="{Binding !IsExporting}">
+              <Button Grid.Column="2"
+                      Command="{Binding ExportMaterialListCommand}"
+                      Classes="Outlined"
+                      IsEnabled="{Binding !IsExporting}"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      AutomationProperties.AutomationId="Grout_BtnExportPdf">
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="PDF" FontSize="12"
-                             Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ExportMaterialList}"
+                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
-              <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
+              <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                      AutomationProperties.AutomationId="Grout_BtnExportCsv">
                 <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
                                  Foreground="{DynamicResource AccentBrush}" />
               </Button>
-            </StackPanel>
+            </Grid>
           </StackPanel>
         </Border>
 
       </StackPanel>
     </ScrollViewer>
 
-    <!-- Bottom Bar -->
-    <Border Grid.Row="1" VerticalAlignment="Bottom"
-            Background="{DynamicResource BackgroundBrush}"
-            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0"
-            Padding="16,8">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <Button Grid.Column="0" Command="{Binding ResetCommand}"
-                Background="Transparent" Padding="12,8">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="Refresh" Width="18" Height="18"
+    <!-- Bottom Action Bar (3-Button Standard) -->
+    <Border Grid.Row="2" Padding="16,12" Background="{DynamicResource BackgroundBrush}"
+            AutomationProperties.AutomationId="Grout_BottomBar">
+      <Grid ColumnDefinitions="*,8,*,8,*">
+        <Button Grid.Column="0"
+                Command="{Binding ResetCommand}"
+                Classes="Outlined"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                AutomationProperties.AutomationId="Grout_BtnReset">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{loc:Translate Reset}" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Translate Reset}"
+                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-
-        <Button Grid.Column="1" Command="{Binding CalculateCommand}"
-                HorizontalAlignment="Stretch" Margin="12,0"
-                Padding="0,10"
-                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
-          <Button.Background>
-            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-              <GradientStop Color="#EC4899" Offset="0" />
-              <GradientStop Color="#DB2777" Offset="1" />
-            </LinearGradientBrush>
-          </Button.Background>
-          <Button.Transitions>
-            <Transitions>
-              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
-            </Transitions>
-          </Button.Transitions>
-          <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="Calculator" Width="18" Height="18" Foreground="White" />
-            <TextBlock Text="{loc:Translate Calculate}" FontWeight="Bold" Foreground="White" />
+        <Button Grid.Column="2"
+                Command="{Binding CalculateCommand}"
+                Classes="Primary"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                AutomationProperties.AutomationId="Grout_BtnCalculate">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
+            <TextBlock Text="{loc:Translate Calculate}"
+                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-
-        <Button Grid.Column="2" Command="{Binding SaveProjectCommand}"
-                Background="Transparent" Padding="12,8"
-                IsVisible="{Binding HasResult}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18"
-                             Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="{loc:Translate Save}" Foreground="{DynamicResource AccentBrush}" />
+        <Button Grid.Column="4"
+                Classes="Secondary"
+                Command="{Binding SaveProjectCommand}"
+                IsVisible="{Binding HasResult}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                AutomationProperties.AutomationId="Grout_BtnSave">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
+            <TextBlock Text="{loc:Translate Save}"
+                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
           </StackPanel>
         </Button>
       </Grid>
     </Border>
 
-    <!-- Save Dialog Overlay -->
-    <Border Grid.Row="0" Grid.RowSpan="2"
+    <!-- Save Project Dialog Overlay -->
+    <Border Grid.Row="0" Grid.RowSpan="3"
+            ZIndex="100"
+            Background="#80000000"
             IsVisible="{Binding ShowSaveDialog}"
-            Background="#80000000">
-      <Border Classes="Card" CornerRadius="12" Padding="20"
-              MaxWidth="360" VerticalAlignment="Center" HorizontalAlignment="Center"
-              Margin="24">
+            AutomationProperties.AutomationId="Grout_SaveDialogOverlay">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="340"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              AutomationProperties.AutomationId="Grout_SaveDialogCard">
         <StackPanel Spacing="16">
-          <TextBlock Text="{loc:Translate SaveProject}" FontSize="18" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
-          <TextBox Text="{Binding SaveProjectName}" Watermark="{loc:Translate ProjectName}" />
-          <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-            <Button Command="{Binding CancelSaveProjectCommand}" Background="Transparent"
-                    Content="{loc:Translate Cancel}" />
-            <Button Command="{Binding ConfirmSaveProjectCommand}">
-              <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                  <GradientStop Color="#EC4899" Offset="0" />
-                  <GradientStop Color="#DB2777" Offset="1" />
-                </LinearGradientBrush>
-              </Button.Background>
-              <TextBlock Text="{loc:Translate Save}" Foreground="White" FontWeight="Bold" />
-            </Button>
-          </StackPanel>
+          <TextBlock Text="{loc:Translate SaveProject}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Grout_TxtSaveDialogTitle" />
+          <TextBox Text="{Binding SaveProjectName}"
+                   Watermark="{loc:Translate ProjectName}"
+                   Classes="Outlined"
+                   AutomationProperties.AutomationId="Grout_TxtBoxSaveProjectName" />
+          <Grid ColumnDefinitions="*,8,*">
+            <Button Grid.Column="0" Command="{Binding CancelSaveProjectCommand}"
+                    Classes="Outlined"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate Cancel}"
+                    AutomationProperties.AutomationId="Grout_BtnCancelSave" />
+            <Button Grid.Column="2" Command="{Binding ConfirmSaveProjectCommand}"
+                    Classes="Primary"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate Save}"
+                    AutomationProperties.AutomationId="Grout_BtnConfirmSave" />
+          </Grid>
         </StackPanel>
       </Border>
     </Border>

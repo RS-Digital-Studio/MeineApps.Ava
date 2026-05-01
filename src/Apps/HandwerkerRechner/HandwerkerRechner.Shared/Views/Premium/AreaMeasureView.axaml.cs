@@ -20,6 +20,8 @@ public partial class AreaMeasureView : CalculatorViewBase
 
     protected override void OnResultPropertyChanged()
     {
+        // HasResult bleibt nach dem 1. Calculate dauerhaft true → Dimension1-5 / Shape ändern sich
+        // bei Live-Calculate, ohne explizites InvalidateSurface würde das Canvas nicht neu rendern.
         AreaMeasureVisualization.StartAnimation();
         AreaMeasureCanvas.InvalidateSurface();
     }

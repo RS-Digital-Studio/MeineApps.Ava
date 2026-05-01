@@ -202,7 +202,7 @@
                   <TextBlock Text="{loc:Translate TilesPerSqm}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBox Text="{Binding TilesPerSqm}" Watermark="pcs/m²"
+                  <TextBox Text="{Binding TilesPerSqm}" Watermark="/ m²"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxTilesPerSqm" />
                 </StackPanel>
 

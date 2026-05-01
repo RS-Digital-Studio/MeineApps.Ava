@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.Views;
 
@@ -10,12 +9,6 @@ public partial class ProjectTemplatesView : UserControl
         InitializeComponent();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
-    {
-        base.OnDataContextChanged(e);
-
-        // Vorlagen beim ersten Anzeigen asynchron laden
-        if (DataContext is ProjectTemplatesViewModel vm)
-            _ = vm.LoadTemplatesAsync();
-    }
+    // Hinweis: LoadTemplatesAsync erfolgt zentral im MainViewModel.OnCurrentPageChanged().
+    // Hier KEIN doppelter Fire-and-forget-Aufruf - sonst Doppel-Load + ungehandelte Exceptions.
 }

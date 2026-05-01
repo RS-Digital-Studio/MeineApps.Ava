@@ -277,7 +277,7 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
                     break;
             }
 
-            await _historyService.AddCalculationAsync(calcType, title, data);
+            _historyService.ScheduleDebouncedSave(calcType, title, data);
         }
         catch (Exception ex)
         {

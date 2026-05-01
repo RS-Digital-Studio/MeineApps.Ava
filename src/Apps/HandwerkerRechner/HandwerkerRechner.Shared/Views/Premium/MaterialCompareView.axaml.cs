@@ -20,6 +20,8 @@ public partial class MaterialCompareView : CalculatorViewBase
 
     protected override void OnResultPropertyChanged()
     {
+        // HasResult bleibt nach dem 1. Calculate dauerhaft true → TotalCostA/B ändern sich
+        // bei Live-Calculate, ohne explizites InvalidateSurface würde das Canvas nicht neu rendern.
         MaterialCompareVisualization.StartAnimation();
         MaterialCompareCanvas.InvalidateSurface();
     }

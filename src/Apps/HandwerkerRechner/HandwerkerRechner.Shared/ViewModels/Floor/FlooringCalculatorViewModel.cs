@@ -267,7 +267,7 @@ public sealed partial class FlooringCalculatorViewModel : ViewModelBase, IDispos
                 } : new Dictionary<string, object>()
             };
 
-            await _historyService.AddCalculationAsync("FlooringCalculator", title, data);
+            _historyService.ScheduleDebouncedSave("FlooringCalculator", title, data);
         }
         catch (Exception ex)
         {
@@ -506,11 +506,13 @@ public sealed partial class FlooringCalculatorViewModel : ViewModelBase, IDispos
     }
 
     /// <summary>
-    /// Cleanup when ViewModel is disposed
+    /// Cleanup wenn die VM von der View weg-navigiert. API-konsistent mit Premium-VMs.
     /// </summary>
     public void Cleanup()
     {
         _unitConverter.UnitSystemChanged -= OnUnitSystemChanged;
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 
     public void Dispose()

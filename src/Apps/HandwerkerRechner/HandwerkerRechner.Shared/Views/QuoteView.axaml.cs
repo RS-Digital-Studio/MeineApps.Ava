@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using HandwerkerRechner.ViewModels;
 
 namespace HandwerkerRechner.Views;
 
@@ -10,12 +9,6 @@ public partial class QuoteView : UserControl
         InitializeComponent();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
-    {
-        base.OnDataContextChanged(e);
-
-        // Angebote beim ersten Laden asynchron abrufen
-        if (DataContext is QuoteViewModel vm)
-            _ = vm.LoadQuotesAsync();
-    }
+    // Hinweis: LoadQuotesAsync erfolgt zentral im MainViewModel.OnCurrentPageChanged().
+    // Hier KEIN doppelter Fire-and-forget-Aufruf - sonst Doppel-Load + ungehandelte Exceptions.
 }

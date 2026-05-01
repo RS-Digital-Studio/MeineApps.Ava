@@ -262,7 +262,7 @@ public sealed partial class StairsViewModel : ViewModelBase, IDisposable, ICalcu
                 } : new Dictionary<string, object>()
             };
 
-            await _historyService.AddCalculationAsync(calcType, title, data);
+            _historyService.ScheduleDebouncedSave(calcType, title, data);
         }
         catch (Exception ex)
         {

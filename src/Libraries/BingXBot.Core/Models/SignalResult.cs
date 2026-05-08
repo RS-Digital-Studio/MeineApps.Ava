@@ -46,4 +46,10 @@ public record SignalResult(
     /// Task 4.10 — Multiplikator für Position-Size (z.B. 0.5 = halbe Position für Counter-Trend-Scalps).
     /// Null = keine Anpassung (normale SK-Position).
     /// </summary>
-    decimal? PositionScaleOverride = null);
+    decimal? PositionScaleOverride = null,
+    /// <summary>
+    /// v1.5.0 Phase 2 — Asymmetrisches CRV: Wenn TP1/TP2 aus der HTF-Sequenz statt LTF stammen,
+    /// haelt dieses Feld den HTF-Timeframe (W1 oder D1) fuer UI-Badge "TP von D1".
+    /// Null = klassisches Verhalten (TP aus LTF), kein Badge anzeigen.
+    /// </summary>
+    TimeFrame? TpSourceTimeframe = null);

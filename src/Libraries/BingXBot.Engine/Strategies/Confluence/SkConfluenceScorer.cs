@@ -14,8 +14,13 @@ namespace BingXBot.Engine.Strategies.Confluence;
 /// </summary>
 public sealed class SkConfluenceScorer
 {
-    /// <summary>Maximal erreichbarer Score (Summe aller Kategorien inkl. GKL-Bonus + High-Probability-Bonus).</summary>
-    public const int MaxScore = 10;
+    /// <summary>
+    /// Maximal erreichbarer Score (Summe aller Kategorien inkl. GKL-Bonus + High-Probability-Bonus
+    /// + Funding-Rate-Bonus).
+    /// v1.5.4 Phase 7: 10 → 11 (FavorableFundingRate als +1-Kategorie). Confidence-Divisor zieht
+    /// automatisch nach (Confidence = score / MaxScore).
+    /// </summary>
+    public const int MaxScore = 11;
 
     private readonly List<(ConfluenceCategory Category, string Reason)> _hits = new();
     private int _score;

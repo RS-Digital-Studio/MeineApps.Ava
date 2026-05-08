@@ -3,6 +3,9 @@ using BingXBot.Core.Enums;
 using FluentAssertions;
 using Xunit;
 
+// Default-Tests greifen auf Legacy-Single-TF-Felder zu (Migration auf ByTf-Maps in v1.4.x).
+#pragma warning disable CS0618
+
 namespace BingXBot.Tests.Core;
 
 public class ConfigTests

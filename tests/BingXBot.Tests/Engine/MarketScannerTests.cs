@@ -10,6 +10,8 @@ using Xunit;
 
 namespace BingXBot.Tests.Engine;
 
+#pragma warning disable CS0618 // Single-TF-Legacy-Felder absichtlich verwendet — MarketScanner-Tests pruefen die Legacy-Pfade
+
 public class MarketScannerTests
 {
     [Fact]
@@ -66,3 +68,5 @@ public class MarketScannerTests
         results.Should().HaveCount(5);
     }
 }
+
+#pragma warning restore CS0618

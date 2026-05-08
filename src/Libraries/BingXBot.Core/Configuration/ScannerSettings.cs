@@ -127,6 +127,52 @@ public class ScannerSettings
     /// </summary>
     public bool EnableConfluenceOverlapDetection { get; set; } = true;
 
+    /// <summary>
+    /// v1.5.4 Phase 7 — Funding-Rate Soft-Bonus (User-Erweiterung, nicht im Buch).
+    /// True (Default) = Confluence-Score bekommt +1 wenn die Funding-Rate in Trade-Richtung
+    /// favorisiert (Long bei stark negativer Funding, Short bei stark positiver Funding).
+    /// Schwelle 0.05 % (5 Basispunkte) — siehe <c>FundingRateBonusThresholdPercent</c>.
+    /// </summary>
+    public bool EnableFundingRateBonus { get; set; } = true;
+
+    /// <summary>
+    /// v1.5.4 Phase 7 — Schwelle (in %, z.B. 0.05 = 0.05 %) ab der die Funding-Rate als
+    /// "favorabel" zaehlt. Default 0.05 % (= ~0.0005 als Decimal).
+    /// </summary>
+    public decimal FundingRateBonusThresholdPercent { get; set; } = 0.05m;
+
+    /// <summary>
+    /// v1.6.2 Phase 12 — Slippage-Guard fuer Market-Orders. Default true.
+    /// Wenn aktiv: vor jedem Market-Entry wird ein OrderBook-Snapshot geholt + Slippage
+    /// geschaetzt; bei Slippage > Schwelle wird die Order geblockt + Decision-Trail-Log mit
+    /// Reason "slippage_too_high".
+    /// </summary>
+    public bool SlippageGuardEnabled { get; set; } = true;
+
+    /// <summary>
+    /// v1.6.2 Phase 12 — Globale Default-Slippage-Schwelle in % wenn die Kategorie keinen
+    /// eigenen Wert hat. Crypto 0.10 %, Forex 0.05 %, Stock 0.30 % sind die Plan-Vorgaben.
+    /// </summary>
+    public decimal MaxSlippagePercent { get; set; } = 0.10m;
+
+    // === v1.6.6 Phase 17 — Adaptive TF-Disable ===
+    /// <summary>
+    /// True = TFs mit schlechter WinRate werden automatisch fuer 24 h aus dem Scanner-Pfad
+    /// genommen (Self-Healing). Default false — opt-in.
+    /// </summary>
+    public bool EnableAdaptiveTfDisable { get; set; } = false;
+
+    /// <summary>Mindest-Sample-Size pro TF bevor Disable triggert (Default 20).</summary>
+    public int AdaptiveTfMinTrades { get; set; } = 20;
+
+    /// <summary>
+    /// WinRate-Schwelle (0.0-1.0). Default 0.30 — TFs unter 30 % WinRate werden disabled.
+    /// </summary>
+    public decimal AdaptiveTfMinWinRate { get; set; } = 0.30m;
+
+    /// <summary>Wie lange (Stunden) bleibt eine TF disabled, bevor Re-Probing? Default 24.</summary>
+    public int AdaptiveTfDisableHours { get; set; } = 24;
+
     // ═══════════════════════════════════════════════════════════════
     // Multi-TF Standalone (15.04.2026) — ein Service, mehrere TFs parallel
     // ═══════════════════════════════════════════════════════════════
@@ -199,14 +245,18 @@ public class ScannerSettings
     // Legacy-Felder (werden weiterhin unterstützt für Backtest / UI)
     // ═══════════════════════════════════════════════════════════════
 
+    /// <summary>Legacy-Single-TF-Volume-Filter. Bevorzugt: <see cref="MinVolume24hByTf"/> für Multi-TF.</summary>
+    [Obsolete("Multi-TF ist die Wahrheit — nutze MinVolume24hByTf. Wird in v1.4.x entfernt.")]
     public decimal MinVolume24h { get; set; } = 1_000_000m;
-    /// <summary>Min. 24h-Preisänderung in %. 0.1% zeigt auch Stabilisierungsphasen (SK).</summary>
+    /// <summary>Legacy-Single-TF-Preisänderung. Bevorzugt: <see cref="MinPriceChangeByTf"/> für Multi-TF.</summary>
+    [Obsolete("Multi-TF ist die Wahrheit — nutze MinPriceChangeByTf. Wird in v1.4.x entfernt.")]
     public decimal MinPriceChange { get; set; } = 0.1m;
     /// <summary>Scanner-Default-Timeframe (nur für Backtest/UI — Live-Scanner nutzt ActiveTimeframes).</summary>
     public TimeFrame ScanTimeFrame { get; set; } = TimeFrame.H4;
     public List<string> Blacklist { get; set; } = new();
     public List<string> Whitelist { get; set; } = new();
-    /// <summary>Max. Kandidaten pro Scan (Legacy, Default für Backtest). Multi-TF-Scanner nutzt <see cref="MaxResultsByTf"/>.</summary>
+    /// <summary>Legacy-Single-TF-Result-Cap. Bevorzugt: <see cref="MaxResultsByTf"/> für Multi-TF.</summary>
+    [Obsolete("Multi-TF ist die Wahrheit — nutze MaxResultsByTf. Wird in v1.4.x entfernt.")]
     public int MaxResults { get; set; } = 100;
     /// <summary>SK = Mean-Reversion (nicht Momentum).</summary>
     public ScanMode Mode { get; set; } = ScanMode.Reversal;
@@ -229,8 +279,11 @@ public class ScannerSettings
         MarketCategory.Forex, MarketCategory.Stock
     };
 
-    /// <summary>Min. 24h-Volume für TradFi-Assets.</summary>
+    /// <summary>Legacy-Single-TF-Volume-Filter für TradFi. Bevorzugt: <see cref="MinVolume24hTradFiByTf"/>.</summary>
+    [Obsolete("Multi-TF ist die Wahrheit — nutze MinVolume24hTradFiByTf. Wird in v1.4.x entfernt.")]
     public decimal MinVolume24hTradFi { get; set; } = 1_000_000m;
+    /// <summary>Legacy-Single-TF-Preisänderung für TradFi. Bevorzugt: <see cref="MinPriceChangeTradFiByTf"/>.</summary>
+    [Obsolete("Multi-TF ist die Wahrheit — nutze MinPriceChangeTradFiByTf. Wird in v1.4.x entfernt.")]
     public decimal MinPriceChangeTradFi { get; set; } = 0.1m;
 
     /// <summary>

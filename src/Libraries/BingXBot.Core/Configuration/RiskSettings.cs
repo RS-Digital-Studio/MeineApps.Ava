@@ -108,6 +108,55 @@ public class RiskSettings
     public decimal HighProbabilityPositionMultiplier { get; set; } = 1.0m;
 
     /// <summary>
+    /// Spec §7 (B19, Phase 3) — "Heiliger Gral" als Hard-Gate (opt-in, default false).
+    /// Wenn true: Signal wird nur generiert, wenn ENTWEDER ein HTF-GKL-Hit (Multi-TF-GKL-Detector)
+    /// ODER ein Confluence-Zone-Overlap (HTF-Zielzone × LTF-BC) für die geplante Richtung vorliegt.
+    /// Filtert Low-Quality-Setups raus, die nur isoliert auf der Navigator-TF Sinn machen.
+    /// Empfohlen für aggressives Risk-Profil (5%/Trade) als Quality-Boost — kostet Trades-pro-Tag,
+    /// erhöht aber WinRate und vermeidet "Phantom-Setups" gegen die übergeordnete Marktstruktur.
+    /// </summary>
+    public bool RequireHtfConfluenceForEntry { get; set; } = false;
+
+    /// <summary>
+    /// Phase 3 — Quantitatives Confluence-Score-Hard-Gate (opt-in, default 0 = aus).
+    /// Wenn &gt; 0: Signal wird nur generiert wenn der berechnete <c>SkConfluenceScorer</c>-Score
+    /// diesen Mindestwert erreicht. Score-Skala: 0-10 (8 Standard-Kategorien à 1 Punkt + HighProbabilityZone à 2).
+    /// Empfehlung: 4-6 für aggressives Filtern. 0 = bestehende Verhalten (Score nur als Confidence-Info).
+    /// Wirkt komplementär zu <see cref="RequireHtfConfluenceForEntry"/> — beide AND-verknüpft.
+    /// </summary>
+    public int MinConfluenceScore { get; set; } = 0;
+
+    /// <summary>
+    /// v1.5.0 Phase 2 — Asymmetrisches CRV (opt-in, default false).
+    /// Wenn true UND Signal ist GKL-Setup (<see cref="SignalResult.IsGklSetup"/> = true):
+    /// SL kommt weiterhin vom LTF-Setup (Point0 + Buffer), aber TP1/TP2 werden aus der
+    /// uebergeordneten HTF-Sequenz gelesen — TP1 = HTF-Ext161.8, TP2 = HTF-Ext200.
+    /// Verbessert das Chance-Risk-Verhaeltnis bei Multi-TF-Confluence-Setups (HTF-Strecken
+    /// sind weiter, der LTF-SL bleibt eng). Buch-Spec konform.
+    /// Sanity-Guard: Wenn HTF-Ext1618 das LTF-Ext1618 um Faktor &gt; 5 ueberschreitet,
+    /// wird auf LTF-Ext1618 × 3 hard-gecappt — schuetzt vor kaputten HTF-Sequenzen.
+    /// Voraussetzung: Phase 1 Hard-Gate sollte aktiv sein, sonst gibt es nicht zwingend
+    /// pro Trade eine HTF-Sequenz.
+    /// </summary>
+    public bool UseAsymmetricCrv { get; set; } = false;
+
+    // === v1.7.0 Phase 16 — Cross-TF-Position-Pyramidisierung (User-Ausnahme, NICHT im Buch) ===
+    /// <summary>
+    /// Bewusste Buch-Abweichung. Wenn aktiv: ein offenes Long/Short kann durch ein zweites
+    /// Long/Short auf hoeherer TF um <see cref="PyramidScalePercent"/> der Original-Groesse
+    /// erweitert werden. Default false. Pro-Trader-Praxis fuer Trend-Confirmation-Adds.
+    /// </summary>
+    public bool EnableCrossTfPyramiding { get; set; } = false;
+
+    /// <summary>Anzahl zusaetzlicher Pyramid-Adds pro Position (Default 1).</summary>
+    public int PyramidMaxAddOns { get; set; } = 1;
+
+    /// <summary>
+    /// Skalierung der Add-On-Position relativ zur Original-Quantitaet (Default 0.5 = 50 %).
+    /// </summary>
+    public decimal PyramidScalePercent { get; set; } = 0.5m;
+
+    /// <summary>
     /// Task 4.7 — Runner-TP opt-in. Buch: "manche Trader lassen am 200%-Level noch 5-10%
     /// als Runner für mögliche Überschießungen (261.8% oder 423.6%) laufen und trailen den
     /// Stop-Loss aggressiv nach." Default false (Buch: opt-in, nicht Standard).
@@ -117,6 +166,18 @@ public class RiskSettings
     public decimal RunnerPercent { get; set; } = 0.10m;
     /// <summary>Task 4.7 — ATR-Multiplikator für Trailing-Stop des Runners (Buch: "aggressiv nachtrailen").</summary>
     public decimal RunnerTrailingAtrMultiplier { get; set; } = 2.0m;
+
+    /// <summary>
+    /// Maximale Lebensdauer einer pending Limit-Order in Stunden (Default 6h, 0 = aus).
+    /// Hintergrund: Wenn ein Symbol aus der Top-100 herausfällt, wird kein neues Signal mehr
+    /// generiert — die Cancel-Logik (<c>CancelStaleSequencePendingAsync</c>) löst nur bei NEUEM
+    /// Signal aus. Ohne Time-Expiry läuft die Order tagelang gegen einen toten Markt; bei
+    /// einer späten Reversal-Bewegung kann sie zufällig auf BC-Niveau füllen, obwohl die
+    /// Sequenz längst verfallen ist.
+    /// 6h ist eine konservative Obergrenze für M15/H1-Setups (typische BC-Hold-Zeit).
+    /// 0 deaktiviert den Filter (Backwards-Compat).
+    /// </summary>
+    public decimal PendingLimitOrderMaxAgeHours { get; set; } = 6m;
 
     // BUCH-ONLY: EnforceFahrplanAlignment entfernt. Das Buch kennt keinen "Trade gegen Fahrplan
     // blockieren"-Filter — die einzige Multi-TF-Regel ist die MTA in ScannerSettings

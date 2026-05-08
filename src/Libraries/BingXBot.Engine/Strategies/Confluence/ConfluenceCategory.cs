@@ -27,5 +27,13 @@ public enum ConfluenceCategory
     /// Doku-Zitat: "Die stärksten Trades entstehen genau dann, wenn verschiedene Fibonacci-Level aus
     /// völlig unterschiedlichen Zügen exakt übereinanderliegen und eine kompakte, massive Box im Chart bilden."
     /// </summary>
-    HighProbabilityZone
+    HighProbabilityZone,
+
+    /// <summary>
+    /// v1.5.4 Phase 7 — Funding-Rate-Edge (User-Erweiterung, NICHT im Buch).
+    /// +1 wenn die aktuelle Funding-Rate in Trade-Richtung favorisiert (Long bei stark negativer
+    /// Funding, Short bei stark positiver). Threshold default 0.05 % (5 Basispunkte).
+    /// Opt-in via <see cref="BingXBot.Core.Configuration.ScannerSettings.EnableFundingRateBonus"/>.
+    /// </summary>
+    FavorableFundingRate
 }

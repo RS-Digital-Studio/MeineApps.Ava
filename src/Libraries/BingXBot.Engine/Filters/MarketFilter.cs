@@ -173,26 +173,10 @@ public static class MarketFilter
         return false;
     }
 
-    /// <summary>
-    /// Prüft ob die maximale Anzahl Trades pro Tag erreicht ist.
-    /// Default: 3 Trades/Tag (SK-System Standard-Limit).
-    /// </summary>
-    public static bool IsMaxDailyTradesReached(int tradesToday, int maxTradesPerDay = 3)
-    {
-        return tradesToday >= maxTradesPerDay;
-    }
-
-    /// <summary>
-    /// Prüft ob die ATR-Volatilität extrem ist (>90. Perzentil).
-    /// Bei extremer Volatilität: Halbe Positionsgröße.
-    /// </summary>
-    public static decimal GetVolatilityScale(int atrPercentile)
-    {
-        if (atrPercentile >= 95) return 0.5m;
-        if (atrPercentile >= 90) return 0.65m;
-        if (atrPercentile >= 80) return 0.8m;
-        return 1.0m;
-    }
+    // 04.05.2026: IsMaxDailyTradesReached + GetVolatilityScale entfernt.
+    // MaxTradesPerDay wurde im Buch-Only Strip Phase 2 (21.04.2026) aus den RiskSettings entfernt
+    // (kein Buch-Konzept). GetVolatilityScale wurde nirgends mehr aufgerufen — Position-Sizing
+    // läuft über RiskManager.Check (Risk%-basiert) ohne Volatility-Scaling.
 }
 
 // ═══════════════════════════════════════════════════════════

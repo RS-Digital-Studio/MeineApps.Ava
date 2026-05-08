@@ -152,7 +152,7 @@ public class SequenceStateMachine
     // SK-VERIFY: [Abweichung #6] GKL-Historie abgearbeiteter Sequenzen beibehalten
     // Im SK-System sind GKLs abgearbeiteter Sequenzen die wertvollsten Kaufzonen.
     // Ohne Historie gehen sie bei ProcessAbgearbeitet-Reset verloren.
-    /// <summary>GKL-Zonen aller abgearbeiteten Sequenzen (50/66.7% von Point0 bis Extension1618).</summary>
+    /// <summary>GKL-Zonen aller abgearbeiteten Sequenzen (50/66.7% von Point0 bis Extension200).</summary>
     public List<CompletedGklEntry> CompletedGkls { get; } = new();
 
     // SK-VERIFY: [2.4] 100er Extension als Minimum-Gate
@@ -525,7 +525,11 @@ public class SequenceStateMachine
         {
             SmState.SucheB => SequenceState.CorrectionZone,
             SmState.Aktiviert => SequenceState.Active,
-            SmState.Abgearbeitet => SequenceState.TargetReached,
+            // 04.05.2026: SmState.Abgearbeitet wird jetzt erst bei 200% (TP2) erreicht — entspricht
+            // <see cref="SequenceState.FullyCompleted"/>. <see cref="SequenceState.TargetReached"/>
+            // (= 161.8% TP1) wird nur noch durch <see cref="SequenceDetector.UpdateState"/> aus dem
+            // aktuellen Preis abgeleitet, nicht aus der State-Machine.
+            SmState.Abgearbeitet => SequenceState.FullyCompleted,
             _ => SequenceState.Forming
         };
 
@@ -748,35 +752,34 @@ public class SequenceStateMachine
     /// <summary>
     /// Sucht Point B (Korrekturende). BUCH-REGEL DOCHT-MESSUNG (Task 4.1):
     /// PotentialB wird IMMER am Kerzendocht gemessen — Long: candle.Low, Short: candle.High.
+    ///
+    /// Strukturpunkte-Doku §4 (Punkt-0-Verteidigung): Point 0 ist die absolute Liquidity-Grenze
+    /// der Sequenz. Ein Wick UNTER Point 0 (Long) bzw. ÜBER Point 0 (Short) invalidiert die
+    /// Sequenz SOFORT — auch wenn der Body-Close noch in der Korrekturbox liegt.
+    /// (Die früher hier zitierte Masterclass-WickOnly-Toleranz wurde am 04.05.2026 zusammen
+    /// mit dem CorrectionBoxExitClassifier entfernt — sie war nicht buch-konform für die
+    /// Point-0-Grenze.)
     /// </summary>
     private bool ProcessSucheB(Candle candle, int index)
     {
         if (IsLong)
         {
-            // Trailing Low: B rutscht mit dem Preis nach unten mit (Buch: Docht-Low, Body ignorieren)
+            // Strukturpunkte-Doku §4: Wick unter Point 0 = Sequenz tot (Liquidity-Grab abgegriffen).
+            // Diese Prüfung läuft VOR dem Trailing, damit PotentialB strukturell nicht unter Point0
+            // wandern kann (B muss zwischen 0 und A liegen). Sonst rutscht PotentialB unter Point0,
+            // bRetrace springt > 100%, TryActivate-Reject — die Sequenz hängt tot in SucheB fest.
+            if (candle.Low < Point0)
+            {
+                return InvalidateAndPromoteSucheB(candle, index, candle.Low, isLong: true);
+            }
+
+            // Trailing Low: B rutscht mit dem Preis nach unten mit (Buch: Docht-Low, Body ignorieren).
             if (candle.Low < PotentialB)
             {
                 PotentialB = candle.Low;
                 Debug.Assert(PotentialB == candle.Low, "SK-Buch Task 4.1: PotentialB muss aus candle.Low stammen (Docht-Messung).");
+                Debug.Assert(PotentialB >= Point0, "SK-Strukturpunkte §4: PotentialB darf nicht unter Point0 rutschen.");
                 PotentialBIndex = index;
-            }
-
-            // Task 4.2 — Schlusskurs-Regel nach SK-Buch Masterclass:
-            // Docht-Pike unter Point0 mit Body-Close in der Korrekturbox → WickOnly (Sequenz bleibt).
-            // Body-Close weit unter Box → StrongClose (Reset). Body-Close unter Point0 → Invalidierung.
-            if (candle.Low < Point0)
-            {
-                var rangeLocal = Math.Abs(PointA - Point0);
-                var ret500 = PointA - rangeLocal * 0.500m;
-                var ret786 = PointA - rangeLocal * 0.786m;
-                var classification = CorrectionBoxExitClassifier.Classify(
-                    isLong: true, candle, boxUpper: ret500, boxLower: ret786, point0: Point0);
-                if (classification == CorrectionBoxExit.FullInvalidation
-                    || classification == CorrectionBoxExit.StrongClose)
-                {
-                    return InvalidateAndPromoteSucheB(candle, index, candle.Low, isLong: true);
-                }
-                // WickOnly / InBox → Sequenz bleibt aktiv, Point0-Docht wird toleriert.
             }
 
             // AKTIVIERUNG: Preis durchbricht A (Close über Punkt A)
@@ -788,27 +791,19 @@ public class SequenceStateMachine
         }
         else
         {
-            // Short: Trailing High (Buch: Docht-High, Body ignorieren)
+            // Strukturpunkte-Doku §4 (Short-Variante): Wick über Point 0 = Sequenz tot.
+            if (candle.High > Point0)
+            {
+                return InvalidateAndPromoteSucheB(candle, index, candle.High, isLong: false);
+            }
+
+            // Short: Trailing High (Buch: Docht-High, Body ignorieren).
             if (candle.High > PotentialB)
             {
                 PotentialB = candle.High;
                 Debug.Assert(PotentialB == candle.High, "SK-Buch Task 4.1: PotentialB muss aus candle.High stammen (Docht-Messung).");
+                Debug.Assert(PotentialB <= Point0, "SK-Strukturpunkte §4: PotentialB darf nicht über Point0 rutschen.");
                 PotentialBIndex = index;
-            }
-
-            // Task 4.2 — Schlusskurs-Regel (Short-Variante).
-            if (candle.High > Point0)
-            {
-                var rangeLocal = Math.Abs(PointA - Point0);
-                var ret500 = PointA + rangeLocal * 0.500m;
-                var ret786 = PointA + rangeLocal * 0.786m;
-                var classification = CorrectionBoxExitClassifier.Classify(
-                    isLong: false, candle, boxUpper: ret500, boxLower: ret786, point0: Point0);
-                if (classification == CorrectionBoxExit.FullInvalidation
-                    || classification == CorrectionBoxExit.StrongClose)
-                {
-                    return InvalidateAndPromoteSucheB(candle, index, candle.High, isLong: false);
-                }
             }
 
             // AKTIVIERUNG: Close unter Punkt A
@@ -840,12 +835,15 @@ public class SequenceStateMachine
         var range = Math.Abs(PointA - Point0);
         if (range <= 0) return false;
 
-        // SK-FIX (B-Sanity): PotentialB muss auf der korrekten Seite von PointA liegen.
-        // Long: B < A (Korrektur nach unten von Impuls-Gipfel), Short: B > A.
-        // Ohne diesen Check würde Math.Abs() Datenfehler (z.B. Wick über PointA in Trailing-Phase)
-        // als gültiges Retracement verschleiern und zu TryActivate-Rejects statt klarer Invalidation
-        // führen. In diesem Fall: Sequenz ist nicht mehr valide, auf Suche0 zurücksetzen.
-        if ((IsLong && PotentialB >= PointA) || (!IsLong && PotentialB <= PointA))
+        // SK-FIX (B-Sanity): PotentialB muss strukturell zwischen Point0 und PointA liegen.
+        // Long: Point0 ≤ B < A (Korrektur nach unten von Impuls-Gipfel, aber nicht unter Sequenz-Ursprung).
+        // Short: Point0 ≥ B > A.
+        // Ohne diesen Check würde Math.Abs() Datenfehler (z.B. Wick über PointA in Trailing-Phase
+        // oder Wick unter Point0 trotz Fix #1) als gültiges Retracement verschleiern und zu
+        // TryActivate-Rejects statt klarer Invalidation führen.
+        // In diesem Fall: Sequenz ist nicht mehr valide, auf Suche0 zurücksetzen.
+        if ((IsLong && (PotentialB >= PointA || PotentialB < Point0))
+            || (!IsLong && (PotentialB <= PointA || PotentialB > Point0)))
         {
             Reset();
             return false;
@@ -944,14 +942,18 @@ public class SequenceStateMachine
 
         // BUCH-ONLY: Kein 138.2%-Over-Extension-Guard. Das Buch kennt nur TP1 (161.8%) und TP2 (200%).
 
-        // Ziellevel-Check: Sequenz abgearbeitet wenn 161.8% Extension erreicht
-        // SK: "Sobald Ziellevel berührt → State auf Abgearbeitet"
-        if (IsLong && candle.High >= Extension1618)
+        // Ziellevel-Check (04.05.2026 korrigiert): Sequenz ist erst bei TP2 (200%) "vollständig abgearbeitet".
+        // SK-Buch: TP1 = 161.8% (Teil-Exit, Sequenz läuft weiter Richtung 200%), TP2 = 200% (vollständig erfüllt).
+        // <see cref="Sequence.HasFullyCompleted"/> prüft ebenfalls auf 200%. Die alte 161.8%-Schwelle führte dazu,
+        // dass <see cref="ProcessAbgearbeitet"/> in einer 161.8%-Spike-Kerze SOFORT ein neues Point0 setzte und
+        // die State-Machine für eine Gegenrichtung (Bias-Flip / Re-Entry) freigab — obwohl der TP2-LIMIT-Auftrag
+        // auf der Exchange noch lebt. Ergebnis: Geister-Re-Entries auf laufenden Trades zwischen TP1 und TP2.
+        if (IsLong && candle.High >= Extension200)
         {
             State = SmState.Abgearbeitet;
             return false;
         }
-        if (!IsLong && candle.Low <= Extension1618)
+        if (!IsLong && candle.Low <= Extension200)
         {
             State = SmState.Abgearbeitet;
             return false;
@@ -1018,19 +1020,21 @@ public class SequenceStateMachine
     {
         // SK-VERIFY: [Abweichung #6] GKL MERKEN bevor Reset
         // Im SK-System sind GKLs abgearbeiteter Sequenzen die wertvollsten Kaufzonen.
-        var range = Math.Abs(Extension1618 - Point0);
-        if (range > 0 && Extension1618 != 0)
+        // 04.05.2026: Range zieht jetzt auf Extension200 (TP2 = vollständig abgearbeitet) statt
+        // Extension1618 (TP1 = nur Teil-Exit). Konsistent zur neuen Abgearbeitet-Schwelle.
+        var range = Math.Abs(Extension200 - Point0);
+        if (range > 0 && Extension200 != 0)
         {
             decimal gkl500, gkl667;
             if (IsLong)
             {
-                gkl500 = Extension1618 - range * 0.500m;
-                gkl667 = Extension1618 - range * 0.667m;
+                gkl500 = Extension200 - range * 0.500m;
+                gkl667 = Extension200 - range * 0.667m;
             }
             else
             {
-                gkl500 = Extension1618 + range * 0.500m;
-                gkl667 = Extension1618 + range * 0.667m;
+                gkl500 = Extension200 + range * 0.500m;
+                gkl667 = Extension200 + range * 0.667m;
             }
             CompletedGkls.Add(new CompletedGklEntry(gkl500, gkl667, IsLong, DateTime.UtcNow));
             // Maximal 5 GKLs pro Machine behalten (älteste raus)
@@ -1098,7 +1102,7 @@ public enum SmState
     SucheB,
     /// <summary>AKTIVIERT: A durchbrochen, B eingefroren. Trade läuft Richtung Ziellevel.</summary>
     Aktiviert,
-    /// <summary>ABGEARBEITET: Ziellevel (161.8%) erreicht. Keine neuen Trades in diese Richtung — nur GKL/Gegensequenz.</summary>
+    /// <summary>ABGEARBEITET: TP2 (200%) erreicht — Sequenz vollständig abgearbeitet. Reset auf Suche0 in der Folgekerze.</summary>
     Abgearbeitet
 }
 
@@ -1107,7 +1111,7 @@ public enum SmState
 /// Im SK-System sind diese die wertvollsten Kaufzonen (tieferer Preis, engerer SL).
 /// </summary>
 public record CompletedGklEntry(
-    decimal Gkl500,       // 50% Retracement der Gesamtstrecke Point0→Extension1618
+    decimal Gkl500,       // 50% Retracement der Gesamtstrecke Point0→Extension200 (TP2)
     decimal Gkl667,       // 66.7% Retracement
     bool IsLong,          // Richtung der abgearbeiteten Sequenz
     DateTime CompletedAt  // Zeitpunkt der Abarbeitung

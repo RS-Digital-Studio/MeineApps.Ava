@@ -92,6 +92,7 @@ public class ConfluenceScoringTests
         s.Add(ConfluenceCategory.VolumeSpike, "f");
         s.Add(ConfluenceCategory.BcklReEntry, "g");
         s.Add(ConfluenceCategory.HighProbabilityZone, "hp");      // +2 (Spec §7 Heiliger Gral)
+        s.Add(ConfluenceCategory.FavorableFundingRate, "funding"); // +1 (v1.5.4 Phase 7)
         s.Score.Should().Be(SkConfluenceScorer.MaxScore);
         s.Confidence.Should().Be(1m);
     }
@@ -99,16 +100,16 @@ public class ConfluenceScoringTests
     // BUCH-ONLY: BcDepthAdjustment-Tests entfernt (BcDepthMonitor ist raus).
 
     [Fact]
-    public void Confidence_HalbeAnzahl_HalbeConfidence()
+    public void Confidence_AnteilAnMaxScore_KorrektBerechnet()
     {
-        // MaxScore=10: 5 einfache Hits geben 0.5 Confidence (5/10).
+        // v1.5.4: MaxScore = 11 (zuvor 10). 5 einfache Hits → 5/11 ≈ 0.4545 Confidence.
         var s = new SkConfluenceScorer();
         s.Add(ConfluenceCategory.PriceAction, "a");
         s.Add(ConfluenceCategory.FibonacciGoldenPocket, "b");
         s.Add(ConfluenceCategory.FahrplanAlignment, "c");
         s.Add(ConfluenceCategory.HigherTfSequence, "d");
         s.Add(ConfluenceCategory.VolumeSpike, "e");
-        s.Confidence.Should().Be(0.5m);
+        s.Confidence.Should().BeApproximately(5m / SkConfluenceScorer.MaxScore, 0.0001m);
     }
 
     [Fact]

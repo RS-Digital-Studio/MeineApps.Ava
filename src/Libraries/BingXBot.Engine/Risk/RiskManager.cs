@@ -180,6 +180,30 @@ public class RiskManager : IRiskManager
         // Risk-Per-Trade (1-3%) und Positionsgroesse, nicht ueber Liquidationsdistanz.
         var leverage = actualLeverage > 0 ? (decimal)actualLeverage : (_settings.MaxLeverage > 0 ? _settings.MaxLeverage : 1m);
 
+        // 04.05.2026 — Margin-Aware-Cap (TradFi-Schutz):
+        // Bei hohem Hebel (NCFX 20×, NCSI 10×) kann ein einzelner 5%-Risk-Trade trotz korrekter
+        // Risk-Distanz fast die gesamte verfügbare Margin binden. Ohne Cap würde ein zweiter
+        // paralleler Trade auf einem zweiten TradFi-Symbol die Cross-Margin sprengen.
+        // Regel: Summe aller Margins (offene Positionen + neue) darf 60% der Wallet-Balance nicht
+        // überschreiten. Der posSize wird ggf. reduziert, statt den Trade abzulehnen.
+        if (context.Account.Balance > 0 && entryPrice > 0 && leverage > 0)
+        {
+            var openMargins = context.OpenPositions.Sum(p =>
+                p.Leverage > 0 ? p.EntryPrice * p.Quantity / p.Leverage : p.EntryPrice * p.Quantity);
+            var marginCap = context.Account.Balance * 0.6m;
+            var newMargin = entryPrice * posSize / leverage;
+            if (openMargins + newMargin > marginCap)
+            {
+                var available = marginCap - openMargins;
+                if (available <= 0)
+                    return new RiskCheckResult(false,
+                        $"Margin-Cap erreicht ({openMargins:F2}/{marginCap:F2} USDT durch offene Positionen blockiert)", 0m);
+                var maxPosSize = available * leverage / entryPrice;
+                if (maxPosSize < posSize)
+                    posSize = maxPosSize;
+            }
+        }
+
         // 6. Risk-Reward-Ratio prüfen: Trade muss Mindest-RRR erfüllen
         if (_settings.MinRiskRewardRatio > 0 && signal.StopLoss.HasValue && signal.TakeProfit.HasValue
             && signal.StopLoss.Value > 0 && signal.TakeProfit.Value > 0)

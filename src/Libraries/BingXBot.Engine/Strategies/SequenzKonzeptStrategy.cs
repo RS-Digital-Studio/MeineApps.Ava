@@ -51,6 +51,14 @@ public class SequenzKonzeptStrategy : IStrategy
     /// <summary>Ampel-Status pro TF — wird pro Evaluate-Aufruf aktualisiert.</summary>
     public Dictionary<TimeFrame, string> AmpelStatus { get; private set; } = new();
 
+    /// <summary>
+    /// v1.5.2 Phase 4 — Letzte gefaellte Entscheidung (Reject-Reason oder Success).
+    /// Aufrufer (TradingServiceBase) liest dies nach jedem Evaluate-Call und publisht
+    /// in <c>BotEventBus.EvaluationDecided</c>. Wird nur gesetzt wenn der Decision-Trail
+    /// aktiv ist — bei <c>BotSettings.EnableDecisionTrail = false</c> bleibt das Feld null.
+    /// </summary>
+    public BingXBot.Core.Diagnostics.EvaluationDecision? LastEvaluationDecision { get; private set; }
+
     // ═══════════════════════════════════════════════════════════════
     // Laufzeit-State (pro Symbol-Klon + Navigator-TF)
     // ═══════════════════════════════════════════════════════════════
@@ -127,6 +135,17 @@ public class SequenzKonzeptStrategy : IStrategy
         var weeklyCandles = context.WeeklyCandles;
         var scannerSettings = context.ScannerSettings;
 
+        // v1.5.2 Phase 4 — Eval-Kontext fuer Decision-Trail vorbereiten (Symbol/State/Punkte
+        // werden im Lauf von Evaluate gesetzt, sodass Blocked() einen aktuellen Snapshot hat).
+        _lastEvalSymbol = context.Symbol;
+        _lastEvalSequenceState = "Unknown";
+        _lastEvalPoint0 = null;
+        _lastEvalPointA = null;
+        _lastEvalPointB = null;
+        _lastEvalScore = 0;
+        _lastEvalCategories = null;
+        LastEvaluationDecision = null;
+
         // Ampel zurücksetzen und Standard-Einträge anlegen (Duplikate vermeiden wenn navTf=D1 oder =W1)
         AmpelStatus = new Dictionary<TimeFrame, string>();
         AmpelStatus[TimeFrame.W1] = "—";
@@ -154,7 +173,7 @@ public class SequenzKonzeptStrategy : IStrategy
                 var blackoutEvent = context.NewsBlackoutCheck(nowForNews, newsBlackoutMinutes, CancellationToken.None)
                     .GetAwaiter().GetResult();
                 if (!string.IsNullOrEmpty(blackoutEvent))
-                    return Blocked(navTf, $"News-Blackout: {blackoutEvent}");
+                    return Blocked(navTf, $"News-Blackout: {blackoutEvent}", BingXBot.Core.Diagnostics.RejectionReasons.NewsBlackout);
             }
             catch
             {
@@ -249,12 +268,10 @@ public class SequenzKonzeptStrategy : IStrategy
             && filterCandles is { Count: >= 25 })
         {
             var ctBufferPips = GetSlBufferPips(context, GetFilterTimeframe(navTf) ?? TimeFrame.M15);
-            var ctPipValue = context.Category switch
-            {
-                Core.Enums.MarketCategory.Forex => 0.0001m,
-                Core.Enums.MarketCategory.Commodity => 0.1m,
-                _ => currentPrice * 0.0001m,
-            };
+            // 04.05.2026: Inline-Pip-Berechnung entfernt — divergierte vom kanonischen Helper
+            // (Stock: hier `*0.0001` statt korrekt `*0.00005`; Index: hier `*0.0001` statt `1`).
+            // Counter-Trend-SL-Buffer war auf NCSI/NCSK falsch.
+            var ctPipValue = Risk.PipStopLossCalculator.GetPipValue(context.Symbol, context.Category, currentPrice);
             var ctHit = CounterTrendScalper.TryDetect(navSeq, currentPrice, filterCandles, ctBufferPips * ctPipValue);
             if (ctHit != null)
             {
@@ -279,7 +296,7 @@ public class SequenzKonzeptStrategy : IStrategy
         var tradeIsLong = navSeq.IsLong;
 
         // ───────────────────────────────────────────────────────────
-        // FILTER-TF (nächst tiefere TF) — optional, TF-gestaffelter ChoCH-Filter
+        // FILTER-TF (nächst tiefere TF) — Korrektur-Ende-Bestätigung (Buch-only)
         // ───────────────────────────────────────────────────────────
         var filterAvailable = filterCandles is { Count: > 20 } && filterTf.HasValue;
         var correctionEnding = false;
@@ -314,7 +331,7 @@ public class SequenzKonzeptStrategy : IStrategy
         // ───────────────────────────────────────────────────────────
 
         if (navMachine.State != SmState.Aktiviert)
-            return Blocked(navTf, $"{navTf} nicht aktiviert (State={navMachine.State})");
+            return Blocked(navTf, $"{navTf} nicht aktiviert (State={navMachine.State})", BingXBot.Core.Diagnostics.RejectionReasons.StateNotActivated);
 
         // ───────────────────────────────────────────────────────────
         // Strukturpunkte-Doku §5A: Volumen-Anomaly-Filter (Hard-Block)
@@ -345,7 +362,7 @@ public class SequenzKonzeptStrategy : IStrategy
         if (scannerSettings?.BlockLtfEntryWhenHtfInTargetZone == true
             && IsHigherTfInTargetZone(navTf, weeklyCandles, dailyCandles, scannerSettings, currentPrice, tradeIsLong))
         {
-            return Blocked(navTf, "HTF in Zielzone (EXT_1618-EXT_2000) — LTF-Entry gegen drohende HTF-Wende blockiert (Spec §7)");
+            return Blocked(navTf, "HTF in Zielzone (EXT_1618-EXT_2000) — LTF-Entry gegen drohende HTF-Wende blockiert (Spec §7)", BingXBot.Core.Diagnostics.RejectionReasons.MtaTargetZoneBlock);
         }
 
         // BUCH-ONLY: Keine 38.2% Mindest-Aktivierung, keine 138.2% Over-Extension, kein ChoCH-Filter.
@@ -477,13 +494,19 @@ public class SequenzKonzeptStrategy : IStrategy
         // LTF_Target_Zone_EXT_1618 der Gegenrichtung): Markiere diese Zone als HIGH_PROBABILITY_ZONE."
         // Im Unterschied zum reinen Preis-in-GKL-Check (gklHit) prüft der Overlap-Detector echte Intervall-Geometrie:
         // auch wenn der Preis gerade nicht in der GKL steht, zählt die Konstellation als High-Probability.
+        // v1.5.0 Phase 1 — Hard-Gate aktiv? Dann Mikro-Touch-Filter (0.1 % der LTF-B-Box-Spanne)
+        // erzwingen, damit ein Pixel-Schnitt nicht als Confluence zaehlt. Bei deaktiviertem Hard-Gate
+        // bleibt das Verhalten wie bisher (Soft-Bonus bei jedem Touch).
+        var hardGateActive = context.RiskSettings?.RequireHtfConfluenceForEntry ?? false;
+        var minOverlapWidthPct = hardGateActive ? 0.1m : 0m;
+
         var overlapHit = false;
         if (scannerSettings?.EnableConfluenceOverlapDetection != false)
         {
             var counterMachineForOverlap = tradeIsLong ? navShortMachine : navLongMachine;
             var counterSeqForOverlap = counterMachineForOverlap?.ToSequence(navCandles);
             var overlap = SkConfluenceZoneOverlap.EvaluateFromHtf(
-                weeklyCandles, dailyCandles, navSeq, counterSeqForOverlap);
+                weeklyCandles, dailyCandles, navSeq, counterSeqForOverlap, minOverlapWidthPct);
             if (overlap.HasOverlap)
             {
                 scorer.Add(ConfluenceCategory.HighProbabilityZone, overlap.Reason);
@@ -511,15 +534,55 @@ public class SequenzKonzeptStrategy : IStrategy
         if (ltfReversal != null)
             scorer.Add(ConfluenceCategory.PriceAction, $"LTF:{ltfReversal.Reason}");
 
+        // v1.5.4 Phase 7 — Funding-Rate Soft-Bonus (User-Erweiterung, nicht im Buch).
+        // Long bei stark negativer Funding (Markt zahlt Longs) bzw. Short bei stark positiver
+        // Funding (Markt zahlt Shorts) bekommt +1 Score. Schwelle aus ScannerSettings.
+        // BingX-Funding ist ueblicherweise Dezimalbruchteil (z.B. 0.0001 = 0.01 %).
+        var fundingBonusEnabled = scannerSettings?.EnableFundingRateBonus ?? true;
+        if (fundingBonusEnabled && context.FundingRatePercent != 0m)
+        {
+            var thresholdPct = scannerSettings?.FundingRateBonusThresholdPercent ?? 0.05m;
+            var thresholdDec = thresholdPct / 100m; // Prozent → Decimal
+            var fundingRate = context.FundingRatePercent;
+            if (tradeIsLong && fundingRate < -thresholdDec)
+                scorer.Add(ConfluenceCategory.FavorableFundingRate, $"Funding {fundingRate:P4} fuer Long");
+            else if (!tradeIsLong && fundingRate > thresholdDec)
+                scorer.Add(ConfluenceCategory.FavorableFundingRate, $"Funding {fundingRate:P4} fuer Short");
+        }
+
         var score = scorer.Score;
         var reasons = scorer.Reasons.ToList();
 
-        // BUCH-ONLY (21.04.2026): Der Confluence-Score wird weiterhin berechnet (Info/Log/Confidence),
-        // aber es existiert KEIN Hard-Threshold. Die Spec-Docs kennen Confluence nur qualitativ
-        // ("Heiliger Gral = Überlappung HTF_GKL_Zone mit LTF_BC_Zone"). Diese qualitative Erkennung
-        // erledigt der `SkConfluenceScorer` oben (gklHit/bcklData/overlap-Counter). Ein numerischer
-        // Mindest-Score als Hard-Block ist Implementation-Extra und fliegt raus.
-        var minScore = 0;
+        // v1.5.2 Phase 4 — Eval-Snapshot fuer Decision-Trail. Wird in Blocked()-Helper gelesen
+        // sobald ein Reject feuert; bei Erfolg unten mit Triggered=true ueberschrieben.
+        _lastEvalSequenceState = navMachine.State.ToString();
+        _lastEvalPoint0 = navMachine.Point0;
+        _lastEvalPointA = navMachine.PointA;
+        _lastEvalPointB = navMachine.LockedB;
+        _lastEvalScore = score;
+        _lastEvalCategories = scorer.Reasons.ToList();
+
+        // 04.05.2026 — Phase 3 "Heiliger Gral als Hard-Gate" (opt-in via RiskSettings).
+        // Standard-Default beider Settings ist AUS, sodass das Verhalten unverändert bleibt.
+        // Nur User die aktiv 5% Risk fahren und Quality-Boost wollen, schalten das ein.
+        //
+        // v1.5.0 Phase 1 — Spezialfall: Wenn Navigator-TF bereits W1/D1 ist, gibt es keinen
+        // "hoeheren" Timeframe fuer GKL/Overlap. In dem Fall ist das Gate no-op (kein Block) —
+        // sonst wuerde jeder W1/D1-Trade mit aktivem Flag stumm verworfen.
+        // Mikro-Touch-Filter: bei aktiviertem Hard-Gate verlangt der Overlap-Check eine
+        // Mindestbreite von 0.1 % der LTF-B-Box-Spanne (siehe minOverlapWidthPct oben).
+        var requireHtfConfluence = hardGateActive;
+        var isNavigatorTopTf = navTf == TimeFrame.W1 || navTf == TimeFrame.D1;
+        if (requireHtfConfluence && !isNavigatorTopTf && gklHit == null && !overlapHit)
+        {
+            return Blocked(navTf, $"Hard-Gate: keine HTF-Confluence (weder GKL-Hit noch Zone-Overlap) — {tradeIsLong}", BingXBot.Core.Diagnostics.RejectionReasons.NoHtfConfluence);
+        }
+
+        var minScore = context.RiskSettings?.MinConfluenceScore ?? 0;
+        if (minScore > 0 && score < minScore)
+        {
+            return Blocked(navTf, $"Hard-Gate: Confluence-Score {score} < {minScore}", BingXBot.Core.Diagnostics.RejectionReasons.ScoreBelowMin);
+        }
 
         // ───────────────────────────────────────────────────────────
         // Multi-Entry Staffelung nach SK-Buch (Cheat 37 + 49):
@@ -601,9 +664,51 @@ public class SequenzKonzeptStrategy : IStrategy
         // TAKE-PROFIT (SK-Buch S.16, Workflow 4.5)
         // TP1 = 161.8% Extension (Partial-Close 50%), TP2 = 200% + 20 Pips Buffer.
         // ───────────────────────────────────────────────────────────
-        var tp1 = navSeq.Extension1618;
+        var ltfTp1 = navSeq.Extension1618;
         var tp2Buffer = PipStopLossCalculator.Get20PipsBuffer(context.Symbol, context.Category, currentPrice);
-        var tp2 = tradeIsLong ? navSeq.Extension200 + tp2Buffer : navSeq.Extension200 - tp2Buffer;
+        var ltfTp2 = tradeIsLong ? navSeq.Extension200 + tp2Buffer : navSeq.Extension200 - tp2Buffer;
+
+        var tp1 = ltfTp1;
+        var tp2 = ltfTp2;
+        TimeFrame? tpSourceTimeframe = null;
+
+        // v1.5.0 Phase 2 — Asymmetrisches CRV: SL aus LTF (oben), TPs aus HTF-Sequenz wenn GKL-Setup.
+        // SignalResult.IsGklSetup ist hier noch nicht gebaut, aber gklHit haelt dieselbe Information.
+        var useAsymmetricCrv = (context.RiskSettings?.UseAsymmetricCrv ?? false) && gklHit != null;
+        if (useAsymmetricCrv)
+        {
+            var htfSeq = TryBuildHtfPrimarySequence(gklHit!.Tf, weeklyCandles, dailyCandles,
+                scannerSettings, currentPrice, tradeIsLong);
+            if (htfSeq != null && htfSeq.Extension1618 > 0m && htfSeq.Extension200 > 0m)
+            {
+                var htfTp1 = htfSeq.Extension1618;
+                var htfTp2 = tradeIsLong
+                    ? htfSeq.Extension200 + tp2Buffer
+                    : htfSeq.Extension200 - tp2Buffer;
+
+                // Sanity-Cap: HTF-Ext1618 darf LTF-Ext1618 (Distanz vom Entry) nicht um Faktor > 5 ueberschreiten.
+                // Schuetzt vor kaputten HTF-Sequenzen (z.B. wenn ein W1-Pivot durch fehlende Daten extrem weit liegt).
+                var ltfTp1Distance = Math.Abs(ltfTp1 - entry);
+                var htfTp1Distance = Math.Abs(htfTp1 - entry);
+                if (ltfTp1Distance > 0m && htfTp1Distance > ltfTp1Distance * 5m)
+                {
+                    var capped = ltfTp1Distance * 3m;
+                    htfTp1 = tradeIsLong ? entry + capped : entry - capped;
+                    var ltfTp2Distance = Math.Abs(ltfTp2 - entry);
+                    var htfTp2Distance = Math.Abs(htfTp2 - entry);
+                    if (htfTp2Distance > ltfTp2Distance * 5m)
+                    {
+                        var cappedTp2 = ltfTp2Distance * 3m;
+                        htfTp2 = tradeIsLong ? entry + cappedTp2 : entry - cappedTp2;
+                    }
+                    LastStatus = $"AsymCrv-SanityCap: HTF-TP > 5× LTF — gecappt auf 3× LTF";
+                }
+
+                tp1 = htfTp1;
+                tp2 = htfTp2;
+                tpSourceTimeframe = gklHit.Tf;
+            }
+        }
 
         // Sanity: tp1 muss VOR tp2 liegen.
         var tp1PastTp2 = tradeIsLong ? tp1 > tp2 : tp1 < tp2;
@@ -615,7 +720,7 @@ public class SequenzKonzeptStrategy : IStrategy
         var rrr = slDistance > 0 ? tpDist / slDistance : 0m;
         const decimal minRrr = 1.0m;
         if (rrr < minRrr)
-            return Blocked(navTf, $"RRR zu klein ({rrr:F1}:1 < {minRrr:F1}:1) — TP2 zu nah am Entry");
+            return Blocked(navTf, $"RRR zu klein ({rrr:F1}:1 < {minRrr:F1}:1) — TP2 zu nah am Entry", BingXBot.Core.Diagnostics.RejectionReasons.RrrTooSmall);
 
         // ───────────────────────────────────────────────────────────
         // Buch-Checkliste (9 Schritte) — alle Punkte sind jetzt inline in Evaluate umgesetzt:
@@ -675,6 +780,21 @@ public class SequenzKonzeptStrategy : IStrategy
         var entrySuffix = isAdditionalEntry ? "_Add" : "_Prim";
         var seqId = $"{context.Symbol}_{navTf}_{RoundToTick(navSeq.Point0.Price):G8}_{RoundToTick(navSeq.PointA.Price):G8}{entrySuffix}";
 
+        // v1.5.2 Phase 4 — Erfolgsentscheidung im Decision-Trail.
+        LastEvaluationDecision = new BingXBot.Core.Diagnostics.EvaluationDecision(
+            Symbol: context.Symbol,
+            Tf: navTf,
+            UtcTimestamp: DateTime.UtcNow,
+            SequenceState: navMachine.State.ToString(),
+            Point0: navMachine.Point0,
+            PointA: navMachine.PointA,
+            PointB: navMachine.LockedB,
+            Triggered: true,
+            RejectionReason: null,
+            ConfluenceScore: score,
+            ConfluenceCategories: reasons,
+            HardFiltersFailed: Array.Empty<string>());
+
         return new SignalResult(
             side, confidence,
             EntryPrice: entry,
@@ -698,7 +818,57 @@ public class SequenzKonzeptStrategy : IStrategy
             PositionScaleOverride: overlapHit
                 && (context.RiskSettings?.HighProbabilityPositionMultiplier ?? 1.0m) > 1.0m
                     ? context.RiskSettings!.HighProbabilityPositionMultiplier
-                    : null);
+                    : null,
+            // v1.5.0 Phase 2 — Asymmetrisches CRV: TF-Quelle der TPs (W1 oder D1) für UI-Badge.
+            TpSourceTimeframe: tpSourceTimeframe);
+    }
+
+    /// <summary>
+    /// v1.5.0 Phase 2 — Helper fuer asymmetrisches CRV: baut die HTF-Primary-Sequenz aus
+    /// W1- oder D1-Candles je nach GKL-Treffer-TF. Liefert null bei nicht aktivierten / falsch
+    /// gerichteten Sequenzen — Aufrufer faellt dann auf LTF-Ziele zurueck.
+    /// </summary>
+    private static Sequence? TryBuildHtfPrimarySequence(
+        TimeFrame gklTf,
+        IReadOnlyList<Candle>? weekly,
+        IReadOnlyList<Candle>? daily,
+        ScannerSettings? scannerSettings,
+        decimal currentPrice,
+        bool tradeIsLong)
+    {
+        var htfCandles = gklTf switch
+        {
+            TimeFrame.W1 => weekly,
+            TimeFrame.D1 => daily,
+            _ => null,
+        };
+        if (htfCandles == null || htfCandles.Count < 30) return null;
+
+        var atrPercent = CalculateAtrPercent(htfCandles, currentPrice, gklTf);
+        var impulseMul = GetAtrMultiplier(scannerSettings, gklTf, impulse: true, fallback: 1.0m);
+        var corrMul = GetAtrMultiplier(scannerSettings, gklTf, impulse: false, fallback: 1.5m);
+        var minPoint0 = GetMinPoint0Candles(scannerSettings, gklTf);
+        var htfBosAnchor = Math.Max(2, scannerSettings?.BosAnchorSwingStrength ?? 5);
+        var htfBosCloseBreak = scannerSettings?.RequireBosCloseBreak ?? true;
+        var htfBosLeft = scannerSettings?.BosAnchorLeftBars ?? 0;
+        var htfBosRight = scannerSettings?.BosAnchorRightBars ?? 0;
+        var htfEnableBiasFlip = scannerSettings?.EnableBiasFlip ?? true;
+
+        var (htfPrimary, _, _) = SequenceStateMachine.FromCandlesBoth(
+            htfCandles, atrPercent * impulseMul, atrPercent * corrMul, 0.382m, 0.786m, minPoint0,
+            enableBiasFlip: htfEnableBiasFlip,
+            bosRequireCloseBreak: htfBosCloseBreak,
+            bosAnchorSwingStrength: htfBosAnchor,
+            bosAnchorLeftBars: htfBosLeft,
+            bosAnchorRightBars: htfBosRight);
+
+        if (htfPrimary == null) return null;
+        // Richtung muss zum geplanten Trade passen — sonst sind die Extensions in die falsche Richtung berechnet.
+        if (htfPrimary.IsLong != tradeIsLong) return null;
+        // State muss mindestens Aktiviert sein, sonst sind Ext1618/Ext200 unzuverlaessig.
+        if (htfPrimary.State < SmState.Aktiviert) return null;
+
+        return htfPrimary.ToSequence(htfCandles);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -783,8 +953,9 @@ public class SequenzKonzeptStrategy : IStrategy
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Multi-TF Standalone ChoCH-Filter-Staffel (siehe Plan Tabelle Abschnitt 1):
-    /// D1→H4, H4→H1, H1→M15, M15→M5 (optional, kann null sein → kein Filter).
+    /// Multi-TF Standalone Filter-TF-Staffel (siehe Plan Tabelle Abschnitt 1):
+    /// D1→H4, H4→H1, H1→M15, M15→M5. Buch-only: Liefert die nächst-tiefere TF
+    /// für MTA-Confluence-Bewertung (kein ChoCH-Filter mehr seit Buch-Only Strip Phase 2).
     /// </summary>
     public static TimeFrame? GetFilterTimeframe(TimeFrame navTf) => navTf switch
     {
@@ -825,12 +996,6 @@ public class SequenzKonzeptStrategy : IStrategy
     }
 
     /// <summary>
-    /// BUCH-ONLY: Min-Confluence-Score entfernt. Buch kennt keinen quantitativen Score-Threshold.
-    /// Rückgabe immer 0 = Score wird nur für Info-Log berechnet, nicht als Gate.
-    /// </summary>
-    private static int GetMinConfluenceScore(ScannerSettings? settings, TimeFrame tf, int fallback) => 0;
-
-    /// <summary>
     /// Task 2.2 — Prüft ob eine höhere TF als navTf eine aktivierte Sequenz in die gleiche Richtung hat.
     /// Für navTf=D1 → schau auf W1. Für H4 → D1. Für H1 → H4 (daily-Proxy). Für M15 → H1 (daily-Proxy).
     /// </summary>
@@ -865,9 +1030,13 @@ public class SequenzKonzeptStrategy : IStrategy
         var htfBosCloseBreak = scannerSettings?.RequireBosCloseBreak ?? true;
         var htfBosLeft = scannerSettings?.BosAnchorLeftBars ?? 0;
         var htfBosRight = scannerSettings?.BosAnchorRightBars ?? 0;
+        // 04.05.2026: EnableBiasFlip muss zwischen Navigator-Call und HTF-Calls konsistent sein,
+        // sonst sieht das MTA-Gate eine andere Sequenz-Richtung als der Navigator.
+        var htfEnableBiasFlip = scannerSettings?.EnableBiasFlip ?? true;
 
         var (htfPrimary, _, _) = SequenceStateMachine.FromCandlesBoth(
             htfCandles, atrPercent * impulseMul, atrPercent * corrMul, 0.382m, 0.786m, minPoint0,
+            enableBiasFlip: htfEnableBiasFlip,
             bosRequireCloseBreak: htfBosCloseBreak,
             bosAnchorSwingStrength: htfBosAnchor,
             bosAnchorLeftBars: htfBosLeft,
@@ -923,9 +1092,12 @@ public class SequenzKonzeptStrategy : IStrategy
         var htfBosCloseBreak = scannerSettings?.RequireBosCloseBreak ?? true;
         var htfBosLeft = scannerSettings?.BosAnchorLeftBars ?? 0;
         var htfBosRight = scannerSettings?.BosAnchorRightBars ?? 0;
+        // 04.05.2026: EnableBiasFlip muss zwischen Navigator-Call und HTF-Calls konsistent sein.
+        var htfEnableBiasFlip = scannerSettings?.EnableBiasFlip ?? true;
 
         var (htfPrimary, _, _) = SequenceStateMachine.FromCandlesBoth(
             htfCandles, atrPercent * impulseMul, atrPercent * corrMul, 0.382m, 0.786m, minPoint0,
+            enableBiasFlip: htfEnableBiasFlip,
             bosRequireCloseBreak: htfBosCloseBreak,
             bosAnchorSwingStrength: htfBosAnchor,
             bosAnchorLeftBars: htfBosLeft,
@@ -1090,10 +1262,34 @@ public class SequenzKonzeptStrategy : IStrategy
     // Block-Helper
     // ═══════════════════════════════════════════════════════════════
 
-    private SignalResult Blocked(TimeFrame navTf, string reason)
+    private SignalResult Blocked(TimeFrame navTf, string reason, string rejectionCode = BingXBot.Core.Diagnostics.RejectionReasons.Other)
     {
         var ampelSummary = string.Join("|", AmpelStatus.Select(kv => $"{kv.Key}:{kv.Value}"));
         LastStatus = $"[{ampelSummary}] {reason}";
+        // v1.5.2 Phase 4 — Decision-Trail-Eintrag fuer Reject-Pfad. Publish-Pfad uebernimmt
+        // der Aufrufer (TradingServiceBase) — die Strategy haelt nur die letzte Entscheidung.
+        LastEvaluationDecision = new BingXBot.Core.Diagnostics.EvaluationDecision(
+            Symbol: _lastEvalSymbol ?? "",
+            Tf: navTf,
+            UtcTimestamp: DateTime.UtcNow,
+            SequenceState: _lastEvalSequenceState ?? "Unknown",
+            Point0: _lastEvalPoint0,
+            PointA: _lastEvalPointA,
+            PointB: _lastEvalPointB,
+            Triggered: false,
+            RejectionReason: rejectionCode,
+            ConfluenceScore: _lastEvalScore,
+            ConfluenceCategories: _lastEvalCategories ?? Array.Empty<string>(),
+            HardFiltersFailed: new[] { rejectionCode });
         return new SignalResult(Signal.None, 0m, null, null, null, LastStatus);
     }
+
+    // v1.5.2 Phase 4 — Eval-Kontext fuer Decision-Trail-Lookup (gesetzt am Evaluate-Anfang).
+    private string? _lastEvalSymbol;
+    private string? _lastEvalSequenceState;
+    private decimal? _lastEvalPoint0;
+    private decimal? _lastEvalPointA;
+    private decimal? _lastEvalPointB;
+    private int _lastEvalScore;
+    private IReadOnlyList<string>? _lastEvalCategories;
 }

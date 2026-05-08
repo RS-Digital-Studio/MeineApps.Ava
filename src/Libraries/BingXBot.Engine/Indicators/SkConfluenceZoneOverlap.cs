@@ -32,6 +32,38 @@ public static class SkConfluenceZoneOverlap
     }
 
     /// <summary>
+    /// Berechnet die Breite des Overlap-Bereichs zweier <see cref="PriceZone"/>.
+    /// Gibt 0 zurueck wenn kein Overlap besteht.
+    /// </summary>
+    public static decimal OverlapWidth(PriceZone a, PriceZone b)
+    {
+        if (!a.IsValid || !b.IsValid) return 0m;
+        var lo = Math.Max(a.Low, b.Low);
+        var hi = Math.Min(a.High, b.High);
+        return hi >= lo ? hi - lo : 0m;
+    }
+
+    /// <summary>
+    /// v1.5.0 Phase 1 — Mikro-Touch-Schwelle fuer das HTF-Confluence-Hard-Gate.
+    /// Pruet ob der Overlap-Bereich zwischen <paramref name="reference"/> und <paramref name="other"/>
+    /// mindestens <paramref name="minWidthPercent"/> der <paramref name="reference"/>-Spanne ausmacht.
+    /// Damit werden 0-1-Tick-Beruehrungen ("Mikro-Touch") nicht als Confluence gewertet — nur ein
+    /// echter geometrischer Schnitt mit nennenswerter Breite gilt.
+    /// </summary>
+    /// <param name="reference">Referenz-Zone (typisch: LTF-B-Box) — ihre Spanne ist die Bezugsgroesse.</param>
+    /// <param name="other">Andere Zone (typisch: HTF-GKL).</param>
+    /// <param name="minWidthPercent">Minimal-Breite des Overlaps in Prozent der Referenz-Spanne (z.B. 0.1m = 0.1 %).</param>
+    public static bool HasMeaningfulOverlap(PriceZone reference, PriceZone other, decimal minWidthPercent)
+    {
+        if (!reference.IsValid || !other.IsValid) return false;
+        if (minWidthPercent <= 0m) return Overlaps(reference, other);
+        var span = reference.High - reference.Low;
+        if (span <= 0m) return false;
+        var width = OverlapWidth(reference, other);
+        return width >= span * (minWidthPercent / 100m);
+    }
+
+    /// <summary>
     /// Baut eine <see cref="PriceZone"/> aus zwei Preis-Grenzen. Reihenfolge egal — das Intervall wird sortiert.
     /// </summary>
     public static PriceZone MakeZone(decimal a, decimal b) =>
@@ -112,7 +144,8 @@ public static class SkConfluenceZoneOverlap
         IReadOnlyList<Candle>? weekly,
         IReadOnlyList<Candle>? daily,
         Sequence? ltfSeq,
-        Sequence? ltfCounterSeq)
+        Sequence? ltfCounterSeq,
+        decimal minWidthPercent = 0m)
     {
         PriceZone? gkl = null;
         TimeFrame? htfTf = null;
@@ -140,13 +173,19 @@ public static class SkConfluenceZoneOverlap
         if (ltfSeq != null)
         {
             var bcZone = BuildBcZone(ltfSeq);
-            if (bcZone.HasValue && Overlaps(gklZone, bcZone.Value))
+            if (bcZone.HasValue
+                && (minWidthPercent > 0m
+                    ? HasMeaningfulOverlap(bcZone.Value, gklZone, minWidthPercent)
+                    : Overlaps(gklZone, bcZone.Value)))
                 return (true, $"HighProb-Overlap: HTF-{htfTf}-GKL ∩ LTF-BC", htfTf, OverlapKind.GklAndBc);
         }
         if (ltfCounterSeq != null && (ltfSeq == null || ltfCounterSeq.IsLong != ltfSeq.IsLong))
         {
             var targetZone = BuildTargetZoneOfOpposite(ltfCounterSeq);
-            if (targetZone.HasValue && Overlaps(gklZone, targetZone.Value))
+            if (targetZone.HasValue
+                && (minWidthPercent > 0m
+                    ? HasMeaningfulOverlap(targetZone.Value, gklZone, minWidthPercent)
+                    : Overlaps(gklZone, targetZone.Value)))
                 return (true, $"HighProb-Overlap: HTF-{htfTf}-GKL ∩ LTF-EXT161.8/200 Counter",
                     htfTf, OverlapKind.GklAndCounterTarget);
         }

@@ -42,8 +42,9 @@ public class MarketScanner : IMarketScanner
         // Alle Ticker holen
         var tickers = await _exchangeClient.GetAllTickersAsync();
 
-        // MarketCap-Cache aktualisieren (CoinGecko, max 1x pro Stunde)
-        try { await MarketCapCache.RefreshIfNeededAsync().ConfigureAwait(false); }
+        // MarketCap-Cache aktualisieren (CoinGecko, max 1x pro Stunde) — Static-Bridge,
+        // konkrete HTTP-Logic in Engine.Helpers.CoinGeckoMarketCapProvider seit 04.05.2026.
+        try { await Engine.Helpers.MarketCapRefreshHelper.RefreshIfNeededAsync().ConfigureAwait(false); }
         catch { /* Fallback auf Volume-Ranking */ }
 
         // Krypto und TradFi trennen
@@ -73,7 +74,10 @@ public class MarketScanner : IMarketScanner
                 settings.TopCoinsCount, MarketCapCache.IsLoaded, tickers.Count, cryptoTickers.Count, tradfiTickers.Count);
         }
 
-        // Basis-Filter (Volumen, Preis, Black/Whitelist)
+        // Basis-Filter (Volumen, Preis, Black/Whitelist).
+        // Legacy-Single-TF-Pfad: nutzt die Obsolete-Properties bewusst — Migration auf
+        // ByTf-Maps in v1.4.x.
+#pragma warning disable CS0618 // Legacy-Single-TF-Pfad — siehe MinVolume24hByTf für Multi-TF.
         var filteredCrypto = cryptoTickers
             .Where(t => !settings.Blacklist.Contains(t.Symbol))
             .Where(t => settings.Whitelist.Count == 0 || settings.Whitelist.Contains(t.Symbol))
@@ -86,6 +90,7 @@ public class MarketScanner : IMarketScanner
             .Where(t => t.Volume24h >= settings.MinVolume24hTradFi)
             .Where(t => Math.Abs(t.PriceChangePercent24h) >= settings.MinPriceChangeTradFi)
             .ToList();
+#pragma warning restore CS0618
 
         var filtered = filteredCrypto.Concat(filteredTradFi).ToList();
 
@@ -127,8 +132,11 @@ public class MarketScanner : IMarketScanner
             }
         }
 
-        // Nach Score sortiert zurückgeben
-        foreach (var result in scored.OrderByDescending(r => r.Score).Take(settings.MaxResults))
+        // Nach Score sortiert zurückgeben — Legacy-Single-TF-Cap.
+#pragma warning disable CS0618
+        var maxResults = settings.MaxResults;
+#pragma warning restore CS0618
+        foreach (var result in scored.OrderByDescending(r => r.Score).Take(maxResults))
         {
             yield return result;
         }

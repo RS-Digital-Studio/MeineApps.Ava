@@ -196,14 +196,15 @@ public static class PipStopLossCalculator
     }
 
     /// <summary>
-    /// Pip-Wert in Preis-Einheiten je nach Instrument.
+    /// Pip-Wert in Preis-Einheiten je nach Instrument. KANONISCHE Quelle — alle Counter-Trend-,
+    /// Backtest- und Risk-Pfade müssen diesen Helper nutzen statt eigene Tabellen zu pflegen.
     /// Gold (~2600 USD/oz): 0.1 ist die "Hochzahl" (1. Nachkommastelle).
     /// Silber (~30 USD/oz): 0.01 ist die "Hochzahl" (2. Nachkommastelle) — sonst SL = 5% vom Entry (BUG-Fix v1.2.6).
     /// Aktien: prozentualer Pip (entryPrice × 0.00005) skaliert automatisch mit Preis — robust für hochpreisige
     /// (BRK @ 600) wie auch günstige Aktien (falls BingX welche listet). 0.00005 = 50% des Crypto-Skalings,
     /// weil Aktien geringere Tagesvolatilität haben (~1-2% statt 3-5%).
     /// </summary>
-    private static decimal GetPipValue(string symbol, MarketCategory category, decimal entryPrice)
+    public static decimal GetPipValue(string symbol, MarketCategory category, decimal entryPrice)
     {
         return category switch
         {

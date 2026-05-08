@@ -52,4 +52,34 @@ public class PendingLimitOrderState
     public string? SequenceId { get; set; }
 
     // BUCH-ONLY: OverExtensionLevel (138.2%) entfernt — kein Buch-Konzept.
+
+    // ═════════════════════════════════════════════════════════════════════
+    // v1.4.0 Phase 0.7 (Finding 0.7) — Strategy-Felder fuer Signal-Rekonstruktion
+    // ═════════════════════════════════════════════════════════════════════
+    // Vor v1.4.0 wurde nach 30 s ohne registriertes Signal das SignalResult ohne diese
+    // Felder rekonstruiert → A-Bruch-BE-Trigger feuert nie (NavPointA=null), Runner kann
+    // nicht aktiviert werden, kein HighProbability-Position-Boost. Schema-Migration v10
+    // ist additiv (JSON-Blob) — alte Eintraege deserialisieren mit Default-Werten,
+    // neue Server-Versionen brechen nicht.
+
+    /// <summary>
+    /// SK Workflow 4.2 — Navigator-PointA. Wird vom A-Bruch-BE-Trigger (BreakevenCalculator)
+    /// gelesen. 0 = unbekannt → Fallback auf 2× SL-Distanz-Trigger.
+    /// </summary>
+    public decimal NavPointA { get; set; }
+
+    /// <summary>Task 1.1 — True wenn das Signal aus einem GKL-Setup (W1/D1) entstand.</summary>
+    public bool IsGklSetup { get; set; }
+
+    /// <summary>Task 1.1 — Timeframe des GKL-Setups (W1 oder D1) zur Anzeige im ActivityFeed.</summary>
+    public TimeFrame? GklTimeframe { get; set; }
+
+    /// <summary>Task 4.7 — Extension 423.6% als Hard-Cap fuer Runner.</summary>
+    public decimal RunnerHardCap { get; set; }
+
+    /// <summary>Task 4.10 — True bei Counter-Trend-Scalp (gegen Haupt-Trend, halbe Position).</summary>
+    public bool IsCounterTrendScalp { get; set; }
+
+    /// <summary>Task 4.10 / Spec §7 B19 — Multiplikator fuer Position-Size (0.5 = halb, 1.5 = HighProb-Boost).</summary>
+    public decimal? PositionScaleOverride { get; set; }
 }

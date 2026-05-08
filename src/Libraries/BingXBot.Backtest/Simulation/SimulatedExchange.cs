@@ -111,16 +111,24 @@ public class SimulatedExchange : IExchangeClient, IDisposable
         foreach (var order in toFill)
         {
             _openOrders.Remove(order);
-            // Ausführung wie Market-Order zum Order-Preis (mit Slippage)
+            // Ausführung zum Order-Preis (mit Slippage). LIMIT-Orders sind Maker (BingX-Realität),
+            // STOP_MARKET (SL) sind Taker.
             var fillPrice = ApplySlippage(order.Price, order.Side);
-            ExecuteOrderLocked(order.Symbol, order.Side, order.Quantity, fillPrice);
+            var isMaker = order.Type == OrderType.Limit;
+            ExecuteOrderLocked(order.Symbol, order.Side, order.Quantity, fillPrice, isMaker);
         }
     }
 
-    /// <summary>Führt eine Order aus und erstellt/erweitert die Position (muss im Write-Lock aufgerufen werden).</summary>
-    private void ExecuteOrderLocked(string symbol, Side side, decimal quantity, decimal fillPrice)
+    /// <summary>
+    /// Führt eine Order aus und erstellt/erweitert die Position (muss im Write-Lock aufgerufen werden).
+    /// 04.05.2026: Limit-Order-Triggers nutzen MakerFee (Default 0.02%); explizite Market-Orders zahlen
+    /// die TakerFee aus dem Caller-Pfad. Realistische Fee-Modellierung — vorher zahlte JEDER Limit-Fill
+    /// die Taker-Rate, was den Backtest pessimistisch um ~0.03% pro Limit-Entry verzerrte.
+    /// </summary>
+    private void ExecuteOrderLocked(string symbol, Side side, decimal quantity, decimal fillPrice, bool isMaker = false)
     {
-        var fee = _settings.TakerFee * quantity * fillPrice;
+        var feeRate = isMaker ? _settings.MakerFee : _settings.TakerFee;
+        var fee = feeRate * quantity * fillPrice;
         _balance -= fee;
 
         var leverageKey = $"{symbol}_{side}";
@@ -307,7 +315,12 @@ public class SimulatedExchange : IExchangeClient, IDisposable
         finally { _rwLock.ExitWriteLock(); }
     }
 
-    public Task ClosePositionAsync(string symbol, Side side)
+    /// <summary>
+    /// Schließt eine offene Position. <paramref name="isMakerClose"/> = true wenn der Close
+    /// real über eine Limit-Reduce-Only-Order erfolgt (TP-Hit) — dann gilt die MakerFee.
+    /// Default false (Market-Close, z.B. SL-StopMarket oder manueller Close) → TakerFee.
+    /// </summary>
+    public Task ClosePositionAsync(string symbol, Side side, bool isMakerClose = false)
     {
         _rwLock.EnterWriteLock();
         try
@@ -320,9 +333,10 @@ public class SimulatedExchange : IExchangeClient, IDisposable
             var exitPrice = GetPriceLocked(symbol);
             var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol);
 
-            // PnL berechnen
+            // PnL berechnen — Fee-Rate je nach Order-Typ (Maker bei TP-Limit-Fill, Taker bei SL/Market-Close)
             var pnl = CalculatePnl(pos.Side, pos.EntryPrice, exitPriceWithSlippage, pos.Quantity);
-            var closingFee = _settings.TakerFee * pos.Quantity * exitPriceWithSlippage;
+            var closingFeeRate = isMakerClose ? _settings.MakerFee : _settings.TakerFee;
+            var closingFee = closingFeeRate * pos.Quantity * exitPriceWithSlippage;
 
             // Opening-Fee aus dem Speicher holen (wurde bei PlaceOrderAsync bereits von _balance abgezogen)
             var feeKey = $"{pos.Symbol}_{pos.Side}";
@@ -372,8 +386,9 @@ public class SimulatedExchange : IExchangeClient, IDisposable
     /// <summary>
     /// Reduziert eine offene Position um die angegebene Menge (Partial Close für Multi-Stage TP1).
     /// Erstellt einen CompletedTrade für den geschlossenen Teil, behält den Rest als Position.
+    /// <paramref name="isMakerClose"/>: TP1-Limit-Reduce-Only → true (Maker), Market-Reduce → false (Taker).
     /// </summary>
-    public Task ReducePositionAsync(string symbol, Side side, decimal quantityToClose)
+    public Task ReducePositionAsync(string symbol, Side side, decimal quantityToClose, bool isMakerClose = false)
     {
         _rwLock.EnterWriteLock();
         try
@@ -383,13 +398,14 @@ public class SimulatedExchange : IExchangeClient, IDisposable
                 return Task.CompletedTask;
 
             var pos = _positions[index];
+            var closingFeeRate = isMakerClose ? _settings.MakerFee : _settings.TakerFee;
             if (quantityToClose >= pos.Quantity)
             {
                 // Voller Close inline (Lock wird NICHT freigegeben, kein Re-Entrant-Aufruf)
                 var fullExitPrice = GetPriceLocked(symbol);
                 var fullExitSlippage = ApplySlippage(fullExitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol);
                 var fullPnl = CalculatePnl(pos.Side, pos.EntryPrice, fullExitSlippage, pos.Quantity);
-                var fullClosingFee = _settings.TakerFee * pos.Quantity * fullExitSlippage;
+                var fullClosingFee = closingFeeRate * pos.Quantity * fullExitSlippage;
                 var fullFeeKey = $"{pos.Symbol}_{pos.Side}";
                 var fullOpeningFee = _positionOpenFees.GetValueOrDefault(fullFeeKey, 0m);
                 _positionOpenFees.Remove(fullFeeKey);
@@ -408,9 +424,9 @@ public class SimulatedExchange : IExchangeClient, IDisposable
             var exitPrice = GetPriceLocked(symbol);
             var exitPriceWithSlippage = ApplySlippage(exitPrice, side == Side.Buy ? Side.Sell : Side.Buy, symbol);
 
-            // PnL nur für den geschlossenen Teil
+            // PnL nur für den geschlossenen Teil (Fee-Rate s.o.: Maker bei TP1-Limit-Reduce, Taker bei Market-Reduce)
             var pnl = CalculatePnl(pos.Side, pos.EntryPrice, exitPriceWithSlippage, quantityToClose);
-            var closingFee = _settings.TakerFee * quantityToClose * exitPriceWithSlippage;
+            var closingFee = closingFeeRate * quantityToClose * exitPriceWithSlippage;
 
             // Anteilige Opening-Fee (proportional zur geschlossenen Menge)
             var feeKey = $"{pos.Symbol}_{pos.Side}";
@@ -553,6 +569,10 @@ public class SimulatedExchange : IExchangeClient, IDisposable
 
     public Task<IReadOnlyList<Position>> GetPositionsAsync(CancellationToken ct) => GetPositionsAsync();
 
+    /// <summary>Interface-Variante: Default ist Market-Close (TakerFee). BacktestEngine nutzt die
+    /// 3-Parameter-Überladung mit explizitem isMakerClose für TP-Hits.</summary>
+    Task IExchangeClient.ClosePositionAsync(string symbol, Side side) => ClosePositionAsync(symbol, side, isMakerClose: false);
+
     public Task CloseAllPositionsAsync(CancellationToken ct) => CloseAllPositionsAsync();
 
     public Task<bool> IsHedgeModeAsync() => Task.FromResult(true);
@@ -605,7 +625,17 @@ public class SimulatedExchange : IExchangeClient, IDisposable
             Status: OrderStatus.New));
 
     public Task<Order> PlaceTpReduceOnlyLimitAsync(string symbol, Side positionSide, decimal quantity, decimal limitPrice) =>
-        PlaceTpLimitOrderAsync(symbol, positionSide, quantity, limitPrice);
+        Task.FromResult(new Order(
+            OrderId: $"sim-tp-rolim-{Interlocked.Increment(ref _orderCounter)}",
+            Symbol: symbol,
+            Side: positionSide == Side.Buy ? Side.Sell : Side.Buy,
+            Type: OrderType.Limit,
+            Price: limitPrice,
+            Quantity: quantity,
+            StopPrice: null,
+            CreateTime: DateTime.UtcNow,
+            Status: OrderStatus.New,
+            ReduceOnly: true));
 
     public Task ActivateKillSwitchAsync(int timeoutMs = 120_000) => Task.CompletedTask;
 

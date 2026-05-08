@@ -28,7 +28,15 @@ public static class PositionDriftAnalyzer
         OrphanSignalRemove,
 
         /// <summary>Position auf Exchange, aber kein Signal im Bot → nur Warnung, nicht schliessen.</summary>
-        UnmanagedPositionWarning
+        UnmanagedPositionWarning,
+
+        /// <summary>
+        /// v1.5.1 Phase 3 — Position existiert, aber kein nativer STOP_MARKET-Reduce-Only-Schutz auf BingX.
+        /// Aktion: Reconcile-Loop ruft <c>SetPositionSlTpAsync</c> mit dem Signal-SL erneut auf
+        /// (Re-Place). Wenn kein Signal-SL bekannt: EmergencyStop fuer dieses Symbol (User-Eingriff noetig).
+        /// Grace-Window 30 s nach Position-Open (verhindert Race zwischen Position-Eroeffnung und SL-Place).
+        /// </summary>
+        MissingStopLoss
     }
 
     /// <summary>
@@ -50,7 +58,10 @@ public static class PositionDriftAnalyzer
         IReadOnlyCollection<string> botSignalKeys,
         IReadOnlySet<(string Symbol, Side Side)> pendingSymbolSides,
         TimeSpan graceWindow,
-        IReadOnlyDictionary<string, DateTime> signalCreatedAt)
+        IReadOnlyDictionary<string, DateTime> signalCreatedAt,
+        IReadOnlyList<Order>? openOrders = null,
+        IReadOnlyDictionary<string, DateTime>? positionOpenedAt = null,
+        TimeSpan? missingStopGraceWindow = null)
     {
         var actions = new List<DriftAction>();
         var now = DateTime.UtcNow;
@@ -100,6 +111,43 @@ public static class PositionDriftAnalyzer
                 pos.Symbol,
                 pos.Side,
                 $"Position auf Exchange ohne Bot-Signal (Qty={pos.Quantity:F4}, Entry={pos.EntryPrice:F8}) — nicht automatisch geschlossen"));
+        }
+
+        // 3) v1.5.1 Phase 3 — Missing-StopLoss-Detection: Bot-managed Position ohne nativen
+        //    STOP_MARKET-Reduce-Only-Schutz. Nur aktiv wenn openOrders + positionOpenedAt geliefert sind.
+        //    Grace-Window: frisch geoeffnete Positionen (≤ 30 s) werden ausgeklammert — der SL-Place
+        //    folgt im PriceTickerLoop in den ersten Sekunden, kein Drift.
+        if (openOrders != null)
+        {
+            var stopGrace = missingStopGraceWindow ?? TimeSpan.FromSeconds(30);
+            // (Symbol, ClosingSide) → hat einen nativen STOP_MARKET-Reduce-Only-Schutz
+            var stopOrderSet = new HashSet<(string Symbol, Side Side)>();
+            foreach (var o in openOrders)
+            {
+                if (o.Type != OrderType.StopMarket) continue;
+                if (!o.ReduceOnly) continue;
+                stopOrderSet.Add((o.Symbol, o.Side));
+            }
+
+            foreach (var pos in exchangePositions.Where(p => p.Quantity > 0))
+            {
+                var key = $"{pos.Symbol}_{pos.Side}";
+                if (!botSignalKeys.Contains(key)) continue;  // Unmanaged → woanders behandelt
+                var closingSide = pos.Side == Side.Buy ? Side.Sell : Side.Buy;
+                if (stopOrderSet.Contains((pos.Symbol, closingSide))) continue;
+
+                // Grace: Position erst seit kurzem offen → SL-Place vermutlich gerade in Arbeit.
+                if (positionOpenedAt != null
+                    && positionOpenedAt.TryGetValue(key, out var openedAt)
+                    && (now - openedAt) < stopGrace)
+                    continue;
+
+                actions.Add(new DriftAction(
+                    DriftKind.MissingStopLoss,
+                    pos.Symbol,
+                    pos.Side,
+                    $"Position offen ohne nativen SL (Side={closingSide} STOP_MARKET ReduceOnly fehlt) — Re-Place erforderlich"));
+            }
         }
 
         return actions;

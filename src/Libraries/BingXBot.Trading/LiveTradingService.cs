@@ -69,7 +69,12 @@ public partial class LiveTradingService : TradingServiceBase
     // TakeProfit/TakeProfit2: TP-Werte werden im Tuple gehalten, damit bei Signal-Rekonstruktion
     // (Fill erkannt, aber _positionSignals leer nach 30s+) der TP nicht verloren geht.
     // internal damit Tests pending-Entries fuer die Pending-Ausnahme im Reconcile setzen koennen.
-    internal readonly ConcurrentDictionary<string, (string OrderId, DateTime PlacedAt, decimal InvalidationLevel, bool IsLong, string Symbol, string? SequenceId, decimal? TakeProfit, decimal? TakeProfit2)> _pendingLimitOrders = new();
+    //
+    // v1.4.0 Phase 0.7 (Finding 0.7) — zusaetzliche Strategy-Felder am Ende des Tuples:
+    // NavPointA / IsGklSetup / GklTimeframe / RunnerHardCap / IsCounterTrendScalp /
+    // PositionScaleOverride. Werden bei Inline-Rekonstruktion in OnBeforePriceTickerIteration
+    // gelesen, damit A-Bruch-BE / Runner / HighProb-Boost auch nach Signal-Verlust korrekt arbeiten.
+    internal readonly ConcurrentDictionary<string, (string OrderId, DateTime PlacedAt, decimal InvalidationLevel, bool IsLong, string Symbol, string? SequenceId, decimal? TakeProfit, decimal? TakeProfit2, decimal NavPointA, bool IsGklSetup, TimeFrame? GklTimeframe, decimal RunnerHardCap, bool IsCounterTrendScalp, decimal? PositionScaleOverride)> _pendingLimitOrders = new();
 
     /// <summary>
     /// Bildet den Dictionary-Key aus Symbol und SequenceId.
@@ -332,7 +337,7 @@ public partial class LiveTradingService : TradingServiceBase
             // Erst Close, dann Cancel (sicherer: bei Close-Fehler bleibt nativer SL als Schutz)
             await _restClient.ClosePositionAsync(symbol, side).ConfigureAwait(false);
             RemoveSignalByKey($"{symbol}_{side}");
-            try { await CancelNativeSlTpOrdersAsync(symbol).ConfigureAwait(false); }
+            try { await CancelNativeSlTpOrdersAsync(symbol, side).ConfigureAwait(false); }
             catch { /* Verwaiste Orders sind ungefährlich */ }
 
             // CompletedTrade erstellen damit RiskManager Feedback bekommt
@@ -381,7 +386,7 @@ public partial class LiveTradingService : TradingServiceBase
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
                     $"LIVE: {pos.Symbol} {pos.Side} bereits durch native SL/TP geschlossen", pos.Symbol));
                 // Verwaiste native SL/TP-Orders canceln (Position bereits geschlossen)
-                await CancelNativeSlTpOrdersAsync(pos.Symbol).ConfigureAwait(false);
+                await CancelNativeSlTpOrdersAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
 
                 // CompletedTrade trotzdem erstellen (TradeHistory + RiskManager)
                 var entryFeeNat = pos.Quantity * pos.EntryPrice * _takerFeeRate;
@@ -403,7 +408,7 @@ public partial class LiveTradingService : TradingServiceBase
             // Verwaiste Orders nach erfolgreichem Close sind ungefährlich.
             await _restClient.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
             // Position erfolgreich geschlossen → jetzt verwaiste SL/TP-Orders aufräumen
-            try { await CancelNativeSlTpOrdersAsync(pos.Symbol).ConfigureAwait(false); }
+            try { await CancelNativeSlTpOrdersAsync(pos.Symbol, pos.Side).ConfigureAwait(false); }
             catch { /* Best-effort: Verwaiste Orders sind ungefährlich */ }
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
@@ -526,8 +531,10 @@ public partial class LiveTradingService : TradingServiceBase
     /// </summary>
     protected override async Task PreloadScanDataAsync(IReadOnlyList<Ticker> candidates, CancellationToken ct)
     {
+        // v1.5.4 Phase 7 — 30-s-TTL-Cache. Vorher hat `!_fundingRates.ContainsKey(...)` permanent
+        // gecached → Funding lief stundenlang stale. Jetzt: bei abgelaufenem Cache neu fetchen.
         var toLoad = candidates
-            .Where(t => !_fundingRates.ContainsKey(t.Symbol)
+            .Where(t => !IsFundingRateCacheFresh(t.Symbol)
                         && !Core.Helpers.SymbolClassifier.IsTradFi(t.Symbol))
             .Take(50)
             .ToList();
@@ -541,6 +548,7 @@ public partial class LiveTradingService : TradingServiceBase
             {
                 var rate = await _restClient.GetFundingRateAsync(t.Symbol).ConfigureAwait(false);
                 _fundingRates[t.Symbol] = rate;
+                _fundingRatesFetchedAt[t.Symbol] = DateTime.UtcNow;
             }
             catch { /* Funding-Load ist best-effort */ }
             finally { sem.Release(); }
@@ -592,21 +600,85 @@ public partial class LiveTradingService : TradingServiceBase
                     // existiert, aber kein Signal → Fill-Detection stuck in "retry nächster Tick" Endlos-Loop
                     // → TP wird nie platziert.
                     //
-                    // Triple-Entry (15.04.2026): Key-Format ist "{symbol}#{sequenceId}" — wir müssen
-                    // irgendeinen Eintrag für dieses Symbol finden, egal welcher Level-Suffix.
+                    // Side aus dem posKey-Format ({symbol}_{Buy|Sell}) einmal extrahieren — sowohl fuer
+                    // den Side-spezifischen Pending-Schutz (Finding 0.4) als auch fuer den
+                    // Reduce-Only-Filter im Cancel-Aufruf (Finding 0.1).
                     var symbol = key.Split('_')[0];
-                    if (_pendingLimitOrders.Values.Any(v => v.Symbol == symbol))
+                    Side? sideOfKey = null;
+                    var sideIdx = key.LastIndexOf('_');
+                    if (sideIdx >= 0 && Enum.TryParse<Side>(key.AsSpan(sideIdx + 1), out var parsedSide))
+                        sideOfKey = parsedSide;
+
+                    // Phase 0.4 Fix (Finding 0.4) — Side-Filter beim Pending-Schutz.
+                    // Vor v1.4.0: Long-Signal blieb stehen, wenn IRGENDEINE Pending fuer das Symbol
+                    // existierte — auch wenn die Pending in die Gegenrichtung lief (z.B. Short).
+                    // Im Hedge-Mode mit Long+Short parallel fuehrte das zu Zombie-Long-Signalen, die
+                    // Risiko-Berechnungen (DailyRisk, Recovery-TP) verzerrten.
+                    // Triple-Entry-Key {symbol}#{sequenceId} (Pending-Map) hat keine Side-Komponente —
+                    // Side liegt im Wert-Tuple (IsLong). Pending-Side wird aus IsLong projiziert.
+                    var hasMatchingPending = sideOfKey.HasValue
+                        ? _pendingLimitOrders.Values.Any(v =>
+                            v.Symbol == symbol
+                            && (v.IsLong ? Side.Buy : Side.Sell) == sideOfKey.Value)
+                        : _pendingLimitOrders.Values.Any(v => v.Symbol == symbol);
+                    if (hasMatchingPending)
                         continue;
 
                     // Nur entfernen wenn Signal älter als 30 Sekunden (API-Latenz-Grace-Period)
                     if (_signalCreatedAt.TryGetValue(key, out var createdAt) && (now - createdAt).TotalSeconds > 30)
                     {
                         // SK-VERIFY: [6.2] Verwaiste native SL/TP-Orders aufräumen
-                        // Wenn User die Position manuell auf BingX schließt, bleiben die nativen Orders im Orderbuch
-                        try { await CancelNativeSlTpOrdersAsync(symbol).ConfigureAwait(false); }
+                        // Wenn User die Position manuell auf BingX schließt, bleiben die nativen Orders im Orderbuch.
+                        try { await CancelNativeSlTpOrdersAsync(symbol, sideOfKey).ConfigureAwait(false); }
                         catch { /* Best-effort: Verwaiste Orders sind ungefährlich */ }
                         RemoveSignalByKey(key);
                     }
+                }
+            }
+        }
+
+        // v1.4.0 Phase 0.6 (Finding 0.6) — Stage 3: TP-Place-Retry fuer Positionen, deren
+        // initialer TP-Place fehlgeschlagen ist (Position bei BingX nicht binnen 3 s sichtbar).
+        // Tickt zusammen mit PriceTickerLoop (5 s). Hard-Timeout 30 s ab erstem Versuch — danach
+        // gibt der Bot auf und ueberlaesst der PriceTickerLoop-Fallback-Logik die TP-Detection.
+        if (_exitStates.Count > 0)
+        {
+            const int RetryHardTimeoutSeconds = 30;
+            var nowRetry = DateTime.UtcNow;
+            foreach (var kvp in _exitStates)
+            {
+                var es = kvp.Value;
+                if (!es.PendingTpRetry) continue;
+
+                // Hard-Timeout: Wenn der erste Versuch > 30 s zurueckliegt, geben wir auf.
+                var ageSeconds = (nowRetry - es.PendingTpFirstAttemptUtc).TotalSeconds;
+                if (ageSeconds > RetryHardTimeoutSeconds)
+                {
+                    es.PendingTpRetry = false;
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                        $"LIVE: {es.Symbol} TP-Retry Hard-Timeout ({RetryHardTimeoutSeconds}s) erreicht " +
+                        $"nach {es.PendingTpRetryCount} Versuch(en) — Bot-Fallback (PriceTickerLoop) uebernimmt",
+                        es.Symbol));
+                    continue;
+                }
+
+                // Position muss jetzt sichtbar sein, sonst weiter warten.
+                var pos = positions.FirstOrDefault(p => p.Symbol == es.Symbol && p.Side == es.Side);
+                if (pos == null || pos.Quantity <= 0) continue;
+
+                es.PendingTpRetryCount++;
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                    $"LIVE: {es.Symbol} Stage-3-Retry #{es.PendingTpRetryCount} (Position jetzt sichtbar, qty={pos.Quantity:F8})",
+                    es.Symbol));
+                try
+                {
+                    await PlaceTpLimitOrdersAfterFillAsync(es.Symbol, es.Side, pos.Quantity, es.Signal).ConfigureAwait(false);
+                }
+                catch (Exception retryEx)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                        $"LIVE: {es.Symbol} Stage-3-Retry-Aufruf fehlgeschlagen: {retryEx.Message}",
+                        es.Symbol));
                 }
             }
         }
@@ -662,7 +734,7 @@ public partial class LiveTradingService : TradingServiceBase
                         try
                         {
                             await _restClient.ClosePositionAsync(sym, filledPos.Side).ConfigureAwait(false);
-                            await CancelNativeSlTpOrdersAsync(sym).ConfigureAwait(false);
+                            await CancelNativeSlTpOrdersAsync(sym, filledPos.Side).ConfigureAwait(false);
                         }
                         catch (Exception raceEx)
                         {
@@ -711,6 +783,13 @@ public partial class LiveTradingService : TradingServiceBase
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
                             $"LIVE: {sym} Signal nach {pendingAge:F0}s nicht registriert — rekonstruiere aus Pending-State (SL={kvp.Value.InvalidationLevel:F8}, {tpLogText})", sym));
 
+                        // v1.4.0 Phase 0.7 (Finding 0.7) — Strategy-Felder direkt aus Pending-Tuple
+                        // wiederbeleben (Place- und Restore-Pfade fuellen sie). Vor v1.4.0 fielen
+                        // hier NavPointA / RunnerHardCap / GKL / Counter-Trend / PositionScale
+                        // weg → A-Bruch-BE feuerte nie, Runner inactive, HighProb-Boost futsch.
+                        decimal? recoveredNavPointA = kvp.Value.NavPointA > 0 ? kvp.Value.NavPointA : null;
+                        decimal? recoveredHardCap = kvp.Value.RunnerHardCap > 0 ? kvp.Value.RunnerHardCap : null;
+
                         var reconstructedSignal = new SignalResult(
                             kvp.Value.IsLong ? Signal.Long : Signal.Short,
                             0.5m,
@@ -720,7 +799,13 @@ public partial class LiveTradingService : TradingServiceBase
                             Reason: "Rekonstruiert nach Signal-Verlust (Verwaist-Cleanup oder Neustart)",
                             TakeProfit2: recoveredTp2,
                             DisableSmartBreakeven: true,
-                            SequenceId: kvp.Value.SequenceId);
+                            SequenceId: kvp.Value.SequenceId,
+                            IsGklSetup: kvp.Value.IsGklSetup,
+                            GklTimeframe: kvp.Value.GklTimeframe,
+                            NavPointA: recoveredNavPointA,
+                            RunnerHardCap: recoveredHardCap,
+                            IsCounterTrendScalp: kvp.Value.IsCounterTrendScalp,
+                            PositionScaleOverride: kvp.Value.PositionScaleOverride);
 
                         _positionSignals[posKey] = reconstructedSignal;
                         OnSignalCreated(posKey);
@@ -803,7 +888,11 @@ public partial class LiveTradingService : TradingServiceBase
                     : positions.FirstOrDefault(p => p.Symbol == sym)?.MarkPrice ?? 0m;
                 if (currentPx <= 0)
                 {
-                    tickers ??= await _publicClient.GetAllTickersAsync().ConfigureAwait(false);
+                    if (tickers == null)
+                    {
+                        var fetched = await _publicClient.GetAllTickersAsync().ConfigureAwait(false);
+                        tickers = fetched?.ToList() ?? new List<Ticker>();
+                    }
                     currentPx = tickers.FirstOrDefault(t => t.Symbol == sym)?.LastPrice ?? 0m;
                 }
 
@@ -847,7 +936,7 @@ public partial class LiveTradingService : TradingServiceBase
                         {
                             // Teilweise gefüllt: TP-Limit-Orders auf BingX canceln (falsche Qty)
                             // und Signal/ExitState mit korrekter Quantity + Fill-Preis aktualisieren
-                            await CancelNativeSlTpOrdersAsync(sym).ConfigureAwait(false);
+                            await CancelNativeSlTpOrdersAsync(sym, currentPos.Side).ConfigureAwait(false);
                             var posKey = $"{sym}_{currentPos.Side}";
                             if (_exitStates.TryGetValue(posKey, out var es))
                             {
@@ -869,7 +958,7 @@ public partial class LiveTradingService : TradingServiceBase
                                 if (_positionSignals.ContainsKey(posKey))
                                 {
                                     RemoveSignalByKey(posKey);
-                                    try { await CancelNativeSlTpOrdersAsync(sym).ConfigureAwait(false); }
+                                    try { await CancelNativeSlTpOrdersAsync(sym, side).ConfigureAwait(false); }
                                     catch { /* Best-effort */ }
                                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
                                         $"{sym}: Nicht gefüllt, Signal + TP-Orders aufgeräumt", sym));
@@ -903,6 +992,7 @@ public partial class LiveTradingService : TradingServiceBase
                 {
                     var rate = await _restClient.GetFundingRateAsync(symbol).ConfigureAwait(false);
                     _fundingRates[symbol] = rate;
+                    _fundingRatesFetchedAt[symbol] = DateTime.UtcNow;
                 }
                 catch { /* Funding-Rate-Abfrage ist optional */ }
             }

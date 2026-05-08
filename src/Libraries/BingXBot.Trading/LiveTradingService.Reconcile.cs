@@ -30,7 +30,13 @@ public partial class LiveTradingService
             try
             {
                 if (!_isPaused)
+                {
                     await ReconcilePositionsAsync(ct).ConfigureAwait(false);
+                    // 04.05.2026 — Stale Pending-Limit-Orders mit Time-Expiry cancel (Default 6h).
+                    // Schützt gegen "Symbol aus Top-100 gefallen, Pending hängt tagelang" — siehe
+                    // RiskSettings.PendingLimitOrderMaxAgeHours.
+                    await CancelExpiredPendingLimitOrdersAsync().ConfigureAwait(false);
+                }
             }
             catch (OperationCanceledException) { break; }
             catch (Exception ex)
@@ -48,7 +54,8 @@ public partial class LiveTradingService
     /// Einmaliger Reconcile-Durchlauf:
     /// 1) Exchange-Positionen abrufen,
     /// 2) Drift gegen <see cref="TradingServiceBase._positionSignals"/> analysieren,
-    /// 3) Orphan-Signale bereinigen, Unmanaged-Positionen loggen.
+    /// 3) Orphan-Signale bereinigen, Unmanaged-Positionen loggen,
+    /// 4) v1.5.1 Phase 3 — Missing-Stop-Loss-Detection (Re-Place wenn Signal-SL bekannt).
     /// Internal fuer Testbarkeit (InternalsVisibleTo=BingXBot.Tests).
     /// </summary>
     internal async Task ReconcilePositionsAsync(CancellationToken ct)
@@ -63,12 +70,30 @@ public partial class LiveTradingService
             .Select(v => (v.Symbol, v.IsLong ? Side.Buy : Side.Sell))
             .ToHashSet();
 
+        // v1.5.1 Phase 3 — Open-Orders fuer Missing-Stop-Loss-Detection abrufen.
+        IReadOnlyList<Order>? openOrders = null;
+        try
+        {
+            openOrders = await _restClient.GetOpenOrdersAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Reconcile",
+                $"OpenOrders-Abruf fehlgeschlagen — Missing-Stop-Detection in dieser Iteration uebersprungen: {ex.Message}"));
+        }
+
+        // PositionOpenedAt-Lookup (fuer 30-s-Grace-Window).
+        var positionOpenedAt = (IReadOnlyDictionary<string, DateTime>)_positionOpenTimes;
+
         var actions = PositionDriftAnalyzer.Analyze(
             positions,
             botKeys,
             pendingSymbolSides,
             graceWindow: TimeSpan.FromSeconds(90),
-            signalCreatedAt: _signalCreatedAt);
+            signalCreatedAt: _signalCreatedAt,
+            openOrders: openOrders,
+            positionOpenedAt: positionOpenedAt,
+            missingStopGraceWindow: TimeSpan.FromSeconds(30));
 
         if (actions.Count == 0) return;
 
@@ -89,7 +114,43 @@ public partial class LiveTradingService
                         $"{LogPrefix}{action.Symbol} {action.Side}: {action.Reason}",
                         action.Symbol));
                     break;
+
+                case PositionDriftAnalyzer.DriftKind.MissingStopLoss:
+                    await ReplaceMissingStopAsync(action, key).ConfigureAwait(false);
+                    break;
             }
+        }
+    }
+
+    /// <summary>
+    /// v1.5.1 Phase 3 — Re-platziert den nativen SL fuer eine Position deren STOP_MARKET-Order
+    /// auf BingX fehlt. Liest den SL-Wert aus dem Signal (<see cref="TradingServiceBase._positionSignals"/>).
+    /// Wenn kein Signal-SL bekannt: Warning + kein Auto-Close (User-Eingriff erwartet,
+    /// Auto-Close wuerde manuell gestartete Trades plattmachen).
+    /// </summary>
+    private async Task ReplaceMissingStopAsync(PositionDriftAnalyzer.DriftAction action, string posKey)
+    {
+        if (!_positionSignals.TryGetValue(posKey, out var signal) || signal.StopLoss is null)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
+                $"{LogPrefix}{action.Symbol} {action.Side}: Missing-SL erkannt, ABER kein Signal-SL bekannt — manueller Eingriff noetig (Position UNGESCHUETZT!)",
+                action.Symbol));
+            return;
+        }
+
+        try
+        {
+            await _restClient.SetPositionSlTpAsync(action.Symbol, action.Side, signal.StopLoss, signal.TakeProfit)
+                .ConfigureAwait(false);
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                $"{LogPrefix}{action.Symbol} {action.Side}: Missing-SL → re-placed @ {signal.StopLoss:F8}",
+                action.Symbol));
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Reconcile",
+                $"{LogPrefix}{action.Symbol} {action.Side}: SL-Re-Place fehlgeschlagen ({ex.Message}) — Position UNGESCHUETZT bis naechster Reconcile-Durchlauf!",
+                action.Symbol));
         }
     }
 }

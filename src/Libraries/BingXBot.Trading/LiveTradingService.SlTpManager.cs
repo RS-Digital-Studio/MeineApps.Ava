@@ -14,17 +14,49 @@ namespace BingXBot.Trading;
 public partial class LiveTradingService
 {
     /// <summary>
-    /// Cancelt alle nativen SL/TP-Orders (STOP_MARKET + TAKE_PROFIT_MARKET) für ein Symbol.
-    /// Muss VOR Position-Close aufgerufen werden, damit keine Ghost-Orders übrigbleiben.
+    /// Cancelt alle SL/TP-Orders fuer ein Symbol. Muss VOR Position-Close aufgerufen werden,
+    /// damit keine Ghost-Orders uebrigbleiben.
+    ///
+    /// v1.4.0 Phase 0.1 (Finding 0.1) — Filter erweitert:
+    /// - Native: <see cref="OrderType.StopMarket"/>, <see cref="OrderType.TakeProfitMarket"/>,
+    ///   <see cref="OrderType.TakeProfitLimit"/> (von <c>BingXRestClient.PlaceTpLimitOrderAsync</c> /
+    ///   <c>SetPositionSlTpAsync</c> platziert).
+    /// - Bot-platzierte TP-Reduce-Only-LIMITs: <see cref="OrderType.Limit"/> mit
+    ///   <see cref="Order.ReduceOnly"/> true (von <c>PlaceTpReduceOnlyLimitAsync</c>).
+    ///   Vor v1.4.0 wurden diese hier nicht erkannt → Ghost-Orders im BingX-Orderbuch nach
+    ///   regulaerem Close (Open-Order-Limit aufgefressen, falsche Reconcile-Stats, im Worst-Case
+    ///   Cross-Match mit neuer Position auf demselben Symbol+Side).
     /// </summary>
-    private async Task CancelNativeSlTpOrdersAsync(string symbol)
+    /// <param name="symbol">Symbol der zu schliessenden Position.</param>
+    /// <param name="originalPositionSide">
+    /// Original-Side der zu schliessenden Position (Buy=Long, Sell=Short). Wird genutzt um
+    /// Reduce-Only-Limits auf der Schliess-Seite zu filtern. Im Hedge-Mode kann dasselbe Symbol
+    /// gleichzeitig Long+Short halten — dann sollen NUR die Reduce-Only-Limits der zu schliessenden
+    /// Seite gecancelt werden, die der parallelen Gegenposition NICHT.
+    /// Bei <c>null</c> (Notfall-Cleanup ohne Side-Kontext): alle Reduce-Only-Limits canceln.
+    /// </param>
+    private async Task CancelNativeSlTpOrdersAsync(string symbol, Side? originalPositionSide = null)
     {
         try
         {
             var openOrders = await _restClient.GetOpenOrdersAsync(symbol).ConfigureAwait(false);
+            // Reduce-Only-Order = Schliess-Seite der Original-Position
+            // (Long-Position → Sell-Order, Short-Position → Buy-Order).
+            var roCloseSide = originalPositionSide.HasValue
+                ? (originalPositionSide.Value == Side.Buy ? Side.Sell : Side.Buy)
+                : (Side?)null;
+
             foreach (var order in openOrders)
             {
-                if (order.Type is OrderType.StopMarket or OrderType.TakeProfitMarket or OrderType.TakeProfitLimit)
+                var isNativeSlTp = order.Type is OrderType.StopMarket
+                                              or OrderType.TakeProfitMarket
+                                              or OrderType.TakeProfitLimit;
+
+                var isBotTpReduceOnly = order.Type == OrderType.Limit
+                    && order.ReduceOnly
+                    && (roCloseSide == null || order.Side == roCloseSide.Value);
+
+                if (isNativeSlTp || isBotTpReduceOnly)
                 {
                     try { await _restClient.CancelOrderAsync(order.OrderId, symbol).ConfigureAwait(false); }
                     catch { /* Order möglicherweise bereits gecancelled */ }

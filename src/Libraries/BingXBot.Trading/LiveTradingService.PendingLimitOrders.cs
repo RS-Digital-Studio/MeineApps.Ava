@@ -61,7 +61,10 @@ public partial class LiveTradingService
                 TakeProfit2 = kvp.Value.TakeProfit2,
             };
 
-            // DisableSmartBreakeven + EntryPrice aus zugehoerigem Signal (falls noch vorhanden).
+            // DisableSmartBreakeven + EntryPrice + Strategy-Felder aus zugehoerigem Signal
+            // (falls noch vorhanden). Phase 0.7 (Finding 0.7): Strategy-Felder werden mit-
+            // persistiert, damit nach 30s+ Signal-Rekonstruktion (Verwaist-Cleanup oder Restart)
+            // A-Bruch-BE / Runner / HighProbability-Boost weiterhin korrekt arbeiten.
             var expectedSide = kvp.Value.IsLong ? Side.Buy : Side.Sell;
             var posKey = $"{kvp.Value.Symbol}_{expectedSide}";
             if (_positionSignals.TryGetValue(posKey, out var sig))
@@ -71,6 +74,14 @@ public partial class LiveTradingService
                 // Fallback fuer Legacy-Tuple-Eintraege ohne TP-Persist (sollte nach v1.2.5 nicht mehr auftreten)
                 state.TakeProfit ??= sig.TakeProfit;
                 state.TakeProfit2 ??= sig.TakeProfit2;
+
+                // v1.4.0 Phase 0.7 — Strategy-Felder
+                state.NavPointA = sig.NavPointA ?? 0m;
+                state.IsGklSetup = sig.IsGklSetup;
+                state.GklTimeframe = sig.GklTimeframe;
+                state.RunnerHardCap = sig.RunnerHardCap ?? 0m;
+                state.IsCounterTrendScalp = sig.IsCounterTrendScalp;
+                state.PositionScaleOverride = sig.PositionScaleOverride;
             }
 
             result[kvp.Key] = state;
@@ -99,9 +110,16 @@ public partial class LiveTradingService
 
             // TakeProfit/TakeProfit2 persistiert — bei alten DB-Eintraegen null → Rekonstruktion
             // ohne TP (wie bisher), aber neue Eintraege behalten TP beim Restart.
+            // v1.4.0 Phase 0.7 (Finding 0.7) — Strategy-Felder aus DB ins Tuple uebernehmen.
             _pendingLimitOrders[newKey] = (kvp.Value.OrderId, kvp.Value.PlacedAt,
                 kvp.Value.InvalidationLevel, kvp.Value.IsLong, symbol, sequenceId,
-                kvp.Value.TakeProfit, kvp.Value.TakeProfit2);
+                kvp.Value.TakeProfit, kvp.Value.TakeProfit2,
+                NavPointA: kvp.Value.NavPointA,
+                IsGklSetup: kvp.Value.IsGklSetup,
+                GklTimeframe: kvp.Value.GklTimeframe,
+                RunnerHardCap: kvp.Value.RunnerHardCap,
+                IsCounterTrendScalp: kvp.Value.IsCounterTrendScalp,
+                PositionScaleOverride: kvp.Value.PositionScaleOverride);
 
             // Signal muss auch existieren damit Fill-Detection das TP setzen kann
             var expectedSide = kvp.Value.IsLong ? Side.Buy : Side.Sell;
@@ -111,6 +129,8 @@ public partial class LiveTradingService
                 // EntryPrice persistiert seit 17.04.2026 (Limit-Preis). Bei Legacy-Einträgen
                 // oder unbekanntem EntryPrice fallback auf null — im Fill werden die tatsächlichen
                 // Werte in _exitStates korrigiert.
+                // v1.4.0 Phase 0.7 (Finding 0.7) — Strategy-Felder restoren, damit BE-Trigger /
+                // Runner / HighProb-Boost nach Restart greifen.
                 decimal? entryPx = kvp.Value.EntryPrice > 0 ? kvp.Value.EntryPrice : null;
                 var signal = new SignalResult(
                     kvp.Value.IsLong ? Signal.Long : Signal.Short,
@@ -120,7 +140,13 @@ public partial class LiveTradingService
                     Reason: "Recovery: Pending Limit-Order wiederhergestellt",
                     TakeProfit2: kvp.Value.TakeProfit2,
                     DisableSmartBreakeven: kvp.Value.DisableSmartBreakeven,
-                    SequenceId: sequenceId);
+                    SequenceId: sequenceId,
+                    IsGklSetup: kvp.Value.IsGklSetup,
+                    GklTimeframe: kvp.Value.GklTimeframe,
+                    NavPointA: kvp.Value.NavPointA > 0 ? kvp.Value.NavPointA : null,
+                    RunnerHardCap: kvp.Value.RunnerHardCap > 0 ? kvp.Value.RunnerHardCap : null,
+                    IsCounterTrendScalp: kvp.Value.IsCounterTrendScalp,
+                    PositionScaleOverride: kvp.Value.PositionScaleOverride);
                 _positionSignals[posKey] = signal;
                 OnSignalCreated(posKey);
 
@@ -235,5 +261,56 @@ public partial class LiveTradingService
     public async Task RecoverTpOrdersAsync(string symbol, Side side, decimal quantity, SignalResult signal)
     {
         await PlaceTpLimitOrdersAfterFillAsync(symbol, side, quantity, signal).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 04.05.2026 — Time-Based-Expiry für pending Limit-Orders.
+    /// Cancelt alle pending Orders deren <c>PlacedAt</c> älter als
+    /// <see cref="RiskSettings.PendingLimitOrderMaxAgeHours"/> ist. Wenn der Wert ≤ 0 ist,
+    /// macht die Methode nichts (Backwards-Compat / Opt-out).
+    ///
+    /// Hintergrund: Wenn ein Symbol aus der Top-100 herausfällt, wird kein neues Signal mehr
+    /// generiert — <see cref="CancelStaleSequencePendingAsync"/> löst nur bei NEUEM Signal aus.
+    /// Ohne Time-Expiry läuft die Order tagelang gegen einen toten Markt; bei einer späten
+    /// Reversal-Bewegung kann sie zufällig auf BC-Niveau füllen, obwohl die Sequenz längst
+    /// verfallen ist.
+    ///
+    /// Wird vom Reconcile-Loop alle 60 s aufgerufen. Internal für Testbarkeit.
+    /// </summary>
+    internal async Task CancelExpiredPendingLimitOrdersAsync()
+    {
+        var maxAgeHours = _riskSettings.PendingLimitOrderMaxAgeHours;
+        if (maxAgeHours <= 0m) return;
+        if (_pendingLimitOrders.IsEmpty) return;
+
+        var nowUtc = DateTime.UtcNow;
+        var maxAge = TimeSpan.FromHours((double)maxAgeHours);
+        var expired = _pendingLimitOrders
+            .Where(kvp => nowUtc - kvp.Value.PlacedAt > maxAge)
+            .Select(kvp => (kvp.Key, kvp.Value.OrderId, kvp.Value.Symbol, kvp.Value.SequenceId, kvp.Value.PlacedAt))
+            .ToList();
+
+        if (expired.Count == 0) return;
+
+        foreach (var (key, orderId, symbol, sequenceId, placedAt) in expired)
+        {
+            var ageHours = (nowUtc - placedAt).TotalHours;
+            try
+            {
+                await _restClient.CancelOrderAsync(orderId, symbol).ConfigureAwait(false);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                    $"{symbol}: Pending-Limit-Order abgelaufen (Alter={ageHours:F1}h > {maxAgeHours}h, SeqId={sequenceId}, OrderId={orderId}) — gecancelt",
+                    symbol));
+            }
+            catch (Exception ex)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
+                    $"{symbol}: Cancel der abgelaufenen Order schlug fehl (möglicherweise bereits gefüllt/gecancelt): {ex.Message}",
+                    symbol));
+            }
+            _pendingLimitOrders.TryRemove(key, out _);
+        }
+
+        await PersistPendingLimitOrdersAsync().ConfigureAwait(false);
     }
 }

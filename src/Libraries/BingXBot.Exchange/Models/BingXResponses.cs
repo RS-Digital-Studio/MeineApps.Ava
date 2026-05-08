@@ -69,6 +69,18 @@ public class BingXOrderDetail
     [JsonPropertyName("stopPrice"), JsonConverter(typeof(FlexibleStringConverter))] public string? StopPrice { get; set; }
     [JsonPropertyName("status")] public string Status { get; set; } = "";
     [JsonPropertyName("createTime")] public long CreateTime { get; set; }
+    /// <summary>
+    /// BingX kann das Feld als bool (true) oder string ("true"/"false") liefern — der
+    /// FlexibleStringConverter normalisiert beides auf string. v1.4.0 Phase 0.1 (Finding 0.1):
+    /// notwendig, damit Bot-platzierte TP-Reduce-Only-Limits beim Position-Close gecancelt
+    /// werden statt als Ghost-Orders im Orderbuch zu bleiben.
+    /// </summary>
+    [JsonPropertyName("reduceOnly"), JsonConverter(typeof(FlexibleStringConverter))] public string? ReduceOnly { get; set; }
+    /// <summary>
+    /// "LONG" / "SHORT" / "BOTH". Wird in Hedge-Mode-Detektion + Side-Inversion-Fallback
+    /// fuer Reduce-Only-Filter (Finding 0.1) verwendet, falls reduceOnly fehlt.
+    /// </summary>
+    [JsonPropertyName("positionSide")] public string? PositionSide { get; set; }
 }
 
 // Position (BingX gibt manche Felder als Zahl statt String zurück → FlexibleStringConverter)

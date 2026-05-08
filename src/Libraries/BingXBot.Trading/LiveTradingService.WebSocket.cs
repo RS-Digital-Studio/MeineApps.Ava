@@ -132,6 +132,29 @@ public partial class LiveTradingService
                         var oSide = orderData.TryGetProperty("S", out var sideProp) ? sideProp.GetString() : "?";
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "WebSocket",
                             $"Order-Update: {symbol} {oSide} → {status}", symbol));
+
+                        // v1.4.0 Phase 0.2/0.3 (Findings 0.2/0.3) — TP1/TP2 Limit-Fill-Detection.
+                        // BingX User-Data-Stream feuert bei jedem Order-Status-Change. Bei FILLED auf
+                        // einer unserer TP-Reduce-Only-Limits triggern wir die Phase-Transition
+                        // (Signal patchen, BE setzen, CompletedTrade publishen) — der PriceTickerLoop
+                        // hat den TP-Hit-Check bereits geskippt (siehe IsTpManagedByExchange).
+                        // PARTIALLY_FILLED triggert NICHT — sonst frueher Phase-Wechsel bei niedriger Liquiditaet.
+                        if (status == "FILLED" && !string.IsNullOrEmpty(symbol))
+                        {
+                            string? orderId = null;
+                            if (orderData.TryGetProperty("i", out var iProp))
+                            {
+                                orderId = iProp.ValueKind == System.Text.Json.JsonValueKind.Number
+                                    ? iProp.GetInt64().ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                    : iProp.GetString();
+                            }
+                            if (!string.IsNullOrEmpty(orderId))
+                            {
+                                // Fire-and-forget — der WebSocket-Handler darf nicht blockieren.
+                                // Exceptions im Helper werden dort geloggt.
+                                _ = SafeProcessTpFillAsync(symbol!, orderId!);
+                            }
+                        }
                     }
                     break;
             }
@@ -139,6 +162,23 @@ public partial class LiveTradingService
         catch
         {
             // Parse-Fehler ignorieren - User-Data ist optional
+        }
+    }
+
+    /// <summary>
+    /// Wrapper um <see cref="ProcessTpLimitFillAsync"/> mit Exception-Handling, damit ein
+    /// Bug im Helper den Stream-Handler nicht killt.
+    /// </summary>
+    private async Task SafeProcessTpFillAsync(string symbol, string orderId)
+    {
+        try
+        {
+            await ProcessTpLimitFillAsync(symbol, orderId).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "WebSocket",
+                $"TP-Limit-Fill-Verarbeitung fuer {symbol}/{orderId} fehlgeschlagen: {ex.Message}", symbol));
         }
     }
 

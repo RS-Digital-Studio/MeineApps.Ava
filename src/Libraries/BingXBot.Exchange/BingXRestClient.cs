@@ -659,6 +659,12 @@ public class BingXRestClient : IExchangeClient
                 var detail = JsonSerializer.Deserialize<BingXOrderDetail>(item.GetRawText());
                 if (detail is null) continue;
 
+                // ReduceOnly aus FlexibleStringConverter (true/false als string oder bool).
+                // Phase 0.1 (Finding 0.1): notwendig fuer Cancel-Filter, damit Bot-platzierte TP-Limits
+                // (LIMIT mit reduceOnly=true) beim Position-Close erkannt werden.
+                var reduceOnly = !string.IsNullOrEmpty(detail.ReduceOnly)
+                    && detail.ReduceOnly.Equals("true", StringComparison.OrdinalIgnoreCase);
+
                 orders.Add(new Order(
                     detail.OrderId,
                     detail.Symbol,
@@ -668,7 +674,8 @@ public class BingXRestClient : IExchangeClient
                     ParseDecimal(detail.Quantity),
                     string.IsNullOrEmpty(detail.StopPrice) ? null : ParseDecimal(detail.StopPrice),
                     FromUnixMs(detail.CreateTime),
-                    ParseOrderStatus(detail.Status)));
+                    ParseOrderStatus(detail.Status),
+                    ReduceOnly: reduceOnly));
             }
         }
 
@@ -926,16 +933,19 @@ public class BingXRestClient : IExchangeClient
             var detail = data.Order;
             return detail != null
                 ? new Order(detail.OrderId, symbol, closeSide, OrderType.Limit,
-                    roundedPrice, adjustedQty, null, DateTime.UtcNow, ParseOrderStatus(detail.Status))
+                    roundedPrice, adjustedQty, null, DateTime.UtcNow, ParseOrderStatus(detail.Status),
+                    ReduceOnly: true)
                 : new Order("", symbol, closeSide, OrderType.Limit,
-                    roundedPrice, adjustedQty, null, DateTime.UtcNow, OrderStatus.Rejected);
+                    roundedPrice, adjustedQty, null, DateTime.UtcNow, OrderStatus.Rejected,
+                    ReduceOnly: true);
         }
         catch (Exception ex)
         {
             _logger.LogWarning("TP Limit fehlgeschlagen: {Error}", ex.Message);
             return new Order("", symbol, closeSide, OrderType.Limit,
                 roundedPrice, adjustedQty, null, DateTime.UtcNow, OrderStatus.Rejected,
-                RejectionReason: ex.Message);
+                RejectionReason: ex.Message,
+                ReduceOnly: true);
         }
     }
 

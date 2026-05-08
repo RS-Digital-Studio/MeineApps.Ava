@@ -48,7 +48,7 @@ public sealed class FakeExchangeClient : IExchangeClient
         return this;
     }
 
-    public FakeExchangeClient WithOpenOrder(string symbol, Side side, OrderType type, decimal qty, decimal price)
+    public FakeExchangeClient WithOpenOrder(string symbol, Side side, OrderType type, decimal qty, decimal price, bool reduceOnly = false)
     {
         lock (_lock)
         {
@@ -61,8 +61,19 @@ public sealed class FakeExchangeClient : IExchangeClient
                 Quantity: qty,
                 StopPrice: null,
                 CreateTime: DateTime.UtcNow,
-                Status: OrderStatus.New));
+                Status: OrderStatus.New,
+                ReduceOnly: reduceOnly));
         }
+        return this;
+    }
+
+    /// <summary>
+    /// Direkter Insert eines Order-Records (fuer Tests die das ReduceOnly/Side-Detail
+    /// vorgeben muessen). Order-ID wird beibehalten — kein Auto-Generate.
+    /// </summary>
+    public FakeExchangeClient WithOpenOrderInstance(Order order)
+    {
+        lock (_lock) _openOrders.Add(order);
         return this;
     }
 
@@ -224,8 +235,25 @@ public sealed class FakeExchangeClient : IExchangeClient
             DateTime.UtcNow, OrderStatus.New));
     }
 
-    public Task<Order> PlaceTpReduceOnlyLimitAsync(string symbol, Side positionSide, decimal quantity, decimal limitPrice) =>
-        PlaceTpLimitOrderAsync(symbol, positionSide, quantity, limitPrice);
+    public Task<Order> PlaceTpReduceOnlyLimitAsync(string symbol, Side positionSide, decimal quantity, decimal limitPrice)
+    {
+        CallLog.Add($"PlaceTpReduceOnlyLimitAsync({symbol},{positionSide},{quantity},{limitPrice})");
+        PlaceTpCalls.Add((symbol, positionSide, quantity, limitPrice));
+        var closeSide = positionSide == Side.Buy ? Side.Sell : Side.Buy;
+        var order = new Order(
+            OrderId: $"fake-tp-ro-{Interlocked.Increment(ref _orderIdCounter)}",
+            Symbol: symbol,
+            Side: closeSide,
+            Type: OrderType.Limit,
+            Price: limitPrice,
+            Quantity: quantity,
+            StopPrice: null,
+            CreateTime: DateTime.UtcNow,
+            Status: OrderStatus.New,
+            ReduceOnly: true);
+        lock (_lock) _openOrders.Add(order);
+        return Task.FromResult(order);
+    }
 
     // ────────────────── Safety / Kill-Switch ──────────────────
     public Task ActivateKillSwitchAsync(int timeoutMs = 120_000) { CallLog.Add($"ActivateKillSwitchAsync({timeoutMs})"); return Task.CompletedTask; }

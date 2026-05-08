@@ -136,4 +136,75 @@ public class PositionExitState
     /// damit bei Flat-Phasen kein permanenter API-Spam entsteht.
     /// </summary>
     public DateTime RunnerLastPushUtc { get; set; }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // v1.4.0 Phase 0.6 (Finding 0.6) — TP-Place-Retry-Mechanik
+    // ═════════════════════════════════════════════════════════════════════
+    // Wenn nach einem Market-Fill die Position bei BingX nicht binnen 3 s sichtbar ist
+    // (Funding-Settlement-Welle, Hochlast), war vor v1.4.0 der TP-Place skipped → Position
+    // ungeschuetzt bis SL-Hit oder Bot-PriceTickerLoop-Fallback. Bei Bot-Crash zwischen
+    // Fill und naechstem Tick: ungeschuetzt bis SL-Hit auf Mark-Price.
+
+    /// <summary>
+    /// True wenn die initialen TP-Place-Versuche fehlgeschlagen sind und der Bot in
+    /// folgenden Ticks erneut versuchen soll. Wird in <c>OnBeforePriceTickerIteration</c>
+    /// gepollt, max 30 s nach <see cref="PendingTpFirstAttemptUtc"/>.
+    /// </summary>
+    public bool PendingTpRetry { get; set; }
+
+    /// <summary>Zaehler der bisherigen Stage-3-Retry-Versuche (zur Diagnose).</summary>
+    public int PendingTpRetryCount { get; set; }
+
+    /// <summary>UTC-Zeitstempel des ersten TP-Place-Versuchs (fuer 30-s-Timeout in Stage 3).</summary>
+    public DateTime PendingTpFirstAttemptUtc { get; set; }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // v1.4.0 Phase 0.2 + 0.3 (Findings 0.2/0.3) — TP1/TP2 LIMIT auf Exchange
+    // ═════════════════════════════════════════════════════════════════════
+    // Wenn der Bot TP1/TP2 als Reduce-Only-LIMIT auf BingX platziert (Maker-Fee), darf der
+    // Bot-PriceTickerLoop NICHT parallel den TP-Hit checken und ClosePartialAsync triggern —
+    // sonst Doppel-Close-Race: BingX fuellt das Limit + der Bot Market-closed nochmal mit
+    // falsch berechneter Quantity (pos.Quantity nach Limit-Partial-Fill * 0.5 ≠ originale 50%).
+    // Auf der Live-Seite uebernimmt BingX den Hit (LIMIT @ TP-Preis), Order-Filled-Event vom
+    // User-Data-Stream triggert Phase-Transition + CompletedTrade.
+
+    /// <summary>
+    /// BingX-OrderId der TP1-Reduce-Only-LIMIT-Order. Gesetzt nach erfolgreichem
+    /// <c>PlaceTpReduceOnlyLimitAsync</c>. Solange != null + Phase = Initial wird der
+    /// PriceTickerLoop-TP1-Hit-Check geskippt. PaperTradingService laesst dieses Feld
+    /// immer null → Bot-Pfad bleibt im Paper-Mode aktiv.
+    /// </summary>
+    public string? Tp1LimitOrderId { get; set; }
+
+    /// <summary>BingX-OrderId der TP2-Reduce-Only-LIMIT-Order (analog zu <see cref="Tp1LimitOrderId"/>).</summary>
+    public string? Tp2LimitOrderId { get; set; }
+
+    /// <summary>
+    /// True wenn der aktive TP von BingX nativ ueberwacht wird (kein Bot-Hit-Check noetig).
+    /// Phase=Initial → Tp1LimitOrderId. Phase=Tp1Hit → Tp2LimitOrderId.
+    /// </summary>
+    public bool IsTpManagedByExchange =>
+        Phase == ExitPhase.Initial ? !string.IsNullOrEmpty(Tp1LimitOrderId)
+                                   : !string.IsNullOrEmpty(Tp2LimitOrderId);
+
+    // === v1.7.0 Phase 16 — Cross-TF-Pyramiding (User-Ausnahme) ===
+    /// <summary>Anzahl bisheriger Pyramid-Add-Ons. Bei Erstposition = 0.</summary>
+    public int PyramidAddOnCount { get; set; }
+
+    /// <summary>
+    /// Liste der Pyramid-Adds (jeweils mit eigener TF, Entry-Preis und TP1/TP2). Erstposition
+    /// ist NICHT in dieser Liste — sie lebt in den Top-Level-Feldern (EntryPrice, Signal.TakeProfit).
+    /// </summary>
+    public List<PyramidEntry> PyramidEntries { get; set; } = new();
 }
+
+/// <summary>
+/// v1.7.0 Phase 16 — Ein Pyramid-Add-On (zusaetzlicher Entry auf hoeherer TF).
+/// </summary>
+public sealed record PyramidEntry(
+    BingXBot.Core.Enums.TimeFrame Tf,
+    DateTime EntryTimeUtc,
+    decimal EntryPrice,
+    decimal Quantity,
+    decimal? TakeProfit1,
+    decimal? TakeProfit2);

@@ -469,7 +469,8 @@ public class BacktestEngine
                         if (closeQty > 0)
                         {
                             simExchange.SetCurrentPrice(symbol, origSignal.TakeProfit!.Value);
-                            await simExchange.ReducePositionAsync(symbol, pos.Side, closeQty).ConfigureAwait(false);
+                            // TP1 = Limit-Reduce-Only auf der echten Exchange → MakerFee
+                            await simExchange.ReducePositionAsync(symbol, pos.Side, closeQty, isMakerClose: true).ConfigureAwait(false);
                             simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                         }
                         // TP2 (200%+Buffer) als neues Ziel, SL bleibt (Buch 4.3)
@@ -522,17 +523,18 @@ public class BacktestEngine
 
                 if (slHit)
                 {
+                    // SL = StopMarket auf der echten Exchange → TakerFee
                     simExchange.SetCurrentPrice(symbol, currentSignal.StopLoss!.Value);
-                    await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
+                    await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: false).ConfigureAwait(false);
                     positionSignals.Remove(key);
                     exitTracking.Remove(key);
                     simExchange.SetCurrentPrice(symbol, currentCandle.Close);
                 }
                 else if (tpHit)
                 {
-                    // Buch: TP2 = 200% + Buffer → 100% Close (Sequenz abgearbeitet)
+                    // TP2 = Limit-Reduce-Only auf der echten Exchange → MakerFee
                     simExchange.SetCurrentPrice(symbol, currentSignal.TakeProfit!.Value);
-                    await simExchange.ClosePositionAsync(symbol, pos.Side).ConfigureAwait(false);
+                    await simExchange.ClosePositionAsync(symbol, pos.Side, isMakerClose: true).ConfigureAwait(false);
                     positionSignals.Remove(key);
                     exitTracking.Remove(key);
                     simExchange.SetCurrentPrice(symbol, currentCandle.Close);

@@ -75,7 +75,13 @@ public class ReconcilePositionsIntegrationTests
             Symbol: "SOL-USDT",
             SequenceId: "seq1",
             TakeProfit: 110m,
-            TakeProfit2: null);
+            TakeProfit2: null,
+            NavPointA: 0m,
+            IsGklSetup: false,
+            GklTimeframe: null,
+            RunnerHardCap: 0m,
+            IsCounterTrendScalp: false,
+            PositionScaleOverride: null);
 
         await service.ReconcilePositionsAsync(CancellationToken.None);
 

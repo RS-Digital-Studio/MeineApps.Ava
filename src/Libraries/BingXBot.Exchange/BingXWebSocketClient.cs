@@ -16,7 +16,12 @@ namespace BingXBot.Exchange;
 public class BingXWebSocketClient : IAsyncDisposable
 {
     private const string WsBaseUrl = "wss://open-api-swap.bingx.com/swap-market";
-    private const int MaxReconnectAttempts = 5;
+    // 04.05.2026: Auf 20 erhöht. BingX-Wartungsfenster sind typisch 10-15 min — bei 5 Versuchen
+    // mit 2-32 s Backoff (Total ~62 s) wäre die WS dauerhaft tot, Fill-Events kämen erst beim
+    // nächsten Reconcile-Loop (60 s). 20 Versuche mit Cap 30 s = bis zu 10 min Toleranz.
+    private const int MaxReconnectAttempts = 20;
+    /// <summary>Hard-Cap für exponentiellen Backoff. Verhindert Wartezeiten von Stunden bei späten Versuchen.</summary>
+    private static readonly TimeSpan MaxBackoff = TimeSpan.FromSeconds(30);
     private const int ReceiveBufferSize = 8192;
     private static readonly ArrayPool<byte> BufferPool = ArrayPool<byte>.Shared;
 
@@ -351,9 +356,14 @@ public class BingXWebSocketClient : IAsyncDisposable
     }
 
     /// <summary>
-    /// Exponentieller Backoff: 2^Versuch Sekunden (2s, 4s, 8s, 16s, 32s).
+    /// Exponentieller Backoff: 2^Versuch Sekunden (2s, 4s, 8s, 16s, 32s) gedeckelt bei <see cref="MaxBackoff"/> = 30s.
+    /// Verhindert exorbitante Wartezeiten bei langen Outages (z.B. 2^15 = 32768 s = 9 h).
     /// </summary>
-    private TimeSpan GetBackoff() => TimeSpan.FromSeconds(Math.Pow(2, _reconnectAttempts));
+    private TimeSpan GetBackoff()
+    {
+        var raw = TimeSpan.FromSeconds(Math.Pow(2, _reconnectAttempts));
+        return raw > MaxBackoff ? MaxBackoff : raw;
+    }
 
     /// <summary>
     /// Verbindet den User-Data-Stream (Account/Position/Order Events).
@@ -472,7 +482,9 @@ public class BingXWebSocketClient : IAsyncDisposable
     {
         for (int attempt = 1; attempt <= MaxReconnectAttempts && !ct.IsCancellationRequested; attempt++)
         {
-            var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 2s, 4s, 8s, 16s, 32s
+            // 2s, 4s, 8s, 16s, 32s — gedeckelt bei MaxBackoff (30 s).
+            var rawBackoff = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+            var backoff = rawBackoff > MaxBackoff ? MaxBackoff : rawBackoff;
             _logger.LogWarning("User-Data-Stream Reconnect Versuch {Attempt}/{Max} in {Backoff}s...",
                 attempt, MaxReconnectAttempts, backoff.TotalSeconds);
 

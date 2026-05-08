@@ -51,6 +51,26 @@ public partial class LiveTradingService
 
             // Order platzieren: Limit wenn bevorzugt und Entry-Preis vorhanden, sonst Market
             var useLimit = signal?.PreferLimitOrder == true && signal.EntryPrice.HasValue && signal.EntryPrice.Value > 0;
+
+            // v1.6.2 Phase 12 — SlippageGuard fuer Market-Orders.
+            // Pragmatisch ohne dediziertes OrderBook-API: nutzen Ticker.AskPrice/BidPrice als
+            // Best-Level-Proxy. Spread (Ask - Last) / Last ist eine konservative Slippage-Schaetzung.
+            // Bei Limit-Orders kein Check (Limit definiert Worst-Case-Fill selbst).
+            if (!useLimit && _scannerSettings.SlippageGuardEnabled
+                && ticker.LastPrice > 0 && ticker.AskPrice > 0 && ticker.BidPrice > 0)
+            {
+                var refPrice = ticker.LastPrice;
+                var spreadPct = side == Side.Buy
+                    ? (ticker.AskPrice - refPrice) / refPrice * 100m
+                    : (refPrice - ticker.BidPrice) / refPrice * 100m;
+                if (spreadPct > _scannerSettings.MaxSlippagePercent)
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                        $"{ticker.Symbol}: Order geblockt — Slippage-Estimate {spreadPct:F3}% > Threshold {_scannerSettings.MaxSlippagePercent:F3}% (Phase 12 SlippageGuard)",
+                        ticker.Symbol));
+                    return false;
+                }
+            }
             var orderType = useLimit ? OrderType.Limit : OrderType.Market;
             var limitPrice = useLimit ? signal!.EntryPrice : null;
 
@@ -68,13 +88,49 @@ public partial class LiveTradingService
             // TP wird NICHT im Haupt-Order gesetzt — stattdessen separate TP-Market-Orders
             // mit spezifischer Quantity (TP1 30% bei 161.8%, TP2 Rest bei 200%)
             // Nativer TP auf Haupt-Order würde 100% schließen und Partial-Close überschreiben
-            var order = await _restClient.PlaceOrderAsync(new OrderRequest(
-                ticker.Symbol, side, orderType, quantity,
-                Price: limitPrice,
-                StopLoss: signal?.StopLoss,
-                TakeProfit: null),
-                lastPrice: ticker.LastPrice)
-                .ConfigureAwait(false);
+            //
+            // v1.5.5 Phase 8 (Finding Order-Retry) — Wrapped in OrderRetryPolicy: HTTP 429 / 5xx /
+            // Timeouts / spezifische BingX-Error-Codes (109400, 100410) werden mit Exp-Backoff
+            // (100/300/1000/3000 ms) bis zu 4× wiederholt. Vor jedem Retry pruefen wir per
+            // Idempotency-Check (GetPositionsAsync), ob die Order beim ersten Versuch in Wahrheit
+            // doch durchging und nur die Response timeoutete — sonst Doppel-Place.
+            Order order = null!;
+            order = await Resilience.OrderRetryPolicy.ExecuteAsync(async () =>
+            {
+                // Idempotency-Pre-Check vor jedem Retry-Versuch (ausser dem ersten):
+                // Position oder pending Limit-Order schon da → skippen, gefakte "neue" Order zurueckgeben.
+                if (order != null) // Marker: vorheriger Versuch lief und wirft jetzt Retry
+                {
+                    try
+                    {
+                        var existing = await _restClient.GetPositionsAsync().ConfigureAwait(false);
+                        var match = existing.FirstOrDefault(p => p.Symbol == ticker.Symbol && p.Side == side);
+                        if (match != null && match.Quantity > 0)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                                $"{ticker.Symbol}: Idempotency-Treffer — Position existiert bereits, kein Doppel-Place",
+                                ticker.Symbol));
+                            return order;
+                        }
+                    }
+                    catch { /* Idempotency-Check Best-Effort */ }
+                }
+                var placed = await _restClient.PlaceOrderAsync(new OrderRequest(
+                    ticker.Symbol, side, orderType, quantity,
+                    Price: limitPrice,
+                    StopLoss: signal?.StopLoss,
+                    TakeProfit: null),
+                    lastPrice: ticker.LastPrice)
+                    .ConfigureAwait(false);
+                if (placed.Status == OrderStatus.Rejected)
+                    return placed; // Nicht retryen — strukturelle Ablehnung.
+                return placed;
+            }, onRetry: (attempt, ex) =>
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                    $"{ticker.Symbol}: Order-Retry #{attempt} nach Fehler ({ex.GetType().Name}: {ex.Message}) — Backoff {Resilience.OrderRetryPolicy.GetBackoffMs(attempt + 1)} ms",
+                    ticker.Symbol));
+            }).ConfigureAwait(false);
 
             if (order.Status == OrderStatus.Rejected)
             {
@@ -94,12 +150,22 @@ public partial class LiveTradingService
                 var pendingKey = BuildPendingKey(ticker.Symbol, signal.SequenceId);
                 _pendingLimitOrders[pendingKey] = (order.OrderId, DateTime.UtcNow, signal.StopLoss.Value,
                     isLong, ticker.Symbol, signal.SequenceId,
-                    signal.TakeProfit, signal.TakeProfit2);
+                    signal.TakeProfit, signal.TakeProfit2,
+                    // v1.4.0 Phase 0.7 (Finding 0.7) — Strategy-Felder fuer Signal-Rekonstruktion
+                    NavPointA: signal.NavPointA ?? 0m,
+                    IsGklSetup: signal.IsGklSetup,
+                    GklTimeframe: signal.GklTimeframe,
+                    RunnerHardCap: signal.RunnerHardCap ?? 0m,
+                    IsCounterTrendScalp: signal.IsCounterTrendScalp,
+                    PositionScaleOverride: signal.PositionScaleOverride);
 
-                // Periodisches Save (18.04.2026 v1.2.4): Pending-Liste sofort persistieren, damit
-                // ein Crash zwischen Order-Platzierung und naechstem Stop den State nicht verliert.
-                // Fire-and-forget — Save ist best-effort, darf den Order-Flow nicht blockieren.
-                _ = PersistPendingLimitOrdersAsync();
+                // v1.4.0 Phase 0.5 (Finding 0.5) — Synchroner Save BEFORE return.
+                // Vor v1.4.0 lief der Save als fire-and-forget; ein Sub-second-Crash zwischen
+                // In-Memory-Set und DB-Write fuehrte dazu, dass die Order auf BingX existierte,
+                // aber der Bot nach Restart nichts davon wusste → Ghost-Order, bei Fill kommt eine
+                // Position rein, die der Bot als unmanaged sieht (Reconcile warnt nur).
+                // Persistenz auf der Pi-SSD ist ~1-2 ms — kein Latenz-Impact auf Order-Flow.
+                await PersistPendingLimitOrdersAsync().ConfigureAwait(false);
             }
 
             // TP1 + TP2 als LIMIT Reduce-Only Orders auf BingX (stackbar, Maker-Fee 0.02%)
@@ -136,14 +202,19 @@ public partial class LiveTradingService
     /// Platziert TP1/TP2 als LIMIT Reduce-Only-Orders nach einem Market-Fill.
     /// Liest echte Position + Qty von BingX (3 Retry-Versuche wegen BingX-Position-Lag)
     /// und platziert dann die TP-Orders gestaffelt gemaess SK-Tp1CloseRatio.
+    ///
+    /// v1.4.0 Phase 0.6 (Finding 0.6) — 2-Stage-Retry:
+    /// - Stage 1: Position-Read mit 3× 1 s Retry (heutige Logik). Wenn sichtbar → TP mit echter Qty.
+    /// - Stage 2 (NEU): Position nach 3 s nicht da → TP-Place mit <paramref name="fallbackQty"/>.
+    ///   BingX kann die Order ggf. wegen "no position" rejecten. Bei Reject: ExitState.PendingTpRetry=true,
+    ///   Stage 3 (in OnBeforePriceTickerIteration) versucht nach max 30 s erneut.
     /// </summary>
     private async Task PlaceTpLimitOrdersAfterFillAsync(string symbol, Side side, decimal fallbackQty, SignalResult signal)
     {
         try
         {
-            // Position mit Retry lesen: BingX braucht bei Market-Orders manchmal 1-3s bis die Position
-            // in GetPositionsAsync auftaucht. Ohne Retry würde TP-Order mit fallbackQty platziert und
-            // könnte als "keine Position" rejected werden (Hedge-Mode mit positionSide=LONG).
+            // Stage 1: Position mit Retry lesen — BingX braucht bei Market-Orders manchmal 1-3 s
+            // bis die Position in GetPositionsAsync auftaucht.
             Position? actualPos = null;
             for (int attempt = 1; attempt <= 3; attempt++)
             {
@@ -154,10 +225,51 @@ public partial class LiveTradingService
                     await Task.Delay(1000).ConfigureAwait(false);
             }
 
+            // Stage 2 (Phase 0.6): Position nicht sichtbar → mit fallbackQty trotzdem versuchen.
+            // Lieber ein gelogtes Reject ("no position") als eine ungeschuetzte Position bis SL-Hit.
+            // Bei Reject: ExitState.PendingTpRetry=true → Stage 3 retried in OnBeforePriceTickerIteration.
             if (actualPos == null || actualPos.Quantity <= 0)
             {
+                var posKeyStage2 = $"{symbol}_{side}";
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                    $"LIVE: {symbol} TP-Platzierung übersprungen — Position nach 3s noch nicht bei BingX registriert (Fallback: Bot-seitig via PriceTickerLoop)", symbol));
+                    $"LIVE: {symbol} Position nach 3s nicht bei BingX registriert — Stage-2-TP-Place mit fallbackQty={fallbackQty:F8} versuchen",
+                    symbol));
+
+                var stage2Tp1Qty = signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0
+                                   && signal.TakeProfit2.Value != signal.TakeProfit!.Value
+                    ? Math.Round(fallbackQty * _riskSettings.Tp1CloseRatio, 6)
+                    : Math.Round(fallbackQty, 6);
+                var stage2Tp2Qty = signal.TakeProfit2.HasValue && signal.TakeProfit2.Value > 0
+                                   && signal.TakeProfit2.Value != signal.TakeProfit!.Value
+                    ? Math.Round(fallbackQty - stage2Tp1Qty, 6)
+                    : 0m;
+
+                string? s2Tp1 = null, s2Tp2 = null;
+                if (signal.TakeProfit.HasValue && stage2Tp1Qty > 0)
+                    s2Tp1 = await PlaceTpWithRetryAsync(symbol, side, stage2Tp1Qty, signal.TakeProfit!.Value, "TP1 Stage2").ConfigureAwait(false);
+                if (signal.TakeProfit2.HasValue && stage2Tp2Qty > 0)
+                    s2Tp2 = await PlaceTpWithRetryAsync(symbol, side, stage2Tp2Qty, signal.TakeProfit2!.Value, "TP2 Stage2").ConfigureAwait(false);
+
+                // Phase 0.2/0.3 — auch Stage-2-Erfolge ins ExitState schreiben, sonst greift der
+                // Skip-Block im PriceTickerLoop nicht und der Doppel-Close-Race entsteht hier.
+                if (_exitStates.TryGetValue(posKeyStage2, out var esStage2))
+                {
+                    if (!string.IsNullOrEmpty(s2Tp1)) esStage2.Tp1LimitOrderId = s2Tp1;
+                    if (!string.IsNullOrEmpty(s2Tp2)) esStage2.Tp2LimitOrderId = s2Tp2;
+                }
+
+                // Stage 3 vorbereiten: nur retry-Marker, wenn beide Stage-2-Versuche fehlschlugen.
+                if (string.IsNullOrEmpty(s2Tp1) && string.IsNullOrEmpty(s2Tp2))
+                {
+                    if (_exitStates.TryGetValue(posKeyStage2, out var es2))
+                    {
+                        es2.PendingTpRetry = true;
+                        if (es2.PendingTpFirstAttemptUtc == default)
+                            es2.PendingTpFirstAttemptUtc = DateTime.UtcNow;
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                            $"LIVE: {symbol} Stage-2-TP-Place fehlgeschlagen — Stage 3 (PendingTpRetry) aktiviert", symbol));
+                    }
+                }
                 return;
             }
 
@@ -229,6 +341,32 @@ public partial class LiveTradingService
                 tp2OrderId = await PlaceTpWithRetryAsync(symbol, side, tp2Qty, signal.TakeProfit2!.Value, "TP2").ConfigureAwait(false);
             }
 
+            // v1.4.0 Phase 0.2/0.3 (Findings 0.2/0.3) — OrderIds ins ExitState schreiben.
+            // Solange Tp1LimitOrderId / Tp2LimitOrderId gesetzt sind, skippt der PriceTickerLoop
+            // den Bot-seitigen TP-Hit-Check (BingX fuellt nativ + WebSocket-Fill-Event triggert Phase-Transition).
+            // Verhindert Doppel-Close-Race: Bot Market-closed mit pos.Quantity*0.5 nach BingX-Limit-Partial-Fill
+            // → falsche Mengen, kaputte CompletedTrade-Buchhaltung.
+            var posKeyExit = $"{symbol}_{side}";
+            if (_exitStates.TryGetValue(posKeyExit, out var esTp))
+            {
+                if (!string.IsNullOrEmpty(tp1OrderId)) esTp.Tp1LimitOrderId = tp1OrderId;
+                if (!string.IsNullOrEmpty(tp2OrderId)) esTp.Tp2LimitOrderId = tp2OrderId;
+            }
+
+            // v1.4.0 Phase 0.6 (Finding 0.6): Erfolgreicher Stage-1-Place setzt PendingTpRetry=false
+            // (Reset eines moeglichen Stage-3-Markers aus vorherigem Versuch).
+            var posKeyAfterPlace = $"{symbol}_{side}";
+            if (_exitStates.TryGetValue(posKeyAfterPlace, out var esAfter))
+            {
+                if (esAfter.PendingTpRetry)
+                {
+                    esAfter.PendingTpRetry = false;
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                        $"LIVE: {symbol} Stage-3-Retry erfolgreich abgeschlossen — TPs platziert nach {esAfter.PendingTpRetryCount} Versuch(en)",
+                        symbol));
+                }
+            }
+
             // Verifizieren dass die platzierten TP-Orders tatsächlich im BingX-Orderbuch stehen
             // (Schutz gegen "stumme" API-Erfolge wo Order zurückgegeben wird aber nicht existiert)
             if (!string.IsNullOrEmpty(tp1OrderId) || !string.IsNullOrEmpty(tp2OrderId))
@@ -267,12 +405,37 @@ public partial class LiveTradingService
     /// <summary>
     /// Platziert eine einzelne TP-Limit-Order mit Retry bei Rejection.
     /// Gibt die OrderId zurück wenn erfolgreich, null bei endgültigem Fehler.
+    ///
+    /// v1.5.5 Phase 8 — nutzt jetzt <see cref="Resilience.OrderRetryPolicy"/> fuer Exception-basierte
+    /// Retries (HTTP 429/5xx/Timeout/BingX 109400/100410) PLUS einen separaten Reject-basierten
+    /// Retry-Loop (BingX-Reject ist KEINE Exception, sondern <c>OrderStatus.Rejected</c>).
     /// </summary>
     private async Task<string?> PlaceTpWithRetryAsync(string symbol, Side side, decimal quantity, decimal price, string tpLabel)
     {
+        // Reject-basierte Retries: 3 Versuche mit 1.5 s Pause — historisches Verhalten beibehalten.
+        // Exception-basierte Retries (Timeout/429/5xx) laufen INNERHALB jedes Versuchs durch
+        // OrderRetryPolicy.ExecuteAsync, sodass kurze Netz-Bumps kein Reject-Versuch verbrauchen.
         for (int attempt = 1; attempt <= 3; attempt++)
         {
-            var order = await _restClient.PlaceTpReduceOnlyLimitAsync(symbol, side, quantity, price).ConfigureAwait(false);
+            Order order;
+            try
+            {
+                order = await Resilience.OrderRetryPolicy.ExecuteAsync(() =>
+                    _restClient.PlaceTpReduceOnlyLimitAsync(symbol, side, quantity, price),
+                    onRetry: (retry, ex) =>
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                            $"LIVE: {symbol} {tpLabel} Inner-Retry #{retry} ({ex.GetType().Name}: {ex.Message})",
+                            symbol));
+                    }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // Exception-Retries erschoepft → wie Reject behandeln und ggf. weiter retryen.
+                order = new Order(string.Empty, symbol, side, OrderType.Limit, price, quantity,
+                    null, DateTime.UtcNow, OrderStatus.Rejected, RejectionReason: ex.Message,
+                    ReduceOnly: true);
+            }
 
             if (order.Status != OrderStatus.Rejected && !string.IsNullOrEmpty(order.OrderId))
             {
@@ -309,5 +472,145 @@ public partial class LiveTradingService
         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Trade",
             $"LIVE: {ticker.Symbol} Entry-Fee: {entryFee:N4} USDT", ticker.Symbol));
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// v1.4.0 Phase 0.2/0.3 (Findings 0.2/0.3) — verarbeitet ein Order-Filled-Event vom
+    /// User-Data-Stream fuer Bot-platzierte TP1/TP2-Reduce-Only-Limits.
+    ///
+    /// Flow:
+    /// 1) Suche ExitState mit passender <see cref="PositionExitState.Tp1LimitOrderId"/> /
+    ///    <see cref="PositionExitState.Tp2LimitOrderId"/>.
+    /// 2) Bei TP1-Fill: Phase Initial → Tp1Hit, PartialClosed=true, Signal-TP auf Tp2 patchen,
+    ///    nativen SL/TP auf BingX aktualisieren (BE / neuer TP). CompletedTrade mit Maker-Fee.
+    /// 3) Bei TP2-Fill: Position vollstaendig zu — CompletedTrade publishen, Signal entfernen,
+    ///    native Orders aufraeumen.
+    /// 4) Idempotent: nach Verarbeitung wird die Tp1/Tp2-OrderId genullt → Duplicate-Events
+    ///    werden ignoriert.
+    /// </summary>
+    /// <returns>True wenn das Event eine Bot-TP-Order war und verarbeitet wurde.</returns>
+    internal async Task<bool> ProcessTpLimitFillAsync(string symbol, string orderId)
+    {
+        if (string.IsNullOrEmpty(orderId)) return false;
+
+        // ExitState-Lookup: finde den Eintrag dessen Tp1/Tp2 OrderId matcht.
+        string? matchedKey = null;
+        PositionExitState? es = null;
+        foreach (var kvp in _exitStates)
+        {
+            var v = kvp.Value;
+            if (v.Symbol != symbol) continue;
+            if (v.Tp1LimitOrderId == orderId || v.Tp2LimitOrderId == orderId)
+            {
+                matchedKey = kvp.Key;
+                es = v;
+                break;
+            }
+        }
+        if (matchedKey == null || es == null) return false;
+
+        var isTp1 = es.Tp1LimitOrderId == orderId;
+        var isTp2 = es.Tp2LimitOrderId == orderId;
+
+        // Position nach dem Limit-Fill abrufen — gibt Aufschluss ueber tatsaechliche Restmenge.
+        var positions = await _restClient.GetPositionsAsync().ConfigureAwait(false);
+        var posAfter = positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == es.Side);
+
+        if (isTp1 && es.Phase == ExitPhase.Initial)
+        {
+            // Geschlossene Menge: tatsaechliche Restmenge-Differenz, Fallback Tp1CloseRatio.
+            var expectedClosedQty = es.OriginalQuantity * _riskSettings.Tp1CloseRatio;
+            var closedQty = posAfter != null
+                ? Math.Max(0m, es.OriginalQuantity - posAfter.Quantity)
+                : expectedClosedQty;
+            if (closedQty <= 0m) closedQty = expectedClosedQty;
+
+            var fillPrice = es.Signal.TakeProfit ?? 0m;
+            // Maker-Fee — Bot-platzierte Reduce-Only-LIMIT ist Maker. Anteilige Entry-Fee
+            // (proportional zur geschlossenen Menge) gegen Doppel-Buchung beim TP2-Fill.
+            var entryFee = closedQty * es.EntryPrice * _makerFeeRate;
+            var exitFee = closedQty * fillPrice * _makerFeeRate;
+            var totalFee = entryFee + exitFee;
+            var rawPnl = es.Side == Side.Buy
+                ? (fillPrice - es.EntryPrice) * closedQty
+                : (es.EntryPrice - fillPrice) * closedQty;
+            var navTf = GetNavigatorTimeframeForKey(matchedKey);
+            var trade = new CompletedTrade(symbol, es.Side, es.EntryPrice, fillPrice,
+                closedQty, rawPnl - totalFee, totalFee, es.EntryTime, DateTime.UtcNow,
+                "TP1 (Limit-Fill via WebSocket)", TradingMode.Live, navTf);
+            ProcessCompletedTrade(trade);
+            _eventBus.PublishTrade(trade);
+
+            // Phase-Transition: Initial -> Tp1Hit.
+            es.PartialClosed = true;
+            es.Tp1LimitOrderId = null;  // Idempotent: Duplicate-WS-Event triggert nichts mehr.
+            if (es.Tp2.HasValue && _positionSignals.TryGetValue(matchedKey, out var sigOld))
+            {
+                var sigNew = sigOld with { TakeProfit = es.Tp2 };
+                _positionSignals[matchedKey] = sigNew;
+                es.Signal = sigNew;
+                es.Phase = ExitPhase.Tp1Hit;
+            }
+
+            // SL/TP auf BingX aktualisieren (BE-Trigger / neuer TP).
+            try
+            {
+                await _restClient.SetPositionSlTpAsync(
+                    symbol, es.Side,
+                    es.Signal.StopLoss,
+                    es.Signal.TakeProfit).ConfigureAwait(false);
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Trade",
+                    $"LIVE: {symbol} TP1 Limit-Fill via WebSocket erkannt → Phase Tp1Hit, SL/TP aktualisiert",
+                    symbol));
+            }
+            catch (Exception slEx)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                    $"LIVE: {symbol} SL/TP-Update nach TP1-Fill fehlgeschlagen: {slEx.Message}", symbol));
+            }
+            return true;
+        }
+
+        if (isTp2 && (es.Phase == ExitPhase.Tp1Hit || es.Phase == ExitPhase.Initial))
+        {
+            // Tp2 oder Tp-Single (Phase=Initial mit nur einem TP der per LIMIT lief): Position komplett zu.
+            var totalEntryQty = es.OriginalQuantity > 0 ? es.OriginalQuantity : (posAfter?.Quantity ?? 0m);
+            var alreadyClosedTp1 = es.Phase == ExitPhase.Tp1Hit
+                ? totalEntryQty * _riskSettings.Tp1CloseRatio
+                : 0m;
+            var closedQty = Math.Max(0m, totalEntryQty - alreadyClosedTp1 - (posAfter?.Quantity ?? 0m));
+            if (closedQty <= 0m && posAfter == null)
+                closedQty = totalEntryQty - alreadyClosedTp1;
+            if (closedQty <= 0m) closedQty = Math.Max(0m, totalEntryQty - alreadyClosedTp1);
+
+            var fillPrice = es.Signal.TakeProfit ?? 0m;
+            var entryFee = closedQty * es.EntryPrice * _makerFeeRate;
+            var exitFee = closedQty * fillPrice * _makerFeeRate;
+            var totalFee = entryFee + exitFee;
+            var rawPnl = es.Side == Side.Buy
+                ? (fillPrice - es.EntryPrice) * closedQty
+                : (es.EntryPrice - fillPrice) * closedQty;
+            var navTf = GetNavigatorTimeframeForKey(matchedKey);
+            var trade = new CompletedTrade(symbol, es.Side, es.EntryPrice, fillPrice,
+                closedQty, rawPnl - totalFee, totalFee, es.EntryTime, DateTime.UtcNow,
+                es.Phase == ExitPhase.Tp1Hit ? "TP2 (Limit-Fill via WebSocket)" : "TP (Limit-Fill via WebSocket)",
+                TradingMode.Live, navTf);
+            ProcessCompletedTrade(trade);
+            _eventBus.PublishTrade(trade);
+
+            // Cleanup: Signal/ExitState entfernen, native Orders auf Symbol+Side aufraeumen.
+            es.Tp2LimitOrderId = null;
+            es.Tp1LimitOrderId = null;
+            RemoveSignalByKey(matchedKey);
+            try { await CancelNativeSlTpOrdersAsync(symbol, es.Side).ConfigureAwait(false); }
+            catch { /* best-effort */ }
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
+                $"LIVE: {symbol} TP{(es.Phase == ExitPhase.Tp1Hit ? "2" : "")} Limit-Fill via WebSocket erkannt → Position vollstaendig geschlossen",
+                symbol));
+            return true;
+        }
+
+        return false;
     }
 }

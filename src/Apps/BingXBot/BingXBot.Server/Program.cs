@@ -95,6 +95,12 @@ services.AddSingleton<PaperTradingService>(sp =>
 });
 services.AddSingleton<LiveTradingManager>();
 
+// v1.5.2 Phase 4 — Decision-Trail-Buffer (In-Memory + DB-Persistenz, Capacity 5000).
+services.AddSingleton<BingXBot.Core.Diagnostics.DecisionTrailBuffer>();
+
+// v1.5.3 Phase 5 — Trade-Stats-Aggregator (Singleton, lebt mit dem Server).
+services.AddSingleton<BingXBot.Trading.Stats.TradeStatsAggregator>();
+
 // Local-Impls (Wrapper um Engine-Services)
 services.AddSingleton<ScannerResultsCache>();
 services.AddSingleton<LocalBotEventStream>();
@@ -115,6 +121,15 @@ services.AddHostedService<BotHubEventForwarder>();
 // registrieren, damit SignalR die ersten Resume-Logs/State-Events ueberhaupt forwarden kann.
 services.AddHostedService<BingXBot.Server.Services.BotAutoResumeService>();
 
+// v1.6.1 Phase 11 — DB-Archivierung (monatlich 04:00 UTC nach DbBackupService).
+services.AddHostedService<BingXBot.Server.Services.DbArchiveService>();
+
+// v1.6.6 Phase 17 — Adaptive TF-Disable (Singleton + HostedService).
+services.AddSingleton<BingXBot.Server.Services.AdaptiveTfDisableService>();
+services.AddHostedService<BingXBot.Server.Services.AdaptiveTfDisableService>(sp =>
+    sp.GetRequiredService<BingXBot.Server.Services.AdaptiveTfDisableService>());
+// Static-Bridge wird beim Boot weiter unten verdrahtet (TradingServiceBase.AdaptiveTfDisableProbe).
+
 // FCM-Push (Stub ohne Firebase-Service-Account, Push-Versand wird geloggt statt geschickt).
 // Aktivierung: firebase-service-account.json in DataDirectory ablegen + FirebaseAdmin NuGet hinzufuegen.
 services.AddSingleton<BingXBot.Server.Services.FcmDeviceStore>();
@@ -127,7 +142,11 @@ services.AddSingleton<BingXBot.Server.Services.LogBufferService>();
 // Connection-Health-Watchdog: Ueberwacht alle 30s ob der Live-Exchange-Client noch verbunden
 // ist und pushed einen ConnectionDegraded-Event ueber den SignalR-Hub wenn sich der Status
 // aendert. Edge-Transition-basiert — kein Spam bei stabilem Zustand.
-services.AddHostedService<BingXBot.Server.Services.ServerHealthWatchdog>();
+// v1.6.5 Phase 15 — Watchdog als Singleton + HostedService, damit BotAutoResumeService die
+// Probe-Status-Property (IsCurrentlyDegraded) lesen kann.
+services.AddSingleton<BingXBot.Server.Services.ServerHealthWatchdog>();
+services.AddHostedService<BingXBot.Server.Services.ServerHealthWatchdog>(sp =>
+    sp.GetRequiredService<BingXBot.Server.Services.ServerHealthWatchdog>());
 
 // DB-Backup-Service: Taegliches Backup der bot.db (03:00 UTC, 7 Tage rotierend).
 // Schuetzt vor Pi-SD-Karten-Korruption — ohne Backup = Total-Wissensverlust bei SD-Ausfall.
@@ -221,6 +240,11 @@ services.AddCors(p => p.AddDefaultPolicy(b =>
 // ============ App bauen ============
 var app = builder.Build();
 
+// 04.05.2026 — IMarketCapProvider in den Static-Bridge einhängen
+// (CoinGecko-HTTP-Logic im Engine-Layer, kein Layer-Verletzung mehr in Core).
+BingXBot.Engine.Helpers.MarketCapRefreshHelper.Configure(
+    new BingXBot.Engine.Helpers.CoinGeckoMarketCapProvider());
+
 // Datenbank + Settings laden — DB-Pfad aus Server:DataDirectory (kollidiert nicht mit Desktop)
 using (var scope = app.Services.CreateScope())
 {
@@ -276,6 +300,9 @@ app.MapBotControlEndpoints();
 app.MapSettingsEndpoints();
 app.MapTradesAndLogsEndpoints();
 app.MapBacktestEndpoints();
+// v1.5.2 Phase 4 / v1.5.3 Phase 5 — Decision-Trail + Stats-Breakdown
+app.MapDecisionsEndpoints();
+app.MapStatsEndpoints();
 
 // SignalR-Hub
 app.MapHub<BotHub>(BingXBot.Contracts.Api.ApiRoutes.BotHubPath);
@@ -286,6 +313,46 @@ app.MapHub<BotHub>(BingXBot.Contracts.Api.ApiRoutes.BotHubPath);
 {
     var stream = app.Services.GetRequiredService<IBotEventStream>();
     await stream.StartAsync();
+}
+
+// v1.5.2 Phase 4 — EvaluationDecided-Event-Subscriber: legt Decisions in den Buffer +
+// persistiert in DB. Hot-Path-Schutz greift im TradingServiceBase (EnableDecisionTrail-Check),
+// hier nur Forward.
+{
+    var bus = app.Services.GetRequiredService<BingXBot.Trading.BotEventBus>();
+    var buffer = app.Services.GetRequiredService<BingXBot.Core.Diagnostics.DecisionTrailBuffer>();
+    var decisionDb = app.Services.GetRequiredService<BotDatabaseService>();
+    bus.EvaluationDecided += (_, decision) =>
+    {
+        buffer.Append(decision);
+        // Fire-and-forget DB-Save — best-effort, blockiert den Hot-Path nicht.
+        _ = decisionDb.SaveDecisionAsync(decision);
+    };
+}
+
+// v1.5.3 Phase 5 — TradeStatsAggregator initial aus DB rebuilden, damit Stats nach
+// Server-Restart erhalten bleiben (kein eigener DB-Tisch noetig — Trades-Tabelle ist die Quelle).
+{
+    var aggregator = app.Services.GetRequiredService<BingXBot.Trading.Stats.TradeStatsAggregator>();
+    var statsDb = app.Services.GetRequiredService<BotDatabaseService>();
+    try
+    {
+        var pastTrades = await statsDb.GetTradesAsync(modeFilter: null, limit: 10_000).ConfigureAwait(false);
+        aggregator.ReplayFromTrades(pastTrades);
+    }
+    catch (Exception replayEx)
+    {
+        var statsLogger = app.Services.GetRequiredService<ILogger<BingXBot.Trading.Stats.TradeStatsAggregator>>();
+        statsLogger.LogWarning(replayEx, "Trade-Stats Replay aus DB fehlgeschlagen — Aggregator startet leer");
+    }
+}
+
+// v1.6.6 Phase 17 — Static-Bridge: TradingServiceBase pruet auf AdaptiveTfDisableService bei
+// jedem Scan-Loop-Iter. Ohne diese Bridge wuerde der Service zwar laufen, aber die Engine
+// die disableten TFs trotzdem scannen.
+{
+    var tfDisable = app.Services.GetRequiredService<BingXBot.Server.Services.AdaptiveTfDisableService>();
+    BingXBot.Trading.TradingServiceBase.AdaptiveTfDisableProbe = tf => tfDisable.IsTfDisabled(tf);
 }
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
@@ -321,6 +388,28 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     risk.RequireWickRejectionInBZone = saved.Risk.RequireWickRejectionInBZone;
     risk.RequireBoxCloseOnEntry = saved.Risk.RequireBoxCloseOnEntry;
     risk.HighProbabilityPositionMultiplier = saved.Risk.HighProbabilityPositionMultiplier;
+    // Phase 3 — Heiliger Gral als Hard-Gate (opt-in, default false / 0)
+    risk.RequireHtfConfluenceForEntry = saved.Risk.RequireHtfConfluenceForEntry;
+    risk.MinConfluenceScore = saved.Risk.MinConfluenceScore;
+    // v1.5.0 Phase 2 — Asymmetrisches CRV (opt-in, default false)
+    risk.UseAsymmetricCrv = saved.Risk.UseAsymmetricCrv;
+    // v1.5.4 Phase 7 — Funding-Rate Soft-Bonus
+    scanner.EnableFundingRateBonus = saved.Scanner.EnableFundingRateBonus;
+    scanner.FundingRateBonusThresholdPercent = saved.Scanner.FundingRateBonusThresholdPercent;
+    // v1.6.2 Phase 12 — Slippage-Guard
+    scanner.SlippageGuardEnabled = saved.Scanner.SlippageGuardEnabled;
+    scanner.MaxSlippagePercent = saved.Scanner.MaxSlippagePercent;
+    // v1.6.6 Phase 17 — Adaptive TF-Disable
+    scanner.EnableAdaptiveTfDisable = saved.Scanner.EnableAdaptiveTfDisable;
+    scanner.AdaptiveTfMinTrades = saved.Scanner.AdaptiveTfMinTrades;
+    scanner.AdaptiveTfMinWinRate = saved.Scanner.AdaptiveTfMinWinRate;
+    scanner.AdaptiveTfDisableHours = saved.Scanner.AdaptiveTfDisableHours;
+    // v1.7.0 Phase 16 — Cross-TF-Pyramiding (User-Ausnahme)
+    risk.EnableCrossTfPyramiding = saved.Risk.EnableCrossTfPyramiding;
+    risk.PyramidMaxAddOns = saved.Risk.PyramidMaxAddOns;
+    risk.PyramidScalePercent = saved.Risk.PyramidScalePercent;
+    // Stale-Pending-Limit-Order-Expiry (Default 6h)
+    risk.PendingLimitOrderMaxAgeHours = saved.Risk.PendingLimitOrderMaxAgeHours;
     // Runner-TP (opt-in)
     risk.EnableRunner = saved.Risk.EnableRunner;
     risk.RunnerPercent = saved.Risk.RunnerPercent;
@@ -340,10 +429,12 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
 
     // ============ Scanner ============
     // Kernparameter
+#pragma warning disable CS0618 // Legacy-Felder weiterhin persistieren bis v1.4-Migration abgeschlossen
     scanner.MinVolume24h = saved.Scanner.MinVolume24h;
     scanner.MinPriceChange = saved.Scanner.MinPriceChange;
     scanner.ScanTimeFrame = saved.Scanner.ScanTimeFrame;
     scanner.MaxResults = saved.Scanner.MaxResults;
+#pragma warning restore CS0618
     scanner.Mode = saved.Scanner.Mode;
     scanner.OnlyTopByVolume = saved.Scanner.OnlyTopByVolume;
     scanner.TopCoinsCount = saved.Scanner.TopCoinsCount;
@@ -353,8 +444,10 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     scanner.EnableTradFi = saved.Scanner.EnableTradFi;
     if (saved.Scanner.EnabledCategories is { Count: > 0 })
         scanner.EnabledCategories = saved.Scanner.EnabledCategories;
+#pragma warning disable CS0618
     scanner.MinVolume24hTradFi = saved.Scanner.MinVolume24hTradFi;
     scanner.MinPriceChangeTradFi = saved.Scanner.MinPriceChangeTradFi;
+#pragma warning restore CS0618
     // Bias-Flip + Counter-Trend-Scalper (v1.2.7+)
     scanner.EnableBiasFlip = saved.Scanner.EnableBiasFlip;
     scanner.EnableCounterTrendScalp = saved.Scanner.EnableCounterTrendScalp;
@@ -425,6 +518,9 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     bot.EnableDesktopNotifications = saved.EnableDesktopNotifications;
     bot.SimulatedFundingRatePercent = saved.SimulatedFundingRatePercent;
     bot.WasRunningOnShutdown = saved.WasRunningOnShutdown;
+    // v1.5.2 Phase 4 / v1.5.5 Phase 9 — Decision-Trail + Trade-Push Toggles
+    bot.EnableDecisionTrail = saved.EnableDecisionTrail;
+    bot.EnableTradePushNotifications = saved.EnableTradePushNotifications;
 
     // Referenzen in BotSettings zeigen auf die DI-Singletons
     bot.Risk = risk;

@@ -266,6 +266,109 @@
       </Border>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- v1.5.x — Optimization-Plan-Toggles (opt-in, Default aus)         -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Classes="RiskCard">
+        <StackPanel Spacing="14">
+          <TextBlock Text="Erweiterte Filter (opt-in)" FontWeight="SemiBold" FontSize="14"
+                     Foreground="{DynamicResource AppTextBrush}" Margin="0,0,0,4" />
+
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="HTF-Confluence Hard-Gate" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Phase 1: Signale nur mit GKL-Hit oder HTF-Zone-Overlap (W1/D1)."
+                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding RequireHtfConfluenceForEntry}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Min. Confluence-Score" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Phase 1: Hard-Gate auf Confluence-Score 0-11 (0 = aus, 4-6 empfohlen)."
+                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <NumericUpDown Grid.Column="1" Classes="RiskNumeric"
+                           Value="{Binding MinConfluenceScore}"
+                           Minimum="0" Maximum="11" Increment="1" FormatString="0" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Asymmetrisches CRV (TP aus HTF)" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Phase 2: SL bleibt LTF, TP1/TP2 kommen aus HTF-Sequenz (nur GKL-Setups)."
+                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseAsymmetricCrv}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- v1.7.0 Phase 16 — Cross-TF-Pyramiding (User-Ausnahme)            -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
+              Padding="20,16"
+              BoxShadow="{DynamicResource CardShadow}">
+        <StackPanel Spacing="14">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="LayersTriple" Width="18" Height="18"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Cross-TF-Pyramiding (Phase 16)" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="Bei laufendem TF-A-Trade darf ein zweites TF-B-Signal eine Add-On-Position öffnen. NICHT Buch-konform — bewusste User-Ausnahme."
+                     FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
+
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Cross-TF-Pyramiding aktiv" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Default: aus. Erst aktivieren wenn Backtest auf eigenen Setups grün ist."
+                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableCrossTfPyramiding}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. Add-Ons" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Wieviele zusätzliche Pyramid-Entries pro Basis-Trade (1-3 empfohlen)."
+                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <NumericUpDown Grid.Column="1" Classes="RiskNumeric"
+                           Value="{Binding PyramidMaxAddOns}"
+                           Minimum="1" Maximum="5" Increment="1" FormatString="0" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <Grid Classes="SettingsRow" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Add-On Positions-Skala" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Add-On-Größe relativ zur Basis (0.5 = halb so groß, 1.0 = gleich)."
+                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <NumericUpDown Grid.Column="1" Classes="RiskNumeric"
+                           Value="{Binding PyramidScalePercent}"
+                           Minimum="0.1" Maximum="2.0" Increment="0.1"
+                           FormatString="0.0" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
       <!-- Buttons: Speichern + Reset                                      -->
       <!-- ═══════════════════════════════════════════════════════════════ -->
       <StackPanel Orientation="Horizontal" Spacing="12">

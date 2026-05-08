@@ -17,6 +17,18 @@ namespace BingXBot.Services;
 /// wenn App-Start-Initial-Sync und erster Connect unmittelbar hintereinander feuern.
 ///
 /// Nur im Remote-Modus aktiv. Im Local-Modus existiert die Client-Server-Trennung nicht.
+///
+/// 27.04.2026 — Bug-Fix: Robert sah "kurz Server-Werte, dann 1-2 s später Defaults". Ursache
+/// war der Doppel-Refresh-Race: <see cref="App.RefreshRemoteSettingsAsync"/> wurde von
+/// <see cref="App.InitializeBackgroundAsync"/> initial aufgerufen, danach feuerte SignalR
+/// ConnectionChanged → AutoSync triggert nochmal (Debounce griff nicht, weil
+/// <see cref="_lastRefreshUtc"/> = <see cref="DateTime.MinValue"/>). Wenn der zweite Refresh
+/// in einer Race fehlerhaft war (z.B. parallele HTTP-Verbindung, Auth-Race, Async-Reorder),
+/// kamen Default-Werte zurück und überschrieben die soeben korrekt geladenen Singletons.
+/// Fix: <see cref="MarkRefreshed"/> teilt dem AutoSync den Initial-Refresh-Zeitpunkt mit;
+/// das erste ConnectionChanged-Event innerhalb von 2 s wird dadurch wie ein Reconnect-Debounce
+/// behandelt und übersprungen. Spätere echte Reconnects (>2 s nach Initial) refreshen
+/// weiterhin normal.
 /// </summary>
 public sealed class RemoteSettingsAutoSync : IDisposable
 {
@@ -41,6 +53,13 @@ public sealed class RemoteSettingsAutoSync : IDisposable
         _stream.ConnectionChanged += OnConnectionChanged;
     }
 
+    /// <summary>
+    /// Markiert dass ein Refresh extern (z.B. App-Start-Initial) gerade gelaufen ist.
+    /// Der Debounce-Timer wird mitgezählt — der nächste ConnectionChanged-Event wird
+    /// dadurch übersprungen, wenn er innerhalb von 2 s passiert.
+    /// </summary>
+    public void MarkRefreshed() => _lastRefreshUtc = DateTime.UtcNow;
+
     private async void OnConnectionChanged(ConnectionStatus status)
     {
         if (_disposed) return;
@@ -49,6 +68,9 @@ public sealed class RemoteSettingsAutoSync : IDisposable
         // Debounce: Wenn der letzte Refresh frischer als 2s ist, skippe. Das fängt den Fall
         // "App-Start-Refresh + direkt darauf initialer SignalR-Connect" ab, ohne Logik-Special-
         // Casing. Bei echten Reconnects ist der Abstand immer > 2s.
+        // Wichtig: MarkRefreshed wird beim Initial-Refresh aus App.RefreshRemoteSettingsAsync
+        // gerufen — sonst wäre _lastRefreshUtc = MinValue und der erste Connect würde immer
+        // einen redundanten zweiten Refresh triggern (= Race-Quelle vor v1.3.10).
         if (DateTime.UtcNow - _lastRefreshUtc < DebounceInterval) return;
 
         // Non-Blocking try-acquire: Wenn gerade ein Refresh läuft, überspringe — der laufende

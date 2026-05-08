@@ -1,3 +1,5 @@
+using BingXBot.Contracts.Dto;
+using BingXBot.Contracts.Services;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
@@ -14,6 +16,9 @@ namespace BingXBot.ViewModels;
 /// ViewModel für den Markt-Scanner (Filterkriterien, Scan-Ergebnisse).
 /// Nutzt BingXPublicClient für echte Ticker-Daten, IMarketScanner für Signal-Analyse.
 /// Publiziert Scan-Ergebnisse über den BotEventBus an die Log-Ansicht.
+///
+/// Subscribed auf <see cref="ISettingsService.SettingsChanged"/>, damit beim initialen
+/// Server-Sync (Remote-Mode) und Multi-Client-Updates die Filterkriterien refreshen.
 /// </summary>
 public partial class ScannerViewModel : ViewModelBase, IDisposable
 {
@@ -21,7 +26,9 @@ public partial class ScannerViewModel : ViewModelBase, IDisposable
     private readonly IMarketScanner? _marketScanner;
     private readonly IPublicMarketDataClient? _publicClient;
     private readonly BotEventBus _eventBus;
+    private readonly ISettingsService? _settingsService;
     private CancellationTokenSource? _cts;
+    private bool _disposed;
 
     [ObservableProperty] private decimal _minVolume;
     [ObservableProperty] private decimal _minPriceChange;
@@ -34,19 +41,46 @@ public partial class ScannerViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _scanStatus = "Drücke 'Scannen' um den Markt zu durchsuchen";
     [ObservableProperty] private string _scanModeDescription = "Sucht Paare mit starker Preisbewegung";
 
+    // === v1.5.4 Phase 7 — Funding-Rate Soft-Bonus ===
+    [ObservableProperty] private bool _enableFundingRateBonus;
+    [ObservableProperty] private decimal _fundingRateBonusThresholdPercent;
+
+    // === v1.6.2 Phase 12 — Slippage-Guard ===
+    [ObservableProperty] private bool _slippageGuardEnabled;
+    [ObservableProperty] private decimal _maxSlippagePercent;
+
+    // === v1.6.6 Phase 17 — Adaptive TF-Disable ===
+    [ObservableProperty] private bool _enableAdaptiveTfDisable;
+    [ObservableProperty] private int _adaptiveTfMinTrades;
+    [ObservableProperty] private decimal _adaptiveTfMinWinRate;
+    [ObservableProperty] private int _adaptiveTfDisableHours;
+
     public string[] TimeFrames => new[] { "M5", "M15", "M30", "H1", "H4", "D1" };
     public string[] ScanModes => new[] { "Momentum", "Reversal", "Breakout", "VolumeSurge" };
 
     public ObservableCollection<ScanResultItem> Results { get; } = new();
 
-    public ScannerViewModel(ScannerSettings scannerSettings, BotEventBus eventBus, IMarketScanner? marketScanner = null, IPublicMarketDataClient? publicClient = null)
+    public ScannerViewModel(ScannerSettings scannerSettings, BotEventBus eventBus,
+        IMarketScanner? marketScanner = null, IPublicMarketDataClient? publicClient = null,
+        ISettingsService? settingsService = null)
     {
         _scannerSettings = scannerSettings;
         _eventBus = eventBus;
         _marketScanner = marketScanner;
         _publicClient = publicClient;
+        _settingsService = settingsService;
         LoadFromSettings();
         UpdateScanModeDescription();
+
+        // Subscribe auf Server-Pushes / Initial-Sync (analog RiskSettingsViewModel).
+        if (_settingsService != null)
+            _settingsService.SettingsChanged += OnSettingsChanged;
+    }
+
+    private void OnSettingsChanged(FullSettingsDto snapshot)
+    {
+        // Auf UI-Thread marshalen — SignalR-Hub feuert von Background.
+        Avalonia.Threading.Dispatcher.UIThread.Post(LoadFromSettings);
     }
 
     /// <summary>
@@ -71,13 +105,23 @@ public partial class ScannerViewModel : ViewModelBase, IDisposable
     /// </summary>
     private void LoadFromSettings()
     {
+#pragma warning disable CS0618 // Single-TF-UI nutzt Legacy-Felder bewusst (Migration auf ByTf-UI in v1.4.x)
         MinVolume = _scannerSettings.MinVolume24h;
         MinPriceChange = _scannerSettings.MinPriceChange;
         SelectedTimeFrame = _scannerSettings.ScanTimeFrame.ToString();
         SelectedScanMode = _scannerSettings.Mode.ToString();
         MaxResults = _scannerSettings.MaxResults;
+#pragma warning restore CS0618
         BlacklistText = string.Join(", ", _scannerSettings.Blacklist);
         WhitelistText = string.Join(", ", _scannerSettings.Whitelist);
+        EnableFundingRateBonus = _scannerSettings.EnableFundingRateBonus;
+        FundingRateBonusThresholdPercent = _scannerSettings.FundingRateBonusThresholdPercent;
+        SlippageGuardEnabled = _scannerSettings.SlippageGuardEnabled;
+        MaxSlippagePercent = _scannerSettings.MaxSlippagePercent;
+        EnableAdaptiveTfDisable = _scannerSettings.EnableAdaptiveTfDisable;
+        AdaptiveTfMinTrades = _scannerSettings.AdaptiveTfMinTrades;
+        AdaptiveTfMinWinRate = _scannerSettings.AdaptiveTfMinWinRate;
+        AdaptiveTfDisableHours = _scannerSettings.AdaptiveTfDisableHours;
     }
 
     /// <summary>
@@ -86,9 +130,11 @@ public partial class ScannerViewModel : ViewModelBase, IDisposable
     private ScannerSettings BuildCurrentSettings()
     {
         // UI-Werte ins Settings-Objekt übertragen
+#pragma warning disable CS0618
         _scannerSettings.MinVolume24h = MinVolume;
         _scannerSettings.MinPriceChange = MinPriceChange;
         _scannerSettings.MaxResults = MaxResults;
+#pragma warning restore CS0618
 
         if (Enum.TryParse<TimeFrame>(SelectedTimeFrame, out var tf))
             _scannerSettings.ScanTimeFrame = tf;
@@ -99,6 +145,20 @@ public partial class ScannerViewModel : ViewModelBase, IDisposable
         // Blacklist/Whitelist aus kommasepariertem Text parsen
         _scannerSettings.Blacklist = ParseSymbolList(BlacklistText);
         _scannerSettings.Whitelist = ParseSymbolList(WhitelistText);
+
+        // v1.5.4 Phase 7 — Funding-Rate Soft-Bonus
+        _scannerSettings.EnableFundingRateBonus = EnableFundingRateBonus;
+        _scannerSettings.FundingRateBonusThresholdPercent = FundingRateBonusThresholdPercent;
+
+        // v1.6.2 Phase 12 — Slippage-Guard
+        _scannerSettings.SlippageGuardEnabled = SlippageGuardEnabled;
+        _scannerSettings.MaxSlippagePercent = MaxSlippagePercent;
+
+        // v1.6.6 Phase 17 — Adaptive TF-Disable
+        _scannerSettings.EnableAdaptiveTfDisable = EnableAdaptiveTfDisable;
+        _scannerSettings.AdaptiveTfMinTrades = AdaptiveTfMinTrades;
+        _scannerSettings.AdaptiveTfMinWinRate = AdaptiveTfMinWinRate;
+        _scannerSettings.AdaptiveTfDisableHours = AdaptiveTfDisableHours;
 
         return _scannerSettings;
     }
@@ -156,6 +216,7 @@ public partial class ScannerViewModel : ViewModelBase, IDisposable
                     filtered = filtered.Where(t => !settings.Blacklist.Any(b =>
                         t.Symbol.Contains(b, StringComparison.OrdinalIgnoreCase)));
 
+#pragma warning disable CS0618 // Single-TF-Scanner-UI nutzt Legacy-Felder bewusst
                 // Volumen-Filter
                 if (settings.MinVolume24h > 0)
                     filtered = filtered.Where(t => t.Volume24h >= settings.MinVolume24h);
@@ -174,6 +235,7 @@ public partial class ScannerViewModel : ViewModelBase, IDisposable
                         t.PriceChangePercent24h))
                     .OrderByDescending(r => r.Score)
                     .Take(settings.MaxResults > 0 ? settings.MaxResults : 20);
+#pragma warning restore CS0618
 
                 foreach (var item in scored)
                     Results.Add(item);
@@ -250,6 +312,10 @@ public partial class ScannerViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+        if (_settingsService != null)
+            _settingsService.SettingsChanged -= OnSettingsChanged;
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;

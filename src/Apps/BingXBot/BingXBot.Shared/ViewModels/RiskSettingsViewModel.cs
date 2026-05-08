@@ -1,3 +1,4 @@
+using BingXBot.Contracts.Dto;
 using BingXBot.Contracts.Services;
 using BingXBot.Core.Configuration;
 using BingXBot.Core.Enums;
@@ -13,13 +14,21 @@ namespace BingXBot.ViewModels;
 /// ViewModel für Risk-Management (Buch-konform: nur SK-Buch-relevante Parameter).
 /// Max Drawdown, Position Sizing, Leverage, Korrelation, Cooldown.
 /// Nicht-Buch-konforme Parameter (Trailing, Funding-Filter, Equity-Curve, Momentum) wurden entfernt.
+///
+/// Subscribed auf <see cref="ISettingsService.SettingsChanged"/>, damit beim initialen Server-Sync
+/// (Remote-Mode) und bei Multi-Client-Updates (anderer Client speichert via Hub-Push) die UI
+/// automatisch refresht. Sonst bleiben die [ObservableProperty]-Felder auf den Defaults
+/// hängen, die beim ersten Konstruktor-Lauf aus dem leeren Singleton kopiert wurden.
 /// </summary>
-public partial class RiskSettingsViewModel : ViewModelBase
+public partial class RiskSettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly RiskSettings _riskSettings;
     private readonly BotEventBus _eventBus;
     private readonly BotDatabaseService? _dbService;
     private readonly ISettingsPersistenceService _settingsPersistence;
+    private readonly ISettingsService? _settingsService;
+    private bool _suppressDirty;
+    private bool _disposed;
 
     [ObservableProperty] private decimal _maxPositionSizePercent;
     [ObservableProperty] private decimal _maxMarginPerTradePercent;
@@ -31,6 +40,16 @@ public partial class RiskSettingsViewModel : ViewModelBase
     [ObservableProperty] private decimal _tp1CloseRatio;
     [ObservableProperty] private decimal _tp2CloseRatio;
     [ObservableProperty] private decimal _minRiskRewardRatio;
+
+    // === v1.5.x Optimization-Plan-2026-05 — opt-in Toggles ===
+    [ObservableProperty] private bool _requireHtfConfluenceForEntry;   // Phase 1
+    [ObservableProperty] private int _minConfluenceScore;              // Phase 1 quantitatives Gate
+    [ObservableProperty] private bool _useAsymmetricCrv;               // Phase 2
+
+    // === v1.7.0 Phase 16 — Cross-TF-Pyramiding (User-Ausnahme) ===
+    [ObservableProperty] private bool _enableCrossTfPyramiding;
+    [ObservableProperty] private int _pyramidMaxAddOns;
+    [ObservableProperty] private decimal _pyramidScalePercent;
 
     // === Marktspezifische Hebel (mappen auf RiskSettings.CategorySettings) ===
     public decimal CryptoMaxLeverage
@@ -75,6 +94,7 @@ public partial class RiskSettingsViewModel : ViewModelBase
     public RiskSettingsViewModel(RiskSettings riskSettings, BotEventBus eventBus,
         BotSettings botSettings, ScannerSettings scannerSettings,
         ISettingsPersistenceService settingsPersistence,
+        ISettingsService? settingsService = null,
         BotDatabaseService? dbService = null)
     {
         _riskSettings = riskSettings;
@@ -82,22 +102,64 @@ public partial class RiskSettingsViewModel : ViewModelBase
         _botSettings = botSettings;
         _scannerSettings = scannerSettings;
         _settingsPersistence = settingsPersistence;
+        _settingsService = settingsService;
         _dbService = dbService;
         LoadFromSettings();
+
+        // Subscribe auf Server-Pushes / Initial-Sync. Wichtig: Im Remote-Mode wird das VM
+        // möglicherweise BEVOR der erste Server-Sync durch ist konstruiert (Lazy<T> + schneller
+        // Tab-Klick). Bei Multi-Client-Saves feuert der Hub das Event ebenfalls hier.
+        if (_settingsService != null)
+            _settingsService.SettingsChanged += OnSettingsChanged;
+    }
+
+    private void OnSettingsChanged(FullSettingsDto snapshot)
+    {
+        // Feuert evtl. von SignalR-Background-Thread → auf UI-Thread marshalen, weil Setter
+        // PropertyChanged-Notifications auf Bindings auslösen.
+        Avalonia.Threading.Dispatcher.UIThread.Post(LoadFromSettings);
     }
 
     private void LoadFromSettings()
     {
-        MaxPositionSizePercent = _riskSettings.MaxPositionSizePercent;
-        MaxMarginPerTradePercent = _riskSettings.MaxMarginPerTradePercent;
-        MaxDailyDrawdownPercent = _riskSettings.MaxDailyDrawdownPercent;
-        MaxTotalDrawdownPercent = _riskSettings.MaxTotalDrawdownPercent;
-        MaxOpenPositions = _riskSettings.MaxOpenPositions;
-        MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol;
-        MaxLeverage = _riskSettings.MaxLeverage;
-        Tp1CloseRatio = _riskSettings.Tp1CloseRatio;
-        Tp2CloseRatio = _riskSettings.Tp2CloseRatio;
-        MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio;
+        // Suppress-Flag verhindert dass die OnXxxChanged partial-Setter MarkDirty() triggern.
+        // Sync vom Server ist KEINE User-Änderung — wir wollen kein "Ungespeicherte Änderungen"-Banner.
+        _suppressDirty = true;
+        try
+        {
+            MaxPositionSizePercent = _riskSettings.MaxPositionSizePercent;
+            MaxMarginPerTradePercent = _riskSettings.MaxMarginPerTradePercent;
+            MaxDailyDrawdownPercent = _riskSettings.MaxDailyDrawdownPercent;
+            MaxTotalDrawdownPercent = _riskSettings.MaxTotalDrawdownPercent;
+            MaxOpenPositions = _riskSettings.MaxOpenPositions;
+            MaxOpenPositionsPerSymbol = _riskSettings.MaxOpenPositionsPerSymbol;
+            MaxLeverage = _riskSettings.MaxLeverage;
+            Tp1CloseRatio = _riskSettings.Tp1CloseRatio;
+            Tp2CloseRatio = _riskSettings.Tp2CloseRatio;
+            MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio;
+
+            // v1.5.x Optimization-Plan-Toggles
+            RequireHtfConfluenceForEntry = _riskSettings.RequireHtfConfluenceForEntry;
+            MinConfluenceScore = _riskSettings.MinConfluenceScore;
+            UseAsymmetricCrv = _riskSettings.UseAsymmetricCrv;
+            EnableCrossTfPyramiding = _riskSettings.EnableCrossTfPyramiding;
+            PyramidMaxAddOns = _riskSettings.PyramidMaxAddOns;
+            PyramidScalePercent = _riskSettings.PyramidScalePercent;
+
+            // Marktspezifische Hebel: Diese Properties haben keinen Backing-Field-Setter (sie lesen
+            // direkt aus _riskSettings.CategorySettings), brauchen also explizite Notification.
+            OnPropertyChanged(nameof(CryptoMaxLeverage));
+            OnPropertyChanged(nameof(CommodityMaxLeverage));
+            OnPropertyChanged(nameof(IndexMaxLeverage));
+            OnPropertyChanged(nameof(ForexMaxLeverage));
+            OnPropertyChanged(nameof(StockMaxLeverage));
+
+            HasUnsavedChanges = false;
+        }
+        finally
+        {
+            _suppressDirty = false;
+        }
     }
 
     [RelayCommand]
@@ -113,6 +175,12 @@ public partial class RiskSettingsViewModel : ViewModelBase
         _riskSettings.Tp1CloseRatio = Tp1CloseRatio;
         _riskSettings.Tp2CloseRatio = Tp2CloseRatio;
         _riskSettings.MinRiskRewardRatio = MinRiskRewardRatio;
+        _riskSettings.RequireHtfConfluenceForEntry = RequireHtfConfluenceForEntry;
+        _riskSettings.MinConfluenceScore = MinConfluenceScore;
+        _riskSettings.UseAsymmetricCrv = UseAsymmetricCrv;
+        _riskSettings.EnableCrossTfPyramiding = EnableCrossTfPyramiding;
+        _riskSettings.PyramidMaxAddOns = PyramidMaxAddOns;
+        _riskSettings.PyramidScalePercent = PyramidScalePercent;
 
         SaveStatus = "Gespeichert";
         HasUnsavedChanges = false;
@@ -143,6 +211,7 @@ public partial class RiskSettingsViewModel : ViewModelBase
 
     private void MarkDirty()
     {
+        if (_suppressDirty) return;   // LoadFromSettings darf kein Dirty-Flag setzen
         HasUnsavedChanges = true;
         SaveStatus = "";
     }
@@ -157,4 +226,18 @@ public partial class RiskSettingsViewModel : ViewModelBase
     partial void OnTp1CloseRatioChanged(decimal value) => MarkDirty();
     partial void OnTp2CloseRatioChanged(decimal value) => MarkDirty();
     partial void OnMinRiskRewardRatioChanged(decimal value) => MarkDirty();
+    partial void OnRequireHtfConfluenceForEntryChanged(bool value) => MarkDirty();
+    partial void OnMinConfluenceScoreChanged(int value) => MarkDirty();
+    partial void OnUseAsymmetricCrvChanged(bool value) => MarkDirty();
+    partial void OnEnableCrossTfPyramidingChanged(bool value) => MarkDirty();
+    partial void OnPyramidMaxAddOnsChanged(int value) => MarkDirty();
+    partial void OnPyramidScalePercentChanged(decimal value) => MarkDirty();
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        if (_settingsService != null)
+            _settingsService.SettingsChanged -= OnSettingsChanged;
+    }
 }

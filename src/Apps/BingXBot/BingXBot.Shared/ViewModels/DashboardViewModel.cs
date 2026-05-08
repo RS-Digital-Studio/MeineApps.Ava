@@ -114,6 +114,14 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     private DateTime _lastAmpelUpdateUtc = DateTime.MinValue;
     private Avalonia.Threading.DispatcherTimer? _watchdogTimer;
 
+    // === v1.6.0 Phase 10B — Stats-Breakdown-Card (TF × Category × Mode) ===
+    private readonly IStatsService? _statsService;
+    private Avalonia.Threading.DispatcherTimer? _statsRefreshTimer;
+    /// <summary>Aggregierte Stats pro (TF × MarketCategory × Mode) — wird alle 30 s refreshed.</summary>
+    public ObservableCollection<BingXBot.Contracts.Dto.TradeStatsBreakdownRowDto> StatsBreakdown { get; } = new();
+    [ObservableProperty] private bool _isStatsLoading;
+    [ObservableProperty] private string _statsStatusText = "";
+
     /// <summary>True wenn der Bot nicht im Running-State ist ODER seit ≥ 5 min kein Engine-Update kam.</summary>
     [ObservableProperty] private bool _isAmpelStale = true;
 
@@ -273,7 +281,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         ISettingsPersistenceService settingsPersistence,
         IPublicMarketDataClient? publicClient = null,
         BotDatabaseService? dbService = null,
-        ISecureStorageService? secureStorage = null)
+        ISecureStorageService? secureStorage = null,
+        IStatsService? statsService = null)
     {
         _eventBus = eventBus;
         _eventStream = eventStream;
@@ -290,6 +299,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _publicClient = publicClient;
         _dbService = dbService;
         _secureStorage = secureStorage;
+        _statsService = statsService;
 
         // Sub-ViewModels erstellen
         BtcTicker = new BtcTickerViewModel(publicClient, eventBus);
@@ -367,7 +377,52 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _watchdogTimer.Start();
         EvaluateAmpelStaleness();
 
+        // v1.6.0 Phase 10B — Stats-Breakdown 30 s Refresh.
+        if (_statsService != null)
+        {
+            _statsRefreshTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            _statsRefreshTimer.Tick += async (_, _) => await RefreshStatsAsync().ConfigureAwait(false);
+            _statsRefreshTimer.Start();
+            // Initial-Load (fire-and-forget — Fehler werden im StatusText angezeigt).
+            _ = RefreshStatsAsync();
+        }
+
         _isInitializing = false; // Ab jetzt überschreiben Modus-Wechsel die Settings
+    }
+
+    /// <summary>
+    /// v1.6.0 Phase 10B — Holt aktuelle Stats-Aggregat vom Server (Remote) oder direkt
+    /// vom <see cref="BingXBot.Trading.Stats.TradeStatsAggregator"/> (Local). Nicht-blockierend.
+    /// </summary>
+    [RelayCommand]
+    public async Task RefreshStatsAsync()
+    {
+        if (_statsService == null) return;
+        try
+        {
+            IsStatsLoading = true;
+            var dto = await _statsService.GetBreakdownAsync().ConfigureAwait(false);
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                StatsBreakdown.Clear();
+                foreach (var row in dto.Rows.OrderByDescending(r => r.TotalPnl))
+                    StatsBreakdown.Add(row);
+                StatsStatusText = StatsBreakdown.Count == 0
+                    ? "Noch keine Trades aggregiert"
+                    : $"{StatsBreakdown.Count} Buckets";
+            });
+        }
+        catch (Exception ex)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                StatsStatusText = $"Stats-Fehler: {ex.Message}";
+            });
+        }
+        finally
+        {
+            IsStatsLoading = false;
+        }
     }
 
     partial void OnSelectedStrategyChanged(string value)
@@ -1347,6 +1402,11 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             _watchdogTimer.Stop();
             _watchdogTimer = null;
+        }
+        if (_statsRefreshTimer != null)
+        {
+            _statsRefreshTimer.Stop();
+            _statsRefreshTimer = null;
         }
 
         _accountUpdateCts?.Cancel();

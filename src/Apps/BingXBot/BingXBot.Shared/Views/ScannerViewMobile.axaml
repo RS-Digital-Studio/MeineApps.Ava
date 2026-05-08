@@ -133,6 +133,92 @@
             <TextBox Text="{Binding BlacklistText, Mode=TwoWay}" Watermark="z.B. SHIB,DOGE"
                      FontSize="13" />
           </StackPanel>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="0,4" />
+
+          <!-- v1.5.4 Phase 7 — Funding-Rate Soft-Bonus -->
+          <StackPanel Spacing="4">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Funding-Bonus" FontSize="12"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock Text="+1 Score wenn Funding-Rate in Trade-Richtung"
+                           FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableFundingRateBonus, Mode=TwoWay}" />
+            </Grid>
+            <NumericUpDown Value="{Binding FundingRateBonusThresholdPercent, Mode=TwoWay}"
+                           Minimum="0.01" Maximum="1.0" Increment="0.01"
+                           FormatString="0.00\\%"
+                           IsEnabled="{Binding EnableFundingRateBonus}"
+                           FontSize="13" HorizontalAlignment="Stretch" />
+          </StackPanel>
+
+          <!-- v1.6.2 Phase 12 — Slippage-Guard -->
+          <StackPanel Spacing="4">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Slippage-Guard" FontSize="12"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock Text="Order-Book vor Entry prüfen"
+                           FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding SlippageGuardEnabled, Mode=TwoWay}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding SlippageGuardEnabled}">
+              <TextBlock Grid.Column="0" Text="Max. Slippage" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         VerticalAlignment="Center" />
+              <NumericUpDown Grid.Column="1"
+                             Value="{Binding MaxSlippagePercent, Mode=TwoWay}"
+                             Minimum="0.05" Maximum="2.0" Increment="0.05"
+                             FormatString="0.00\\%"
+                             FontSize="12" MinWidth="110" />
+            </Grid>
+          </StackPanel>
+
+          <!-- v1.6.6 Phase 17 — Adaptive TF-Disable -->
+          <StackPanel Spacing="4">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Adaptive TF-Disable" FontSize="12"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock Text="Schlechte TF temporär aus"
+                           FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableAdaptiveTfDisable, Mode=TwoWay}" />
+            </Grid>
+            <StackPanel Spacing="3" IsEnabled="{Binding EnableAdaptiveTfDisable}">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="Min. Trades" FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1"
+                               Value="{Binding AdaptiveTfMinTrades, Mode=TwoWay}"
+                               Minimum="5" Maximum="200" Increment="5"
+                               FormatString="0" FontSize="12" MinWidth="110" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="Min. WinRate" FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1"
+                               Value="{Binding AdaptiveTfMinWinRate, Mode=TwoWay}"
+                               Minimum="0.10" Maximum="0.80" Increment="0.05"
+                               FormatString="0.00" FontSize="12" MinWidth="110" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="Disable-Stunden" FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1"
+                               Value="{Binding AdaptiveTfDisableHours, Mode=TwoWay}"
+                               Minimum="1" Maximum="168" Increment="1"
+                               FormatString="0" FontSize="12" MinWidth="110" />
+              </Grid>
+            </StackPanel>
+          </StackPanel>
         </StackPanel>
       </Expander>
     </StackPanel>

@@ -84,6 +84,18 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
     // Regime-Breakdown (formatiert als Text-Zeilen)
     [ObservableProperty] private string _regimeBreakdownText = "";
 
+    // === v1.5.3 Phase 6 / v1.6.0 Phase 10C — Walk-Forward-Backtest ===
+    [ObservableProperty] private bool _enableWalkForward;
+    [ObservableProperty] private int _walkForwardWindowDays = 30;
+    [ObservableProperty] private int _walkForwardStepDays = 7;
+    [ObservableProperty] private bool _hasWalkForwardResult;
+    [ObservableProperty] private decimal _walkForwardAvgWinRate;
+    [ObservableProperty] private decimal _walkForwardRobustnessScore;
+    [ObservableProperty] private decimal _walkForwardTotalPnl;
+    [ObservableProperty] private decimal _walkForwardMaxDrawdown;
+    [ObservableProperty] private int _walkForwardWindowCount;
+    public ObservableCollection<WalkForwardWindowResult> WalkForwardWindows { get; } = new();
+
     /// <summary>Ob das Gesamt-PnL positiv ist (für Farbsteuerung in der View).</summary>
     public bool IsPnlPositive => TotalPnl >= 0;
 
@@ -317,8 +329,10 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
     {
         IsRunning = true;
         HasResult = false;
+        HasWalkForwardResult = false;
         StatusText = "Lade historische Daten von BingX...";
         Trades.Clear();
+        WalkForwardWindows.Clear();
 
         _backtestCts?.Cancel();
         _backtestCts?.Dispose();
@@ -330,6 +344,13 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
 
         try
         {
+            // Phase 10C: Wenn Walk-Forward aktiv → eigener Pfad (Single-TF, ueberlappende Fenster)
+            if (EnableWalkForward)
+            {
+                await RunWalkForwardBacktestAsync(_backtestCts.Token).ConfigureAwait(false);
+                return;
+            }
+
             // Multi-TF Standalone: Wenn BacktestAllTimeframes aktiv → Schleife über alle ausgewählten TFs
             if (BacktestAllTimeframes)
             {
@@ -503,6 +524,101 @@ public partial class BacktestViewModel : ViewModelBase, IDisposable
     private void CancelBacktest()
     {
         _backtestCts?.Cancel();
+    }
+
+    /// <summary>
+    /// v1.6.0 Phase 10C — Walk-Forward-Backtest: Ueberlappende Fenster (WindowDays + StepDays)
+    /// um Robustheit ueber unterschiedliche Markt-Regimes zu testen. Robustness-Score = StdDev
+    /// der WinRate ueber alle Fenster — niedrige Werte = konsistent, hohe = Overfitting-Verdacht.
+    /// </summary>
+    private async Task RunWalkForwardBacktestAsync(CancellationToken ct)
+    {
+        if (_publicClient == null)
+        {
+            StatusText = "Walk-Forward braucht den BingX-Public-Client (Symbol-Daten).";
+            return;
+        }
+        if (WalkForwardWindowDays < 1 || WalkForwardStepDays < 1)
+        {
+            StatusText = "Walk-Forward: Window/Step muss > 0 sein.";
+            return;
+        }
+
+        try
+        {
+            var timeFrame = ParseTimeFrame(SelectedTimeFrame);
+            var from = StartDate?.UtcDateTime ?? DateTime.UtcNow.AddDays(-180);
+            var to = EndDate?.UtcDateTime ?? DateTime.UtcNow;
+            var windowSize = TimeSpan.FromDays(WalkForwardWindowDays);
+            var stepSize = TimeSpan.FromDays(WalkForwardStepDays);
+
+            // Vorab Window-Anzahl pruefen, damit User aussagekraeftige Fehlermeldung erhaelt.
+            var windows = WalkForwardRunner.GenerateWindows(from, to, windowSize, stepSize);
+            if (windows.Count < 2)
+            {
+                StatusText = $"Walk-Forward braucht ≥ 2 Fenster — Range ergibt nur {windows.Count}. Range erweitern oder Window verkleinern.";
+                return;
+            }
+
+            StatusText = $"Walk-Forward: {windows.Count} Fenster × {WalkForwardWindowDays} Tage...";
+
+            var engine = new BacktestEngine(_publicClient, NullLogger<BacktestEngine>.Instance);
+            var runner = new WalkForwardRunner(engine, NullLogger<WalkForwardRunner>.Instance);
+
+            var backtestSettings = new BacktestSettings
+            {
+                InitialBalance = InitialBalance,
+                Tp1CloseRatio = _riskSettings.Tp1CloseRatio,
+                Tp2CloseRatio = _riskSettings.Tp2CloseRatio,
+                MinRiskRewardRatio = _riskSettings.MinRiskRewardRatio,
+                HtfTimeFrame = SequenzKonzeptStrategy.GetFilterTimeframe(timeFrame),
+            };
+
+            var progressReporter = new Progress<(int Window, int Total)>(p =>
+            {
+                Progress = (int)((double)p.Window / p.Total * 100);
+                StatusText = $"Walk-Forward: Fenster {p.Window}/{p.Total}";
+            });
+
+            var report = await runner.RunAsync(
+                Symbol, timeFrame, from, to, windowSize, stepSize,
+                backtestSettings,
+                strategyFactory: CreateStrategy,
+                riskManagerFactory: () => new RiskManager(BuildRiskSettings(), NullLogger<RiskManager>.Instance),
+                scannerSettings: _scannerSettings,
+                riskSettings: BuildRiskSettings(),
+                progress: progressReporter,
+                ct: ct).ConfigureAwait(false);
+
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                WalkForwardWindows.Clear();
+                foreach (var w in report.Windows)
+                    WalkForwardWindows.Add(w);
+
+                WalkForwardWindowCount = report.WindowCount;
+                WalkForwardAvgWinRate = report.AvgWinRate;
+                WalkForwardRobustnessScore = report.RobustnessScore;
+                WalkForwardTotalPnl = report.TotalNetPnl;
+                WalkForwardMaxDrawdown = report.MaxDrawdownAcrossWindows;
+                HasWalkForwardResult = true;
+
+                StatusText = $"Walk-Forward fertig — {report.WindowCount} Fenster, AvgWinRate={report.AvgWinRate:P0}, Robustheit (StdDev WinRate)={report.RobustnessScore:F4}";
+            });
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Info, "Backtest",
+                $"Walk-Forward abgeschlossen: {report.WindowCount} Fenster, AvgWinRate={report.AvgWinRate:P1}, Robustheit={report.RobustnessScore:F4}, TotalPnl={report.TotalNetPnl:F2}"));
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Walk-Forward abgebrochen";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Walk-Forward Fehler: {ex.Message}";
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, Core.Enums.LogLevel.Error, "Backtest",
+                $"Walk-Forward fehlgeschlagen: {ex.Message}"));
+        }
     }
 
     public void Dispose()

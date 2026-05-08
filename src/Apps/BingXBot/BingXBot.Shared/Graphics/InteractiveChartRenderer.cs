@@ -106,6 +106,25 @@ public class InteractiveChartRenderer
     private static readonly SKFont FibFont = new(SKTypeface.Default, 9);
     private static readonly SKFont PointFont = new(SKTypeface.Default, 11);
 
+    // 04.05.2026 — Per-Frame-Allokationen aus Render-Methoden ausgelagert.
+    // Reduziert GC-Pressure auf Android-Mid-Tier + Pi (~150 SKPaint-Allokationen pro Frame entfernt).
+    // Color-variable Paints werden vor Verwendung mit .Color = ... aktualisiert (UI-Thread, kein Race).
+    private static readonly SKPaint PriceLinePaint = new() { StrokeWidth = 1f, PathEffect = DashEffect };
+    private static readonly SKPaint PriceLabelPaint = new() { IsAntialias = true };
+    private static readonly SKPaint ProfitZonePaint = new() { Color = TpColor.WithAlpha(15), Style = SKPaintStyle.Fill };
+    private static readonly SKPaint LossZonePaint = new() { Color = SlColor.WithAlpha(15), Style = SKPaintStyle.Fill };
+    private static readonly SKPaint Tp1ExtLinePaint = new() { Color = TpColor.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
+    private static readonly SKPaint Tp1ExtLabelPaint = new() { Color = TpColor.WithAlpha(200), IsAntialias = true };
+    private static readonly SKPaint Tp2ExtLinePaint = new() { Color = Tp2Color.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
+    private static readonly SKPaint Tp2ExtLabelPaint = new() { Color = Tp2Color.WithAlpha(200), IsAntialias = true };
+    private static readonly SKPaint BadgeBgPaint = new() { Color = SKColor.Parse("#1E1E2E").WithAlpha(200), Style = SKPaintStyle.Fill };
+    private static readonly SKPaint BadgeTextPaint = new() { Color = FibColor, IsAntialias = true };
+    private static readonly SKPaint MarkerCircleFillPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
+    private static readonly SKPaint MarkerCircleBorderPaint = new() { Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true };
+    private static readonly SKPaint MarkerTextPaint = new() { Color = SKColors.White, IsAntialias = true };
+    private static readonly SKPaint MarkerPricePaint = new() { IsAntialias = true };
+    private static readonly SKPaint TradeMarkerFillPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
+
     public ChartState State { get; } = new();
 
     // Berechnete Layout-Bereiche (für Mouse-Event-Handling im View)
@@ -216,10 +235,10 @@ public class InteractiveChartRenderer
         var lastPrice = candles[visEnd - 1].Close;
         var lastY = MapY(lastPrice, priceArea, minP, maxP);
         var lastBull = candles[visEnd - 1].Close >= candles[visEnd - 1].Open;
-        using var priceLine = new SKPaint { Color = (lastBull ? BullColor : BearColor).WithAlpha(100), StrokeWidth = 1f, PathEffect = DashEffect };
-        canvas.DrawLine(priceArea.Left, lastY, priceArea.Right, lastY, priceLine);
-        using var priceLbl = new SKPaint { Color = lastBull ? BullColor : BearColor, IsAntialias = true };
-        canvas.DrawText($"{lastPrice:F1}", priceArea.Right + 3, lastY + 4, LabelFont, priceLbl);
+        PriceLinePaint.Color = (lastBull ? BullColor : BearColor).WithAlpha(100);
+        canvas.DrawLine(priceArea.Left, lastY, priceArea.Right, lastY, PriceLinePaint);
+        PriceLabelPaint.Color = lastBull ? BullColor : BearColor;
+        canvas.DrawText($"{lastPrice:F1}", priceArea.Right + 3, lastY + 4, LabelFont, PriceLabelPaint);
 
         // Layer 7: SK-Sequenz-Overlay (Fib-Level, GKL-Zone, A-B-C Punkte)
         if (sequenceOverlay != null)
@@ -372,10 +391,8 @@ public class InteractiveChartRenderer
             var entryY = MapY(ov.EntryPrice, area, min, max);
             var slY = MapY(ov.StopLoss.Value, area, min, max);
             var tpY = MapY(ov.TakeProfit.Value, area, min, max);
-            using var profitZone = new SKPaint { Color = TpColor.WithAlpha(15), Style = SKPaintStyle.Fill };
-            using var lossZone = new SKPaint { Color = SlColor.WithAlpha(15), Style = SKPaintStyle.Fill };
-            DrawZone(canvas, area, entryY, tpY, profitZone);
-            DrawZone(canvas, area, entryY, slY, lossZone);
+            DrawZone(canvas, area, entryY, tpY, ProfitZonePaint);
+            DrawZone(canvas, area, entryY, slY, LossZonePaint);
         }
     }
 
@@ -406,12 +423,8 @@ public class InteractiveChartRenderer
         DrawFibLine(canvas, area, min, max, seq.Ret786, "78.6%");
 
         // 4. Extension-Linien (Buch-Tabelle: TP1 161.8%, TP2 200%, Runner 261.8%, Max 423.6%)
-        using var tp1ExtPaint = new SKPaint { Color = TpColor.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
-        using var tp1ExtLabel = new SKPaint { Color = TpColor.WithAlpha(200), IsAntialias = true };
-        DrawHLine(canvas, area, min, max, seq.Ext1618, tp1ExtPaint, "TP1 161.8%", tp1ExtLabel);
-        using var tp2ExtPaint = new SKPaint { Color = Tp2Color.WithAlpha(100), StrokeWidth = 1.2f, IsAntialias = true, PathEffect = SKPathEffect.CreateDash([5f, 4f], 0) };
-        using var tp2ExtLabel = new SKPaint { Color = Tp2Color.WithAlpha(200), IsAntialias = true };
-        DrawHLine(canvas, area, min, max, seq.Ext200, tp2ExtPaint, "TP2 200%", tp2ExtLabel);
+        DrawHLine(canvas, area, min, max, seq.Ext1618, Tp1ExtLinePaint, "TP1 161.8%", Tp1ExtLabelPaint);
+        DrawHLine(canvas, area, min, max, seq.Ext200, Tp2ExtLinePaint, "TP2 200%", Tp2ExtLabelPaint);
         DrawExtLine(canvas, area, min, max, seq.Ext2618, "261.8%");
         DrawExtLine(canvas, area, min, max, seq.Ext4236, "423.6%");
 
@@ -439,11 +452,9 @@ public class InteractiveChartRenderer
 
         // 7. Richtungs-Badge oben links (Buch-konform: Long/Short, keine Wellen-/Typ-Klassifikation)
         var badge = $"SK {(seq.IsLong ? "Long" : "Short")}";
-        using var badgeBg = new SKPaint { Color = SKColor.Parse("#1E1E2E").WithAlpha(200), Style = SKPaintStyle.Fill };
-        using var badgeText = new SKPaint { Color = FibColor, IsAntialias = true };
         var badgeRect = new SKRect(area.Left + 5, area.Top + 5, area.Left + 5 + badge.Length * 7f + 10, area.Top + 22);
-        canvas.DrawRoundRect(badgeRect, 4, 4, badgeBg);
-        canvas.DrawText(badge, area.Left + 10, area.Top + 18, FibFont, badgeText);
+        canvas.DrawRoundRect(badgeRect, 4, 4, BadgeBgPaint);
+        canvas.DrawText(badge, area.Left + 10, area.Top + 18, FibFont, BadgeTextPaint);
     }
 
     private static void DrawFibLine(SKCanvas canvas, SKRect area, decimal min, decimal max, decimal price, string label)
@@ -471,17 +482,16 @@ public class InteractiveChartRenderer
         // Position horizontal (linkes Drittel, da keine X-Zeitinfo)
         var x = label switch { "A" => area.Left + area.Width * 0.15f, "B" => area.Left + area.Width * 0.30f, _ => area.Left + area.Width * 0.45f };
 
-        // Kreis mit Buchstabe
-        using var circleFill = new SKPaint { Color = color.WithAlpha(40), Style = SKPaintStyle.Fill, IsAntialias = true };
-        using var circleBorder = new SKPaint { Color = color.WithAlpha(180), Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true };
-        using var textPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
-        canvas.DrawCircle(x, y, 10, circleFill);
-        canvas.DrawCircle(x, y, 10, circleBorder);
-        canvas.DrawText(label, x - 3.5f, y + 4, PointFont, textPaint);
+        // Kreis mit Buchstabe — gecachte Paints, Color wird pro Marker gesetzt (UI-Thread, kein Race).
+        MarkerCircleFillPaint.Color = color.WithAlpha(40);
+        MarkerCircleBorderPaint.Color = color.WithAlpha(180);
+        canvas.DrawCircle(x, y, 10, MarkerCircleFillPaint);
+        canvas.DrawCircle(x, y, 10, MarkerCircleBorderPaint);
+        canvas.DrawText(label, x - 3.5f, y + 4, PointFont, MarkerTextPaint);
 
         // Preis-Label neben dem Punkt
-        using var pricePaint = new SKPaint { Color = color.WithAlpha(200), IsAntialias = true };
-        canvas.DrawText($"{price:G6}", x + 14, y + 4, SmallFont, pricePaint);
+        MarkerPricePaint.Color = color.WithAlpha(200);
+        canvas.DrawText($"{price:G6}", x + 14, y + 4, SmallFont, MarkerPricePaint);
     }
 
     // ═══ Position-Overlay ═══
@@ -504,6 +514,9 @@ public class InteractiveChartRenderer
 
     // ═══ Trade-Markers ═══
 
+    // 04.05.2026 — Wiederverwendbarer Path für Entry-Marker, vermeidet N×Allokation pro Frame.
+    private static readonly SKPath SharedTradeMarkerPath = new();
+
     private void DrawTradeMarkers(SKCanvas canvas, SKRect area, decimal min, decimal max,
         IReadOnlyList<Candle> candles, int visStart, int visEnd, IReadOnlyList<TradeMarker> markers)
     {
@@ -523,21 +536,19 @@ public class InteractiveChartRenderer
             var sz = 7f;
             if (m.IsEntry)
             {
-                var col = m.Side == Side.Buy ? LongEntryColor : ShortEntryColor;
-                using var p = new SKPaint { Color = col, Style = SKPaintStyle.Fill, IsAntialias = true };
-                using var path = new SKPath();
+                TradeMarkerFillPaint.Color = m.Side == Side.Buy ? LongEntryColor : ShortEntryColor;
+                SharedTradeMarkerPath.Reset();
                 if (m.Side == Side.Buy)
-                { path.MoveTo(x, y + sz + 4); path.LineTo(x - sz, y + sz * 2 + 4); path.LineTo(x + sz, y + sz * 2 + 4); }
+                { SharedTradeMarkerPath.MoveTo(x, y + sz + 4); SharedTradeMarkerPath.LineTo(x - sz, y + sz * 2 + 4); SharedTradeMarkerPath.LineTo(x + sz, y + sz * 2 + 4); }
                 else
-                { path.MoveTo(x, y - sz - 4); path.LineTo(x - sz, y - sz * 2 - 4); path.LineTo(x + sz, y - sz * 2 - 4); }
-                path.Close();
-                canvas.DrawPath(path, p);
+                { SharedTradeMarkerPath.MoveTo(x, y - sz - 4); SharedTradeMarkerPath.LineTo(x - sz, y - sz * 2 - 4); SharedTradeMarkerPath.LineTo(x + sz, y - sz * 2 - 4); }
+                SharedTradeMarkerPath.Close();
+                canvas.DrawPath(SharedTradeMarkerPath, TradeMarkerFillPaint);
             }
             else
             {
-                var col = m.Pnl >= 0 ? ExitWinColor : ExitLossColor;
-                using var p = new SKPaint { Color = col, Style = SKPaintStyle.Fill, IsAntialias = true };
-                canvas.DrawCircle(x, y, sz * 0.7f, p);
+                TradeMarkerFillPaint.Color = m.Pnl >= 0 ? ExitWinColor : ExitLossColor;
+                canvas.DrawCircle(x, y, sz * 0.7f, TradeMarkerFillPaint);
             }
         }
     }

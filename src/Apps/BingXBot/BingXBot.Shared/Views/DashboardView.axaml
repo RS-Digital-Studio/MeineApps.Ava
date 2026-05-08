@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:dto="using:BingXBot.Contracts.Dto"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:conv="using:BingXBot.Converters"
@@ -292,6 +293,74 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
+              </StackPanel>
+            </Border>
+
+            <!-- v1.6.0 Phase 10B — Stats-Breakdown (TF × Category × Mode) -->
+            <Border Background="{DynamicResource AppBackgroundAltBrush}" CornerRadius="6"
+                    Padding="10,8" Margin="0,8,0,0"
+                    IsVisible="{Binding StatsBreakdown.Count}">
+              <StackPanel Spacing="4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="Trade-Stats (TF × Markt × Modus)" FontSize="10" FontWeight="SemiBold"
+                             Foreground="{DynamicResource AppTextSecondaryBrush}"
+                             VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Command="{Binding RefreshStatsCommand}"
+                          Background="Transparent" BorderThickness="0"
+                          Padding="4,2" Cursor="Hand"
+                          ToolTip.Tip="Aggregat neu laden">
+                    <mi:MaterialIcon Kind="Refresh" Width="14" Height="14"
+                                     Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                  </Button>
+                </Grid>
+                <Grid ColumnDefinitions="40,80,60,60,80,80" Margin="0,2,0,2">
+                  <TextBlock Grid.Column="0" Text="TF" FontSize="9" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Grid.Column="1" Text="Markt" FontSize="9" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Grid.Column="2" Text="Modus" FontSize="9" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Grid.Column="3" Text="Trades" FontSize="9" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+                  <TextBlock Grid.Column="4" Text="WinRate" FontSize="9" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+                  <TextBlock Grid.Column="5" Text="PnL ges." FontSize="9" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding StatsBreakdown}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="dto:TradeStatsBreakdownRowDto">
+                      <Grid ColumnDefinitions="40,80,60,60,80,80" Margin="0,1">
+                        <TextBlock Grid.Column="0" Text="{Binding Tf}" FontSize="10"
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{DynamicResource AppTextBrush}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Category}" FontSize="10"
+                                   Foreground="{DynamicResource AppTextBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding Mode}" FontSize="10"
+                                   Foreground="{DynamicResource AppTextSecondaryBrush}" />
+                        <TextBlock Grid.Column="3" Text="{Binding TotalTrades}" FontSize="10"
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{DynamicResource AppTextBrush}"
+                                   HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="4"
+                                   Text="{Binding WinRate, StringFormat='{}{0:P0}'}"
+                                   FontSize="10"
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="5"
+                                   Text="{Binding TotalPnl, StringFormat='{}{0:+0.00;-0.00;0.00}'}"
+                                   FontSize="10" FontWeight="SemiBold"
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   HorizontalAlignment="Right" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding StatsStatusText}" FontSize="9" FontStyle="Italic"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           IsVisible="{Binding StatsStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               </StackPanel>
             </Border>
           </StackPanel>

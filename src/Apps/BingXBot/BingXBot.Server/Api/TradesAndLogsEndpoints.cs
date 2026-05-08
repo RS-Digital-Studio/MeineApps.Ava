@@ -13,12 +13,29 @@ public static class TradesAndLogsEndpoints
     {
         app.MapGet(ApiRoutes.Trades, async (
             ITradeHistoryService history,
+            BingXBot.Trading.BotDatabaseService db,
+            BingXBot.Core.Interfaces.IAppPaths paths,
             int? page, int? pageSize, string? mode, string? symbol,
-            DateTime? from, DateTime? to, CancellationToken ct) =>
+            DateTime? from, DateTime? to, bool? archive, CancellationToken ct) =>
         {
             TradingMode? modeFilter = null;
             if (!string.IsNullOrWhiteSpace(mode) && Enum.TryParse<TradingMode>(mode, true, out var m))
                 modeFilter = m;
+
+            // v1.6.1 Phase 11 — bei ?archive=true zusaetzlich archivierte Trades einblenden.
+            if (archive == true)
+            {
+                var archiveDir = Path.Combine(Path.GetDirectoryName(paths.DatabasePath) ?? ".", "archives");
+                var combined = await db.GetTradesIncludingArchiveAsync(archiveDir, modeFilter, limit: 5000)
+                    .ConfigureAwait(false);
+                IEnumerable<BingXBot.Core.Models.CompletedTrade> q = combined;
+                if (!string.IsNullOrWhiteSpace(symbol)) q = q.Where(t => t.Symbol == symbol);
+                if (from.HasValue) q = q.Where(t => t.EntryTime >= from.Value);
+                if (to.HasValue) q = q.Where(t => t.ExitTime <= to.Value);
+                var pg = page ?? 0; var ps = pageSize ?? 100;
+                var paged = q.Skip(pg * ps).Take(ps).ToList();
+                return Results.Ok(new { Items = paged, Page = pg, PageSize = ps, Total = q.Count() });
+            }
 
             var query = new TradeQueryDto(
                 Page: page ?? 0,

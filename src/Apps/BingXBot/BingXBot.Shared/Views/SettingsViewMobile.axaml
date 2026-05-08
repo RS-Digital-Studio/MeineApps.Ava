@@ -256,6 +256,40 @@
         </StackPanel>
       </Border>
 
+      <!-- ═════ Diagnose &amp; Push (v1.5.x Optimization-Plan) ═════ -->
+      <Border Classes="SectionCard">
+        <StackPanel Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Cogs" Width="16" Height="16"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Diagnose &amp; Push" FontSize="13" FontWeight="Bold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Decision-Trail" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Phase 4: Reject-Log" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableDecisionTrail}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Trade-Push" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Phase 9: FCM Open/Close" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableTradePushNotifications}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
       <!-- ═════ Logging ═════ -->
       <Border Classes="SectionCard">
         <StackPanel Spacing="10">

@@ -78,6 +78,11 @@ public partial class App : Application
             ValidateScopes = true
         });
 
+        // 04.05.2026 — Market-Cap-Provider beim Static-Bridge einhängen (HTTP-Logic in Engine,
+        // damit Core HTTP-frei bleibt). Wirkt nur im Local-Mode; im Remote-Mode liefert der Server.
+        BingXBot.Engine.Helpers.MarketCapRefreshHelper.Configure(
+            new BingXBot.Engine.Helpers.CoinGeckoMarketCapProvider());
+
         // Flag setzen (kein Service-Zugriff der werfen könnte)
         try
         {
@@ -152,7 +157,36 @@ public partial class App : Application
                 {
                     RestoreSettingsFromDb(saved);
                     ApplyTheme(saved.ThemePreference);
+                    // Lazy-resolved ViewModels (Risk/Scanner) abonnieren SettingsChanged. Im Local-Mode
+                    // wird Restore VOR irgendeinem Save aufgerufen — explizit triggern, damit die UI
+                    // den DB-Stand sieht statt der Singleton-Defaults vom ersten Resolve.
+                    if (Services.GetService<ISettingsService>() is LocalSettingsService ls)
+                        ls.RaiseChanged();
                 });
+
+                // v1.5.2 Phase 4 / v1.5.3 Phase 5 — Im Local-Mode (Desktop standalone) muessen
+                // wir die neuen Services aktiv verdrahten:
+                // - DecisionTrailBuffer subscribt auf BotEventBus.EvaluationDecided + persistiert in DB.
+                // - TradeStatsAggregator wird durch Resolve aktiviert (Konstruktor abonniert TradeCompleted)
+                //   und mit den letzten 10.000 Trades aus der DB rebuildet.
+                try
+                {
+                    var bus = Services.GetRequiredService<BotEventBus>();
+                    var buffer = Services.GetRequiredService<BingXBot.Core.Diagnostics.DecisionTrailBuffer>();
+                    bus.EvaluationDecided += (_, decision) =>
+                    {
+                        buffer.Append(decision);
+                        _ = db.SaveDecisionAsync(decision); // Best-effort
+                    };
+
+                    var aggregator = Services.GetRequiredService<BingXBot.Trading.Stats.TradeStatsAggregator>();
+                    var pastTrades = await db.GetTradesAsync(modeFilter: null, limit: 10_000).ConfigureAwait(false);
+                    aggregator.ReplayFromTrades(pastTrades);
+                }
+                catch (Exception wireEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Local-Mode Trail/Stats Wire-up fehlgeschlagen: {wireEx.Message}");
+                }
             }
             catch (Exception ex)
             {
@@ -222,6 +256,28 @@ public partial class App : Application
         risk.RequireWickRejectionInBZone = saved.Risk.RequireWickRejectionInBZone;
         risk.RequireBoxCloseOnEntry = saved.Risk.RequireBoxCloseOnEntry;
         risk.HighProbabilityPositionMultiplier = saved.Risk.HighProbabilityPositionMultiplier;
+        // Phase 3 — Heiliger Gral als Hard-Gate (opt-in, default false / 0)
+        risk.RequireHtfConfluenceForEntry = saved.Risk.RequireHtfConfluenceForEntry;
+        risk.MinConfluenceScore = saved.Risk.MinConfluenceScore;
+        // v1.5.0 Phase 2 — Asymmetrisches CRV (opt-in, default false)
+        risk.UseAsymmetricCrv = saved.Risk.UseAsymmetricCrv;
+        // v1.5.4 Phase 7 — Funding-Rate Soft-Bonus
+        scanner.EnableFundingRateBonus = saved.Scanner.EnableFundingRateBonus;
+        scanner.FundingRateBonusThresholdPercent = saved.Scanner.FundingRateBonusThresholdPercent;
+        // v1.6.2 Phase 12 — Slippage-Guard
+        scanner.SlippageGuardEnabled = saved.Scanner.SlippageGuardEnabled;
+        scanner.MaxSlippagePercent = saved.Scanner.MaxSlippagePercent;
+        // v1.6.6 Phase 17 — Adaptive TF-Disable
+        scanner.EnableAdaptiveTfDisable = saved.Scanner.EnableAdaptiveTfDisable;
+        scanner.AdaptiveTfMinTrades = saved.Scanner.AdaptiveTfMinTrades;
+        scanner.AdaptiveTfMinWinRate = saved.Scanner.AdaptiveTfMinWinRate;
+        scanner.AdaptiveTfDisableHours = saved.Scanner.AdaptiveTfDisableHours;
+        // v1.7.0 Phase 16 — Cross-TF-Pyramiding (User-Ausnahme)
+        risk.EnableCrossTfPyramiding = saved.Risk.EnableCrossTfPyramiding;
+        risk.PyramidMaxAddOns = saved.Risk.PyramidMaxAddOns;
+        risk.PyramidScalePercent = saved.Risk.PyramidScalePercent;
+        // Stale-Pending-Limit-Order-Expiry (Default 6h)
+        risk.PendingLimitOrderMaxAgeHours = saved.Risk.PendingLimitOrderMaxAgeHours;
         // Runner-TP (opt-in)
         risk.EnableRunner = saved.Risk.EnableRunner;
         risk.RunnerPercent = saved.Risk.RunnerPercent;
@@ -239,10 +295,12 @@ public partial class App : Application
             risk.SlBufferPipsByTf = saved.Risk.SlBufferPipsByTf;
 
         // ============ Scanner-Settings ============
+#pragma warning disable CS0618 // Legacy-Felder weiterhin persistieren bis v1.4-Migration abgeschlossen
         scanner.MinVolume24h = saved.Scanner.MinVolume24h;
         scanner.MinPriceChange = saved.Scanner.MinPriceChange;
         scanner.ScanTimeFrame = saved.Scanner.ScanTimeFrame;
         scanner.MaxResults = saved.Scanner.MaxResults;
+#pragma warning restore CS0618
         scanner.Mode = saved.Scanner.Mode;
         scanner.OnlyTopByVolume = saved.Scanner.OnlyTopByVolume;
         scanner.TopCoinsCount = saved.Scanner.TopCoinsCount;
@@ -252,8 +310,10 @@ public partial class App : Application
         scanner.EnableTradFi = saved.Scanner.EnableTradFi;
         if (saved.Scanner.EnabledCategories != null && saved.Scanner.EnabledCategories.Count > 0)
             scanner.EnabledCategories = saved.Scanner.EnabledCategories;
+#pragma warning disable CS0618
         scanner.MinVolume24hTradFi = saved.Scanner.MinVolume24hTradFi;
         scanner.MinPriceChangeTradFi = saved.Scanner.MinPriceChangeTradFi;
+#pragma warning restore CS0618
         // Bias-Flip + Counter-Trend-Scalper (v1.2.7+)
         scanner.EnableBiasFlip = saved.Scanner.EnableBiasFlip;
         scanner.EnableCounterTrendScalp = saved.Scanner.EnableCounterTrendScalp;
@@ -323,6 +383,9 @@ public partial class App : Application
         bot.EnableDesktopNotifications = saved.EnableDesktopNotifications;
         bot.SimulatedFundingRatePercent = saved.SimulatedFundingRatePercent;
         bot.WasRunningOnShutdown = saved.WasRunningOnShutdown;              // 24.04.2026: konsistent zum Server
+        // v1.5.2 Phase 4 / v1.5.5 Phase 9 — Decision-Trail + Trade-Push Toggles
+        bot.EnableDecisionTrail = saved.EnableDecisionTrail;
+        bot.EnableTradePushNotifications = saved.EnableTradePushNotifications;
         // Referenzen in BotSettings auf die DI-Singletons zeigen (analog Server Program.cs)
         bot.Risk = risk;
         bot.Scanner = scanner;
@@ -365,6 +428,18 @@ public partial class App : Application
             var settings = Services.GetRequiredService<ISettingsService>();
             var snapshot = await settings.GetAsync();
 
+            // Sanity-Check gegen Default-Schreiber (Bug 27.04.2026): Wenn der Snapshot offensichtlich
+            // einen frischen RiskSettings()-Default hält (MaxLeverage=1 + MaxOpenPositions=1 +
+            // MaxPositionSizePercent=5 — die Konstruktor-Defaults), liegt vermutlich ein Race oder
+            // Auth-Fehler vor. Wir verwerfen den Snapshot statt die echten Server-Werte zu
+            // ueberschreiben. Echte User-Werte unterscheiden sich praktisch immer in mindestens
+            // einer dieser drei Stellen.
+            if (LooksLikeFreshDefault(snapshot))
+            {
+                System.Diagnostics.Debug.WriteLine("Remote-Settings-Refresh: Snapshot sieht aus wie frischer Default — verwerfe statt zu ueberschreiben.");
+                return;
+            }
+
             // Server-Authority fuer alle 4 Sub-Bloecke in die Client-Singletons spielen.
             // snapshot.Bot haelt zwar eine Nav-Ref auf Risk/Scanner/Backtest, aber wir wollen die
             // lokalen DI-Instanzen behalten (ViewModels halten Refs darauf) — daher die Werte
@@ -374,11 +449,56 @@ public partial class App : Application
             pseudoDbSettings.Scanner = snapshot.Scanner;
             pseudoDbSettings.Backtest = snapshot.Backtest;
             RestoreSettingsFromDb(pseudoDbSettings);
+
+            // ViewModels (RiskSettings/Scanner/...) abonnieren ISettingsService.SettingsChanged,
+            // um beim Sync die UI zu aktualisieren. RestoreSettingsFromDb schreibt aber direkt in
+            // die Singletons — der Service-Save-Pfad wird nicht durchlaufen, also feuert das Event
+            // nicht von alleine. Hier explizit triggern, damit die VMs den Initial-Sync mitkriegen.
+            // Sonst zeigen sie die Defaults aus dem ersten Konstruktor-Lauf bis zum App-Restart.
+            if (settings is RemoteSettingsService rs)
+                rs.RaiseChanged(snapshot);
+
+            // Doppel-Refresh-Race vermeiden (27.04.2026): RemoteSettingsAutoSync triggert beim
+            // ersten ConnectionChanged-Event sonst einen redundanten zweiten Refresh, der in einer
+            // Async-Race Defaults schreiben kann. MarkRefreshed setzt den Debounce-Timer, sodass
+            // der erste Connect (innerhalb 2 s) übersprungen wird. Echte spätere Reconnects
+            // (>2 s) refreshen normal.
+            var autoSync = Services.GetService<RemoteSettingsAutoSync>();
+            autoSync?.MarkRefreshed();
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Remote-Settings-Refresh fehlgeschlagen: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Erkennt einen frisch konstruierten <see cref="RiskSettings"/>/<see cref="ScannerSettings"/>-
+    /// Default-Snapshot. Wird genutzt um Race-/Auth-Fehler abzufangen, die einen leeren
+    /// Default-Snapshot zurückgeben statt der echten Server-Werte. Sehr defensiv: nur "true"
+    /// wenn mehrere unabhängige Felder GLEICHZEITIG auf Default stehen — sonst false-positives
+    /// bei User-Setups, die zufällig einen Default-Wert übernommen haben.
+    /// </summary>
+    private static bool LooksLikeFreshDefault(BingXBot.Contracts.Dto.FullSettingsDto snapshot)
+    {
+        if (snapshot?.Risk == null || snapshot.Scanner == null) return false;
+        var defR = new RiskSettings();
+        var defS = new ScannerSettings();
+        // Risk: drei strukturelle Felder gleichzeitig auf Default
+        var riskLooksDefault =
+            snapshot.Risk.MaxLeverage == defR.MaxLeverage &&
+            snapshot.Risk.MaxOpenPositions == defR.MaxOpenPositions &&
+            snapshot.Risk.MaxPositionSizePercent == defR.MaxPositionSizePercent &&
+            snapshot.Risk.MaxTotalDrawdownPercent == defR.MaxTotalDrawdownPercent;
+#pragma warning disable CS0618 // Default-Detection nutzt MaxResults als Marker — gilt bis v1.4-Migration
+        // Scanner: ActiveTimeframes-Default-Liste-Match (Multi-TF Standalone Default = 4 TFs)
+        var scannerLooksDefault =
+            snapshot.Scanner.ActiveTimeframes != null &&
+            snapshot.Scanner.ActiveTimeframes.Count == defS.ActiveTimeframes.Count &&
+            snapshot.Scanner.ActiveTimeframes.SequenceEqual(defS.ActiveTimeframes) &&
+            snapshot.Scanner.MaxResults == defS.MaxResults;
+#pragma warning restore CS0618
+        return riskLooksDefault && scannerLooksDefault;
     }
 
     // Internal fuer DI-Container-Validation-Tests (InternalsVisibleTo=BingXBot.Tests).
@@ -440,6 +560,16 @@ public partial class App : Application
         var remoteMode = IsRemoteModeEnabled();
         services.AddSingleton<ScannerResultsCache>();
 
+        // v1.5.2 Phase 4 — Decision-Trail-Buffer + v1.5.3 Phase 5 — TradeStatsAggregator.
+        // Im Remote-Mode unbenutzt (Server haelt seine eigene Instanz und pusht via SignalR).
+        // Im Local-Mode (Desktop standalone) brauchen wir die hier, damit der Decision-Trail
+        // und die Trade-Stats funktionieren.
+        if (!remoteMode)
+        {
+            services.AddSingleton<BingXBot.Core.Diagnostics.DecisionTrailBuffer>();
+            services.AddSingleton<BingXBot.Trading.Stats.TradeStatsAggregator>();
+        }
+
         // LocalBotEventStream nur im Local-Modus registrieren — im Remote-Modus wird RemoteBotEventStream
         // als IBotEventStream gebunden, LocalBotEventStream wird nie aufgeloest (tote Instanz + tote
         // Subscriptions auf BotEventBus). Conditional-Registrierung spart Memory und vermeidet
@@ -474,6 +604,7 @@ public partial class App : Application
             services.AddSingleton<ITradeHistoryService, RemoteTradeHistoryService>();
             services.AddSingleton<IBotControlService, RemoteBotControlService>();
             services.AddSingleton<IBacktestControlService, RemoteBacktestService>();
+            services.AddSingleton<IStatsService, RemoteStatsService>();
             // Strategy-Katalog kann lokal bleiben (kein Netz-Call noetig).
             services.AddSingleton<IStrategyCatalog, LocalStrategyCatalog>();
 
@@ -495,6 +626,7 @@ public partial class App : Application
             services.AddSingleton<IBotControlService, LocalBotControlService>();
             services.AddSingleton<IBacktestControlService, LocalBacktestService>();
             services.AddSingleton<IStrategyCatalog, LocalStrategyCatalog>();
+            services.AddSingleton<IStatsService, LocalStatsService>();
         }
 
         // ViewModels: Dashboard ist Startup-Page (eager Singleton).
@@ -509,6 +641,9 @@ public partial class App : Application
         services.AddSingleton<RiskSettingsViewModel>();
         services.AddSingleton<LogViewModel>();
         services.AddSingleton<SettingsViewModel>();
+        // v1.6.0 Phase 10 + 14 — Diagnose- und Audit-Trail-VMs (Lazy via Lazy<T>, falls nicht eager genutzt).
+        services.AddSingleton<DecisionTrailViewModel>();
+        services.AddSingleton<SettingsHistoryViewModel>();
 
         // Lazy-Wrapper: DI-Container unterstuetzt Lazy<T> nicht out-of-the-box.
         // Transient-Registrierung genuegt (Lazy selbst ist billig; die gewrappten VMs bleiben Singleton).

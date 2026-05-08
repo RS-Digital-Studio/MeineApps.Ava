@@ -31,6 +31,7 @@ public static class ScanHelper
     public static List<Ticker> FilterCandidatesForTimeframe(
         IReadOnlyList<Ticker> tickers, ScannerSettings settings, TimeFrame navigatorTf)
     {
+#pragma warning disable CS0618 // Legacy-Single-TF-Fallback wenn ByTf-Map keinen Wert hat
         var minVolCrypto = settings.MinVolume24hByTf.TryGetValue(navigatorTf, out var vc) && vc > 0
             ? vc : settings.MinVolume24h;
         var minVolTradFi = settings.MinVolume24hTradFiByTf.TryGetValue(navigatorTf, out var vt) && vt > 0
@@ -41,6 +42,7 @@ public static class ScanHelper
             ? pt : settings.MinPriceChangeTradFi;
         var maxResults = settings.MaxResultsByTf.TryGetValue(navigatorTf, out var mr) && mr > 0
             ? mr : settings.MaxResults;
+#pragma warning restore CS0618
 
         return FilterCandidatesCore(tickers, settings,
             minVolCrypto, minVolTradFi, minChgCrypto, minChgTradFi, maxResults);
@@ -49,10 +51,12 @@ public static class ScanHelper
     /// <summary>Legacy-Overload: Nutzt die globalen Settings-Werte (für Backtest + Single-TF-UI).</summary>
     public static List<Ticker> FilterCandidates(IReadOnlyList<Ticker> tickers, ScannerSettings settings)
     {
+#pragma warning disable CS0618 // Legacy-Single-TF-Pfad
         return FilterCandidatesCore(tickers, settings,
             settings.MinVolume24h, settings.MinVolume24hTradFi,
             settings.MinPriceChange, settings.MinPriceChangeTradFi,
             settings.MaxResults > 0 ? settings.MaxResults : 100);
+#pragma warning restore CS0618
     }
 
     private static List<Ticker> FilterCandidatesCore(

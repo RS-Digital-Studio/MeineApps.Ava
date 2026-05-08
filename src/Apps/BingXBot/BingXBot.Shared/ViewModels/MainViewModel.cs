@@ -28,6 +28,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private readonly Lazy<RiskSettingsViewModel> _riskSettings;
     private readonly Lazy<LogViewModel> _log;
     private readonly Lazy<SettingsViewModel> _settings;
+    private readonly Lazy<DecisionTrailViewModel> _decisionTrail;
+    private readonly Lazy<SettingsHistoryViewModel> _settingsHistory;
 
     /// <summary>Sub-ViewModels. Werden per DI injiziert und sind als Binding-Quellen öffentlich sichtbar.</summary>
     public DashboardViewModel Dashboard { get; }
@@ -38,6 +40,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public RiskSettingsViewModel RiskSettings => _riskSettings.Value;
     public LogViewModel Log => _log.Value;
     public SettingsViewModel Settings => _settings.Value;
+    public DecisionTrailViewModel DecisionTrail => _decisionTrail.Value;
+    public SettingsHistoryViewModel SettingsHistory => _settingsHistory.Value;
 
     /// <summary>Aktuell angezeigtes Sub-ViewModel. ContentControl.Content rendert es via ViewLocator.</summary>
     [ObservableProperty] private ViewModelBase _currentPageViewModel;
@@ -70,10 +74,13 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public bool IsRiskSettingsActive => _riskSettings.IsValueCreated && ReferenceEquals(CurrentPageViewModel, _riskSettings.Value);
     public bool IsLogActive => _log.IsValueCreated && ReferenceEquals(CurrentPageViewModel, _log.Value);
     public bool IsSettingsActive => _settings.IsValueCreated && ReferenceEquals(CurrentPageViewModel, _settings.Value);
+    public bool IsDecisionTrailActive => _decisionTrail.IsValueCreated && ReferenceEquals(CurrentPageViewModel, _decisionTrail.Value);
+    public bool IsSettingsHistoryActive => _settingsHistory.IsValueCreated && ReferenceEquals(CurrentPageViewModel, _settingsHistory.Value);
 
-    /// <summary>Mobile: True wenn aktuell eine Drawer-Seite (Strategie/Backtest/Risk/Settings) sichtbar ODER das Sheet offen ist.</summary>
+    /// <summary>Mobile: True wenn aktuell eine Drawer-Seite (Strategie/Backtest/Risk/Settings/Diagnose) sichtbar ODER das Sheet offen ist.</summary>
     public bool IsMoreSectionActive =>
-        IsMoreDrawerOpen || IsStrategyActive || IsBacktestActive || IsRiskSettingsActive || IsSettingsActive;
+        IsMoreDrawerOpen || IsStrategyActive || IsBacktestActive || IsRiskSettingsActive || IsSettingsActive
+        || IsDecisionTrailActive || IsSettingsHistoryActive;
 
     /// <summary>Farbe des Verbindungs-Indikators (grün=verbunden, rot=getrennt).</summary>
     public string ConnectionDotColor => IsConnected ? "#10B981" : "#EF4444";
@@ -97,7 +104,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         Lazy<TradeHistoryViewModel> tradeHistory,
         Lazy<RiskSettingsViewModel> riskSettings,
         Lazy<LogViewModel> log,
-        Lazy<SettingsViewModel> settings)
+        Lazy<SettingsViewModel> settings,
+        Lazy<DecisionTrailViewModel> decisionTrail,
+        Lazy<SettingsHistoryViewModel> settingsHistory)
     {
         _eventBus = eventBus;
         _eventBus.BotStateChanged += OnBotStateChanged;
@@ -112,6 +121,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _riskSettings = riskSettings;
         _log = log;
         _settings = settings;
+        _decisionTrail = decisionTrail;
+        _settingsHistory = settingsHistory;
 
         // Startseite ist Dashboard. Initiale Page-Bezeichnung ist bereits "Dashboard" (Default).
         _currentPageViewModel = Dashboard;
@@ -128,6 +139,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsRiskSettingsActive));
         OnPropertyChanged(nameof(IsLogActive));
         OnPropertyChanged(nameof(IsSettingsActive));
+        OnPropertyChanged(nameof(IsDecisionTrailActive));
+        OnPropertyChanged(nameof(IsSettingsHistoryActive));
         OnPropertyChanged(nameof(IsMoreSectionActive));
     }
 
@@ -203,6 +216,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             "RiskSettings" => RiskSettings,
             "Log" => Log,
             "Settings" => Settings,
+            "DecisionTrail" => DecisionTrail,
+            "SettingsHistory" => SettingsHistory,
             _ => Dashboard
         };
 

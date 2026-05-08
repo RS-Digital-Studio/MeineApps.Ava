@@ -240,6 +240,103 @@
         </StackPanel>
       </Border>
 
+      <!-- v1.5.x — Optimization-Plan Toggles (opt-in) -->
+      <Border Classes="MobileCard">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Erweiterte Filter (opt-in)" FontWeight="SemiBold" FontSize="14"
+                     Foreground="{DynamicResource AppTextBrush}" />
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="HTF-Confluence Hard-Gate" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Phase 1: Nur GKL/HTF-Overlap" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding RequireHtfConfluenceForEntry}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Min. Confluence-Score" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="0-11, 0 = aus" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <NumericUpDown Grid.Column="1" Classes="MobileNumeric"
+                           Value="{Binding MinConfluenceScore}"
+                           Minimum="0" Maximum="11" Increment="1" FormatString="0" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Asymm. CRV (TP aus HTF)" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Phase 2: TPs aus HTF-Sequenz" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseAsymmetricCrv}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- v1.7.0 Phase 16 — Cross-TF-Pyramiding (User-Ausnahme) -->
+      <Border Classes="SectionCard">
+        <StackPanel Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="LayersTriple" Width="16" Height="16"
+                             Foreground="{DynamicResource AppPrimaryBrush}" />
+            <TextBlock Text="Cross-TF-Pyramiding (Phase 16)" FontSize="13" FontWeight="Bold"
+                       Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="Add-On bei zweitem TF-Signal. Nicht Buch-konform — User-Ausnahme."
+                     FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Pyramiding aktiv" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Default: aus" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableCrossTfPyramiding}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Max. Add-Ons" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="Pyramid-Entries pro Basis" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <NumericUpDown Grid.Column="1" Classes="MobileNumeric"
+                           Value="{Binding PyramidMaxAddOns}"
+                           Minimum="1" Maximum="5" Increment="1" FormatString="0" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" />
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Add-On Skala" FontSize="13"
+                         Foreground="{DynamicResource AppTextBrush}" />
+              <TextBlock Text="0.5 = halb so groß" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+            <NumericUpDown Grid.Column="1" Classes="MobileNumeric"
+                           Value="{Binding PyramidScalePercent}"
+                           Minimum="0.1" Maximum="2.0" Increment="0.1"
+                           FormatString="0.0" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
     </StackPanel>
   </ScrollViewer>
 </UserControl>

@@ -1,0 +1,155 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BingXBot.ViewModels"
+             xmlns:dto="using:BingXBot.Contracts.Dto"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BingXBot.Views.SettingsHistoryViewMobile"
+             x:DataType="vm:SettingsHistoryViewModel"
+             x:CompileBindings="True"
+             Background="{DynamicResource AppBackgroundBrush}">
+
+  <Grid RowDefinitions="Auto,*">
+
+    <StackPanel Grid.Row="0" Spacing="10" Margin="12,10,12,6">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <mi:MaterialIcon Kind="History" Width="20" Height="20"
+                         Foreground="{DynamicResource AppPrimaryBrush}" />
+        <TextBlock Text="Settings-Audit-Trail" FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource AppTextBrush}" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <!-- Filter -->
+      <Grid ColumnDefinitions="*,8,*">
+        <StackPanel Grid.Column="0" Spacing="3">
+          <TextBlock Text="Block" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+          <ComboBox ItemsSource="{Binding AvailableFields}"
+                    SelectedItem="{Binding SelectedField}"
+                    HorizontalAlignment="Stretch" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Spacing="3">
+          <TextBlock Text="Limit" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+          <ComboBox ItemsSource="{Binding AvailableLimits}"
+                    SelectedItem="{Binding SelectedLimit}"
+                    HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Grid>
+
+      <StackPanel Spacing="3">
+        <TextBlock Text="Seit" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+        <DatePicker SelectedDate="{Binding SinceDate}" HorizontalAlignment="Stretch" />
+      </StackPanel>
+
+      <Grid ColumnDefinitions="*,8,*">
+        <Button Grid.Column="0" Command="{Binding RefreshCommand}"
+                IsEnabled="{Binding !IsLoading}"
+                Background="{DynamicResource AppPrimaryBrush}"
+                Foreground="{DynamicResource PrimaryContrastBrush}"
+                CornerRadius="10" Padding="0,12"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                BorderThickness="0" FontWeight="SemiBold">
+          <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="Refresh" Width="16" Height="16" />
+            <TextBlock Text="Laden" FontSize="13" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="2" Command="{Binding ClearFilterCommand}"
+                Background="{DynamicResource SurfaceBrush}"
+                Foreground="{DynamicResource AppTextBrush}"
+                CornerRadius="10" Padding="0,12"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource AppBorderBrush}">
+          <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="FilterRemoveOutline" Width="16" Height="16" />
+            <TextBlock Text="Reset" FontSize="13" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <TextBlock Text="{Binding StatusText}" FontSize="11"
+                 Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
+
+      <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}"
+                   Foreground="{DynamicResource AppPrimaryBrush}"
+                   Background="{DynamicResource CardBrush}"
+                   Height="3" CornerRadius="2" />
+    </StackPanel>
+
+    <Border Grid.Row="1"
+            Background="{DynamicResource CardBrush}"
+            CornerRadius="12"
+            Margin="12,6,12,12"
+            ClipToBounds="True">
+      <Panel>
+        <StackPanel IsVisible="{Binding !Changes.Count}"
+                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Spacing="10" Margin="24">
+          <mi:MaterialIcon Kind="ClockOutline" Width="56" Height="56"
+                           Foreground="{DynamicResource TextMutedBrush}" Opacity="0.35"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="Tippe 'Laden' um die History abzurufen"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <ListBox ItemsSource="{Binding Changes}"
+                 Background="Transparent" BorderThickness="0"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 IsVisible="{Binding Changes.Count}">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="MinHeight" Value="0" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="dto:SettingsChangeDto">
+              <Border Padding="12,10"
+                      BorderBrush="{DynamicResource BorderSubtleBrush}"
+                      BorderThickness="0,0,0,1">
+                <StackPanel Spacing="4">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding Field}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AppPrimaryBrush}"
+                               TextWrapping="Wrap" />
+                    <Border Grid.Column="1"
+                            Background="{DynamicResource InfoBackgroundBrush}"
+                            CornerRadius="4" Padding="6,2"
+                            VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Source}" FontSize="10"
+                                 Foreground="{DynamicResource InfoBrush}"
+                                 FontWeight="SemiBold" />
+                    </Border>
+                  </Grid>
+                  <TextBlock Text="{Binding Timestamp, StringFormat=yyyy-MM-dd HH:mm:ss}"
+                             FontSize="10" FontFamily="Consolas, Courier New, monospace"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="{Binding OldValue}" FontSize="11"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource ErrorBrush}"
+                               TextTrimming="CharacterEllipsis" MaxWidth="120" />
+                    <mi:MaterialIcon Kind="ArrowRight" Width="12" Height="12"
+                                     Foreground="{DynamicResource TextMutedBrush}"
+                                     VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding NewValue}" FontSize="11"
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{DynamicResource SuccessBrush}"
+                               TextTrimming="CharacterEllipsis" MaxWidth="120" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Panel>
+    </Border>
+  </Grid>
+</UserControl>

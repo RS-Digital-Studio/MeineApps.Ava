@@ -21,6 +21,23 @@ public sealed class BotHubEventForwarder : IHostedService, IDisposable
     private readonly Lock _tickerLock = new();
     private static readonly TimeSpan TickerThrottle = TimeSpan.FromMilliseconds(1000);
 
+    // 04.05.2026 — Throttle für PositionUpdated (max 1 Update pro {Symbol,Side} und 2 s).
+    // Vorher floss jedes 5-s-Tick-Update aller offenen Positionen ungedrosselt durch SignalR
+    // (bei 20 offenen Positionen = 20 SignalR-Sends/5s/Client). 2 s ist langsam genug für UI,
+    // schnell genug für SL/TP/BE-Updates die separat über andere Events propagiert werden.
+    private readonly Dictionary<string, DateTime> _lastPositionPerKey = new();
+    private readonly Lock _positionLock = new();
+    private static readonly TimeSpan PositionThrottle = TimeSpan.FromMilliseconds(2000);
+
+    // 04.05.2026 — Log-Batching: 250 ms Buffer reduziert SignalR-Overhead bei Scan-Bursts
+    // (50-200 Log-Events pro Scan-Zyklus). Bei einzelnem Eintrag wird weiterhin LogEmitted
+    // gefeuert (Backwards-Compat); bei mehreren Einträgen wird LogBatch genutzt — RemoteBotEventStream
+    // splittet das clientseitig in einzelne LogEmitted-Events.
+    private readonly List<LogEntryDto> _logBuffer = new();
+    private readonly Lock _logLock = new();
+    private static readonly TimeSpan LogFlushInterval = TimeSpan.FromMilliseconds(250);
+    private Timer? _logFlushTimer;
+
     public BotHubEventForwarder(
         IHubContext<BotHub> hub,
         IBotEventStream stream,
@@ -48,6 +65,9 @@ public sealed class BotHubEventForwarder : IHostedService, IDisposable
         _stream.BacktestCompleted += OnBacktestCompleted;
         _stream.SettingsChanged += OnSettingsChanged;
         _stream.ConnectionDegraded += OnConnectionDegraded;
+        _stream.EvaluationDecided += OnEvaluationDecided;
+        // Periodischer Flush des Log-Buffers (alle 250 ms).
+        _logFlushTimer = new Timer(_ => FlushLogBuffer(), null, LogFlushInterval, LogFlushInterval);
         _logger.LogInformation("BotHubEventForwarder gestartet");
         return Task.CompletedTask;
     }
@@ -69,6 +89,10 @@ public sealed class BotHubEventForwarder : IHostedService, IDisposable
         _stream.BacktestCompleted -= OnBacktestCompleted;
         _stream.SettingsChanged -= OnSettingsChanged;
         _stream.ConnectionDegraded -= OnConnectionDegraded;
+        _stream.EvaluationDecided -= OnEvaluationDecided;
+        _logFlushTimer?.Dispose();
+        _logFlushTimer = null;
+        FlushLogBuffer(); // Letzte Logs noch durchsenden
         return Task.CompletedTask;
     }
 
@@ -76,17 +100,54 @@ public sealed class BotHubEventForwarder : IHostedService, IDisposable
         Fire(HubMethods.BotStateChanged, dto);
     private void OnTradeOpened(TradeDto dto) => Fire(HubMethods.TradeOpened, dto);
     private void OnTradeClosed(TradeDto dto) => Fire(HubMethods.TradeClosed, dto);
-    private void OnPositionUpdated(PositionDto dto) => Fire(HubMethods.PositionUpdated, dto);
+    private void OnPositionUpdated(PositionDto dto)
+    {
+        // Throttle pro {Symbol,Side}: max 1 Update / 2 s. Spürbare Bandbreiten- und Battery-Reduktion
+        // auf Android-Clients bei vielen offenen Positionen.
+        var key = $"{dto.Symbol}_{dto.Side}";
+        var nowUtc = DateTime.UtcNow;
+        lock (_positionLock)
+        {
+            if (_lastPositionPerKey.TryGetValue(key, out var last) && nowUtc - last < PositionThrottle)
+                return;
+            _lastPositionPerKey[key] = nowUtc;
+        }
+        Fire(HubMethods.PositionUpdated, dto);
+    }
     private void OnEquityUpdate(EquityPointDto dto) => Fire(HubMethods.EquityUpdate, dto);
     private void OnMarginWarning(MarginWarningDto dto) => Fire(HubMethods.MarginWarning, dto);
     private void OnBtcPrice(TickerUpdateDto dto) => Fire(HubMethods.BtcPriceUpdate, dto);
     private void OnScannerResult(ScannerResultDto dto) => Fire(HubMethods.ScannerResult, dto);
-    private void OnLog(LogEntryDto dto) => Fire(HubMethods.LogEmitted, dto);
+    private void OnLog(LogEntryDto dto)
+    {
+        // Buffer den Eintrag; FlushLogBuffer() entscheidet ob LogEmitted (1 Eintrag) oder LogBatch (>1).
+        lock (_logLock)
+        {
+            _logBuffer.Add(dto);
+        }
+    }
+
+    private void FlushLogBuffer()
+    {
+        List<LogEntryDto>? batch;
+        lock (_logLock)
+        {
+            if (_logBuffer.Count == 0) return;
+            batch = _logBuffer.ToList();
+            _logBuffer.Clear();
+        }
+
+        if (batch.Count == 1)
+            Fire(HubMethods.LogEmitted, batch[0]);
+        else
+            Fire(HubMethods.LogBatch, (IReadOnlyList<LogEntryDto>)batch);
+    }
     private void OnActivity(ActivityFeedDto dto) => Fire(HubMethods.ActivityFeed, dto);
     private void OnBacktestProgress(BacktestProgressDto dto) => Fire(HubMethods.BacktestProgress, dto);
     private void OnBacktestCompleted(BacktestResultDto dto) => Fire(HubMethods.BacktestCompleted, dto);
     private void OnSettingsChanged(FullSettingsDto dto) => Fire(HubMethods.SettingsChanged, dto);
     private void OnConnectionDegraded(ConnectionDegradedDto dto) => Fire(HubMethods.ConnectionDegraded, dto);
+    private void OnEvaluationDecided(EvaluationDecisionDto dto) => Fire(HubMethods.EvaluationDecided, dto);
 
     private void OnTickerUpdate(TickerUpdateDto dto)
     {

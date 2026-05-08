@@ -22,13 +22,18 @@ namespace BingXBot.ViewModels;
 /// und IExchangeClient für Verbindungstests.
 /// Publiziert Aktionen über den BotEventBus an die Log-Ansicht.
 /// </summary>
-public partial class SettingsViewModel : ViewModelBase
+public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly BotSettings _botSettings;
     private readonly ISecureStorageService? _secureStorage;
     private readonly IExchangeClient? _exchangeClient;
     private readonly BotEventBus _eventBus;
     private readonly ISettingsPersistenceService _settingsPersistence;
+    // v1.5.2 Phase 4 / v1.5.5 Phase 9 — Multi-Client-Sync: bei SettingsChanged vom Server
+    // muessen die Toggle-Properties aktualisiert werden, sonst zeigt das UI stale Werte.
+    private readonly ISettingsService? _settingsService;
+    private bool _disposed;
+    private bool _suppressSave;
 
     /// <summary>Event wenn sich der API-Key-Status ändert (true = vorhanden, false = gelöscht).</summary>
     public event EventHandler<bool>? ApiKeysAvailableChanged;
@@ -73,6 +78,25 @@ public partial class SettingsViewModel : ViewModelBase
     {
         _botSettings.ThemePreference = value;
         App.ApplyTheme(value);
+        if (_suppressSave) return;
+        _ = _settingsPersistence.SaveAllAsync();
+    }
+
+    // === v1.5.2 Phase 4 / v1.5.5 Phase 9 — Decision-Trail + Trade-Push-Notifications ===
+    [ObservableProperty] private bool _enableDecisionTrail;
+    [ObservableProperty] private bool _enableTradePushNotifications;
+
+    partial void OnEnableDecisionTrailChanged(bool value)
+    {
+        _botSettings.EnableDecisionTrail = value;
+        if (_suppressSave) return;
+        _ = _settingsPersistence.SaveAllAsync();
+    }
+
+    partial void OnEnableTradePushNotificationsChanged(bool value)
+    {
+        _botSettings.EnableTradePushNotifications = value;
+        if (_suppressSave) return;
         _ = _settingsPersistence.SaveAllAsync();
     }
 
@@ -86,7 +110,8 @@ public partial class SettingsViewModel : ViewModelBase
         ISettingsPersistenceService settingsPersistence,
         ISecureStorageService? secureStorage = null,
         IExchangeClient? exchangeClient = null,
-        IAccountService? accountService = null)
+        IAccountService? accountService = null,
+        ISettingsService? settingsService = null)
     {
         _botSettings = botSettings;
         _eventBus = eventBus;
@@ -96,7 +121,16 @@ public partial class SettingsViewModel : ViewModelBase
         _pairingClient = pairingClient;
         _accountService = accountService;
         _settingsPersistence = settingsPersistence;
+        _settingsService = settingsService;
         _theme = botSettings.ThemePreference;
+        _enableDecisionTrail = botSettings.EnableDecisionTrail;
+        _enableTradePushNotifications = botSettings.EnableTradePushNotifications;
+
+        // v1.5.2 Phase 4 / v1.5.5 Phase 9 — Multi-Client-Sync. Wenn ein anderer Client die
+        // Settings aendert, feuert der Server SettingsChanged → wir refreshen die Toggles
+        // ohne erneuten Save (suppressSave verhindert Echo-Loop).
+        if (_settingsService != null)
+            _settingsService.SettingsChanged += OnSettingsChanged;
 
         // Gespeicherte Credentials laden
         _ = LoadCredentialsAsync();
@@ -104,6 +138,34 @@ public partial class SettingsViewModel : ViewModelBase
         // Persisted Server-Profile pruefen
         UpdateServerStatus();
         _serverConnection.Changed += _ => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateServerStatus);
+    }
+
+    /// <summary>
+    /// v1.5.2 Phase 4 / v1.5.5 Phase 9 — Multi-Client-Sync-Handler. SignalR feuert vom
+    /// Background-Thread → auf UI-Thread marshalen, weil die Setter PropertyChanged ausloesen.
+    /// _suppressSave verhindert dass der Setter-Hook wieder SaveAllAsync aufruft (Echo-Loop).
+    /// </summary>
+    private void OnSettingsChanged(BingXBot.Contracts.Dto.FullSettingsDto snapshot)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            _suppressSave = true;
+            try
+            {
+                EnableDecisionTrail = snapshot.Bot.EnableDecisionTrail;
+                EnableTradePushNotifications = snapshot.Bot.EnableTradePushNotifications;
+                Theme = snapshot.Bot.ThemePreference;
+            }
+            finally { _suppressSave = false; }
+        });
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        if (_settingsService != null)
+            _settingsService.SettingsChanged -= OnSettingsChanged;
     }
 
     private void UpdateServerStatus()

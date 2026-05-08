@@ -33,8 +33,6 @@ public abstract class TradingServiceBase : IDisposable
     protected RiskManager? _riskManager;
     /// <summary>RiskManager-Instanz (für Rolling-Metriken im UI).</summary>
     public RiskManager? RiskManager => _riskManager;
-    /// <summary>Geteilter RiskManager vom MultiModeOrchestrator. Wenn gesetzt, wird dieser statt des eigenen verwendet.</summary>
-    public RiskManager? RiskManagerOverride { get; set; }
     protected CancellationTokenSource? _cts;
     protected volatile bool _isRunning;
     protected volatile bool _isPaused;
@@ -43,6 +41,34 @@ public abstract class TradingServiceBase : IDisposable
 
     // Funding-Rates pro Symbol (wird von Subklassen aktualisiert, z.B. aus BingX API)
     protected readonly ConcurrentDictionary<string, decimal> _fundingRates = new();
+    // v1.5.4 Phase 7 — Letzter Fetch-Zeitpunkt pro Symbol fuer 30-s-TTL-Cache. Schuetzt vor
+    // BingX-Rate-Limit-Spam, wenn `PreloadScanDataAsync` ueber viele Kandidaten iteriert oder
+    // `OnBeforePriceTickerIteration` (alle 5 s) Funding pruefen will.
+    protected readonly ConcurrentDictionary<string, DateTime> _fundingRatesFetchedAt = new();
+    /// <summary>v1.5.4 Phase 7 — TTL fuer den Funding-Cache. 30 s reichen, Funding-Wert aendert sich alle 8 h.</summary>
+    protected static readonly TimeSpan FundingRateCacheTtl = TimeSpan.FromSeconds(30);
+
+    /// <summary>v1.5.4 Phase 7 — Hilfs-Methode fuer Subklassen: True wenn der Cache fuer das Symbol noch frisch ist.</summary>
+    protected bool IsFundingRateCacheFresh(string symbol)
+    {
+        if (!_fundingRatesFetchedAt.TryGetValue(symbol, out var ts)) return false;
+        return DateTime.UtcNow - ts < FundingRateCacheTtl;
+    }
+
+    /// <summary>
+    /// v1.6.6 Phase 17 — Static-Bridge fuer Adaptive-TF-Disable. Wird vom Server-Bootstrap
+    /// auf <c>AdaptiveTfDisableService.IsTfDisabled</c> verdrahtet. Default: alle TFs enabled.
+    /// Static, weil der DI-Graph zwischen BingXBot.Trading + BingXBot.Server-Services keinen
+    /// Konstruktor-Injection-Pfad hat (Trading kennt Server-Side nicht).
+    /// </summary>
+    public static Func<TimeFrame, bool>? AdaptiveTfDisableProbe { get; set; }
+
+    /// <summary>v1.6.6 Phase 17 — Pruefung im Scan-Loop: TF auto-disabled?</summary>
+    protected bool IsTfAutoDisabled(TimeFrame tf)
+    {
+        var probe = AdaptiveTfDisableProbe;
+        return probe != null && probe(tf);
+    }
     // Margin-Monitoring: Bereits gewarnte Positionen (nicht bei jedem Tick erneut warnen)
     private readonly ConcurrentDictionary<string, DateTime> _marginWarningsIssued = new();
 
@@ -256,7 +282,7 @@ public abstract class TradingServiceBase : IDisposable
     /// <summary>Initialisiert RiskManager, CancellationToken und startet die Loops.</summary>
     protected void StartBase(RiskManager riskManager)
     {
-        _riskManager = RiskManagerOverride ?? riskManager;
+        _riskManager = riskManager;
         // K-5 Fix: Cancel VOR Dispose — sonst laufen alte Loops weiter (ObjectDisposedException
         // wird nicht von catch(OperationCanceledException) gefangen)
         _cts?.Cancel();
@@ -474,9 +500,15 @@ public abstract class TradingServiceBase : IDisposable
                     // Buch S.16 Zielbereich 161.8-200% — Partial Close 50/50 entspricht diesem Range
                     if (_exitStates.TryGetValue(key, out var exitState))
                     {
+                        // v1.4.0 Phase 0.2 (Finding 0.2) — Skip Bot-TP1-Hit-Check wenn TP1 als
+                        // Reduce-Only-LIMIT auf BingX liegt. Sonst Doppel-Close-Race: BingX fuellt
+                        // den Limit, gleichzeitig sendet der Bot ClosePartialAsync mit pos.Quantity*0.5
+                        // → bei Limit-Partial-Fill ist pos.Quantity bereits reduziert → falsche Mengen.
+                        // Paper-Mode: Tp1LimitOrderId bleibt null → Bot-Pfad bleibt aktiv.
                         // Phase Initial: TP1 Partial Close (50% bei 161.8% Extension)
                         if (exitState.Phase == ExitPhase.Initial && signal.TakeProfit.HasValue && !exitState.PartialClosed
-                            && _riskSettings.Tp1CloseRatio > 0 && _riskSettings.Tp1CloseRatio < 1m)
+                            && _riskSettings.Tp1CloseRatio > 0 && _riskSettings.Tp1CloseRatio < 1m
+                            && string.IsNullOrEmpty(exitState.Tp1LimitOrderId))
                         {
                             var tp1Hit = pos.Side == Side.Buy
                                 ? price >= signal.TakeProfit.Value
@@ -611,20 +643,29 @@ public abstract class TradingServiceBase : IDisposable
                     }
 
                     // ═══ Standard SL/TP-Check (auch für Multi-Stage Phase) ═══
+                    // v1.4.0 Phase 0.2/0.3 (Findings 0.2/0.3): TP-Branch wird geskippt wenn das
+                    // aktive TP als Reduce-Only-LIMIT auf BingX liegt (Phase=Initial → Tp1LimitOrderId,
+                    // Phase=Tp1Hit → Tp2LimitOrderId). BingX fuellt den Limit + Order-Filled-Event vom
+                    // User-Data-Stream triggert Phase-Transition. Bot-TP-Hit-Check wuerde Mark-Price
+                    // ausloesen BEVOR der LIMIT auf Last-Price fuellt → Doppel-Close. SL-Branch bleibt
+                    // aktiv (BingX nativer SL ist Backup, Bot-Detection ist Safety-Net).
+                    var tpManagedByExchange = _exitStates.TryGetValue(key, out var esTp02)
+                        && esTp02.IsTpManagedByExchange;
+
                     if (!hit)
                     {
                         if (pos.Side == Side.Buy)
                         {
                             if (signal.StopLoss.HasValue && price <= signal.StopLoss.Value)
                             { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:F8}"; }
-                            else if (signal.TakeProfit.HasValue && price >= signal.TakeProfit.Value)
+                            else if (!tpManagedByExchange && signal.TakeProfit.HasValue && price >= signal.TakeProfit.Value)
                             { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:F8}"; }
                         }
                         else
                         {
                             if (signal.StopLoss.HasValue && price >= signal.StopLoss.Value)
                             { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:F8}"; }
-                            else if (signal.TakeProfit.HasValue && price <= signal.TakeProfit.Value)
+                            else if (!tpManagedByExchange && signal.TakeProfit.HasValue && price <= signal.TakeProfit.Value)
                             { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:F8}"; }
                         }
 
@@ -692,12 +733,14 @@ public abstract class TradingServiceBase : IDisposable
         var nextScanText = $"Nächster Scan: {nextScanTime:HH:mm:ss}";
 
         // 0. Market-Cap-Cache aktualisieren (CoinGecko, max 1x pro Stunde)
-        // MUSS vor dem ersten Scan geladen sein, sonst kommen Meme-Coins durch
+        // MUSS vor dem ersten Scan geladen sein, sonst kommen Meme-Coins durch.
+        // 04.05.2026: HTTP-Logik ist jetzt im Engine-Layer (CoinGeckoMarketCapProvider) —
+        // hier nur der Static-Bridge MarketCapRefreshHelper.RefreshIfNeededAsync.
         if (!Core.Helpers.MarketCapCache.IsLoaded)
         {
             try
             {
-                await Core.Helpers.MarketCapCache.RefreshIfNeededAsync().ConfigureAwait(false);
+                await Engine.Helpers.MarketCapRefreshHelper.RefreshIfNeededAsync(ct).ConfigureAwait(false);
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Market",
                     Core.Helpers.MarketCapCache.IsLoaded
                         ? $"MarketCap-Cache geladen: {Core.Helpers.MarketCapCache.CachedCount} Coins von CoinGecko"
@@ -712,7 +755,7 @@ public abstract class TradingServiceBase : IDisposable
         else
         {
             // Cache ist geladen — nur stündlich refreshen (still, kein Log)
-            try { await Core.Helpers.MarketCapCache.RefreshIfNeededAsync().ConfigureAwait(false); }
+            try { await Engine.Helpers.MarketCapRefreshHelper.RefreshIfNeededAsync(ct).ConfigureAwait(false); }
             catch { /* Stündlicher Refresh optional */ }
         }
 
@@ -916,6 +959,9 @@ public abstract class TradingServiceBase : IDisposable
             {
                 if (ct.IsCancellationRequested) break;
 
+                // v1.6.6 Phase 17 — Adaptive TF-Disable: TF wegen schlechter WinRate auto-disabled?
+                if (IsTfAutoDisabled(navTf)) continue;
+
                 // Per-TF-Kandidaten-Filter: Symbol muss in dieser TF die Volume/PriceChange-Schwellen passieren.
                 if (!candidateSetByTf.TryGetValue(navTf, out var tfSet) || !tfSet.Contains(ticker.Symbol))
                     continue;
@@ -953,6 +999,16 @@ public abstract class TradingServiceBase : IDisposable
                     {
                         _lastSkStatus = $"{ticker.Symbol} [{navTf}]: {skInst.LastStatus}";
                         _lastSkStatusByTf[navTf] = $"{ticker.Symbol}: {skInst.LastStatus}";
+                    }
+
+                    // v1.5.2 Phase 4 — Decision-Trail-Eintrag publishen.
+                    // Nur wenn EnableDecisionTrail=true UND mindestens ein Subscriber existiert
+                    // (typisch DecisionTrailBuffer). Hot-Path-Schutz: bei null kein Allocation-Overhead.
+                    if (_botSettings.EnableDecisionTrail
+                        && strategy is Engine.Strategies.SequenzKonzeptStrategy decSk
+                        && decSk.LastEvaluationDecision != null)
+                    {
+                        _eventBus.PublishEvaluationDecision(decSk.LastEvaluationDecision);
                     }
 
                     // Scanner-Ergebnis pro TF sammeln (auch für Signal.None — zeigt Status im UI)
@@ -1076,6 +1132,43 @@ public abstract class TradingServiceBase : IDisposable
                     var slTpKey = $"{ticker.Symbol}_{side}";
                     if (_positionSignals.ContainsKey(slTpKey))
                     {
+                        // v1.7.0 Phase 16 — Cross-TF-Pyramiding (User-Ausnahme).
+                        // Bedingungen fuer Add-On:
+                        //   1. RiskSettings.EnableCrossTfPyramiding=true (opt-in)
+                        //   2. Aktuelle navTf ist STRENG HOEHER als die der bestehenden Position (W1>D1>H4>H1>M15)
+                        //   3. PyramidAddOnCount < PyramidMaxAddOns
+                        //   4. Side identisch (Pyramiding nur auf bestehende Trade-Richtung)
+                        // Wenn alle erfuellt: zusaetzliche Order mit positionSizeStd * PyramidScalePercent.
+                        var addOnPlaced = false;
+                        if (_riskSettings.EnableCrossTfPyramiding
+                            && _exitStates.TryGetValue(slTpKey, out var existingExit)
+                            && existingExit.PyramidAddOnCount < _riskSettings.PyramidMaxAddOns
+                            && (int)navTf > (int)existingExit.NavigatorTimeframe)
+                        {
+                            var addOnQty = positionSizeStd * _riskSettings.PyramidScalePercent;
+                            if (addOnQty > 0m)
+                            {
+                                var addOnSig = signal with { /* keine SL-Aenderung — bestehende Position behaelt SL */ };
+                                var addOnOk = await PlaceOrderOnExchangeAsync(ticker, side, addOnQty, addOnSig, adaptLevStd).ConfigureAwait(false);
+                                if (addOnOk)
+                                {
+                                    existingExit.PyramidEntries.Add(new BingXBot.Core.Models.PyramidEntry(
+                                        Tf: navTf,
+                                        EntryTimeUtc: DateTime.UtcNow,
+                                        EntryPrice: ticker.LastPrice,
+                                        Quantity: addOnQty,
+                                        TakeProfit1: addOnSig.TakeProfit,
+                                        TakeProfit2: addOnSig.TakeProfit2));
+                                    existingExit.PyramidAddOnCount++;
+                                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
+                                        $"{LogPrefix}{ticker.Symbol} [{navTf}]: Pyramid-Add-On #{existingExit.PyramidAddOnCount} {side} {addOnQty:F4} @ {ticker.LastPrice:F8} (Scale={_riskSettings.PyramidScalePercent:F2})",
+                                        ticker.Symbol));
+                                    addOnPlaced = true;
+                                }
+                            }
+                        }
+                        if (addOnPlaced) continue;
+
                         if (_eventBus.HasLogSubscribers)
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Risk",
                                 $"{LogPrefix}{ticker.Symbol} [{navTf}]: Übersprungen — Signal bereits aktiv für {side}", ticker.Symbol));

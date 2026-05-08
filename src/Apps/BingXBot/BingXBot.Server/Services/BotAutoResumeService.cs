@@ -30,6 +30,11 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
     private readonly BotSettings _botSettings;
     private readonly ScannerSettings _scannerSettings;
     private readonly ILogger<BotAutoResumeService> _logger;
+    /// <summary>
+    /// v1.6.5 Phase 15 — Optional. Wenn Watchdog Degraded meldet, blockiert Auto-Resume bis
+    /// Probe wieder gruen ist (verhindert ConnectionLoss-Endless-Loop).
+    /// </summary>
+    private readonly ServerHealthWatchdog? _healthWatchdog;
 
     /// <summary>
     /// Eigener Lebenszyklus-CTS (24.04.2026 Debugger-Fix Bug #5):
@@ -44,12 +49,14 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
         IBotControlService botControl,
         BotSettings botSettings,
         ScannerSettings scannerSettings,
-        ILogger<BotAutoResumeService> logger)
+        ILogger<BotAutoResumeService> logger,
+        ServerHealthWatchdog? healthWatchdog = null)
     {
         _botControl = botControl;
         _botSettings = botSettings;
         _scannerSettings = scannerSettings;
         _logger = logger;
+        _healthWatchdog = healthWatchdog;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -80,6 +87,18 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
             {
                 _logger.LogInformation(
                     "Auto-Resume: WasRunningOnShutdown=false. Bot bleibt gestoppt — User muss manuell Start druecken.");
+                return;
+            }
+
+            // v1.6.5 Phase 15 — Wenn der Health-Watchdog gerade Degraded meldet (BingX nicht erreichbar),
+            // pause Resume bis er wieder gruen ist. Verhindert ConnectionLoss-Endless-Loop, wenn der Pi
+            // direkt nach dem Boot noch keine BingX-Verbindung hat.
+            if (_healthWatchdog?.IsCurrentlyDegraded == true)
+            {
+                _logger.LogWarning(
+                    "Auto-Resume blockiert: ServerHealthWatchdog meldet Degraded. Warte auf BingX-Recovery.");
+                // Nicht hart abbrechen — bei naechstem Service-Restart wird ohnehin neu probiert.
+                // In dieser Iteration einfach return.
                 return;
             }
 

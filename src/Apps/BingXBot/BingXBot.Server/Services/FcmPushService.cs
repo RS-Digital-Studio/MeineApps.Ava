@@ -20,6 +20,7 @@ public sealed class FcmPushService : IHostedService
 {
     private readonly IBotEventStream _stream;
     private readonly FcmDeviceStore _store;
+    private readonly BingXBot.Core.Configuration.BotSettings _botSettings;
     private readonly ILogger<FcmPushService> _logger;
     private readonly string _serviceAccountPath;
     private bool _firebaseInitialized;
@@ -27,11 +28,13 @@ public sealed class FcmPushService : IHostedService
     public FcmPushService(
         IBotEventStream stream,
         FcmDeviceStore store,
+        BingXBot.Core.Configuration.BotSettings botSettings,
         IConfiguration config,
         ILogger<FcmPushService> logger)
     {
         _stream = stream;
         _store = store;
+        _botSettings = botSettings;
         _logger = logger;
 
         var dataDir = config.GetValue<string>("Server:DataDirectory");
@@ -55,6 +58,8 @@ public sealed class FcmPushService : IHostedService
         _stream.TradeClosed += OnTradeClosed;
         _stream.MarginWarning += OnMarginWarning;
         _stream.BotStateChanged += OnBotStateChanged;
+        // v1.5.5 Phase 9 — Trade-Push fuer Open-Events. Subscribed zusaetzlich auf TradeOpened.
+        _stream.TradeOpened += OnTradeOpened;
         return Task.CompletedTask;
     }
 
@@ -67,6 +72,7 @@ public sealed class FcmPushService : IHostedService
             _stream.TradeClosed -= OnTradeClosed;
             _stream.MarginWarning -= OnMarginWarning;
             _stream.BotStateChanged -= OnBotStateChanged;
+            _stream.TradeOpened -= OnTradeOpened;
         }
         return Task.CompletedTask;
     }
@@ -101,9 +107,41 @@ public sealed class FcmPushService : IHostedService
 
     private void OnTradeClosed(TradeDto trade)
     {
-        var title = trade.Pnl >= 0 ? "Trade geschlossen" : "Trade mit Verlust";
+        // v1.5.5 Phase 9 — Settings-Flag respektieren (User kann Trade-Push deaktivieren).
+        if (!_botSettings.EnableTradePushNotifications) return;
+
+        var (title, category) = TradeClosedFormatter.Format(trade);
         var body = $"{trade.Symbol} {trade.Side}: {trade.Pnl:+0.00;-0.00} USDT ({trade.PnlPercent:+0.00;-0.00}%)";
-        _ = SendAsync(title, body, "TradeClosed");
+        _ = SendAsync(title, body, category);
+    }
+
+    /// <summary>
+    /// v1.5.5 Phase 9 — Trade-Open-Push. Sendet sofort beim Entry, damit User auf dem
+    /// Mobile mitbekommt wenn der Bot eine neue Position eroeffnet hat.
+    /// EnableTradePushNotifications-Toggle aus Settings wird respektiert.
+    /// </summary>
+    private void OnTradeOpened(TradeDto trade)
+    {
+        if (!_botSettings.EnableTradePushNotifications) return;
+        var title = "Trade eroeffnet";
+        var body = $"{trade.Symbol} {trade.Side}: Entry {trade.EntryPrice:G6}";
+        _ = SendAsync(title, body, "TradeOpened");
+    }
+
+    /// <summary>
+    /// v1.5.5 Phase 9 — Format-Helper fuer Trade-Closed-Notifications. Public static fuer
+    /// Unit-Tests, die das Reason-Matching ohne Firebase-Init testen sollen.
+    /// </summary>
+    public static class TradeClosedFormatter
+    {
+        public static (string Title, string Category) Format(TradeDto trade)
+        {
+            var isStopLoss = !string.IsNullOrEmpty(trade.Reason)
+                && trade.Reason.Contains("Stop-Loss", StringComparison.OrdinalIgnoreCase);
+            if (isStopLoss)
+                return ("SL ausgelöst", "StopHit");
+            return (trade.Pnl >= 0 ? "Trade geschlossen" : "Trade mit Verlust", "TradeClosed");
+        }
     }
 
     private void OnMarginWarning(MarginWarningDto warning)

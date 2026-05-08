@@ -23,8 +23,22 @@ public class BotDatabaseService
     /// v9 (24.04.2026): Bereinigt korrupte Enum-Werte (BCZoneEntryStrategy.Triple/Quad/Hex int 2/3/4)
     /// die nach Buch-Only Strip Phase 2 nicht mehr im Enum existieren — sonst all-or-nothing-Crash beim
     /// Deserialize, ALLE User-Settings gehen verloren.
+    /// v10 (05.05.2026, Phase 0.7 Finding 0.7): Additive Strategy-Felder im PendingLimitOrderState
+    /// (NavPointA / IsGklSetup / GklTimeframe / RunnerHardCap / IsCounterTrendScalp /
+    /// PositionScaleOverride). Persistenz laeuft als JSON-Blob in Settings-Row "PendingLimitOrders" —
+    /// alte Snapshots deserialisieren mit Default-Werten (additiv, keine ALTER TABLE-Aktion noetig).
+    /// v11 (05.05.2026, Phase 4 Decision-Trail): Neue Tabelle EvaluationDecisions
+    /// (CreateTableAsync legt sie an). Indices auf Timestamp DESC + Symbol + RejectionReason fuer
+    /// Filter-Queries. Ringpuffer-Trim auf 50.000 Eintraege via DeleteOldestDecisionsAsync.
+    /// v12 (06.05.2026, Phase 14 Settings-Audit-Trail): Neue Tabelle SettingsChanges. Indices
+    /// auf Timestamp DESC + Field. Retention via Phase 11 DbArchiveService (90 d Default).
     /// </summary>
-    private const int CurrentSchemaVersion = 9;
+    private const int CurrentSchemaVersion = 12;
+
+    /// <summary>v1.5.2 Phase 4 — Maximale Anzahl Decision-Eintraege in der DB.</summary>
+    public const int MaxDecisionEntries = 50_000;
+    /// <summary>Trim-Batch-Groesse beim Ringpuffer-Cleanup.</summary>
+    private const int DecisionCleanupBatch = 5_000;
 
     /// <summary>
     /// JSON-Optionen fuer BotSettings (24.04.2026): Enums werden als String geschrieben (forward-kompatibel,
@@ -123,6 +137,10 @@ public class BotDatabaseService
         await _db.CreateTableAsync<LogEntity>();
         await _db.CreateTableAsync<SettingEntity>();
         await _db.CreateTableAsync<BacktestJobEntity>();
+        // v1.5.2 Phase 4 — Decision-Trail-Tabelle (idempotent dank CreateTableAsync).
+        await _db.CreateTableAsync<EvaluationDecisionEntity>();
+        // v1.6.3 Phase 14 — Settings-Audit-Trail-Tabelle.
+        await _db.CreateTableAsync<SettingsChangeEntity>();
 
         // Indices für häufige Abfragen (idempotent dank IF NOT EXISTS)
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Trades_ExitTime ON Trades (ExitTime DESC)");
@@ -131,6 +149,12 @@ public class BotDatabaseService
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_EquitySnapshots_Time ON EquitySnapshots (Time)");
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_LogEntries_Timestamp ON LogEntries (Timestamp DESC)");
         await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_LogEntries_Level ON LogEntries (Level)");
+        // v1.5.2 Phase 4 — Decision-Trail-Indices fuer Filter-Queries.
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_EvaluationDecisions_Ts ON EvaluationDecisions (Timestamp DESC)");
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_EvaluationDecisions_Reason ON EvaluationDecisions (RejectionReason)");
+        // v1.6.3 Phase 14 — Settings-Audit-Trail-Indices.
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_SettingsChanges_Ts ON SettingsChanges (Timestamp DESC)");
+        await _db.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_SettingsChanges_Field ON SettingsChanges (Field)");
 
         // Schema-Versioning und Migrationen
         await RunMigrationsAsync();
@@ -212,6 +236,19 @@ public class BotDatabaseService
             }
             catch { /* best-effort: schlimmster Fall = Catch-And-Reset in LoadSettingsAsync uebernimmt */ }
         }
+
+        // Migration v9 → v10 (05.05.2026, Phase 0.7 Finding 0.7): Strategy-Felder im
+        // PendingLimitOrderState (NavPointA/IsGklSetup/GklTimeframe/RunnerHardCap/
+        // IsCounterTrendScalp/PositionScaleOverride). Persistenz ist additiv (JSON-Blob in
+        // Settings-Row "PendingLimitOrders") → keine SQL-Aktion noetig. Alte Snapshots
+        // deserialisieren mit Default-Werten; neue Server-Versionen brechen nicht (forwards/
+        // backwards JSON-tolerant).
+        // if (currentVersion < 10) { /* no-op, additiv */ }
+
+        // Migration v10 → v11 (05.05.2026, Phase 4 Decision-Trail): Tabelle EvaluationDecisions
+        // wird durch CreateTableAsync<EvaluationDecisionEntity>() oben angelegt. Hier nur Marker
+        // setzen — kein expliziter SQL-Schritt noetig.
+        // if (currentVersion < 11) { /* no-op, CreateTableAsync ist idempotent */ }
 
         // Schema-Version aktualisieren
         await _db.InsertOrReplaceAsync(new SettingEntity
@@ -493,6 +530,320 @@ public class BotDatabaseService
     {
         if (_db == null)
             throw new InvalidOperationException("BotDatabaseService nicht initialisiert. InitializeAsync() zuerst aufrufen.");
+    }
+
+    // === v1.5.2 Phase 4 — Decision-Trail Persistenz ==========================================
+
+    private int _decisionInsertCount;
+
+    /// <summary>
+    /// Persistiert eine einzelne Decision. Triggert nach <see cref="MaxDecisionEntries"/> Eintraegen
+    /// einen Trim-Lauf (loescht <see cref="DecisionCleanupBatch"/> aelteste Eintraege).
+    /// Best-effort — ein Schreibfehler darf den Hot-Path nicht blockieren.
+    /// </summary>
+    public async Task SaveDecisionAsync(BingXBot.Core.Diagnostics.EvaluationDecision decision)
+    {
+        EnsureInitialized();
+        var entity = new EvaluationDecisionEntity
+        {
+            Timestamp = decision.UtcTimestamp,
+            Symbol = decision.Symbol,
+            Tf = (int)decision.Tf,
+            SequenceState = decision.SequenceState,
+            Point0 = decision.Point0,
+            PointA = decision.PointA,
+            PointB = decision.PointB,
+            Triggered = decision.Triggered,
+            RejectionReason = decision.RejectionReason,
+            ConfluenceScore = decision.ConfluenceScore,
+            CategoriesJson = JsonSerializer.Serialize(decision.ConfluenceCategories),
+            HardFiltersJson = JsonSerializer.Serialize(decision.HardFiltersFailed),
+        };
+
+        try
+        {
+            await _db!.InsertAsync(entity).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Hot-Path-tolerant — nicht eskalieren.
+            return;
+        }
+
+        var count = System.Threading.Interlocked.Increment(ref _decisionInsertCount);
+        if (count >= 1_000)
+        {
+            System.Threading.Interlocked.Exchange(ref _decisionInsertCount, 0);
+            await TrimDecisionsAsync().ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Liefert die letzten Decisions, optional gefiltert nach Symbol/TF/Reason/Since.
+    /// Ergebnis ist absteigend sortiert nach Timestamp.
+    /// </summary>
+    public async Task<List<BingXBot.Core.Diagnostics.EvaluationDecision>> LoadDecisionsAsync(
+        string? symbol = null,
+        BingXBot.Core.Enums.TimeFrame? tf = null,
+        string? rejectionReason = null,
+        DateTime? since = null,
+        int limit = 200)
+    {
+        EnsureInitialized();
+        var query = _db!.Table<EvaluationDecisionEntity>();
+        if (!string.IsNullOrEmpty(symbol))
+            query = query.Where(d => d.Symbol == symbol);
+        if (tf.HasValue)
+        {
+            var tfInt = (int)tf.Value;
+            query = query.Where(d => d.Tf == tfInt);
+        }
+        if (!string.IsNullOrEmpty(rejectionReason))
+            query = query.Where(d => d.RejectionReason == rejectionReason);
+        if (since.HasValue)
+        {
+            var sinceVal = since.Value;
+            query = query.Where(d => d.Timestamp >= sinceVal);
+        }
+
+        var entities = await query.OrderByDescending(d => d.Timestamp).Take(limit).ToListAsync().ConfigureAwait(false);
+        return entities.Select(EntityToDecision).ToList();
+    }
+
+    private static BingXBot.Core.Diagnostics.EvaluationDecision EntityToDecision(EvaluationDecisionEntity e)
+    {
+        IReadOnlyList<string> categories;
+        IReadOnlyList<string> hardFilters;
+        try { categories = JsonSerializer.Deserialize<List<string>>(e.CategoriesJson) ?? new List<string>(); }
+        catch { categories = Array.Empty<string>(); }
+        try { hardFilters = JsonSerializer.Deserialize<List<string>>(e.HardFiltersJson) ?? new List<string>(); }
+        catch { hardFilters = Array.Empty<string>(); }
+
+        return new BingXBot.Core.Diagnostics.EvaluationDecision(
+            Symbol: e.Symbol,
+            Tf: (BingXBot.Core.Enums.TimeFrame)e.Tf,
+            UtcTimestamp: e.Timestamp,
+            SequenceState: e.SequenceState,
+            Point0: e.Point0,
+            PointA: e.PointA,
+            PointB: e.PointB,
+            Triggered: e.Triggered,
+            RejectionReason: e.RejectionReason,
+            ConfluenceScore: e.ConfluenceScore,
+            ConfluenceCategories: categories,
+            HardFiltersFailed: hardFilters);
+    }
+
+    // === v1.6.3 Phase 14 — Settings-Audit-Trail Persistenz ====================================
+
+    /// <summary>
+    /// Persistiert eine Liste von Settings-Aenderungen in einem einzigen Insert-Batch.
+    /// Best-effort — DB-Fehler werden geschluckt (Audit-Log darf den Save-Pfad nicht blockieren).
+    /// </summary>
+    public async Task LogSettingsChangesAsync(IReadOnlyList<BingXBot.Core.Models.SettingsChange> changes)
+    {
+        EnsureInitialized();
+        if (changes.Count == 0) return;
+        var entities = changes.Select(c => new SettingsChangeEntity
+        {
+            Timestamp = c.Timestamp,
+            Field = c.Field,
+            OldValue = c.OldValue,
+            NewValue = c.NewValue,
+            Source = c.Source,
+            Snapshot = c.Snapshot,
+        }).ToList();
+        try { await _db!.InsertAllAsync(entities).ConfigureAwait(false); }
+        catch { /* best-effort */ }
+    }
+
+    /// <summary>
+    /// Liefert die Settings-History optional gefiltert nach Feld + Zeitraum.
+    /// Default-Sortierung: Timestamp DESC.
+    /// </summary>
+    public async Task<List<BingXBot.Core.Models.SettingsChange>> GetSettingsHistoryAsync(
+        string? fieldFilter = null, DateTime? since = null, int limit = 200)
+    {
+        EnsureInitialized();
+        var query = _db!.Table<SettingsChangeEntity>();
+        if (!string.IsNullOrEmpty(fieldFilter))
+            query = query.Where(c => c.Field == fieldFilter);
+        if (since.HasValue)
+        {
+            var s = since.Value;
+            query = query.Where(c => c.Timestamp >= s);
+        }
+        var rows = await query.OrderByDescending(c => c.Timestamp).Take(limit).ToListAsync().ConfigureAwait(false);
+        return rows.Select(r => new BingXBot.Core.Models.SettingsChange(
+            Timestamp: r.Timestamp,
+            Field: r.Field,
+            OldValue: r.OldValue,
+            NewValue: r.NewValue,
+            Source: r.Source,
+            Snapshot: r.Snapshot)).ToList();
+    }
+
+    /// <summary>
+    /// v1.6.1 Phase 11 — Loescht Settings-Changes aelter als <paramref name="cutoff"/>.
+    /// Wird vom DbArchiveService monatlich aufgerufen.
+    /// sqlite-net bindet DateTime nativ — kein String-Format-Geraet noetig.
+    /// </summary>
+    public async Task PurgeOldSettingsChangesAsync(DateTime cutoff)
+    {
+        EnsureInitialized();
+        try
+        {
+            // sqlite-net laesst DateTime in DateTime.Ticks oder ISO-String konvertieren —
+            // wir nutzen LINQ-Where statt rohem SQL um Format-Bugs zu vermeiden.
+            var stale = await _db!.Table<SettingsChangeEntity>()
+                .Where(e => e.Timestamp < cutoff)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var s in stale) await _db.DeleteAsync(s).ConfigureAwait(false);
+        }
+        catch { /* best-effort */ }
+    }
+
+    // === v1.6.1 Phase 11 — DB-Archivierung (Trades + Decisions) ==============================
+
+    /// <summary>
+    /// Verschiebt Trades aelter als <paramref name="cutoff"/> in eine separate Archiv-DB
+    /// <c>{archiveDir}/bot-archive-{YYYY-MM}.db</c> und loescht sie aus der Live-DB.
+    /// VACUUM danach gibt freigewordenen Speicher frei. Idempotent — zweimal ausgefuehrt
+    /// erzeugt keine Doppel-Inserts (Pre-Check via Trade-EntryTime).
+    /// </summary>
+    /// <returns>Anzahl archivierter Trades.</returns>
+    public async Task<int> ArchiveTradesAsync(DateTime cutoff, string archiveDir)
+    {
+        EnsureInitialized();
+        Directory.CreateDirectory(archiveDir);
+
+        var stale = await _db!.Table<TradeEntity>()
+            .Where(t => t.EntryTime < cutoff)
+            .ToListAsync().ConfigureAwait(false);
+        if (stale.Count == 0) return 0;
+
+        // Archive-File-Naming basiert auf dem aeltesten Trade im Batch (UTC-Monat).
+        var oldest = stale.Min(t => t.EntryTime);
+        var archiveFile = Path.Combine(archiveDir, $"bot-archive-{oldest:yyyy-MM}.db");
+
+        var archiveDb = new SQLiteAsyncConnection(archiveFile);
+        try
+        {
+            await archiveDb.CreateTableAsync<TradeEntity>().ConfigureAwait(false);
+            // Idempotenz: Trade-Id ist Auto-Increment der Live-DB → in der Archiv-DB
+            // koennte derselbe Trade schon liegen. InsertAllAsync mit Conflict-Ignore.
+            // sqlite-net bietet das via SQLite.Insert OnConflict — wir nutzen InsertOrReplaceAsync
+            // pro Trade, weil Replace bei gleichem PK keine Duplikate erzeugt.
+            foreach (var t in stale) await archiveDb.InsertOrReplaceAsync(t).ConfigureAwait(false);
+        }
+        finally
+        {
+            await archiveDb.CloseAsync().ConfigureAwait(false);
+        }
+
+        // Aus Live-DB loeschen + VACUUM.
+        foreach (var t in stale) await _db.DeleteAsync(t).ConfigureAwait(false);
+        try { await _db.ExecuteAsync("VACUUM").ConfigureAwait(false); }
+        catch { /* VACUUM kann fehlschlagen wenn andere Verbindungen offen sind — best-effort */ }
+        return stale.Count;
+    }
+
+    /// <summary>
+    /// v1.6.1 Phase 11 — Loescht Evaluation-Decisions aelter als <paramref name="cutoff"/>.
+    /// Decisions sind Diagnose-Daten, brauchen keine 12-Monate-Archivierung.
+    /// </summary>
+    public async Task<int> PurgeOldDecisionsAsync(DateTime cutoff)
+    {
+        EnsureInitialized();
+        var stale = await _db!.Table<EvaluationDecisionEntity>()
+            .Where(e => e.Timestamp < cutoff)
+            .ToListAsync().ConfigureAwait(false);
+        foreach (var s in stale) await _db.DeleteAsync(s).ConfigureAwait(false);
+        return stale.Count;
+    }
+
+    /// <summary>
+    /// v1.6.4 Phase 13 — Sucht den letzten Settings-Snapshot vor <paramref name="atUtc"/>.
+    /// Liefert das deserialisierte BotSettings-Objekt oder null wenn kein Snapshot existiert.
+    /// Wird vom Trade-Replay-Runner aufgerufen, um Settings zur Trade-Zeit zu rekonstruieren.
+    /// </summary>
+    public async Task<BotSettings?> GetSettingsSnapshotAtAsync(DateTime atUtc)
+    {
+        EnsureInitialized();
+        try
+        {
+            // Suche letzten Eintrag VOR atUtc mit nicht-null Snapshot.
+            var rows = await _db!.Table<SettingsChangeEntity>()
+                .Where(c => c.Timestamp <= atUtc)
+                .OrderByDescending(c => c.Timestamp)
+                .Take(50) // Cap — der erste mit Snapshot gewinnt
+                .ToListAsync().ConfigureAwait(false);
+            var withSnap = rows.FirstOrDefault(r => !string.IsNullOrEmpty(r.Snapshot));
+            if (withSnap == null) return null;
+            return JsonSerializer.Deserialize<BotSettings>(withSnap.Snapshot!, BotSettingsJsonOptions);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// v1.6.1 Phase 11 — Liefert Trades inklusive Archive-Files. Attacht alle bot-archive-*.db
+    /// im Archive-Ordner temporaer + UNION-Query + Detach. Wird vom Trade-History-Endpoint
+    /// genutzt wenn Client ?archive=true uebergibt.
+    /// </summary>
+    public async Task<List<CompletedTrade>> GetTradesIncludingArchiveAsync(string archiveDir,
+        TradingMode? modeFilter = null, int limit = 1000)
+    {
+        EnsureInitialized();
+        var live = await GetTradesAsync(modeFilter, limit).ConfigureAwait(false);
+        if (!Directory.Exists(archiveDir)) return live;
+
+        var combined = new List<CompletedTrade>(live);
+        foreach (var archiveFile in Directory.GetFiles(archiveDir, "bot-archive-*.db"))
+        {
+            try
+            {
+                var conn = new SQLiteAsyncConnection(archiveFile);
+                try
+                {
+                    var query = conn.Table<TradeEntity>();
+                    if (modeFilter.HasValue)
+                    {
+                        var mf = (int)modeFilter.Value;
+                        query = query.Where(t => t.Mode == mf);
+                    }
+                    var rows = await query.OrderByDescending(t => t.ExitTime).Take(limit).ToListAsync()
+                        .ConfigureAwait(false);
+                    combined.AddRange(rows.Select(r => r.ToRecord()));
+                }
+                finally { await conn.CloseAsync().ConfigureAwait(false); }
+            }
+            catch { /* Skip kaputte Archive-Files — best-effort */ }
+        }
+
+        return combined.OrderByDescending(t => t.ExitTime).Take(limit).ToList();
+    }
+
+    /// <summary>
+    /// Trim — wenn die Tabelle ueber <see cref="MaxDecisionEntries"/> wachsen wuerde, werden die
+    /// aeltesten Eintraege geloescht. Best-effort, Fehler werden geschluckt.
+    /// </summary>
+    public async Task TrimDecisionsAsync()
+    {
+        EnsureInitialized();
+        try
+        {
+            var count = await _db!.Table<EvaluationDecisionEntity>().CountAsync().ConfigureAwait(false);
+            if (count > MaxDecisionEntries)
+            {
+                await _db.ExecuteAsync(
+                    $"DELETE FROM EvaluationDecisions WHERE Id IN (SELECT Id FROM EvaluationDecisions ORDER BY Timestamp ASC LIMIT {DecisionCleanupBatch})")
+                    .ConfigureAwait(false);
+            }
+        }
+        catch { /* best-effort */ }
     }
 
     /// <summary>

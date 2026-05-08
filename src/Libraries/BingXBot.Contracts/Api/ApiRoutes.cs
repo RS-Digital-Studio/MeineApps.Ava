@@ -56,6 +56,18 @@ public static class ApiRoutes
     // Android-FCM Device-Registrierung (optional, Phase 5.7)
     public const string DevicesFcm = ApiPrefix + "/devices/fcm";
 
+    // v1.5.2 Phase 4 — Decision-Trail / Rejection-Log
+    public const string Decisions = ApiPrefix + "/decisions";
+
+    // v1.5.3 Phase 5 — Per-TF + Per-Category Trade-Stats
+    public const string StatsBreakdown = ApiPrefix + "/stats/breakdown";
+
+    // v1.6.3 Phase 14 — Settings-Change-Audit-Trail
+    public const string SettingsHistory = ApiPrefix + "/settings/history";
+
+    // v1.6.4 Phase 13 — Trade-Replay
+    public const string BacktestReplayTrade = ApiPrefix + "/backtest/replay-trade/{tradeId}";
+
     // SignalR-Hub
     public const string BotHubPath = "/hubs/bot";
 }

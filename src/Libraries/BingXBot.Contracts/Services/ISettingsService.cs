@@ -19,6 +19,10 @@ public interface ISettingsService
     /// <summary>Gesamten Settings-Block uebernehmen (atomar — Revision wird geprueft).</summary>
     Task SaveAllAsync(FullSettingsDto snapshot, CancellationToken ct = default);
 
+    /// <summary>v1.6.3 Phase 14 — Audit-Trail-History.</summary>
+    Task<SettingsHistoryDto> GetHistoryAsync(string? field = null, DateTime? since = null,
+        int limit = 200, CancellationToken ct = default);
+
     /// <summary>Feuert wenn Server einen Change pushed (Multi-Client-Szenario).</summary>
     event Action<FullSettingsDto>? SettingsChanged;
 }

@@ -57,6 +57,10 @@ public interface IBotEventStream : IDisposable
     // sieht der User Live-Engine-Probleme direkt im Log.
     event Action<ConnectionDegradedDto>? ConnectionDegraded;
 
+    // v1.5.2 Phase 4 — Decision-Trail. Server pusht pro Strategy-Evaluation eine Decision
+    // (Reject mit Reason oder Success). Client kann die im Live-Stream zeigen ohne GET-Polling.
+    event Action<EvaluationDecisionDto>? EvaluationDecided;
+
     /// <summary>Startet die Verbindung (Client-Remote: SignalR Connect; Server-Local: No-Op).</summary>
     Task StartAsync(CancellationToken ct = default);
 

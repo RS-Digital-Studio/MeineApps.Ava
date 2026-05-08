@@ -37,6 +37,17 @@ public sealed class RemoteSettingsService : ISettingsService
     public Task SaveAllAsync(FullSettingsDto snapshot, CancellationToken ct = default) =>
         _connection.HttpClient.PutJsonAsync(ApiRoutes.Settings, snapshot, ct);
 
+    public Task<SettingsHistoryDto> GetHistoryAsync(string? field = null, DateTime? since = null,
+        int limit = 200, CancellationToken ct = default)
+    {
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(field)) query.Add($"field={Uri.EscapeDataString(field)}");
+        if (since.HasValue) query.Add($"since={Uri.EscapeDataString(since.Value.ToUniversalTime().ToString("O"))}");
+        if (limit > 0) query.Add($"limit={limit}");
+        var url = ApiRoutes.SettingsHistory + (query.Count > 0 ? "?" + string.Join("&", query) : "");
+        return _connection.HttpClient.GetJsonAsync<SettingsHistoryDto>(url, ct);
+    }
+
     // Wird von App.axaml.cs (Remote-Mode-Wire-up) aufgerufen, wenn der Hub ein SettingsChanged-
     // Event liefert. Dadurch bleiben alle ViewModels die auf ISettingsService.SettingsChanged
     // subscriben automatisch synchron, auch wenn ein anderer Client die Settings aendert.

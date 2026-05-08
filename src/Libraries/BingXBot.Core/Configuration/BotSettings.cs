@@ -48,6 +48,21 @@ public class BotSettings
     /// Default Dark — passt zu Trading-Terminal-UI und ist seit v1.0 der Standard.
     /// </summary>
     public ThemePreference ThemePreference { get; set; } = ThemePreference.Dark;
+
+    /// <summary>
+    /// v1.5.2 Phase 4 — Decision-Trail / Rejection-Log aktivieren.
+    /// Default true — der Trail haelt eine Diagnose-Liste der letzten N Strategy-Evaluations
+    /// (warum hat das Setup nicht gefeuert?) im Memory-Ringpuffer (5000 Eintraege).
+    /// Bei false: Hot-Path baut keine <c>EvaluationDecision</c>-Records (kein Allocation-Overhead).
+    /// </summary>
+    public bool EnableDecisionTrail { get; set; } = true;
+
+    /// <summary>
+    /// v1.5.5 Phase 9 — Trade-Push-Notifications via FCM (TradeOpened / TradeClosed / SL-Hit).
+    /// Default true — Pi-Server pusht Trade-Events an gepairte Mobile-Clients. Bei false
+    /// wird der TradePushSubscriber ausgehaengt und feuert nicht mehr.
+    /// </summary>
+    public bool EnableTradePushNotifications { get; set; } = true;
 }
 
 /// <summary>UI-Theme-Optionen fuer die BingXBot-Clients (Desktop + Mobile).</summary>

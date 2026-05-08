@@ -49,6 +49,8 @@ public sealed class RemoteBotEventStream : IBotEventStream
     public event Action<BacktestResultDto>? BacktestCompleted;
     public event Action<FullSettingsDto>? SettingsChanged;
     public event Action<ConnectionDegradedDto>? ConnectionDegraded;
+    /// <summary>v1.5.2 Phase 4 — Decision-Trail Live-Forward von Server.</summary>
+    public event Action<EvaluationDecisionDto>? EvaluationDecided;
 
     public RemoteBotEventStream(ServerConnection connection, ILogger<RemoteBotEventStream> logger)
     {
@@ -143,11 +145,20 @@ public sealed class RemoteBotEventStream : IBotEventStream
         hub.On<TickerUpdateDto>(HubMethods.BtcPriceUpdate, dto => BtcPriceUpdate?.Invoke(dto));
         hub.On<ScannerResultDto>(HubMethods.ScannerResult, dto => ScannerResult?.Invoke(dto));
         hub.On<LogEntryDto>(HubMethods.LogEmitted, dto => LogEmitted?.Invoke(dto));
+        // 04.05.2026 — Batched Logs (Server-seitig 250 ms Buffer): in einzelne LogEmitted-Events splitten,
+        // damit bestehende ViewModel-Subscriber nichts ändern müssen.
+        hub.On<IReadOnlyList<LogEntryDto>>(HubMethods.LogBatch, batch =>
+        {
+            if (batch == null) return;
+            foreach (var dto in batch)
+                LogEmitted?.Invoke(dto);
+        });
         hub.On<ActivityFeedDto>(HubMethods.ActivityFeed, dto => ActivityFeed?.Invoke(dto));
         hub.On<BacktestProgressDto>(HubMethods.BacktestProgress, dto => BacktestProgress?.Invoke(dto));
         hub.On<BacktestResultDto>(HubMethods.BacktestCompleted, dto => BacktestCompleted?.Invoke(dto));
         hub.On<FullSettingsDto>(HubMethods.SettingsChanged, dto => SettingsChanged?.Invoke(dto));
         hub.On<ConnectionDegradedDto>(HubMethods.ConnectionDegraded, dto => ConnectionDegraded?.Invoke(dto));
+        hub.On<EvaluationDecisionDto>(HubMethods.EvaluationDecided, dto => EvaluationDecided?.Invoke(dto));
     }
 
     public void Dispose()

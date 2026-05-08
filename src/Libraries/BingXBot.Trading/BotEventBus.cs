@@ -63,6 +63,13 @@ public class BotEventBus
     /// Client rendert das als eine Tabelle pro TF — deshalb ein Event pro Sweep, nicht pro Symbol.</summary>
     public event EventHandler<ScannerSweepArgs>? ScannerSweep;
 
+    /// <summary>
+    /// v1.5.2 Phase 4 — Decision-Trail. Feuert pro Strategy-Evaluation mit der gefaellten
+    /// Entscheidung (Reject mit Reason oder Success). Subscriber: <c>DecisionTrailBuffer</c>
+    /// (In-Memory-Ringpuffer 5000), spaeter Hub-Forwarder fuer Remote-UI.
+    /// </summary>
+    public event EventHandler<BingXBot.Core.Diagnostics.EvaluationDecision>? EvaluationDecided;
+
     /// <summary>Ob mindestens ein Subscriber für LogEmitted registriert ist. Prüfen VOR LogEntry-Allokation.</summary>
     public bool HasLogSubscribers => LogEmitted != null;
 
@@ -111,6 +118,13 @@ public class BotEventBus
 
     /// <summary>Scanner-Sweep: alle Kandidaten eines Navigator-TF-Scans in einem Rutsch.</summary>
     public void PublishScannerSweep(ScannerSweepArgs args) => ScannerSweep?.Invoke(this, args);
+
+    /// <summary>v1.5.2 Phase 4 — Decision-Trail-Eintrag publizieren. No-op wenn keine Subscriber.</summary>
+    public void PublishEvaluationDecision(BingXBot.Core.Diagnostics.EvaluationDecision decision) =>
+        EvaluationDecided?.Invoke(this, decision);
+
+    /// <summary>True wenn mindestens ein Subscriber fuer EvaluationDecided. Caller checkt das, bevor Build aufwendiger wird.</summary>
+    public bool HasEvaluationDecidedSubscribers => EvaluationDecided != null;
 }
 
 /// <summary>Argumente für das BacktestCompleted-Event.</summary>

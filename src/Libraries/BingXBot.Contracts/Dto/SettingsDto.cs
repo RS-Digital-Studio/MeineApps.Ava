@@ -30,6 +30,19 @@ public record SetCredentialsRequest(
     string ApiKey,
     string ApiSecret);
 
+/// <summary>v1.6.3 Phase 14 — Settings-Audit-Trail-Eintrag (Wire-DTO).</summary>
+public record SettingsChangeDto(
+    DateTime Timestamp,
+    string Field,
+    string? OldValue,
+    string? NewValue,
+    string Source,
+    string? Snapshot);
+
+/// <summary>v1.6.3 Phase 14 — Antwort-DTO fuer GET /settings/history.</summary>
+public record SettingsHistoryDto(
+    IReadOnlyList<SettingsChangeDto> Changes);
+
 /// <summary>FCM-Device-Registrierung (Phase 5.7).</summary>
 public record FcmDeviceRegistrationDto(
     string DeviceId,

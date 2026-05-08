@@ -1,37 +1,28 @@
 using System.Collections.Concurrent;
-using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 
 namespace BingXBot.Core.Helpers;
 
 /// <summary>
-/// Cached die Top-N Kryptowährungen nach Market Cap von CoinGecko (Free API).
-/// Wird einmal pro Stunde aktualisiert. Liefert eine Whitelist von Symbolen
-/// die auf BingX als "-USDT" Perpetual Futures verfügbar sind.
-///
-/// CoinGecko Free API: 10-30 Req/Min, /coins/markets braucht nur 1 Request für Top-250.
+/// Cache für Top-N Kryptowährungen nach Market Cap.
+/// 04.05.2026: HTTP-Backend wurde nach <c>BingXBot.Engine.Helpers.CoinGeckoMarketCapProvider</c>
+/// extrahiert (Layer-Verletzung beseitigt — Core ist jetzt netzwerk-frei). Diese Klasse hält
+/// nur noch den thread-safen Lookup-Cache und wird vom Provider via <see cref="SetRankings"/>
+/// befüllt. Aufrufer (ScanHelper/MarketScanner) lesen weiterhin statisch — Backwards-Compat
+/// bleibt erhalten.
 /// </summary>
 public static class MarketCapCache
 {
-    private static readonly HttpClient _client;
     private static readonly ConcurrentDictionary<string, int> _rankBySymbol = new();
     private static DateTime _lastUpdate = DateTime.MinValue;
-    private static readonly TimeSpan _updateInterval = TimeSpan.FromHours(1);
-    private static readonly SemaphoreSlim _refreshLock = new(1, 1); // Verhindert parallele CoinGecko-Requests
-
-    static MarketCapCache()
-    {
-        _client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-        // CoinGecko blockiert Requests ohne User-Agent mit 403 Forbidden
-        _client.DefaultRequestHeaders.Add("User-Agent", "BingXBot/1.0 (Trading Bot)");
-        _client.DefaultRequestHeaders.Add("Accept", "application/json");
-    }
 
     /// <summary>True wenn mindestens einmal erfolgreich geladen wurde.</summary>
     public static bool IsLoaded => _rankBySymbol.Count > 0;
 
     /// <summary>Anzahl der gecachten Coins.</summary>
     public static int CachedCount => _rankBySymbol.Count;
+
+    /// <summary>Zeitpunkt der letzten erfolgreichen Aktualisierung (für Provider-Stale-Check).</summary>
+    public static DateTime LastUpdateUtc => _lastUpdate;
 
     /// <summary>
     /// Prüft ob ein Symbol in den Top-N nach Market Cap ist.
@@ -51,55 +42,16 @@ public static class MarketCapCache
     }
 
     /// <summary>
-    /// Aktualisiert den Cache von CoinGecko (Top-250 nach Market Cap).
-    /// Wird automatisch aufgerufen wenn der Cache älter als 1 Stunde ist.
-    /// Fehler werden ignoriert — der alte Cache bleibt aktiv.
+    /// Wird vom <c>IMarketCapProvider</c> aufgerufen, wenn neue Rankings geladen wurden.
+    /// Ersetzt den kompletten Cache atomar.
     /// </summary>
-    public static async Task RefreshIfNeededAsync()
+    /// <param name="rankedSymbols">Dictionary Symbol → Rang (1-basiert).</param>
+    public static void SetRankings(IReadOnlyDictionary<string, int> rankedSymbols)
     {
-        if (DateTime.UtcNow - _lastUpdate < _updateInterval && _rankBySymbol.Count > 0)
-            return;
-
-        // Lock: Nur ein Thread darf gleichzeitig CoinGecko aufrufen
-        // (Im Multi-Mode starten 3 Services parallel → ohne Lock = 3x Request → 403)
-        if (!await _refreshLock.WaitAsync(0).ConfigureAwait(false))
-            return; // Anderer Thread lädt bereits
-
-        try
-        {
-            // Double-Check nach Lock
-            if (DateTime.UtcNow - _lastUpdate < _updateInterval && _rankBySymbol.Count > 0)
-                return;
-
-            // CoinGecko Free API: Top-250 Coins nach Market Cap
-            var url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false";
-            var coins = await _client.GetFromJsonAsync<List<CoinGeckoMarketItem>>(url).ConfigureAwait(false);
-
-            if (coins == null || coins.Count == 0) return;
-
-            _rankBySymbol.Clear();
-            for (int i = 0; i < coins.Count; i++)
-            {
-                var ticker = coins[i].Symbol?.ToUpperInvariant();
-                if (string.IsNullOrEmpty(ticker)) continue;
-
-                // CoinGecko Symbol → BingX Symbol Mapping
-                // CoinGecko: "btc", "eth", "sol" → BingX: "BTC-USDT", "ETH-USDT", "SOL-USDT"
-                var bingxSymbol = $"{ticker}-USDT";
-                _rankBySymbol[bingxSymbol] = i + 1; // Rang 1-basiert
-            }
-
-            _lastUpdate = DateTime.UtcNow;
-        }
-        catch (Exception)
-        {
-            // Exception NICHT schlucken — TradingServiceBase muss sie sehen für Logging
-            throw;
-        }
-        finally
-        {
-            _refreshLock.Release();
-        }
+        _rankBySymbol.Clear();
+        foreach (var kvp in rankedSymbols)
+            _rankBySymbol[kvp.Key] = kvp.Value;
+        _lastUpdate = DateTime.UtcNow;
     }
 
     /// <summary>Normalisiert ein BingX-Symbol für den Lookup (z.B. "1000PEPE-USDT" → "PEPE-USDT").</summary>
@@ -114,14 +66,4 @@ public static class MarketCapCache
         else if (s.StartsWith("1000")) s = s[4..];
         return s;
     }
-}
-
-/// <summary>CoinGecko /coins/markets Response-Item (nur die Felder die wir brauchen).</summary>
-internal class CoinGeckoMarketItem
-{
-    [JsonPropertyName("symbol")]
-    public string? Symbol { get; set; }
-
-    [JsonPropertyName("market_cap_rank")]
-    public int? MarketCapRank { get; set; }
 }

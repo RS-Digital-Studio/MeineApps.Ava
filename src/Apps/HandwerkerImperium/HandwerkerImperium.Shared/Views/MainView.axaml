@@ -70,146 +70,46 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
                         AutomationProperties.AutomationId="Main_Canvas_Background" />
 
     <!-- ============================================ -->
-    <!-- Row 0: Content Area (switches based on tab)  -->
+    <!-- Row 0: Content Area                           -->
+    <!--                                               -->
+    <!-- AAA-Audit P0 Lazy-View-Loading (09.05.2026):  -->
+    <!--                                               -->
+    <!-- 4 Direct-Bound-Views (Dashboard/Imperium/      -->
+    <!-- Missionen/Prestige) binden direkt auf         -->
+    <!-- MainViewModel und bleiben mit IsVisible.       -->
+    <!--                                               -->
+    <!-- 25+ Sub-Views laufen ueber ein einzelnes      -->
+    <!-- ContentControl mit ActivePageContent-Binding. -->
+    <!-- ViewLocator findet die passende View. Nicht-  -->
+    <!-- aktive Views werden NICHT materialisiert.     -->
     <!-- ============================================ -->
     <Panel x:Name="ContentPanel" Grid.Row="0" AutomationProperties.AutomationId="Main_Panel_Content">
-      <!-- Dashboard Tab (uses MainViewModel directly) -->
-      <views:DashboardView x:Name="DashboardViewInstance" IsVisible="{Binding IsDashboardActive}" AutomationProperties.AutomationId="Main_View_Dashboard" />
 
-      <!-- Shop Tab -->
-      <ContentControl Content="{Binding ShopViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsShopActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Shop" />
+      <!-- Dashboard Tab (DataContext = MainViewModel) -->
+      <views:DashboardView x:Name="DashboardViewInstance"
+                            IsVisible="{Binding IsDashboardActive}"
+                            AutomationProperties.AutomationId="Main_View_Dashboard" />
 
-      <!-- Statistics Tab -->
-      <ContentControl Content="{Binding StatisticsViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsStatisticsActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Statistics" />
-
-      <!-- Achievements Tab -->
-      <ContentControl Content="{Binding AchievementsViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsAchievementsActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Achievements" />
-
-      <!-- Settings Tab -->
-      <ContentControl Content="{Binding SettingsViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSettingsActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Settings" />
-
-      <!-- Workshop Detail (overlay when selected) -->
-      <ContentControl Content="{Binding WorkshopViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkshopDetailActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_WorkshopDetail" />
-
-      <!-- Order Detail (overlay when selected) -->
-      <ContentControl Content="{Binding OrderViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsOrderDetailActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_OrderDetail" />
-
-      <!-- Worker Market (overlay when selected) -->
-      <ContentControl Content="{Binding WorkerMarketViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkerMarketActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_WorkerMarket" />
-
-      <!-- Worker Profile → als Bottom-Sheet (siehe unten) -->
-
-      <!-- Imperium Tab (nutzt IsBuildingsActive, DataContext vom Parent geerbt) -->
+      <!-- Imperium Tab (DataContext = MainViewModel) -->
       <views:ImperiumView IsVisible="{Binding IsBuildingsActive}"
                           AutomationProperties.AutomationId="Main_View_Imperium" />
 
-      <!-- Missionen Tab (neu) -->
+      <!-- Missionen Tab (DataContext = MainViewModel) -->
       <views:MissionenView IsVisible="{Binding IsMissionenActive}"
                            AutomationProperties.AutomationId="Main_View_Missionen" />
 
-      <!-- Research (overlay when selected) -->
-      <ContentControl Content="{Binding ResearchViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsResearchActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Research" />
-
-      <!-- Neue Feature-Views (Welle 1-8) -->
-      <ContentControl Content="{Binding ManagerViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsManagerActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Manager" />
-      <ContentControl Content="{Binding TournamentViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsTournamentActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Tournament" />
-      <ContentControl Content="{Binding SeasonalEventViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSeasonalEventActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_SeasonalEvent" />
-      <ContentControl Content="{Binding BattlePassViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBattlePassActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_BattlePass" />
-      <ContentControl Content="{Binding GuildViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Guild" />
-      <!-- Gilden-Sub-Seiten (Hub-Navigation, ViewLocator-Pattern Phase 4 17.04.2026) -->
-      <ContentControl Content="{Binding GuildViewModel.ResearchVM}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildResearchActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_GuildResearch" />
-      <ContentControl Content="{Binding GuildViewModel.MembersVM}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildMembersActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_GuildMembers" />
-      <ContentControl Content="{Binding GuildViewModel.InviteVM}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildInviteActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_GuildInvite" />
-      <ContentControl Content="{Binding GuildViewModel.WarSeasonViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildWarSeasonActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_GuildWarSeason" />
-      <ContentControl Content="{Binding GuildViewModel.BossViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildBossActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_GuildBoss" />
-      <ContentControl Content="{Binding GuildViewModel.HallViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildHallActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_GuildHall" />
-      <ContentControl Content="{Binding GuildViewModel.AchievementsVM}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildAchievementsActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_GuildAchievements" />
-      <ContentControl Content="{Binding GuildViewModel.ChatVM}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildChatActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_GuildChat" />
-      <ContentControl Content="{Binding GuildViewModel.WarVM}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildWarActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_GuildWar" />
-      <ContentControl Content="{Binding CraftingViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsCraftingActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Crafting" />
-      <ContentControl Content="{Binding AscensionViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsAscensionActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_Ascension" />
-      <!-- Prestige Single-Page-View (v2.0.37) — DataContext bleibt MainViewModel
-           damit DialogVM-Properties + NavigateBackCommand direkt erreichbar sind. -->
-      <views:PrestigeView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsPrestigeActive}"
+      <!-- Prestige Single-Page-View (DataContext = MainViewModel, v2.0.37) -->
+      <views:PrestigeView IsVisible="{Binding IsPrestigeActive}"
                           AutomationProperties.AutomationId="Main_View_Prestige" />
 
-      <!-- MiniGame View (ein einziges ContentControl statt 10 separate → spart 9 View-Instanzen + Renderer im Ruhezustand) -->
-      <ContentControl Content="{Binding ActiveMiniGameViewModel}"
-                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsAnyMiniGameActive}"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      AutomationProperties.AutomationId="Main_View_MiniGame" />
+      <!-- Zentrales ContentControl fuer alle anderen Sub-Views.
+           ActivePageContent liefert das passende VM (oder null fuer Direct-Bound-Views).
+           ViewLocator-Pattern materialisiert die Sub-View beim Switch. -->
+      <ContentControl Content="{Binding ActivePageContent}"
+                      IsVisible="{Binding HasActivePageContent}"
+                      HorizontalContentAlignment="Stretch"
+                      VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_SubPage" />
     </Panel>
 
     <!-- NAV-3: Breadcrumb-Leiste wenn Tab-Bar versteckt (Sub-Views/MiniGames) -->

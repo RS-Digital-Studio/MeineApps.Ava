@@ -63,6 +63,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly IPlayGamesService? _playGamesService;
     // Telemetrie (REST via FirebaseService, keine nativen SDKs noetig)
     private readonly IAnalyticsService? _analyticsService;
+    /// <summary>AAA-Audit P0 Zerlegungs-Sprint: Cinematic-Logik aus MainViewModel extrahiert.</summary>
+    private readonly ICinematicCoordinator? _cinematicCoordinator;
+    /// <summary>AAA-Audit P0 Zerlegungs-Sprint: Reputation-Tier-Up-Effekte extrahiert.</summary>
+    private readonly IReputationTierEffects? _reputationTierEffects;
     private readonly ICloudSaveService? _cloudSaveService;
     private readonly IRemoteConfigService? _remoteConfigService;
     private readonly IWeeklyMissionService _weeklyMissionService;
@@ -466,20 +470,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     /// <summary>P0.3 AAA-Audit: Prestige-Cinematic-Trigger. View startet daraufhin den 14s-Renderer.</summary>
     public event Action<HandwerkerImperium.Models.PrestigeCinematicData>? PrestigeCinematicRequested;
 
-    /// <summary>P0.3 AAA-Audit: View meldet Tap-to-Skip waehrend der Cinematic.</summary>
-    public void OnPrestigeCinematicSkipped()
-    {
-        _analyticsService?.TrackEvent(AnalyticsEvents.PrestigeCinematicSkipped);
-    }
+    /// <summary>
+    /// P0.3 AAA-Audit + Zerlegungs-Sprint: View meldet Tap-to-Skip — delegiert an Coordinator.
+    /// </summary>
+    public void OnPrestigeCinematicSkipped() => _cinematicCoordinator?.OnSkipped();
 
-    /// <summary>P0.3 AAA-Audit: View meldet Cinematic-Ende (nach Tap-to-Continue oder Auto-Timeout).</summary>
-    public void OnPrestigeCinematicDismissed()
-    {
-        _analyticsService?.TrackEvent(AnalyticsEvents.PrestigeCinematicCompleted);
-        // Zurueck zum Default-Track
-        try { _ = _audioService.PlayMusicAsync(MusicTrack.IdleWorkshop, crossfade: true); }
-        catch { /* Audio-Fehler ignorieren */ }
-    }
+    /// <summary>
+    /// P0.3 AAA-Audit + Zerlegungs-Sprint: View meldet Cinematic-Ende — delegiert an Coordinator.
+    /// </summary>
+    public void OnPrestigeCinematicDismissed() => _cinematicCoordinator?.OnDismissed();
 
     /// <summary>Wird ausgelöst um einen Exit-Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").</summary>
     public event Action<string>? ExitHintRequested;
@@ -658,6 +657,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         // MiniGame-ContentControl aktualisieren (ein einziges statt 10 separate)
         OnPropertyChanged(nameof(ActiveMiniGameViewModel));
         OnPropertyChanged(nameof(IsAnyMiniGameActive));
+
+        // AAA-Audit P0 Lazy-View-Loading: Zentrales ActivePageContent feuern, damit das
+        // einzelne ContentControl in MainView die richtige Sub-View materialisiert.
+        OnPropertyChanged(nameof(ActivePageContent));
+        OnPropertyChanged(nameof(HasActivePageContent));
     }
 
     // Berechnete Navigation-Properties (XAML-Bindings bleiben unverändert)
@@ -753,6 +757,61 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     };
 
     public bool IsAnyMiniGameActive => ActiveMiniGameViewModel != null;
+
+    /// <summary>
+    /// AAA-Audit P0 Lazy-View-Loading: Liefert das ViewModel der aktuell aktiven Seite,
+    /// oder null fuer Direct-Bound-Views (Dashboard/Imperium/Missionen/Prestige), die im
+    /// MainView weiter via IsVisible toggle’n.
+    ///
+    /// MainView nutzt ein einzelnes &lt;ContentControl Content="{Binding ActivePageContent}"/&gt;
+    /// statt 25+ einzelner ContentControls — das spart bei Cold-Start die Materialisierung
+    /// aller nicht-aktiven Sub-Views (~25 SkiaSharp-Renderer pro App-Start vermieden).
+    /// </summary>
+    public object? ActivePageContent => ActivePage switch
+    {
+        // Direct-Bound (kein ContentControl-Routing) — null = MainView's IsVisible-Bindings greifen.
+        ActivePage.Dashboard or ActivePage.Buildings or ActivePage.Missionen or ActivePage.Prestige
+            => null,
+
+        // Top-Level-Tabs
+        ActivePage.Shop => ShopViewModel,
+        ActivePage.Statistics => StatisticsViewModel,
+        ActivePage.Achievements => AchievementsViewModel,
+        ActivePage.Settings => SettingsViewModel,
+        ActivePage.WorkshopDetail => WorkshopViewModel,
+        ActivePage.OrderDetail => OrderViewModel,
+        ActivePage.WorkerMarket => WorkerMarketViewModel,
+        ActivePage.Research => ResearchViewModel,
+        ActivePage.Manager => ManagerViewModel,
+        ActivePage.Tournament => TournamentViewModel,
+        ActivePage.SeasonalEvent => SeasonalEventViewModel,
+        ActivePage.BattlePass => BattlePassViewModel,
+        ActivePage.Crafting => CraftingViewModel,
+        ActivePage.Ascension => AscensionViewModel,
+        ActivePage.Guild => GuildViewModel,
+
+        // Gilden-Sub-Pages (Thin-Wrapper-VMs ueber GuildViewModel)
+        ActivePage.GuildResearch => GuildViewModel.ResearchVM,
+        ActivePage.GuildMembers => GuildViewModel.MembersVM,
+        ActivePage.GuildInvite => GuildViewModel.InviteVM,
+        ActivePage.GuildWarSeason => GuildViewModel.WarSeasonViewModel,
+        ActivePage.GuildBoss => GuildViewModel.BossViewModel,
+        ActivePage.GuildHall => GuildViewModel.HallViewModel,
+        ActivePage.GuildAchievements => GuildViewModel.AchievementsVM,
+        ActivePage.GuildChat => GuildViewModel.ChatVM,
+        ActivePage.GuildWar => GuildViewModel.WarVM,
+
+        // MiniGames (delegieren an ActiveMiniGameViewModel)
+        ActivePage.SawingGame or ActivePage.PipePuzzle or ActivePage.WiringGame
+            or ActivePage.PaintingGame or ActivePage.RoofTilingGame or ActivePage.BlueprintGame
+            or ActivePage.DesignPuzzleGame or ActivePage.InspectionGame or ActivePage.ForgeGame
+            or ActivePage.InventGame => ActiveMiniGameViewModel,
+
+        _ => null
+    };
+
+    /// <summary>True wenn ActivePageContent ein VM liefert (= ContentControl wird sichtbar).</summary>
+    public bool HasActivePageContent => ActivePageContent != null;
 
     // Overlay-States (überlagern die aktuelle Seite, ActivePage bleibt unverändert)
     [ObservableProperty]
@@ -984,7 +1043,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         IAnalyticsService? analyticsService = null,
         ICloudSaveService? cloudSaveService = null,
         IRemoteConfigService? remoteConfigService = null,
-        IWhatsNewService? whatsNewService = null)
+        IWhatsNewService? whatsNewService = null,
+        ICinematicCoordinator? cinematicCoordinator = null,
+        IReputationTierEffects? reputationTierEffects = null)
     {
         _navigationService = navigationService;
         _dialogOrchestrator = dialogOrchestrator;
@@ -993,6 +1054,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _cloudSaveService = cloudSaveService;
         _remoteConfigService = remoteConfigService;
         _whatsNewService = whatsNewService;
+        _cinematicCoordinator = cinematicCoordinator;
+        _reputationTierEffects = reputationTierEffects;
         // Host-Attach damit Services Navigation/Dialog-Kaskade an MainViewModel delegieren koennen
         _navigationService?.AttachHost(this);
         _dialogOrchestrator?.AttachHost(this);
@@ -1182,7 +1245,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         DialogVM.FloatingTextRequested += _dialogFloatingTextHandler;
         _prestigeService.PrestigeCompleted += OnPrestigeCompleted;
         _prestigeService.MilestoneReached += OnPrestigeMilestoneReached;
-        _prestigeService.CinematicReady += OnPrestigeCinematicReady;
+        // AAA-Audit P0 Zerlegungs-Sprint: Cinematic-Subscription an Coordinator delegiert.
+        // CinematicCoordinator broadcastet die UI-thread-resolvte Daten an den hier registrierten Hook.
+        if (_cinematicCoordinator != null)
+        {
+            _cinematicCoordinator.CinematicReady += OnCinematicReadyFromCoordinator;
+            (_cinematicCoordinator as CinematicCoordinator)?.StartListening();
+        }
+        else
+        {
+            // Fallback: alter Pfad fuer Tests die ohne Coordinator instanziieren.
+            _prestigeService.CinematicReady += OnPrestigeCinematicReady;
+        }
 
         // Rebirth-Event fuer First-Star-Hint
         if (_rebirthService != null)
@@ -1424,11 +1498,21 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         CheckForNewStoryChapter();
     }
 
-    /// <summary>P0.3 AAA-Audit: Vom PrestigeService gefeuert, sobald Cinematic-Daten bereit sind.</summary>
+    /// <summary>
+    /// AAA-Audit P0 Zerlegungs-Sprint: Coordinator hat Daten lokalisiert + Audio-Track
+    /// gesetzt — wir leiten nur noch das View-Trigger-Event weiter.
+    /// </summary>
+    private void OnCinematicReadyFromCoordinator(HandwerkerImperium.Models.PrestigeCinematicData resolved)
+    {
+        PrestigeCinematicRequested?.Invoke(resolved);
+    }
+
+    /// <summary>
+    /// P0.3 AAA-Audit: Fallback-Pfad fuer Tests ohne Coordinator. Production-Code laeuft
+    /// ueber <see cref="OnCinematicReadyFromCoordinator"/>.
+    /// </summary>
     private void OnPrestigeCinematicReady(object? sender, HandwerkerImperium.Models.PrestigeCinematicData data)
     {
-        // Tier-Name lokalisieren — RESX-Keys "PrestigeTierBronze", "PrestigeTierSilver" usw.
-        // RESX-Keys: PrestigeBronze, PrestigeSilver, ... (existieren bereits)
         var localizedTierName = _localizationService.GetString($"Prestige{data.Tier}") ?? data.Tier.ToString();
         var resolved = new HandwerkerImperium.Models.PrestigeCinematicData
         {
@@ -1446,8 +1530,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         };
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            // P2.3 + P0.3 verdrahtet: Celebration-Track waehrend der Cinematic, danach
-            // Idle-Workshop. Audio-Fehler duerfen die Cinematic nicht blockieren.
             try { _ = _audioService.PlayMusicAsync(MusicTrack.Celebration, crossfade: true); }
             catch { /* Audio-Fehler ignorieren */ }
             PrestigeCinematicRequested?.Invoke(resolved);
@@ -1847,36 +1929,17 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
             OnPropertyChanged(nameof(ReputationTierName));
             OnPropertyChanged(nameof(ReputationTierColor));
 
-            if (!e.IsUp) return;
-
-            var tierName = _localizationService.GetString(e.NewTier.GetLocalizationKey()) ?? e.NewTier.ToString();
-            var format = _localizationService.GetString("RepTierUpFormat") ?? "{0} reached!";
-            FloatingTextRequested?.Invoke(string.Format(format, tierName), "level");
-            CelebrationRequested?.Invoke();
-            _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
-
-            // v2.0.39 Audit-Fix U7: Modal-Dialog mit Tier-Effekten (nur bei Tier-Aufstieg
-            // ueber Beginner — Beginner ist der Default-Start-Tier und braucht keine Erklaerung).
-            if (e.NewTier > Models.Enums.CustomerReputationTier.Beginner)
-            {
-                var effectsKey = e.NewTier switch
+            // AAA-Audit P0 Zerlegungs-Sprint: Effekt-Logik in IReputationTierEffects extrahiert.
+            _reputationTierEffects?.HandleTierChanged(
+                e,
+                floatingTextRaiser: (text, kind) => FloatingTextRequested?.Invoke(text, kind),
+                celebrationRaiser: () => CelebrationRequested?.Invoke(),
+                achievementDialog: (name, desc) =>
                 {
-                    Models.Enums.CustomerReputationTier.CityKnown => "RepTierCityKnownEffects",
-                    Models.Enums.CustomerReputationTier.RegionStar => "RepTierRegionStarEffects",
-                    Models.Enums.CustomerReputationTier.IndustryLegend => "RepTierIndustryLegendEffects",
-                    _ => null
-                };
-                if (!string.IsNullOrEmpty(effectsKey))
-                {
-                    var effectsText = _localizationService.GetString(effectsKey);
-                    if (!string.IsNullOrEmpty(effectsText))
-                    {
-                        DialogVM.AchievementName = string.Format(format, tierName);
-                        DialogVM.AchievementDescription = effectsText;
-                        DialogVM.IsAchievementDialogVisible = true;
-                    }
-                }
-            }
+                    DialogVM.AchievementName = name;
+                    DialogVM.AchievementDescription = desc;
+                    DialogVM.IsAchievementDialogVisible = true;
+                });
         });
     }
 
@@ -2381,7 +2444,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
 
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
         _prestigeService.MilestoneReached -= OnPrestigeMilestoneReached;
-        _prestigeService.CinematicReady -= OnPrestigeCinematicReady;
+        // AAA-Audit P0 Zerlegungs-Sprint: Cinematic-Subscription via Coordinator
+        if (_cinematicCoordinator != null)
+            _cinematicCoordinator.CinematicReady -= OnCinematicReadyFromCoordinator;
+        else
+            _prestigeService.CinematicReady -= OnPrestigeCinematicReady;
         if (_rebirthService != null)
             _rebirthService.RebirthCompleted -= OnRebirthCompleted;
         _workerService.WorkerLevelUp -= OnWorkerLevelUp;

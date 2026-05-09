@@ -24,9 +24,16 @@ public sealed class AndroidNotificationService : INotificationService
     internal const int RushAvailableId = 1003;
     internal const int DailyRewardId = 1004;
 
+    // AAA-Audit P1: 4 zusaetzliche Trigger fuer Re-Engagement (Top-2 nach FTUE).
+    internal const int WorkerMoodCriticalId = 1005;     // Worker-Stimmung < 25
+    internal const int OfflineEarningsCappedId = 1006;  // Offline-Cap erreicht (4h)
+    internal const int BattlePassExpiringId = 1007;     // Saison endet in 3 Tagen
+    internal const int LiveOrderAvailableId = 1008;     // Live-Auftrag verfuegbar (1h nach App-Close)
+
     // Alle bekannten Notification-IDs für Iteration
     internal static readonly int[] AllNotificationIds =
-        [ResearchCompleteId, DeliveryReminderId, RushAvailableId, DailyRewardId];
+        [ResearchCompleteId, DeliveryReminderId, RushAvailableId, DailyRewardId,
+         WorkerMoodCriticalId, OfflineEarningsCappedId, BattlePassExpiringId, LiveOrderAvailableId];
 
     public AndroidNotificationService(Context context)
     {
@@ -86,6 +93,35 @@ public sealed class AndroidNotificationService : INotificationService
         if (rushTime <= rushNow) rushTime = rushTime.AddDays(1);
         var rushDelay = rushTime - rushNow;
         ScheduleNotification(RushAvailableId, "RushAvailableNotif", (long)rushDelay.TotalMilliseconds);
+
+        // ────────── AAA-Audit P1: 4 neue Re-Engagement-Trigger ──────────
+
+        // 5. Worker-Mood-Critical: Trigger 30min nach App-Close, wenn ein Worker Mood < 25 hatte.
+        var anyLowMood = state.Workshops?.Any(ws => ws.Workers.Any(w => w.Mood < 25)) ?? false;
+        if (anyLowMood)
+        {
+            ScheduleNotification(WorkerMoodCriticalId, "WorkerMoodCriticalNotif", 30 * 60 * 1000);
+        }
+
+        // 6. Offline-Earnings-Capped: 4h nach App-Close (Spieler verpasst Geld nach Cap).
+        ScheduleNotification(OfflineEarningsCappedId, "OfflineEarningsCappedNotif", 4 * 60 * 60 * 1000);
+
+        // 7. BattlePass-Saison endet in 3 Tagen — schaut der Spieler dann nochmal rein.
+        var bp = state.BattlePass;
+        if (bp != null && bp.DaysRemaining is > 0 and <= 5)
+        {
+            // 3 Tage vor Saison-Ende
+            var daysToReminder = Math.Max(0, bp.DaysRemaining - 3);
+            ScheduleNotification(BattlePassExpiringId, "BattlePassExpiringNotif",
+                daysToReminder * 24L * 60 * 60 * 1000);
+        }
+
+        // 8. Live-Auftrag wartet (1h nach App-Close) — wenn der Spieler aktiv genug ist
+        //    (mind. Workshop-Lv 25 erreicht), spawnen Live-Orders, die schnell ablaufen.
+        if (state.Workshops?.Any(ws => ws.Level >= 25) ?? false)
+        {
+            ScheduleNotification(LiveOrderAvailableId, "LiveOrderAvailableNotif", 60 * 60 * 1000);
+        }
     }
 
     public void CancelAllNotifications()

@@ -100,10 +100,20 @@ public sealed class GameFloatingTextSystem : IDisposable
     }
 
     /// <summary>
+    /// v2.0.46 — Accessibility: HighContrast verstärkt die Outline auf 2× Stroke-Width
+    /// damit Floating-Texte (Score-Popups, Combo) auf bunten Hintergründen lesbar bleiben.
+    /// </summary>
+    public bool HighContrast { get; set; }
+
+    /// <summary>
     /// Texte im Canvas rendern (mit Viewport-Transformation)
     /// </summary>
     public void Render(SKCanvas canvas, float scale, float offsetX, float offsetY)
     {
+        // HighContrast verstärkt die Outline (Default ~3px → 6px für besseren Kontrast)
+        float originalStroke = _outlinePaint.StrokeWidth;
+        if (HighContrast)
+            _outlinePaint.StrokeWidth = originalStroke * 2f;
         for (int i = 0; i < _activeCount; i++)
         {
             ref var entry = ref _entries[i];
@@ -126,6 +136,10 @@ public sealed class GameFloatingTextSystem : IDisposable
             _textPaint.Color = entry.Color.WithAlpha(alpha);
             canvas.DrawText(entry.Text, screenX, screenY, SKTextAlign.Center, _font, _textPaint);
         }
+
+        // Stroke-Width zurücksetzen (Paint wird über Frames hinweg wiederverwendet)
+        if (HighContrast)
+            _outlinePaint.StrokeWidth = originalStroke;
     }
 
     public void Clear()

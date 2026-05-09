@@ -1,0 +1,5 @@
+=== SFX-Pack (67 Files) ===
+  sfx_ui_hover.ogg
+  sfx_ui_swipe.ogg
+  sfx_ui_modal_open.ogg
+  sfx_ui_modal_close.ogg

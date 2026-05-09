@@ -23,7 +23,12 @@ public sealed class BearerAuthMiddleware
         ApiRoutes.PairComplete,
         ApiRoutes.PairCancel,   // Ohne PublicPath: Cancel-Button war auth-required → 401, User konnte
                                  // laufendes Pairing nur per Lifetime-Ablauf (5 min) loswerden.
-        ApiRoutes.AuthRefresh
+        ApiRoutes.AuthRefresh,
+        // Phase 18 / G4 + H6 — Metrics-Endpoints fuer Prometheus-Scrape + Grafana-JSON-API.
+        // Pi-Server steht hinter Tailscale/LAN — Auth waere fuer Scraper aufwendig + bringt
+        // wenig Sicherheitsgewinn (Metriken enthalten keine API-Keys, nur Counter/Gauges).
+        ApiRoutes.MetricsInternal,
+        "/metrics"
     };
 
     public BearerAuthMiddleware(RequestDelegate next, AuthTokenStore tokens, ILogger<BearerAuthMiddleware> logger)

@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.ViewModels;
+using HandwerkerImperium.ViewModels.Guild;
 using Avalonia.Labs.Controls;
 using SkiaSharp;
 
@@ -97,7 +98,17 @@ public partial class GuildResearchView : UserControl
             _guildVm = null;
         }
 
-        if (DataContext is GuildViewModel vm)
+        // Bug-Fix: ViewLocator setzt DataContext auf GuildResearchViewModel (Thin-Wrapper),
+        // nicht direkt auf GuildViewModel. Wir muessen ueber die .Guild-Property auflosen.
+        // Vorher: `DataContext is GuildViewModel vm` -> immer false -> kein Render.
+        GuildViewModel? vm = DataContext switch
+        {
+            GuildResearchViewModel wrapper => wrapper.Guild,
+            GuildViewModel direct => direct,
+            _ => null
+        };
+
+        if (vm != null)
         {
             _guildVm = vm;
             _guildVm.PropertyChanged += OnGuildVmPropertyChanged;

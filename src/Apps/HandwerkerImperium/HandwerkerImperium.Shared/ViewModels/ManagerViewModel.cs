@@ -67,11 +67,14 @@ public sealed partial class ManagerViewModel : ViewModelBase, INavigable, IDispo
         }
         if (def == null) return;
 
-        string name = _localizationService.GetString($"Manager_{managerId}") ?? def.Id;
+        // Bug-Fix: Vorher wurde "Manager_{managerId}" gebaut → "Manager_mgr_erfinder"
+        // (doppeltes Manager-Prefix, Key existierte nicht in RESX, LocalizationService gab den
+        // Lookup-Key selbst zurueck). GetDisplayName loest RESX → Default-Name → Id auf.
+        string name = def.GetDisplayName(_localizationService);
         _dialogService.ShowAlertDialog(
-            _localizationService.GetString("ManagerUnlocked") ?? "Neuer Vorarbeiter!",
-            string.Format(_localizationService.GetString("ManagerUnlockedFormat") ?? "{0} ist jetzt verfügbar!", name),
-            _localizationService.GetString("Great") ?? "Super!");
+            _localizationService.GetString("ManagerUnlocked") ?? "New Foreman!",
+            string.Format(_localizationService.GetString("ManagerUnlockedFormat") ?? "{0} is now available!", name),
+            _localizationService.GetString("Great") ?? "Great!");
 
         RefreshManagers();
     }
@@ -125,7 +128,7 @@ public sealed partial class ManagerViewModel : ViewModelBase, INavigable, IDispo
             // Workshop-Name bestimmen
             string workshopName = def.Workshop.HasValue
                 ? _localizationService.GetString(def.Workshop.Value.GetLocalizationKey())
-                : _localizationService.GetString("AllWorkshops") ?? "Alle";
+                : _localizationService.GetString("AllWorkshops") ?? "All";
 
             // Fähigkeits-Name lokalisieren
             string abilityName = GetAbilityName(def.Ability);
@@ -160,7 +163,7 @@ public sealed partial class ManagerViewModel : ViewModelBase, INavigable, IDispo
     /// </summary>
     public void UpdateLocalizedTexts()
     {
-        Title = _localizationService.GetString("Managers") ?? "Vorarbeiter";
+        Title = _localizationService.GetString("Managers") ?? "Foremen";
         RefreshManagers();
     }
 
@@ -170,11 +173,11 @@ public sealed partial class ManagerViewModel : ViewModelBase, INavigable, IDispo
 
     private string GetAbilityName(ManagerAbility ability) => ability switch
     {
-        ManagerAbility.AutoCollectOrders => _localizationService.GetString("AbilityAutoCollect") ?? "Auto-Aufträge",
-        ManagerAbility.EfficiencyBoost => _localizationService.GetString("AbilityEfficiency") ?? "Effizienz",
-        ManagerAbility.FatigueReduction => _localizationService.GetString("AbilityFatigue") ?? "Ermüdung",
-        ManagerAbility.MoodBoost => _localizationService.GetString("AbilityMood") ?? "Stimmung",
-        ManagerAbility.IncomeBoost => _localizationService.GetString("AbilityIncome") ?? "Einkommen",
+        ManagerAbility.AutoCollectOrders => _localizationService.GetString("AbilityAutoCollect") ?? "Auto-Collect",
+        ManagerAbility.EfficiencyBoost => _localizationService.GetString("AbilityEfficiency") ?? "Efficiency",
+        ManagerAbility.FatigueReduction => _localizationService.GetString("AbilityFatigue") ?? "Fatigue",
+        ManagerAbility.MoodBoost => _localizationService.GetString("AbilityMood") ?? "Mood",
+        ManagerAbility.IncomeBoost => _localizationService.GetString("AbilityIncome") ?? "Income",
         ManagerAbility.TrainingSpeedUp => _localizationService.GetString("AbilityTraining") ?? "Training",
         _ => ability.ToString()
     };

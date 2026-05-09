@@ -27,7 +27,44 @@ public record ManagerDefinition(
     int RequiredLevel,
     int RequiredPrestige,
     int RequiredPerfectRatings
-);
+)
+{
+    /// <summary>
+    /// Anzeigename mit Fallback. Eigennamen wie "Hans", "Fritz" sind sprach-unabhängig,
+    /// "Erfinder" / "Schmied" sind beschreibende Rollen — werden via RESX uebersetzt
+    /// wenn der Key existiert, sonst fallback auf den deutschen Default-Namen.
+    /// </summary>
+    public string GetDisplayName(MeineApps.Core.Ava.Localization.ILocalizationService? loc)
+    {
+        // RESX-Lookup zuerst (z.B. "ManagerErfinder" -> "Inventor" auf Englisch)
+        if (loc != null)
+        {
+            var localized = loc.GetString(NameKey);
+            if (!string.IsNullOrEmpty(localized) && localized != NameKey)
+                return localized;
+        }
+        // Default-Fallback aus Eigennamen-Tabelle
+        return DefaultNames.TryGetValue(Id, out var name) ? name : Id;
+    }
+
+    private static readonly System.Collections.Generic.Dictionary<string, string> DefaultNames = new()
+    {
+        ["mgr_hans"] = "Hans",
+        ["mgr_fritz"] = "Fritz",
+        ["mgr_kurt"] = "Kurt",
+        ["mgr_lisa"] = "Lisa",
+        ["mgr_karl"] = "Karl",
+        ["mgr_otto"] = "Otto",
+        ["mgr_anna"] = "Anna",
+        ["mgr_max"] = "Max",
+        ["mgr_schmied"] = "Schmied",
+        ["mgr_erfinder"] = "Erfinder",
+        ["mgr_schmidt"] = "Schmidt",
+        ["mgr_weber"] = "Weber",
+        ["mgr_mueller"] = "Müller",
+        ["mgr_kaiser"] = "Kaiser",
+    };
+}
 
 /// <summary>
 /// Ein freigeschalteter Manager mit Level.

@@ -13,8 +13,9 @@ public static class LevelThresholds
     /// <summary>BannerStrip (Events/Boosts) im Dashboard anzeigen.</summary>
     public const int BannerStrip = 3;
 
-    /// <summary>QuickJobs-Tab im Dashboard freischalten.</summary>
-    public const int QuickJobs = 5;
+    /// <summary>QuickJobs-Tab im Dashboard freischalten.
+    /// Ab v2.0.36: 5 → 2, damit neue Spieler innerhalb 90 Sekunden ihr erstes MiniGame spielen koennen.</summary>
+    public const int QuickJobs = 2;
 
     /// <summary>Crafting + Forschung im Imperium-Tab anzeigen.</summary>
     public const int CraftingResearch = 8;
@@ -52,8 +53,8 @@ public static class LevelThresholds
     /// <summary>Hint: Arbeiter einstellen.</summary>
     public const int HintWorkerUnlock = 3;
 
-    /// <summary>Hint: QuickJobs verfügbar.</summary>
-    public const int HintQuickJobs = 5;
+    /// <summary>Hint: QuickJobs verfügbar. Muss identisch zu <see cref="QuickJobs"/> bleiben.</summary>
+    public const int HintQuickJobs = 2; // v2.0.36 Konsistenz-Fix: 5 → 2 (synchron mit QuickJobs)
 
     /// <summary>Hint: Crafting verfügbar.</summary>
     public const int HintCrafting = 8;

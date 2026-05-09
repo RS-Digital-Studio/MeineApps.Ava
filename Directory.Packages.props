@@ -21,6 +21,13 @@
     <PackageVersion Include="Material.Icons.Avalonia" Version="3.0.0" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- AUDIO (Desktop-Wiedergabe — Windows nutzt NAudio, Linux/macOS    -->
+    <!-- spawnen ffplay als Fallback)                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="NAudio" Version="2.2.1" />
+    <PackageVersion Include="NAudio.Vorbis" Version="1.5.0" />
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- MVVM & BEHAVIORS                                                 -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />

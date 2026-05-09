@@ -11,6 +11,14 @@
     <PackageReference Include="Avalonia.Desktop" />
   </ItemGroup>
 
+  <!-- Cross-Platform-Audio: NAudio + NAudio.Vorbis fuer OGG-Wiedergabe auf Desktop.       -->
+  <!-- NAudio ist Windows-only zur Laufzeit, das Linken auf Linux/macOS schadet aber nicht  -->
+  <!-- (DesktopAudioService prueft OperatingSystem.IsWindows() vor jedem WaveOut-Aufruf).  -->
+  <ItemGroup>
+    <PackageReference Include="NAudio" />
+    <PackageReference Include="NAudio.Vorbis" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\HandwerkerImperium.Shared\HandwerkerImperium.Shared.csproj" />
   </ItemGroup>

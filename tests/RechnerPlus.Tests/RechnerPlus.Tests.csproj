@@ -15,8 +15,10 @@
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="coverlet.collector" />
-    <!-- Avalonia Headless für Tests - benötigt weil RechnerPlus.Shared auf Avalonia.Core verweist -->
-    <PackageReference Include="Avalonia.Headless.XUnit" />
+    <!-- Avalonia Headless-Stub fuer Test-Builds (kein UI, nur Avalonia-Refs).
+         Nicht Avalonia.Headless.XUnit — das zieht xunit.v3 als transitive Dependency und
+         kollidiert mit unserem xunit 2.x. Fuer echte Headless-UI-Tests siehe HandwerkerImperium.Tests. -->
+    <PackageReference Include="Avalonia.Headless" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Apps\RechnerPlus\RechnerPlus.Shared\RechnerPlus.Shared.csproj" />

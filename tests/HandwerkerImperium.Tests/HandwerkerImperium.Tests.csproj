@@ -13,10 +13,11 @@
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="coverlet.collector" />
-    <!-- P0.1 Layer 3 AAA-Audit: Avalonia.Headless fuer UI-Critical-Path-Tests -->
+    <!-- Avalonia-Headless-Stub fuer Test-Build (kein UI). Avalonia.Headless.XUnit zieht
+         xunit.v3 transitiv → kollidiert mit unserem xunit 2.x. Wenn echte UI-Tests gebraucht
+         werden, in eigenes xunit.v3-Test-Projekt extrahieren. -->
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Headless" />
-    <PackageReference Include="Avalonia.Headless.XUnit" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
   </ItemGroup>
   <ItemGroup>

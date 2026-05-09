@@ -115,7 +115,7 @@ public static class ContextualHints
         Position = HintPosition.Below
     };
 
-    // Quick Jobs (Level 10 oder erster QuickJobs-Tab-Besuch)
+    // Quick Jobs (Level 2 oder erster QuickJobs-Tab-Besuch — ab v2.0.36)
     public static readonly ContextualHint QuickJobs = new()
     {
         Id = "quick_jobs", TitleKey = "HintQuickJobsTitle", TextKey = "HintQuickJobsText",
@@ -225,5 +225,14 @@ public static class ContextualHints
     {
         Id = "reputation_hint", TitleKey = "HintReputationTitle", TextKey = "HintReputationText",
         Position = HintPosition.Below, IsDialog = true
+    };
+
+    // U10 (v2.0.39 Audit-Fix): Long-Press auf Workshop-Karte fuer Bulk-Upgrade.
+    // Triggert nach dem 2. erfolgreichen Workshop-Upgrade — der Spieler kennt das normale Tap,
+    // jetzt ist der Discoverability-Moment fuer "Halten = x10/x100".
+    public static readonly ContextualHint LongPressBulk = new()
+    {
+        Id = "long_press_bulk", TitleKey = "HintLongPressBulkTitle", TextKey = "HintLongPressBulkText",
+        Position = HintPosition.Below
     };
 }

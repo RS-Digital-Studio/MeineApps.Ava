@@ -30,4 +30,21 @@ public class AutomationSettings
     /// </summary>
     [JsonPropertyName("autoClaimDaily")]
     public bool AutoClaimDaily { get; set; }
+
+    /// <summary>
+    /// v2.0.36: Wenn aktiv, werden NUR Standard-Auftraege automatisch akzeptiert.
+    /// Live-/Premium-Auftraege bleiben fuer manuelle Annahme liegen.
+    /// Default: true (sicherer Default fuer bestehende Spieler — verhindert dass
+    /// AutoAccept versehentlich VIP-Auftraege „verbrennt").
+    /// </summary>
+    [JsonPropertyName("autoAcceptOnlyStandard")]
+    public bool AutoAcceptOnlyStandard { get; set; } = true;
+
+    /// <summary>
+    /// v2.0.36: Wenn aktiv, ueberspringt MiniGame-Auto-Complete Live-/Premium-Auftraege.
+    /// Sodass diese manuell gespielt werden — Strategie + Risk/Reward bleiben relevant.
+    /// Default: true.
+    /// </summary>
+    [JsonPropertyName("autoCompleteSkipLiveOrders")]
+    public bool AutoCompleteSkipLiveOrders { get; set; } = true;
 }

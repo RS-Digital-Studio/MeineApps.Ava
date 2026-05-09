@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using HandwerkerImperium.Models.Enums;
 
 namespace HandwerkerImperium.Models;
 
@@ -49,6 +50,31 @@ public class CustomerReputation
         < 90 => "ReputationExcellent",
         _ => "ReputationLegendary"
     };
+
+    /// <summary>
+    /// v2.0.37 Audit-Fix L5: Letzter berechneter Tier-Stand. Persistiert damit Hysterese
+    /// ueber App-Restarts hinweg konsistent bleibt. Default Beginner — wird beim ersten
+    /// <see cref="RecomputeTier"/>-Call auf den korrekten Tier gesetzt.
+    /// </summary>
+    [JsonPropertyName("currentTier")]
+    public CustomerReputationTier CurrentTier { get; set; } = CustomerReputationTier.Beginner;
+
+    /// <summary>
+    /// v2.0.37 Audit-Fix L5: Berechnet den Tier mit Hysterese und aktualisiert
+    /// <see cref="CurrentTier"/> bei Aenderung. Liefert true wenn ein Tier-Wechsel
+    /// stattgefunden hat (Caller kann TierChanged-Event ausloesen).
+    /// </summary>
+    public bool RecomputeTier(out CustomerReputationTier oldTier)
+    {
+        oldTier = CurrentTier;
+        var newTier = CustomerReputationTierExtensions.FromScoreWithHysteresis(ReputationScore, CurrentTier);
+        if (newTier != oldTier)
+        {
+            CurrentTier = newTier;
+            return true;
+        }
+        return false;
+    }
 
     /// <summary>
     /// Adds a rating (1-5 stars) from a completed order.

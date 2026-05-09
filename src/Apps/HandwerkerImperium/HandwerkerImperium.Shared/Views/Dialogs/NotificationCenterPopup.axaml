@@ -1,0 +1,161 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Dialogs.NotificationCenterPopup"
+             x:DataType="vm:NotificationCenterViewModel"
+             x:CompileBindings="True">
+
+  <UserControl.Styles>
+    <!-- Pulse fuer ungesehene Story-Items -->
+    <Style Selector="Border.UnseenPulse">
+      <Style.Animations>
+        <Animation Duration="0:0:1.6" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.85"/></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1.0"/></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.85"/></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Popup-Overlay (Backdrop + Card oben rechts) -->
+  <Border Background="{StaticResource DialogOverlayBrush}"
+          IsVisible="{Binding IsPopupVisible}"
+          PointerPressed="OnOverlayPressed"
+          AutomationProperties.AutomationId="Notification_Overlay">
+
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16"
+            Padding="0"
+            MaxWidth="380"
+            MaxHeight="540"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Margin="12,72,12,0"
+            BoxShadow="0 8 24 0 #50000000"
+            PointerPressed="OnContentPressed"
+            AutomationProperties.AutomationId="Notification_Card">
+
+      <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceVariantBrush}"
+                CornerRadius="16,16,0,0"
+                Padding="16,12">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <icons:GameIcon Grid.Column="0"
+                            Kind="Bell"
+                            Width="22" Height="22"
+                            Foreground="{StaticResource CraftGoldBrush}"
+                            VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1"
+                       Text="{loc:Translate NotificationCenterTitle}"
+                       FontSize="16" FontWeight="Bold"
+                       Margin="10,0,0,0"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource OnSurfaceBrush}" />
+            <Button Grid.Column="2"
+                    Classes="Text"
+                    MinWidth="44" MinHeight="44"
+                    Padding="6"
+                    Command="{Binding ClosePopupCommand}"
+                    AutomationProperties.AutomationId="Notification_Btn_Close">
+              <icons:GameIcon Kind="Close" Width="18" Height="18"
+                              Foreground="{DynamicResource OnSurfaceBrush}" />
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- Liste -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      MinHeight="100"
+                      MaxHeight="400">
+          <StackPanel Spacing="0">
+            <!-- Empty-State -->
+            <TextBlock Text="{loc:Translate NotificationCenterEmpty}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       Padding="20,32"
+                       HorizontalAlignment="Center"
+                       IsVisible="{Binding IsEmpty}"
+                       AutomationProperties.AutomationId="Notification_Txt_Empty" />
+
+            <!-- Items -->
+            <ItemsControl ItemsSource="{Binding DisplayItems}"
+                          IsVisible="{Binding HasItems}"
+                          AutomationProperties.AutomationId="Notification_List">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:NotificationDisplayItem">
+                  <Border Padding="14,12"
+                          BorderThickness="0,0,0,1"
+                          BorderBrush="{DynamicResource OutlineBrush}"
+                          MinHeight="64"
+                          AutomationProperties.AutomationId="Notification_Item">
+                    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="*">
+                      <!-- Icon mit Pulse-Akzent fuer neue Story-Kapitel -->
+                      <Border Grid.Column="0"
+                              Width="44" Height="44"
+                              CornerRadius="22"
+                              Background="{StaticResource CraftPrimaryLightBrush}"
+                              VerticalAlignment="Center"
+                              Classes.UnseenPulse="{Binding ShowPulse}">
+                        <icons:GameIcon Kind="{Binding Icon}"
+                                        Width="22" Height="22"
+                                        Foreground="{StaticResource CraftDarkBrownBrush}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                      </Border>
+
+                      <StackPanel Grid.Column="1" Margin="12,0,8,0"
+                                  VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding Title}"
+                                   FontSize="14" FontWeight="Bold"
+                                   Foreground="{DynamicResource OnSurfaceBrush}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Body}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   MaxLines="2"
+                                   TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+
+                      <Button Grid.Column="2"
+                              Classes="Primary"
+                              MinHeight="44"
+                              Padding="12,6"
+                              VerticalAlignment="Center"
+                              Content="{loc:Translate NotificationActionOpen}"
+                              Command="{Binding $parent[ItemsControl].((vm:NotificationCenterViewModel)DataContext).ActivateItemCommand}"
+                              CommandParameter="{Binding}"
+                              AutomationProperties.AutomationId="Notification_Btn_Activate" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer mit "Alle erledigen" -->
+        <Border Grid.Row="2"
+                Padding="14,10"
+                Background="{DynamicResource SurfaceVariantBrush}"
+                CornerRadius="0,0,16,16"
+                IsVisible="{Binding HasItems}">
+          <Button Classes="Text"
+                  Content="{loc:Translate NotificationDismissAll}"
+                  Command="{Binding DismissAllCommand}"
+                  HorizontalAlignment="Right"
+                  MinHeight="44"
+                  Padding="10,6"
+                  AutomationProperties.AutomationId="Notification_Btn_DismissAll" />
+        </Border>
+      </Grid>
+    </Border>
+  </Border>
+</UserControl>

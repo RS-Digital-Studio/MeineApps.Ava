@@ -64,4 +64,37 @@ public static class AsyncExtensions
     {
         task.AsTask().FireAndForget(onError);
     }
+
+    /// <summary>
+    /// Wrapper für async void Event-Handler (v2.0.36). Fängt ALLE Exceptions zentral —
+    /// ein unbehandelter Throw in einem async void Handler würde sonst den Prozess zerreißen
+    /// (siehe <see cref="HandwerkerImperium.ViewModels.MiniGames.BaseMiniGameViewModel"/>
+    /// HandleTimerTick als Vorbild, dort wurde das Pattern in Phase 1 etabliert).
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// private async void OnSomeEvent(object? sender, EventArgs e)
+    ///     => await AsyncExtensions.RunHandlerSafely(async () =>
+    ///        {
+    ///            await DoWorkAsync();
+    ///        });
+    /// </code>
+    /// </example>
+    /// <param name="action">Der eigentliche Handler-Body als Task-Producer.</param>
+    /// <param name="caller">Wird automatisch vom Compiler gesetzt (CallerMemberName).</param>
+    public static async Task RunHandlerSafely(Func<Task> action, [CallerMemberName] string? caller = null)
+    {
+        try
+        {
+            await action().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            var msg = $"Event-Handler Fehler in {caller}: {ex.Message}";
+            if (Logger != null)
+                Logger.Error(msg, ex);
+            else
+                System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {msg}");
+        }
+    }
 }

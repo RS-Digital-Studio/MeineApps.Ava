@@ -411,6 +411,13 @@
           </StackPanel>
         </Border>
 
+        <!-- AAA-Audit P1: Cross-Promotion zwischen den 11 eigenen Apps. -->
+        <!-- Tagesrotation; eine Karte pro Tag aus dem CrossPromoService.            -->
+        <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_CrossPromoCard">
+          <ContentControl Content="{Binding CrossPromoVM}" />
+        </Border>
+
         <!-- DATA (Danger Zone) -->
         <Border Classes="SettingsCard"
                 AutomationProperties.AutomationId="Settings_Border_DataCard"

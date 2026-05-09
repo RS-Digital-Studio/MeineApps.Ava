@@ -139,6 +139,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     private bool _isInitializing;
     private bool _isBusy;
 
+    /// <summary>AAA-Audit P1: Cross-Promotion-Karte (House-Ad zwischen den 11 eigenen Apps).</summary>
+    public CrossPromoViewModel CrossPromoVM { get; }
+
     public SettingsViewModel(
         IAudioService audioService,
         ILocalizationService localizationService,
@@ -148,6 +151,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         IPlayGamesService playGamesService,
         IContextualHintService contextualHintService,
         IDialogService dialogService,
+        CrossPromoViewModel crossPromoVm,
         IAnalyticsService? analyticsService = null,
         ICloudSaveService? cloudSaveService = null)
     {
@@ -161,6 +165,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
         _dialogService = dialogService;
         _analyticsService = analyticsService;
         _cloudSaveService = cloudSaveService;
+        CrossPromoVM = crossPromoVm;
 
         // Grafik-Qualitäts-Optionen lokalisiert befüllen
         GraphicsQualities.Add(new(localizationService.GetString("GraphicsLow") ?? "Low", GraphicsQuality.Low));

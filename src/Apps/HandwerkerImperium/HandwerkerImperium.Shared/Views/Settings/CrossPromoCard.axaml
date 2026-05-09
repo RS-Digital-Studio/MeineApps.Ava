@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:icons="using:HandwerkerImperium.Icons"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Settings.CrossPromoCard"
+             x:DataType="vm:CrossPromoViewModel"
+             x:CompileBindings="True">
+
+  <!-- AAA-Audit P1: House-Ad-Karte fuer Cross-Promotion zwischen den 11 eigenen Apps. -->
+  <!-- Tages-Rotation, klickbar, Play-Store-Deep-Link. Keine externe Abhaengigkeit.   -->
+  <StackPanel Spacing="8">
+    <TextBlock Text="{loc:Translate CrossPromoSectionTitle}"
+               FontSize="14" FontWeight="Bold"
+               Foreground="{DynamicResource TextSecondaryBrush}" />
+
+    <ItemsControl ItemsSource="{Binding Items}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:CrossPromoCardItem">
+          <Button Classes="Text"
+                  Command="{Binding $parent[ItemsControl].((vm:CrossPromoViewModel)DataContext).OpenStoreCommand}"
+                  CommandParameter="{Binding .}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  MinHeight="64" Padding="0"
+                  Margin="0,0,0,8">
+            <Border Classes="Card"
+                    Background="{DynamicResource SurfaceBrush}"
+                    Padding="12">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                <!-- Icon mit App-Akzent-Farbe -->
+                <Border Grid.Column="0"
+                        Width="48" Height="48"
+                        CornerRadius="10"
+                        Background="{Binding AccentColor, Converter={StaticResource ColorBrushConverter}}"
+                        VerticalAlignment="Center">
+                  <icons:GameIcon Kind="{Binding IconKind, Converter={StaticResource IconKindConverter}}"
+                                  Width="28" Height="28"
+                                  Foreground="{DynamicResource PrimaryContrastBrush}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                </Border>
+
+                <!-- Name + Hook -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                  <TextBlock Text="{Binding Name}"
+                             FontSize="14" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{Binding Hook}"
+                             FontSize="12" Opacity="0.85"
+                             TextWrapping="Wrap" MaxLines="2"
+                             TextTrimming="CharacterEllipsis"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+
+                <!-- Open-Indicator (zeigt: tap to open) -->
+                <icons:GameIcon Grid.Column="2"
+                                Kind="ChevronRight"
+                                Width="20" Height="20"
+                                VerticalAlignment="Center"
+                                Foreground="{DynamicResource TextSecondaryBrush}" />
+              </Grid>
+            </Border>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

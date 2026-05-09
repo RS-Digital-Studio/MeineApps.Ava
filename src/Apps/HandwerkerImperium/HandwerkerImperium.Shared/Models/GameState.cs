@@ -673,6 +673,19 @@ public class GameState
     public List<Friend> Friends { get; set; } = [];
 
     /// <summary>
+    /// AAA-Audit P1: Referral-Tracking (Friend-Invite Reward-Loop).
+    /// Default-Init reicht — keine Migration noetig, weil Sub-Objekt bei aelteren Saves frisch erzeugt wird.
+    /// </summary>
+    [JsonPropertyName("referral")]
+    public ReferralProgress Referral { get; set; } = new();
+
+    /// <summary>
+    /// AAA-Audit P1: Aktuelles Live-Event (RemoteConfig-getrieben). Null wenn kein Event aktiv.
+    /// </summary>
+    [JsonPropertyName("liveEvent")]
+    public LiveEvent? LiveEvent { get; set; }
+
+    /// <summary>
     /// Letztes Datum an dem ein Geschenk an einen echten Freund gesendet wurde (1x/Tag).
     /// </summary>
     [JsonPropertyName("lastGiftSentDate")]

@@ -343,6 +343,14 @@ public partial class App : Application
         // AAA-Audit P0: FTUE-Service-Skelett (10-Step-Tutorial). UI-Spotlight-Overlay
         // wird in einem Folge-Sprint implementiert — Foundation hier ist build-fest.
         services.AddSingleton<IFtueService, FtueService>();
+
+        // AAA-Audit P1: Friend-Invite Reward-Loop (K-Factor-Driver, ~30% Free-Installs bei
+        // Voodoo / Lion). Server-Endpoint fuer Anti-Cheat ist Folge-Sprint.
+        services.AddSingleton<IReferralService, ReferralService>();
+
+        // AAA-Audit P1: Limited-Time-Events (FOMO + Re-Engagement). 4 Templates:
+        // DoubleReward, BossRush, CoopMarathon, MiniGameMastery.
+        services.AddSingleton<ILiveEventService, LiveEventService>();
         // P1.3 AAA-Audit: Daily-Bundle-Foundation (UI-Wiring kommt in spaeterem Sprint)
         services.AddSingleton<IDailyBundleService, DailyBundleService>();
 

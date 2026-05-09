@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AAA-Audit P2: Coverage-Reporting fuer HandwerkerImperium-Tests.
+  Sammelt nur den HandwerkerImperium-Domain-Layer; Avalonia/Skia/View-Code
+  ist UI-Layer, dort macht Test-Coverage wenig Sinn.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura,opencover</Format>
+          <Exclude>[Avalonia.*]*,[*Tests]*,[*]*.MainView,[*]*.Views.*,[*]*.Graphics.*,[SkiaSharp.*]*</Exclude>
+          <ExcludeByAttribute>Obsolete,GeneratedCode,CompilerGenerated</ExcludeByAttribute>
+          <ExcludeByFile>**/obj/**,**/bin/**,**/*.g.cs,**/*.Designer.cs</ExcludeByFile>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>true</UseSourceLink>
+          <DeterministicReport>true</DeterministicReport>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

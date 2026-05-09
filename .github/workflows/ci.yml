@@ -83,7 +83,38 @@ jobs:
           dotnet test tests/HandwerkerImperium.Tests/HandwerkerImperium.Tests.csproj \
             -c Release --no-build --logger trx --logger "console;verbosity=normal" \
             --collect:"XPlat Code Coverage" \
+            --settings tests/HandwerkerImperium.Tests/coverlet.runsettings \
             --results-directory ./TestResults
+
+      # AAA-Audit P2: ReportGenerator + Coverage-Schwelle 60% auf Domain-Layer.
+      # Audit-Ziel war 80% — wir starten bei 60%, ziehen schrittweise hoch.
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Coverage-Report generieren
+        run: |
+          reportgenerator \
+            -reports:'TestResults/**/coverage.cobertura.xml' \
+            -targetdir:'TestResults/coverage-report' \
+            -reporttypes:'Html;Cobertura;TextSummary;MarkdownSummaryGithub'
+          cat TestResults/coverage-report/Summary.txt || true
+
+      - name: Coverage-Schwelle (Soft-Gate, derzeit nur Warnung)
+        run: |
+          # Extrahiert die Line-Coverage und vergleicht mit Schwelle 60.
+          LINE_COV=$(grep -oP 'Line coverage:\s*\K[0-9.]+' TestResults/coverage-report/Summary.txt | head -1)
+          echo "Line-Coverage: ${LINE_COV}%"
+          THRESHOLD=60
+          if (( $(echo "${LINE_COV} < ${THRESHOLD}" | bc -l) )); then
+            echo "::warning::Coverage ${LINE_COV}% unter ${THRESHOLD}% Schwelle"
+          fi
+
+      - name: PR-Coverage-Comment
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -f TestResults/coverage-report/SummaryGithub.md ]; then
+            cat TestResults/coverage-report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Test-Results Artefakt
         if: always()

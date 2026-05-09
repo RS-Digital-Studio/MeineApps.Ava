@@ -32,6 +32,17 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     private readonly IStarterPackService _starterPackService;
     private readonly IPreferencesService _preferencesService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IEventService _eventService;
+    // Dashboard-Aggregation (v2.0.43): die HEUTE-/KARRIERE-Cards lesen direkt aus diesen
+    // Services. DailyHubViewModel ist abgeschafft — alle Werte werden hier zusammengefuehrt.
+    private readonly ILuckySpinService _luckySpinService;
+    private readonly IRotatingDealsService _rotatingDealsService;
+    private readonly IBossRushService _bossRushService;
+    private readonly ICustomizationService _customizationService;
+    private readonly IMasterModeService _masterModeService;
+    private readonly IAchievementService _achievementService;
+    private readonly ICollectionService _collectionService;
+    private readonly ICardService _cardService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -72,6 +83,37 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
 
     [ObservableProperty]
     private string _gemsText = "0";
+
+    /// <summary>v2.0.46 — Easing-Pop bei Currency-Increment (Quick-Win Audit Sektion 3.3)</summary>
+    [ObservableProperty]
+    private bool _isCoinsPulse;
+
+    [ObservableProperty]
+    private bool _isGemsPulse;
+
+    partial void OnCoinsTextChanged(string value) => TriggerCoinsPulse();
+    partial void OnGemsTextChanged(string value) => TriggerGemsPulse();
+
+    private void TriggerCoinsPulse()
+    {
+        IsCoinsPulse = true;
+        // Auto-Reset nach 250ms damit der Pulse ein 1-Shot-Trigger ist
+        _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            await Task.Delay(280);
+            IsCoinsPulse = false;
+        });
+    }
+
+    private void TriggerGemsPulse()
+    {
+        IsGemsPulse = true;
+        _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            await Task.Delay(280);
+            IsGemsPulse = false;
+        });
+    }
 
     /// <summary>Ob die heutige Daily Challenge noch nicht gespielt wurde</summary>
     [ObservableProperty]
@@ -146,7 +188,12 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         IWeeklyChallengeService weeklyChallengeService, IDailyMissionService dailyMissionService,
         IBattlePassService battlePassService, ILeagueService leagueService,
         IStarterPackService starterPackService, IPreferencesService preferencesService,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService, IEventService eventService,
+        // Dashboard-Services (v2.0.43)
+        ILuckySpinService luckySpinService, IRotatingDealsService rotatingDealsService,
+        IBossRushService bossRushService, ICustomizationService customizationService,
+        IMasterModeService masterModeService, IAchievementService achievementService,
+        ICollectionService collectionService, ICardService cardService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
@@ -163,6 +210,15 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         _starterPackService = starterPackService;
         _preferencesService = preferencesService;
         _rewardedAdService = rewardedAdService;
+        _eventService = eventService;
+        _luckySpinService = luckySpinService;
+        _rotatingDealsService = rotatingDealsService;
+        _bossRushService = bossRushService;
+        _customizationService = customizationService;
+        _masterModeService = masterModeService;
+        _achievementService = achievementService;
+        _collectionService = collectionService;
+        _cardService = cardService;
 
         // Live-Update bei Coin-/Gem-Änderungen (z.B. aus Shop, Rewarded Ads)
         _coinService.BalanceChanged += OnBalanceChanged;
@@ -222,7 +278,12 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
             _coinService.TotalEarned.ToString("N0"));
         IsDailyChallengeNew = !_dailyChallengeService.IsCompletedToday;
         HasNewMissions = !_weeklyChallengeService.IsAllComplete || !_dailyMissionService.IsAllComplete;
+
         OnPropertyChanged(nameof(HasProgress));
+
+        // Dashboard-Refresh: HEUTE-Panel + KARRIERE-Panel + Hero-Section + Modi-Strip + Event-Banner
+        // (Implementiert in MainMenuViewModel.Dashboard.cs)
+        RefreshDashboard();
 
         // Comeback-Bonus prüfen (>3 Tage inaktiv → 2000 Coins + 5 Gems)
         var comebackBonus = _dailyRewardService.CheckComebackBonus();
@@ -242,6 +303,13 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
 
         // Letzte Aktivität aktualisieren (für zukünftige Comeback-Prüfung)
         _dailyRewardService.UpdateLastActivity();
+
+        // Saisonales Event-Greeting (v2.0.42, Plan Task 3.4) — einmal pro Tag pro Event
+        TryShowEventGreeting();
+
+        // Onboarding-Modal (v2.0.43, Plan Phase 4) — einmal pro Installation,
+        // erklaert das neue Dashboard-Layout fuer Bestand-Spieler.
+        TryShowOnboarding();
 
         // Starterpaket-Eligibility pruefen
         _starterPackService.CheckEligibility(_progressService.HighestCompletedLevel);
@@ -634,9 +702,8 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
     }
 
     /// <summary>
-    /// Tägliche + wöchentliche Missionen (ab Level 17). Navigiert direkt zum
-    /// Missions-Tab im Challenges-View, damit Spieler nicht erst über DailyChallenge
-    /// und dann Tab-Switch kommen müssen.
+    /// Tägliche + wöchentliche Missionen — wird vom HEUTE-Panel der Dashboard-Card "Missions"
+    /// aus aufgerufen (v2.0.43, ersetzt den L17-Standalone-Button im alten Layout).
     /// </summary>
     [RelayCommand]
     private void Missions()
@@ -644,17 +711,6 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
         MarkFeatureSeen("daily_missions");
         MarkFeatureSeen("weekly_missions");
         NavigationRequested?.Invoke(new GoWeeklyChallenge());
-    }
-
-    /// <summary>
-    /// Player-Customization (ab Level 18). Navigiert zum Profile-View, wo Skins,
-    /// Trails und Victory-Emotes ausgewählt werden können.
-    /// </summary>
-    [RelayCommand]
-    private void Customize()
-    {
-        MarkFeatureSeen("customization");
-        NavigationRequested?.Invoke(new GoProfile());
     }
 
     [RelayCommand]
@@ -727,6 +783,34 @@ public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGame
             var insufficientText = _localizationService.GetString("ShopNotEnoughCoins") ?? "Not enough Coins!";
             FloatingTextRequested?.Invoke(insufficientText, "red");
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SAISONALES EVENT-GREETING (v2.0.42, Plan Task 3.4)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private const string EventGreetingShownKey = "EventGreetingShown_v1";
+
+    /// <summary>
+    /// Zeigt einmal pro Tag pro aktivem Event ein Floating-Greeting beim Erscheinen des MainMenus.
+    /// Persistiert per UTC-Datum in Preferences damit Halloween/Christmas/etc. nicht spamt.
+    /// </summary>
+    private void TryShowEventGreeting()
+    {
+        var ev = _eventService.CurrentEvent;
+        if (ev == null) return;
+
+        // Persistenter Schluessel: "Halloween_2026-10-30" — eindeutig pro Event-Type + UTC-Tag.
+        var todayKey = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var stateKey = $"{EventGreetingShownKey}_{ev.Type}_{todayKey}";
+        var alreadyShown = _preferencesService.Get(stateKey, false);
+        if (alreadyShown) return;
+
+        var greeting = _localizationService.GetString(ev.GreetingKey) ?? ev.Type.ToString();
+        FloatingTextRequested?.Invoke(greeting, "gold");
+        CelebrationRequested?.Invoke();
+
+        _preferencesService.Set(stateKey, true);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

@@ -1,13 +1,9 @@
 using System.Collections.ObjectModel;
-using Avalonia.Media;
 using BomberBlast.Models;
-using BomberBlast.Models.Entities;
-using BomberBlast.Models.Levels;
 using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
-using BomberBlast.Icons;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
 
@@ -16,6 +12,15 @@ namespace BomberBlast.ViewModels;
 /// <summary>
 /// ViewModel fuer den Shop - zeigt Upgrades, PowerUp-Übersicht, Skins und Coin-Stand.
 /// Implementiert IDisposable fuer BalanceChanged-Unsubscription.
+///
+/// <para>v2.0.39 (Plan Task 2.3): Partial-Class-Split — Methoden auf 4 Files aufgeteilt:
+/// <list type="bullet">
+///   <item>ShopViewModel.cs — Header + Lifecycle + Localization + Balance-Updates</item>
+///   <item>ShopViewModel.Upgrades.cs — Permanent-Upgrades + PowerUp/Mechanic + Mappings</item>
+///   <item>ShopViewModel.Skins.cs — alle 6 Skin-Kategorien (Player/Bomb/Explosion/Trail/Victory/Frame)</item>
+///   <item>ShopViewModel.Deals.cs — Rotating-Deals + Gem-Skin-Logik</item>
+/// </list>
+/// </para>
 /// </summary>
 public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
 {
@@ -89,6 +94,33 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
 
     [ObservableProperty]
     private int _coinBalance;
+
+    /// <summary>v2.0.48 — Currency-Pulse-Animation bei Coin-Update (analog MainMenu)</summary>
+    [ObservableProperty]
+    private bool _isCoinsPulse;
+
+    [ObservableProperty]
+    private bool _isGemsPulse;
+
+    partial void OnCoinsTextChanged(string value)
+    {
+        IsCoinsPulse = true;
+        _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            await Task.Delay(280);
+            IsCoinsPulse = false;
+        });
+    }
+
+    partial void OnGemsTextChanged(string value)
+    {
+        IsGemsPulse = true;
+        _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            await Task.Delay(280);
+            IsGemsPulse = false;
+        });
+    }
 
     [ObservableProperty]
     private string _shopTitleText = "";
@@ -191,7 +223,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // INITIALIZATION
+    // LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════════
 
     public void OnAppearing()
@@ -233,338 +265,15 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
         SectionGemSkinsText = _localizationService.GetString("GemSkinsTitle") ?? "Exclusive Gem Skins";
     }
 
-    private void RefreshItems()
-    {
-        var items = _shopService.GetShopItems();
-
-        // Namen und Beschreibungen lokalisieren
-        foreach (var item in items)
-        {
-            item.DisplayName = _localizationService.GetString(item.NameKey);
-            item.DisplayDescription = _localizationService.GetString(item.DescriptionKey);
-            item.LevelText = string.Format(
-                _localizationService.GetString("UpgradeLevelFormat"),
-                item.CurrentLevel, item.MaxLevel);
-            item.Refresh(_coinService.Balance, _gemService.Balance);
-        }
-
-        ReloadCollection(ShopItems, items);
-    }
-
-    private void RefreshPowerUpItems()
-    {
-        var items = new List<PowerUpDisplayItem>();
-        foreach (PowerUpType type in Enum.GetValues<PowerUpType>())
-        {
-            items.Add(CreateDisplayItem(
-                "powerup_" + type.ToString().ToLower(),
-                $"PowerUp_{type}",
-                type.GetUnlockLevel(),
-                GetPowerUpIcon(type),
-                GetPowerUpAvaloniaColor(type)));
-        }
-        ReloadCollection(PowerUpItems, items);
-    }
-
-    private void RefreshMechanicItems()
-    {
-        var mechanics = new[] { WorldMechanic.Ice, WorldMechanic.Conveyor, WorldMechanic.Teleporter, WorldMechanic.LavaCrack };
-        var items = new List<PowerUpDisplayItem>();
-        foreach (var mech in mechanics)
-        {
-            items.Add(CreateDisplayItem(
-                "mechanic_" + mech.ToString().ToLower(),
-                $"Mechanic_{mech}",
-                mech.GetUnlockLevel(),
-                GetMechanicIcon(mech),
-                GetMechanicColor(mech)));
-        }
-        ReloadCollection(MechanicItems, items);
-    }
-
-    /// <summary>Erstellt ein PowerUpDisplayItem mit Unlock-Status-Logik</summary>
-    private PowerUpDisplayItem CreateDisplayItem(string id, string nameKey, int unlockLevel,
-        GameIconKind icon, Color color)
-    {
-        int highest = _progressService.HighestCompletedLevel;
-        bool isUnlocked = highest >= unlockLevel || unlockLevel <= 1;
-        var unlockedFormat = _localizationService.GetString("UnlockedAt") ?? "From Level {0}";
-        var unlockedText = _localizationService.GetString("Unlocked") ?? "Unlocked";
-
-        return new PowerUpDisplayItem
-        {
-            Id = id,
-            DisplayName = _localizationService.GetString(nameKey) ?? nameKey,
-            DisplayDescription = isUnlocked
-                ? (_localizationService.GetString(nameKey + "_Desc") ?? "")
-                : "???",
-            IconKind = icon,
-            IconColor = isUnlocked ? color : Color.Parse("#666666"),
-            UnlockLevel = unlockLevel,
-            IsUnlocked = isUnlocked,
-            UnlockText = isUnlocked ? unlockedText : string.Format(unlockedFormat, unlockLevel)
-        };
-    }
-
-    private void RefreshSkinItems()
-    {
-        var currentSkin = _customizationService.PlayerSkin;
-        bool isPremium = _purchaseService.IsPremium;
-        var equippedText = _localizationService.GetString("SkinEquipped") ?? "Equipped";
-        var lockedText = _localizationService.GetString("SkinLocked") ?? _localizationService.GetString("SkinPremiumOnly") ?? "Premium Only";
-        var selectText = _localizationService.GetString("SkinSelect") ?? "Select";
-
-        var items = new List<SkinDisplayItem>();
-        foreach (var skin in _customizationService.AvailablePlayerSkins)
-        {
-            bool isEquipped = skin.Id == currentSkin.Id;
-            bool isPremiumLocked = skin.IsPremiumOnly && !isPremium;
-            bool isOwned = _customizationService.IsPlayerSkinOwned(skin.Id);
-
-            items.Add(new SkinDisplayItem
-            {
-                Id = skin.Id,
-                Category = SkinCategory.Player,
-                PreviewIconKind = GameIconKind.Account,
-                DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
-                PrimaryColor = Color.FromRgb(skin.PrimaryColor.Red, skin.PrimaryColor.Green, skin.PrimaryColor.Blue),
-                SecondaryColor = Color.FromRgb(skin.SecondaryColor.Red, skin.SecondaryColor.Green, skin.SecondaryColor.Blue),
-                IsPremiumOnly = skin.IsPremiumOnly,
-                HasGlow = skin.GlowColor.HasValue,
-                CoinPrice = skin.CoinPrice,
-                IsOwned = isOwned,
-                IsEquipped = isEquipped,
-                IsLocked = isPremiumLocked,
-                StatusText = isEquipped ? equippedText : (isPremiumLocked ? lockedText : (isOwned ? selectText : ""))
-            });
-        }
-        ReloadCollection(SkinItems, items);
-    }
-
-    private void RefreshBombSkinItems()
-    {
-        var currentSkin = _customizationService.BombSkin;
-        bool isPremium = _purchaseService.IsPremium;
-        var equippedText = _localizationService.GetString("SkinEquipped") ?? "Equipped";
-        var lockedText = _localizationService.GetString("SkinPremiumOnly") ?? "Premium Only";
-        var selectText = _localizationService.GetString("SkinSelect") ?? "Select";
-
-        var items = new List<SkinDisplayItem>();
-        foreach (var skin in _customizationService.AvailableBombSkins)
-        {
-            bool isEquipped = skin.Id == currentSkin.Id;
-            bool isOwned = _customizationService.IsBombSkinOwned(skin.Id);
-            bool isPremiumLocked = skin.IsPremiumOnly && !isPremium;
-
-            items.Add(new SkinDisplayItem
-            {
-                Id = skin.Id,
-                Category = SkinCategory.Bomb,
-                PreviewIconKind = GameIconKind.Bomb,
-                DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
-                PrimaryColor = skin.BodyColor == SkiaSharp.SKColor.Empty
-                    ? Color.Parse("#444444")
-                    : Color.FromRgb(skin.BodyColor.Red, skin.BodyColor.Green, skin.BodyColor.Blue),
-                SecondaryColor = skin.GlowColor == SkiaSharp.SKColor.Empty
-                    ? Color.Parse("#FF6600")
-                    : Color.FromRgb(skin.GlowColor.Red, skin.GlowColor.Green, skin.GlowColor.Blue),
-                IsPremiumOnly = skin.IsPremiumOnly,
-                CoinPrice = skin.CoinPrice,
-                IsOwned = isOwned,
-                IsEquipped = isEquipped,
-                IsLocked = isPremiumLocked,
-                StatusText = isEquipped ? equippedText : (isPremiumLocked ? lockedText : (isOwned ? selectText : ""))
-            });
-        }
-        ReloadCollection(BombSkinItems, items);
-    }
-
-    private void RefreshExplosionSkinItems()
-    {
-        var currentSkin = _customizationService.ExplosionSkin;
-        bool isPremium = _purchaseService.IsPremium;
-        var equippedText = _localizationService.GetString("SkinEquipped") ?? "Equipped";
-        var lockedText = _localizationService.GetString("SkinPremiumOnly") ?? "Premium Only";
-        var selectText = _localizationService.GetString("SkinSelect") ?? "Select";
-
-        var items = new List<SkinDisplayItem>();
-        foreach (var skin in _customizationService.AvailableExplosionSkins)
-        {
-            bool isEquipped = skin.Id == currentSkin.Id;
-            bool isOwned = _customizationService.IsExplosionSkinOwned(skin.Id);
-            bool isPremiumLocked = skin.IsPremiumOnly && !isPremium;
-
-            items.Add(new SkinDisplayItem
-            {
-                Id = skin.Id,
-                Category = SkinCategory.Explosion,
-                PreviewIconKind = GameIconKind.Fire,
-                DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
-                PrimaryColor = skin.OuterColor == SkiaSharp.SKColor.Empty
-                    ? Color.Parse("#FF6600")
-                    : Color.FromRgb(skin.OuterColor.Red, skin.OuterColor.Green, skin.OuterColor.Blue),
-                SecondaryColor = skin.CoreColor == SkiaSharp.SKColor.Empty
-                    ? Color.Parse("#FFFF00")
-                    : Color.FromRgb(skin.CoreColor.Red, skin.CoreColor.Green, skin.CoreColor.Blue),
-                IsPremiumOnly = skin.IsPremiumOnly,
-                CoinPrice = skin.CoinPrice,
-                IsOwned = isOwned,
-                IsEquipped = isEquipped,
-                IsLocked = isPremiumLocked,
-                StatusText = isEquipped ? equippedText : (isPremiumLocked ? lockedText : (isOwned ? selectText : ""))
-            });
-        }
-        ReloadCollection(ExplosionSkinItems, items);
-    }
-
-    private void RefreshTrailItems()
-    {
-        var activeTrail = _customizationService.ActiveTrail;
-        var equippedText = _localizationService.GetString("SkinEquipped") ?? "Equipped";
-        var selectText = _localizationService.GetString("SkinSelect") ?? "Select";
-        var noneText = _localizationService.GetString("TrailNone") ?? "None";
-
-        var items = new List<SkinDisplayItem>();
-        // "Kein Trail" Option
-        items.Add(new SkinDisplayItem
-        {
-            Id = "",
-            Category = SkinCategory.Trail,
-            PreviewIconKind = GameIconKind.Trail,
-            DisplayName = noneText,
-            PrimaryColor = Color.Parse("#888888"),
-            SecondaryColor = Color.Parse("#666666"),
-            CoinPrice = 0,
-            IsOwned = true,
-            IsEquipped = activeTrail == null,
-            IsLocked = false,
-            StatusText = activeTrail == null ? equippedText : selectText
-        });
-
-        foreach (var trail in _customizationService.AvailableTrails)
-        {
-            bool isEquipped = activeTrail?.Id == trail.Id;
-            bool isOwned = _customizationService.IsTrailOwned(trail.Id);
-
-            items.Add(new SkinDisplayItem
-            {
-                Id = trail.Id,
-                Category = SkinCategory.Trail,
-                PreviewIconKind = GameIconKind.Trail,
-                DisplayName = _localizationService.GetString(trail.NameKey) ?? trail.Id,
-                PrimaryColor = Color.FromRgb(trail.PrimaryColor.Red, trail.PrimaryColor.Green, trail.PrimaryColor.Blue),
-                SecondaryColor = Color.FromRgb(trail.SecondaryColor.Red, trail.SecondaryColor.Green, trail.SecondaryColor.Blue),
-                CoinPrice = trail.CoinPrice,
-                IsOwned = isOwned,
-                IsEquipped = isEquipped,
-                IsLocked = false,
-                StatusText = isEquipped ? equippedText : (isOwned ? selectText : "")
-            });
-        }
-        ReloadCollection(TrailItems, items);
-    }
-
-    private void RefreshVictoryItems()
-    {
-        var activeVictory = _customizationService.ActiveVictory;
-        var equippedText = _localizationService.GetString("SkinEquipped") ?? "Equipped";
-        var selectText = _localizationService.GetString("SkinSelect") ?? "Select";
-        var noneText = _localizationService.GetString("VictoryNone") ?? "Standard";
-
-        var items = new List<SkinDisplayItem>();
-        // "Standard" Option
-        items.Add(new SkinDisplayItem
-        {
-            Id = "",
-            Category = SkinCategory.Victory,
-            PreviewIconKind = GameIconKind.Celebration,
-            DisplayName = noneText,
-            PrimaryColor = Color.Parse("#888888"),
-            SecondaryColor = Color.Parse("#666666"),
-            CoinPrice = 0,
-            IsOwned = true,
-            IsEquipped = activeVictory == null,
-            IsLocked = false,
-            StatusText = activeVictory == null ? equippedText : selectText
-        });
-
-        foreach (var victory in _customizationService.AvailableVictories)
-        {
-            bool isEquipped = activeVictory?.Id == victory.Id;
-            bool isOwned = _customizationService.IsVictoryOwned(victory.Id);
-            // VictoryDefinition hat keine PrimaryColor/SecondaryColor → Raritätsfarben verwenden
-            var rarityColor = victory.Rarity.GetColor();
-            var rarityGlow = victory.Rarity.GetGlowColor();
-
-            items.Add(new SkinDisplayItem
-            {
-                Id = victory.Id,
-                Category = SkinCategory.Victory,
-                PreviewIconKind = GameIconKind.Celebration,
-                DisplayName = _localizationService.GetString(victory.NameKey) ?? victory.Id,
-                PrimaryColor = Color.FromRgb(rarityColor.Red, rarityColor.Green, rarityColor.Blue),
-                SecondaryColor = Color.FromRgb(rarityGlow.Red, rarityGlow.Green, rarityGlow.Blue),
-                CoinPrice = victory.CoinPrice,
-                IsOwned = isOwned,
-                IsEquipped = isEquipped,
-                IsLocked = false,
-                StatusText = isEquipped ? equippedText : (isOwned ? selectText : "")
-            });
-        }
-        ReloadCollection(VictoryItems, items);
-    }
-
-    private void RefreshFrameItems()
-    {
-        var activeFrame = _customizationService.ActiveFrame;
-        var equippedText = _localizationService.GetString("SkinEquipped") ?? "Equipped";
-        var selectText = _localizationService.GetString("SkinSelect") ?? "Select";
-        var noneText = _localizationService.GetString("FrameNone") ?? "None";
-
-        var items = new List<SkinDisplayItem>();
-        // "Kein Rahmen" Option
-        items.Add(new SkinDisplayItem
-        {
-            Id = "",
-            Category = SkinCategory.Frame,
-            PreviewIconKind = GameIconKind.CardFrame,
-            DisplayName = noneText,
-            PrimaryColor = Color.Parse("#888888"),
-            SecondaryColor = Color.Parse("#666666"),
-            CoinPrice = 0,
-            IsOwned = true,
-            IsEquipped = activeFrame == null,
-            IsLocked = false,
-            StatusText = activeFrame == null ? equippedText : selectText
-        });
-
-        foreach (var frame in _customizationService.AvailableFrames)
-        {
-            bool isEquipped = activeFrame?.Id == frame.Id;
-            bool isOwned = _customizationService.IsFrameOwned(frame.Id);
-
-            items.Add(new SkinDisplayItem
-            {
-                Id = frame.Id,
-                Category = SkinCategory.Frame,
-                PreviewIconKind = GameIconKind.CardFrame,
-                DisplayName = _localizationService.GetString(frame.NameKey) ?? frame.Id,
-                PrimaryColor = Color.FromRgb(frame.PrimaryColor.Red, frame.PrimaryColor.Green, frame.PrimaryColor.Blue),
-                SecondaryColor = Color.FromRgb(frame.SecondaryColor.Red, frame.SecondaryColor.Green, frame.SecondaryColor.Blue),
-                CoinPrice = frame.CoinPrice,
-                IsOwned = isOwned,
-                IsEquipped = isEquipped,
-                IsLocked = false,
-                StatusText = isEquipped ? equippedText : (isOwned ? selectText : "")
-            });
-        }
-        ReloadCollection(FrameItems, items);
-    }
-
     private void UpdateCoinDisplay()
     {
         CoinBalance = _coinService.Balance;
         CoinsText = _coinService.Balance.ToString("N0");
+    }
+
+    private void UpdateGemDisplay()
+    {
+        GemsText = _gemService.Balance.ToString("N0");
     }
 
     private void OnBalanceChanged(object? sender, EventArgs e)
@@ -579,317 +288,6 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
         // Rebuild passiert nur bei Kauf (PurchaseSkinAsync) oder Auswahl (SelectSkin).
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // COMMANDS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    [RelayCommand]
-    private async Task PurchaseAsync(ShopDisplayItem? item)
-    {
-        if (item == null || item.IsMaxed) return;
-
-        // Gratis-Upgrade per Ad: Coins werden nicht abgezogen
-        if (FreeUpgradeActive)
-        {
-            if (_shopService.TryPurchaseFree(item.Type))
-            {
-                var upgradeName = _localizationService.GetString(item.NameKey);
-                PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
-                FreeUpgradeActive = false;
-                RefreshItems();
-                UpdateCoinDisplay();
-            }
-            return;
-        }
-
-        if (!_coinService.CanAfford(item.NextPrice))
-        {
-            // Detailliertes Fehler-Feedback: Wie viele Coins fehlen
-            var detail = string.Format(
-                _localizationService.GetString("PurchaseFailedDetail") ?? "Requires {0} Coins, you have {1}",
-                item.NextPrice.ToString("N0"), _coinService.Balance.ToString("N0"));
-            MessageRequested?.Invoke(
-                _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
-                detail);
-            InsufficientFunds?.Invoke();
-            return;
-        }
-
-        // Bestätigungsdialog bei teureren Käufen (ab 3000 Coins)
-        if (item.NextPrice >= 3000 && ConfirmationRequested != null)
-        {
-            var upgradeName = _localizationService.GetString(item.NameKey) ?? item.NameKey;
-            var msg = string.Format(
-                _localizationService.GetString("ConfirmPurchaseMessage") ?? "Spend {0} Coins on {1}?",
-                item.NextPrice.ToString("N0"), upgradeName);
-            var confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("ConfirmPurchaseTitle") ?? "Confirm Purchase",
-                msg,
-                _localizationService.GetString("Buy") ?? "Buy",
-                _localizationService.GetString("Cancel"));
-            if (!confirmed) return;
-        }
-
-        if (_shopService.TryPurchase(item.Type))
-        {
-            var upgradeName = _localizationService.GetString(item.NameKey);
-            PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
-            RefreshItems();
-            UpdateCoinDisplay();
-        }
-    }
-
-    /// <summary>
-    /// Upgrade mit Gems kaufen (Alternative zu Coins, ab Level 2).
-    /// </summary>
-    [RelayCommand]
-    private async Task PurchaseWithGemsAsync(ShopDisplayItem? item)
-    {
-        if (item == null || item.IsMaxed || item.GemPrice <= 0) return;
-
-        if (!_gemService.CanAfford(item.GemPrice))
-        {
-            var detail = string.Format(
-                _localizationService.GetString("PurchaseFailedDetailGems") ?? "Requires {0} Gems, you have {1}",
-                item.GemPrice, _gemService.Balance);
-            MessageRequested?.Invoke(
-                _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
-                detail);
-            InsufficientFunds?.Invoke();
-            return;
-        }
-
-        // Bestätigungsdialog bei teureren Gem-Käufen (ab 30 Gems)
-        if (item.GemPrice >= 30 && ConfirmationRequested != null)
-        {
-            var upgradeName = _localizationService.GetString(item.NameKey) ?? item.NameKey;
-            var msg = string.Format(
-                _localizationService.GetString("ConfirmGemPurchaseMessage") ?? "Spend {0} Gems on {1}?",
-                item.GemPrice, upgradeName);
-            var confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("ConfirmPurchaseTitle") ?? "Confirm Purchase",
-                msg,
-                _localizationService.GetString("Buy") ?? "Buy",
-                _localizationService.GetString("Cancel"));
-            if (!confirmed) return;
-        }
-
-        if (_shopService.TryPurchaseWithGems(item.Type))
-        {
-            var upgradeName = _localizationService.GetString(item.NameKey);
-            PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
-            RefreshItems();
-            UpdateCoinDisplay();
-        }
-    }
-
-    [RelayCommand]
-    private void SelectSkin(SkinDisplayItem? item)
-    {
-        if (item == null || item.IsLocked || item.IsEquipped) return;
-
-        switch (item.Category)
-        {
-            case SkinCategory.Player:
-                _customizationService.SetPlayerSkin(item.Id);
-                RefreshSkinItems();
-                break;
-            case SkinCategory.Bomb:
-                _customizationService.SetBombSkin(item.Id);
-                RefreshBombSkinItems();
-                break;
-            case SkinCategory.Explosion:
-                _customizationService.SetExplosionSkin(item.Id);
-                RefreshExplosionSkinItems();
-                break;
-            case SkinCategory.Trail:
-                _customizationService.SetTrail(string.IsNullOrEmpty(item.Id) ? null : item.Id);
-                RefreshTrailItems();
-                break;
-            case SkinCategory.Victory:
-                _customizationService.SetVictory(string.IsNullOrEmpty(item.Id) ? null : item.Id);
-                RefreshVictoryItems();
-                break;
-            case SkinCategory.Frame:
-                _customizationService.SetFrame(string.IsNullOrEmpty(item.Id) ? null : item.Id);
-                RefreshFrameItems();
-                break;
-        }
-
-        PurchaseSucceeded?.Invoke(item.DisplayName);
-    }
-
-    [RelayCommand]
-    private async Task PurchaseSkinAsync(SkinDisplayItem? item)
-    {
-        if (item == null || item.IsOwned || item.IsLocked) return;
-
-        if (!_coinService.CanAfford(item.CoinPrice))
-        {
-            // Detailliertes Fehler-Feedback: Wie viele Coins fehlen
-            var detail = string.Format(
-                _localizationService.GetString("PurchaseFailedDetail") ?? "Requires {0} Coins, you have {1}",
-                item.CoinPrice.ToString("N0"), _coinService.Balance.ToString("N0"));
-            MessageRequested?.Invoke(
-                _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
-                detail);
-            InsufficientFunds?.Invoke();
-            return;
-        }
-
-        // Bestätigungsdialog bei teureren Skins (ab 3000 Coins)
-        if (item.CoinPrice >= 3000 && ConfirmationRequested != null)
-        {
-            var msg = string.Format(
-                _localizationService.GetString("ConfirmPurchaseMessage") ?? "Spend {0} Coins on {1}?",
-                item.CoinPrice.ToString("N0"), item.DisplayName);
-            var confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("ConfirmPurchaseTitle") ?? "Confirm Purchase",
-                msg,
-                _localizationService.GetString("Buy") ?? "Buy",
-                _localizationService.GetString("Cancel"));
-            if (!confirmed) return;
-        }
-
-        bool success = item.Category switch
-        {
-            SkinCategory.Player => _customizationService.TryPurchasePlayerSkin(item.Id),
-            SkinCategory.Bomb => _customizationService.TryPurchaseBombSkin(item.Id),
-            SkinCategory.Explosion => _customizationService.TryPurchaseExplosionSkin(item.Id),
-            SkinCategory.Trail => _customizationService.TryPurchaseTrail(item.Id),
-            SkinCategory.Victory => _customizationService.TryPurchaseVictory(item.Id),
-            SkinCategory.Frame => _customizationService.TryPurchaseFrame(item.Id),
-            _ => false
-        };
-
-        if (success)
-        {
-            PurchaseSucceeded?.Invoke(item.DisplayName);
-            switch (item.Category)
-            {
-                case SkinCategory.Player: RefreshSkinItems(); break;
-                case SkinCategory.Bomb: RefreshBombSkinItems(); break;
-                case SkinCategory.Explosion: RefreshExplosionSkinItems(); break;
-                case SkinCategory.Trail: RefreshTrailItems(); break;
-                case SkinCategory.Victory: RefreshVictoryItems(); break;
-                case SkinCategory.Frame: RefreshFrameItems(); break;
-            }
-            UpdateCoinDisplay();
-        }
-    }
-
-    /// <summary>
-    /// Rewarded Ad für 1 Gratis-Upgrade pro Tag.
-    /// Nach Erfolg wird FreeUpgradeActive gesetzt → nächster Kauf kostenlos.
-    /// </summary>
-    [RelayCommand]
-    private async Task WatchAdForFreeUpgrade()
-    {
-        if (HasFreeUpgradeToday || FreeUpgradeActive) return;
-
-        CanWatchAdForFreeUpgrade = false;
-
-        var success = await _rewardedAdService.ShowAdAsync("free_shop_upgrade");
-        if (success)
-        {
-            RewardedAdCooldownTracker.RecordAdShown();
-            FreeUpgradeActive = true;
-            HasFreeUpgradeToday = true;
-
-            // Feedback: Gratis-Upgrade bereit
-            FloatingTextRequested?.Invoke(
-                _localizationService.GetString("FreeUpgradeReady") ?? "Next Upgrade FREE!",
-                "gold");
-
-            // Heutiges Datum speichern, damit es nur 1x pro Tag geht
-            _preferencesService.Set("FreeUpgradeDate", DateTime.UtcNow.Date.ToString("O"));
-        }
-        else
-        {
-            CanWatchAdForFreeUpgrade = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
-        }
-    }
-
-    /// <summary>Prüft ob heute bereits ein Gratis-Upgrade genutzt wurde</summary>
-    private void CheckFreeUpgradeAvailability()
-    {
-        var savedDate = _preferencesService.Get("FreeUpgradeDate", "");
-        if (!string.IsNullOrEmpty(savedDate))
-        {
-            if (DateTime.TryParse(savedDate, System.Globalization.CultureInfo.InvariantCulture,
-                    System.Globalization.DateTimeStyles.RoundtripKind, out var date))
-            {
-                HasFreeUpgradeToday = date.Date == DateTime.UtcNow.Date;
-            }
-        }
-        else
-        {
-            HasFreeUpgradeToday = false;
-        }
-
-        CanWatchAdForFreeUpgrade = !HasFreeUpgradeToday && _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
-    }
-
-    /// <summary>Rotierenden Deal kaufen</summary>
-    [RelayCommand]
-    private void BuyDeal(RotatingDeal? deal)
-    {
-        if (deal == null || deal.IsClaimed) return;
-
-        if (_rotatingDealsService.ClaimDeal(deal.Id))
-        {
-            PurchaseSucceeded?.Invoke(_localizationService.GetString(deal.TitleKey) ?? deal.TitleKey);
-            RefreshDailyDeals();
-            UpdateCoinDisplay();
-            UpdateGemDisplay();
-        }
-        else
-        {
-            InsufficientFunds?.Invoke();
-        }
-    }
-
-    /// <summary>Gem-Skin kaufen (mit Gems statt Coins)</summary>
-    [RelayCommand]
-    private void BuyGemSkin(SkinDisplayItem? item)
-    {
-        if (item == null || item.IsOwned || item.IsLocked) return;
-
-        var skin = PlayerSkins.All.FirstOrDefault(s => s.Id == item.Id);
-        if (skin == null || skin.GemPrice <= 0) return;
-
-        if (!_gemService.CanAfford(skin.GemPrice))
-        {
-            var detail = string.Format(
-                _localizationService.GetString("PurchaseFailedDetail") ?? "Requires {0} Gems, you have {1}",
-                skin.GemPrice, _gemService.Balance);
-            MessageRequested?.Invoke(
-                _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
-                detail);
-            InsufficientFunds?.Invoke();
-            return;
-        }
-
-        if (_customizationService.TryPurchasePlayerSkinWithGems(item.Id))
-        {
-            PurchaseSucceeded?.Invoke(item.DisplayName);
-            RefreshGemSkinItems();
-            UpdateGemDisplay();
-        }
-    }
-
-    /// <summary>Gem-Skin auswählen (wenn bereits gekauft)</summary>
-    [RelayCommand]
-    private void SelectGemSkin(SkinDisplayItem? item)
-    {
-        if (item == null || item.IsLocked || item.IsEquipped || !item.IsOwned) return;
-
-        _customizationService.SetPlayerSkin(item.Id);
-        RefreshGemSkinItems();
-        RefreshSkinItems(); // Auch normale Skin-Liste aktualisieren
-        PurchaseSucceeded?.Invoke(item.DisplayName);
-    }
-
     [RelayCommand]
     private void GoBack()
     {
@@ -901,112 +299,6 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IGameJuic
         _coinService.BalanceChanged -= OnBalanceChanged;
         _gemService.BalanceChanged -= OnBalanceChanged;
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // REFRESH-METHODEN FÜR DEALS & GEM-SKINS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void RefreshDailyDeals()
-    {
-        var deals = _rotatingDealsService.GetTodaysDeals();
-        ReloadCollection(DailyDeals, deals);
-        WeeklyDeal = _rotatingDealsService.GetWeeklyDeal();
-    }
-
-    private void RefreshGemSkinItems()
-    {
-        var currentSkin = _customizationService.PlayerSkin;
-        var equippedText = _localizationService.GetString("SkinEquipped") ?? "Equipped";
-        var selectText = _localizationService.GetString("SkinSelect") ?? "Select";
-
-        var items = new List<SkinDisplayItem>();
-        // Nur Skins mit GemPrice > 0 anzeigen
-        foreach (var skin in PlayerSkins.All)
-        {
-            if (skin.GemPrice <= 0) continue;
-
-            bool isEquipped = skin.Id == currentSkin.Id;
-            bool isOwned = _customizationService.IsPlayerSkinOwned(skin.Id);
-
-            items.Add(new SkinDisplayItem
-            {
-                Id = skin.Id,
-                Category = SkinCategory.Player,
-                PreviewIconKind = GameIconKind.DiamondStone,
-                DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
-                PrimaryColor = Color.FromRgb(skin.PrimaryColor.Red, skin.PrimaryColor.Green, skin.PrimaryColor.Blue),
-                SecondaryColor = Color.FromRgb(skin.SecondaryColor.Red, skin.SecondaryColor.Green, skin.SecondaryColor.Blue),
-                HasGlow = skin.GlowColor.HasValue,
-                CoinPrice = skin.GemPrice, // GemPrice in CoinPrice-Feld für Anzeige
-                IsOwned = isOwned,
-                IsEquipped = isEquipped,
-                IsLocked = false,
-                StatusText = isEquipped ? equippedText : (isOwned ? selectText : $"{skin.GemPrice} Gems")
-            });
-        }
-        ReloadCollection(GemSkinItems, items);
-    }
-
-    private void UpdateGemDisplay()
-    {
-        GemsText = _gemService.Balance.ToString("N0");
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // ICON/FARB-MAPPING (konsistent mit GameRenderer/HelpIconRenderer)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private static GameIconKind GetPowerUpIcon(PowerUpType type) => type switch
-    {
-        PowerUpType.BombUp => GameIconKind.Bomb,
-        PowerUpType.Fire => GameIconKind.Fire,
-        PowerUpType.Speed => GameIconKind.FlashOutline,
-        PowerUpType.Wallpass => GameIconKind.Ghost,
-        PowerUpType.Detonator => GameIconKind.FlashAlert,
-        PowerUpType.Bombpass => GameIconKind.ArrowRightCircle,
-        PowerUpType.Flamepass => GameIconKind.ShieldOutline,
-        PowerUpType.Mystery => GameIconKind.HelpCircleOutline,
-        PowerUpType.Kick => GameIconKind.Shoe,
-        PowerUpType.LineBomb => GameIconKind.DotsHorizontal,
-        PowerUpType.PowerBomb => GameIconKind.StarCircle,
-        PowerUpType.Skull => GameIconKind.SkullOutline,
-        _ => GameIconKind.HelpCircleOutline
-    };
-
-    private static Color GetPowerUpAvaloniaColor(PowerUpType type) => type switch
-    {
-        PowerUpType.BombUp => Color.Parse("#5050F0"),
-        PowerUpType.Fire => Color.Parse("#F05A28"),
-        PowerUpType.Speed => Color.Parse("#3CDC50"),
-        PowerUpType.Wallpass => Color.Parse("#966432"),
-        PowerUpType.Detonator => Color.Parse("#F02828"),
-        PowerUpType.Bombpass => Color.Parse("#323296"),
-        PowerUpType.Flamepass => Color.Parse("#F0BE28"),
-        PowerUpType.Mystery => Color.Parse("#B450F0"),
-        PowerUpType.Kick => Color.Parse("#FFA500"),
-        PowerUpType.LineBomb => Color.Parse("#00B4FF"),
-        PowerUpType.PowerBomb => Color.Parse("#FF3232"),
-        PowerUpType.Skull => Color.Parse("#640064"),
-        _ => Colors.White
-    };
-
-    private static GameIconKind GetMechanicIcon(WorldMechanic mech) => mech switch
-    {
-        WorldMechanic.Ice => GameIconKind.Snowflake,
-        WorldMechanic.Conveyor => GameIconKind.ArrowRightBold,
-        WorldMechanic.Teleporter => GameIconKind.SwapHorizontal,
-        WorldMechanic.LavaCrack => GameIconKind.Terrain,
-        _ => GameIconKind.HelpCircleOutline
-    };
-
-    private static Color GetMechanicColor(WorldMechanic mech) => mech switch
-    {
-        WorldMechanic.Ice => Color.Parse("#64C8FF"),
-        WorldMechanic.Conveyor => Color.Parse("#A0A0A0"),
-        WorldMechanic.Teleporter => Color.Parse("#C864FF"),
-        WorldMechanic.LavaCrack => Color.Parse("#FF5000"),
-        _ => Colors.White
-    };
 
     /// <summary>
     /// Collection in-place neuladen statt via Property-Assignment.

@@ -681,6 +681,36 @@ Telemetrie-Events: `ftue_started`, `ftue_step_completed`, `ftue_skipped`, `ftue_
 
 ---
 
+## Live-Ops-Foundation (AAA-Audit P1)
+
+### LiveEventService
+
+`ILiveEventService` + `LiveEventService` — RemoteConfig-getrieben, 4 Templates:
+DoubleReward / BossRush / CoopMarathon / MiniGameMastery. Score-Tracking + 3-Tier-Reward
+(25/75/200 GS bei 100/500/2000 Punkten). Foundation; Game-Code muss noch `AddScore`-Aufrufe
+einhängen (z.B. nach Order-Complete bei DoubleReward). RemoteConfig-Schluessel:
+`live_event.id|template|starts_at|ends_at`.
+
+### Push-Notifications (8 Trigger)
+
+`AndroidNotificationService` plant 8 Notifications statt 4: ResearchComplete, DeliveryReminder,
+RushAvailable, DailyReward + neu WorkerMoodCritical (30min nach Close), OfflineEarningsCapped (4h),
+BattlePassExpiring (3 Tage vor Saison-Ende), LiveOrderAvailable (1h, ab WS-Lv25).
+Alle Texte mit Meister-Hans-Persona-Praefix („Meister Hans: ‚...'").
+
+### Friend-Invite Reward-Loop
+
+`IReferralService` + `ReferralService` mit 6-stelligem Code-Generator + 3-Tier-Reward
+(50/200/500 GS bei 1/5/10 erfolgreichen Empfehlungen) + permanenter +5% Income-Boost ab Tier 10.
+Server-Endpoint fuer Anti-Cheat (Geraete-Fingerprint gegen Self-Referral) ist Folge-Sprint.
+
+### BattlePass-Saison-Update
+
+Saison-Dauer 42 → 30 Tage (12 Saisons/Jahr statt 8.7). Premium-Spread auf ~3x Free
+(baseMoney *120→*180, Capstone-GS 100→150, Milestone-40 30→50, Tier-0-29 GS 10/2→12/3).
+
+---
+
 ## Reset-Hierarchie-Pacing (AAA-Audit P0)
 
 Drei Reset-Layer (Rebirth/Prestige/Ascension) sind UX-getrennt:
@@ -715,7 +745,7 @@ Drei Reset-Layer (Rebirth/Prestige/Ascension) sind UX-getrennt:
 | City-Szene | CityRenderer: AI-Bitmap + Wetter-Overlay (saisonal, Event-gesteuert, 2x Intensität) |
 | City Weather | Regen+Regenbogen, Sonne+Shimmer, Blätter, Schnee, Kirschblüten (80 Struct-Pool) |
 | Workshop-Szenen | AI-Bitmap + Level-Overlays (Sterne Lv250+, Gold-Aura Lv500+, Shimmer Lv1000) |
-| Reduce Motion | `Classes.NoMotion` per `ReduceMotion = Settings.GraphicsQuality == Low` |
+| Reduce Motion | `Classes.NoMotion` per `ReduceMotion = Settings.GraphicsQuality == Low` PLUS `GameJuiceEngine.ReduceMotion` daempft ScreenShake auf 30%, schaltet Confetti/RadialBurst/Shockwave ab, halbiert Coin-Fly-Count |
 | PrestigeCinematic | 4-Phasen-Renderer, 14s, Auto-Dismiss nach 8s Reward-Phase |
 
 **Farbpalette** (Craft-Theme):

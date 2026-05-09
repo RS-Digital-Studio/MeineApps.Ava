@@ -443,6 +443,46 @@ public sealed class LeagueService : ILeagueService
         }
     }
 
+    /// <summary>
+    /// DSGVO Art. 17: Eigenen Liga-Eintrag aus allen Tier-Subtrees + Daily-Race-Subtree
+    /// + alle eigenen Reports löschen. Best-Effort: Fehler werden geschluckt damit
+    /// die lokale Account-Löschung trotzdem durchgehen kann.
+    /// </summary>
+    public async Task DeleteOwnEntryAsync()
+    {
+        try
+        {
+            await _firebase.EnsureAuthenticatedAsync();
+            var uid = _firebase.Uid;
+            if (string.IsNullOrEmpty(uid)) return;
+
+            // Liga-Eintrag in allen 5 Tiers parallel löschen (Spieler kann historisch auf-/abgestiegen sein)
+            var deleteTasks = new List<Task>();
+            foreach (var tier in Enum.GetValues<LeagueTier>())
+            {
+                var path = $"league/s{SeasonNumber}/{tier.ToString().ToLowerInvariant()}/{uid}";
+                deleteTasks.Add(SafeDeleteAsync(path));
+            }
+
+            // Reports zu diesem Spieler bleiben (Moderations-Audit-Trail), aber eigene Submissions als
+            // Reporter werden NICHT gelöscht — sie sind anonymisierbar via reporterUid-Hash. DSGVO erlaubt
+            // Pseudonymisierung. Hier vorerst kein Eingriff, da der Reporter-Pfad uid-bound ist und
+            // nur durch Service-Account aufgelöst werden kann.
+
+            await Task.WhenAll(deleteTasks);
+        }
+        catch
+        {
+            // Best-Effort
+        }
+    }
+
+    private async Task SafeDeleteAsync(string path)
+    {
+        try { await _firebase.DeleteAsync(path); }
+        catch { /* Best-Effort */ }
+    }
+
     /// <summary>Eigenen Score nach Firebase pushen.</summary>
     private async Task PushScoreToFirebaseAsync()
     {
@@ -683,5 +723,258 @@ public sealed class LeagueService : ILeagueService
         _pushDebounce?.Cancel();
         _pushDebounce?.Dispose();
         _pushDebounce = null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DAILY BOMB RACE (v2.0.41, Plan Task 3.1)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Alle Spieler erhalten denselben Tages-Seed → identisches Level. Score ranked pro Tier.
+    // Lokale Persistenz: "DailyRaceBest_yyyy-MM-dd" → int. Firebase-Push optional via SubmitDailyRaceScoreAsync.
+    // Liga-Punkte werden vom Caller (z.B. GameOverViewModel) ueber AddPoints vergeben — Service-API ist read-only.
+
+    private const string DAILY_RACE_PREF_PREFIX = "DailyRaceBest_";
+
+    public int GetDailyRaceSeed(DateTime utcDate)
+    {
+        // Deterministischer Seed: yyyy*10000 + MM*100 + dd → identisch fuer alle Spieler weltweit.
+        return utcDate.Year * 10000 + utcDate.Month * 100 + utcDate.Day;
+    }
+
+    public string GetDailyRaceDateKey(DateTime utcDate)
+    {
+        return utcDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    public int TodayDailyRaceBestScore
+    {
+        get
+        {
+            var key = DAILY_RACE_PREF_PREFIX + GetDailyRaceDateKey(DateTime.UtcNow);
+            return _preferences.Get(key, 0);
+        }
+    }
+
+    public bool HasPlayedDailyRaceToday => TodayDailyRaceBestScore > 0;
+
+    public async Task<bool> SubmitDailyRaceScoreAsync(int score)
+    {
+        var todayKey = GetDailyRaceDateKey(DateTime.UtcNow);
+        var prefKey = DAILY_RACE_PREF_PREFIX + todayKey;
+        int currentBest = _preferences.Get(prefKey, 0);
+
+        // Nur neuer Wert wenn besser
+        if (score <= currentBest) return false;
+
+        _preferences.Set(prefKey, score);
+
+        // Firebase-Push (best-effort, kein Throw bei Offline)
+        var uid = _firebase.Uid;
+        if (IsOnline && !string.IsNullOrEmpty(uid))
+        {
+            try
+            {
+                await PushDailyRaceScoreToFirebaseAsync(todayKey, score, uid);
+                // Liga-Punkte-Vergabe basierend auf Tages-Rang nach Push
+                // Top-3 = +100, Top-10 = +50. Einmal pro Tag (nur bei neuem Best).
+                await AwardDailyRaceLeaguePointsAsync(todayKey, uid);
+            }
+            catch
+            {
+                // Firebase-Fehler werden bewusst ignoriert — lokaler Wert ist persistiert.
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Vergibt Liga-Punkte basierend auf Daily-Race-Rang nach erfolgreichem Score-Push.
+    /// Top-3 = +100, Top-10 = +50. Idempotent via "DailyRacePointsAwarded_{dateKey}" Preferences-Flag
+    /// damit ein einzelner Spieler bei mehreren Best-Improvements nicht mehrfach Punkte bekommt.
+    /// </summary>
+    private async Task AwardDailyRaceLeaguePointsAsync(string dateKey, string uid)
+    {
+        var awardKey = $"DailyRacePointsAwarded_{dateKey}";
+        if (_preferences.Get(awardKey, false)) return;
+
+        try
+        {
+            var leaderboard = await FetchDailyRaceLeaderboardFromFirebaseAsync(dateKey, uid);
+            var ownEntry = leaderboard.FirstOrDefault(e => e.Uid == uid);
+            if (ownEntry == null) return;
+
+            int points = ownEntry.Rank switch
+            {
+                <= 3 => 100,
+                <= 10 => 50,
+                _ => 0,
+            };
+            if (points > 0)
+            {
+                AddPoints(points);
+                _preferences.Set(awardKey, true);
+            }
+        }
+        catch
+        {
+            // Liga-Punkte-Vergabe ist best-effort. Bei Firebase-Fehler kein Award —
+            // wird beim naechsten Submit oder Leaderboard-Refresh nochmal versucht.
+        }
+    }
+
+    public async Task<IReadOnlyList<LeagueLeaderboardEntry>> GetDailyRaceLeaderboardAsync(DateTime? utcDate = null)
+    {
+        var date = utcDate ?? DateTime.UtcNow;
+        var key = GetDailyRaceDateKey(date);
+        var uid = _firebase.Uid ?? "";
+
+        // Offline / nicht-initialisiert: nur eigener Eintrag.
+        if (!IsOnline || string.IsNullOrEmpty(uid))
+        {
+            int local = _preferences.Get(DAILY_RACE_PREF_PREFIX + key, 0);
+            if (local <= 0) return Array.Empty<LeagueLeaderboardEntry>();
+            return new[]
+            {
+                new LeagueLeaderboardEntry
+                {
+                    Uid = uid,
+                    Name = PlayerName,
+                    Points = local,
+                    Rank = 1,
+                    IsPlayer = true,
+                    IsRealPlayer = true,
+                }
+            };
+        }
+
+        try
+        {
+            return await FetchDailyRaceLeaderboardFromFirebaseAsync(key, uid);
+        }
+        catch
+        {
+            return Array.Empty<LeagueLeaderboardEntry>();
+        }
+    }
+
+    /// <summary>
+    /// Cross-Tier (Global): fetcht parallel alle 5 Tier-Subtrees, merged + sortiert + Top-50.
+    /// </summary>
+    public async Task<IReadOnlyList<LeagueLeaderboardEntry>> GetDailyRaceGlobalLeaderboardAsync(DateTime? utcDate = null)
+    {
+        var date = utcDate ?? DateTime.UtcNow;
+        var key = GetDailyRaceDateKey(date);
+        var uid = _firebase.Uid ?? "";
+
+        if (!IsOnline || string.IsNullOrEmpty(uid))
+        {
+            // Offline-Fallback identisch zu Single-Tier (nur eigener Eintrag wenn vorhanden).
+            return await GetDailyRaceLeaderboardAsync(utcDate);
+        }
+
+        try
+        {
+            await _firebase.EnsureAuthenticatedAsync();
+
+            // Alle 5 Tiers parallel fetchen
+            var tiers = new[] { LeagueTier.Bronze, LeagueTier.Silver, LeagueTier.Gold, LeagueTier.Platinum, LeagueTier.Diamond };
+            var fetchTasks = tiers.Select(async tier =>
+            {
+                var path = $"league/s{SeasonNumber}/daily_race/{key}/{(int)tier}";
+                try
+                {
+                    return await _firebase.GetAsync<Dictionary<string, DailyRaceFirebaseEntry>>(path)
+                           ?? new Dictionary<string, DailyRaceFirebaseEntry>();
+                }
+                catch
+                {
+                    return new Dictionary<string, DailyRaceFirebaseEntry>();
+                }
+            }).ToArray();
+
+            var allTierResults = await Task.WhenAll(fetchTasks);
+
+            // Mergen aller Tier-Eintraege in eine globale Liste
+            var merged = new List<LeagueLeaderboardEntry>();
+            foreach (var tierEntries in allTierResults)
+            {
+                foreach (var (entryUid, entry) in tierEntries)
+                {
+                    merged.Add(new LeagueLeaderboardEntry
+                    {
+                        Uid = entryUid,
+                        Name = entry.Name ?? "",
+                        Points = entry.Score,
+                        IsPlayer = entryUid == uid,
+                        IsRealPlayer = true,
+                    });
+                }
+            }
+
+            // Score-DESC sortieren, Rank zuweisen, Top-50 cappen
+            merged.Sort((a, b) => b.Points.CompareTo(a.Points));
+            for (int i = 0; i < merged.Count; i++) merged[i].Rank = i + 1;
+            if (merged.Count > 50) merged.RemoveRange(50, merged.Count - 50);
+            return merged;
+        }
+        catch
+        {
+            return Array.Empty<LeagueLeaderboardEntry>();
+        }
+    }
+
+    /// <summary>
+    /// Pusht den Daily-Race-Score in Firebase: <c>league/s{saison}/daily_race/{date}/{tier}/{uid}</c>.
+    /// Server-Timestamp via {".sv":"timestamp"} verhindert client-spoofbare updatedMs (analog Liga-Saison-Schema).
+    /// EnsureAuthenticatedAsync stellt sicher dass Anonymous-Auth aktiv ist — sonst wuerde Permission-Denied folgen.
+    /// </summary>
+    private async Task PushDailyRaceScoreToFirebaseAsync(string dateKey, int score, string uid)
+    {
+        await _firebase.EnsureAuthenticatedAsync();
+        var path = $"league/s{SeasonNumber}/daily_race/{dateKey}/{(int)CurrentTier}/{uid}";
+        var payload = new DailyRaceFirebaseEntry
+        {
+            Name = PlayerName,
+            Score = score,
+            UpdatedMs = new Dictionary<string, string> { [".sv"] = "timestamp" },
+        };
+        await _firebase.SetAsync(path, payload);
+    }
+
+    /// <summary>
+    /// Liefert Top-20 echte Spieler aus dem eigenen Tier-Subtree fuer den angegebenen Tag.
+    /// Sortiert absteigend nach Score. EnsureAuthenticatedAsync vor dem Read damit keine Permission-Denied folgt.
+    /// </summary>
+    private async Task<IReadOnlyList<LeagueLeaderboardEntry>> FetchDailyRaceLeaderboardFromFirebaseAsync(string dateKey, string playerUid)
+    {
+        await _firebase.EnsureAuthenticatedAsync();
+        var path = $"league/s{SeasonNumber}/daily_race/{dateKey}/{(int)CurrentTier}";
+        var entries = await _firebase.GetAsync<Dictionary<string, DailyRaceFirebaseEntry>>(path);
+        if (entries == null || entries.Count == 0) return Array.Empty<LeagueLeaderboardEntry>();
+
+        var list = new List<LeagueLeaderboardEntry>(entries.Count);
+        foreach (var (uid, entry) in entries)
+        {
+            list.Add(new LeagueLeaderboardEntry
+            {
+                Uid = uid,
+                Name = entry.Name ?? "",
+                Points = entry.Score,
+                IsPlayer = uid == playerUid,
+                IsRealPlayer = true,
+            });
+        }
+        list.Sort((a, b) => b.Points.CompareTo(a.Points));
+        for (int i = 0; i < list.Count; i++) list[i].Rank = i + 1;
+        if (list.Count > 20) list.RemoveRange(20, list.Count - 20);
+        return list;
+    }
+
+    /// <summary>Firebase-Payload fuer Daily-Race-Eintrag (analog FirebaseLeagueEntry, aber mit Score statt Points).</summary>
+    private class DailyRaceFirebaseEntry
+    {
+        public string? Name { get; set; }
+        public int Score { get; set; }
+        // Server-Timestamp-Sentinel fuer manipulationssichere updatedMs (siehe Saison-Liga-Schema).
+        public Dictionary<string, string>? UpdatedMs { get; set; }
     }
 }

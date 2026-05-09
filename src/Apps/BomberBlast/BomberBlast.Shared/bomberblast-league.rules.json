@@ -3,8 +3,62 @@
     ".read": false,
     ".write": false,
 
+    "reports": {
+      "$reportedUid": {
+        "$reporterUid": {
+          ".write": "auth != null && $reporterUid === auth.uid && $reportedUid !== auth.uid && newData.exists() && (!data.exists() || (now - data.child('reportedAt').val()) >= 86400000)",
+          ".read": false,
+          ".validate": "newData.hasChildren(['reason', 'reportedAt'])",
+
+          "reason": {
+            ".validate": "newData.isString() && (newData.val() === 'offensive_name' || newData.val() === 'cheating' || newData.val() === 'other')"
+          },
+
+          "reportedAt": {
+            ".validate": "newData.val() == now"
+          },
+
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+
     "league": {
       "$seasonKey": {
+
+        "daily_race": {
+          "$dateKey": {
+            "$tier": {
+              ".indexOn": ["score"],
+              ".read": "auth != null",
+
+              "$uid": {
+                ".write": "auth != null && $uid === auth.uid && newData.exists() && (!data.exists() || !data.child('updatedMs').exists() || (now - data.child('updatedMs').val()) >= 60000)",
+
+                ".validate": "newData.hasChildren(['name', 'score', 'updatedMs'])",
+
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
+                },
+
+                "score": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+                },
+
+                "updatedMs": {
+                  ".validate": "newData.val() == now && (!data.exists() || newData.val() > data.val())"
+                },
+
+                "$other": {
+                  ".validate": false
+                }
+              }
+            }
+          }
+        },
+
         "$tier": {
           ".indexOn": ["points"],
           ".read": "auth != null",
@@ -12,7 +66,7 @@
           "$uid": {
             ".write": "auth != null && $uid === auth.uid && newData.exists() && (!data.exists() || !data.child('updatedMs').exists() || (now - data.child('updatedMs').val()) >= 60000)",
 
-            ".validate": "newData.hasChildren(['name', 'points', 'updatedUtc', 'updatedMs'])",
+            ".validate": "newData.hasChildren(['name', 'points', 'updatedMs'])",
 
             "name": {
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
@@ -20,10 +74,6 @@
 
             "points": {
               ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500000 && (!data.exists() || newData.val() <= data.val() + 2000)"
-            },
-
-            "updatedUtc": {
-              ".validate": "newData.isString() && newData.val().length >= 20 && newData.val().length <= 40 && newData.val().endsWith('Z') && (!data.exists() || newData.val() > data.val())"
             },
 
             "updatedMs": {

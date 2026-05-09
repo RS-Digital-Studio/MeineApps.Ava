@@ -79,7 +79,16 @@ public sealed class CloudSaveService : ICloudSaveService
         // v2.0.35: Master Mode + Deck-Balancing-Telemetrie
         "master_mode_status_v1",   // Per-Level Master-Sterne
         "master_mode_active",       // User-Toggle
-        "deck_telemetry_v1"         // Used/Plays/Wins pro BombType
+        "deck_telemetry_v1",        // Used/Plays/Wins pro BombType
+
+        // v2.0.46: Accessibility + Performance + DSGVO-Consent (Schema V3)
+        "Accessibility_ColorblindMode",
+        "Accessibility_HighContrast",
+        "Accessibility_UiScale",
+        "Accessibility_Subtitles",
+        "TargetFrameRate",
+        "AnalyticsConsent",
+        "CrashlyticsConsent"
     ];
 
     /// <summary>
@@ -154,6 +163,13 @@ public sealed class CloudSaveService : ICloudSaveService
             var cloudData = JsonSerializer.Deserialize<CloudSaveData>(cloudJson, JsonOptions);
             if (cloudData == null)
                 return false;
+
+            // v2.0.44: Schema-Migration auf aktuelle Version anheben + Validation.
+            if (!CloudSaveSchemaMigrator.TryMigrateAndValidate(cloudData, out var migrationError))
+            {
+                _logger.LogWarning($"CloudSave: Migration/Validation fehlgeschlagen — Cloud-Daten verworfen. Grund: {migrationError}");
+                return false;
+            }
 
             // Persistenz-Korruption: Wenn ein Service beim Laden einen JSON-Parse-Fehler hatte,
             // ist der lokale State nicht vertrauenswuerdig. Cloud-Pull ERZWINGEN, um zu verhindern,
@@ -268,6 +284,41 @@ public sealed class CloudSaveService : ICloudSaveService
         }
     }
 
+    /// <summary>
+    /// DSGVO Art. 17: Cloud-Save überschreiben mit leerem Snapshot (effective Delete).
+    /// Wenn der User später eine neue Identität anlegt, wird der erste Pull ein leeres Objekt
+    /// zurückgeben → CloudSaveData.ChooseBest entscheidet sich automatisch für lokale Daten.
+    /// Best-Effort: Bei Offline/Permission still abgebrochen.
+    /// </summary>
+    public async Task DeleteCloudSaveAsync()
+    {
+        if (!_playGames.IsSignedIn) return;
+
+        try
+        {
+            // Leeren Snapshot uploaden (überschreibt existierenden Snapshot)
+            // v2.0.55 — Phase 15 P1-Fix: CurrentSchemaVersion statt hardcoded 1
+            // (sonst triggert Re-Login eine V1→V3-Migration mit Default-Auffüllung)
+            var emptyData = new CloudSaveData
+            {
+                Version = CloudSaveSchemaMigrator.CurrentSchemaVersion,
+                TimestampUtc = DateTime.UtcNow.ToString("O"),
+                TotalStars = 0,
+                CoinBalance = 0,
+                GemBalance = 0,
+                TotalCards = 0,
+                Keys = new Dictionary<string, string>()
+            };
+            var emptyJson = JsonSerializer.Serialize(emptyData, JsonOptions);
+            await _playGames.SaveToCloudAsync(emptyJson);
+            _logger.LogInfo("CloudSave: DSGVO Account-Löschung — Snapshot mit leeren Daten überschrieben.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("CloudSave DeleteCloudSaveAsync Fehler", ex);
+        }
+    }
+
     public async Task<bool> ForceDownloadAsync()
     {
         if (!IsEnabled || !_playGames.IsSignedIn)
@@ -284,6 +335,13 @@ public sealed class CloudSaveService : ICloudSaveService
             var cloudData = JsonSerializer.Deserialize<CloudSaveData>(cloudJson, JsonOptions);
             if (cloudData == null)
                 return false;
+
+            // v2.0.44: Schema-Migration auf aktuelle Version anheben + Validation.
+            if (!CloudSaveSchemaMigrator.TryMigrateAndValidate(cloudData, out var migrationError))
+            {
+                _logger.LogWarning($"CloudSave ForceDownload: Migration/Validation fehlgeschlagen. Grund: {migrationError}");
+                return false;
+            }
 
             // Cloud-Stand erzwingen (ohne Vergleich)
             ApplyCloudData(cloudData);
@@ -309,7 +367,7 @@ public sealed class CloudSaveService : ICloudSaveService
     {
         var data = new CloudSaveData
         {
-            Version = 1,
+            Version = CloudSaveSchemaMigrator.CurrentSchemaVersion,
             TimestampUtc = DateTime.UtcNow.ToString("O"),
             TotalStars = _progressService.GetTotalStars(),
             CoinBalance = _coinService.Balance,

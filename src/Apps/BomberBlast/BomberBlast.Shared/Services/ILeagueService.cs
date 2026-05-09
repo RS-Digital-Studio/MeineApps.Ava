@@ -63,10 +63,56 @@ public interface ILeagueService : IDisposable
     /// <returns>true bei Erfolg, false wenn offline oder Rate-Limit.</returns>
     Task<bool> ReportPlayerAsync(string reportedUid, string reason);
 
+    /// <summary>
+    /// DSGVO Art. 17: Eigenen Liga-Eintrag aus Firebase löschen.
+    /// Cascading-Delete für Account-Löschung. Best-Effort: Bei Offline-Status oder Auth-Fehler
+    /// wird der Aufruf still abgebrochen (lokale Daten werden trotzdem gelöscht).
+    /// </summary>
+    Task DeleteOwnEntryAsync();
+
     event EventHandler? PointsChanged;
     event EventHandler? SeasonEnded;
     event EventHandler? LeaderboardUpdated;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // DAILY BOMB RACE (v2.0.41, Plan Task 3.1)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Alle Liga-Mitglieder bekommen denselben Tages-Seed. Top-Score pro Tag ranked.
+    // Liga-Punkte: Daily-Race-Top-10 = +50 Punkte, Top-3 = +100 Punkte.
+    // Firebase-Schema: league/s{saison}/daily_race/{utcDate-yyyy-MM-dd}/{tier}/{uid}
+
+    /// <summary>UTC-Datum-basierter Seed fuer das tageaktuelle Race-Level (deterministisch fuer alle Spieler).</summary>
+    int GetDailyRaceSeed(DateTime utcDate);
+
+    /// <summary>UTC-Datum-Key fuer das tageaktuelle Race (Format "yyyy-MM-dd").</summary>
+    string GetDailyRaceDateKey(DateTime utcDate);
+
+    /// <summary>
+    /// Daily-Race-Score melden (zentral fuer alle Spieler in derselben Liga + Tag).
+    /// Nimmt nur Submission an wenn Score > bisheriger eigener Tagesbest.
+    /// Liga-Punkte werden separat ueber AddPoints() vergeben (Top-10/Top-3 nach Refresh).
+    /// </summary>
+    /// <param name="score">Erzielter Score auf dem heutigen Daily-Race-Level.</param>
+    Task<bool> SubmitDailyRaceScoreAsync(int score);
+
+    /// <summary>
+    /// Liefert die Daily-Race-Rangliste fuer das angegebene Datum (default: heute).
+    /// Top 20 echte Spieler aus Firebase fuer den eigenen Tier.
+    /// </summary>
+    Task<IReadOnlyList<LeagueLeaderboardEntry>> GetDailyRaceLeaderboardAsync(DateTime? utcDate = null);
+
+    /// <summary>
+    /// Liefert die globale Cross-Tier-Daily-Race-Rangliste (alle 5 Tiers parallel gefetcht + gemerged).
+    /// Top 50 echte Spieler weltweit. Performance-Hinweis: 5 parallele Firebase-Reads — etwas teurer
+    /// als der Single-Tier-Fetch, aber bei kleinem Saison-Set akzeptabel.
+    /// </summary>
+    Task<IReadOnlyList<LeagueLeaderboardEntry>> GetDailyRaceGlobalLeaderboardAsync(DateTime? utcDate = null);
+
+    /// <summary>Eigener Best-Score fuer das heutige Daily Race (0 wenn noch nicht gespielt).</summary>
+    int TodayDailyRaceBestScore { get; }
+
+    /// <summary>True wenn der Spieler heute schon mind. 1 Daily-Race-Run aufgezeichnet hat.</summary>
+    bool HasPlayedDailyRaceToday { get; }
 }
 
 /// <summary>Einzelner Eintrag in der Liga-Rangliste.</summary>

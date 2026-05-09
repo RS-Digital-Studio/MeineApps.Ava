@@ -60,4 +60,11 @@ public interface ICloudSaveService : IDisposable
 
     /// <summary>Cloud Save aktivieren/deaktivieren</summary>
     void SetEnabled(bool enabled);
+
+    /// <summary>
+    /// DSGVO Art. 17: Cloud-Save-Snapshot vollständig löschen (Account-Löschung).
+    /// Best-Effort — bei Offline-Status oder Permission-Fehler wird still abgebrochen,
+    /// damit der lokale Daten-Reset trotzdem laufen kann.
+    /// </summary>
+    Task DeleteCloudSaveAsync();
 }

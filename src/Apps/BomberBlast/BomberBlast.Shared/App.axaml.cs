@@ -30,6 +30,13 @@ public partial class App : Application
     public static IServiceProvider Services { get; private set; } = null!;
 
     /// <summary>
+    /// Aktuelles Mobile-Root-Panel — wird vom IActivityApplicationLifetime.MainViewFactory gesetzt.
+    /// RunLoadingAsync greift darauf zu um den DataContext nach Pipeline-Abschluss zu setzen.
+    /// Avalonia 12 hat kein direktes "View"-Getter auf IActivityApplicationLifetime.
+    /// </summary>
+    private static Control? _activityRoot;
+
+    /// <summary>
     /// Factory fuer plattformspezifischen IRewardedAdService (Android setzt RewardedAdHelper).
     /// Nimmt IServiceProvider entgegen fuer Lazy-Resolution von Abhaengigkeiten.
     /// </summary>
@@ -131,6 +138,21 @@ public partial class App : Application
 
             // Desktop: Beim Herunterfahren alle IDisposable-Singletons disposen
             desktop.ShutdownRequested += (_, _) => DisposeServices();
+        }
+        else if (ApplicationLifetime is IActivityApplicationLifetime activity)
+        {
+            // Avalonia 12: MainViewFactory wird pro Activity neu aufgerufen.
+            // Pipeline laeuft beim allerersten Factory-Call (Singleton via _activityRoot-Guard).
+            activity.MainViewFactory = () =>
+            {
+                var splash = CreateSplash();
+                var panel = new Panel();
+                panel.Children.Add(new MainView());
+                panel.Children.Add(splash);
+                _activityRoot = panel;
+                _ = RunLoadingAsync(splash);
+                return panel;
+            };
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {

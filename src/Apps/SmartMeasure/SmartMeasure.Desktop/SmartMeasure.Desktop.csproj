@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" />
-    <PackageReference Include="Avalonia.Diagnostics" />
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" />
     <!-- BLE fuer Desktop (Windows/Linux) -->
     <PackageReference Include="InTheHand.BluetoothLE" />
   </ItemGroup>

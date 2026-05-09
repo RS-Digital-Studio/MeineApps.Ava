@@ -115,9 +115,20 @@ public partial class App : Application
                 Content = mainVm
             };
         }
+        else if (ApplicationLifetime is IActivityApplicationLifetime activity)
+        {
+            // Android — ViewLocator wählt automatisch MainViewMobile für MainViewModel.
+            // Avalonia 12: MainViewFactory statt MainView — Factory wird pro Activity neu aufgerufen.
+            // mainVm ist Singleton im DI-Container, daher OK ihn zu capturen (selber Container-Lifecycle).
+            IsMobileShell = true;
+            activity.MainViewFactory = () => new Avalonia.Controls.ContentControl
+            {
+                Content = Services.GetRequiredService<MainViewModel>()
+            };
+        }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
         {
-            // Android/iOS — ViewLocator wählt automatisch MainViewMobile für MainViewModel.
+            // Fallback (z.B. iOS) — Avalonia 12 nutzt ISingleViewApplicationLifetime weiterhin auf einigen Plattformen.
             IsMobileShell = true;
             singleView.MainView = new Avalonia.Controls.ContentControl { Content = mainVm };
         }

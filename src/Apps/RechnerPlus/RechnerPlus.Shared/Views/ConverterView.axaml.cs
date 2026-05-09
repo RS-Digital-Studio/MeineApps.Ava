@@ -42,6 +42,11 @@ public partial class ConverterView : UserControl
     {
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel?.Clipboard != null)
-            await topLevel.Clipboard.SetTextAsync(text);
+        {
+            // Avalonia 12: DataTransfer + DataTransferItem (SetTextAsync entfernt)
+            var data = new Avalonia.Input.DataTransfer();
+            data.Add(Avalonia.Input.DataTransferItem.CreateText(text));
+            await topLevel.Clipboard.SetDataAsync(data);
+        }
     }
 }

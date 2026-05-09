@@ -79,7 +79,7 @@ public class MenuBackgroundCanvas : UserControl
         {
             // Theme geändert → Renderer neu initialisieren
             _initialized = false;
-            if (IsEffectivelyVisible && this.GetVisualRoot() != null)
+            if (IsEffectivelyVisible && TopLevel.GetTopLevel(this) != null)
             {
                 MenuBackgroundRenderer.Initialize(42, BackgroundTheme);
                 _initialized = true;
@@ -91,7 +91,7 @@ public class MenuBackgroundCanvas : UserControl
     /// <summary>Startet nur wenn effektiv sichtbar (inkl. Parent-Visibility) und im Visual Tree.</summary>
     private void StartIfVisible()
     {
-        if (IsEffectivelyVisible && this.GetVisualRoot() != null)
+        if (IsEffectivelyVisible && TopLevel.GetTopLevel(this) != null)
             Start();
     }
 
@@ -101,7 +101,7 @@ public class MenuBackgroundCanvas : UserControl
     /// </summary>
     public void Start()
     {
-        if (this.GetVisualRoot() == null || !IsEffectivelyVisible)
+        if (TopLevel.GetTopLevel(this) == null || !IsEffectivelyVisible)
             return;
 
         // Renderer einmalig initialisieren (mit aktuellem Theme)

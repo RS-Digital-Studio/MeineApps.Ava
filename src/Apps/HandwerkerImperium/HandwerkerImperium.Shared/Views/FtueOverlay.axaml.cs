@@ -74,7 +74,7 @@ public partial class FtueOverlay : UserControl
         {
             try
             {
-                if (this.GetVisualRoot() is not Control root) return;
+                if (TopLevel.GetTopLevel(this) is not Control root) return;
                 var target = FindByAutomationId(root, vm.SpotlightAutomationId!);
                 if (target == null) return;
 

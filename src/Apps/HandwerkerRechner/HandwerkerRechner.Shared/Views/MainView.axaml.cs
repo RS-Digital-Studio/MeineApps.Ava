@@ -166,7 +166,12 @@ public partial class MainView : UserControl
         {
             var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
             if (clipboard != null)
-                await clipboard.SetTextAsync(text);
+            {
+                // Avalonia 12: DataTransfer + DataTransferItem (SetTextAsync entfernt)
+                var data = new Avalonia.Input.DataTransfer();
+                data.Add(Avalonia.Input.DataTransferItem.CreateText(text));
+                await clipboard.SetDataAsync(data);
+            }
         }
         catch (Exception)
         {

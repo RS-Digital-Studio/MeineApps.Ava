@@ -54,7 +54,7 @@ public class App : Application
                 {
                     Title = "GardenControl",
                     WindowState = WindowState.FullScreen,
-                    SystemDecorations = SystemDecorations.None,
+                    WindowDecorations = WindowDecorations.None,
                     Content = new MainView { DataContext = _mainVm }
                 };
             }
@@ -78,8 +78,16 @@ public class App : Application
 
             _ = _mainVm.InitializeAsync();
         }
+        else if (ApplicationLifetime is IActivityApplicationLifetime activity)
+        {
+            // Avalonia 12: MainViewFactory wird pro Activity-Instanz neu aufgerufen.
+            // _mainVm ist Singleton — gleicher DI-Container pro Prozess.
+            activity.MainViewFactory = () => new MainView { DataContext = _mainVm };
+            _ = _mainVm.InitializeAsync();
+        }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
         {
+            // iOS-Fallback (Avalonia 12 nutzt SingleView dort weiter)
             singleView.MainView = new MainView { DataContext = _mainVm };
             _ = _mainVm.InitializeAsync();
         }

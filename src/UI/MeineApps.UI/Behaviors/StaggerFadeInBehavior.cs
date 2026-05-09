@@ -69,7 +69,7 @@ public class StaggerFadeInBehavior : Behavior<Control>
         AssociatedObject.DetachedFromVisualTree += OnDetachedFromVisualTree;
 
         // Falls bereits im Visual Tree → Animation direkt starten
-        if (AssociatedObject.GetVisualRoot() != null)
+        if (TopLevel.GetTopLevel(AssociatedObject) != null)
         {
             StartFadeIn();
         }

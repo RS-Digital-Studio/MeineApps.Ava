@@ -80,7 +80,7 @@ public class FadeInBehavior : Behavior<Control>
 
         // Fallback: Falls Control bereits im Visual Tree ist, wird AttachedToVisualTree
         // nicht mehr gefeuert → Animation direkt starten
-        if (AssociatedObject.GetVisualRoot() != null)
+        if (TopLevel.GetTopLevel(AssociatedObject) != null)
         {
             _ = RunFadeInAsync();
         }

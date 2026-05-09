@@ -614,7 +614,12 @@ public partial class CalculatorView : UserControl
     {
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel?.Clipboard != null)
-            await topLevel.Clipboard.SetTextAsync(text);
+        {
+            // Avalonia 12: DataTransfer + DataTransferItem (SetTextAsync entfernt)
+            var data = new Avalonia.Input.DataTransfer();
+            data.Add(Avalonia.Input.DataTransferItem.CreateText(text));
+            await topLevel.Clipboard.SetDataAsync(data);
+        }
     }
 
     private async Task OnClipboardPaste()
@@ -622,9 +627,10 @@ public partial class CalculatorView : UserControl
         if (_currentVm == null) return;
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel?.Clipboard == null) return;
-#pragma warning disable CS0618 // GetTextAsync ist veraltet, TryGetTextAsync braucht IAsyncDataTransfer
-        var text = await topLevel.Clipboard.GetTextAsync();
-#pragma warning restore CS0618
+        // Avalonia 12: TryGetDataAsync liefert IAsyncDataTransfer, der wiederum TryGetTextAsync hat
+        using var data = await topLevel.Clipboard.TryGetDataAsync();
+        if (data == null) return;
+        var text = await data.TryGetTextAsync();
         _currentVm.PasteValue(text);
     }
 

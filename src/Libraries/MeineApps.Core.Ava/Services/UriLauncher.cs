@@ -53,7 +53,13 @@ public static class UriLauncher
                 is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
                 ? desktop.MainWindow : null;
             var clipboard = mainWindow?.Clipboard;
-            clipboard?.SetTextAsync(text);
+            if (clipboard != null)
+            {
+                // Avalonia 12 Clipboard-API: DataTransfer + DataTransferItem
+                var data = new Avalonia.Input.DataTransfer();
+                data.Add(Avalonia.Input.DataTransferItem.CreateText(text));
+                _ = clipboard.SetDataAsync(data);
+            }
         }
         catch
         {

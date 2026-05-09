@@ -173,7 +173,7 @@ north_off = stabHeight * sin(tilt) * cos(azimuth)       // nur MagAccuracy ≥ 2
 
 Bei 5°/1,8 m Stab: 15,7 cm horizontaler Versatz. `SetStabHeightAsync` setzt Wert im Service.
 
-### ARCore Rotations-Formel (KRITISCH — war in Phase 1 falsch)
+### ARCore Rotations-Formel (KRITISCH — typische Fehlerquelle)
 
 ARCore: +X = rechts, +Y = oben, **+Z = hinten** (vom Gerät weg).
 Bei heading=0 zeigt -Z nach Norden. Korrekte Rotation:

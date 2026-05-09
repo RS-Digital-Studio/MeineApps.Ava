@@ -395,8 +395,8 @@ SQLite WAL-Modus für Multi-Mode-Concurrency. Schema-Versioning via `RunMigratio
 | `Logs` | Log-Einträge (LogEntity) |
 | `Settings` | JSON-blob pro Settings-Block (Risk/Scanner/Bot/Backtest) + `AutoResumeFlag` + `LastHeartbeatUtc` als separate Keys |
 | `BacktestJobs` | Backtest-Job-Metadaten (BacktestJobEntity) |
-| `EvaluationDecisions` | Decision-Trail (Phase 4, Migration v11), 50000-Eintrag-Trim mit Index auf Timestamp/Symbol/Reason |
-| `SettingsChanges` | Audit-Trail für Settings-Diffs (Phase 14, Migration v12) |
+| `EvaluationDecisions` | Decision-Trail (Migration v11), 50000-Eintrag-Trim mit Index auf Timestamp/Symbol/Reason |
+| `SettingsChanges` | Audit-Trail für Settings-Diffs (Migration v12) |
 | `RuntimeState` | TradesToday, ConsecutiveLosses, ExitStates, PendingLimitOrders (JSON-Blobs für Crash-Recovery) |
 
 ### Schema-Migration
@@ -717,7 +717,7 @@ MinRRR per Kategorie: 1.0 (SK-Buch S.13).
 - **Pending-Symbol-Side im Reconcile**: `PositionDriftAnalyzer` schliesst Pending-Limit-Entries vom OrphanSignal-Check aus
 - **Stale Pending-Cleanup**: `RiskSettings.PendingLimitOrderMaxAgeHours` (Default 6h) — schützt gegen Symbol-aus-Top-100-gefallen + Pending hängt tagelang gegen toten Markt
 - **Triple-Sibling-Key** (`_Prim` + `_Add`): `BuildPendingKey` baut `{symbol}#{sequenceId}` — Reconcile-Loop nutzt `kvp.Value.Symbol` für REST-API-Calls, NICHT `kvp.Key` (Key enthält SequenceId-Suffix)
-- **Strategy-Felder im Pending** (Phase 0.7): NavPointA, IsGklSetup, GklTimeframe, RunnerHardCap, IsCounterTrendScalp, PositionScaleOverride werden im Pending persistiert + bei Recovery rekonstruiert (sonst BE-Trigger feuert nie nach Restart)
+- **Strategy-Felder im Pending**: NavPointA, IsGklSetup, GklTimeframe, RunnerHardCap, IsCounterTrendScalp, PositionScaleOverride werden im Pending persistiert + bei Recovery rekonstruiert (sonst BE-Trigger feuert nie nach Restart)
 
 ### Mathematik / Metriken
 

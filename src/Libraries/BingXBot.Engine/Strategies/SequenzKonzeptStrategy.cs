@@ -566,13 +566,18 @@ public class SequenzKonzeptStrategy : IStrategy
         var fundingBonusEnabled = scannerSettings?.EnableFundingRateBonus ?? true;
         if (fundingBonusEnabled && context.FundingRatePercent != 0m)
         {
-            var thresholdPct = scannerSettings?.FundingRateBonusThresholdPercent ?? 0.05m;
+            var basePct = scannerSettings?.FundingRateBonusThresholdPercent ?? 0.05m;
+            // Phase 18 / F5 — Symbol-spezifischer Multiplier auf den Threshold. Memecoins haben
+            // strukturell hoehere Funding-Spitzen (0.5-1 %), Majors selten ueber 0.05 %. Ohne
+            // Multiplier loest der Bonus auf Memecoins zu oft aus. Default-Multiplier 1.0 = kein Effekt.
+            var multiplier = scannerSettings?.GetFundingThresholdMultiplier(context.Category) ?? 1.0m;
+            var thresholdPct = basePct * multiplier;
             var thresholdDec = thresholdPct / 100m; // Prozent → Decimal
             var fundingRate = context.FundingRatePercent;
             if (tradeIsLong && fundingRate < -thresholdDec)
-                scorer.Add(ConfluenceCategory.FavorableFundingRate, $"Funding {fundingRate:P4} fuer Long");
+                scorer.Add(ConfluenceCategory.FavorableFundingRate, $"Funding {fundingRate:P4} fuer Long (Threshold {thresholdPct:F4} %)");
             else if (!tradeIsLong && fundingRate > thresholdDec)
-                scorer.Add(ConfluenceCategory.FavorableFundingRate, $"Funding {fundingRate:P4} fuer Short");
+                scorer.Add(ConfluenceCategory.FavorableFundingRate, $"Funding {fundingRate:P4} fuer Short (Threshold {thresholdPct:F4} %)");
         }
 
         var score = scorer.Score;

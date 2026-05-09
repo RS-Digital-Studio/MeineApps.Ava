@@ -363,4 +363,25 @@ public class ScannerSettings
     /// Default 20 (Buch-konform).
     /// </summary>
     public int NavigatorMinCandlesOffset { get; set; } = 20;
+
+    // === Phase 18 / F5 — Symbol-spezifischer Funding-Bonus-Threshold ===
+    /// <summary>
+    /// Phase 18 / F5 — Markt-Kategorie-spezifischer Multiplier auf <see cref="FundingRateBonusThresholdPercent"/>.
+    /// Memecoins haben strukturell hoehere Funding-Spitzen (0.5-1 %) als Majors (selten > 0.05 %).
+    /// Standard-Threshold (0.05 %) loest auf Memecoins zu oft aus → Multiplier &gt; 1.0 fuer
+    /// Memecoin-Topf. Aktuell ueber MarketCategory; granular Cluster-Mapping ist Folgeschritt.
+    /// Default: alle 1.0 = kein Effekt (Backwards-Compat).
+    /// </summary>
+    public Dictionary<MarketCategory, decimal> FundingThresholdMultiplierByCategory { get; set; } = new()
+    {
+        { MarketCategory.Crypto, 1.0m },
+        { MarketCategory.Forex, 1.0m },
+        { MarketCategory.Index, 1.0m },
+        { MarketCategory.Commodity, 1.0m },
+        { MarketCategory.Stock, 1.0m },
+    };
+
+    /// <summary>Phase 18 / F5 — liefert den Multiplier fuer eine Kategorie (Default 1.0).</summary>
+    public decimal GetFundingThresholdMultiplier(MarketCategory category)
+        => FundingThresholdMultiplierByCategory.TryGetValue(category, out var m) && m > 0 ? m : 1.0m;
 }

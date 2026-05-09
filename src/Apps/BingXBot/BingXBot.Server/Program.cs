@@ -134,6 +134,8 @@ services.AddHostedService<BingXBot.Server.Services.AdaptiveTfDisableService>(sp 
 // Aktivierung: firebase-service-account.json in DataDirectory ablegen + FirebaseAdmin NuGet hinzufuegen.
 services.AddSingleton<BingXBot.Server.Services.FcmDeviceStore>();
 services.AddHostedService<BingXBot.Server.Services.FcmPushService>();
+// Phase 18 / F2 — FCM-Token-Cleanup (24h-Tick, entfernt Devices > 30 Tage inaktiv).
+services.AddHostedService<BingXBot.Server.Services.FcmTokenCleanupService>();
 
 // Log-Ringpuffer: liefert den Server-seitigen /api/v1/logs-Endpoint. Clients sehen nach
 // Reconnect die letzten N Eintraege statt einer leeren Log-Ansicht.

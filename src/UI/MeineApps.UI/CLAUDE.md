@@ -57,7 +57,7 @@ SkiaSharp-Visualisierungen, GPU-Shader und das Loading-Pipeline-Framework.
 | `SkiaChartTooltip.cs` | Tooltip-System für interaktive Charts (Pfeil, Auto-Positionierung, Highlight-Dot) |
 | `InteractiveChartBase.cs` | Abstrakte Basis für Touch-Charts (Drag, Tooltip-Timeout 2s, DPI-Skalierung) |
 | `EasingFunctions.cs` | Mathematische Easing-Funktionen (CubicEaseOut, SineEaseInOut etc.) |
-| `AnimatedVisualizationBase.cs` | Abstrakte Basis für animierte Renderer (Einschwing-Animation) |
+| `AnimatedVisualizationBase.cs` | Basis für animierte Renderer (Einschwing-Animation, `StartAnimation()` + `AnimationProgress`) |
 
 ### SkSL GPU-Shader (`SkiaSharp/Shaders/`)
 

@@ -24,7 +24,8 @@ Abhängigkeit: `MeineApps.Core.Ava` (IPreferencesService).
 | `Android/RewardedAdHelper.cs` | Linked File | Rewarded Ad Lifecycle + JNI-Fix + Retry |
 | `Android/AndroidRewardedAdService.cs` | Linked File | `IRewardedAdService` Android-Implementierung |
 | `Android/AndroidPurchaseService.cs` | Linked File | Google Play Billing Client v8 |
-| `Android/AndroidPlayGamesService.cs` | Linked File | Google Play Games Services v2 |
+| `Android/AndroidPlayGamesService.cs` | Linked File | Google Play Games Services v2 (Achievements + Leaderboards) |
+| `Android/AndroidFileShareService.cs` | Linked File | Native Share-Sheet via `Intent.ActionSend` (für `UriLauncher.ShareText`) |
 
 ---
 

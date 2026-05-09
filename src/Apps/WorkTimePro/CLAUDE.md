@@ -1,7 +1,8 @@
 # WorkTimePro — Arbeitszeiterfassung & Export
 
 Vollständige Arbeitszeiterfassung mit Check-in/out, Pausen, Urlaub, Schichtplanung,
-Feiertagen (DE/AT/CH), Statistiken (12 SkiaSharp-Charts) und Export (PDF/Excel/CSV/ICS).
+Feiertagen (DE/AT/CH), Statistiken (11 eigene + 3 geteilte SkiaSharp-Visualisierungen)
+und Export (PDF/Excel/CSV/ICS).
 
 > Für Build-Befehle, Conventions, Troubleshooting → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
@@ -27,8 +28,8 @@ src/Apps/WorkTimePro/
 
 ### DI-Registrierung (App.axaml.cs)
 
-Alle Services als Singleton. ViewModels: `MainViewModel` Singleton, Child-VMs Transient
-(aus DI). Platform-Services über Factory-Pattern:
+Alle Services als Singleton. ViewModels: alle als **Singleton** registriert (MainViewModel
+und alle Child-VMs). Platform-Services über Factory-Pattern:
 
 | Factory-Property | Plattform | Zweck |
 |-----------------|-----------|-------|
@@ -89,16 +90,17 @@ Tab-Wechsel (`MainViewModel.LoadTabDataAsync`).
 
 | Tabelle | Modell | Besonderheit |
 |---------|--------|-------------|
-| `WorkDay` | `WorkDay` | UNIQUE-Index auf `Date` |
-| `TimeEntry` | `TimeEntry` | UNIQUE auf `(WorkDayId, Timestamp, Type)` (Anti-Duplikat) |
-| `PauseEntry` | `PauseEntry` | FK auf `WorkDayId`, Index |
-| `VacationEntry` | `VacationEntry` | FK auf `Year` |
-| `VacationQuota` | `VacationQuota` | Pro Jahr + optionaler EmployerId |
-| `HolidayEntry` | `HolidayEntry` | Region-basiert (gespeichert je Kombination Jahr+Region) |
-| `Project` | `Project` | Soft-Delete (IsActive) |
-| `Employer` | `Employer` | Default-Flag, SetDefaultAsync via 2× SQL-UPDATE |
-| `ShiftPattern` | `ShiftPattern` | Wiederkehrendes Muster |
-| `ShiftAssignment` | `ShiftAssignment` | Einzelne Tages-Zuweisung, Index auf Date |
+| `WorkDays` | `WorkDay` | UNIQUE-Index auf `Date` |
+| `TimeEntries` | `TimeEntry` | UNIQUE auf `(WorkDayId, Timestamp, Type)` (Anti-Duplikat) |
+| `PauseEntries` | `PauseEntry` | FK auf `WorkDayId`, Index |
+| `VacationEntries` | `VacationEntry` | FK auf `Year` |
+| `VacationQuotas` | `VacationQuota` | Pro Jahr + optionaler EmployerId |
+| `Holidays` | `HolidayEntry` | Region-basiert (gespeichert je Kombination Jahr+Region) |
+| `Projects` | `Project` | Soft-Delete (IsActive) |
+| `Employers` | `Employer` | Default-Flag, SetDefaultAsync via 2× SQL-UPDATE |
+| `ShiftPatterns` | `ShiftPattern` | Wiederkehrendes Muster |
+| `ShiftAssignments` | `ShiftAssignment` | Einzelne Tages-Zuweisung, Index auf Date |
+| `WorkSettings` | `WorkSettings` | Singleton-Zeile (FirstOrDefault + Insert wenn leer) |
 
 ### Enums
 
@@ -107,9 +109,11 @@ Tab-Wechsel (`MainViewModel.LoadTabDataAsync`).
 | `DayStatus` | WorkDay, Weekend, Vacation, Holiday, Sick, UnpaidLeave, HomeOffice, BusinessTrip, OvertimeCompensation, SpecialLeave, Training, CompensatoryTime (12 Typen) |
 | `TrackingStatus` | Idle, Working, OnBreak |
 | `EntryType` | CheckIn, CheckOut |
+| `PauseType` | Manual, Auto (Auto = gesetzlich ergänzt) |
 | `ShiftType` | Early, Late, Night, Normal, Flexible, Off |
 | `ExportFormat` | PDF, CSV, Excel |
 | `StatisticsPeriod` | Week, Month, Quarter, Year, Custom |
+| `CloudProvider` | None, GoogleDrive, OneDrive (in WorkSettings, noch nicht aktiv) |
 
 ### DateTime-Konvention (WorkTimePro-spezifisch)
 
@@ -243,7 +247,6 @@ Navigation: Event-basiert (`NavigationRequested`), kein Avalonia Shell.
 | `WeekdayRadialVisualization` | Radiales Balkendiagramm Mo–So, gestrichelte Soll-Linie |
 | `WeeklyWorkChartVisualization` | Wöchentliche Arbeitsstunden + Soll-Linie |
 | `MonthlyBarChartVisualization` | Monatsbalken + kumulative Saldo-Kurve |
-| `LinearProgressVisualization` | Gradient-Fortschrittsbalken mit Glow + Prozent |
 | `VacationQuotaGaugeVisualization` | 3 konzentrische Ringe, Farbe grün→gelb→rot nach Verbrauch |
 | `StatsSummaryGaugeVisualization` | 4 Halbkreis-Gauges (Arbeitszeit/Überstunden/Schnitt/Quote) |
 | `MonthWeekProgressVisualization` | Alle Wochen eines Monats als Gradient-Balken in einem Canvas |
@@ -251,6 +254,7 @@ Navigation: Event-basiert (`NavigationRequested`), kein Avalonia Shell.
 | `WorkspaceBackgroundRenderer` | "Professional Dashboard": 5-Layer animierter Hintergrund (~5fps, 0 GC/Frame) |
 
 Geteilte Controls aus `MeineApps.UI`:
+- `LinearProgressVisualization` (Gradient-Fortschrittsbalken mit Glow + Prozent, in `WeekOverviewView`)
 - `DonutChartVisualization` (Pausen, Projekte, Arbeitgeber)
 - `SkiaGradientRing` (Tagesfortschritt-Ring auf TodayView)
 

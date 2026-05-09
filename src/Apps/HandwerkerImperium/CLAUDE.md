@@ -85,19 +85,23 @@ Alle Services sind Singletons. DI-Container owned die Dispose-Aufrufe.
 `Services as IDisposable`.
 
 ```
-GameLoopService (1s-Takt)
-├── GameStateService         (lock + ExecuteWithLock)
+GameLoopService (1s-Takt, partial: cs + Automation + PeriodicChecks + PrestigeCache)
+├── GameStateService         (lock + ExecuteWithLock, partial: cs + Money + Xp + Workshop + Orders)
 │   ├── SaveGameService      (IO-Lock, AutoSave alle 30s, Background-Thread)
 │   └── IncomeCalculatorService  (zentrales Income/Cost-Berechnung)
 ├── WorkerService            (Mood, Fatigue, Training, Markt-Generierung)
-├── OrderGeneratorService    (4 OrderTypes, Live-Spawn, Stammkunden)
+├── OrderGeneratorService    (6 OrderTypes inkl. Quick+MaterialOrder, Live-Spawn, Stammkunden)
 ├── ResearchService          (45 Nodes, Timer, Effekt-Cache)
 ├── EventService             (8 Typen, Intervall-Skalierung per Tier)
-├── AutoProductionService    (Tier-1-Produktion passiv)
-├── GuildBossService         (60s/Offset 20)
-├── GuildHallService         (60s/Offset 40)
-├── GuildAchievementService  (300s/Offset 250)
-└── GuildWarSeasonService    (300s/Offset 260)
+├── AutoProductionService    (Tier-1 alle 180s/Offset 90, Higher-Tier alle 360s/Offset 270)
+├── GuildCoopOrderService    (Firebase Co-op-Aufträge, PATCH-atomar, HMAC-signiert)
+├── WorkerAuctionService     (Auktionen, NPC-Bots, Bid-Idempotenz)
+└── GuildTickService         (Facade über 5 Gilden-Tick-Services, 1 Dependency statt 4)
+    ├── GuildBossService         (60s/Offset 20)
+    ├── GuildHallService         (60s/Offset 40)
+    ├── GuildAchievementService  (300s/Offset 250)
+    ├── GuildWarSeasonService    (300s/Offset 260)
+    └── WorkerAuctionService     (Spawn 300s/Offset 90, NPC-Bot-Tick 5s/Offset 1)
 ```
 
 ### ViewLocator-Konvention (Guild-Sub-VMs)
@@ -110,15 +114,15 @@ Thin-Wrapper-Pattern: Sub-VM hat nur `GuildViewModel Guild { get; }`, Bindings v
 
 ### Feature-ViewModels (Source-of-Truth, kein MainViewModel-State)
 
-| ViewModel | Properties | Kommunikation zurück |
-|-----------|-----------|----------------------|
-| `HeaderViewModel` | 16 (Money, Level, GoldenScrews, XP, ...) | PropertyChanged-Forward in MainVM |
-| `PrestigeBannerViewModel` | 18 (IsPrestigeAvailable, Preview-Props, ...) | dito |
-| `GoalBannerViewModel` | CurrentGoal + NavigateToGoalCommand | INavigationService direkt |
-| `WelcomeFlowViewModel` | 13 (Dialog-Sichtbarkeiten, Texte) | Events an MainViewModel |
-| `MissionsFeatureViewModel` | Daily/Weekly/QuickJobs/LuckySpin-Props | NavigateToMiniGameRequested |
-| `EconomyFeatureViewModel` | Workshop/Order/Rush-Commands | FloatingTextRequested, CelebrationRequested |
-| `DialogViewModel` | 45 Props, implementiert IDialogService | Events an MainViewModel |
+| ViewModel | Properties | Kommunikation zurück | Instanziierung |
+|-----------|-----------|----------------------|----------------|
+| `HeaderViewModel` | 16 (Money, Level, GoldenScrews, XP, ...) | PropertyChanged-Forward in MainVM | DI Singleton |
+| `PrestigeBannerViewModel` | 18 (IsPrestigeAvailable, Preview-Props, ...) | dito | DI Singleton |
+| `GoalBannerViewModel` | CurrentGoal + NavigateToGoalCommand | INavigationService direkt | DI Singleton |
+| `WelcomeFlowViewModel` | 13 (Dialog-Sichtbarkeiten, Texte) | Events an MainViewModel | DI Singleton |
+| `MissionsFeatureViewModel` | Daily/Weekly/QuickJobs/LuckySpin-Props | NavigateToMiniGameRequested | DI Singleton |
+| `EconomyFeatureViewModel` | Workshop/Order/Rush-Commands | FloatingTextRequested, CelebrationRequested | `new` in MainViewModel.Economy.cs (KEIN DI) |
+| `DialogViewModel` | 45 Props, implementiert IDialogService | Events an MainViewModel | DI Singleton |
 
 ### Navigation-Services
 
@@ -131,10 +135,11 @@ Thin-Wrapper-Pattern: Sub-VM hat nur `GuildViewModel Guild { get; }`, Bindings v
 
 ### DI-Registrierung (App.axaml.cs)
 
-- Services → Singleton (alle 40+ Services)
+- Services → Singleton (70+ Services)
 - MainViewModel → Singleton
-- Child-VMs → Singleton (HeaderVM, PrestigeBannerVM, DialogVM, MissionsFeatureVM, ...)
+- Child-VMs → Singleton (HeaderVM, PrestigeBannerVM, DialogVM, MissionsFeatureVM, GuildCoopOrderVM, WorkerAuctionVM, NotificationCenterVM, ReputationShopVM, ...)
 - Guild-Sub-VMs (GuildWarSeasonVM, GuildBossVM, GuildHallVM) → Singleton
+- `EconomyFeatureViewModel` → per `new` in `MainViewModel.Economy.cs` erstellt (KEIN DI, braucht mainVM-Kontext)
 - Thin-Wrapper-VMs (GuildResearchVM, ...) → im GuildViewModel-Ctor erstellt (kein DI-Container)
 
 **IGuildFacade**: Service-Container-Facade bündelt 9 Gilden-Services über Properties.
@@ -167,11 +172,18 @@ Jede Sekunde:
   Offline-Kündigung: Worker kündigen nach 24h bei Mood<20 (konsistent mit Online)
   AutoSave alle 30s (JSON, Background-Thread via Task.Run + ExecuteWithLock)
 
-Alle 25s: Live-Auftrag spawnen (50% Chance, max 5 parallel)
 Alle 3 Ticks: ExpireOldLiveOrders (Early-Exit wenn LiveOrderCount == 0)
-Alle 60s: Lieferant-Check, Research-Check, Boss-Check (Offset 20), Hall-Check (Offset 40)
-Alle 300s: Achievement-Check (Offset 250), WarSeason-Check (Offset 260)
-Alle 180 Ticks: AutoProduktion (Offset 90)
+Alle 5 Ticks: Automation (AutoCollect, AutoAccept) (Offset 3)
+Alle 10 Ticks: Lieferant-Check
+Alle 25 Ticks: Live-Auftrag spawnen (50% Chance, max 5 parallel) (Offset 17)
+Alle 60 Ticks: QuickJob-Rotation, Order-Expiry, WeeklyMission-Check (Offset 15), AutoAssign (Offset 30), MasterSmith-Materialien (Offset 45)
+Alle 120 Ticks: Manager-Unlock-Check (Offset 60), MasterTool-Check
+Alle 180 Ticks: AutoProduktion Tier-1 (Offset 90)
+Alle 300 Ticks: Event-Check, Saison-Check (Offset 150), BattlePass-Check (Offset 200)
+Alle 360 Ticks: Auto-Craft höherer Tiers (Offset 270)
+Jeder Tick: GuildTickService.ProcessTick() → Boss (60s/Offset 20), Hall (60s/Offset 40),
+             Achievements (300s/Offset 250), WarSeason (300s/Offset 260),
+             Auktions-Spawn (300s/Offset 90), NPC-Bot-Tick (5s/Offset 1)
 ```
 
 **IsBusy-Guard**: `private bool _isBusy` + try/finally in GuildVM, SettingsVM, ShopVM, WorkerMarketVM
@@ -238,13 +250,14 @@ Morale (−MoodDecay max 50%). Auto-Rest bei 100% Fatigue → Auto-Resume nach E
 
 ### Auftragstypen (OrderType)
 
-| Typ | Freischaltung | Belohnung | Besonderheit |
-|-----|---------------|-----------|-------------|
-| Standard | Immer | 1.0x | Basis |
-| Large | WS-Level 10+ | 1.8x | Mehr Aufgaben |
-| Cooperation | WS-Level 15+, ≥2 Workshops | 2.5x | Gemischte Aufgaben |
-| Weekly | WS-Level 20+ | 3.0x | 7-Tage-Deadline |
-| MaterialOrder | WS-Level 50+ | 1.8x | Kein MiniGame, Items liefern, 4h Deadline, max 3/Tag |
+| Typ | Freischaltung | Belohnung | Aufgaben | Besonderheit |
+|-----|---------------|-----------|----------|-------------|
+| Quick | Immer | 0.6x | 1 | Schnellauftrag, kein Deadline |
+| Standard | Immer | 1.0x | 2–3 | Basis |
+| Large | Level 10+ | 1.8x | 4–6 | Mehr Aufgaben |
+| Cooperation | Level 15+, ≥2 Workshops | 2.5x | 3 (gemischt) | Mehrere Werkstatt-Typen |
+| Weekly | Level 20+ | 3.0x | 10 | 7-Tage-Deadline |
+| MaterialOrder | Level 50+ (AutoProductionUnlockLevel) | 1.8x | 0 | Kein MiniGame, Items liefern, 4h Deadline |
 
 **Stammkunden**: 20% Chance, BonusMultiplier 1.1–1.5x.
 
@@ -511,9 +524,12 @@ mit `_disposed`-Guard. Statische Felder werden NICHT disposed.
 
 `App.DisposeServices()` → `GameJuiceEngine.Dispose()` → alle Renderer-Dispose-Kaskaden.
 
-**Statische Renderer** (kein IDisposable nötig, nur static readonly):
-`FireworksRenderer`, `LoadingScreenRenderer`, `WorkerAvatarRenderer`, `GameCardRenderer`,
-`ResearchIconRenderer`.
+**Statische Renderer** (`static class`, kein IDisposable nötig):
+`GameCardRenderer`, `WorkshopGameCardRenderer`, `ResearchIconRenderer`.
+
+**Instanz-Renderer ohne Instanz-Felder** (sealed class, aber alle Felder static readonly):
+`FireworksRenderer`, `LoadingScreenRenderer` — kein IDisposable erforderlich, da keine
+Instanz-SKPaint-Felder vorhanden sind.
 
 ### SKPath/SKFont-Caching-Pattern (GC-Reduktion bei 30fps)
 
@@ -530,10 +546,14 @@ Gecachte Instanz- oder Klassenfelder statt `using var` pro Frame:
 
 **Shader-Cache-Pattern**: Nur bei Bounds-Änderung neu erstellen (ForgeGame, Wiring, Sawing, CraftTextures).
 
-### WorkerAvatarControl
+### WorkerAvatarControl (`Controls/WorkerAvatarControl.cs`)
 
-Gemeinsamer statischer Timer (`s_sharedTimer`) für alle Instanzen. Statische `s_bitmapPaint` + `s_blinkPaint`.
-WeakReference-Liste für Auto-Cleanup. `FpsProfile.WorkerAvatar()` für adaptives Intervall.
+Custom `Control`-Ableitung (kein TemplatedControl, kein SKCanvasView direkt).
+Gemeinsamer statischer DispatcherTimer (`s_sharedTimer`) für alle Instanzen — ein Tick für alle statt
+pro-Instanz-Timer. Statische `s_bitmapPaint` + `s_blinkPaint` ohne Allokation pro Frame.
+WeakReference-Liste (`s_instances`) für Auto-Cleanup toter Controls.
+`FpsProfile.CurrentChanged`-Event für Live-Intervall-Update bei Qualitätswechsel.
+`WorkerAvatarRenderer` (sealed class) rendert das Pixel-Art-Bitmap, gecacht im `GameAssetService`.
 
 ### FPS-Profile (FpsProfile.cs, plattformadaptiv)
 

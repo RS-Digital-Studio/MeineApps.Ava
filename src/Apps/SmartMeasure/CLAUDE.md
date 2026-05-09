@@ -7,7 +7,7 @@ GeoJSON, DXF, KMZ, CSV, PDF. Nicht im Play Store.
 
 | Aspekt | Wert |
 |--------|------|
-| Aktuelle Version | v1.0.2 |
+| Aktuelle Version | v1.1.4 |
 | Modus | Desktop (Entwicklung/Mock) + Android (Samsung Galaxy S25 Ultra) |
 | Min SDK | 26 (Android 8.0) |
 | ARCore-Paket | Vapolia.Google.ARCore 1.47.1 |
@@ -20,15 +20,17 @@ GeoJSON, DXF, KMZ, CSV, PDF. Nicht im Play Store.
 ```
 src/Apps/SmartMeasure/
 ├── SmartMeasure.Shared/
-│   ├── ViewModels/        # 8 ViewModels (Connect, Survey, Terrain, GardenPlan, Map, Projects, Stakeout, Settings)
-│   ├── Views/             # 8 Views mit x:CompileBindings="True"
-│   ├── Services/          # Interfaces + Desktop-Impls + Mock-Impls
-│   ├── Models/            # SurveyPoint, GardenElement, TerrainMesh, ArPoint, ArContour, ArCaptureResult
+│   ├── ViewModels/        # 9 ViewModels (Connect, Survey, Terrain, GardenPlan, Map, Projects, Stakeout, Settings, Main)
+│   ├── Views/             # 9 Views mit x:CompileBindings="True" (inkl. StakeoutView + MainView)
+│   ├── Services/          # Interfaces + Shared-Impls (AppPaths, MockBleService, MockArCaptureService, ...)
+│   ├── Models/            # SurveyPoint, SurveyProject, NtripConfig, MaterialEstimate, StickState,
+│   │                      # GardenElement, StakeoutTarget, TerrainMesh, ArPoint, ArContour, ArCaptureResult
 │   └── Graphics/          # 5 SkiaSharp-Renderer (Terrain, GardenPlan, SurveyLive, Stakeout, Thumbnail)
 ├── SmartMeasure.Desktop/
-│   └── Services/          # DesktopBleService, DesktopAppPaths
+│   └── Program.cs         # Einstiegspunkt. Kein eigener Service-Ordner — Desktop nutzt Shared-Impls
 └── SmartMeasure.Android/
-    ├── Ar/                # ArCaptureActivity, ArBackgroundRenderer, ArPointOverlayView, AndroidArCaptureService
+    ├── Ar/                # ArCaptureActivity, ArBackgroundRenderer, ArPointOverlayView,
+    │                      # AndroidArCaptureService, ArAnchorManager, ArPrecisionHelpers, ArOverlayState
     └── Services/          # AndroidBleService, AndroidAppPaths, MeasurementForegroundService
 ```
 
@@ -275,8 +277,8 @@ FrameLayout
 | Feature | Zweck |
 |---------|-------|
 | `ArAnchorManager` | Drift-Kompensation: Anchor pro gesetztem Punkt, RefreshAnchors pro Frame |
-| `ArPoseSampler` | Multi-Frame-Averaging (15 Samples / 800 ms), Median + ±3σ-Outlier-Filter |
-| `ArStabilityMonitor` | EMA über Gyro + Accel, StabilityScore 0..1, Block bei <0,6 |
+| `ArPoseSampler` (in `ArAnchorManager.cs`) | Multi-Frame-Averaging (15 Samples / 800 ms), Median + ±3σ-Outlier-Filter |
+| `ArStabilityMonitor` (in `ArAnchorManager.cs`) | EMA über Gyro + Accel, StabilityScore 0..1, Block bei <0,6 |
 | `ArPrecisionHelpers` | Depth-Sanity, Ground-Plane, ARCore-Heading-Extraktion, Bowditch-Correction |
 | Geospatial API (VPS) | `earth.CameraGeospatialPose` → Heading ±5° statt ±15–30° (Metall-immun) |
 | Earth-Anchors | Persistent über Session-Ende via VPS re-lokalisierbar |

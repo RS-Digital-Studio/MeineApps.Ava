@@ -7,6 +7,7 @@ plus Android- und Desktop-App für mobile Steuerung. Solar-betrieben (kein Strom
 
 | Aspekt | Wert |
 |--------|------|
+| Version | v1.0.0 (VersionCode 1) |
 | Pi-Hostname | `gardencontrol.local` |
 | Server-URL | `http://<pi-ip>:5000` |
 | Theme | Sattes Grün `#2E7D32` + Wasser-Blau `#1E88E5` + Erd-Braun `#8D6E63` |
@@ -91,16 +92,32 @@ bash src/Apps/GardenControl/GardenControl.Server/Install/deploy.sh gardencontrol
 - SignalR: `http://<pi-ip>:5000/hub/garden` (Echtzeit-Push)
 - Mock-Hardware: Automatisch wenn kein `/sys/class/gpio` erkannt (Desktop-Entwicklung)
 
-## Server-Services
+## Server-Komponenten
+
+### `Hardware/` (Plattform-Abstraktion)
+
+| Klasse | Aufgabe |
+|--------|---------|
+| `IGpioService` / `GpioService` | Relais-Steuerung über `System.Device.Gpio` |
+| `ISensorService` / `SensorService` | ADC-Werte via `Iot.Device.Ads1115` |
+| `MockHardwareService` | Implementiert beide Interfaces ohne echte Hardware (Desktop-Entwicklung) |
+
+Mock-Erkennung: automatisch wenn `/sys/class/gpio` nicht vorhanden ist.
+
+### `Services/`
 
 | Service | Aufgabe |
 |---------|---------|
-| GpioService / MockGpioService | Relais-Steuerung über System.Device.Gpio |
-| SensorService / MockSensorService | ADC-Werte via Iot.Device.Ads1115 |
-| IrrigationService | Bewässerungslogik (Start/Stop/Schwellenwerte/Cooldown) |
-| DatabaseService | SQLite (Messwerte, Ereignisse, Zonen, Konfiguration) |
-| SensorPollingWorker | Background-Service für periodisches Polling + SignalR-Push |
-| GardenHub | SignalR Hub für Echtzeit-Kommunikation |
+| `IIrrigationService` / `IrrigationService` | Bewässerungslogik (Start/Stop, Schwellenwerte, Cooldown) |
+| `IDatabaseService` / `DatabaseService` | SQLite (Messwerte, Ereignisse, Zonen, Konfiguration) |
+| `SensorPollingWorker` | `BackgroundService` für periodisches Sensor-Polling + SignalR-Push |
+| `Weather/` | Wetterdaten-Integration (regenbasiertes Skip der Bewässerung) |
+
+### `Hubs/`
+
+| Hub | Aufgabe |
+|-----|---------|
+| `GardenHub` | SignalR-Hub für Echtzeit-Kommunikation (`/hub/garden`) |
 
 ## Client-ViewModels
 

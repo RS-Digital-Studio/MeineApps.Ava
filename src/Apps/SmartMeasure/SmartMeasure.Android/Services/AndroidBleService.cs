@@ -24,7 +24,7 @@ namespace SmartMeasure.Android.Services;
 /// Kommuniziert via BLE GATT mit dem ESP32-S3 auf dem Stab.
 ///
 /// Produktions-Hardening:
-/// - MTU-Request 128 (Default 23 reicht nicht für 48-Byte Point-Pakete)
+/// - MTU-Request 247 (BLE 5.3 DLE Maximum — Default 23 reicht nicht für 48-Byte Point-Pakete)
 /// - Write-Queue mit seriellem OnCharacteristicWrite-Acknowledgment
 /// - Exponential-Backoff Reconnect (1s, 2s, 4s, max 10s)
 /// - Endianness-explizite BitConverter-Alternative (little-endian ESP32)
@@ -243,7 +243,7 @@ public sealed class AndroidBleService : IBleService, IDisposable
             CurrentState.IsConnected = true;
         }
 
-        // MTU 128 MUSS angefordert werden — Default 23 Bytes reicht nicht:
+        // MTU 247 MUSS angefordert werden — Default 23 Bytes reicht nicht:
         // Position-Paket = 24 Bytes, Point-Paket = 48 Bytes → würde abgeschnitten
         var gatt = _gatt;
         if (gatt != null && !gatt.RequestMtu(TargetMtu))

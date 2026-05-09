@@ -8,6 +8,8 @@ Angebots-Generator, Vorlagen und Einheiten-Umrechnung. Premium-Modell = nur "rem
 | Aspekt | Wert |
 |--------|------|
 | Package-ID | `com.meineapps.handwerkerrechner` |
+| Version | v2.0.7 (VersionCode 22) |
+| Theme | Blueprint Professional (`#3B82F6` Blau) |
 | Premium | 3,99 EUR `remove_ads` (alle 19 Rechner sind frei zugänglich) |
 | Ad-Placements | `material_pdf`, `project_export` (Rewarded) |
 
@@ -124,13 +126,25 @@ Arrays — `Random.Shared.NextDouble()` pro Frame würde sichtbar wackeln.
 
 ## Services
 
+### App-spezifisch (`HandwerkerRechner.Shared/Services/`)
+
 | Service | Zweck |
 |---------|-------|
-| `ProjectService` | JSON-Persistenz Project-Model, `DateTime.UtcNow`, SemaphoreSlim-Locks |
-| `CalculationHistoryService` (in `Core.Ava`) | History pro Rechner (max 30 Items), 2s-Debounce-Save, parallel-load mit `Task.WhenAll`, static `JsonSerializerOptions` |
-| `UnitConverterService` | Länge, Fläche, Volumen, Gewicht (Metrisch/Imperial) |
+| `ICalculatorFactoryService` / `CalculatorFactoryService` | Factory-Dictionary `Route → Func<ObservableObject>` für alle 19 Calculator-VMs (ersetzt switch/case in MainViewModel) |
+| `IProjectService` / `ProjectService` | JSON-Persistenz Project-Model, `DateTime.UtcNow`, SemaphoreSlim-Locks |
+| `IProjectTemplateService` / `ProjectTemplateService` | Built-in + Eigene Templates, Property-Key-Konsistenz mit Calculator-VM `LoadProjectAsync` |
+| `IQuoteService` / `QuoteService` | Angebots-Generator (Kundendaten, Positionen, Marge + MwSt, PDF-Export) |
+| `IFavoritesService` / `FavoritesService` | Favorisierte Calculator (Reihenfolge merken) |
 | `IMaterialExportService` / `MaterialExportService` | PDF (PdfSharpCore A4) + CSV (Semikolon, UTF-8-BOM, Excel-kompatibel). Lokalisierte Header. Formula-Injection-Schutz in `EscapeCsv()` (führendes `=`/`+`/`-`/`@` mit Apostroph präfixt) |
-| `IPhotoPickerService` / `DesktopPhotoPickerService` | Foto-Auswahl via StorageProvider, kopiert nach AppData/photos/ mit GUID-Name. Path-Traversal-Schutz in `DeletePhotoAsync` (`Path.GetFullPath`-Vergleich mit erwartetem PhotoDirectory) |
+| `IMaterialPriceService` / `MaterialPriceService` | Material-Preise pro Region/Land (für Kostenschätzungen) |
+| `IPhotoPickerService` / `DesktopPhotoPickerService` | Foto-Auswahl via StorageProvider, kopiert nach AppData/photos/ mit GUID-Name. Path-Traversal-Schutz in `DeletePhotoAsync` (`Path.GetFullPath`-Vergleich mit erwartetem PhotoDirectory). Android-Override via Factory in `App.axaml.cs` |
+
+### Aus `MeineApps.Core.Ava` (Shared)
+
+| Service | Zweck |
+|---------|-------|
+| `CalculationHistoryService` | History pro Rechner (max 30 Items), 2s-Debounce-Save, parallel-load mit `Task.WhenAll`, static `JsonSerializerOptions` |
+| `IUnitConverterService` / `UnitConverterService` | Länge, Fläche, Volumen, Gewicht (Metrisch/Imperial) |
 
 ---
 

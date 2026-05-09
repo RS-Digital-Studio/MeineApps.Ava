@@ -150,7 +150,7 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "BomberBlast",
-            AppVersion = "v2.0.42",
+            AppVersion = "v2.0.55",
             Renderer = new BomberBlastSplashRenderer()
         };
     }
@@ -310,6 +310,10 @@ public partial class App : Application
         services.AddSingleton<ILoadoutService, LoadoutService>();
         services.AddSingleton<IBossRushService, BossRushService>();
         services.AddSingleton<IEventService, EventService>();
+        // Phase 20 — AAA-Audit L2: Wöchentlicher Event-Calendar (deterministisch via ISO-Week)
+        services.AddSingleton<IEventCalendarService, EventCalendarService>();
+        // Phase 23 — AAA-Audit M5: First-Time-Purchase-Bonus (×2 auf ersten Kauf)
+        services.AddSingleton<IFirstPurchaseService, FirstPurchaseService>();
         // v2.0.44 — AAA-Audit: Accessibility + DSGVO Account-Löschung + Telemetrie
         services.AddSingleton<IAccessibilityService, AccessibilityService>();
         services.AddSingleton<IAccountDeletionService, AccountDeletionService>();

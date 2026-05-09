@@ -8,6 +8,7 @@ Aktivitäts-Tracking, Rezept-Editor und Gamification.
 
 | Aspekt | Wert |
 |--------|------|
+| Version | v2.0.7 (VersionCode 15) |
 | Package-ID | `com.meineapps.fitnessrechner` |
 | Premium | 3,99 EUR `remove_ads` (keine Ads, unbegrenzte Barcode-Scans, permanente Extended Food-DB) |
 | Ad-Placements | `barcode_scan` (+5 Bonus-Scans), `detail_analysis` (7-Tage-Analyse), `tracking_export` (CSV), `extended_food_db` (24h-Zugang) |
@@ -43,6 +44,13 @@ Wegen Größe in 4 Files gesplittet:
 | `ProgressViewModel.Charts.cs` | Chart-Daten, Statistik, Meilensteine, Status-Updates, Meal Grouping |
 | `ProgressViewModel.Food.cs` | Food-Search, Add Food, "Gestern kopieren" |
 
+`MainViewModel` ist ebenfalls in 2 Files aufgeteilt:
+
+| Datei | Inhalt |
+|-------|--------|
+| `MainViewModel.cs` | Kern, DI, Tab-Navigation, Events, Lifecycle |
+| `MainViewModel.Dashboard.cs` | Dashboard-Properties, lokalisierte Labels, Gamification, Quick-Add, Heatmap, Weekly Comparison, Evening Summary |
+
 `OnAppearingAsync()` wird beim Tab-Wechsel aufgerufen.
 
 ### `PreferenceKeys` (zentral)
@@ -56,7 +64,7 @@ Key-Gruppen:
 - Gamification: `fitness_xp`, `fitness_level`, `achievements_unlocked`,
   `achievements_progress`, `challenge_completed_date`, `total_meals_logged`,
   `total_barcodes_scanned`, `distinct_foods_tracked`, `calculators_used_mask`
-- Extended Food DB: `extended_food_db_expiry` (ISO 8601 UTC mit `DateTimeStyles.RoundtripKind`)
+- Extended Food DB: `ExtendedFoodDbExpiry` (ISO 8601 UTC mit `DateTimeStyles.RoundtripKind`)
 
 ---
 
@@ -126,8 +134,8 @@ permanente erweiterte Suchergebnisse (`maxResults = 200`).
 | Mahlzeit-Eintrag | +5 |
 | Wasser-Eintrag | +3 |
 | Rechner-Nutzung | +2 |
-| Achievement | +50–200 |
-| Challenge | +25–50 |
+| Achievement | +25–500 |
+| Challenge | +20–40 |
 
 ### Dashboard Quick-Add (3 SkiaSharp-Buttons)
 
@@ -208,7 +216,6 @@ Full SkiaSharp Immersion für alle visuellen Elemente, XAML nur für native Form
 | `CalorieRingRenderer` | Static | Kalorien-Ringe (Medical Grid + 72BPM Glow + Data-Stream Partikel) |
 | `HealthTrendVisualization` | Static | Catmull-Rom Spline mit Gradient-Fill, Target-Zones, Milestones |
 | `WeeklyCaloriesBarVisualization` | Static | Gradient-Balken mit Target-Linie |
-| `LinearProgressVisualization` | Static | XP-Bar, Challenge-Bar |
 | `FitnessRechnerSplashRenderer` | Splash | EKG-Herzschlag-Splash |
 
 ### Render-Loop

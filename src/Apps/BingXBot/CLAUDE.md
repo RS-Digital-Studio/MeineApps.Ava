@@ -67,11 +67,12 @@ Wenn `ServerProfile` gesetzt ist, registriert die DI Remote-Service-Impls; sonst
 |-----------|-------|-----------|-------------|
 | `IBotControlService` | Start/Stop/EmergencyStop | `LocalBotControlService` | `RemoteBotControlService` |
 | `ISettingsService` | Risk/Scanner/Bot/Backtest-Settings | `LocalSettingsService` | `RemoteSettingsService` |
+| `ISettingsPersistenceService` | Persistiert alle Settings-Blöcke (SaveAllAsync, Semaphore-geschützt) | `SettingsPersistenceService` | — (nur Local benötigt) |
 | `IAccountService` | Balance/Positions/Orders | `LocalAccountService` | `RemoteAccountService` |
 | `ITradeHistoryService` | Trades aus DB | `LocalTradeHistoryService` | `RemoteTradeHistoryService` |
 | `IBotEventStream` | SignalR-Events (Push) | `LocalBotEventStream` | `RemoteBotEventStream` |
 | `IBacktestControlService` | Backtest-Control | `LocalBacktestService` | `RemoteBacktestService` |
-| `IStrategyCatalog` | Strategie-Metadaten | `LocalStrategyCatalog` | `RemoteStrategyCatalog` |
+| `IStrategyCatalog` | Strategie-Metadaten | `LocalStrategyCatalog` | — (kein Remote-Impl) |
 | `IStatsService` | Stats-Breakdown (TF × Category × Mode) | `LocalStatsService` | `RemoteStatsService` |
 
 ### REST-Routen (`/api/v1/...`)
@@ -390,7 +391,10 @@ SQLite WAL-Modus für Multi-Mode-Concurrency. Schema-Versioning via `RunMigratio
 | Tabelle | Inhalt |
 |---------|--------|
 | `Trades` | Live + Paper-Trades (Backtest **nicht** — flutet sonst) |
+| `Equity` | Equity-Curve-Punkte (EquityEntity) |
+| `Logs` | Log-Einträge (LogEntity) |
 | `Settings` | JSON-blob pro Settings-Block (Risk/Scanner/Bot/Backtest) + `AutoResumeFlag` + `LastHeartbeatUtc` als separate Keys |
+| `BacktestJobs` | Backtest-Job-Metadaten (BacktestJobEntity) |
 | `EvaluationDecisions` | Decision-Trail (Phase 4, Migration v11), 50000-Eintrag-Trim mit Index auf Timestamp/Symbol/Reason |
 | `SettingsChanges` | Audit-Trail für Settings-Diffs (Phase 14, Migration v12) |
 | `RuntimeState` | TradesToday, ConsecutiveLosses, ExitStates, PendingLimitOrders (JSON-Blobs für Crash-Recovery) |
@@ -494,16 +498,15 @@ mit den letzten 10000 Trades aus DB rebuildet. Endpoint `/api/v1/stats/breakdown
 | View | Zweck |
 |------|-------|
 | `DashboardView` | Balance, Positionen, Bot-Controls, Strategie, Equity-Chart, SK-Ampel pro TF, News-Service-Banner |
-| `ScannerView` | Live-Scan mit Volumen/Momentum-Filter |
+| `ScannerView` | Live-Scan mit Volumen/Momentum-Filter + Scanner-Settings (Multi-TF, Filter, Slippage, Adaptive-TF) |
 | `StrategyView` | Parameter-Editor + TF-Visualisierung |
 | `BacktestView` | Historischer Test mit `PerformanceReport` + Walk-Forward + Trade-Replay |
 | `TradeHistoryView` | Alle Trades filterbar (Modus/Symbol/Zeitraum/TF-Badge) |
 | `RiskSettingsView` | Risiko-Parameter (Risk/Margin/DD/Korrelation/Vol-Targeting/Pyramiding) |
-| `ScannerView` | Scanner-Settings (Multi-TF, Filter, Slippage, Adaptive-TF) |
 | `LogView` | Live-Log mit Level/Kategorie-Filter |
 | `SettingsView` | API-Keys, Server-Verbindung, Pairing, Theme, Push-Notifications, Decision-Trail |
 | `DecisionTrailView` | Decision-Trail mit Filter |
-| `SettingsHistoryView` | Settings-Audit-Trail (Phase 14) |
+| `SettingsHistoryView` | Settings-Audit-Trail |
 
 Mobile-Variante via `ViewLocator`-Konvention: `DashboardView` → `DashboardViewMobile`,
 ausgewählt zur Laufzeit über `App.IsMobileShell`.
@@ -513,9 +516,11 @@ ausgewählt zur Laufzeit über `App.IsMobileShell`.
 | Renderer | Zweck |
 |----------|-------|
 | `EquityChartRenderer` | Linien-Chart Equity-Kurve |
-| `BtcPriceChartRenderer` | Candlestick BTC-USDT (Markt-Indikator) |
+| `DrawdownChartRenderer` | Drawdown-Visualisierung (Underwater-Chart) |
 | `InteractiveChartRenderer` | SK-Sequenz-Overlay (Punkt 0/A/B + Fibonacci-Levels + Trade-Marker) |
 | `PnlCalendarRenderer` | Tages-PnL-Heatmap |
+| `FearGreedGaugeRenderer` | Gauge-Anzeige für Fear & Greed / Markt-Sentiment |
+| `CorrelationMatrixRenderer` | Korrelations-Matrix für Cluster-Visualisierung |
 
 ### `BotEventBus` (Singleton, ViewModel-zu-ViewModel)
 
@@ -524,9 +529,11 @@ ausgewählt zur Laufzeit über `App.IsMobileShell`.
 | `TradeCompleted` | TradeHistoryVM |
 | `TradeOpened` | LocalBotEventStream → SignalR |
 | `BacktestCompleted` | TradeHistoryVM |
+| `NotificationRequested` | Desktop-Notification-Service |
 | `LogEmitted` | LogVM, ActivityFeedVM |
 | `BotStateChanged` | MainVM |
 | `MarginWarning` | DashboardVM |
+| `TradingModeChanged` | MainVM (Statusleiste Paper/Live) |
 | `SkAmpelUpdated` | DashboardVM, StrategyVM |
 | `EvaluationDecided` | DecisionTrailBuffer + LocalBotEventStream |
 | `NewsServiceHealthChanged` | LocalBotEventStream → SignalR → UI-Banner |

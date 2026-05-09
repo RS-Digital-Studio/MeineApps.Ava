@@ -27,28 +27,32 @@ src/Apps/BomberBlast/
 │   │   ├── GameTimer.cs         # Ablauf-Timer mit Warning/Expired-Events
 │   │   ├── Modes/               # IGameMode-Implementierungen (8 Modi + IGameMode)
 │   │   ├── Combat/              # ComboSystem, SpecialExplosionEffects, EnemyPositionIndex
-│   │   ├── LevelGeneration/     # LevelLayoutGenerator, ILevelGenerator, MutatorEffects
+│   │   ├── LevelGeneration/     # LevelGenerator (ILevelGenerator-Impl.), ILevelGenerator, MutatorEffects
+│   │   ├── Audio/               # AudioBus, AudioBusMixer, SoundVariationPool, AudioSpatial
 │   │   └── Dungeon/             # DungeonSynergyResolver
-│   ├── Graphics/                # Alle Renderer (14 Stück)
-│   │   ├── GameRenderer.cs      # Kern: Palette, Viewport, SaveLayer-Stack
-│   │   ├── GameRenderer.Grid.cs # Tiles + Blocks (aufgeteilt in .Tiles/.Blocks/.GridFx)
+│   ├── Graphics/                # Alle Renderer
+│   │   ├── GameRenderer.cs              # Kern: Palette, Viewport, SaveLayer-Stack
+│   │   ├── GameRenderer.Grid.cs         # Dispatcher: delegiert an .Tiles/.Blocks/.GridFx
+│   │   ├── GameRenderer.Grid.Tiles.cs
+│   │   ├── GameRenderer.Grid.Blocks.cs
+│   │   ├── GameRenderer.Grid.GridFx.cs  # FogOverlay, Transitions, Afterglow
 │   │   ├── GameRenderer.Characters.cs
 │   │   ├── GameRenderer.Bosses.cs
-│   │   ├── GameRenderer.Items.cs
+│   │   ├── GameRenderer.Items.cs        # Bomben, PowerUps, Exit
 │   │   ├── GameRenderer.Atmosphere.cs
-│   │   ├── GameRenderer.HUD.cs
-│   │   ├── GameRenderer.Events.cs  # Saisonale Partikel-Overlays (Halloween/Christmas/NewYear/Summer)
-│   │   ├── CinematicSequencer.cs   # Lightweight-Event-Sequencer für Boss-Reveal/Victory
-│   │   ├── SubtitleSystem.cs       # Struct-Pool-Captions (max 4 aktiv)
-│   │   ├── FogOfWarSystem.cs       # 3-Zustand Memory-FoW für L50+/Master-Mode
-│   │   ├── MenuBackgroundCanvas.cs # 7 Themes, struct-Pool 60 Partikel
-│   │   ├── GameButtonCanvas.cs     # Torn-Metal-Button mit SKCanvas
+│   │   ├── GameRenderer.HUD.cs          # Side-Panel rechts mit Time/Score/Combo/Lives/Deck
+│   │   ├── GameRenderer.Events.cs       # Saisonale Partikel-Overlays (Halloween/Christmas/NewYear/Summer)
+│   │   ├── CinematicSequencer.cs        # Lightweight-Event-Sequencer für Boss-Reveal/Victory
+│   │   ├── SubtitleSystem.cs            # Struct-Pool-Captions (max 4 aktiv)
+│   │   ├── FogOfWarSystem.cs            # 3-Zustand Memory-FoW für L50+/Master-Mode
+│   │   ├── MenuBackgroundRenderer.cs    # 7 Themes, struct-Pool 60 Partikel
 │   │   └── ...weitere Renderer
 │   ├── Icons/                   # Eigenes Neon-Arcade Icon-System (152 Icons)
 │   ├── Input/                   # NeonJoystick, InputManager
 │   ├── Models/                  # Entities, Level, Dungeon, PowerUp, Bomb-Typen
-│   ├── Services/                # 29 Services (alle als Interface)
-│   └── ViewModels/              # 23 ViewModels (alle Singletons per Lazy<T>)
+│   │   └── Levels/LevelLayoutGenerator.cs  # Static: Welt-Layout-Rotation, Boss/Bonus-Level-Config
+│   ├── Services/                # 37 Services (alle als Interface)
+│   └── ViewModels/              # 25 ViewModels (alle Singletons per Lazy<T>)
 ├── BomberBlast.Android/
 └── BomberBlast.Desktop/
 ```
@@ -69,17 +73,36 @@ Die `GameEngine` ist eine God-Class (~5.100 LOC), aufgeteilt in 5 Partial-Files:
 | `GameEngine.Level.cs` | Level-Start/Complete/Victory, Boss-Reveal-Cinematic, Mode-Dispatch |
 | `GameEngine.Render.cs` | Delegiert an `GameRenderer`, setzt Renderer-Properties pro Frame |
 
+Sonstige Kern-Files in `Core/`:
+
+| Datei | Zweck |
+|-------|-------|
+| `SoundManager.cs` | Pitch/Pan-Variation-Wrapper für ISoundService |
+| `GameLoopSettings.cs` | TargetFps (30/60) via IPreferencesService |
+| `GameState.cs` | State-Enum (Menu/Playing/Paused/GameOver/…) |
+| `FixedTimestepRunner.cs` | 60-Hz-Akkumulator (Foundation, nicht integriert) |
+| `Audio/AudioBus.cs` | Volume-Bus-System (Master/SFX/Music) |
+| `Audio/AudioBusMixer.cs` | Bus-Mixing-Logic |
+| `Audio/SoundVariationPool.cs` | Pitch/Volume-Variation-Pool für wiederholte SFX |
+| `Audio/AudioSpatial.cs` | Stereo-Pan-Berechnung (GridX → Pan) |
+
 **Extrahierte Pure-Logic-Klassen** (−836 Zeilen aus GameEngine):
 
 | Klasse | Pfad | Pattern |
 |--------|------|---------|
-| `LevelLayoutGenerator` | `Core/LevelGeneration/` | Singleton, DI, gepoolte interne Listen |
+| `LevelGenerator` | `Core/LevelGeneration/` | Singleton via DI (`ILevelGenerator`), gepoolte interne Listen |
 | `MutatorEffects` | `Core/LevelGeneration/` | Static, pure Funktion, Context als Parameter |
 | `SpecialExplosionEffects` | `Core/Combat/` | Static, 13 Handle*-Methoden, ExplosionEffectsContext |
 | `EnemyPositionIndex` | `Core/Combat/` | Singleton, O(1)-Lookup, Lazy-Rebuild per Dirty-Flag |
 | `SurvivalSpawner` | `Core/Modes/` | Static, zustandslos, SurvivalMode hält State |
 | `DungeonSynergyResolver` | `Core/Dungeon/` | Static, pure Funktion, wertet 5 Synergie-Regeln |
 | `ComboSystem` | `Core/Combat/` | Instanz-Klasse, per `_comboSystem`-Field in GameEngine |
+
+**Namens-Klarstellung** — zwei verschiedene Klassen mit ähnlichem Namen:
+- `Core/LevelGeneration/LevelGenerator` — DI-Singleton, erzeugt Level-Inhalte (PowerUps, Exit, Spawns).
+  Implementiert `ILevelGenerator`. Registriert als `services.AddSingleton<ILevelGenerator, LevelGenerator>()`.
+- `Models/Levels/LevelLayoutGenerator` — Static-Klasse, bestimmt welches Layout + Mutator + Boss-Typ
+  ein Level bekommt. Keine DI, kein State. Wird von `GameEngine.Level.cs` direkt aufgerufen.
 
 **Callback-Pattern für Engine-Mutationen** (in `ExplosionEffectsContext`):
 `DestroyBlock`, `KillEnemy`, `ProcessExplosion` als Delegates — diese mutieren engine-interne
@@ -88,12 +111,12 @@ Score/Events/State-Machine und gehören nicht in eine Extract-Datei.
 ### IGameMode-Pattern
 
 ```csharp
-// Core/Modes/IGameMode.cs
+// Core/Modes/IGameMode.cs — Mode-Plugin-Framework Phase 1+2 (v2.0.46/v2.0.49, AAA-Audit P1/P6)
 interface IGameMode {
     string ModeTag { get; }
     void Initialize(GameModeContext ctx);
-    void UpdateLogic(GameModeContext ctx, float deltaTime);  // noch nicht im Update-Loop
-    void OnLevelComplete(GameModeContext ctx);               // noch nicht im Update-Loop
+    void UpdateLogic(float deltaTime, GameModeContext ctx);  // Phase 2: parallel zu Bool-Flags
+    bool OnLevelComplete(GameModeContext ctx);               // true → Engine feuert Event, false → Mode managed selbst
     void OnGameOver(GameModeContext ctx);
     void Cleanup(GameModeContext ctx);
 }
@@ -103,6 +126,11 @@ interface IGameMode {
 `StoryMode`, `MasterMode`, `DailyChallengeMode`, `QuickPlayMode`, `SurvivalMode`,
 `DungeonMode`, `BossRushMode`, `DailyRaceMode` — alle erben von `GameModeBase`
 (no-op-Defaults).
+
+**Aktueller Stand (v2.0.49)**: Mode-Klassen laufen parallel zu den existierenden Bool-Flags
+(`_isStoryMode`, `_isSurvivalMode`, etc.). Tatsächliche Mode-Logic-Migration aus GameEngine
+in Mode-Klassen kommt in Phase 7+. Neue Modi MÜSSEN `IGameMode` implementieren — kein
+weiterer Bool-Flag in `GameEngine.cs`.
 
 **Property-Alias-Pattern für State-Migration**: DungeonMode-State (13 Felder) lebt in
 `DungeonMode`-Klasse. GameEngine hat private Properties mit identischem Namen die intern
@@ -138,7 +166,7 @@ DispatcherTimer (16ms) → GameView.OnTimerTick()
 
 ### DI-Konfiguration
 
-- **23 ViewModels** (alle Singleton), **29 Services** (alle Singleton)
+- **25 ViewModels** (alle Singleton), **37 Services** (alle Singleton)
 - **14 spät-unlocked Child-VMs** als `Lazy<T>` injiziert (ShopVM, AchievementsVM, DeckVM usw.)
   → `EnsureXxxVm()`-Methode mit idempotentem Guard, erst beim ersten Navigations-Ziel instanziiert
 - **9 Eager-VMs** für frühe Interaktion: MainMenu, Game, LevelSelect, Settings, Help,
@@ -151,17 +179,20 @@ DispatcherTimer (16ms) → GameView.OnTimerTick()
 
 ## Render-Pipeline
 
-### GameRenderer — 7 Partial-Classes
+### GameRenderer — 10 Partial-Classes
 
 ```
-GameRenderer.cs           # Kern: Viewport (canvas.LocalClipBounds), Palette, SaveLayer-Reihenfolge
-GameRenderer.Grid.cs      # Aufgeteilt in .Tiles/.Blocks/.GridFx (FogOverlay, Transitions, Afterglow)
+GameRenderer.cs                # Kern: Viewport (canvas.LocalClipBounds), Palette, SaveLayer-Reihenfolge
+GameRenderer.Grid.cs           # Dispatcher: delegiert an .Tiles/.Blocks/.GridFx
+GameRenderer.Grid.Tiles.cs     # Floor-Tiles, Boden-Cache (150 Tiles als SKBitmap)
+GameRenderer.Grid.Blocks.cs    # Destructible/Indestructible Blocks, Block-Fragmente
+GameRenderer.Grid.GridFx.cs    # FogOverlay, Transitions, Afterglow
 GameRenderer.Characters.cs
 GameRenderer.Bosses.cs
-GameRenderer.Items.cs     # Bomben, PowerUps, Exit
+GameRenderer.Items.cs          # Bomben, PowerUps, Exit
 GameRenderer.Atmosphere.cs
-GameRenderer.HUD.cs       # Side-Panel rechts mit Time/Score/Combo/Lives/Deck
-GameRenderer.Events.cs    # Saisonale Partikel-Overlays
+GameRenderer.HUD.cs            # Side-Panel rechts mit Time/Score/Combo/Lives/Deck
+GameRenderer.Events.cs         # Saisonale Partikel-Overlays
 ```
 
 **SaveLayer-Reihenfolge** (außen → innen):
@@ -276,9 +307,9 @@ Turn bei 40% Zellzentrum-Nähe.
 - **PowerUp-Freischaltung**: Level-basiert via `GetUnlockLevel()`. Story filtert gesperrte.
 - **Speed**: SpeedLevel 0-3, `BASE_SPEED(80) + Level * 20`
 - **Kick**: Bombe gleitet in Blickrichtung (`SLIDE_SPEED 160f`), stoppt bei Hindernis
-- **LineBomb**: Alle Bomben in Blickrichtung auf leeren Zellen (ab Level 26)
-- **PowerBomb**: Range = FireRange + MaxBombs − 1, verbraucht alle Slots (ab Level 36)
-- **Skull/Curse**: 4 Typen (Diarrhea/Slow/Constipation/ReverseControls), 6s Dauer,
+- **LineBomb**: Alle Bomben in Blickrichtung auf leeren Zellen (ab Level 30)
+- **PowerBomb**: Range = FireRange + MaxBombs − 1, verbraucht alle Slots (ab Level 40)
+- **Skull/Curse**: 4 Typen (Diarrhea/Slow/Constipation/ReverseControls), 10s Dauer,
   `Cure-PowerUp` (grünes Kreuz) als sofortige Abhilfe
 - **Flamepass**: Schützt NUR vor Explosionen, nicht Gegnern
 - **Discovery-System**: Pausiert Spiel bei Erstentdeckung, `DiscoveryOverlay` (SkiaSharp)
@@ -321,7 +352,11 @@ Mutator-Level schenken 3 garantierte Sterne (Schwierigkeit = Belohnung, nicht St
 **Ablauf**: Floor 1-4 normal, Floor 5 Mini-Boss, Floor 6-9 härter, Floor 10 End-Boss + Truhe,
 ab Floor 11 +50% Skalierung.
 
-**DungeonRunState — Schema-Migration (KRITISCH)**:
+**CloudSaveData — Schema-Migration (KRITISCH)**:
+
+`DungeonRunState` selbst hat keine Versionierung — die Schema-Migration liegt in `CloudSaveSchemaMigrator`
+(migriert das gesamte `CloudSaveData`-Objekt, das auch DungeonStats, LoadoutData, BossRushData etc. enthält):
+
 ```
 V1 → V2: master_mode_status_v1, master_mode_active, deck_telemetry_v1, LoadoutData,
           BossRushData, DungeonStatsData als Defaults aufgefüllt
@@ -329,6 +364,7 @@ V2 → V3: Accessibility_ColorblindMode, HighContrast, UiScale, Subtitles,
           TargetFrameRate, AnalyticsConsent, CrashlyticsConsent als Defaults (Off/false/30fps)
 ```
 
+`CloudSaveSchemaMigrator.CurrentSchemaVersion = 3`.
 `CloudSaveSchemaMigrator.TryMigrateAndValidate(data, out error)` läuft VOR `ApplyCloudData`.
 Bei Migrations-Fehler: Cloud-Stand verworfen + Logger-Warning (kein Push mit Leer-State).
 `BuildCloudSaveData` setzt `Version = CloudSaveSchemaMigrator.CurrentSchemaVersion` (nie hardcoded).
@@ -453,6 +489,9 @@ Spezifische Firebase-Rule muss VOR `$tier`-Wildcard stehen (Firebase prefer spec
 ### Audio-System
 
 - **AndroidSoundService**: SoundPool für SFX (12 + 6 Sounds) + MediaPlayer für Musik (4 + 6 Tracks)
+- **AudioBus-System** (`Core/Audio/`): Volume-Bus-Architektur mit Master/SFX/Music-Kanälen.
+  `AudioBusMixer` mischt Bus-Volumes. `SoundVariationPool` verwaltet Pitch/Volume-Variation-Parameter.
+  `AudioSpatial` berechnet Stereo-Pan aus Grid-Position.
 - **Pitch-Variation**: `SoundManager.PlaySound` wendet ±5% Pitch-Random + ±10% Volume-Variation
   auf wiederholte SFX an — eliminiert akustisches Stutter bei Bomben-Spam
 - **Räumliches Audio**: `PlaySoundPanned(key, pan)` mit Stereo-Pan basierend auf `bomb.GridX / Grid.Width`
@@ -659,12 +698,18 @@ Boss-Reveal-Cinematic kann sonst nach Mode-Wechsel weiterlaufen.
 Firebase-Rules prüfen `updatedUtc` nicht mehr in `hasChildren` (seit ServerTimestamp-Migration).
 Rule-Änderungen müssen in Firebase Console deployed werden — Datei lokal ist nicht automatisch live.
 
+### Splash-Versions-String manuell gepflegt
+
+`App.axaml.cs`: `AppVersion = "v2.0.42"` — diese Zeichenkette wird NICHT aus der csproj gelesen.
+Bei jedem Release manuell auf die aktuelle `ApplicationDisplayVersion` setzen.
+
 ---
 
 ## Services-Übersicht
 
 | Service | Zweck |
 |---------|-------|
+| `IAppLogger` | Logging-Wrapper (AppLogger-Impl., LogCat auf Android) |
 | `ISoundService` | Audio (Pitch/Pan-Variation, räumliches Audio) |
 | `IProgressService` | Level-Fortschritt, Sterne, Fail-Counter, World-Gating |
 | `IHighScoreService` | Top-10 Scores (sqlite-net-pcl) |
@@ -695,10 +740,14 @@ Rule-Änderungen müssen in Firebase Console deployed werden — Datei lokal ist
 | `IAccessibilityService` | Colorblind-Mode, HighContrast, UiScale, Subtitles |
 | `IAccountDeletionService` | DSGVO Art. 17 Cascading-Delete (Local-First) |
 | `IEventService` | Saisonale Events: Halloween/Christmas/NewYear/Summer |
+| `IEventCalendarService` | Wöchentlicher Event-Calendar (deterministisch via ISO-Week, Phase 20) |
 | `IBossRushService` | 5-Boss-Sequenz, ISO-8601-Year-Week-Reset |
 | `ILoadoutService` | Pre-Run Boosts pro Story-Level (max 2 Boosts) |
 | `IMasterModeService` | Master-Mode-Status pro Level, IsActive-Toggle |
 | `IDeckTelemetryService` | Used/Plays/Wins pro BombType (Balance-Telemetrie) |
+| `IGameTrackingService` | Session-Tracking, Spielzeit, Game-Events für Analytics |
+| `IStarterPackService` | Starter-Pack-Angebot (Einmal-Kauf, erstes Start-Fenster) |
+| `IReviewService` | Google In-App Review API (Trigger nach Meilenstein) |
 | `ITelemetryService` | Crashlytics-Wrapper (NullTelemetryService auf Desktop) |
 | `IAnalyticsService` | Firebase Analytics (NullAnalyticsService auf Desktop) |
 | `IPushNotificationService` | FCM + AlarmManager (NullPushNotificationService auf Desktop) |

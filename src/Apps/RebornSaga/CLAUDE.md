@@ -22,7 +22,7 @@ MainView (SKCanvasView, 60fps DispatcherTimer)
   └── MainViewModel (Update + Render + Input-Delegation)
         └── SceneManager (Scene-Stack + Overlays + Transitions)
               ├── Scene (abstrakt: Update, Render, HandleInput, Lifecycle)
-              ├── TransitionEffect (Fade, Slide, Glitch, Dissolve, MangaWipe, Iris)
+              ├── TransitionEffect (Fade, Slide, GlitchCut, Dissolve, MangaWipe, Iris)
               └── InputManager (Pointer → InputAction: Tap, Hold, Swipe, Drag)
 ```
 
@@ -101,7 +101,7 @@ Prozedurales Legacy-System (CharacterParts, FaceRenderer, HairRenderer usw.) wur
 | `SpriteCharacterRenderer` | Komplette Bilder, unabhängiges Blinzeln pro Charakter, Crossfade 150 ms, Mund-Animation (3 Frames) |
 | `SpriteCache` (Service) | LRU-Cache (max 30 Bilder), thread-safe, `IDisposable`, Preload-Support |
 | `CharacterRenderer` | Fassade: `DrawPortrait` / `DrawFullBody` / `DrawIcon`, aktiv/inaktiv-Dimming |
-| `CharacterDefinitions` | 10 Definitionen (3 Protagonist-Klassen + 5 NPCs + 2 Bosse), `GetById()` |
+| `CharacterDefinitions` | 11 Definitionen (3 Protagonist-Klassen + 6 NPCs + 2 Bosse), `GetById()` |
 | `SpriteDefinitions` | `Pose`-Enum (Standing/Battle/Sitting/Kneeling/Floating/Lying/Running) |
 | `SpriteAssetPaths` | Pfad-Konventionen aller Asset-Typen |
 
@@ -177,7 +177,7 @@ DungeonHalls, DungeonBoss, TowerLibrary, TowerSummit, Battlefield, CastleHall, D
 ### Map-Renderer
 
 - `OverworldRenderer` — Kapitel-Map mit Nodes und Pfaden, AI-Regions-Hintergrund
-- `NodeRenderer` — Knoten-Typen (Story, Boss, Sidequest, Rest, Shop), AI-Icons via SpriteCache
+- `NodeRenderer` — Knoten-Typen (Story, Boss, SideQuest, Npc, Dungeon, Rest, Locked), AI-Icons via SpriteCache
 - `PathRenderer` — Verbindungslinien (freigeschaltet/gesperrt)
 
 ---
@@ -237,8 +237,10 @@ Feuer > Eis > Blitz > Wind > Licht > Dunkel > Feuer (Schwäche: 1,5×, Resistenz
 
 **Kampf-Phasen (BattlePhase Enum):**
 ```
-Intro → PlayerTurn → (Attack | Dodge | SkillSelect | ItemSelect | PlayerSkillAttack)
-      → EnemyTurn → (Victory | Defeat | BossPhaseChange | Done)
+Intro → PlayerTurn → SkillSelect | ItemSelect
+      → PlayerAttack | PlayerSkillAttack | PlayerDodge
+      → EnemyTurn → EnemyAttack
+      → Victory | Defeat | BossPhaseChange | Done
 ```
 
 `BossPhaseChange` — Boss wechselt Phase (Mini-Cutscene, volle HP).
@@ -331,7 +333,7 @@ disposed. Kommentar-Pflicht: `// _glowBlur ist static readonly — NICHT dispose
 - **Strings im Konstruktor cachen:** `_localization.GetString("Key") ?? "Fallback"` — nie per Frame
 - **Fallback:** Englisch (Base .resx), Deutsch für Story-Texte (`StoryEngine.LoadDialogueTextsAsync`)
 - **AppStrings.Designer.cs** manuell gepflegt (CLI-Build generiert nicht automatisch)
-- **135 RESX-Keys**, 6 Sprachen, 10 Scenes + 9 Overlays vollständig lokalisiert
+- **103 RESX-Keys**, 6 Sprachen, 10 Scenes + 9 Overlays vollständig lokalisiert
 
 ---
 

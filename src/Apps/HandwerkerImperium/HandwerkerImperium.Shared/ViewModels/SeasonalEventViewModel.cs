@@ -118,7 +118,7 @@ public sealed partial class SeasonalEventViewModel : ViewModelBase, INavigable
         }
         else
         {
-            EventName = _localizationService.GetString("NoEventActive") ?? "Kein Event aktiv";
+            EventName = _localizationService.GetString("NoEventActive") ?? "No event active";
             EventColor = "#808080";
             SeasonCurrency = "0";
             TimeRemaining = "-";
@@ -131,7 +131,7 @@ public sealed partial class SeasonalEventViewModel : ViewModelBase, INavigable
     /// </summary>
     public void UpdateLocalizedTexts()
     {
-        Title = _localizationService.GetString("SeasonalEvent") ?? "Saison-Event";
+        Title = _localizationService.GetString("SeasonalEvent") ?? "Seasonal Event";
         RefreshEvent();
     }
 
@@ -166,10 +166,10 @@ public sealed partial class SeasonalEventViewModel : ViewModelBase, INavigable
 
     private string GetSeasonName(Season season) => season switch
     {
-        Season.Spring => _localizationService.GetString("SeasonSpring") ?? "Frühling",
-        Season.Summer => _localizationService.GetString("SeasonSummer") ?? "Sommer",
-        Season.Autumn => _localizationService.GetString("SeasonAutumn") ?? "Herbst",
-        Season.Winter => _localizationService.GetString("SeasonWinter") ?? "Winter",
+        Season.Spring => _localizationService.GetString("SeasonSpring") ?? "Spring +15%",
+        Season.Summer => _localizationService.GetString("SeasonSummer") ?? "Summer +20%",
+        Season.Autumn => _localizationService.GetString("SeasonAutumn") ?? "Autumn +10%",
+        Season.Winter => _localizationService.GetString("SeasonWinter") ?? "Winter -10%",
         _ => season.ToString()
     };
 

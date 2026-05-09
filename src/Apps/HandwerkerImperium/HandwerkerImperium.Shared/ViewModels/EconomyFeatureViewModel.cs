@@ -335,9 +335,9 @@ internal sealed class EconomyFeatureViewModel
         if (!_gameStateService.CanStartParallelOrder(order.WorkshopType))
         {
             ShowAlertDialog(
-                _localizationService.GetString("ParallelOrderLimitTitle") ?? "Limit erreicht",
+                _localizationService.GetString("ParallelOrderLimitTitle") ?? "Limit reached",
                 _localizationService.GetString("ParallelOrderLimitMessage")
-                    ?? "Diese Werkstatt hat bereits einen laufenden Auftrag oder das globale Parallel-Limit ist erreicht.",
+                    ?? "This workshop already has a running order or the global parallel limit has been reached.",
                 _localizationService.GetString("OK") ?? "OK");
             return;
         }
@@ -366,20 +366,15 @@ internal sealed class EconomyFeatureViewModel
 
     /// <summary>
     /// Setzt einen parallelen Auftrag als aktiv und oeffnet den OrderDetail-Screen
-    /// zum Fortsetzen (v2.0.35 Feature A).
+    /// zum Fortsetzen (v2.0.35 Feature A, atomar seit v2.0.36).
     /// </summary>
     internal async Task ResumeParallelOrderAsync(WorkshopType workshopType)
     {
-        var order = _gameStateService.GetParallelOrder(workshopType);
+        // Atomarer Wechsel: kein Beobachtungs-Slot mit ActiveOrder=null zwischen
+        // Pause + Resume → kein Doppel-Tap-Race, kein GameLoop-Tick-Sandwich.
+        var order = _gameStateService.SwapToParallelOrder(workshopType);
         if (order == null) return;
 
-        // Bestehenden Vordergrund-Auftrag pausieren (falls vorhanden)
-        if (_host.HasActiveOrder && _host.ActiveOrder?.WorkshopType != workshopType)
-        {
-            _gameStateService.PauseActiveOrder();
-        }
-
-        _gameStateService.ResumeParallelOrder(workshopType);
         _host.HasActiveOrder = true;
         _host.ActiveOrder = order;
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
@@ -403,9 +398,9 @@ internal sealed class EconomyFeatureViewModel
             if (available < required)
             {
                 // Nicht genug Materialien
-                var msg = _localizationService.GetString("InsufficientMaterials") ?? "Nicht genügend Materialien";
+                var msg = _localizationService.GetString("InsufficientMaterials") ?? "Not enough materials";
                 _host.DialogVM.ShowAlertDialog(
-                    _localizationService.GetString("MaterialsRequired") ?? "Materialien benötigt",
+                    _localizationService.GetString("MaterialsRequired") ?? "Materials Required",
                     msg,
                     "OK");
                 return;
@@ -462,7 +457,7 @@ internal sealed class EconomyFeatureViewModel
         {
             // BAL-AD-5: Video-Rush (1h) als Alternative zu 10 GS (2h)
             var watchVideo = await _dialogService.ShowConfirmDialog(
-                _localizationService.GetString("ActivateRush") ?? "Rush aktivieren",
+                _localizationService.GetString("ActivateRush") ?? "Activate Rush",
                 string.Format(
                     _localizationService.GetString("RushChoiceDesc") ?? "Video = {0}h Rush\n{1} Schrauben = {2}h Rush",
                     RushAdDurationHours, RushCostScrews, RushDurationHours),
@@ -900,7 +895,7 @@ internal sealed class EconomyFeatureViewModel
         for (int i = 0; i < state.Buildings.Count; i++)
             if (state.Buildings[i].IsBuilt) builtCount++;
         var builtLabel = _localizationService.GetString("Built") ?? "gebaut";
-        var buildingsLabel = _localizationService.GetString("Buildings") ?? "Gebäude";
+        var buildingsLabel = _localizationService.GetString("Buildings") ?? "Buildings";
         _host.BuildingsSummary = $"{s_totalBuildingCount} {buildingsLabel}, {builtCount} {builtLabel}";
     }
 
@@ -925,7 +920,7 @@ internal sealed class EconomyFeatureViewModel
         {
             var researchName = _localizationService.GetString($"Research_{state.ActiveResearchId}") ?? state.ActiveResearchId;
             _host.ResearchStatusText = string.Format(
-                _localizationService.GetString("ResearchActiveStatus") ?? "Erforscht: {0}",
+                _localizationService.GetString("ResearchActiveStatus") ?? "Researching: {0}",
                 researchName);
         }
         else
@@ -1029,7 +1024,7 @@ internal sealed class EconomyFeatureViewModel
         {
             var potentialPoints = _prestigeService.GetPrestigePoints(state.CurrentRunMoney);
             int tierPoints = (int)(potentialPoints * highestTier.GetPointMultiplier());
-            var pointsLabel = _localizationService.GetString("PrestigePoints") ?? "Prestige-Punkte";
+            var pointsLabel = _localizationService.GetString("PrestigePoints") ?? "Prestige Points";
             _host.PrestigeBannerVM.PrestigePointsPreview = $"+{tierPoints} {pointsLabel}";
 
             _host.PrestigeBannerVM.PrestigePreviewTierName = _localizationService.GetString(highestTier.GetLocalizationKey()) ?? highestTier.ToString();
@@ -1040,26 +1035,26 @@ internal sealed class EconomyFeatureViewModel
             _prestigeGains.Add($"+{tierPoints} {pointsLabel} (x{highestTier.GetPointMultiplier()})");
             _prestigeGains.Add($"+{permanentBonus:0}% {_localizationService.GetString("PermanentIncomeBonus") ?? "permanenter Einkommens-Bonus"}");
             if (highestTier.KeepsResearch())
-                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsResearch") ?? "Forschung bleibt erhalten!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsResearch") ?? "Research preserved!");
             if (highestTier.KeepsShopItems())
-                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsShop") ?? "Prestige-Shop bleibt!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsShop") ?? "Prestige shop preserved!");
             if (highestTier.KeepsMasterTools())
-                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsTools") ?? "Meisterwerkzeuge bleiben!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsTools") ?? "Master tools preserved!");
             if (highestTier.KeepsBuildings())
-                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsBuildings") ?? "Gebäude bleiben (Lv.1)!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsBuildings") ?? "Buildings preserved (Lv.1)!");
             if (highestTier.KeepsManagers())
-                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsManagers") ?? "Manager bleiben (Lv.1)!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsManagers") ?? "Managers preserved (Lv.1)!");
             if (highestTier.KeepsBestWorkers())
-                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsWorkers") ?? "Beste Worker bleiben!");
+                _prestigeGains.Add(_localizationService.GetString("PrestigeKeepsWorkers") ?? "Best workers preserved!");
             _host.PrestigeBannerVM.PrestigePreviewGains = string.Join("\n", _prestigeGains);
 
             // Verluste (wiederverwendbare Liste statt new List<string>)
             _prestigeLosses.Clear();
-            _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesLevel") ?? "Spieler-Level → 1");
-            _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesMoney") ?? "Geld → 0");
-            _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesWorkers") ?? "Worker → entlassen");
+            _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesLevel") ?? "Player level → 1");
+            _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesMoney") ?? "Money → 0");
+            _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesWorkers") ?? "Workers → dismissed");
             if (!highestTier.KeepsResearch())
-                _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesResearch") ?? "Forschung → Reset");
+                _prestigeLosses.Add(_localizationService.GetString("PrestigeLosesResearch") ?? "Research → reset");
             _host.PrestigeBannerVM.PrestigePreviewLosses = string.Join("\n", _prestigeLosses);
 
             // Geschätzter Speed-Up
@@ -1166,7 +1161,7 @@ internal sealed class EconomyFeatureViewModel
         if (!success)
         {
             // SoloMeister + QuickStart oder Max erreicht
-            var msg = _localizationService.GetString("ChallengesMaxReached") ?? "Maximal 3 Herausforderungen";
+            var msg = _localizationService.GetString("ChallengesMaxReached") ?? "Maximum 3 challenges";
             FloatingTextRequested?.Invoke(msg, "warning");
             return;
         }
@@ -1184,12 +1179,12 @@ internal sealed class EconomyFeatureViewModel
     {
         if (!_prestigeService.HasActiveChallenges) return;
 
-        var title = _localizationService.GetString("AbandonChallengeTitle") ?? "Herausforderung aufgeben?";
+        var title = _localizationService.GetString("AbandonChallengeTitle") ?? "Abandon Challenge?";
         var msg = _localizationService.GetString("AbandonChallengeMessage")
-                  ?? "Du erhältst 50% der Basis-Prestige-Punkte (ohne Challenge-Bonus). Die Herausforderungen werden deaktiviert.";
+                  ?? "You will receive 50% of the base prestige points (without challenge bonus). All challenges will be deactivated.";
 
-        var acceptText = _localizationService.GetString("AbandonChallengeButton") ?? "Aufgeben";
-        var cancelText = _localizationService.GetString("Cancel") ?? "Abbrechen";
+        var acceptText = _localizationService.GetString("AbandonChallengeButton") ?? "Abandon";
+        var cancelText = _localizationService.GetString("Cancel") ?? "Cancel";
         bool confirmed = await _host.DialogVM.ShowConfirmDialog(title, msg, acceptText, cancelText);
         if (!confirmed) return;
 

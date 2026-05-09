@@ -255,8 +255,7 @@ public partial class RoofTilingGameView : UserControl
     /// Reagiert auf SelectColorHint-Änderung → Farbpalette pulsieren.
     /// </summary>
     private async void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        try
+        => await AsyncExtensions.RunHandlerSafely(async () =>
         {
             if (e.PropertyName != nameof(RoofTilingGameViewModel.SelectColorHint)) return;
             if (_vm?.SelectColorHint != true) return;
@@ -275,21 +274,13 @@ public partial class RoofTilingGameView : UserControl
                     await Task.Delay(150);
                 }
             });
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnVmPropertyChanged)} Fehler: {ex.Message}");
-        }
-    }
+        });
 
     /// <summary>
     /// Visuelle Effekte nach Spielende abspielen (Rating-Farbe, Sterne, Border-Pulse).
     /// </summary>
     private async void OnGameCompleted(object? sender, int rating)
-    {
-        try
-        {
-        await Dispatcher.UIThread.InvokeAsync(async () =>
+        => await AsyncExtensions.RunHandlerSafely(() => Dispatcher.UIThread.InvokeAsync(async () =>
         {
             // 1. Rating-Text Farbe setzen
             var ratingText = this.FindControl<TextBlock>("RatingText");
@@ -330,13 +321,7 @@ public partial class RoofTilingGameView : UserControl
                 await MiniGameEffectHelper.AnimateRewardTextAsync(
                     xpText, $"+{_vm.XpAmount} XP");
             }
-        });
-        }
-        catch
-        {
-            // Effekt-Fehler still behandelt
-        }
-    }
+        }));
 
     /// <summary>
     /// Startet den Render-Loop bei Task-Wechsel neu (Multi-Task-Orders).

@@ -133,7 +133,7 @@ public sealed partial class GuildBossViewModel : ViewModelBase
             if (data == null || data.Status != BossStatus.Active)
             {
                 HasActiveBoss = false;
-                StatusMessage = _localizationService.GetString("GuildBossNone") ?? "Kein Boss aktiv";
+                StatusMessage = _localizationService.GetString("GuildBossNone") ?? "No boss active";
                 return;
             }
 
@@ -164,7 +164,7 @@ public sealed partial class GuildBossViewModel : ViewModelBase
             }
             else
             {
-                BossCountdown = _localizationService.GetString("GuildBossExpiring") ?? "Läuft ab...";
+                BossCountdown = _localizationService.GetString("GuildBossExpiring") ?? "Expiring...";
                 IsCountdownUrgent = true;
             }
 
@@ -172,7 +172,7 @@ public sealed partial class GuildBossViewModel : ViewModelBase
             OwnDamage = data.OwnDamage;
             OwnHits = data.OwnHits;
             OwnRank = data.OwnRank;
-            var hitsLabel = _localizationService.GetString("BossHits") ?? "Treffer";
+            var hitsLabel = _localizationService.GetString("BossHits") ?? "Hits";
             OwnDamageDisplay = $"{data.OwnDamage:N0} ({data.OwnHits} {hitsLabel})";
             OwnRankDisplay = data.OwnRank > 0
                 ? $"#{data.OwnRank}"
@@ -185,8 +185,8 @@ public sealed partial class GuildBossViewModel : ViewModelBase
         catch
         {
             MessageRequested?.Invoke(
-                _localizationService.GetString("Error") ?? "Fehler",
-                _localizationService.GetString("GuildBossLoadError") ?? "Boss-Daten konnten nicht geladen werden.");
+                _localizationService.GetString("Error") ?? "Error",
+                _localizationService.GetString("GuildBossLoadError") ?? "Boss data could not be loaded.");
         }
         finally
         {
@@ -209,7 +209,7 @@ public sealed partial class GuildBossViewModel : ViewModelBase
     public string GetQuickStatus()
     {
         if (!HasActiveBoss)
-            return _localizationService.GetString("GuildBossNone") ?? "Kein Boss";
+            return _localizationService.GetString("GuildBossNone") ?? "No boss active";
 
         return $"{(int)(BossHpPercent * 100)}% {BossName}";
     }

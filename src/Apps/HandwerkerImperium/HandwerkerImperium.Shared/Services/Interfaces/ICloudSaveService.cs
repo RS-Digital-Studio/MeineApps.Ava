@@ -47,7 +47,22 @@ public interface ICloudSaveService
     /// Schiebt den aktuellen State in die Cloud. Uebernimmt HMAC-Signierung.
     /// Ist idempotent — mehrfacher Aufruf schadet nicht.
     /// </summary>
+    /// <remarks>
+    /// Race-Hinweis: Diese Methode serialisiert den State erst beim Upload — das ist
+    /// nur sicher, wenn der Aufrufer keine parallelen State-Mutationen erzeugt. Im
+    /// Hot-Path (SaveGameService) bitte <see cref="UploadJsonAsync"/> mit bereits
+    /// serialisiertem JSON nutzen, um Collection-modified-Crashes zu vermeiden.
+    /// </remarks>
     Task<bool> UploadAsync(GameState state);
+
+    /// <summary>
+    /// Schiebt einen bereits serialisierten State + Metadata in die Cloud (v2.0.36).
+    /// Race-frei: Aufrufer hat das JSON bereits unter dem State-Lock erstellt, daher
+    /// kann keine parallele Mutation einen Collection-modified-Crash auslösen.
+    /// </summary>
+    /// <param name="stateJson">Bereits serialisiertes State-JSON (kein Pretty-Print).</param>
+    /// <param name="metadata">Bereits unter Lock erstellte Cloud-Metadaten.</param>
+    Task<bool> UploadJsonAsync(string stateJson, CloudSaveMetadata metadata);
 
     /// <summary>
     /// Loescht den Cloud-Save (z.B. nach "Fortschritt zuruecksetzen").

@@ -389,6 +389,10 @@ public sealed class NavigationService : INavigationService
                 _gameStateService.State.TotalQuickJobsCompleted++;
                 _quickJobService?.NotifyJobCompleted(activeQuickJob);
                 _dailyChallengeService.OnQuickJobCompleted();
+                // v2.0.36 Onboarding-Beschleunigung: Story Ch.2 (tutorial_orders) wird nach
+                // erstem QuickJob freigeschaltet (RequiredQuickJobsCompleted=1). Trigger
+                // sofort, damit der Spieler nicht erst auf den naechsten Story-Hook warten muss.
+                _host.CheckForNewStoryChapter();
             }
             _host.ActiveQuickJob = null;
             _host.QuickJobMiniGamePlayed = false;

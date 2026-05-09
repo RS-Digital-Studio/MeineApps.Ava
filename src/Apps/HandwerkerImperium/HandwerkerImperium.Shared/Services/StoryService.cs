@@ -16,6 +16,8 @@ public sealed class StoryService : IStoryService
     {
         _gameStateService = gameStateService;
         _chapters = CreateChapters();
+        // v2.1.0: Saison-Storyline-Kapitel an die Master-Liste anhaengen.
+        _chapters.AddRange(SeasonStorylineCatalog.GetAllSeasonChapters());
     }
 
     /// <summary>
@@ -122,6 +124,15 @@ public sealed class StoryService : IStoryService
             return false;
         if (chapter.RequiredAscensionLevel > 0 && state.Ascension.AscensionLevel < chapter.RequiredAscensionLevel)
             return false;
+        // v2.0.36: QuickJob-Bedingung fuer beschleunigtes Onboarding
+        if (chapter.RequiredQuickJobsCompleted > 0 && state.TotalQuickJobsCompleted < chapter.RequiredQuickJobsCompleted)
+            return false;
+        // v2.1.0: Battle-Pass-Tier-Bedingung (Saison-Storyline)
+        if (chapter.RequiredBattlePassTier > 0 && state.BattlePass.CurrentTier < chapter.RequiredBattlePassTier)
+            return false;
+        // v2.1.0: Saison-Theme-Bedingung — Saison-Kapitel nur in der jeweiligen Saison
+        if (chapter.RequiredSeasonTheme is { } reqSeason && state.BattlePass.SeasonTheme != reqSeason)
+            return false;
         return true;
     }
 
@@ -153,7 +164,10 @@ public sealed class StoryService : IStoryService
             TextKey = "Story_Ch02_Text",
             TitleFallback = "Dein erster Auftrag!",
             TextFallback = "Telefon klingelt? Das ist ein Kunde! Bei Aufträgen musst du kleine Geschicklichkeitsspiele meistern – Sägen, Rohre legen, Kabel verlegen. Je besser du abschneidest, desto mehr Geld und Erfahrung gibt's. Also: Ran an die Arbeit!",
-            RequiredPlayerLevel = 3,
+            // v2.0.36: Trigger nach erstem QuickJob (statt Level 3) — Onboarding-Beschleunigung.
+            // QuickJobs sind ab Level 2 freigeschaltet, sodass Spieler innerhalb 90s ihr erstes
+            // MiniGame spielt; danach feuert dieses Kapitel direkt und erklaert die Auftragslogik.
+            RequiredQuickJobsCompleted = 1,
             MoneyReward = 250,
             GoldenScrewReward = 0,
             XpReward = 20,

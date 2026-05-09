@@ -274,7 +274,7 @@ public sealed partial class CraftingViewModel : ViewModelBase, INavigable, IDisp
             var remaining = job.TimeRemaining;
             string timeDisplay = remaining > TimeSpan.Zero
                 ? FormatDuration((int)remaining.TotalSeconds)
-                : _localizationService.GetString("Ready") ?? "Fertig";
+                : _localizationService.GetString("Ready") ?? "Ready";
 
             jobItems.Add(new CraftingJobDisplay
             {
@@ -325,7 +325,7 @@ public sealed partial class CraftingViewModel : ViewModelBase, INavigable, IDisp
     /// </summary>
     public void UpdateLocalizedTexts()
     {
-        Title = _localizationService.GetString("Crafting") ?? "Handwerk";
+        Title = _localizationService.GetString("Crafting") ?? "Crafting";
         BuildWorkshopOptions();
         RefreshCrafting();
     }
@@ -375,7 +375,7 @@ public sealed partial class CraftingViewModel : ViewModelBase, INavigable, IDisp
         Dictionary<string, int> craftingInventory)
     {
         if (recipe.InputProducts.Count == 0)
-            return _localizationService.GetString("NoInputRequired") ?? "Keine Materialien";
+            return _localizationService.GetString("NoInputRequired") ?? "No materials required";
 
         var parts = new List<string>();
         foreach (var (productId, needed) in recipe.InputProducts)

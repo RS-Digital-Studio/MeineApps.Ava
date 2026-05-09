@@ -152,6 +152,18 @@
   <data name="Continue" xml:space="preserve">
     <value>Continua</value>
   </data>
+  <data name="StorySkip" xml:space="preserve">
+    <value>Salta</value>
+  </data>
+  <data name="DailyBundleTitle" xml:space="preserve">
+    <value>Pacchetto del giorno</value>
+  </data>
+  <data name="DailyBundleSubtitle" xml:space="preserve">
+    <value>Offerta limitata — solo oggi</value>
+  </data>
+  <data name="DailyBundleToday" xml:space="preserve">
+    <value>OGGI</value>
+  </data>
   <data name="WatchAdForDouble" xml:space="preserve">
     <value>Guarda annuncio = 2x</value>
   </data>
@@ -3347,6 +3359,51 @@
   <data name="CloudSyncFailed" xml:space="preserve">
     <value>Sincronizzazione fallita. Il salvataggio locale è al sicuro.</value>
   </data>
+  <data name="CloudSaveTooNewTitle" xml:space="preserve">
+    <value>Aggiornamento richiesto</value>
+  </data>
+  <data name="CloudSaveTooNewBody" xml:space="preserve">
+    <value>Il tuo salvataggio cloud è stato creato con una versione più recente dell'app. Aggiorna l'app sul Play Store prima di continuare.</value>
+  </data>
+  <data name="WhatsNewTitle" xml:space="preserve">
+    <value>Novità</value>
+  </data>
+  <data name="WhatsNewBell" xml:space="preserve">
+    <value>Campanella nell'intestazione: le ricompense giornaliere si raccolgono qui invece di accumularsi come finestre</value>
+  </data>
+  <data name="WhatsNewStrategyEV" xml:space="preserve">
+    <value>Tasso di successo per mini-gioco mostrato sui pulsanti di strategia (Sicuro / Standard / Rischio)</value>
+  </data>
+  <data name="WhatsNewReputation" xml:space="preserve">
+    <value>Livelli di reputazione: Principiante → Conosciuto in città → Stella regionale → Leggenda con bonus cliente fisso</value>
+  </data>
+  <data name="WhatsNewReputationShop" xml:space="preserve">
+    <value>Negozio reputazione: dal livello "Conosciuto in città" puoi acquistare 5 oggetti con la reputazione</value>
+  </data>
+  <data name="WhatsNewImperiumTabs" xml:space="preserve">
+    <value>La scheda Impero ora ha sotto-schede (Officine / Lavoratori / Ricerca / Equipaggiamento / Ascensione)</value>
+  </data>
+  <data name="WhatsNewWhatsNewItself" xml:space="preserve">
+    <value>Questa finestra apparirà dopo ogni aggiornamento con nuove funzionalità</value>
+  </data>
+  <data name="RepTierCityKnownEffects" xml:space="preserve">
+    <value>Ora sei conosciuto in città. Più clienti fissi e ricompense degli ordini leggermente migliori.</value>
+  </data>
+  <data name="RepTierRegionStarEffects" xml:space="preserve">
+    <value>La tua reputazione brilla nella regione. Gli ordini live appaiono più spesso e i clienti fissi danno più bonus.</value>
+  </data>
+  <data name="RepTierIndustryLegendEffects" xml:space="preserve">
+    <value>Leggenda dell'industria: massimo tasso di clienti fissi e più alti moltiplicatori di ricompensa su tutti gli ordini.</value>
+  </data>
+  <data name="HintLongPressBulkTitle" xml:space="preserve">
+    <value>Potenzia più velocemente</value>
+  </data>
+  <data name="HintLongPressBulkText" xml:space="preserve">
+    <value>Tieni premuto il pulsante di potenziamento per comprare più livelli in una volta — perfetto per le soglie x10/x100/Max.</value>
+  </data>
+  <data name="StatusInternReadyForPromotion" xml:space="preserve">
+    <value>Pronto per la promozione</value>
+  </data>
   <data name="RushActive" xml:space="preserve">
     <value>2x RUSH ATTIVO</value>
   </data>
@@ -6220,4 +6277,132 @@
   <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>Questa officina ha gi&#224; un ordine in corso o il limite globale &#232; stato raggiunto.</value></data>
   <data name="LiveOrderSpawnedToast" xml:space="preserve"><value>Nuovo ordine live!</value></data>
   <data name="LiveOrderSpawnedPremiumToast" xml:space="preserve"><value>Ordine VIP disponibile!</value></data>
+  <!-- Notification-Center / Bell-UI (v2.0.36) -->
+  <data name="NotificationCenterTitle" xml:space="preserve"><value>Notifiche</value></data>
+  <data name="NotificationCenterEmpty" xml:space="preserve"><value>Niente di nuovo.</value></data>
+  <data name="NotificationDismissAll" xml:space="preserve"><value>Cancella tutto</value></data>
+  <data name="NotificationActionOpen" xml:space="preserve"><value>Apri</value></data>
+  <data name="NotificationDailyRewardTitle" xml:space="preserve"><value>Ricompensa giornaliera in attesa</value></data>
+  <data name="NotificationDailyRewardBody" xml:space="preserve"><value>Tocca per riscattare la tua ricompensa giornaliera.</value></data>
+  <data name="NotificationWelcomeBackTitle" xml:space="preserve"><value>Offerta di bentornato</value></data>
+  <data name="NotificationWelcomeBackBody" xml:space="preserve"><value>Un bonus speciale ti sta aspettando.</value></data>
+  <data name="NotificationStreakSavedTitle" xml:space="preserve"><value>Serie salvata</value></data>
+  <data name="NotificationStreakSavedBody" xml:space="preserve"><value>La tua serie di accessi &#232; stata preservata.</value></data>
+  <data name="NotificationStoryChapterTitle" xml:space="preserve"><value>Nuovo capitolo disponibile</value></data>
+  <data name="NotificationStoryChapterBody" xml:space="preserve"><value>Mastro Hans ha qualcosa da dirti.</value></data>
+  <data name="NotificationAchievementTitle" xml:space="preserve"><value>Obiettivo sbloccato: {0}</value></data>
+  <data name="NotificationAchievementBody" xml:space="preserve"><value>Tocca per vedere tutti gli obiettivi.</value></data>
+  <data name="NotificationLiveOrderTitle" xml:space="preserve"><value>Ordine live disponibile</value></data>
+  <data name="NotificationLiveOrderBody" xml:space="preserve"><value>Un cliente premium &#232; in linea &#8212; accetta manualmente.</value></data>
+  <!-- Strategy-Quoten (v2.0.36) -->
+  <data name="StrategyExpectedValue" xml:space="preserve"><value>VA: {0}x</value></data>
+  <data name="StrategyWinRateLabel" xml:space="preserve"><value>Riuscita: {0}%</value></data>
+  <data name="StrategyWinRateUnknown" xml:space="preserve"><value>Riuscita: ~?</value></data>
+  <data name="StrategyWinRateTooFewPlays" xml:space="preserve"><value>Gioca {0}+ per vedere la percentuale</value></data>
+  <!-- Auto-Play differenzieren (v2.0.36) -->
+  <data name="AutomationAutoAcceptOnlyStandard" xml:space="preserve"><value>Solo ordini standard</value></data>
+  <data name="AutomationAutoAcceptOnlyStandardDesc" xml:space="preserve"><value>Gli ordini live e VIP restano per la scelta manuale</value></data>
+  <data name="AutomationAutoCompleteSkipLive" xml:space="preserve"><value>Gioca gli ordini live manualmente</value></data>
+  <data name="AutomationAutoCompleteSkipLiveDesc" xml:space="preserve"><value>Auto-Complete salta ordini premium e live</value></data>
+  <!-- v2.0.36: Bisher fehlende Keys (waren als Fallback im Code) -->
+  <data name="Worker" xml:space="preserve"><value>Operaio</value></data>
+  <data name="TabWorkshop" xml:space="preserve"><value>Officina</value></data>
+  <data name="TabMissions" xml:space="preserve"><value>Missioni</value></data>
+  <data name="TabGuild" xml:space="preserve"><value>Gilda</value></data>
+  <data name="InitError" xml:space="preserve"><value>Si &#232; verificato un errore durante il caricamento. Riavvia l&#8217;app.</value></data>
+  <data name="DeliveryCollected" xml:space="preserve"><value>Consegna ritirata</value></data>
+  <data name="SoftCapIncome" xml:space="preserve"><value>Reddito</value></data>
+  <data name="ManagerUnlocked" xml:space="preserve"><value>Nuovo capomastro!</value></data>
+  <data name="ManagerUnlockedFormat" xml:space="preserve"><value>{0} ora &#232; disponibile!</value></data>
+  <data name="AscensionFailed" xml:space="preserve"><value>Ascensione fallita. Requisiti non soddisfatti.</value></data>
+  <data name="ResearchTime" xml:space="preserve"><value>Tempo di ricerca</value></data>
+  <data name="StartReputationFormat" xml:space="preserve"><value>Reputazione iniziale: {0}</value></data>
+  <data name="OrderStrategyRiskConfirmDesc" xml:space="preserve"><value>Fallimento = nessuna ricompensa + perdita di reputazione. Rischiare davvero?</value></data>
+  <data name="AbandonChallengeDesc" xml:space="preserve"><value>Riceverai il 50% dei punti prestigio di base (senza bonus sfida). Tutte le sfide verranno disattivate.</value></data>
+  <data name="ParallelOrderLimitDesc" xml:space="preserve"><value>Questa officina ha gi&#224; un ordine in corso o il limite globale &#232; stato raggiunto.</value></data>
+  <data name="GuildWarTrainingRound" xml:space="preserve"><value>Round di allenamento! Completa ordini e mini-giochi per ottenere punti guerra per il prossimo round.</value></data>
+  <data name="AtLevelShort" xml:space="preserve"><value>Dal livello {0}</value></data>
+  <!-- Reputation-Tiers (v2.0.37) -->
+  <data name="RepTierBeginner" xml:space="preserve"><value>Apprendista</value></data>
+  <data name="RepTierCityKnown" xml:space="preserve"><value>Conosciuto in citt&#224;</value></data>
+  <data name="RepTierRegionStar" xml:space="preserve"><value>Stella regionale</value></data>
+  <data name="RepTierIndustryLegend" xml:space="preserve"><value>Leggenda del settore</value></data>
+  <data name="RepTierUpFormat" xml:space="preserve"><value>{0} raggiunto!</value></data>
+  <data name="PrestigeChooseTier" xml:space="preserve"><value>Scegli un livello</value></data>
+  <!-- Saison-Storyline (v2.1.0) -->
+  <data name="SeasonStorySpringTheme" xml:space="preserve"><value>Primavera: Espansione della citt&#224;</value></data>
+  <data name="SeasonStorySummerTheme" xml:space="preserve"><value>Estate: Progetto sull&#8217;isola</value></data>
+  <data name="SeasonStoryAutumnTheme" xml:space="preserve"><value>Autunno: Torneo delle gilde</value></data>
+  <data name="SeasonStoryWinterTheme" xml:space="preserve"><value>Inverno: Emergenza tempesta</value></data>
+  <!-- Imperium-Sub-Tabs (v2.1.0) -->
+  <data name="ImperiumSubTabWorkshops" xml:space="preserve"><value>Officine</value></data>
+  <data name="ImperiumSubTabWorkers" xml:space="preserve"><value>Operai</value></data>
+  <data name="ImperiumSubTabResearch" xml:space="preserve"><value>Ricerca</value></data>
+  <data name="ImperiumSubTabEquipment" xml:space="preserve"><value>Equipaggiamento</value></data>
+  <data name="ImperiumSubTabAscension" xml:space="preserve"><value>Ascensione</value></data>
+  <data name="EquipmentSectionHint" xml:space="preserve"><value>L'equipaggiamento si gestisce nel profilo del lavoratore. Tocca un lavoratore per equipaggiare strumenti e attrezzatura.</value></data>
+  <data name="CoopCreateInvite" xml:space="preserve"><value>Crea cooperativa</value></data>
+  <data name="CoopPickMemberTitle" xml:space="preserve"><value>Scegli un partner cooperativo</value></data>
+  <!-- Co-op Orders + Worker Auctions (v2.1.0) -->
+  <data name="CoopOrdersTitle" xml:space="preserve"><value>Ordini cooperativi</value></data>
+  <data name="CoopOrdersDescription" xml:space="preserve"><value>Unisciti a un membro della gilda per un mini-gioco condiviso.</value></data>
+  <data name="CoopOrdersEmpty" xml:space="preserve"><value>Nessun ordine cooperativo aperto.</value></data>
+  <data name="CoopAccept" xml:space="preserve"><value>Accetta</value></data>
+  <data name="CoopDecline" xml:space="preserve"><value>Rifiuta</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Aggiorna</value></data>
+  <data name="AuctionTitle" xml:space="preserve"><value>Asta operai</value></data>
+  <data name="AuctionHighestBid" xml:space="preserve"><value>Offerta max</value></data>
+  <data name="AuctionMinBid" xml:space="preserve"><value>Offerta min.</value></data>
+  <data name="AuctionBidPlaceholder" xml:space="preserve"><value>La tua offerta</value></data>
+  <data name="AuctionPlaceBid" xml:space="preserve"><value>Offri</value></data>
+  <!-- Praktikanten-System (v2.1.0) -->
+  <data name="InternHireTitle" xml:space="preserve"><value>Assumi un tirocinante</value></data>
+  <data name="InternHireDescription" xml:space="preserve"><value>Operaio F, paga 0. Promosso al tier E dopo 24h di addestramento attivo (max 2).</value></data>
+  <data name="InternHireButton" xml:space="preserve"><value>Assumi (gratis)</value></data>
+  <data name="InternHireFailedTitle" xml:space="preserve"><value>Nessuno slot libero</value></data>
+  <data name="InternHireFailedDesc" xml:space="preserve"><value>Tutte le officine sono piene o il limite tirocinanti (2) &#232; stato raggiunto.</value></data>
+  <data name="InternPromotionTitle" xml:space="preserve"><value>Tirocinante pronto per la promozione</value></data>
+  <data name="InternPromotionMessage" xml:space="preserve"><value>{0} ha completato 24h di addestramento. Mantieni (tier E, stipendio) o lascia andare?</value></data>
+  <data name="InternPromotionKeep" xml:space="preserve"><value>Mantieni</value></data>
+  <data name="InternPromotionLet" xml:space="preserve"><value>Lascia andare</value></data>
+  <data name="SeasonStory_Spring_Ch1_Title" xml:space="preserve"><value>Risveglio di primavera</value></data>
+  <data name="SeasonStory_Spring_Ch1_Text" xml:space="preserve"><value>La citt&#224; si sveglia dal sonno invernale, mastro! I cantieri fioriscono ovunque. Il sindaco ha annunciato un piano d&#8217;espansione &#8212; e tu sarai parte di esso!</value></data>
+  <data name="SeasonStory_Spring_Ch2_Title" xml:space="preserve"><value>Primi ordini della citt&#224;</value></data>
+  <data name="SeasonStory_Spring_Ch2_Text" xml:space="preserve"><value>Livello 10! Il consiglio ha scelto le nostre officine. Tre nuovi quartieri richiedono artigiani &#8212; tu guidi l&#8217;assegnazione!</value></data>
+  <data name="SeasonStory_Spring_Ch3_Title" xml:space="preserve"><value>Concorrenza dalla citt&#224; vicina</value></data>
+  <data name="SeasonStory_Spring_Ch3_Text" xml:space="preserve"><value>Livello 25! Brutte notizie &#8212; un concorrente vuole prendere i nostri contratti. Ma non ci arrendiamo. Con la tua squadra siamo imbattibili!</value></data>
+  <data name="SeasonStory_Spring_Ch4_Title" xml:space="preserve"><value>La grande inaugurazione</value></data>
+  <data name="SeasonStory_Spring_Ch4_Text" xml:space="preserve"><value>Livello 40! La nuova estensione viene inaugurata &#8212; le nostre officine sono il cuore!</value></data>
+  <data name="SeasonStory_Spring_Ch5_Title" xml:space="preserve"><value>Capstone: Costruttore dell&#8217;anno</value></data>
+  <data name="SeasonStory_Spring_Ch5_Text" xml:space="preserve"><value>Livello 50! La citt&#224; ti ha nominato Costruttore dell&#8217;anno. Il tuo nome &#232; su una targa di bronzo nel municipio.</value></data>
+  <data name="SeasonStory_Summer_Ch1_Title" xml:space="preserve"><value>Estate sull&#8217;isola</value></data>
+  <data name="SeasonStory_Summer_Ch1_Text" xml:space="preserve"><value>Un investitore vuole costruire un resort. Prendi gli attrezzi, mastro!</value></data>
+  <data name="SeasonStory_Summer_Ch2_Title" xml:space="preserve"><value>Il contratto del porto</value></data>
+  <data name="SeasonStory_Summer_Ch2_Text" xml:space="preserve"><value>Livello 10. Il porto dell&#8217;isola attende la nostra squadra.</value></data>
+  <data name="SeasonStory_Summer_Ch3_Title" xml:space="preserve"><value>Emergenza tempesta</value></data>
+  <data name="SeasonStory_Summer_Ch3_Text" xml:space="preserve"><value>Livello 25. Una tempesta distrugge mezza isola &#8212; la ricostruiamo!</value></data>
+  <data name="SeasonStory_Summer_Ch4_Title" xml:space="preserve"><value>Lo spettacolo dell&#8217;isola</value></data>
+  <data name="SeasonStory_Summer_Ch4_Text" xml:space="preserve"><value>Livello 40. L&#8217;inaugurazione con i fuochi d&#8217;artificio!</value></data>
+  <data name="SeasonStory_Summer_Ch5_Title" xml:space="preserve"><value>Capstone: Architetto dell&#8217;isola</value></data>
+  <data name="SeasonStory_Summer_Ch5_Text" xml:space="preserve"><value>Livello 50! Il resort ora porta il tuo nome.</value></data>
+  <data name="SeasonStory_Autumn_Ch1_Title" xml:space="preserve"><value>Il torneo d&#8217;autunno comincia</value></data>
+  <data name="SeasonStory_Autumn_Ch1_Text" xml:space="preserve"><value>Le gilde chiamano al torneo annuale. Ci sei, mastro?</value></data>
+  <data name="SeasonStory_Autumn_Ch2_Title" xml:space="preserve"><value>Primo turno</value></data>
+  <data name="SeasonStory_Autumn_Ch2_Text" xml:space="preserve"><value>Livello 10 &#8212; arrivano i primi compiti.</value></data>
+  <data name="SeasonStory_Autumn_Ch3_Title" xml:space="preserve"><value>Semifinale</value></data>
+  <data name="SeasonStory_Autumn_Ch3_Text" xml:space="preserve"><value>Livello 25. Restano solo 4 gilde &#8212; e ci siamo!</value></data>
+  <data name="SeasonStory_Autumn_Ch4_Title" xml:space="preserve"><value>La finale</value></data>
+  <data name="SeasonStory_Autumn_Ch4_Text" xml:space="preserve"><value>Livello 40. Gomito a gomito con la concorrenza!</value></data>
+  <data name="SeasonStory_Autumn_Ch5_Title" xml:space="preserve"><value>Capstone: Vincitore del torneo</value></data>
+  <data name="SeasonStory_Autumn_Ch5_Text" xml:space="preserve"><value>Livello 50! Trofeo in mano &#8212; e una festa cittadina in nostro onore.</value></data>
+  <data name="SeasonStory_Winter_Ch1_Title" xml:space="preserve"><value>La prima neve</value></data>
+  <data name="SeasonStory_Winter_Ch1_Text" xml:space="preserve"><value>Inverno arrivato! La citt&#224; ha bisogno di artigiani d&#8217;emergenza.</value></data>
+  <data name="SeasonStory_Winter_Ch2_Title" xml:space="preserve"><value>Danni da gelo</value></data>
+  <data name="SeasonStory_Winter_Ch2_Text" xml:space="preserve"><value>Livello 10. I tubi scoppiano in massa.</value></data>
+  <data name="SeasonStory_Winter_Ch3_Title" xml:space="preserve"><value>La grande tempesta</value></data>
+  <data name="SeasonStory_Winter_Ch3_Text" xml:space="preserve"><value>Livello 25. Tempesta del secolo &#8212; tutto &#232; fermo.</value></data>
+  <data name="SeasonStory_Winter_Ch4_Title" xml:space="preserve"><value>Ricostruzione</value></data>
+  <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>Livello 40. Trave per trave ricostruiamo la citt&#224;.</value></data>
+  <data name="SeasonStory_Winter_Ch5_Title" xml:space="preserve"><value>Capstone: Eroe dell&#8217;inverno</value></data>
+  <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>Livello 50! La citt&#224; ti onora come Eroe dell&#8217;inverno.</value></data>
 </root>

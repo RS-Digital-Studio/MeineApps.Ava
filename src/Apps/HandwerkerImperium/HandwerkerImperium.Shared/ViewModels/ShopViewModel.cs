@@ -28,6 +28,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
     private readonly IEquipmentService _equipmentService;
     private readonly IVipService _vipService;
     private readonly IDialogService _dialogService;
+    private readonly IDailyBundleService? _dailyBundleService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -72,6 +73,18 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
     [ObservableProperty]
     private string _premiumIncomeComparison = string.Empty;
 
+    /// <summary>P1.3 AAA-Audit: Aktuelles Tages-Bundle (null wenn deaktiviert).</summary>
+    [ObservableProperty]
+    private DailyBundleOffer? _currentDailyBundle;
+
+    /// <summary>True wenn ein Bundle aktiv ist (für UI-Visibility-Binding).</summary>
+    public bool HasDailyBundle => CurrentDailyBundle != null;
+
+    partial void OnCurrentDailyBundleChanged(DailyBundleOffer? value)
+    {
+        OnPropertyChanged(nameof(HasDailyBundle));
+    }
+
     /// <summary>
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
@@ -80,13 +93,16 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
     /// <summary>
     /// Localized text for restore purchases button.
     /// </summary>
-    public string RestorePurchasesText => _localizationService.GetString("RestorePurchases") ?? "Käufe wiederherstellen";
+    public string RestorePurchasesText => _localizationService.GetString("RestorePurchases") ?? "Restore Purchases";
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
     private readonly IAnalyticsService? _analyticsService;
+
+    /// <summary>v2.1.0: Reputation-Shop als Sub-Section im Shop (Section sichtbar ab Reputation 60).</summary>
+    public ReputationShopViewModel ReputationShopVM { get; }
 
     public ShopViewModel(
         IGameStateService gameStateService,
@@ -98,7 +114,9 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         IEquipmentService equipmentService,
         IVipService vipService,
         IDialogService dialogService,
-        IAnalyticsService? analyticsService = null)
+        ReputationShopViewModel reputationShopVm,
+        IAnalyticsService? analyticsService = null,
+        IDailyBundleService? dailyBundleService = null)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
@@ -110,6 +128,8 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         _vipService = vipService;
         _dialogService = dialogService;
         _analyticsService = analyticsService;
+        _dailyBundleService = dailyBundleService;
+        ReputationShopVM = reputationShopVm;
 
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
@@ -118,9 +138,39 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         _gameStateService.MoneyChanged += OnMoneyChanged;
         _gameStateService.GoldenScrewsChanged += OnGoldenScrewsChanged;
 
+        // P1.3 AAA-Audit: Bundle live aktualisieren bei Tageswechsel
+        if (_dailyBundleService != null)
+            _dailyBundleService.BundleRotated += OnDailyBundleRotated;
+
         LoadShopData();
         LoadTools();
         LoadEquipmentShop();
+        RefreshDailyBundle();
+    }
+
+    private void OnDailyBundleRotated()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(RefreshDailyBundle);
+    }
+
+    /// <summary>P1.3 AAA-Audit: Aktualisiert <see cref="CurrentDailyBundle"/> aus dem Service.</summary>
+    public void RefreshDailyBundle()
+    {
+        CurrentDailyBundle = _dailyBundleService?.GetCurrentBundle();
+    }
+
+    /// <summary>P1.3 AAA-Audit: Kauft das aktuelle Bundle (Service verbucht Bonus-Items).</summary>
+    [RelayCommand]
+    private async Task PurchaseDailyBundleAsync()
+    {
+        if (_dailyBundleService is null || _isBusy) return;
+        _isBusy = true;
+        try
+        {
+            var ok = await _dailyBundleService.PurchaseCurrentBundleAsync();
+            if (ok) RefreshDailyBundle();
+        }
+        finally { _isBusy = false; }
     }
 
     private void OnPremiumStatusChanged(object? sender, EventArgs e)
@@ -484,8 +534,8 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
                 if (state.PremiumAdRewardsUsedToday >= 3)
                 {
                     ShowAlert(
-                        _localizationService.GetString("PremiumDailyLimitTitle") ?? "Tageslimit",
-                        _localizationService.GetString("PremiumDailyLimitMessage") ?? "Premium-Belohnungen für heute aufgebraucht.",
+                        _localizationService.GetString("PremiumDailyLimitTitle") ?? "Daily Limit",
+                        _localizationService.GetString("PremiumDailyLimitMessage") ?? "Premium rewards used up today. Come back tomorrow!",
                         _localizationService.GetString("OK") ?? "OK");
                     return;
                 }
@@ -506,9 +556,9 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             {
                 var remaining = cooldownEnd - DateTime.UtcNow;
                 ShowAlert(
-                    _localizationService.GetString("AdCooldownTitle") ?? "Wartezeit aktiv",
+                    _localizationService.GetString("AdCooldownTitle") ?? "Cooldown Active",
                     string.Format(
-                        _localizationService.GetString("AdCooldownMessage") ?? "Nächstes Video in {0}h {1}min",
+                        _localizationService.GetString("AdCooldownMessage") ?? "Next video in {0}h {1}min",
                         (int)remaining.TotalHours, remaining.Minutes),
                     _localizationService.GetString("OK") ?? "OK");
                 return;
@@ -517,8 +567,8 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             if (!_rewardedAdService.IsAvailable)
             {
                 ShowAlert(
-                    _localizationService.GetString("AdVideoNotAvailableTitle") ?? "Video nicht verfügbar",
-                    _localizationService.GetString("AdVideoNotAvailableMessage") ?? "Bitte versuche es später.",
+                    _localizationService.GetString("AdVideoNotAvailableTitle") ?? "No video available",
+                    _localizationService.GetString("AdVideoNotAvailableMessage") ?? "No ad video is currently available. Please try again later.",
                     _localizationService.GetString("OK") ?? "OK");
                 return;
             }
@@ -780,18 +830,20 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
                 ShowAlert(
                     _localizationService.GetString("TimeSkipped"),
                     string.Format(
-                        _localizationService.GetString("TimeSkipFullDesc") ?? "+{0} + Erholung & Forschung beschleunigt",
+                        _localizationService.GetString("TimeSkipFullDesc") ?? "+{0} + Recovery & research accelerated",
                         FormatMoney(timeSkipEarnings)),
                     _localizationService.GetString("Great"));
                 break;
 
             case "golden_screws_ad":
-                _gameStateService.AddGoldenScrews(8);  // BAL-AD-1: Von 5 auf 8 GS (eigener 4h-Cooldown)
+                // v2.0.37: 8 → 12 GS (Goldschrauben-Oekonomie-Anpassung).
+                // F2P-Vollabschluss-Zeit reduziert sich um ~30% bei Spielern, die Werbung schauen.
+                _gameStateService.AddGoldenScrews(12);
                 GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
                 await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
                 ShowAlert(
                     _localizationService.GetString("GoldenScrews"),
-                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 8),
+                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 12),
                     _localizationService.GetString("Great"));
                 break;
         }
@@ -839,9 +891,9 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         var premiumFormatted = MoneyFormatter.FormatPerSecond(premiumIncome);
 
         var incomeTemplate = _localizationService.GetString("PremiumIncomeCompare")
-                       ?? "Dein Einkommen: {0} \u2192 Mit Premium: {1}";
+                       ?? "Your income: {0} \u2192 With Premium: {1}";
         var gsBenefit = _localizationService.GetString("PremiumBenefitGoldenScrews")
-                       ?? "+100% Goldschrauben aus Mini-Games";
+                       ?? "+100% Golden Screws from Mini-Games";
 
         PremiumIncomeComparison = string.Format(incomeTemplate, currentFormatted, premiumFormatted)
                                   + "\n" + gsBenefit;
@@ -869,6 +921,8 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
     {
         if (_disposed) return;
         _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
+        if (_dailyBundleService != null)
+            _dailyBundleService.BundleRotated -= OnDailyBundleRotated;
         _gameStateService.MoneyChanged -= OnMoneyChanged;
         _gameStateService.GoldenScrewsChanged -= OnGoldenScrewsChanged;
         _disposed = true;

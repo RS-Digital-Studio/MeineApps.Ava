@@ -39,6 +39,8 @@ public sealed partial class GameStateService : IGameStateService
     public event EventHandler? StateLoaded;
     public event EventHandler<GoldenScrewsChangedEventArgs>? GoldenScrewsChanged;
     public event EventHandler<MiniGameResultRecordedEventArgs>? MiniGameResultRecorded;
+    public event EventHandler<PerfectRatingIncrementedEventArgs>? PerfectRatingIncremented;
+    public event EventHandler<ReputationTierChangedEventArgs>? ReputationTierChanged;
 
     // ===================================================================
     // INITIALISIERUNG

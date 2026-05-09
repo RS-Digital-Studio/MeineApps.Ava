@@ -90,4 +90,42 @@ public interface IWorkerService
     /// Fired when a worker levels up.
     /// </summary>
     event EventHandler<Worker>? WorkerLevelUp;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PRAKTIKANTEN-SYSTEM (v2.1.0)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// v2.1.0: Stellt einen Praktikanten kostenlos ein (F-Tier, 0 Lohn, Effizienz 0.5x).
+    /// Limit: 2 Praktikanten gleichzeitig pro Imperium.
+    /// Nach 24h aktivem Training (siehe <see cref="Worker.InternProgressTicks"/>) wartet
+    /// der Praktikant auf Promotion (E-Tier, kostenpflichtig) oder verlaesst die Werkstatt.
+    /// </summary>
+    bool HireIntern(WorkshopType workshop);
+
+    /// <summary>
+    /// v2.1.0: Promoviert einen Praktikanten zu E-Tier (regulaerer Worker).
+    /// Setzt IsIntern=false, InternAwaitingPromotion=false. Worker bleibt im Workshop.
+    /// </summary>
+    bool PromoteIntern(string workerId);
+
+    /// <summary>
+    /// v2.1.0: Lehnt die Promotion ab — Worker verlaesst die Werkstatt.
+    /// </summary>
+    bool DeclineInternPromotion(string workerId);
+
+    /// <summary>
+    /// v2.1.0: Anzahl aktiver Praktikanten ueber alle Workshops.
+    /// </summary>
+    int GetInternCount();
+
+    /// <summary>
+    /// v2.1.0: Maximale Anzahl gleichzeitig aktiver Praktikanten.
+    /// </summary>
+    int MaxInterns => 2;
+
+    /// <summary>
+    /// v2.1.0: Feuert wenn ein Praktikant die 24h-Promotion-Schwelle erreicht hat.
+    /// </summary>
+    event EventHandler<Worker>? InternReadyForPromotion;
 }

@@ -44,8 +44,7 @@ public static class BottomSheetBehavior
     }
 
     private static async void OnIsOpenChanged(Control element, AvaloniaPropertyChangedEventArgs e)
-    {
-        try
+        => await HandwerkerImperium.Helpers.AsyncExtensions.RunHandlerSafely(async () =>
         {
             var isOpen = (bool)e.NewValue!;
             var distance = GetSlideDistance(element);
@@ -109,10 +108,5 @@ public static class BottomSheetBehavior
                 await Task.Delay(300);
                 element.IsVisible = false;
             }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnIsOpenChanged)} Fehler: {ex.Message}");
-        }
-    }
+        });
 }

@@ -431,13 +431,13 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
     private (string Name, string Icon) GetCategoryInfo(PrestigeShopCategory category) => category switch
     {
         PrestigeShopCategory.IncomeAndCosts => (
-            _localizationService.GetString("ShopCatIncome") ?? "Einkommen & Kosten", "Cash"),
+            _localizationService.GetString("ShopCatIncome") ?? "Income & Costs", "Cash"),
         PrestigeShopCategory.WorkerAndMood => (
-            _localizationService.GetString("ShopCatWorker") ?? "Arbeiter & Stimmung", "HardHat"),
+            _localizationService.GetString("ShopCatWorker") ?? "Workers & Mood", "HardHat"),
         PrestigeShopCategory.SpeedAndAutomation => (
-            _localizationService.GetString("ShopCatSpeed") ?? "Beschleunigung", "LightningBolt"),
+            _localizationService.GetString("ShopCatSpeed") ?? "Speed & Automation", "LightningBolt"),
         PrestigeShopCategory.CurrencyAndStart => (
-            _localizationService.GetString("ShopCatCurrency") ?? "Währung & Start", "Bank"),
+            _localizationService.GetString("ShopCatCurrency") ?? "Currency & Start", "Bank"),
         _ => ("", "")
     };
 
@@ -476,9 +476,9 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
         CanBuyPrestigePass = false;
 
         _dialogService.ShowAlertDialog(
-            _localizationService.GetString("PrestigePassTitle") ?? "Prestige-Pass",
-            _localizationService.GetString("PrestigePassActive") ?? "Prestige-Pass aktiviert! +50% Prestige-Punkte beim nächsten Prestige.",
-            _localizationService.GetString("Great") ?? "Super!");
+            _localizationService.GetString("PrestigePassTitle") ?? "Prestige Pass",
+            _localizationService.GetString("PrestigePassActive") ?? "Prestige Pass Active",
+            _localizationService.GetString("Great") ?? "Great!");
     }
 
     [RelayCommand]
@@ -573,19 +573,19 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
         // Was dieser Tier neu freischaltet (Unterschied zum Vorgänger)
         var unlocks = new List<string>();
         if (nextTier.KeepsResearch() && !currentHighest.KeepsResearch())
-            unlocks.Add(_localizationService.GetString("PrestigeKeepsResearch") ?? "Forschung bleibt");
+            unlocks.Add(_localizationService.GetString("PrestigeKeepsResearch") ?? "Research preserved!");
         if (nextTier.KeepsShopItems() && !currentHighest.KeepsShopItems())
-            unlocks.Add(_localizationService.GetString("PrestigeKeepsShop") ?? "Shop bleibt");
+            unlocks.Add(_localizationService.GetString("PrestigeKeepsShop") ?? "Prestige shop preserved!");
         if (nextTier.KeepsMasterTools() && !currentHighest.KeepsMasterTools())
-            unlocks.Add(_localizationService.GetString("PrestigeKeepsTools") ?? "Meisterwerkzeuge bleiben");
+            unlocks.Add(_localizationService.GetString("PrestigeKeepsTools") ?? "Master tools preserved!");
         if (nextTier.KeepsBuildings() && !currentHighest.KeepsBuildings())
-            unlocks.Add(_localizationService.GetString("PrestigeKeepsBuildings") ?? "Gebäude bleiben");
+            unlocks.Add(_localizationService.GetString("PrestigeKeepsBuildings") ?? "Buildings preserved (Lv.1)!");
         if (nextTier.KeepsEquipment() && !currentHighest.KeepsEquipment())
-            unlocks.Add(_localizationService.GetString("PrestigeKeepsEquipment") ?? "Ausrüstung bleibt");
+            unlocks.Add(_localizationService.GetString("PrestigeKeepsEquipment") ?? "Equipment preserved!");
         if (nextTier.KeepsManagers() && !currentHighest.KeepsManagers())
-            unlocks.Add(_localizationService.GetString("PrestigeKeepsManagers") ?? "Manager bleiben");
+            unlocks.Add(_localizationService.GetString("PrestigeKeepsManagers") ?? "Managers preserved (Lv.1)!");
         if (nextTier.KeepsBestWorkers() && !currentHighest.KeepsBestWorkers())
-            unlocks.Add(_localizationService.GetString("PrestigeKeepsWorkers") ?? "Beste Worker bleiben");
+            unlocks.Add(_localizationService.GetString("PrestigeKeepsWorkers") ?? "Best workers preserved!");
 
         // PP-Multiplikator als Highlight
         unlocks.Insert(0, $"x{nextTier.GetPointMultiplier()} PP");
@@ -603,44 +603,44 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
         var keep = new List<string>
         {
             _localizationService.GetString("Achievements") ?? "Achievements",
-            _localizationService.GetString("PrestigePointsShort") ?? "Prestige-Punkte",
-            _localizationService.GetString("Settings") ?? "Einstellungen",
+            _localizationService.GetString("PrestigePointsShort") ?? "Prestige Points",
+            _localizationService.GetString("Settings") ?? "Settings",
         };
 
         // Tier-spezifische Bewahrungen (progressive Bewahrung)
         if (tier.KeepsResearch())
-            keep.Add(_localizationService.GetString("Research") ?? "Forschung");
+            keep.Add(_localizationService.GetString("Research") ?? "Research");
         if (tier.KeepsShopItems())
-            keep.Add(_localizationService.GetString("PrestigeShop") ?? "Prestige-Shop");
+            keep.Add(_localizationService.GetString("PrestigeShop") ?? "Prestige Shop");
         if (tier.KeepsMasterTools())
-            keep.Add(_localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge");
+            keep.Add(_localizationService.GetString("MasterTools") ?? "Master Tools");
         if (tier.KeepsBuildings())
-            keep.Add(_localizationService.GetString("Buildings") ?? "Gebäude");
+            keep.Add(_localizationService.GetString("Buildings") ?? "Buildings");
         if (tier.KeepsEquipment())
-            keep.Add(_localizationService.GetString("Equipment") ?? "Ausrüstung");
+            keep.Add(_localizationService.GetString("Equipment") ?? "Equipment");
         if (tier.KeepsManagers())
-            keep.Add(_localizationService.GetString("Managers") ?? "Vorarbeiter");
+            keep.Add(_localizationService.GetString("Managers") ?? "Foremen");
         if (tier.KeepsBestWorkers())
-            keep.Add(_localizationService.GetString("BestWorkers") ?? "Beste Arbeiter");
+            keep.Add(_localizationService.GetString("BestWorkers") ?? "Best Workers");
 
         // Was verloren geht (inverse der Bewahrung)
         var lose = new List<string>
         {
-            _localizationService.GetString("WorkshopsTab") ?? "Werkstätten",
-            _localizationService.GetString("Workers") ?? "Arbeiter",
-            _localizationService.GetString("Money") ?? "Geld",
+            _localizationService.GetString("WorkshopsTab") ?? "Workshops",
+            _localizationService.GetString("Workers") ?? "Team",
+            _localizationService.GetString("Money") ?? "Money",
         };
 
         if (!tier.KeepsResearch())
-            lose.Add(_localizationService.GetString("Research") ?? "Forschung");
+            lose.Add(_localizationService.GetString("Research") ?? "Research");
         if (!tier.KeepsMasterTools())
-            lose.Add(_localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge");
+            lose.Add(_localizationService.GetString("MasterTools") ?? "Master Tools");
         if (!tier.KeepsBuildings())
-            lose.Add(_localizationService.GetString("Buildings") ?? "Gebäude");
+            lose.Add(_localizationService.GetString("Buildings") ?? "Buildings");
         if (!tier.KeepsEquipment())
-            lose.Add(_localizationService.GetString("Equipment") ?? "Ausrüstung");
+            lose.Add(_localizationService.GetString("Equipment") ?? "Equipment");
         if (!tier.KeepsManagers())
-            lose.Add(_localizationService.GetString("Managers") ?? "Vorarbeiter");
+            lose.Add(_localizationService.GetString("Managers") ?? "Foremen");
 
         PrestigeKeepList = string.Join("\n", keep.Select(k => $"+ {k}"));
         PrestigeLoseList = string.Join("\n", lose.Select(l => $"\u2212 {l}"));
@@ -668,7 +668,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
         var lines = new List<string>();
 
         // Level-Anforderung
-        var levelLabel = _localizationService.GetString("RequiredLevel") ?? "Benötigtes Level";
+        var levelLabel = _localizationService.GetString("RequiredLevel") ?? "Required Level";
         lines.Add($"{levelLabel}: {tier.GetRequiredLevel()}");
 
         // Vorgänger-Anforderung
@@ -677,32 +677,32 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
         {
             var prevTier = (PrestigeTier)((int)tier - 1);
             var prevName = _localizationService.GetString(prevTier.GetLocalizationKey()) ?? prevTier.ToString();
-            var reqLabel = _localizationService.GetString("Required") ?? "Benötigt";
+            var reqLabel = _localizationService.GetString("Required") ?? "Required";
             lines.Add($"{reqLabel}: {reqCount}x {prevName}");
         }
 
         lines.Add("");
 
         // Belohnungen
-        var rewardLabel = _localizationService.GetString("Rewards") ?? "Belohnungen";
+        var rewardLabel = _localizationService.GetString("Rewards") ?? "Rewards";
         lines.Add($"{rewardLabel}:");
         lines.Add($"  x{tier.GetPointMultiplier()} PP");
-        lines.Add($"  +{tier.GetPermanentMultiplierBonus() * 100:0}% {_localizationService.GetString("PermanentIncomeBonus") ?? "Einkommens-Bonus"}");
+        lines.Add($"  +{tier.GetPermanentMultiplierBonus() * 100:0}% {_localizationService.GetString("PermanentIncomeBonus") ?? "permanent income bonus"}");
 
         // Was bleibt erhalten (progressive Bewahrung)
         var keeps = new List<string>();
-        if (tier.KeepsResearch()) keeps.Add(_localizationService.GetString("Research") ?? "Forschung");
-        if (tier.KeepsShopItems()) keeps.Add(_localizationService.GetString("PrestigeShop") ?? "Prestige-Shop");
-        if (tier.KeepsMasterTools()) keeps.Add(_localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge");
-        if (tier.KeepsBuildings()) keeps.Add(_localizationService.GetString("Buildings") ?? "Gebäude");
-        if (tier.KeepsEquipment()) keeps.Add(_localizationService.GetString("Equipment") ?? "Ausrüstung");
-        if (tier.KeepsManagers()) keeps.Add(_localizationService.GetString("Managers") ?? "Vorarbeiter");
-        if (tier.KeepsBestWorkers()) keeps.Add(_localizationService.GetString("BestWorkers") ?? "Beste Arbeiter");
+        if (tier.KeepsResearch()) keeps.Add(_localizationService.GetString("Research") ?? "Research");
+        if (tier.KeepsShopItems()) keeps.Add(_localizationService.GetString("PrestigeShop") ?? "Prestige Shop");
+        if (tier.KeepsMasterTools()) keeps.Add(_localizationService.GetString("MasterTools") ?? "Master Tools");
+        if (tier.KeepsBuildings()) keeps.Add(_localizationService.GetString("Buildings") ?? "Buildings");
+        if (tier.KeepsEquipment()) keeps.Add(_localizationService.GetString("Equipment") ?? "Equipment");
+        if (tier.KeepsManagers()) keeps.Add(_localizationService.GetString("Managers") ?? "Foremen");
+        if (tier.KeepsBestWorkers()) keeps.Add(_localizationService.GetString("BestWorkers") ?? "Best Workers");
 
         if (keeps.Count > 0)
         {
             lines.Add("");
-            var keepsLabel = _localizationService.GetString("PrestigeKeeps") ?? "Bewahrt";
+            var keepsLabel = _localizationService.GetString("PrestigeKeeps") ?? "Kept:";
             lines.Add($"{keepsLabel}:");
             foreach (var k in keeps)
                 lines.Add($"  + {k}");
@@ -713,7 +713,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
         if (count > 0)
         {
             lines.Add("");
-            var completedLabel = _localizationService.GetString("Completed") ?? "Abgeschlossen";
+            var completedLabel = _localizationService.GetString("Completed") ?? "Completed";
             lines.Add($"{completedLabel}: {count}x");
         }
 
@@ -802,8 +802,8 @@ public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
     {
         var now = DateTime.UtcNow;
         var days = (int)(now - utcDate).TotalDays;
-        if (days == 0) return _localizationService.GetString("Today") ?? "Heute";
-        if (days == 1) return _localizationService.GetString("Yesterday") ?? "Gestern";
+        if (days == 0) return _localizationService.GetString("Today") ?? "Today";
+        if (days == 1) return _localizationService.GetString("Yesterday") ?? "Yesterday";
         return string.Format(
             _localizationService.GetString("DaysAgo") ?? "vor {0} Tagen",
             days);

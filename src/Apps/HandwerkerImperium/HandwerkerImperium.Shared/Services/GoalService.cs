@@ -72,7 +72,7 @@ public sealed class GoalService : IGoalService
                     var goal = new GameGoal
                     {
                         Description = $"{wsName} → Lv.{milestones[m]}",
-                        RewardHint = $"x{mult:0.#} {_localizationService.GetString("IncomeBoost") ?? "Einkommens-Boost"}!",
+                        RewardHint = $"x{mult:0.#} {_localizationService.GetString("IncomeBoost") ?? "Income Boost"}!",
                         Progress = (double)ws.Level / milestones[m],
                         NavigationRoute = "dashboard",
                         IconKind = "TrendingUp",
@@ -97,7 +97,7 @@ public sealed class GoalService : IGoalService
             int tierPoints = (int)(points * highestTier.GetPointMultiplier());
             var goal = new GameGoal
             {
-                Description = _localizationService.GetString("PrestigeAvailable") ?? "Prestige verfügbar!",
+                Description = _localizationService.GetString("PrestigeAvailable") ?? "Prestige available!",
                 RewardHint = $"+{tierPoints} {_localizationService.GetString("PrestigePointsShort") ?? "PP"}",
                 Progress = 1.0,
                 NavigationRoute = "prestige",
@@ -129,7 +129,7 @@ public sealed class GoalService : IGoalService
                 var goal = new GameGoal
                 {
                     Description = $"{wsName} {_localizationService.GetString("Unlock") ?? "freischalten"}",
-                    RewardHint = $"x{cheapestLocked.Type.GetBaseIncomeMultiplier():0.#} {_localizationService.GetString("Income") ?? "Einkommen"}",
+                    RewardHint = $"x{cheapestLocked.Type.GetBaseIncomeMultiplier():0.#} {_localizationService.GetString("Income") ?? "Income"}",
                     Progress = Math.Min(1.0, (double)(state.Money / cheapestLocked.UnlockCost)),
                     NavigationRoute = "dashboard",
                     IconKind = "LockOpenVariant",
@@ -158,7 +158,7 @@ public sealed class GoalService : IGoalService
                     var goal = new GameGoal
                     {
                         Description = $"{bName} → Lv.{building.Level + 1}",
-                        RewardHint = _localizationService.GetString("BuildingUpgradeHint") ?? "Bessere Boni!",
+                        RewardHint = _localizationService.GetString("BuildingUpgradeHint") ?? "Better bonuses!",
                         Progress = Math.Min(1.0, (double)(state.Money / upgradeCost)),
                         NavigationRoute = "imperium",
                         IconKind = "HomeCity",
@@ -196,8 +196,8 @@ public sealed class GoalService : IGoalService
                     var tierName = _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString();
                     bestGoal = new GameGoal
                     {
-                        Description = $"{tierName}-{_localizationService.GetString("Worker") ?? "Arbeiter"}",
-                        RewardHint = $"{nextTier.GetMinEfficiency():0.#}-{nextTier.GetMaxEfficiency():0.#}x {_localizationService.GetString("Efficiency") ?? "Effizienz"}",
+                        Description = $"{tierName}-{_localizationService.GetString("Worker") ?? "Worker"}",
+                        RewardHint = $"{nextTier.GetMinEfficiency():0.#}-{nextTier.GetMaxEfficiency():0.#}x {_localizationService.GetString("Efficiency") ?? "Efficiency"}",
                         Progress = Math.Min(1.0, (double)(state.Money / hiringCost)),
                         NavigationRoute = "workers",
                         IconKind = "AccountArrowUp",
@@ -254,7 +254,7 @@ public sealed class GoalService : IGoalService
             var wsName = _localizationService.GetString(ws.Type.GetLocalizationKey()) ?? ws.Type.ToString();
             return new GameGoal
             {
-                Description = $"{wsName} {_localizationService.GetString("GoalReadyForRebirth") ?? "bereit für Wiedergeburt!"}",
+                Description = $"{wsName} {_localizationService.GetString("GoalReadyForRebirth") ?? "ready for Rebirth!"}",
                 RewardHint = $"★{stars + 1} (+{GetRebirthBonusText(stars + 1)})",
                 Progress = (double)ws.Level / Workshop.MaxLevel,
                 NavigationRoute = "dashboard",
@@ -276,7 +276,7 @@ public sealed class GoalService : IGoalService
         int ap = _ascensionService.CalculateAscensionPoints();
         return new GameGoal
         {
-            Description = _localizationService.GetString("GoalAscensionAvailable") ?? "Aufstieg verfügbar!",
+            Description = _localizationService.GetString("GoalAscensionAvailable") ?? "Ascension available! Receive {0} points.",
             RewardHint = $"+{ap} {_localizationService.GetString("AscensionPointsShort") ?? "AP"}",
             Progress = 1.0,
             NavigationRoute = "prestige",
@@ -307,9 +307,9 @@ public sealed class GoalService : IGoalService
         return new GameGoal
         {
             Description = string.Format(
-                _localizationService.GetString("GoalAllWorkshopsMax") ?? "Alle Werkstätten auf Lv.1000 ({0}/{1})",
+                _localizationService.GetString("GoalAllWorkshopsMax") ?? "All workshops at Lv.1000 ({0}/8)",
                 atMax, totalUnlocked),
-            RewardHint = _localizationService.GetString("GoalMaxRebirthAccess") ?? "Maximale Rebirth-Möglichkeiten!",
+            RewardHint = _localizationService.GetString("GoalMaxRebirthAccess") ?? "Maximum Rebirth access!",
             Progress = (double)atMax / totalUnlocked,
             NavigationRoute = "dashboard",
             IconKind = "ChartBar",
@@ -348,9 +348,9 @@ public sealed class GoalService : IGoalService
         return new GameGoal
         {
             Description = string.Format(
-                _localizationService.GetString("GoalNextRebirthStar") ?? "{0}: Noch {1} Level bis zum nächsten Stern",
+                _localizationService.GetString("GoalNextRebirthStar") ?? "{0}: {1} more levels until next star",
                 wsName, remaining),
-            RewardHint = _localizationService.GetString("GoalPermanentBonus") ?? "Permanenter Bonus!",
+            RewardHint = _localizationService.GetString("GoalPermanentBonus") ?? "Permanent bonus!",
             Progress = (double)bestCandidate.Level / Workshop.MaxLevel,
             NavigationRoute = "dashboard",
             IconKind = "Star",
@@ -392,9 +392,9 @@ public sealed class GoalService : IGoalService
             return new GameGoal
             {
                 Description = string.Format(
-                    _localizationService.GetString("GoalCollectRebirthStars") ?? "Sammle Rebirth-Sterne ({0}/{1})",
+                    _localizationService.GetString("GoalCollectRebirthStars") ?? "Collect Rebirth stars ({0}/{1})",
                     totalStars, maxPossibleStars),
-                RewardHint = _localizationService.GetString("GoalUltimatePower") ?? "Ultimative Macht!",
+                RewardHint = _localizationService.GetString("GoalUltimatePower") ?? "Ultimate power!",
                 Progress = maxPossibleStars > 0 ? (double)totalStars / maxPossibleStars : 0,
                 NavigationRoute = "dashboard",
                 IconKind = "StarCircle",
@@ -414,7 +414,7 @@ public sealed class GoalService : IGoalService
                 Description = string.Format(
                     _localizationService.GetString("GoalNextHundred") ?? "{0} auf Level {1} bringen",
                     wsName, nextHundred),
-                RewardHint = _localizationService.GetString("GoalKeepGrowing") ?? "Wachse weiter!",
+                RewardHint = _localizationService.GetString("GoalKeepGrowing") ?? "Keep growing!",
                 Progress = (double)lowestWorkshop.Level / nextHundred,
                 NavigationRoute = "dashboard",
                 IconKind = "TrendingUp",
@@ -481,8 +481,8 @@ public sealed class GoalService : IGoalService
         {
             return new GameGoal
             {
-                Description = _localizationService.GetString("GoalFirstOrder") ?? "Ersten Auftrag annehmen",
-                RewardHint = _localizationService.GetString("GoalEarnMoney") ?? "Geld verdienen!",
+                Description = _localizationService.GetString("GoalFirstOrder") ?? "Accept first order",
+                RewardHint = _localizationService.GetString("GoalEarnMoney") ?? "Earn money!",
                 Progress = 0.0,
                 NavigationRoute = "dashboard",
                 IconKind = "ClipboardText",
@@ -495,8 +495,8 @@ public sealed class GoalService : IGoalService
         {
             return new GameGoal
             {
-                Description = $"{_localizationService.GetString(firstWorkshop.Type.GetLocalizationKey()) ?? "Werkstatt"} → Lv.10",
-                RewardHint = _localizationService.GetString("GoalUnlockFeatures") ?? "Neue Features!",
+                Description = $"{_localizationService.GetString(firstWorkshop.Type.GetLocalizationKey()) ?? "Workshop"} → Lv.10",
+                RewardHint = _localizationService.GetString("GoalUnlockFeatures") ?? "New features!",
                 Progress = firstWorkshop.Level / 10.0,
                 NavigationRoute = "dashboard",
                 IconKind = "TrendingUp",
@@ -512,8 +512,8 @@ public sealed class GoalService : IGoalService
 
         return new GameGoal
         {
-            Description = string.Format(_localizationService.GetString("GoalReachLevel") ?? "Erreiche Level {0}", targetLevel),
-            RewardHint = _localizationService.GetString("GoalUnlockFeatures") ?? "Neue Features!",
+            Description = string.Format(_localizationService.GetString("GoalReachLevel") ?? "Reach Level {0}", targetLevel),
+            RewardHint = _localizationService.GetString("GoalUnlockFeatures") ?? "New features!",
             Progress = progress,
             NavigationRoute = "dashboard",
             IconKind = "StarFourPoints",

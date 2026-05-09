@@ -208,6 +208,7 @@ public class GameIcon : TemplatedControl
 
     /// <summary>
     /// Leert den Avalonia-Bitmap-Cache (z.B. bei App-Shutdown).
+    /// v2.0.37: Auch _pathMap mit clearen, sodass beim Re-Init keine stale Pfade haengen bleiben.
     /// </summary>
     public static void ClearCache()
     {
@@ -215,6 +216,7 @@ public class GameIcon : TemplatedControl
             entry?.Dispose();
         _bitmapCache.Clear();
         _brushCache.Clear();
+        _pathMap.Clear();
         _allPreloaded = false;
     }
 }

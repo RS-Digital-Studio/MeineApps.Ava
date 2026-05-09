@@ -282,18 +282,18 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, IDisposable
 
         if (HasFreeSpin)
         {
-            SpinButtonText = _localizationService.GetString("LuckySpinFree") ?? "Gratis drehen!";
+            SpinButtonText = _localizationService.GetString("LuckySpinFree") ?? "Free spin!";
             SpinCostDisplay = "";
         }
         else if (hasAdSpin)
         {
             // BAL-AD-6: Ad-Spin verfügbar
-            SpinButtonText = _localizationService.GetString("LuckySpinAd") ?? "Video drehen";
+            SpinButtonText = _localizationService.GetString("LuckySpinAd") ?? "Spin with video";
             SpinCostDisplay = "";
         }
         else
         {
-            var costFormat = _localizationService.GetString("LuckySpinCost") ?? "Drehen ({0})";
+            var costFormat = _localizationService.GetString("LuckySpinCost") ?? "Spin ({0})";
             var idx = costFormat.IndexOf(" (", StringComparison.Ordinal);
             SpinButtonText = idx > 0 ? costFormat[..idx] : string.Format(costFormat, _luckySpinService.SpinCost);
             SpinCostDisplay = _luckySpinService.SpinCost.ToString("N0");
@@ -356,7 +356,7 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, IDisposable
     /// </summary>
     public void UpdateLocalizedTexts()
     {
-        Title = _localizationService.GetString("LuckySpin") ?? "Glücksrad";
+        Title = _localizationService.GetString("LuckySpin") ?? "Lucky Spin";
         Refresh();
     }
 
@@ -406,7 +406,7 @@ public sealed partial class LuckySpinViewModel : ViewModelBase, IDisposable
                 _localizationService.GetString("LuckySpinSpeedBoost") ?? "2x Speed 30min",
 
             LuckySpinPrizeType.ToolUpgrade =>
-                _localizationService.GetString("LuckySpinToolUpgrade") ?? "Werkzeug-Upgrade!",
+                _localizationService.GetString("LuckySpinToolUpgrade") ?? "Tool Upgrade!",
 
             LuckySpinPrizeType.Jackpot50 => $"+{screws} \U0001f529 JACKPOT!",
 

@@ -152,6 +152,18 @@
   <data name="Continue" xml:space="preserve">
     <value>Continue</value>
   </data>
+  <data name="StorySkip" xml:space="preserve">
+    <value>Skip</value>
+  </data>
+  <data name="DailyBundleTitle" xml:space="preserve">
+    <value>Today's Bundle</value>
+  </data>
+  <data name="DailyBundleSubtitle" xml:space="preserve">
+    <value>Limited offer — today only</value>
+  </data>
+  <data name="DailyBundleToday" xml:space="preserve">
+    <value>TODAY</value>
+  </data>
   <data name="WatchAdForDouble" xml:space="preserve">
     <value>Watch Ad = 2x</value>
   </data>
@@ -3492,6 +3504,51 @@
   <data name="CloudSyncFailed" xml:space="preserve">
     <value>Cloud sync failed. Your local save is still safe.</value>
   </data>
+  <data name="CloudSaveTooNewTitle" xml:space="preserve">
+    <value>App update required</value>
+  </data>
+  <data name="CloudSaveTooNewBody" xml:space="preserve">
+    <value>Your cloud save was created with a newer app version. Please update the app in the Play Store before continuing.</value>
+  </data>
+  <data name="WhatsNewTitle" xml:space="preserve">
+    <value>What's new</value>
+  </data>
+  <data name="WhatsNewBell" xml:space="preserve">
+    <value>Header bell: daily rewards collect here instead of stacking up as dialogs</value>
+  </data>
+  <data name="WhatsNewStrategyEV" xml:space="preserve">
+    <value>Success rate per mini-game shown on the strategy buttons (Safe / Standard / Risk)</value>
+  </data>
+  <data name="WhatsNewReputation" xml:space="preserve">
+    <value>Reputation tiers: Beginner → City-Known → Region-Star → Industry-Legend with regular-customer bonus</value>
+  </data>
+  <data name="WhatsNewReputationShop" xml:space="preserve">
+    <value>Reputation shop: from "City-Known" tier you can buy 5 items with reputation</value>
+  </data>
+  <data name="WhatsNewImperiumTabs" xml:space="preserve">
+    <value>Imperium tab now has sub-tabs (Workshops / Workers / Research / Equipment / Ascension)</value>
+  </data>
+  <data name="WhatsNewWhatsNewItself" xml:space="preserve">
+    <value>This dialog will appear after every update with new features</value>
+  </data>
+  <data name="RepTierCityKnownEffects" xml:space="preserve">
+    <value>You are now known in the city. More regular customers and slightly better order rewards.</value>
+  </data>
+  <data name="RepTierRegionStarEffects" xml:space="preserve">
+    <value>Your reputation shines across the region. Live orders appear more often and regular customers give bigger bonuses.</value>
+  </data>
+  <data name="RepTierIndustryLegendEffects" xml:space="preserve">
+    <value>Industry Legend: maximum regular-customer rate and highest reward multipliers on all orders.</value>
+  </data>
+  <data name="HintLongPressBulkTitle" xml:space="preserve">
+    <value>Upgrade faster</value>
+  </data>
+  <data name="HintLongPressBulkText" xml:space="preserve">
+    <value>Hold the upgrade button to buy several levels at once — perfect for the x10/x100/Max thresholds.</value>
+  </data>
+  <data name="StatusInternReadyForPromotion" xml:space="preserve">
+    <value>Ready for promotion</value>
+  </data>
   <data name="RushActive" xml:space="preserve">
     <value>2x RUSH ACTIVE</value>
   </data>
@@ -6460,4 +6517,151 @@
   <data name="ParallelOrderLimitMessage" xml:space="preserve"><value>This workshop already has a running order, or the global parallel limit has been reached.</value></data>
   <data name="LiveOrderSpawnedToast" xml:space="preserve"><value>New live order available!</value></data>
   <data name="LiveOrderSpawnedPremiumToast" xml:space="preserve"><value>VIP order incoming!</value></data>
+  <!-- Notification-Center / Bell-UI (v2.0.36) -->
+  <data name="NotificationCenterTitle" xml:space="preserve"><value>Notifications</value></data>
+  <data name="NotificationCenterEmpty" xml:space="preserve"><value>Nothing new.</value></data>
+  <data name="NotificationDismissAll" xml:space="preserve"><value>Dismiss all</value></data>
+  <data name="NotificationActionOpen" xml:space="preserve"><value>Open</value></data>
+  <data name="NotificationDailyRewardTitle" xml:space="preserve"><value>Daily reward is waiting</value></data>
+  <data name="NotificationDailyRewardBody" xml:space="preserve"><value>Tap to collect your daily reward.</value></data>
+  <data name="NotificationWelcomeBackTitle" xml:space="preserve"><value>Welcome-back offer</value></data>
+  <data name="NotificationWelcomeBackBody" xml:space="preserve"><value>A special bonus is waiting for you.</value></data>
+  <data name="NotificationStreakSavedTitle" xml:space="preserve"><value>Streak rescued</value></data>
+  <data name="NotificationStreakSavedBody" xml:space="preserve"><value>Your login streak was saved.</value></data>
+  <data name="NotificationStoryChapterTitle" xml:space="preserve"><value>New chapter available</value></data>
+  <data name="NotificationStoryChapterBody" xml:space="preserve"><value>Master Hans wants to tell you something.</value></data>
+  <data name="NotificationAchievementTitle" xml:space="preserve"><value>Achievement unlocked: {0}</value></data>
+  <data name="NotificationAchievementBody" xml:space="preserve"><value>Tap to view all achievements.</value></data>
+  <data name="NotificationLiveOrderTitle" xml:space="preserve"><value>Live order available</value></data>
+  <data name="NotificationLiveOrderBody" xml:space="preserve"><value>A premium client is on the line — accept manually.</value></data>
+  <!-- Strategy-Quoten (v2.0.36) -->
+  <data name="StrategyExpectedValue" xml:space="preserve"><value>EV: {0}x</value></data>
+  <data name="StrategyWinRateLabel" xml:space="preserve"><value>Hit rate: {0}%</value></data>
+  <data name="StrategyWinRateUnknown" xml:space="preserve"><value>Hit rate: ~?</value></data>
+  <data name="StrategyWinRateTooFewPlays" xml:space="preserve"><value>Play {0}+ to see hit rate</value></data>
+  <!-- Auto-Play differenzieren (v2.0.36) -->
+  <data name="AutomationAutoAcceptOnlyStandard" xml:space="preserve"><value>Standard orders only</value></data>
+  <data name="AutomationAutoAcceptOnlyStandardDesc" xml:space="preserve"><value>Live and VIP orders stay open for you to accept manually</value></data>
+  <data name="AutomationAutoCompleteSkipLive" xml:space="preserve"><value>Play live orders yourself</value></data>
+  <data name="AutomationAutoCompleteSkipLiveDesc" xml:space="preserve"><value>Auto-Complete skips premium and live orders</value></data>
+  <!-- v2.0.36: Bisher fehlende Keys (waren als Fallback im Code) -->
+  <data name="Worker" xml:space="preserve"><value>Worker</value></data>
+  <data name="TabWorkshop" xml:space="preserve"><value>Workshop</value></data>
+  <data name="TabMissions" xml:space="preserve"><value>Missions</value></data>
+  <data name="TabGuild" xml:space="preserve"><value>Guild</value></data>
+  <data name="InitError" xml:space="preserve"><value>An error occurred while loading. Please restart the app.</value></data>
+  <data name="DeliveryCollected" xml:space="preserve"><value>Delivery collected</value></data>
+  <data name="SoftCapIncome" xml:space="preserve"><value>Income</value></data>
+  <data name="ManagerUnlocked" xml:space="preserve"><value>New Foreman!</value></data>
+  <data name="ManagerUnlockedFormat" xml:space="preserve"><value>{0} is now available!</value></data>
+  <data name="AscensionFailed" xml:space="preserve"><value>Ascension failed. Requirements not met.</value></data>
+  <data name="ResearchTime" xml:space="preserve"><value>Research time</value></data>
+  <data name="StartReputationFormat" xml:space="preserve"><value>Starting reputation: {0}</value></data>
+  <data name="OrderStrategyRiskConfirmDesc" xml:space="preserve"><value>Miss = no reward + reputation loss. Really risk it?</value></data>
+  <data name="AbandonChallengeDesc" xml:space="preserve"><value>You will receive 50% of the base prestige points (without challenge bonus). All challenges will be deactivated.</value></data>
+  <data name="ParallelOrderLimitDesc" xml:space="preserve"><value>This workshop already has a running order or the global parallel limit has been reached.</value></data>
+  <data name="GuildWarTrainingRound" xml:space="preserve"><value>Training round! Complete orders and mini-games to earn war points for the next round.</value></data>
+  <data name="AtLevelShort" xml:space="preserve"><value>From Level {0}</value></data>
+  <!-- Reputation-Tiers (v2.0.37) -->
+  <data name="RepTierBeginner" xml:space="preserve"><value>Apprentice</value></data>
+  <data name="RepTierCityKnown" xml:space="preserve"><value>City-known</value></data>
+  <data name="RepTierRegionStar" xml:space="preserve"><value>Region Star</value></data>
+  <data name="RepTierIndustryLegend" xml:space="preserve"><value>Industry Legend</value></data>
+  <data name="RepTierUpFormat" xml:space="preserve"><value>{0} reached!</value></data>
+  <data name="PrestigeChooseTier" xml:space="preserve"><value>Choose a tier</value></data>
+  <!-- Saison-Storyline (v2.1.0) -->
+  <data name="SeasonStorySpringTheme" xml:space="preserve"><value>Spring: City Expansion</value></data>
+  <data name="SeasonStorySummerTheme" xml:space="preserve"><value>Summer: Island Project</value></data>
+  <data name="SeasonStoryAutumnTheme" xml:space="preserve"><value>Autumn: Guild Tournament</value></data>
+  <data name="SeasonStoryWinterTheme" xml:space="preserve"><value>Winter: Storm Emergency</value></data>
+  <!-- Imperium-Sub-Tabs (v2.1.0) -->
+  <data name="ImperiumSubTabWorkshops" xml:space="preserve"><value>Workshops</value></data>
+  <data name="ImperiumSubTabWorkers" xml:space="preserve"><value>Workers</value></data>
+  <data name="ImperiumSubTabResearch" xml:space="preserve"><value>Research</value></data>
+  <data name="ImperiumSubTabEquipment" xml:space="preserve"><value>Equipment</value></data>
+  <data name="ImperiumSubTabAscension" xml:space="preserve"><value>Ascension</value></data>
+  <data name="EquipmentSectionHint" xml:space="preserve"><value>Equipment is managed in the worker profile. Tap a worker to equip tools and gear.</value></data>
+  <data name="CoopCreateInvite" xml:space="preserve"><value>Create co-op</value></data>
+  <data name="CoopPickMemberTitle" xml:space="preserve"><value>Pick a co-op partner</value></data>
+  <!-- Co-op Orders + Worker Auctions (v2.1.0) -->
+  <data name="CoopOrdersTitle" xml:space="preserve"><value>Co-op orders</value></data>
+  <data name="CoopOrdersDescription" xml:space="preserve"><value>Team up with a guild member for a shared mini-game.</value></data>
+  <data name="CoopOrdersEmpty" xml:space="preserve"><value>No open co-op orders.</value></data>
+  <data name="CoopAccept" xml:space="preserve"><value>Accept</value></data>
+  <data name="CoopDecline" xml:space="preserve"><value>Decline</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="AuctionTitle" xml:space="preserve"><value>Worker auction</value></data>
+  <data name="AuctionHighestBid" xml:space="preserve"><value>Highest bid</value></data>
+  <data name="AuctionMinBid" xml:space="preserve"><value>Min bid</value></data>
+  <data name="AuctionBidPlaceholder" xml:space="preserve"><value>Your bid</value></data>
+  <data name="AuctionPlaceBid" xml:space="preserve"><value>Bid</value></data>
+  <!-- Praktikanten-System (v2.1.0) -->
+  <data name="InternHireTitle" xml:space="preserve"><value>Hire intern</value></data>
+  <data name="InternHireDescription" xml:space="preserve"><value>F-tier worker, 0 wage. Promotes to E-tier after 24h active training (max 2).</value></data>
+  <data name="InternHireButton" xml:space="preserve"><value>Hire intern (free)</value></data>
+  <data name="InternHireFailedTitle" xml:space="preserve"><value>No free slot</value></data>
+  <data name="InternHireFailedDesc" xml:space="preserve"><value>All workshops are full or the intern limit (2) is reached.</value></data>
+  <data name="InternPromotionTitle" xml:space="preserve"><value>Intern ready for promotion</value></data>
+  <data name="InternPromotionMessage" xml:space="preserve"><value>{0} has completed 24h training. Keep (E-tier, wage applies) or let go?</value></data>
+  <data name="InternPromotionKeep" xml:space="preserve"><value>Keep</value></data>
+  <data name="InternPromotionLet" xml:space="preserve"><value>Let go</value></data>
+  <!-- Reputation-Shop UI (v2.1.0) -->
+  <data name="RepShopTitle" xml:space="preserve"><value>Reputation Shop</value></data>
+  <data name="RepShopDescription" xml:space="preserve"><value>Spend reputation for special perks. Reputation is earned via orders.</value></data>
+  <data name="RepShopBuyFailedTitle" xml:space="preserve"><value>Not enough reputation</value></data>
+  <data name="RepShopBuyFailedDesc" xml:space="preserve"><value>You need more reputation to buy this item.</value></data>
+  <data name="RepShopRegularCustomerName" xml:space="preserve"><value>Regular Customer Guarantee</value></data>
+  <data name="RepShopRegularCustomerDesc" xml:space="preserve"><value>Next 5 orders are regular customers — up to 1.5x reward.</value></data>
+  <data name="RepShopFasterDeliveryName" xml:space="preserve"><value>Faster Delivery</value></data>
+  <data name="RepShopFasterDeliveryDesc" xml:space="preserve"><value>Next supplier arrives 50% faster for 1 hour.</value></data>
+  <data name="RepShopWorkerMoodBoostName" xml:space="preserve"><value>Team Mood Boost</value></data>
+  <data name="RepShopWorkerMoodBoostDesc" xml:space="preserve"><value>All workers get +30 mood (instant).</value></data>
+  <data name="RepShopSkinWoodName" xml:space="preserve"><value>Workshop Skin "Wood Premium"</value></data>
+  <data name="RepShopSkinWoodDesc" xml:space="preserve"><value>Permanent cosmetic skin for all workshops.</value></data>
+  <data name="RepShopInsuranceName" xml:space="preserve"><value>Reputation Insurance</value></data>
+  <data name="RepShopInsuranceDesc" xml:space="preserve"><value>Next risk-miss costs no reputation.</value></data>
+  <!-- Spring -->
+  <data name="SeasonStory_Spring_Ch1_Title" xml:space="preserve"><value>Spring Awakening</value></data>
+  <data name="SeasonStory_Spring_Ch1_Text" xml:space="preserve"><value>The city wakes from winter sleep, master! Construction sites bloom like flowers everywhere. The mayor announced a city-expansion plan — and you're going to be part of it!</value></data>
+  <data name="SeasonStory_Spring_Ch2_Title" xml:space="preserve"><value>First City Orders</value></data>
+  <data name="SeasonStory_Spring_Ch2_Text" xml:space="preserve"><value>Tier 10! The city council picked our workshops. Three new residential districts need craftsmen — and you lead the assignment! Show them what you can do, master!</value></data>
+  <data name="SeasonStory_Spring_Ch3_Title" xml:space="preserve"><value>Competition from the Neighbour Town</value></data>
+  <data name="SeasonStory_Spring_Ch3_Text" xml:space="preserve"><value>Tier 25! Bad news — a competitor wants to take over our city contracts. But we don't back down. With your crew we are unbeatable!</value></data>
+  <data name="SeasonStory_Spring_Ch4_Title" xml:space="preserve"><value>The Grand City Opening</value></data>
+  <data name="SeasonStory_Spring_Ch4_Text" xml:space="preserve"><value>Tier 40! The new city extension is opened — and our workshops are at its heart! The mayor wants to honor you personally, master.</value></data>
+  <data name="SeasonStory_Spring_Ch5_Title" xml:space="preserve"><value>Capstone: City Builder of the Year</value></data>
+  <data name="SeasonStory_Spring_Ch5_Text" xml:space="preserve"><value>Tier 50! The city named you Builder of the Year! Your name is now on a bronze plaque in the town hall. What season comes next, master?</value></data>
+  <!-- Summer -->
+  <data name="SeasonStory_Summer_Ch1_Title" xml:space="preserve"><value>Summer on the Island</value></data>
+  <data name="SeasonStory_Summer_Ch1_Text" xml:space="preserve"><value>An investor wants to build an island resort. Pack the tools, master!</value></data>
+  <data name="SeasonStory_Summer_Ch2_Title" xml:space="preserve"><value>The Harbour Contract</value></data>
+  <data name="SeasonStory_Summer_Ch2_Text" xml:space="preserve"><value>Tier 10. The island harbour awaits our crew.</value></data>
+  <data name="SeasonStory_Summer_Ch3_Title" xml:space="preserve"><value>Storm Emergency</value></data>
+  <data name="SeasonStory_Summer_Ch3_Text" xml:space="preserve"><value>Tier 25. A storm tears through half the island — we rebuild it!</value></data>
+  <data name="SeasonStory_Summer_Ch4_Title" xml:space="preserve"><value>The Island Spectacle</value></data>
+  <data name="SeasonStory_Summer_Ch4_Text" xml:space="preserve"><value>Tier 40. The opening with fireworks!</value></data>
+  <data name="SeasonStory_Summer_Ch5_Title" xml:space="preserve"><value>Capstone: Island Architect</value></data>
+  <data name="SeasonStory_Summer_Ch5_Text" xml:space="preserve"><value>Tier 50! The resort now bears your name.</value></data>
+  <!-- Autumn -->
+  <data name="SeasonStory_Autumn_Ch1_Title" xml:space="preserve"><value>The Autumn Tournament Begins</value></data>
+  <data name="SeasonStory_Autumn_Ch1_Text" xml:space="preserve"><value>The guilds call for the annual tournament. Are you in, master?</value></data>
+  <data name="SeasonStory_Autumn_Ch2_Title" xml:space="preserve"><value>First Round</value></data>
+  <data name="SeasonStory_Autumn_Ch2_Text" xml:space="preserve"><value>Tier 10 — the first tasks come in.</value></data>
+  <data name="SeasonStory_Autumn_Ch3_Title" xml:space="preserve"><value>Semi-Final</value></data>
+  <data name="SeasonStory_Autumn_Ch3_Text" xml:space="preserve"><value>Tier 25. Only 4 guilds remain — and we are among them!</value></data>
+  <data name="SeasonStory_Autumn_Ch4_Title" xml:space="preserve"><value>The Final</value></data>
+  <data name="SeasonStory_Autumn_Ch4_Text" xml:space="preserve"><value>Tier 40. Head-to-head race with the competition!</value></data>
+  <data name="SeasonStory_Autumn_Ch5_Title" xml:space="preserve"><value>Capstone: Tournament Winner</value></data>
+  <data name="SeasonStory_Autumn_Ch5_Text" xml:space="preserve"><value>Tier 50! Trophy in hand — and a city festival in our name.</value></data>
+  <!-- Winter -->
+  <data name="SeasonStory_Winter_Ch1_Title" xml:space="preserve"><value>The First Snow</value></data>
+  <data name="SeasonStory_Winter_Ch1_Text" xml:space="preserve"><value>Winter has arrived! The city needs emergency craftsmen.</value></data>
+  <data name="SeasonStory_Winter_Ch2_Title" xml:space="preserve"><value>Frost Damage</value></data>
+  <data name="SeasonStory_Winter_Ch2_Text" xml:space="preserve"><value>Tier 10. Pipes are bursting in droves.</value></data>
+  <data name="SeasonStory_Winter_Ch3_Title" xml:space="preserve"><value>The Great Storm</value></data>
+  <data name="SeasonStory_Winter_Ch3_Text" xml:space="preserve"><value>Tier 25. A century storm — everything stands still.</value></data>
+  <data name="SeasonStory_Winter_Ch4_Title" xml:space="preserve"><value>Reconstruction</value></data>
+  <data name="SeasonStory_Winter_Ch4_Text" xml:space="preserve"><value>Tier 40. Beam by beam we rebuild the city.</value></data>
+  <data name="SeasonStory_Winter_Ch5_Title" xml:space="preserve"><value>Capstone: Hero of Winter</value></data>
+  <data name="SeasonStory_Winter_Ch5_Text" xml:space="preserve"><value>Tier 50! The city honors you as the Hero of Winter.</value></data>
 </root>

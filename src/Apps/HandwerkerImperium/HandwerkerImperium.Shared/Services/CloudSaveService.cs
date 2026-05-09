@@ -113,34 +113,58 @@ public sealed class CloudSaveService : ICloudSaveService
             _integrity.ComputeSignature(state);
 
             var json = JsonSerializer.Serialize(state, _jsonOptions);
-
-            var metadata = new CloudSaveMetadata
-            {
-                PlayerLevel = state.PlayerLevel,
-                Money = state.Money,
-                GoldenScrews = state.GoldenScrews,
-                PrestigePoints = state.Prestige.PrestigePoints,
-                AscensionLevel = state.Ascension.AscensionLevel,
-                SavedAtIso = state.LastSavedAt.ToString("O"),
-                StateVersion = state.Version,
-                AppVersion = typeof(CloudSaveService).Assembly.GetName().Version?.ToString(3) ?? "unknown"
-            };
-
-            // 1) Metadaten schreiben (klein, fuer Konflikt-Anzeige)
-            var metaOk = await _firebase.SetAsync($"{BasePath}/{_firebase.PlayerId}/metadata", metadata)
-                .ConfigureAwait(false);
-
-            // 2) Voller State (als JSON-String — Firebase speichert das als String-Wert)
-            var dataOk = await _firebase.SetAsync($"{BasePath}/{_firebase.PlayerId}/data", json)
-                .ConfigureAwait(false);
-
-            return metaOk && dataOk;
+            var metadata = BuildMetadata(state);
+            return await UploadInternalAsync(json, metadata).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             _log.Error("Cloud-Save-Upload fehlgeschlagen.", ex);
             return false;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UploadJsonAsync(string stateJson, CloudSaveMetadata metadata)
+    {
+        if (!IsAvailable) return false;
+        if (string.IsNullOrEmpty(stateJson)) return false;
+
+        try
+        {
+            // Race-freier Pfad: JSON + Metadata kommen bereits "frozen" vom Aufrufer.
+            // Kein State-Zugriff in dieser Methode → kein Collection-modified-Risiko.
+            return await UploadInternalAsync(stateJson, metadata).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _log.Error("Cloud-Save-Upload (JSON) fehlgeschlagen.", ex);
+            return false;
+        }
+    }
+
+    private static CloudSaveMetadata BuildMetadata(GameState state) => new()
+    {
+        PlayerLevel = state.PlayerLevel,
+        Money = state.Money,
+        GoldenScrews = state.GoldenScrews,
+        PrestigePoints = state.Prestige.PrestigePoints,
+        AscensionLevel = state.Ascension.AscensionLevel,
+        SavedAtIso = state.LastSavedAt.ToString("O"),
+        StateVersion = state.Version,
+        AppVersion = typeof(CloudSaveService).Assembly.GetName().Version?.ToString(3) ?? "unknown"
+    };
+
+    private async Task<bool> UploadInternalAsync(string json, CloudSaveMetadata metadata)
+    {
+        // 1) Metadaten schreiben (klein, fuer Konflikt-Anzeige)
+        var metaOk = await _firebase.SetAsync($"{BasePath}/{_firebase.PlayerId}/metadata", metadata)
+            .ConfigureAwait(false);
+
+        // 2) Voller State (als JSON-String — Firebase speichert das als String-Wert)
+        var dataOk = await _firebase.SetAsync($"{BasePath}/{_firebase.PlayerId}/data", json)
+            .ConfigureAwait(false);
+
+        return metaOk && dataOk;
     }
 
     /// <inheritdoc />

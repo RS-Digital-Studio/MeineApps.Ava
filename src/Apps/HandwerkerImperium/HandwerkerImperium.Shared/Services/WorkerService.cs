@@ -13,6 +13,7 @@ public sealed class WorkerService : IWorkerService
     private readonly IPrestigeService? _prestigeService;
     private readonly IResearchService? _researchService;
     private readonly IManagerService? _managerService;
+    private readonly IAnalyticsService? _analyticsService;
     private readonly object _lock = new();
 
     // Wiederverwendbare Liste für Kündigungen (vermeidet Allokation pro Tick)
@@ -21,14 +22,17 @@ public sealed class WorkerService : IWorkerService
     public event EventHandler<Worker>? WorkerMoodWarning;
     public event EventHandler<Worker>? WorkerQuit;
     public event EventHandler<Worker>? WorkerLevelUp;
+    public event EventHandler<Worker>? InternReadyForPromotion;
 
     public WorkerService(IGameStateService gameState, IPrestigeService? prestigeService = null,
-        IResearchService? researchService = null, IManagerService? managerService = null)
+        IResearchService? researchService = null, IManagerService? managerService = null,
+        IAnalyticsService? analyticsService = null)
     {
         _gameState = gameState;
         _prestigeService = prestigeService;
         _researchService = researchService;
         _managerService = managerService;
+        _analyticsService = analyticsService;
     }
 
     public bool HireWorker(Worker worker, WorkshopType workshop)
@@ -269,6 +273,18 @@ public sealed class WorkerService : IWorkerService
                         UpdateWorking(worker, deltaHours, moodDecayReduction, guildFatigueReduction + wsMgrFatigue, canteen, wsMgrMood);
                     }
 
+                    // v2.1.0: Praktikanten-Training — aktive Ticks akkumulieren, Promotion bei 86400.
+                    if (worker.IsIntern && !worker.InternAwaitingPromotion && !worker.IsResting)
+                    {
+                        worker.InternProgressTicks += (int)Math.Max(1, deltaSeconds);
+                        const int promotionThreshold = 86400; // 24h aktiv
+                        if (worker.InternProgressTicks >= promotionThreshold)
+                        {
+                            worker.InternAwaitingPromotion = true;
+                            InternReadyForPromotion?.Invoke(this, worker);
+                        }
+                    }
+
                     // Kündigungsbedingungen prüfen
                     if (worker.WillQuit)
                     {
@@ -295,6 +311,14 @@ public sealed class WorkerService : IWorkerService
                 ws.Workers.Remove(worker);
                 state.Statistics.TotalWorkersFired++;
                 WorkerQuit?.Invoke(this, worker);
+                // P1.1 AAA-Audit: Mood-Quit ist Retention-relevantes Signal.
+                _analyticsService?.TrackEvent(AnalyticsEvents.WorkerQuit, new Dictionary<string, object?>
+                {
+                    ["worker_id"] = worker.Id,
+                    ["tier"] = worker.Tier.ToString(),
+                    ["mood"] = (int)worker.Mood,
+                    ["workshop"] = ws.Type.ToString()
+                });
             }
         }
     }
@@ -582,5 +606,119 @@ public sealed class WorkerService : IWorkerService
             }
             return null;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PRAKTIKANTEN-SYSTEM (v2.1.0)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public bool HireIntern(WorkshopType workshop)
+    {
+        lock (_lock)
+        {
+            var state = _gameState.State;
+            if (GetInternCountInternal() >= ((IWorkerService)this).MaxInterns) return false;
+
+            var ws = state.GetOrCreateWorkshop(workshop);
+            if (ws.Workers.Count >= ws.MaxWorkers) return false;
+
+            // F-Tier-Praktikant: 0 EUR Lohn, Effizienz 0.5x (per .Tier=F implizit).
+            var intern = new Worker
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = $"Praktikant {Random.Shared.Next(1000, 9999)}",
+                Tier = WorkerTier.F,
+                Mood = 80m,
+                Fatigue = 0m,
+                AssignedWorkshop = workshop,
+                HiredAt = DateTime.UtcNow,
+                WagePerHour = 0m,
+                IsIntern = true,
+                InternProgressTicks = 0
+            };
+            ws.Workers.Add(intern);
+            state.InvalidateIncomeCache();
+            return true;
+        }
+    }
+
+    public bool PromoteIntern(string workerId)
+    {
+        lock (_lock)
+        {
+            var w = GetWorkerInternal(workerId);
+            if (w == null || !w.IsIntern || !w.InternAwaitingPromotion) return false;
+
+            w.IsIntern = false;
+            w.InternAwaitingPromotion = false;
+            w.InternProgressTicks = 0;
+            w.Tier = WorkerTier.E;
+            // Standard E-Tier-Lohn-Skalierung — Tier-Default wird beim naechsten Lohn-Tick angewandt.
+            w.WagePerHour = WorkerTier.E.GetWagePerHour();
+            _gameState.State.InvalidateIncomeCache();
+
+            // P1.1 AAA-Audit: Praktikanten-Promotion ist Onboarding-Funnel-Signal.
+            _analyticsService?.TrackEvent(AnalyticsEvents.WorkerPromoted, new Dictionary<string, object?>
+            {
+                ["worker_id"] = workerId,
+                ["from_tier"] = "F-Intern",
+                ["to_tier"] = "E"
+            });
+            return true;
+        }
+    }
+
+    public bool DeclineInternPromotion(string workerId)
+    {
+        lock (_lock)
+        {
+            var state = _gameState.State;
+            for (int i = 0; i < state.Workshops.Count; i++)
+            {
+                var workers = state.Workshops[i].Workers;
+                for (int j = 0; j < workers.Count; j++)
+                {
+                    var w = workers[j];
+                    if (w.Id == workerId && w.IsIntern && w.InternAwaitingPromotion)
+                    {
+                        workers.RemoveAt(j);
+                        state.InvalidateIncomeCache();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    public int GetInternCount()
+    {
+        lock (_lock) { return GetInternCountInternal(); }
+    }
+
+    private int GetInternCountInternal()
+    {
+        var state = _gameState.State;
+        int count = 0;
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            var workers = state.Workshops[i].Workers;
+            for (int j = 0; j < workers.Count; j++)
+                if (workers[j].IsIntern) count++;
+        }
+        return count;
+    }
+
+    /// <summary>Lock-frei — Aufrufer haelt _lock.</summary>
+    private Worker? GetWorkerInternal(string id)
+    {
+        var workshops = _gameState.State.Workshops;
+        for (int i = 0; i < workshops.Count; i++)
+        {
+            var workers = workshops[i].Workers;
+            for (int j = 0; j < workers.Count; j++)
+                if (workers[j].Id == id) return workers[j];
+        }
+        return null;
     }
 }

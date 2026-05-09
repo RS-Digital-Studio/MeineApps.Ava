@@ -24,6 +24,10 @@
         </i:BehaviorCollection>
       </Setter>
     </Style>
+    <!-- v2.1.0: Sub-Tab Active-Indication -->
+    <Style Selector="Button.SubTabActive">
+      <Setter Property="Background" Value="{StaticResource CraftPrimaryLightBrush}" />
+    </Style>
     <!-- Prestige-Banner Glow (Opacity statt BoxShadow - GPU-beschleunigt auf Android) -->
     <Style Selector="Border.PrestigeBannerGlow">
       <!-- BoxShadow entfernt: CPU-Blur bei jedem Opacity-Frame verursacht Stutter auf Android -->
@@ -71,6 +75,113 @@
                      AutomationProperties.AutomationId="Imperium_Txt_Balance" />
         </Border>
       </Grid>
+
+      <!-- ================================================================= -->
+      <!-- v2.1.0: Sub-Tab-Leiste (Workshops/Workers/Research/Equipment/Ascension) -->
+      <!-- ================================================================= -->
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="12" Padding="6,6"
+              AutomationProperties.AutomationId="Imperium_Border_SubTabs">
+        <UniformGrid Columns="5" Rows="1">
+          <Button Classes="Text"
+                  Classes.SubTabActive="{Binding IsImperiumWorkshopsActive}"
+                  Command="{Binding SelectImperiumSubTabCommand}"
+                  CommandParameter="Workshops"
+                  MinHeight="44" Padding="6,8" CornerRadius="8"
+                  AutomationProperties.AutomationId="Imperium_Btn_SubTab_Workshops">
+            <StackPanel Spacing="2" HorizontalAlignment="Center">
+              <icons:GameIcon Kind="Hammer" Width="20" Height="20"
+                              HorizontalAlignment="Center"
+                              Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{loc:Translate ImperiumSubTabWorkshops}"
+                         FontSize="10" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="Text"
+                  Classes.SubTabActive="{Binding IsImperiumWorkersActive}"
+                  Command="{Binding SelectImperiumSubTabCommand}"
+                  CommandParameter="Workers"
+                  MinHeight="44" Padding="6,8" CornerRadius="8"
+                  AutomationProperties.AutomationId="Imperium_Btn_SubTab_Workers">
+            <StackPanel Spacing="2" HorizontalAlignment="Center">
+              <icons:GameIcon Kind="AccountGroup" Width="20" Height="20"
+                              HorizontalAlignment="Center"
+                              Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{loc:Translate ImperiumSubTabWorkers}"
+                         FontSize="10" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="Text"
+                  Classes.SubTabActive="{Binding IsImperiumResearchActive}"
+                  Command="{Binding SelectImperiumSubTabCommand}"
+                  CommandParameter="Research"
+                  MinHeight="44" Padding="6,8" CornerRadius="8"
+                  AutomationProperties.AutomationId="Imperium_Btn_SubTab_Research">
+            <StackPanel Spacing="2" HorizontalAlignment="Center">
+              <icons:GameIcon Kind="FlaskOutline" Width="20" Height="20"
+                              HorizontalAlignment="Center"
+                              Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{loc:Translate ImperiumSubTabResearch}"
+                         FontSize="10" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Button>
+          <Button Classes="Text"
+                  Classes.SubTabActive="{Binding IsImperiumEquipmentActive}"
+                  Command="{Binding SelectImperiumSubTabCommand}"
+                  CommandParameter="Equipment"
+                  MinHeight="44" Padding="6,8" CornerRadius="8"
+                  AutomationProperties.AutomationId="Imperium_Btn_SubTab_Equipment">
+            <StackPanel Spacing="2" HorizontalAlignment="Center">
+              <icons:GameIcon Kind="Wrench" Width="20" Height="20"
+                              HorizontalAlignment="Center"
+                              Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{loc:Translate ImperiumSubTabEquipment}"
+                         FontSize="10" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Button>
+          <!-- v2.0.37 Audit-Fix U4: Ascension-Tab IMMER sichtbar (kein Layout-Sprung beim Unlock). -->
+          <!-- Vor Unlock: gedimmt + Lock-Icon, NICHT klickbar. Nach Unlock: voll sichtbar + klickbar. -->
+          <Button Classes="Text"
+                  Classes.SubTabActive="{Binding IsImperiumAscensionActive}"
+                  IsEnabled="{Binding IsImperiumAscensionUnlocked}"
+                  Command="{Binding SelectImperiumSubTabCommand}"
+                  CommandParameter="Ascension"
+                  MinHeight="44" Padding="6,8" CornerRadius="8"
+                  AutomationProperties.AutomationId="Imperium_Btn_SubTab_Ascension">
+            <StackPanel Spacing="2" HorizontalAlignment="Center">
+              <Panel HorizontalAlignment="Center">
+                <icons:GameIcon Kind="Star" Width="20" Height="20"
+                                HorizontalAlignment="Center"
+                                Foreground="{StaticResource CraftGoldBrush}" />
+                <icons:GameIcon Kind="Lock" Width="12" Height="12"
+                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Margin="0,0,-4,-4"
+                                IsVisible="{Binding !IsImperiumAscensionUnlocked}"
+                                Foreground="{DynamicResource TextSecondaryBrush}" />
+              </Panel>
+              <TextBlock Text="{loc:Translate ImperiumSubTabAscension}"
+                         FontSize="10" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{StaticResource CraftGoldBrush}" />
+            </StackPanel>
+          </Button>
+        </UniformGrid>
+      </Border>
+
+      <!-- ================================================================= -->
+      <!-- SUB-TAB: WORKSHOPS (= Gebäude/Werkstätten, v2.1.0)                -->
+      <!-- ================================================================= -->
+      <StackPanel Spacing="8"
+                  IsVisible="{Binding IsImperiumWorkshopsActive}"
+                  AutomationProperties.AutomationId="Imperium_Section_Workshops">
 
       <!-- ================================================================= -->
       <!-- 2. GEBÄUDE - FREIGESCHALTETE (Full-Width Karten)                  -->
@@ -204,6 +315,16 @@
         </ItemsControl>
       </StackPanel>
 
+      </StackPanel>
+      <!-- ENDE SUB-TAB: WORKSHOPS -->
+
+      <!-- ================================================================= -->
+      <!-- SUB-TAB: RESEARCH (= Crafting+Forschung, v2.1.0)                  -->
+      <!-- ================================================================= -->
+      <StackPanel Spacing="8"
+                  IsVisible="{Binding IsImperiumResearchActive}"
+                  AutomationProperties.AutomationId="Imperium_Section_Research">
+
       <!-- ================================================================= -->
       <!-- 5. AKTIVE PROZESSE (Crafting + Forschung, ab Lv.8)               -->
       <!-- ================================================================= -->
@@ -305,6 +426,16 @@
           </Border>
         </Button>
       </Grid>
+
+      </StackPanel>
+      <!-- ENDE SUB-TAB: RESEARCH -->
+
+      <!-- ================================================================= -->
+      <!-- SUB-TAB: WORKERS (= Team Quick-Access, v2.1.0)                    -->
+      <!-- ================================================================= -->
+      <StackPanel Spacing="8"
+                  IsVisible="{Binding IsImperiumWorkersActive}"
+                  AutomationProperties.AutomationId="Imperium_Section_Workers">
 
       <!-- ================================================================= -->
       <!-- 6. QUICK-ACCESS (Team, Vorarbeiter, Meisterwerkzeuge)             -->
@@ -436,6 +567,50 @@
           </Border>
         </Button>
       </ItemsControl>
+
+      </StackPanel>
+      <!-- ENDE SUB-TAB: WORKERS -->
+
+      <!-- ================================================================= -->
+      <!-- SUB-TAB: EQUIPMENT (Ausruestungs-Hinweis, v2.1.0)                 -->
+      <!-- ================================================================= -->
+      <StackPanel Spacing="8"
+                  IsVisible="{Binding IsImperiumEquipmentActive}"
+                  AutomationProperties.AutomationId="Imperium_Section_Equipment">
+        <Border Classes="CardElevated" CornerRadius="12" Padding="16">
+          <StackPanel Spacing="10" HorizontalAlignment="Center">
+            <Border CornerRadius="14" Width="56" Height="56" HorizontalAlignment="Center"
+                    Background="#1F3B82F6">
+              <icons:GameIcon Kind="ShieldHalfFull" Width="32" Height="32"
+                              Foreground="{StaticResource CraftPrimaryBrush}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="{loc:Translate ImperiumSubTabEquipment}"
+                       FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="{loc:Translate EquipmentSectionHint}"
+                       FontSize="12" TextWrapping="Wrap" TextAlignment="Center"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Button Classes="Primary" Padding="14,8" CornerRadius="8"
+                    HorizontalAlignment="Center" MinHeight="44"
+                    Command="{Binding NavigateToWorkerMarketCommand}"
+                    AutomationProperties.AutomationId="Imperium_Btn_EquipmentToWorkers">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <icons:GameIcon Kind="AccountHardHat" Width="18" Height="18" />
+                <TextBlock Text="{loc:Translate Workers}" FontSize="13" FontWeight="SemiBold" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+      <!-- ENDE SUB-TAB: EQUIPMENT -->
+
+      <!-- ================================================================= -->
+      <!-- SUB-TAB: ASCENSION (Prestige-Bereich, v2.1.0)                     -->
+      <!-- ================================================================= -->
+      <StackPanel Spacing="8"
+                  IsVisible="{Binding IsImperiumAscensionActive}"
+                  AutomationProperties.AutomationId="Imperium_Section_Ascension">
 
       <!-- ================================================================= -->
       <!-- PRESTIGE-BEREICH (am Ende, stört nicht den Gebäude-Fokus)        -->
@@ -628,6 +803,9 @@
           </Grid>
         </Border>
       </Button>
+
+      </StackPanel>
+      <!-- ENDE SUB-TAB: ASCENSION -->
 
       <!-- Bottom-Spacer für kleine Screens -->
       <Border Height="24" />

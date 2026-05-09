@@ -1013,7 +1013,15 @@ public sealed class WiringGameRenderer : IDisposable
         {
             _leftPlugShaders[i]?.Dispose();
             _rightPlugShaders[i]?.Dispose();
+            _leftPlugShaders[i] = null;
+            _rightPlugShaders[i] = null;
         }
+
+        // v2.0.37 Audit-Fix P2: Background-Reference nullen — die SKBitmap selbst gehoert
+        // dem GameAssetService (LRU-Cache), nicht dem Renderer. Wir disposen sie nicht,
+        // aber nullen die Reference damit der Renderer bei einem Re-Use-Szenario
+        // (Cache-Eviction + erneutes Render) eine frische Bitmap aus dem Cache holt.
+        _background = null;
     }
 }
 

@@ -19,6 +19,7 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
     private bool _disposed;
 
     public event Action? BattlePassUpdated;
+    public event Action<int, int, int>? TierUpReached;
 
     public BattlePassService(IGameStateService gameState, IPurchaseService purchaseService, IWorkerService workerService, ICraftingService craftingService)
     {
@@ -43,8 +44,12 @@ public sealed class BattlePassService : IBattlePassService, IDisposable
         var bp = _gameState.State.BattlePass;
         if (bp.IsSeasonExpired) return;
 
+        // v2.1.0: Tier-Snapshot vor AddXp — Saison-Storyline bindet sich an TierUp-Event.
+        int tierBefore = bp.CurrentTier;
         int tierUps = bp.AddXp(amount);
 
+        if (tierUps > 0)
+            TierUpReached?.Invoke(tierBefore, bp.CurrentTier, bp.SeasonNumber);
 
         if (tierUps > 0 || amount > 0)
             BattlePassUpdated?.Invoke();

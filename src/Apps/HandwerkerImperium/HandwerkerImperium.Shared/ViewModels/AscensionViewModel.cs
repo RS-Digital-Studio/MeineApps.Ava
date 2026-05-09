@@ -133,16 +133,16 @@ public sealed partial class AscensionViewModel : ViewModelBase, INavigable, IDis
 
         // Lokalisierte Display-Strings
         AscensionLevelDisplay = string.Format(
-            _localizationService.GetString("AscensionLevelFormat") ?? "Stufe {0}",
+            _localizationService.GetString("AscensionLevelFormat") ?? "Level {0}",
             AscensionLevel);
         AvailablePointsDisplay = string.Format(
-            _localizationService.GetString("AvailablePointsFormat") ?? "{0} AP verfügbar",
+            _localizationService.GetString("AvailablePointsFormat") ?? "{0} AP available",
             AvailablePoints);
         TotalPointsDisplay = string.Format(
-            _localizationService.GetString("TotalPointsFormat") ?? "Gesamt: {0}",
+            _localizationService.GetString("TotalPointsFormat") ?? "Total: {0}",
             TotalPoints);
         PendingPointsDisplay = string.Format(
-            _localizationService.GetString("NextAscensionFormat") ?? "Nächster Aufstieg: +{0} AP",
+            _localizationService.GetString("NextAscensionFormat") ?? "Next ascension: +{0} AP",
             PendingPoints);
 
         // Perk-Liste aufbauen
@@ -190,14 +190,14 @@ public sealed partial class AscensionViewModel : ViewModelBase, INavigable, IDis
     {
         if (!CanAscend) return;
 
-        var title = _localizationService.GetString("AscensionTitle") ?? "Aufstieg";
+        var title = _localizationService.GetString("AscensionTitle") ?? "Ascension";
         var points = _ascensionService.CalculateAscensionPoints();
         var message = string.Format(
             _localizationService.GetString("AscensionConfirm")
-                ?? "Aufstieg durchfuehren? Du erhaeltst {0} AP. Alle Prestige-Daten werden zurueckgesetzt!",
+                ?? "Ascend? Your entire prestige progress will be reset!",
             points);
-        var accept = _localizationService.GetString("Ascend") ?? "Aufsteigen";
-        var cancel = _localizationService.GetString("Cancel") ?? "Abbrechen";
+        var accept = _localizationService.GetString("Ascend") ?? "Ascend";
+        var cancel = _localizationService.GetString("Cancel") ?? "Cancel";
 
         // Bestaetigung abwarten
         var confirmed = await _dialogService.ShowConfirmDialog(title, message, accept, cancel);
@@ -208,7 +208,7 @@ public sealed partial class AscensionViewModel : ViewModelBase, INavigable, IDis
         {
             _dialogService.ShowAlertDialog(
                 title,
-                _localizationService.GetString("AscensionFailed") ?? "Aufstieg fehlgeschlagen. Voraussetzungen nicht erfuellt.",
+                _localizationService.GetString("AscensionFailed") ?? "Ascension failed. Requirements not met.",
                 _localizationService.GetString("OK") ?? "OK");
             return;
         }
@@ -218,7 +218,7 @@ public sealed partial class AscensionViewModel : ViewModelBase, INavigable, IDis
         CelebrationRequested?.Invoke();
 
         var resultText = string.Format(
-            _localizationService.GetString("AscensionComplete") ?? "Aufstieg abgeschlossen! +{0} AP",
+            _localizationService.GetString("AscensionComplete") ?? "Ascension complete! You received {0} AP.",
             points);
         FloatingTextRequested?.Invoke(resultText, "ascension");
 
@@ -290,17 +290,17 @@ public sealed partial class AscensionViewModel : ViewModelBase, INavigable, IDis
         return perkId switch
         {
             // Prozentuale Boni
-            "asc_start_capital" => $"+{value * 100:0}% {_localizationService.GetString("StartMoney") ?? "Startgeld"}",
-            "asc_timeless_research" => $"-{value * 100:0}% {_localizationService.GetString("ResearchTime") ?? "Forschungszeit"}",
-            "asc_golden_era" => $"+{value * 100:0}% {_localizationService.GetString("GoldenScrews") ?? "Goldschrauben"}",
+            "asc_start_capital" => $"+{value * 100:0}% {_localizationService.GetString("StartMoney") ?? "Start money"}",
+            "asc_timeless_research" => $"-{value * 100:0}% {_localizationService.GetString("ResearchTime") ?? "Research time"}",
+            "asc_golden_era" => $"+{value * 100:0}% {_localizationService.GetString("GoldenScrews") ?? "Golden Screws"}",
 
             // Absolute Werte
-            "asc_eternal_tools" => $"Lv.{value:0} {_localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge"}",
+            "asc_eternal_tools" => $"Lv.{value:0} {_localizationService.GetString("MasterTools") ?? "Master Tools"}",
             "asc_quick_start" => string.Format(
                 _localizationService.GetString("QuickStartFormat") ?? "{0} Workshops",
                 (int)value),
             "asc_legendary_reputation" => string.Format(
-                _localizationService.GetString("StartReputationFormat") ?? "Start-Rep. {0}",
+                _localizationService.GetString("StartReputationFormat") ?? "Starting reputation: {0}",
                 (int)value),
 
             _ => $"{value}"

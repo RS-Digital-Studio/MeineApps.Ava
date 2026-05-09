@@ -57,10 +57,10 @@ public sealed class MiniGameNavigator : IMiniGameNavigator
     public async Task ConfirmMiniGameAbortAsync()
     {
         if (_host == null) return;
-        var title = _localization.GetString("MiniGameAbortTitle") ?? "MiniGame abbrechen?";
-        var msg = _localization.GetString("MiniGameAbortMessage") ?? "Dein Fortschritt geht verloren.";
-        var confirm = _localization.GetString("MiniGameAbortConfirm") ?? "Abbrechen";
-        var cancel = _localization.GetString("Cancel") ?? "Zurueck";
+        var title = _localization.GetString("MiniGameAbortTitle") ?? "Abort mini-game?";
+        var msg = _localization.GetString("MiniGameAbortMessage") ?? "Your progress will be lost. Do you really want to abort?";
+        var confirm = _localization.GetString("MiniGameAbortConfirm") ?? "Abort";
+        var cancel = _localization.GetString("Cancel") ?? "Back";
         bool confirmed = await _host.DialogVM.ShowConfirmDialog(title, msg, confirm, cancel);
         if (confirmed)
         {

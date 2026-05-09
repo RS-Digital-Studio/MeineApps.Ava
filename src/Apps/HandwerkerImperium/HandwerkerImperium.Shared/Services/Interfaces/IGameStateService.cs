@@ -69,6 +69,18 @@ public interface IGameStateService
     /// <summary>Wird ausgeloest wenn ein MiniGame-Ergebnis aufgezeichnet wird.</summary>
     event EventHandler<MiniGameResultRecordedEventArgs>? MiniGameResultRecorded;
 
+    /// <summary>
+    /// Feuert nach jedem Perfect-Rating mit dem MiniGameType + neuer Lifetime-Anzahl (v2.0.36).
+    /// Wird vom <c>IMiniGameMasteryService</c> abonniert, um Tier-Up-Belohnungen auszuloesen.
+    /// </summary>
+    event EventHandler<PerfectRatingIncrementedEventArgs>? PerfectRatingIncremented;
+
+    /// <summary>
+    /// Feuert wenn der Reputation-Tier wechselt (v2.0.37).
+    /// Wird von MainViewModel abonniert, um Confetti + FloatingText zu triggern.
+    /// </summary>
+    event EventHandler<ReputationTierChangedEventArgs>? ReputationTierChanged;
+
     // ===================================================================
     // EVENTS — STATE
     // ===================================================================
@@ -150,6 +162,20 @@ public interface IGameStateService
     /// <summary>Zeichnet ein MiniGame-Ergebnis fuer den aktiven Auftrag auf.</summary>
     void RecordMiniGameResult(MiniGameRating rating);
 
+    /// <summary>
+    /// Zeichnet ein MiniGame-Ergebnis MIT Typ auf — befuellt zusaetzlich
+    /// <see cref="StatisticsData.MiniGamePerformance"/> fuer das Sliding-Window Last-20-Plays
+    /// (Basis fuer die Risk/Reward-Erfolgsquote im OrderViewModel ab v2.0.36).
+    /// </summary>
+    void RecordMiniGameResult(MiniGameRating rating, MiniGameType miniGameType);
+
+    /// <summary>
+    /// Personalisierte Erfolgsquote fuer einen MiniGame-Typ (Sliding-Window auf den letzten
+    /// 20 Plays, "Erfolg" = mindestens 4 Sterne). Returns -1 wenn weniger als 5 Plays —
+    /// dann sollte die UI „~?%" statt einer konkreten Zahl anzeigen.
+    /// </summary>
+    double GetMiniGameSuccessRate(MiniGameType miniGameType);
+
     /// <summary>Schliesst den aktiven Auftrag ab und vergibt Belohnungen.</summary>
     void CompleteActiveOrder();
 
@@ -161,6 +187,20 @@ public interface IGameStateService
 
     /// <summary>Bricht den aktiven Auftrag ohne Belohnungen ab.</summary>
     void CancelActiveOrder();
+
+    /// <summary>
+    /// v2.0.37: Pausiert alle Live-/Premium-Auftraege im AvailableOrders-Pool.
+    /// Wird beim App-OnPause (Android) bzw. Window-Deactivated (Desktop) aufgerufen.
+    /// Setzt <see cref="Order.PausedAt"/> auf jetzt; ResumeAllLiveOrders rechnet die
+    /// Pause-Dauer in <see cref="Order.AccumulatedPauseDuration"/>.
+    /// </summary>
+    void PauseAllLiveOrders();
+
+    /// <summary>
+    /// v2.0.37: Setzt alle pausierten Live-Orders fort. Akkumulierte Pause wird gecappt
+    /// auf 5 Minuten — laenger pausierte Orders laufen wieder normal weiter.
+    /// </summary>
+    void ResumeAllLiveOrders();
 
     /// <summary>
     /// Pausiert den aktuellen Auftrag (v2.0.35 Feature A): ActiveOrder wird null,
@@ -179,6 +219,12 @@ public interface IGameStateService
     /// Der Spieler kehrt zu einem pausierten Auftrag zurueck und kann das naechste MiniGame starten.
     /// </summary>
     void ResumeParallelOrder(WorkshopType workshopType);
+
+    /// <summary>
+    /// Wechselt atomar zu einem parallelen Auftrag (v2.0.36 Feature A+).
+    /// Ersetzt PauseActiveOrder + ResumeParallelOrder in einem Schritt.
+    /// </summary>
+    Order? SwapToParallelOrder(WorkshopType workshopType);
 
     /// <summary>
     /// Prueft ob ein neuer paralleler Auftrag gestartet werden kann (v2.0.35 Feature A).

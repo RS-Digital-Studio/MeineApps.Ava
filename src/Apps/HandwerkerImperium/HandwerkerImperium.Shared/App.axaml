@@ -155,6 +155,12 @@
     <StyleInclude Source="avares://MeineApps.UI/Styles/ModernCardStyles.axaml" />
 
     <!-- HandwerkerImperium: Button-Farben auf Craft-Palette ueberschreiben -->
+    <!-- v2.0.37 Audit-Fix U3: Disabled-State sichtbar (Opacity 0.45 + muted Foreground) — -->
+    <!-- vorher wirkte ein deaktivierter Button wie Render-Bug. -->
+    <Style Selector="Button:disabled">
+      <Setter Property="Opacity" Value="0.45" />
+      <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+    </Style>
     <Style Selector="Button.Primary">
       <Setter Property="Background" Value="{StaticResource CraftPrimaryBrush}" />
     </Style>

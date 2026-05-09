@@ -140,10 +140,10 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
             }
 
             // Saison-Info
-            var seasonLabel = _localizationService.GetString("GuildWarSeason") ?? "Saison";
+            var seasonLabel = _localizationService.GetString("GuildWarSeason") ?? "Season";
             SeasonTitle = $"{seasonLabel} {data.SeasonNumber}";
             WeekDisplay = string.Format(
-                _localizationService.GetString("GuildWarWeek") ?? "Woche {0}",
+                _localizationService.GetString("GuildWarWeek") ?? "Week {0}",
                 data.WeekNumber);
 
             // Liga
@@ -158,7 +158,7 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
             if (IsByeWeek)
             {
                 ByeWeekMessage = _localizationService.GetString("GuildWarByeWeekTraining")
-                    ?? "Trainingsrunde! Schließe Aufträge und MiniGames ab, um Kriegspunkte für die nächste Runde zu sammeln.";
+                    ?? "Training round! Complete orders and mini-games to earn war points for the next round.";
             }
 
             if (HasActiveWar)
@@ -178,7 +178,7 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
                     var remaining = phaseEnd - DateTime.UtcNow;
                     PhaseTimeRemaining = remaining > TimeSpan.Zero
                         ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}m"
-                        : _localizationService.GetString("PhaseEnding") ?? "Endet...";
+                        : _localizationService.GetString("PhaseEnding") ?? "Ending...";
                 }
 
                 // MVP
@@ -206,8 +206,8 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
         catch
         {
             MessageRequested?.Invoke(
-                _localizationService.GetString("Error") ?? "Fehler",
-                _localizationService.GetString("GuildWarLoadError") ?? "Kriegsdaten konnten nicht geladen werden.");
+                _localizationService.GetString("Error") ?? "Error",
+                _localizationService.GetString("GuildWarLoadError") ?? "War data could not be loaded.");
         }
         finally
         {
@@ -230,10 +230,10 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
     public string GetQuickStatus()
     {
         if (!HasActiveWar && !IsByeWeek)
-            return _localizationService.GetString("GuildWarNoSeason") ?? "Keine Saison";
+            return _localizationService.GetString("GuildWarNoSeason") ?? "No season";
 
         if (IsByeWeek)
-            return _localizationService.GetString("GuildWarByeWeek") ?? "Freilos-Woche";
+            return _localizationService.GetString("GuildWarByeWeek") ?? "Bye Week - no opponent this round";
 
         return $"{OwnScore:N0}:{OpponentScore:N0} {PhaseDisplay}";
     }
@@ -251,11 +251,11 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
 
     private string GetLeagueDisplayText(GuildLeague league) => league switch
     {
-        GuildLeague.Bronze => _localizationService.GetString("LeagueBronze") ?? "Bronze-Liga",
-        GuildLeague.Silver => _localizationService.GetString("LeagueSilver") ?? "Silber-Liga",
-        GuildLeague.Gold => _localizationService.GetString("LeagueGold") ?? "Gold-Liga",
-        GuildLeague.Diamond => _localizationService.GetString("LeagueDiamond") ?? "Diamant-Liga",
-        _ => "Bronze-Liga"
+        GuildLeague.Bronze => _localizationService.GetString("LeagueBronze") ?? "Bronze League",
+        GuildLeague.Silver => _localizationService.GetString("LeagueSilver") ?? "Silver League",
+        GuildLeague.Gold => _localizationService.GetString("LeagueGold") ?? "Gold League",
+        GuildLeague.Diamond => _localizationService.GetString("LeagueDiamond") ?? "Diamond League",
+        _ => "Bronze League"
     };
 
     private static string GetLeagueColor(GuildLeague league) => league switch
@@ -269,10 +269,10 @@ public sealed partial class GuildWarSeasonViewModel : ViewModelBase
 
     private string GetPhaseDisplayText(WarPhase phase) => phase switch
     {
-        WarPhase.Attack => _localizationService.GetString("WarPhaseAttack") ?? "Angriff",
-        WarPhase.Defense => _localizationService.GetString("WarPhaseDefense") ?? "Verteidigung",
-        WarPhase.Evaluation => _localizationService.GetString("WarPhaseEvaluation") ?? "Auswertung",
-        WarPhase.Completed => _localizationService.GetString("WarPhaseCompleted") ?? "Abgeschlossen",
-        _ => "Angriff"
+        WarPhase.Attack => _localizationService.GetString("WarPhaseAttack") ?? "Attack",
+        WarPhase.Defense => _localizationService.GetString("WarPhaseDefense") ?? "Defense",
+        WarPhase.Evaluation => _localizationService.GetString("WarPhaseEvaluation") ?? "Evaluation",
+        WarPhase.Completed => _localizationService.GetString("WarPhaseCompleted") ?? "Completed",
+        _ => "Attack"
     };
 }

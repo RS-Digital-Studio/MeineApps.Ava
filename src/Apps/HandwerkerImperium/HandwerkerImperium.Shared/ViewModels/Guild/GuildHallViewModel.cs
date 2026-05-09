@@ -102,27 +102,27 @@ public sealed partial class GuildHallViewModel : ViewModelBase
 
             // Hallen-Level
             HallLevel = _hallService.GetHallLevel();
-            var hallLabel = _localizationService.GetString("GuildHallLevel") ?? "Halle Lv.{0}";
+            var hallLabel = _localizationService.GetString("GuildHallLevel") ?? "Hall Lv.{0}";
             HallLevelDisplay = string.Format(hallLabel, HallLevel);
 
             // Effekte-Zusammenfassung
             var effects = _hallService.GetCachedEffects();
             var parts = new List<string>();
             if (effects.IncomeBonus > 0)
-                parts.Add($"+{effects.IncomeBonus:P0} {_localizationService.GetString("Income") ?? "Einkommen"}");
+                parts.Add($"+{effects.IncomeBonus:P0} {_localizationService.GetString("Income") ?? "Income"}");
             if (effects.CraftingSpeedBonus > 0)
-                parts.Add($"+{effects.CraftingSpeedBonus:P0} {_localizationService.GetString("Crafting") ?? "Handwerk"}");
+                parts.Add($"+{effects.CraftingSpeedBonus:P0} {_localizationService.GetString("Crafting") ?? "Crafting"}");
             if (effects.OrderRewardBonus > 0)
-                parts.Add($"+{effects.OrderRewardBonus:P0} {_localizationService.GetString("OrderReward") ?? "Auftragsbelohnung"}");
+                parts.Add($"+{effects.OrderRewardBonus:P0} {_localizationService.GetString("OrderReward") ?? "Order Reward"}");
             if (effects.EverythingBonus > 0)
-                parts.Add($"+{effects.EverythingBonus:P0} {_localizationService.GetString("Everything") ?? "Alles"}");
+                parts.Add($"+{effects.EverythingBonus:P0} {_localizationService.GetString("Everything") ?? "Everything"}");
             HallEffectsSummary = parts.Count > 0 ? string.Join(", ", parts) : "";
         }
         catch
         {
             MessageRequested?.Invoke(
-                _localizationService.GetString("Error") ?? "Fehler",
-                _localizationService.GetString("GuildHallLoadError") ?? "Hauptquartier konnte nicht geladen werden.");
+                _localizationService.GetString("Error") ?? "Error",
+                _localizationService.GetString("GuildHallLoadError") ?? "Headquarters could not be loaded.");
         }
         finally
         {
@@ -154,8 +154,8 @@ public sealed partial class GuildHallViewModel : ViewModelBase
             else
             {
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("GuildHallUpgradeFailed") ?? "Upgrade nicht möglich (Kosten oder Voraussetzungen nicht erfüllt).");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("GuildHallUpgradeFailed") ?? "Upgrade not possible (cost or requirements not met).");
             }
         }
         finally
@@ -177,7 +177,7 @@ public sealed partial class GuildHallViewModel : ViewModelBase
     /// <summary>Gibt den Quick-Status für den Guild-Hub zurück.</summary>
     public string GetQuickStatus()
     {
-        var label = _localizationService.GetString("GuildHallShort") ?? "Halle";
+        var label = _localizationService.GetString("GuildHallShort") ?? "Hall";
         return $"{label} Lv.{HallLevel}";
     }
 
@@ -201,7 +201,7 @@ public sealed partial class GuildHallViewModel : ViewModelBase
         Buildings = new ObservableCollection<GuildBuildingDisplay>(buildingList);
         HasBuildings = Buildings.Count > 0;
         HallLevel = _hallService.GetHallLevel();
-        var hallLabel = _localizationService.GetString("GuildHallLevel") ?? "Halle Lv.{0}";
+        var hallLabel = _localizationService.GetString("GuildHallLevel") ?? "Hall Lv.{0}";
         HallLevelDisplay = string.Format(hallLabel, HallLevel);
     }
 }

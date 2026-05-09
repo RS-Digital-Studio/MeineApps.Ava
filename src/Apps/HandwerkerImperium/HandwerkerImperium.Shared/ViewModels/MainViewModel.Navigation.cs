@@ -160,6 +160,13 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private async Task NavigateToPrestigeAsync() => await ShowPrestigeConfirmationAsync();
 
+    /// <summary>
+    /// v2.0.37: Public RelayCommand fuer die PrestigeView-Back-Aktion (und andere Views,
+    /// die an MainViewModel gebunden sind). Delegiert an die interne Stack-Navigation.
+    /// </summary>
+    [RelayCommand]
+    private void GoBack() => NavigateBack();
+
     // ═══════════════════════════════════════════════════════════════════════
     // BACK-NAVIGATION
     // ═══════════════════════════════════════════════════════════════════════
@@ -242,7 +249,7 @@ public sealed partial class MainViewModel
         // 2. Auf Dashboard: Double-Back-to-Exit
         if (ActivePage == ActivePage.Dashboard)
         {
-            var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Erneut druecken zum Beenden";
+            var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Press back again to exit";
             return _backPressHelper.HandleDoubleBack(msg);
         }
 

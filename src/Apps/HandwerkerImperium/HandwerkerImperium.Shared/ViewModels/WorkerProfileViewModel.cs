@@ -350,7 +350,11 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
         IsResting = Worker.IsResting;
         IsWorking = Worker.IsWorking;
 
-        if (Worker.IsTraining)
+        // v2.0.39 Audit-Fix U9: Praktikanten-Promotion ueberlagert alle anderen Status —
+        // der Spieler soll im Profil sofort sehen, dass eine Entscheidung ansteht.
+        if (Worker.IsIntern && Worker.InternAwaitingPromotion)
+            StatusDisplay = _localizationService.GetString("StatusInternReadyForPromotion") ?? "Ready for promotion";
+        else if (Worker.IsTraining)
             StatusDisplay = _localizationService.GetString("StatusTraining");
         else if (Worker.IsResting)
             StatusDisplay = _localizationService.GetString("StatusResting");
@@ -366,7 +370,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
         {
             var remaining = Worker.QuitDeadline.Value - DateTime.UtcNow;
             QuitCountdownText = string.Format(
-                _localizationService.GetString("WorkerQuitsInFormat") ?? "Kündigt in {0}",
+                _localizationService.GetString("WorkerQuitsInFormat") ?? "Quits in {0}",
                 $"{(int)remaining.TotalHours:D1}:{remaining.Minutes:D2}:{remaining.Seconds:D2}");
         }
         else
@@ -531,7 +535,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
         else
         {
             FloatingTextRequested?.Invoke(
-                _localizationService.GetString("TrainingFailed") ?? "Training fehlgeschlagen",
+                _localizationService.GetString("TrainingFailed") ?? "Training Failed",
                 "error");
         }
     }
@@ -558,7 +562,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
         else
         {
             FloatingTextRequested?.Invoke(
-                _localizationService.GetString("RestFailed") ?? "Ruhe fehlgeschlagen",
+                _localizationService.GetString("RestFailed") ?? "Rest Failed",
                 "error");
         }
     }
@@ -630,7 +634,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
 
             ShowUndoFireWorker = true;
             UndoFireWorkerText = string.Format(
-                _localizationService.GetString("WorkerFiredUndo") ?? "{0} entlassen \u2212 Rückgängig?",
+                _localizationService.GetString("WorkerFiredUndo") ?? "{0} fired - Undo?",
                 firedWorker.Name ?? $"Tier-{firedWorker.Tier}");
 
             _undoTimer?.Stop();
@@ -730,7 +734,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
 
         var name = _localizationService.GetString(equipment.NameKey) ?? equipment.NameKey;
         FloatingTextRequested?.Invoke(
-            $"{name} {_localizationService.GetString("EquipAction") ?? "ausgerüstet"}!",
+            $"{name} {_localizationService.GetString("EquipAction") ?? "Equip"}!",
             "golden_screws");
     }
 
@@ -835,7 +839,7 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase, INavigable, 
         AvailableEquipment = items;
         HasAvailableEquipment = items.Count > 0;
         NoEquipmentHint = _localizationService.GetString("NoEquipmentInInventory")
-            ?? "Kein Equipment im Inventar.";
+            ?? "No equipment in inventory. Win drops from mini-games or buy in the shop!";
     }
 
     private void LoadAvailableWorkshops()

@@ -3,6 +3,7 @@ using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using HandwerkerImperium.Graphics;
@@ -24,6 +25,9 @@ public partial class MainView : UserControl
 
     // Full-Screen Reward-Zeremonie (Phase 7)
     private readonly RewardCeremonyRenderer _ceremonyRenderer = new();
+
+    // P0.3 AAA-Audit: Prestige-Cinematic-Renderer (4 Phasen, 14s)
+    private readonly PrestigeCinematicRenderer _prestigeCinematicRenderer = new();
 
     // Animierter Loading-Screen (Phase 10)
     private readonly LoadingScreenRenderer _loadingRenderer = new();
@@ -48,6 +52,21 @@ public partial class MainView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += OnDetachedFromVisualTree;
+        // v2.0.39 Audit-Fix U5: Escape schliesst den obersten Dialog (Desktop-Komfort).
+        // Tunnel-Phase damit das vor evtl. Dialog-internen Handlern triggert.
+        AddHandler(KeyDownEvent, OnGlobalKeyDown, RoutingStrategies.Tunnel);
+    }
+
+    /// <summary>
+    /// v2.0.39 Audit-Fix U5: Auf Desktop schliesst Escape den obersten sichtbaren Dialog.
+    /// Aequivalent zum Android-Back-Button (HandleBackPressed). Auf Android ist Escape
+    /// kein nativer Key — der Handler ist daher reine Desktop-UX.
+    /// </summary>
+    private void OnGlobalKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape || _vm == null) return;
+        if (_vm.HandleBackPressed())
+            e.Handled = true;
     }
 
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -61,6 +80,7 @@ public partial class MainView : UserControl
             _vm.PageTransitionStarting -= OnPageTransitionStarting;
             _vm.CelebrationRequested -= OnCelebrationRequested;
             _vm.CeremonyRequested -= OnCeremonyRequested;
+            _vm.PrestigeCinematicRequested -= OnPrestigeCinematicRequested;
             _vm.PauseStateChanged -= OnPauseStateChanged;
             _vm = null;
         }
@@ -69,6 +89,7 @@ public partial class MainView : UserControl
         _transitionRenderer.Dispose();
         _backgroundRenderer.Dispose();
         _ceremonyRenderer.Dispose();
+        _prestigeCinematicRenderer.Dispose();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -80,6 +101,7 @@ public partial class MainView : UserControl
             _vm.PageTransitionStarting -= OnPageTransitionStarting;
             _vm.CelebrationRequested -= OnCelebrationRequested;
             _vm.CeremonyRequested -= OnCeremonyRequested;
+            _vm.PrestigeCinematicRequested -= OnPrestigeCinematicRequested;
             _vm.PauseStateChanged -= OnPauseStateChanged;
         }
 
@@ -91,6 +113,7 @@ public partial class MainView : UserControl
             _vm.PageTransitionStarting += OnPageTransitionStarting;
             _vm.CelebrationRequested += OnCelebrationRequested;
             _vm.CeremonyRequested += OnCeremonyRequested;
+            _vm.PrestigeCinematicRequested += OnPrestigeCinematicRequested;
             _vm.PauseStateChanged += OnPauseStateChanged;
 
             // Tab-Labels initialisieren
@@ -184,6 +207,18 @@ public partial class MainView : UserControl
             if (!_ceremonyRenderer.IsActive && CeremonyCanvas != null)
             {
                 CeremonyCanvas.IsVisible = false;
+            }
+        }
+
+        // P0.3 AAA-Audit: Prestige-Cinematic
+        if (_prestigeCinematicRenderer.IsActive)
+        {
+            _prestigeCinematicRenderer.Update(0.066f);
+            PrestigeCinematicCanvas?.InvalidateSurface();
+
+            if (!_prestigeCinematicRenderer.IsActive && PrestigeCinematicCanvas != null)
+            {
+                PrestigeCinematicCanvas.IsVisible = false;
             }
         }
 
@@ -480,6 +515,50 @@ public partial class MainView : UserControl
     private void OnCeremonyTapped(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         _ceremonyRenderer.Dismiss();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // P0.3 AAA-Audit: Prestige-Cinematic (Render + Tap-Handling)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void OnPrestigeCinematicRequested(HandwerkerImperium.Models.PrestigeCinematicData data)
+    {
+        _prestigeCinematicRenderer.Start(data);
+        if (PrestigeCinematicCanvas != null)
+        {
+            PrestigeCinematicCanvas.IsVisible = true;
+            PrestigeCinematicCanvas.InvalidateSurface();
+        }
+    }
+
+    private void OnPrestigeCinematicPaintSurface(object? sender, Avalonia.Labs.Controls.SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        if (!_prestigeCinematicRenderer.IsActive) return;
+        var bounds = canvas.LocalClipBounds;
+        _prestigeCinematicRenderer.Render(canvas, bounds);
+    }
+
+    private void OnPrestigeCinematicTapped(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        // 3-Stufen-Logik:
+        //  (a) Tap im Skip-Button-Bereich (Phase 1-3) = Skip
+        //  (b) Tap irgendwo waehrend Phase 1-3 = Skip (groesserer Touch-Bereich)
+        //  (c) Tap in Reward-Phase = Dismiss (Tap-to-Continue)
+        if (_prestigeCinematicRenderer.IsReadyForDismiss)
+        {
+            _prestigeCinematicRenderer.Dismiss();
+            _vm?.OnPrestigeCinematicDismissed();
+            return;
+        }
+
+        if (_prestigeCinematicRenderer.IsSkipEnabled)
+        {
+            // Skip — sowohl bei Tap im Button als auch im Restbereich (P0.3 fordert "Skip ab 5 s sichtbar")
+            _prestigeCinematicRenderer.Skip();
+            _vm?.OnPrestigeCinematicSkipped();
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

@@ -256,7 +256,7 @@ public sealed partial class ResearchViewModel : ViewModelBase, INavigable, IDisp
         ToolsBranchLabel = $"{ResearchBranch.Tools.GetIcon()} {_localizationService.GetString(ResearchBranch.Tools.GetLocalizationKey())}";
         ManagementBranchLabel = $"{ResearchBranch.Management.GetIcon()} {_localizationService.GetString(ResearchBranch.Management.GetLocalizationKey())}";
         MarketingBranchLabel = $"{ResearchBranch.Marketing.GetIcon()} {_localizationService.GetString(ResearchBranch.Marketing.GetLocalizationKey())}";
-        ResearchRunningLabel = _localizationService.GetString("ResearchRunning") ?? "Forschung l\u00e4uft...";
+        ResearchRunningLabel = _localizationService.GetString("ResearchRunning") ?? "Research in progress...";
         LoadResearchTree();
     }
 
@@ -399,8 +399,8 @@ public sealed partial class ResearchViewModel : ViewModelBase, INavigable, IDisp
             LoadResearchTree();
 
             _dialogService.ShowAlertDialog(
-                _localizationService.GetString("ResearchSpeedUp") ?? "Forschung beschleunigt",
-                _localizationService.GetString("ResearchSpeedUpDesc") ?? "Forschungszeit um 50% reduziert!",
+                _localizationService.GetString("ResearchSpeedUp") ?? "Research accelerated",
+                _localizationService.GetString("ResearchSpeedUpDesc") ?? "Research time reduced by 50%!",
                 _localizationService.GetString("Great"));
         }
     }
@@ -429,7 +429,7 @@ public sealed partial class ResearchViewModel : ViewModelBase, INavigable, IDisp
         }
 
         var buttonText = string.Format(
-            _localizationService.GetString("ResearchInstantComplete") ?? "Sofort fertig ({0} GS)",
+            _localizationService.GetString("ResearchInstantComplete") ?? "Finish now ({0} GS)",
             cost);
 
         var confirm = await _dialogService.ShowConfirmDialog(
@@ -492,7 +492,7 @@ public sealed partial class ResearchViewModel : ViewModelBase, INavigable, IDisp
         InstantCompleteCost = cost;
         CanInstantComplete = active.IsActive && _gameStateService.CanAffordGoldenScrews(cost);
         InstantCompleteButtonText = string.Format(
-            _localizationService.GetString("ResearchInstantComplete") ?? "Sofort fertig ({0} GS)",
+            _localizationService.GetString("ResearchInstantComplete") ?? "Finish now ({0} GS)",
             cost);
     }
 

@@ -322,6 +322,40 @@ public sealed partial class WorkerMarketViewModel : ViewModelBase, INavigable
         LoadMarket();
     }
 
+    /// <summary>
+    /// v2.1.0: Anzahl aktiver Praktikanten (für UI-Anzeige).
+    /// </summary>
+    public int InternCount => _workerService.GetInternCount();
+
+    /// <summary>v2.1.0: True wenn der Spieler noch Praktikanten einstellen kann (Limit 2).</summary>
+    public bool CanHireIntern => InternCount < ((IWorkerService)_workerService).MaxInterns;
+
+    /// <summary>v2.1.0: Stellt einen Praktikanten in der ersten verfügbaren Werkstatt ein (F-Tier, kostenlos).</summary>
+    [RelayCommand]
+    private void HireIntern()
+    {
+        var workshops = _gameStateService.State.Workshops;
+        for (int i = 0; i < workshops.Count; i++)
+        {
+            var ws = workshops[i];
+            if (_gameStateService.State.IsWorkshopUnlocked(ws.Type) && ws.Workers.Count < ws.MaxWorkers)
+            {
+                if (_workerService.HireIntern(ws.Type))
+                {
+                    OnPropertyChanged(nameof(InternCount));
+                    OnPropertyChanged(nameof(CanHireIntern));
+                    LoadMarket();
+                    return;
+                }
+            }
+        }
+        // Kein freier Slot — Alert.
+        _dialogService.ShowAlertDialog(
+            _localizationService.GetString("InternHireFailedTitle") ?? "No free slot",
+            _localizationService.GetString("InternHireFailedDesc") ?? "All workshops are full or the intern limit (2) is reached.",
+            _localizationService.GetString("OK") ?? "OK");
+    }
+
     [RelayCommand]
     private async Task WatchAdForWorkerSlotAsync()
     {

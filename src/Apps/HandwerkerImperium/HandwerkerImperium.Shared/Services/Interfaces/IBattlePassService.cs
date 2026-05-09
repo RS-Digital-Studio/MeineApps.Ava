@@ -8,6 +8,13 @@ public interface IBattlePassService
     /// <summary>Feuert wenn sich der Battle-Pass-Zustand ändert (XP, Tier-Up, Claim).</summary>
     event Action? BattlePassUpdated;
 
+    /// <summary>
+    /// Feuert wenn der Spieler einen oder mehrere BP-Tiers aufsteigt (v2.1.0).
+    /// (oldTier, newTier, seasonNumber). Bei Multi-Tier-Aufstieg wird das Event nur einmal
+    /// mit den End-Werten gefeuert.
+    /// </summary>
+    event Action<int, int, int>? TierUpReached;
+
     /// <summary>Fügt Battle-Pass-XP hinzu.</summary>
     void AddXp(int amount, string source);
 

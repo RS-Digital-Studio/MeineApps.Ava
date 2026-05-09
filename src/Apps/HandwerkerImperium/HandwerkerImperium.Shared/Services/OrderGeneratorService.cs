@@ -275,8 +275,14 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
             order.RequiredWorkshops = [workshopType, cooperationSecondType];
         }
 
-        // Stammkunden-Zuordnung (20% Chance wenn Stammkunden vorhanden, ohne LINQ/ToList)
-        if (Random.Shared.NextDouble() < 0.20)
+        // Stammkunden-Zuordnung — Basis 20% + Reputation-Tier-Bonus (v2.0.37).
+        // Tier-Boni: CityKnown +10%, RegionStar +20%, IndustryLegend +35% — additiv.
+        // v2.1.0: Reputation-Shop „Stammkunden-Garantie" — naechste 5 Auftraege immer Stammkunde.
+        bool forcedRegular = state.RepShopRegularCustomerCharges > 0;
+        if (forcedRegular)
+            state.RepShopRegularCustomerCharges--;
+        var regularCustomerChance = 0.20m + state.Reputation.CurrentTier.GetRegularCustomerBonus();
+        if (forcedRegular || (decimal)Random.Shared.NextDouble() < regularCustomerChance)
         {
             int regularCount = 0;
             var customers = state.Reputation.RegularCustomers;
@@ -544,8 +550,11 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
             order = GenerateOrder(picked.Type, picked.Level);
             order.IsLive = true;
 
-            // Premium-Rolle (5%): x3 Reward, kuerzere Deadline, hoeherer Schwierigkeitsgrad
-            bool isPremium = Random.Shared.NextDouble() < PremiumSpawnChance;
+            // Premium-Rolle: 5% Default, im Reputation-Tier IndustryLegend bis 10%, RegionStar 5% (v2.0.37).
+            // Tier-Bonus auf Premium-Spawn ueberlagert die Default-Chance.
+            var tierLiveBonus = (double)state.Reputation.CurrentTier.GetLiveOrderSpawnChance();
+            var effectivePremiumChance = tierLiveBonus > 0 ? tierLiveBonus : PremiumSpawnChance;
+            bool isPremium = Random.Shared.NextDouble() < effectivePremiumChance;
             if (isPremium)
             {
                 order.IsPremium = true;
@@ -572,6 +581,12 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
     /// <inheritdoc />
     public int ExpireOldLiveOrders()
     {
+        // v2.0.39 Audit-Fix P5: Early-Exit wenn keine Live-Orders existieren — vermeidet die
+        // RemoveAll-Iteration ueber die volle AvailableOrders-Liste alle 3 Ticks (typisch leer).
+        // LiveOrderCount ist ein O(n)-Lock-freier Scan, aber lebensfreundlicher als der
+        // RemoveAt-Pfad inkl. Lock-Aequisition.
+        if (LiveOrderCount == 0) return 0;
+
         // v2.0.35 Hotfix-2: Lock schuetzt RemoveAt gegen SaveAsync-Serializer-Iteration.
         int removed = 0;
         _gameStateService.ExecuteWithLock(() =>
@@ -589,6 +604,24 @@ public sealed class OrderGeneratorService : IOrderGeneratorService
             }
         });
         return removed;
+    }
+
+    /// <inheritdoc />
+    public int LiveOrderCount
+    {
+        get
+        {
+            // v2.0.39 Audit-Fix P5: Schneller Lese-Counter ohne Lock.
+            // Race ist akzeptabel — bei +/-1 Diskrepanz fuehrt der naechste Tick die korrekte
+            // Bereinigung im LockedExpire-Pfad durch.
+            var orders = _gameStateService.State.AvailableOrders;
+            int count = 0;
+            for (int i = 0; i < orders.Count; i++)
+            {
+                if (orders[i].IsLive) count++;
+            }
+            return count;
+        }
     }
 
     public Order? GenerateMaterialOrder()

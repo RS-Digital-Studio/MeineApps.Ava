@@ -200,6 +200,10 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
                       IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsAscensionActive}"
                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                       AutomationProperties.AutomationId="Main_View_Ascension" />
+      <!-- Prestige Single-Page-View (v2.0.37) — DataContext bleibt MainViewModel
+           damit DialogVM-Properties + NavigateBackCommand direkt erreichbar sind. -->
+      <views:PrestigeView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsPrestigeActive}"
+                          AutomationProperties.AutomationId="Main_View_Prestige" />
 
       <!-- MiniGame View (ein einziges ContentControl statt 10 separate → spart 9 View-Instanzen + Renderer im Ruhezustand) -->
       <ContentControl Content="{Binding ActiveMiniGameViewModel}"
@@ -352,6 +356,9 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
     <!-- Confirm Dialog (DataContext: DialogVM) -->
     <dialogs:ConfirmDialog Grid.RowSpan="2" DataContext="{Binding DialogVM}" />
 
+    <!-- Notification-Center Popup (Bell-UI, v2.0.36) -->
+    <dialogs:NotificationCenterPopup Grid.RowSpan="2" DataContext="{Binding NotificationCenterVM}" />
+
     <!-- Worker Profile Bottom-Sheet (extrahiert in UserControl) -->
     <dialogs:WorkerProfileDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
@@ -395,6 +402,15 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
                        PaintSurface="OnCeremonyPaintSurface"
                        PointerPressed="OnCeremonyTapped"
                        AutomationProperties.AutomationId="Main_Canvas_Ceremony" />
+
+    <!-- P0.3 AAA-Audit: Prestige-Cinematic (4 Phasen, 14s, Skip+TapToContinue) -->
+    <skia:SKCanvasView x:Name="PrestigeCinematicCanvas"
+                       Grid.RowSpan="2"
+                       ZIndex="115"
+                       IsVisible="False"
+                       PaintSurface="OnPrestigeCinematicPaintSurface"
+                       PointerPressed="OnPrestigeCinematicTapped"
+                       AutomationProperties.AutomationId="Main_Canvas_PrestigeCinematic" />
 
     <!-- Animierter Loading-Screen (Zahnräder + Fortschritt + Tipps) -->
     <skia:SKCanvasView x:Name="LoadingCanvas"

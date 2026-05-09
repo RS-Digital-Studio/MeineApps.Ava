@@ -436,35 +436,35 @@ public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
             // Neue Typen
             DailyChallengeType.TrainWorker =>
                 string.Format(
-                    _localizationService.GetString("ChallengeTrainWorker") ?? "Bilde {0} Arbeiter aus",
+                    _localizationService.GetString("ChallengeTrainWorker") ?? "Train {0} workers",
                     challenge.TargetValue),
             DailyChallengeType.CompleteCrafting =>
                 string.Format(
-                    _localizationService.GetString("ChallengeCompleteCrafting") ?? "Stelle {0} Gegenstände her",
+                    _localizationService.GetString("ChallengeCompleteCrafting") ?? "Craft {0} items",
                     challenge.TargetValue),
             DailyChallengeType.AchievePerfectStreak =>
                 string.Format(
-                    _localizationService.GetString("ChallengePerfectStreak") ?? "Erreiche {0} perfekte Bewertungen in Folge",
+                    _localizationService.GetString("ChallengePerfectStreak") ?? "Achieve {0} perfect ratings in a row",
                     challenge.TargetValue),
             DailyChallengeType.ReachWorkshopLevel =>
                 string.Format(
-                    _localizationService.GetString("ChallengeReachWorkshopLevel") ?? "Erreiche Werkstatt-Level {0}",
+                    _localizationService.GetString("ChallengeReachWorkshopLevel") ?? "Reach workshop level {0}",
                     challenge.TargetValue),
             DailyChallengeType.ProduceItems =>
                 string.Format(
-                    _localizationService.GetString("ChallengeProduceItems") ?? "Produziere {0} Items automatisch",
+                    _localizationService.GetString("ChallengeProduceItems") ?? "Auto-produce {0} items",
                     challenge.TargetValue),
             DailyChallengeType.SellItems =>
                 string.Format(
-                    _localizationService.GetString("ChallengeSellItems") ?? "Verkaufe {0} Items",
+                    _localizationService.GetString("ChallengeSellItems") ?? "Sell {0} items",
                     challenge.TargetValue),
             DailyChallengeType.CompleteMaterialOrder =>
                 string.Format(
-                    _localizationService.GetString("ChallengeCompleteMaterialOrder") ?? "Schließe {0} Lieferaufträge ab",
+                    _localizationService.GetString("ChallengeCompleteMaterialOrder") ?? "Complete {0} delivery orders",
                     challenge.TargetValue),
             DailyChallengeType.CollectEquipment =>
                 string.Format(
-                    _localizationService.GetString("ChallengeCollectEquipment") ?? "Sammle {0} Ausrüstungsgegenstände",
+                    _localizationService.GetString("ChallengeCollectEquipment") ?? "Collect {0} equipment items",
                     challenge.TargetValue),
 
             _ => ""

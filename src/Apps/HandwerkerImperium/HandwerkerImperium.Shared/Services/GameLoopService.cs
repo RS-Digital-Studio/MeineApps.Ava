@@ -20,12 +20,16 @@ namespace HandwerkerImperium.Services;
 /// </summary>
 public sealed partial class GameLoopService : IGameLoopService, IDisposable
 {
+    // Pflicht-Services (v2.0.36): Werden im Konstruktor mit ArgumentNullException.ThrowIfNull
+    // geprueft. Falsche DI-Konfiguration crasht laut, statt stille null-Referenzen zu erzeugen.
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
-    private readonly IWorkerService? _workerService;
-    private readonly IResearchService? _researchService;
+    private readonly IWorkerService _workerService;
+    private readonly IResearchService _researchService;
+    private readonly IPrestigeService _prestigeService;
+    private readonly IIncomeCalculatorService _incomeCalculator;
+    // Optionale Services (Plugin-artig — koennen fehlen, GameLoop laeuft trotzdem)
     private readonly IEventService? _eventService;
-    private readonly IPrestigeService? _prestigeService;
     private readonly IQuickJobService? _quickJobService;
     private readonly IDailyChallengeService? _dailyChallengeService;
     private readonly IWeeklyMissionService? _weeklyMissionService;
@@ -38,7 +42,6 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
     private readonly IVipService? _vipService;
     private readonly IRebirthService? _rebirthService;
     private readonly IAscensionService? _ascensionService;
-    private readonly IIncomeCalculatorService? _incomeCalculator;
     private readonly IAutoProductionService? _autoProductionService;
     private readonly IOrderGeneratorService? _orderGeneratorService;
     private readonly IChallengeConstraintService? _challengeConstraints;
@@ -111,12 +114,16 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
     public event EventHandler<GameTickEventArgs>? OnTick;
 
     public GameLoopService(
+        // Pflicht-Services (v2.0.36): Falsche DI-Konfiguration crasht laut, statt stille
+        // null-Referenzen ueber 22 nullable-Felder zu verschlucken.
         IGameStateService gameStateService,
         ISaveGameService saveGameService,
-        IWorkerService? workerService = null,
-        IResearchService? researchService = null,
+        IIncomeCalculatorService incomeCalculator,
+        IPrestigeService prestigeService,
+        IWorkerService workerService,
+        IResearchService researchService,
+        // Optionale (Plugin-artige) Services
         IEventService? eventService = null,
-        IPrestigeService? prestigeService = null,
         IQuickJobService? quickJobService = null,
         IDailyChallengeService? dailyChallengeService = null,
         IWeeklyMissionService? weeklyMissionService = null,
@@ -129,17 +136,24 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         IVipService? vipService = null,
         IRebirthService? rebirthService = null,
         IAscensionService? ascensionService = null,
-        IIncomeCalculatorService? incomeCalculator = null,
         IAutoProductionService? autoProductionService = null,
         IChallengeConstraintService? challengeConstraints = null,
         IOrderGeneratorService? orderGeneratorService = null)
     {
+        ArgumentNullException.ThrowIfNull(gameStateService);
+        ArgumentNullException.ThrowIfNull(saveGameService);
+        ArgumentNullException.ThrowIfNull(incomeCalculator);
+        ArgumentNullException.ThrowIfNull(prestigeService);
+        ArgumentNullException.ThrowIfNull(workerService);
+        ArgumentNullException.ThrowIfNull(researchService);
+
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
+        _incomeCalculator = incomeCalculator;
+        _prestigeService = prestigeService;
         _workerService = workerService;
         _researchService = researchService;
         _eventService = eventService;
-        _prestigeService = prestigeService;
         _quickJobService = quickJobService;
         _dailyChallengeService = dailyChallengeService;
         _weeklyMissionService = weeklyMissionService;
@@ -152,7 +166,6 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
         _vipService = vipService;
         _rebirthService = rebirthService;
         _ascensionService = ascensionService;
-        _incomeCalculator = incomeCalculator;
         _autoProductionService = autoProductionService;
         _challengeConstraints = challengeConstraints;
         _orderGeneratorService = orderGeneratorService;
@@ -286,8 +299,12 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
             // Event-ReputationChange anwenden (einmalig bei Event-Start)
             if (eventEffects != null && eventEffects.ReputationChange != 0)
             {
+                // v2.0.37: Tier-Wechsel erkennen + Event firen.
+                var tierBefore = state.Reputation.CurrentTier;
                 state.Reputation.ReputationScore = Math.Clamp(
                     state.Reputation.ReputationScore + (int)eventEffects.ReputationChange, 0, 100);
+                if (_gameStateService is GameStateService gss)
+                    gss.RaiseReputationTierChangedIfNeeded(tierBefore);
             }
         }
         else if (currentEventId == null)

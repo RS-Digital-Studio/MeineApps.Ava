@@ -110,7 +110,7 @@ public sealed partial class MainViewModel
     // ── Double-Back-to-Exit ──────────────────────────────────────────
     bool INavigationHost.HandleDoubleBackExit()
     {
-        var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Erneut druecken zum Beenden";
+        var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Press back again to exit";
         return _backPressHelper.HandleDoubleBack(msg);
     }
 }

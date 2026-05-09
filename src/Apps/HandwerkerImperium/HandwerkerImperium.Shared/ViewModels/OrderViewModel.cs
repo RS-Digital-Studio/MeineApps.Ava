@@ -80,6 +80,38 @@ public sealed partial class OrderViewModel : ViewModelBase, INavigable
     [ObservableProperty]
     private bool _isCooperationOrder;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // RISK/REWARD STRATEGY-ANZEIGE (v2.0.36)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Trefferquote-Anzeige fuer Safe-Strategie (z.B. „Trefferquote: 95%").</summary>
+    [ObservableProperty]
+    private string _safeWinRateText = "";
+
+    /// <summary>Erwartungswert-Anzeige fuer Safe-Strategie (z.B. „EV: 0,75x").</summary>
+    [ObservableProperty]
+    private string _safeExpectedValueText = "";
+
+    /// <summary>Trefferquote-Anzeige fuer Standard-Strategie.</summary>
+    [ObservableProperty]
+    private string _standardWinRateText = "";
+
+    /// <summary>Erwartungswert-Anzeige fuer Standard-Strategie.</summary>
+    [ObservableProperty]
+    private string _standardExpectedValueText = "";
+
+    /// <summary>Trefferquote-Anzeige fuer Risk-Strategie.</summary>
+    [ObservableProperty]
+    private string _riskWinRateText = "";
+
+    /// <summary>Erwartungswert-Anzeige fuer Risk-Strategie.</summary>
+    [ObservableProperty]
+    private string _riskExpectedValueText = "";
+
+    /// <summary>True wenn Risk-Strategie statistisch schlechter als Standard — UI zeigt rote Border.</summary>
+    [ObservableProperty]
+    private bool _isRiskWorseThanStandard;
+
     /// <summary>
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
@@ -162,6 +194,59 @@ public sealed partial class OrderViewModel : ViewModelBase, INavigable
         IsInProgress = order.CurrentTaskIndex > 0 && !order.IsCompleted;
         CanStart = order.CurrentTaskIndex == 0;
         IsCooperationOrder = order.OrderType == OrderType.Cooperation;
+
+        // v2.0.36: Strategy-Quoten + Erwartungswert berechnen
+        UpdateStrategyStats(order);
+    }
+
+    /// <summary>
+    /// Befuellt die Trefferquote- und Erwartungswert-Anzeigen pro Strategie (v2.0.36).
+    /// Basis: <see cref="IGameStateService.GetMiniGameSuccessRate"/> auf dem Typ des
+    /// naechsten ausstehenden Tasks. Bei weniger als 5 Plays wird ein „~?"-Hinweis gezeigt
+    /// statt einer konkreten Zahl.
+    ///
+    /// Erwartungswert-Modell (vereinfacht, lineare Belohnungs-Skalierung):
+    ///   Safe:     ~95% Trefferquote × 0,75x Reward (kleines Risiko, kleiner Reward)
+    ///   Standard: persoenliche Trefferquote × 1,0x Reward (Miss → 50% Teil-Reward)
+    ///   Risk:     persoenliche Trefferquote × 0,7 × 2,0x Reward (Miss → 0)
+    /// </summary>
+    private void UpdateStrategyStats(Order order)
+    {
+        var nextTaskIndex = Math.Min(order.CurrentTaskIndex, order.Tasks.Count - 1);
+        var miniGameType = order.Tasks.Count > 0
+            ? order.Tasks[Math.Max(0, nextTaskIndex)].GameType
+            : (MiniGameType?)null;
+
+        if (miniGameType == null)
+        {
+            SafeWinRateText = StandardWinRateText = RiskWinRateText = "";
+            SafeExpectedValueText = StandardExpectedValueText = RiskExpectedValueText = "";
+            IsRiskWorseThanStandard = false;
+            return;
+        }
+
+        var personalRate = _gameStateService.GetMiniGameSuccessRate(miniGameType.Value);
+        bool tooFewPlays = personalRate < 0;
+        var standardRate = tooFewPlays ? 0.65 : personalRate;
+        var safeRate = Math.Min(0.95, 0.30 + standardRate * 0.65); // Safe-Schiene zieht hoch
+        var riskRate = Math.Max(0.0, standardRate * 0.7);
+
+        var winRateLabelFormat = _localizationService.GetString("StrategyWinRateLabel") ?? "Hit rate: {0}%";
+        var unknownText = _localizationService.GetString("StrategyWinRateUnknown") ?? "Hit rate: ~?";
+        var evFormat = _localizationService.GetString("StrategyExpectedValue") ?? "EV: {0}x";
+
+        SafeWinRateText = tooFewPlays ? unknownText : string.Format(winRateLabelFormat, (int)Math.Round(safeRate * 100));
+        StandardWinRateText = tooFewPlays ? unknownText : string.Format(winRateLabelFormat, (int)Math.Round(standardRate * 100));
+        RiskWinRateText = tooFewPlays ? unknownText : string.Format(winRateLabelFormat, (int)Math.Round(riskRate * 100));
+
+        var safeEv = safeRate * 0.75;
+        var standardEv = standardRate * 1.0 + (1 - standardRate) * 0.5;
+        var riskEv = riskRate * 2.0; // Miss → 0
+        SafeExpectedValueText = string.Format(evFormat, safeEv.ToString("0.00"));
+        StandardExpectedValueText = string.Format(evFormat, standardEv.ToString("0.00"));
+        RiskExpectedValueText = string.Format(evFormat, riskEv.ToString("0.00"));
+
+        IsRiskWorseThanStandard = !tooFewPlays && riskEv < standardEv;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -203,11 +288,11 @@ public sealed partial class OrderViewModel : ViewModelBase, INavigable
         if (strat == OrderStrategy.Risk)
         {
             var confirmed = await _dialogService.ShowConfirmDialog(
-                _localizationService.GetString("OrderStrategyRiskConfirmTitle") ?? "Risiko wirklich waehlen?",
+                _localizationService.GetString("OrderStrategyRiskConfirmTitle") ?? "Really take the risk?",
                 _localizationService.GetString("OrderStrategyRiskConfirmMessage")
-                    ?? "Miss = kein Reward + Reputation-Verlust. Trotzdem riskieren?",
-                _localizationService.GetString("OrderStrategyRiskConfirmYes") ?? "Ja, riskieren",
-                _localizationService.GetString("Cancel") ?? "Abbrechen");
+                    ?? "Miss = no reward + reputation loss. Really risk it?",
+                _localizationService.GetString("OrderStrategyRiskConfirmYes") ?? "Yes, risk it",
+                _localizationService.GetString("Cancel") ?? "Cancel");
             if (!confirmed) return;
         }
 

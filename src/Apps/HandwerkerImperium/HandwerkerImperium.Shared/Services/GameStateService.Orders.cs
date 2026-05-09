@@ -57,6 +57,12 @@ public sealed partial class GameStateService
     /// waehlt einen pausierten/wartenden Auftrag aus und startet/fortsetzt dessen
     /// MiniGame-Flow.
     /// </summary>
+    /// <remarks>
+    /// Veraltet ab v2.0.36: Bitte <see cref="SwapToParallelOrder"/> verwenden, um
+    /// Pause + Resume atomar in einem Lock auszufuehren (verhindert Doppel-Tap-Races
+    /// und einen kurzen Beobachtungs-Slot mit ActiveOrder=null fuer den GameLoop-Tick).
+    /// </remarks>
+    [Obsolete("Bitte SwapToParallelOrder() verwenden — pausiert+wechselt atomar.")]
     public void ResumeParallelOrder(WorkshopType workshopType)
     {
         lock (_stateLock)
@@ -65,6 +71,29 @@ public sealed partial class GameStateService
             {
                 _state.ActiveOrder = order;
             }
+        }
+    }
+
+    /// <summary>
+    /// Wechselt atomar zu einem parallelen Auftrag (v2.0.36): liest
+    /// ParallelOrdersByWorkshop und setzt ActiveOrder unter EINEM Lock. Vermeidet
+    /// einen Beobachtungs-Slot mit ActiveOrder=null zwischen PauseActiveOrder und
+    /// ResumeParallelOrder, der bei Doppel-Tap oder GameLoop-Ticks zu inkonsistentem
+    /// State fuehren konnte.
+    /// </summary>
+    /// <returns>Den neuen ActiveOrder oder null, wenn kein paralleler Auftrag existiert.</returns>
+    public Order? SwapToParallelOrder(WorkshopType workshopType)
+    {
+        lock (_stateLock)
+        {
+            if (!_state.ParallelOrdersByWorkshop.TryGetValue(workshopType, out var order))
+                return null;
+
+            // Atomarer Wechsel: ActiveOrder wird auf den parallelen Auftrag gesetzt.
+            // Ein bisheriger ActiveOrder bleibt in ParallelOrdersByWorkshop erhalten
+            // (wurde dort bei StartOrder gespiegelt) — Pause + Resume in einer Operation.
+            _state.ActiveOrder = order;
+            return order;
         }
     }
 
@@ -83,9 +112,18 @@ public sealed partial class GameStateService
     }
 
     /// <summary>
-    /// Liefert die Anzahl paralleler Auftraege (ohne Lock — fuer UI-Bindings).
+    /// Liefert die Anzahl paralleler Auftraege (Lock-konsistent fuer UI-Bindings).
     /// </summary>
-    public int ParallelOrderCount => _state.ParallelOrdersByWorkshop.Count;
+    public int ParallelOrderCount
+    {
+        get
+        {
+            lock (_stateLock)
+            {
+                return _state.ParallelOrdersByWorkshop.Count;
+            }
+        }
+    }
 
     public void RecordMiniGameResult(MiniGameRating rating)
     {
@@ -116,6 +154,116 @@ public sealed partial class GameStateService
 
         // Event IMMER feuern (DailyChallengeService, WeeklyMissions, QuickJob-Validierung)
         MiniGameResultRecorded?.Invoke(this, new MiniGameResultRecordedEventArgs(rating));
+    }
+
+    /// <summary>
+    /// v2.0.36: Zusaetzliche Ueberladung mit MiniGameType — fuettert die Sliding-Window-Stats
+    /// fuer die personalisierte Erfolgsquote. Delegiert die generische Logik an die
+    /// Single-Argument-Variante, damit alle bestehenden Listener (DailyChallengeService etc.)
+    /// gleich angesprochen werden.
+    /// </summary>
+    public void RecordMiniGameResult(MiniGameRating rating, MiniGameType miniGameType)
+    {
+        lock (_stateLock)
+        {
+            var perf = _state.Statistics.MiniGamePerformance;
+            if (!perf.TryGetValue(miniGameType, out var stats))
+            {
+                stats = new MiniGameStats();
+                perf[miniGameType] = stats;
+            }
+
+            stats.TotalPlays++;
+            stats.LastPlayedAt = DateTime.UtcNow;
+
+            // "Erfolg" im Risk/Reward-Sinn = Good oder Perfect (Hit-Zone getroffen).
+            bool wasSuccess = rating == MiniGameRating.Perfect || rating == MiniGameRating.Good;
+            if (rating == MiniGameRating.Perfect)
+                stats.PerfectRatings++;
+            if (rating == MiniGameRating.Miss)
+                stats.Misses++;
+
+            stats.RollingResults.Add(wasSuccess);
+            // Fenster auf RollingWindowSize halten — alte Eintraege wegtrimmen.
+            while (stats.RollingResults.Count > MiniGameStats.RollingWindowSize)
+                stats.RollingResults.RemoveAt(0);
+        }
+
+        // Generische Buchhaltung + Event ueber den bestehenden Pfad (eine Quelle der Wahrheit).
+        RecordMiniGameResult(rating);
+    }
+
+    /// <summary>
+    /// v2.0.36: Erfolgsquote auf Basis der RollingResults. -1 wenn weniger als 5 Plays —
+    /// die UI zeigt dann „~?%" statt konkreter Zahl.
+    /// </summary>
+    public double GetMiniGameSuccessRate(MiniGameType miniGameType)
+    {
+        lock (_stateLock)
+        {
+            if (!_state.Statistics.MiniGamePerformance.TryGetValue(miniGameType, out var stats))
+                return -1d;
+            if (stats.RollingResults.Count < 5)
+                return -1d;
+            int successes = 0;
+            for (int i = 0; i < stats.RollingResults.Count; i++)
+                if (stats.RollingResults[i]) successes++;
+            return (double)successes / stats.RollingResults.Count;
+        }
+    }
+
+    /// <summary>
+    /// v2.0.37: Vergleicht den uebergebenen Tier-Snapshot mit dem aktuellen Reputation-Tier.
+    /// Bei Aenderung wird <see cref="ReputationTierChanged"/> gefeuert. Aufruf NICHT innerhalb
+    /// eines Locks — Subscriber laufen auf dem aufrufenden Thread und koennen lange Operationen
+    /// haben.
+    ///
+    /// Audit-Fix L5: Nutzt jetzt RecomputeTier mit Hysterese (3-Punkte-Buffer) statt direkter
+    /// Score-zu-Tier-Berechnung. Verhindert UI-Flackern an Tier-Boundaries (z.B. bei +1/-1
+    /// Score-Schwankungen durch Stammkunden-Reputation und Decay).
+    /// </summary>
+    internal void RaiseReputationTierChangedIfNeeded(CustomerReputationTier oldTier)
+    {
+        // Hysterese-Berechnung — aktualisiert state.Reputation.CurrentTier intern.
+        if (_state.Reputation.RecomputeTier(out _))
+        {
+            ReputationTierChanged?.Invoke(this, new ReputationTierChangedEventArgs(oldTier, _state.Reputation.CurrentTier));
+        }
+    }
+
+    public void PauseAllLiveOrders()
+    {
+        var now = DateTime.UtcNow;
+        lock (_stateLock)
+        {
+            for (int i = 0; i < _state.AvailableOrders.Count; i++)
+            {
+                var o = _state.AvailableOrders[i];
+                if (o.IsLive && o.PausedAt == null)
+                    o.PausedAt = now;
+            }
+        }
+    }
+
+    public void ResumeAllLiveOrders()
+    {
+        var now = DateTime.UtcNow;
+        var maxPause = TimeSpan.FromMinutes(5);
+        lock (_stateLock)
+        {
+            for (int i = 0; i < _state.AvailableOrders.Count; i++)
+            {
+                var o = _state.AvailableOrders[i];
+                if (o.PausedAt is { } pausedAt)
+                {
+                    var pauseDuration = now - pausedAt;
+                    if (pauseDuration < TimeSpan.Zero) pauseDuration = TimeSpan.Zero;
+                    if (pauseDuration > maxPause) pauseDuration = maxPause;
+                    o.AccumulatedPauseDuration += pauseDuration;
+                    o.PausedAt = null;
+                }
+            }
+        }
     }
 
     public decimal GetOrderRewardMultiplier(Order order)
@@ -271,7 +419,11 @@ public sealed partial class GameStateService
                 if (_state.Researches[ri].IsResearched && _state.Researches[ri].Effect?.ReputationBonus > 0)
                     reputationBonus += _state.Researches[ri].Effect!.ReputationBonus;
             }
+            // v2.0.37: Tier-Snapshot vor Aenderung — Event triggert Confetti/FloatingText
+            // im MainViewModel, wenn der Spieler in einen neuen Tier aufsteigt.
+            var tierBeforeRating = _state.Reputation.CurrentTier;
             _state.Reputation.AddRating(stars, reputationBonus);
+            RaiseReputationTierChangedIfNeeded(tierBeforeRating);
 
             // Stammkunden-Tracking bei Perfect Rating
             if (avgRating == MiniGameRating.Perfect && !string.IsNullOrEmpty(order.CustomerName))
@@ -332,14 +484,31 @@ public sealed partial class GameStateService
 
     public void RecordPerfectRating(MiniGameType type)
     {
+        int newLifetimeCount;
         lock (_stateLock)
         {
             int key = (int)type;
+
+            // Auto-Complete-Counter (wird bei Ascension resettet).
             if (_state.PerfectRatingCounts.TryGetValue(key, out int count))
                 _state.PerfectRatingCounts[key] = count + 1;
             else
                 _state.PerfectRatingCounts[key] = 1;
+
+            // Mastery-Lifetime-Counter (v2.0.36, NICHT bei Ascension/Prestige resetten).
+            // Defensive Init fuer alte SaveGames ohne dieses Dictionary.
+            _state.LifetimePerfectRatingCounts ??= new Dictionary<int, int>();
+            if (_state.LifetimePerfectRatingCounts.TryGetValue(key, out int lifeCount))
+                _state.LifetimePerfectRatingCounts[key] = lifeCount + 1;
+            else
+                _state.LifetimePerfectRatingCounts[key] = 1;
+
+            newLifetimeCount = _state.LifetimePerfectRatingCounts[key];
         }
+
+        // Event AUSSERHALB des Locks feuern — MasteryService subscribed darauf und
+        // ruft AddGoldenScrews() auf (nimmt seinen eigenen Lock, Reentrancy unproblematisch).
+        PerfectRatingIncremented?.Invoke(this, new PerfectRatingIncrementedEventArgs(type, newLifetimeCount));
     }
 
     public bool CanAutoComplete(MiniGameType type, bool isPremium)

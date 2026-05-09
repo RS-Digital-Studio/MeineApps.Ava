@@ -73,6 +73,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private readonly IWorkerService _workerService;
     private readonly IRebirthService? _rebirthService;
     private readonly ITournamentService? _tournamentService;
+    private readonly INotificationCenterService _notificationCenterService;
+    // v2.0.39 Audit-Fix U1: WhatsNew-Dialog beim ersten Start nach Update.
+    private readonly IWhatsNewService? _whatsNewService;
     private bool _disposed;
     private decimal _pendingOfflineEarnings;
     private QuickJob? _activeQuickJob;
@@ -460,6 +463,24 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     // Full-Screen Reward-Zeremonie (nur große Meilensteine)
     public event Action<CeremonyType, string, string>? CeremonyRequested;
 
+    /// <summary>P0.3 AAA-Audit: Prestige-Cinematic-Trigger. View startet daraufhin den 14s-Renderer.</summary>
+    public event Action<HandwerkerImperium.Models.PrestigeCinematicData>? PrestigeCinematicRequested;
+
+    /// <summary>P0.3 AAA-Audit: View meldet Tap-to-Skip waehrend der Cinematic.</summary>
+    public void OnPrestigeCinematicSkipped()
+    {
+        _analyticsService?.TrackEvent(AnalyticsEvents.PrestigeCinematicSkipped);
+    }
+
+    /// <summary>P0.3 AAA-Audit: View meldet Cinematic-Ende (nach Tap-to-Continue oder Auto-Timeout).</summary>
+    public void OnPrestigeCinematicDismissed()
+    {
+        _analyticsService?.TrackEvent(AnalyticsEvents.PrestigeCinematicCompleted);
+        // Zurueck zum Default-Track
+        try { _ = _audioService.PlayMusicAsync(MusicTrack.IdleWorkshop, crossfade: true); }
+        catch { /* Audio-Fehler ignorieren */ }
+    }
+
     /// <summary>Wird ausgelöst um einen Exit-Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").</summary>
     public event Action<string>? ExitHintRequested;
 
@@ -527,11 +548,64 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         }
     }
 
+    /// <summary>v2.0.36: Nur Standard-Auftraege automatisch annehmen (Live/VIP bleiben liegen).</summary>
+    public bool AutoAcceptOnlyStandard
+    {
+        get => _gameStateService.Automation.AutoAcceptOnlyStandard;
+        set
+        {
+            if (_gameStateService.Automation.AutoAcceptOnlyStandard == value) return;
+            _gameStateService.Automation.AutoAcceptOnlyStandard = value;
+            _saveGameService.SaveAsync().FireAndForget();
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>v2.0.36: MiniGame-Auto-Complete ueberspringt Live-/Premium-Auftraege.</summary>
+    public bool AutoCompleteSkipLiveOrders
+    {
+        get => _gameStateService.Automation.AutoCompleteSkipLiveOrders;
+        set
+        {
+            if (_gameStateService.Automation.AutoCompleteSkipLiveOrders == value) return;
+            _gameStateService.Automation.AutoCompleteSkipLiveOrders = value;
+            _saveGameService.SaveAsync().FireAndForget();
+            OnPropertyChanged();
+        }
+    }
+
     // Level-Gates für Automatisierung (delegiert an GameStateService)
     public bool IsAutoCollectUnlocked => _gameStateService.IsAutoCollectUnlocked;
     public bool IsAutoAcceptUnlocked => _gameStateService.IsAutoAcceptUnlocked;
     public bool IsAutoAssignUnlocked => _gameStateService.IsAutoAssignUnlocked;
     public bool IsAutoClaimUnlocked => _purchaseService.IsPremium;
+
+    /// <summary>
+    /// v2.0.36: Wenn die Grafik-Qualitaet auf Low steht, schalten wir die Loop-Animationen
+    /// (GoldenBadgeShimmer, TutorialHintPulse, BoostPulse) aus. Die wichtigen Event-getriebenen
+    /// One-Shot-Animationen (LevelUpFlash, IncomePulse) bleiben — die geben Spieler-Feedback.
+    /// </summary>
+    public bool ReduceMotion => _gameStateService.Settings.GraphicsQuality == Models.Enums.GraphicsQuality.Low;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // REPUTATION-TIER (v2.0.37 — Header-Badge + Spawn-Boni)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Aktuelles Reputations-Tier (computed aus dem ReputationScore).</summary>
+    public Models.Enums.CustomerReputationTier CurrentReputationTier
+        => _gameStateService.State.Reputation.CurrentTier;
+
+    /// <summary>True ab Tier CityKnown — Anfaenger-Tier wird nicht angezeigt (Spam-Schutz).</summary>
+    public bool ShowReputationTierBadge
+        => CurrentReputationTier > Models.Enums.CustomerReputationTier.Beginner;
+
+    /// <summary>Lokalisierter Tier-Name fuer den Header-Badge.</summary>
+    public string ReputationTierName
+        => _localizationService.GetString(CurrentReputationTier.GetLocalizationKey())
+           ?? CurrentReputationTier.ToString();
+
+    /// <summary>Hex-Farbe fuer das Tier-Badge (Bronze/Silber/Gold).</summary>
+    public string ReputationTierColor => CurrentReputationTier.GetBadgeColor();
 
     // ═══════════════════════════════════════════════════════════════════════
     // ZENTRALES NAVIGATION-STATE (ActivePage Enum statt 35+ Booleans)
@@ -555,7 +629,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     /// Merkt sich die vorherige Seite damit Back immer dorthin zurückkehrt woher man kam.
     /// Max 10 Einträge (reicht für tiefste Verschachtelung).
     /// </summary>
-    private readonly Stack<ActivePage> _navigationStack = new();
+    // Code-Review-Fix [Finding 5]: O(1)-Cap-Handling statt O(n)-Rebuild.
+    private readonly Helpers.CappedNavigationStack _navigationStack = new(MaxNavigationStackSize);
     private bool _isNavigatingBack;
     private const int MaxNavigationStackSize = 10;
 
@@ -565,42 +640,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     /// </summary>
     partial void OnActivePageChanged(ActivePage oldValue, ActivePage newValue)
     {
-        // Back-Stack: Alte Seite merken (außer bei Rück-Navigation und Tab-Wechseln)
-        // Tab-Wechsel (Dashboard↔Shop↔Imperium↔Missionen↔Guild) werden NICHT getracked,
-        // damit Back nicht durch Tab-Ping-Pong läuft. Nur Sub-Navigationen landen auf dem Stack.
-        if (!_isNavigatingBack && oldValue != newValue)
-        {
-            bool isTabToTab = s_mainTabs.Contains(oldValue) && s_mainTabs.Contains(newValue);
-            // Settings zählt auch als "Tab-Level" (direkt vom Dashboard erreichbar)
-            isTabToTab = isTabToTab || (oldValue == ActivePage.Settings && s_mainTabs.Contains(newValue))
-                                   || (s_mainTabs.Contains(oldValue) && newValue == ActivePage.Settings);
-
-            if (!isTabToTab)
-            {
-                _navigationStack.Push(oldValue);
-                // Stack begrenzen
-                if (_navigationStack.Count > MaxNavigationStackSize)
-                {
-                    var temp = _navigationStack.ToArray();
-                    _navigationStack.Clear();
-                    for (int i = Math.Min(temp.Length - 1, MaxNavigationStackSize - 1); i >= 0; i--)
-                        _navigationStack.Push(temp[i]);
-                }
-            }
-            else
-            {
-                // Bei Tab-Wechsel: Stack leeren (frischer Kontext)
-                _navigationStack.Clear();
-            }
-        }
+        // P1.5 AAA-Audit: Stack-Management an Helper delegiert (Sprint A — Helper-Variante).
+        Helpers.PageNavigationHelper.ManageStack(_navigationStack, oldValue, newValue, _isNavigatingBack);
 
         // GuildChat-Polling stoppen wenn Chat verlassen wird
         if (oldValue == ActivePage.GuildChat)
             GuildViewModel.StopChatPolling();
 
         // PropertyChanged für die berechneten IsXxxActive-Properties (nur die 2 geänderten)
-        var oldProp = ActivePagePropertyName(oldValue);
-        var newProp = ActivePagePropertyName(newValue);
+        var oldProp = Helpers.PageNavigationHelper.GetPropertyNameFor(oldValue);
+        var newProp = Helpers.PageNavigationHelper.GetPropertyNameFor(newValue);
         if (oldProp != null) OnPropertyChanged(oldProp);
         if (newProp != null) OnPropertyChanged(newProp);
         OnPropertyChanged(nameof(IsTabBarVisible));
@@ -649,6 +698,40 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     public bool IsForgeGameActive => ActivePage == ActivePage.ForgeGame;
     public bool IsInventGameActive => ActivePage == ActivePage.InventGame;
     public bool IsAscensionActive => ActivePage == ActivePage.Ascension;
+    public bool IsPrestigeActive => ActivePage == ActivePage.Prestige;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // IMPERIUM-SUB-TABS (v2.0.37)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsImperiumWorkshopsActive))]
+    [NotifyPropertyChangedFor(nameof(IsImperiumWorkersActive))]
+    [NotifyPropertyChangedFor(nameof(IsImperiumResearchActive))]
+    [NotifyPropertyChangedFor(nameof(IsImperiumEquipmentActive))]
+    [NotifyPropertyChangedFor(nameof(IsImperiumAscensionActive))]
+    private ImperiumSubTab _imperiumSubTab = ImperiumSubTab.Workshops;
+
+    public bool IsImperiumWorkshopsActive => ImperiumSubTab == ImperiumSubTab.Workshops;
+    public bool IsImperiumWorkersActive => ImperiumSubTab == ImperiumSubTab.Workers;
+    public bool IsImperiumResearchActive => ImperiumSubTab == ImperiumSubTab.Research;
+    public bool IsImperiumEquipmentActive => ImperiumSubTab == ImperiumSubTab.Equipment;
+    public bool IsImperiumAscensionActive => ImperiumSubTab == ImperiumSubTab.Ascension;
+
+    /// <summary>
+    /// Imperium-Sub-Tab waehlen (per RelayCommand aus AXAML).
+    /// Ascension-Sub-Tab nur sichtbar wenn Ascension verfuegbar (PrestigeData.LegendeCount &gt;= 3).
+    /// </summary>
+    [RelayCommand]
+    private void SelectImperiumSubTab(string subTabName)
+    {
+        if (Enum.TryParse<ImperiumSubTab>(subTabName, ignoreCase: true, out var tab))
+            ImperiumSubTab = tab;
+    }
+
+    /// <summary>True wenn Ascension-Sub-Tab freigeschaltet (3x Legende-Prestige).</summary>
+    public bool IsImperiumAscensionUnlocked
+        => _gameStateService.Prestige.LegendeCount >= 3;
 
     /// <summary>
     /// Gibt das aktuell aktive MiniGame-ViewModel zurück, oder null wenn kein MiniGame aktiv.
@@ -745,16 +828,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     /// <summary>
     /// Haupt-Tabs bei denen die Tab-Bar sichtbar ist (5 Hauptseiten).
     /// </summary>
-    private static readonly HashSet<ActivePage> s_mainTabs =
-    [
-        ActivePage.Dashboard, ActivePage.Buildings, ActivePage.Missionen,
-        ActivePage.Guild, ActivePage.Shop
-    ];
+    // P1.5 AAA-Audit: s_mainTabs wandert als statisches Set in den Helper.
 
     /// <summary>
     /// Tab-Bar sichtbar nur auf den 5 Haupt-Tabs und wenn kein Overlay aktiv ist.
     /// </summary>
-    public bool IsTabBarVisible => s_mainTabs.Contains(ActivePage) && !IsWorkerProfileActive;
+    public bool IsTabBarVisible => Helpers.PageNavigationHelper.MainTabs.Contains(ActivePage) && !IsWorkerProfileActive;
 
     /// <summary>
     /// NAV-3: Breadcrumb-Text für Sub-Views (zeigt den Parent-Tab wenn Tab-Bar versteckt ist).
@@ -765,63 +844,20 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         ActivePage.SawingGame or ActivePage.PipePuzzle or ActivePage.WiringGame or
         ActivePage.PaintingGame or ActivePage.RoofTilingGame or ActivePage.BlueprintGame or
         ActivePage.DesignPuzzleGame or ActivePage.InspectionGame or ActivePage.ForgeGame or
-        ActivePage.InventGame => _localizationService.GetString("TabWorkshop") ?? "Werkstatt",
+        ActivePage.InventGame => _localizationService.GetString("TabWorkshop") ?? "Workshop",
         ActivePage.WorkerMarket or ActivePage.Research or ActivePage.Manager or
-        ActivePage.Crafting or ActivePage.Ascension => _localizationService.GetString("TabImperium") ?? "Imperium",
+        ActivePage.Crafting or ActivePage.Ascension => _localizationService.GetString("TabImperium") ?? "Empire",
         ActivePage.Tournament or ActivePage.SeasonalEvent or ActivePage.BattlePass or
-        ActivePage.Statistics or ActivePage.Achievements => _localizationService.GetString("TabMissions") ?? "Missionen",
+        ActivePage.Statistics or ActivePage.Achievements => _localizationService.GetString("TabMissions") ?? "Missions",
         ActivePage.GuildResearch or ActivePage.GuildMembers or ActivePage.GuildInvite or
         ActivePage.GuildWarSeason or ActivePage.GuildBoss or ActivePage.GuildHall or
-        ActivePage.GuildAchievements or ActivePage.GuildChat or ActivePage.GuildWar => _localizationService.GetString("TabGuild") ?? "Gilde",
-        ActivePage.Settings => _localizationService.GetString("Settings") ?? "Einstellungen",
+        ActivePage.GuildAchievements or ActivePage.GuildChat or ActivePage.GuildWar => _localizationService.GetString("TabGuild") ?? "Guild",
+        ActivePage.Settings => _localizationService.GetString("Settings") ?? "Settings",
         _ => ""
     };
 
-    /// <summary>
-    /// Mapping ActivePage → Property-Name für gezielte PropertyChanged-Benachrichtigungen.
-    /// Nur 2 Notifications pro Seitenwechsel statt 36 (alter Ansatz mit DeactivateAllTabs).
-    /// </summary>
-    private static string? ActivePagePropertyName(ActivePage page) => page switch
-    {
-        ActivePage.Dashboard => nameof(IsDashboardActive),
-        ActivePage.Shop => nameof(IsShopActive),
-        ActivePage.Statistics => nameof(IsStatisticsActive),
-        ActivePage.Achievements => nameof(IsAchievementsActive),
-        ActivePage.Settings => nameof(IsSettingsActive),
-        ActivePage.WorkshopDetail => nameof(IsWorkshopDetailActive),
-        ActivePage.OrderDetail => nameof(IsOrderDetailActive),
-        ActivePage.SawingGame => nameof(IsSawingGameActive),
-        ActivePage.PipePuzzle => nameof(IsPipePuzzleActive),
-        ActivePage.WiringGame => nameof(IsWiringGameActive),
-        ActivePage.PaintingGame => nameof(IsPaintingGameActive),
-        ActivePage.RoofTilingGame => nameof(IsRoofTilingGameActive),
-        ActivePage.BlueprintGame => nameof(IsBlueprintGameActive),
-        ActivePage.DesignPuzzleGame => nameof(IsDesignPuzzleGameActive),
-        ActivePage.InspectionGame => nameof(IsInspectionGameActive),
-        ActivePage.WorkerMarket => nameof(IsWorkerMarketActive),
-        ActivePage.Buildings => nameof(IsBuildingsActive),
-        ActivePage.Research => nameof(IsResearchActive),
-        ActivePage.Manager => nameof(IsManagerActive),
-        ActivePage.Tournament => nameof(IsTournamentActive),
-        ActivePage.SeasonalEvent => nameof(IsSeasonalEventActive),
-        ActivePage.BattlePass => nameof(IsBattlePassActive),
-        ActivePage.Guild => nameof(IsGuildActive),
-        ActivePage.Missionen => nameof(IsMissionenActive),
-        ActivePage.GuildResearch => nameof(IsGuildResearchActive),
-        ActivePage.GuildMembers => nameof(IsGuildMembersActive),
-        ActivePage.GuildInvite => nameof(IsGuildInviteActive),
-        ActivePage.GuildWarSeason => nameof(IsGuildWarSeasonActive),
-        ActivePage.GuildBoss => nameof(IsGuildBossActive),
-        ActivePage.GuildHall => nameof(IsGuildHallActive),
-        ActivePage.GuildAchievements => nameof(IsGuildAchievementsActive),
-        ActivePage.GuildChat => nameof(IsGuildChatActive),
-        ActivePage.GuildWar => nameof(IsGuildWarActive),
-        ActivePage.Crafting => nameof(IsCraftingActive),
-        ActivePage.ForgeGame => nameof(IsForgeGameActive),
-        ActivePage.InventGame => nameof(IsInventGameActive),
-        ActivePage.Ascension => nameof(IsAscensionActive),
-        _ => null
-    };
+    // P1.5 AAA-Audit: ActivePagePropertyName ist als Helper extrahiert
+    // (Helpers/PageNavigationHelper.GetPropertyNameFor). 41 Zeilen weniger im MainViewModel.
 
     // ═══════════════════════════════════════════════════════════════════════
     // CHILD VIEWMODELS
@@ -867,6 +903,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
 
     /// <summary>Welcome-Flow: CombinedWelcome, StarterOffer, OfflineEarnings, DailyReward.</summary>
     public WelcomeFlowViewModel WelcomeFlowVM { get; }
+
+    /// <summary>
+    /// Notification-Center (Bell-UI im Header, v2.0.36). Sammelt nicht-kritische
+    /// Benachrichtigungen statt Modal-Stacking beim Re-Open.
+    /// </summary>
+    public NotificationCenterViewModel NotificationCenterVM { get; }
 
     /// <summary>
     /// Zentrale Effekt-Engine (Singleton aus DI). Wird von DashboardView direkt genutzt.
@@ -926,6 +968,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         PrestigeBannerViewModel prestigeBannerViewModel,
         GoalBannerViewModel goalBannerViewModel,
         WelcomeFlowViewModel welcomeFlowViewModel,
+        NotificationCenterViewModel notificationCenterViewModel,
+        INotificationCenterService notificationCenterService,
         ITournamentService? tournamentService = null,
         IRebirthService? rebirthService = null,
         IStoryService? storyService = null,
@@ -939,7 +983,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         Services.Interfaces.IMiniGameNavigator? miniGameNavigator = null,
         IAnalyticsService? analyticsService = null,
         ICloudSaveService? cloudSaveService = null,
-        IRemoteConfigService? remoteConfigService = null)
+        IRemoteConfigService? remoteConfigService = null,
+        IWhatsNewService? whatsNewService = null)
     {
         _navigationService = navigationService;
         _dialogOrchestrator = dialogOrchestrator;
@@ -947,6 +992,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _analyticsService = analyticsService;
         _cloudSaveService = cloudSaveService;
         _remoteConfigService = remoteConfigService;
+        _whatsNewService = whatsNewService;
         // Host-Attach damit Services Navigation/Dialog-Kaskade an MainViewModel delegieren koennen
         _navigationService?.AttachHost(this);
         _dialogOrchestrator?.AttachHost(this);
@@ -963,7 +1009,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _orderGeneratorService.OrderSpawned += OnLiveOrderSpawned;
         _audioService = audioService;
         _localizationService = localizationService;
-        _cachedNetIncomeLabel = _localizationService.GetString("NetIncome") ?? "Netto";
+        _cachedNetIncomeLabel = _localizationService.GetString("NetIncome") ?? "Net Income";
         _dailyRewardService = dailyRewardService;
         _achievementService = achievementService;
         _purchaseService = purchaseService;
@@ -1082,6 +1128,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _gameStateService.OrderCompleted += OnOrderCompleted;
         _gameStateService.StateLoaded += OnStateLoaded;
         _gameStateService.MiniGameResultRecorded += OnMiniGameResultRecorded;
+        _gameStateService.ReputationTierChanged += OnReputationTierChanged;
         _gameLoopService.OnTick += OnGameTick;
         _gameLoopService.MasterToolUnlocked += OnMasterToolUnlocked;
         _gameLoopService.DeliveryArrived += OnDeliveryArrived;
@@ -1122,12 +1169,17 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         // EconomyFeatureViewModel initialisieren (nach DialogVM, da es DialogVM als IDialogService nutzt)
         InitializeEconomyVM();
         DialogVM.DeferredDialogCheckRequested += CheckDeferredDialogs;
+        // P2.2 AAA-Audit: Story-Skip-Tracking fuer Onboarding-Funnel-Analyse.
+        DialogVM.StorySkipRequested += chapterId => _analyticsService?.TrackEvent(
+            AnalyticsEvents.OnboardingStorySkipped,
+            new Dictionary<string, object?> { ["chapter_id"] = chapterId });
         _dialogPrestigeSummaryGoToShopHandler = () => SelectBuildingsTab();
         _dialogFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         DialogVM.PrestigeSummaryGoToShopRequested += _dialogPrestigeSummaryGoToShopHandler;
         DialogVM.FloatingTextRequested += _dialogFloatingTextHandler;
         _prestigeService.PrestigeCompleted += OnPrestigeCompleted;
         _prestigeService.MilestoneReached += OnPrestigeMilestoneReached;
+        _prestigeService.CinematicReady += OnPrestigeCinematicReady;
 
         // Rebirth-Event fuer First-Star-Hint
         if (_rebirthService != null)
@@ -1135,6 +1187,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
 
         // Worker-Level-Up Feedback (Sound + FloatingText)
         _workerService.WorkerLevelUp += OnWorkerLevelUp;
+        _workerService.InternReadyForPromotion += OnInternReadyForPromotion;
 
         // Notification + PlayGames Services (per Constructor Injection)
         _notificationService = notificationService;
@@ -1143,6 +1196,25 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
 
         // Back-Press Helper verdrahten (benannte Methode statt Lambda fuer Dispose-Abmeldung)
         _backPressHelper.ExitHintRequested += OnBackPressExitHint;
+
+        // v2.0.36: Notification-Center (Bell-UI). VM haengt am NotificationCenterService und
+        // feuert ItemActivated wenn der Spieler eine Karte antippt — wir routen die Aktion
+        // ueber NotificationKind in den richtigen Handler.
+        _notificationCenterService = notificationCenterService;
+        NotificationCenterVM = notificationCenterViewModel;
+        NotificationCenterVM.ItemActivated += OnNotificationItemActivated;
+
+        // v2.1.0: Saison-Storyline-Trigger an BP-Tier-Up.
+        BattlePassViewModel.Service.TierUpReached += OnBattlePassTierUp;
+    }
+
+    /// <summary>
+    /// v2.1.0: Bei BP-Tier-Up das Saison-Storyline-Kapitel triggern (1/10/25/40/50).
+    /// CheckForNewStoryChapter pruefte intern, ob ein Saison-Kapitel passt und zeigt es an.
+    /// </summary>
+    private void OnBattlePassTierUp(int oldTier, int newTier, int seasonNumber)
+    {
+        Dispatcher.UIThread.Post(() => CheckForNewStoryChapter());
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1343,10 +1415,40 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         CheckForNewStoryChapter();
     }
 
+    /// <summary>P0.3 AAA-Audit: Vom PrestigeService gefeuert, sobald Cinematic-Daten bereit sind.</summary>
+    private void OnPrestigeCinematicReady(object? sender, HandwerkerImperium.Models.PrestigeCinematicData data)
+    {
+        // Tier-Name lokalisieren — RESX-Keys "PrestigeTierBronze", "PrestigeTierSilver" usw.
+        // RESX-Keys: PrestigeBronze, PrestigeSilver, ... (existieren bereits)
+        var localizedTierName = _localizationService.GetString($"Prestige{data.Tier}") ?? data.Tier.ToString();
+        var resolved = new HandwerkerImperium.Models.PrestigeCinematicData
+        {
+            MoneyAtPrestige = data.MoneyAtPrestige,
+            Tier = data.Tier,
+            BasePrestigePoints = data.BasePrestigePoints,
+            BonusPrestigePoints = data.BonusPrestigePoints,
+            TierMultiplierRaw = data.TierMultiplierRaw,
+            DiminishingReturnsFactor = data.DiminishingReturnsFactor,
+            TierMultiplierEffective = data.TierMultiplierEffective,
+            TierCount = data.TierCount,
+            RunDurationSeconds = data.RunDurationSeconds,
+            ActiveChallengeCount = data.ActiveChallengeCount,
+            TierDisplayName = localizedTierName,
+        };
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            // P2.3 + P0.3 verdrahtet: Celebration-Track waehrend der Cinematic, danach
+            // Idle-Workshop. Audio-Fehler duerfen die Cinematic nicht blockieren.
+            try { _ = _audioService.PlayMusicAsync(MusicTrack.Celebration, crossfade: true); }
+            catch { /* Audio-Fehler ignorieren */ }
+            PrestigeCinematicRequested?.Invoke(resolved);
+        });
+    }
+
     private void OnPrestigeMilestoneReached(object? sender, PrestigeMilestoneEventArgs e)
     {
         var text = string.Format(
-            _localizationService.GetString("PrestigeMilestoneReached") ?? "Prestige-Meilenstein! +{0} Goldschrauben",
+            _localizationService.GetString("PrestigeMilestoneReached") ?? "Prestige milestone! +{0} golden screws",
             e.GoldenScrewReward);
         FloatingTextRequested?.Invoke(text, "currency");
         CelebrationRequested?.Invoke();
@@ -1402,6 +1504,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
             ShowTutorialHint = false;
             _contextualHintService.TryShowHint(ContextualHints.WorkshopDetail);
         }
+        // v2.0.39 Audit-Fix U10: Long-Press-Hint nach 2. Upgrade — Spieler hat erstes Tap-Upgrade
+        // erlebt, jetzt ist der Discoverability-Moment fuer "Halten = x10 / x100 Bulk".
+        // Bei aktivem Hold-to-Upgrade zeigen wir den Hint NICHT (er kennt das Feature dann schon).
+        else if (!IsHoldingUpgrade && !_contextualHintService.HasSeenHint(ContextualHints.LongPressBulk.Id))
+        {
+            _contextualHintService.TryShowHint(ContextualHints.LongPressBulk);
+        }
 
         // Rebirth-Hint: Erster Workshop erreicht Level 1000
         if (e.NewLevel >= Workshop.MaxLevel)
@@ -1412,7 +1521,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         {
             decimal milestoneMultiplier = Workshop.GetMilestoneMultiplierForLevel(e.NewLevel);
             var workshopName = _localizationService.GetString(e.WorkshopType.GetLocalizationKey());
-            string boostText = $"x{milestoneMultiplier:0.#} {_localizationService.GetString("IncomeBoost") ?? "EINKOMMENS-BOOST"}!";
+            string boostText = $"x{milestoneMultiplier:0.#} {_localizationService.GetString("IncomeBoost") ?? "Income Boost"}!";
 
             FloatingTextRequested?.Invoke(boostText, "golden_screws");
             _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
@@ -1494,16 +1603,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     // OnChallengeProgressChanged → extrahiert nach MissionsFeatureViewModel
 
     private async void OnShowPrestigeDialog(object? sender, EventArgs e)
-    {
-        try
-        {
-            await ShowPrestigeConfirmationAsync();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnShowPrestigeDialog)} Fehler: {ex.Message}");
-        }
-    }
+        => await Helpers.AsyncExtensions.RunHandlerSafely(ShowPrestigeConfirmationAsync);
 
     private void OnMiniGameResultRecorded(object? sender, MiniGameResultRecordedEventArgs e)
     {
@@ -1553,7 +1653,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         {
             HasActiveOrder = false;
             ActiveOrder = null;
-            var msg = _localizationService.GetString("OrderExpiredNotification") ?? "Auftrag abgelaufen!";
+            var msg = _localizationService.GetString("OrderExpiredNotification") ?? "Order expired!";
             FloatingTextRequested?.Invoke(msg, "warning");
             _audioService.PlaySoundAsync(GameSound.Miss).FireAndForget();
             RefreshOrders();
@@ -1570,7 +1670,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         {
             HasPendingDelivery = false;
             FloatingTextRequested?.Invoke(
-                $"{_localizationService.GetString("DeliveryCollected") ?? "Lieferung eingesammelt"}!", "Delivery");
+                $"{_localizationService.GetString("DeliveryCollected") ?? "Delivery collected"}!", "Delivery");
         });
     }
 
@@ -1690,6 +1790,87 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         RefreshFromState();
     }
 
+    /// <summary>
+    /// v2.1.0: Praktikant hat 24h aktiv trainiert — Spieler bekommt Promotion-Dialog.
+    /// Bei Annahme wird er zu E-Tier promoviert (kostenpflichtig), bei Ablehnung verlaesst er.
+    /// </summary>
+    private void OnInternReadyForPromotion(object? sender, Worker intern)
+    {
+        Dispatcher.UIThread.Post(async () =>
+        {
+            var title = _localizationService.GetString("InternPromotionTitle") ?? "Praktikant bereit zur Promotion";
+            var msgFormat = _localizationService.GetString("InternPromotionMessage")
+                            ?? "{0} hat 24h Training abgeschlossen. Behalten (E-Tier, Lohn) oder gehen lassen?";
+            var keep = _localizationService.GetString("InternPromotionKeep") ?? "Behalten";
+            var let = _localizationService.GetString("InternPromotionLet") ?? "Gehen lassen";
+
+            var confirmed = await DialogVM.ShowConfirmDialog(
+                title, string.Format(msgFormat, intern.Name), keep, let);
+
+            if (confirmed)
+            {
+                _workerService.PromoteIntern(intern.Id);
+                FloatingTextRequested?.Invoke($"{intern.Name}: E-Tier!", "level");
+            }
+            else
+            {
+                _workerService.DeclineInternPromotion(intern.Id);
+            }
+        });
+    }
+
+    /// <summary>
+    /// v2.0.37: Reputation-Tier-Wechsel — bei Aufstieg Confetti + FloatingText, bei Abstieg
+    /// stille Aktualisierung der Header-Properties (Spieler soll nicht zusaetzlich frustriert
+    /// werden, wenn Reputation faellt).
+    ///
+    /// v2.0.39 Audit-Fix U7: Zusaetzlich Achievement-Dialog mit Tier-Effekten (Stammkunden-Bonus
+    /// + Live-Order-Spawn-Chance), damit der Spieler die Bedeutung des Aufstiegs erkennt — nicht
+    /// nur einen Floating-Text. Dialog erscheint NUR bei Aufstieg, nicht bei Abstieg.
+    /// </summary>
+    private void OnReputationTierChanged(object? sender, ReputationTierChangedEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            // Header-Bindings aktualisieren — alle drei Properties sind computed.
+            OnPropertyChanged(nameof(CurrentReputationTier));
+            OnPropertyChanged(nameof(ShowReputationTierBadge));
+            OnPropertyChanged(nameof(ReputationTierName));
+            OnPropertyChanged(nameof(ReputationTierColor));
+
+            if (!e.IsUp) return;
+
+            var tierName = _localizationService.GetString(e.NewTier.GetLocalizationKey()) ?? e.NewTier.ToString();
+            var format = _localizationService.GetString("RepTierUpFormat") ?? "{0} reached!";
+            FloatingTextRequested?.Invoke(string.Format(format, tierName), "level");
+            CelebrationRequested?.Invoke();
+            _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
+
+            // v2.0.39 Audit-Fix U7: Modal-Dialog mit Tier-Effekten (nur bei Tier-Aufstieg
+            // ueber Beginner — Beginner ist der Default-Start-Tier und braucht keine Erklaerung).
+            if (e.NewTier > Models.Enums.CustomerReputationTier.Beginner)
+            {
+                var effectsKey = e.NewTier switch
+                {
+                    Models.Enums.CustomerReputationTier.CityKnown => "RepTierCityKnownEffects",
+                    Models.Enums.CustomerReputationTier.RegionStar => "RepTierRegionStarEffects",
+                    Models.Enums.CustomerReputationTier.IndustryLegend => "RepTierIndustryLegendEffects",
+                    _ => null
+                };
+                if (!string.IsNullOrEmpty(effectsKey))
+                {
+                    var effectsText = _localizationService.GetString(effectsKey);
+                    if (!string.IsNullOrEmpty(effectsText))
+                    {
+                        DialogVM.AchievementName = string.Format(format, tierName);
+                        DialogVM.AchievementDescription = effectsText;
+                        DialogVM.IsAchievementDialogVisible = true;
+                    }
+                }
+            }
+        });
+    }
+
     private void OnAchievementUnlocked(object? sender, Achievement achievement)
     {
         // Während Hold-to-Upgrade keine Dialoge anzeigen
@@ -1713,7 +1894,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         // Lokalisierungs-Caches aktualisieren
-        _cachedNetIncomeLabel = _localizationService.GetString("NetIncome") ?? "Netto";
+        _cachedNetIncomeLabel = _localizationService.GetString("NetIncome") ?? "Net Income";
         _cachedActiveEventKey = null; // Event-Name bei Sprachwechsel neu laden
         EconomyVM.InvalidatePrestigeBannerCache(); // Prestige-Banner mit neuen Texten neu berechnen
 
@@ -1839,7 +2020,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
                 if (state.IsSoftCapActive && !HeaderVM.IsSoftCapActive)
                 {
                     FloatingTextRequested?.Invoke(
-                        _localizationService.GetString("SoftCapReached") ?? "Bonus-Decke erreicht!",
+                        _localizationService.GetString("SoftCapReached") ?? "Bonus cap reached!",
                         "warning");
                 }
 
@@ -1847,7 +2028,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
                 if (state.IsSoftCapActive && state.SoftCapReductionPercent > 0)
                 {
                     // GAM-6: Differenzierter Text mit "Einkommen" Prefix
-                    var incomeLabel = _localizationService.GetString("SoftCapIncome") ?? "Einkommen";
+                    var incomeLabel = _localizationService.GetString("SoftCapIncome") ?? "Income";
                     HeaderVM.SoftCapText = $"{incomeLabel} -{state.SoftCapReductionPercent}%";
                 }
                 else if (!state.IsSoftCapActive)
@@ -1892,9 +2073,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
     {
         string[] tabNames = [
             _localizationService.GetString("TabWerkstatt") ?? "Workshop",
-            _localizationService.GetString("TabImperium") ?? "Imperium",
-            _localizationService.GetString("TabMissionen") ?? "Missionen",
-            _localizationService.GetString("TabGilde") ?? "Gilde",
+            _localizationService.GetString("TabImperium") ?? "Empire",
+            _localizationService.GetString("TabMissionen") ?? "Missions",
+            _localizationService.GetString("TabGilde") ?? "Guild",
             _localizationService.GetString("TabShop") ?? "Shop"
         ];
 
@@ -1975,7 +2156,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         if (quitRisk > 0)
         {
             HeaderVM.WorkerWarningText = string.Format(
-                _localizationService.GetString("WorkerQuitRisk") ?? "{0} Arbeiter drohen zu kündigen!",
+                _localizationService.GetString("WorkerQuitRisk") ?? "{0} workers at risk of quitting!",
                 quitRisk) + context;
         }
         else if (unhappyCount > 0)
@@ -1987,7 +2168,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         else if (tiredCount > 0)
         {
             HeaderVM.WorkerWarningText = string.Format(
-                _localizationService.GetString("WorkerTired") ?? "{0} Arbeiter erschöpft",
+                _localizationService.GetString("WorkerTired") ?? "{0} workers exhausted",
                 tiredCount) + context;
         }
     }
@@ -2078,6 +2259,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         if (_gameLoopService.IsRunning)
             _gameLoopService.Pause();
 
+        // v2.0.37: Live-Orders pausieren — Countdown laeuft im Background nicht weiter (Cap 5min).
+        _gameStateService.PauseAllLiveOrders();
+
         // Benachrichtigungen planen wenn aktiviert
         if (_gameStateService.Settings.NotificationsEnabled)
             _notificationService?.ScheduleGameNotifications(_gameStateService.State);
@@ -2097,6 +2281,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         if (!_gameLoopService.IsRunning)
             _gameLoopService.Resume();
 
+        // v2.0.37: Live-Orders fortsetzen — akkumulierte Pause wird auf 5min gecappt.
+        _gameStateService.ResumeAllLiveOrders();
+
         // Render-Timer der MainView wieder starten
         PauseStateChanged?.Invoke(false);
     }
@@ -2109,8 +2296,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             var text = order.IsPremium
-                ? _localizationService.GetString("LiveOrderSpawnedPremiumToast") ?? "VIP-Auftrag verfuegbar!"
-                : _localizationService.GetString("LiveOrderSpawnedToast") ?? "Neuer Live-Auftrag!";
+                ? _localizationService.GetString("LiveOrderSpawnedPremiumToast") ?? "VIP order incoming!"
+                : _localizationService.GetString("LiveOrderSpawnedToast") ?? "New live order available!";
             FloatingTextRequested?.Invoke(text, order.IsPremium ? "premium" : "info");
             // Nach Spawn neu rendern, damit der Auftrag direkt sichtbar ist
             EconomyVM.RefreshOrders();
@@ -2158,6 +2345,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         _gameStateService.OrderCompleted -= OnOrderCompleted;
         _gameStateService.StateLoaded -= OnStateLoaded;
         _gameStateService.MiniGameResultRecorded -= OnMiniGameResultRecorded;
+        _gameStateService.ReputationTierChanged -= OnReputationTierChanged;
         _gameLoopService.OnTick -= OnGameTick;
         _gameLoopService.MasterToolUnlocked -= OnMasterToolUnlocked;
         _gameLoopService.DeliveryArrived -= OnDeliveryArrived;
@@ -2176,11 +2364,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable, Services
         DialogVM.FloatingTextRequested -= _dialogFloatingTextHandler;
         DialogVM.Cleanup();
 
+        // v2.0.36: Notification-Center Event abmelden
+        NotificationCenterVM.ItemActivated -= OnNotificationItemActivated;
+
+        // v2.1.0: BP-Tier-Up Event abmelden
+        BattlePassViewModel.Service.TierUpReached -= OnBattlePassTierUp;
+
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
         _prestigeService.MilestoneReached -= OnPrestigeMilestoneReached;
+        _prestigeService.CinematicReady -= OnPrestigeCinematicReady;
         if (_rebirthService != null)
             _rebirthService.RebirthCompleted -= OnRebirthCompleted;
         _workerService.WorkerLevelUp -= OnWorkerLevelUp;
+        _workerService.InternReadyForPromotion -= OnInternReadyForPromotion;
         _backPressHelper.ExitHintRequested -= OnBackPressExitHint;
 
         // EconomyFeatureVM Events abmelden

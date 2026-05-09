@@ -219,7 +219,7 @@ public sealed class TournamentService : ITournamentService
                     {
                         leaderboard.Add(new TournamentLeaderboardEntry
                         {
-                            Name = _playGamesService.PlayerDisplayName ?? "Du",
+                            Name = _playGamesService.PlayerDisplayName ?? "You",
                             Score = tournament.TotalScore,
                             IsPlayer = true
                         });

@@ -164,6 +164,24 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             ActiveSubTab = tab;
     }
 
+    /// <summary>
+    /// Polling fuer Co-op + Auktion startet/stoppt mit dem Combat-Tab (v2.1.0).
+    /// Spart Firebase-Requests + Battery wenn der Tab nicht offen ist.
+    /// </summary>
+    partial void OnActiveSubTabChanged(GuildSubTab value)
+    {
+        if (value == GuildSubTab.Combat)
+        {
+            CoopOrderVM.StartPolling();
+            AuctionVM.StartPolling();
+        }
+        else
+        {
+            CoopOrderVM.StopPolling();
+            AuctionVM.StopPolling();
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES - Spielername-Dialog
     // ═══════════════════════════════════════════════════════════════════════
@@ -436,6 +454,12 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     public GuildChatViewModel ChatVM { get; private set; } = null!;
     public GuildWarViewModel WarVM { get; private set; } = null!;
 
+    /// <summary>Co-op-Auftraege ViewModel (v2.1.0). Polling laeuft beim Combat-Tab.</summary>
+    public GuildCoopOrderViewModel CoopOrderVM { get; }
+
+    /// <summary>Worker-Auktion ViewModel (v2.1.0). Polling laeuft beim Combat-Tab.</summary>
+    public ViewModels.Auctions.WorkerAuctionViewModel AuctionVM { get; }
+
     public GuildViewModel(
         IGameStateService gameStateService,
         IGuildFacade facade,
@@ -443,7 +467,9 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         IDialogService dialogService,
         GuildWarSeasonViewModel warSeasonViewModel,
         GuildBossViewModel bossViewModel,
-        GuildHallViewModel hallViewModel)
+        GuildHallViewModel hallViewModel,
+        GuildCoopOrderViewModel coopOrderViewModel,
+        ViewModels.Auctions.WorkerAuctionViewModel auctionViewModel)
     {
         _gameStateService = gameStateService;
         _facade = facade;
@@ -453,6 +479,26 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         WarSeasonViewModel = warSeasonViewModel;
         BossViewModel = bossViewModel;
         HallViewModel = hallViewModel;
+        CoopOrderVM = coopOrderViewModel;
+        AuctionVM = auctionViewModel;
+
+        // v2.1.0: Co-op-Picker-Provider verdrahten — liefert alle Gildenmitglieder ausser dem Spieler selbst.
+        // Member-Liste wird vom GuildViewModel verwaltet (RefreshGuildDetails) — Provider wird zur
+        // Click-Zeit (OpenPicker) ausgewertet damit immer die aktuelle Liste verwendet wird.
+        CoopOrderVM.AvailableMembersProvider = () =>
+        {
+            var list = new List<(string PlayerId, string Name)>();
+            foreach (var m in Members)
+            {
+                if (m.IsPlayer) continue;
+                if (string.IsNullOrEmpty(m.PlayerId)) continue;
+                list.Add((m.PlayerId, m.Name));
+            }
+            return list;
+        };
+
+        // v2.1.0: Co-op-NavigationRequested an Parent weiterleiten (MainViewModel routet zum MiniGame).
+        CoopOrderVM.NavigationRequested += route => NavigationRequested?.Invoke(route);
 
         // Thin-Wrapper-Sub-VMs fuer ViewLocator (Phase 4 17.04.2026)
         ResearchVM = new GuildResearchViewModel(this);
@@ -554,7 +600,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             else
             {
                 // Spieler als verfügbar registrieren (für Einladungs-Browser)
-                await _facade.Guild.RegisterAsAvailableAsync();
+                await _facade.Invite.RegisterAsAvailableAsync();
 
                 // Einladungs-Inbox laden
                 await LoadReceivedInvitesAsync();
@@ -652,8 +698,8 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
                 CelebrationRequested?.Invoke();
 
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("GuildCreated") ?? "Gilde erfolgreich erstellt!");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("GuildCreated") ?? "Guild created successfully!");
             }
             else
             {
@@ -704,15 +750,15 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
                 CelebrationRequested?.Invoke();
 
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("GuildJoined") ?? "Gilde beigetreten!");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("GuildJoined") ?? "Joined the guild!");
             }
             else
             {
                 ViewState = GuildViewState.Browse;
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("GuildFull") ?? "Gilde ist voll.");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("GuildFull") ?? "Guild is full.");
             }
         }
         catch
@@ -730,10 +776,10 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     {
         if (_isBusy) return;
         var confirmed = await _dialogService.ShowConfirmDialog(
-            _localizationService.GetString("LeaveGuildTitle") ?? "Gilde verlassen",
-            _localizationService.GetString("LeaveGuildConfirm") ?? "Willst du die Gilde wirklich verlassen?",
-            _localizationService.GetString("Leave") ?? "Verlassen",
-            _localizationService.GetString("Cancel") ?? "Abbrechen");
+            _localizationService.GetString("LeaveGuildTitle") ?? "Leave Guild",
+            _localizationService.GetString("LeaveGuildConfirm") ?? "Do you really want to leave the guild?",
+            _localizationService.GetString("Leave") ?? "Leave",
+            _localizationService.GetString("Cancel") ?? "Cancel");
         if (!confirmed) return;
         _isBusy = true;
         try
@@ -748,8 +794,8 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
                 ViewState = GuildViewState.Browse;
 
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("GuildLeft") ?? "Gilde verlassen.");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("GuildLeft") ?? "Left the guild.");
             }
             else
             {
@@ -788,7 +834,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
                 await RefreshGuildDetailsAsync();
 
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
+                    _localizationService.GetString("Guild") ?? "Guild",
                     string.Format(
                         _localizationService.GetString("GuildContributed") ?? "€{0} beigetragen!",
                         MoneyFormatter.Format(contribution, 0)));
@@ -846,7 +892,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             if (success)
             {
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("GuildResearchTitle") ?? "Gilden-Forschung",
+                    _localizationService.GetString("GuildResearchTitle") ?? "Guild Research",
                     string.Format(
                         _localizationService.GetString("GuildResearchContributed") ?? "€{0} beigetragen!",
                         MoneyFormatter.Format(amount, 0)));
@@ -913,12 +959,12 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     {
         if (string.IsNullOrEmpty(GuildInviteCode)) return;
 
-        var shareText = $"{(_localizationService.GetString("InviteCode") ?? "Einladungs-Code")}: {GuildInviteCode}";
-        UriLauncher.ShareText(shareText, _localizationService.GetString("ShareCode") ?? "Code teilen");
+        var shareText = $"{(_localizationService.GetString("InviteCode") ?? "Invite Code")}: {GuildInviteCode}";
+        UriLauncher.ShareText(shareText, _localizationService.GetString("ShareCode") ?? "Share Code");
 
         MessageRequested?.Invoke(
-            _localizationService.GetString("Guild") ?? "Innung",
-            $"{(_localizationService.GetString("CodeCopied") ?? "Code kopiert")}: {GuildInviteCode}");
+            _localizationService.GetString("Guild") ?? "Guild",
+            $"{(_localizationService.GetString("CodeCopied") ?? "Code copied")}: {GuildInviteCode}");
     }
 
     [RelayCommand]
@@ -929,21 +975,21 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         _isBusy = true;
         try
         {
-            var success = await _facade.Guild.JoinByInviteCodeAsync(JoinCodeInput.Trim());
+            var success = await _facade.Invite.JoinByInviteCodeAsync(JoinCodeInput.Trim());
             if (success)
             {
                 JoinCodeInput = "";
                 CelebrationRequested?.Invoke();
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("GuildJoined") ?? "Gilde beigetreten!");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("GuildJoined") ?? "Joined the guild!");
                 await LoadGuildDataInternalAsync();
             }
             else
             {
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("GuildCodeInvalid") ?? "Ungültiger Code");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("GuildCodeInvalid") ?? "Invalid code");
             }
         }
         finally
@@ -959,9 +1005,9 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         _isBusy = true;
         try
         {
-            var players = await _facade.Guild.BrowseAvailablePlayersAsync();
-            var inviteText = _localizationService.GetString("InvitePlayer") ?? "Einladen";
-            var invitedText = _localizationService.GetString("InvitedBadge") ?? "Eingeladen";
+            var players = await _facade.Invite.BrowseAvailablePlayersAsync();
+            var inviteText = _localizationService.GetString("InvitePlayer") ?? "Invite Player";
+            var invitedText = _localizationService.GetString("InvitedBadge") ?? "Invited";
             var displays = new ObservableCollection<AvailablePlayerDisplay>();
             foreach (var p in players)
             {
@@ -994,19 +1040,19 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         try
         {
             // Direkte Einladung an den Spieler senden (Firebase-basiert)
-            var success = await _facade.Guild.SendInviteAsync(player.Uid);
+            var success = await _facade.Invite.SendInviteAsync(player.Uid);
             if (success)
             {
                 player.IsInvited = true;
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("InviteSent") ?? "Einladung gesendet");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("InviteSent") ?? "Invite sent");
             }
             else
             {
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("InviteFailed") ?? "Einladung fehlgeschlagen");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("InviteFailed") ?? "Invite failed");
             }
         }
         finally
@@ -1023,7 +1069,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     {
         try
         {
-            var invites = await _facade.Guild.GetReceivedInvitesAsync();
+            var invites = await _facade.Invite.GetReceivedInvitesAsync();
             var maxMembers = _facade.Guild.GetMaxMembers();
             var displays = new ObservableCollection<GuildInvitationDisplay>();
             foreach (var (guildId, invite) in invites)
@@ -1036,7 +1082,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
                     GuildColor = invite.GuildColor,
                     GuildLevel = invite.GuildLevel,
                     MemberDisplay = $"{invite.MemberCount}/{maxMembers}",
-                    InvitedByDisplay = $"{_localizationService.GetString("InvitedByPrefix") ?? "Eingeladen von:"} {invite.InvitedBy}"
+                    InvitedByDisplay = $"{_localizationService.GetString("InvitedByPrefix") ?? "Invited by:"} {invite.InvitedBy}"
                 });
             }
             ReceivedInvites = displays;
@@ -1058,20 +1104,20 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         _isBusy = true;
         try
         {
-            var success = await _facade.Guild.AcceptInviteAsync(invite.GuildId);
+            var success = await _facade.Invite.AcceptInviteAsync(invite.GuildId);
             if (success)
             {
                 CelebrationRequested?.Invoke();
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("GuildJoined") ?? "Gilde beigetreten!");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("GuildJoined") ?? "Joined the guild!");
                 await LoadGuildDataInternalAsync();
             }
             else
             {
                 MessageRequested?.Invoke(
-                    _localizationService.GetString("Guild") ?? "Innung",
-                    _localizationService.GetString("GuildFull") ?? "Gilde ist voll");
+                    _localizationService.GetString("Guild") ?? "Guild",
+                    _localizationService.GetString("GuildFull") ?? "Guild is full.");
             }
         }
         finally
@@ -1087,7 +1133,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         _isBusy = true;
         try
         {
-            await _facade.Guild.DeclineInviteAsync(invite.GuildId);
+            await _facade.Invite.DeclineInviteAsync(invite.GuildId);
             ReceivedInvites.Remove(invite);
             HasReceivedInvites = ReceivedInvites.Count > 0;
             ReceivedInviteCount = ReceivedInvites.Count;
@@ -1211,11 +1257,11 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
             ChatSubtitle = latest.Count > 0
                 ? latest[^1].Text
-                : (_localizationService.GetString("NoChatMessages") ?? "Noch keine Nachrichten");
+                : (_localizationService.GetString("NoChatMessages") ?? "No messages");
         }
         catch
         {
-            ChatSubtitle = _localizationService.GetString("NoChatMessages") ?? "Noch keine Nachrichten";
+            ChatSubtitle = _localizationService.GetString("NoChatMessages") ?? "No messages";
         }
     }
 
@@ -1238,7 +1284,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             await LoadWarStatusAsync();
 
             MessageRequested?.Invoke(
-                _localizationService.GetString("GuildWarTitle") ?? "Gildenkrieg",
+                _localizationService.GetString("GuildWarTitle") ?? "Guild War",
                 string.Format(
                     _localizationService.GetString("WarContribute") ?? "+{0} Punkte beigetragen!",
                     points));
@@ -1280,20 +1326,20 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
                 var remaining = ActiveWar!.EndDate - DateTime.UtcNow;
                 WarTimeRemaining = remaining > TimeSpan.Zero
                     ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}min"
-                    : (_localizationService.GetString("WarResult") ?? "Ergebnis steht fest");
+                    : (_localizationService.GetString("WarResult") ?? "Result is in");
                 WarStatusText = $"{MoneyFormatter.Format(seasonData.OwnScore, 0)} vs {MoneyFormatter.Format(seasonData.OpponentScore, 0)}";
                 WarSubtitle = WarStatusText;
             }
             else
             {
                 HasActiveWar = false;
-                WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "Kein aktiver Krieg";
+                WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "No active war";
             }
         }
         catch
         {
             HasActiveWar = false;
-            WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "Kein aktiver Krieg";
+            WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "No active war";
         }
     }
 
@@ -1337,9 +1383,9 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     /// </summary>
     public void UpdateLocalizedTexts()
     {
-        Title = _localizationService.GetString("Guild") ?? "Innung";
-        ChatSubtitle = _localizationService.GetString("NoChatMessages") ?? "Noch keine Nachrichten";
-        WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "Kein aktiver Krieg";
+        Title = _localizationService.GetString("Guild") ?? "Guild";
+        ChatSubtitle = _localizationService.GetString("NoChatMessages") ?? "No messages";
+        WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "No active war";
         WarSeasonViewModel.UpdateLocalizedTexts();
         BossViewModel.UpdateLocalizedTexts();
         HallViewModel.UpdateLocalizedTexts();
@@ -1366,7 +1412,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
             var bonus = membership.IncomeBonus;
             IncomeBonusDisplay = $"+{bonus * 100:F0}%";
-            IncomeBonusDetailDisplay = $"+{bonus * 100:F0}% {(_localizationService.GetString("GuildIncomeBonus") ?? "Einkommens-Bonus")}";
+            IncomeBonusDetailDisplay = $"+{bonus * 100:F0}% {(_localizationService.GetString("GuildIncomeBonus") ?? "Income Bonus")}";
         }
         else
         {
@@ -1395,24 +1441,24 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
         var parts = new List<string>();
         if (membership.IncomeBonus > 0)
-            parts.Add($"+{membership.IncomeBonus * 100:F0}% {(_localizationService.GetString("Income") ?? "Einkommen")}");
+            parts.Add($"+{membership.IncomeBonus * 100:F0}% {(_localizationService.GetString("Income") ?? "Income")}");
         if (membership.ResearchCostReduction > 0)
-            parts.Add($"-{membership.ResearchCostReduction * 100:F0}% {(_localizationService.GetString("Costs") ?? "Kosten")}");
+            parts.Add($"-{membership.ResearchCostReduction * 100:F0}% {(_localizationService.GetString("Costs") ?? "Costs")}");
         if (membership.ResearchXpBonus > 0)
             parts.Add($"+{membership.ResearchXpBonus * 100:F0}% XP");
         if (membership.ResearchEfficiencyBonus > 0)
-            parts.Add($"+{membership.ResearchEfficiencyBonus * 100:F0}% {(_localizationService.GetString("Efficiency") ?? "Effizienz")}");
+            parts.Add($"+{membership.ResearchEfficiencyBonus * 100:F0}% {(_localizationService.GetString("Efficiency") ?? "Efficiency")}");
 
         if (parts.Count > 0)
         {
             var bonusLabel = _localizationService.GetString("GuildBonusActiveOffline")
-                ?? "Gilden-Boni aktiv (offline)";
+                ?? "Guild bonuses active (offline)";
             CachedBonusInfo = $"{bonusLabel}: {string.Join(", ", parts)}";
         }
         else
         {
             CachedBonusInfo = _localizationService.GetString("GuildBonusActiveOffline")
-                ?? "Gilden-Boni aktiv (offline)";
+                ?? "Guild bonuses active (offline)";
         }
     }
 
@@ -1436,7 +1482,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
         var bonus = detail.IncomeBonus;
         IncomeBonusDisplay = $"+{bonus * 100:F0}%";
-        IncomeBonusDetailDisplay = $"+{bonus * 100:F0}% {(_localizationService.GetString("GuildIncomeBonus") ?? "Einkommens-Bonus")}";
+        IncomeBonusDetailDisplay = $"+{bonus * 100:F0}% {(_localizationService.GetString("GuildIncomeBonus") ?? "Income Bonus")}";
 
         // Mitglieder aktualisieren
         var memberDisplays = new ObservableCollection<GuildMemberDisplay>();
@@ -1446,14 +1492,15 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             {
                 Name = m.Name,
                 RoleDisplay = m.Role == "leader"
-                    ? (_localizationService.GetString("GuildLeaderRole") ?? "Gründer")
-                    : (_localizationService.GetString("GuildMemberRole") ?? "Mitglied"),
+                    ? (_localizationService.GetString("GuildLeaderRole") ?? "Founder")
+                    : (_localizationService.GetString("GuildMemberRole") ?? "Member"),
                 ContributionDisplay = MoneyFormatter.Format(m.Contribution, 0),
-                IsPlayer = m.IsCurrentPlayer
+                IsPlayer = m.IsCurrentPlayer,
+                PlayerId = m.Uid // v2.1.0: PlayerId fuer Co-op-Einladungen (Uid IST die PlayerId — siehe GuildService)
             });
         }
         Members = memberDisplays;
-        MembersHeaderDisplay = $"{(_localizationService.GetString("Members") ?? "Mitglieder")} ({Members.Count})";
+        MembersHeaderDisplay = $"{(_localizationService.GetString("Members") ?? "Members")} ({Members.Count})";
 
         // Gilden-Forschungen laden
         await LoadGuildResearchAsync();
@@ -1463,7 +1510,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         await LoadWarStatusAsync();
 
         // Einladungs-Code laden (für Invite-Seite)
-        var code = await _facade.Guild.GetOrCreateInviteCodeAsync();
+        var code = await _facade.Invite.GetOrCreateInviteCodeAsync();
         GuildInviteCode = code ?? "";
     }
 
@@ -1548,7 +1595,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
 
         if (remaining <= TimeSpan.Zero)
         {
-            ActiveResearchCountdown = _localizationService.GetString("GuildResearchDone") ?? "Fertig!";
+            ActiveResearchCountdown = _localizationService.GetString("GuildResearchDone") ?? "Done!";
         }
         else
         {
@@ -1635,6 +1682,10 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         HallViewModel.MessageRequested -= _hallMsgHandler;
         HallViewModel.CelebrationRequested -= _hallCelebrationHandler;
         HallViewModel.FloatingTextRequested -= _hallFloatingTextHandler;
+
+        // Co-op + Auktion Polling stoppen (v2.1.0)
+        CoopOrderVM.StopPolling();
+        AuctionVM.StopPolling();
     }
 
     /// <summary>
@@ -1655,10 +1706,10 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
             var league = _facade.WarSeason.GetCurrentLeague();
             LeagueQuickStatus = league switch
             {
-                GuildLeague.Bronze => _localizationService.GetString("LeagueBronze") ?? "Bronze",
-                GuildLeague.Silver => _localizationService.GetString("LeagueSilver") ?? "Silber",
-                GuildLeague.Gold => _localizationService.GetString("LeagueGold") ?? "Gold",
-                GuildLeague.Diamond => _localizationService.GetString("LeagueDiamond") ?? "Diamant",
+                GuildLeague.Bronze => _localizationService.GetString("LeagueBronze") ?? "Bronze League",
+                GuildLeague.Silver => _localizationService.GetString("LeagueSilver") ?? "Silver League",
+                GuildLeague.Gold => _localizationService.GetString("LeagueGold") ?? "Gold League",
+                GuildLeague.Diamond => _localizationService.GetString("LeagueDiamond") ?? "Diamond League",
                 _ => "Bronze"
             };
 
@@ -1708,7 +1759,7 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
     {
         CelebrationRequested?.Invoke();
         MessageRequested?.Invoke(
-            _localizationService.GetString("GuildAchievementUnlocked") ?? "Gilden-Erfolg!",
+            _localizationService.GetString("GuildAchievementUnlocked") ?? "Guild Achievement Unlocked!",
             $"{achievement.Name} (+{achievement.GoldenScrewReward} GS)");
     }
 
@@ -1726,12 +1777,12 @@ public sealed partial class GuildViewModel : ViewModelBase, INavigable, IDisposa
         var diff = DateTime.UtcNow - lastActive;
 
         if (diff.TotalHours < 24)
-            return _localizationService.GetString("Today") ?? "Heute";
+            return _localizationService.GetString("Today") ?? "Today";
         if (diff.TotalHours < 48)
-            return _localizationService.GetString("Yesterday") ?? "Gestern";
+            return _localizationService.GetString("Yesterday") ?? "Yesterday";
 
         var days = (int)diff.TotalDays;
-        var template = _localizationService.GetString("DaysAgo") ?? "vor {0} Tagen";
+        var template = _localizationService.GetString("DaysAgo") ?? "{0} days ago";
         return string.Format(template, days);
     }
 }
@@ -1749,6 +1800,9 @@ public class GuildMemberDisplay
     public string RoleDisplay { get; set; } = "";
     public string ContributionDisplay { get; set; } = "";
     public bool IsPlayer { get; set; }
+
+    /// <summary>v2.1.0: PlayerId fuer Co-op-Auftrags-Einladungen + Direct-Messages.</summary>
+    public string PlayerId { get; set; } = "";
 }
 
 /// <summary>

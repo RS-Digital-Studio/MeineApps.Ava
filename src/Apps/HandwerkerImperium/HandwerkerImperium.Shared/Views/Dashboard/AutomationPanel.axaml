@@ -9,6 +9,7 @@
 
         <Border Classes="Card" Padding="10,8" Margin="0,0,0,4"
                 AutomationProperties.AutomationId="Dashboard_Border_Automation">
+          <StackPanel Spacing="8">
           <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="6">
 
             <!-- AutoCollect (Lv15+) -->
@@ -120,6 +121,54 @@
             </Border>
 
           </Grid>
+
+          <!-- v2.0.36: Sub-Toggles fuer differenzierte Auto-Play-Steuerung. -->
+          <StackPanel Spacing="4"
+                      IsVisible="{Binding IsAutoAcceptUnlocked}"
+                      AutomationProperties.AutomationId="Dashboard_Panel_AutomationSubToggles">
+            <Border CornerRadius="6" Padding="8,6"
+                    Background="{DynamicResource SurfaceBrush}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate AutomationAutoAcceptOnlyStandard}"
+                             FontSize="12" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{loc:Translate AutomationAutoAcceptOnlyStandardDesc}"
+                             FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1"
+                              IsChecked="{Binding AutoAcceptOnlyStandard}"
+                              OnContent="" OffContent=""
+                              MinHeight="44"
+                              VerticalAlignment="Center"
+                              AutomationProperties.AutomationId="Dashboard_Toggle_AutoAcceptOnlyStandard" />
+              </Grid>
+            </Border>
+
+            <Border CornerRadius="6" Padding="8,6"
+                    Background="{DynamicResource SurfaceBrush}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate AutomationAutoCompleteSkipLive}"
+                             FontSize="12" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{loc:Translate AutomationAutoCompleteSkipLiveDesc}"
+                             FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1"
+                              IsChecked="{Binding AutoCompleteSkipLiveOrders}"
+                              OnContent="" OffContent=""
+                              MinHeight="44"
+                              VerticalAlignment="Center"
+                              AutomationProperties.AutomationId="Dashboard_Toggle_AutoCompleteSkipLive" />
+              </Grid>
+            </Border>
+          </StackPanel>
+          </StackPanel>
         </Border>
 
 </UserControl>

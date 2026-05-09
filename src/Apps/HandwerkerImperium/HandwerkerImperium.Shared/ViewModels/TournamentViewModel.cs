@@ -111,8 +111,8 @@ public sealed partial class TournamentViewModel : ViewModelBase, INavigable
         if (!_tournamentService.CanEnter)
         {
             _dialogService.ShowAlertDialog(
-                _localizationService.GetString("TournamentFull") ?? "Turnier",
-                _localizationService.GetString("TournamentNoEntries") ?? "Keine Teilnahmen mehr verfügbar.",
+                _localizationService.GetString("TournamentFull") ?? "Tournament",
+                _localizationService.GetString("TournamentNoEntries") ?? "No entries available.",
                 _localizationService.GetString("OK") ?? "OK");
             return;
         }
@@ -137,7 +137,7 @@ public sealed partial class TournamentViewModel : ViewModelBase, INavigable
             };
 
             _dialogService.ShowAlertDialog(
-                _localizationService.GetString("TournamentReward") ?? "Turnier-Belohnung",
+                _localizationService.GetString("TournamentReward") ?? "Tournament Reward",
                 $"{tierName}: {screws} \u2699",
                 _localizationService.GetString("OK") ?? "OK");
 
@@ -168,7 +168,7 @@ public sealed partial class TournamentViewModel : ViewModelBase, INavigable
         // Play Games Hinweis
         ShowPlayGamesHint = !_tournamentService.IsPlayGamesSignedIn;
         PlayGamesHint = ShowPlayGamesHint
-            ? _localizationService.GetString("TournamentSignInHint") ?? "Melde dich bei Play Games an für echte Gegner!"
+            ? _localizationService.GetString("TournamentSignInHint") ?? "Sign in to Play Games"
             : "";
 
         if (tournament != null && IsTournamentActive)
@@ -268,7 +268,7 @@ public sealed partial class TournamentViewModel : ViewModelBase, INavigable
     /// </summary>
     public void UpdateLocalizedTexts()
     {
-        Title = _localizationService.GetString("Tournament") ?? "Turnier";
+        Title = _localizationService.GetString("Tournament") ?? "Tournament";
         RefreshTournament();
     }
 
@@ -278,14 +278,14 @@ public sealed partial class TournamentViewModel : ViewModelBase, INavigable
 
     private string GetMiniGameName(MiniGameType type) => type switch
     {
-        MiniGameType.Sawing => _localizationService.GetString("MiniGameSawing") ?? "Sägen",
-        MiniGameType.PipePuzzle => _localizationService.GetString("MiniGamePipePuzzle") ?? "Rohr-Puzzle",
-        MiniGameType.WiringGame => _localizationService.GetString("MiniGameWiring") ?? "Verkabelung",
-        MiniGameType.PaintingGame => _localizationService.GetString("MiniGamePainting") ?? "Streichen",
-        MiniGameType.RoofTiling => _localizationService.GetString("MiniGameRoofTiling") ?? "Dachdecken",
-        MiniGameType.Blueprint => _localizationService.GetString("MiniGameBlueprint") ?? "Bauplan",
-        MiniGameType.DesignPuzzle => _localizationService.GetString("MiniGameDesignPuzzle") ?? "Grundriss",
-        MiniGameType.Inspection => _localizationService.GetString("MiniGameInspection") ?? "Inspektion",
+        MiniGameType.Sawing => _localizationService.GetString("MiniGameSawing") ?? "Sawing",
+        MiniGameType.PipePuzzle => _localizationService.GetString("MiniGamePipePuzzle") ?? "Pipe Puzzle",
+        MiniGameType.WiringGame => _localizationService.GetString("MiniGameWiring") ?? "Wiring",
+        MiniGameType.PaintingGame => _localizationService.GetString("MiniGamePainting") ?? "Painting",
+        MiniGameType.RoofTiling => _localizationService.GetString("MiniGameRoofTiling") ?? "Roof Tiling",
+        MiniGameType.Blueprint => _localizationService.GetString("MiniGameBlueprint") ?? "Blueprint",
+        MiniGameType.DesignPuzzle => _localizationService.GetString("MiniGameDesignPuzzle") ?? "Design Puzzle",
+        MiniGameType.Inspection => _localizationService.GetString("MiniGameInspection") ?? "Inspection",
         _ => type.ToString()
     };
 }

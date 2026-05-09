@@ -367,9 +367,9 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
             WelcomeOfferTitle = _localizationService.GetString("WelcomeBackTitle") ?? "Welcome Back!";
             WelcomeOfferDescription = offer.Type switch
             {
-                WelcomeBackOfferType.Premium => _localizationService.GetString("WelcomeBackPremium") ?? "Premium welcome package!",
-                WelcomeBackOfferType.StarterPack => _localizationService.GetString("StarterPackTitle") ?? "Starter pack bonus!",
-                _ => _localizationService.GetString("WelcomeBackStandard") ?? "We missed you!"
+                WelcomeBackOfferType.Premium => _localizationService.GetString("WelcomeBackPremium") ?? "It's been a while! Here's a special bonus for you.",
+                WelcomeBackOfferType.StarterPack => _localizationService.GetString("StarterPackTitle") ?? "Starter Pack",
+                _ => _localizationService.GetString("WelcomeBackStandard") ?? "We missed you! Here's a small welcome gift."
             };
             WelcomeOfferMoneyReward = MoneyFormatter.FormatCompact(offer.MoneyReward);
             WelcomeOfferScrewReward = offer.GoldenScrewReward > 0 ? $"+{offer.GoldenScrewReward}" : "";
@@ -493,7 +493,7 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
 
         // Kompakten Info-Text zusammenbauen (1 Zeile pro Tool)
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"{_localizationService.GetString("IncomeBonus") ?? "Einkommensbonus"}: +{totalBonus:P0}");
+        sb.AppendLine($"{_localizationService.GetString("IncomeBonus") ?? "Income Bonus"}: +{totalBonus:P0}");
         sb.AppendLine();
 
         foreach (var tool in allTools)
@@ -514,7 +514,7 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
             }
         }
 
-        var title = _localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge";
+        var title = _localizationService.GetString("MasterTools") ?? "Master Tools";
         _dialogService.ShowAlertDialog(title, sb.ToString().TrimEnd(), _localizationService.GetString("OK"));
     }
 
@@ -528,16 +528,16 @@ public sealed partial class MissionsFeatureViewModel : ViewModelBase, IDisposabl
         {
             "mt_golden_hammer" => $"Workshop Lv. 75",
             "mt_diamond_saw" => $"Workshop Lv. 150",
-            "mt_titanium_pliers" => $"150 {_localizationService.GetString("Orders") ?? "Aufträge"}",
+            "mt_titanium_pliers" => $"150 {_localizationService.GetString("Orders") ?? "Orders"}",
             "mt_brass_level" => $"300 Mini-Games",
             "mt_silver_wrench" => $"Workshop Lv. 300",
-            "mt_jade_brush" => $"75 {_localizationService.GetString("PerfectRating") ?? "Perfect"}",
-            "mt_crystal_chisel" => $"1x {_localizationService.GetString("PrestigeBronze") ?? "Bronze-Prestige"}",
+            "mt_jade_brush" => $"75 {_localizationService.GetString("PerfectRating") ?? "Perfect Ratings"}",
+            "mt_crystal_chisel" => $"1x {_localizationService.GetString("PrestigeBronze") ?? "Bronze"}",
             "mt_obsidian_drill" => $"Workshop Lv. 750",
-            "mt_ruby_blade" => $"1x {_localizationService.GetString("PrestigeSilver") ?? "Silber-Prestige"}",
+            "mt_ruby_blade" => $"1x {_localizationService.GetString("PrestigeSilver") ?? "Silver"}",
             "mt_emerald_toolbox" => $"Workshop Lv. 1500",
-            "mt_dragon_anvil" => $"1x {_localizationService.GetString("PrestigeGold") ?? "Gold-Prestige"}",
-            "mt_master_crown" => $"{_localizationService.GetString("AllToolsCollected") ?? "Alle anderen Werkzeuge"}",
+            "mt_dragon_anvil" => $"1x {_localizationService.GetString("PrestigeGold") ?? "Gold"}",
+            "mt_master_crown" => $"{_localizationService.GetString("AllToolsCollected") ?? "All other tools collected"}",
             _ => "?"
         };
     }

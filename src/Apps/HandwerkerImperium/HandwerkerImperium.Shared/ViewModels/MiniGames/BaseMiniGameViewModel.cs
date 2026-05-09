@@ -31,6 +31,16 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     protected bool _disposed;
     protected bool _isEnding;
 
+    /// <summary>
+    /// v2.1.0: Aktiver Co-op-Auftrag (Order-ID auf Firebase). Wird vom Co-op-Flow gesetzt,
+    /// bevor das MiniGame startet. Wenn != null, wird beim Spielende der Score an
+    /// <see cref="IGuildCoopOrderService.SubmitScoreAsync"/> uebermittelt.
+    /// </summary>
+    public static string? ActiveCoopOrderId { get; set; }
+
+    /// <summary>True wenn der aktuelle Spieler der Auftrags-Ersteller ist (Player1).</summary>
+    public static bool ActiveCoopIsPlayer1 { get; set; }
+
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
@@ -210,6 +220,30 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     protected virtual MiniGameType GetCurrentMiniGameType() => GameMiniGameType;
 
     /// <summary>
+    /// v2.1.0: Score-Mapping fuer Co-op-Auftraege. Aggregiert ueber alle Tasks der Order
+    /// (Durchschnitt aller Ratings). Fallback auf das aktuelle Rating wenn keine Order existiert.
+    /// </summary>
+    protected int ComputeCoopScore(MiniGameRating finalRating)
+    {
+        var order = _gameStateService.GetActiveOrder();
+        if (order == null || order.TaskResults.Count == 0)
+            return RatingToScore(finalRating);
+
+        // Aggregierter Score: Durchschnitt aller Task-Ratings (Multi-Task-Order).
+        double sum = 0;
+        foreach (var r in order.TaskResults) sum += RatingToScore(r);
+        return (int)Math.Round(sum / order.TaskResults.Count);
+    }
+
+    private static int RatingToScore(MiniGameRating r) => r switch
+    {
+        MiniGameRating.Perfect => 100,
+        MiniGameRating.Good => 75,
+        MiniGameRating.Ok => 50,
+        _ => 0
+    };
+
+    /// <summary>
     /// Belohnungen berechnen und auf RewardAmount/XpAmount setzen.
     /// PaintingGame überschreibt für Combo-Multiplikator.
     /// </summary>
@@ -235,16 +269,24 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Optionaler Co-op-Service (v2.1.0). Wenn injiziert + <see cref="ActiveCoopOrderId"/>
+    /// gesetzt, wird der MiniGame-Score am Spielende an Firebase uebermittelt.
+    /// </summary>
+    protected readonly IGuildCoopOrderService? _coopOrderService;
+
     protected BaseMiniGameViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IGuildCoopOrderService? coopOrderService = null)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
         _rewardedAdService = rewardedAdService;
         _localizationService = localizationService;
+        _coopOrderService = coopOrderService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -388,16 +430,25 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
                 int penalty = CurrentStrategy.GetReputationPenaltyOnMiss();
                 if (penalty < 0)
                 {
-                    var rep = _gameStateService.State.Reputation;
-                    rep.ReputationScore = Math.Max(0, rep.ReputationScore + penalty);
+                    // v2.1.0: Reputation-Insurance — Charge verhindert Reputation-Verlust.
+                    var state = _gameStateService.State;
+                    if (state.RepShopInsuranceCharges > 0)
+                    {
+                        state.RepShopInsuranceCharges--;
+                        // FloatingText fuer Spieler-Feedback (kein Penalty).
+                    }
+                    else
+                    {
+                        state.Reputation.ReputationScore = Math.Max(0, state.Reputation.ReputationScore + penalty);
+                    }
                 }
                 // Restliche Tasks ueberspringen — Continue geht direkt zum Ende.
                 IsLastTask = true;
             }
         }
 
-        // Ergebnis aufzeichnen
-        _gameStateService.RecordMiniGameResult(rating);
+        // Ergebnis aufzeichnen — v2.0.36: Mit MiniGameType fuer Sliding-Window-Stats.
+        _gameStateService.RecordMiniGameResult(rating, GetCurrentMiniGameType());
 
         // Perfect-Rating für Auto-Complete zählen
         if (rating == MiniGameRating.Perfect)
@@ -455,6 +506,23 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
                     ? (int)Math.Round((double)totalStarSum / totalPossible * 3.0)
                     : 0;
                 starCount = Math.Clamp(starCount, 0, 3);
+            }
+
+            // v2.1.0: Co-op-Auftrag — Score uebermitteln wenn aktiv.
+            // Score-Mapping: Perfect=100, Good=75, Ok=50, Miss=0. Aggregiert ueber alle Tasks
+            // wenn Multi-Task-Order (Durchschnitt aller Ratings).
+            if (_coopOrderService != null && !string.IsNullOrEmpty(ActiveCoopOrderId))
+            {
+                int coopScore = ComputeCoopScore(rating);
+                var coopId = ActiveCoopOrderId;
+                var isP1 = ActiveCoopIsPlayer1;
+                _ = Task.Run(async () =>
+                {
+                    try { await _coopOrderService.SubmitScoreAsync(coopId, coopScore, isP1); }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Coop] SubmitScore-Fehler: {ex.Message}"); }
+                });
+                // Co-op-Order-State zuruecksetzen — naechstes MiniGame ist normal.
+                ActiveCoopOrderId = null;
             }
 
             // v2.0.35 Bugfix: Sterne werden NUR von der View via MiniGameEffectHelper.
@@ -615,8 +683,10 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
 
         // Mastery-Belohnung: Alle verbleibenden Tasks mit Perfect abschließen
         // Der Spieler hat sich Auto-Complete durch 30/15 Perfect-Ratings verdient
+        // v2.0.36: Mit MiniGameType fuer Sliding-Window-Stats.
+        var miniGameType = GetCurrentMiniGameType();
         while (!order.IsCompleted)
-            _gameStateService.RecordMiniGameResult(MiniGameRating.Perfect);
+            _gameStateService.RecordMiniGameResult(MiniGameRating.Perfect, miniGameType);
 
         await _audioService.PlaySoundAsync(GameSound.Perfect);
 
@@ -673,8 +743,18 @@ public abstract partial class BaseMiniGameViewModel : ViewModelBase, INavigable,
     {
         var state = _gameStateService.State;
         // Auto-Complete nur bei echten Aufträgen, nicht bei QuickJobs (die haben kein ActiveOrder)
-        bool hasActiveOrder = _gameStateService.GetActiveOrder() != null;
+        var activeOrder = _gameStateService.GetActiveOrder();
+        bool hasActiveOrder = activeOrder != null;
         bool canAuto = hasActiveOrder && _gameStateService.CanAutoComplete(gameType, state.IsPremium);
+
+        // v2.0.36: Bei AutoCompleteSkipLiveOrders wird Auto-Complete fuer Live-/VIP-Auftraege
+        // ausgeblendet — Spieler soll den Risk/Reward-Run aktiv steuern.
+        if (canAuto && state.Automation.AutoCompleteSkipLiveOrders
+            && activeOrder != null && (activeOrder.IsLive || activeOrder.IsPremium))
+        {
+            canAuto = false;
+        }
+
         CanAutoComplete = canAuto;
         if (canAuto)
         {

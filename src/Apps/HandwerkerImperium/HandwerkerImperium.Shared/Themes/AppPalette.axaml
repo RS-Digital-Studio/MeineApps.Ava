@@ -55,6 +55,12 @@
       <Color x:Key="OverlayColor">#80000000</Color>
       <Color x:Key="RippleColor">#20FFFFFF</Color>
 
+      <!-- Craft-Specific Badges (v2.0.36) -->
+      <!-- Live-Auftrag-Badge: kraftvoll-rot, signalisiert Zeitdruck -->
+      <Color x:Key="CraftLiveBadgeColor">#E53935</Color>
+      <!-- Premium-Order-Badge: violetter Royal-Akzent, hebt Premium von gewoehnlichen Live-Aufträgen ab -->
+      <Color x:Key="CraftPremiumBadgeColor">#7C3AED</Color>
+
       <!-- Gradient -->
       <Color x:Key="GradientStartColor">#261F16</Color>
       <Color x:Key="GradientMidColor">#1C1710</Color>
@@ -97,6 +103,10 @@
 
       <SolidColorBrush x:Key="OverlayBrush" Color="{DynamicResource OverlayColor}" />
       <SolidColorBrush x:Key="RippleBrush" Color="{DynamicResource RippleColor}" />
+
+      <!-- Craft-Badges (v2.0.36) -->
+      <SolidColorBrush x:Key="CraftLiveBadgeBrush" Color="{DynamicResource CraftLiveBadgeColor}" />
+      <SolidColorBrush x:Key="CraftPremiumBadgeBrush" Color="{DynamicResource CraftPremiumBadgeColor}" />
 
       <!-- Box Shadows -->
       <BoxShadows x:Key="CardShadow">0 1 3 0 #1A000000, 0 1 2 0 #26000000</BoxShadows>

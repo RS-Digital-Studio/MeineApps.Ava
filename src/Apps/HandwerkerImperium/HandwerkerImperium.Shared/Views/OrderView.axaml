@@ -10,6 +10,14 @@
              x:CompileBindings="True"
              AutomationProperties.AutomationId="Order_Root">
 
+  <UserControl.Styles>
+    <!-- Risk-Warning: rote Border wenn EV(Risk) &lt; EV(Standard) (v2.0.36) -->
+    <Style Selector="Button.RiskWarning">
+      <Setter Property="BorderBrush" Value="{DynamicResource ErrorBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Order_Grid_Root">
 
     <!-- ================================================================= -->
@@ -260,6 +268,15 @@
                   <TextBlock Text="{loc:Translate OrderStrategySafeDesc}"
                              FontSize="11" TextWrapping="Wrap"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <!-- v2.0.36: Erfolgsquote + Erwartungswert -->
+                  <TextBlock Text="{Binding SafeWinRateText}"
+                             FontSize="10"
+                             Foreground="{DynamicResource SuccessBrush}"
+                             AutomationProperties.AutomationId="Order_Txt_SafeWinRate" />
+                  <TextBlock Text="{Binding SafeExpectedValueText}"
+                             FontSize="10" Opacity="0.85"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Order_Txt_SafeEv" />
                 </StackPanel>
                 <TextBlock Grid.Column="2" Text="0,75x"
                            FontSize="13" FontWeight="Bold"
@@ -288,6 +305,16 @@
                              FontSize="11" TextWrapping="Wrap"
                              Foreground="{DynamicResource PrimaryContrastBrush}"
                              Opacity="0.85" />
+                  <!-- v2.0.36: Erfolgsquote + Erwartungswert -->
+                  <TextBlock Text="{Binding StandardWinRateText}"
+                             FontSize="10"
+                             Foreground="{DynamicResource PrimaryContrastBrush}"
+                             Opacity="0.9"
+                             AutomationProperties.AutomationId="Order_Txt_StandardWinRate" />
+                  <TextBlock Text="{Binding StandardExpectedValueText}"
+                             FontSize="10" Opacity="0.7"
+                             Foreground="{DynamicResource PrimaryContrastBrush}"
+                             AutomationProperties.AutomationId="Order_Txt_StandardEv" />
                 </StackPanel>
                 <TextBlock Grid.Column="2" Text="1,0x"
                            FontSize="13" FontWeight="Bold"
@@ -298,6 +325,7 @@
 
             <!-- Risiko: 2x Reward, hart, 0 bei Miss -->
             <Button Classes="Secondary"
+                    Classes.RiskWarning="{Binding IsRiskWorseThanStandard}"
                     AutomationProperties.AutomationId="Order_Btn_StrategyRisk"
                     Command="{Binding StartWithStrategyCommand}"
                     CommandParameter="Risk"
@@ -315,6 +343,15 @@
                   <TextBlock Text="{loc:Translate OrderStrategyRiskDesc}"
                              FontSize="11" TextWrapping="Wrap"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <!-- v2.0.36: Erfolgsquote + Erwartungswert -->
+                  <TextBlock Text="{Binding RiskWinRateText}"
+                             FontSize="10"
+                             Foreground="{DynamicResource ErrorBrush}"
+                             AutomationProperties.AutomationId="Order_Txt_RiskWinRate" />
+                  <TextBlock Text="{Binding RiskExpectedValueText}"
+                             FontSize="10" Opacity="0.85"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Order_Txt_RiskEv" />
                 </StackPanel>
                 <TextBlock Grid.Column="2" Text="2,0x"
                            FontSize="13" FontWeight="Bold"

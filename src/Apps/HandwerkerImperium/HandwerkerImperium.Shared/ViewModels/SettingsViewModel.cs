@@ -655,8 +655,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, INavigable
     {
         _contextualHintService.ResetAllHints();
         ShowAlert(
-            _localizationService.GetString("ResetTutorialHintsTitle") ?? "Tutorial zurückgesetzt",
-            _localizationService.GetString("ResetTutorialHintsMessage") ?? "Alle Tutorial-Hinweise werden beim nächsten Spielstart erneut angezeigt.",
+            _localizationService.GetString("ResetTutorialHintsTitle") ?? "Tutorial Reset",
+            _localizationService.GetString("ResetTutorialHintsMessage") ?? "All tutorial hints will be shown again on the next game start.",
             _localizationService.GetString("OK") ?? "OK");
     }
 

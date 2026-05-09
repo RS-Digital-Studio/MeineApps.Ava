@@ -62,10 +62,13 @@ public sealed partial class GameLoopService
         if (auto.AutoAcceptOrder && _gameStateService.IsAutoAcceptUnlocked && state.ActiveOrder == null && state.AvailableOrders.Count > 0)
         {
             // Besten Auftrag waehlen (hoechste Belohnung) - ohne LINQ um Allokationen zu vermeiden
+            // v2.0.36: Wenn AutoAcceptOnlyStandard aktiv, werden Live-/Premium-Auftraege uebersprungen.
             Order? bestOrder = null;
             for (int i = 0; i < state.AvailableOrders.Count; i++)
             {
                 var order = state.AvailableOrders[i];
+                if (auto.AutoAcceptOnlyStandard && (order.IsLive || order.IsPremium))
+                    continue;
                 if (bestOrder == null || order.BaseReward > bestOrder.BaseReward)
                     bestOrder = order;
             }

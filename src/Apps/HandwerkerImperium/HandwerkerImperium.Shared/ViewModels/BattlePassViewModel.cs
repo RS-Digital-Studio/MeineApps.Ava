@@ -89,6 +89,12 @@ public sealed partial class BattlePassViewModel : ViewModelBase, INavigable
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// v2.1.0: Direkter Zugriff auf den Service fuer MainViewModel-Subscriptions
+    /// (z.B. TierUpReached fuer Saison-Storyline-Trigger).
+    /// </summary>
+    public IBattlePassService Service => _battlePassService;
+
     public BattlePassViewModel(
         IGameStateService gameStateService,
         IBattlePassService battlePassService,
@@ -159,16 +165,16 @@ public sealed partial class BattlePassViewModel : ViewModelBase, INavigable
 
         // Premium-Upgrade-Preis (IAP 2,99 EUR)
         UpgradePriceDisplay = bp.IsPremium
-            ? _localizationService.GetString("AlreadyPurchased") ?? "Bereits gekauft"
+            ? _localizationService.GetString("AlreadyPurchased") ?? "Already Purchased"
             : $"2,99 € → {(_localizationService.GetString("PremiumPass") ?? "Premium Pass")}";
 
         // Verbleibende Zeit
         int daysLeft = bp.DaysRemaining;
         SeasonTimeRemainingDisplay = daysLeft > 1
-            ? $"{daysLeft} {(_localizationService.GetString("Days") ?? "Tage")}"
+            ? $"{daysLeft} {(_localizationService.GetString("Days") ?? "Days")}"
             : daysLeft == 1
-                ? $"1 {(_localizationService.GetString("Day") ?? "Tag")}"
-                : _localizationService.GetString("Expired") ?? "Abgelaufen";
+                ? $"1 {(_localizationService.GetString("Day") ?? "Day")}"
+                : _localizationService.GetString("Expired") ?? "Expired";
 
         // Tier-Displays aufbauen
         BuildTierDisplays(bp);
@@ -179,7 +185,7 @@ public sealed partial class BattlePassViewModel : ViewModelBase, INavigable
     /// </summary>
     public void UpdateLocalizedTexts()
     {
-        Title = _localizationService.GetString("BattlePass") ?? "Battle Pass";
+        Title = _localizationService.GetString("BattlePass") ?? "Season Pass";
         RefreshBattlePass();
     }
 

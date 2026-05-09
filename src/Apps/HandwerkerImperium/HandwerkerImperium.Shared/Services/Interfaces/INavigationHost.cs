@@ -86,6 +86,13 @@ public interface INavigationHost
     void CheckDeferredDialogs();
     void HideLuckySpinOverlay();
 
+    /// <summary>
+    /// Prueft ob ein neues Story-Kapitel freigeschaltet wurde (v2.0.36).
+    /// Wird z.B. nach QuickJob-Abschluss aufgerufen, damit Story Ch.2 sofort
+    /// nach dem ersten QuickJob feuert.
+    /// </summary>
+    void CheckForNewStoryChapter();
+
     // Double-Back-to-Exit (bleibt in MainViewModel wegen BackPressHelper-Ownership)
     bool HandleDoubleBackExit();
 }

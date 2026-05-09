@@ -4,6 +4,8 @@
              xmlns:models="using:HandwerkerImperium.Models"
              xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:guildViews="using:HandwerkerImperium.Views.Guild"
+             xmlns:auctionViews="using:HandwerkerImperium.Views.Auctions"
              x:Class="HandwerkerImperium.Views.GuildView"
              x:DataType="vm:GuildViewModel"
              x:CompileBindings="True">
@@ -796,6 +798,14 @@
                 </Grid>
               </Border>
             </Button>
+
+            <!-- Co-op-Auftraege (v2.1.0) -->
+            <guildViews:GuildCoopOrderView DataContext="{Binding CoopOrderVM}"
+                                            AutomationProperties.AutomationId="Guild_Combat_CoopOrders" />
+
+            <!-- Worker-Auktion (v2.1.0) -->
+            <auctionViews:WorkerAuctionView DataContext="{Binding AuctionVM}"
+                                             AutomationProperties.AutomationId="Guild_Combat_Auction" />
 
           </StackPanel>
 

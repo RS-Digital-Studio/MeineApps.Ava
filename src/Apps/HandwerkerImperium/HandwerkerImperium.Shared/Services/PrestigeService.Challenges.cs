@@ -121,7 +121,34 @@ public sealed partial class PrestigeService
             }
         }
 
+        // v2.0.37: Wiederholbarer Wochen-Meilenstein — alle 7 Prestiges +5 GS.
+        // Counter wird bei jedem Prestige hochgezaehlt (per IncrementWeeklyPrestigeCounter).
+        // Diese Methode resettet den Counter, wenn 7 erreicht ist.
+        if (prestige.PrestigesSinceLastWeeklyReward >= 7)
+        {
+            const int weeklyReward = 5;
+            prestige.PrestigesSinceLastWeeklyReward -= 7;
+            _gameStateService.AddGoldenScrews(weeklyReward, fromPurchase: false);
+            totalGsAwarded += weeklyReward;
+
+            MilestoneReached?.Invoke(this, new PrestigeMilestoneEventArgs
+            {
+                MilestoneId = "pm_weekly",
+                GoldenScrewReward = weeklyReward,
+                RequiredPrestigeCount = 7,
+            });
+        }
+
         return totalGsAwarded;
+    }
+
+    /// <summary>
+    /// v2.0.37: Erhoeht den Counter fuer den wiederholbaren Wochen-Meilenstein.
+    /// Wird vom DoPrestige-Pfad aufgerufen, BEVOR <see cref="CheckAndAwardMilestones"/> laeuft.
+    /// </summary>
+    public void IncrementWeeklyPrestigeCounter()
+    {
+        _gameStateService.State.Prestige.PrestigesSinceLastWeeklyReward++;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

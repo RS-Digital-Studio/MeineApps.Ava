@@ -109,7 +109,7 @@ public sealed class ResearchActiveRenderer : IDisposable
         float infoX = glassX + glassW + 20;
         float infoW = w - (infoX - x) - 16;
         DrawResearchInfo(canvas, infoX, y, infoW, h, researchName, timeRemaining, progress, branchColor,
-            runningLabel ?? "Forschung l\u00e4uft...");
+            runningLabel ?? "Research in progress...");
 
         // Fortschrittsbalken (unten)
         float barY = y + h - 10;

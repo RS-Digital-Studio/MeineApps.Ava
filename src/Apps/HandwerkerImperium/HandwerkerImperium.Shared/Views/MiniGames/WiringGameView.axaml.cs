@@ -231,10 +231,7 @@ public partial class WiringGameView : UserControl
     /// Gleiche MiniGameEffectHelper-Pattern wie SawingGameView.
     /// </summary>
     private async void OnGameCompleted(object? sender, int starCount)
-    {
-        try
-        {
-        await Dispatcher.UIThread.InvokeAsync(async () =>
+        => await AsyncExtensions.RunHandlerSafely(() => Dispatcher.UIThread.InvokeAsync(async () =>
         {
             // 1. Rating-Text einfaerben
             var ratingText = this.FindControl<TextBlock>("RatingText");
@@ -275,13 +272,7 @@ public partial class WiringGameView : UserControl
                 await MiniGameEffectHelper.AnimateRewardTextAsync(
                     xpText, $"+{_vm.XpAmount} XP");
             }
-        });
-        }
-        catch
-        {
-            // Effekt-Fehler still behandelt
-        }
-    }
+        }));
 
     /// <summary>
     /// Startet den Render-Loop bei Task-Wechsel neu (Multi-Task-Orders).

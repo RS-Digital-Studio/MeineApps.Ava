@@ -93,8 +93,9 @@ public sealed partial class InventGameViewModel : BaseMiniGameViewModel
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
-        ILocalizationService localizationService)
-        : base(gameStateService, audioService, rewardedAdService, localizationService)
+        ILocalizationService localizationService,
+        IGuildCoopOrderService? coopOrderService = null)
+        : base(gameStateService, audioService, rewardedAdService, localizationService, coopOrderService)
     {
     }
 

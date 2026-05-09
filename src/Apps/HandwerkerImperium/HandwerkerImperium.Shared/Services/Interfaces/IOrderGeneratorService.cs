@@ -45,6 +45,13 @@ public interface IOrderGeneratorService
     int ExpireOldLiveOrders();
 
     /// <summary>
+    /// v2.0.39 Audit-Fix P5: Schneller Lock-freier Lese-Counter — wie viele Live-Auftraege
+    /// sind aktuell im AvailableOrders-Pool. Vermeidet einen vollstaendigen RemoveAll-Iter
+    /// in <see cref="ExpireOldLiveOrders"/> wenn es nichts zu tun gibt (Early-Exit-Guard).
+    /// </summary>
+    int LiveOrderCount { get; }
+
+    /// <summary>
     /// Aktualisiert BaseReward + BaseXp aller wartenden AvailableOrders auf Basis des
     /// aktuellen NetIncomePerSecond (v2.0.35 Bugfix). Verhindert dass alte Orders
     /// "veraltete" Rewards zeigen wenn das Einkommen zwischenzeitlich gestiegen ist.

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
@@ -11,12 +13,14 @@ namespace HandwerkerImperium.Services;
 public sealed class ManagerService : IManagerService
 {
     private readonly IGameStateService _gameStateService;
+    private readonly IAnalyticsService? _analyticsService;
 
     public event Action<string>? ManagerUnlocked;
 
-    public ManagerService(IGameStateService gameStateService)
+    public ManagerService(IGameStateService gameStateService, IAnalyticsService? analyticsService = null)
     {
         _gameStateService = gameStateService;
+        _analyticsService = analyticsService;
     }
 
     public void CheckAndUnlockManagers()
@@ -50,6 +54,14 @@ public sealed class ManagerService : IManagerService
             state.Managers.Add(manager);
 
             ManagerUnlocked?.Invoke(def.Id);
+
+            // P1.1 AAA-Audit: Manager-Unlock ist Mid-Game-Meilenstein.
+            _analyticsService?.TrackEvent(AnalyticsEvents.ManagerUnlocked, new Dictionary<string, object?>
+            {
+                ["manager_id"] = def.Id,
+                ["player_level"] = state.PlayerLevel,
+                ["total_managers"] = state.Managers.Count
+            });
         }
     }
 

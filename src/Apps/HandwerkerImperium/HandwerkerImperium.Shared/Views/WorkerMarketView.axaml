@@ -159,6 +159,37 @@
           </StackPanel>
         </Border>
 
+        <!-- v2.1.0: Praktikanten-Einstellung (kostenlos, F-Tier, Limit 2) -->
+        <Border Classes="Card" Padding="14,12"
+                IsVisible="{Binding CanHireIntern}"
+                AutomationProperties.AutomationId="WorkerMarket_Border_Intern">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="{loc:Translate InternHireTitle}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate InternHireDescription}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <TextBlock Grid.Column="1"
+                         Text="{Binding InternCount}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         VerticalAlignment="Center" />
+            </Grid>
+            <Button Classes="Primary"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    MinHeight="44" Padding="12,8"
+                    Command="{Binding HireInternCommand}"
+                    Content="{loc:Translate InternHireButton}"
+                    AutomationProperties.AutomationId="WorkerMarket_Btn_HireIntern" />
+          </StackPanel>
+        </Border>
+
         <!-- Empty State: Keine Arbeiter verfügbar -->
         <StackPanel IsVisible="{Binding HasNoAvailableWorkers}" Spacing="8"
                     HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,24"

@@ -125,16 +125,29 @@ public sealed partial class MainViewModel
             _dailyRewardService.ClaimReward();
             HasDailyReward = false;
         }
-        else if (dialogsShown < 2)
+        else if (dialogsShown < 1)
         {
+            // v2.0.36: Daily Reward bekommt nur dann ein Modal, wenn noch KEIN anderer Dialog
+            // geschlagen wurde. Zweiter Modal in der Kaskade landet stattdessen in der Bell.
             CheckDailyReward();
             if (WelcomeFlowVM.IsDailyRewardDialogVisible)
                 dialogsShown++;
         }
-        else
+        else if (_dailyRewardService.IsRewardAvailable)
         {
-            // Daily Reward verzögert anzeigen (nach erstem Dialog geschlossen)
-            _hasDeferredDailyReward = _dailyRewardService.IsRewardAvailable;
+            // v2.0.36: Statt verzoegertem Modal — direkt in Notification-Center pushen.
+            // HasDailyReward bleibt true, sodass das Header-Badge sichtbar wird.
+            HasDailyReward = true;
+            _notificationCenterService.Add(new NotificationItem
+            {
+                Id = "daily_reward_today",
+                Kind = NotificationKind.DailyReward,
+                TitleKey = "NotificationDailyRewardTitle",
+                BodyKey = "NotificationDailyRewardBody",
+                CreatedAt = DateTime.UtcNow,
+                IconKind = "Gift"
+            });
+            _hasDeferredDailyReward = false;
         }
 
         // Story + Welcome-Hint NUR verzögert (nie beim Start direkt)
@@ -147,6 +160,12 @@ public sealed partial class MainViewModel
 
         // Start the game loop for idle earnings
         _gameLoopService.Start();
+
+        // v2.0.39 Audit-Fix U1: WhatsNew-Dialog fuer Bestandsspieler nach App-Update.
+        // Wird verzoegert ausgespielt, damit Offline-Earnings/Daily-Reward/Story zuerst durchgehen.
+        // Fire-and-forget — Spielstart darf darauf nicht warten.
+        if (_whatsNewService != null)
+            ShowWhatsNewDeferredAsync().SafeFireAndForget();
 
         // Telemetrie: Analytics + Session-Start (nur wenn Consent gegeben oder noch nie gefragt).
         // ShowAnalyticsConsentIfNeededAsync laeuft nicht-blockierend — der Spieler kann schon spielen.
@@ -171,8 +190,8 @@ public sealed partial class MainViewModel
             try
             {
                 DialogVM.ShowAlertDialog(
-                    _localizationService?.GetString("Error") ?? "Fehler",
-                    _localizationService?.GetString("InitError") ?? "Beim Laden ist ein Fehler aufgetreten. Bitte starte die App neu.",
+                    _localizationService?.GetString("Error") ?? "Error",
+                    _localizationService?.GetString("InitError") ?? "An error occurred while loading. Please restart the app.",
                     "OK");
             }
             catch
@@ -196,6 +215,21 @@ public sealed partial class MainViewModel
             var metadata = await _cloudSaveService.GetMetadataAsync();
             if (metadata == null) return;
 
+            // v2.0.37 Audit-Fix K6: App-Outdated-Schutz. Wenn der Cloud-Save mit einer
+            // neueren App-Version geschrieben wurde (z.B. Spieler hat 2 Geraete, aktuelles
+            // Geraet ist alte App-Version), KEIN Download — sonst wuerde Migration auf
+            // bereits-aktuelle Daten den State korrumpieren. Nutzer sieht stattdessen
+            // den Hinweis dass er die App aktualisieren muss.
+            if (metadata.StateVersion > GameState.CurrentStateVersion)
+            {
+                var outdatedTitle = _localizationService.GetString("CloudSaveTooNewTitle")
+                    ?? "App update required";
+                var outdatedBody = _localizationService.GetString("CloudSaveTooNewBody")
+                    ?? "Your cloud save was created with a newer app version. Please update the app in the Play Store.";
+                DialogVM.ShowAlertDialog(outdatedTitle, outdatedBody, _localizationService.GetString("Confirm") ?? "OK");
+                return;
+            }
+
             // Cloud neuer als lokal? Toleranz 5s gegen Clock-Skew.
             var localSavedAt = _gameStateService.State.LastSavedAt;
             var cloudSavedAt = metadata.SavedAtUtc;
@@ -203,9 +237,9 @@ public sealed partial class MainViewModel
                 return;
 
             // Konflikt-Dialog: zeigt Level + Money beider Stände
-            var title = _localizationService.GetString("CloudSaveNewer") ?? "Cloud-Spielstand gefunden";
+            var title = _localizationService.GetString("CloudSaveNewer") ?? "A newer cloud save was found (Level {0}). Use cloud save?";
             var localLbl = string.Format(
-                _localizationService.GetString("CloudSaveLocalSummary") ?? "Lokal: Level {0} ({1})",
+                _localizationService.GetString("CloudSaveLocalSummary") ?? "Local: Level {0} ({1})",
                 _gameStateService.State.PlayerLevel,
                 Helpers.MoneyFormatter.FormatCompact(_gameStateService.State.Money));
             var cloudLbl = string.Format(
@@ -214,8 +248,8 @@ public sealed partial class MainViewModel
                 Helpers.MoneyFormatter.FormatCompact(metadata.Money));
             var message = $"{localLbl}\n{cloudLbl}";
 
-            var useCloud = _localizationService.GetString("UseCloudSave") ?? "Cloud laden";
-            var useLocal = _localizationService.GetString("UseLocalSave") ?? "Lokal behalten";
+            var useCloud = _localizationService.GetString("UseCloudSave") ?? "Use Cloud";
+            var useLocal = _localizationService.GetString("UseLocalSave") ?? "Keep Local";
 
             var confirmed = await ShowConfirmDialog(title, message, useCloud, useLocal);
             if (!confirmed) return;
@@ -242,6 +276,28 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>
+    /// v2.0.39 Audit-Fix U1: Wartet kurz und zeigt dann den WhatsNew-Dialog wenn er
+    /// gebraucht wird. Wartet zusaetzlich falls beim Start andere Dialoge offen sind
+    /// (Offline/DailyReward/Story/Welcome/Starter-Offer) — Bestandsspieler haben nach
+    /// einem Update meist mehrere Dialog-Kandidaten.
+    /// </summary>
+    private async Task ShowWhatsNewDeferredAsync()
+    {
+        if (_whatsNewService == null) return;
+
+        // Erste Verzoegerung: andere Startup-Dialoge zuerst durchlassen.
+        await Task.Delay(2500);
+
+        // Maximal 4 Sekunden zusaetzlich warten falls Dialoge offen sind.
+        for (int i = 0; i < 8 && IsAnyDialogVisible; i++)
+            await Task.Delay(500);
+
+        if (IsAnyDialogVisible) return; // ergibt sich beim naechsten Start nochmal
+
+        await _whatsNewService.ShowWhatsNewIfNeededAsync();
+    }
+
+    /// <summary>
     /// Zeigt den DSGVO-Consent-Dialog fuer Analytics, wenn er noch nie gezeigt wurde.
     /// Wird nicht-blockierend aufgerufen (fire-and-forget) damit der Spielstart nicht wartet.
     /// </summary>
@@ -260,11 +316,11 @@ public sealed partial class MainViewModel
             await Task.Delay(2500);
         }
 
-        var title = _localizationService.GetString("AnalyticsConsentTitle") ?? "Hilfst du uns mit?";
+        var title = _localizationService.GetString("AnalyticsConsentTitle") ?? "Help us improve?";
         var message = _localizationService.GetString("AnalyticsConsentMessage")
-                      ?? "Anonyme Nutzungsdaten helfen uns, das Spiel zu verbessern. Keine persoenlichen Daten, kein Tracking durch Dritte. Du kannst das jederzeit in den Einstellungen aendern.";
-        var accept = _localizationService.GetString("AnalyticsConsentAccept") ?? "Ja, helfen";
-        var decline = _localizationService.GetString("AnalyticsConsentDecline") ?? "Nein, danke";
+                      ?? "Anonymous usage data helps us improve the game. No personal data, no third-party tracking. You can change this in settings at any time.";
+        var accept = _localizationService.GetString("AnalyticsConsentAccept") ?? "Yes, help";
+        var decline = _localizationService.GetString("AnalyticsConsentDecline") ?? "No, thanks";
 
         var consent = await ShowConfirmDialog(title, message, accept, decline);
 
@@ -472,7 +528,7 @@ public sealed partial class MainViewModel
                           && state.GoldenScrews >= 3;  // BAL-7: Von 5 auf 3 reduziert
         if (MissionsVM.CanRescueStreak)
         {
-            var costText = _localizationService.GetString("StreakRescueCost") ?? "Rescue streak ({0})";
+            var costText = _localizationService.GetString("StreakRescueCost") ?? "{0} Golden Screws";
             MissionsVM.StreakRescueText = string.Format(costText, 3);
         }
 
@@ -514,7 +570,7 @@ public sealed partial class MainViewModel
                         currentStreak);
                     CelebrationRequested?.Invoke();
                     CeremonyRequested?.Invoke(CeremonyType.Achievement, streakText,
-                        $"{currentStreak} {_localizationService.GetString("Days") ?? "Tage"}");
+                        $"{currentStreak} {_localizationService.GetString("Days") ?? "Days"}");
                     _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
                     break;
                 }

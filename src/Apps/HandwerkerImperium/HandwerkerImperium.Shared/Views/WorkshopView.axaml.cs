@@ -314,8 +314,7 @@ public partial class WorkshopView : UserControl
     }
 
     private async void OnUpgradeEffect(object? sender, EventArgs e)
-    {
-        try
+        => await AsyncExtensions.RunHandlerSafely(async () =>
         {
             // Level-Badge Scale-Pop Animation
             var badge = this.FindControl<Border>("LevelBadge");
@@ -330,10 +329,5 @@ public partial class WorkshopView : UserControl
                 var bounds = _workshopCanvas.Bounds;
                 _animationManager.AddLevelUpConfetti((float)bounds.Width / 2, (float)bounds.Height / 2);
             }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[HandwerkerImperium] {nameof(OnUpgradeEffect)} Fehler: {ex.Message}");
-        }
-    }
+        });
 }

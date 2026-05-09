@@ -69,7 +69,10 @@ public sealed partial class GameLoopService
             // v2.0.35 Hotfix-2: Order-Expiry unter State-Lock, schuetzt AvailableOrders +
             // ParallelOrdersByWorkshop vor Race mit SaveAsync-Serializer auf ThreadPool.
             bool activeExpired = false;
-            var expiredParallel = new List<WorkshopType>();
+            // v2.0.36: Lazy-Init — die Liste wird nur allokiert, wenn tatsaechlich ein
+            // paralleler Auftrag abgelaufen ist (typisch 0 pro Tick). Spart 60×/h
+            // GC-Druck ohne Effekt zu verlieren.
+            List<WorkshopType>? expiredParallel = null;
             _gameStateService.ExecuteWithLock(() =>
             {
                 // Nicht-Live-Auftraege via Deadline entfernen. Live-Auftraege laufen ueber
@@ -98,18 +101,27 @@ public sealed partial class GameLoopService
                 foreach (var kv in state.ParallelOrdersByWorkshop)
                 {
                     if (kv.Value.IsExpired && kv.Value != state.ActiveOrder)
+                    {
+                        expiredParallel ??= new List<WorkshopType>();
                         expiredParallel.Add(kv.Key);
+                    }
                 }
-                foreach (var wsType in expiredParallel)
-                    state.ParallelOrdersByWorkshop.Remove(wsType);
+                if (expiredParallel != null)
+                {
+                    for (int i = 0; i < expiredParallel.Count; i++)
+                        state.ParallelOrdersByWorkshop.Remove(expiredParallel[i]);
+                }
             });
 
             // Events AUSSERHALB des Locks feuern — Subscriber duerfen State-Methoden
             // aufrufen ohne Re-Entrant-Lock-Problem.
             if (activeExpired)
                 OrderExpired?.Invoke(this, EventArgs.Empty);
-            for (int i = 0; i < expiredParallel.Count; i++)
-                OrderExpired?.Invoke(this, EventArgs.Empty);
+            if (expiredParallel != null)
+            {
+                for (int i = 0; i < expiredParallel.Count; i++)
+                    OrderExpired?.Invoke(this, EventArgs.Empty);
+            }
         }
         if (_tickCount % WeeklyMissionCheckIntervalTicks == 15)
             _weeklyMissionService?.CheckAndResetIfNewWeek();
@@ -164,6 +176,8 @@ public sealed partial class GameLoopService
         if ((now - state.LastReputationDecay).TotalHours >= 24)
         {
             state.LastReputationDecay = now;
+            // v2.0.37: Tier-Snapshot fuer Event-Detection
+            var tierBefore = state.Reputation.CurrentTier;
             var showroom = state.GetBuilding(BuildingType.Showroom);
             if (showroom != null && showroom.DailyReputationGain > 0)
             {
@@ -171,6 +185,8 @@ public sealed partial class GameLoopService
                     state.Reputation.ReputationScore + (int)Math.Ceiling(showroom.DailyReputationGain));
             }
             state.Reputation.DecayReputation();
+            if (_gameStateService is GameStateService gss)
+                gss.RaiseReputationTierChangedIfNeeded(tierBefore);
         }
     }
 

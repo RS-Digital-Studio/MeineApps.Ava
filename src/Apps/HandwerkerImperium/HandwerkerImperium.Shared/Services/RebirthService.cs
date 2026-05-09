@@ -24,16 +24,18 @@ public sealed class RebirthService : IRebirthService
     ///
     /// Fix 18.04.2026 Game-Audit: Gesamt-GS halbiert von 2350 auf 1175 pro Workshop
     /// (10 Workshops: 23.500 → 11.750 GS). Mit best-case ~110 GS/Tag F2P: 210 Tage → 107 Tage.
-    /// Damit wird der 5-Stern-Full-Complete auch fuer Completionists realistisch erreichbar,
-    /// ohne die IAP-Attraktivitaet zu untergraben (Premium-Pass halbiert zusaetzlich).
+    ///
+    /// v2.0.37 (05.05.2026): Stern 4+5 weiter reduziert (250→200, 500→400). Senkt
+    /// pro Workshop nochmal 150 GS (1500 GS bei 10 Workshops, ~14 Tage F2P).
+    /// Premium-Wert bleibt erhalten (Premium-Pass halbiert ohnehin nochmal).
     /// </summary>
     private static readonly (int goldenScrews, decimal moneyPercent)[] RebirthCosts =
     [
         ( 50, 0.10m),   // Stern 1 (von 100)
         (125, 0.15m),   // Stern 2 (von 250)
         (250, 0.20m),   // Stern 3 (von 500)
-        (250, 0.25m),   // Stern 4 (von 500)
-        (500, 0.30m),   // Stern 5 (von 1000)
+        (200, 0.25m),   // Stern 4 (v2.0.37: 250 → 200)
+        (400, 0.30m),   // Stern 5 (v2.0.37: 500 → 400)
     ];
 
     public event EventHandler<WorkshopType>? RebirthCompleted;

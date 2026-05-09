@@ -103,9 +103,9 @@ public sealed partial class BuildingsViewModel : ViewModelBase, INavigable
         CurrentBalance = MoneyFormatter.Format(state.Money, 2);
 
         var items = new List<BuildingDisplayItem>();
-        var buildLabel = _localizationService.GetString("Build") ?? "Bauen";
+        var buildLabel = _localizationService.GetString("Build") ?? "Build";
         var upgradeLabel = _localizationService.GetString("Upgrade") ?? "Upgrade";
-        var maxLevelLabel = _localizationService.GetString("MaxLevel") ?? "Max";
+        var maxLevelLabel = _localizationService.GetString("MaxLevel") ?? "Max Level";
 
         foreach (var type in Enum.GetValues<BuildingType>())
         {

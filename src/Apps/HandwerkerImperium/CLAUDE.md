@@ -6,7 +6,703 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Aufträge oder spiele Mini-Games.
 
-**Version:** 2.0.35 (VersionCode 43) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
+**Version:** 2.1.0 (VersionCode 50) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
+
+### Sprint 3 v2.1.0 (Stand 05.05.2026, Big Bets)
+
+**Saison-Pass Storyline (Task 3.1)**
+- `SeasonStoryline`-Model + `SeasonStorylineCatalog` mit 4 Saisons (Spring/Summer/Autumn/Winter)
+  × 5 Kapiteln = 20 saisonale Story-Kapitel.
+- `StoryChapter` um `RequiredBattlePassTier` + `RequiredSeasonTheme` erweitert.
+  `StoryService.IsChapterUnlocked` prueft beide Bedingungen.
+- `IBattlePassService.TierUpReached` Event (oldTier, newTier, seasonNumber) — feuert
+  beim AddXp wenn Tier hoeher springt. MainViewModel abonniert + ruft
+  `CheckForNewStoryChapter` auf der UI-Thread auf.
+- Spring-Saison („Aufschwung der Stadt") komplett mit deutschem Text. Summer/Autumn/
+  Winter haben Stub-Texte — Story-Writing-Pass kann sie spaeter ausarbeiten.
+
+**Praktikanten-System (Task 3.5)**
+- `Worker.IsIntern` + `InternProgressTicks` + `InternAwaitingPromotion` Properties.
+- `IWorkerService.HireIntern` (kostenlos, F-Tier, 0 Lohn, Limit 2 gleichzeitig).
+- `IWorkerService.PromoteIntern` (zu E-Tier, Lohn-pflichtig) und `DeclineInternPromotion`
+  (Worker verlaesst Werkstatt).
+- Promotions-Schwelle: 86400 aktive Ticks (24h aktive Spielzeit).
+- `InternReadyForPromotion`-Event bei Promotion-Schwelle.
+- Update-Logik in `WorkerService.UpdateWorkerStates` — IsResting blockiert Tick-Inkrement.
+
+**Reputation-Shop (Task 3.3)**
+- `IReputationShopService` als 3. Waehrung neben Geld + Goldschrauben — Items kosten
+  Reputation-Score-Punkte. Sichtbar ab Reputation &gt;= 60.
+- 5 Items mit Effekten: Stammkunden-Garantie (30 Rep, naechste 5 Auftraege),
+  Schnelle Lieferung (20 Rep, +50% Speed/1h), Worker-Mood-Boost (25 Rep, +30 Mood),
+  Workshop-Skin Holz-Premium (100 Rep, kosmetisch permanent), Reputation-Insurance
+  (40 Rep, naechster Risk-Miss kostenlos).
+- GameState-Properties: RepShopRegularCustomerCharges, RepShopFasterDeliveryUntil,
+  RepShopWoodPremiumSkinUnlocked, RepShopInsuranceCharges.
+- OrderGeneratorService respektiert Stammkunden-Charges (forciert Stammkunde wenn &gt; 0).
+
+**Co-op-Auftraege Foundation (Task 3.2 — Phase A)**
+- `CoopOrderState` + `CoopOrderStatus` Models. Firebase-Pfad
+  `guilds/{guildId}/coopOrders/{orderId}`.
+- `IGuildCoopOrderService` Skelett mit CRUD-Methoden (Create/Accept/Decline/SubmitScore).
+- Phase B (Firebase-Implementierung, Polling-Loop, HMAC-Signierung, UI in GuildView,
+  Echtzeit-MiniGame-Sync) braucht dedizierten Branch + 2-Player-Mock-Tests.
+
+**Worker-Auktionen Foundation (Task 3.4 — Phase A)**
+- `WorkerAuctionState` + `WorkerAuctionStatus` Models. Firebase-Pfad
+  `guilds/{guildId}/auctions/{auctionId}`.
+- `IWorkerAuctionService` Skelett. Phase B (Bidding-Logik, NPC-Bots fuer Solo,
+  5min-Auktion-Cron, Refund) braucht dedizierten Branch + Firebase-Rules-Update.
+
+### Sprint 2 v2.0.37 (Stand 05.05.2026, UX-Tiefe + Code-Haertung)
+
+**Reputation-Tiers (Task 2.1)**
+- `CustomerReputationTier` Enum (Beginner/CityKnown/RegionStar/IndustryLegend, Score-Mapping
+  0-30 / 31-60 / 61-80 / 81-100). Computed Property `CustomerReputation.CurrentTier`.
+- `IGameStateService.ReputationTierChanged`-Event mit `ReputationTierChangedEventArgs`
+  (OldTier/NewTier/IsUp). Wird ausgeloest aus drei Stellen: CompleteActiveOrder (AddRating),
+  GameLoopService.cs (event-ReputationChange), GameLoopService.PeriodicChecks (Showroom-Decay).
+- Header-Badge in DashboardView: `ShowReputationTierBadge`/`ReputationTierName`/`ReputationTierColor`
+  Properties am MainViewModel, Bronze/Silber/Gold-Farben.
+- Spawn-Effekte in `OrderGeneratorService`: Stammkunden-Chance + Live-Order-Spawn-Chance werden
+  per `tier.GetRegularCustomerBonus()` und `tier.GetLiveOrderSpawnChance()` modifiziert.
+- Tier-Up-Celebration: MainViewModel.OnReputationTierChanged feuert FloatingText + Confetti +
+  Sound nur bei Aufstieg (IsUp=true), nicht bei Abstieg.
+
+**Prestige Single-Page-View (Task 2.2 — Foundation)**
+- Neue `ActivePage.Prestige` + `IsPrestigeActive` + `PrestigeView.axaml/cs` als Vollbild-Page.
+- View bindet auf `MainViewModel.DialogVM.*`-Properties (Tier-Optionen, ConfirmDialog-Texte,
+  BonusPpPreview, ChallengePpPreview, RunDuration). Tier-Tabs + Live-Vorschau + grosser CTA.
+- `GoBackCommand` als RelayCommand am MainViewModel (delegiert an `NavigateBack`).
+- Existierender Modal-Pfad (`ShowPrestigeConfirmationAsync` → Bottom-Sheet) bleibt aktiv —
+  Foundation fuer kompletten UI-Wechsel ist gelegt.
+
+**Imperium-Sub-Tabs (Task 2.3 — Foundation)**
+- `ImperiumSubTab` Enum (Workshops/Workers/Research/Equipment/Ascension).
+- 5 `IsImperiumXxxActive` Bools + `SelectImperiumSubTabCommand` + `IsImperiumAscensionUnlocked`
+  (LegendeCount &gt;= 3). Section-Migration der ImperiumView (~600 Zeilen) ist pendant.
+
+**Goldschrauben-Oekonomie (Task 2.7)**
+- Rebirth-Kosten Stern 4: 250 → 200 GS, Stern 5: 500 → 400 GS (10 Workshops = 1500 GS Ersparnis,
+  ~14 Tage F2P-Reduktion). RebirthService.RebirthCosts-Tabelle.
+- Rewarded GS-Ad: 8 → 12 GS (`ShopViewModel.cs::golden_screws_ad`-Case).
+- Wiederholbarer Wochen-Meilenstein: alle 7 Prestiges +5 GS. Neuer State-Counter
+  `PrestigeData.PrestigesSinceLastWeeklyReward` + `IncrementWeeklyPrestigeCounter()` +
+  Reset-Logik in `CheckAndAwardMilestones`.
+
+**Live-Orders pausieren (Task 2.8)**
+- `Order.PausedAt` (DateTime?) + `Order.AccumulatedPauseDuration` (TimeSpan).
+- `Order.IsExpired` + `LiveCountdownSeconds` nutzen `GetEffectiveNow()` — Pause-Dauer wird
+  abgezogen, mit 5-Minuten-Cap gegen „Bunkern".
+- `IGameStateService.PauseAllLiveOrders()` + `ResumeAllLiveOrders()`.
+- `MainViewModel.PauseGameLoop()` + `ResumeGameLoop()` rufen Pause/Resume an. Android-Lifecycle
+  (OnPause/OnResume) ist bereits an PauseGameLoop verdrahtet.
+
+**Snapshot-Save (Task 2.4) — keine Aenderung**
+- Aktueller `SaveGameService.SaveAsync` nutzt bereits `Task.Run + ExecuteWithLock` —
+  off-thread Serialisierung. Echte CreateSnapshot-Implementierung wuerde Deep-Copy aller
+  Sub-Objekte erfordern (~500 Zeilen) fuer unklaren Mehrwert.
+
+**SkiaSharp-Disposal-Audit (Task 2.6)**
+- `GameAssetService` hat IDisposable + ClearCache (Bestand).
+- `GameIcon.ClearCache()` um `_pathMap.Clear()` erweitert (komplettes Cleanup).
+- PipePuzzle-/Sawing-/etc. Renderer haben IDisposable mit umfassendem Dispose (Bestand).
+- Static SKMaskFilter (Process-Lifetime) — bereinigt sich beim App-Shutdown.
+- App.DisposeServices ruft GameLoopService/GameJuiceEngine/ServiceProvider/GameIcon/
+  GameIconRenderer in der richtigen Reihenfolge auf.
+
+**DialogViewModel-Aufspaltung (Task 2.5) — Phase 1 abgeschlossen**
+- 4 Partial-Class-Files extrahiert: DialogViewModel.LevelUp.cs (30 Z.),
+  DialogViewModel.Achievement.cs (25 Z.), DialogViewModel.Alert.cs (29 Z.),
+  DialogViewModel.PrestigeSummary.cs (45 Z.).
+- DialogViewModel.cs: 785 → 747 Zeilen. Bindings unveraendert (selbe Klasse via partial).
+- Restliche Sektionen (Story/Hint/Confirm) bleiben in der Hauptdatei — sie sind eng mit
+  Helper-Methoden (UpdatePrestigeDialogContent, ShowConfirmDialog mit TCS) verzahnt
+  und brauchen tieferen Refactor.
+
+### Sprint 3 Final-Pass (Stand 05.05.2026, alle Phase-A→B Aufgaben)
+
+**3.1 Saison-Storyline RESX-Uebersetzungen** (Task 24)
+- 240 RESX-Eintraege (4 Saisons × 5 Kapitel × 2 Texte × 6 Sprachen) in DE/EN/ES/FR/IT/PT.
+- Zusaetzlich `SeasonStoryXxxTheme` Header-Strings.
+
+**3.2 GuildCoopOrderService Firebase-Implementation** (Task 25)
+- Vollstaendige Firebase-CRUD-Implementation: CreateInvite/Accept/Decline/SubmitScore/GetState/GetOpenForPlayer.
+- HMAC-Signierung via `IGameIntegrityService.ComputeStringHmac` — Score-Tampering wird beim
+  GetState-Read erkannt und Auftrag als Expired markiert.
+- Reward-Berechnung: 50/50-Split + 25%-Bonus bei beidseitig Perfect (Score &gt;= 95).
+- 5min Pending-Phase, 3min Active-Phase. UI in GuildView und Polling-Loop sind als
+  separater Task pendant — Service-Logic ist build-fest.
+
+**3.3 Reputation-Shop** (Sprint 3) — Phase 1 abgeschlossen (im Ursprungs-Sprint).
+
+**3.4 WorkerAuctionService Firebase-Implementation** (Task 26)
+- Bid-Logik: 10% Mindest-Erhoehung, 1s-Cooldown gegen Spam-Bidding, Geld-Locking via Delta-Subtraktion.
+- HMAC-Signierung mit deterministischer AllBids-Sortierung (StringComparer.Ordinal).
+- Refund-Logik: Verlierer bekommen ihr Geld zurueck im Settle.
+- Spawn-Cron (5min-Intervall) und UI sind als separater Task pendant — Service ist build-fest.
+
+**Imperium-Sub-Tabs UI** (Task 23)
+- Sub-Tab-Leiste oben in ImperiumView mit 5 Buttons (Workshops/Workers/Research/Equipment/Ascension).
+- Active-Indication via `Classes.SubTabActive`-Style. Ascension-Tab nur sichtbar nach
+  3x Legende-Prestige (LegendeCount &gt;= 3).
+- Section-Mapping innerhalb der View bleibt fuer einen tieferen UI-Refactor.
+
+**RESX Sub-Tab-Keys** (Task 23 Bonus)
+- 5 Keys (`ImperiumSubTabXxx`) in allen 6 Sprachen.
+
+**Snapshot-Save Diagnostik** (Task 22)
+- Stopwatch-Diagnostik im DEBUG-Build: Save-Snapshot-Latenz wird gemessen, &gt;50ms triggert
+  Debug-Warnung. Aktuelles Pattern (Task.Run + ExecuteWithLock) bleibt.
+
+**Game-Integrity ComputeStringHmac** (Sub-Task fuer 3.2/3.4)
+- `IGameIntegrityService.ComputeStringHmac(string)` — generischer HMAC-SHA256 fuer Co-op +
+  Auktions-Daten. Nutzt den gleichen Geraete-spezifischen Schluessel wie SaveGame-Signing.
+
+### Sprint 3 Vollstaendiger Abschluss (Stand 05.05.2026, UI + Cron + Firebase-Rules)
+
+**3.2 + 3.4 ViewModels mit Polling-Loop** (Tasks 28+29)
+- `GuildCoopOrderViewModel` (ViewModels/Guild/): DispatcherTimer 2s waehrend offene Auftraege,
+  ObservableCollection mit Items, Create/Accept/Decline-Commands, BadgeText fuer UI-Counter.
+  Auto-Refresh auf `CoopOrderUpdated`-Event vom Service.
+- `WorkerAuctionViewModel` (ViewModels/Auctions/): 1s-Polling waehrend aktiver Auktion +
+  separater Countdown-Timer (1s) fuer EndsAt-Display. PlaceBid-Validation, BidError-Anzeige.
+  HasActiveAuction/MinBidDisplay (10%-Erhoehung) als computed Properties.
+- Beide IDisposable: stoppen Timer + unsubscribe-Events.
+
+**Co-op + Auction Views** (Task 30)
+- `Views/Guild/GuildCoopOrderView.axaml`: Card mit Empty-State, Item-Liste mit Accept/Decline-
+  Buttons (MinHeight 44dp), Refresh-Button.
+- `Views/Auctions/WorkerAuctionView.axaml`: Bid-Form mit Worker-Name, Hoechstgebot, Mindestgebot,
+  Countdown-Badge, Bid-Input + Place-Bid-Button. Error-Feedback bei abgelehnten Bids.
+- Beide MVVM-konform: nur `InitializeComponent()` im Code-Behind.
+- 11 RESX-Keys (`CoopOrders*`, `Coop*`, `Auction*`, `Refresh`) in allen 6 Sprachen.
+
+**Firebase Database-Rules** (Task 31)
+- `database.rules.json` (beide Kopien synchron — Repo-Root + Apps-Ordner): neue Pfade
+  `guilds/$id/coopOrders/$orderId` + `guilds/$id/auctions/$auctionId`. Schreib-Berechtigungen:
+  Gildenmitglieder. Schema-Validation fuer alle Felder (createdBy/invitedPlayer string, status
+  numerisch 0-3, Score 0-100, Bid 0-1e12, hmac max 128 Zeichen).
+- Wert-Caps gegen Manipulation: BaseReward max 1 Billion EUR, allBids-Schluessel-Validation.
+- **Deploy-Befehl:** `npx firebase-tools deploy --only database --project handwerkerimperium-487917`.
+
+**WorkerAuction-Cron im GuildTickService** (Task 32)
+- Optionaler `IWorkerAuctionService`-Parameter im Konstruktor. Alle 5min (Tick % 300 == 90)
+  wird `RefreshAuctionAsync()` aufgerufen — pollt aktuelle Auktion + settled abgelaufene.
+- Offset 90 vermeidet Kollision mit den 4 anderen Cron-Checks (Boss/Hall/Achievement/War).
+
+**DI-Registration** (App.axaml.cs)
+- `GuildCoopOrderViewModel` + `WorkerAuctionViewModel` als Singletons. Services bereits
+  in v2.1.0-Phase-A registriert.
+
+**MVVM-Status nach Aufspaltung**
+- Alle 6 neuen Code-Behind-Dateien sauber: `InitializeComponent()` only.
+- Keine `App.Services.GetRequiredService` Calls.
+- Keine `DataContext = ...` Setter.
+- Keine Business-Logik in Views.
+
+### v2.0.37 Audit-Hotfixes (Stand 07.05.2026)
+
+Basis: `HandwerkerImperium_Audit_v2.0.36.md` mit 40+ Befunden in 6 Kategorien.
+Verifikation per 3 parallelen `code-review`-Agents — von 22 ueberprueften Befunden waren
+14 bereits gefixt (K1, K2, P6, P7, L1-L4 u.a.), 8 echt offen.
+
+**K4 + NC2 + NC4 + P1 — NotificationCenterService Race-Condition + Lock-Delegation + Cap + Cache**
+- Eigenes `_lock` ersetzt durch `_gameStateService.ExecuteWithLock(...)` — gleicher Lock wie
+  SaveGameService verhindert „Collection was modified" beim AutoSave waehrend Add/Dismiss.
+- Inbox-Cap = 100 Items: aelteste werden ueber CreatedAt evicted bei Ueberlauf.
+- `Items` Property cacht sortierte Liste mit Dirty-Flag — vermeidet ~60 Allokationen/s
+  (LINQ `OrderByDescending().ToList()`) bei offener Bell.
+- Alle 5 Mutationen (Add/Dismiss/Clear/MarkAllSeen/Contains) auf ExecuteWithLock umgestellt.
+
+**K5 — V5→V6 Migration** (Phantom-Bug)
+- Audit-Empfehlung war spekulativ: `Order.IsAccepted` existiert in V5 nicht. Pause-Mechanik
+  (Order.PausedAt) wurde erst in V6 (Sprint 2) eingefuehrt. Der ursprueng­liche Migrations-
+  Code mit nur `state.ActiveOrder` ist korrekt — kein Datenverlust-Pfad. Kommentar im Code
+  dokumentiert die Audit-Annahme als nicht zutreffend.
+
+**K6 — Cloud-Save Version-Mismatch-Schutz**
+- `GameState.CurrentStateVersion` (const = 6) — referenzierbar fuer Version-Vergleiche.
+- `MainViewModel.CheckCloudSaveAsync`: Wenn `metadata.StateVersion > CurrentStateVersion`
+  zeigt die App einen Alert ("App-Update erforderlich") und bricht den Cloud-Download ab —
+  schuetzt vor State-Korruption durch Wiederholungs-Migration.
+- 2 neue RESX-Keys (`CloudSaveTooNewTitle`, `CloudSaveTooNewBody`) in 6 Sprachen.
+
+**Co-op Race-Condition bei gleichzeitigem Score-Submit**
+- Frueher: Beide Spieler `SetAsync(path, state)` (PUT) → Last-Write-Wins ueberschrieb den
+  Score des ersten Submitters.
+- Jetzt: `UpdateAsync(path, { player1Score: X })` (PATCH) — atomar nur das eigene Feld.
+  Status-Uebergang in 2. Patch idempotent (`fresh.Status == Active && both scores set`).
+- HMAC-Schema reduziert auf stabile Felder (OrderId, CreatedBy, InvitedPlayer, BaseReward,
+  MiniGameType) — Score/Status werden inkrementell gepatcht, sind nicht im HMAC.
+  Schutz ueber Firebase-Rules (Score 0-100 validate, Status 0-3).
+
+**L5 — Reputation-Tier Hysterese**
+- `CustomerReputation.CurrentTier` jetzt persistiert (war vorher computed). `RecomputeTier()`
+  nutzt `FromScoreWithHysteresis(score, currentTier)` mit 3-Punkte-Buffer (Up bei 31/61/81,
+  Down bei 28/58/78). Verhindert UI-Flackern an Tier-Boundaries (z.B. Stammkunden +1 /
+  Decay -1 abwechselnd).
+- `RaiseReputationTierChangedIfNeeded` ruft `RecomputeTier()` statt `FromScore`.
+
+**U3 — Disabled-Button Visual-State**
+- Globaler Style `Button:disabled` in App.axaml: Opacity 0.45 + TextMutedBrush.
+  Vorher wirkte ein deaktivierter Button wie Render-Bug.
+
+**U4 — Imperium Sub-Tab Symmetrie (Ascension)**
+- Tab IMMER sichtbar (5 Tabs), gelocked-Variante zeigt Lock-Icon ueberlagert auf dem Star.
+  `IsEnabled="{Binding IsImperiumAscensionUnlocked}"` — Layout springt nicht beim Unlock.
+
+**P2 — WiringGameRenderer Background-Reference**
+- `_background = null;` in Dispose. SKBitmap selbst gehoert dem GameAssetService-Cache —
+  Renderer ist Reference-Holder, kein Owner. Re-Use-Szenarien (Cache-Eviction + erneutes
+  Render) holen die Bitmap frisch.
+
+### Audit-Befunde STATUS (Stand 08.05.2026)
+
+| Sektion | Status |
+|---------|--------|
+| K1 (WiringRenderer Overflow) | gefixt vor v2.0.37 (Math.Min-Clamp + Difficulty-Tuple max=7) |
+| K2 (ParallelOrders Lock-Race) | gefixt vor v2.0.37 (vollstaendige Lock-Abdeckung) |
+| K3 (RollingResults List<bool>) | bewusste Design-Entscheidung — List<bool> bleibt fuer JSON-Roundtrip-Stabilitaet, Lock + N=20 macht O(20) trivial |
+| K4 (NotificationCenter Lock) | **gefixt v2.0.37** |
+| K5 (V5→V6 Migration) | nicht zutreffend (Audit-Annahme falsch) |
+| K6 (Cloud-Save Version) | **gefixt v2.0.37** |
+| P1 (Items LINQ-Cache) | **gefixt v2.0.37** (mit K4 zusammen) |
+| P2 (Bitmap-Leak Wiring) | **gefixt v2.0.37** (Reference-Null-Pattern) |
+| P3 (GameIcon Race) | akzeptabel — `_bitmapCache`/`_brushCache`/`_pathMap` sind ConcurrentDictionary, ClearCache nur bei App-Shutdown |
+| P4 (Save-Lock) | akzeptabel (off-thread via Task.Run, Lock-Hold ~5-20ms im DEBUG-Stopwatch verifiziert) |
+| P5 (ExpireOldLiveOrders Early-Exit) | **gefixt v2.0.39** (LiveOrderCount-Property + Early-Exit-Guard) |
+| P6 (Prestige-Shop O(n)) | gefixt vor v2.0.37 |
+| P7 (WorkshopLookupCache) | gefixt vor v2.0.37 |
+| P8 (CraftingInventory Lazy-Init) | bereits Eager-Init im GameState (`= new()`) — Audit-Annahme veraltet |
+| L1 (verwaiste ParallelOrders) | gefixt vor v2.0.37 |
+| L2 (Pause-Overflow) | gefixt vor v2.0.37 |
+| L3 (Mood-Decay negativ) | gefixt vor v2.0.37 (Math.Min-Cap) |
+| L4 (DivByZero) | gefixt vor v2.0.37 (ApplyBoostsProRata Guard) |
+| L5 (Reputation Hysterese) | **gefixt v2.0.37** |
+| L6 (wasCapped ungenutzt) | bereits in MainViewModel.Init.cs umgesetzt (durationText "(Max. {h}h)" + OfflineEfficiencyHint) |
+| U1 (WhatsNew-Dialog) | **gefixt v2.0.39** (WhatsNewService + Versions-Map kumulativ + 7 RESX-Keys × 7 Files) |
+| U2 (Header-Density) | bereits konditional (Reputation-Badge ab Tier 2, Streak ab 7 Tagen) |
+| U3 (Disabled-Button) | **gefixt v2.0.37** |
+| U4 (Sub-Tab Symmetrie) | **gefixt v2.0.37** |
+| U5 (Escape-Key Desktop) | **gefixt v2.0.39** (Tunnel-KeyDown-Handler in MainView delegiert HandleBackPressed) |
+| U6 (Backdrop-Dismiss konsistent) | durch U5 abgedeckt (Escape schliesst obersten Dialog) + DialogVM-Dismiss-Methoden vorhanden |
+| U7 (Reputation-Tier-Up Modal) | **gefixt v2.0.39** (Achievement-Dialog mit Tier-Effekten via 3 RESX-Keys × 7 Files) |
+| U8 (Pull-to-Refresh) | OFFEN — separater Sprint (RefreshContainer-Behavior-Implementierung) |
+| U9 (Praktikanten-Promotion-Visual) | **gefixt v2.0.39** (StatusInternReadyForPromotion ueberlagert alle anderen Status im WorkerProfile) |
+| U10 (Long-Press-Hint) | **gefixt v2.0.39** (LongPressBulk-Hint nach 2. Workshop-Upgrade via ContextualHints) |
+
+### AAA-Audit-Umsetzung 09.05.2026 (8 von 12 Punkten realisiert)
+
+Vollständige Bearbeitung des `AAA_AUDIT_2026-05-08.md` (15 Wochen Plan).
+Der Audit war teilweise überholt — wichtigste Befunde verifiziert:
+
+| Audit-Befund | Verifikation | Umsetzung |
+|--------------|--------------|-----------|
+| P0.1 "Null Tests" | **FALSCH** — 38 Test-Dateien existieren, 996/1009 grün | + 22 neue Property-Based Migration- und Performance-Benchmark-Tests, alle grün |
+| P0.2 "Kein CI/CD" | **PARTIELL** — `.github/workflows` leer | `ci.yml` (Build + Test + Firebase-Rules-Lint) |
+| P0.3 "Cinematic fehlt" | korrekt | `PrestigeCinematicRenderer` (4-Phasen, 14s, Skip+Tap-To-Continue) |
+| P1.1 "Live-Ops zu flach" | 11 Keys / 56 Events | + 18 RemoteConfig-Keys, + 17 Analytics-Events, A/B-Cohort-Tracking |
+| P1.5 "MainVM 2422 Z." | korrekt | Helper-Variante: `PageNavigationHelper` extrahiert, MainVM 2422→2392 |
+| P2.2 "Onboarding 4 Dialoge" | korrekt | Story-Skip-Button (Ch.1+Tutorial only) + Analytics-Funnel-Events |
+| P2.3 "Kein Music" | korrekt (15 SFX, 0 Music) | `IAudioService.PlayMusicAsync(MusicTrack, crossfade)` + AudioFocus |
+| P0.1 Layer 3 (Headless-UI) | als 1W-Sprint dokumentiert (zu groß für Session) | `CriticalPathHeadlessTests.cs` Skelett (skipped) |
+| P1.2 CJK-Lokalisation | `DEFER` (5k€ Translation-Budget extern) | dokumentiert |
+| P1.3 Monetization-Bundles | `DEFER` (4 Wochen) | dokumentiert |
+| P2.1 Content-Pipeline | `DEFER` (Google Sheets) | dokumentiert |
+| P2.4 Worker-Spine-Animation | `DEFER` (15k€) | dokumentiert |
+
+**Neu erstellt:**
+- `Models/PrestigeCinematicData.cs`, `Graphics/PrestigeCinematicRenderer.cs`, `Helpers/PageNavigationHelper.cs`
+- `tests/HandwerkerImperium.Tests/{SaveGameMigrationTests,PerformanceBenchmarkTests,CriticalPathHeadlessTests}.cs`
+- `.github/workflows/ci.yml`
+
+**Erweitert:**
+- `Models/AnalyticsEvents.cs` (+17 Events: Worker, Coop, Auction, RepShop, Equipment, Live-Order, Cinematic, Onboarding-Funnel)
+- `Models/RemoteConfigKeys.cs` (+18 Keys: Difficulty/Live-Order/WorkerMarket-Weights, Premium-Fallback, Bundle-Foundation, Theme-Override, Kill-Switches, Cross-Promo, UX-Onboarding)
+- `Models/AnalyticsUserProperties.cs` (+TestCohort, InstallCohortWeek, PlayerIdProperty)
+- `Services/AnalyticsService.cs` (Cohort-Hash + ISO-Week)
+- `Services/Interfaces/IAudioService.cs` + `AudioService.cs` + `AndroidAudioService.cs` (MusicTrack-Enum, Crossfade, AudioFocus)
+- `Services/Interfaces/IPrestigeService.cs` + `PrestigeService.cs` (CinematicReady-Event mit Snapshot vor Reset)
+- `ViewModels/MainViewModel.cs` (Helper-Delegation, Cinematic-Forward, StorySkip-Tracking)
+- `ViewModels/DialogViewModel.cs` (CanSkipStory + SkipStoryCommand + StorySkipRequested-Event)
+- `Views/MainView.axaml(.cs)` (PrestigeCinematicCanvas), `Views/Dialogs/StoryDialog.axaml` (Skip-Button)
+- `HandwerkerImperium.Shared.csproj` (InternalsVisibleTo), `SaveGameService.cs::MigrateState` (private→internal)
+- 7 RESX-Files (StorySkip in DE/EN/ES/FR/IT/PT + neutral)
+
+**Stale Tests gefixt** (alle 8 vorherigen Fehler):
+- `EquipmentTests.ShopPrice` — Theory-Werte auf 3/8/18/40 GS aktualisiert
+- `RebirthServiceTests.GetRebirthCost_FuenfterStern` — Method+Assertion auf 400 GS angepasst
+- `LevelThresholdsTests.QuickJobs_IstLevel5` → `IstLevel2` (Onboarding-Beschleunigung)
+- `LevelThresholdsTests.ProgressiveDisclosureReihenfolge_IstLogisch` — Erwartung auf neue Reihenfolge angepasst
+- `LevelThresholdsTests.HintLevels_SindKonsistentMitFeatureLevels` — fixt **Source-Bug**: `HintQuickJobs=5` widersprach `QuickJobs=2`. Source auf 2 korrigiert.
+
+**Result:** 1004 von 1004 grün (5 Skip = Headless-Skelett für Layer-3-Sprint).
+
+### Erweiterung: Foundation-Pässe für DEFER-Punkte
+
+Auch die als "DEFER" markierten Audit-Punkte haben eine umsetzbare Foundation bekommen
+(volle Realisierung erfordert externe Resourcen wie Translation-Budget oder Google-Sheet-Setup).
+
+**P1.3 Daily-Bundle-Foundation:**
+- `Models/DailyBundleOffer.cs` — Bundle-Slot mit SKU, Bonus-Items, Expiry
+- `Services/Interfaces/IDailyBundleService.cs` + `Services/DailyBundleService.cs` —
+  RemoteConfig-getriebene 7-Slot-Rotation, IAP-Flow, idempotente Bonus-Verbuchung
+- `Services/RemoteConfigKeys.DailyBundleEnabled` + `DailyBundleSkus` (JSON-Array)
+- DI-Registration in `App.axaml.cs`
+- **Offen für Robert:** SKUs in Google Play Console anlegen + RemoteConfig-JSON setzen + ShopView-Bundle-Card
+
+**P2.1 Content-Pipeline-Skelett:**
+- `tools/ContentPipeline/sync_content.py` — Google-Sheets→C#+RESX Sync-Skript (Stub-Modus + Live-Modus)
+- `tools/ContentPipeline/README.md` — Setup-Anleitung
+- **Offen für Robert:** Google Cloud Service Account + Sheet anlegen + CI-Hook in `ci.yml`
+
+**P1.2 CJK Phase 1 (ohne Translation-Budget):**
+- `Graphics/CjkFontResolver.cs` — System-Font-Resolver für zh-CN/zh-TW/ja/ko (NotoSansCJK / PingFang / YuGothic / MalgunGothic Fallback-Kette)
+- `tests/HandwerkerImperium.Tests/CjkFontResolverTests.cs` — 13 Property-Based-Tests, alle grün
+- `Resources/Strings/AppStrings.{zh-CN,ja,ko}.resx` — Stub-RESX mit Test-Glyphen für Render-Validation
+- **Offen für Robert:** Crowdin-Setup + ~5k€ Translation-Budget für ~3000 Strings × 3 Sprachen + Native-Speaker-QA
+
+**P2.4 Worker-Spine-Animation — bleibt formal DEFER:**
+- 6-8W Engineering + ~10-15k€ Asset-Budget für 50 animierte Charaktere
+- Vor Soft-Launch entscheiden (Pixel-Art ist nicht inhärent ein AAA-Killer)
+
+### AAA-Audit Loose-End-Pass 09.05.2026 (Polish + Hardening)
+
+Nach der Umsetzung wurde die Codebase auf lose Enden geprüft und folgendes nachgezogen:
+
+**Cinematic Auto-Dismiss + Audio-Trigger:**
+- `PrestigeCinematicRenderer.Update()` schaltet sich nach 8s Reward-Phase auto-ab (Bug-Fix: vorher lief die Cinematic ewig wenn nicht getippt)
+- `MainViewModel.OnPrestigeCinematicReady` triggert `MusicTrack.Celebration` mit Crossfade
+- `OnPrestigeCinematicDismissed` schaltet zurück auf `MusicTrack.IdleWorkshop`
+
+**AndroidAudioService Dispose:**
+- `IDisposable` implementiert. Released: Crossfade-Timer, AudioFocus-Listener+Request, SoundPool, MediaPlayer (alle mit Try/Catch wegen Native-Resource-Verträge)
+
+**DailyBundleService Init-Hook:**
+- `HandwerkerImperiumLoadingPipeline` ruft `IDailyBundleService.InitializeAsync()` direkt nach `IRemoteConfigService.InitializeAsync()` auf — Bundle nutzt die jetzt verfügbaren Slots
+
+**Cinematic-Renderer-Tests** (15 Tests):
+- Phasen-Übergänge (Money→Badge→Multiplier→Reward)
+- Skip-Logik (vor/nach 2s)
+- Auto-Dismiss nach 8s in Reward-Phase
+- Theory: Alle 7 Tier-Werte ohne Exception
+- Dispose-Idempotenz
+
+**DailyBundleService-Tests** (10 Tests):
+- Disabled-Pfad ohne Feature-Flag
+- JSON-Parse-Fehler-Handling (kein Crash)
+- DayOfWeek-Mapping (Mo=0..So=6)
+- Purchase-Flow: Verbuchung bei Erfolg, kein State-Change bei Fehler
+- Default-Initialisierung ohne Bonus-Felder
+
+**Analytics-Events live verdrahtet** (4 neue Live-Events):
+- `WorkerPromoted` — `WorkerService.PromoteIntern` (Onboarding-Funnel)
+- `WorkerQuit` — `WorkerService.UpdateWorkerStates` Mood-Quit-Pfad (Retention)
+- `ManagerUnlocked` — `ManagerService.CheckAndUnlockManagers` (Mid-Game-Meilenstein)
+- `EquipmentDropped` + `EquipmentEquipped` — `EquipmentService.TryGenerateDrop` + `EquipItem` (Engagement)
+
+**Headless-UI Layer 3 LIVE statt Skelett** (2 Tests):
+- `HeadlessSmokeTests` mit `[AvaloniaFact]` + `AvaloniaTestApplication`-Attribut
+- `Avalonia.Headless` + `Avalonia.Headless.XUnit` zu `Directory.Packages.props` hinzugefügt
+- `UseHeadlessDrawing=true` für CI ohne Display-Server
+- Beweist: Window/StackPanel/TextBlock rendern + Layout-Pass funktioniert
+- `CriticalPathHeadlessTests` bleibt als **Pattern-Dokumentation** für DI-Mock-aufwendige Tests
+
+**Result:** 1050 von 1050 Tests grün (5 Skip = dokumentiertes Skelett). Build clean (Shared + Android).
+
+**Neu erstellt:**
+- `tests/HandwerkerImperium.Tests/{PrestigeCinematicRendererTests,DailyBundleServiceTests,HeadlessSmokeTests}.cs`
+
+**Erweitert:**
+- `Graphics/PrestigeCinematicRenderer.cs` (Auto-Dismiss-Logic in Update)
+- `ViewModels/MainViewModel.cs` (Audio-Trigger im Cinematic-Forward + Idle-Track-Restore)
+- `HandwerkerImperium.Android/AndroidAudioService.cs` (`IDisposable`-Pattern)
+- `Loading/HandwerkerImperiumLoadingPipeline.cs` (Bundle-Init nach RemoteConfig)
+- `Services/{Worker,Manager,Equipment}Service.cs` (`IAnalyticsService`-Injection + 4 Live-Event-Triggers)
+- `tests/HandwerkerImperium.Tests/HandwerkerImperium.Tests.csproj` (Avalonia + Headless-Packages)
+- `Directory.Packages.props` (`Avalonia.Headless` 11.3.13)
+
+### Code-Review Final-Pass 09.05.2026 (alle 7 Findings sauber abgearbeitet)
+
+Code-Review-Agent (`code-review`) hat 7 Findings gemeldet — **alle gefixt**:
+
+| Finding | Schwere | Datei | Fix |
+|---------|---------|-------|-----|
+| 1 — RemoteConfig-Timeout-Race | KRITISCH | `Loading/HandwerkerImperiumLoadingPipeline.cs` | `ContinueWith`-Hook für deferred Bundle-Init bei Timeout (statt sofort mit leeren Werten zu initialisieren) |
+| 2 — DailyBundle Tageswechsel-Race | HOCH | `Services/DailyBundleService.cs` | `_rotateLock` um Tageswechsel-Detection — verhindert Doppel-`BundleRotated`-Events |
+| 3 — SkipButtonBounds-Stale | NIEDRIG | `Graphics/PrestigeCinematicRenderer.cs` | Bounds-Reset in `Start()` + Auto-Null in `Update()` wenn nicht `IsSkipEnabled` |
+| 4 — CjkFontResolver Cache-null | MITTEL | `Graphics/CjkFontResolver.cs` | Sentinel-Flags `s_resolvedXx` verhindern wiederholtes `LoadFamily` bei null-Result |
+| 5 — PageNavigationHelper O(n²) | MITTEL | `Helpers/CappedNavigationStack.cs` (NEU) | Ringbuffer mit O(1)-Push/Pop ersetzt Stack-Rebuild bei Cap-Überschreitung |
+| 6 — NextRandom thread-affin | MITTEL | `Graphics/PrestigeCinematicRenderer.cs` | `Random.Shared` (thread-safe seit .NET 6) statt eigener xorshift32-State |
+| 7 — Volume-Loss bei Duck→Loss | NIEDRIG | `HandwerkerImperium.Android/AndroidAudioService.cs` | `_currentMusicVolume`-Tracking — Pause merkt geduckten Wert statt MusicMaxVolume |
+
+**Result:** 1050/1050 Tests grün, beide Builds clean (Shared + Android), alle 7 Findings adressiert.
+
+### v2.0.39 Audit-Hotfixes (Stand 08.05.2026)
+
+Letzter Pass des `HandwerkerImperium_Audit_v2.0.36.md` — verbleibende OFFEN-Punkte aus
+v2.0.37 abgearbeitet. Assembly-Version Shared.csproj von 2.0.32 auf 2.1.0 synchronisiert
+(matched Android `ApplicationDisplayVersion=2.1.0`).
+
+**P5 — ExpireOldLiveOrders Early-Exit**
+- Neue Property `IOrderGeneratorService.LiveOrderCount` als O(n)-Lock-freier Scan ueber
+  `state.AvailableOrders` mit `IsLive`-Filter.
+- `ExpireOldLiveOrders()` returnt frueh wenn `LiveOrderCount == 0` — vermeidet die
+  RemoveAll-Iteration + Lock-Aequisition alle 3 Ticks (typisch leerer Pool).
+
+**U1 — WhatsNew-Dialog beim Update**
+- Neuer `IWhatsNewService` + `WhatsNewService` (Singleton) mit kumulativer Versions-Map
+  `s_releases[(version, featureKeys[])]`. Aktuelle Eintraege fuer 2.0.36 + 2.0.37.
+- `SettingsData.LastWhatsNewVersion` (default "0.0.0") persistiert die zuletzt gesehene
+  Version. Bei Spielern mit `LastSavedAt == default || TotalOrdersCompleted == 0` wird
+  der Dialog beim ersten Start uebersprungen, aber die Versions-Marke trotzdem gesetzt.
+- `MainViewModel.ShowWhatsNewDeferredAsync()`: 2.5s Initial-Delay + bis zu 4s Wartezeit
+  falls andere Startup-Dialoge offen sind. Fire-and-Forget, blockiert keinen Spielstart.
+- 7 neue RESX-Keys (`WhatsNewTitle`, `WhatsNewBell`, `WhatsNewStrategyEV`,
+  `WhatsNewReputation`, `WhatsNewReputationShop`, `WhatsNewImperiumTabs`,
+  `WhatsNewWhatsNewItself`) in 7 Dateien (DE/EN/ES/FR/IT/PT + neutral).
+
+**U5 — Escape-Key auf Desktop**
+- `MainView` registriert in seinem Ctor einen Tunnel-Phase-`KeyDownEvent`-Handler. Bei
+  `Key.Escape` wird `_vm.HandleBackPressed()` delegiert — selber Pfad wie Android-Back.
+- Schliesst den obersten sichtbaren Dialog (Achievement, Confirm, Story, Hint etc.) und
+  gibt `e.Handled = true` zurueck wenn etwas geschlossen wurde.
+
+**U7 — Reputation-Tier-Up Achievement-Dialog**
+- `OnReputationTierChanged` zeigt nun bei Aufstieg ueber Beginner einen
+  `DialogVM.AchievementDialog` mit Tier-Name + Effekt-Beschreibung. Floating-Text +
+  Confetti + Sound bleiben (kombinieren sich mit dem Modal). Bei Tier-Abstieg
+  unveraendert still.
+- 3 neue RESX-Keys (`RepTierCityKnownEffects`, `RepTierRegionStarEffects`,
+  `RepTierIndustryLegendEffects`) in 7 Dateien.
+
+**U9 — Praktikanten-Promotion Visual**
+- `WorkerProfileViewModel.UpdateFromWorker()` zeigt fuer Praktikanten mit
+  `InternAwaitingPromotion=true` den Status "Bereit zur Promotion" — ueberlagert
+  IsTraining/IsResting/IsTired/IsWorking. Spieler erkennt die ausstehende Entscheidung
+  ohne den Promotion-Dialog erst aufzumachen.
+- 1 neuer RESX-Key (`StatusInternReadyForPromotion`) in 7 Dateien.
+
+**U10 — Long-Press-Bulk-Discoverability**
+- Neuer `ContextualHints.LongPressBulk` (2 RESX-Keys: `HintLongPressBulkTitle`,
+  `HintLongPressBulkText` in 7 Dateien). Triggert in `MainViewModel.OnWorkshopUpgraded`
+  nach dem 2. Workshop-Upgrade (`HasSeenHint(WorkshopDetail.Id)` + nicht
+  `HasSeenHint(LongPressBulk.Id)`) und nicht waehrend aktivem Hold-to-Upgrade.
+
+**Geaenderte / neue Dateien (v2.0.39)**
+
+Neu:
+- `Services/Interfaces/IWhatsNewService.cs`
+- `Services/WhatsNewService.cs`
+
+Erweitert:
+- `App.axaml.cs` (DI-Registrierung)
+- `Models/SettingsData.cs` (LastWhatsNewVersion)
+- `Models/ContextualHint.cs` (LongPressBulk)
+- `Services/Interfaces/IOrderGeneratorService.cs` (LiveOrderCount)
+- `Services/OrderGeneratorService.cs` (LiveOrderCount + Early-Exit)
+- `ViewModels/MainViewModel.cs` (WhatsNewService-Feld + Tier-Up-AchievementDialog +
+  LongPressBulk-Hint-Trigger)
+- `ViewModels/MainViewModel.Init.cs` (ShowWhatsNewDeferredAsync)
+- `ViewModels/WorkerProfileViewModel.cs` (StatusInternReadyForPromotion)
+- `Views/MainView.axaml.cs` (Escape-KeyDown-Handler)
+- `HandwerkerImperium.Shared.csproj` (Version 2.0.32 → 2.1.0)
+- 7 RESX-Dateien (12 neue Keys je Sprache: WhatsNew*7, RepTier*Effects*3, HintLongPressBulk*2,
+  StatusInternReadyForPromotion)
+
+### Sprint 3 Verdrahtungs-Pass (Stand 06.05.2026, Tasks 33/36/38/39/40)
+
+**Co-op + Auktion in Combat-Tab (Task 33)**
+- `GuildView` Combat-Tab bettet `GuildCoopOrderView` + `WorkerAuctionView` ein.
+- `GuildViewModel.CoopOrderVM` + `AuctionVM` Properties (DI per Constructor).
+- `OnActiveSubTabChanged`: Combat-Tab oeffnet/schliesst startet/stoppt Polling beider VMs
+  (spart Firebase-Requests + Battery, wenn Tab nicht offen).
+- Dispose stoppt Polling beider VMs sauber.
+
+**Imperium-Sub-Tabs Section-Bindings (Task 36)**
+- `ImperiumView` Sektionen umfassen jetzt jeweils einen `IsImperium*Active`-StackPanel-Container:
+  Workshops (Buildings), Workers (Quick-Access), Research (ActiveProcesses), Equipment
+  (Hinweis-Card), Ascension (Prestige-Bereich). Wechsel ueber die Sub-Tab-Leiste blendet
+  jeweils nur eine Sektion ein.
+- Neuer RESX-Key `EquipmentSectionHint` in allen 6 Sprachen + neutral.
+
+**Auktions-Spawn + NPC-Bot-Bidding (Task 38)**
+- `IWorkerAuctionService.SpawnAuctionIfMasterAsync()`: Master-Client-Pattern (Spieler mit
+  lexikografisch kleinster `PlayerId` in der Mitgliederliste fuehrt Spawn aus, deterministisch
+  ohne Server). Solo-Spieler ist immer Master.
+- `IWorkerAuctionService.RunNpcBotTickAsync()`: Bots bieten zufaellig hoeher (35% Chance/Tick,
+  5-25% Increment, Tier-spezifisches Bot-Maximum 50k/250k/1M EUR).
+- `GuildTickService` ruft alle 5min `RefreshAuctionAsync` + `SpawnAuctionIfMasterAsync`
+  sequentiell, alle 5s `RunNpcBotTickAsync` waehrend aktiver Auktion (Master-Side).
+- Auktions-Worker werden mit zufaelligen Namen + Tier-Verteilung 70%/25%/5% (S/SS/SSS) erzeugt.
+
+**Co-op SubmitScore-Hook im BaseMiniGameViewModel (Task 39)**
+- `BaseMiniGameViewModel.ActiveCoopOrderId` + `ActiveCoopIsPlayer1` (static, vom Co-op-Flow
+  vor Start gesetzt). Optionaler `IGuildCoopOrderService`-Konstruktor-Parameter.
+- Beim Spielende (`IsLastTask`): `SubmitScoreAsync(orderId, score, isP1)` als Fire-and-Forget.
+  Score-Mapping ueber alle Tasks: Perfect=100, Good=75, Ok=50, Miss=0 (Durchschnitt fuer
+  Multi-Task-Orders, `ComputeCoopScore`-Helper).
+- Alle 10 MiniGame-VMs haben den optionalen `coopOrderService`-Parameter im Konstruktor.
+
+**Co-op Player-Picker (Task 40)**
+- `GuildMemberDisplay.PlayerId` ergaenzt — wird aus `GuildMemberInfo.Uid` (= PlayerId) befuellt.
+- `GuildCoopOrderViewModel.AvailableMembersProvider` (Func): liefert wahlbare Member.
+  Verdrahtet im `GuildViewModel`-Konstruktor — filtert eigenen Spieler raus.
+- `OpenPickerCommand` / `ClosePickerCommand` / `PickMemberCommand` + `IsPickerOpen` Property.
+- `GuildCoopOrderView`: "Co-op erstellen"-Button + Modal-Overlay mit Member-Liste.
+- Neue RESX-Keys `CoopCreateInvite` + `CoopPickMemberTitle` in allen 6 Sprachen.
+
+**Auktions-Sieg → Worker-Pool (Task 42, Lueckenfix)**
+- `WorkerAuctionService` bekommt `IWorkerService` injiziert. Bei Sieg
+  (`HighestBidderId == PlayerId`) wird `Worker.CreateForTier` mit dem Auktions-Tier+Namen
+  aufgerufen und via `IWorkerService.HireWorker` an den ersten freigeschalteten Workshop
+  uebergeben (Default Carpenter). Spieler kann den Worker spaeter via TransferWorker umsetzen.
+
+**Co-op Accept/Create → MiniGame-Navigation (Task 43, Lueckenfix)**
+- `GuildCoopOrderViewModel.StartCoopMiniGame(state)`: setzt
+  `BaseMiniGameViewModel.ActiveCoopOrderId` + `ActiveCoopIsPlayer1` und feuert
+  `NavigationRequested` mit `state.MiniGameType.GetRoute()`.
+- Aufruf in beiden Flows: `CreateInviteAsync` (Initiator startet sofort) und `AcceptAsync`
+  (eingeladener Spieler startet bei erfolgreichem Accept).
+- `IFirebaseService` als zweiter Konstruktor-Parameter im VM (DI-Container automatisch).
+- Event-Forwarding im `GuildViewModel`: `CoopOrderVM.NavigationRequested → NavigationRequested`
+  → MainViewModel routet ueber `INavigationService` ins MiniGame.
+- Damit ist der Co-op-Loop geschlossen: Picker → Create/Accept → MiniGame → Score-Submit
+  (an `coopId` aus `ActiveCoopOrderId`) → SettleRewards bei beiden Spielern.
+
+**Co-op Reward Polling-basiert (Task 44, Race-Condition-Fix)**
+- `SettleRewardsAsync` entfernt — frueher hat es nur auf dem Client gelaufen, dessen Score
+  als zweiter eintraf. Der erste Submitter hat das Reward-Auszahlung verloren, weil sein
+  Polling den Completed-Auftrag aus `GetOpenForPlayerAsync` rausgefiltert hat.
+- Neuer Pfad: `TryClaimCompletedReward(state)` ist idempotent ueber `GameState.ClaimedCoopOrderIds`.
+  Wird in `SubmitScoreAsync` (eigener Submit) UND in `GetOpenForPlayerAsync` (Polling-Pfad
+  fuer den anderen Spieler) aufgerufen — beide Spieler bekommen ihren Anteil garantiert,
+  niemals doppelt.
+- Reward-Berechnung gleich wie zuvor: `BaseReward * RewardSplit * (bothPerfect ? 1.25 : 1.0)`.
+
+**Auktion-Recovery nach App-Restart (Task 45, Idempotenz-Fix)**
+- `GameState.ClaimedAuctionIds` (List<string>) — analog zu CoopOrders.
+- `WorkerAuctionService.ApplyRefunds`: Idempotent ueber `ClaimedAuctionIds` — Doppel-Pay
+  und Doppel-Worker-Hire bei wiederholtem Polling oder App-Restart vermieden.
+- `DiscoverAndRecoverAsync`: Beim ersten Refresh nach App-Start (CurrentAuction == null)
+  werden alle Auktionen der Gilde gelesen, ungeclaimte Settled-Auktionen werden ueber
+  `ApplyRefunds` nachgeholt, und die juengste aktive Auktion wird als CurrentAuction gesetzt.
+  Verhindert dass Spieler Geld + Worker verlieren wenn die Settle-Transition waehrend App
+  geschlossen passiert ist.
+
+### Sprint 1 v2.0.36 (Stand 05.05.2026, Quick-Wins-Sprint)
+
+**Onboarding-Beschleunigung (Task 1.1)**
+- `LevelThresholds.QuickJobs` von 5 → 2 (erstes MiniGame innerhalb 90 Sekunden).
+- `StoryChapter` um `RequiredQuickJobsCompleted` erweitert. Story Ch.2 (`tutorial_orders`)
+  triggert jetzt nach erstem QuickJob, nicht mehr Level-basiert.
+- `INavigationHost.CheckForNewStoryChapter()` erlaubt Services (NavigationService),
+  Story-Trigger nach QuickJob-Completion auszuloesen.
+
+**Notification-Center / Bell-UI (Task 1.2)**
+- Neue Service-Schicht: `INotificationCenterService` + `NotificationCenterService` (Singleton).
+- `NotificationItem`, `NotificationKind` (OfflineEarnings/DailyReward/WelcomeBackOffer/
+  AchievementUnlocked/StreakSaved/NewStoryChapter/LiveOrderAvailable).
+- Persistenz in `GameState.NotificationInbox` (Default `[]`, V6-kompatibel).
+- `NotificationCenterViewModel` haengt am Service, feuert `ItemActivated` an MainViewModel,
+  das via Switch-Statement die richtige Aktion ausfuehrt.
+- Bell-Button im DashboardView-Header zwischen DailyReward-Badge und Settings-Cog.
+- Popup `NotificationCenterPopup.axaml` (rechts oben, MaxWidth 380, MaxHeight 540).
+- Login-Flow (MainViewModel.Init.cs) angepasst: OfflineEarnings/CombinedWelcome bleiben Modal,
+  DailyReward landet ab dem 2. Modal-Konflikt in der Bell statt verzoegert ins Modal.
+
+**Risk/Reward Strategy-Anzeige (Task 1.3)**
+- `StatisticsData.MiniGamePerformance` (Dictionary<MiniGameType, MiniGameStats>).
+- `MiniGameStats` mit Sliding-Window Last-20-Plays (`RollingResults`), TotalPlays,
+  PerfectRatings, Misses, LastPlayedAt.
+- `IGameStateService.RecordMiniGameResult(rating, miniGameType)` Ueberladung fuettert die
+  Stats; `GetMiniGameSuccessRate(type)` gibt -1 wenn weniger als 5 Plays.
+- `OrderViewModel.UpdateStrategyStats(order)` berechnet pro Strategie Trefferquote +
+  Erwartungswert (EV) mit linearer Reward-Skala (Safe=0,75x, Standard=1,0x, Risk=2,0x).
+- `IsRiskWorseThanStandard` setzt Class `RiskWarning` auf Risk-Button → rote Border via Style.
+
+**Auto-Play differenzieren (Task 1.4)**
+- `AutomationSettings.AutoAcceptOnlyStandard` (Default true) — AutoAccept ueberspringt
+  Live/VIP. `GameLoopService.Automation.cs::TryAutoAcceptOrder()` filtert.
+- `AutomationSettings.AutoCompleteSkipLiveOrders` (Default true) — MiniGame-Auto-Complete
+  in `BaseMiniGameViewModel.UpdateAutoCompleteStatus()` ist bei Live/VIP-Order ausgeblendet.
+- 2 Sub-Toggles im Dashboard `AutomationPanel.axaml` (nur sichtbar wenn AutoAccept gelockt).
+
+**GameLoopService Constructor-Validation (Task 1.6)**
+- Pflicht-Services nicht-nullable: `IIncomeCalculatorService`, `IPrestigeService`,
+  `IWorkerService`, `IResearchService` (zusaetzlich zu `IGameStateService`/`ISaveGameService`).
+- `ArgumentNullException.ThrowIfNull(...)` im Konstruktor — DI-Fehlkonfiguration crasht laut.
+- Optionale Plugin-Services (Guild/BattlePass/Vip/etc.) bleiben nullable.
+
+**Reduce-Motion-Profil (Task 1.8)**
+- `MainViewModel.ReduceMotion` (computed: `Settings.GraphicsQuality == Low`).
+- DashboardView-Animations-Styles per `:not(.NoMotion)` Selektor: GoldenBadgeShimmer,
+  TutorialHintPulse, BoostPulse, GoldenScrewBadgeShimmer ausgeschaltet wenn ReduceMotion.
+- Element-Bindung `Classes.NoMotion="{Binding ReduceMotion}"` schaltet das ein.
+
+**Touch-Targets (Task 1.5)**
+- 9 MiniGame-Tutorial-Info-Buttons von MinHeight=32 auf 44 angehoben.
+- ParallelOrders-Resume-Button von 40 auf 44.
+
+**RESX-Luecken (Task 1.7)**
+- 18 Keys, die zuvor `?? "Fallback"` im Code waren, sind jetzt in allen 6 RESX-Sprachen
+  vollstaendig: Worker, TabWorkshop, TabMissions, TabGuild, InitError, DeliveryCollected,
+  SoftCapIncome, ManagerUnlocked, ManagerUnlockedFormat, AscensionFailed, ResearchTime,
+  StartReputationFormat, OrderStrategyRiskConfirmDesc, AbandonChallengeDesc,
+  ParallelOrderLimitDesc, GuildWarTrainingRound, AtLevelShort.
+
+### GuildService-Aufteilung (Stand 01.05.2026)
+GuildInviteService aus GuildService (1571 Zeilen) extrahiert. Neuer Stand: GuildService ~1230 Zeilen
+(Kern-CRUD, Wochenziele, Mitglieder-Verwaltung, Rollen, MemberCount-Synchronisation), GuildInviteService
+~310 Zeilen (Invite-Codes, "Verfuegbare Spieler"-Browser, Einladungs-Inbox). FirebaseKeyValidator
+in eigene Helper-Klasse extrahiert (`Helpers/FirebaseKeyValidator.cs`), beide Services nutzen sie.
+Beitritts-Operationen (JoinByInviteCode, AcceptInvite) delegieren an `IGuildService.JoinGuildAsync`
+um den globalen Beitritts-Lock und die Integritaets-Checks zentral zu halten — keine doppelte
+Sperre, keine Race-Bedingung. RegisterAsAvailable/UnregisterAvailable bewusst privat im
+GuildService dupliziert (`RegisterAsAvailableInternalAsync`/`UnregisterAvailableInternalAsync`,
+je 12 Zeilen) um Circular DI mit GuildInviteService zu vermeiden — die Methoden sind reine
+Firebase-Set/Delete-Calls ohne eigene Logik. IGuildFacade um `Invite`-Property erweitert,
+GuildViewModel nutzt `_facade.Invite.X` fuer 8 Aufrufstellen statt zuvor `_facade.Guild.X`.
+Keine Membership-Cleanup-Extraktion: Die Cleanup/Duplicate/Stale/MemberCount-Methoden sind
+alle private Helfer ohne oeffentliche API — eine Extraktion wuerde shared State zerreissen
+oder Circular Dependencies erzeugen.
+
+### Async-void Handler (Stand 01.05.2026)
+14 von 15 `async void`-Event-Handlern auf `AsyncExtensions.RunHandlerSafely` umgestellt
+(Helpers/AsyncExtensions.cs). Eliminierte ~280 Zeilen redundantes try/catch-Logging.
+NICHT konvertiert: `LuckySpinViewModel.OnSpinTick` (catch-Block stoppt Timer + unsubscribt
+Event + setzt IsSpinning=false — echte Cleanup-Logik, keine reine Logging-Hülle).
+
+Konvertiert: BottomSheetBehavior.OnIsOpenChanged, WorkshopView.OnUpgradeEffect,
+PaintingGameView.OnComboIncreased + OnGameCompleted, RoofTilingGameView.OnVmPropertyChanged
++ OnGameCompleted, ForgeGameView.OnGameStarted + OnGameCompleted, SawingGameView.OnGameStarted
++ OnGameCompleted, sowie OnGameCompleted in Blueprint/DesignPuzzle/PipePuzzle/Invent/
+Inspection/Wiring (zusätzlich MainViewModel.OnShowPrestigeDialog war bereits konvertiert).
+
+### Lokalisierung (Stand 01.05.2026)
+Alle deutschen Fallback-Strings in `?? "..."` Konstrukten wurden auf englische Strings umgestellt.
+EN ist die Base-Sprache. Deutsche Fallbacks brechen das Fallback-System für alle nicht-deutschen Nutzer.
+
+**Fehlende Keys in AppStrings.en.resx** (Fallbacks auf sinnvolles Englisch gesetzt):
+- `Worker` → "Worker" (GoalService)
+- `TabWorkshop` / `TabMissions` / `TabGuild` → "Workshop" / "Missions" / "Guild" (MainViewModel)
+- `InitError` → "An error occurred while loading. Please restart the app."
+- `DeliveryCollected` → "Delivery collected"
+- `SoftCapIncome` → "Income"
+- `ManagerUnlocked` → "New Foreman!"
+- `ManagerUnlockedFormat` → "{0} is now available!"
+- `AscensionFailed` → "Ascension failed. Requirements not met."
+- `ResearchTime` → "Research time"
+- `StartReputationFormat` → "Starting reputation: {0}"
+- `PremiumIncomeComparison` / `PremiumIncomeCompare` → vorhanden, korrekt
+- `OrderStrategyRiskConfirmDesc` / `OrderStrategyRiskConfirmMessage` → "Miss = no reward + reputation loss. Really risk it?"
+- `AbandonChallengeDesc` → "You will receive 50% of the base prestige points (without challenge bonus). All challenges will be deactivated."
+- `ParallelOrderLimitDesc` → "This workshop already has a running order or the global parallel limit has been reached."
+- `GuildWarTrainingRound` / `GuildWarByeWeekTraining` → "Training round! Complete orders and mini-games to earn war points for the next round."
+- `AtLevelShort` → "From Level {0}"
+
+**IGameStateService.SwapToParallelOrder** fehlte im Interface (bereits vorhandener Fehler, behoben).
 
 ## Icon-System (Bitmap-Icons, AI + Programmatisch)
 
@@ -592,7 +1288,8 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 | `TournamentService` | Wöchentliche MiniGame-Turniere (alle 10 MiniGame-Typen), 9 simulierte Gegner |
 | `BattlePassService` | 50-Tier Battle Pass, Free/Premium, 42-Tage-Saisons |
 | `SeasonalEventService` | 4 Events/Jahr (Mär/Jun/Sep/Dez, 1.-14.), SP-Währung (5+Bonus pro Auftrag), Event-Shop (6 Items/Saison: 4 Basis + 2 einzigartige), IDisposable (OrderCompleted-Subscription) |
-| `GuildService` | Firebase REST API, Gilden-CRUD, Wochenziele, Einladungen, GetMaxMembers(), CountAndSyncMemberCountAsync (Race-Condition-frei), Duplikat-Erkennung (RemoveDuplicateMemberAsync), Verwaiste-Mitglieder-Bereinigung (CleanupStaleMembersAsync, >30d inaktiv) |
+| `GuildService` | Firebase REST API, Gilden-CRUD, Wochenziele, GetMaxMembers(), CountAndSyncMemberCountAsync (Race-Condition-frei), Duplikat-Erkennung, Verwaiste-Mitglieder-Bereinigung (>30d inaktiv), Rollen-Management (Promote/Demote/Kick/TransferLeadership) |
+| `GuildInviteService` | Einladungs-Subsystem (extrahiert aus GuildService am 01.05.2026): 6-stellige Invite-Codes, Spieler-Browser (verfuegbare Spieler), Direkt-Einladungs-Inbox (Send/Receive/Accept/Decline). Beitritts-Operationen delegieren an `IGuildService.JoinGuildAsync` (kein doppelter Lock) |
 | `GuildResearchService` | 18 Gilden-Forschungen (6 Kategorien), Timer, Effekt-Cache, SemaphoreSlim |
 | `GuildWarSeasonService` | Einziger Gilden-Krieg-Service (Saison-System, Matchmaking, Scoring, Ligen, Bonus-Missionen). Legacy GuildWarService entfernt |
 | `GuildHallService` | Interaktives Gilden-HQ mit 10 Gebäuden (Level 1-5), Upgrade-Timer, Effekt-Cache |
@@ -1078,7 +1775,7 @@ Vierter umfassender Review. Findings von `code-review`, `health`, `game-audit`, 
 - **DisposeServices Silent-Leak-Risiko**: `App.axaml.cs:191-240` hatte 13 hardkodierte Dispose-Aufrufe → neue IDisposable-Services vergessen. Fix: Kritische Services (GameLoopService, GameJuiceEngine) weiter explizit (Reihenfolge), danach `Services as IDisposable`.Dispose() kaskadiert ALLE registrierten IDisposable-Singletons. Idempotent via `_servicesDisposed`-Flag.
 
 ### Architektur
-- **IGuildFacade**: Neues Service-Container-Interface buendelt 8 Gilden-Services (IGuildService/Research/Chat/WarSeason/Boss/Hall/Tip/Achievement) über Properties. GuildViewModel-Ctor von 14 auf 7 Parameter reduziert. Service-Container-Pattern (keine Methoden-Delegation) — Code bleibt semantisch identisch: `_guildService.X` → `_facade.Guild.X`. Sub-VMs (WarSeason/Boss/Hall) bleiben unveraendert (eigene DI). Facade ist Singleton, disposed die inneren Services NICHT (DI-Container-Ownership).
+- **IGuildFacade**: Neues Service-Container-Interface buendelt 9 Gilden-Services (IGuildService/Invite/Research/Chat/WarSeason/Boss/Hall/Tip/Achievement) über Properties. GuildViewModel-Ctor von 14 auf 7 Parameter reduziert. Service-Container-Pattern (keine Methoden-Delegation) — Code bleibt semantisch identisch: `_guildService.X` → `_facade.Guild.X`. Sub-VMs (WarSeason/Boss/Hall) bleiben unveraendert (eigene DI). Facade ist Singleton, disposed die inneren Services NICHT (DI-Container-Ownership).
 - **CloseWorkerProfileCommand**: Backdrop-Klick im `WorkerProfileDialog` rief `MainViewModel.HandleBackPressed()` auf (überdimensioniert + semantisch falsch). Dedizierter `[RelayCommand] CloseWorkerProfile` auf MainViewModel. Code-Behind ruft diesen statt HandleBackPressed — keine Seiten-Effekte auf andere Overlays.
 - **AscensionView `Text="MAX"`** → `{loc:Translate PerkMaxLevel}` (Key existierte in allen 6 RESX, nur Binding fehlte).
 

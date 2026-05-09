@@ -161,7 +161,10 @@ public class SequenzKonzeptStrategy : IStrategy
         if (filterTf.HasValue)
             AmpelStatus[filterTf.Value] = "—";
 
-        if (navCandles.Count < _swingStrength * 2 + 20)
+        // Phase 18 / D1 — Swing-Strength + Min-Candles-Offset aus ScannerSettings, mit Field-Fallback.
+        var navSwingStrength = scannerSettings?.NavigatorSwingStrength is > 0 ? scannerSettings.NavigatorSwingStrength : _swingStrength;
+        var minCandlesOffset = scannerSettings?.NavigatorMinCandlesOffset is > 0 ? scannerSettings.NavigatorMinCandlesOffset : 20;
+        if (navCandles.Count < navSwingStrength * 2 + minCandlesOffset)
             return Blocked(navTf, $"Zu wenig {navTf}-Daten");
 
         // ───────────────────────────────────────────────────────────
@@ -402,8 +405,10 @@ public class SequenzKonzeptStrategy : IStrategy
         // ───────────────────────────────────────────────────────────
         (decimal Bckl500, decimal Bckl559, decimal Bckl618, decimal Bckl667)? bcklData = null;
         var isBcklReEntry = false;
+        // Phase 18 / D1 — Cooldown-Kerzen aus Settings (Default 2, Field-Fallback const).
+        var bcklCooldown = scannerSettings?.BcklReEntryCooldownCandles is > 0 ? scannerSettings.BcklReEntryCooldownCandles : BcklReEntryCooldownCandles;
         if (navMachine.State == SmState.Aktiviert
-            && (navCandles.Count - 1 - _lastBcklEntryCandleIndex) >= BcklReEntryCooldownCandles)
+            && (navCandles.Count - 1 - _lastBcklEntryCandleIndex) >= bcklCooldown)
         {
             // Bevorzugt dynamische BC-Zone (Trailing High/Low nach Aktivierung).
             var (bcTop, bcBottom) = navMachine.GetDynamicBcZone();

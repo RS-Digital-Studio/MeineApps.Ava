@@ -334,4 +334,33 @@ public class ScannerSettings
         MinPriceChangeTradFiByTf?.Remove(TimeFrame.M5);
         MaxResultsByTf?.Remove(TimeFrame.M5);
     }
+
+    // === Phase 18 / D1 — Magic-Numbers aus SequenzKonzeptStrategy exposed ===
+    /// <summary>
+    /// Phase 18 / D1 — Swing-Stärke für Fraktal-Erkennung auf der Navigator-TF (vorher hardcoded 5
+    /// in SequenzKonzeptStrategy._swingStrength). Default 5 = Buch-konform fuer H1/H4. Walk-Forward
+    /// kann darueber optimieren, Settings-Audit-Trail erfasst Aenderungen.
+    /// </summary>
+    public int NavigatorSwingStrength { get; set; } = 5;
+
+    /// <summary>
+    /// Phase 18 / D1 — Mindest-Confluence-Fallback (vorher hardcoded 3 in
+    /// SequenzKonzeptStrategy._minConfluence). BUCH-ONLY: Score ist primaer Info/Confidence,
+    /// kein Hard-Threshold. Default 3.
+    /// </summary>
+    public int NavigatorMinConfluence { get; set; } = 3;
+
+    /// <summary>
+    /// Phase 18 / D1 — Cooldown-Kerzen zwischen BCKL-Re-Entry-Triggern (vorher const 2 in
+    /// SequenzKonzeptStrategy.BcklReEntryCooldownCandles). Schuetzt vor Doppel-Trigger in
+    /// derselben Kerze. Default 2.
+    /// </summary>
+    public int BcklReEntryCooldownCandles { get; set; } = 2;
+
+    /// <summary>
+    /// Phase 18 / D1 — Konstanter Offset fuer die Mindest-Kerzen-Anzahl beim Sequenz-Setup
+    /// (vorher Magic 20 in SequenzKonzeptStrategy.cs:158: <c>navCandles.Count &lt; _swingStrength * 2 + 20</c>).
+    /// Default 20 (Buch-konform).
+    /// </summary>
+    public int NavigatorMinCandlesOffset { get; set; } = 20;
 }

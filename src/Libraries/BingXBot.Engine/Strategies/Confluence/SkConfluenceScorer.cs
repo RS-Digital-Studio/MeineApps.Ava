@@ -15,12 +15,20 @@ namespace BingXBot.Engine.Strategies.Confluence;
 public sealed class SkConfluenceScorer
 {
     /// <summary>
-    /// Maximal erreichbarer Score (Summe aller Kategorien inkl. GKL-Bonus + High-Probability-Bonus
-    /// + Funding-Rate-Bonus).
-    /// v1.5.4 Phase 7: 10 → 11 (FavorableFundingRate als +1-Kategorie). Confidence-Divisor zieht
-    /// automatisch nach (Confidence = score / MaxScore).
+    /// Maximal erreichbarer Score, dynamisch berechnet aus den definierten <see cref="ConfluenceCategory"/>-
+    /// Werten + Doppel-Gewicht fuer GklMasterZone und HighProbabilityZone (analog <see cref="Add"/>).
+    /// Phase 18 / D2 (QW6) — verhindert Off-by-One bei jeder Kategorie-Erweiterung. Vorher hardcoded 11
+    /// (musste manuell pro neuer Kategorie hochgezaehlt werden).
     /// </summary>
-    public const int MaxScore = 11;
+    public static readonly int MaxScore = ComputeMaxScore();
+
+    private static int ComputeMaxScore()
+    {
+        var sum = 0;
+        foreach (ConfluenceCategory cat in Enum.GetValues<ConfluenceCategory>())
+            sum += cat is ConfluenceCategory.GklMasterZone or ConfluenceCategory.HighProbabilityZone ? 2 : 1;
+        return sum;
+    }
 
     private readonly List<(ConfluenceCategory Category, string Reason)> _hits = new();
     private int _score;
